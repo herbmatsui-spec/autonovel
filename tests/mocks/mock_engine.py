@@ -16,6 +16,7 @@ class MockEngine:
 
         self.logic_validator = AsyncMock()
         self.auditor = AsyncMock()
+        self.auditor.audit.return_value = {"status": "ok", "issues": []}
         self.narrative = AsyncMock()
 
         if mock_llm:

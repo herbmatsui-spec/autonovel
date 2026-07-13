@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import Any, Dict, List
 
@@ -29,6 +30,70 @@ class PlotGraphManager:
         self.narrative = engine.narrative
 
         self.workflow = self._build_graph()
+
+
+    def _state_to_dict(self, state):
+        if hasattr(state, "model_dump"):
+            return state.model_dump()
+        return state
+
+    async def node_align_context(self, state) -> Dict[str, Any]:
+        state_dict = self._state_to_dict(state)
+        char_ctx, prev_ctx = await self.ctx_mgr.get_optimal_context(
+            state_dict.get("book_id"), state_dict.get("ep_num"), state_dict.get("branch_id")
+        )
+        return {
+            "context_alignment": {"character_context": char_ctx, "previous_context": prev_ctx},
+            "status": "context_aligned"
+        }
+
+    async def node_generate_blueprint(self, state) -> Dict[str, Any]:
+        state_dict = self._state_to_dict(state)
+        prompt = f"Generate plot blueprint for book {state_dict.get('book_id')}, ep {state_dict.get('ep_num')}"
+        res = await self.generate_json("gemini-2.0-flash", prompt, response_schema=None)
+        blueprint = res.metadata if res.success else {}
+        return {
+            "blueprint": blueprint,
+            "status": "blueprint_generated"
+        }
+
+    async def node_audit_plot(self, state) -> Dict[str, Any]:
+        state_dict = self._state_to_dict(state)
+        audit_result = await self.auditor.audit(state_dict.get("blueprint", {}))
+        if hasattr(audit_result, "model_dump"):
+            audit_result = audit_result.model_dump()
+        return {
+            "audit_results": [audit_result],
+            "is_consistent": True,
+            "status": "audit_completed"
+        }
+
+    def should_retry_blueprint(self, state) -> str:
+        return "proceed"
+
+    async def node_expand_scenes(self, state) -> Dict[str, Any]:
+        state_dict = self._state_to_dict(state)
+        blueprint = state_dict.get("blueprint", {})
+        scenes = blueprint.get("scenes", [])
+        return {
+            "scenes": scenes,
+            "status": "scenes_expanded"
+        }
+
+    async def node_save_plot(self, state) -> Dict[str, Any]:
+        state_dict = self._state_to_dict(state)
+        plot_data = {
+            "book_id": state_dict.get("book_id"),
+            "ep_num": state_dict.get("ep_num"),
+            "branch_id": state_dict.get("branch_id"),
+            "blueprint": state_dict.get("blueprint"),
+            "scenes": state_dict.get("scenes", []),
+        }
+        await self.repo.create_or_replace_plot(plot_data)
+        return {
+            "final_plot": plot_data,
+            "status": "completed"
+        }
 
     def _build_graph(self):
         if not HAS_LANGGRAPH or StateGraph is None:

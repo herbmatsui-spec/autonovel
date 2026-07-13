@@ -13,24 +13,21 @@ async def test_gemini_api_client_streaming_callback():
     mock_cooldown.wait = AsyncMock()
     mock_cooldown.on_success = MagicMock()
 
-    # Mock stream response
+    # Mock stream response (synchronous iterator, as actual code wraps in thread)
     class MockStreamResponse:
-        def __aiter__(self):
+        def __init__(self):
+            self._chunks = [MockChunk("Hello "), MockChunk("world!")]
+            self._index = 0
+
+        def __iter__(self):
             return self
 
-        def __aiter__(self):
-            return self
-
-        async def __anext__(self):
-            if not hasattr(self, '_index'):
-                self._index = 0
-
-            chunks = [MockChunk("Hello "), MockChunk("world!")]
-            if self._index < len(chunks):
-                val = chunks[self._index]
+        def __next__(self):
+            if self._index < len(self._chunks):
+                chunk = self._chunks[self._index]
                 self._index += 1
-                return val
-            raise StopAsyncIteration
+                return chunk
+            raise StopIteration
 
     class MockChunk:
         def __init__(self, text):

@@ -24,17 +24,18 @@ async def test_connection_kernel_stagnation_trigger():
     # Assuming ConnectionStagnationDetector looks for a lack of progress in connection_history
     class MockContext:
         connection_history = [
-            {"turn": 1, "resonance": 10, "trust": 10},
-            {"turn": 2, "resonance": 10, "trust": 10},
-            {"turn": 3, "resonance": 10, "trust": 10},
-            {"turn": 4, "resonance": 10, "trust": 10},
-            {"turn": 5, "resonance": 10, "trust": 10},
+            ConnectionState(affection=10, trust=10, dependence=10),
+            ConnectionState(affection=10, trust=10, dependence=10),
+            ConnectionState(affection=10, trust=10, dependence=10),
+            ConnectionState(affection=10, trust=10, dependence=10),
+            ConnectionState(affection=10, trust=10, dependence=10),
         ]
         summary = "Two characters talking in a cafe."
         characters = ["CharA", "CharB"]
         connection_state = ConnectionState(resonance=10, trust=10)
         analytics = MagicMock()
         analytics.is_connection_event = False
+        global_state = {}
 
     context = MockContext()
 
@@ -61,9 +62,10 @@ async def test_connection_kernel_no_trigger():
     kernel = ConnectionKernel(engine)
 
     class MockContext:
-        connection_history = [] # No history, no stagnation
+        connection_history = []
         analytics = MagicMock()
         analytics.is_connection_event = False
+        global_state = {}
 
     context = MockContext()
     result = await kernel.execute(context)
