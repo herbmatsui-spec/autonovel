@@ -1,0 +1,470 @@
+# 覇権小説エンジン - 標準アーキタイプ定義プラグイン
+# backend/config.py の STORY_ARCHETYPES を外部化したもの
+
+plugin_id: "standard_archetypes"
+plugin_name: "標準アーキタイプ定義集"
+version: "1.1.0"
+
+# 各フィールドの定義:
+# visual_icon: アイコン名 (Lucide iconsを想定)
+# summary: 1行ストーリー
+# trend_tag: トレンドタグ
+
+archetypes:
+  "カスタム":
+    visual_icon: "settings"
+    summary: "あなただけのオリジナルの物語を構築します。"
+    trend_tag: "自由設計"
+  "王道ざまぁ（爽快感最大）":
+    visual_icon: "sword"
+    summary: "追放された主人公が、実力を見せつけて周囲を見返す。"
+    trend_tag: "Web小説の王道"
+    plot_pattern: "exile_rise"
+    cheat_scale: 5
+    growth_curve: "最初からカンスト(無双)"
+    system_assist: 90
+    reality_cost: 20
+    cost_severity: 1
+    style_key: "style_web_standard"
+    default_target_eps: 50
+    default_word_count: 2500
+  "本格戦記（泥臭い逆転）":
+    visual_icon: "shield-alert"
+    summary: "圧倒的な戦力差を戦略と執念で覆す、骨太な戦記もの。"
+    trend_tag: "重厚なストーリー"
+    cheat_scale: 2
+    growth_curve: "徐々に成長(王道)"
+    system_assist: 30
+    reality_cost: 80
+    cost_severity: 4
+    style_key: "style_military_rational"
+    default_target_eps: 80
+    default_word_count: 3000
+  "死に戻り（絶望と執念）":
+    visual_icon: "history"
+    summary: "死ぬたびに過去へ戻る主人公が、運命を変えるために足掻く。"
+    trend_tag: "ループもの"
+    cheat_scale: 3
+    growth_curve: "条件付き最強(ピーキー)"
+    system_assist: 50
+    reality_cost: 60
+    cost_severity: 5
+    style_key: "style_psychological_loop"
+    default_target_eps: 60
+    default_word_count: 2800
+  "ほのぼの飯テロ（ストレス皆無）":
+    visual_icon: "coffee"
+    summary: "異世界の食材で美味しい料理を作り、仲間と癒やしの時間を過ごす。"
+    trend_tag: "スローライフ"
+    plot_pattern: "slow_life"
+    cheat_scale: 4
+    growth_curve: "最初からカンスト(無双)"
+    system_assist: 100
+    reality_cost: 10
+    cost_severity: 0
+    style_key: "style_bookworm_daily"
+    default_target_eps: 30
+    default_word_count: 1500
+  "悪役令嬢の逆転劇":
+    visual_icon: "crown"
+    summary: "婚約破棄された悪役令嬢が、現代知識で華麗に成り上がる。"
+    trend_tag: "女性向け人気"
+    plot_pattern: "reincarnation_cheat"
+    cheat_scale: 3
+    growth_curve: "徐々に成長(王道)"
+    system_assist: 60
+    reality_cost: 40
+    cost_severity: 2
+    style_key: "style_villainess_elegant"
+    default_target_eps: 40
+    default_word_count: 2000
+  "勘違い爆走（ギャップ萌え）":
+    visual_icon: "laugh"
+    summary: "主人公の言動が、周囲の勘違いを呼んで事態が好転していく。"
+    trend_tag: "コメディ"
+    plot_pattern: "reincarnation_cheat"
+    cheat_scale: 4
+    growth_curve: "最初からカンスト(無双)"
+    system_assist: 80
+    reality_cost: 20
+    cost_severity: 0
+    style_key: "style_overlord"
+    default_target_eps: 45
+    default_word_count: 2200
+  "最強テイマー（もふもふ無双）":
+    visual_icon: "paw-print"
+    summary: "伝説の魔獣たちを仲間にし、もふもふに癒やされながら無双する。"
+    trend_tag: "癒やし・無双"
+    plot_pattern: "slow_life"
+    cheat_scale: 4
+    growth_curve: "徐々に成長(王道)"
+    system_assist: 70
+    reality_cost: 10
+    cost_severity: 1
+    style_key: "style_bookworm_daily"
+    default_target_eps: 35
+    default_word_count: 1800
+  "万能錬金術師（商会成り上がり）":
+    visual_icon: "flask-conical"
+    summary: "錬金術を駆使して、画期的な商品を作り、巨大商会を作り上げる。"
+    trend_tag: "成り上がり"
+    plot_pattern: "exile_rise"
+    cheat_scale: 3
+    growth_curve: "徐々に成長(王道)"
+    system_assist: 60
+    reality_cost: 30
+    cost_severity: 1
+    style_key: "style_web_standard"
+    default_target_eps: 55
+    default_word_count: 2600
+  "現代知識チート（文明無双）":
+    visual_icon: "lightbulb"
+    summary: "異世界に現代の科学や知識を持ち込み、文明をアップデートする。"
+    trend_tag: "文明開化"
+    plot_pattern: "reincarnation_cheat"
+    cheat_scale: 3
+    growth_curve: "最初からカンスト(無双)"
+    system_assist: 50
+    reality_cost: 40
+    cost_severity: 0
+    style_key: "style_web_standard"
+    default_target_eps: 60
+    default_word_count: 2700
+  "絶品料理人（美食無双）":
+    visual_icon: "chef-hat"
+    summary: "異世界の魔獣肉や食材を、至高の料理に変えて世界を魅了する。"
+    trend_tag: "グルメ"
+    plot_pattern: "slow_life"
+    cheat_scale: 4
+    growth_curve: "最初からカンスト(無双)"
+    system_assist: 80
+    reality_cost: 10
+    cost_severity: 0
+    style_key: "style_bookworm_daily"
+    default_target_eps: 30
+    default_word_count: 1600
+  "爆笑冒険譚（コメディ最大）":
+    visual_icon: "zap"
+    summary: "とんでもないトラブルとコメディが連続する、ハイテンション冒険記。"
+    trend_tag: "笑い"
+    plot_pattern: "reincarnation_cheat"
+    cheat_scale: 3
+    growth_curve: "最初からカンスト(無双)"
+    system_assist: 40
+    reality_cost: 10
+    cost_severity: 0
+    style_key: "style_comedy_speed"
+    default_target_eps: 40
+    default_word_count: 1800
+  "異世界配信者（バズり無双）":
+    visual_icon: "radio"
+    summary: "異世界から動画を配信して、地球の視聴者を熱狂させる。"
+    trend_tag: "配信・SNS"
+    plot_pattern: "reincarnation_cheat"
+    cheat_scale: 4
+    growth_curve: "最初からカンスト(無双)"
+    system_assist: 100
+    reality_cost: 10
+    cost_severity: 0
+    style_key: "style_chat_log"
+    default_target_eps: 50
+    default_word_count: 2000
+  "癒やしの聖女（溺愛平和）":
+    visual_icon: "heart"
+    summary: "聖なる力で周囲を浄化し、みんなに愛されながら平和に暮らす。"
+    trend_tag: "溺愛"
+    plot_pattern: "slow_life"
+    cheat_scale: 5
+    growth_curve: "徐々に成長(王道)"
+    system_assist: 50
+    reality_cost: 20
+    cost_severity: 0
+    style_key: "style_bookworm_daily"
+    default_target_eps: 35
+    default_word_count: 1700
+  "万能魔導具師（快適生活）":
+    visual_icon: "wrench"
+    summary: "便利な魔導具を作って、快適で自堕落な生活を目指す。"
+    trend_tag: "快適ライフ"
+    plot_pattern: "slow_life"
+    cheat_scale: 3
+    growth_curve: "徐々に成長(王道)"
+    system_assist: 60
+    reality_cost: 30
+    cost_severity: 1
+    style_key: "style_bookworm_daily"
+    default_target_eps: 40
+    default_word_count: 1900
+  "モブ生徒の学園青春記":
+    visual_icon: "school"
+    summary: "平凡な学園生活を送るはずが、事件に巻き込まれていく。"
+    trend_tag: "学園"
+    plot_pattern: "slow_life"
+    cheat_scale: 1
+    growth_curve: "徐々に成長(王道)"
+    system_assist: 20
+    reality_cost: 10
+    cost_severity: 1
+    style_key: "style_web_standard"
+    default_target_eps: 25
+    default_word_count: 1200
+  "お気楽宝探し（浪漫追求）":
+    visual_icon: "map"
+    summary: "地図を頼りに、古代遺跡の宝を探して世界を旅する。"
+    trend_tag: "冒険"
+    plot_pattern: "reincarnation_cheat"
+    cheat_scale: 3
+    growth_curve: "最初からカンスト(無双)"
+    system_assist: 40
+    reality_cost: 40
+    cost_severity: 2
+    style_key: "style_light_fun"
+    default_target_eps: 50
+    default_word_count: 2300
+  "聖獣カフェのまったり経営":
+    visual_icon: "cup-soda"
+    summary: "聖獣たちが集まるカフェを経営し、のんびりとお客様をもてなす。"
+    trend_tag: "経営・スローライフ"
+    plot_pattern: "slow_life"
+    cheat_scale: 4
+    growth_curve: "最初からカンスト(無双)"
+    system_assist: 80
+    reality_cost: 10
+    cost_severity: 0
+    style_key: "style_bookworm_daily"
+    default_target_eps: 30
+    default_word_count: 1400
+  "ダンジョン農家（魔力で豊作）":
+    visual_icon: "sprout"
+    summary: "ダンジョンの奥深くで、魔力を使いながら理想の農園を作る。"
+    trend_tag: "開拓・スローライフ"
+    plot_pattern: "slow_life"
+    cheat_scale: 4
+    growth_curve: "最初からカンスト(無双)"
+    system_assist: 90
+    reality_cost: 5
+    cost_severity: 0
+    style_key: "style_bookworm_daily"
+    default_target_eps: 40
+    default_word_count: 1700
+  "癒やしの衛生兵（後方支援無双）":
+    visual_icon: "plus-circle"
+    summary: "軍の衛生兵として、後方から仲間を支えて圧倒的な信頼を得る。"
+    trend_tag: "職業モノ"
+    plot_pattern: "exile_rise"
+    cheat_scale: 3
+    growth_curve: "徐々に成長(王道)"
+    system_assist: 40
+    reality_cost: 20
+    cost_severity: 1
+    style_key: "style_light_fun"
+    default_target_eps: 50
+    default_word_count: 2400
+  "異世界コンビニ（現代品無双）":
+    visual_icon: "shopping-basket"
+    summary: "異世界にコンビニを開き、現代の商品を売って大繁盛させる。"
+    trend_tag: "経営・チート"
+    plot_pattern: "slow_life"
+    cheat_scale: 5
+    growth_curve: "最初からカンスト(無双)"
+    system_assist: 100
+    reality_cost: 0
+    cost_severity: 0
+    style_key: "style_web_standard"
+    default_target_eps: 45
+    default_word_count: 2000
+  "モブ執事の矜持（有能側近）":
+    visual_icon: "user-check"
+    summary: "影から主人を支える執事が、あまりの有能さで全てを解決する。"
+    trend_tag: "側近"
+    plot_pattern: "reincarnation_cheat"
+    cheat_scale: 3
+    growth_curve: "最初からカンスト(無双)"
+    system_assist: 30
+    reality_cost: 40
+    cost_severity: 1
+    style_key: "style_villainess_elegant"
+    default_target_eps: 50
+    default_word_count: 2300
+  "不老不死の道楽（伝説の趣味人）":
+    visual_icon: "infinite"
+    summary: "悠久の時を生きる不死者が、趣味を極めて伝説になる。"
+    trend_tag: "長寿"
+    plot_pattern: "slow_life"
+    cheat_scale: 4
+    growth_curve: "最初からカンスト(無双)"
+    system_assist: 10
+    reality_cost: 10
+    cost_severity: 0
+    style_key: "style_serious_fantasy"
+    default_target_eps: 70
+    default_word_count: 2800
+  "ギャル転生（ハイテンション）":
+    visual_icon: "smile"
+    summary: "ギャルが異世界に転生して、ポジティブ全開で世界を変える。"
+    trend_tag: "ポジティブ"
+    plot_pattern: "reincarnation_cheat"
+    cheat_scale: 3
+    growth_curve: "最初からカンスト(無双)"
+    system_assist: 60
+    reality_cost: 10
+    cost_severity: 0
+    style_key: "style_comedy_speed"
+    default_target_eps: 40
+    default_word_count: 1700
+  "辺境開拓（ホワイト領地経営）":
+    visual_icon: "land-plot"
+    summary: "過酷な辺境の地を、ホワイトな環境で領地経営していく。"
+    trend_tag: "経営"
+    plot_pattern: "slow_life"
+    cheat_scale: 4
+    growth_curve: "最初からカンスト(無双)"
+    system_assist: 70
+    reality_cost: 20
+    cost_severity: 1
+    style_key: "style_bookworm_daily"
+    default_target_eps: 60
+    default_word_count: 2500
+  "竜騎士無双（伝説の再起）":
+    visual_icon: "dragon"
+    summary: "伝説の竜騎士が力を取り戻し、再び空を支配する。"
+    trend_tag: "ファンタジー"
+    plot_pattern: "exile_rise"
+    cheat_scale: 5
+    growth_curve: "最初からカンスト(無双)"
+    system_assist: 30
+    reality_cost: 40
+    cost_severity: 2
+    style_key: "style_web_standard"
+    default_target_eps: 70
+    default_word_count: 2900
+  "鉄壁タンク（不動の守護）":
+    visual_icon: "shield"
+    summary: "どんな攻撃も無効化する最強のタンクが、仲間を守り抜く。"
+    trend_tag: "守護"
+    plot_pattern: "exile_rise"
+    cheat_scale: 4
+    growth_curve: "最初からカンスト(無双)"
+    system_assist: 50
+    reality_cost: 50
+    cost_severity: 1
+    style_key: "style_iron_wall"
+    default_target_eps: 65
+    default_word_count: 2700
+  "鬼人進化（弱肉強食）":
+    visual_icon: "skull"
+    summary: "モンスターとして転生し、進化を繰り返して最強を目指す。"
+    trend_tag: "進化"
+    plot_pattern: "reincarnation_cheat"
+    cheat_scale: 5
+    growth_curve: "徐々に成長(王道)"
+    system_assist: 30
+    reality_cost: 70
+    cost_severity: 3
+    style_key: "style_evolution"
+    default_target_eps: 75
+    default_word_count: 3000
+  "禁書司書（全知の隠者）":
+    visual_icon: "book-open"
+    summary: "禁書図書館の司書として、全知の知識を武器に事件を解決する。"
+    trend_tag: "知識"
+    plot_pattern: "slow_life"
+    cheat_scale: 3
+    growth_curve: "最初からカンスト(無双)"
+    system_assist: 10
+    reality_cost: 80
+    cost_severity: 2
+    style_key: "style_forbidden_library"
+    default_target_eps: 50
+    default_word_count: 2400
+  "豪運ギャンブラー（一攫千金）":
+    visual_icon: "dices"
+    summary: "異常な幸運を武器に、カジノや商売で一攫千金を狙う。"
+    trend_tag: "運ゲー"
+    plot_pattern: "reincarnation_cheat"
+    cheat_scale: 4
+    growth_curve: "最初からカンスト(無双)"
+    system_assist: 60
+    reality_cost: 30
+    cost_severity: 2
+    style_key: "style_high_luck_gambler"
+    default_target_eps: 55
+    default_word_count: 2600
+  "旋律の魔術師（伝説の演奏）":
+    visual_icon: "music"
+    summary: "音楽の魔法で、聴く者の心を操り、奇跡を起こす。"
+    trend_tag: "音楽・魔法"
+    plot_pattern: "slow_life"
+    cheat_scale: 3
+    growth_curve: "最初からカンスト(無双)"
+    system_assist: 40
+    reality_cost: 20
+    cost_severity: 1
+    style_key: "style_melody_mage"
+    default_target_eps: 40
+    default_word_count: 1900
+  "孤高の真祖（夜の支配者）":
+    visual_icon: "moon"
+    summary: "吸血鬼の真祖として、夜の住人たちを統率し、裏社会を支配する。"
+    trend_tag: "吸血鬼"
+    plot_pattern: "reincarnation_cheat"
+    cheat_scale: 5
+    growth_curve: "最初からカンスト(無双)"
+    system_assist: 20
+    reality_cost: 40
+    cost_severity: 1
+    style_key: "style_true_ancestor"
+    default_target_eps: 60
+    default_word_count: 2700
+  "遺物修理屋（職人の矜持）":
+    visual_icon: "hammer"
+    summary: "古代の遺物を修理する職人が、その技術で世界を変えていく。"
+    trend_tag: "職人"
+    plot_pattern: "slow_life"
+    cheat_scale: 3
+    growth_curve: "最初からカンスト(無双)"
+    system_assist: 30
+    reality_cost: 10
+    cost_severity: 1
+    style_key: "style_relic_repairer"
+    default_target_eps: 45
+    default_word_count: 2100
+  "呪いの剣聖（一刀両断）":
+    visual_icon: "swords"
+    summary: "呪われた剣を持つ剣聖が、代償を払いつつ敵を斬り伏せる。"
+    trend_tag: "シリアス"
+    plot_pattern: "exile_rise"
+    cheat_scale: 4
+    growth_curve: "徐々に成長(王道)"
+    system_assist: 0
+    reality_cost: 90
+    cost_severity: 4
+    style_key: "style_cursed_sword"
+    default_target_eps: 70
+    default_word_count: 2900
+  "影の支配者（黒幕の愉悦）":
+    visual_icon: "eye"
+    summary: "表向きはモブ、裏では黒幕として事件の糸を引く。"
+    trend_tag: "黒幕"
+    plot_pattern: "reincarnation_cheat"
+    cheat_scale: 3
+    growth_curve: "最初からカンスト(無双)"
+    system_assist: 40
+    reality_cost: 50
+    cost_severity: 2
+    style_key: "style_shadow_ruler"
+    default_target_eps: 60
+    default_word_count: 2600
+  "最強陰陽師（和風無双）":
+    visual_icon: "fan"
+    summary: "和風の術を駆使する陰陽師が、異世界のモンスターを浄化する。"
+    trend_tag: "和風"
+    plot_pattern: "reincarnation_cheat"
+    cheat_scale: 5
+    growth_curve: "最初からカンスト(無双)"
+    system_assist: 50
+    reality_cost: 30
+    cost_severity: 2
+    style_key: "style_onmyoji_master"
+    default_target_eps: 65
+    default_word_count: 2800

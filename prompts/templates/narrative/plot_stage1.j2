@@ -1,0 +1,17 @@
+【第{{ ep }}話プロット：構造確定】{{ mode_label }}
+現在の物語状態: {{ narrative_state }}
+状態詳細: {{ narrative_node.description if narrative_node else "未定義" }}
+推奨トーン: {{ narrative_node.tone if narrative_node else "標準" }}
+{{ avoidance_inst }}
+{{ foreshadowing_inst }}
+{{ constraint_inst }}
+【構造的指令】現在の状態は{{ narrative_state }}です。この状態に合った葛藤の深化を描いてください。
+日常義務: {{ routine_type }} / 絶望: {{ tragedy_type }}
+1. [thought_process]: 3ステップ思考（矛盾検証、反証、統合結論）を行え。
+2. [detailed_blueprint]: 2000文字の超詳細設計図を作成せよ。
+3. [parameters]: resolution_style, burned_cost_or_loot, antagonist_status を定義せよ。
+【キャラクター】
+{{ char_ctx }}
+【文脈】
+{{ prev_ctx }}
+※この段階では scenes は空で構いません。

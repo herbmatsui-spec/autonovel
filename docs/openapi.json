@@ -1,0 +1,2201 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "覇権小説エンジン API",
+    "version": "3.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health Check",
+        "operationId": "health_check_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/books/{book_id}/narrative_metrics": {
+      "get": {
+        "summary": "Get Narrative Metrics",
+        "operationId": "get_narrative_metrics_api_books__book_id__narrative_metrics_get",
+        "parameters": [
+          {
+            "name": "book_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Book Id"
+            }
+          },
+          {
+            "name": "branch_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1,
+              "title": "Branch Id"
+            }
+          },
+          {
+            "name": "ep_num",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ep Num"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/books": {
+      "get": {
+        "summary": "List Books",
+        "operationId": "list_books_api_books_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/books/{book_id}": {
+      "get": {
+        "summary": "Get Book",
+        "operationId": "get_book_api_books__book_id__get",
+        "parameters": [
+          {
+            "name": "book_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Book Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete Book",
+        "operationId": "delete_book_api_books__book_id__delete",
+        "parameters": [
+          {
+            "name": "book_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Book Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/plots/{book_id}": {
+      "get": {
+        "summary": "Get Plots",
+        "operationId": "get_plots_api_plots__book_id__get",
+        "parameters": [
+          {
+            "name": "book_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Book Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/chapters/{book_id}": {
+      "get": {
+        "summary": "Get Chapters",
+        "operationId": "get_chapters_api_chapters__book_id__get",
+        "parameters": [
+          {
+            "name": "book_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Book Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bibles/{book_id}": {
+      "get": {
+        "summary": "Get Bible",
+        "operationId": "get_bible_api_bibles__book_id__get",
+        "parameters": [
+          {
+            "name": "book_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Book Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/optimization_history/{book_id}": {
+      "get": {
+        "summary": "Get Opt History",
+        "operationId": "get_opt_history_api_optimization_history__book_id__get",
+        "parameters": [
+          {
+            "name": "book_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Book Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/patches/{book_id}/pending": {
+      "get": {
+        "summary": "Get Pending Patches",
+        "operationId": "get_pending_patches_api_patches__book_id__pending_get",
+        "parameters": [
+          {
+            "name": "book_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Book Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/patches/{patch_id}/approve": {
+      "post": {
+        "summary": "Approve Patch",
+        "operationId": "approve_patch_api_patches__patch_id__approve_post",
+        "parameters": [
+          {
+            "name": "patch_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Patch Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/PatchActionRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Req"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/patches/{patch_id}/reject": {
+      "post": {
+        "summary": "Reject Patch",
+        "operationId": "reject_patch_api_patches__patch_id__reject_post",
+        "parameters": [
+          {
+            "name": "patch_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Patch Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/PatchActionRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Req"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/patches/{patch_id}/edit": {
+      "post": {
+        "summary": "Edit Patch",
+        "operationId": "edit_patch_api_patches__patch_id__edit_post",
+        "parameters": [
+          {
+            "name": "patch_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Patch Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PatchEditRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/prompt_versions/{book_id}": {
+      "get": {
+        "summary": "Get Prompt Versions",
+        "operationId": "get_prompt_versions_api_prompt_versions__book_id__get",
+        "parameters": [
+          {
+            "name": "book_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Book Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/prompt_versions/{book_id}/rollback": {
+      "post": {
+        "summary": "Rollback Prompt Version",
+        "operationId": "rollback_prompt_version_api_prompt_versions__book_id__rollback_post",
+        "parameters": [
+          {
+            "name": "book_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Book Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RollbackRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/{task_id}/status": {
+      "get": {
+        "summary": "Get Task Status",
+        "operationId": "get_task_status_api_tasks__task_id__status_get",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Task Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/{task_id}/stream": {
+      "get": {
+        "summary": "Stream Task Status",
+        "operationId": "stream_task_status_api_tasks__task_id__stream_get",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Task Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/{task_id}/stop": {
+      "post": {
+        "summary": "Stop Task",
+        "operationId": "stop_task_api_tasks__task_id__stop_post",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Task Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/refine_erotic": {
+      "post": {
+        "summary": "Refine Erotic",
+        "operationId": "refine_erotic_api_refine_erotic_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefineEroticRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/easy_mode/generate": {
+      "post": {
+        "summary": "Generate Easy",
+        "operationId": "generate_easy_api_easy_mode_generate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EasyModeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/plots/plan_generation": {
+      "post": {
+        "summary": "Plan Generation",
+        "operationId": "plan_generation_api_plots_plan_generation_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlanGenerationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/episodes/retry_failed": {
+      "post": {
+        "summary": "Retry Failed Episodes",
+        "operationId": "retry_failed_episodes_api_episodes_retry_failed_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetryFailedRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/episodes/generate": {
+      "post": {
+        "summary": "Generate Episodes",
+        "operationId": "generate_episodes_api_episodes_generate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EpisodeGenerateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/episodes/generate_candidates": {
+      "post": {
+        "summary": "Generate Episodes Candidates",
+        "operationId": "generate_episodes_candidates_api_episodes_generate_candidates_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EpisodeGenerateCandidatesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/plots/expand": {
+      "post": {
+        "summary": "Expand Plots",
+        "operationId": "expand_plots_api_plots_expand_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlotExpandRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/plots/expand_candidates": {
+      "post": {
+        "summary": "Expand Plots Candidates",
+        "operationId": "expand_plots_candidates_api_plots_expand_candidates_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlotExpandCandidatesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/plots/rebuild": {
+      "post": {
+        "summary": "Rebuild Plots",
+        "operationId": "rebuild_plots_api_plots_rebuild_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlotRebuildRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/critique/optimize": {
+      "post": {
+        "summary": "Critique Optimize",
+        "operationId": "critique_optimize_api_critique_optimize_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CritiqueOptimizeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/plots/audit": {
+      "post": {
+        "summary": "Audit Plan",
+        "operationId": "audit_plan_api_plots_audit_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuditPlanRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/chapters/import": {
+      "post": {
+        "summary": "Import Chapter",
+        "operationId": "import_chapter_api_chapters_import_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChapterImportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/marketing/generate": {
+      "post": {
+        "summary": "Generate Marketing",
+        "operationId": "generate_marketing_api_marketing_generate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarketingGenerateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/marketing/export_package/{book_id}": {
+      "post": {
+        "summary": "Export Package",
+        "operationId": "export_package_api_marketing_export_package__book_id__post",
+        "parameters": [
+          {
+            "name": "book_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Book Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BaseModel"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Export Package Get",
+        "operationId": "export_package_get_api_marketing_export_package__book_id__get",
+        "parameters": [
+          {
+            "name": "book_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Book Id"
+            }
+          },
+          {
+            "name": "api_key",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Api Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/books/{book_id}/issues": {
+      "get": {
+        "summary": "Get Issues",
+        "operationId": "get_issues_api_books__book_id__issues_get",
+        "parameters": [
+          {
+            "name": "book_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Book Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/narrative_metrics/{book_id}/{branch_id}": {
+      "get": {
+        "summary": "Get Narrative Metrics Trend",
+        "description": "書籍およびブランチごとの指標推移を取得する。",
+        "operationId": "get_narrative_metrics_trend_api_narrative_metrics__book_id___branch_id__get",
+        "parameters": [
+          {
+            "name": "book_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Book Id"
+            }
+          },
+          {
+            "name": "branch_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Branch Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/issues/{issue_id}/resolve": {
+      "post": {
+        "summary": "Resolve Issue",
+        "operationId": "resolve_issue_api_issues__issue_id__resolve_post",
+        "parameters": [
+          {
+            "name": "issue_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Issue Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveIssueRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/prompt-metrics": {
+      "get": {
+        "summary": "Get Prompt Metrics",
+        "description": "Get prompt usage metrics\n\nArgs:\n    limit: Maximum number of records to return\n    \nReturns:\n    List of metric records ordered by timestamp desc",
+        "operationId": "get_prompt_metrics_api_prompt_metrics_get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete Old Prompt Metrics",
+        "description": "Delete metrics older than specified days\n\nArgs:\n    days: Number of days to keep\n    \nReturns:\n    Number of records deleted",
+        "operationId": "delete_old_prompt_metrics_api_prompt_metrics_delete",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 30,
+              "title": "Days"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/prompt-metrics/template/{template_name}": {
+      "get": {
+        "summary": "Get Prompt Metrics By Template",
+        "description": "Get metrics for a specific template\n\nArgs:\n    template_name: Name of the template\n    limit: Maximum number of records to return\n    \nReturns:\n    List of metric records for the template",
+        "operationId": "get_prompt_metrics_by_template_api_prompt_metrics_template__template_name__get",
+        "parameters": [
+          {
+            "name": "template_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Template Name"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/prompt-metrics/save": {
+      "post": {
+        "summary": "Save Prompt Metrics",
+        "description": "Save prompt metrics snapshot\n\nArgs:\n    request: Dict with template_name -> {hits, total_time_ms, error_count, ...}\n    \nReturns:\n    Success status",
+        "operationId": "save_prompt_metrics_api_prompt_metrics_save_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Request"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AuditPlanRequest": {
+        "properties": {
+          "api_key": {
+            "type": "string",
+            "title": "Api Key"
+          },
+          "genre": {
+            "type": "string",
+            "title": "Genre"
+          },
+          "keywords": {
+            "type": "string",
+            "title": "Keywords"
+          },
+          "trend_memo": {
+            "type": "string",
+            "title": "Trend Memo"
+          },
+          "sanctuary": {
+            "type": "string",
+            "title": "Sanctuary",
+            "default": ""
+          },
+          "originality_score": {
+            "type": "integer",
+            "title": "Originality Score",
+            "default": 50
+          },
+          "platform": {
+            "type": "string",
+            "title": "Platform",
+            "default": "カクヨム/なろう"
+          }
+        },
+        "type": "object",
+        "required": [
+          "api_key",
+          "genre",
+          "keywords",
+          "trend_memo"
+        ],
+        "title": "AuditPlanRequest",
+        "description": "プラン監査リクエスト（configなし）"
+      },
+      "BaseModel": {
+        "properties": {},
+        "type": "object",
+        "title": "BaseModel"
+      },
+      "ChapterImportRequest": {
+        "properties": {
+          "api_key": {
+            "type": "string",
+            "title": "Api Key"
+          },
+          "book_id": {
+            "type": "integer",
+            "title": "Book Id"
+          },
+          "ep_num": {
+            "type": "integer",
+            "title": "Ep Num"
+          },
+          "import_text": {
+            "type": "string",
+            "title": "Import Text"
+          },
+          "do_refine": {
+            "type": "boolean",
+            "title": "Do Refine"
+          }
+        },
+        "type": "object",
+        "required": [
+          "api_key",
+          "book_id",
+          "ep_num",
+          "import_text",
+          "do_refine"
+        ],
+        "title": "ChapterImportRequest",
+        "description": "章インポートリクエスト"
+      },
+      "CritiqueOptimizeRequest": {
+        "properties": {
+          "api_key": {
+            "type": "string",
+            "title": "Api Key"
+          },
+          "config": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Config"
+          },
+          "book_id": {
+            "type": "integer",
+            "title": "Book Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "api_key",
+          "book_id"
+        ],
+        "title": "CritiqueOptimizeRequest",
+        "description": "品質分析最適化リクエスト"
+      },
+      "EasyModeRequest": {
+        "properties": {
+          "api_key": {
+            "type": "string",
+            "title": "Api Key"
+          },
+          "config": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Config"
+          },
+          "genre": {
+            "type": "string",
+            "title": "Genre"
+          },
+          "keywords": {
+            "type": "string",
+            "title": "Keywords"
+          },
+          "archetype_key": {
+            "type": "string",
+            "title": "Archetype Key"
+          },
+          "target_eps": {
+            "type": "integer",
+            "title": "Target Eps"
+          },
+          "initial_limit": {
+            "type": "integer",
+            "title": "Initial Limit"
+          },
+          "word_count": {
+            "type": "integer",
+            "title": "Word Count"
+          },
+          "concept": {
+            "type": "string",
+            "title": "Concept",
+            "default": ""
+          },
+          "tone_vibe": {
+            "type": "number",
+            "title": "Tone Vibe",
+            "default": 0.6
+          }
+        },
+        "type": "object",
+        "required": [
+          "api_key",
+          "genre",
+          "keywords",
+          "archetype_key",
+          "target_eps",
+          "initial_limit",
+          "word_count"
+        ],
+        "title": "EasyModeRequest",
+        "description": "かんたんモード 全自動生成リクエスト"
+      },
+      "EpisodeGenerateCandidatesRequest": {
+        "properties": {
+          "api_key": {
+            "type": "string",
+            "title": "Api Key"
+          },
+          "config": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Config"
+          },
+          "book_id": {
+            "type": "integer",
+            "title": "Book Id"
+          },
+          "write_from": {
+            "type": "integer",
+            "title": "Write From"
+          },
+          "write_to": {
+            "type": "integer",
+            "title": "Write To"
+          },
+          "passion": {
+            "type": "number",
+            "title": "Passion"
+          },
+          "word_count": {
+            "type": "integer",
+            "title": "Word Count"
+          },
+          "do_refine": {
+            "type": "boolean",
+            "title": "Do Refine"
+          },
+          "env_state": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Env State"
+          },
+          "pipeline_mode": {
+            "type": "boolean",
+            "title": "Pipeline Mode",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "api_key",
+          "book_id",
+          "write_from",
+          "write_to",
+          "passion",
+          "word_count",
+          "do_refine"
+        ],
+        "title": "EpisodeGenerateCandidatesRequest",
+        "description": "エピソード候補生成リクエスト"
+      },
+      "EpisodeGenerateRequest": {
+        "properties": {
+          "api_key": {
+            "type": "string",
+            "title": "Api Key"
+          },
+          "config": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Config"
+          },
+          "book_id": {
+            "type": "integer",
+            "title": "Book Id"
+          },
+          "write_from": {
+            "type": "integer",
+            "title": "Write From"
+          },
+          "write_to": {
+            "type": "integer",
+            "title": "Write To"
+          },
+          "passion": {
+            "type": "number",
+            "title": "Passion"
+          },
+          "word_count": {
+            "type": "integer",
+            "title": "Word Count"
+          },
+          "do_refine": {
+            "type": "boolean",
+            "title": "Do Refine"
+          },
+          "env_state": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Env State"
+          },
+          "pipeline_mode": {
+            "type": "boolean",
+            "title": "Pipeline Mode",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "api_key",
+          "book_id",
+          "write_from",
+          "write_to",
+          "passion",
+          "word_count",
+          "do_refine"
+        ],
+        "title": "EpisodeGenerateRequest",
+        "description": "エピソード生成リクエスト"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "MarketingGenerateRequest": {
+        "properties": {
+          "api_key": {
+            "type": "string",
+            "title": "Api Key"
+          },
+          "book_id": {
+            "type": "integer",
+            "title": "Book Id"
+          },
+          "latest_ep": {
+            "type": "integer",
+            "title": "Latest Ep"
+          }
+        },
+        "type": "object",
+        "required": [
+          "api_key",
+          "book_id",
+          "latest_ep"
+        ],
+        "title": "MarketingGenerateRequest",
+        "description": "マーケティング生成リクエスト"
+      },
+      "PatchActionRequest": {
+        "properties": {
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "title": "PatchActionRequest",
+        "description": "パッチアクションリクエスト"
+      },
+      "PatchEditRequest": {
+        "properties": {
+          "content": {
+            "type": "string",
+            "title": "Content"
+          }
+        },
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "title": "PatchEditRequest",
+        "description": "パッチ編集リクエスト"
+      },
+      "PlanGenerationRequest": {
+        "properties": {
+          "api_key": {
+            "type": "string",
+            "title": "Api Key"
+          },
+          "config": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Config"
+          },
+          "params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Params"
+          }
+        },
+        "type": "object",
+        "required": [
+          "api_key",
+          "params"
+        ],
+        "title": "PlanGenerationRequest",
+        "description": "企画生成リクエスト"
+      },
+      "PlotExpandCandidatesRequest": {
+        "properties": {
+          "api_key": {
+            "type": "string",
+            "title": "Api Key"
+          },
+          "config": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Config"
+          },
+          "book_id": {
+            "type": "integer",
+            "title": "Book Id"
+          },
+          "gen_from": {
+            "type": "integer",
+            "title": "Gen From"
+          },
+          "gen_to": {
+            "type": "integer",
+            "title": "Gen To"
+          }
+        },
+        "type": "object",
+        "required": [
+          "api_key",
+          "book_id",
+          "gen_from",
+          "gen_to"
+        ],
+        "title": "PlotExpandCandidatesRequest",
+        "description": "プロット候補展開リクエスト"
+      },
+      "PlotExpandRequest": {
+        "properties": {
+          "api_key": {
+            "type": "string",
+            "title": "Api Key"
+          },
+          "config": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Config"
+          },
+          "book_id": {
+            "type": "integer",
+            "title": "Book Id"
+          },
+          "gen_from": {
+            "type": "integer",
+            "title": "Gen From"
+          },
+          "gen_to": {
+            "type": "integer",
+            "title": "Gen To"
+          }
+        },
+        "type": "object",
+        "required": [
+          "api_key",
+          "book_id",
+          "gen_from",
+          "gen_to"
+        ],
+        "title": "PlotExpandRequest",
+        "description": "プロット展開リクエスト"
+      },
+      "PlotRebuildRequest": {
+        "properties": {
+          "api_key": {
+            "type": "string",
+            "title": "Api Key"
+          },
+          "config": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Config"
+          },
+          "params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Params"
+          }
+        },
+        "type": "object",
+        "required": [
+          "api_key",
+          "params"
+        ],
+        "title": "PlotRebuildRequest",
+        "description": "プロット再構築リクエスト"
+      },
+      "RefineEroticRequest": {
+        "properties": {
+          "api_key": {
+            "type": "string",
+            "title": "Api Key"
+          },
+          "config": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Config"
+          },
+          "book_id": {
+            "type": "integer",
+            "title": "Book Id"
+          },
+          "ep_num": {
+            "type": "integer",
+            "title": "Ep Num"
+          },
+          "intensity": {
+            "type": "integer",
+            "title": "Intensity",
+            "default": 2
+          },
+          "platform_preset": {
+            "type": "string",
+            "title": "Platform Preset",
+            "default": "kakuyomu_romance"
+          }
+        },
+        "type": "object",
+        "required": [
+          "api_key",
+          "book_id",
+          "ep_num"
+        ],
+        "title": "RefineEroticRequest",
+        "description": "官能研磨リクエスト"
+      },
+      "ResolveIssueRequest": {
+        "properties": {
+          "action": {
+            "type": "string",
+            "title": "Action"
+          },
+          "api_key": {
+            "type": "string",
+            "title": "Api Key"
+          }
+        },
+        "type": "object",
+        "required": [
+          "action",
+          "api_key"
+        ],
+        "title": "ResolveIssueRequest",
+        "description": "課題解決リクエスト"
+      },
+      "RetryFailedRequest": {
+        "properties": {
+          "api_key": {
+            "type": "string",
+            "title": "Api Key"
+          },
+          "config": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Config"
+          },
+          "book_id": {
+            "type": "integer",
+            "title": "Book Id"
+          },
+          "passion": {
+            "type": "number",
+            "title": "Passion"
+          },
+          "word_count": {
+            "type": "integer",
+            "title": "Word Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "api_key",
+          "book_id",
+          "passion",
+          "word_count"
+        ],
+        "title": "RetryFailedRequest",
+        "description": "失敗エピソード再試行リクエスト"
+      },
+      "RollbackRequest": {
+        "properties": {
+          "version_id": {
+            "type": "integer",
+            "title": "Version Id"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason",
+            "default": "手動ロールバック"
+          }
+        },
+        "type": "object",
+        "required": [
+          "version_id"
+        ],
+        "title": "RollbackRequest",
+        "description": "プロンプトロールバックリクエスト"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

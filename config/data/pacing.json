@@ -1,0 +1,47 @@
+{
+    "default": [
+        {
+            "condition": "ep_num == 1 and is_light",
+            "instruction": "【第1話】主人公の日常的な『ついてなさ』をコミカルに描写。チート能力による快進撃の予感を描け。",
+            "density": "情報密度: 低",
+            "temp": 0.85
+        },
+        {
+            "condition": "ep_num == 1 and not is_light",
+            "instruction": "【第1話】主人公の理不尽な不遇・絶望を五感で執拗に描写。最後に能力の片鱗が現れるが、無双で終わらせるな。",
+            "density": "情報密度: 低",
+            "temp": 0.8
+        },
+        {
+            "condition": "2 <= ep_num <= 4",
+            "instruction": "【導入】能力の特異性とヒロインとの関係性を描写。小さなトラブルを代償や機転で解決させよ。",
+            "density": "情報密度: 中",
+            "temp": 0.8
+        },
+        {
+            "condition": "ep_num == 5",
+            "instruction": "【第1の爆発】1〜4話の伏線を一気に回収。最初の明確なカタルシスを描け。",
+            "density": "情報密度: 高",
+            "temp": 0.85
+        },
+        {
+            "condition": "24 <= ep_num <= 26",
+            "instruction": "【第1部クライマックス】最大級のカタルシス。これまでの伏線を全回収せよ。",
+            "density": "情報密度: 特高",
+            "multiplier": 1.5,
+            "temp": 0.9
+        },
+        {
+            "condition": "ep_num >= total_eps - 2",
+            "instruction": "【グランドフィナーレ】余韻を残しつつ、読者が満足できる大団円を。",
+            "density": "情報密度: 高",
+            "temp": 0.85
+        },
+        {
+            "condition": "True",
+            "instruction": "【展開・溜め回】物語を着実に進行させよ。新たな謎の提示、キャラの深掘り。",
+            "density": "標準",
+            "temp": 0.75
+        }
+    ]
+}

@@ -1,0 +1,4 @@
+INFO:     Will watch for changes in these directories: ['I:\\R15\\cR15']
+INFO:     Uvicorn running on http://127.0.0.1:8001 (Press CTRL+C to quit)
+INFO:     Started reloader process [26620] using WatchFiles
+WARNING:  WatchFiles detected changes in 'tests\test_zamaa_generation.py'. Reloading...

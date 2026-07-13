@@ -1,0 +1,74 @@
+// DI Graph - Hegemony Novel Engine
+digraph {
+	api_key [label="api_key
+(ObjectProvider)"]
+	db [label="db
+(SingletonProvider)"]
+	vector_store [label="vector_store
+(SingletonProvider)"]
+	audit_logger [label="audit_logger
+(SingletonProvider)"]
+	cooldown [label="cooldown
+(SingletonProvider)"]
+	genai_client [label="genai_client
+(SingletonProvider)"]
+	llm_factory [label="llm_factory
+(SingletonProvider)"]
+	semantic_cache [label="semantic_cache
+(SingletonProvider)"]
+	llm [label="llm
+(SingletonProvider)"]
+	repo [label="repo
+(SingletonProvider)"]
+	uow [label="uow
+(FactoryProvider)"]
+	pm [label="pm
+(SingletonProvider)"]
+	ctx_mgr [label="ctx_mgr
+(SingletonProvider)"]
+	auditor [label="auditor
+(SingletonProvider)"]
+	marketing [label="marketing
+(SingletonProvider)"]
+	bible_generator [label="bible_generator
+(SingletonProvider)"]
+	plot_expander [label="plot_expander
+(SingletonProvider)"]
+	planner [label="planner
+(SingletonProvider)"]
+	narrative [label="narrative
+(SingletonProvider)"]
+	critique [label="critique
+(SingletonProvider)"]
+	style_rag [label="style_rag
+(SingletonProvider)"]
+	writer [label="writer
+(SingletonProvider)"]
+	llm_factory -> genai_client
+	llm_factory -> cooldown
+	semantic_cache -> vector_store
+	semantic_cache -> genai_client
+	repo -> db
+	ctx_mgr -> repo
+	auditor -> repo
+	auditor -> pm
+	auditor -> llm
+	marketing -> repo
+	marketing -> pm
+	marketing -> llm
+	bible_generator -> repo
+	bible_generator -> llm
+	bible_generator -> pm
+	bible_generator -> auditor
+	plot_expander -> repo
+	plot_expander -> llm
+	plot_expander -> pm
+	plot_expander -> auditor
+	planner -> repo
+	planner -> pm
+	planner -> auditor
+	writer -> repo
+	writer -> llm
+	writer -> pm
+	writer -> planner
+}

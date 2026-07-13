@@ -1,0 +1,38 @@
+---
+agent: Connection
+purpose: Generates a scene to move characters from separate emotional orbits into a shared resonant state.
+metrics:
+  - emotional_synchronization: Do characters' internal states begin to align?
+  - earned_deepening: Is the bond growth a logical result of the scene's events?
+  - micro_synchronicities: Are there non-verbal cues indicating deep resonance?
+---
+# Connection Resonance Generation
+
+## Context
+Narrative Summary: {{ context.narrative_summary }}
+Target Characters: {{ target_characters | join(', ') }}
+Current Connection State: {{ connection_state }}
+Trigger Reason: {{ trigger_reason }}
+
+## Behavioral Guidelines
+{% for guideline in behavioral_guidelines %}
+- {{ guideline }}
+{% endfor %}
+
+## Selected Resonance Pattern
+Pattern: {{ selected_pattern.name }}
+Description: {{ selected_pattern.description }}
+Implementation Hints:
+{% for hint in selected_pattern.implementation_hints %}
+- {{ hint }}
+{% endfor %}
+
+## Task
+Generate a high-fidelity scene proposal that implements the selected resonance pattern. 
+Focus on the transition from the current state to a state of psychological resonance.
+Avoid artificial acceleration. Ensure the deepening of the bond is "earned" through shared vulnerability or mutual understanding.
+
+## Output Format
+1. Scene Proposal: Detailed prose or beat-by-beat description.
+2. Emotional Shift: Describe the specific shift in the connection state (e.g., Trust +10, Resonance +15).
+3. Key Resonance Moment: Identify the exact moment where the "click" of synchronization occurs.

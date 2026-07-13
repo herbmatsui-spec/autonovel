@@ -1,0 +1,40 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+        cache: 'pip'
+    - name: Install dependencies
+      run: pip install -r requirements.txt pytest pytest-xdist mypy ruff
+    - name: Run type checks
+      run: mypy src/ streamlit_app/ --ignore-missing-imports
+    - name: Run lint
+      run: ruff check src/ streamlit_app/ tests/
+    - name: Run tests
+      run: pytest -n auto tests/unit tests/integration
+  
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+        cache: 'pip'
+    - name: Install dependencies
+      run: pip install -r requirements.txt pylint
+    - name: Generate architecture
+      run: python docs/generate_architecture.py

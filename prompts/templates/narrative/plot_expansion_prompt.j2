@@ -1,0 +1,34 @@
+あなたはカクヨムでランキング1位を獲るためのプロット設計者です。
+作品タイトル: {{ book_title }}
+ジャンル: {{ book_genre }}
+【第{{ ep_num }}話 詳細プロット設計】
+この話のロードマップ概要: {{ ep_summary }}
+解決スタイル: {{ resolution_style }}
+消費コスト/獲得物: {{ burned_cost_or_loot }}
+テーマ的節目: {{ thematic_milestone }}
+敵対者状況: {{ antagonist_status }}
+
+【過去のプロット】
+{{ past_plots_str }}
+
+【アーク構成】
+{{ arcs_str }}
+
+【指令】
+1. [thought_process]: 3ステップ思考（矛盾検証、反証、統合結論）を行え。
+2. [title]: 第{{ ep_num }}話のサブタイトルを考案せよ。
+3. [summary]: 読者の興味を引く一行あらすじを記述せよ。
+4. [detailed_blueprint]: 2000文字以上の超詳細なシーン設計図を作成せよ。起承転結の流れ、状況の変化、キャラの行動を具体的に記述せよ。
+5. [scenes]: detailed_blueprintに基づき、MasterSceneBlockのリストを生成せよ。各シーンには具体的な行動(action)、重要な会話の要点(dialogue_point)、感情的結末(emotional_payoff)、そして詳細なビート(beats)を含めよ。
+   ※重要: [beats] 内の各項目は、必ず 'beat_type'（導入/展開/結末/状況/内面葛藤/具体的行動/余韻から選択）と 'action_description'（150文字以上の描写詳細）を省略せずに含めること。
+6. [next_hook]: 読者が即座に次をクリックしたくなる強烈なクリフハンガーを作成せよ。
+7. [stress], [catharsis], [is_catharsis], [catharsis_type], [tension], [love_meter]: 物語の感情曲線に沿って適切な値を設定せよ。
+   ※特に [tension] は、指定された目標値 {{ target_tension }} (0.0-1.0) に極力近づけること。
+8. [emotional_payoff]: この話で読者が得るべき感情的な報酬を記述せよ。
+9. [misunderstanding_gap]: もし『勘違い』の要素がある場合、その乖離内容を記述せよ。
+10. [lite_model_director_notes]: 生成したプロットの弱点や、執筆フェーズへの修正指示があれば記述せよ。
+11. [script_content]: detailed_blueprintに基づき、会話と行動指示のみの台本案を生成せよ。
+12. [current_chain_phase]: この話が『Hate』『Prep』『Payoff』のどのフェーズに当たるか指定せよ。
+
+Output Schema (JSON):
+{{ schema_json }}

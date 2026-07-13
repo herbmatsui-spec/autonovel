@@ -1,0 +1,72 @@
+{
+    "serenity_sanctuaries": [
+        {
+            "id": "library_haven",
+            "name": "静謐の書庫 (Library Haven)",
+            "triggers": [
+                "library",
+                "archive",
+                "study",
+                "bookshelves"
+            ],
+            "default_serenity_level": 3,
+            "sensory_bias": [
+                "olfactory.scents[0]",
+                "auditory.ambient[3]",
+                "visual.light[1]"
+            ],
+            "effect": "Automatic transition to Deep Stillness. Dialogue becomes hushed and reflective."
+        },
+        {
+            "id": "rainy_veranda",
+            "name": "雨の縁側 (Rainy Veranda)",
+            "triggers": [
+                "veranda",
+                "engawa",
+                "rainy day",
+                "porch"
+            ],
+            "default_serenity_level": 2,
+            "sensory_bias": [
+                "auditory.ambient[2]",
+                "tactile.textures[4]",
+                "visual.movement[2]"
+            ],
+            "effect": "Focus on the boundary between indoor safety and outdoor nature. Rhythmic pacing."
+        },
+        {
+            "id": "midnight_kitchen",
+            "name": "真夜中の台所 (Midnight Kitchen)",
+            "triggers": [
+                "kitchen",
+                "midnight",
+                "tea making",
+                "late night snack"
+            ],
+            "default_serenity_level": 2,
+            "sensory_bias": [
+                "tactile.textures[0]",
+                "visual.light[3]",
+                "olfactory.scents[3]"
+            ],
+            "effect": "Intimate, low-tension sharing of small truths. High warmth."
+        },
+        {
+            "id": "forest_glade",
+            "name": "森の光溜まり (Forest Glade)",
+            "triggers": [
+                "forest",
+                "glade",
+                "woods",
+                "nature path"
+            ],
+            "default_serenity_level": 4,
+            "sensory_bias": [
+                "visual.light[0]",
+                "auditory.ambient[0]",
+                "visual.movement[0]"
+            ],
+            "effect": "Transcendental peace. Characters feel a sense of oneness with the world."
+        }
+    ]
+}

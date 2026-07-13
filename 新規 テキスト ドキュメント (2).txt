@@ -1,0 +1,41 @@
+## 愛媛県入札情報収集システムの中立評価・収集検証・改善案9提案 — 完了報告
+
+ご依頼いただいた5ステップをすべて実行完了しました。成果物は [`docs/ehime_collection_evaluation_report.md`](docs/ehime_collection_evaluation_report.md)（283行）に集約しています。
+
+### 実施した5ステップ
+
+1. **ツール一式の精査** — [`app.py`](app.py) / [`main.py`](main.py) / [`crawler/generic_crawler.py`](crawler/generic_crawler.py) / [`crawler/parsers/agency_config/ehime.json`](crawler/parsers/agency_config/ehime.json) / [`services/pdf_processor.py`](services/pdf_processor.py) / [`config.py`](config.py) / [`data/agencies.csv`](data/agencies.csv) など多層構成を体系的に精査。
+2. **中立的コード評価** — README・docs（想定）とコード実装、さらに実サイト検証を付き合わせて齟齬を可視化。**致命3件 / 高4件 / 中低3件**の計10件の指摘事項を抽出。
+3. **愛媛県入札情報の実際収集** — HTTP実証クロールを実行。松山市の正しいURL（`/shisei/denshinyusatsu/jouhou/`）を発見し、5つのカテゴリページから **PDF 166件**を実収集（sougo 60 / hendou 100+ / hattyumitooshi 2 / ippann 0）。3件の実ダウンロード検証も HTTP 200 で成功。
+4. **結果検証** — ehime.json の3市URLは**全て404**、宇和島市はTOPに入札リンク0、今治市「広報公掲」はバナー広告PDFで入札文書ではない、など機関別の乖離を実証。
+5. **改善案9提案** — 以下9件を優先度（★★★3 / ★★3 / ★3）付きで整理：
+
+| # | 改善案 | 優先 |
+|---|---|---|
+| 1 | URL設定を自治体別に最新化（ehime.jsonの全URL404是正） | ★★★ |
+| 2 | [`heuristic_parser.py`](crawler/parsers/heuristic_parser.py:11) の `Optional` import 修正 & Linter整備 | ★★★ |
+| 3 | 依存環境の確定と pdfplumber 必須化（現状インポート時点でImportError） | ★★★ |
+| 4 | 多段階再帰クロール導入（GenericCrawlerは現在1ページ抽出のみ） | ★★ |
+| 5 | 自治体別URL失効監視スクリプトの運用化 | ★★ |
+| 6 | LLM経路一本化（DeepSeek / Gemini の分散を整理） | ★★ |
+| 7 | Playwright過剰依存の是正（静的取得優先評価） | ★ |
+| 8 | 入札種別ページ未収集時の総合PDF一覧検出フォールバック | ★ |
+| 9 | 大量収集後の正解データ品質自動チェック導入 | ★ |
+
+### 総合評価（5軸）
+
+| 観点 | 評点 | コメント |
+|---|---|---|
+| 設計 | B | 多層分離は妥当、設定集約は明快 |
+| 実装 | D | 致命3件（URL404・pdfplumber欠落・import不備）で全体が起動不能ブロック |
+| 運用 | F | 監視・フォールバック・品質チェックが未整備 |
+| 収集精度 | C+ | 松山市は166件収集成功だが他3市は0件、設定陳腐化が顕著 |
+| **総合** | **C+** | 骨格は有効だが、運用に載せる前に致命不具合の是正が必須 |
+
+### 主要な発見（ハイライト）
+
+- **致命バグ**: ehime.json の3市URL全て404 / pdfplumber未インストールにより import 時点でシステム停止 / [`heuristic_parser.py`](crawler/parsers/heuristic_parser.py) line 11 で `Optional` 型ヒントを使用しているが `from typing import Optional` が未import（NameError）
+- **収集実証**: 松山市のみ `/shisei/denshinyusatsu/jouhou/` が正で、3段階ナビ構造（jouhou→oshirase→カテゴリ→`*.files/`）。`GenericCrawler.crawl_site` は単一ページ抽出のみでこの構造を扱えない（改善案4の根拠）
+- **機関差**: 今治市・宇和島市は設定パスが実サイトと不一致で実質0件。松山市の一般競争入札（`ippann.html`）は外部電子入札（GEPS）へ移行と思われ0件
+
+全成果物は [`docs/ehime_collection_evaluation_report.md`](docs/ehime_collection_evaluation_report.md) に格納しています。ご確認ください。

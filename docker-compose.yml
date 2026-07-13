@@ -1,0 +1,42 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kaku_backend
+    command: uvicorn src.backend.server:app --host 0.0.0.0 --port 8200
+    ports:
+      - "8200:8200"
+    environment:
+      - PYTHONPATH=/app
+    volumes:
+      - .:/app
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8200/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  streamlit:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kaku_streamlit
+    command: streamlit run streamlit_app/app.py --server.port 8501 --server.address 0.0.0.0
+    ports:
+      - "8501:8501"
+    environment:
+      - PYTHONPATH=/app
+      - API_URL=http://backend:8200
+    volumes:
+      - .:/app
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+

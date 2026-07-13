@@ -1,0 +1,12 @@
+Safety: PASS
+Quality Score: 80.6/100
+  sensory_depth: 100.0
+  metaphor_density: 42.3
+  tension_arc: 50.0
+  emotion_layering: 87.7
+  afterglow_depth: 90.0
+  consent_eroticized: 100.0
+  vocabulary_diversity: 75.0
+  mechanical_avoidance: 100.0
+Strengths: 6
+Suggestions: 0

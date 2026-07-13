@@ -1,0 +1,69 @@
+# ============================================================
+# config/settings.toml — 設定の単一真理源 (SSOT)
+#
+# このファイルがアプリケーション設定の唯一の真実源です。
+# 全てのスカラー設定は [general] セクションに集約され、
+# schemas/config.py の GlobalConfigModel (Pydantic) によって統制・検証されます。
+#
+# 上書きルール:
+#   1. この TOML が基本値 (SSOT)
+#   2. 環境変数は明示的マッピング (schemas/config.py の ENV_OVERRIDE_MAP)
+#      経由でのみ上書き可能 (例: KAKU_FAIL_FAST_MODE=true, REDIS_URL=...)
+#   3. 拡張設定 (domain_profiles / interaction_matrix / tropes / system_plugins)
+#      は別ファイルからマージされる (後方互換のため)
+# ============================================================
+
+[general]
+
+# ===================== モデル設定 =====================
+model_writing          = "gemma-4-31b-it"
+model_planning         = "gemini-3.1-flash-lite"
+model_plot_expansion   = "gemma-4-31b-it"
+model_climax           = "gemma-4-31b-it"
+model_stable_fallback  = "gemma-4-31b-it"
+model_ultra_stable     = "gemma-4-31b-it"
+model_embedding        = "text-embedding-004"
+
+# ===================== データベース設定 =====================
+# NOTE: 環境変数 DATABASE_URL で上書き可能 (EnvOverrideMap 経由)
+database_url           = "sqlite+aiosqlite:///kaku_hegemony_v2.db"
+
+# ===================== Redis キャッシュ設定 =====================
+# NOTE: 環境変数 REDIS_URL で上書き可能
+redis_url              = ""
+redis_max_connections  = 10
+redis_default_ttl      = 3600
+redis_namespace        = "kaku:cache"
+
+# ===================== プロンプトキャッシュ設定 =====================
+prompt_cache_max_size  = 100
+
+# ===================== コンテキストウィンドウ最適化設定 =====================
+context_window_target_ratio = 0.85
+context_window_min_reserve  = 2000
+context_trimming_enabled    = true
+prefetch_enabled            = true
+prefetch_episode_count      = 3
+hybrid_search_alpha         = 0.5
+
+# ===================== エッジ保全設定 =====================
+similarity_threshold = 0.75   # コサイン類似度閾値 (0.0-1.0)
+enable_semantic = true         # 意味的判定の有効/無効
+semantic_fallback_string = true  # 意味的判定失敗時の文字列チェック復帰
+
+# ===================== 実行制御フラグ =====================
+fail_fast_mode    = false
+enable_dogfeeding = true
+enable_heavy_audit = true
+
+# ===================== AI挙動設定 =====================
+draft_polish_enabled           = true
+polishing_min_content_ratio    = 0.5
+actor_critic_enabled           = true
+actor_critic_max_iterations    = 2
+actor_critic_severity_threshold = "Major"
+specialized_amplifier_enabled  = true
+
+# ===================== NSFW/セーフティ設定 =====================
+enable_nsfw          = false
+safety_filter_level  = "BLOCK_ONLY_HIGH"

@@ -1,0 +1,18 @@
+
+async def build_simulation_scoring_prompt(self, current_ep_num: int, path_label: str, path_details: Dict[str, Any], prev_plots_summary: str, book_genre: str) -> str:
+    return (
+        f"あなたは物語構造の専門監査役です。第{current_ep_num}話の展開案「{path_label}」を構造的にスコアリングしてください。\n\n"
+        f"【ジャンル】: {book_genre}\n"
+        f"【前話までの流れ】:\n{prev_plots_summary}\n\n"
+        f"【評価対象パス: {path_label}】\n"
+        f"タイトル: {path_details.get('title')}\n"
+        f"概要: {path_details.get('summary')}\n"
+        f"詳細設計図: {path_details.get('detailed_blueprint')}\n"
+        f"緊張感: {path_details.get('tension')}\n"
+        f"次の話への引き: {path_details.get('next_hook')}\n\n"
+        f"以下の3つの観点で各10点満点で採点し、合計スコアと評価理由を述べてください：\n"
+        f"1. 構造的整合性: 前話からの流れに論理的飛躍がなく、自然な展開か。\n"
+        f"2. 感情的インパクト: 読者の感情を揺さぶる力や、意外性があるか。\n"
+        f"3. 推進力: 次の話を読ませる強い引き（クリフハンガー）があるか。\n\n"
+        f"JSON形式で出力してください。"
+    )

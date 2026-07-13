@@ -1,0 +1,22 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+.env
+
+# Database
+*.db
+*.sqlite3
+
+# Temporary and backup files
+*.bak
+temp_*
+temp_extract/
+temp_restore/
+temp_restore_zip/
+
+# Node
+node_modules/
+dist/
+build/

@@ -1,0 +1,10 @@
+{
+  "api_key": "test",
+  "config": {},
+  "genre": "test",
+  "keywords": "test",
+  "archetype_key": "test",
+  "target_eps": 1,
+  "initial_limit": 1,
+  "word_count": 1000
+}

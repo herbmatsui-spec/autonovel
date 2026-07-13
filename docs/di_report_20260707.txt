@@ -1,0 +1,56 @@
+Dependency Injection Graph Report
+==================================================
+
+Generated: 2026-07-07
+Source: src/core/container.py analysis
+
+Nodes (Providers Registered in AppContainer):
+  api_key: ObjectProvider
+  db: SingletonProvider -> get_db_manager
+  vector_store: SingletonProvider -> ChromaVectorStore
+  audit_logger: SingletonProvider -> AuditLogger
+  cooldown: SingletonProvider -> AdaptiveCooldown
+  genai_client: SingletonProvider -> create_genai_client
+  llm_factory: SingletonProvider -> LLMProviderFactory
+  semantic_cache: SingletonProvider -> SemanticCacheManager
+  llm: SingletonProvider -> LLMGenerateResultProxy
+  connection_pipeline: SingletonProvider -> _get_connection_pipeline
+  repo: SingletonProvider -> DataRepository
+  uow: FactoryProvider -> UnitOfWork
+  pm: SingletonProvider -> PromptManager
+  ctx_mgr: SingletonProvider -> ContextManager
+  global_config: SingletonProvider -> get_config
+  audit_service_factory: FactoryProvider -> _provide_audit_service
+  auditor: SingletonProvider -> LogicalAuditor
+  marketing: SingletonProvider -> MarketingAgent
+  bible_generator: SingletonProvider -> WorldBibleGenerator
+  plot_expander: SingletonProvider -> PlotExpander
+  planner: SingletonProvider -> PlanningAgent
+  validator: SingletonProvider -> LogicalAuditor (ALIAS of auditor)
+  narrative: SingletonProvider -> NarrativeController
+  critique: SingletonProvider -> CritiqueAgent
+  style_rag: SingletonProvider -> StyleRagManager
+  writer: SingletonProvider -> WritingAgent
+  formatter: SingletonProvider -> KakuyomuFormatter
+
+Dependency Relationships:
+  llm_factory <- genai_client, cooldown
+  semantic_cache <- vector_store, genai_client (as llm_client)
+  repo <- db
+  ctx_mgr <- repo
+  auditor <- repo, pm, ctx_mgr, llm (via generate_json)
+  marketing <- repo, pm, llm (via generate_json)
+  bible_generator <- repo, llm, pm, marketing, auditor
+  plot_expander <- repo, llm, pm, auditor
+  planner <- repo, pm, ctx_mgr, auditor, bible_generator, plot_expander
+  narrative <- llm (via generate_json), repo, pm, ctx_mgr, validator, auditor
+  critique <- repo, pm, llm (via generate_json)
+  style_rag <- genai_client (as client), repo
+  writer <- repo, llm, pm, ctx_mgr, narrative, critique, plot_expander, style_rag, uow, global_config, planner
+
+CRITICAL BUG IDENTIFIED:
+  Line 144-202 in src/core/container.py contains a duplicate/replacement of SingletonProvider code
+  WITHOUT the class declaration "class SingletonProvider:".
+  The LazyProvider class ends at line 144, but lines 145-202 contain SingletonProvider.__init__
+  and __call__ method bodies without proper class encapsulation.
+  This is a syntax/logic error that needs to be fixed before DI refactoring.

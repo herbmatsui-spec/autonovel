@@ -1,0 +1,158 @@
+[MEDIUM] I:/claude2\scratch_check_models.py:16 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\app.py:35 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\app.py:521 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\app.py:534 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\background.py:149 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\background.py:225 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\background.py:139 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\background.py:176 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\background.py:172 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\database.py:378 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\database.py:738 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\database.py:838 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\database.py:987 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\database.py:41 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\database.py:231 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\database.py:209 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\database.py:192 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\database.py:769 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\database.py:219 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\database.py:207 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\engine.py:135 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\engine.py:184 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\engine.py:216 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\engine_dogfeeder.py:61 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\engine_dogfeeder.py:68 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\engine_context.py:79 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\engine_context.py:112 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\engine_context.py:179 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\engine_critique.py:409 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\engine_critique.py:125 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\engine_critique.py:475 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\engine_critique.py:393 - Error-prone: Catching generic Exception
+[LOW] I:/claude2\engine_narrative.py:122 - Maintainability: Function 'compute_next_state' has too many arguments (>5)
+[LOW] I:/claude2\engine_narrative.py:129 - Maintainability: Function 'get_pacing_instruction' has too many arguments (>5)
+[MEDIUM] I:/claude2\engine_narrative.py:232 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\engine_narrative.py:376 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\engine_narrative.py:413 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\engine_service.py:86 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\engine_service.py:147 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\engine_service.py:164 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\engine_service.py:275 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\engine_service.py:292 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\engine_service.py:440 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\engine_service.py:448 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\engine_service.py:458 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\engine_service.py:513 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\engine_service.py:475 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\engine_utils.py:206 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\verify_easy_mode.py:10 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\verify_easy_mode.py:26 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\verify_easy_mode.py:34 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\verify_easy_mode.py:61 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\sanitizer.py:209 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\sanitizer.py:304 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\sanitizer.py:627 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\sanitizer.py:178 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\sanitizer.py:710 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\sanitizer.py:731 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\sanitizer.py:723 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\ui_tabs_analytics.py:87 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\ui_tabs_planning.py:287 - Error-prone: Catching generic Exception
+[LOW] I:/claude2\maintenance_audit.py:248 - Maintainability: Function '_resolve_and_verify_module' has too many arguments (>5)
+[LOW] I:/claude2\maintenance_audit.py:46 - Maintainability: Function 'add_finding' has too many arguments (>5)
+[MEDIUM] I:/claude2\maintenance_audit.py:196 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\maintenance_audit.py:410 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\maintenance_audit.py:511 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\maintenance_audit.py:472 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\verify_sanitizer.py:39 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\ui_tabs_config.py:66 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\engine_style_rag.py:68 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\engine_style_rag.py:82 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\engine_style_rag.py:54 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\git_restore.py:11 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\repair.py:16 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\repair.py:40 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\temp\test_models.py:17 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\kernels\connection.py:28 - Maintainability: Function 'compute_next_state' is too long (>50 lines)
+[MEDIUM] I:/claude2\backups\old_scratch\test_imports.py:9 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\backups\old_scratch\test_imports.py:16 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\backups\old_scratch\debug_sanitizer.py:11 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\backups\old_scratch\health_check.py:30 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\backups\old_scratch\check_engine_sanitizer.py:18 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\backups\old_scratch\repro_pydantic.py:26 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\backups\old_scratch\repro_pydantic.py:34 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\backups\old_scratch\repro_pydantic.py:42 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\backups\old_scratch\repro_pydantic_v2.py:76 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\backups\old_scratch\test_alias_bug.py:14 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\backups\old_scratch\test_alias_bug.py:27 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\backups\old_scratch\test_pydantic_std.py:11 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\backups\old_scratch\test_pydantic_std.py:17 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\backups\old_scratch\test_pydantic_std.py:23 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\backups\old_scratch\test_plot_validation.py:14 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\backups\old_scratch\test_plot_validation.py:27 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\backups\old_scratch\test_import.py:16 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\backups\old_scratch\test_import_v2.py:11 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\backups\old_scratch\test_constants.py:15 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\backups\old_scratch\debug_dogfeeding.py:44 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\backups\old_scratch\debug_dogfeeding.py:51 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\backups\old_scratch\verify_import.py:13 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\backups\old_scratch\verify_refinements.py:38 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\backups\old_scratch\extract_logs.py:27 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\backups\old_scratch\extract_logs.py:20 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\services\vector_store.py:11 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\services\vector_store.py:29 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\services\vector_store.py:44 - Error-prone: Catching generic Exception
+[LOW] I:/claude2\prompts\manager.py:106 - Maintainability: Function 'build_ultra_fast_bible_prompt' has too many arguments (>5)
+[LOW] I:/claude2\prompts\creation.py:5 - Maintainability: Function 'build_character_concept_prompt' has too many arguments (>5)
+[LOW] I:/claude2\prompts\creation.py:25 - Maintainability: Function 'build_title_generation_prompt' has too many arguments (>5)
+[LOW] I:/claude2\prompts\creation.py:61 - Maintainability: Function 'build_mc_creation_prompt' has too many arguments (>5)
+[LOW] I:/claude2\prompts\creation.py:97 - Maintainability: Function 'build_sub_char_creation_prompt' has too many arguments (>5)
+[LOW] I:/claude2\prompts\creation.py:120 - Maintainability: Function 'build_bible_creation_prompt' has too many arguments (>5)
+[LOW] I:/claude2\prompts\plotting.py:6 - Maintainability: Function 'build_roadmap_prompt' has too many arguments (>5)
+[LOW] I:/claude2\prompts\plotting.py:35 - Maintainability: Function 'build_plot_expansion_prompt' has too many arguments (>5)
+[LOW] I:/claude2\prompts\plotting.py:141 - Maintainability: Function 'build_arc_generation_prompt' has too many arguments (>5)
+[LOW] I:/claude2\prompts\plotting.py:159 - Maintainability: Function 'build_rebuild_plot_outline_prompt' has too many arguments (>5)
+[LOW] I:/claude2\prompts\plotting.py:174 - Maintainability: Function 'build_roadmap_rebuild_prompt' has too many arguments (>5)
+[LOW] I:/claude2\prompts\audit.py:74 - Maintainability: Function 'build_hegemony_dogfeeding_prompt' has too many arguments (>5)
+[LOW] I:/claude2\prompts\audit.py:144 - Maintainability: Function 'build_hegemony_prediction_prompt' has too many arguments (>5)
+[LOW] I:/claude2\prompts\writing.py:87 - Maintainability: Function 'build_final_writing_prompt' has too many arguments (>5)
+[MEDIUM] I:/claude2\scratch\verify_prompts.py:30 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\scratch\debug_import.py:28 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\scratch\test_comfort_kernel.py:14 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\scratch\debug_diagnostics.py:77 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\scratch\debug_diagnostics.py:23 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\scratch\debug_diagnostics.py:52 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\scratch\debug_diagnostics.py:74 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\scratch\test_imports.py:14 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\scratch\test_integration.py:23 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\scratch\test_integration.py:46 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\scratch\test_integration.py:79 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\scratch\test_integration.py:118 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\scratch\test_integration.py:140 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\scratch\check_available_models.py:18 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\scratch\test_gemma_json.py:17 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\scratch\test_gemma_json.py:31 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\scratch\test_other_models.py:14 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\scratch\test_other_models.py:27 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\scratch\run_audit.py:21 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\config\data_loader.py:46 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\models\character.py:186 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\models\plot.py:249 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\models\plot.py:345 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\models\plot.py:252 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\models\plot.py:348 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\agents\base.py:45 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\agents\planning.py:715 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\agents\planning.py:368 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\agents\planning.py:376 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\agents\planning.py:530 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\agents\planning.py:579 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\agents\planning.py:633 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\agents\writing.py:98 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\agents\writing.py:494 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\agents\writing.py:424 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\agents\writing.py:470 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\agents\memory_service.py:35 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\agents\llm_provider.py:173 - Error-prone: Catching generic Exception
+[MEDIUM] I:/claude2\agents\llm_provider.py:151 - Error-prone: Catching generic Exception

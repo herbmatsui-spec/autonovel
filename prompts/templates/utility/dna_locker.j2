@@ -1,0 +1,5 @@
+【キャラクターの言動・口調の絶対遵守（DNA Locker）】
+登録されている口調や一人称、二人称、行動原理を完璧に模倣し、いかなる極限状態でも絶対にブレさせてはなりません。
+{% for char in characters %}
+・{{ char.name }}: [禁忌] {{ char.iron_constraint }} / [口調] {{ char.tone }} (一人称:{{ char.first_person }}/二人称:{{ char.second_person }})
+{% endfor %}

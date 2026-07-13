@@ -1,0 +1,12 @@
+{
+  "STRESS_CATHARSIS_THRESHOLD": 75,
+  "STRESS_FILLER_THRESHOLD": 30,
+  "STRESS_CLIMAX_BONUS": 40,
+  "STRESS_HATE_GAIN_BASE": 15,
+  "SPECULATIVE_BRANCH_CATHARSIS_NAME": "HighTension",
+  "SPECULATIVE_INSTRUCTION_CATHARSIS": "【⚠️分岐プロット（高テンション・心理的対立）】\nこのエピソードは登場人物間の心理的緊張や人間関係の劇的な変化を最大化する構成に特化させてください。",
+  "AUDIT_TRIGGER_KEYWORDS": [
+    "裏切り", "葛藤", "秘密", "対立", "崩壊", "和解", "告白", "嘘", "過去"
+  ],
+  "AUDIT_WORDS_CATHARSIS": ["感情の爆発", "社会的復権", "和解", "真実の暴露"]
+}

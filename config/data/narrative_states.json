@@ -1,0 +1,58 @@
+{
+    "narrative_states": {
+        "DAILY": {
+            "name": "日常 / 導入",
+            "description": "物語のベースとなる日常描写。キャラクターの役割提示と世界観の構築を行う。",
+            "required_conditions": [],
+            "recommended_tone": "安定, 穏やか, 潜在的な不安",
+            "forbidden_elements": ["いきなりのクライマックスへの飛躍", "提示されていない核心的謎の完全解明", "日常を破壊するイベントの欠如したままの物語終了"]
+        },
+        "INCIDENT": {
+            "name": "事件発生 / 転機",
+            "description": "日常を破壊する出来事の発生。物語のメインプロットが駆動し始める。",
+            "required_conditions": ["日常の確立"],
+            "recommended_tone": "衝撃, 動揺, 期待",
+            "forbidden_elements": ["発生した事件の即座かつ完全な解決", "主人公が葛藤せず状況を受け入れすぎる展開"]
+        },
+        "CONFLICT": {
+            "name": "葛藤 / 展開",
+            "description": "目標達成への障害、対立の激化、内部的な葛藤の深化。",
+            "required_conditions": ["事件の発生"],
+            "recommended_tone": "緊張, 焦燥, 執着",
+            "forbidden_elements": ["論理的根拠のない急激な和解", "物語の推進力を奪う緊張感の消失", "目標の唐突な放棄"]
+        },
+        "PRE_CLIMAX": {
+            "name": "クライマックス前夜 / 準備",
+            "description": "最大衝突に向けた最終的な準備、伏線の回収、覚悟の決定。",
+            "required_conditions": ["十分な葛藤の蓄積"],
+            "recommended_tone": "静かな決意, 嵐の前の静けさ",
+            "forbidden_elements": ["感情的な溜めや伏線回収を飛ばした決戦への突入", "クライマックスの緊張感を削ぐ不適切な休息"]
+        },
+        "CLIMAX": {
+            "name": "クライマックス / 最大衝突",
+            "description": "物語の最大の山場。対立の決着と核心的なカタルシスの提供。",
+            "required_conditions": ["準備の完了", "対立の最大化"],
+            "recommended_tone": "激昂, 絶頂, 衝撃",
+            "forbidden_elements": ["デウス・エクス・マキナ的な都合の良い救済", "カタルシスに至る前の唐突な物語の中断", "核心的対立を回避した妥協的な結末"]
+        },
+        "RESOLUTION": {
+            "name": "解決 / 後日談",
+            "description": "衝突後の世界。変化した関係性の提示と物語の締めくくり。",
+            "required_conditions": ["クライマックスの完了"],
+            "recommended_tone": "安堵, 郷愁, 新たな始まり",
+            "forbidden_elements": ["重要な伏線や謎を未解決にしたままの唐突な終了", "変化した関係性を提示しない機械的な締めくくり"]
+        }
+    },
+    "transitions": [
+        {"from": "DAILY", "to": "INCIDENT", "weight": 1.0, "path": "standard"},
+        {"from": "INCIDENT", "to": "CONFLICT", "weight": 1.0, "path": "standard"},
+        {"from": "INCIDENT", "to": "PRE_CLIMAX", "weight": 0.3, "path": "twist"},
+        {"from": "CONFLICT", "to": "CONFLICT", "weight": 0.8, "path": "standard"},
+        {"from": "CONFLICT", "to": "PRE_CLIMAX", "weight": 1.0, "path": "standard"},
+        {"from": "CONFLICT", "to": "CLIMAX", "weight": 0.4, "path": "twist"},
+        {"from": "PRE_CLIMAX", "to": "CLIMAX", "weight": 1.0, "path": "standard"},
+        {"from": "CLIMAX", "to": "RESOLUTION", "weight": 1.0, "path": "standard"},
+        {"from": "CLIMAX", "to": "CONFLICT", "weight": 0.2, "path": "twist"},
+        {"from": "RESOLUTION", "to": "DAILY", "weight": 0.5, "path": "standard"}
+    ]
+}

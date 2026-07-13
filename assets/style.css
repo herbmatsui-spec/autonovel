@@ -1,0 +1,162 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Outfit:wght@600;800&family=JetBrains+Mono&display=swap');
+
+/* Global Styles */
+.stApp {
+    background: radial-gradient(circle at 50% 0%, #020617 0%, #000000 100%);
+    color: #f8fafc !important;
+    font-family: 'Inter', sans-serif;
+}
+
+/* Standardized Container for Visibility */
+.premium-card {
+    background: rgba(15, 23, 42, 0.9) !important;
+    backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(56, 189, 248, 0.3) !important;
+    border-radius: 20px !important;
+    padding: 1.5rem !important;
+    margin-bottom: 1rem;
+    box-shadow: 0 10px 40px -10px rgba(0,0,0,0.5);
+}
+
+/* Ensure all text is visible but allows semantic variations */
+p, span, label {
+    color: #e2e8f0 !important;
+}
+
+/* Typography */
+h1, h2, h3 {
+    font-family: 'Outfit', sans-serif !important;
+    background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 800 !important;
+    letter-spacing: -0.02em;
+    margin-top: 1.5rem !important;
+    margin-bottom: 1rem !important;
+}
+
+/* Glassmorphism Cards - System Wide */
+div[data-testid="stExpander"], .stChatMessage, div[data-testid="stMetric"], div[data-testid="stVerticalBlock"] > div > div[style*="border"] {
+    background: rgba(15, 23, 42, 0.9) !important;
+    backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(56, 189, 248, 0.2) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8) !important;
+}
+
+/* Alerts - HIGH CONTRAST */
+div.stAlert {
+    background-color: rgba(30, 41, 59, 0.95) !important;
+    border: 2px solid rgba(56, 189, 248, 0.5) !important;
+    border-radius: 12px !important;
+}
+div.stAlert p {
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    font-size: 1.05rem !important;
+}
+
+/* Code Blocks */
+code, pre {
+    font-family: 'JetBrains Mono', monospace !important;
+    background: #000000 !important;
+    border: 1px solid #334155 !important;
+    color: #7dd3fc !important;
+    border-radius: 10px !important;
+}
+
+/* Inputs & Selectors - ULTRA VISIBILITY */
+.stTextInput input, .stTextArea textarea, .stSelectbox [data-baseweb="select"], .stNumberInput input {
+    background-color: #0f172a !important;
+    color: #ffffff !important;
+    border: 2px solid #334155 !important;
+    border-radius: 10px !important;
+    font-size: 1.05rem !important;
+    transition: border-color 0.3s ease;
+}
+.stTextInput input:focus, .stTextArea textarea:focus {
+    border-color: #38bdf8 !important;
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.3) !important;
+}
+
+/* Dropdowns */
+div[data-baseweb="popover"] { background-color: #0f172a !important; }
+div[role="option"] { background-color: #0f172a !important; color: #ffffff !important; }
+div[role="option"]:hover { background-color: #1e293b !important; }
+
+/* Sliders */
+.stSlider [data-baseweb="slider"] { color: #38bdf8 !important; }
+
+/* Sidebar Styling */
+section[data-testid="stSidebar"] {
+    background-color: #020617 !important;
+    border-right: 1px solid rgba(56, 189, 248, 0.2);
+}
+section[data-testid="stSidebar"] p, section[data-testid="stSidebar"] label {
+    color: #cbd5e1 !important;
+    font-weight: 500;
+}
+
+/* Premium Buttons */
+.stButton > button {
+    border-radius: 12px !important;
+    transition: all 0.3s ease !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    font-weight: 700 !important;
+    padding: 0.7rem 2rem !important;
+}
+.stButton > button[kind="primary"] {
+    background: linear-gradient(135deg, #0ea5e9 0%, #4f46e5 100%) !important;
+    border: none !important;
+    box-shadow: 0 4px 15px rgba(14, 165, 233, 0.4) !important;
+}
+.stButton > button[kind="primary"]:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 25px rgba(14, 165, 233, 0.6) !important;
+}
+
+/* Metric Styling */
+[data-testid="stMetricValue"] {
+    color: #38bdf8 !important;
+    font-family: 'Outfit', sans-serif;
+    font-size: 2.4rem !important;
+    font-weight: 800 !important;
+    text-shadow: 0 0 20px rgba(56, 189, 248, 0.3);
+}
+[data-testid="stMetricLabel"] {
+    color: #94a3b8 !important;
+    font-weight: 600 !important;
+    font-size: 0.9rem !important;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+/* Neon Accents */
+.status-active { color: #38bdf8; font-weight: bold; }
+.status-warning { color: #fbbf24; font-weight: bold; }
+.status-error { color: #ef4444; font-weight: bold; }
+
+/* Custom Progress Bar */
+.stProgress > div > div > div > div {
+    background-image: linear-gradient(to right, #38bdf8, #818cf8) !important;
+    height: 12px !important;
+    border-radius: 6px !important;
+}
+
+/* Tabs Styling */
+.stTabs [data-baseweb="tab-list"] {
+    background-color: rgba(30, 41, 59, 0.5) !important;
+    padding: 10px !important;
+    border-radius: 12px !important;
+}
+.stTabs [data-baseweb="tab"] {
+    color: #94a3b8 !important;
+    font-weight: 700 !important;
+    padding: 10px 20px !important;
+}
+.stTabs [aria-selected="true"] {
+    background-color: #0f172a !important;
+    color: #38bdf8 !important;
+    border: 1px solid rgba(56, 189, 248, 0.3) !important;
+}

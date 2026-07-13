@@ -1,0 +1,12 @@
+name: "gemini_3_lite"
+description: "Gemini 3.1 Flash Lite Profile"
+provider: "Google Gemini"
+models:
+  planning: "gemini-3.1-flash-lite"
+  plot_expansion: "gemma-4-31b-it"
+  writing: "gemma-4-31b-it"
+  climax: "gemma-4-31b-it"
+  stable_fallback: "gemma-4-31b-it"
+  ultra_stable: "gemma-4-31b-it"
+  lightweight: "gemma-4-31b-it"
+  embedding: "gemini-embedding-2"

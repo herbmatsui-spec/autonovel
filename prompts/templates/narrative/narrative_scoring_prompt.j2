@@ -1,0 +1,28 @@
+### Narrative Scoring Prompt Template
+
+{{ context }}
+
+### Instructions
+1. Analyze the provided narrative scene and context.
+2. Evaluate the following metrics on a scale of 0-100:
+   - Tension: How much suspense or pressure is present?
+   - Emotional Satisfaction: How fulfilling is the scene emotionally?
+   - Mystery Density: How many unanswered questions or revelations are introduced?
+3. Provide a detailed justification for each score.
+
+### Scene
+{{ scene }}
+
+### Previous Metrics (if any)
+{{ previous_metrics }}
+
+### Output Format
+Respond ONLY with a JSON object in the following format:
+```json
+{
+  "tension": 0,
+  "emotional_satisfaction": 0,
+  "mystery_density": 0,
+  "reasoning": "Detailed explanation for each score..."
+}
+```

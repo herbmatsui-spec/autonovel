@@ -1,0 +1,15 @@
+【文体定義】
+名称: {{ style_name }}
+台詞比率: {{ dialogue_ratio }}
+
+【指示】
+{{ instruction }}
+
+{% if dna_data %}
+【文体的DNA矯正（絶対遵守）】
+1. 構文・リズム: {{ dna_data.syntax_rhythm }}
+2. 固有比喩・感覚辞書: {{ dna_data.metaphor_dna }}
+3. 思考ノイズ・生理反応: {{ dna_data.noise_dna }}
+4. 文末の多様性: 同じ文末の3連続を禁止。体言止め、倒置法を徹底せよ。
+5. 五感のノルマ: 重要シーンでは視覚以外の五感を積極的に含めよ。
+{% endif %}

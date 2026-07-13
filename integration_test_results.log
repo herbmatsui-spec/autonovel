@@ -1,0 +1,78 @@
+統合テスト反復実行ログ - 開始時刻: 2026-07-03 07:33:17
+対象テスト: tests/integration/test_app_integration.py
+
+=========================================
+RUN 1 - Start time: 2026-07-03 07:33:17
+=========================================
+--- STDOUT ---
+============================= test session starts =============================
+platform win32 -- Python 3.14.2, pytest-9.0.3, pluggy-1.6.0 -- C:\Users\Annag\AppData\Local\Python\pythoncore-3.14-64\python.exe
+cachedir: .pytest_cache
+rootdir: D:\claude2
+configfile: pytest.ini
+plugins: anyio-4.12.1, langsmith-0.8.8, asyncio-1.4.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 4 items
+
+tests/integration/test_app_integration.py::test_app_main_easy_mode_success PASSED [ 25%]
+tests/integration/test_app_integration.py::test_app_main_advanced_mode_success PASSED [ 50%]
+tests/integration/test_app_integration.py::test_app_main_backend_error PASSED [ 75%]
+tests/integration/test_app_integration.py::test_app_main_missing_or_invalid_api_key PASSED [100%]
+
+============================= 4 passed in 32.59s ==============================
+
+--- STDERR ---
+
+Exit Code: 0
+
+=========================================
+RUN 2 - Start time: 2026-07-03 07:34:18
+=========================================
+--- STDOUT ---
+============================= test session starts =============================
+platform win32 -- Python 3.14.2, pytest-9.0.3, pluggy-1.6.0 -- C:\Users\Annag\AppData\Local\Python\pythoncore-3.14-64\python.exe
+cachedir: .pytest_cache
+rootdir: D:\claude2
+configfile: pytest.ini
+plugins: anyio-4.12.1, langsmith-0.8.8, asyncio-1.4.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 4 items
+
+tests/integration/test_app_integration.py::test_app_main_easy_mode_success PASSED [ 25%]
+tests/integration/test_app_integration.py::test_app_main_advanced_mode_success PASSED [ 50%]
+tests/integration/test_app_integration.py::test_app_main_backend_error PASSED [ 75%]
+tests/integration/test_app_integration.py::test_app_main_missing_or_invalid_api_key PASSED [100%]
+
+============================= 4 passed in 28.53s ==============================
+
+--- STDERR ---
+
+Exit Code: 0
+
+=========================================
+RUN 3 - Start time: 2026-07-03 07:35:05
+=========================================
+--- STDOUT ---
+============================= test session starts =============================
+platform win32 -- Python 3.14.2, pytest-9.0.3, pluggy-1.6.0 -- C:\Users\Annag\AppData\Local\Python\pythoncore-3.14-64\python.exe
+cachedir: .pytest_cache
+rootdir: D:\claude2
+configfile: pytest.ini
+plugins: anyio-4.12.1, langsmith-0.8.8, asyncio-1.4.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 4 items
+
+tests/integration/test_app_integration.py::test_app_main_easy_mode_success PASSED [ 25%]
+tests/integration/test_app_integration.py::test_app_main_advanced_mode_success PASSED [ 50%]
+tests/integration/test_app_integration.py::test_app_main_backend_error PASSED [ 75%]
+tests/integration/test_app_integration.py::test_app_main_missing_or_invalid_api_key PASSED [100%]
+
+============================= 4 passed in 20.58s ==============================
+
+--- STDERR ---
+
+Exit Code: 0
+
+=========================================
+RUN 4 - Start time: 2026-07-03 07:35:44
+=========================================

@@ -1,0 +1,54 @@
+{
+  "api_key": null,
+  "config": {},
+  "current_book_id": null,
+  "selected_episode_id": null,
+  "wizard": {
+    "step": 2,
+    "data": {
+      "status": "done"
+    },
+    "is_complete": false
+  },
+  "last_action_timestamp": null,
+  "error_message": null,
+  "runtime": {
+    "app_mode": "easy",
+    "is_api_key_valid": false,
+    "forbidden_patterns": [],
+    "selected_desires": [
+      "カタルシス"
+    ],
+    "selected_emotional_hook": null,
+    "backend_connection_error": false,
+    "token_stats": {
+      "prompt": 0,
+      "completion": 0,
+      "calls": 0
+    },
+    "active_job_ids": {},
+    "last_passion": 0.6,
+    "last_word_count": 2500,
+    "easy_genre_key": null,
+    "download_zip_path": null,
+    "download_zip_name": null,
+    "download_zip_data": null,
+    "rerun_count": 18,
+    "api_key_input": "",
+    "ui_processing_lock": false,
+    "save_status": {},
+    "monitored_jobs": {},
+    "poll_fail_count": {},
+    "poll_skip_until": {},
+    "fragment_versions": {
+      "status": 0,
+      "logs": 0,
+      "usage": 0
+    },
+    "api_key_validation_state": "idle",
+    "api_key_validation_key": "",
+    "api_key_validation_error": "",
+    "toasted_notification_keys": [],
+    "config_data": {}
+  }
+}

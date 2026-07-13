@@ -1,0 +1,12 @@
+name: "gemma_4"
+description: "Gemma 4 31B Instruction Tuned (Local or Vertex)"
+provider: "Google Gemini"
+models:
+  planning: "gemma-4-31b-it"
+  plot_expansion: "gemma-4-31b-it"
+  writing: "gemma-4-31b-it"
+  climax: "gemma-4-31b-it"
+  stable_fallback: "gemma-4-31b-it"
+  ultra_stable: "gemma-4-31b-it"
+  lightweight: "gemma-4-31b-it"
+  embedding: "gemini-embedding-2"

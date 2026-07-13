@@ -1,0 +1,10 @@
+HEX: 2222220a74657374732f746573745f65726f7469
+DECODE: """
+tests/test_erotic_workflow.py
+官能ワークフローのユニットテスト。
+"""
+import pytest
+from config.erotic_pacing import EroticCurve, EroticBeat
+from config.erotic_vocabulary import get_vocabulary_for_tier
+from config.erotic_platform_presets import get_preset, get_preset_names
+from s

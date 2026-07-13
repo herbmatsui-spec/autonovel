@@ -1,0 +1,6 @@
+digraph DI_Graph {
+    graph [fontname="Arial", fontsize=10];
+    node [shape=box, style=rounded, fontname="Arial", fontsize=9];
+    rankdir=LR;
+    margin=0; width=0;
+}

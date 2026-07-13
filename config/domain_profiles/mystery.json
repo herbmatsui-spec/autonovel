@@ -1,0 +1,20 @@
+{
+  "DISABLE_CATHARSIS_ENGINE": false,
+  "STRESS_CATHARSIS_THRESHOLD": 80,
+  "STRESS_FILLER_THRESHOLD": 25,
+  "STRESS_CLIMAX_BONUS": 45,
+  "STRESS_HATE_GAIN_BASE": 15,
+  "SPECULATIVE_BRANCH_CATHARSIS_NAME": "Resolution",
+  "SPECULATIVE_INSTRUCTION_CATHARSIS": "【⚠️分岐プロット（謎解き・真相解明）】\nこのエピソードは伏線回収と驚き（真犯人の特定やトリックの看破）を最大化する構成に特化させてください。",
+  "AUDIT_TRIGGER_KEYWORDS": [
+    "トリック", "アリバイ", "動機", "証拠", "推理", "謎", "真真", "解明", "偽装", "伏線"
+  ],
+  "AUDIT_WORDS_CATHARSIS": ["謎解き", "チェックメイト", "真相暴露", "トリック看破"],
+  "DE_AI_MODE": "relaxed",
+  "AUDITOR_PERSONA": "ベテラン編集者",
+  "AUDITOR_INSTRUCTIONS": "「論理的な整合性が足りない」「謎解きの伏線が回収されていない」「トリックのリアリティを追求せよ」と指摘する文芸誌のベテラン編集者。",
+  "WEIGHT_EMOTIONAL_RESONANCE": 1.0,
+  "WEIGHT_THEMATIC_DEPTH": 2.0,
+  "WEIGHT_LITERARY_BEAUTY": 1.0,
+  "WEIGHT_BASE_ENGAGEMENT": 3.0
+}

@@ -1,0 +1,9 @@
+【描写方針】
+{% for s in normalized_scenes %}
+    {% set impact = s.get('impact_score', 50) %}
+    {% if impact >= 70 %}
+- シーン{{ loop.index }}: 【Show全開】五感を飽和させ、筋肉の痙攣や視線の動きを執拗に描写せよ。
+    {% elif impact <= 30 %}
+- シーン{{ loop.index }}: 【Tell要約】状況を簡潔に流し、テンポを重視せよ。
+    {% endif %}
+{% endfor %}

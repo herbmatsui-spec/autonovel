@@ -1,0 +1,55 @@
+本文開始前に [thought_process] を出力せよ:
+1. シーンごとの緩急の峻別 2. 目標文字数配分 3. 読者の情緒を破壊する一文 4. 五感情報の優先順位 5. 冒頭・末尾のフック戦略
+
+{{ quota_inst }}
+{{ show_tell_inst }}
+{{ forbidden_inst }}
+{{ hook_inst }}
+{{ assertion_inst }}
+
+【作品文脈】
+不変属性: {{ char_static_ctx }}
+{% if dialogue_profiles %}
+【ダイアログ・プロファイル（会話文の絶対制約）】
+{% for name, profile in dialogue_profiles.items() %}
+- {{ name }}: {{ profile }}
+{% endfor %}
+※各キャラクターの話し方の癖、禁止語、特有の口調を厳格に守り、会話だけで誰が話しているか分かるレベルまで差別化せよ。
+{% endif %}
+動的状態: {{ char_dynamic_ctx }}
+既知の文脈: {{ prev_ctx }}
+{% if pov_character_name %}
+【視点人物 (POV)】: {{ pov_character_name }}
+※ {{ pov_character_name }} が知り得ない情報は地の文で記述せず、外部からの観察や推測として描写せよ。視点漏れ (POV Leak) を厳格に排除すること。
+{% endif %}
+
+【指令】
+{% if density_level == 'Extreme' %}
+■ 【最優先指令：【描写密度：極致】
+このシーンは物語の最重要局面です。一瞬の表情、空気の震え、内面の激昂や絶望を極限まで詳細に描写してください。
+時間は引き伸ばし、読者がその場の緊張感に窒息するほどの濃密な筆致で執筆せよ。
+{% elif density_level == 'High' %}
+■ 【描写密度：高密度】
+重要な展開です。情景描写と心理描写を丁寧に重ね、シーンの奥行きを深くしてください。
+単なる状況説明ではなく、具体的な質感や五感を盛り込み、重厚な文体で構成せよ。
+{% elif density_level == 'Low' %}
+■ 【描写密度：低密度】
+テンポ重視のシーンです。冗長な描写を削ぎ落とし、物語を迅速に前進させてください。
+状況は簡潔に伝え、会話やアクションを中心に軽快なリズムで執筆せよ。
+{% else %}
+■ 【描写密度：標準】
+バランスの良い描写を心がけてください。
+{% endif %}
+
+■ 台本 (絶対遵守): {{ script_text }}
+■ プロット設計図: {{ blueprint }}
+■ 目標文字数: {{ target_word_count }} 字以上
+{{ tone_inst }}
+{% include "style_inheritance_notes.j2" %}
+
+--- 出力形式 ---
+[thought_process]
+{{ CONTENT_SEPARATOR }}
+[NOVEL_CONTENT]
+{{ CONTENT_SEPARATOR }}
+[METADATA_JSON]

@@ -1,0 +1,12 @@
+name: "gemini_3"
+description: "Gemini 3.1 Flash/Pro Mix"
+provider: "Google Gemini"
+models:
+  planning: "gemini-3.1-flash-lite"
+  plot_expansion: "gemini-3.1-flash"
+  writing: "gemini-3.1-flash"
+  climax: "gemini-3.1-pro"
+  stable_fallback: "gemini-3.1-flash"
+  ultra_stable: "gemini-3.1-flash"
+  lightweight: "gemini-3.1-flash-lite"
+  embedding: "gemini-embedding-2"

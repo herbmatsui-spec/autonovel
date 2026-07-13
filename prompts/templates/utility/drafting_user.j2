@@ -1,0 +1,31 @@
+---
+name: drafting_user
+version: "1.0.0"
+description: "Drafting Agent User instructions"
+variables: [quota_inst, show_tell_inst, assertion_inst, char_static_ctx, char_dynamic_ctx, prev_ctx, script_text, blueprint, target_word_count, tone_inst, director_notes, CONTENT_SEPARATOR]
+---
+本文開始前に [thought_process] を出力せよ:
+1. シーンごとの緩急の峻別 2. 目標文字数配分 3. 読者の情緒を破壊する一文
+
+{{ quota_inst }}
+{{ show_tell_inst }}
+{{ assertion_inst }}
+
+【作品文脈】
+不変属性: {{ char_static_ctx }}
+動的状態: {{ char_dynamic_ctx }}
+既知の文脈: {{ prev_ctx }}
+
+【指令】
+■ 台本 (絶対遵守): {{ script_text }}
+■ プロット設計図: {{ blueprint }}
+■ 目標文字数: {{ target_word_count }} 字以上
+{{ tone_inst }}
+{% include "writing_notes.j2" %}
+
+--- 出力形式 ---
+[thought_process]
+{{ CONTENT_SEPARATOR }}
+[NOVEL_CONTENT]
+{{ CONTENT_SEPARATOR }}
+[METADATA_JSON]

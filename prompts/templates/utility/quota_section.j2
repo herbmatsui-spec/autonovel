@@ -1,0 +1,7 @@
+【執筆ノルマ】
+{% for s in normalized_scenes %}
+    {% set impact = s.get('impact_score', 50) %}
+    {% set scene_quota = [100, ((target_word_count * (impact / total_impact)) * 1.8)|int]|max %}
+    {% set role = "💥 爆発" if impact >= 80 else ("📋 導入" if impact <= 30 else "⏳ 展開") %}
+    - シーン{{ loop.index }} [{{ role }}]: 目標 {{ scene_quota }} 字以上。最低 5段落以上。
+{% endfor %}

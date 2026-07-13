@@ -1,0 +1,53 @@
+{
+    "serenity_anchors": {
+        "visual": {
+            "light": [
+                "filtered sunlight through leaves (komorebi)",
+                "dust motes dancing in a shaft of light",
+                "the soft blue of twilight (magic hour)",
+                "the rhythmic flicker of a candle flame",
+                "pale moonlight reflecting on a still water surface"
+            ],
+            "movement": [
+                "slowly drifting clouds",
+                "the gentle sway of curtains in a breeze",
+                "steam curling slowly from a hot drink",
+                "a single petal falling in slow motion",
+                "the rhythmic rise and fall of a sleeping chest"
+            ]
+        },
+        "auditory": {
+            "ambient": [
+                "the distant chime of a wind bell",
+                "the rhythmic ticking of an old wall clock",
+                "the muffled sound of rain on a roof",
+                "the faint rustle of pages being turned",
+                "the low hum of a quiet city in the distance"
+            ],
+            "silence_textures": [
+                "a silence that feels like a warm blanket",
+                "the crisp, cold silence of a winter morning",
+                "a shared silence filled with unspoken understanding",
+                "the heavy, peaceful silence after a long conversation"
+            ]
+        },
+        "olfactory": {
+            "scents": [
+                "the smell of old books and dried paper",
+                "faint scent of sandalwood or incense",
+                "the crisp aroma of rain on dry earth (petrichor)",
+                "the comforting scent of freshly brewed tea",
+                "the clean, subtle scent of sun-dried laundry"
+            ]
+        },
+        "tactile": {
+            "textures": [
+                "the warmth of a ceramic cup against the palms",
+                "the cool touch of a polished wooden table",
+                "the soft texture of a worn-in linen shirt",
+                "a gentle, lingering touch on the shoulder",
+                "the feeling of bare feet on a cool tatami mat"
+            ]
+        }
+    }
+}

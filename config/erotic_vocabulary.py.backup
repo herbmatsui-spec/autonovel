@@ -1,0 +1,80 @@
+# 官能表現ボキャブラリーバンク
+# 
+# 比喩表現メタファ
+METAPHOR_BANK = [
+    "肌を陶磁の表面に似せる",
+    "欲望を逆向きの波に例える",
+    "呼吸を風の流れに例える",
+    "瞳を星の瞬きに例える",
+    "体温を夕暮れの大地に例える",
+    "声を風鈴の音に例える",
+    "影を夕闇に例える",
+    "笑顔を朝日のように例える",
+    "背徳感を闇の底に例える",
+    "官能を月光に例える"
+]
+
+# 擬音（文学訳：呼吸、衣擦れ、くぐもり音のみ。直接的な生殖器表記ではなく機能性の音）
+ONOMATOPOEIA_BANK = [
+    "呼吸の微かな音",
+    "衣の擦れ音",
+    "足音の静かなリズム",
+    "呼吸の乱れ",
+    "肌に触れる微かな感触",
+    "呼吸の深さ",
+    "静寂の沈黙",
+    "微かな汗の匂い",
+    "衣装の摩擦音",
+    "心臓の鼓動"
+]
+
+# 心理描写のテンプレ群（上位概念の物理化）
+PSYCHOLOGY_TEMPLATES = [
+    "陶酔の境界線",
+    "自失の瞬間",
+    "背徳感の消失",
+    "解き放ちの瞬間",
+    "心の奥底への旅",
+    "欲望の芽生え",
+    "禁断の誘惑",
+    "心の奥底への探求",
+    "感情の波紋",
+    "心の距離の縮小"
+]
+
+# 設計: dict-like。erotic engine が random で選出するため、重み付けカテゴリ別のリスト構造。
+# 実際の実装では、この辞書を使って random.choices() で要素を選択する。
+# 例: random.choices(METAPHOR_BANK, k=1) で比喩を選択
+
+# ティア別ボキャブラリー（erotic_intensityに応じて選択される）
+VOCABULARY_TIERS = {
+    "mild": {
+        "metaphors": METAPHOR_BANK[:5],
+        "onomatopoeia": ONOMATOPOEIA_BANK[:5],
+        "psychology": PSYCHOLOGY_TEMPLATES[:5],
+    },
+    "moderate": {
+        "metaphors": METAPHOR_BANK,
+        "onomatopoeia": ONOMATOPOEIA_BANK,
+        "psychology": PSYCHOLOGY_TEMPLATES,
+    },
+    "full": {
+        "metaphors": METAPHOR_BANK + [
+            "潮の満ち引きに例える情動",
+            "溶岩のように広がる体温",
+        ],
+        "onomatopoeia": ONOMATOPOEIA_BANK + [
+            "荒い呼吸の連なり",
+            "肌と肌が触れ合う微音",
+        ],
+        "psychology": PSYCHOLOGY_TEMPLATES + [
+            "境界の消失",
+            "自我の融解",
+        ],
+    },
+}
+
+def get_vocabulary_for_tier(tier: str) -> dict:
+    """指定ティアのボキャブラリーを返す。不明なティアはmildへフォールバック。"""
+    return VOCABULARY_TIERS.get(tier, VOCABULARY_TIERS["mild"])
+

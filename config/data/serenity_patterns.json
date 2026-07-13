@@ -1,0 +1,37 @@
+[
+    {
+        "pattern_id": "shared_silence",
+        "name": "共有された沈黙 (Shared Silence)",
+        "description": "言葉を必要としない、完全な相互理解に基づく静寂",
+        "mechanism": "会話を途絶えさせ、その空白を心地よい感覚描写で満たすことで、精神的な一体感を演出する",
+        "serenity_level": 3
+    },
+    {
+        "pattern_id": "mundane_ritual",
+        "name": "日常の儀式化 (Mundane Ritual)",
+        "description": "ありふれた家事や習慣を、二人だけの特別な時間へと昇華させる",
+        "mechanism": "動作の一つ一つを極めて丁寧に描写し、その時間の不可逆性と尊さを強調する",
+        "serenity_level": 2
+    },
+    {
+        "pattern_id": "sensory_sanctuary",
+        "name": "感覚的聖域 (Sensory Sanctuary)",
+        "description": "外界の喧騒を完全に遮断した、二人だけの物理的・精神的空間の構築",
+        "mechanism": "特定の『柔らかい』感覚（光、音、温度）を強調し、外界からの隔離感を演出する",
+        "serenity_level": 4
+    },
+    {
+        "pattern_id": "parallel_existence",
+        "name": "並行する存在 (Parallel Existence)",
+        "description": "同じ空間にいながら別々のことに没頭し、それでも心地よいと感じる状態",
+        "mechanism": "直接的な干渉を避け、相手の気配だけを感じながら自分の時間を過ごす描写",
+        "serenity_level": 1
+    },
+    {
+        "pattern_id": "absolute_acceptance",
+        "name": "絶対的受容 (Absolute Acceptance)",
+        "description": "どのような自分であっても許されているという、究極の精神的安らぎ",
+        "mechanism": "微かな肯定の仕草や、深い溜息のような『解放』の描写を通じて、緊張の完全な消失を演出する",
+        "serenity_level": 5
+    }
+]

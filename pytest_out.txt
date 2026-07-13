@@ -1,0 +1,36 @@
+============================= test session starts =============================
+platform win32 -- Python 3.14.2, pytest-9.0.3, pluggy-1.6.0 -- C:\Users\Annag\AppData\Local\Python\pythoncore-3.14-64\python.exe
+cachedir: .pytest_cache
+rootdir: d:\claude2
+configfile: pytest.ini
+plugins: anyio-4.12.1, langsmith-0.8.8, asyncio-1.4.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 10 items
+
+tests/test_config.py::test_config_validator_all_files_exist PASSED       [ 10%]
+tests/test_config.py::test_config_validator_load_settings PASSED         [ 20%]
+tests/test_config.py::test_config_validator_load_models PASSED           [ 30%]
+tests/test_config.py::test_config_validator_load_system_plugins PASSED   [ 40%]
+tests/test_config.py::test_config_validator_load_tropes PASSED           [ 50%]
+tests/test_config.py::test_config_validator_load_interaction_matrix PASSED [ 60%]
+tests/test_config.py::test_config_validator_load_domain_profiles FAILED  [ 70%]
+tests/test_config.py::test_config_validator_validate_all PASSED          [ 80%]
+tests/test_config.py::test_config_validator_validate_all_missing_file PASSED [ 90%]
+tests/test_config.py::test_config_validator_validate_all_invalid_json FAILED [100%]
+
+================================== FAILURES ===================================
+_________________ test_config_validator_load_domain_profiles __________________
+tests\test_config.py:90: in test_config_validator_load_domain_profiles
+    assert profile.STRESS_CATHARSIS_THRESHOLD == 85
+E   AssertionError: assert 75 == 85
+E    +  where 75 = DomainProfileModel(DISABLE_CATHARSIS_ENGINE=False, STRESS_CATHARSIS_THRESHOLD=75, STRESS_FILLER_THRESHOLD=30, STRESS_CLIMAX_BONUS=40, STRESS_HATE_GAIN_BASE=15, SPECULATIVE_BRANCH_CATHARSIS_NAME='HighTension', SPECULATIVE_INSTRUCTION_CATHARSIS='\u3010\u26a0\ufe0f\u5206\u5c90\u30d7\u30ed\u30c3\u30c8\uff08\u9ad8\u30c6\u30f3\u30b7\u30e7\u30f3\u30fb\u5fc3\u7406\u7684\u5bfe\u7acb\uff09\u3011\\n\u3053\u306e\u30a8\u30d4\u30bd\u30fc\u30c9\u306f\u767b\u5834\u4eba\u7269\u9593\u306e\u5fc3\u7406\u7684\u7dca\u5f35\u3084\u4eba\u9593\u95a2\u4fc2\u306e\u5287\u7684\u306a\u5909\u5316\u3092\u6700\u5927\u5316\u3059\u308b\u69cb\u6210\u306b\u7279\u5316\u3055\u305b\u3066\u304f\u3060\u3055\u3044\u3002', AUDIT_TRIGGER_KEYWORDS=['\u88cf\u5207\u308a', '\u845b\u85e4', '\u79d8\u5bc6', '\u5bfe\u7acb', '\u5d29\u58ca', '\u548c\u89e3', '\u544a\u767d', '\u5618', '\u904e\u53bb'], AUDIT_WORDS_CATHARSIS=['\u611f\u60c5\u306e\u7206\u767a', '\u793e\u4f1a\u7684\u5fa9\u6a29', '\u548c\u89e3', '\u771f\u5b9f\u306e\u66b4\u9732'], DE_AI_MODE='strict', AUDITOR_PERSONA='\u8987\u6a29\u30d7\u30ed\u30c7\u30e5\u30fc\u30b5\u30fc', AUDITOR_INSTRUCTIONS='\u300c\u30d0\u30ba\u308b\u30ad\u30fc\u30ef\u30fc\u30c9\u3092\u8ffd\u52a0\u3057\u308d\u300d\u300c\u30ab\u30bf\u30eb\u30b7\u30b9\u304c\u8db3\u308a\u306a\u3044\u300d\u3068\u6307\u6458\u3059\u308b\u654f\u8155\u30d7\u30ed\u30c7\u30e5\u30fc\u30b5\u30fc\u3002\u5546\u7528\u51fa\u7248\u3067\u30e9\u30f3\u30ad\u30f3\u30b01\u4f4d\u3092\u72d9\u3048\u308b\u5177\u4f53\u7684\u306a\u4fee\u6b63\u6848\u3092\u51fa\u529b\u305b\u3088\u3002', WEIGHT_EMOTIONAL_RESONANCE=1.0, WEIGHT_THEMATIC_DEPTH=0.5, WEIGHT_LITERARY_BEAUTY=0.5, WEIGHT_BASE_ENGAGEMENT=4.0).STRESS_CATHARSIS_THRESHOLD
+_______________ test_config_validator_validate_all_invalid_json _______________
+tests\test_config.py:141: in test_config_validator_validate_all_invalid_json
+    original_tropes.rename(backup_tropes)
+C:\Users\Annag\AppData\Local\Python\pythoncore-3.14-64\Lib\pathlib\__init__.py:1076: in rename
+    os.rename(self, target)
+E   FileExistsError: [WinError 183] 既に存在するファイルを作成することはできません。: 'config\\tropes.json' -> 'config\\tropes.json.bak'
+=========================== short test summary info ===========================
+FAILED tests/test_config.py::test_config_validator_load_domain_profiles - Ass...
+FAILED tests/test_config.py::test_config_validator_validate_all_invalid_json
+======================== 2 failed, 8 passed in 37.27s =========================

@@ -1,0 +1,11 @@
+            sp = c_data.get("second_person", "")
+            if iron_const or tone:
+                dna_locker_inst += f"・{c.name}: [禁忌] {iron_const} / [口調] {tone} (一人称:{fp}/二人称:{sp})\n"
+        
+        sys_inst += dna_locker_inst
+        return sys_inst, fw_prompt
+
+    async def _audit_and_save(self, book_id: int, branch_id: int, ep_num: int, content: str, meta: Dict[str, Any], ctx: Dict[str, Any], is_integrity_ok: bool, reporter):
+        if not content or len(content.strip()) == 0:
+            logger.error(f"Save aborted: Ep.{ep_num} content is empty.")
+            if
