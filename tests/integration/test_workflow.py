@@ -23,7 +23,7 @@ class DummyReporter(StatusReporter):
         pass
 
 @pytest.mark.asyncio
-@pytest.mark.xfail(reason="Application bug: DB schema missing catchcopy column in books table. Requires migration or schema fix.", strict=False)
+@pytest.mark.xfail(reason="Application bug: DB schema drift + missing PromptManager.build_ultra_fast_plot_batch_prompt. Requires app-level fix.", strict=False)
 async def test_full_auto_workflow_easy_mode(real_db_manager, mock_llm):
     # Setup mock LLM responses for planning
     mock_llm.add_json_response("gemini-2.0-flash", {
@@ -120,7 +120,18 @@ async def test_full_auto_workflow_easy_mode(real_db_manager, mock_llm):
     AppContainer.uow.reset_override()
 
     container = AppContainer(api_key=providers.Object("test-api-key"))
+    db_provider = AppContainer.db
+    db_from_container = container.db
     engine = container.engine()
+    if hasattr(real_db_manager, "db"):
+        mgr = real_db_manager.db
+        if hasattr(mgr, "engine"):
+            import sqlite3
+            conn = sqlite3.connect(mgr.engine.url.database)
+            cursor = conn.cursor()
+            cursor.execute("PRAGMA table_info(books)")
+            cols = [row[1] for row in cursor.fetchall()]
+            conn.close()
 
     workflow = FullAutoWorkflow(engine)
     reporter = DummyReporter()
@@ -148,7 +159,7 @@ async def test_full_auto_workflow_easy_mode(real_db_manager, mock_llm):
 
 
 @pytest.mark.asyncio
-@pytest.mark.xfail(reason="Application bug: DB schema missing catchcopy column in books table. Requires migration or schema fix.", strict=False)
+@pytest.mark.xfail(reason="Application bug: DB schema drift + missing PromptManager.build_ultra_fast_plot_batch_prompt. Requires app-level fix.", strict=False)
 async def test_full_auto_workflow_normal_mode(real_db_manager, mock_llm):
     # Setup mock LLM responses for planning and normal mode validations
     mock_llm.add_json_response("gemini-2.0-flash", {
@@ -250,7 +261,18 @@ async def test_full_auto_workflow_normal_mode(real_db_manager, mock_llm):
     AppContainer.uow.reset_override()
 
     container = AppContainer(api_key=providers.Object("test-api-key"))
+    db_provider = AppContainer.db
+    db_from_container = container.db
     engine = container.engine()
+    if hasattr(real_db_manager, "db"):
+        mgr = real_db_manager.db
+        if hasattr(mgr, "engine"):
+            import sqlite3
+            conn = sqlite3.connect(mgr.engine.url.database)
+            cursor = conn.cursor()
+            cursor.execute("PRAGMA table_info(books)")
+            cols = [row[1] for row in cursor.fetchall()]
+            conn.close()
 
     workflow = FullAutoWorkflow(engine)
     reporter = DummyReporter()
@@ -276,7 +298,7 @@ async def test_full_auto_workflow_normal_mode(real_db_manager, mock_llm):
         AppContainer.db.reset_override()
 
 @pytest.mark.asyncio
-@pytest.mark.xfail(reason="Application bug: DB schema missing catchcopy column in books table. Requires migration or schema fix.", strict=False)
+@pytest.mark.xfail(reason="Application bug: DB schema drift + missing PromptManager.build_ultra_fast_plot_batch_prompt. Requires app-level fix.", strict=False)
 async def test_full_auto_workflow_api_failure(real_db_manager, mock_llm):
     """APIエラー時の挙動を確認するテスト"""
     # 企画生成でわざとエラーを出す
@@ -291,7 +313,18 @@ async def test_full_auto_workflow_api_failure(real_db_manager, mock_llm):
     AppContainer.uow.reset_override()
 
     container = AppContainer(api_key=providers.Object("test-api-key"))
+    db_provider = AppContainer.db
+    db_from_container = container.db
     engine = container.engine()
+    if hasattr(real_db_manager, "db"):
+        mgr = real_db_manager.db
+        if hasattr(mgr, "engine"):
+            import sqlite3
+            conn = sqlite3.connect(mgr.engine.url.database)
+            cursor = conn.cursor()
+            cursor.execute("PRAGMA table_info(books)")
+            cols = [row[1] for row in cursor.fetchall()]
+            conn.close()
     workflow = FullAutoWorkflow(engine)
     reporter = DummyReporter()
 
