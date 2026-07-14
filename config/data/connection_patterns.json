@@ -4,7 +4,7 @@
             "id": "vulnerability_reveal",
             "name": "脆弱性の露呈 (Vulnerability Reveal)",
             "description": "キャラクターが隠していた弱み、過去の傷、または社会的な仮面の裏にある真実を明かすことで、相手に心理的な同期を促す。",
-      ","trigger_condition": "信頼度が中程度（Mid Trust）以上であり、かつ関係性が停滞しているとき",
+      "trigger_condition": "信頼度が中程度（Mid Trust）以上であり、かつ関係性が停滞しているとき",
             "expected_outcome": "信頼度の急上昇、共鳴レベルの向上、絆の質の変化（例：知人→共犯者）",
             "implementation_hints": [
                 "物理的な密室状態や、静寂が支配する時間帯に配置する",

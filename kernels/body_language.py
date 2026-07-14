@@ -125,6 +125,7 @@ class BodyLanguageGenerator:
             f"以下の身体的反応を、シーンの適切な箇所にト書きとして挿入してください：\n"
             f"→ {cues_str}\n"
             f"※セリフで説明せず、視線、呼吸、微細な動作として描写してください。"
+        )
 
 
 # ==========================================
@@ -261,5 +262,4 @@ def generate_gap_moe_scene_prompt(
 
 状況: {trigger_situation or "（指定なし）"}
 """
-        )
 

@@ -15,20 +15,19 @@ async def test_refine_erotic_workflow_success():
     # モックのセットアップ
     mock_engine = MagicMock()
     mock_uow = MagicMock()
-    mock_engine.repo.return_value.__aenter__.return_value = mock_uow
+    mock_engine.repo.__aenter__.return_value = mock_uow
 
     # モックのチャプターとプロット
     mock_chapter = MagicMock()
     mock_chapter.content = "元のコンテンツ"
     mock_plot = MagicMock()
 
-    mock_uow.chapters.get_chapter.return_value = mock_chapter
-    mock_uow.plots.get_plot.return_value = mock_plot
+    mock_uow.chapters.get_chapter = AsyncMock(return_value=mock_chapter)
+    mock_uow.plots.get_plot = AsyncMock(return_value=mock_plot)
     mock_uow.session.commit = AsyncMock()
 
     # ワークフローとモックエンジン
-    workflow = RefineEroticWorkflow()
-    workflow.engine = mock_engine
+    workflow = RefineEroticWorkflow(mock_engine)
 
     # EroticSpecialistのモック化（実際の処理をスキップ）
     original_metaphor_filter = None
@@ -44,7 +43,7 @@ async def test_refine_erotic_workflow_success():
     try:
         from src.agents.erotic_integrity import EroticIntegrityChecker
         original_check_all = EroticIntegrityChecker.check_all
-        EroticIntegrityChecker.check_all = lambda self, text, consent_state=None: (True, [])
+        EroticIntegrityChecker.check_all = lambda self, text, consent_state=None: (True, [], None, None)
     except ImportError:
         pass
 
@@ -95,27 +94,26 @@ async def test_refine_erotic_workflow_failure():
     # モックのセットアップ
     mock_engine = MagicMock()
     mock_uow = MagicMock()
-    mock_engine.repo.return_value.__aenter__.return_value = mock_uow
+    mock_engine.repo.__aenter__.return_value = mock_uow
 
     # モックのチャプターとプロット
     mock_chapter = MagicMock()
     mock_chapter.content = "元のコンテンツ"
     mock_plot = MagicMock()
 
-    mock_uow.chapters.get_chapter.return_value = mock_chapter
-    mock_uow.plots.get_plot.return_value = mock_plot
+    mock_uow.chapters.get_chapter = AsyncMock(return_value=mock_chapter)
+    mock_uow.plots.get_plot = AsyncMock(return_value=mock_plot)
     mock_uow.session.commit = AsyncMock()
 
     # ワークフローとモックエンジン
-    workflow = RefineEroticWorkflow()
-    workflow.engine = mock_engine
+    workflow = RefineEroticWorkflow(mock_engine)
 
     # EroticIntegrityCheckerを失敗させるモック
     original_check_all = None
     try:
         from src.agents.erotic_integrity import EroticIntegrityChecker
         original_check_all = EroticIntegrityChecker.check_all
-        EroticIntegrityChecker.check_all = lambda self, text, consent_state=None: (False, ["テストエラー"])
+        EroticIntegrityChecker.check_all = lambda self, text, consent_state=None: (False, ["テストエラー"], None, None)
     except ImportError:
         pass
 

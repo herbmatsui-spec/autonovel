@@ -135,6 +135,9 @@ class Plot(Base):
     discovery_item = Column(Text)
     sanctuary_event = Column(Text)
     is_locked = Column(Boolean, default=False)
+    is_simulation = Column(Boolean, default=False)
+    simulation_id = Column(String, server_default="", nullable=True)
+    pov_character_id = Column(Integer, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
 
     __table_args__ = (

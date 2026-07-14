@@ -23,7 +23,6 @@ class DummyReporter(StatusReporter):
         pass
 
 @pytest.mark.asyncio
-@pytest.mark.xfail(reason="Application bug: DB schema drift + missing PromptManager.build_ultra_fast_plot_batch_prompt. Requires app-level fix.", strict=False)
 async def test_full_auto_workflow_easy_mode(real_db_manager, mock_llm):
     # Setup mock LLM responses for planning
     mock_llm.add_json_response("gemini-2.0-flash", {
@@ -69,38 +68,42 @@ async def test_full_auto_workflow_easy_mode(real_db_manager, mock_llm):
 
     # Detailed plot expansion mock response
     mock_llm.add_json_response("plot_expansion_prompt", {
-        "ep_num": 1,
-        "thought_process": "展開思考",
-        "title": "プロット第1話",
-        "one_line_summary": "ギルドから理不尽に追放されるアレン。",
-        "detailed_blueprint": "詳細設計図...",
-        "tension": 60,
-        "tension_delta": 10,
-        "catharsis": 0,
-        "is_catharsis": False,
-        "love_meter": 0,
-        "catharsis_type": "なし",
-        "next_hook": {"type": "New Crisis", "description": "次の危機"},
-        "misunderstanding_gap": "なし",
-        "current_chain_phase": "Friction",
-        "emotional_payoff": "なし",
-        "resolution_style": "Cheat",
-        "burned_cost_or_loot": "なし",
-        "thematic_milestone": "なし",
-        "antagonist_status": "現状維持",
-        "scenes": [
+        "plots": [
             {
-                "scene_number": 1,
-                "action": "アレンがギルドを去るシーン。",
-                "dialogue_point": "ギルドマスターとアレンの会話。",
-                "dramatic_function": "導入",
+                "ep_num": 1,
+                "thought_process": "展開思考",
+                "title": "プロット第1話",
+                "one_line_summary": "ギルドから理不尽に追放されるアレン。",
+                "detailed_blueprint": "詳細設計図...",
+                "tension": 60,
+                "tension_delta": 10,
+                "catharsis": 0,
+                "is_catharsis": False,
+                "love_meter": 0,
+                "catharsis_type": "なし",
+                "next_hook": {"type": "New Crisis", "description": "次の危機"},
+                "misunderstanding_gap": "なし",
+                "current_chain_phase": "Friction",
                 "emotional_payoff": "なし",
-                "beats": [
-                    {"beat_type": "導入", "action_description": "ギルドのドアが閉まる。", "sensory_keywords": [], "psychology_keywords": []}
-                ],
-                "bridge_instruction": "",
-                "impact_score": 70,
-                "psychological_layer": "アレンは悲しんでいる。"
+                "resolution_style": "Cheat",
+                "burned_cost_or_loot": "なし",
+                "thematic_milestone": "なし",
+                "antagonist_status": "現状維持",
+                "scenes": [
+                    {
+                        "scene_number": 1,
+                        "action": "アレンがギルドを去るシーン。",
+                        "dialogue_point": "ギルドマスターとアレンの会話。",
+                        "dramatic_function": "導入",
+                        "emotional_payoff": "なし",
+                        "beats": [
+                            {"beat_type": "導入", "action_description": "ギルドのドアが閉まる。", "sensory_keywords": [], "psychology_keywords": []}
+                        ],
+                        "bridge_instruction": "",
+                        "impact_score": 70,
+                        "psychological_layer": "アレンは悲しんでいる。"
+                    }
+                ]
             }
         ]
     })
@@ -159,7 +162,6 @@ async def test_full_auto_workflow_easy_mode(real_db_manager, mock_llm):
 
 
 @pytest.mark.asyncio
-@pytest.mark.xfail(reason="Application bug: DB schema drift + missing PromptManager.build_ultra_fast_plot_batch_prompt. Requires app-level fix.", strict=False)
 async def test_full_auto_workflow_normal_mode(real_db_manager, mock_llm):
     # Setup mock LLM responses for planning and normal mode validations
     mock_llm.add_json_response("gemini-2.0-flash", {
@@ -203,38 +205,42 @@ async def test_full_auto_workflow_normal_mode(real_db_manager, mock_llm):
     })
 
     mock_llm.add_json_response("plot_expansion_prompt", {
-        "ep_num": 1,
-        "thought_process": "通常モード展開思考",
-        "title": "プロット第1話",
-        "one_line_summary": "ギルドから理不尽に追放されるアレン。",
-        "detailed_blueprint": "詳細設計図...",
-        "tension": 60,
-        "tension_delta": 10,
-        "catharsis": 0,
-        "is_catharsis": False,
-        "love_meter": 0,
-        "catharsis_type": "なし",
-        "next_hook": {"type": "New Crisis", "description": "次の危機"},
-        "misunderstanding_gap": "なし",
-        "current_chain_phase": "Friction",
-        "emotional_payoff": "なし",
-        "resolution_style": "Cheat",
-        "burned_cost_or_loot": "なし",
-        "thematic_milestone": "なし",
-        "antagonist_status": "現状維持",
-        "scenes": [
+        "plots": [
             {
-                "scene_number": 1,
-                "action": "アレンがギルドを去るシーン。",
-                "dialogue_point": "会話。",
-                "dramatic_function": "導入",
+                "ep_num": 1,
+                "thought_process": "通常モード展開思考",
+                "title": "プロット第1話",
+                "one_line_summary": "ギルドから理不尽に追放されるアレン。",
+                "detailed_blueprint": "詳細設計図...",
+                "tension": 60,
+                "tension_delta": 10,
+                "catharsis": 0,
+                "is_catharsis": False,
+                "love_meter": 0,
+                "catharsis_type": "なし",
+                "next_hook": {"type": "New Crisis", "description": "次の危機"},
+                "misunderstanding_gap": "なし",
+                "current_chain_phase": "Friction",
                 "emotional_payoff": "なし",
-                "beats": [
-                    {"beat_type": "導入", "action_description": "ドアが閉まる。", "sensory_keywords": [], "psychology_keywords": []}
-                ],
-                "bridge_instruction": "",
-                "impact_score": 70,
-                "psychological_layer": "悲しみ。"
+                "resolution_style": "Cheat",
+                "burned_cost_or_loot": "なし",
+                "thematic_milestone": "なし",
+                "antagonist_status": "現状維持",
+                "scenes": [
+                    {
+                        "scene_number": 1,
+                        "action": "アレンがギルドを去るシーン。",
+                        "dialogue_point": "会話。",
+                        "dramatic_function": "導入",
+                        "emotional_payoff": "なし",
+                        "beats": [
+                            {"beat_type": "導入", "action_description": "ドアが閉まる。", "sensory_keywords": [], "psychology_keywords": []}
+                        ],
+                        "bridge_instruction": "",
+                        "impact_score": 70,
+                        "psychological_layer": "悲しみ。"
+                    }
+                ]
             }
         ]
     })
@@ -298,11 +304,10 @@ async def test_full_auto_workflow_normal_mode(real_db_manager, mock_llm):
         AppContainer.db.reset_override()
 
 @pytest.mark.asyncio
-@pytest.mark.xfail(reason="Application bug: DB schema drift + missing PromptManager.build_ultra_fast_plot_batch_prompt. Requires app-level fix.", strict=False)
 async def test_full_auto_workflow_api_failure(real_db_manager, mock_llm):
     """APIエラー時の挙動を確認するテスト"""
     # 企画生成でわざとエラーを出す
-    mock_llm.add_exception("世界構築のプロフェッショナル", Exception("API Connection Error"))
+    mock_llm.add_exception("gemini-2.0-flash", Exception("API Connection Error"))
 
     from dependency_injector import providers
     from src.core.container import AppContainer

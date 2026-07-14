@@ -42,7 +42,7 @@ class RefineEroticWorkflow(BaseWorkflow):
             curve = EroticCurve.create_default(intensity)
             peak_beat = curve.get_peak_beat()
             consent_state = peak_beat.consent_state if peak_beat else "implicit"
-            is_ok, issues = checker.check_all(refined_content, consent_state=consent_state)
+            is_ok, issues, _, _ = checker.check_all(refined_content, consent_state=consent_state)
 
             # 3.5. afterglow 蜩∬ｳｪ隧穂ｾ｡・・eak 縺ｮ蠕後↓ afterglow 縺後≠繧句ｴ蜷茨ｼ・
             from src.services.erotic_afterglow_evaluator import AfterglowEvaluator

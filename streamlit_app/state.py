@@ -196,5 +196,47 @@ class UIStateStore(JobStore, PollStateStore, ToastStore, SessionStore):
             if hasattr(state, key):
                 setattr(state, key, value)
             else:
-                # フォームデータなどの動的な属性は form_data に格納する
                 state.form_data[key] = value
+
+    def get_ui_state_value(self, key: str, default: Any = None) -> Any:
+        """
+        UI状態から値を取得する。
+        明示的なフィールドまたは form_data のいずれかから値を返す。
+        """
+        state = self.ui_state
+        if hasattr(state, key):
+            return getattr(state, key)
+        return state.form_data.get(key, default)
+
+    def reset_ui_state(self) -> None:
+        """
+        UI状態をデフォルト値にリセットする。
+        """
+        from streamlit_app.state_keys import UI_STATE_KEY
+        st.session_state[UI_STATE_KEY] = UIState()
+
+    def set_form_data(self, key: str, value: Any) -> None:
+        """
+        フォームデータを設定する。
+        """
+        state = self.ui_state
+        state.form_data[key] = value
+
+    def get_form_data(self, key: str, default: Any = None) -> Any:
+        """
+        フォームデータを取得する。
+        """
+        state = self.ui_state
+        return state.form_data.get(key, default)
+
+    def set_modal_visible(self, visible: bool) -> None:
+        """
+        モーダル表示フラグを設定する。
+        """
+        self.update_ui_state(show_modal=visible)
+
+    def is_modal_visible(self) -> bool:
+        """
+        モーダル表示フラグを取得する。
+        """
+        return self.get_ui_state_value("show_modal", False)

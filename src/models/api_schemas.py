@@ -198,6 +198,52 @@ class PatchEditRequest(BaseModel):
     """パッチ編集リクエスト"""
     content: str
 
+# ==========================================
+# 小説制作パイプライン用リクエストモデル
+# ==========================================
+
+class ProduceNovelRequest(BaseModel):
+    """作品全話生成リクエスト"""
+    title: str = Field(..., description="作品タイトル")
+    genre: str = Field(..., description="ジャンル")
+    synopsis: str = Field(default="", description="あらすじ")
+    keywords: List[str] = Field(default_factory=list, description="キーワード")
+    target_episodes: int = Field(default=10, ge=1, le=100, description="目標話数")
+    target_word_count: int = Field(default=3000, ge=100, le=50000, description="1話目標文字数")
+    style_key: str = Field(default="default", description="スタイルキー")
+    engine_key: str = Field(default="standard", description="エンジンキー")
+
+
+class ProduceNovelResponse(BaseResponse):
+    """作品生成レスポンス"""
+    project_id: int = Field(..., description="プロジェクトID")
+    status: str = Field(default="started", description="ステータス")
+    message: str = Field(default="", description="メッセージ")
+    token_usage_estimate: Optional[Dict[str, int]] = Field(
+        default=None, description="推定トークン使用量"
+    )
+
+
+class NovelStatusResponse(BaseResponse):
+    """作品ステータス取得レスポンス"""
+    project_id: int
+    status: str
+    current_episode: int
+    total_episodes: int
+    progress_percent: float
+    message: str
+    completed_episodes: List[int] = Field(default_factory=list)
+
+
+class EpisodeListResponse(BaseResponse):
+    """エピソード一覧取得レスポンス"""
+    episodes: List[Dict[str, Any]] = Field(default_factory=list)
+
+
+class NovelReportResponse(BaseResponse):
+    """制作レポート取得レスポンス"""
+    report: Optional[Dict[str, Any]] = Field(default=None, description="レポートデータ")
+
 class RollbackRequest(BaseModel):
     """プロンプトロールバックリクエスト"""
     version_id: int

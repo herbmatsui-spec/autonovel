@@ -4,15 +4,18 @@ import typing
 from typing import Any, List, Optional
 
 import streamlit as st
-from src.ui.types import StreamDisplayInterface
+
+from streamlit_app.ui.ui_types import StreamDisplayInterface
 
 T = typing.TypeVar("T")
+
 
 class StreamlitStreamDisplay(StreamDisplayInterface):
     """
     Streamlit向けの実装。
     st.empty() を利用してリアルタイムにUIを更新する（状態管理はUIStateStore経由）。
     """
+
     def __init__(self, run_key: str):
         self.run_key = run_key
         self.status_container = st.empty()
@@ -24,7 +27,7 @@ class StreamlitStreamDisplay(StreamDisplayInterface):
         pct = min(1.0, current / total) if total > 0 else 0.0
         with self.status_container.container(border=True):
             st.markdown(f"### ⚙️ {message}")
-            st.progress(pct, text=f"全体進捗: {current}/{total} ({int(pct*100)}%)")
+            st.progress(pct, text=f"全体進捗: {current}/{total} ({int(pct * 100)}%)")
 
     def append_log(self, message: str) -> None:
         self._logs.append(message)

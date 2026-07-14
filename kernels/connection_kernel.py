@@ -15,7 +15,8 @@ class ConnectionKernel(KernelBase):
     moving from simple intimacy to psychological resonance.
     """
     def __init__(self, engine):
-        super().__init__(engine)
+        super().__init__("connection")
+        self.engine = engine
         self.persona = CONNECTION_PERSONA
         self.stagnation_detector = ConnectionStagnationDetector()
         self.translator = TranslationEngine()
@@ -91,7 +92,7 @@ class ConnectionKernel(KernelBase):
         try:
             prompt_manager = PromptManager()
             # We'll need to create 'connection_resonance_prompt' in Phase 3
-            prompt_text = prompt_manager.render("connection_resonance_prompt", **prompt_vars)
+            prompt_text = await prompt_manager.render_async("connection_resonance_prompt", **prompt_vars)
 
             response = await self.engine.llm.generate(
                 prompt=prompt_text,
@@ -111,7 +112,7 @@ class ConnectionKernel(KernelBase):
             }
 
         except Exception as e:
-            logger.error("Error generating resonance event", error=str(e), exc_info=True)
+            logger.error("Error generating resonance event: %s", str(e), exc_info=True)
             return {"error": str(e)}
 
     def _select_connection_pattern(self, context, trigger) -> Dict[str, Any]:
@@ -140,7 +141,7 @@ class ConnectionKernel(KernelBase):
             # Default to the first pattern or a random one
             return patterns[0]
         except Exception as e:
-            logger.error("Error loading connection patterns", error=str(e), exc_info=True)
+            logger.error("Error loading connection patterns: %s", str(e), exc_info=True)
             return {"id": "generic", "name": "Generic Resonance", "description": "A subtle alignment of emotional states."}
 
     async def apply_resonance_polish(self, scene_text: str) -> str:
@@ -151,7 +152,7 @@ class ConnectionKernel(KernelBase):
         try:
             prompt_manager = PromptManager()
             # We'll create 'resonance_polish_prompt' in Phase 6
-            prompt_text = prompt_manager.render("resonance_polish_prompt", scene=scene_text)
+            prompt_text = await prompt_manager.render_async("resonance_polish_prompt", scene=scene_text)
 
             return await self.engine.llm.generate(
                 prompt=prompt_text,
@@ -167,7 +168,7 @@ class ConnectionKernel(KernelBase):
         from prompts.manager import PromptManager
         prompt_manager = PromptManager()
         # We'll create 'connection_audit_prompt' in Phase 8
-        audit_prompt = prompt_manager.render("connection_audit_prompt", scene=scene)
+        audit_prompt = await prompt_manager.render_async("connection_audit_prompt", scene=scene)
 
         audit_res = await self.engine.llm.generate(
             prompt=audit_prompt,

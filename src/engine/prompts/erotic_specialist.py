@@ -98,6 +98,6 @@ class EroticSpecialist:
             intensity: 強度レベル
             vocab: オプション。比喩表現辞書（未使用、後方互換のため残す）。
         """
-        combined = get_combined_mappings(intensity)
+        combined = get_combined_mappings()
         replacer = SafeReplacer(combined)
         return replacer.replace(raw_scene)

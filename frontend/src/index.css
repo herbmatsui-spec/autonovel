@@ -463,50 +463,50 @@
   }
 }
 
-/* TaskMonitor */
-.task-monitor-panel {
-  background-color: rgba(15, 17, 26, 0.95);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8), 0 0 30px rgba(99, 102, 241, 0.2);
-}
+  /* TaskMonitor */
+  .task-monitor-panel {
+    background-color: rgba(15, 17, 26, 0.95);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8), 0 0 30px rgba(99, 102, 241, 0.2);
+  }
 
-.task-monitor-preview {
-  background: rgba(99, 102, 241, 0.05);
-}
+  .task-monitor-preview {
+    background: rgba(99, 102, 241, 0.05);
+  }
 
-.task-monitor-log {
-  background: #07080c;
-}
+  .task-monitor-log {
+    background: #07080c;
+  }
 
-.task-monitor-log-line {
-  color: #8892b0;
-}
+  .task-monitor-log-line {
+    color: #8892b0;
+  }
 
-/* NarrativeGraph empty state */
-.narrative-graph-empty {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 400px;
-  color: var(--text-muted);
-  background: rgba(255, 255, 255, 0.02);
-  border-radius: 12px;
-  border: 1px dashed var(--border);
-}
+  /* NarrativeGraph empty state */
+  .narrative-graph-empty {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 400px;
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 12px;
+    border: 1px dashed var(--border);
+  }
 
-/* NarrativeGraph period filter select */
-.narrative-graph-select {
-  padding: 0.3rem 0.5rem;
-  font-size: 0.8rem;
-  border-radius: 4px;
-  border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.05);
-  color: #fff;
-}
+  /* NarrativeGraph period filter select */
+  .narrative-graph-select {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.8rem;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+  }
 
-.narrative-graph-period-label {
-  color: var(--text-secondary);
-  font-size: 0.8rem;
-}
+  .narrative-graph-period-label {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+  }
 
 @layer utilities {
   .animate-fade-in {

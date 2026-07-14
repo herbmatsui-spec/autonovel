@@ -3,7 +3,7 @@ from __future__ import annotations
 """
 database/repo_branch.py - ブランチ(Branches)データ操作用のリポジトリMixin
 """
-import time
+from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 
 from sqlalchemy import select, update
@@ -26,7 +26,7 @@ class BranchRepository(BaseRepository):
             name=name,
             parent_id=parent_id,
             fork_ep_num=fork_ep_num,
-            created_at=time.strftime('%Y-%m-%dT%H:%M:%S')
+            created_at=datetime.now()
         )
         self.session.add(branch)
         await self.session.flush()

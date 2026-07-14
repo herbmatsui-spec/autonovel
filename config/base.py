@@ -19,9 +19,9 @@ logger = logging.getLogger(__name__)
 # ==========================================
 # モデル設定
 # ==========================================
-MODEL_PLANNING        = "gemini-2.0-flash"
-MODEL_PLOT_EXPANSION  = "gemini-2.0-flash"
-MODEL_EMBEDDING       = "text-embedding-004"
+MODEL_PLANNING        = "gemini-3.1-flash-lite"
+MODEL_PLOT_EXPANSION  = "gemma-4-31b-it"
+MODEL_EMBEDDING       = "gemini-embedding-2"
 MODEL_WRITING         = "gemma-4-31b-it" # Keep this as is, only change MODEL_PLOT_EXPANSION
 MODEL_CLIMAX          = "gemma-4-31b-it"
 MODEL_STABLE_FALLBACK = "gemma-4-31b-it" # 503エラー時の緊急回避用モデルエラー時の緊急回避用モデル

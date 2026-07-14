@@ -1,0 +1,76 @@
+あなたはカクヨムでランキング1位を獲るための超高速プロット設計者です。
+以下の世界観に基づき、指定されたエピソード群の詳細プロット設計図を【一括生成】してください。
+
+【plot_expansion_prompt: 超高速バッチプロット生成】
+
+【作品情報】
+タイトル: {{ book_title }}
+ジャンル: {{ book_genre }}
+コンセプト: {{ concept }}
+スタイルキー: {{ style_key }}
+エンジンキー: {{ engine_key }}
+あらすじ: {{ synopsis }}
+
+【主人公情報】
+名前: {{ mc_name }}
+表層人格: {{ mc_surface }}
+内なる葛藤: {{ mc_inner_conflict }}
+鉄則: {{ mc_iron_constraint }}
+
+【世界設定】
+{{ world_settings_summary }}
+
+【サブキャラクター】
+{{ sub_characters_summary }}
+
+【対象エピソード】
+{{ ep_range_str }}
+
+【各話のロードマップ】
+{% for item in roadmap_items %}
+第{{ item.ep_num }}話:
+  一行あらすじ: {{ item.one_line_summary }}
+  解決スタイル: {{ item.resolution_style }}
+  消費コスト/獲得物: {{ item.burned_cost_or_loot }}
+  テーマ的節目: {{ item.thematic_milestone }}
+  敵対者状況: {{ item.antagonist_status }}
+{% endfor %}
+
+【出力ルール (重要)】
+各エピソードについて、以下のフィールドを全て含むPlotEpisodeオブジェクトを生成してください。
+ omissions(欠落)があるとバリデーションエラーになります。
+
+必須フィールド:
+- ep_num: 話数(整数)
+- title: サブタイトル
+- one_line_summary: 一行あらすじ
+- thought_process: 3ステップ思考(矛盾検証→反証→統合結論)
+- detailed_blueprint: 2000文字以上の超詳細シーン設計図(起承転結の流れ、状況の変化、キャラの行動を具体的に記述)
+- scenes: MasterSceneBlockのリスト。各シーンには以下を含める:
+  - scene_number(整数)
+  - action(主要な出来事)
+  - dialogue_point(重要な会話の要点)
+  - dramatic_function(場面の役割)
+  - emotional_payoff(感情的結末)
+  - beats(List[SceneBeatBlock]): 各ビートに beat_type(導入/展開/結末/状況/内面葛藤/具体的行動/余韻) と action_description(150文字以上の描写詳細) を含めること
+  - bridge_instruction(前シーンとの繋がり)
+  - impact_score(0-100)
+  - psychological_layer(深層心理)
+- next_hook: クリフハンガー (type: New Crisis/Shocking Truth/Quiet Foreshadowing, description)
+- tension: 0-100の整数
+- tension_delta: 増減値(整数)
+- catharsis: 0-100の整数
+- is_catharsis: 真偽値
+- catharsis_type: カタルシスタイプ(なし/小/中/大 等)
+- love_meter: 好感度変化量(整数)
+- emotional_payoff: 感情的な報酬
+- resolution_style: Cheat / Logic / Focus_Drama のいずれか
+- antagonist_status: 敵対者状況
+- burned_cost_or_loot: 消費コスト/獲得物
+- thematic_milestone: テーマ的節目
+- current_chain_phase: Hate/Prep/Payoff/Discovery/Bonding/Fulfillment のいずれか
+- misunderstanding_gap: 勘違いの乖離内容(なければ"なし")
+- lite_model_director_notes: 生成したプロットの弱点や修正指示
+
+Output Schema (JSON):
+{{ schema_json }}

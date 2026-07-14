@@ -77,7 +77,7 @@ class FullAutoWorkflow(BaseWorkflow):
                 reporter.report(f"⚠️ カタルシスパターン分析中にエラーが発生しましたが、処理を継続します: {e}", "warning")
             
             # 健全性チェックの実行
-            if self.engine.planner.plan_auditor and not await self.engine.planner.plan_auditor.audit_bible_completeness(bible, reporter=reporter):
+            if hasattr(self.engine.planner, "plan_auditor") and self.engine.planner.plan_auditor and not await self.engine.planner.plan_auditor.audit_bible_completeness(bible, reporter=reporter):
                 return {"book_id": book_id, "status": "failed_integrity_check"}
 
             if reporter.state.should_stop():

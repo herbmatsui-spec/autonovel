@@ -209,12 +209,16 @@ class LLMGenerateResultMockProxy:
         if len(args) == 1 and hasattr(args[0], "prompt"):
             request = args[0]
             text, usage = await self.mock_llm.generate_text(
-                model_name=request.model_name,
+                model_name=getattr(request, "model_name", None) or getattr(request, "purpose", "writing"),
                 prompt=request.prompt,
                 system_instruction=request.system_instruction,
-                temp=request.temp,
+                temp=getattr(request, "temp", 0.7),
                 **kwargs
             )
         else:
+            purpose = kwargs.pop("purpose", None)
+            if purpose and "model_name" not in kwargs:
+                from src.llm.model_router import select_model
+                kwargs["model_name"] = select_model(purpose)
             text, usage = await self.mock_llm.generate_text(*args, **kwargs)
         return GenerateResult(success=True, story_content=text)

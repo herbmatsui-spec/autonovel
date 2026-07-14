@@ -5,7 +5,7 @@ database/repo_book.py - 作品(Books)データ操作用のリポジトリMixin
 """
 import json
 import logging
-import time
+from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from sqlalchemy import delete, select, update
@@ -35,7 +35,7 @@ class BookRepository(BaseRepository):
             target_eps=target_eps,
             style_dna=json.dumps(style_dna, ensure_ascii=False),
             marketing_data=json.dumps(marketing_data, ensure_ascii=False),
-            created_at=time.strftime('%Y-%m-%dT%H:%M:%S')
+            created_at=datetime.now()
         )
         self.session.add(book)
         await self.session.flush()

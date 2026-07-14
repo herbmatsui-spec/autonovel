@@ -15,6 +15,7 @@ class PlotExpansionWorkflow(BaseWorkflow):
         mode = kwargs.get("mode", "final")
 
         bible = await self.engine.repo.get_latest_bible(book_id)
+        print(f"DEBUG bible={bible!r}, settings={getattr(bible, "settings", None)!r}")
         settings = bible.settings if isinstance(bible.settings, dict) else json.loads(bible.settings or "{}") if bible else {}
         arcs = settings.get("arcs", [])
         # 候補生成モードの場合、planner側に候補生成を指示する

@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -40,10 +40,23 @@ async def test_tension_integration_workflow():
     mock_plot_model.target_tension = 0.2
     mock_repo.get_plot.return_value = mock_plot_model
 
+    # Mock Bible (settings は文字列で渡す)
+    mock_bible = AsyncMock()
+    mock_bible.settings = '{"arcs": []}'
+    mock_repo.get_latest_bible.return_value = mock_bible
+
+    # Mock Planner (expand_plots の戻り値を設定)
+    mock_planner = AsyncMock()
+    mock_episode = MagicMock()
+    mock_episode.ep_num = 1
+    mock_episode.tension = 80
+    mock_planner.expand_plots.return_value = [mock_episode]
+
     # Engine setup
     engine = AsyncMock(spec=UltimateHegemonyEngine)
     engine.repo = mock_repo
     engine.ai_api = mock_llm
+    engine.planner = mock_planner
     engine.determine_target_tension = UltimateHegemonyEngine.determine_target_tension.__get__(engine, UltimateHegemonyEngine)
     engine.validate_tension_deviation = UltimateHegemonyEngine.validate_tension_deviation.__get__(engine, UltimateHegemonyEngine)
 
@@ -93,9 +106,22 @@ async def test_tension_integration_success():
     mock_plot_model.target_tension = 0.2
     mock_repo.get_plot.return_value = mock_plot_model
 
+    # Mock Bible
+    mock_bible = AsyncMock()
+    mock_bible.settings = '{"arcs": []}'
+    mock_repo.get_latest_bible.return_value = mock_bible
+
+    # Mock Planner
+    mock_planner = AsyncMock()
+    mock_episode = MagicMock()
+    mock_episode.ep_num = 1
+    mock_episode.tension = 25
+    mock_planner.expand_plots.return_value = [mock_episode]
+
     engine = AsyncMock(spec=UltimateHegemonyEngine)
     engine.repo = mock_repo
     engine.ai_api = mock_llm
+    engine.planner = mock_planner
     engine.determine_target_tension = UltimateHegemonyEngine.determine_target_tension.__get__(engine, UltimateHegemonyEngine)
     engine.validate_tension_deviation = UltimateHegemonyEngine.validate_tension_deviation.__get__(engine, UltimateHegemonyEngine)
     workflow = PlotExpansionWorkflow(engine=engine)

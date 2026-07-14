@@ -25,7 +25,7 @@ async def test_zamaa_plot_generation():
     # Note: In a real test we might mock the LLM, but here we verify the pipeline flow
     try:
         container = Container()
-        plot_service = container.get_service(PlotService)
+        plot_service = PlotService(container.repo())
         
         logger.info("Executing plot generation with zamaa engine...")
         # We use a mock-like approach or a limited run to verify the call chain

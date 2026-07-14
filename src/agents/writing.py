@@ -27,12 +27,13 @@ class WritingAgent(BaseAgent):
         # プロンプトを構築
         if self.prompt_manager is None:
             raise ValueError("PromptManager is not injected into WritingAgent")
-        prompt = self.prompt_manager.build_final_writing_prompt(
+        prompt = await self.prompt_manager.build_final_writing_prompt(
             ep_num=ep_num,
             plot_data=context.get("plot", {}),
             script_text=context.get("script", ""),
             target_word_count=context.get("target_word_count", 2000),
-            **context
+            style_tag=context.get("style_tag"),
+            **{k: v for k, v in context.items() if k not in ("plot", "target_word_count", "style_tag")}
         )
 
         erotic_intensity = context.get("erotic_intensity", 0)
@@ -59,6 +60,8 @@ class WritingAgent(BaseAgent):
             system_instruction=None,
             temperature=0.7,
         )
+        if hasattr(result, "story_content"):
+            result = result.story_content
 
         if specialist and erotic_intensity > 0 and nsfw_enabled:
             try:
@@ -117,6 +120,32 @@ class WritingAgent(BaseAgent):
                 logger.error(f"generate_episodes failed at ep {ep}: {e}")
                 return 0
         return total_chars
+
+    async def generate_episodes_pipeline(self, book_id, start_ep, end_ep, passion, target_word_count, is_easy_mode, reporter, branch_id=1, style_tag=None):
+        """エピソード生成パイプライン。成功時は (total_chars, []) 、失敗時は (0, [failed_eps]) を返す。"""
+        total_chars = 0
+        failed_episodes = []
+        for ep in range(start_ep, end_ep + 1):
+            try:
+                chars = await self.generate_episodes(
+                    book_id=book_id,
+                    start_ep=ep,
+                    end_ep=ep,
+                    passion=passion,
+                    target_word_count=target_word_count,
+                    is_easy_mode=is_easy_mode,
+                    reporter=reporter,
+                    branch_id=branch_id,
+                    style_tag=style_tag,
+                )
+                if chars > 0:
+                    total_chars += chars
+                else:
+                    failed_episodes.append(ep)
+            except Exception as e:
+                logger.error(f"generate_episodes_pipeline failed at ep {ep}: {e}")
+                failed_episodes.append(ep)
+        return total_chars, failed_episodes
 
     async def trigger_bible_extraction(self, book_id, content, reporter):
         """Bible抽出トリガー（現在はスタブ）"""

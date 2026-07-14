@@ -11,7 +11,7 @@ SHARP_EDGE_TYPES: List[str] = [
     "ending_pullback",
     "protagonist_flaw",
     "abnormal_dialogue",
-    "emotional_hook",
+    "sharp_conflict",
 ]
 
 SHARP_EDGE_DESCRIPTIONS: Dict[str, str] = {

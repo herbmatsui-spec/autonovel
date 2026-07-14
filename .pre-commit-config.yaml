@@ -1,0 +1,26 @@
+# See https://pre-commit.com for more information
+# Install: pre-commit install
+# Run all: pre-commit run --all-files
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-nonzero-on-fix]
+      - id: ruff-format
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.11.2
+    hooks:
+      - id: mypy
+        additional_dependencies: [pydantic>=2.7.0]
+        args: [--config-file=pyproject.toml, --ignore-missing-imports]
+
+  - repo: local
+    hooks:
+      - id: pytest-unit
+        name: unit tests
+        entry: bash -c 'pytest tests/unit -q -p no:cacheprovider'
+        language: system
+        pass_filenames: false
+        always_run: true

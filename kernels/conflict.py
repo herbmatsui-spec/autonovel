@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 from kernels.base import KernelBase
 from prompts.conflict_persona import CONFLICT_PERSONA

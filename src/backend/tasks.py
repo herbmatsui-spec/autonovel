@@ -1,7 +1,7 @@
 import logging
 from typing import Optional
 
-from huey import SqliteHuey
+from huey import SqliteHuey, crontab
 
 from config.container import Container
 from prompts.manager import prompt_manager
@@ -39,11 +39,6 @@ def process_vector_event(event_type: str, payload: dict, trace_id: Optional[str]
         )
     return None
 
-import asyncio
-
-from huey import crontab
-
-
 @huey.periodic_task(crontab(minute='*'))
 def process_outbox_events():
     """
@@ -51,6 +46,7 @@ def process_outbox_events():
     Replaces the manual polling loop in outbox_worker.py
     """
     logger.info("Running outbox processor task...")
+    import asyncio
     try:
         asyncio.run(_process_outbox_events_async())
     except Exception as e:

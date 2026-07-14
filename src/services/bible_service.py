@@ -167,12 +167,12 @@ class WorldBibleGenerator:
             async def _process_batch_item(ep_range):
                 async with sem:
                     plot_prompt = await self.pm.build_ultra_fast_plot_batch_prompt(bible_json_str, ep_range, book_id=None)
-                    plot_res = await self.llm.generate_json("gemini-2.0-flash", plot_prompt, response_schema=UltraFastPlotBatch, reporter=reporter)
+                    plot_res = await self.llm.generate_json(MODEL_PLOT_EXPANSION, plot_prompt, response_schema=UltraFastPlotBatch, reporter=reporter)
                     if not plot_res.success:
                         raise RuntimeError(f"プロットバッチ生成に失敗しました: {plot_res.error_message}")
                     plots = UltraFastPlotBatch.model_validate(plot_res.metadata).plots
                     for p in plots:
-                        await self.repo.save_plot(1, p.ep_num, p)
+                        await self.repo.save_plot(book_id, p.ep_num, p)
 
             async with asyncio.TaskGroup() as tg:
                 tasks = [tg.create_task(_process_batch_item([ep])) for ep in ep_list]

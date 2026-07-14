@@ -5,7 +5,7 @@ database/repo_misc.py - その他のデータ(Style Fragments, Custom Styles, In
 """
 import json
 import logging
-import time
+from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from sqlalchemy import delete, func, select, update
@@ -35,7 +35,7 @@ class MiscRepository(BaseRepository):
         opt = OptimizationHistory(
             book_id=book_id,
             report_json=json.dumps(report, ensure_ascii=False),
-            created_at=time.strftime('%Y-%m-%dT%H:%M:%S')
+            created_at=datetime.now()
         )
         self.session.add(opt)
     async def get_optimization_history(self, book_id: int) -> List[OptimizationHistoryDbModel]:
@@ -55,7 +55,7 @@ class MiscRepository(BaseRepository):
             content=content,
             embedding_json=json.dumps(embedding),
             origin=origin,
-            created_at=time.strftime('%Y-%m-%dT%H:%M:%S')
+            created_at=datetime.now()
         )
         self.session.add(frag)
     async def get_all_style_fragments(self, tag: Optional[str] = None) -> List[StyleFragmentDbModel]:
@@ -86,7 +86,7 @@ class MiscRepository(BaseRepository):
         style.instruction = instruction
         style.score = score
         style.analysis = analysis
-        style.created_at = time.strftime('%Y-%m-%dT%H:%M:%S')
+        style.created_at = datetime.now()
     async def get_all_custom_styles(self) -> List[CustomStyleDbModel]:
         result = await self.session.execute(
             select(CustomStyle).order_by(CustomStyle.score.desc())
@@ -109,7 +109,7 @@ class MiscRepository(BaseRepository):
             state = InternalState(key=key)
             self.session.add(state)
         state.value = json.dumps(value, ensure_ascii=False) if not isinstance(value, str) else value
-        state.updated_at = time.strftime('%Y-%m-%dT%H:%M:%S')
+        state.updated_at = datetime.now()
     async def get_internal_state(self, key: str) -> Optional[Any]:
         """保存された内部状態を取得する"""
         result = await self.session.execute(select(InternalState.value).where(InternalState.key == key))
@@ -135,7 +135,7 @@ class MiscRepository(BaseRepository):
             patch_content=json.dumps(patch_content, ensure_ascii=False) if isinstance(patch_content, dict) else patch_content,
             ab_test_result=json.dumps(ab_test_result, ensure_ascii=False),
             status="pending",
-            created_at=time.strftime('%Y-%m-%dT%H:%M:%S')
+            created_at=datetime.now()
         )
         self.session.add(patch)
         await self.session.flush()
@@ -156,7 +156,7 @@ class MiscRepository(BaseRepository):
         await self.session.execute(
             update(PendingPatch)
             .where(PendingPatch.id == patch_id)
-            .values(status=status, reviewed_at=time.strftime('%Y-%m-%dT%H:%M:%S'))
+            .values(status=status, reviewed_at=datetime.now())
         )
     async def get_rejected_patches(self, book_id: int, limit: int = 5) -> List[PendingPatchDbModel]:
         """却下されたパッチの履歴を取得"""

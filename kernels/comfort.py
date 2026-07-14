@@ -1,6 +1,7 @@
 from kernels.base import KernelBase
 from prompts.comfort_persona import COMFORT_PERSONA
 from src.core.observability import get_structured_logger
+from typing import TYPE_CHECKING, Tuple
 
 logger = get_structured_logger("comfort_kernel")
 

@@ -1,0 +1,27 @@
+# CI用統合テスト基盤
+# 使用法: docker compose -f docker-compose.ci.yml up -d
+# 停止:   docker compose -f docker-compose.ci.yml down -v
+services:
+  chroma:
+    image: chromadb/chroma:0.5.5
+    container_name: kaku_ci_chroma
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    environment:
+      - ALLOW_RESET=TRUE
+
+  redis:
+    image: redis:7-alpine
+    container_name: kaku_ci_redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10

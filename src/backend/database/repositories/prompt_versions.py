@@ -1,5 +1,5 @@
 import json
-import time
+from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from sqlalchemy import select, update
@@ -29,7 +29,7 @@ class PromptVersionRepository(BaseRepository):
             score_after=score_after,
             ab_test_metrics=json.dumps(ab_test_metrics or {}, ensure_ascii=False),
             is_active=is_active,
-            created_at=time.strftime('%Y-%m-%dT%H:%M:%S')
+            created_at=datetime.now()
         )
         self.session.add(version)
         await self.session.flush()

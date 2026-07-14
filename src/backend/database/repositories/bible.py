@@ -5,7 +5,7 @@ database/repo_bible.py - バイブル(Bible)データ操作用のリポジトリ
 """
 import json
 import logging
-import time
+from datetime import datetime
 from typing import TYPE_CHECKING, Any, Optional
 
 from sqlalchemy import select
@@ -88,7 +88,7 @@ class BibleRepository(BaseRepository):
                     target_eps=kwargs.get("target_eps", 50),
                     style_dna=style_dna,
                     marketing_data=mkt_data,
-                    created_at=time.strftime('%Y-%m-%dT%H:%M:%S')
+                    created_at=datetime.now()
                 )
                 self.session.add(book_obj)
                 await self.session.flush()
@@ -100,7 +100,7 @@ class BibleRepository(BaseRepository):
                 branch_obj = Branch(
                     book_id=book_id,
                     name="Main",
-                    created_at=time.strftime('%Y-%m-%dT%H:%M:%S')
+                    created_at=datetime.now()
                 )
                 self.session.add(branch_obj)
                 await self.session.flush()
@@ -120,7 +120,7 @@ class BibleRepository(BaseRepository):
                 book_id=book_id,
                 settings=json.dumps(ws_data, ensure_ascii=False),
                 version=1,
-                last_updated=time.strftime('%Y-%m-%dT%H:%M:%S')
+                last_updated=datetime.now()
             )
             self.session.add(bible_obj)
 
@@ -203,6 +203,6 @@ async def resolve_pending_setting(self, setting_id: int, status: str) -> None:
     setting = result.scalar_one_or_none()
     if setting:
         setting.status = status
-        import time
-        setting.resolved_at = time.strftime('%Y-%m-%dT%H:%M:%S')
+        from datetime import datetime
+        setting.resolved_at = datetime.now()
 

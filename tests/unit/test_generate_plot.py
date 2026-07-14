@@ -308,7 +308,7 @@ class TestSelectKeywordsForGenre:
         gp.BASE_DIR = temp_project_dir
 
         try:
-            selected = select_keywords_for_genre("light", count=3, user_keywords=["ほのぼのぼの", "カフェ"])
+            selected = select_keywords_for_genre("light", count=3, user_keywords=["ほのぼの", "カフェ"])
             assert "ほのぼの" in selected
             assert "カフェ" in selected
             assert len(selected) == 3
@@ -868,7 +868,7 @@ class TestRunGeneratePlotIntegration:
 {
   "title": "統合テストタイトル",
   "logline": "統合テストログライン",
-  "synopsis": "統合テスト用のあらすじです。十分な長さがあります。主人公が冒険して成長します。",
+  "synopsis": "統合テスト用のあらすじです。十分な長さがあります。主人公が冒険して成長し、仲間とともに困難を乗り越え、新たな世界へと旅立っていく物語です。",
   "beats": ["ビート1", "ビート2", "ビート3", "ビート4"],
   "characters": [{"name": "主人公", "role": "main", "description": "説明"}],
   "genre_metadata": {}
@@ -902,7 +902,7 @@ class TestRunGeneratePlotIntegration:
 {
   "title": "ダークテスト",
   "logline": "復讐の物語",
-  "synopsis": "主人公が復讐のために闇に堕ちていくダークな物語です。十分な長さのあらすじテキストです。",
+  "synopsis": "主人公が復讐のために闇に堕ちていくダークな物語です。十分な長さのあらすじテキストです。最後に待ち受けるのは血に染まった決着の瞬間となります。",
   "beats": ["導入", "復讐の決意", "闇への堕落", "対決", "結末"],
   "characters": [],
   "genre_metadata": {}
@@ -975,7 +975,7 @@ class TestCLIIntegration:
 {
   "title": "CLIテストタイトル",
   "logline": "CLIテストログライン",
-  "synopsis": "CLI統合テスト用のあらすじです。主人公が冒険して魔法を習得し、世界を救う物語です。",
+  "synopsis": "CLI統合テスト用のあらすじです。主人公が冒険して魔法を習得し、世界を救う物語です。仲間との絆と試練を経て、平和を取り戻す結末を迎えます。",
   "beats": ["日常", "冒険の始まり", "試練", "成長", "勝利"],
   "characters": [{"name": "主人公", "role": "main", "description": "勇者"}],
   "genre_metadata": {}
@@ -1017,7 +1017,7 @@ class TestGenreSpecificGeneration:
 {{
   "title": "{genre}タイトル",
   "logline": "{genre}ログライン",
-  "synopsis": "{genre}ジャンルのあらすじです。十分な長さがあります。特徴的な展開が含まれます。",
+  "synopsis": "{genre}ジャンルのあらすじです。十分な長さがあります。特徴的な展開が含まれます。主人公は独自の試練を乗り越え、物語の結末へと向かっていきます。",
   "beats": ["ビート1", "ビート2", "ビート3", "ビート4"],
   "characters": [],
   "genre_metadata": {{"genre": "{genre}"}}

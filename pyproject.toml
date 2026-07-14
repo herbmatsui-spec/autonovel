@@ -1,6 +1,7 @@
 [tool.mypy]
 python_version = "3.12"
 strict = true
+explicit_package_bases = true
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
@@ -42,3 +43,10 @@ package-dir = {"" = "."}
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["src*", "config*", "schemas*", "services*", "prompts*", "formatters*", "models*", "plugins*", "kernels*"]
+
+[tool.coverage.run]
+source = ["src", "streamlit_app"]
+omit = ["tests/*", "*/__pycache__/*"]
+
+[tool.coverage.report]
+show_missing = true

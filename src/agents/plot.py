@@ -52,11 +52,38 @@ class PlotAgent(BaseAgent):
         self, book_id: int, start_ep: int, new_total_eps: int, keywords: str,
         trend_memo: str, plot_pattern_key: str, cost_severity: int, cheat_scale: int,
         system_assist: int, reporter=None
-    ):
-        """TODO: 第X話以降のプロット再構築機能の実装"""
+    ) -> List[Any]:
+        """
+        第X話以降のプロット再構築機能を実行する。
+
+        Args:
+            book_id: 書籍ID
+            start_ep: 再構築開始話数
+            new_total_eps: 新しい総話数
+            keywords: キーワード
+            trend_memo: トレンドメモ
+            plot_pattern_key: プロットパターンキー
+            cost_severity: コスト重要度
+            cheat_scale: チートスケール
+            system_assist: システムアシスト値
+            reporter: 進捗レポーター
+
+        Returns:
+            再構築されたプロットのリスト（現在未実装のため空リストを返す）
+
+        .. note::
+            このメソッドは現在未実装です。ステップ16-22のPlotAgent実装計画で検討されます。
+        """
+        import warnings
+        warnings.warn(
+            f"rebuild_hegemony_plot は現在未実装です。"
+            f"第{start_ep}話以降のプロット再構築は現在のところサポートされていません。",
+            UserWarning,
+            stacklevel=2
+        )
         if reporter:
             reporter.report(f"第{start_ep}話以降のプロット再構築を開始します...", "info")
-        # 現在は未実装のため空のリストを返す
+        # 現在未実装のため空のリストを返す
         return []
 
     async def run(self, *args, **kwargs):

@@ -3,77 +3,279 @@ src/agents/erotic_integrity.py
 官能・シーン整合性チェックのエージェント。
 Version: 3.3 (Extended Continuity Tracking)
 """
+
 import logging
-from pydantic import BaseModel, ConfigDict, Field, model_validator
 from typing import Dict, List, Optional, Tuple
+
+from pydantic import BaseModel, ConfigDict, model_validator
 
 logger = logging.getLogger(__name__)
 
 # シーン種別定数
-SCENE_TYPES = ["erotic", "combat", "conversation", "exploration", "travel", "rest", "monologue", "foreshadow", "time", "item"]
+SCENE_TYPES = [
+    "erotic",
+    "combat",
+    "conversation",
+    "exploration",
+    "travel",
+    "rest",
+    "monologue",
+    "foreshadow",
+    "time",
+    "item",
+]
 
 # シーン種別定数
-SCENE_TYPES = ["erotic", "combat", "conversation", "exploration", "travel", "rest", "monologue", "foreshadow", "time", "item"]
+SCENE_TYPES = [
+    "erotic",
+    "combat",
+    "conversation",
+    "exploration",
+    "travel",
+    "rest",
+    "monologue",
+    "foreshadow",
+    "time",
+    "item",
+]
 
 # 戦闘シーンキーワード
-COMBAT_KEYWORDS = ["攻撃", "斬撃", "魔法", "剣", "盾", "戦い", "戦闘", "敵", "ダメージ", "負傷", "血", "切り裂く", "撃破", "死闘", "激突"]
+COMBAT_KEYWORDS = [
+    "攻撃",
+    "斬撃",
+    "魔法",
+    "剣",
+    "盾",
+    "戦い",
+    "戦闘",
+    "敵",
+    "ダメージ",
+    "負傷",
+    "血",
+    "切り裂く",
+    "撃破",
+    "死闘",
+    "激突",
+]
 # 会話シーンキーワード
-CONVERSATION_KEYWORDS = ["話す", "語る", "対話", "議論", "囁く", "問う", "答える", "口調", "態度", "表情", "納得", "反論", "説得"]
+CONVERSATION_KEYWORDS = [
+    "話す",
+    "語る",
+    "対話",
+    "議論",
+    "囁く",
+    "問う",
+    "答える",
+    "口調",
+    "態度",
+    "表情",
+    "納得",
+    "反論",
+    "説得",
+]
 # 探索シーンキーワード
-EXPLORATION_KEYWORDS = ["調べる", "発見", "探索", "見つける", "隠し", "洞窟", "遺跡", "手がかり", "地図", "路地", "潜入", "巡回"]
+EXPLORATION_KEYWORDS = [
+    "調べる",
+    "発見",
+    "探索",
+    "見つける",
+    "隠し",
+    "洞窟",
+    "遺跡",
+    "手がかり",
+    "地図",
+    "路地",
+    "潜入",
+    "巡回",
+]
 # 移動シーンキーワード
-TRAVEL_KEYWORDS = ["向かう", "旅", "移動", "辿り着く", "街道", "馬車", "徒歩", "船", "距離", "到着", "出発", "移動"]
+TRAVEL_KEYWORDS = [
+    "向かう",
+    "旅",
+    "移動",
+    "辿り着く",
+    "街道",
+    "馬車",
+    "徒歩",
+    "船",
+    "距離",
+    "到着",
+    "出発",
+    "移動",
+]
 # 休息シーンキーワード
-REST_KEYWORDS = ["眠る", "休息", "休む", "キャンプ", "宿屋", "回復", "まどろむ", "夜明", "休息時間", "リラックス"]
+REST_KEYWORDS = [
+    "眠る",
+    "休息",
+    "休む",
+    "キャンプ",
+    "宿屋",
+    "回復",
+    "まどろむ",
+    "夜明",
+    "休息時間",
+    "リラックス",
+]
 # 独白シーンキーワード
-MONOLOGUE_KEYWORDS = ["思う", "感じる", "心の中で", "独白", "自問", "回想", "記憶", "呟く", "考え込む"]
+MONOLOGUE_KEYWORDS = [
+    "思う",
+    "感じる",
+    "心の中で",
+    "独白",
+    "自問",
+    "回想",
+    "記憶",
+    "呟く",
+    "考え込む",
+]
 # 伏線シーンキーワード
-FORESHADOW_KEYWORDS = ["予感", "違和感", "意味深", "伏線", "暗示", "不吉", "兆候", "鍵となる", "後でわかる"]
+FORESHADOW_KEYWORDS = [
+    "予感",
+    "違和感",
+    "意味深",
+    "伏線",
+    "暗示",
+    "不吉",
+    "兆候",
+    "鍵となる",
+    "後でわかる",
+]
 # 時間帯キーワード
 TIME_KEYWORDS = {
     "morning": ["朝", "暁", "午前", "夜が明けて"],
     "day": ["昼", "正午", "日中"],
     "evening": ["夕方", "黄昏", "午後"],
-    "night": ["夜", "深夜", "夜更け"]
+    "night": ["夜", "深夜", "夜更け"],
 }
 # アイテムキーワード
-ITEM_KEYWORDS = ["持つ", "所持", "アイテム", "道具", "武器", "装備", "拾う", "失う", "鍵", "薬", "宝箱"]
+ITEM_KEYWORDS = [
+    "持つ",
+    "所持",
+    "アイテム",
+    "道具",
+    "武器",
+    "装備",
+    "拾う",
+    "失う",
+    "鍵",
+    "薬",
+    "宝箱",
+]
 
 # 同意確認キーワード（明示的）
 CONSENT_EXPLICIT_KEYWORDS = ["同意", "了承", "承諾", "OK", "いいよ", "求めて", "欲しい", "させて"]
 # 同意確認キーワード（暗黙的）
-CONSENT_IMPLICIT_KEYWORDS = ["促す", "引き寄せる", "唇が触れる", "近づく", "体が触れる", "手を伸ばす"]
+CONSENT_IMPLICIT_KEYWORDS = [
+    "促す",
+    "引き寄せる",
+    "唇が触れる",
+    "近づく",
+    "体が触れる",
+    "手を伸ばす",
+]
 # 拒否・不同意キーワード
 CONSENT_REFUSAL_KEYWORDS = ["嫌", "やだ", "断る", "拒否", "抗拒", "逃げる", "拒む"]
 
 # 双方向同意キーワード
 CONSENT_A_TO_B_KEYWORDS = ["いいよ", "求めて", "欲しい", "させて", "同意", "了承", "承諾", "OK"]
-CONSENT_B_TO_A_KEYWORDS = ["構わない", "いいわ", "いいわよ", "お願い", "返事", "誘導", "促す", "引き寄せる",
-                         "応じる", "受け入れる", "任せて", "いいな", "どうぞ",
-                         "近づく", "唇が触れる", "体が触れる", "手を伸ばす", "身を寄せる"]
+CONSENT_B_TO_A_KEYWORDS = [
+    "構わない",
+    "いいわ",
+    "いいわよ",
+    "お願い",
+    "返事",
+    "誘導",
+    "促す",
+    "引き寄せる",
+    "応じる",
+    "受け入れる",
+    "任せて",
+    "いいな",
+    "どうぞ",
+    "近づく",
+    "唇が触れる",
+    "体が触れる",
+    "手を伸ばす",
+    "身を寄せる",
+]
 
 # 簡易双方向同意: 両者共通の同意表現（方向ではなく存在チェック用）
 CONSENT_ALL_CHARACTERS_KEYWORDS = [
-    "いいよ", "いいわ", "いいな", "求めて", "欲しい", "させて", "OK",
-    "同意", "了承", "承諾", "構わない", "受け入れる", "応じる",
-    "任せて", "どうぞ", "お願い"
+    "いいよ",
+    "いいわ",
+    "いいな",
+    "求めて",
+    "欲しい",
+    "させて",
+    "OK",
+    "同意",
+    "了承",
+    "承諾",
+    "構わない",
+    "受け入れる",
+    "応じる",
+    "任せて",
+    "どうぞ",
+    "お願い",
 ]
 CONSENT_CONTINUATION_KEYWORDS = ["そのまま", "ながらも", "それでも", "しかし", "しかしながら"]
 CONSENT_DISTANCE_THRESHOLD = 500
 
 # 官能品質スコアリング用キーワード
-SENSORY_TOUCH_KEYWORDS = ["触れる", "触覚", "感触", "肌", "温度", "熱", "冷た", "温もり", "柔らか", "ざら", "滑らか", "指先", "掌", "撫で", "震え", "脈"]
+SENSORY_TOUCH_KEYWORDS = [
+    "触れる",
+    "触覚",
+    "感触",
+    "肌",
+    "温度",
+    "熱",
+    "冷た",
+    "温もり",
+    "柔らか",
+    "ざら",
+    "滑らか",
+    "指先",
+    "掌",
+    "撫で",
+    "震え",
+    "脈",
+]
 SENSORY_SMELL_KEYWORDS = ["香り", "匂い", "嗅覚", "芳香", "薫る", "馨しい", "麝香", "甘い香り"]
-SENSORY_SOUND_KEYWORDS = ["吐息", "呼吸", "囁き", "衣擦れ", "鼓動", "心音", "喘ぎ", "静寂", "響く", "音"]
+SENSORY_SOUND_KEYWORDS = [
+    "吐息",
+    "呼吸",
+    "囁き",
+    "衣擦れ",
+    "鼓動",
+    "心音",
+    "喘ぎ",
+    "静寂",
+    "響く",
+    "音",
+]
 SENSORY_SIGHT_KEYWORDS = ["視線", "瞳", "眼差し", "光", "陰影", "照らす", "映る", "煌めき"]
 SENSORY_TASTE_KEYWORDS = ["味覚", "味わう", "甘い", "苦い", "唇", "舌"]
 
-METAPHOR_KEYWORDS = ["ように", "まるで", "かのような", "彷彿", "～めく", "～じみる", "如く", "波のように", "光のように", "溶けるように", "ほどけて"]
+METAPHOR_KEYWORDS = [
+    "ように",
+    "まるで",
+    "かのような",
+    "彷彿",
+    "～めく",
+    "～じみる",
+    "如く",
+    "波のように",
+    "光のように",
+    "溶けるように",
+    "ほどけて",
+]
 
 # 比喩密度スコア自動調整用: シーン長閾値
 
+
 class SceneStateSnapshot(BaseModel):
     """一般シーンの状態を保存するためのスナップショット。"""
+
     character_name: str
     episode_num: int
     scene_type: str
@@ -97,38 +299,53 @@ class SceneStateSnapshot(BaseModel):
             self.items_held = []
         return self
 
+
 class SceneContinuityTracker:
     """一般シーンの一貫性を追跡する。SQLiteでの永続化に対応。"""
+
     def __init__(self, db_path: str = "kaku_hegemony_v2.db"):
         self.db_path = db_path
         self._init_db()
 
     def save_snapshot(self, snapshot: SceneStateSnapshot) -> None:
         """シーン状態スナップショットを保存する。"""
-        import sqlite3
         import json
+        import sqlite3
+
         with sqlite3.connect(self.db_path) as conn:
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT OR REPLACE INTO scene_snapshots
                 (character_name, episode_num, scene_type, injury_level, attitude, discoveries,
                  travel_state, recovery_state, perspective, foreshadowing_active, time_of_day, items_held)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                snapshot.character_name, snapshot.episode_num, snapshot.scene_type,
-                snapshot.injury_level, snapshot.attitude, json.dumps(snapshot.discoveries),
-                snapshot.travel_state, snapshot.recovery_state, snapshot.perspective,
-                int(snapshot.foreshadowing_active), snapshot.time_of_day, json.dumps(snapshot.items_held)
-            ))
+            """,
+                (
+                    snapshot.character_name,
+                    snapshot.episode_num,
+                    snapshot.scene_type,
+                    snapshot.injury_level,
+                    snapshot.attitude,
+                    json.dumps(snapshot.discoveries),
+                    snapshot.travel_state,
+                    snapshot.recovery_state,
+                    snapshot.perspective,
+                    int(snapshot.foreshadowing_active),
+                    snapshot.time_of_day,
+                    json.dumps(snapshot.items_held),
+                ),
+            )
 
     def get_snapshot(self, episode_num: int, character_name: str) -> Optional[SceneStateSnapshot]:
         """指定エピソードのキャラクター状態を取得する。"""
-        import sqlite3
         import json
+        import sqlite3
+
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
             cur = conn.execute(
                 "SELECT * FROM scene_snapshots WHERE episode_num = ? AND character_name = ?",
-                (episode_num, character_name)
+                (episode_num, character_name),
             )
             row = cur.fetchone()
             if row:
@@ -144,38 +361,42 @@ class SceneContinuityTracker:
                     perspective=row["perspective"],
                     foreshadowing_active=bool(row["foreshadowing_active"]),
                     time_of_day=row["time_of_day"],
-                    items_held=json.loads(row["items_held"])
+                    items_held=json.loads(row["items_held"]),
                 )
         return None
 
-    def get_previous_snapshot(self, episode_num: int, character_name: str) -> Optional[SceneStateSnapshot]:
+    def get_previous_snapshot(
+        self, episode_num: int, character_name: str
+    ) -> Optional[SceneStateSnapshot]:
         """直前のエピソードの状態を取得する。"""
         return self.get_snapshot(episode_num - 1, character_name)
 
     def _detect_injury_level(self, text: str) -> str:
         """テキストから負傷レベルを判定する。"""
         scores = {"none": 0, "light": 0, "moderate": 0, "severe": 0}
-        
+
         # 判定用キーワード
         kw_map = {
             "severe": ["致命的", "瀕死", "意識不明", "血の海", "絶望的", "崩れ落ち"],
             "moderate": ["深手", "激痛", "出血", "骨折", "動けない", "呻き"],
-            "light": ["かすり傷", "打撲", "軽い", "痛み", "切り傷", "違和感"]
+            "light": ["かすり傷", "打撲", "軽い", "痛み", "切り傷", "違和感"],
         }
-        
+
         for level, keywords in kw_map.items():
             for kw in keywords:
                 if kw in text:
                     scores[level] += 1
-        
+
         # 最もスコアの高いものを選択（severe > moderate > light > none の優先順位）
         for level in ["severe", "moderate", "light"]:
             if scores[level] > 0:
                 return level
-                
+
         return "none"
 
-    def check_injury_continuity(self, current_ep: int, character_name: str, current_text: str) -> List[str]:
+    def check_injury_continuity(
+        self, current_ep: int, character_name: str, current_text: str
+    ) -> List[str]:
         """戦闘負傷の一貫性をチェックする。"""
         issues = []
         prev_snapshot = self.get_previous_snapshot(current_ep, character_name)
@@ -195,38 +416,44 @@ class SceneContinuityTracker:
             # 回復キーワードのチェック
             recovery_keywords = ["治療", "手当て", "回復", "癒える", "包帯", "薬"]
             if not any(kw in current_text for kw in recovery_keywords):
-                issues.append(f"【整合性警告】{character_name}の負傷状態が {prev_level} から {current_level} へ不自然に回復しています（治療描写が見当たりません）。")
+                issues.append(
+                    f"【整合性警告】{character_name}の負傷状態が {prev_level} から {current_level} へ不自然に回復しています（治療描写が見当たりません）。"
+                )
 
         # 急激な悪化のチェック
         if curr_val - prev_val >= 2:
-            issues.append(f"【状態急変】{character_name}の負傷が {prev_level} から {current_level} へ急激に悪化しています。描写に十分な説得力があるか確認してください。")
+            issues.append(
+                f"【状態急変】{character_name}の負傷が {prev_level} から {current_level} へ急激に悪化しています。描写に十分な説得力があるか確認してください。"
+            )
 
         return issues
 
     def _detect_attitude(self, text: str) -> str:
         """テキストから会話態度を判定する。"""
         scores = {"friendly": 0, "neutral": 0, "hostile": 0, "tense": 0}
-        
+
         # 判定用キーワード
         kw_map = {
             "hostile": ["拒絶", "怒り", "罵倒", "軽蔑", "激昂", "憎しみ", "突き放す"],
             "tense": ["緊張", "気まずい", "沈黙", "警戒", "険しい", "冷ややか", "対立"],
             "friendly": ["親密", "信頼", "微笑み", "穏やか", "快諾", "共感", "温かい"],
         }
-        
+
         for attitude, keywords in kw_map.items():
             for kw in keywords:
                 if kw in text:
                     scores[attitude] += 1
-        
+
         # 最もスコアの高いものを選択。同点なら hostile > tense > friendly > neutral の順で優先
         for attitude in ["hostile", "tense", "friendly"]:
             if scores[attitude] > 0:
                 return attitude
-        
+
         return "neutral"
 
-    def check_attitude_continuity(self, current_ep: int, character_name: str, current_text: str) -> List[str]:
+    def check_attitude_continuity(
+        self, current_ep: int, character_name: str, current_text: str
+    ) -> List[str]:
         """会話態度の一貫性をチェックする。"""
         issues = []
         prev_snapshot = self.get_previous_snapshot(current_ep, character_name)
@@ -236,108 +463,135 @@ class SceneContinuityTracker:
         current_attitude = self._detect_attitude(current_text)
         prev_attitude = prev_snapshot.attitude
 
-        if prev_attitude != "neutral" and current_attitude != "neutral" and prev_attitude != current_attitude:
+        if (
+            prev_attitude != "neutral"
+            and current_attitude != "neutral"
+            and prev_attitude != current_attitude
+        ):
             # 態度が急激に変化した（例: hostile -> friendly）場合に警告
-            issues.append(f"【整合性警告】{character_name}の態度が {prev_attitude} から {current_attitude} へ不自然に変化しています。心理描写やイベントによる変化があるか確認してください。")
+            issues.append(
+                f"【整合性警告】{character_name}の態度が {prev_attitude} から {current_attitude} へ不自然に変化しています。心理描写やイベントによる変化があるか確認してください。"
+            )
 
         return issues
-    
+
     def _detect_discoveries(self, text: str) -> List[str]:
         """テキストから探索による発見事項を抽出する。"""
         discoveries = []
-        discovery_keywords = ["発見した", "見つけた", "知った", "判明した", "気づいた", "明らかになった"]
-        
+        discovery_keywords = [
+            "発見した",
+            "見つけた",
+            "知った",
+            "判明した",
+            "気づいた",
+            "明らかになった",
+        ]
+
         sentences = text.split("。")
         for sentence in sentences:
             sentence = sentence.strip()
             if sentence and any(kw in sentence for kw in discovery_keywords):
                 discoveries.append(sentence)
-        
+
         return discoveries
-    
-    def check_discovery_continuity(self, current_ep: int, character_name: str, current_text: str) -> List[str]:
+
+    def check_discovery_continuity(
+        self, current_ep: int, character_name: str, current_text: str
+    ) -> List[str]:
         """探索発見の一貫性をチェックする。"""
         issues = []
         prev_snapshot = self.get_previous_snapshot(current_ep, character_name)
         if not prev_snapshot:
             return issues
-        
+
         current_discoveries = self._detect_discoveries(current_text)
         prev_discoveries = prev_snapshot.discoveries or []
-        
+
         # 前回の発見事項が今回は出現していない場合は警告
         for prev_disc in prev_discoveries:
             # 簡易チェック: 内容が完全一致するか、または主要キーワードが含まれているか
             if prev_disc not in current_discoveries:
                 disc_keywords = ["秘密", "真実", "弱点", "正体", "計画", "正体"]
                 if any(kw in prev_disc for kw in disc_keywords):
-                    issues.append(f"【一貫性警告】{character_name}が前回発見した重要な情報「{prev_disc[:20]}...」に関する言及が不足しています。")
-        
+                    issues.append(
+                        f"【一貫性警告】{character_name}が前回発見した重要な情報「{prev_disc[:20]}...」に関する言及が不足しています。"
+                    )
+
         return issues
-    
+
     def _detect_travel_state(self, text: str) -> str:
         """テキストから移動状態を判定する。"""
         # 出発・移動中・到着の3状態を判定
         departure_kw = ["出発", "旅立", "去り", "去る", "立ち去る", "別れを告げ"]
         arriving_kw = ["到着", "辿り着", "辿りつ", "たどり着", "着いた", "目指す"]
-        
+
         if any(kw in text for kw in departure_kw):
             return "departing"
         if any(kw in text for kw in arriving_kw):
             return "arriving"
-        
+
         # 既定値
         return "staying"
-    
-    def check_travel_continuity(self, current_ep: int, character_name: str, current_text: str) -> List[str]:
+
+    def check_travel_continuity(
+        self, current_ep: int, character_name: str, current_text: str
+    ) -> List[str]:
         """移動接続の一貫性をチェックする。"""
         issues = []
         prev_snapshot = self.get_previous_snapshot(current_ep, character_name)
         if not prev_snapshot:
             return issues
-        
+
         prev_state = prev_snapshot.travel_state
         current_state = self._detect_travel_state(current_text)
-        
+
         # 前回「出発」で本次「滞在」の場合、到着描写があったかチェック
         if prev_state == "departing" and current_state == "staying":
             arriving_kw = ["到着", "辿り着", "着いた", "たどり着", "辿りつ"]
             if not any(kw in current_text for kw in arriving_kw):
-                issues.append(f"【移動断絶】{character_name}が前回出発したにもかかわらず、到着描写がありません。途中経路か到着シーンを追加してください。")
-        
+                issues.append(
+                    f"【移動断絶】{character_name}が前回出発したにもかかわらず、到着描写がありません。途中経路か到着シーンを追加してください。"
+                )
+
         # 前回「到着」で本次「出発」といきなり逆戻る場合、滞在描写があったか
         elif prev_state == "arriving" and current_state == "departing":
             staying_kw = ["滞在", "留ま", "過ごす", "とどまる", "宿", "宿屋", "野営"]
             if not any(kw in current_text for kw in staying_kw):
-                issues.append(f"【移動断絶】{character_name}が前回到着した直後にまた出発しています。間に滞在・休息描写を追加してください。")
-        
+                issues.append(
+                    f"【移動断絶】{character_name}が前回到着した直後にまた出発しています。間に滞在・休息描写を追加してください。"
+                )
+
         return issues
-    
+
     def _detect_monologue_perspective(self, text: str) -> str:
         """テキストから独白の視点を判定する。"""
         # 一人称 / 三人称 / 視点混在
         first_person_kw = ["私は", "僕は", "俺は", "私の中", "僕の", "俺の"]
-        
+
         if any(kw in text for kw in first_person_kw):
             return "first_person"
-        
+
         # 三人称的な描写（名前で呼ぶ、客観的な視点）
         # ここでは簡易的に一人称でなければ三人称とする
         return "third_person"
-    
-    def check_perspective_continuity(self, current_ep: int, character_name: str, current_text: str) -> List[str]:
+
+    def check_perspective_continuity(
+        self, current_ep: int, character_name: str, current_text: str
+    ) -> List[str]:
         """独白視点の一貫性をチェックする。"""
         issues = []
         prev_snapshot = self.get_previous_snapshot(current_ep, character_name)
         if not prev_snapshot:
             return issues
-        
+
         prev_perspective = prev_snapshot.perspective
         current_perspective = self._detect_monologue_perspective(current_text)
-        
+
         if prev_perspective and current_perspective != prev_perspective:
-            issues.append(f"【視点警告】{character_name}の視点が前回 {prev_perspective} でしたが、今回は {current_perspective} に変更されています。意図的な視点変更か確認してください。")
-            
+            issues.append(
+                f"【視点警告】{character_name}の視点が前回 {prev_perspective} でしたが、今回は {current_perspective} に変更されています。意図的な視点変更か確認してください。"
+            )
+
         return issues
 
     def _detect_recovery_state(self, text: str) -> str:
@@ -346,7 +600,7 @@ class SceneContinuityTracker:
         resting_kw = ["休息", "眠り", "就寝", "ベッド", "布団", "野営", "止まり", "一息"]
         recovering_kw = ["回復", "傷が癒え", "癒える", "元気を取り戻", "体力が戻", "力が戻"]
         action_kw = ["戦い", "戦闘", "激走", "奔走", "怒涛", "激闘"]
-        
+
         if any(kw in text for kw in resting_kw):
             return "resting"
         if any(kw in text for kw in recovering_kw):
@@ -354,29 +608,35 @@ class SceneContinuityTracker:
         if any(kw in text for kw in action_kw):
             return "action"
         return "unknown"
-    
-    def check_recovery_continuity(self, current_ep: int, character_name: str, current_text: str) -> List[str]:
+
+    def check_recovery_continuity(
+        self, current_ep: int, character_name: str, current_text: str
+    ) -> List[str]:
         """休息回復の一貫性をチェックする。"""
         issues = []
         prev_snapshot = self.get_previous_snapshot(current_ep, character_name)
         if not prev_snapshot:
             return issues
-        
+
         prev_state = prev_snapshot.recovery_state
         current_state = self._detect_recovery_state(current_text)
-        
+
         # 前回「戦闘中」で受傷していたのに本次いきなり「回復中」で治療描写がない場合
         prev_injury = prev_snapshot.injury_level
         if prev_state == "action" and prev_injury in ("moderate", "severe"):
             if current_state == "recovering":
                 treatment_kw = ["治療", "手当て", "包帯", "薬", "魔法", "癒"]
                 if not any(kw in current_text for kw in treatment_kw):
-                    issues.append(f"【一貫性警告】{character_name}が前回戦闘で負った傷（{prev_injury}）が、治療描写なしに回復しています。")
+                    issues.append(
+                        f"【一貫性警告】{character_name}が前回戦闘で負った傷（{prev_injury}）が、治療描写なしに回復しています。"
+                    )
             elif current_state == "action":
-                issues.append(f"【連戦警告】{character_name}が前回の戦闘で負った負傷（{prev_injury}）を抱えたまま再び戦闘しています。負傷の影響を描写してください。")
-        
+                issues.append(
+                    f"【連戦警告】{character_name}が前回の戦闘で負った負傷（{prev_injury}）を抱えたまま再び戦闘しています。負傷の影響を描写してください。"
+                )
+
         return issues
-    
+
     def _detect_foreshadowing(self, text: str) -> List[str]:
         """テキストから伏線と思われるキーワードを抽出する。"""
         found = []
@@ -385,7 +645,9 @@ class SceneContinuityTracker:
                 found.append(keyword)
         return found
 
-    def check_foreshadowing_continuity(self, current_ep: int, character_name: str, current_text: str) -> List[str]:
+    def check_foreshadowing_continuity(
+        self, current_ep: int, character_name: str, current_text: str
+    ) -> List[str]:
         """伏線が適切に継承または回収されているかを確認する。"""
         issues = []
         prev_snapshot = self.get_previous_snapshot(current_ep, character_name)
@@ -397,19 +659,15 @@ class SceneContinuityTracker:
         # 具体的な伏線キーワードの追跡が必要な場合は、別途実装が必要。
         # ここでは、前話で伏線がアクティブだった場合、現在のテキストに
         # 伏線キーワードが含まれているか、回収キーワードがあるかをチェックする。
-        
+
         current_foreshadows = self._detect_foreshadowing(current_text)
         recovery_keywords = ["判明", "解決", "正体", "理由", "気づく"]
-        
+
         if not current_foreshadows and not any(rk in current_text for rk in recovery_keywords):
-            issues.append(f"【伏線警告】前話で伏線が提示されていましたが、今回のシーンで継承または回収されていません。")
-            # 簡易的に、キーワードが含まれていなければ警告（実際はもっと複雑な判定が必要）
-            if foreshadow not in current_text:
-                # 回収キーワード（「正体」「判明」「解決」など）が含まれていればOKとする
-                recovery_keywords = ["判明", "解決", "正体", "理由", "気づく"]
-                if not any(rk in current_text for rk in recovery_keywords):
-                    issues.append(f"伏線 '{foreshadow}' が前話から継承されていないか、回収されていません。")
-        
+            issues.append(
+                "【伏線警告】前話で伏線が提示されていましたが、今回のシーンで継承または回収されていません。"
+            )
+
         return issues
 
     def extract_snapshot(self, text: str) -> SceneStateSnapshot:
@@ -423,10 +681,12 @@ class SceneContinuityTracker:
             perspective=self._detect_monologue_perspective(text),
             foreshadowing_active=len(self._detect_foreshadowing(text)) > 0,
             time_of_day=self._detect_time_of_day(text),
-            items_held=self._detect_item_ownership(text)
+            items_held=self._detect_item_ownership(text),
         )
 
-    def check_time_continuity(self, current_ep: int, character_name: str, current_text: str) -> List[str]:
+    def check_time_continuity(
+        self, current_ep: int, character_name: str, current_text: str
+    ) -> List[str]:
         """時間帯の不自然な遷移をチェックする。"""
         issues = []
         prev_snapshot = self.get_previous_snapshot(current_ep, character_name)
@@ -441,15 +701,17 @@ class SceneContinuityTracker:
             "morning": ["day"],
             "day": ["evening"],
             "evening": ["night"],
-            "night": ["morning"]
+            "night": ["morning"],
         }
-        
+
         prev_time = prev_snapshot.time_of_day
         if prev_time != current_time:
             if current_time not in transitions.get(prev_time, []):
                 time_passage_keywords = ["翌日", "数時間後", "翌朝", "夜が明けて", "時間が経ち"]
                 if not any(kw in current_text for kw in time_passage_keywords):
-                    issues.append(f"時間帯が {prev_time} から {current_time} へ不自然に遷移しています。経過描写が不足している可能性があります。")
+                    issues.append(
+                        f"時間帯が {prev_time} から {current_time} へ不自然に遷移しています。経過描写が不足している可能性があります。"
+                    )
 
         return issues
 
@@ -461,10 +723,12 @@ class SceneContinuityTracker:
                 found.append(item)
         return found
 
-    def check_all_continuity(self, current_ep: int, character_name: str, current_text: str) -> List[str]:
+    def check_all_continuity(
+        self, current_ep: int, character_name: str, current_text: str
+    ) -> List[str]:
         """全ての整合性チェックをまとめて実行する。"""
         all_issues = []
-        
+
         # 各種チェックメソッドのリスト
         check_check_methods = [
             self.check_injury_continuity,
@@ -475,15 +739,17 @@ class SceneContinuityTracker:
             self.check_perspective_continuity,
             self.check_foreshadowing_continuity,
             self.check_time_continuity,
-            self.check_item_continuity
+            self.check_item_continuity,
         ]
-        
+
         for method in check_check_methods:
             all_issues.extend(method(current_ep, character_name, current_text))
-            
+
         return all_issues
 
-    def check_item_continuity(self, current_ep: int, character_name: str, current_text: str) -> List[str]:
+    def check_item_continuity(
+        self, current_ep: int, character_name: str, current_text: str
+    ) -> List[str]:
         """アイテムの所持状態に矛盾がないか確認する。"""
         issues = []
         prev_snapshot = self.get_previous_snapshot(current_ep, character_name)
@@ -491,28 +757,39 @@ class SceneContinuityTracker:
             return issues
 
         current_items = self._detect_item_ownership(current_text)
-        
+
         # 前話で持っていたアイテムが今回言及されているか、あるいは失った描写があるか
         for item in prev_snapshot.items_held:
             if item not in current_items:
                 # 紛失・譲渡・消費のキーワードがあるか確認
-                loss_keywords = ["失う", "なくす", "捨てる", "譲る", "渡す", "壊れる", "消費", "使う"]
+                loss_keywords = [
+                    "失う",
+                    "なくす",
+                    "捨てる",
+                    "譲る",
+                    "渡す",
+                    "壊れる",
+                    "消費",
+                    "使う",
+                ]
                 if not any(kw in current_text for kw in loss_keywords):
                     # 重要アイテム（キーワードに含まれるもの）が突然消えた場合に警告
-                    issues.append(f"アイテム '{item}' が前話から消失していますが、紛失や消費の描写がありません。")
-        
+                    issues.append(
+                        f"アイテム '{item}' が前話から消失していますが、紛失や消費の描写がありません。"
+                    )
+
         return issues
 
     def _detect_time_of_day(self, text: str) -> str:
         """テキストから時間帯（朝・昼・夕・夜・不明）を判定する。"""
         scores = {"morning": 0, "day": 0, "evening": 0, "night": 0}
-        
+
         # TIME_KEYWORDS は {'morning': [...], 'day': [...], ...} の形式を想定
         for period, keywords in TIME_KEYWORDS.items():
             for kw in keywords:
                 if kw in text:
                     scores[period] += 1
-        
+
         # 最もスコアが高い時間帯を返す
         best_period = max(scores, key=scores.get)
         if scores[best_period] == 0:
@@ -522,6 +799,7 @@ class SceneContinuityTracker:
     def _init_db(self) -> None:
         """シーン状態保存用テーブルを初期化する。"""
         import sqlite3
+
         with sqlite3.connect(self.db_path) as conn:
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS scene_snapshots (
@@ -541,12 +819,14 @@ class SceneContinuityTracker:
                 )
             """)
 
+
 class SceneTypeDetector:
     """テキストからシーン種別を判定する。"""
+
     def detect(self, text: str) -> str:
         """テキストからシーン種別を判定する。"""
         scores = {stype: 0 for stype in SCENE_TYPES}
-        
+
         # 各種キーワードに基づくスコアリング
         keyword_map = {
             "combat": COMBAT_KEYWORDS,
@@ -559,27 +839,31 @@ class SceneTypeDetector:
             "time": TIME_KEYWORDS,
             "item": ITEM_KEYWORDS,
         }
-        
+
         for stype, keywords in keyword_map.items():
             for kw in keywords:
                 if kw in text:
                     scores[stype] += 1
-        
+
         # 官能シーンの判定（既存のロジックを簡易的に模倣、またはキーワードで判定）
         # ここでは簡易的に 'erotic' キーワードとして扱うか、他が低ければデフォルトにする
         # 本来は EroticQualityScorer の判定に寄せるべきだが、Detector単体で完結させる
         if any(kw in text for kw in ["官能", "情事", "愛撫", "絶頂"]):
             scores["erotic"] += 5
-            
+
         # 最もスコアの高いシーン種別を返す。同点の場合は 'erotic' または 'conversation' を優先
         max_score = max(scores.values())
         if max_score == 0:
             return "conversation"  # デフォルト
-            
+
         best_types = [t for t, s in scores.items() if s == max_score]
-        if "erotic" in best_types: return "erotic"
-        if "conversation" in best_types: return "conversation"
+        if "erotic" in best_types:
+            return "erotic"
+        if "conversation" in best_types:
+            return "conversation"
         return best_types[0]
+
+
 METAPHOR_SCENE_SHORT_THRESHOLD = 200
 METAPHOR_SCENE_MEDIUM_THRESHOLD = 500
 # シーン長別の密度係数（倍率）
@@ -588,19 +872,72 @@ METAPHOR_DENSITY_COEFFICIENTS = {"short": 35.0, "medium": 25.0, "long": 18.0}
 # テンション曲線段階的スコアリング用: フェーズ区切りマーカ
 PHASE_MARKERS = ["【Build", "【Peak", "【Afterglow", "【build", "【peak", "【afterglow"]
 # フェーズ別スコア
-TENSION_SCORE_U_SHAPE = 85.0      # Build短→Peak長→Afterglow短
-TENSION_SCORE_RISING = 60.0       # 上昇のみ
-TENSION_SCORE_FALLING = 50.0      # 下降のみ
-TENSION_SCORE_FLAT = 20.0         # 平坦
-TENSION_BONUS_SMOOTH = 5.0        # 滑らかさボーナス
-TENSION_PENALTY_SHARP = 10.0      # 極端な段差ペナルティ
-MECHANICAL_KEYWORDS = ["次に", "続けて", "更に", "もう一度", "繰り返す", "そして", "それから", "第一に", "第二に", "段階"]
-EMOTION_LAYER_KEYWORDS = ["感情", "思い", "心", "胸", "感じる", "満たされる", "溢れる", "切な", "愛しさ"]
+TENSION_SCORE_U_SHAPE = 85.0  # Build短→Peak長→Afterglow短
+TENSION_SCORE_RISING = 60.0  # 上昇のみ
+TENSION_SCORE_FALLING = 50.0  # 下降のみ
+TENSION_SCORE_FLAT = 20.0  # 平坦
+TENSION_BONUS_SMOOTH = 5.0  # 滑らかさボーナス
+TENSION_PENALTY_SHARP = 10.0  # 極端な段差ペナルティ
+MECHANICAL_KEYWORDS = [
+    "次に",
+    "続けて",
+    "更に",
+    "もう一度",
+    "繰り返す",
+    "そして",
+    "それから",
+    "第一に",
+    "第二に",
+    "段階",
+]
+EMOTION_LAYER_KEYWORDS = [
+    "感情",
+    "思い",
+    "心",
+    "胸",
+    "感じる",
+    "満たされる",
+    "溢れる",
+    "切な",
+    "愛しさ",
+]
 BODY_LAYER_KEYWORDS = ["身体", "肌", "体温", "震え", "反応", "反る", "熱くなる", "火照る"]
-PSYCHOLOGY_LAYER_KEYWORDS = ["心理", "意識", "思考", "記憶", "過去", "未来", "意味", "理解", "気づく", "悟る"]
+PSYCHOLOGY_LAYER_KEYWORDS = [
+    "心理",
+    "意識",
+    "思考",
+    "記憶",
+    "過去",
+    "未来",
+    "意味",
+    "理解",
+    "気づく",
+    "悟る",
+]
 
-AFTERGLOW_DEPTH_KEYWORDS = ["沈静", "余韻", "温もり", "安らぎ", "静まる", "距離感", "再確認", "次話", "明日", "これから", "伏線"]
-EROTICIZED_CONSENT_KEYWORDS = ["囁くように", "震える声で", "熱を帯びた", "誘うように", "乞うように", "縋るように", "潤んだ瞳で", "甘く"]
+AFTERGLOW_DEPTH_KEYWORDS = [
+    "沈静",
+    "余韻",
+    "温もり",
+    "安らぎ",
+    "静まる",
+    "距離感",
+    "再確認",
+    "次話",
+    "明日",
+    "これから",
+    "伏線",
+]
+EROTICIZED_CONSENT_KEYWORDS = [
+    "囁くように",
+    "震える声で",
+    "熱を帯びた",
+    "誘うように",
+    "乞うように",
+    "縋るように",
+    "潤んだ瞳で",
+    "甘く",
+]
 
 # ===== Continuity Tracker 用定数 =====
 STAMINA_LEVELS = ["exhausted", "tired", "normal", "energetic"]
@@ -625,82 +962,422 @@ LOCATION_OUTDOOR_KW = ["外", "森", "庭", "野原", "河", "海", "空の下",
 LOCATION_TRANSITION_KW = ["移動", "向かう", "戻る", "出る", "入る", "到着"]
 
 # ===== シーン種別定数（汎用 Continuity Tracker 用） =====
-SCENE_TYPES = ["combat", "conversation", "exploration", "travel", "rest", "monologue", "erotic", "unknown"]
+SCENE_TYPES = [
+    "combat",
+    "conversation",
+    "exploration",
+    "travel",
+    "rest",
+    "monologue",
+    "erotic",
+    "unknown",
+]
 
-COMBAT_KEYWORDS = ["戦う", "斬る", "打つ", "攻撃", "防御", "魔法", "剣", "槍", "弓", "呪文", "殺", "討つ", "防ぐ", "避ける", "盾", "刃"]
-CONVERSATION_KEYWORDS = ["言った", "答えた", "聞いた", "問う", "語る", "話す", "囁く", "叫ぶ", "会話", "対話", "応える", "返す"]
-EXPLORATION_KEYWORDS = ["調べる", "探索", "探す", "発見", "手がかり", "足跡", "痕跡", "調べ", "観察", "捜索", "見つけ"]
-TRAVEL_KEYWORDS = ["向かう", "移動", "歩く", "道を", "戻る", "出る", "入る", "到着", "出発", "旅路", "街道"]
-REST_KEYWORDS = ["休む", "眠る", "睡眠", "休息", "座り込む", "横たわる", "眠りにつ", "宿", "野営", "仮眠"]
-MONOLOGUE_KEYWORDS = ["思う", "考える", "心に", "独白", "内心", "胸の奥で", "～だろうか", "問いかける", "自問"]
+COMBAT_KEYWORDS = [
+    "戦う",
+    "斬る",
+    "打つ",
+    "攻撃",
+    "防御",
+    "魔法",
+    "剣",
+    "槍",
+    "弓",
+    "呪文",
+    "殺",
+    "討つ",
+    "防ぐ",
+    "避ける",
+    "盾",
+    "刃",
+]
+CONVERSATION_KEYWORDS = [
+    "言った",
+    "答えた",
+    "聞いた",
+    "問う",
+    "語る",
+    "話す",
+    "囁く",
+    "叫ぶ",
+    "会話",
+    "対話",
+    "応える",
+    "返す",
+]
+EXPLORATION_KEYWORDS = [
+    "調べる",
+    "探索",
+    "探す",
+    "発見",
+    "手がかり",
+    "足跡",
+    "痕跡",
+    "調べ",
+    "観察",
+    "捜索",
+    "見つけ",
+]
+TRAVEL_KEYWORDS = [
+    "向かう",
+    "移動",
+    "歩く",
+    "道を",
+    "戻る",
+    "出る",
+    "入る",
+    "到着",
+    "出発",
+    "旅路",
+    "街道",
+]
+REST_KEYWORDS = [
+    "休む",
+    "眠る",
+    "睡眠",
+    "休息",
+    "座り込む",
+    "横たわる",
+    "眠りにつ",
+    "宿",
+    "野営",
+    "仮眠",
+]
+MONOLOGUE_KEYWORDS = [
+    "思う",
+    "考える",
+    "心に",
+    "独白",
+    "内心",
+    "胸の奥で",
+    "～だろうか",
+    "問いかける",
+    "自問",
+]
 
 # ===== シーン種別定数（汎用 Continuity Tracker 用） =====
-SCENE_TYPES = ["combat", "conversation", "exploration", "travel", "rest", "monologue", "erotic", "unknown"]
+SCENE_TYPES = [
+    "combat",
+    "conversation",
+    "exploration",
+    "travel",
+    "rest",
+    "monologue",
+    "erotic",
+    "unknown",
+]
 
-COMBAT_KEYWORDS = ["戦う", "斬る", "打つ", "攻撃", "防御", "魔法", "剣", "槍", "弓", "呪文", "殺", "討つ", "防ぐ", "避ける", "盾", "刃"]
-CONVERSATION_KEYWORDS = ["言った", "答えた", "聞いた", "問う", "語る", "話す", "囁く", "叫ぶ", "会話", "対話", "応える", "返す"]
-EXPLORATION_KEYWORDS = ["調べる", "探索", "探す", "発見", "手がかり", "足跡", "痕跡", "調べ", "観察", "捜索", "見つけ"]
-TRAVEL_KEYWORDS = ["向かう", "移動", "歩く", "道を", "戻る", "出る", "入る", "到着", "出発", "旅路", "街道"]
-REST_KEYWORDS = ["休む", "眠る", "睡眠", "休息", "座り込む", "横たわる", "眠りにつ", "宿", "野営", "仮眠"]
-MONOLOGUE_KEYWORDS = ["思う", "考える", "心に", "独白", "内心", "胸の奥で", "～だろうか", "問いかける", "自問"]
+COMBAT_KEYWORDS = [
+    "戦う",
+    "斬る",
+    "打つ",
+    "攻撃",
+    "防御",
+    "魔法",
+    "剣",
+    "槍",
+    "弓",
+    "呪文",
+    "殺",
+    "討つ",
+    "防ぐ",
+    "避ける",
+    "盾",
+    "刃",
+]
+CONVERSATION_KEYWORDS = [
+    "言った",
+    "答えた",
+    "聞いた",
+    "問う",
+    "語る",
+    "話す",
+    "囁く",
+    "叫ぶ",
+    "会話",
+    "対話",
+    "応える",
+    "返す",
+]
+EXPLORATION_KEYWORDS = [
+    "調べる",
+    "探索",
+    "探す",
+    "発見",
+    "手がかり",
+    "足跡",
+    "痕跡",
+    "調べ",
+    "観察",
+    "捜索",
+    "見つけ",
+]
+TRAVEL_KEYWORDS = [
+    "向かう",
+    "移動",
+    "歩く",
+    "道を",
+    "戻る",
+    "出る",
+    "入る",
+    "到着",
+    "出発",
+    "旅路",
+    "街道",
+]
+REST_KEYWORDS = [
+    "休む",
+    "眠る",
+    "睡眠",
+    "休息",
+    "座り込む",
+    "横たわる",
+    "眠りにつ",
+    "宿",
+    "野営",
+    "仮眠",
+]
+MONOLOGUE_KEYWORDS = [
+    "思う",
+    "考える",
+    "心に",
+    "独白",
+    "内心",
+    "胸の奥で",
+    "～だろうか",
+    "問いかける",
+    "自問",
+]
 
 # ===== シーン種別定数（汎用 Continuity Tracker 用） =====
-SCENE_TYPES = ["combat", "conversation", "exploration", "travel", "rest", "monologue", "erotic", "unknown"]
+SCENE_TYPES = [
+    "combat",
+    "conversation",
+    "exploration",
+    "travel",
+    "rest",
+    "monologue",
+    "erotic",
+    "unknown",
+]
 
-COMBAT_KEYWORDS = ["戦う", "斬る", "打つ", "攻撃", "防御", "魔法", "剣", "槍", "弓", "呪文", "殺", "討つ", "防ぐ", "避ける", "盾", "刃"]
-CONVERSATION_KEYWORDS = ["言った", "答えた", "聞いた", "問う", "語る", "話す", "囁く", "叫ぶ", "会話", "対話", "応える", "返す"]
-EXPLORATION_KEYWORDS = ["調べる", "探索", "探す", "発見", "手がかり", "足跡", "痕跡", "調べ", "観察", "捜索", "見つけ"]
-TRAVEL_KEYWORDS = ["向かう", "移動", "歩く", "道を", "戻る", "出る", "入る", "到着", "出発", "旅路", "街道"]
-REST_KEYWORDS = ["休む", "眠る", "睡眠", "休息", "座り込む", "横たわる", "眠りにつ", "宿", "野営", "仮眠"]
-MONOLOGUE_KEYWORDS = ["思う", "考える", "心に", "独白", "内心", "胸の奥で", "～だろうか", "問いかける", "自問"]
+COMBAT_KEYWORDS = [
+    "戦う",
+    "斬る",
+    "打つ",
+    "攻撃",
+    "防御",
+    "魔法",
+    "剣",
+    "槍",
+    "弓",
+    "呪文",
+    "殺",
+    "討つ",
+    "防ぐ",
+    "避ける",
+    "盾",
+    "刃",
+]
+CONVERSATION_KEYWORDS = [
+    "言った",
+    "答えた",
+    "聞いた",
+    "問う",
+    "語る",
+    "話す",
+    "囁く",
+    "叫ぶ",
+    "会話",
+    "対話",
+    "応える",
+    "返す",
+]
+EXPLORATION_KEYWORDS = [
+    "調べる",
+    "探索",
+    "探す",
+    "発見",
+    "手がかり",
+    "足跡",
+    "痕跡",
+    "調べ",
+    "観察",
+    "捜索",
+    "見つけ",
+]
+TRAVEL_KEYWORDS = [
+    "向かう",
+    "移動",
+    "歩く",
+    "道を",
+    "戻る",
+    "出る",
+    "入る",
+    "到着",
+    "出発",
+    "旅路",
+    "街道",
+]
+REST_KEYWORDS = [
+    "休む",
+    "眠る",
+    "睡眠",
+    "休息",
+    "座り込む",
+    "横たわる",
+    "眠りにつ",
+    "宿",
+    "野営",
+    "仮眠",
+]
+MONOLOGUE_KEYWORDS = [
+    "思う",
+    "考える",
+    "心に",
+    "独白",
+    "内心",
+    "胸の奥で",
+    "～だろうか",
+    "問いかける",
+    "自問",
+]
 
 # ===== シーン種別定数（汎用 Continuity Tracker 用） =====
-SCENE_TYPES = ["combat", "conversation", "exploration", "travel", "rest", "monologue", "erotic", "unknown"]
+SCENE_TYPES = [
+    "combat",
+    "conversation",
+    "exploration",
+    "travel",
+    "rest",
+    "monologue",
+    "erotic",
+    "unknown",
+]
 
-COMBAT_KEYWORDS = ["戦う", "斬る", "打つ", "攻撃", "防御", "魔法", "剣", "槍", "弓", "呪文", "殺", "討つ", "防ぐ", "避ける", "盾", "刃"]
-CONVERSATION_KEYWORDS = ["言った", "答えた", "聞いた", "問う", "語る", "話す", "囁く", "叫ぶ", "会話", "対話", "応える", "返す"]
-EXPLORATION_KEYWORDS = ["調べる", "探索", "探す", "発見", "手がかり", "足跡", "痕跡", "調べ", "観察", "捜索", "見つけ"]
-TRAVEL_KEYWORDS = ["向かう", "移動", "歩く", "道を", "戻る", "出る", "入る", "到着", "出発", "旅路", "街道"]
-REST_KEYWORDS = ["休む", "眠る", "睡眠", "休息", "座り込む", "横たわる", "眠りにつ", "宿", "野営", "仮眠"]
-MONOLOGUE_KEYWORDS = ["思う", "考える", "心に", "独白", "内心", "胸の奥で", "～だろうか", "問いかける", "自問"]
+COMBAT_KEYWORDS = [
+    "戦う",
+    "斬る",
+    "打つ",
+    "攻撃",
+    "防御",
+    "魔法",
+    "剣",
+    "槍",
+    "弓",
+    "呪文",
+    "殺",
+    "討つ",
+    "防ぐ",
+    "避ける",
+    "盾",
+    "刃",
+]
+CONVERSATION_KEYWORDS = [
+    "言った",
+    "答えた",
+    "聞いた",
+    "問う",
+    "語る",
+    "話す",
+    "囁く",
+    "叫ぶ",
+    "会話",
+    "対話",
+    "応える",
+    "返す",
+]
+EXPLORATION_KEYWORDS = [
+    "調べる",
+    "探索",
+    "探す",
+    "発見",
+    "手がかり",
+    "足跡",
+    "痕跡",
+    "調べ",
+    "観察",
+    "捜索",
+    "見つけ",
+]
+TRAVEL_KEYWORDS = [
+    "向かう",
+    "移動",
+    "歩く",
+    "道を",
+    "戻る",
+    "出る",
+    "入る",
+    "到着",
+    "出発",
+    "旅路",
+    "街道",
+]
+REST_KEYWORDS = [
+    "休む",
+    "眠る",
+    "睡眠",
+    "休息",
+    "座り込む",
+    "横たわる",
+    "眠りにつ",
+    "宿",
+    "野営",
+    "仮眠",
+]
+MONOLOGUE_KEYWORDS = [
+    "思う",
+    "考える",
+    "心に",
+    "独白",
+    "内心",
+    "胸の奥で",
+    "～だろうか",
+    "問いかける",
+    "自問",
+]
 
 STAMINA_ALLOWED_TRANSITIONS = {
     "exhausted": ["exhausted", "tired"],
-    "tired":     ["exhausted", "tired", "normal"],
-    "normal":    ["exhausted", "tired", "normal", "energetic"],
+    "tired": ["exhausted", "tired", "normal"],
+    "normal": ["exhausted", "tired", "normal", "energetic"],
     "energetic": ["tired", "normal", "energetic"],
 }
 
 PSYCH_ALLOWED_TRANSITIONS = {
     "distressed": ["distressed", "anxious"],
-    "anxious":    ["distressed", "anxious", "neutral"],
-    "neutral":    ["anxious", "neutral", "content"],
-    "content":    ["neutral", "content", "euphoric"],
-    "euphoric":   ["content", "euphoric", "neutral"],
+    "anxious": ["distressed", "anxious", "neutral"],
+    "neutral": ["anxious", "neutral", "content"],
+    "content": ["neutral", "content", "euphoric"],
+    "euphoric": ["content", "euphoric", "neutral"],
 }
 
 # 官能品質の評価次元
 EROTIC_QUALITY_DIMENSIONS = {
-    "sensory_depth":       "五感の深さ（触覚/嗅覚/聴覚/視覚/味覚のカバレッジ）",
-    "metaphor_density":    "文学的比喩の密度",
-    "tension_arc":         "テンション曲線（文長変動と緊張の上昇→下降パターン）",
-    "emotion_layering":    "感情→身体→心理の3層構造",
-    "afterglow_depth":     "余韻の深さ（意味のあるアフターグロー）",
-    "consent_eroticized":  "同意表現の官能化",
+    "sensory_depth": "五感の深さ（触覚/嗅覚/聴覚/視覚/味覚のカバレッジ）",
+    "metaphor_density": "文学的比喩の密度",
+    "tension_arc": "テンション曲線（文長変動と緊張の上昇→下降パターン）",
+    "emotion_layering": "感情→身体→心理の3層構造",
+    "afterglow_depth": "余韻の深さ（意味のあるアフターグロー）",
+    "consent_eroticized": "同意表現の官能化",
     "vocabulary_diversity": "語彙の多様性（繰り返し回避）",
     "mechanical_avoidance": "機械的/マニュアル的描写の回避",
 }
 
+
 class EroticQualityReport(BaseModel):
     """官能品質の評価レポート。"""
+
     quality_score: float
     dimension_scores: Dict[str, float]
     strengths: List[str]
     weaknesses: List[str]
     suggestions: List[str]
 
+
 class CharacterStateSnapshot(BaseModel):
     """1話終了時点のキャラクター状態スナップショット。"""
+
     character_name: str
     episode_num: int
     stamina_level: str = "normal"
@@ -718,13 +1395,16 @@ class CharacterStateSnapshot(BaseModel):
             self.custom_flags = {}
         return self
 
+
 class ContinuityReport(BaseModel):
     """話間整合性チェックの結果レポート。"""
+
     is_consistent: bool
     issues: List[str]
     checked_dimensions: List[str]
     character_name: str
     episode_num: int
+
 
 class ContinuityTracker:
     """連続話間のキャラクター状態一貫性を追跡する。SQLiteでの永続化に対応。"""
@@ -736,6 +1416,7 @@ class ContinuityTracker:
 
     def _init_db(self):
         import sqlite3
+
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
@@ -756,7 +1437,9 @@ class ContinuityTracker:
             conn.commit()
             conn.close()
         except Exception as e:
-            logger.warning("Failed to initialize SQLite for ContinuityTracker: %s. Using memory only.", e)
+            logger.warning(
+                "Failed to initialize SQLite for ContinuityTracker: %s. Using memory only.", e
+            )
 
     def save_snapshot(self, snapshot: CharacterStateSnapshot) -> None:
         """エピソード終了時の状態を保存する。"""
@@ -765,53 +1448,63 @@ class ContinuityTracker:
             self._snapshots[ep] = {}
         self._snapshots[ep][snapshot.character_name] = snapshot
 
-        import sqlite3
         import json
+        import sqlite3
+
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
-            cursor.execute("""
-                INSERT OR REPLACE INTO character_continuity_snapshots 
+            cursor.execute(
+                """
+                INSERT OR REPLACE INTO character_continuity_snapshots
                 (character_name, episode_num, stamina_level, psych_state, clothing_state, intimacy_level, location, custom_flags)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                snapshot.character_name,
-                snapshot.episode_num,
-                snapshot.stamina_level,
-                snapshot.psych_state,
-                snapshot.clothing_state,
-                snapshot.intimacy_level,
-                snapshot.location,
-                json.dumps(snapshot.custom_flags)
-            ))
+            """,
+                (
+                    snapshot.character_name,
+                    snapshot.episode_num,
+                    snapshot.stamina_level,
+                    snapshot.psych_state,
+                    snapshot.clothing_state,
+                    snapshot.intimacy_level,
+                    snapshot.location,
+                    json.dumps(snapshot.custom_flags),
+                ),
+            )
             conn.commit()
             conn.close()
         except Exception as e:
             logger.warning("Failed to save snapshot to SQLite: %s", e)
 
-    def get_snapshot(self, episode_num: int, character_name: str) -> Optional[CharacterStateSnapshot]:
+    def get_snapshot(
+        self, episode_num: int, character_name: str
+    ) -> Optional[CharacterStateSnapshot]:
         """指定エピソードのキャラクター状態を取得する。"""
         # メモリ内キャッシュを優先
         if episode_num in self._snapshots and character_name in self._snapshots[episode_num]:
             return self._snapshots[episode_num][character_name]
 
-        import sqlite3
         import json
+        import sqlite3
+
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT stamina_level, psych_state, clothing_state, intimacy_level, location, custom_flags
                 FROM character_continuity_snapshots
                 WHERE episode_num = ? AND character_name = ?
-            """, (episode_num, character_name))
+            """,
+                (episode_num, character_name),
+            )
             row = cursor.fetchone()
             conn.close()
             if row:
                 flags = {}
                 try:
                     flags = json.loads(row[5]) if row[5] else {}
-                except:
+                except Exception:
                     pass
                 snap = CharacterStateSnapshot(
                     character_name=character_name,
@@ -821,7 +1514,7 @@ class ContinuityTracker:
                     clothing_state=row[2],
                     intimacy_level=row[3],
                     location=row[4],
-                    custom_flags=flags
+                    custom_flags=flags,
                 )
                 # キャッシュに保存
                 if episode_num not in self._snapshots:
@@ -833,7 +1526,9 @@ class ContinuityTracker:
 
         return None
 
-    def get_previous_snapshot(self, current_ep: int, character_name: str) -> Optional[CharacterStateSnapshot]:
+    def get_previous_snapshot(
+        self, current_ep: int, character_name: str
+    ) -> Optional[CharacterStateSnapshot]:
         """前話のキャラクター状態を取得する。"""
         return self.get_snapshot(current_ep - 1, character_name)
 
@@ -898,7 +1593,7 @@ class ContinuityTracker:
 
     def _detect_clothing_state(self, text: str) -> str:
         """テキスト末尾から衣服状態を推定する。"""
-        end_text = text[max(0, len(text) - 500):]
+        end_text = text[max(0, len(text) - 500) :]
         undress_count = sum(end_text.count(v) for v in EroticIntegrityChecker.UNDRESS_VERBS)
         dress_count = sum(end_text.count(v) for v in EroticIntegrityChecker.DRESS_VERBS)
 
@@ -908,11 +1603,12 @@ class ContinuityTracker:
             return "partially_undressed"
         return "fully_dressed"
 
-    def extract_snapshot(self, character_name: str, episode_num: int,
-                         scene_text: str, clothing_state: str = None) -> CharacterStateSnapshot:
+    def extract_snapshot(
+        self, character_name: str, episode_num: int, scene_text: str, clothing_state: str = None
+    ) -> CharacterStateSnapshot:
         """テキストを解析してスナップショットを自動生成する。"""
         text_len = len(scene_text)
-        end_portion = scene_text[int(text_len * 0.7):]
+        end_portion = scene_text[int(text_len * 0.7) :]
 
         if clothing_state is None:
             clothing_state = self._detect_clothing_state(scene_text)
@@ -928,8 +1624,9 @@ class ContinuityTracker:
         )
         return snapshot
 
-    def check_stamina_continuity(self, current_ep: int, character_name: str,
-                                  current_text: str) -> List[str]:
+    def check_stamina_continuity(
+        self, current_ep: int, character_name: str, current_text: str
+    ) -> List[str]:
         """前話の体力状態と今話冒層の体力状態の矛盾を検出する。"""
         issues: List[str] = []
         prev = self.get_previous_snapshot(current_ep, character_name)
@@ -950,8 +1647,9 @@ class ContinuityTracker:
 
     RECOVERY_KEYWORDS = ["休む", "眠る", "回復", "癒す", "治療", "休息", "睡眠", "朝", "目覚め"]
 
-    def check_recovery_description(self, current_ep: int, character_name: str,
-                                     current_text: str) -> List[str]:
+    def check_recovery_description(
+        self, current_ep: int, character_name: str, current_text: str
+    ) -> List[str]:
         """前話で疲弊→今話で回復している場合、回復描写があるか検証する。"""
         issues: List[str] = []
         prev = self.get_previous_snapshot(current_ep, character_name)
@@ -959,7 +1657,9 @@ class ContinuityTracker:
             return issues
 
         if prev.stamina_level in ["exhausted", "tired"]:
-            current_stamina = self._detect_stamina(current_text[:max(int(len(current_text) * 0.3), 100)])
+            current_stamina = self._detect_stamina(
+                current_text[: max(int(len(current_text) * 0.3), 100)]
+            )
             if current_stamina in ["normal", "energetic"]:
                 recovery_found = any(kw in current_text[:500] for kw in self.RECOVERY_KEYWORDS)
                 if not recovery_found:
@@ -974,15 +1674,16 @@ class ContinuityTracker:
         mapping = {"exhausted": 0, "tired": 1, "normal": 2, "energetic": 3}
         return mapping.get(level, 2)
 
-    def check_stamina_jump(self, current_ep: int, character_name: str,
-                            current_text: str) -> List[str]:
+    def check_stamina_jump(
+        self, current_ep: int, character_name: str, current_text: str
+    ) -> List[str]:
         """前話→今話で体力が2段階以上ジャンプした場合に警告する。"""
         issues: List[str] = []
         prev = self.get_previous_snapshot(current_ep, character_name)
         if prev is None:
             return issues
 
-        opening_text = current_text[:max(int(len(current_text) * 0.3), 100)]
+        opening_text = current_text[: max(int(len(current_text) * 0.3), 100)]
         current_stamina = self._detect_stamina(opening_text)
 
         prev_num = self._stamina_to_num(prev.stamina_level)
@@ -995,15 +1696,16 @@ class ContinuityTracker:
             )
         return issues
 
-    def check_psych_continuity(self, current_ep: int, character_name: str,
-                                current_text: str) -> List[str]:
+    def check_psych_continuity(
+        self, current_ep: int, character_name: str, current_text: str
+    ) -> List[str]:
         """前話の心理状態と今話冒頭の心理状態の矛盾を検出する。"""
         issues: List[str] = []
         prev = self.get_previous_snapshot(current_ep, character_name)
         if prev is None:
             return issues
 
-        opening_text = current_text[:max(int(len(current_text) * 0.3), 100)]
+        opening_text = current_text[: max(int(len(current_text) * 0.3), 100)]
         current_psych = self._detect_psych_state(opening_text)
 
         allowed = PSYCH_ALLOWED_TRANSITIONS.get(prev.psych_state, PSYCH_STATES)
@@ -1019,8 +1721,9 @@ class ContinuityTracker:
         "euphoric_to_anxious": ["裏切り", "暗雲", "別れ", "失う", "突き落と"],
     }
 
-    def check_psych_trigger(self, current_ep: int, character_name: str,
-                             current_text: str) -> List[str]:
+    def check_psych_trigger(
+        self, current_ep: int, character_name: str, current_text: str
+    ) -> List[str]:
         """心理状態が大きく変化する場合、トリガーイベントがあるか検証する。"""
         issues: List[str] = []
         prev = self.get_previous_snapshot(current_ep, character_name)
@@ -1028,7 +1731,7 @@ class ContinuityTracker:
             return issues
 
         current_psych = self._detect_psych_state(
-            current_text[:max(int(len(current_text) * 0.3), 100)]
+            current_text[: max(int(len(current_text) * 0.3), 100)]
         )
 
         if prev.psych_state == "distressed" and current_psych in ["content", "euphoric"]:
@@ -1052,15 +1755,16 @@ class ContinuityTracker:
         mapping = {"distressed": 0, "anxious": 1, "neutral": 2, "content": 3, "euphoric": 4}
         return mapping.get(state, 2)
 
-    def check_psych_jump(self, current_ep: int, character_name: str,
-                          current_text: str) -> List[str]:
+    def check_psych_jump(
+        self, current_ep: int, character_name: str, current_text: str
+    ) -> List[str]:
         """前話→今話で心理状態が2段階以上ジャンプした場合に警告する。"""
         issues: List[str] = []
         prev = self.get_previous_snapshot(current_ep, character_name)
         if prev is None:
             return issues
 
-        opening_text = current_text[:max(int(len(current_text) * 0.3), 100)]
+        opening_text = current_text[: max(int(len(current_text) * 0.3), 100)]
         current_psych = self._detect_psych_state(opening_text)
 
         prev_num = self._psych_to_num(prev.psych_state)
@@ -1079,8 +1783,9 @@ class ContinuityTracker:
         opening = text[:300]
         return any(kw in opening for kw in self.TIME_PASSAGE_KEYWORDS)
 
-    def check_clothing_continuity(self, current_ep: int, character_name: str,
-                                    current_text: str) -> List[str]:
+    def check_clothing_continuity(
+        self, current_ep: int, character_name: str, current_text: str
+    ) -> List[str]:
         """前話末の衣服状態が今話冒頭で矛盾していないか検証する。"""
         issues: List[str] = []
         prev = self.get_previous_snapshot(current_ep, character_name)
@@ -1106,8 +1811,9 @@ class ContinuityTracker:
         mapping = {"stranger": 0, "acquaintance": 1, "close": 2, "intimate": 3, "bonded": 4}
         return mapping.get(level, 1)
 
-    def check_intimacy_regression(self, current_ep: int, character_name: str,
-                                    current_text: str) -> List[str]:
+    def check_intimacy_regression(
+        self, current_ep: int, character_name: str, current_text: str
+    ) -> List[str]:
         issues: List[str] = []
         prev = self.get_previous_snapshot(current_ep, character_name)
         if prev is None:
@@ -1124,8 +1830,9 @@ class ContinuityTracker:
             )
         return issues
 
-    def check_intimacy_rush(self, current_ep: int, character_name: str,
-                             current_text: str) -> List[str]:
+    def check_intimacy_rush(
+        self, current_ep: int, character_name: str, current_text: str
+    ) -> List[str]:
         issues: List[str] = []
         prev = self.get_previous_snapshot(current_ep, character_name)
         if prev is None:
@@ -1144,8 +1851,9 @@ class ContinuityTracker:
 
     EROTIC_SCENE_MARKERS = ["【Peak", "【peak", "肌を重ね", "身を委ね", "口づけ", "抱きしめ"]
 
-    def check_intimacy_vs_erotic_level(self, current_ep: int, character_name: str,
-                                        current_text: str) -> List[str]:
+    def check_intimacy_vs_erotic_level(
+        self, current_ep: int, character_name: str, current_text: str
+    ) -> List[str]:
         issues: List[str] = []
         prev = self.get_previous_snapshot(current_ep, character_name)
         if prev is None:
@@ -1159,8 +1867,9 @@ class ContinuityTracker:
             )
         return issues
 
-    def check_location_continuity(self, current_ep: int, character_name: str,
-                                    current_text: str) -> List[str]:
+    def check_location_continuity(
+        self, current_ep: int, character_name: str, current_text: str
+    ) -> List[str]:
         issues: List[str] = []
         prev = self.get_previous_snapshot(current_ep, character_name)
         if prev is None or prev.location == "unknown":
@@ -1183,7 +1892,7 @@ class ContinuityTracker:
 
     def check_environment_consistency(self, prev_text: str, current_text: str) -> List[str]:
         issues: List[str] = []
-        prev_end = prev_text[max(0, len(prev_text) - 300):]
+        prev_end = prev_text[max(0, len(prev_text) - 300) :]
         curr_start = current_text[:300]
 
         prev_weather = [kw for kw in self.WEATHER_KEYWORDS if kw in prev_end]
@@ -1205,11 +1914,11 @@ class EroticQualityScorer:
     def score(self, scene_text: str) -> EroticQualityReport:
         """シーンの官能品質を総合評価する。"""
         dims = {}
-        dims["sensory_depth"]      = self._score_sensory_depth(scene_text)
-        dims["metaphor_density"]   = self._score_metaphor_density(scene_text)
-        dims["tension_arc"]        = self._score_tension_arc(scene_text)
-        dims["emotion_layering"]   = self._score_emotion_layering(scene_text)
-        dims["afterglow_depth"]    = self._score_afterglow_depth(scene_text)
+        dims["sensory_depth"] = self._score_sensory_depth(scene_text)
+        dims["metaphor_density"] = self._score_metaphor_density(scene_text)
+        dims["tension_arc"] = self._score_tension_arc(scene_text)
+        dims["emotion_layering"] = self._score_emotion_layering(scene_text)
+        dims["afterglow_depth"] = self._score_afterglow_depth(scene_text)
         dims["consent_eroticized"] = self._score_consent_eroticized(scene_text)
         dims["vocabulary_diversity"] = self._score_vocabulary_diversity(scene_text)
         dims["mechanical_avoidance"] = self._score_mechanical_avoidance(scene_text)
@@ -1286,7 +1995,9 @@ class EroticQualityScorer:
         # フェーズ別文長からテンション曲線タイプを分類
         # U字: Peak が Build と Afterglow の両方より明確に長い
         PEAK_MARGIN = 1.3
-        peak_is_max = (peak_avg >= build_avg * PEAK_MARGIN) and (peak_avg >= afterglow_avg * PEAK_MARGIN)
+        peak_is_max = (peak_avg >= build_avg * PEAK_MARGIN) and (
+            peak_avg >= afterglow_avg * PEAK_MARGIN
+        )
 
         if peak_is_max:
             score = TENSION_SCORE_U_SHAPE
@@ -1317,7 +2028,9 @@ class EroticQualityScorer:
                 positions.append(pos)
         return sorted(positions)
 
-    def _extract_all_phases(self, scene_text: str, markers: List[int]) -> Tuple[List[str], List[str], List[str]]:
+    def _extract_all_phases(
+        self, scene_text: str, markers: List[int]
+    ) -> Tuple[List[str], List[str], List[str]]:
         """マーカ位置を使って Build / Peak / Afterglow の文を抽出する。"""
         sections = []
         for i, start in enumerate(markers):
@@ -1328,7 +2041,7 @@ class EroticQualityScorer:
         # markers の順序に従って build/peak/afterglow に対応
         build_s, peak_s, afterglow_s = [], [], []
         for idx, marker in enumerate(markers):
-            marker_str = scene_text[marker:marker + 12]
+            marker_str = scene_text[marker : marker + 12]
             if "build" in marker_str.lower():
                 build_s = sections[idx] if idx < len(sections) else []
             elif "peak" in marker_str.lower():
@@ -1370,12 +2083,12 @@ class EroticQualityScorer:
             return 0.0
 
         avg_len = sum(lengths) / len(lengths)
-        variance = sum((l - avg_len) ** 2 for l in lengths) / len(lengths)
+        variance = sum((ln - avg_len) ** 2 for ln in lengths) / len(lengths)
         variance_score = min(variance / 50.0, 50.0)
 
         n = len(lengths)
-        first_third = lengths[:n//3]
-        last_third = lengths[2*n//3:]
+        first_third = lengths[: n // 3]
+        last_third = lengths[2 * n // 3 :]
         if first_third and last_third:
             first_avg = sum(first_third) / len(first_third)
             last_avg = sum(last_third) / len(last_third)
@@ -1388,8 +2101,8 @@ class EroticQualityScorer:
     def _score_emotion_layering(self, scene_text: str) -> float:
         """感情→身体→心理の3層構造を評価。"""
         emotion_count = sum(scene_text.count(kw) for kw in EMOTION_LAYER_KEYWORDS)
-        body_count    = sum(scene_text.count(kw) for kw in BODY_LAYER_KEYWORDS)
-        psych_count   = sum(scene_text.count(kw) for kw in PSYCHOLOGY_LAYER_KEYWORDS)
+        body_count = sum(scene_text.count(kw) for kw in BODY_LAYER_KEYWORDS)
+        psych_count = sum(scene_text.count(kw) for kw in PSYCHOLOGY_LAYER_KEYWORDS)
 
         layers_present = sum(1 for c in [emotion_count, body_count, psych_count] if c > 0)
         layer_score = (layers_present / 3.0) * 60.0
@@ -1397,7 +2110,7 @@ class EroticQualityScorer:
         # バランスボーナス（1層だけ突出していないか）
         total = emotion_count + body_count + psych_count
         if total > 0:
-            ratios = [emotion_count/total, body_count/total, psych_count/total]
+            ratios = [emotion_count / total, body_count / total, psych_count / total]
             imbalance = max(ratios) - min(ratios)
             balance_score = max(0.0, (1.0 - imbalance) * 40.0)
         else:
@@ -1430,8 +2143,13 @@ class EroticQualityScorer:
 
     def _score_vocabulary_diversity(self, scene_text: str) -> float:
         """語彙の多様性を評価。キーワードの重複を検出。"""
-        all_sensory = (SENSORY_TOUCH_KEYWORDS + SENSORY_SMELL_KEYWORDS +
-                      SENSORY_SOUND_KEYWORDS + SENSORY_SIGHT_KEYWORDS + SENSORY_TASTE_KEYWORDS)
+        all_sensory = (
+            SENSORY_TOUCH_KEYWORDS
+            + SENSORY_SMELL_KEYWORDS
+            + SENSORY_SOUND_KEYWORDS
+            + SENSORY_SIGHT_KEYWORDS
+            + SENSORY_TASTE_KEYWORDS
+        )
 
         keyword_counts = {}
         for kw in all_sensory:
@@ -1477,7 +2195,7 @@ class EroticQualityScorer:
         current = ""
         for char in text:
             current += char
-            if char in ['。', '！', '？', '」', '.']:
+            if char in ["。", "！", "？", "」", "."]:
                 sentences.append(current.strip())
                 current = ""
         if current.strip():
@@ -1491,21 +2209,37 @@ class EroticQualityScorer:
         threshold = 30.0
 
         if dims.get("sensory_depth", 100) <= threshold:
-            suggestions.append("五感描写を強化: 触覚・嗅覚・聴覚・視覚・味覚のうち不足している感覚を追加してください。特に触覚と嗅覚は官能表現に重要です。")
+            suggestions.append(
+                "五感描写を強化: 触覚・嗅覚・聴覚・視覚・味覚のうち不足している感覚を追加してください。特に触覚と嗅覚は官能表現に重要です。"
+            )
         if dims.get("metaphor_density", 100) <= threshold:
-            suggestions.append("文学的比喩を増やしてください。「〜のように」「まるで〜」などの比喩表現を使い、直接的な描写を避けてください。")
+            suggestions.append(
+                "文学的比喩を増やしてください。「〜のように」「まるで〜」などの比喩表現を使い、直接的な描写を避けてください。"
+            )
         if dims.get("tension_arc", 100) <= threshold:
-            suggestions.append("テンション曲線を強化: 文の長さに変化をつけ、前半→中盤→後半でテンションの上昇→下降パターンを作ってください。")
+            suggestions.append(
+                "テンション曲線を強化: 文の長さに変化をつけ、前半→中盤→後半でテンションの上昇→下降パターンを作ってください。"
+            )
         if dims.get("emotion_layering", 100) <= threshold:
-            suggestions.append("感情→身体反応→心理変化の3層構造を明示的に書いてください。感情描写だけでなく、身体反応と心理的意味づけの両方を入れてください。")
+            suggestions.append(
+                "感情→身体反応→心理変化の3層構造を明示的に書いてください。感情描写だけでなく、身体反応と心理的意味づけの両方を入れてください。"
+            )
         if dims.get("afterglow_depth", 100) <= threshold:
-            suggestions.append("余韻を深くしてください。沈静・距離感の再確認・次話への伏線を含めてください。最低2段落以上が推奨です。")
+            suggestions.append(
+                "余韻を深くしてください。沈静・距離感の再確認・次話への伏線を含めてください。最低2段落以上が推奨です。"
+            )
         if dims.get("consent_eroticized", 100) <= threshold:
-            suggestions.append("同意表現を官能的にしてください。「OK」「いいよ」のような事務的同意ではなく、「震える声で」「潤んだ瞳で」など官能的な同意表現を使ってください。")
+            suggestions.append(
+                "同意表現を官能的にしてください。「OK」「いいよ」のような事務的同意ではなく、「震える声で」「潤んだ瞳で」など官能的な同意表現を使ってください。"
+            )
         if dims.get("vocabulary_diversity", 100) <= threshold:
-            suggestions.append("語彙の多様性を高めてください。同じ感覚キーワードの繰り返しを避け、類義語を使って表現の幅を広げてください。")
+            suggestions.append(
+                "語彙の多様性を高めてください。同じ感覚キーワードの繰り返しを避け、類義語を使って表現の幅を広げてください。"
+            )
         if dims.get("mechanical_avoidance", 100) <= threshold:
-            suggestions.append("機械的描写を避けてください。「次に」「更に」「そして」のような段階的な手順説明は官能表現を損ないます。流れるような自然な描写を心がけてください。")
+            suggestions.append(
+                "機械的描写を避けてください。「次に」「更に」「そして」のような段階的な手順説明は官能表現を損ないます。流れるような自然な描写を心がけてください。"
+            )
 
         return suggestions
 
@@ -1536,21 +2270,69 @@ class EroticIntegrityChecker:
 
     # 強制・暴力検出用パターン
     COERCION_INDICATORS = [
-        "無理やり", "強制", "脅迫", "恐怖", "怯える", "震える", "逃げたい",
-        "嫌なのに", "嫌なのにやめて", "やめろと言っているのに", "嫌がっているのに",
-        "押し倒す", "押さえつける", "拘束", "締め付ける", "閉じ込める",
-        "無視する", "無視した", "無視して", "耳を塞ぐ", "目を背ける"
+        "無理やり",
+        "強制",
+        "脅迫",
+        "恐怖",
+        "怯える",
+        "震える",
+        "逃げたい",
+        "嫌なのに",
+        "嫌なのにやめて",
+        "やめろと言っているのに",
+        "嫌がっているのに",
+        "押し倒す",
+        "押さえつける",
+        "拘束",
+        "締め付ける",
+        "閉じ込める",
+        "無視する",
+        "無視した",
+        "無視して",
+        "耳を塞ぐ",
+        "目を背ける",
     ]
 
     VIOLENCE_INDICATORS = [
-        "痛い", "痛がる", "痛がり", "痛み", "苦しい", "苦しみ", "苦しむ", "苦しむ", "叫ぶ", "叫び", "叫んだ", "悲鳴", "泣く", "涙",
-        "出血", "傷", "あざ", "瘀血", "打撲", "打ち身", "挫傷"
+        "痛い",
+        "痛がる",
+        "痛がり",
+        "痛み",
+        "苦しい",
+        "苦しみ",
+        "苦しむ",
+        "苦しむ",
+        "叫ぶ",
+        "叫び",
+        "叫んだ",
+        "悲鳴",
+        "泣く",
+        "涙",
+        "出血",
+        "傷",
+        "あざ",
+        "瘀血",
+        "打撲",
+        "打ち身",
+        "挫傷",
     ]
 
     POWER_IMBALANCE_INDICATORS = [
-        "させる", "させられた", "してもらう", "してもらった",
-        "してもらわないと", "しなければならない", "しなければ駄目",
-        "命令", "指図", "上司", "部下", "先生", "生徒", "先輩", "後輩"
+        "させる",
+        "させられた",
+        "してもらう",
+        "してもらった",
+        "してもらわないと",
+        "しなければならない",
+        "しなければ駄目",
+        "命令",
+        "指図",
+        "上司",
+        "部下",
+        "先生",
+        "生徒",
+        "先輩",
+        "後輩",
     ]
 
     def __init__(self, db_path: str = "kaku_hegemony_v2.db"):
@@ -1584,7 +2366,9 @@ class EroticIntegrityChecker:
 
         # 2つ以上あるが、同じ位置に密集しているかチェック
         consent_positions.sort()
-        spread = consent_positions[-1][0] - consent_positions[0][0] if len(consent_positions) >= 2 else 0
+        spread = (
+            consent_positions[-1][0] - consent_positions[0][0] if len(consent_positions) >= 2 else 0
+        )
 
         if spread < 50 and len(consent_positions) >= 2:
             # 同じ発話内での複数キーワード（片方だけの可能性あり）
@@ -1610,7 +2394,7 @@ class EroticIntegrityChecker:
         current_sentence = ""
         for char in scene_text:
             current_sentence += char
-            if char in ['。', '！', '？', '）', '」']:
+            if char in ["。", "！", "？", "）", "」"]:
                 sentences.append(current_sentence)
                 current_sentence = ""
         if current_sentence:
@@ -1668,9 +2452,12 @@ class EroticIntegrityChecker:
             next_event = sorted_events[i + 1]
             self._check_ordering(current, next_event, issues)
 
-    def _check_ordering(self, current: "EroticIntegrityChecker.ClothingEvent",
-                        next_event: "EroticIntegrityChecker.ClothingEvent",
-                        issues: List[str]) -> None:
+    def _check_ordering(
+        self,
+        current: "EroticIntegrityChecker.ClothingEvent",
+        next_event: "EroticIntegrityChecker.ClothingEvent",
+        issues: List[str],
+    ) -> None:
         """イベント順序を検証する。"""
         if current.event_type == "dress" and next_event.event_type == "dress":
             distance = next_event.position - current.position
@@ -1681,9 +2468,7 @@ class EroticIntegrityChecker:
                 )
 
         if current.event_type == "undress" and next_event.event_type == "undress":
-            issues.append(
-                f"脱衣イベントが連続しています：'{current.text}' -> '{next_event.text}'"
-            )
+            issues.append(f"脱衣イベントが連続しています：'{current.text}' -> '{next_event.text}'")
 
     def check_coercive_context(self, scene_text: str) -> Tuple[bool, List[str]]:
         """文脈理解に基づく強制・暴力検出を実行する。"""
@@ -1740,7 +2525,9 @@ class EroticIntegrityChecker:
 
         return len(issues) == 0, issues
 
-    def check_consent_state(self, scene_text: str, declared_consent: str = "implicit") -> Tuple[bool, List[str]]:
+    def check_consent_state(
+        self, scene_text: str, declared_consent: str = "implicit"
+    ) -> Tuple[bool, List[str]]:
         """
         シーン内の同意表現是否符合 declared_consent を検証する。
         """
@@ -1762,8 +2549,9 @@ class EroticIntegrityChecker:
 
         return len(issues) == 0, issues
 
-    def check_continuity(self, current_ep: int, character_name: str,
-                          current_text: str, prev_text: str = "") -> ContinuityReport:
+    def check_continuity(
+        self, current_ep: int, character_name: str, current_text: str, prev_text: str = ""
+    ) -> ContinuityReport:
         """全ての話間整合性チェックを実行する。"""
         all_issues: List[str] = []
         checked = []
@@ -1781,47 +2569,99 @@ class EroticIntegrityChecker:
 
         for char in chars_to_check:
             # 体力チェック
-            all_issues.extend(self.continuity_tracker.check_stamina_continuity(current_ep, char, current_text))
-            all_issues.extend(self.continuity_tracker.check_recovery_description(current_ep, char, current_text))
-            all_issues.extend(self.continuity_tracker.check_stamina_jump(current_ep, char, current_text))
+            all_issues.extend(
+                self.continuity_tracker.check_stamina_continuity(current_ep, char, current_text)
+            )
+            all_issues.extend(
+                self.continuity_tracker.check_recovery_description(current_ep, char, current_text)
+            )
+            all_issues.extend(
+                self.continuity_tracker.check_stamina_jump(current_ep, char, current_text)
+            )
 
             # 心理チェック
-            all_issues.extend(self.continuity_tracker.check_psych_continuity(current_ep, char, current_text))
-            all_issues.extend(self.continuity_tracker.check_psych_trigger(current_ep, char, current_text))
-            all_issues.extend(self.continuity_tracker.check_psych_jump(current_ep, char, current_text))
+            all_issues.extend(
+                self.continuity_tracker.check_psych_continuity(current_ep, char, current_text)
+            )
+            all_issues.extend(
+                self.continuity_tracker.check_psych_trigger(current_ep, char, current_text)
+            )
+            all_issues.extend(
+                self.continuity_tracker.check_psych_jump(current_ep, char, current_text)
+            )
 
             # 衣服チェック
-            all_issues.extend(self.continuity_tracker.check_clothing_continuity(current_ep, char, current_text))
+            all_issues.extend(
+                self.continuity_tracker.check_clothing_continuity(current_ep, char, current_text)
+            )
 
             # 場所チェック
-            all_issues.extend(self.continuity_tracker.check_location_continuity(current_ep, char, current_text))
+            all_issues.extend(
+                self.continuity_tracker.check_location_continuity(current_ep, char, current_text)
+            )
 
             # 一般シーン整合性チェック
-            all_issues.extend(self.scene_continuity_tracker.check_all_continuity(current_ep, char, current_text))
+            all_issues.extend(
+                self.scene_continuity_tracker.check_all_continuity(current_ep, char, current_text)
+            )
 
         # ペア関係性チェック（2人以上のキャラクターが指定された場合）
         if len(chars_to_check) >= 2:
             # ペア表記をソートして一意にする
             pair_name = ":".join(sorted(chars_to_check))
             for char in chars_to_check:
-                all_issues.extend(self.continuity_tracker.check_intimacy_regression(current_ep, char, current_text))
-                all_issues.extend(self.continuity_tracker.check_intimacy_rush(current_ep, char, current_text))
-                all_issues.extend(self.continuity_tracker.check_intimacy_vs_erotic_level(current_ep, char, current_text))
-            
+                all_issues.extend(
+                    self.continuity_tracker.check_intimacy_regression(
+                        current_ep, char, current_text
+                    )
+                )
+                all_issues.extend(
+                    self.continuity_tracker.check_intimacy_rush(current_ep, char, current_text)
+                )
+                all_issues.extend(
+                    self.continuity_tracker.check_intimacy_vs_erotic_level(
+                        current_ep, char, current_text
+                    )
+                )
+
             # ペア単位の親密度チェック
-            all_issues.extend(self.continuity_tracker.check_intimacy_regression(current_ep, pair_name, current_text))
-            all_issues.extend(self.continuity_tracker.check_intimacy_rush(current_ep, pair_name, current_text))
-            all_issues.extend(self.continuity_tracker.check_intimacy_vs_erotic_level(current_ep, pair_name, current_text))
+            all_issues.extend(
+                self.continuity_tracker.check_intimacy_regression(
+                    current_ep, pair_name, current_text
+                )
+            )
+            all_issues.extend(
+                self.continuity_tracker.check_intimacy_rush(current_ep, pair_name, current_text)
+            )
+            all_issues.extend(
+                self.continuity_tracker.check_intimacy_vs_erotic_level(
+                    current_ep, pair_name, current_text
+                )
+            )
             checked.append("intimacy_pair")
         else:
             # 単一キャラの場合でも自己親密度（あるいはデフォルトペア）のチェックを実行
-            all_issues.extend(self.continuity_tracker.check_intimacy_regression(current_ep, character_name, current_text))
-            all_issues.extend(self.continuity_tracker.check_intimacy_rush(current_ep, character_name, current_text))
-            all_issues.extend(self.continuity_tracker.check_intimacy_vs_erotic_level(current_ep, character_name, current_text))
+            all_issues.extend(
+                self.continuity_tracker.check_intimacy_regression(
+                    current_ep, character_name, current_text
+                )
+            )
+            all_issues.extend(
+                self.continuity_tracker.check_intimacy_rush(
+                    current_ep, character_name, current_text
+                )
+            )
+            all_issues.extend(
+                self.continuity_tracker.check_intimacy_vs_erotic_level(
+                    current_ep, character_name, current_text
+                )
+            )
             checked.append("intimacy_single")
 
         if prev_text:
-            all_issues.extend(self.continuity_tracker.check_environment_consistency(prev_text, current_text))
+            all_issues.extend(
+                self.continuity_tracker.check_environment_consistency(prev_text, current_text)
+            )
 
         checked.extend(["stamina", "psychology", "clothing", "location"])
 
@@ -1833,8 +2673,9 @@ class EroticIntegrityChecker:
             episode_num=current_ep,
         )
 
-    def finalize_episode(self, character_name: str, episode_num: int,
-                          scene_text: str) -> CharacterStateSnapshot:
+    def finalize_episode(
+        self, character_name: str, episode_num: int, scene_text: str
+    ) -> CharacterStateSnapshot:
         """エピソード完了時にスナップショットを自動保存する。"""
         # カンマ、ハイフン、コロン等で区切られたペア名対応
         chars_to_save = []
@@ -1850,11 +2691,9 @@ class EroticIntegrityChecker:
         last_snap = None
         for char in chars_to_save:
             # 既存のキャラクター状態スナップショットを保存
-            snapshot = self.continuity_tracker.extract_snapshot(
-                char, episode_num, scene_text
-            )
+            snapshot = self.continuity_tracker.extract_snapshot(char, episode_num, scene_text)
             self.continuity_tracker.save_snapshot(snapshot)
-            
+
             # 一般シーン状態スナップショットを保存
             scene_snap = self.scene_continuity_tracker.extract_snapshot(scene_text)
             # 保存用にメタデータを付与
@@ -1862,7 +2701,7 @@ class EroticIntegrityChecker:
             scene_snap.episode_num = episode_num
             # シーン種別の判定
             scene_snap.scene_type = SceneTypeDetector().detect(scene_text)
-            
+
             self.scene_continuity_tracker.save_snapshot(scene_snap)
             last_snap = snapshot
 
@@ -1876,9 +2715,14 @@ class EroticIntegrityChecker:
 
         return last_snap
 
-    def check_all(self, scene_text: str, consent_state: str = "implicit",
-                  current_ep: int = 0, character_name: str = "",
-                  prev_text: str = "") -> Tuple[bool, List[str], Optional[EroticQualityReport], Optional[ContinuityReport]]:
+    def check_all(
+        self,
+        scene_text: str,
+        consent_state: str = "implicit",
+        current_ep: int = 0,
+        character_name: str = "",
+        prev_text: str = "",
+    ) -> Tuple[bool, List[str], Optional[EroticQualityReport], Optional[ContinuityReport]]:
         """
         全整合性チェックを実行し、官能品質と話間整合性も評価する。
 

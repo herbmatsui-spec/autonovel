@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel, ValidationInfo, field_validator
@@ -18,7 +19,7 @@ class BookDbModel(BaseModel):
     target_eps:       Optional[int]              = None
     style_dna:        Optional[Union[dict, str]] = None
     status:           Optional[str]              = None
-    created_at:       Optional[str]              = None
+    created_at:       Optional[datetime]         = None
     marketing_data:   Optional[Union[dict, str]] = None
     cumulative_tension: Optional[int]             = 0
     cumulative_qol:    Optional[int]             = 0
@@ -70,7 +71,7 @@ class BranchDbModel(BaseModel):
     name:             str
     parent_id:        Optional[int] = None
     fork_ep_num:      Optional[int] = 0
-    created_at:       Optional[str] = None
+    created_at:       Optional[datetime] = None
 
     model_config = MODEL_CONFIG_DEFAULTS
 
@@ -155,7 +156,7 @@ class ChapterDbModel(BaseModel):
     world_state:       Optional[Union[dict, str]] = None
     trinity_review_log: Optional[Union[dict, str]] = None
     ai_insight:        Optional[str]              = None
-    created_at:        Optional[str]              = None
+    created_at:        Optional[datetime]         = None
     tension_delta:      Optional[int]              = 0
     qol_delta:         Optional[int]              = 0
 
