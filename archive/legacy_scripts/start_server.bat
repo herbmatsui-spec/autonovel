@@ -9,6 +9,5 @@ if exist ".venv\Scripts\activate.bat" (
     call venv\Scripts\activate.bat
 )
 
-cd backend
-python -m uvicorn server:app --port 8000 --reload
+python -m uvicorn src.backend.server:app --port 8001 --reload
 pause

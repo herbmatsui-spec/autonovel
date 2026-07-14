@@ -114,9 +114,7 @@ def configure_cors(app: FastAPI):
 
 configure_cors(app)
 
-from src.backend.routers import (
-    health, books, plots, episodes, tasks, patches, issues, marketing, prompt_versions, metrics, misc
-)
+from src.backend.routers import commercial, health, books, plots, episodes, tasks, patches, issues, marketing, prompt_versions, metrics, misc, novel
 
 app.include_router(health.router)
 app.include_router(books.router)
@@ -129,7 +127,8 @@ app.include_router(marketing.router)
 app.include_router(prompt_versions.router)
 app.include_router(metrics.router)
 app.include_router(misc.router)
-
+app.include_router(novel.router)
+app.include_router(commercial.router)
 
 
 

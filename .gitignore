@@ -16,6 +16,24 @@ temp_extract/
 temp_restore/
 temp_restore_zip/
 
+# Scratch / one-off scripts and outputs (kept under archive/ when needed)
+tmp_*
+scratch*
+*_out.txt
+*_output.txt
+*.log
+async_methods.txt
+check_result.txt
+implementation_summary.txt
+integration_out.txt
+launch_test_out.txt
+models_list.txt
+pytest_out.txt
+test_result.txt
+workflow_debug.txt
+workflow_error.txt
+run_output.log
+
 # Node
 node_modules/
 dist/

@@ -9,6 +9,5 @@ if exist ".venv\Scripts\activate.bat" (
     call venv\Scripts\activate.bat
 )
 
-cd backend
-python -m huey.bin.huey_consumer tasks.huey
+python -m huey.bin.huey_consumer src.backend.tasks.huey
 pause

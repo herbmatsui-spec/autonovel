@@ -1,6 +1,42 @@
-# ⚔️ 覇権小説エンジン v3.0 - 利用マニュアル & ヘルプ
+# ⚔️ 覇権小説エンジン v3.0
 
-「覇権小説エンジン v3.0」は、生成AI（Gemini API）を活用し、Web小説プラットフォーム（カクヨム等）でランキング上位を狙える小説を自動・半自動で執筆・管理するための総合支援ツールです。
+「覇権小説エンジン v3.0」は、生成AI（Google Gemini）を活用し、Web小説プラットフォーム（カクヨム等）でランキング上位を狙える小説を自動・半自動で執筆・管理するための総合支援ツールです。
+
+Python パッケージ名: `kaku-hegemony` (v3.0.0)
+
+---
+
+## 🧱 システム構成
+
+本ツールは **FastAPI バックエンド** と **Streamlit UI** の 2 層構成です。重い生成処理は **Huey タスクワーカー**（Redis バックエンド、非導入時は SQLite へフォールバック）で非同期に実行されます。
+
+| コンポーネント | 役割 | 既定ポート |
+| --- | --- | --- |
+| `src/backend/server.py` | FastAPI バックエンド（REST API + SSE 進捗配信） | `8200` |
+| `streamlit_app/app.py` | Streamlit UI（メインの操作画面） | `8501` |
+| `src/backend/tasks.py` | Huey タスクワーカー（非同期生成パイプライン） | — |
+| `src/services/vector_store.py` | ChromaDB（RAG / 文体ラボ等のベクトル検索） | — |
+| `src/backend/database/` | SQLAlchemy + Alembic マイグレーション（既定は SQLite） | — |
+
+> **UI について**: `frontend/` に React + TypeScript (Vite) の足場がありますが、**実装は未着手**です（段階的に Streamlit から React へ移行予定、[ADR-0003](docs/adr/0003-streamlit-coexistence-strategy.md) 参照）。現時点で実際に動作する UI は Streamlit のみです。
+
+### ディレクトリ構成（抜粋）
+
+```
+src/
+  backend/     FastAPI サーバー・ルーター・エンジン・ワーカー
+  services/    LLM / ベクトルストア / ビジネスロジック
+  agents/      AI オーケストレーション（ADR-0002）
+  core/        監査可能性（Trace ID 等）・例外・共通ユーティリティ
+  domain/      ドメインモデル
+  llm/         Gemini クライアント・モデル選択
+  infrastructure/  API クライアント・DI コンテナ
+  models/      Pydantic スキーマ
+config/        設定・CORS・DI コンテナ
+prompts/       プロンプトテンプレート
+schemas/       データスキーマ定義
+streamlit_app/ UI エントリ
+```
 
 ---
 
@@ -19,7 +55,7 @@
 *   **プロット管理**: エピソードごとのあらすじ、登場キャラクター、目標の感情値の編集・閲覧。
 *   **本文執筆**: 「情熱（Passion）」パラメータや「高解像度化（五感・心理描写の強化）」トグルを用いた、AIによる高品質な文章生成。
 *   **監査・チケット管理**: 整合性のチェックやアンチパターンの検知を行い、未解決の課題を「チケット（Issue）」として管理・修正。
-*   **文体ラボ**: キャラクター別の描写拡張テーマ（例：主人公のフェティッシュなこだわり、ヒロインの微細な嫉妬など）のカスタマイズ。
+*   **文体ラボ**: キャラクター別の描写拡張テーマのカスタマイズ（RAG による類似文体検索を活用）。
 *   **プロット再構築**: 途中でストーリーを変更したい場合に、それ以降のプロットを一貫性を保ったまま自動で再生成。
 
 ---
@@ -27,17 +63,58 @@
 ## 🛠️ 動作要件・セットアップ
 
 ### 1. 前提条件
-*   **Python**: 3.10 以上推奨
-*   **Gemini API キー**: Google AI Studio 等から取得した有効な API キーが必要です。
-*   **バックエンドサーバー**: 本ツールは FastAPI バックエンドと通信を行います。
+*   **Python**: 3.10 以上（開発・CI は 3.12 で動作確認）。Docker 環境は Python 3.10 ベースです。
+*   **Google Gemini API キー**: Google AI Studio 等から取得した有効な API キーが必要です（環境変数 `GEMINI_API_KEY`、または UI から入力）。
+*   **（任意）Redis**: タスクワーカー用。未導入の場合は SQLite へフォールバックします。
+*   **（任意）ChromaDB**: ベクトル検索（RAG）用。未導入の場合は機能が無効化されます。
 
-### 2. クイックスタート
-1.  **起動バッチファイルの実行**:
-    プロジェクトルートにある `start_app.bat`（または `run_app.bat`）を実行します。これにより、バックエンドサーバーと Streamlit アプリケーションが起動します。
-2.  **ブラウザでアクセス**:
-    通常、自動的にブラウザが立ち上がり `http://localhost:8501` に接続されます。
-3.  **APIキーの入力**:
-    画面左側のサイドバー上部にある「🔑 Gemini API Key」に入力して認証します。
+### 2. Docker での起動（推奨）
+
+`docker-compose.yml` にバックエンド（`:8200`）と Streamlit（`:8501`）の両方が定義されています。
+
+```bash
+# 任意: 環境変数を .env に用意（GEMINI_API_KEY など）
+cp .env.example .env
+
+docker compose up --build
+```
+
+起動後:
+*   Streamlit UI: http://localhost:8501
+*   Backend API:  http://localhost:8200 （`/docs` で Swagger UI を確認可）
+
+### 3. ローカルでの起動
+
+```bash
+# 依存関係のインストール
+pip install -r requirements.txt
+
+# 環境変数（例）
+export GEMINI_API_KEY="your-api-key"
+export PYTHONPATH="$(pwd)"
+
+# 1) バックエンド API
+uvicorn src.backend.server:app --host 127.0.0.1 --port 8200
+
+# 2) タスクワーカー (Huey)
+python -m huey.bin.huey_consumer src.backend.tasks.huey
+
+# 3) Streamlit UI
+streamlit run streamlit_app/app.py --server.port 8501
+```
+
+Windows の場合は `start_app.bat` を実行すると、上記 3 プロセスをまとめて起動できます。
+
+### 4. 環境変数
+
+| 変数 | 説明 | 既定値 |
+| --- | --- | --- |
+| `GEMINI_API_KEY` | Google Gemini API キー | — |
+| `DATABASE_URL` | DB 接続先（SQLAlchemy）。未指定時はローカル SQLite | `sqlite+aiosqlite:///./kaku_hegemony_v2.db` |
+| `REDIS_URL` | Huey ワーカー用 Redis | `redis://localhost:6379/0`（未接続時は SQLite へフォールバック） |
+| `CHROMA_URL` | ChromaDB エンドポイント（任意） | ローカル永続化 |
+| `CORS_ALLOWED_ORIGINS` | 許可するオリジン（カンマ区切り / JSON 配列） | `http://localhost:5173,http://localhost:8501` |
+| `API_URL` | Streamlit が参照するバックエンド URL（Docker 内は `http://backend:8200`） | `http://localhost:8200/api` |
 
 ---
 
@@ -54,3 +131,34 @@
 3.  **プロット調整**: 「📖 プロット管理」タブで、生成された各話のプロット（感情値やキャラクターの動き）をレビュー・修正します。
 4.  **執筆**: 「✍️ 本文執筆」タブからエピソードを指定し、目標文字数や表現スタイル（情熱度など）を設定して「執筆開始」をクリックします。
 5.  **監査と修正**: 「⚖️ 監査・チケット管理」タブで物語の矛盾点を検知し、必要に応じてプロットや本文を修正します。
+
+---
+
+## 🧪 テスト・品質管理
+
+CI（`.github/workflows/ci.yml`）は lint（ruff）、型検査（mypy）、ユニット／統合テスト（pytest）を実行します。
+
+```bash
+# Lint / フォーマット確認
+ruff check src/ streamlit_app/ tests/
+ruff format --check .
+
+# 型検査
+mypy --config-file pyproject.toml src/ streamlit_app/
+
+# テスト（ユニット / 統合）
+pytest tests/unit -q
+pytest tests/integration tests/test_vector_store_lifecycle.py -q
+```
+
+統合テストは ChromaDB（`chroma:0.5.5`）と Redis（`redis:7`）のコンテナを必要とします。詳細は CI ワークフローを参照してください。
+
+---
+
+## 📚 ドキュメント
+
+*   アーキテクチャ方針: [docs/adr/0001-architecture-refactoring-policy.md](docs/adr/0001-architecture-refactoring-policy.md)
+*   AI オーケストレーション: [docs/adr/0002-ai-orchestration-framework.md](docs/adr/0002-ai-orchestration-framework.md)
+*   UI の共存・移行方針: [docs/adr/0003-streamlit-coexistence-strategy.md](docs/adr/0003-streamlit-coexistence-strategy.md)
+*   プラグインシステム: [docs/adr/002-plugin-system.md](docs/adr/002-plugin-system.md)
+*   エンジンの仲介レイヤ: [docs/adr/003-engine-mediator.md](docs/adr/003-engine-mediator.md)
