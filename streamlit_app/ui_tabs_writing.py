@@ -14,7 +14,7 @@ from streamlit_app.state import UIStateStore
 # UIStateStore ヘルパー
 # ----------------------------------------------------------------------
 def get_ui(key: str, default: Any = None) -> Any:
-    return UIStateStore.get_ui_state_value(key, default)
+    return UIStateStore().get_ui_state_value(key, default)
 
 def set_ui(**kwargs) -> None:
     UIStateStore().update_ui_state(**kwargs)

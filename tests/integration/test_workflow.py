@@ -48,15 +48,43 @@ async def test_full_auto_workflow_easy_mode(real_db_manager, mock_llm):
     })
 
     mock_llm.add_json_response("gemma-4-31b-it", {
-        "title": "テスト小説：追放された最強の剣士",
-        "concept": "追放からの成り上がり",
-        "plot_summary": "主人公が追放されるが、真の力に目覚める物語。",
-        "characters": [
-            {"name": "アレン", "role": "主人公", "profile": "元SSSランク剣士。理不尽に追放された。"},
-            {"name": "リリア", "role": "ヒロイン", "profile": "アレンを支える魔導士。"}
-        ],
-        "roadmap": [
-            {"ep_num": 1, "title": "理不尽な追放", "synopsis": "アレンはギルドから追放される。"}
+        "plots": [
+            {
+                "ep_num": 1,
+                "thought_process": "展開思考",
+                "title": "プロット第1話",
+                "one_line_summary": "ギルドから理不尽に追放されるアレン。",
+                "detailed_blueprint": "詳細設計図...",
+                "tension": 60,
+                "tension_delta": 10,
+                "catharsis": 0,
+                "is_catharsis": False,
+                "love_meter": 0,
+                "catharsis_type": "なし",
+                "next_hook": {"type": "New Crisis", "description": "次の危機"},
+                "misunderstanding_gap": "なし",
+                "current_chain_phase": "Friction",
+                "emotional_payoff": "なし",
+                "resolution_style": "Cheat",
+                "burned_cost_or_loot": "なし",
+                "thematic_milestone": "なし",
+                "antagonist_status": "現状維持",
+                "scenes": [
+                    {
+                        "scene_number": 1,
+                        "action": "アレンがギルドを去るシーン。",
+                        "dialogue_point": "ギルドマスターとアレンの会話。",
+                        "dramatic_function": "導入",
+                        "emotional_payoff": "なし",
+                        "beats": [
+                            {"beat_type": "導入", "action_description": "ギルドのドアが閉まる。", "sensory_keywords": [], "psychology_keywords": []}
+                        ],
+                        "bridge_instruction": "",
+                        "impact_score": 70,
+                        "psychological_layer": "アレンは悲しんでいる。"
+                    }
+                ]
+            }
         ]
     })
 
@@ -187,14 +215,43 @@ async def test_full_auto_workflow_normal_mode(real_db_manager, mock_llm):
     })
 
     mock_llm.add_json_response("gemma-4-31b-it", {
-        "title": "テスト小説：通常モード検証",
-        "concept": "通常モード",
-        "plot_summary": "通常モードのテスト実行用プロット。",
-        "characters": [
-            {"name": "アレン", "role": "主人公", "profile": "元SSSランク剣士。"},
-        ],
-        "roadmap": [
-            {"ep_num": 1, "title": "理不尽な追放", "synopsis": "アレンはギルドから追放される。"}
+        "plots": [
+            {
+                "ep_num": 1,
+                "thought_process": "通常モード展開思考",
+                "title": "プロット第1話",
+                "one_line_summary": "ギルドから理不尽に追放されるアレン。",
+                "detailed_blueprint": "詳細設計図...",
+                "tension": 60,
+                "tension_delta": 10,
+                "catharsis": 0,
+                "is_catharsis": False,
+                "love_meter": 0,
+                "catharsis_type": "なし",
+                "next_hook": {"type": "New Crisis", "description": "次の危機"},
+                "misunderstanding_gap": "なし",
+                "current_chain_phase": "Friction",
+                "emotional_payoff": "なし",
+                "resolution_style": "Cheat",
+                "burned_cost_or_loot": "なし",
+                "thematic_milestone": "なし",
+                "antagonist_status": "現状維持",
+                "scenes": [
+                    {
+                        "scene_number": 1,
+                        "action": "アレンがギルドを去るシーン。",
+                        "dialogue_point": "会話。",
+                        "dramatic_function": "導入",
+                        "emotional_payoff": "なし",
+                        "beats": [
+                            {"beat_type": "導入", "action_description": "ドアが閉まる。", "sensory_keywords": [], "psychology_keywords": []}
+                        ],
+                        "bridge_instruction": "",
+                        "impact_score": 70,
+                        "psychological_layer": "悲しみ。"
+                    }
+                ]
+            }
         ]
     })
 
