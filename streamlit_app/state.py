@@ -187,8 +187,6 @@ from streamlit_app.stores import (
 
 class UIStateStore(JobStore, PollStateStore, ToastStore, SessionStore):
     """UI state store implementation."""
-    
-    _subscribers: dict[str, list[Callable]] = {}
 
     @property
     def ui_state(self) -> UIState:
@@ -211,7 +209,7 @@ class UIStateStore(JobStore, PollStateStore, ToastStore, SessionStore):
                 setattr(state, key, value)
             else:
                 state.form_data[key] = value
-            self._notify_subscribers(key, value)
+            self._notify(key, value)
 
     def get_ui_state_value(self, key: str, default: Any = None) -> Any:
         """
@@ -255,19 +253,3 @@ class UIStateStore(JobStore, PollStateStore, ToastStore, SessionStore):
         モーダル表示フラグを取得する。
         """
         return self.get_ui_state_value("show_modal", False)
-
-    @classmethod
-    def subscribe(cls, key: str, callback: Callable) -> Callable:
-        """状態変更時のコールバック登録"""
-        if key not in cls._subscribers:
-            cls._subscribers[key] = []
-        cls._subscribers[key].append(callback)
-        return lambda: cls._subscribers[key].remove(callback)
-
-    @classmethod
-    def _notify_subscribers(cls, key: str, value: Any) -> None:
-        for callback in cls._subscribers.get(key, []):
-            try:
-                callback(value)
-            except Exception:
-                pass

@@ -81,11 +81,12 @@ class BaseStore:
         SessionManager.save_state(get_session())
 
     @staticmethod
-    def subscribe(key: str, callback: Callable[[Any], None]) -> None:
+    def subscribe(key: str, callback: Callable[[Any], None]) -> Callable[[], None]:
         """特定のキーの値が変更されたときに呼び出されるコールバックを登録する"""
         if key not in BaseStore._subscribers:
             BaseStore._subscribers[key] = []
         BaseStore._subscribers[key].append(callback)
+        return lambda: BaseStore._subscribers[key].remove(callback)
 
     @staticmethod
     def _notify(key: str, value: Any) -> None:
