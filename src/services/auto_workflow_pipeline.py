@@ -105,7 +105,7 @@ class PlanStep(WorkflowStep):
                 pass  # Silent fail for visualization
 
             # 健全性チェック
-            if engine.planner.plan_auditor and not await engine.planner.plan_auditor.audit_bible_completeness(bible, reporter=reporter):
+            if getattr(engine.planner, "plan_auditor", None) and not await engine.planner.plan_auditor.audit_bible_completeness(bible, reporter=reporter):
                 # We stop the pipeline
                 return False
 

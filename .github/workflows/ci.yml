@@ -78,7 +78,6 @@ jobs:
   format-check:
     runs-on: ubuntu-latest
     needs: [changed-files]
-    if: ${{ needs.changed-files.outputs.files != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -87,12 +86,17 @@ jobs:
           cache: "pip"
       - run: pip install ruff
       - name: Ruff format check (changed files)
-        run: ruff format --check ${{ needs.changed-files.outputs.files }}
+        run: |
+          FILES="${{ needs.changed-files.outputs.files }}"
+          if [ -z "$FILES" ]; then
+            echo "No changed Python files; skipping format check."
+            exit 0
+          fi
+          ruff format --check $FILES
 
   lint-new:
     runs-on: ubuntu-latest
     needs: [changed-files]
-    if: ${{ needs.changed-files.outputs.files != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -101,7 +105,13 @@ jobs:
           cache: "pip"
       - run: pip install ruff
       - name: Lint (ruff, changed files only)
-        run: ruff check ${{ needs.changed-files.outputs.files }}
+        run: |
+          FILES="${{ needs.changed-files.outputs.files }}"
+          if [ -z "$FILES" ]; then
+            echo "No changed Python files; skipping lint."
+            exit 0
+          fi
+          ruff check $FILES
 
   # --- Test execution (gated by the blocking format/lint gates) ---
   unit-test:

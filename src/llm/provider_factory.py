@@ -5,6 +5,7 @@ from google import genai
 from src.backend.engine_utils import AdaptiveCooldown
 from src.llm.base import LLMProvider
 from src.llm.gemini_provider import GeminiProvider
+from src.llm.model_router import is_openai_compatible
 from src.llm.openai_provider import OpenAIProvider
 
 
@@ -24,10 +25,8 @@ class LLMProviderFactory:
         """
         モデル名から最適なプロバイダーを選択して返す。
         """
-        model_lower = model_name.lower()
-
-        # OpenAI互換 (GPT, Claude-via-OpenRouter, Llama etc.)
-        if any(x in model_lower for x in ["gpt", "claude", "llama", "mistral", "qwen"]):
+        # OpenAI互換 (OpenRouter 等の "org/model" 形式や、gpt/claude/llama 等)
+        if is_openai_compatible(model_name):
             return self._providers["openai"]
 
         # デフォルトは Gemini

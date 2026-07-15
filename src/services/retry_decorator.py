@@ -233,10 +233,10 @@ def with_llm_retry():
                                 MODEL_ULTRA_STABLE = MODEL_STABLE_FALLBACK
 
                             if state.model_name != MODEL_ULTRA_STABLE and (state.attempt >= 2 or state.model_name == MODEL_STABLE_FALLBACK):
-                                state.model_name = MODEL_ULTRA_STABLE if MODEL_ULTRA_STABLE else "gemini-2.0-flash"
+                                state.model_name = MODEL_ULTRA_STABLE if MODEL_ULTRA_STABLE else "gemini-3.1-flash-lite"
                                 logger.warning(f"[Gemini FALLBACK] Persistent 5xx. Switching to ULTRA_STABLE: {state.model_name}")
                             elif state.model_name != MODEL_STABLE_FALLBACK and MODEL_STABLE_FALLBACK != state.original_model_name:
-                                state.model_name = MODEL_STABLE_FALLBACK if MODEL_STABLE_FALLBACK else "gemini-2.0-flash"
+                                state.model_name = MODEL_STABLE_FALLBACK if MODEL_STABLE_FALLBACK else "gemini-3.1-flash-lite"
                                 logger.warning(f"[Gemini FALLBACK] 5xx detected. Switching to STABLE_FALLBACK: {state.model_name}")
 
                     await asyncio.sleep(wait_time)

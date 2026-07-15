@@ -33,6 +33,12 @@ class GlobalConfigModel(BaseModel):
     model_ultra_stable: str = "gemma-4-31b-it"
     model_embedding: str = "text-embedding-004"
 
+    # ===================== OpenAI互換プロバイダ設定 (OpenRouter等) =====================
+    # OpenAI互換エンドポイント (OpenRouter: https://openrouter.ai/api/v1)
+    openai_base_url: str = "https://openrouter.ai/api/v1"
+    # OpenAI互換プロバイダのAPIキー (OpenRouterの場合は sk-or-... )
+    openai_api_key: str = ""
+
     # ===================== データベース設定 =====================
     database_url: Optional[str] = None  # 例: "postgresql://..." 環境変数 DATABASE_URL で上書き可
 
@@ -127,6 +133,8 @@ class GlobalConfigModel(BaseModel):
         "KAKU_MODEL_STABLE_FALLBACK": "model_stable_fallback",
         "KAKU_MODEL_ULTRA_STABLE": "model_ultra_stable",
         "KAKU_MODEL_EMBEDDING": "model_embedding",
+        "KAKU_OPENAI_BASE_URL": "openai_base_url",
+        "KAKU_OPENAI_API_KEY": "openai_api_key",
         "KAKU_REDIS_MAX_CONNECTIONS": "redis_max_connections",
         "KAKU_REDIS_DEFAULT_TTL": "redis_default_ttl",
         "KAKU_REDIS_NAMESPACE": "redis_namespace",

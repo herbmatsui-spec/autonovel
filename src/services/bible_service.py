@@ -124,7 +124,7 @@ class WorldBibleGenerator:
             style_key=config.style_key,
             engine_key=config.engine_key,
         )
-        res = await self.llm.generate_json("gemini-2.0-flash", prompt, response_schema=UltraFastWorldBible, reporter=reporter)
+        res = await self.llm.generate_json("gemini-3.1-flash-lite", prompt, response_schema=UltraFastWorldBible, reporter=reporter)
         if not res.success:
             raise RuntimeError(f"超高速設定生成に失敗しました: {res.error_message}")
 

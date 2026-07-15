@@ -13,33 +13,38 @@ sys.modules["streamlit"] = mock_st
 
 # ターゲット関数のインポート
 
-def test_fragments_decorators():
+
+def test_render_novel_production_tab_defined():
     """
-    各関数に @st.fragment デコレータが適用されているかを確認する。
-    """
-    import streamlit_app.ui_tabs_writing as ui_writing
-    source = inspect.getsource(ui_writing)
-
-    # デコレータが存在することを確認
-    assert "@st.fragment" in source, "@st.fragment decorator should be present in the source code"
-
-    # 各関数の定義の前に @st.fragment が記述されているかを検証
-    #- 空白を正規化（1つに）してチェック
-    import re
-    normalized_source = re.sub(r'\s+', ' ', source)
-
-    assert "@st.fragment def render_plot_tab" in normalized_source, "render_plot_tab should have @st.fragment"
-    assert "@st.fragment def render_episode_list" in normalized_source, "render_episode_list should have @st.fragment"
-    assert "@st.fragment def render_import_tab" in normalized_source, "render_import_tab should have @st.fragment"
-
-def test_render_writing_tab_calls_episode_list():
-    """
-    render_writing_tab が render_episode_list を呼び出していることを確認する。
+    render_novel_production_tab が定義され、呼び出し可能であることを確認する。
+    （ui_tabs_writing.py は複数の fragment 関数を単一の
+     render_novel_production_tab に統合済み。旧テストが期待していた
+     render_plot_tab / render_episode_list / render_import_tab /
+     render_writing_tab は存在しない。）
     """
     import streamlit_app.ui_tabs_writing as ui_writing
-    source = inspect.getsource(ui_writing.render_writing_tab)
 
-    assert "render_episode_list(" in source, "render_writing_tab must call render_episode_list to ensure partial updates"
+    assert hasattr(ui_writing, "render_novel_production_tab"), (
+        "render_novel_production_tab must be defined"
+    )
+    assert callable(ui_writing.render_novel_production_tab), (
+        "render_novel_production_tab must be callable"
+    )
+
+
+def test_render_novel_production_tab_calls_commercial_api():
+    """
+    render_novel_production_tab が商用化パイプラインの API
+    (/api/commercial/run) を呼び出すことを確認する。
+    """
+    import streamlit_app.ui_tabs_writing as ui_writing
+
+    source = inspect.getsource(ui_writing.render_novel_production_tab)
+
+    assert "/api/commercial/run" in source, (
+        "render_novel_production_tab must call the commercial pipeline API"
+    )
+
 
 if __name__ == "__main__":
     pytest.main([__file__])

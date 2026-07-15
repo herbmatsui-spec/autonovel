@@ -112,7 +112,13 @@ class AppContainer(containers.DeclarativeContainer):
         "src.agents.plot.PlotAgent",
         repo=repo,
         pm=pm,
-        generate_json=llm.provided.generate_json
+        generate_json=llm.provided.generate_json,
+        plot_expander=providers.Singleton(
+            "src.services.default_plot_expander.DefaultPlotExpander",
+            repo=repo,
+            pm=pm,
+            llm=llm,
+        ),
     )
     planner = providers.Singleton(
         "src.agents.PlanningAgent",
@@ -152,7 +158,8 @@ class AppContainer(containers.DeclarativeContainer):
         repo=repo,
         llm=llm,
         prompt_manager=pm,
-        style_rag=style_rag
+        style_rag=style_rag,
+        plot_expander=plot_expander,
     )
     formatter = providers.Singleton(
         "src.backend.sanitizer.TextFormatter"

@@ -119,12 +119,24 @@ def run_in_background(workflow_type: WorkflowType, **kwargs) -> ProgressStatePro
     """
     バックグラウンドワークフローを動的に解決して実行する。
     """
-    from streamlit_app.state import get_session
+    from streamlit_app.state import UIStateStore, get_session
 
     # セッション状態から共通パラメータを取得
     session = get_session()
     api_key = session.api_key
-    config = session.config
+
+    # session.config (NSFW/官能設定等) に、サイドバーで選択された
+    # グローバル設定 (config_data: モデル選択・OpenRouter設定等) をマージして送信する。
+    # これにより、バックエンドワーカーがプロセスキャッシュに関係なく
+    # 最新のモデル選択を確実に反映できる。
+    config = dict(session.config or {})
+    try:
+        runtime_cfg = UIStateStore.get_runtime().config_data or {}
+        for key, value in runtime_cfg.items():
+            # session.config 側で明示的に設定済みの値は上書きしない
+            config.setdefault(key, value)
+    except Exception:
+        pass
 
     kwargs.update({"api_key": api_key, "config": config})
 

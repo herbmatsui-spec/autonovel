@@ -95,7 +95,7 @@ class DraftingStep(PipelineStep):
                 reporter.report(f"✍️ 第{ep_num}話の本編を執筆中...", "info")
             count = await agent.generate_episodes(
                 ctx.book_id, ep_num, ep_num, ctx.passion, ctx.target_word_count,
-                False, reporter, ctx.is_easy_mode, branch_id=ctx.branch_id, style_tag=ctx.style_tag
+                ctx.is_easy_mode, reporter, branch_id=ctx.branch_id, style_tag=ctx.style_tag
             )
             if count == 0:
                 raise RuntimeError(f"第{ep_num}話の本文生成結果が空（0文字）です。")

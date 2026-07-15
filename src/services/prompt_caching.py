@@ -43,7 +43,7 @@ class PromptCacheManager:
         self,
         cache_key: str,
         contents: list,
-        model_name: str = "gemini-2.0-flash",
+        model_name: str = "gemini-3.1-flash-lite",
         ttl_minutes: int = 60
     ) -> caching.CachedContent:
         """
@@ -174,7 +174,7 @@ class UnifiedPromptCache:
         self,
         cache_key: str,
         contents: list,
-        model_name: str = "gemini-2.0-flash",
+        model_name: str = "gemini-3.1-flash-lite",
         ttl_minutes: int = 60
     ) -> caching.CachedContent:
         """Gemini Context Cache を取得または作成."""

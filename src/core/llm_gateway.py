@@ -30,12 +30,21 @@ class LLMProviderFactory:
         self.cooldown = cooldown
 
     def get_client(self, provider: str = "gemini"):
+        """モデル名から適切なAPIクライアントを返す。
+
+        OpenRouter 等の OpenAI互換モデルID ("anthropic/claude-3.5-sonnet" 等)
+        や、gpt/claude/llama 等のキーワードを含む場合は OpenAI 互換クライアントを返す。
+        """
+        from src.llm.model_router import is_openai_compatible
+
+        if is_openai_compatible(provider):
+            return OpenAIApiClient(cooldown=self.cooldown)
+
         provider_key = provider.split("-")[0] if "-" in provider else provider
         if provider_key == "gemini":
             return GeminiApiClient(client=self.genai_client, cooldown=self.cooldown)
-        elif provider_key == "openai":
-            return OpenAIApiClient(cooldown=self.cooldown)
-        raise ValueError(f"Unknown provider: {provider}")
+        # デフォルトは Gemini
+        return GeminiApiClient(client=self.genai_client, cooldown=self.cooldown)
 
     def get_available_providers(self) -> List[str]:
         """Get list of available providers"""
@@ -143,12 +152,12 @@ class LLMGenerateResultProxy:
                 def token_usage(self): return self["token_usage"]
             return GenerateResult(response)
         else:
-            from src.llm.model_router import select_model
+            from src.llm.model_router import resolve_model
             purpose = args[0] if len(args) > 0 else kwargs.get('purpose')
             prompt = args[1] if len(args) > 1 else kwargs.get('prompt')
             response_schema = args[2] if len(args) > 2 else kwargs.get('response_schema')
             system_instruction = args[3] if len(args) > 3 else kwargs.get('system_instruction')
-            model_name = select_model(purpose)
+            model_name = resolve_model(purpose)
             
             provider = self.get_client(model_name)
             response = await provider.generate_json(

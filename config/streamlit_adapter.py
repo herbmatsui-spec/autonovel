@@ -25,6 +25,30 @@ from config.project_context import (
 
 logger = logging.getLogger(__name__)
 
+# サイドバーのモデル選択に表示するプリセット一覧。
+# デフォルトの Gemini/Gemma に加え、OpenRouter で利用可能な代表的な
+# OpenAI互換モデルを含める。「/」を含むIDは OpenAI互換プロバイダへルーティングされる。
+PRESET_MODELS = [
+    # デフォルト（Gemini / Gemma）
+    "gemini-3.1-flash-lite",
+    "gemini-3.5-flash",
+    "gemini-3.1-pro",
+    "gemma-4-31b-it",
+    # OpenRouter の人気モデル
+    "anthropic/claude-3.5-sonnet",
+    "anthropic/claude-3.7-sonnet",
+    "openai/gpt-4o",
+    "openai/gpt-4o-mini",
+    "openai/gpt-4.1",
+    "meta-llama/llama-3.3-70b-instruct",
+    "deepseek/deepseek-chat",
+    "qwen/qwen2.5-72b-instruct",
+    "google/gemini-2.0-flash-001",
+]
+
+# モデル選択の「自由入力」オプション
+CUSTOM_MODEL = "✏️ カスタム（自由入力）"
+
 
 class StreamlitConfig(GlobalConfig):
     """
@@ -89,39 +113,68 @@ class StreamlitConfig(GlobalConfig):
             if value is not None:
                 self.set(key, value)
 
-        models = [
-            "gemini-3.1-flash-lite-preview",
-            "gemini-3.1-flash-lite",
-            "gemini-3.5-flash",
-            "gemini-3.1-pro",
-            "gemma-4-31b-it",
-        ]
+        def render_model_selector(config_key: str, label: str, help_text: str) -> None:
+            """用途別モデル選択（プリセット + 自由入力）。"""
+            current = self.get(config_key) or ""
+            options = list(PRESET_MODELS)
+            if current and current not in options:
+                options.append(current)
+            options.append(CUSTOM_MODEL)
+            default_index = options.index(current) if current in options else 0
 
-        curr_planning = self.get("model_planning")
-        if curr_planning and curr_planning not in models:
-            models.append(curr_planning)
-
-        curr_writing = self.get("model_writing")
-        if curr_writing and curr_writing not in models:
-            models.append(curr_writing)
+            choice = st.selectbox(label, options=options, index=default_index, help=help_text)
+            if choice == CUSTOM_MODEL:
+                custom = st.text_input(
+                    f"{label}（カスタム）",
+                    value=current,
+                    key=f"custom_{config_key}",
+                    help="OpenRouter 等のモデルIDを自由に入力できます（例: anthropic/claude-3.5-sonnet）。",
+                )
+                if custom and custom != current:
+                    self.set(config_key, custom)
+            elif choice != current:
+                self.set(config_key, choice)
 
         st.subheader("🤖 モデル設定")
-        st.selectbox(
-            "企画用モデル",
-            options=models,
-            index=models.index(curr_planning) if curr_planning in models else 0,
-            key="cfg_model_planning",
-            on_change=lambda: _sync("model_planning", "cfg_model_planning"),
-            help="企画立案やプロット生成時に使用するAIモデルを選択します。",
+        st.caption("各工程で使用するAIモデルを選択します。OpenRouter等のOpenAI互換モデルも指定可能です。")
+        render_model_selector(
+            "model_planning",
+            "📝 プロット用モデル",
+            "企画立案・プロット生成時に使用するAIモデルを選択します。",
         )
-        st.selectbox(
-            "執筆用モデル",
-            options=models,
-            index=models.index(curr_writing) if curr_writing in models else 0,
-            key="cfg_model_writing",
-            on_change=lambda: _sync("model_writing", "cfg_model_writing"),
-            help="本文執筆（小説生成）時に使用するAIモデルを選択します。",
+        render_model_selector(
+            "model_plot_expansion",
+            "🔍 詳細プロット用モデル",
+            "エピソードごとの詳細プロット展開時に使用するAIモデルを選択します。",
         )
+        render_model_selector(
+            "model_writing",
+            "✍️ 執筆用モデル",
+            "本文執筆（小説生成）時に使用するAIモデルを選択します。",
+        )
+
+        st.divider()
+
+        st.subheader("🔑 OpenRouter / OpenAI互換プロバイダ")
+        st.caption("モデルに OpenAI互換モデル（「/」を含むIDや gpt/claude/llama 等）を選んだ場合に使用します。")
+        openrouter_key = st.text_input(
+            "API Key",
+            type="password",
+            value=self.get("openai_api_key") or "",
+            key="cfg_openai_api_key",
+            help="OpenRouter 等の OpenAI互換 API キー（例: sk-or-...）。",
+        )
+        if openrouter_key != (self.get("openai_api_key") or ""):
+            self.set("openai_api_key", openrouter_key)
+
+        base_url = st.text_input(
+            "API Base URL",
+            value=self.get("openai_base_url") or "https://openrouter.ai/api/v1",
+            key="cfg_openai_base_url",
+            help="OpenAI互換エンドポイント。既定は OpenRouter。",
+        )
+        if base_url != (self.get("openai_base_url") or ""):
+            self.set("openai_base_url", base_url)
 
         st.divider()
 

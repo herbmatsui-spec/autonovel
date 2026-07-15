@@ -12,6 +12,37 @@ from src.core.observability import with_trace_context
 huey = SqliteHuey('kaku_hegemony_v2_huey.db')
 logger = logging.getLogger('huey')
 
+# UI から渡される設定のうち、ワーカーのランタイム設定へ反映を許可するキー。
+# モデル選択と OpenAI互換 (OpenRouter) プロバイダ設定を対象とする。
+_CONFIG_OVERRIDE_KEYS = {
+    "model_planning",
+    "model_plot_expansion",
+    "model_writing",
+    "model_climax",
+    "model_stable_fallback",
+    "model_ultra_stable",
+    "model_embedding",
+    "openai_base_url",
+    "openai_api_key",
+}
+
+
+def _apply_config_overrides(config_dict: Optional[dict]) -> None:
+    """UI から渡された設定 (モデル選択・OpenRouter設定等) をランタイム設定へ反映する。
+
+    ワーカープロセスの設定キャッシュに関係なく、ユーザーが選択した最新の
+    モデル・プロバイダ設定が使用されるようにする。ホワイトリスト外のキーは無視する。
+    """
+    if not config_dict:
+        return
+    try:
+        from config.project_context import ProjectContext
+        for key in _CONFIG_OVERRIDE_KEYS:
+            if key in config_dict and config_dict[key] not in (None, ""):
+                ProjectContext.set_setting(key, config_dict[key])
+    except Exception as e:
+        logger.warning(f"Failed to apply config overrides: {e}")
+
 @huey.task()
 @with_trace_context
 def process_vector_event(event_type: str, payload: dict, trace_id: Optional[str] = None):
@@ -101,9 +132,16 @@ def execute_service_workflow(task_id: str, api_key: str, config_dict: dict, meth
 
     async def _run():
         try:
-            from src.core.container import AppContainer
             from dependency_injector import providers
+
             from config.container import Container
+            from src.core.container import AppContainer
+
+            # UI から渡された設定 (モデル選択・OpenRouter設定等) を
+            # ランタイム設定へ反映する。ワーカープロセスの設定キャッシュに
+            # 関係なく、ユーザーが選択した最新のモデルが使用されるようにする。
+            _apply_config_overrides(config_dict)
+
             container = AppContainer(
                 api_key=providers.Object(api_key),
                 db=providers.Object(Container.db())

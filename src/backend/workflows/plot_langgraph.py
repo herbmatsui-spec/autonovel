@@ -50,7 +50,7 @@ class PlotGraphManager:
     async def node_generate_blueprint(self, state) -> Dict[str, Any]:
         state_dict = self._state_to_dict(state)
         prompt = f"Generate plot blueprint for book {state_dict.get('book_id')}, ep {state_dict.get('ep_num')}"
-        res = await self.generate_json("gemini-2.0-flash", prompt, response_schema=None)
+        res = await self.generate_json("gemini-3.1-flash-lite", prompt, response_schema=None)
         blueprint = res.metadata if res.success else {}
         return {
             "blueprint": blueprint,
