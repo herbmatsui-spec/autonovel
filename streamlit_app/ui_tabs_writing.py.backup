@@ -1,5 +1,5 @@
 """
-src/streamlit_app/ui_tabs_writing.py — 小説生成タブコンポーネント（Streamlit セッション状態統一版）
+src/streamlit_app/ui_tabs_writing.py — 小説生成タブコンポーネント（最終強化版）
 """
 import streamlit as st
 import httpx
@@ -8,28 +8,17 @@ import time
 import uuid
 from typing import Dict, Any
 
-from streamlit_app.state import UIStateStore
-
 # ----------------------------------------------------------------------
-# UIStateStore ヘルパー
+# セッションステートの初期化
 # ----------------------------------------------------------------------
-def get_ui(key: str, default: Any = None) -> Any:
-    return UIStateStore.get_ui_state_value(key, default)
-
-def set_ui(**kwargs) -> None:
-    UIStateStore().update_ui_state(**kwargs)
-
-# ----------------------------------------------------------------------
-# 状態の初期化（UIStateStore経由）
-# ----------------------------------------------------------------------
-if get_ui("commercial_task_id", None) is None:
-    set_ui(commercial_task_id=None)
-if get_ui("report_generated", None) is None:
-    set_ui(report_generated=False)
-if get_ui("api_retry_state", None) is None:
-    set_ui(api_retry_state={"attempts": 0, "max_attempts": 3, "backoff": 1})
-if get_ui("poll_interval", None) is None:
-    set_ui(poll_interval=1)
+if "commercial_task_id" not in st.session_state:
+    st.session_state.commercial_task_id = None
+if "report_generated" not in st.session_state:
+    st.session_state.report_generated = False
+if "api_retry_state" not in st.session_state:
+    st.session_state.api_retry_state = {"attempts": 0, "max_attempts": 3, "backoff": 1}
+if "poll_interval" not in st.session_state:
+    st.session_state.poll_interval = 1
 
 # ----------------------------------------------------------------------
 # ユーティリティ：指数バックオフ付きリトライデコレータ
@@ -37,7 +26,7 @@ if get_ui("poll_interval", None) is None:
 def retry_api(func):
     """API呼び出しを行う際のリトライラッパー"""
     def wrapper(*args, **kwargs):
-        state = get_ui("api_retry_state", {"attempts": 0, "max_attempts": 3, "backoff": 1})
+        state = st.session_state.api_retry_state
         state["attempts"] += 1
         max_attempts = state["max_attempts"]
         backoff = state["backoff"]
@@ -51,7 +40,6 @@ def retry_api(func):
             # 指数バックオフで待機
             time.sleep(backoff)
             state["backoff"] *= 2  # 指数的に増加
-            set_ui(api_retry_state=state)
             st.warning(f"API呼び出し失敗（試行 {state['attempts']}/{state['max_attempts']}）。{backoff}s 後のリトライ...")
             return func(*args, **kwargs)
     return wrapper
@@ -78,13 +66,13 @@ def render_novel_production_tab():
         api_key = st.text_input("API Key", "your_api_key_here", key="api_key_input")
         
         # ==== 生成開始ボタン ==== #
-        if get_ui("gen_task_id", None) is None:
+        if "gen_task_id" not in st.session_state:
             if st.button("生成開始"):
                 # 現状は単なるプレースホル; 実際の実装は別ルートへ委譲
                 st.info("「生成開始」は将来的なバックエンド連携用です")
         
         # ==== 商用化実行ボタン ==== #
-        if get_ui("commercial_task_id", None) is None:
+        if "commercial_task_id" not in st.session_state:
             if st.button("商用化実行"):
                 # -------- 入力チェック --------
                 if not keywords.strip():
@@ -123,7 +111,7 @@ def render_novel_production_tab():
                     result = response.json()
                     # トレースID／タスクIDを取得（バックエンドが提供していれば利用）
                     task_id = result.get("trace_id") or result.get("task_id") or str(uuid.uuid4())
-                    set_ui(commercial_task_id=task_id)
+                    st.session_state.commercial_task_id = task_id
                     
                     st.success("商用化パイプラインが実行されました")
                     
@@ -179,23 +167,23 @@ def render_novel_production_tab():
                                             file_name="schedule.csv",
                                             mime="text/csv"
                                         )
-                    
+                        
                     # -------------------------------------------------
                     # ---------------  進捗ポーリング ----------
                     # -------------------------------------------------
-                    if get_ui("commercial_task_id"):
+                    if st.session_state.commercial_task_id:
                         st.info("パイプラインの実行中です（最大30秒待機）")
                         progress_bar = st.progress(0)
                         max_wait_seconds = 30
                         elapsed = 0
-                        poll_interval = get_ui("poll_interval", 1)
+                        poll_interval = st.session_state.poll_interval
                         
                         while elapsed < max_wait_seconds:
                             elapsed += poll_interval
                             
                             try:
                                 status_resp = httpx.get(
-                                    f"http://localhost:8000/api/tasks/{get_ui('commercial_task_id')}/status",
+                                    f"http://localhost:8000/api/tasks/{st.session_state.commercial_task_id}/status",
                                     timeout=5.0
                                 )
                                 if status_resp.status_code == 200:
@@ -228,7 +216,7 @@ def render_novel_production_tab():
                                                     file_name="production_report.json",
                                                     mime="application/json"
                                                 )
-                                                set_ui(report_generated=True)
+                                                st.session_state.report_generated = True
                                             else:
                                                 st.error(f"レポート取得失敗 {report_resp.status_code}: {report_resp.text}")
                                         except Exception as e:
@@ -245,7 +233,7 @@ def render_novel_production_tab():
                                 st.error(f"ステータス取得エラー: {e}")
                             
                             # ポーリング間隔の調整（ユーザーが変更可能に）
-                            set_ui(poll_interval=poll_interval)
+                            st.session_state.poll_interval = poll_interval
                             time.sleep(poll_interval)
                         
                         # -------------------------------------------------
@@ -264,7 +252,7 @@ def render_novel_production_tab():
     st.info("生成が完了したら上記の「商用化実行」からレポートを取得してください")
     
     # レポート表示 / ダウンロード（既に生成済みフラグで制御）
-    if get_ui("report_generated"):
+    if st.session_state.report_generated:
         st.subheader("生成レポート（サマリ）")
         st.write("トークン使用量、品質スコア、エピソードサマリーなどを表示します")
         # 実際の内容はサーバー側で生成された JSON をそのまま利用
@@ -283,11 +271,11 @@ def render_novel_production_tab():
     # ----------------------------------------------------------------------
     # 停止ボタン（生成中のみ表示）
     # ----------------------------------------------------------------------
-    if get_ui("gen_task_id", None) is not None:
+    if "gen_task_id" in st.session_state:
         if st.button("生成停止"):
             try:
                 stop_resp = httpx.post(
-                    f"http://localhost:8000/api/tasks/{get_ui('gen_task_id')}/stop",
+                    f"http://localhost:8000/api/tasks/{st.session_state.gen_task_id}/stop",
                     timeout=10.0
                 )
                 if stop_resp.status_code == 200:
@@ -299,12 +287,12 @@ def render_novel_production_tab():
             except Exception as e:
                 st.error(f"停止通信エラー: {e}")
             finally:
-                set_ui(gen_task_id=None)
+                del st.session_state["gen_task_id"]
     
     # ----------------------------------------------------------------------
     # エピソード一覧表示（生成完了時のみ）
     # ----------------------------------------------------------------------
-    if get_ui("gen_task_id", None) is not None:
+    if "gen_task_id" in st.session_state:
         if st.button("エピソード一覧を表示"):
             try:
                 episodes_resp = httpx.get(

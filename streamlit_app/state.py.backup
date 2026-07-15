@@ -123,18 +123,6 @@ class SessionManager:
         if cls._STATE_KEY in st.session_state:
             del st.session_state[cls._STATE_KEY]
 
-    @classmethod
-    def migrate_from_session(cls, key: str, default: Any = None) -> Any:
-        """st.session_state から値を取得してUIStateStoreに移行"""
-        if key in st.session_state:
-            value = st.session_state[key]
-            del st.session_state[key]
-            ui_state = st.session_state.get("ui_state")
-            if ui_state is not None and hasattr(ui_state, "form_data"):
-                ui_state.form_data[key] = value
-            return value
-        return default
-
 # 便利なショートカット関数
 def get_session() -> AppStateModel:
     return SessionManager.get_state()
@@ -187,8 +175,6 @@ from streamlit_app.stores import (
 
 class UIStateStore(JobStore, PollStateStore, ToastStore, SessionStore):
     """UI state store implementation."""
-    
-    _subscribers: dict[str, list[Callable]] = {}
 
     @property
     def ui_state(self) -> UIState:
@@ -211,7 +197,6 @@ class UIStateStore(JobStore, PollStateStore, ToastStore, SessionStore):
                 setattr(state, key, value)
             else:
                 state.form_data[key] = value
-            self._notify_subscribers(key, value)
 
     def get_ui_state_value(self, key: str, default: Any = None) -> Any:
         """
@@ -255,19 +240,3 @@ class UIStateStore(JobStore, PollStateStore, ToastStore, SessionStore):
         モーダル表示フラグを取得する。
         """
         return self.get_ui_state_value("show_modal", False)
-
-    @classmethod
-    def subscribe(cls, key: str, callback: Callable) -> Callable:
-        """状態変更時のコールバック登録"""
-        if key not in cls._subscribers:
-            cls._subscribers[key] = []
-        cls._subscribers[key].append(callback)
-        return lambda: cls._subscribers[key].remove(callback)
-
-    @classmethod
-    def _notify_subscribers(cls, key: str, value: Any) -> None:
-        for callback in cls._subscribers.get(key, []):
-            try:
-                callback(value)
-            except Exception:
-                pass

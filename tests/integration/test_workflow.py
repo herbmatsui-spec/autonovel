@@ -25,7 +25,7 @@ class DummyReporter(StatusReporter):
 @pytest.mark.asyncio
 async def test_full_auto_workflow_easy_mode(real_db_manager, mock_llm):
     # Setup mock LLM responses for planning
-    mock_llm.add_json_response("gemini-2.0-flash", {
+    mock_llm.add_json_response("gemini-3.1-flash-lite", {
         "bible_core": {
             "title": "テスト用の異世界",
             "concept": "剣と魔法が支配する世界",
@@ -47,7 +47,7 @@ async def test_full_auto_workflow_easy_mode(real_db_manager, mock_llm):
         }]
     })
 
-    mock_llm.add_json_response("覇権プロットの生成", {
+    mock_llm.add_json_response("gemma-4-31b-it", {
         "title": "テスト小説：追放された最強の剣士",
         "concept": "追放からの成り上がり",
         "plot_summary": "主人公が追放されるが、真の力に目覚める物語。",
@@ -164,7 +164,7 @@ async def test_full_auto_workflow_easy_mode(real_db_manager, mock_llm):
 @pytest.mark.asyncio
 async def test_full_auto_workflow_normal_mode(real_db_manager, mock_llm):
     # Setup mock LLM responses for planning and normal mode validations
-    mock_llm.add_json_response("gemini-2.0-flash", {
+    mock_llm.add_json_response("gemini-3.1-flash-lite", {
         "bible_core": {
             "title": "テスト用の異世界",
             "concept": "剣と魔法が支配する世界",
@@ -186,7 +186,7 @@ async def test_full_auto_workflow_normal_mode(real_db_manager, mock_llm):
         }]
     })
 
-    mock_llm.add_json_response("覇権プロットの生成", {
+    mock_llm.add_json_response("gemma-4-31b-it", {
         "title": "テスト小説：通常モード検証",
         "concept": "通常モード",
         "plot_summary": "通常モードのテスト実行用プロット。",
@@ -307,7 +307,7 @@ async def test_full_auto_workflow_normal_mode(real_db_manager, mock_llm):
 async def test_full_auto_workflow_api_failure(real_db_manager, mock_llm):
     """APIエラー時の挙動を確認するテスト"""
     # 企画生成でわざとエラーを出す
-    mock_llm.add_exception("gemini-2.0-flash", Exception("API Connection Error"))
+    mock_llm.add_exception("gemini-3.1-flash-lite", Exception("API Connection Error"))
 
     from dependency_injector import providers
     from src.core.container import AppContainer
