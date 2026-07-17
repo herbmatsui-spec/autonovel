@@ -1,5 +1,9 @@
+import logging
+
 from fastapi import APIRouter
 from config.container import Container
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["system"])
 
@@ -31,6 +35,7 @@ async def health_check():
         worker_status = "error"
         huey_backend = "error"
         queue_depth = 0
+        logger.warning(f"health worker check failed: {e}")
 
     return {
         "status": "ok",

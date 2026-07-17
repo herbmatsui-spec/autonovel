@@ -258,3 +258,35 @@ def async_score_narrative_metrics(book_id: int, branch_id: int, ep_num: int, tra
             return False
 
     return asyncio.run(_run())
+
+
+@huey.task(retries=3, retry_delay=5)
+@with_trace_context
+def enqueue_audit_after_write(book_id: int, write_from: int, write_to: int, trace_id: Optional[str] = None):
+    """
+    執筆完了後の論理監査 (Shadow Mode) をバックグラウンドで実行するタスク。
+    write_from から write_to までのエピソードに対して論理整合性監査を非同期に実施する。
+    """
+    import asyncio
+    from config.container import Container
+    from src.agents.audit import LogicalAuditor
+
+    async def _run():
+        try:
+            container = Container()
+            async with container.async_session() as session:
+                auditor = LogicalAuditor(
+                    repo=container.repo_plot(),
+                    pm=container.prompt_manager(),
+                    generate_json=container.llm().generate_json,
+                    ctx_mgr=container.project_context(),
+                )
+                for ep_num in range(write_from, write_to + 1):
+                    await auditor.audit_episode(session, book_id, ep_num)
+                logger.info(
+                    f"Shadow audit finished for book_id={book_id}, ep{write_from}-ep{write_to}"
+                )
+        except Exception as e:
+            logger.exception(f"Error in enqueue_audit_after_write for book_id={book_id}: {e}")
+
+    return asyncio.run(_run())

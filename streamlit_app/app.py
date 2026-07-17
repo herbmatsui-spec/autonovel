@@ -6,6 +6,7 @@ app.py - 覇権小説自動生成ツール v3.0 エントリーポイント
 from __future__ import annotations
 
 import logging
+app = __import__(__name__)
 import warnings
 
 import streamlit as st
