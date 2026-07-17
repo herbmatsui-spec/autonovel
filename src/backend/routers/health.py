@@ -1,5 +1,7 @@
 import logging
 
+# Health check endpoint: verifies database, worker, and Huey backend status.
+
 from fastapi import APIRouter
 from config.container import Container
 

@@ -83,11 +83,11 @@ def process_outbox_events():
         logger.error(f"Failed to process outbox events: {e}")
 
 async def _process_outbox_events_async():
-
+    
     container = Container()
     db = container.db()
     uow = UnitOfWork(db=db)
-
+    
     async with uow:
         # Fetch pending events
         events = await uow.get_pending_outbox_events()
@@ -95,96 +95,135 @@ async def _process_outbox_events_async():
             try:
                 # The mediator/dispatch logic was removed in v3.0, so we just mark the outbox event as processed.
                 await uow.mark_outbox_event_processed(event.id)
-            except Exception as e:
-                logger.error(f"Failed to process outbox event {event.id}: {e}")
+    
+    @huey.task(retries=3, retry_delay=5)
+    @with_trace_context
+    def process_vector_event(event_type: str, payload: dict, trace_id: Optional[str] = None):
+        """
+        非同期でChromaDBへの操作を実行するタスク
+        """
+        logger.info(f"Processing vector event: {event_type}")
+
+        # 依存関係の解決
+        from src.services.vector_store import DefaultVectorStore
+        store = DefaultVectorStore()
+
+        if event_type == "chroma_add":
+            return store.add_documents(
+                collection_name=payload["collection"],
+                ids=[payload["id"]],
+                documents=[payload["content"]],
+                embeddings=[payload["embedding"]],
+                metadatas=[payload["metadata"]] if payload["metadata"] else None
+            )
+        elif event_type == "chroma_delete":
+            return store.delete_by_id(
+                collection_name=payload["collection"],
+                ids=payload["ids"]
+            )
+        return None
 
 @huey.periodic_task(crontab(minute='*'))
-def save_prompt_metrics():
-    logger.info("Saving prompt metrics snapshot...")
+def process_outbox_events():
+    """
+    Huey periodic task for processing Outbox events.
+    Replaces the manual polling loop in outbox_worker.py
+    """
+    logger.info("Running outbox processor task...")
+    import asyncio
     try:
-        asyncio.run(_save_prompt_metrics_async())
+        asyncio.run(_process_outbox_events_async())
     except Exception as e:
-        logger.error(f"Failed to save prompt metrics: {e}")
+        logger.error(f"Failed to process outbox events: {e}")
 
-async def _save_prompt_metrics_async():
-    # Get the PromptManager singleton
-    registry = prompt_manager.registry
-    metrics = registry.get_metrics()
-    # Get database session
-    from config.container import Container
-    from src.backend.database.uow import UnitOfWork
+async def _process_outbox_events_async():
+    
     container = Container()
     db = container.db()
-    async with UnitOfWork(db=db) as uow:
-        await uow.prompt_metrics.save_metrics_snapshot(metrics)
+    uow = UnitOfWork(db=db)
+    
+    async with uow:
+        # Fetch pending events
+        events = await uow.get_pending_outbox_events()
+        for event in events:
+            try:
+                # The mediator/dispatch logic was removed in v3.0, so we just mark the outbox event as processed.
+                await uow.mark_outbox_event_processed(event.id)
+    
+    @huey.task(retries=3, retry_delay=5)
+    @with_trace_context
+    def execute_service_workflow(task_id: str, api_key: str, config_dict: dict, method_name: str, kwargs: dict, trace_id: Optional[str] = None):
+        import asyncio
 
-@huey.task(retries=3, retry_delay=5)
-@with_trace_context
-def execute_service_workflow(task_id: str, api_key: str, config_dict: dict, method_name: str, kwargs: dict, trace_id: Optional[str] = None):
-    import asyncio
+        # 状態の初期化
+        from src.backend.background import BackgroundReporter, ProgressState
 
-    from src.backend.background import BackgroundReporter, ProgressState
+        # 状態の初期化
+        state = ProgressState(is_running=True, task_id=task_id, repo=None)
+        reporter = BackgroundReporter(state)
 
-    # 状態の初期化
-    state = ProgressState(is_running=True, task_id=task_id, repo=None)
-    reporter = BackgroundReporter(state)
+        async def _run():
+            try:
+                from dependency_injector import providers
 
-    async def _run():
-        try:
-            from dependency_injector import providers
+                from config.container import Container
+                from src.core.container import AppContainer
 
-            from config.container import Container
-            from src.core.container import AppContainer
+                # UI から渡された設定 (モデル選択・OpenRouter設定等) を
+                # ランタイム設定へ反映する。ワーカープロセスの設定キャッシュに
+                # 関係なく、ユーザーが選択した最新のモデルが使用されるようにする。
+                _apply_config_overrides(config_dict)
 
-            # UI から渡された設定 (モデル選択・OpenRouter設定等) を
-            # ランタイム設定へ反映する。ワーカープロセスの設定キャッシュに
-            # 関係なく、ユーザーが選択した最新のモデルが使用されるようにする。
-            _apply_config_overrides(config_dict)
+                container = AppContainer(
+                    api_key=providers.Object(api_key),
+                    db=providers.Object(Container.db())
+                )
+                engine = container.engine()
+                state.repo = engine.repo
 
-            container = AppContainer(
-                api_key=providers.Object(api_key),
-                db=providers.Object(Container.db())
-            )
-            engine = container.engine()
-            state.repo = engine.repo
-
-            # ワークフローのディスパッチ
-            if method_name == "full_auto_workflow":
-                from src.backend.workflows.full_auto_workflow import FullAutoWorkflow
-                workflow = FullAutoWorkflow(engine)
-            elif method_name == "episode_writing_workflow":
-                from src.backend.workflows.episode_writing_workflow import EpisodeWritingWorkflow
-                workflow = EpisodeWritingWorkflow(engine)
-            elif method_name == "plan_generation_workflow":
-                from src.backend.workflows.plan_generation_workflow import PlanGenerationWorkflow
-                workflow = PlanGenerationWorkflow(engine)
-            elif method_name == "plot_expansion_workflow":
-                from src.backend.workflows.plot_expansion_workflow import PlotExpansionWorkflow
-                workflow = PlotExpansionWorkflow(engine)
-            elif method_name == "plot_rebuild_workflow":
-                from src.backend.workflows.plot_rebuild_workflow import PlotRebuildWorkflow
-                workflow = PlotRebuildWorkflow(engine)
+                # ワークフローのディスパッチ
+                if method_name == "full_auto_workflow":
+                    from src.backend.workflows.full_auto_workflow import FullAutoWorkflow
+                    workflow = FullAutoWorkflow(engine)
+                elif method_name == "episode_writing_workflow":
+                    from src.backend.workflows.episode_writing_workflow import EpisodeWritingWorkflow
+                    workflow = EpisodeWritingWorkflow(engine)
+                elif method_name == "plan_generation_workflow":
+                    from src.backend.workflows.plan_generation_workflow import PlanGenerationWorkflow
+                    workflow = PlanGenerationWorkflow(engine)
+                elif method_name == "plot_expansion_workflow":
+                    from src.backend.workflows.plot_expansion_workflow import PlotExpansionWorkflow
+                    workflow = PlotExpansionWorkflow(engine)
+                elif method_name == "plot_rebuild_workflow":
+                    from src.backend.workflows.plot_rebuild_workflow import PlotRebuildWorkflow
+                    workflow = PlotRebuildWorkflow(engine)
+            
             elif method_name == "run_critique_optimization_workflow":
                 from src.backend.workflows.critique_optimization_workflow import (
                     CritiqueOptimizationWorkflow,
                 )
                 workflow = CritiqueOptimizationWorkflow(engine)
+            
             elif method_name == "retry_failed_episodes_workflow":
                 from src.backend.workflows.retry_failed_episodes_workflow import (
                     RetryFailedEpisodesWorkflow,
                 )
                 workflow = RetryFailedEpisodesWorkflow(engine)
+            
             elif method_name == "chapter_import_workflow":
                 from src.backend.workflows.chapter_import_workflow import ChapterImportWorkflow
                 workflow = ChapterImportWorkflow(engine)
+            
             elif method_name == "marketing_generation_workflow":
                 from src.backend.workflows.marketing_generation_workflow import (
                     MarketingGenerationWorkflow,
                 )
                 workflow = MarketingGenerationWorkflow(engine)
+            
             elif method_name == "refine_erotic_workflow":
                 from src.backend.workflows.refine_erotic_workflow import RefineEroticWorkflow
                 workflow = RefineEroticWorkflow(engine)
+            
             else:
                 raise ValueError(f"Unknown workflow method: {method_name}")
 
@@ -194,12 +233,13 @@ def execute_service_workflow(task_id: str, api_key: str, config_dict: dict, meth
             state.is_running = False
             state.message = "処理が完了しました。"
             state._save_to_db()
+        
         except Exception as e:
             logger.error(f"Workflow error: {e}", exc_info=True)
             state.is_running = False
             state.error = str(e)
             state._save_to_db()
-
+    
     try:
         asyncio.run(_run())
     except Exception as e:
@@ -209,7 +249,6 @@ def execute_service_workflow(task_id: str, api_key: str, config_dict: dict, meth
 @with_trace_context
 def run_test_coro(task_id: str, message: str, trace_id: Optional[str] = None):
     """テスト用のダミータスク"""
-    from src.backend.background import ProgressState
 
     container = Container()
     db = container.db()
@@ -217,6 +256,7 @@ def run_test_coro(task_id: str, message: str, trace_id: Optional[str] = None):
     class FakeEngine:
         def __init__(self):
             self.db = db
+
     state = ProgressState(is_running=False, task_id=task_id, repo=FakeEngine(), skip_initial_save=True)
     state.result_data = "SuccessValue"
     state.logs = [message]
@@ -258,7 +298,6 @@ def async_score_narrative_metrics(book_id: int, branch_id: int, ep_num: int, tra
             return False
 
     return asyncio.run(_run())
-
 
 @huey.task(retries=3, retry_delay=5)
 @with_trace_context
