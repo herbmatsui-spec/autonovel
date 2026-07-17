@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+<style>
+.node { fill: #e8f4fd; stroke: #2563eb; stroke-width: 2; rx: 8; ry: 8; font-family: Arial, sans-serif; font-size: 11px; }
+.edge { stroke: #64748b; stroke-width: 1.5; marker-end: url(#arrowhead); }
+.title { font-family: Arial, sans-serif; font-size: 18px; font-weight: bold; fill: #1e293b; }
+</style>
+<defs>
+  <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+    <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
+  </marker>
+</defs>
+<text x="600" y="30" text-anchor="middle" class="title">DI Container Dependency Graph</text>
+<g transform="translate(50, 60)">
+\n  <g id="api_key">
+    <rect class="node" x="0" y="0" width="140" height="40"/>
+    <text x="70" y="25" text-anchor="middle" dominant-baseline="middle">api_key\n(Object...)</text>
+  </g>
+\n  <g id="db">
+    <rect class="node" x="180" y="0" width="140" height="40"/>
+    <text x="250" y="25" text-anchor="middle" dominant-baseline="middle">db\n(Singleton...)</text>
+  </g>
+\n  <g id="vector_store">
+    <rect class="node" x="360" y="0" width="140" height="40"/>
+    <text x="430" y="25" text-anchor="middle" dominant-baseline="middle">vector_store\n(Singleton...)</text>
+  </g>
+\n  <g id="audit_logger">
+    <rect class="node" x="540" y="0" width="140" height="40"/>
+    <text x="610" y="25" text-anchor="middle" dominant-baseline="middle">audit_logger\n(Singleton...)</text>
+  </g>
+\n  <g id="cooldown">
+    <rect class="node" x="720" y="0" width="140" height="40"/>
+    <text x="790" y="25" text-anchor="middle" dominant-baseline="middle">cooldown\n(Singleton...)</text>
+  </g>
+\n  <g id="genai_client">
+    <rect class="node" x="900" y="0" width="140" height="40"/>
+    <text x="970" y="25" text-anchor="middle" dominant-baseline="middle">genai_client\n(Singleton...)</text>
+  </g>
+\n  <g id="llm_factory">
+    <rect class="node" x="0" y="60" width="140" height="40"/>
+    <text x="70" y="85" text-anchor="middle" dominant-baseline="middle">llm_factory\n(Singleton...)</text>
+  </g>
+\n  <g id="semantic_cache">
+    <rect class="node" x="180" y="60" width="140" height="40"/>
+    <text x="250" y="85" text-anchor="middle" dominant-baseline="middle">semantic_cache\n(Singleton...)</text>
+  </g>
+\n  <g id="llm">
+    <rect class="node" x="360" y="60" width="140" height="40"/>
+    <text x="430" y="85" text-anchor="middle" dominant-baseline="middle">llm\n(Singleton...)</text>
+  </g>
+\n  <g id="connection_pipeline">
+    <rect class="node" x="540" y="60" width="140" height="40"/>
+    <text x="610" y="85" text-anchor="middle" dominant-baseline="middle">connection_pipeline\n(Singleton...)</text>
+  </g>
+\n  <g id="repo">
+    <rect class="node" x="720" y="60" width="140" height="40"/>
+    <text x="790" y="85" text-anchor="middle" dominant-baseline="middle">repo\n(Singleton...)</text>
+  </g>
+\n  <g id="uow">
+    <rect class="node" x="900" y="60" width="140" height="40"/>
+    <text x="970" y="85" text-anchor="middle" dominant-baseline="middle">uow\n(Factory...)</text>
+  </g>
+\n  <g id="pm">
+    <rect class="node" x="0" y="120" width="140" height="40"/>
+    <text x="70" y="145" text-anchor="middle" dominant-baseline="middle">pm\n(Singleton...)</text>
+  </g>
+\n  <g id="ctx_mgr">
+    <rect class="node" x="180" y="120" width="140" height="40"/>
+    <text x="250" y="145" text-anchor="middle" dominant-baseline="middle">ctx_mgr\n(Singleton...)</text>
+  </g>
+\n  <g id="global_config">
+    <rect class="node" x="360" y="120" width="140" height="40"/>
+    <text x="430" y="145" text-anchor="middle" dominant-baseline="middle">global_config\n(Singleton...)</text>
+  </g>
+\n  <g id="auditor">
+    <rect class="node" x="540" y="120" width="140" height="40"/>
+    <text x="610" y="145" text-anchor="middle" dominant-baseline="middle">auditor\n(Singleton...)</text>
+  </g>
+\n  <g id="marketing">
+    <rect class="node" x="720" y="120" width="140" height="40"/>
+    <text x="790" y="145" text-anchor="middle" dominant-baseline="middle">marketing\n(Singleton...)</text>
+  </g>
+\n  <g id="bible_generator">
+    <rect class="node" x="900" y="120" width="140" height="40"/>
+    <text x="970" y="145" text-anchor="middle" dominant-baseline="middle">bible_generator\n(Singleton...)</text>
+  </g>
+\n  <g id="plot_expander">
+    <rect class="node" x="0" y="180" width="140" height="40"/>
+    <text x="70" y="205" text-anchor="middle" dominant-baseline="middle">plot_expander\n(Singleton...)</text>
+  </g>
+\n  <g id="planner">
+    <rect class="node" x="180" y="180" width="140" height="40"/>
+    <text x="250" y="205" text-anchor="middle" dominant-baseline="middle">planner\n(Singleton...)</text>
+  </g>
+\n  <g id="validator">
+    <rect class="node" x="360" y="180" width="140" height="40"/>
+    <text x="430" y="205" text-anchor="middle" dominant-baseline="middle">validator\n(Singleton...)</text>
+  </g>
+\n  <g id="narrative">
+    <rect class="node" x="540" y="180" width="140" height="40"/>
+    <text x="610" y="205" text-anchor="middle" dominant-baseline="middle">narrative\n(Singleton...)</text>
+  </g>
+\n  <g id="critique">
+    <rect class="node" x="720" y="180" width="140" height="40"/>
+    <text x="790" y="205" text-anchor="middle" dominant-baseline="middle">critique\n(Singleton...)</text>
+  </g>
+\n  <g id="style_rag">
+    <rect class="node" x="900" y="180" width="140" height="40"/>
+    <text x="970" y="205" text-anchor="middle" dominant-baseline="middle">style_rag\n(Singleton...)</text>
+  </g>
+\n  <g id="writer">
+    <rect class="node" x="0" y="240" width="140" height="40"/>
+    <text x="70" y="265" text-anchor="middle" dominant-baseline="middle">writer\n(Singleton...)</text>
+  </g>
+\n  <g id="formatter">
+    <rect class="node" x="180" y="240" width="140" height="40"/>
+    <text x="250" y="265" text-anchor="middle" dominant-baseline="middle">formatter\n(Singleton...)</text>
+  </g>
+\n  <g id="edges">\n\n    <line x1="970" y1="40" x2="70" y2="0" class="edge"/>
+\n    <line x1="70" y1="100" x2="970" y2="0" class="edge"/>
+\n    <line x1="70" y1="100" x2="790" y2="0" class="edge"/>
+\n    <line x1="250" y1="100" x2="430" y2="0" class="edge"/>
+\n    <line x1="430" y1="100" x2="70" y2="60" class="edge"/>
+\n    <line x1="790" y1="100" x2="250" y2="0" class="edge"/>
+\n    <line x1="970" y1="100" x2="250" y2="0" class="edge"/>
+\n    <line x1="250" y1="160" x2="790" y2="60" class="edge"/>
+\n    <line x1="610" y1="160" x2="790" y2="60" class="edge"/>
+\n    <line x1="610" y1="160" x2="70" y2="120" class="edge"/>
+\n    <line x1="610" y1="160" x2="430" y2="60" class="edge"/>
+\n    <line x1="610" y1="160" x2="250" y2="120" class="edge"/>
+\n    <line x1="790" y1="160" x2="790" y2="60" class="edge"/>
+\n    <line x1="790" y1="160" x2="70" y2="120" class="edge"/>
+\n    <line x1="790" y1="160" x2="430" y2="60" class="edge"/>
+\n    <line x1="970" y1="160" x2="790" y2="60" class="edge"/>
+\n    <line x1="970" y1="160" x2="430" y2="60" class="edge"/>
+\n    <line x1="970" y1="160" x2="70" y2="120" class="edge"/>
+\n    <line x1="970" y1="160" x2="790" y2="120" class="edge"/>
+\n    <line x1="970" y1="160" x2="610" y2="120" class="edge"/>
+\n    <line x1="70" y1="220" x2="790" y2="60" class="edge"/>
+\n    <line x1="70" y1="220" x2="430" y2="60" class="edge"/>
+\n    <line x1="70" y1="220" x2="70" y2="120" class="edge"/>
+\n    <line x1="70" y1="220" x2="610" y2="120" class="edge"/>
+\n    <line x1="250" y1="220" x2="790" y2="60" class="edge"/>
+\n    <line x1="250" y1="220" x2="70" y2="120" class="edge"/>
+\n    <line x1="250" y1="220" x2="250" y2="120" class="edge"/>
+\n    <line x1="250" y1="220" x2="610" y2="120" class="edge"/>
+\n    <line x1="250" y1="220" x2="970" y2="120" class="edge"/>
+\n    <line x1="250" y1="220" x2="70" y2="180" class="edge"/>
+\n    <line x1="430" y1="220" x2="790" y2="60" class="edge"/>
+\n    <line x1="430" y1="220" x2="70" y2="120" class="edge"/>
+\n    <line x1="430" y1="220" x2="430" y2="60" class="edge"/>
+\n    <line x1="430" y1="220" x2="250" y2="120" class="edge"/>
+\n    <line x1="610" y1="220" x2="430" y2="60" class="edge"/>
+\n    <line x1="610" y1="220" x2="790" y2="60" class="edge"/>
+\n    <line x1="610" y1="220" x2="70" y2="120" class="edge"/>
+\n    <line x1="610" y1="220" x2="250" y2="120" class="edge"/>
+\n    <line x1="610" y1="220" x2="430" y2="180" class="edge"/>
+\n    <line x1="610" y1="220" x2="610" y2="120" class="edge"/>
+\n    <line x1="790" y1="220" x2="790" y2="60" class="edge"/>
+\n    <line x1="790" y1="220" x2="70" y2="120" class="edge"/>
+\n    <line x1="790" y1="220" x2="430" y2="60" class="edge"/>
+\n    <line x1="970" y1="220" x2="970" y2="0" class="edge"/>
+\n    <line x1="970" y1="220" x2="790" y2="60" class="edge"/>
+\n    <line x1="70" y1="280" x2="790" y2="60" class="edge"/>
+\n    <line x1="70" y1="280" x2="430" y2="60" class="edge"/>
+\n    <line x1="70" y1="280" x2="70" y2="120" class="edge"/>
+\n    <line x1="70" y1="280" x2="250" y2="120" class="edge"/>
+\n    <line x1="70" y1="280" x2="610" y2="180" class="edge"/>
+\n    <line x1="70" y1="280" x2="790" y2="180" class="edge"/>
+\n    <line x1="70" y1="280" x2="70" y2="180" class="edge"/>
+\n    <line x1="70" y1="280" x2="970" y2="180" class="edge"/>
+\n    <line x1="70" y1="280" x2="970" y2="60" class="edge"/>
+\n    <line x1="70" y1="280" x2="430" y2="120" class="edge"/>
+\n    <line x1="70" y1="280" x2="250" y2="180" class="edge"/>
+\n  </g>\n</g>\n</svg>
