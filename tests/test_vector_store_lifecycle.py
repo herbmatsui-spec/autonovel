@@ -1,14 +1,14 @@
 
 import pytest
 
-from config.container import Container
+from config.container import Container, get_container
 from src.services.vector_store import ChromaClientProvider, ChromaVectorStore
 
 
 @pytest.mark.asyncio
 async def test_chroma_provider_lifecycle():
     # DIコンテナからProviderを取得
-    container = Container()
+    container = get_container()
     provider = container.chroma_client_provider()
 
     # 初回はNoneであること

@@ -72,7 +72,7 @@ def process_outbox_events():
 
 
 async def _process_outbox_events_async():
-    container = Container()
+    container = get_container()
     db = container.db()
     uow = UnitOfWork(db=db)
 
@@ -97,7 +97,7 @@ def execute_service_workflow(task_id: str, api_key: str, config_dict: dict, meth
     async def _run():
         try:
             from dependency_injector import providers
-            from config.container import Container
+from config.container import Container, get_container
             from src.core.container import AppContainer
 
             _apply_config_overrides(config_dict)
@@ -171,7 +171,7 @@ def execute_service_workflow(task_id: str, api_key: str, config_dict: dict, meth
 @with_trace_context
 def run_test_coro(task_id: str, message: str, trace_id: Optional[str] = None):
     """テスト用のダミータスク"""
-    container = Container()
+    container = get_container()
     db = container.db()
 
     class FakeEngine:
@@ -196,7 +196,7 @@ def async_score_narrative_metrics(book_id: int, branch_id: int, ep_num: int, tra
 
     async def _run():
         try:
-            container = Container()
+            container = get_container()
             async with container.async_session() as session:
                 auditor = LogicalAuditor(
                     repo=container.repo_plot(),
@@ -226,7 +226,7 @@ def enqueue_audit_after_write(book_id: int, write_from: int, write_to: int, trac
 
     async def _run():
         try:
-            container = Container()
+            container = get_container()
             async with container.async_session() as session:
                 auditor = LogicalAuditor(
                     repo=container.repo_plot(),
