@@ -9,7 +9,7 @@ class PlanGenerationWorkflow(BaseWorkflow):
     """企画生成ワークフロー"""
     async def execute(self, reporter: StatusReporter, **kwargs) -> Dict[str, Any]:
         params = kwargs["params"]
-        book_id, bible = await self.engine.planner.create_hegemony_plan(
+        book_id, bible = await self.planner.create_hegemony_plan(
             genre=params.get("genre", "ファンタジー"),
             keywords=params.get("keywords", ""),
             style_key=params.get("style_key", "default"),

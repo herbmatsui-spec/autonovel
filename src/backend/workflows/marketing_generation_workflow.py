@@ -11,7 +11,7 @@ class MarketingGenerationWorkflow(BaseWorkflow):
         book_id = kwargs["book_id"]
         latest_ep = kwargs["latest_ep"]
 
-        book = await self.engine.repo.books.get_by_id(book_id)
+        book = await self.repo.books.get_by_id(book_id)
         if not book:
             raise ValueError(f"Book not found: {book_id}")
 
@@ -19,7 +19,7 @@ class MarketingGenerationWorkflow(BaseWorkflow):
             reporter.set_message("マーケティングパックを生成中...")
             reporter.add_log("マーケティングエージェントを起動しました")
 
-        result = await self.engine.marketing.generate_marketing_pack(
+        result = await self.marketing.generate_marketing_pack(
             book.title, book.synopsis, latest_ep
         )
         return result

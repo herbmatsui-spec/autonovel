@@ -9,7 +9,7 @@ class PlotRebuildWorkflow(BaseWorkflow):
     """プロット再構築ワークフロー: 再構築から詳細展開までを実行"""
     async def execute(self, reporter: StatusReporter, **kwargs) -> Dict[str, Any]:
         params = kwargs["params"]
-        results = await self.engine.planner.rebuild_hegemony_plot(
+        results = await self.planner.rebuild_hegemony_plot(
             book_id=params["book_id"],
             start_ep=params["start_ep"],
             new_total_eps=params["new_total"],

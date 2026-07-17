@@ -23,7 +23,7 @@ class RefineEroticWorkflow(BaseWorkflow):
             reporter.add_log(f"蟇ｾ雎｡菴懷刀: {book_id}, 隧ｱ謨ｰ: {ep_num}, 蠑ｷ蠎ｦ: {intensity}")
 
         # 1. 隧ｲ蠖薙メ繝｣繝励ち繝ｼ縺ｮ譛ｬ譁・ｒ蜿門ｾ・
-        async with self.engine.repo as uow:
+        async with self.repo as uow:
             chapter = await uow.chapters.get_chapter(book_id, ep_num)
             if not chapter:
                 raise ValueError(f"Chapter not found for book_id {book_id}, ep_num {ep_num}")

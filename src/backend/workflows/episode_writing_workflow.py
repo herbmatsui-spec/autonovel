@@ -66,11 +66,11 @@ class EpisodeWritingWorkflow(BaseWorkflow):
 
             # SemanticCacheManager のインスタンスを取得
             # (Container 等でインジェクションされている場合はそれを使用)
-            vector_store = getattr(self.engine, "vector_store", None)
-            client = getattr(self.engine, "llm_client", None) or getattr(self.engine, "client", None)
+            vector_store = getattr(self, "vector_store", None)
+            client = getattr(self, "llm_client", None) or getattr(self, "client", None)
 
             if not vector_store or not client:
-                # VectorStore/Client が Engine に注入されていない場合はスキップ
+                # VectorStore/Client が注入されていない場合はスキップ
                 logger.debug("[PREFETCH] VectorStore or Client not available, skipping prefetch")
                 return
 

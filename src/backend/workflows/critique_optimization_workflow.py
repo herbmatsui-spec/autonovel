@@ -10,7 +10,7 @@ class CritiqueOptimizationWorkflow(BaseWorkflow):
         book_id = kwargs["book_id"]
         reporter.report("🕵️ 作品の品質分析とエンジン最適化案の生成を開始します...", "info")
         try:
-            result = await self.engine.critique.run_iterative_gap_analysis(book_id)
+            result = await self.critique.run_iterative_gap_analysis(book_id)
             if result.success:
                 reporter.report("✅ 最適化レポートの生成が完了しました。戦略司令部で結果を確認してください。", "info")
             else:

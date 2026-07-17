@@ -27,7 +27,7 @@ class FullAutoWorkflow(BaseWorkflow):
         # 1. 企画生成
         try:
             reporter.update_progress(0, 3, "STEP 1/3: 覇権企画を生成中...")
-            book_id, bible = await self.engine.planner.create_hegemony_plan(
+            book_id, bible = await self.planner.create_hegemony_plan(
                 genre=genre,
                 keywords=keywords,
                 style_key=p_settings.get("style_key", "style_web_standard"),
@@ -48,7 +48,7 @@ class FullAutoWorkflow(BaseWorkflow):
                 from config.project_context import ProjectContext
                 
                 # tension履歴を取得（初期プロット用）
-                plots = await self.engine.repo.plot.get_all_plots(book_id)
+                plots = await self.repo.plot.get_all_plots(book_id)
                 tension_history = [getattr(p, "tension", 50) for p in plots] if plots else [50] * 5
                 
                 # WavePatternAnalyzerでパターン分析
@@ -78,7 +78,7 @@ class FullAutoWorkflow(BaseWorkflow):
                 reporter.report(f"⚠️ カタルシスパターン分析中にエラーが発生しましたが、処理を継続します: {e}", "warning")
             
             # 健全性チェックの実行
-            if hasattr(self.engine.planner, "plan_auditor") and self.engine.planner.plan_auditor and not await self.engine.planner.plan_auditor.audit_bible_completeness(bible, reporter=reporter):
+            if hasattr(self.planner, "plan_auditor") and self.planner.plan_auditor and not await self.planner.plan_auditor.audit_bible_completeness(bible, reporter=reporter):
                 return {"book_id": book_id, "status": "failed_integrity_check"}
 
             if reporter.state.should_stop():
@@ -91,7 +91,7 @@ class FullAutoWorkflow(BaseWorkflow):
         try:
             reporter.update_progress(1, 3, "STEP 2/3: 本文を自動執筆中...")
             chars_count, failed_episodes = await run_pipeline_with_retry(
-                writer=self.engine.writer,
+                writer=self.writing,
                 book_id=book_id,
                 start_ep=1,
                 end_ep=target_eps,
@@ -116,7 +116,7 @@ class FullAutoWorkflow(BaseWorkflow):
             reporter.report(f"🚨 納品パッケージ作成中にエラーが発生しました: {e}. 作品データが破損している可能性があります。", "error")
             raise e
 
-        book = await self.engine.repo.get_book(book_id)
+        book = await self.repo.get_book(book_id)
         actual_title = book.title if book else "名称未設定"
 
         reporter.update_progress(3, 3, "全行程完了！")
