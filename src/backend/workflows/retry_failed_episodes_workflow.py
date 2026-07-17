@@ -16,7 +16,7 @@ class RetryFailedEpisodesWorkflow(BaseWorkflow):
         book = await self.engine.repo.get_book(book_id)
         target_eps = book.target_eps if book else 50
         chars, failed = await run_pipeline_with_retry(
-            writer=self.engine.writer,
+            writer=self.writing,
             book_id=book_id,
             start_ep=1,
             end_ep=target_eps,

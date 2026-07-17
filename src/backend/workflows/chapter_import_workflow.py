@@ -13,7 +13,8 @@ class ChapterImportWorkflow(BaseWorkflow):
         import_text = kwargs["import_text"]
         do_refine = kwargs["do_refine"]
 
-        result = await self.engine.writer.analyze_and_import_chapter(
+        # WritingService 経由で委譲（engine.writer から移行済）
+        result = await self.writing.analyze_and_import_chapter(
             book_id, ep_num, import_text, do_refine=do_refine
         )
         return result

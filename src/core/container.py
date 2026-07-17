@@ -180,6 +180,16 @@ class AppContainer(containers.DeclarativeContainer):
         ctx_mgr=ctx_mgr,
         reporter_factory=reporter_factory,
     )
+    # WritingService: 本文執筆・研磨を担当 (ADR-0004)
+    writing_service = providers.Factory(
+        "src.backend.writing_service.WritingService",
+        writer=writer,
+        repo=repo,
+        pm=pm,
+        style_rag=style_rag,
+        ctx_mgr=ctx_mgr,
+        reporter_factory=reporter_factory,
+    )
     engine = providers.Factory(
         "src.backend.engine.UltimateHegemonyEngine",
         api_key=api_key,
