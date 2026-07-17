@@ -15,9 +15,10 @@ logger = logging.getLogger(__name__)
 
 
 class AppContainer2(InfraContainer):
-    wiring_config = containers.WiringConfiguration(
-        packages=["src"]
-    )
+    # wiring_config は手動で wire() を呼ぶ運用に変更 (proxy.py 参照)
+    # wiring_config = containers.WiringConfiguration(
+    #     packages=["src"]
+    # )
 
     api_key = providers.Object("DUMMY")
 

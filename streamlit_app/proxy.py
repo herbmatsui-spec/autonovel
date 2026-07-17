@@ -1,7 +1,7 @@
 import logging
 from typing import Any, Dict, Generic, List, Optional, TypeVar
 
-from src.core.container import AppContainer
+from src.core.container import make_container
 from streamlit_app import api_client
 from streamlit_app.progress import ProgressStateProxy, run_in_background
 from streamlit_app.workflow_types import WorkflowType
@@ -9,9 +9,9 @@ from streamlit_app.workflow_types import WorkflowType
 logger = logging.getLogger(__name__)
 
 # コンテナのキャッシュを管理する内部辞書
-_container_cache: dict[str, AppContainer] = {}
+_container_cache: dict[str, "AppContainer"] = {}
 
-def get_di_container(api_key: str = "DUMMY") -> AppContainer:
+def get_di_container(api_key: str = "DUMMY"):
     """
     DIコンテナをLazyに取得する。
     @st.cache_resource の代わりに明示的なキャッシュ管理を行うことで、
@@ -22,7 +22,7 @@ def get_di_container(api_key: str = "DUMMY") -> AppContainer:
     if api_key not in _container_cache:
         # ここで初めてインスタンス化とワイヤリングを行う (Lazy Loading)
         logger.debug(f"Initializing new AppContainer for api_key: {api_key[:4]}***")
-        container = AppContainer(api_key=api_key)
+        container = make_container(api_key)
         container.wire(modules=[__name__])
         _container_cache[api_key] = container
 

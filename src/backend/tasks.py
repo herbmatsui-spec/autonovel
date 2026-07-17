@@ -96,15 +96,14 @@ def execute_service_workflow(task_id: str, api_key: str, config_dict: dict, meth
 
     async def _run():
         try:
-            from dependency_injector import providers
-from config.container import Container, get_container
-            from src.core.container import AppContainer
+            from config.container import Container
+            from src.core.container import make_container
 
             _apply_config_overrides(config_dict)
 
-            container = AppContainer(
-                api_key=providers.Object(api_key),
-                db=providers.Object(Container.db())
+            container = make_container(
+                api_key=api_key,
+                db=Container.db(),
             )
             engine = container.engine()
             state.repo = engine.repo

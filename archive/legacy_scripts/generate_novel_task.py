@@ -7,7 +7,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
 
 import config
 import config.base
-from src.core.container import AppContainer
+from src.core.container import make_container
 from src.backend.workflows.full_auto_workflow import FullAutoWorkflow
 from src.backend.background import StatusReporter
 
@@ -38,7 +38,7 @@ async def main():
     
     # DIコンテナを使用してエンジンを解決
     # これにより、UltimateHegemonyEngineに必要なすべてのエージェントが自動的に注入される
-    container = AppContainer(api_key=api_key)
+    container = make_container(api_key)
     engine = container.engine()
     
     workflow = FullAutoWorkflow(engine)

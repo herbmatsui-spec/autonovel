@@ -3,6 +3,8 @@ import pytest
 from src.backend.background import ProgressState, StatusReporter
 from src.backend.engine import UltimateHegemonyEngine
 from src.backend.workflows.full_auto_workflow import FullAutoWorkflow
+from src.core.container import AppContainer, make_container
+from tests.mocks.mock_llm import LLMGenerateResultMockProxy
 
 
 class DummyReporter(StatusReporter):
@@ -141,17 +143,11 @@ async def test_full_auto_workflow_easy_mode(real_db_manager, mock_llm):
     mock_llm.add_text_response("polishing", "アレンは静かに剣を置いた。ギルドマスターの冷酷な声が響く。「お前はクビだ」。アレンはただ黙って部屋を後にした。新たな伝説の始まりだった。")
     mock_llm.add_text_response("amplify", "アレンは静かに剣を置いた。ギルドマスターの冷酷な声が響く。「お前はクビだ」。アレンはただ黙って部屋を後にした。新たな伝説の始まりだった。")
 
-    from dependency_injector import providers
-    from src.core.container import AppContainer
-    from tests.mocks.mock_llm import LLMGenerateResultMockProxy
     AppContainer.llm.override(LLMGenerateResultMockProxy(mock_llm))
-    AppContainer.db.override(real_db_manager)
-    # Reset override to use real repositories and unit of work with real database
     AppContainer.repo.reset_override()
     AppContainer.uow.reset_override()
 
-    container = AppContainer(api_key=providers.Object("test-api-key"))
-    db_provider = AppContainer.db
+    container = make_container("test-api-key", db=real_db_manager)
     db_from_container = container.db
     engine = container.engine()
     if hasattr(real_db_manager, "db"):
@@ -186,7 +182,6 @@ async def test_full_auto_workflow_easy_mode(real_db_manager, mock_llm):
         assert result["chars_count"] > 0
     finally:
         AppContainer.llm.reset_override()
-        AppContainer.db.reset_override()
 
 
 @pytest.mark.asyncio
@@ -315,16 +310,11 @@ async def test_full_auto_workflow_normal_mode(real_db_manager, mock_llm):
         "recommended_patch": ""
     })
 
-    from dependency_injector import providers
-    from src.core.container import AppContainer
-    from tests.mocks.mock_llm import LLMGenerateResultMockProxy
     AppContainer.llm.override(LLMGenerateResultMockProxy(mock_llm))
-    AppContainer.db.override(real_db_manager)
     AppContainer.repo.reset_override()
     AppContainer.uow.reset_override()
 
-    container = AppContainer(api_key=providers.Object("test-api-key"))
-    db_provider = AppContainer.db
+    container = make_container("test-api-key", db=real_db_manager)
     db_from_container = container.db
     engine = container.engine()
     if hasattr(real_db_manager, "db"):
@@ -358,7 +348,6 @@ async def test_full_auto_workflow_normal_mode(real_db_manager, mock_llm):
         assert result["chars_count"] > 0
     finally:
         AppContainer.llm.reset_override()
-        AppContainer.db.reset_override()
 
 @pytest.mark.asyncio
 async def test_full_auto_workflow_api_failure(real_db_manager, mock_llm):
@@ -366,16 +355,11 @@ async def test_full_auto_workflow_api_failure(real_db_manager, mock_llm):
     # 企画生成でわざとエラーを出す
     mock_llm.add_exception("gemini-3.1-flash-lite", Exception("API Connection Error"))
 
-    from dependency_injector import providers
-    from src.core.container import AppContainer
-    from tests.mocks.mock_llm import LLMGenerateResultMockProxy
     AppContainer.llm.override(LLMGenerateResultMockProxy(mock_llm))
-    AppContainer.db.override(real_db_manager)
     AppContainer.repo.reset_override()
     AppContainer.uow.reset_override()
 
-    container = AppContainer(api_key=providers.Object("test-api-key"))
-    db_provider = AppContainer.db
+    container = make_container("test-api-key", db=real_db_manager)
     db_from_container = container.db
     engine = container.engine()
     if hasattr(real_db_manager, "db"):
@@ -405,4 +389,3 @@ async def test_full_auto_workflow_api_failure(real_db_manager, mock_llm):
         assert any(status == "error" for status, msg in reporter.messages)
     finally:
         AppContainer.llm.reset_override()
-        AppContainer.db.reset_override()

@@ -18,7 +18,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from src.agents.writing import WritingAgent
-from src.core.container import AppContainer
+from src.core.container import make_container
 
 async def main():
     api_key = os.getenv("GEMINI_API_KEY")
@@ -28,7 +28,7 @@ async def main():
         return
 
     # DIコンテナと依存関係のセットアップ
-    container = AppContainer(api_key=api_key)
+    container = make_container(api_key)
 
     # LLM サービスとプロンプトマネージャを準備
     llm_service = container.llm()

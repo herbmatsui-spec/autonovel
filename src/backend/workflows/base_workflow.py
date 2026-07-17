@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional
 
 from src.backend.engine import UltimateHegemonyEngine
-from src.backend.protocols import WritingPort
+from src.backend.protocols import WritingPort, CritiquePort, BiblePort
 from src.shared.utils import StatusReporter
 
 

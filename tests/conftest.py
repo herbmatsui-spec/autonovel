@@ -1,11 +1,24 @@
 import pytest
 from unittest.mock import Mock
 import sys, os
+import tempfile
+from pathlib import Path
+from sqlalchemy import create_engine
 
 # Ensure project root is on PYTHONPATH for test imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from config.erotic_vocabulary import METAPHOR_BANK, ONOMATOPOEIA_BANK, PSYCHOLOGY_TEMPLATES
+from src.backend.database.models import Base
+from src.backend.database import DatabaseManager
+from src.backend.database.uow import UnitOfWork
+from tests.mocks.mock_llm import MockGeminiApiClient
+
+
+@pytest.fixture
+def mock_llm():
+    """モックLLMクライアントを提供するフィクスチャ"""
+    return MockGeminiApiClient()
 
 
 @pytest.fixture
@@ -30,7 +43,7 @@ def sample_erotic_text():
 @pytest.fixture
 def real_db_manager():
     """
-    実際の SQLite データベースを用いた UnitOfWork を提供する。
+    実際の SQLite データベースを用いた DatabaseManager を提供する。
     
     - 一時ファイルDBを作成し、最新スキーマを create_all で構築
     - コミットパスは ChromaDB へは同期せず Outbox テーブルに記録するため、
@@ -48,14 +61,19 @@ def real_db_manager():
     engine.dispose()
     
     manager = DatabaseManager(db_url)
-    uow = UnitOfWork(db=manager)
     
-    yield uow
+    yield manager
     
     try:
         db_path.unlink()
     except OSError:
         pass
+
+
+@pytest.fixture
+def real_uow(real_db_manager):
+    """実際の SQLite データベースを用いた UnitOfWork を提供する。"""
+    return UnitOfWork(db=real_db_manager)
 
 
 @pytest.fixture
