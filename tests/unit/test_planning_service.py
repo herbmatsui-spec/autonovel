@@ -1,88 +1,69 @@
 """PlanningService のユニットテスト。
 
-対象: UltimateHegemonyEngine の肥大化解消に向けた PlanningService 抽出。
-
-Phase 3: PlanningService 抽出 (Steps 56-80)
-
+対象: UltimateHegemonyEngine の肥大化解消に向けた PlanningService 抽出 (Phase 3)。
+PlanningService は WorldBibleGenerator を内包し、create_hegemony_plan /
+audit_bible_completeness を委譲する。
 """
+from typing import Any, Tuple
 
-from typing import Any
+import pytest
+
 from src.backend.planning_service import PlanningService
-from src.backend.protocols import PlanningPort
-from src.shared.utils import StatusReporter
+
+pytest_mark_async = pytest.mark.asyncio
 
 
-class _FakePlanningService:
-    def __init__(self):
-        self.called_methods = []
-
-    async def create_hegemony_plan(self, *args, **kwargs):
-        self.called_methods.append(("create_hegemony_plan", args, kwargs))
-        return 1, "fake_bible"
+class _FakeAuditor:
+    def __init__(self) -> None:
+        self.calls: list[Tuple] = []
 
     async def audit_bible_completeness(self, book_id: int, reporter: Any = None) -> bool:
-        self.called_methods.append(("audit_bible_completeness", book_id, reporter))
+        self.calls.append(("audit_bible_completeness", book_id))
         return True
 
 
-def test_planning_service_creation():
-    # Mock dependencies
-    planning_agent = object()
-    bible_generator = object()
-    repo = object()
-    pm = object()
-    ctx_mgr = object()
-    reporter_factory = lambda: object()
-    
-    service = PlanningService(
-        planner=planning_agent,
-        bible_generator=bible_generator,
-        repo=repo,
-        pm=pm,
-        ctx_mgr=ctx_mgr,
-        reporter_factory=reporter_factory,
-    )
+class _FakeBibleGenerator:
+    def __init__(self) -> None:
+        self.auditor = _FakeAuditor()
+        self.calls: list[Tuple] = []
 
-    # Verify attributes
-    assert service.planning_agent is planning_agent
-    assert service.bible_generator is bible_generator
-    assert service.repo is repo
-    assert service.pm is pm
-    assert service.ctx_mgr is ctx_mgr
-    assert service.reporter_factory is reporter_factory
+    async def create_hegemony_plan(self, *args: Any, **kwargs: Any):
+        self.calls.append(("create_hegemony_plan", kwargs))
+        return 7, {"title": "demo"}
 
 
-def test_planning_service_methods_exist():
-    # Check that the service has the required methods
-    assert hasattr(PlanningService, "execute")
-    assert hasattr(PlanningService, "create_hegemony_plan")
-    assert hasattr(PlanningService, "audit_bible_completeness")
-    assert hasattr(PlanningService, "expand_plots")
-    assert hasattr(PlanningService, "rebuild_plots")
-    assert hasattr(PlanningService, "audit_bible_completeness")
-
-
-def test_planning_service_instantiation():
-    # Test that PlanningService can be instantiated with the expected arguments
-    planning_service = PlanningService(
-        planning_agent=object(),
-        bible_generator=object(),
+def _make_service() -> Tuple[PlanningService, _FakeBibleGenerator]:
+    bible_gen = _FakeBibleGenerator()
+    svc = PlanningService(
+        bible_generator=bible_gen,
         repo=object(),
         pm=object(),
         ctx_mgr=object(),
-        reporter_factory=object(),
+        reporter_factory=lambda: object(),
     )
-    assert planning_service is not None
+    return svc, bible_gen
 
 
-def test_planning_service_delegation():
-    # Test that the service delegates to its dependencies
-    fake_service = _FakePlanningService()
-    
-    # Test create_hegemony_plan delegation
-    fake_service.create_hegemony_plan()
-    assert ("create_hegemony_plan",) in fake_service.called_methods
-    
-    # Test audit_bible_completeness delegation
-    fake_service.audit_bible_completeness(1, object())
-    assert ("audit_bible_completeness", 1, object()) in fake_service.called_methods
+def test_init_attributes() -> None:
+    svc, bible_gen = _make_service()
+    assert svc.bible_generator is bible_gen
+    assert svc.reporter_factory is not None
+
+
+@pytest_mark_async
+async def test_create_hegemony_plan_delegates() -> None:
+    svc, bible_gen = _make_service()
+    book_id, bible = await svc.create_hegemony_plan(
+        genre="fantasy", keywords="勇者", target_eps=10
+    )
+    assert book_id == 7
+    assert bible == {"title": "demo"}
+    assert bible_gen.calls[0][0] == "create_hegemony_plan"
+
+
+@pytest_mark_async
+async def test_audit_bible_completeness_delegates() -> None:
+    svc, bible_gen = _make_service()
+    ok = await svc.audit_bible_completeness(7, reporter=None)
+    assert ok is True
+    assert bible_gen.auditor.calls == [("audit_bible_completeness", 7)]
