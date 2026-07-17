@@ -12,6 +12,7 @@ from config import get_config
 from prompts.manager import PromptManager
 from src.backend.database import DataRepository, UnitOfWork
 from src.backend.database.core import get_db_manager
+from src.backend.engine_config import EngineConfig
 from src.backend.engine_context import ContextManager
 from src.core.llm_gateway import (
     LLMGenerateResultProxy,  # noqa: F401  (テスト互換のため再エクスポート)
@@ -184,4 +185,11 @@ class AppContainer(containers.DeclarativeContainer):
         style_rag=style_rag,
         llm=llm,
         cooldown=cooldown
+    )
+    # EngineFacade: UltimateHegemonyEngine を内包し、後方互換インターフェースを
+    # 提供する薄いファサード。将来的なサービス分解 (ADR-0004) への移行足場。
+    engine_facade = providers.Factory(
+        "src.backend.engine_facade.EngineFacade",
+        config=providers.Factory(EngineConfig.create, api_key=api_key, cooldown=cooldown),
+        engine=engine,
     )
