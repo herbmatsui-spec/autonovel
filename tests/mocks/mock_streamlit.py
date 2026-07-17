@@ -2,7 +2,6 @@ import sys
 import types
 from unittest.mock import MagicMock
 
-
 class MockStreamlitSessionState(dict):
     """st.session_state をシミュレートする辞書クラス"""
     def __getattr__(self, name):
@@ -43,46 +42,17 @@ class MockStreamlitContext:
     def click_button(self, label: str):
         self.buttons_clicked.add(label)
 
-class MockStreamlitModule(types.ModuleType):
-    """streamlitモジュールの振る舞いをするモックモジュール"""
-    def __init__(self, context: MockStreamlitContext):
-        super().__init__("streamlit")
-        self.__path__ = []
-        self.context = context
-
-        # Define streamlit.errors submodule
-        errors_mod = types.ModuleType("streamlit.errors")
-        errors_mod.StreamlitAPIException = Exception
-        self.errors = errors_mod
-        sys.modules["streamlit.errors"] = errors_mod
-
-        # Define streamlit.runtime and submodules
-        runtime_mod = types.ModuleType("streamlit.runtime")
-        runtime_mod.__path__ = []
-        self.runtime = runtime_mod
-        sys.modules["streamlit.runtime"] = runtime_mod
-
-        scriptrunner_mod = types.ModuleType("streamlit.runtime.scriptrunner")
-        scriptrunner_mod.get_script_run_ctx = MagicMock(return_value=None)
-        self.runtime.scriptrunner = scriptrunner_mod
-        sys.modules["streamlit.runtime.scriptrunner"] = scriptrunner_mod
-
-
-    @property
-    def session_state(self):
-        return self.context.session_state
-
-    def set_page_config(self, *args, **kwargs):
-        pass
-
     def toast(self, message, icon=None):
         self.context.toast_calls.append((message, icon))
+        self.context.toast_calls_with_icon = (message, icon)
 
     def error(self, message):
         self.context.error_calls.append(message)
+        self.context.error_calls_with_message = message
 
     def write(self, message):
         self.context.write_calls.append(message)
+        self.context.write_calls_with_message = message
 
     def markdown(self, body, unsafe_allow_html=False):
         pass
@@ -119,35 +89,40 @@ class MockStreamlitModule(types.ModuleType):
 
     def metric(self, label, value):
         self.context.metrics[label] = value
+        self.context.metrics_with_label_value = (label, value)
 
     def columns(self, spec):
         return [MagicMock() for _ in range(spec if isinstance(spec, int) else len(spec))]
 
-    class SidebarContext:
-        def __enter__(self):
-            return self
-        def __exit__(self, exc_type, exc_val, exc_tb):
-            pass
-
-    @property
-    def sidebar(self):
-        return self.SidebarContext()
-
-    def button(self, label, type=None, **kwargs):
-        return label in self.context.buttons_clicked
-
-    class SpinnerContext:
-        def __enter__(self):
-            return self
-        def __exit__(self, exc_type, exc_val, exc_tb):
-            pass
-
-    def spinner(self, text):
-        return self.SpinnerContext()
+    def click_button(self, label: str):
+        self.context.buttons_clicked.add(label)
+        self.context.button_clicked = label
 
     def rerun(self):
         self.context.rerun_called = True
+        self.context.rerun_called_with_timestamp = time.time()
         pass
+
+    def captured_toasts(self):
+        return self.context.toast_calls
+
+    def captured_errors(self):
+        return self.context.error_calls
+
+    def captured_write_calls(self):
+        return self.context.write_calls
+
+    def captured_metrics(self):
+        return self.context.metrics
+
+    def captured_buttons_clicked(self):
+        return list(self.context.buttons_clicked)
+
+    def captured_rerun(self):
+        return self.context.rerun_called
+
+    def captured_navigation_run(self):
+        return self.context.navigation_run_called
 
     def navigation(self, pages):
         class MockNavigation:
@@ -155,6 +130,7 @@ class MockStreamlitModule(types.ModuleType):
                 self.ctx = ctx
             def run(self):
                 self.ctx.navigation_run_called = True
+                self.ctx.navigation_run_called_with_time = time.time()
         return MockNavigation(self.context)
 
     class Page:
@@ -165,12 +141,12 @@ class MockStreamlitModule(types.ModuleType):
             self.url_path = url_path
             self.default = default
 
-    def fragment(self, *args, **kwargs):
-        if len(args) == 1 and callable(args[0]):
-            return args[0]
-        def decorator(func):
-            return func
-        return decorator
+        def fragment(self, *args, **kwargs):
+            if len(args) == 1 and callable(args[0]):
+                return args[0]
+            def decorator(func):
+                return func
+            return decorator
 
 def patch_streamlit(context: MockStreamlitContext):
     """sys.modules['streamlit'] をモックに置き換える"""

@@ -2,6 +2,7 @@ from typing import Any, Dict
 
 from src.shared.utils import StatusReporter
 
+from ._shared_ops import run_pipeline_with_retry
 from .base_workflow import BaseWorkflow
 
 
@@ -89,30 +90,17 @@ class FullAutoWorkflow(BaseWorkflow):
         # 2. 並列執筆（プロット生成含む）
         try:
             reporter.update_progress(1, 3, "STEP 2/3: 本文を自動執筆中...")
-            chars_count, failed_episodes = await self.engine.writer.generate_episodes_pipeline(
+            chars_count, failed_episodes = await run_pipeline_with_retry(
+                writer=self.engine.writer,
                 book_id=book_id,
                 start_ep=1,
                 end_ep=target_eps,
                 passion=tone_vibe,
-                target_word_count=word_count,
+                word_count=word_count,
                 reporter=reporter,
-                is_easy_mode=True
+                is_easy_mode=True,
+                max_retries=1
             )
-
-            # 自動再試行
-            if failed_episodes and not reporter.state.should_stop():
-                reporter.report(f"🔄 {len(failed_episodes)}件のエピソードで不備を検知。自動修復中...", "warning")
-                retry_chars, still_failed = await self.engine.writer.generate_episodes_pipeline(
-                    book_id=book_id,
-                    start_ep=1,
-                    end_ep=target_eps,
-                    passion=tone_vibe,
-                    target_word_count=word_count,
-                    reporter=reporter,
-                    is_easy_mode=True
-                )
-                chars_count += retry_chars
-                failed_episodes = still_failed
 
             if reporter.state.should_stop():
                 return {"book_id": book_id, "status": "stopped"}

@@ -1,23 +1,21 @@
 import pytest
-import streamlit as st
 from streamlit_app.state import UIStateStore
 from unittest.mock import MagicMock
 
 
-class MockSessionState(dict):
-    pass
-
-
 @pytest.fixture
 def mock_st_session_state(monkeypatch):
-    mock_state = MockSessionState()
-    monkeypatch.setattr(st, "session_state", mock_state)
-    return mock_state
+    """Mock Streamlit session_state using mock_streamlit fixture"""
+    from tests.mocks.mock_streamlit import mock_st_context
+    mock_st = mock_st_context()
+    # We'll use the mock_st_context fixture which patches streamlit
+    # The actual session_state manipulation will be done through the mock
+    return mock_st
 
 
 def test_state_persistence_across_reruns(mock_st_session_state):
     """Streamlit rerun間で状態が保持されることを確認"""
-    store1 = UIStateStore()
+    store = UIStateStore()
     initial_count = len(UIStateStore._subscribers)
     
     for i in range(100):
@@ -27,7 +25,7 @@ def test_state_persistence_across_reruns(mock_st_session_state):
     assert final_count == initial_count + 100
     
     UIStateStore._subscribers.clear()
-
+    
 
 def test_ui_state_store_runtime_access(mock_st_session_state):
     """UIStateStore.get_runtime() がランタイム状態にアクセスできることを確認"""
@@ -36,7 +34,7 @@ def test_ui_state_store_runtime_access(mock_st_session_state):
     assert runtime is not None
     assert hasattr(runtime, "rerun_count")
     assert hasattr(runtime, "config_data")
-
+    
 
 def test_subscriber_notification(mock_st_session_state):
     """状態変更時にサブスクライバーが通知されることを確認"""

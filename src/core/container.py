@@ -39,6 +39,12 @@ class AppContainer(containers.DeclarativeContainer):
         min_sec=0.5,
         max_sec=10.0
     )
+    # StatusReporter ファクトリ (PlanningService 等が利用)
+    # 注意: src/shared/utils.StatusReporter は Protocol。具象クラスである
+    #       src/backend/background.StatusReporter を生成する。
+    reporter_factory = providers.Factory(
+        "src.backend.background.StatusReporter"
+    )
     genai_client = providers.Singleton(
         "src.core.llm_gateway.create_genai_client",
         api_key=api_key
@@ -164,6 +170,15 @@ class AppContainer(containers.DeclarativeContainer):
     )
     formatter = providers.Singleton(
         "src.backend.sanitizer.TextFormatter"
+    )
+    # PlanningService: 企画・プロット生成を担当 (ADR-0004)
+    planning_service = providers.Factory(
+        "src.backend.planning_service.PlanningService",
+        bible_generator=bible_generator,
+        repo=repo,
+        pm=pm,
+        ctx_mgr=ctx_mgr,
+        reporter_factory=reporter_factory,
     )
     engine = providers.Factory(
         "src.backend.engine.UltimateHegemonyEngine",

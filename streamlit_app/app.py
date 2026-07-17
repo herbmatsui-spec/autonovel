@@ -116,6 +116,8 @@ def main() -> None:
 
     if not api_key:
         render_landing()
+        # APIキーがない場合はリソース状況などは表示しない
+        st.sidebar.empty()
         return
 
     _run_navigation(api_key)

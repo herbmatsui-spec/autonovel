@@ -1,40 +1,15 @@
-__pycache__/
-*.pyc
-.venv/
-venv/
-env/
-.env
-
-# Database
-*.db
-*.sqlite3
-
-# Temporary and backup files
-*.bak
-temp_*
-temp_extract/
-temp_restore/
-temp_restore_zip/
-
-# Scratch / one-off scripts and outputs (kept under archive/ when needed)
-tmp_*
-scratch*
-*_out.txt
-*_output.txt
-*.log
-async_methods.txt
-check_result.txt
-implementation_summary.txt
-integration_out.txt
-launch_test_out.txt
-models_list.txt
-pytest_out.txt
-test_result.txt
-workflow_debug.txt
-workflow_error.txt
-run_output.log
-
-# Node
-node_modules/
-dist/
-build/
+docs/improvement_plan_48steps.md
+docs/adr/0005-streamlit-testing-architecture.md
+docs/operations/huey_operations.md
+tests/integration/test_huey_concurrency.py
+tests/mocks/mock_streamlit.py
+tests/conftest.py
+tests/unit/test_ui_fragments.py
+tests/test_streamlit_state.py
+tests/integration/state_tests/test_ui_state_store.py
+tests/integration/test_app_integration.py
+src/backend/huey_config.py
+src/backend/worker_config.py
+src/backend/tasks.py
+src/backend/routers/health.py
+src/backend/routers/metrics.py

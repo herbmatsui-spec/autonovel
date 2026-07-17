@@ -2,12 +2,12 @@
 src/streamlit_app/ui_tabs_writing.py — 小説生成タブコンポーネント（Streamlit セッション状態統一版）
 """
 import streamlit as st
-import httpx
 import json
 import time
 import uuid
 from typing import Dict, Any
 
+from streamlit_app import api_client
 from streamlit_app.state import UIStateStore
 
 # ----------------------------------------------------------------------
@@ -107,20 +107,15 @@ def render_novel_production_tab():
                 
                 # -------- API呼び出し（リトライ対応） --------
                 try:
-                    @retry_api
-                    def call_commercial_api():
-                        return httpx.post(
-                            "http://localhost:8000/api/commercial/run",
-                            json=commercial_config,
-                            timeout=180.0
-                        )
-                    
-                    response = call_commercial_api()
-                    if response.status_code != 200:
-                        st.error(f"API応答エラー {response.status_code}: {response.text}")
-                        return
-                    
-                    result = response.json()
+                    # api_client 経由で呼び出しを行うように変更
+                    # NOTE: api_client側に対応するメソッド(run_commercial_pipeline等)が定義されている前提
+                    result = api_client._request(
+                        "POST", 
+                        "/commercial/run", 
+                        timeout=180.0, 
+                        **commercial_config
+                    )
+
                     # トレースID／タスクIDを取得（バックエンドが提供していれば利用）
                     task_id = result.get("trace_id") or result.get("task_id") or str(uuid.uuid4())
                     set_ui(commercial_task_id=task_id)

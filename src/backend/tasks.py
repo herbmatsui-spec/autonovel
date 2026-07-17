@@ -26,7 +26,6 @@ _CONFIG_OVERRIDE_KEYS = {
     "openai_api_key",
 }
 
-
 def _apply_config_overrides(config_dict: Optional[dict]) -> None:
     """UI から渡された設定 (モデル選択・OpenRouter設定等) をランタイム設定へ反映する。
 
@@ -43,7 +42,7 @@ def _apply_config_overrides(config_dict: Optional[dict]) -> None:
     except Exception as e:
         logger.warning(f"Failed to apply config overrides: {e}")
 
-@huey.task()
+@huey.task(retries=3, retry_delay=5)
 @with_trace_context
 def process_vector_event(event_type: str, payload: dict, trace_id: Optional[str] = None):
     """
@@ -99,7 +98,6 @@ async def _process_outbox_events_async():
             except Exception as e:
                 logger.error(f"Failed to process outbox event {event.id}: {e}")
 
-
 @huey.periodic_task(crontab(minute='*'))
 def save_prompt_metrics():
     logger.info("Saving prompt metrics snapshot...")
@@ -119,7 +117,8 @@ async def _save_prompt_metrics_async():
     db = container.db()
     async with UnitOfWork(db=db) as uow:
         await uow.prompt_metrics.save_metrics_snapshot(metrics)
-@huey.task()
+
+@huey.task(retries=3, retry_delay=5)
 @with_trace_context
 def execute_service_workflow(task_id: str, api_key: str, config_dict: dict, method_name: str, kwargs: dict, trace_id: Optional[str] = None):
     import asyncio
@@ -206,7 +205,7 @@ def execute_service_workflow(task_id: str, api_key: str, config_dict: dict, meth
     except Exception as e:
         logger.error(f"Task execution failed: {e}", exc_info=True)
 
-@huey.task()
+@huey.task(retries=3, retry_delay=5)
 @with_trace_context
 def run_test_coro(task_id: str, message: str, trace_id: Optional[str] = None):
     """テスト用のダミータスク"""
@@ -223,7 +222,7 @@ def run_test_coro(task_id: str, message: str, trace_id: Optional[str] = None):
     state.logs = [message]
     state._save_to_db()
 
-@huey.task()
+@huey.task(retries=3, retry_delay=5)
 @with_trace_context
 def async_score_narrative_metrics(book_id: int, branch_id: int, ep_num: int, trace_id: Optional[str] = None):
     """
@@ -259,6 +258,3 @@ def async_score_narrative_metrics(book_id: int, branch_id: int, ep_num: int, tra
             return False
 
     return asyncio.run(_run())
-
-
-
