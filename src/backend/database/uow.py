@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from services.errors import retry_on_lock
 
-# Circular import avoidance: Move Container import inside methods or use a different approach
+from config.container import Container
 from src.backend.database.core import DatabaseManager
 from src.backend.database.models import Outbox
 from src.backend.database.outbox import ChromaOutboxService
@@ -34,7 +34,7 @@ class UnitOfWork:
     SQLite のトランザクション整合性と ChromaDB への同期（Outboxパターン）を保証する Unit of Work。
     """
     @inject
-    def __init__(self, db: DatabaseManager = Provide["Container.db"]):
+    def __init__(self, db: DatabaseManager = Provide[Container.db]):
         self.db = db
         self.session: Optional[AsyncSession] = None
         self._token = None

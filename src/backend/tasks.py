@@ -8,12 +8,9 @@ from prompts.manager import prompt_manager
 from src.backend.database.uow import UnitOfWork
 from src.core.observability import with_trace_context
 
-# Hueyのセットアップ
 huey = SqliteHuey('kaku_hegemony_v2_huey.db')
 logger = logging.getLogger('huey')
 
-# UI から渡される設定のうち、ワーカーのランタイム設定へ反映を許可するキー。
-# モデル選択と OpenAI互換 (OpenRouter) プロバイダ設定を対象とする。
 _CONFIG_OVERRIDE_KEYS = {
     "model_planning",
     "model_plot_expansion",
@@ -28,11 +25,6 @@ _CONFIG_OVERRIDE_KEYS = {
 
 
 def _apply_config_overrides(config_dict: Optional[dict]) -> None:
-    """UI から渡された設定 (モデル選択・OpenRouter設定等) をランタイム設定へ反映する。
-
-    ワーカープロセスの設定キャッシュに関係なく、ユーザーが選択した最新の
-    モデル・プロバイダ設定が使用されるようにする。ホワイトリスト外のキーは無視する。
-    """
     if not config_dict:
         return
     try:
@@ -43,15 +35,12 @@ def _apply_config_overrides(config_dict: Optional[dict]) -> None:
     except Exception as e:
         logger.warning(f"Failed to apply config overrides: {e}")
 
-@huey.task()
+
+@huey.task(retries=3, retry_delay=5)
 @with_trace_context
 def process_vector_event(event_type: str, payload: dict, trace_id: Optional[str] = None):
-    """
-    非同期でChromaDBへの操作を実行するタスク
-    """
+    """非同期でChromaDBへの操作を実行するタスク"""
     logger.info(f"Processing vector event: {event_type}")
-
-    # 依存関係の解決
     from src.services.vector_store import DefaultVectorStore
     store = DefaultVectorStore()
 
@@ -70,12 +59,10 @@ def process_vector_event(event_type: str, payload: dict, trace_id: Optional[str]
         )
     return None
 
+
 @huey.periodic_task(crontab(minute='*'))
 def process_outbox_events():
-    """
-    Huey periodic task for processing Outbox events.
-    Replaces the manual polling loop in outbox_worker.py
-    """
+    """Huey periodic task for processing Outbox events."""
     logger.info("Running outbox processor task...")
     import asyncio
     try:
@@ -83,73 +70,44 @@ def process_outbox_events():
     except Exception as e:
         logger.error(f"Failed to process outbox events: {e}")
 
-async def _process_outbox_events_async():
 
-    container = Container()
+async def _process_outbox_events_async():
+    container = get_container()
     db = container.db()
     uow = UnitOfWork(db=db)
 
     async with uow:
-        # Fetch pending events
         events = await uow.get_pending_outbox_events()
         for event in events:
             try:
-                # The mediator/dispatch logic was removed in v3.0, so we just mark the outbox event as processed.
                 await uow.mark_outbox_event_processed(event.id)
             except Exception as e:
                 logger.error(f"Failed to process outbox event {event.id}: {e}")
 
 
-@huey.periodic_task(crontab(minute='*'))
-def save_prompt_metrics():
-    logger.info("Saving prompt metrics snapshot...")
-    try:
-        asyncio.run(_save_prompt_metrics_async())
-    except Exception as e:
-        logger.error(f"Failed to save prompt metrics: {e}")
-
-async def _save_prompt_metrics_async():
-    # Get the PromptManager singleton
-    registry = prompt_manager.registry
-    metrics = registry.get_metrics()
-    # Get database session
-    from config.container import Container
-    from src.backend.database.uow import UnitOfWork
-    container = Container()
-    db = container.db()
-    async with UnitOfWork(db=db) as uow:
-        await uow.prompt_metrics.save_metrics_snapshot(metrics)
-@huey.task()
+@huey.task(retries=3, retry_delay=5)
 @with_trace_context
 def execute_service_workflow(task_id: str, api_key: str, config_dict: dict, method_name: str, kwargs: dict, trace_id: Optional[str] = None):
     import asyncio
-
     from src.backend.background import BackgroundReporter, ProgressState
 
-    # 状態の初期化
     state = ProgressState(is_running=True, task_id=task_id, repo=None)
     reporter = BackgroundReporter(state)
 
     async def _run():
         try:
-            from dependency_injector import providers
-
             from config.container import Container
-            from src.core.container import AppContainer
+            from src.core.container import make_container
 
-            # UI から渡された設定 (モデル選択・OpenRouter設定等) を
-            # ランタイム設定へ反映する。ワーカープロセスの設定キャッシュに
-            # 関係なく、ユーザーが選択した最新のモデルが使用されるようにする。
             _apply_config_overrides(config_dict)
 
-            container = AppContainer(
-                api_key=providers.Object(api_key),
-                db=providers.Object(Container.db())
+            container = make_container(
+                api_key=api_key,
+                db=Container.db(),
             )
             engine = container.engine()
             state.repo = engine.repo
 
-            # ワークフローのディスパッチ
             if method_name == "full_auto_workflow":
                 from src.backend.workflows.full_auto_workflow import FullAutoWorkflow
                 workflow = FullAutoWorkflow(engine)
@@ -195,6 +153,7 @@ def execute_service_workflow(task_id: str, api_key: str, config_dict: dict, meth
             state.is_running = False
             state.message = "処理が完了しました。"
             state._save_to_db()
+
         except Exception as e:
             logger.error(f"Workflow error: {e}", exc_info=True)
             state.is_running = False
@@ -206,31 +165,29 @@ def execute_service_workflow(task_id: str, api_key: str, config_dict: dict, meth
     except Exception as e:
         logger.error(f"Task execution failed: {e}", exc_info=True)
 
-@huey.task()
+
+@huey.task(retries=3, retry_delay=5)
 @with_trace_context
 def run_test_coro(task_id: str, message: str, trace_id: Optional[str] = None):
     """テスト用のダミータスク"""
-    from src.backend.background import ProgressState
-
-    container = Container()
+    container = get_container()
     db = container.db()
 
     class FakeEngine:
         def __init__(self):
             self.db = db
+
     state = ProgressState(is_running=False, task_id=task_id, repo=FakeEngine(), skip_initial_save=True)
     state.result_data = "SuccessValue"
     state.logs = [message]
     state._save_to_db()
 
-@huey.task()
+
+@huey.task(retries=3, retry_delay=5)
 @with_trace_context
 def async_score_narrative_metrics(book_id: int, branch_id: int, ep_num: int, trace_id: Optional[str] = None):
-    """
-    エピソードのスコアリングをバックグラウンドで実行するタスク
-    """
+    """エピソードのスコアリングをバックグラウンドで実行するタスク"""
     import asyncio
-
     from config.container import Container
     from src.agents.audit import LogicalAuditor
     from src.backend.database.repositories.narrative_metrics_repo import NarrativeMetricRepository
@@ -238,9 +195,8 @@ def async_score_narrative_metrics(book_id: int, branch_id: int, ep_num: int, tra
 
     async def _run():
         try:
-            container = Container()
+            container = get_container()
             async with container.async_session() as session:
-                # 依存関係の構築
                 auditor = LogicalAuditor(
                     repo=container.repo_plot(),
                     pm=container.prompt_manager(),
@@ -248,10 +204,8 @@ def async_score_narrative_metrics(book_id: int, branch_id: int, ep_num: int, tra
                     ctx_mgr=container.project_context()
                 )
                 metrics_repo = NarrativeMetricRepository(session)
-
                 service = NarrativeScoringService(session, auditor, metrics_repo)
                 success = await service.rescore_episode(book_id, branch_id, ep_num)
-
                 logger.info(f"Background scoring for Ep.{ep_num} finished. Success: {success}")
                 return success
         except Exception as e:
@@ -261,4 +215,30 @@ def async_score_narrative_metrics(book_id: int, branch_id: int, ep_num: int, tra
     return asyncio.run(_run())
 
 
+@huey.task(retries=3, retry_delay=5)
+@with_trace_context
+def enqueue_audit_after_write(book_id: int, write_from: int, write_to: int, trace_id: Optional[str] = None):
+    """執筆完了後の論理監査 (Shadow Mode) をバックグラウンドで実行するタスク。"""
+    import asyncio
+    from config.container import Container
+    from src.agents.audit import LogicalAuditor
 
+    async def _run():
+        try:
+            container = get_container()
+            async with container.async_session() as session:
+                auditor = LogicalAuditor(
+                    repo=container.repo_plot(),
+                    pm=container.prompt_manager(),
+                    generate_json=container.llm().generate_json,
+                    ctx_mgr=container.project_context(),
+                )
+                for ep_num in range(write_from, write_to + 1):
+                    await auditor.audit_episode(session, book_id, ep_num)
+                logger.info(
+                    f"Shadow audit finished for book_id={book_id}, ep{write_from}-ep{write_to}"
+                )
+        except Exception as e:
+            logger.exception(f"Error in enqueue_audit_after_write for book_id={book_id}: {e}")
+
+    return asyncio.run(_run())

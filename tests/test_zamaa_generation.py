@@ -3,7 +3,7 @@ import logging
 from typing import Dict, Any
 from src.models.planning_config import PlanningConfig
 from src.services.plot_service import PlotService
-from src.core.container import AppContainer as Container
+from src.core.container import make_container
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ async def test_zamaa_plot_generation():
     # 2. Initialize PlotService via Container
     # Note: In a real test we might mock the LLM, but here we verify the pipeline flow
     try:
-        container = Container()
+        container = make_container(api_key="test-api-key")
         plot_service = PlotService(container.repo())
         
         logger.info("Executing plot generation with zamaa engine...")

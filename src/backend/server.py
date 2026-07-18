@@ -98,6 +98,43 @@ async def add_trace_id_middleware(request: Request, call_next):
         # リクエスト終了後にコンテキストをクリーンアップ
         TraceContext.clear()
 
+@app.middleware("http")
+async def add_security_headers_middleware(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    return response
+
+from collections import defaultdict
+from datetime import datetime, timedelta
+import time
+
+_rate_limit_store: dict[str, list[float]] = defaultdict(list)
+_RATE_LIMIT_MAX_REQUESTS = 100
+_RATE_LIMIT_WINDOW_SECONDS = 60
+
+@app.middleware("http")
+async def rate_limit_middleware(request: Request, call_next):
+    client_ip = request.client.host if request.client else "unknown"
+    now = time.time()
+    window_start = now - _RATE_LIMIT_WINDOW_SECONDS
+
+    _rate_limit_store[client_ip] = [
+        t for t in _rate_limit_store[client_ip] if t > window_start
+    ]
+
+    if len(_rate_limit_store[client_ip]) >= _RATE_LIMIT_MAX_REQUESTS:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(
+            status_code=429,
+            content={"error": "Too Many Requests", "detail": "リクエスト数が制限を超えました。"},
+        )
+
+    _rate_limit_store[client_ip].append(now)
+    return await call_next(request)
+
 # CORS middleware
 from config.cors_config import get_allowed_origins
 
@@ -113,6 +150,23 @@ def configure_cors(app: FastAPI):
     )
 
 configure_cors(app)
+
+# Request timeout configuration (Step 38)
+from starlette.middleware.base import BaseHTTPMiddleware
+
+class TimeoutMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        try:
+            import asyncio
+            return await asyncio.wait_for(call_next(request), timeout=30.0)
+        except asyncio.TimeoutError:
+            from fastapi.responses import JSONResponse
+            return JSONResponse(
+                status_code=504,
+                content={"error": "Gateway Timeout", "detail": "リクエストがタイムアウトしました。"},
+            )
+
+app.add_middleware(TimeoutMiddleware)
 
 from src.backend.routers import commercial, health, books, plots, episodes, tasks, patches, issues, marketing, prompt_versions, metrics, misc, novel
 

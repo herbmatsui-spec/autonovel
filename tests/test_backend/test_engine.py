@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 from src.backend.engine import UltimateHegemonyEngine
-from src.core.container import AppContainer
+from src.core.container import AppContainer, make_container
 from dependency_injector import providers
 from src.backend.database.models import Plot
 
@@ -175,9 +175,7 @@ async def test_engine_validate_tension_deviation(ep_num, gen_tension, target_ten
 @pytest.mark.parametrize("index", range(10))
 def test_app_container_resolves_engine(index):
     # AppContainer から正しくインスタンス解決できるか
-    container = AppContainer(
-        api_key=providers.Object(f"key-{index}")
-    )
+    container = make_container(f"key-{index}")
     engine = container.engine()
     assert isinstance(engine, UltimateHegemonyEngine)
     assert engine.api_key == f"key-{index}"

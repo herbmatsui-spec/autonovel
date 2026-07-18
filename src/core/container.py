@@ -12,6 +12,7 @@ from config import get_config
 from prompts.manager import PromptManager
 from src.backend.database import DataRepository, UnitOfWork
 from src.backend.database.core import get_db_manager
+from src.backend.engine_config import EngineConfig
 from src.backend.engine_context import ContextManager
 from src.core.llm_gateway import (
     LLMGenerateResultProxy,  # noqa: F401  (テスト互換のため再エクスポート)
@@ -37,6 +38,12 @@ class AppContainer(containers.DeclarativeContainer):
         base_sec=2.0,
         min_sec=0.5,
         max_sec=10.0
+    )
+    # StatusReporter ファクトリ (PlanningService 等が利用)
+    # 注意: src/shared/utils.StatusReporter は Protocol。具象クラスである
+    #       src/backend/background.StatusReporter を生成する。
+    reporter_factory = providers.Factory(
+        "src.backend.background.StatusReporter"
     )
     genai_client = providers.Singleton(
         "src.core.llm_gateway.create_genai_client",
@@ -164,6 +171,25 @@ class AppContainer(containers.DeclarativeContainer):
     formatter = providers.Singleton(
         "src.backend.sanitizer.TextFormatter"
     )
+    # PlanningService: 企画・プロット生成を担当 (ADR-0004)
+    planning_service = providers.Factory(
+        "src.backend.planning_service.PlanningService",
+        bible_generator=bible_generator,
+        repo=repo,
+        pm=pm,
+        ctx_mgr=ctx_mgr,
+        reporter_factory=reporter_factory,
+    )
+    # WritingService: 本文執筆・研磨を担当 (ADR-0004)
+    writing_service = providers.Factory(
+        "src.backend.writing_service.WritingService",
+        writer=writer,
+        repo=repo,
+        pm=pm,
+        style_rag=style_rag,
+        ctx_mgr=ctx_mgr,
+        reporter_factory=reporter_factory,
+    )
     engine = providers.Factory(
         "src.backend.engine.UltimateHegemonyEngine",
         api_key=api_key,
@@ -184,4 +210,11 @@ class AppContainer(containers.DeclarativeContainer):
         style_rag=style_rag,
         llm=llm,
         cooldown=cooldown
+    )
+    # EngineFacade: UltimateHegemonyEngine を内包し、後方互換インターフェースを
+    # 提供する薄いファサード。将来的なサービス分解 (ADR-0004) への移行足場。
+    engine_facade = providers.Factory(
+        "src.backend.engine_facade.EngineFacade",
+        config=providers.Factory(EngineConfig.create, api_key=api_key, cooldown=cooldown),
+        engine=engine,
     )

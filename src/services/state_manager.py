@@ -4,6 +4,7 @@ from typing import Any
 from dependency_injector.wiring import Provide, inject
 
 from src.backend.database.uow import UnitOfWork
+from src.core.container import AppContainer
 
 logger = logging.getLogger(__name__)
 
@@ -11,7 +12,7 @@ class StateManager:
     """アプリケーション状態の管理を行うサービス"""
 
     @inject
-    def __init__(self, uow: UnitOfWork = Provide["Container.uow"]):
+    def __init__(self, uow: UnitOfWork = Provide[AppContainer.uow]):
         self.uow = uow
 
     async def save_state(self, key: str, value: Any):

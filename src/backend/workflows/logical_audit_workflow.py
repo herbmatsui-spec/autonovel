@@ -17,7 +17,7 @@ class LogicalAuditWorkflow(BaseWorkflow):
 
         issues_count = 0
         from src.backend.database import UnitOfWork
-        async with UnitOfWork(self.engine.db) as uow:
+        async with UnitOfWork(self.repo.db) as uow:
             for ep in range(ep_from, ep_to + 1):
                 plot = await uow.plots.get_plot(branch_id, ep)
                 chapter = await uow.chapters.get_chapter(branch_id, ep)
@@ -25,7 +25,7 @@ class LogicalAuditWorkflow(BaseWorkflow):
                     continue
 
                 # Run the auditor agent
-                issue_list = await self.engine.auditor.audit_plot_as_issues(
+                issue_list = await self.auditor.audit_plot_as_issues(
                     book_id=book_id,
                     branch_id=branch_id,
                     ep_num=ep,

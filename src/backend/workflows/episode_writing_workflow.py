@@ -3,9 +3,11 @@ from typing import Any, Dict
 
 from src.shared.utils import StatusReporter
 
+from ._shared_ops import enqueue_shadow_audit, trigger_prefetch
 from .base_workflow import BaseWorkflow
 
 logger = logging.getLogger(__name__)
+
 
 class EpisodeWritingWorkflow(BaseWorkflow):
     """執筆ワークフロー: 通常モードとパイプラインモードの切り替えを隠蔽"""
@@ -20,8 +22,11 @@ class EpisodeWritingWorkflow(BaseWorkflow):
         pipeline_mode = kwargs["pipeline_mode"]
         mode = kwargs.get("mode", "final")
 
+        # WritingService を使用（engine.writer から移行済）
+        writing = self.writing
+
         if pipeline_mode:
-            chars_count, failed = await self.engine.writer.generate_episodes_pipeline(
+            chars_count, failed = await writing.generate_episodes_pipeline(
                 book_id, write_from, write_to, passion, word_count, reporter=reporter,
                 mode=mode
             )
@@ -36,7 +41,7 @@ class EpisodeWritingWorkflow(BaseWorkflow):
                 logger.error(f"Failed to enqueue shadow audit: {e}")
             return {"chars_count": chars_count, "failed_episodes": failed, "book_id": book_id}
         else:
-            chars_count = await self.engine.writer.generate_episodes(
+            chars_count = await writing.generate_episodes(
                 book_id, write_from, write_to, passion, word_count, do_refine,
                 reporter=reporter, env_state=env_state, mode=mode
             )
@@ -61,11 +66,11 @@ class EpisodeWritingWorkflow(BaseWorkflow):
 
             # SemanticCacheManager のインスタンスを取得
             # (Container 等でインジェクションされている場合はそれを使用)
-            vector_store = getattr(self.engine, "vector_store", None)
-            client = getattr(self.engine, "llm_client", None) or getattr(self.engine, "client", None)
+            vector_store = getattr(self, "vector_store", None)
+            client = getattr(self, "llm_client", None) or getattr(self, "client", None)
 
             if not vector_store or not client:
-                # VectorStore/Client が Engine に注入されていない場合はスキップ
+                # VectorStore/Client が注入されていない場合はスキップ
                 logger.debug("[PREFETCH] VectorStore or Client not available, skipping prefetch")
                 return
 
@@ -90,4 +95,3 @@ class EpisodeWritingWorkflow(BaseWorkflow):
         except Exception as e:
             # プリフェッチ失敗は致命的なエラーではなくログ出力のみ
             logger.warning(f"[PREFETCH] Prefetch trigger failed: {e}")
-

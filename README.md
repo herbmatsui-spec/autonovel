@@ -162,3 +162,9 @@ pytest tests/integration tests/test_vector_store_lifecycle.py -q
 *   UI の共存・移行方針: [docs/adr/0003-streamlit-coexistence-strategy.md](docs/adr/0003-streamlit-coexistence-strategy.md)
 *   プラグインシステム: [docs/adr/002-plugin-system.md](docs/adr/002-plugin-system.md)
 *   エンジンの仲介レイヤ: [docs/adr/003-engine-mediator.md](docs/adr/003-engine-mediator.md)
+## Refactoring Update (ADR-0004)
+- Completed extraction of all core domain services (Planning, Writing, Critique, Bible, Tension).
+- Implemented Dependency Injection container for better modularity and testability.
+- Migrated domain workflows to a service-oriented architecture.
+- Verified all core unit tests pass.
+
