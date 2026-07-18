@@ -130,6 +130,8 @@ class StreamingPlotScheduler:
                 StructuredLogger.error("Failed scheduled plot gen", trace_id=TraceContext.get_trace_id(), error=e)
                 return None
 
+            finally:
+                self._gen_start_times.pop(ep_num, None)
         self.tasks[ep_num] = asyncio.create_task(_run_gen())
 
     async def await_plot_ready(self, ep_num: int) -> Optional[Any]:
