@@ -27,7 +27,7 @@ async def test_refine_erotic_workflow_success():
     mock_uow.session.commit = AsyncMock()
 
     # ワークフローとモックエンジン
-    workflow = RefineEroticWorkflow(mock_engine)
+    workflow = RefineEroticWorkflow(engine=mock_engine)
 
     # EroticSpecialistのモック化（実際の処理をスキップ）
     original_metaphor_filter = None
@@ -106,7 +106,7 @@ async def test_refine_erotic_workflow_failure():
     mock_uow.session.commit = AsyncMock()
 
     # ワークフローとモックエンジン
-    workflow = RefineEroticWorkflow(mock_engine)
+    workflow = RefineEroticWorkflow(engine=mock_engine)
 
     # EroticIntegrityCheckerを失敗させるモック
     original_check_all = None

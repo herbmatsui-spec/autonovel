@@ -63,7 +63,7 @@ def _run_navigation(api_key: str) -> None:
     """Gemini APIキーを使用してエンジンを初期化し、ナビゲーションメニューを実行する。"""
     try:
         # EngineService.get_instance 等を利用して、シングルトンまたはキャッシュされたサービスを取得する
-        from streamlit_app.engine_service import EngineService
+        from src.engine_service import EngineService
         # 既存の EngineService は api_key ベースでインスタンスをキャッシュしているため、これを利用
         service = EngineService.get_instance(api_key=api_key)
 

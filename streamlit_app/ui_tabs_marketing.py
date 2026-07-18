@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 from streamlit_app.proxy import UltimateHegemonyEngineProxy as UltimateHegemonyEngine
 
 

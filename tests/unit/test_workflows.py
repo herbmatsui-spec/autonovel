@@ -22,7 +22,7 @@ async def test_chapter_import_workflow_execution():
     engine = NullEngine()
 
     workflow_cls = WORKFLOW_REGISTRY["chapter_import_workflow"]
-    workflow = workflow_cls(engine)
+    workflow = workflow_cls(engine=engine)
 
     result = await workflow.execute(
         reporter=None,

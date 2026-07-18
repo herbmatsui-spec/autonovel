@@ -12,7 +12,8 @@ src/backend/huey_config.py
 src/backend/worker_config.py
 src/backend/tasks.py
 src/backend/routers/health.py
-src/backend/routers/metrics.py__pycache__/
+src/backend/routers/metrics.py
+__pycache__/
 *.pyc
 *.pyo
 *.pyd

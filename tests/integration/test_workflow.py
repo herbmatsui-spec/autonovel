@@ -160,7 +160,7 @@ async def test_full_auto_workflow_easy_mode(real_db_manager, mock_llm):
             cols = [row[1] for row in cursor.fetchall()]
             conn.close()
 
-    workflow = FullAutoWorkflow(engine)
+    workflow = FullAutoWorkflow(engine=engine)
     reporter = DummyReporter()
 
     try:
@@ -327,7 +327,7 @@ async def test_full_auto_workflow_normal_mode(real_db_manager, mock_llm):
             cols = [row[1] for row in cursor.fetchall()]
             conn.close()
 
-    workflow = FullAutoWorkflow(engine)
+    workflow = FullAutoWorkflow(engine=engine)
     reporter = DummyReporter()
 
     try:
@@ -371,7 +371,7 @@ async def test_full_auto_workflow_api_failure(real_db_manager, mock_llm):
             cursor.execute("PRAGMA table_info(books)")
             cols = [row[1] for row in cursor.fetchall()]
             conn.close()
-    workflow = FullAutoWorkflow(engine)
+    workflow = FullAutoWorkflow(engine=engine)
     reporter = DummyReporter()
 
     try:

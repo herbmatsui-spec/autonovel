@@ -105,45 +105,89 @@ def execute_service_workflow(task_id: str, api_key: str, config_dict: dict, meth
                 api_key=api_key,
                 db=Container.db(),
             )
+
+            # サービスをコンテナから取得して注入（engine への依存を排除）
+            planner = container.planner()
+            writing = container.writer()
+            writing_service = container.writing_service()
+            planning_service = container.planning_service()
+            repo = container.repo()
+            critique = container.critique()
+            narrative = container.narrative()
+            marketing = container.marketing()
+            bible_agent = container.bible_generator()
+            plot_agent = container.plot_expander()
+            formatter = container.formatter()
+            vector_store = container.vector_store()
+            llm_client = container.genai_client()
+            # TensionService は engine のメソッドを委譲（後方互換）
             engine = container.engine()
-            state.repo = engine.repo
+            tension = engine
+
+            state.repo = repo
 
             if method_name == "full_auto_workflow":
                 from src.backend.workflows.full_auto_workflow import FullAutoWorkflow
-                workflow = FullAutoWorkflow(engine)
+                workflow = FullAutoWorkflow(
+                    planner=planning_service, writing=writing, repo=repo,
+                    writing_service=writing_service, narrative=narrative,
+                    marketing=marketing, bible_agent=bible_agent,
+                    plot_agent=plot_agent, formatter=formatter,
+                    vector_store=vector_store, llm_client=llm_client,
+                )
             elif method_name == "episode_writing_workflow":
                 from src.backend.workflows.episode_writing_workflow import EpisodeWritingWorkflow
-                workflow = EpisodeWritingWorkflow(engine)
+                workflow = EpisodeWritingWorkflow(
+                    writing=writing, repo=repo, writing_service=writing_service,
+                    vector_store=vector_store, llm_client=llm_client,
+                )
             elif method_name == "plan_generation_workflow":
                 from src.backend.workflows.plan_generation_workflow import PlanGenerationWorkflow
-                workflow = PlanGenerationWorkflow(engine)
+                workflow = PlanGenerationWorkflow(
+                    planner=planning_service, repo=repo,
+                )
             elif method_name == "plot_expansion_workflow":
                 from src.backend.workflows.plot_expansion_workflow import PlotExpansionWorkflow
-                workflow = PlotExpansionWorkflow(engine)
+                workflow = PlotExpansionWorkflow(
+                    planner=planner, repo=repo,
+                    narrative=narrative, tension=tension,
+                )
             elif method_name == "plot_rebuild_workflow":
                 from src.backend.workflows.plot_rebuild_workflow import PlotRebuildWorkflow
-                workflow = PlotRebuildWorkflow(engine)
+                workflow = PlotRebuildWorkflow(
+                    planner=planner, repo=repo,
+                )
             elif method_name == "run_critique_optimization_workflow":
                 from src.backend.workflows.critique_optimization_workflow import (
                     CritiqueOptimizationWorkflow,
                 )
-                workflow = CritiqueOptimizationWorkflow(engine)
+                workflow = CritiqueOptimizationWorkflow(
+                    critique=critique, repo=repo,
+                )
             elif method_name == "retry_failed_episodes_workflow":
                 from src.backend.workflows.retry_failed_episodes_workflow import (
                     RetryFailedEpisodesWorkflow,
                 )
-                workflow = RetryFailedEpisodesWorkflow(engine)
+                workflow = RetryFailedEpisodesWorkflow(
+                    writing=writing, repo=repo,
+                )
             elif method_name == "chapter_import_workflow":
                 from src.backend.workflows.chapter_import_workflow import ChapterImportWorkflow
-                workflow = ChapterImportWorkflow(engine)
+                workflow = ChapterImportWorkflow(
+                    writing=writing, repo=repo,
+                )
             elif method_name == "marketing_generation_workflow":
                 from src.backend.workflows.marketing_generation_workflow import (
                     MarketingGenerationWorkflow,
                 )
-                workflow = MarketingGenerationWorkflow(engine)
+                workflow = MarketingGenerationWorkflow(
+                    marketing=marketing, repo=repo,
+                )
             elif method_name == "refine_erotic_workflow":
                 from src.backend.workflows.refine_erotic_workflow import RefineEroticWorkflow
-                workflow = RefineEroticWorkflow(engine)
+                workflow = RefineEroticWorkflow(
+                    repo=repo,
+                )
             else:
                 raise ValueError(f"Unknown workflow method: {method_name}")
 
