@@ -430,6 +430,12 @@ class WritingAgent(BaseAgent):
                 logger.warning(f"Failed to initialize StreamingPlotScheduler: {e}")
                 scheduler = None
 
+            # StreamingPlotScheduler を WritingGraphManager に注入（存在する場合）
+            try:
+                self._attach_scheduler_to_graph_manager(scheduler)
+            except Exception as e:
+                logger.debug(f"Skipping graph manager scheduler attach: {e}")
+
         for ep in range(start_ep, end_ep + 1):
             try:
                 if scheduler is not None:
@@ -471,6 +477,14 @@ class WritingAgent(BaseAgent):
                 pass
 
         return total_chars, failed_episodes
+
+    def _attach_scheduler_to_graph_manager(self, scheduler) -> None:
+        """StreamingPlotScheduler を WritingGraphManager に注入する（存在する場合のみ）"""
+        if scheduler is None:
+            return
+        graph_manager = getattr(self, "_writing_graph_manager", None)
+        if graph_manager is not None and hasattr(graph_manager, "set_scheduler"):
+            graph_manager.set_scheduler(scheduler)
 
     async def trigger_bible_extraction(self, book_id, content, reporter):
         """Bible抽出トリガー（現在はスタブ）"""

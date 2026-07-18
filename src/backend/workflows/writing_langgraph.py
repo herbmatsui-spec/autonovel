@@ -77,6 +77,11 @@ class WritingGraphManager:
             self.checkpointer = MemorySaver()
         # メタデータ保持用
         self._checkpoint_metadata: Dict[str, Any] = {}
+        # 品質メトリクス収集（ジャンル別トレンド分析用）
+        from .quality_metrics import QualityMetricsCollector
+        self.metrics_collector = QualityMetricsCollector()
+        # StreamingPlotScheduler 統合（依存関係管理用、None=未注入）
+        self._scheduler: Optional[Any] = None
 
     def _build_graph(self):
         if not HAS_LANGGRAPH or StateGraph is None:
@@ -376,11 +381,11 @@ class WritingGraphManager:
         """批評後のルート分岐"""
         if state.get("critic_triggered"):
             # 最大反復回数に達していない場合のみリトライ
-            if state["ac_iter"] < state["max_ac_iter"]:
-                logger.info(f"Critic triggered retry for Ep.{state['ep_num']} (iter {state['ac_iter']}/{state['max_ac_iter']})")
+            if state.get("ac_iter", 0) < state.get("max_ac_iter", 2):
+                logger.info(f"Critic triggered retry for Ep.{state.get('ep_num')} (iter {state.get('ac_iter', 0)}/{state.get('max_ac_iter', 2)})")
                 return "retry"
             else:
-                logger.info(f"Max iterations reached, skipping critic retry for Ep.{state['ep_num']}")
+                logger.info(f"Max iterations reached, skipping critic retry for Ep.{state.get('ep_num')}")
         return "finish"
 
     async def node_healing(self, state: WritingGraphState):
@@ -414,11 +419,11 @@ class WritingGraphManager:
 
     async def node_dogfeed(self, state: WritingGraphState):
         """Dogfood検証ノード - 早期スキップ対応"""
-        logger.info(f"LangGraph: Dogfeed Ep.{state['ep_num']}")
+        logger.info(f"LangGraph: Dogfeed Ep.{state.get('ep_num')}")
 
         # dogfoodが不要またはeasy_modeの場合はスキップ
-        if not state["should_dogfeed"] or state["is_easy_mode"]:
-            logger.info(f"Dogfeed skipped for Ep.{state['ep_num']} (should_dogfeed={state['should_dogfeed']}, easy={state['is_easy_mode']})")
+        if not state.get("should_dogfeed", True) or state.get("is_easy_mode", False):
+            logger.info(f"Dogfeed skipped for Ep.{state.get('ep_num')} (should_dogfeed={state.get('should_dogfeed', True)}, easy={state.get('is_easy_mode', False)})")
             return {"dogfeed_ok": True}
 
         # 指数関数的バックオフ付きリトライ
@@ -444,24 +449,48 @@ class WritingGraphManager:
 
     async def node_finalize(self, state: WritingGraphState):
         """最終化ノード - チェックポイントメタデータ記録対応"""
-        logger.info(f"LangGraph: Finalizing Ep.{state['ep_num']}")
+        logger.info(f"LangGraph: Finalizing Ep.{state.get('ep_num')}")
 
+        ep_num = state.get("ep_num")
         # メタデータを保存
-        self._checkpoint_metadata[state["ep_num"]] = {
-            "ac_iter": state["ac_iter"],
+        self._checkpoint_metadata[ep_num] = {
+            "ac_iter": state.get("ac_iter", 0),
             "rate": state.get("rate", 0),
-            "is_integrity_ok": state["is_integrity_ok"],
-            "is_causal_ok": state["is_causal_ok"],
+            "is_integrity_ok": state.get("is_integrity_ok", False),
+            "is_causal_ok": state.get("is_causal_ok", False),
             "timestamp": time.time()
         }
 
-        if not (state["is_integrity_ok"] and state["is_causal_ok"] and state.get("dogfeed_ok", True)) and not state["is_easy_mode"]:
+        # 品質メトリクスを記録
+        try:
+            from .quality_metrics import QualityMetrics
+            ctx = state.get("context")
+            genre = None
+            if isinstance(ctx, dict):
+                genre = ctx.get("genre_str")
+            metrics = QualityMetrics(
+                ep_num=ep_num,
+                integrity_ok=state.get("is_integrity_ok", False),
+                causal_ok=state.get("is_causal_ok", False),
+                rate=state.get("rate", 0),
+                ac_iter=state.get("ac_iter", 0),
+                threshold=state.get("threshold", 0),
+                timestamp=time.time(),
+                genre=genre,
+                dogfeed_ok=state.get("dogfeed_ok", True),
+                causal_reason=state.get("causal_reason", "")
+            )
+            self.metrics_collector.record(metrics)
+        except Exception as e:
+            logger.warning(f"Failed to record quality metrics for Ep.{ep_num}: {e}")
+
+        if not (state.get("is_integrity_ok") and state.get("is_causal_ok") and state.get("dogfeed_ok", True)) and not state.get("is_easy_mode", False):
             await self.manager._register_lazy_patch(
-                state["ep_num"], state["context"], state["is_integrity_ok"], state.get("rate", 1.0), state.get("threshold", 0),
-                state["is_causal_ok"], state["causal_reason"], state.get("dogfeed_ok", True), None
+                ep_num, state.get("context"), state.get("is_integrity_ok", False), state.get("rate", 1.0), state.get("threshold", 0),
+                state.get("is_causal_ok", False), state.get("causal_reason", ""), state.get("dogfeed_ok", True), None
             )
 
-        logger.info(f"Finalized Ep.{state['ep_num']}: integrity={state['is_integrity_ok']}, causal={state['is_causal_ok']}, dogfeed={state.get('dogfeed_ok', True)}")
+        logger.info(f"Finalized Ep.{ep_num}: integrity={state.get('is_integrity_ok')}, causal={state.get('is_causal_ok')}, dogfeed={state.get('dogfeed_ok', True)}")
         return {"status": "completed"}
 
     def _create_initial_state(self, ep_num: int, ctx: Any, sys_inst: str, fw_prompt: str, passion: float, is_easy_mode: bool) -> Dict[str, Any]:
@@ -543,3 +572,67 @@ class WritingGraphManager:
         count = len(self._checkpoint_metadata)
         self._checkpoint_metadata.clear()
         return count
+
+    # ========================================================================
+    # Phase 2: 品質メトリクス取得 API
+    # ========================================================================
+    def get_episode_metrics(self, ep_num: int):
+        """指定エピソードの品質メトリクスを取得"""
+        return self.metrics_collector.get(ep_num)
+
+    def get_quality_report(self, genre: Optional[str] = None) -> Dict[str, Any]:
+        """全体の品質レポートを生成"""
+        trend = self.metrics_collector.get_quality_trend(genre)
+        all_metrics = list(self.metrics_collector.episode_metrics.values())
+        best = None
+        worst = None
+        if all_metrics:
+            best = max(all_metrics, key=lambda m: m.overall_quality).ep_num
+            worst = min(all_metrics, key=lambda m: m.overall_quality).ep_num
+        return {
+            "total_episodes": len(all_metrics),
+            "trend": trend,
+            "best_episode": best,
+            "worst_episode": worst,
+            "low_quality_episodes": [m.ep_num for m in all_metrics if m.overall_quality < 0.7],
+        }
+
+    # ========================================================================
+    # Phase 3: StreamingPlotScheduler 統合
+    # ========================================================================
+    def set_scheduler(self, scheduler: Any) -> None:
+        """StreamingPlotScheduler を注入し、依存関係管理を有効化"""
+        self._scheduler = scheduler
+        logger.info("StreamingPlotScheduler integration enabled")
+
+    async def _check_dependency(self, ep_num: int, depends_on: int) -> bool:
+        """依存エピソードの品質が十分かチェック"""
+        if depends_on < 1:
+            return True
+        prev_metrics = self.metrics_collector.get(depends_on)
+        if prev_metrics is None:
+            return True  # 記録なしは許可
+        if prev_metrics.overall_quality < 0.7:
+            logger.warning(f"Dependency Ep.{depends_on} has low quality (score={prev_metrics.overall_quality:.2f})")
+            return False
+        return True
+
+    async def _wait_for_dependency(self, ep_num: int, depends_on: int) -> None:
+        """依存エピソードの完了を待機"""
+        if self._scheduler is None or depends_on < 1:
+            return
+        try:
+            await self._scheduler.await_plot_ready(depends_on)
+            logger.info(f"Ep.{ep_num}: Dependency Ep.{depends_on} ready")
+        except Exception as e:
+            logger.warning(f"Ep.{ep_num}: Failed to wait for Ep.{depends_on}: {e}")
+
+    async def run_with_dependencies(self, ep_num: int, ctx: Any, sys_inst: str, fw_prompt: str,
+                                    passion: float, is_easy_mode: bool, depends_on: Optional[int] = None) -> Tuple[str, Dict[str, Any], bool]:
+        """依存関係付き実行"""
+        if depends_on is not None:
+            quality_ok = await self._check_dependency(ep_num, depends_on)
+            if not quality_ok:
+                logger.warning(f"Ep.{ep_num}: Dependency Ep.{depends_on} quality issue, but proceeding")
+            await self._wait_for_dependency(ep_num, depends_on)
+        return await self.run(ep_num, ctx, sys_inst, fw_prompt, passion, is_easy_mode)
