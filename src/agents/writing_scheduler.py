@@ -3,13 +3,14 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from src.core.observability import StructuredLogger, TraceContext
+from src.core.interfaces import IPromptManager
 
 logger = logging.getLogger(__name__)
 
 
 class StreamingPlotScheduler:
     """エピソードのプロット生成をストリーミングスケジュール管理する"""
-    def __init__(self, repo: Any, llm: Any, pm: "IPromptManager", planner: Any, book_id: int, branch_id: int, arcs: List[Any], end_ep: int, reporter=None,
+    def __init__(self, repo: Any, llm: Any, pm: IPromptManager, planner: Any, book_id: int, branch_id: int, arcs: List[Any], end_ep: int, reporter=None,
                  max_concurrent: int = 2, max_retries: int = 3, timeout: int = 60):
         self.repo = repo
         self.llm = llm
@@ -33,11 +34,14 @@ class StreamingPlotScheduler:
         }
         self._gen_times: List[float] = []
         self._gen_start_times: Dict[int, float] = {}
+        self._task_priorities: Dict[int, int] = {}
+        self._consecutive_errors: int = 0
+        self._circuit_open: bool = False
+        self._circuit_breaker_threshold: int = 5
 
     async def schedule_plot_generation(
-        self, ep_num: int, bible: Any, settings: Dict[str, Any], depends_on: Optional[int] = None
+        self, ep_num: int, bible: Any, settings: Dict[str, Any], depends_on: Optional[int] = None, priority: int = 5
     ):
-        """エピソードのプロット生成をスケジュールする。
         
         Args:
             ep_num: エピソード番号
@@ -66,6 +70,7 @@ class StreamingPlotScheduler:
         
         self.metrics["scheduled"] += 1
         self._gen_start_times[ep_num] = asyncio.get_event_loop().time()
+        self._task_priorities[ep_num] = priority
 
         async def _run_gen():
             try:
@@ -132,6 +137,7 @@ class StreamingPlotScheduler:
 
             finally:
                 self._gen_start_times.pop(ep_num, None)
+                self._task_priorities.pop(ep_num, None)
         self.tasks[ep_num] = asyncio.create_task(_run_gen())
 
     async def await_plot_ready(self, ep_num: int) -> Optional[Any]:
@@ -162,23 +168,12 @@ class StreamingPlotScheduler:
             return plot
         return None
 
-    async def _try_generate(self, ep_num: int, bible: Any, settings: Dict[str, Any]) -> Optional[Any]:
-        if ep_num > self.end_ep:
-            return None
-        cached = await self._check_cache(ep_num)
-        if cached is not None:
-            return cached
-        if self.reporter:
-            self.reporter.report(f"🗺️ プロット先行生成スケジュール: 第{ep_num}話", "info")
-        results = await self.planner.expand_plots(self.book_id, [ep_num], self.arcs, reporter=self.reporter,
-                  branch_id=self.branch_id)
-        return results[0] if results else None
-
     async def cancel_range(self, start_ep: int, end_ep: int) -> int:
         cancelled = 0
         for ep_num in list(self.tasks.keys()):
             if start_ep <= ep_num <= end_ep:
                 task = self.tasks.pop(ep_num, None)
+                self._task_priorities.pop(ep_num, None)
                 if task is not None and not task.done():
                     task.cancel()
                     cancelled += 1
@@ -186,10 +181,13 @@ class StreamingPlotScheduler:
         return cancelled
 
     async def cancel_all(self) -> int:
+        self._task_priorities.clear()
         return await self.cancel_range(1, self.end_ep)
 
     def pending_episodes(self) -> List[int]:
-        return [ep for ep, t in self.tasks.items() if not t.done()]
+        pending = [ep for ep, t in self.tasks.items() if not t.done()]
+        pending.sort(key=lambda ep: self._task_priorities.get(ep, 5))
+        return pending
 
     def get_metrics(self) -> Dict[str, int]:
         return dict(self.metrics)
