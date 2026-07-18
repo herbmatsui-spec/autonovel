@@ -6,9 +6,38 @@ from src.core.observability import StructuredLogger, TraceContext
 
 logger = logging.getLogger(__name__)
 
+
+class PrefetchPolicy:
+    """Prefetch policy for dynamic depth adjustment."""
+    def __init__(self, base_depth: int = 2, max_depth: int = 5):
+        self.base_depth = base_depth
+        self.max_depth = max_depth
+        self.gen_times: List[float] = []
+        self.wait_times: List[float] = []
+
+    def record_gen_time(self, seconds: float):
+        self.gen_times.append(seconds)
+        if len(self.gen_times) > 10:
+            self.gen_times.pop(0)
+
+    def record_wait_time(self, seconds: float):
+        self.wait_times.append(seconds)
+        if len(self.wait_times) > 10:
+            self.wait_times.pop(0)
+
+    def estimate_depth(self) -> int:
+        if not self.gen_times or not self.wait_times:
+            return self.base_depth
+        gen_avg = sum(self.gen_times) / len(self.gen_times)
+        wait_avg = sum(self.wait_times) / len(self.wait_times)
+        ratio = gen_avg / max(0.1, wait_avg)
+        return min(self.max_depth, max(1, int(self.base_depth * ratio)))
+
+
 class StreamingPlotScheduler:
     """エピソードのプロット生成をストリーミングスケジュール管理する"""
-    def __init__(self, repo: Any, llm: Any, pm: "IPromptManager", planner: Any, book_id: int, branch_id: int, arcs: List[Any], end_ep: int, reporter=None):
+    def __init__(self, repo: Any, llm: Any, pm: "IPromptManager", planner: Any, book_id: int, branch_id: int, arcs: List[Any], end_ep: int, reporter=None,
+                 max_concurrent: int = 2, max_retries: int = 3):
         self.repo = repo
         self.llm = llm
         self.pm = pm
@@ -19,27 +48,81 @@ class StreamingPlotScheduler:
         self.end_ep = end_ep
         self.reporter = reporter
         self.tasks = {}
+        self._semaphore = asyncio.Semaphore(max_concurrent)
+        self.max_concurrent = max_concurrent
+        self._max_retries = max_retries
+        self.metrics: Dict[str, int] = {
+            "scheduled": 0, "completed": 0, "cancelled": 0,
+            "cache_hits": 0, "cache_misses": 0,
+            "late_deliveries": 0, "errors": 0,
+            "retries": 0,
+        }
+        self._gen_times: List[float] = []
+        self._wait_times: List[float] = []
+        self._gen_start_times: Dict[int, float] = {}
+        self._prefetch_policy = PrefetchPolicy()
 
-    async def schedule_plot_generation(self, ep_num: int, bible: Any, settings: Dict[str, Any]):
+    async def schedule_plot_generation(self, ep_num: int, bible: Any, settings: Dict[str, Any], depends_on: Optional[int] = None):
         if ep_num > self.end_ep:
             return
         if ep_num in self.tasks:
             return
+        
+        # Check dependency
+        if depends_on is not None and depends_on in self.tasks:
+            if self.reporter:
+                self.reporter.report(f"🔗 Ep.{ep_num} は Ep.{depends_on} 完了待ち", "debug")
+            await self.await_plot_ready(depends_on)
+        
+        self.metrics["scheduled"] += 1
+        self._gen_start_times[ep_num] = asyncio.get_event_loop().time()
 
         async def _run_gen():
             try:
-                # 既にプロットが存在するか確認
-                plot = await self.repo.get_plot(self.branch_id, ep_num)
-                if plot and plot.detailed_blueprint and len(plot.detailed_blueprint) > 50:
-                    return plot
-
-                if self.reporter:
-                    self.reporter.report(f"🗺️ プロット先行生成スケジュール: 第{ep_num}話", "info")
-
-                results = await self.planner.expand_plots(self.book_id, [ep_num], self.arcs, reporter=self.reporter)
-                if results:
-                    return results[0]
+                # Check cache first
+                cached = await self._check_cache(ep_num)
+                if cached is not None:
+                    self.metrics["cache_hits"] += 1
+                    return cached
+                
+                # Generate with retry logic
+                last_error = None
+                for attempt in range(self._max_retries):
+                    try:
+                        if self.reporter:
+                            self.reporter.report(f"🗺️ プロット先行生成スケジュール: 第{ep_num}話 (試行 {attempt+1})", "info")
+                        results = await self.planner.expand_plots(self.book_id, [ep_num], self.arcs, reporter=self.reporter,
+                                  branch_id=self.branch_id)
+                        if results:
+                            elapsed = asyncio.get_event_loop().time() - self._gen_start_times.get(ep_num, 0)
+                            self._gen_times.append(elapsed)
+                            if len(self._gen_times) > 10:
+                                self._gen_times.pop(0)
+                            if elapsed > 30 and self.reporter:
+                                self.reporter.report(f"⏰ Ep.{ep_num} プロット生成長時間化 ({elapsed:.1f}s)", "warning")
+                            return results[0]
+                    except asyncio.CancelledError:
+                        if self.reporter:
+                            self.reporter.report(f"🔄 Ep.{ep_num} はキャンセルされました", "debug")
+                        raise
+                    except Exception as e:
+                        last_error = e
+                        self.metrics["errors"] += 1
+                        self.metrics["retries"] += 1
+                        if attempt < self._max_retries - 1:
+                            backoff_sec = min(30, 2 ** attempt)
+                            if self.reporter:
+                                self.reporter.report(
+                                    f"🔄 Ep.{ep_num} リトライ {attempt+1}/{self._max_retries} ({backoff_sec}s後): {e}", "warning")
+                            await asyncio.sleep(backoff_sec)
+                
+                if last_error and self.reporter:
+                    self.reporter.report(f"❌ Ep.{ep_num} 最終失敗: {last_error}", "error")
+                return None
+            except asyncio.CancelledError:
+                raise
             except Exception as e:
+                self.metrics["errors"] += 1
                 StructuredLogger.error("Failed scheduled plot gen", trace_id=TraceContext.get_trace_id(), error=e)
                 return None
 
@@ -47,7 +130,65 @@ class StreamingPlotScheduler:
 
     async def await_plot_ready(self, ep_num: int) -> Optional[Any]:
         if ep_num not in self.tasks:
+            self.metrics["cache_misses"] += 1
             return await self.repo.get_plot(self.branch_id, ep_num)
         task = self.tasks[ep_num]
-        return await task
+        if not task.done():
+            if self.reporter:
+                self.reporter.report(f"⏳ 第{ep_num}話: プロット生成待機中...", "debug")
+            self.metrics["late_deliveries"] += 1
+        try:
+            result = await task
+        except asyncio.CancelledError:
+            self.metrics["cache_misses"] += 1
+            return await self.repo.get_plot(self.branch_id, ep_num)
+        self.tasks.pop(ep_num, None)
+        if result is not None:
+            self.metrics["completed"] += 1
+        return result
 
+    async def _check_cache(self, ep_num: int) -> Optional[Any]:
+        plot = await self.repo.get_plot(self.branch_id, ep_num)
+        if plot and plot.detailed_blueprint and len(plot.detailed_blueprint) > 50:
+            fut = asyncio.Future()
+            fut.set_result(plot)
+            self.tasks[ep_num] = fut
+            return plot
+        return None
+
+    async def _try_generate(self, ep_num: int, bible: Any, settings: Dict[str, Any]) -> Optional[Any]:
+        if ep_num > self.end_ep:
+            return None
+        cached = await self._check_cache(ep_num)
+        if cached is not None:
+            return cached
+        if self.reporter:
+            self.reporter.report(f"🗺️ プロット先行生成スケジュール: 第{ep_num}話", "info")
+        results = await self.planner.expand_plots(self.book_id, [ep_num], self.arcs, reporter=self.reporter,
+                  branch_id=self.branch_id)
+        return results[0] if results else None
+
+    async def cancel_range(self, start_ep: int, end_ep: int) -> int:
+        cancelled = 0
+        for ep_num in list(self.tasks.keys()):
+            if start_ep <= ep_num <= end_ep:
+                task = self.tasks.pop(ep_num, None)
+                if task is not None and not task.done():
+                    task.cancel()
+                    cancelled += 1
+                    self.metrics["cancelled"] += 1
+        return cancelled
+
+    async def cancel_all(self) -> int:
+        return await self.cancel_range(1, self.end_ep)
+
+    def pending_episodes(self) -> List[int]:
+        return [ep for ep, t in self.tasks.items() if not t.done()]
+
+    def get_metrics(self) -> Dict[str, int]:
+        return dict(self.metrics)
+
+    def get_latencies(self) -> Dict[str, float]:
+        gen_avg = sum(self._gen_times) / max(1, len(self._gen_times))
+        wait_avg = sum(self._wait_times) / max(1, len(self._wait_times))
+        return {"gen_avg_sec": gen_avg, "wait_avg_sec": wait_avg}
