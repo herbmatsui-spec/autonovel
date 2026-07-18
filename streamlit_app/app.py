@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 
 # --- リファクタリング後のインポート ---
 from src.core.plugin_loader import PluginLoader
-from streamlit_app.health_check import ensure_backend_available
+from streamlit_app.health_check import ensure_backend_available_sync
 from streamlit_app.landing import render_landing
 from streamlit_app.sidebar import render_sidebar
 from streamlit_app.state import UIStateStore
@@ -105,7 +105,7 @@ def main() -> None:
     _init_session()
 
     # バックエンドの死活監視
-    if not st.experimental_async(ensure_backend_available):
+    if not ensure_backend_available_sync():
         return
 
     if UIStateStore.get_runtime().backend_connection_error:

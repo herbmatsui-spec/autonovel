@@ -22,10 +22,9 @@ def render_easy_mode(state: Any, engine: UltimateHegemonyEngine) -> None:
     # スケルトンローディングのシミュレーション
     if not UIStateStore().ui_state.form_data.get("easy_mode_loaded", False):
         with st.container():
-            st.markdown('<div class="skeleton-header"></div>', unsafe_allow_html=True)
-            st.markdown('<div class="skeleton-text"></div>', unsafe_allow_html=True)
-            st.markdown('<div class="skeleton-card"></div>', unsafe_allow_html=True)
-            time.sleep(0.5) # 演出としての短時間待機
+            st.markdown('<div class="skeleton-header skeleton-fade-in"></div>', unsafe_allow_html=True)
+            st.markdown('<div class="skeleton-text skeleton-fade-in"></div>', unsafe_allow_html=True)
+            st.markdown('<div class="skeleton-card skeleton-fade-in"></div>', unsafe_allow_html=True)
         UIStateStore().update_ui_state(easy_mode_loaded=True)
         st.rerun()
 
@@ -479,9 +478,8 @@ def render_planning_tab(state: Dict[str, Any], engine: UltimateHegemonyEngine) -
     # スケルトンローディングのシミュレーション
     if not UIStateStore().ui_state.form_data.get("planning_tab_loaded", False):
         with st.container():
-            st.markdown('<div class="skeleton-header"></div>', unsafe_allow_html=True)
-            st.markdown('<div class="skeleton-card"></div>', unsafe_allow_html=True)
-            time.sleep(0.3)
+            st.markdown('<div class="skeleton-header skeleton-fade-in"></div>', unsafe_allow_html=True)
+            st.markdown('<div class="skeleton-card skeleton-fade-in"></div>', unsafe_allow_html=True)
         UIStateStore().update_ui_state(planning_tab_loaded=True)
         st.rerun()
 

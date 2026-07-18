@@ -181,6 +181,3 @@ def progress_fragment(run_key: str, controller_manager: Any) -> None:
             job.stop()
             UIStateStore.clear_active_job()
             st.rerun()
-
-    time.sleep(1.0)
-    st.rerun()

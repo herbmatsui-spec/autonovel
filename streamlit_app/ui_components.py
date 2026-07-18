@@ -266,8 +266,7 @@ def _render_job_running(container, job, run_key):
             job.stop()
             UIStateStore.clear_active_job()
             st.rerun()
-    time.sleep(1.0)
-    st.rerun()
+
 
 def _render_job_completed(container, job, run_key, engine):
     if job.error:

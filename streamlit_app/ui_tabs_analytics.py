@@ -542,7 +542,7 @@ def render_prompt_metrics_dashboard():
 
     try:
         import requests
-        response = requests.get("http://localhost:8000/api/prompt-metrics", timeout=5)
+        response = requests.get("http://localhost:8200/api/prompt-metrics", timeout=5)
         if response.status_code == 200:
             data = response.json()
             metrics = data.get("data", [])
@@ -584,7 +584,7 @@ def render_prompt_metrics_dashboard():
             with st.expander("データ管理"):
                 days = st.slider("保持期間（日数）", 1, 90, 30)
                 if st.button("古いデータを削除"):
-                    delete_response = requests.delete(f"http://localhost:8000/api/prompt-metrics?days={days}")
+                    delete_response = requests.delete(f"http://localhost:8200/api/prompt-metrics?days={days}")
                     if delete_response.status_code == 200:
                         st.toast("古いデータを削除しました")
                         st.rerun()

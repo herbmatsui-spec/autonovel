@@ -28,29 +28,21 @@ async def check_backend_health() -> dict[str, str]:
         return {"status": "error", "database": "error", "worker": "error"}
 
 
-async def validate_api_key_async(api_key: str) -> bool:
-    """APIキーの非同期検証。"""
-    from google import genai
-
+def check_backend_health_sync() -> dict[str, str]:
+    """バックエンドサーバーのヘルスステータスを同期的に取得する"""
     try:
-        # google-genai SDKは現状同期的なため、run_in_executorで非同期化してイベントループをブロックしない
-        def sync_validate():
-            client = genai.Client(api_key=api_key)
-            pager = client.models.list(config={"page_size": 1})
-            next(iter(pager))
-            return True
-
-        loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(None, sync_validate)
-    except Exception as e:
-        logger.error(f"API Key validation failed: {e}")
-        return False
+        with httpx.Client() as client:
+            res = client.get(BACKEND_HEALTH_URL, timeout=BACKEND_HEALTH_TIMEOUT_SEC)
+            if res.status_code == 200:
+                return res.json()
+            return {"status": "error", "database": "unknown", "worker": "unknown"}
+    except Exception:
+        return {"status": "error", "database": "error", "worker": "error"}
 
 
-async def ensure_backend_available() -> bool:
-    """バックエンドサーバーの死活を監視し、接続不可の場合は自動起動を促すUIを表示する。
-    本関数は非同期実装であり、呼び出し側は ``st.experimental_async`` で実行することを想定している。"""
-    health_data = await check_backend_health()
+def ensure_backend_available_sync() -> bool:
+    """バックエンドサーバーの死活を監視する同期版。"""
+    health_data = check_backend_health_sync()
     if health_data.get("status") == "ok":
         return True
 
@@ -81,11 +73,82 @@ async def ensure_backend_available() -> bool:
         with st.spinner("バックエンドを起動しています... (最大10秒待機)"):
             success = start_backend_processes()
             if success:
+                for _ in range(BACKEND_STARTUP_WAIT_SEC):
+                    time.sleep(1)
+                    if check_backend_health_sync().get("status") == "ok":
+                        break
+                st.rerun()
+            else:
+                st.error("バックエンドの起動に失敗しました。ログを確認してください。")
+
+    st.error("※ 自動起動で解決しない場合は、黒い画面（コマンドプロンプト）のプロセスを一度すべて終了させ、アプリフォルダ内の `run_all.bat` を直接ダブルクリックして再起動してください。")
+    return False
+
+
+async def validate_api_key_async(api_key: str) -> bool:
+    """APIキーの非同期検証。"""
+    from google import genai
+
+    try:
+        # google-genai SDKは現状同期的なため、run_in_executorで非同期化してイベントループをブロックしない
+        def sync_validate():
+            client = genai.Client(api_key=api_key)
+            pager = client.models.list(config={"page_size": 1})
+            next(iter(pager))
+            return True
+
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(None, sync_validate)
+    except Exception as e:
+        logger.error(f"API Key validation failed: {e}")
+        return False
+
+
+def ensure_backend_available() -> bool:
+    """バックエンドサーバーの死活を監視し、接続不可の場合は自動起動を促すUIを表示する。
+    同期関数として呼び出されることを想定している（``st.experimental_async`` は非推奨/未提供）。"""
+    try:
+        health_data = asyncio.run(check_backend_health())
+    except Exception:
+        health_data = {"status": "error", "database": "error", "worker": "error"}
+    if health_data.get("status") == "ok":
+        return True
+
+    from streamlit_app.ui_utils import render_centered_title
+    render_centered_title(
+        "⚠️ システムステータス（バックエンド未接続）",
+        "APIサーバーとの通信が確立されていません。以下の状態を確認・復旧してください。"
+    )
+
+    st.write("### 🔌 接続ダッシュボード")
+    col1, col2, col3 = st.columns(3)
+    api_status = health_data.get("status", "error")
+    db_status = health_data.get("database", "error")
+    worker_status = health_data.get("worker", "error")
+
+    with col1:
+        st.metric("APIサーバー", "🟢 稼働中" if api_status == "ok" else "🔴 停止中")
+    with col2:
+        st.metric("データベース", "🟢 正常" if db_status == "ok" else "🔴 エラー")
+    with col3:
+        st.metric("タスクワーカー", "🟢 稼働中" if worker_status == "ok" else "🔴 停止中")
+
+    st.divider()
+    st.write("バックエンドサーバーがダウンしているか、起動中です。")
+
+    if st.button("🔄 バックエンドを自動起動する", type="primary"):
+        from streamlit_app.backend_launcher import start_backend
+        with st.spinner("バックエンドを起動しています... (最大10秒待機)"):
+            proc = start_backend()
+            if proc is not None:
                 # ポートが開くまで待機
                 for _ in range(BACKEND_STARTUP_WAIT_SEC):
                     time.sleep(1)
-                    if check_backend_health().get("status") == "ok":
-                        break
+                    try:
+                        if asyncio.run(check_backend_health()).get("status") == "ok":
+                            break
+                    except Exception:
+                        pass
                 st.rerun()
             else:
                 st.error("バックエンドの起動に失敗しました。ログを確認してください。")

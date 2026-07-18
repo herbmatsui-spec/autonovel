@@ -13,7 +13,7 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 _BACKEND_HOST = "127.0.0.1"
-_BACKEND_PORT = 8000
+_BACKEND_PORT = 8200  # must match docker-compose.yml
 _BACKEND_URL = f"http://{_BACKEND_HOST}:{_BACKEND_PORT}/health"
 _STARTUP_TIMEOUT = 30.0  # 秒
 

@@ -106,3 +106,12 @@
     0% { background-position: 200% 0; }
     100% { background-position: -200% 0; }
 }
+
+/* スケルトン専用フェードイン（time.sleep 不要化） */
+.skeleton-fade-in {
+    animation: skeleton-fade 0.6s ease-out forwards;
+}
+@keyframes skeleton-fade {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+}
