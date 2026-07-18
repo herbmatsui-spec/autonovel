@@ -226,15 +226,6 @@ def render_sidebar_settings() -> None:
 
         # テーマカラー切替
         if session.config.get("enable_nsfw", False):
-            st.markdown("""
-            <style>
-            :root {
-                --primary-color: #7b1518 !important;
-            }
-            [data-testid="stSidebar"] {
-                background: linear-gradient(180deg, #1a0a0d 0%, #2d1020 100%) !important;
-            }
-            </style>
             """, unsafe_allow_html=True)
 
             # 強度スライダーとプラットフォームプリセット選択

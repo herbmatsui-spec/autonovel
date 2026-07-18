@@ -175,8 +175,7 @@ def desires_to_hook(desires: list[str]) -> Optional["EmotionalHookSpec"]:
 # -----------------------------------------------------------------------------
 # UIStateStore は 475 行・40 以上の静的メソッドを持ち SRP に反していたため、
 # 責務を JobStore / SessionStore / PollStateStore / ToastStore へ分割した。
-# UIStateStore は後方互換のための薄いファサードとして維持され、
-# 既存の呼び出し箇所(UIStateStore.xxx())をそのまま動作させる。
+# 現在は合成パターンを採用し、各ストアのインスタンスを保持する。
 from streamlit_app.stores import (
     JobStore,
     PollStateStore,
@@ -185,8 +184,183 @@ from streamlit_app.stores import (
 )
 
 
-class UIStateStore(JobStore, PollStateStore, ToastStore, SessionStore):
-    """UI state store implementation."""
+class UIStateStore:
+    """UI state store implementation using composition pattern."""
+
+    def __init__(self):
+        self._job_store = JobStore()
+        self._poll_store = PollStateStore()
+        self._toast_store = ToastStore()
+        self._session_store = SessionStore()
+
+    # Delegate to JobStore
+    @staticmethod
+    def get_monitored_jobs():
+        return JobStore.get_monitored_jobs()
+
+    @staticmethod
+    def set_active_job(job, run_key="default"):
+        return JobStore.set_active_job(job, run_key)
+
+    @staticmethod
+    def clear_active_job(run_key="default"):
+        return JobStore.clear_active_job(run_key)
+
+    @staticmethod
+    def bump_fragment_version(part):
+        return JobStore.bump_fragment_version(part)
+
+    @staticmethod
+    def get_fragment_version(part):
+        return JobStore.get_fragment_version(part)
+
+    @staticmethod
+    def set_job_id(run_key, job_id):
+        return JobStore.set_job_id(run_key, job_id)
+
+    @staticmethod
+    def clear_job_id(run_key):
+        return JobStore.clear_job_id(run_key)
+
+    @staticmethod
+    def set_processing_lock(locked):
+        return JobStore.set_processing_lock(locked)
+
+    @staticmethod
+    def is_processing():
+        return JobStore.is_processing()
+
+    # Delegate to PollStateStore
+    @staticmethod
+    def get_poll_fail_count(run_key):
+        return PollStateStore.get_poll_fail_count(run_key)
+
+    @staticmethod
+    def increment_poll_fail_count(run_key):
+        return PollStateStore.increment_poll_fail_count(run_key)
+
+    @staticmethod
+    def reset_poll_fail_count(run_key):
+        return PollStateStore.reset_poll_fail_count(run_key)
+
+    @staticmethod
+    def get_poll_skip_until(run_key):
+        return PollStateStore.get_poll_skip_until(run_key)
+
+    @staticmethod
+    def set_poll_skip_until(run_key, timestamp):
+        return PollStateStore.set_poll_skip_until(run_key, timestamp)
+
+    @staticmethod
+    def set_save_status(ep_num, status):
+        return PollStateStore.set_save_status(ep_num, status)
+
+    @staticmethod
+    def get_save_status(ep_num):
+        return PollStateStore.get_save_status(ep_num)
+
+    # Delegate to ToastStore
+    @staticmethod
+    def is_toast_notified(key):
+        return ToastStore.is_toast_notified(key)
+
+    @staticmethod
+    def mark_toast_notified(key):
+        return ToastStore.mark_toast_notified(key)
+
+    @staticmethod
+    def clear_toast_notified(key):
+        return ToastStore.clear_toast_notified(key)
+
+    @staticmethod
+    def toast_notify(key, message, icon=None):
+        return ToastStore.toast_notify(key, message, icon)
+
+    # Delegate to SessionStore
+    @staticmethod
+    def set_wizard_step(step):
+        return SessionStore.set_wizard_step(step)
+
+    @staticmethod
+    def update_wizard_data(data):
+        return SessionStore.update_wizard_data(data)
+
+    @staticmethod
+    def set_easy_genre(genre_key):
+        return SessionStore.set_easy_genre(genre_key)
+
+    @staticmethod
+    def get_api_key_validation_state():
+        return SessionStore.get_api_key_validation_state()
+
+    @staticmethod
+    def set_api_key_validation_state(state):
+        return SessionStore.set_api_key_validation_state(state)
+
+    @staticmethod
+    def get_api_key_validation_key():
+        return SessionStore.get_api_key_validation_key()
+
+    @staticmethod
+    def set_api_key_validation_key(key):
+        return SessionStore.set_api_key_validation_key(key)
+
+    @staticmethod
+    def get_api_key_validation_error():
+        return SessionStore.get_api_key_validation_error()
+
+    @staticmethod
+    def set_api_key_validation_error(msg):
+        return SessionStore.set_api_key_validation_error(msg)
+
+    @staticmethod
+    def reset_api_key_validation():
+        return SessionStore.reset_api_key_validation()
+
+    @staticmethod
+    def get_api_key_input():
+        return SessionStore.get_api_key_input()
+
+    @staticmethod
+    def set_api_key_input(value):
+        return SessionStore.set_api_key_input(value)
+
+    # Delegate to BaseStore
+    @staticmethod
+    def get():
+        return BaseStore.get()
+
+    @staticmethod
+    def get_runtime():
+        return BaseStore.get_runtime()
+
+    @staticmethod
+    def update(update_func, notify_keys=None):
+        return BaseStore.update(update_func, notify_keys)
+
+    @staticmethod
+    def update_runtime(key, value, notify=True):
+        return BaseStore.update_runtime(key, value, notify)
+
+    @staticmethod
+    def subscribe(key, callback):
+        return BaseStore.subscribe(key, callback)
+
+    @staticmethod
+    def _notify(key, value):
+        return BaseStore._notify(key, value)
+
+    @staticmethod
+    def get_rerun_count():
+        return BaseStore.get_rerun_count()
+
+    @staticmethod
+    def increment_rerun_count():
+        return BaseStore.increment_rerun_count()
+
+    @staticmethod
+    def get_book_plots(book_id):
+        return BaseStore.get_book_plots(book_id)
 
     @property
     def ui_state(self) -> UIState:

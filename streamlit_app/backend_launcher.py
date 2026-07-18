@@ -69,8 +69,9 @@ def start_backend() -> Optional[subprocess.Popen]:
         logger.error(f"Failed to start backend process: {e}")
         return None
 
-    # 起動待機
+    # 起動待機 (非ブロッキング方式に変更)
     deadline = time.time() + _STARTUP_TIMEOUT
+    poll_interval = 0.5
     while time.time() < deadline:
         try:
             resp = req.get(_BACKEND_URL, timeout=2)
@@ -78,6 +79,7 @@ def start_backend() -> Optional[subprocess.Popen]:
                 logger.info("Backend started successfully.")
                 return proc
         except Exception:
-            time.sleep(0.5)
+            pass
+        time.sleep(poll_interval)
     logger.error("Backend did not become ready within timeout.")
     return proc

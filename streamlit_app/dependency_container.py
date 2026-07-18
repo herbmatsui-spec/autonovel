@@ -21,8 +21,14 @@ class DependencyContainer:
     All dependencies are instantiated on first access and cached.
     """
 
+    _instance: Optional["DependencyContainer"] = None
     _instances: Dict[str, Any] = {}
     _initialized = False
+
+    def __new__(cls) -> "DependencyContainer":
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
 
     # -------------------------------------------------------------------------
     # Public API: Get services

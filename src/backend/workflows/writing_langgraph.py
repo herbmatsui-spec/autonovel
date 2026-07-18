@@ -161,15 +161,16 @@ class WritingGraphManager:
         return count
 
     async def node_prepare(self, state: WritingGraphState):
-        logger.info(f"LangGraph: Preparing context for Ep.{state['ep_num']}")
+        logger.info(f"LangGraph: Preparing context for Ep.{state.get('ep_num', 'unknown')}")
 
         # キャッシュキーの生成
-        cache_key = f"ep{state['ep_num']}_{state['context']['genre_str']}_{state['is_easy_mode']}"
+        genre_str = state.get("context", {}).get("genre_str", "unknown") if isinstance(state.get("context"), dict) else "unknown"
+        cache_key = f"ep{state.get('ep_num', 'unknown')}_{genre_str}_{state.get('is_easy_mode', False)}"
 
         # キャッシュからgen_ctxを取得 시도
         cached_gen_ctx = self._get_cached_gen_ctx(cache_key)
         if cached_gen_ctx is not None:
-            logger.info(f"Using cached gen_ctx for Ep.{state['ep_num']}")
+            logger.info(f"Using cached gen_ctx for Ep.{state.get('ep_num', 'unknown')}")
             gen_ctx = cached_gen_ctx
             # キャッシュが有効な場合は軽量な再計算のみ
             should_dogfeed = True
@@ -182,7 +183,7 @@ class WritingGraphManager:
             for attempt in range(3):
                 try:
                     gen_ctx, should_dogfeed, should_heavy_audit, should_beat_decompose, ncs_score = await self.manager._phase_prepare_context(
-                        state["ep_num"], state["context"], state["sys_inst"], state["fw_prompt"], state["is_easy_mode"], None
+                        state.get("ep_num"), state.get("context"), state.get("sys_inst"), state.get("fw_prompt"), state.get("is_easy_mode", False), None
                     )
                     # 成功したらキャッシュに保存
                     self._set_cached_gen_ctx(cache_key, gen_ctx)
@@ -317,31 +318,31 @@ class WritingGraphManager:
     def route_after_audit(self, state: WritingGraphState) -> str:
         """監査後のルート分岐 - 早期終了条件を積極的に適用"""
         # easy_mode は即座に終了
-        if state["is_easy_mode"]:
+        if state.get("is_easy_mode", False):
             return "finish"
 
         # 品質が極めて高い場合は早期終了
-        if state.get("quality_skip") and state["is_integrity_ok"] and state["is_causal_ok"]:
-            logger.info(f"Early exit triggered for Ep.{state['ep_num']} due to high quality (rate >= {QUALITY_THRESHOLD_EARLY_EXIT})")
+        if state.get("quality_skip") and state.get("is_integrity_ok") and state.get("is_causal_ok"):
+            logger.info(f"Early exit triggered for Ep.{state.get('ep_num')} due to high quality (rate >= {QUALITY_THRESHOLD_EARLY_EXIT})")
             return "finish"
 
         # 整合性・因果性双方がOKで、反復回数の上限に達していない場合
-        if state["is_integrity_ok"] and state["is_causal_ok"]:
+        if state.get("is_integrity_ok") and state.get("is_causal_ok"):
             # 反復回数が残っているかチェック
-            if state["ac_iter"] >= state["max_ac_iter"]:
-                logger.info(f"Max iterations ({state['max_ac_iter']}) reached for Ep.{state['ep_num']}, finishing")
+            if state.get("ac_iter", 0) >= state.get("max_ac_iter", 2):
+                logger.info(f"Max iterations ({state.get('max_ac_iter', 2)}) reached for Ep.{state.get('ep_num')}, finishing")
                 return "finish"
             # 重監査モードで、まだ改善の余地がある場合
-            if state["should_heavy_audit"] and state["ac_iter"] < state["max_ac_iter"]:
+            if state.get("should_heavy_audit", True) and state.get("ac_iter", 0) < state.get("max_ac_iter", 2):
                 return "critic"
             return "finish"
 
         # 因果性のみ失敗で重監査モードの場合
-        if not state["is_causal_ok"] and state["should_heavy_audit"]:
+        if not state.get("is_causal_ok") and state.get("should_heavy_audit", True):
             return "heal"
 
         # 反復可能で重監査モードの場合
-        if state["ac_iter"] < state["max_ac_iter"] and state["should_heavy_audit"]:
+        if state.get("ac_iter", 0) < state.get("max_ac_iter", 2) and state.get("should_heavy_audit", True):
             return "critic"
 
         return "finish"
@@ -463,18 +464,36 @@ class WritingGraphManager:
         logger.info(f"Finalized Ep.{state['ep_num']}: integrity={state['is_integrity_ok']}, causal={state['is_causal_ok']}, dogfeed={state.get('dogfeed_ok', True)}")
         return {"status": "completed"}
 
-    async def run(self, ep_num: int, ctx: Any, sys_inst: str, fw_prompt: str, passion: float, is_easy_mode: bool) -> Tuple[str, Dict[str, Any], bool]:
-        """実行メソッド - チェックポイント対応"""
-        logger.info(f"Starting LangGraph execution for Ep.{ep_num} (easy_mode={is_easy_mode})")
-        initial_state = {
+    def _create_initial_state(self, ep_num: int, ctx: Any, sys_inst: str, fw_prompt: str, passion: float, is_easy_mode: bool) -> Dict[str, Any]:
+        """初期状態を生成（フォールバック・LangGraph共通）"""
+        from config.project_context import ProjectContext
+        base_max = ProjectContext.get_setting("actor_critic_max_iterations", 2)
+        return {
             "ep_num": ep_num,
             "passion": passion,
             "is_easy_mode": is_easy_mode,
             "context": ctx,
             "sys_inst": sys_inst,
             "fw_prompt": fw_prompt,
-            "ac_iter": 0
+            "ac_iter": 0,
+            "max_ac_iter": base_max,
+            "should_heavy_audit": True,
+            "should_dogfeed": True,
+            "should_beat_decompose": False,
+            "gen_ctx": None,
+            "draft_content": "",
+            "final_meta": {},
+            "is_integrity_ok": False,
+            "is_causal_ok": False,
+            "causal_reason": "",
+            "failures": [],
+            "status": "pending"
         }
+
+    async def run(self, ep_num: int, ctx: Any, sys_inst: str, fw_prompt: str, passion: float, is_easy_mode: bool) -> Tuple[str, Dict[str, Any], bool]:
+        """実行メソッド - チェックポイント対応"""
+        logger.info(f"Starting LangGraph execution for Ep.{ep_num} (easy_mode={is_easy_mode})")
+        initial_state = self._create_initial_state(ep_num, ctx, sys_inst, fw_prompt, passion, is_easy_mode)
 
         if self.workflow is None:
             # LangGraph 非依存のフォールバック: ノードを順次実行

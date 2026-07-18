@@ -70,11 +70,11 @@ def ensure_backend_available_sync() -> bool:
 
     if st.button("🔄 バックエンドを自動起動する", type="primary"):
         from streamlit_app.backend_launcher import start_backend_processes
-        with st.spinner("バックエンドを起動しています... (最大10秒待機)"):
+        with st.spinner("バックエンドを起動しています..."):
             success = start_backend_processes()
             if success:
-                for _ in range(BACKEND_STARTUP_WAIT_SEC):
-                    time.sleep(1)
+                deadline = time.time() + BACKEND_STARTUP_WAIT_SEC
+                while time.time() < deadline:
                     if check_backend_health_sync().get("status") == "ok":
                         break
                 st.rerun()
@@ -138,12 +138,11 @@ def ensure_backend_available() -> bool:
 
     if st.button("🔄 バックエンドを自動起動する", type="primary"):
         from streamlit_app.backend_launcher import start_backend
-        with st.spinner("バックエンドを起動しています... (最大10秒待機)"):
+        with st.spinner("バックエンドを起動しています..."):
             proc = start_backend()
             if proc is not None:
-                # ポートが開くまで待機
-                for _ in range(BACKEND_STARTUP_WAIT_SEC):
-                    time.sleep(1)
+                deadline = time.time() + BACKEND_STARTUP_WAIT_SEC
+                while time.time() < deadline:
                     try:
                         if asyncio.run(check_backend_health()).get("status") == "ok":
                             break

@@ -18,9 +18,9 @@ def render_sidebar_section(title: str, content_func: Callable, expanded: bool = 
 def render_centered_title(title: str, subtitle: str):
     """中央揃えのタイトル表示"""
     st.markdown(f"""
-    <div style="text-align:center; padding: 2rem 0;">
+    <div class="centered-title">
         <h1>{title}</h1>
-        <p style="color:#666;">{subtitle}</p>
+        <p>{subtitle}</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -47,70 +47,7 @@ def render_visual_roadmap(active_tab_index: int) -> None:
     ]
 
     # カスタムCSSでステップバーを構築
-    st.markdown("""
-    <style>
-    .roadmap-container {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 2rem;
-        padding: 1rem 0;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-    .roadmap-step {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        position: relative;
-        flex: 1;
-    }
-    .step-icon {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background: #f0f2f6;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        font-size: 1.2rem;
-        border: 2px solid #ccc;
-        z-index: 2;
-        transition: all 0.3s ease;
-    }
-    .step-label {
-        margin-top: 0.5rem;
-        font-size: 0.8rem;
-        color: #666;
-        font-weight: bold;
-    }
-    .roadmap-step.active .step-icon {
-        background: linear-gradient(135deg, #e94560 0%, #ff6b81 100%);
-        color: white;
-        border-color: #e94560;
-        box-shadow: 0 0 15px rgba(233, 69, 96, 0.6);
-        transform: scale(1.1);
-    }
-    .roadmap-step.active .step-label {
-        color: #e94560;
-    }
-    .roadmap-step.completed .step-icon {
-        background: linear-gradient(135deg, #4caf50 0%, #8bc34a 100%);
-        color: white;
-        border-color: #4caf50;
-    }
-    .roadmap-line {
-        position: absolute;
-        top: 20px;
-        left: 50%;
-        width: 100%;
-        height: 3px;
-        background: linear-gradient(to right, #ccc, #eee);
-        z-index: 1;
-    }
-    .roadmap-step:last-child .roadmap-line {
-        display: none;
-    }
-    </style>
+    </style> --> -->
     """, unsafe_allow_html=True)
 
     html_steps = "<div class='roadmap-container'>"

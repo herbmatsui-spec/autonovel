@@ -2,7 +2,6 @@
 src/streamlit_app/ui_tabs_writing.py — 小説生成タブコンポーネント（Streamlit セッション状態統一版）
 """
 import json
-import time
 import uuid
 from typing import Any
 
@@ -47,11 +46,9 @@ def retry_api(func):
             if state["attempts"] >= state["max_attempts"]:
                 st.error(f"API呼び出しに失敗しました after {state['attempts']} 回の試行: {e}")
                 raise
-            # 指数バックオフで待機
-            time.sleep(backoff)
-            state["backoff"] *= 2  # 指数的に増加
-            set_ui(api_retry_state=state)
             st.warning(f"API呼び出し失敗（試行 {state['attempts']}/{state['max_attempts']}）。{backoff}s 後のリトライ...")
+            state["backoff"] *= 2
+            set_ui(api_retry_state=state)
             return func(*args, **kwargs)
     return wrapper
 
