@@ -7,37 +7,10 @@ from src.core.observability import StructuredLogger, TraceContext
 logger = logging.getLogger(__name__)
 
 
-class PrefetchPolicy:
-    """Prefetch policy for dynamic depth adjustment."""
-    def __init__(self, base_depth: int = 2, max_depth: int = 5):
-        self.base_depth = base_depth
-        self.max_depth = max_depth
-        self.gen_times: List[float] = []
-        self.wait_times: List[float] = []
-
-    def record_gen_time(self, seconds: float):
-        self.gen_times.append(seconds)
-        if len(self.gen_times) > 10:
-            self.gen_times.pop(0)
-
-    def record_wait_time(self, seconds: float):
-        self.wait_times.append(seconds)
-        if len(self.wait_times) > 10:
-            self.wait_times.pop(0)
-
-    def estimate_depth(self) -> int:
-        if not self.gen_times or not self.wait_times:
-            return self.base_depth
-        gen_avg = sum(self.gen_times) / len(self.gen_times)
-        wait_avg = sum(self.wait_times) / len(self.wait_times)
-        ratio = gen_avg / max(0.1, wait_avg)
-        return min(self.max_depth, max(1, int(self.base_depth * ratio)))
-
-
 class StreamingPlotScheduler:
     """エピソードのプロット生成をストリーミングスケジュール管理する"""
     def __init__(self, repo: Any, llm: Any, pm: "IPromptManager", planner: Any, book_id: int, branch_id: int, arcs: List[Any], end_ep: int, reporter=None,
-                 max_concurrent: int = 2, max_retries: int = 3):
+                 max_concurrent: int = 2, max_retries: int = 3, timeout: int = 60):
         self.repo = repo
         self.llm = llm
         self.pm = pm
@@ -51,6 +24,7 @@ class StreamingPlotScheduler:
         self._semaphore = asyncio.Semaphore(max_concurrent)
         self.max_concurrent = max_concurrent
         self._max_retries = max_retries
+        self._timeout = timeout
         self.metrics: Dict[str, int] = {
             "scheduled": 0, "completed": 0, "cancelled": 0,
             "cache_hits": 0, "cache_misses": 0,
@@ -58,20 +32,36 @@ class StreamingPlotScheduler:
             "retries": 0,
         }
         self._gen_times: List[float] = []
-        self._wait_times: List[float] = []
         self._gen_start_times: Dict[int, float] = {}
-        self._prefetch_policy = PrefetchPolicy()
 
-    async def schedule_plot_generation(self, ep_num: int, bible: Any, settings: Dict[str, Any], depends_on: Optional[int] = None):
+    async def schedule_plot_generation(
+        self, ep_num: int, bible: Any, settings: Dict[str, Any], depends_on: Optional[int] = None
+    ):
+        """エピソードのプロット生成をスケジュールする。
+        
+        Args:
+            ep_num: エピソード番号
+            bible: ブックデータ
+            settings: 設定辞書
+            depends_on: このエピソードが依存するエピソード番号（省略可能）。
+                例: depends_on=3 の場合、エピソード3のプロット生成完了を待つ。
+        """
         if ep_num > self.end_ep:
             return
         if ep_num in self.tasks:
             return
         
-        # Check dependency
-        if depends_on is not None and depends_on in self.tasks:
+        # 依存関係チェック: 依存先が存在し、まだタスクが完了していない場合は待機
+        # 自己依存は無視（デッドロック防止）
+        if (
+            depends_on is not None
+            and depends_on != ep_num  # 自己依存を防止
+            and depends_on in self.tasks
+        ):
             if self.reporter:
-                self.reporter.report(f"🔗 Ep.{ep_num} は Ep.{depends_on} 完了待ち", "debug")
+                self.reporter.report(
+                    f"🔗 Ep.{ep_num} は Ep.{depends_on} 完了待ち", "debug"
+                )
             await self.await_plot_ready(depends_on)
         
         self.metrics["scheduled"] += 1
@@ -91,9 +81,11 @@ class StreamingPlotScheduler:
                     try:
                         if self.reporter:
                             self.reporter.report(f"🗺️ プロット先行生成スケジュール: 第{ep_num}話 (試行 {attempt+1})", "info")
-                        results = await self.planner.expand_plots(self.book_id, [ep_num], self.arcs, reporter=self.reporter,
-                                  branch_id=self.branch_id)
-                        if results:
+                            results = await asyncio.wait_for(
+                                self.planner.expand_plots(self.book_id, [ep_num], self.arcs, reporter=self.reporter,
+                                branch_id=self.branch_id),
+                                timeout=self._timeout
+                                )
                             elapsed = asyncio.get_event_loop().time() - self._gen_start_times.get(ep_num, 0)
                             self._gen_times.append(elapsed)
                             if len(self._gen_times) > 10:
@@ -105,6 +97,18 @@ class StreamingPlotScheduler:
                         if self.reporter:
                             self.reporter.report(f"🔄 Ep.{ep_num} はキャンセルされました", "debug")
                         raise
+                    except asyncio.TimeoutError:
+                        if self.reporter:
+                            self.reporter.report(f"⏱️ Ep.{ep_num} タイムアウト ({self._timeout}s)", "error")
+                        last_error = asyncio.TimeoutError(f"Timeout after {self._timeout}s")
+                        self.metrics["errors"] += 1
+                        self.metrics["retries"] += 1
+                        if attempt < self._max_retries - 1:
+                            backoff_sec = min(30, 2 ** attempt)
+                            if self.reporter:
+                                self.reporter.report(
+                                    f"🔄 Ep.{ep_num} リトライ {attempt+1}/{self._max_retries} ({backoff_sec}s後): タイムアウト", "warning")
+                            await asyncio.sleep(backoff_sec)
                     except Exception as e:
                         last_error = e
                         self.metrics["errors"] += 1
@@ -190,5 +194,4 @@ class StreamingPlotScheduler:
 
     def get_latencies(self) -> Dict[str, float]:
         gen_avg = sum(self._gen_times) / max(1, len(self._gen_times))
-        wait_avg = sum(self._wait_times) / max(1, len(self._wait_times))
-        return {"gen_avg_sec": gen_avg, "wait_avg_sec": wait_avg}
+        return {"gen_avg_sec": gen_avg}
