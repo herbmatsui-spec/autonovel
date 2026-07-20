@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Literal, Optional
 
 from src.core.observability import StructuredLogger, TraceContext
 from src.core.interfaces import IPromptManager
@@ -35,20 +35,26 @@ class StreamingPlotScheduler:
         self._gen_times: List[float] = []
         self._gen_start_times: Dict[int, float] = {}
         self._task_priorities: Dict[int, int] = {}
+        # Circuit breaker
+        self._circuit_breaker_threshold: int = 5
         self._consecutive_errors: int = 0
         self._circuit_open: bool = False
-        self._circuit_breaker_threshold: int = 5
+        # Progress callbacks
+        self._callbacks: List[Callable[[int, Literal["scheduled", "running", "completed", "failed", "cancelled"]], None]] = []
+        self._callback_task_states: Dict[int, Literal["scheduled", "running", "completed", "failed", "cancelled"]] = {}
 
     async def schedule_plot_generation(
         self, ep_num: int, bible: Any, settings: Dict[str, Any], depends_on: Optional[int] = None, priority: int = 5
     ):
+        """エピソードのプロット生成をスケジュールする。
         
         Args:
             ep_num: エピソード番号
             bible: ブックデータ
             settings: 設定辞書
-            depends_on: このエピソードが依存するエピソード番号（省略可能）。
-                例: depends_on=3 の場合、エピソード3のプロット生成完了を待つ。
+            depends_on: このエピソードが依存するエピソード番号(省略可能).
+                例: depends_on=3 の場合,エピソード3のプロット生成完了を待つ。
+            priority: タスクの優先度（小さい数値ほど高優先度、デフォルト 5）
         """
         if ep_num > self.end_ep:
             return
@@ -71,13 +77,26 @@ class StreamingPlotScheduler:
         self.metrics["scheduled"] += 1
         self._gen_start_times[ep_num] = asyncio.get_event_loop().time()
         self._task_priorities[ep_num] = priority
+        self._emit_callback(ep_num, "scheduled")
 
         async def _run_gen():
+            # Circuit breaker check
+            if self._circuit_open:
+                if self.reporter:
+                    self.reporter.report(f"🔴 Ep.{ep_num} サーキットブレーカーオープン中", "warning")
+                return None
+            
+            self._emit_callback(ep_num, "running")
+            
             try:
                 # Check cache first
                 cached = await self._check_cache(ep_num)
                 if cached is not None:
                     self.metrics["cache_hits"] += 1
+                    # Reset error count on success
+                    self._consecutive_errors = 0
+                    self._circuit_open = False
+                    self._emit_callback(ep_num, "completed")
                     return cached
                 
                 # Generate with retry logic
@@ -97,10 +116,15 @@ class StreamingPlotScheduler:
                                 self._gen_times.pop(0)
                             if elapsed > 30 and self.reporter:
                                 self.reporter.report(f"⏰ Ep.{ep_num} プロット生成長時間化 ({elapsed:.1f}s)", "warning")
+                            # Success: reset error counter and close circuit if open
+                            self._consecutive_errors = 0
+                            self._circuit_open = False
+                            self._emit_callback(ep_num, "completed")
                             return results[0]
                     except asyncio.CancelledError:
                         if self.reporter:
                             self.reporter.report(f"🔄 Ep.{ep_num} はキャンセルされました", "debug")
+                        self._emit_callback(ep_num, "cancelled")
                         raise
                     except asyncio.TimeoutError:
                         if self.reporter:
@@ -108,6 +132,13 @@ class StreamingPlotScheduler:
                         last_error = asyncio.TimeoutError(f"Timeout after {self._timeout}s")
                         self.metrics["errors"] += 1
                         self.metrics["retries"] += 1
+                        # Increment consecutive errors and check circuit breaker
+                        self._consecutive_errors += 1
+                        if self._consecutive_errors >= self._circuit_breaker_threshold:
+                            self._circuit_open = True
+                            if self.reporter:
+                                self.reporter.report(
+                                    f"🔴 サーキットブレーカーがオープンになりました ({self._consecutive_errors}回連続エラー)", "error")
                         if attempt < self._max_retries - 1:
                             backoff_sec = min(30, 2 ** attempt)
                             if self.reporter:
@@ -118,6 +149,13 @@ class StreamingPlotScheduler:
                         last_error = e
                         self.metrics["errors"] += 1
                         self.metrics["retries"] += 1
+                        # Increment consecutive errors and check circuit breaker
+                        self._consecutive_errors += 1
+                        if self._consecutive_errors >= self._circuit_breaker_threshold:
+                            self._circuit_open = True
+                            if self.reporter:
+                                self.reporter.report(
+                                    f"🔴 サーキットブレーカーがオープンになりました ({self._consecutive_errors}回連続エラー)", "error")
                         if attempt < self._max_retries - 1:
                             backoff_sec = min(30, 2 ** attempt)
                             if self.reporter:
@@ -127,12 +165,15 @@ class StreamingPlotScheduler:
                 
                 if last_error and self.reporter:
                     self.reporter.report(f"❌ Ep.{ep_num} 最終失敗: {last_error}", "error")
+                self._emit_callback(ep_num, "failed")
                 return None
             except asyncio.CancelledError:
+                self._emit_callback(ep_num, "cancelled")
                 raise
             except Exception as e:
                 self.metrics["errors"] += 1
                 StructuredLogger.error("Failed scheduled plot gen", trace_id=TraceContext.get_trace_id(), error=e)
+                self._emit_callback(ep_num, "failed")
                 return None
 
             finally:
@@ -178,11 +219,36 @@ class StreamingPlotScheduler:
                     task.cancel()
                     cancelled += 1
                     self.metrics["cancelled"] += 1
+                    self._emit_callback(ep_num, "cancelled")
         return cancelled
 
     async def cancel_all(self) -> int:
         self._task_priorities.clear()
         return await self.cancel_range(1, self.end_ep)
+
+    def reset_circuit_breaker(self) -> None:
+        """サーキットブレーカーを手動リセットする"""
+        self._consecutive_errors = 0
+        self._circuit_open = False
+        if self.reporter:
+            self.reporter.report("🟢 サーキットブレーカーが手動リセットされました", "info")
+
+    def is_circuit_open(self) -> bool:
+        """サーキットブレーカーの状態を返す"""
+        return self._circuit_open
+
+    def register_callback(self, callback: Callable[[int, Literal["scheduled", "running", "completed", "failed", "cancelled"]], None]) -> None:
+        """タスク状態変更コールバックを登録する"""
+        self._callbacks.append(callback)
+
+    def _emit_callback(self, ep_num: int, state: Literal["scheduled", "running", "completed", "failed", "cancelled"]) -> None:
+        """登録済みコールバックを呼び出す"""
+        self._callback_task_states[ep_num] = state
+        for callback in self._callbacks:
+            try:
+                callback(ep_num, state)
+            except Exception as e:
+                logger.warning(f"コールバック実行中にエラー: {e}")
 
     def pending_episodes(self) -> List[int]:
         pending = [ep for ep, t in self.tasks.items() if not t.done()]
