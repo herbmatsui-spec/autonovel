@@ -89,22 +89,22 @@ def get_pages():
     # 共通ページ（モードに関わらず表示）
     landing_page = st.Page(
         _render_landing,
-        title="Landing",
+        title="ホーム",
         icon="🚀",
         url_path="landing",
-        default=True,  # デフォルトページ
+        default=True,
     )
 
     easy_mode_page = st.Page(
         _wrap_easy_mode,
-        title="Easy Mode",
+        title="かんたんモード",
         icon="⚡",
         url_path="easy",
     )
 
     help_page = st.Page(
         _render_help_tab,
-        title="Help",
+        title="ヘルプ・使い方",
         icon="❓",
         url_path="help",
     )
@@ -112,77 +112,77 @@ def get_pages():
     # 上級者モードのページ群
     planning_page = st.Page(
         _wrap_planning_tab,
-        title="Planning",
+        title="企画立案",
         icon="📋",
         url_path="planning",
     )
 
     plot_page = st.Page(
         _wrap_plot_tab,
-        title="Plot",
+        title="プロット設計",
         icon="📖",
         url_path="plot",
     )
 
     writing_page = st.Page(
         _wrap_writing_tab,
-        title="Writing",
+        title="本文執筆",
         icon="✍️",
         url_path="writing",
     )
 
     monitor_page = st.Page(
         _wrap_monitor_tab,
-        title="Monitor",
+        title="進捗モニター",
         icon="📈",
         url_path="monitor",
     )
 
     audit_page = st.Page(
         _wrap_audit_tab,
-        title="Audit",
+        title="品質監査",
         icon="⚖️",
         url_path="audit",
     )
 
     import_page = st.Page(
         _wrap_import_tab,
-        title="Import",
+        title="インポート",
         icon="📥",
         url_path="import",
     )
 
     style_lab_page = st.Page(
         _wrap_style_lab_tab,
-        title="Style Lab",
+        title="文体ラボ",
         icon="🧬",
         url_path="style-lab",
     )
 
     strategy_page = st.Page(
         _wrap_strategy_tab,
-        title="Strategy",
+        title="戦略分析",
         icon="📈",
         url_path="strategy",
     )
 
     promo_page = st.Page(
         _wrap_promo_tab,
-        title="Promo",
+        title="宣伝・マーケ",
         icon="📢",
         url_path="promo",
     )
 
     rebuild_page = st.Page(
         _wrap_rebuild_tab,
-        title="Rebuild",
+        title="プロット再構築",
         icon="🔨",
         url_path="rebuild",
     )
 
     metrics_page = st.Page(
         _wrap_metrics_tab,
-        title="Metrics",
+        title="メトリクス",
         icon="📊",
         url_path="metrics",
     )
@@ -207,6 +207,6 @@ def get_pages():
     ]
 
     return {
-        "Easy Mode": easy_pages,
-        "Advanced Mode": advanced_pages,
+        "かんたんモード": easy_pages,
+        "上級者モード": advanced_pages,
     }

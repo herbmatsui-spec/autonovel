@@ -79,7 +79,7 @@ def _run_navigation(api_key: str) -> None:
     pages_dict = get_pages()
 
     mode = UIStateStore.get_runtime().app_mode
-    page_key = "Easy Mode" if mode == "easy" else "Advanced Mode"
+    page_key = "かんたんモード" if mode == "easy" else "上級者モード"
 
     pages = pages_dict.get(page_key, [])
     if pages:
