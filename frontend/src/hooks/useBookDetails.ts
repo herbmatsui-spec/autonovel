@@ -11,7 +11,7 @@ import {
 import { useBookStore } from '../store/useBookStore';
 import { useUIStore } from '../store/useUIStore';
 
-export function useBookDetails(bookId: number | null, activeTab: string) {
+export function useBookDetails(_bookId: number | null, activeTab: string) {
   const { setPlots, setChapters, setBible } = useBookStore();
   const { setOptHistory, setPendingPatches, setPromptVersions, setMetricTrend } = useUIStore();
 

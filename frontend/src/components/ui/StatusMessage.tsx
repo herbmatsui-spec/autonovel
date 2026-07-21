@@ -1,5 +1,3 @@
-import React from 'react';
-
 interface StatusMessageProps {
   type: 'success' | 'error' | 'info' | 'warning';
   message: string;

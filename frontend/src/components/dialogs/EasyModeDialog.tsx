@@ -1,6 +1,4 @@
 import React from 'react';
-import { Button } from '@/components/ui/button';
-import { useUIStore } from '@/store/useUIStore';
 import { useEasyModeStore } from '@/store/useEasyModeStore';
 import type { EasyModeParams } from '@/types';
 
@@ -43,6 +41,9 @@ export function EasyModeDialog({ isOpen, onClose, onSubmit }: Props) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit({
+      api_key: '',
+      config: {},
+      initial_limit: 1,
       genre: easyGenre,
       keywords: easyKeywords,
       archetype_key: easyArchetype,

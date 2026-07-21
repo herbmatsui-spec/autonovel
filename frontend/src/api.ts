@@ -7,6 +7,7 @@ import type {
   TaskStatus,
   EasyModeParams,
   EpisodeGenerateParams,
+  EpisodeGenerateCandidatesParams,
   PlanGenerationParams,
   RetryFailedParams,
   PlotExpandParams,
@@ -29,6 +30,7 @@ export type {
   TaskStatus,
   EasyModeParams,
   EpisodeGenerateParams,
+  EpisodeGenerateCandidatesParams,
   PlanGenerationParams,
   RetryFailedParams,
   PlotExpandParams,
@@ -42,81 +44,61 @@ export type {
   NarrativeMetricTrend,
 };
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8200/api';
+
+async function apiRequest<T>(url: string, options?: RequestInit): Promise<T> {
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options?.headers,
+    },
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || `HTTP ${response.status}`);
+  }
+
+  if (response.status === 204) return undefined as T;
+  return response.json();
+}
 
 // REST GET/DELETE helper functions
 export async function getBooks(): Promise<Book[]> {
-  const response = await fetch(`${API_BASE_URL}/books`);
-  if (!response.ok) {
-    throw new Error('Failed to fetch books');
-  }
-  return response.json();
+  return apiRequest(`${API_BASE_URL}/books`);
 }
 
 export async function getBook(bookId: number): Promise<Book> {
-  const response = await fetch(`${API_BASE_URL}/books/${bookId}`);
-  if (!response.ok) {
-    throw new Error('Failed to fetch book detail');
-  }
-  return response.json();
+  return apiRequest(`${API_BASE_URL}/books/${bookId}`);
 }
 
 export async function deleteBook(bookId: number): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/books/${bookId}`, {
-    method: 'DELETE',
-  });
-  if (!response.ok) {
-    throw new Error('Failed to delete book');
-  }
+  return apiRequest(`${API_BASE_URL}/books/${bookId}`, { method: 'DELETE' });
 }
 
 export async function getPlots(bookId: number): Promise<Plot[]> {
-  const response = await fetch(`${API_BASE_URL}/plots/${bookId}`);
-  if (!response.ok) {
-    throw new Error('Failed to fetch plots');
-  }
-  return response.json();
+  return apiRequest(`${API_BASE_URL}/plots/${bookId}`);
 }
 
 export async function getChapters(bookId: number): Promise<Chapter[]> {
-  const response = await fetch(`${API_BASE_URL}/chapters/${bookId}`);
-  if (!response.ok) {
-    throw new Error('Failed to fetch chapters');
-  }
-  return response.json();
+  return apiRequest(`${API_BASE_URL}/chapters/${bookId}`);
 }
 
 export async function getBible(bookId: number): Promise<Bible> {
-  const response = await fetch(`${API_BASE_URL}/bibles/${bookId}`);
-  if (!response.ok) {
-    throw new Error('Failed to fetch bible settings');
-  }
-  return response.json();
+  return apiRequest(`${API_BASE_URL}/bibles/${bookId}`);
 }
 
 export async function getOptHistory(bookId: number): Promise<OptimizationHistory[]> {
-  const response = await fetch(`${API_BASE_URL}/optimization_history/${bookId}`);
-  if (!response.ok) {
-    throw new Error('Failed to fetch optimization history');
-  }
-  return response.json();
+  return apiRequest(`${API_BASE_URL}/optimization_history/${bookId}`);
 }
 
 export async function getTaskStatus(taskId: string): Promise<TaskStatus> {
-  const response = await fetch(`${API_BASE_URL}/tasks/${taskId}/status`);
-  if (!response.ok) {
-    throw new Error('Failed to fetch task status');
-  }
-  return response.json();
+  return apiRequest(`${API_BASE_URL}/tasks/${taskId}/status`);
 }
 
 export async function stopTask(taskId: string): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/tasks/${taskId}/stop`, {
-    method: 'POST',
-  });
-  if (!response.ok) {
-    throw new Error('Failed to stop task');
-  }
+  return apiRequest(`${API_BASE_URL}/tasks/${taskId}/stop`, { method: 'POST' });
 }
 
 export function connectTaskStream(
@@ -127,7 +109,7 @@ export function connectTaskStream(
 ): () => void {
   const sseUrl = `${API_BASE_URL}/tasks/${taskId}/stream`;
   const eventSource = new EventSource(sseUrl);
-  
+
   eventSource.onmessage = (event) => {
     try {
       const status: TaskStatus = JSON.parse(event.data);
@@ -141,12 +123,12 @@ export function connectTaskStream(
       eventSource.close();
     }
   };
-  
+
   eventSource.onerror = (error) => {
     onError(error);
     eventSource.close();
   };
-  
+
   return () => {
     eventSource.close();
   };
@@ -154,17 +136,11 @@ export function connectTaskStream(
 
 
 // Background task triggering endpoints (POST)
-async function triggerTask(endpoint: string, body: any): Promise<string> {
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+async function triggerTask(endpoint: string, body: unknown): Promise<string> {
+  const data = await apiRequest<{ task_id: string }>(`${API_BASE_URL}${endpoint}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(errorText || `Failed on POST ${endpoint}`);
-  }
-  const data = await response.json();
   return data.task_id;
 }
 
@@ -180,12 +156,20 @@ export async function generateEpisodes(params: EpisodeGenerateParams): Promise<s
   return triggerTask('/episodes/generate', params);
 }
 
+export async function generateEpisodesCandidates(params: EpisodeGenerateCandidatesParams): Promise<string> {
+  return triggerTask('/episodes/generate', { ...params, mode: 'candidates' });
+}
+
 export async function retryFailedEpisodes(params: RetryFailedParams): Promise<string> {
   return triggerTask('/episodes/retry_failed', params);
 }
 
 export async function expandPlots(params: PlotExpandParams): Promise<string> {
   return triggerTask('/plots/expand', params);
+}
+
+export async function expandPlotsCandidates(params: PlotExpandParams): Promise<string> {
+  return triggerTask('/plots/expand', { ...params, mode: 'candidates' });
 }
 
 export async function rebuildPlots(params: PlotRebuildParams): Promise<string> {
@@ -198,39 +182,24 @@ export async function critiqueOptimize(params: CritiqueOptimizeParams): Promise<
 
 // Synchronous operations (Direct Response)
 export async function auditPlan(params: AuditPlanParams): Promise<any> {
-  const response = await fetch(`${API_BASE_URL}/plots/audit`, {
+  return apiRequest(`${API_BASE_URL}/plots/audit`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(params),
   });
-  if (!response.ok) {
-    throw new Error('Failed to audit plan');
-  }
-  return response.json();
 }
 
 export async function importChapter(params: ChapterImportParams): Promise<any> {
-  const response = await fetch(`${API_BASE_URL}/chapters/import`, {
+  return apiRequest(`${API_BASE_URL}/chapters/import`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(params),
   });
-  if (!response.ok) {
-    throw new Error('Failed to import chapter');
-  }
-  return response.json();
 }
 
 export async function generateMarketing(params: MarketingGenerateParams): Promise<any> {
-  const response = await fetch(`${API_BASE_URL}/marketing/generate`, {
+  return apiRequest(`${API_BASE_URL}/marketing/generate`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(params),
   });
-  if (!response.ok) {
-    throw new Error('Failed to generate marketing pack');
-  }
-  return response.json();
 }
 
 export function getExportPackageUrl(bookId: number, apiKey: string): string {
@@ -239,67 +208,52 @@ export function getExportPackageUrl(bookId: number, apiKey: string): string {
 
 // Pending patches API
 export async function getPendingPatches(bookId: number): Promise<PendingPatch[]> {
-  const response = await fetch(`${API_BASE_URL}/patches/${bookId}/pending`);
-  if (!response.ok) throw new Error('Failed to fetch pending patches');
-  return response.json();
+  return apiRequest(`${API_BASE_URL}/patches/${bookId}/pending`);
 }
 
 export async function approvePatch(patchId: number): Promise<any> {
-  const response = await fetch(`${API_BASE_URL}/patches/${patchId}/approve`, {
+  return apiRequest(`${API_BASE_URL}/patches/${patchId}/approve`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
   });
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(errorText || 'Failed to approve patch');
-  }
-  return response.json();
 }
 
 export async function rejectPatch(patchId: number): Promise<any> {
-  const response = await fetch(`${API_BASE_URL}/patches/${patchId}/reject`, {
+  return apiRequest(`${API_BASE_URL}/patches/${patchId}/reject`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
   });
-  if (!response.ok) throw new Error('Failed to reject patch');
-  return response.json();
 }
 
 export async function editPatch(patchId: number, content: string): Promise<any> {
-  const response = await fetch(`${API_BASE_URL}/patches/${patchId}/edit`, {
+  return apiRequest(`${API_BASE_URL}/patches/${patchId}/edit`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ content }),
   });
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(errorText || 'Failed to edit patch');
-  }
-  return response.json();
 }
 
 // Prompt versions API
 export async function getPromptVersions(bookId: number): Promise<PromptVersion[]> {
-  const response = await fetch(`${API_BASE_URL}/prompt_versions/${bookId}`);
-  if (!response.ok) throw new Error('Failed to fetch prompt versions');
-  return response.json();
+  return apiRequest(`${API_BASE_URL}/prompt_versions/${bookId}`);
 }
 
 export async function rollbackPromptVersion(bookId: number, versionId: number, reason: string): Promise<any> {
-  const response = await fetch(`${API_BASE_URL}/prompt_versions/${bookId}/rollback`, {
+  return apiRequest(`${API_BASE_URL}/prompt_versions/${bookId}/rollback`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ version_id: versionId, reason }),
   });
-  if (!response.ok) throw new Error('Failed to rollback prompt version');
-  return response.json();
 }
 
 export async function getNarrativeMetricsTrend(book_id: number, branch_id: number): Promise<NarrativeMetricTrend[]> {
-  const response = await fetch(`${API_BASE_URL}/narrative_metrics/${book_id}/${branch_id}`);
-  if (!response.ok) {
-    throw new Error('Failed to fetch narrative metrics trend');
-  }
-  return response.json();
+  return apiRequest(`${API_BASE_URL}/narrative_metrics/${book_id}/${branch_id}`);
 }
 
+// Health check
+export async function checkBackendHealth(): Promise<{
+  status: string;
+  database: string;
+  worker: string;
+  huey_backend: string;
+  queue_depth: number;
+}> {
+  const baseUrl = API_BASE_URL.replace('/api', '');
+  return apiRequest(`${baseUrl}/health`);
+}

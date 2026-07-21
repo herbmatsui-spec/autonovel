@@ -2,12 +2,11 @@ import React, { useState } from 'react';
 import { PendingPatch, approvePatch, rejectPatch, editPatch } from '../api';
 
 interface PatchReviewPanelProps {
-  bookId: number;
   patches: PendingPatch[];
   onRefresh: () => void;
 }
 
-export const PatchReviewPanel: React.FC<PatchReviewPanelProps> = ({ bookId, patches, onRefresh }) => {
+export const PatchReviewPanel: React.FC<PatchReviewPanelProps> = ({ patches, onRefresh }) => {
   const [editingPatchId, setEditingPatchId] = useState<number | null>(null);
   const [editText, setEditText] = useState<string>('');
   const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);

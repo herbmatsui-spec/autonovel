@@ -5,9 +5,10 @@ interface NumberInputProps {
   min?: number;
   max?: number;
   step?: number;
+  disabled?: boolean;
 }
 
-export function NumberInput({ label, value, onChange, min, max, step }: NumberInputProps) {
+export function NumberInput({ label, value, onChange, min, max, step, disabled }: NumberInputProps) {
   return (
     <div>
       <label className="block text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>
@@ -24,6 +25,7 @@ export function NumberInput({ label, value, onChange, min, max, step }: NumberIn
         min={min}
         max={max}
         step={step}
+        disabled={disabled}
       />
     </div>
   );

@@ -8,26 +8,56 @@ interface UseTaskStreamCallbacks {
   onError: (error: any) => void;
 }
 
+const MAX_RETRIES = 3;
+const BASE_DELAY_MS = 1000;
+
 export function useTaskStream(
   taskId: string | null,
   callbacks: UseTaskStreamCallbacks
 ) {
+  const callbacksRef = useRef(callbacks);
+  callbacksRef.current = callbacks;
+
+  const retryCountRef = useRef(0);
+  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const disconnectRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
-    if (taskId) {
-      const disconnect = connectTaskStream(
+    if (!taskId) return;
+
+    const attemptConnect = () => {
+      if (disconnectRef.current) {
+        disconnectRef.current();
+      }
+      const cleanup = connectTaskStream(
         taskId,
-        callbacks.onStatus,
-        callbacks.onComplete,
-        callbacks.onError
+        (status) => callbacksRef.current.onStatus(status),
+        (status) => {
+          retryCountRef.current = 0;
+          callbacksRef.current.onComplete(status);
+        },
+        (error) => {
+          if (retryCountRef.current < MAX_RETRIES) {
+            const delay = BASE_DELAY_MS * Math.pow(2, retryCountRef.current);
+            retryCountRef.current += 1;
+            reconnectTimerRef.current = setTimeout(attemptConnect, delay);
+          } else {
+            callbacksRef.current.onError(error);
+          }
+        }
       );
-      disconnectRef.current = disconnect;
-    }
+      disconnectRef.current = cleanup;
+    };
+
+    attemptConnect();
+
     return () => {
+      if (reconnectTimerRef.current) {
+        clearTimeout(reconnectTimerRef.current);
+      }
       if (disconnectRef.current) {
         disconnectRef.current();
       }
     };
-  }, [taskId, callbacks.onStatus, callbacks.onComplete, callbacks.onError]);
+  }, [taskId]);
 }

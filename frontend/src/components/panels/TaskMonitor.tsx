@@ -1,23 +1,19 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import { useTaskStore } from '@/store/useTaskStore';
-import { stopTask } from '@/api';
 
 interface TaskMonitorProps {
-  logEndRef: React.RefObject<HTMLDivElement | null>;
+  logEndRef: React.RefObject<HTMLDivElement>;
   onStop: () => void;
 }
 
 export function TaskMonitor({ logEndRef, onStop }: TaskMonitorProps) {
   const { activeTaskId, taskStatus } = useTaskStore();
-  const { setActiveTaskId, setTaskStatus } = useTaskStore();
 
   useEffect(() => {
     if (logEndRef.current) {
       logEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [taskStatus?.logs, logEndRef]);
-
-  const handleStopTask = onStop;
 
   if (!activeTaskId || !taskStatus) return null;
 

@@ -1,5 +1,3 @@
-import React from 'react';
-import { Button } from '@/components/ui/button';
 import { Tooltip } from '@/components/Tooltip';
 import type { Book, Plot } from '@/types';
 import { EmptyState } from '@/components/ui/EmptyState';

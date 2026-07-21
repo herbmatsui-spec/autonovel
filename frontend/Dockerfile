@@ -1,17 +1,14 @@
-FROM node:20-alpine
-
+# Build stage
+FROM node:20-alpine AS builder
 WORKDIR /app
-
-# Copy package files
-COPY package.json ./
-
-# Install packages inside the container
-RUN npm install --no-audit --no-fund
-
-# Copy the rest of the source code
+COPY package*.json ./
+RUN npm ci --no-audit --no-fund
 COPY . .
+RUN npm run build
 
-EXPOSE 5173
-
-# Start the Vite dev server bound to 0.0.0.0
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+# Production stage
+FROM nginx:alpine
+COPY --from=builder /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 3000
+CMD ["nginx", "-g", "daemon off;"]

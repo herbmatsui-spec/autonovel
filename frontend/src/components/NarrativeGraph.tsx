@@ -73,7 +73,7 @@ export const NarrativeGraph: React.FC<NarrativeGraphProps> = ({ data, onSceneCli
   const targetDatasets: any[] = [];
   // Example ideal tension: start at 30, peak at 70 at middle, end at 50
   if (allMetricNames.includes('Tension')) {
-    const tensionIdeal = filteredData.map((d, idx) => {
+    const tensionIdeal = filteredData.map((_d, idx) => {
       const progress = idx / Math.max(filteredData.length - 1, 1);
       // Simple arc: sin curve scaled
       return 30 + 40 * Math.sin(progress * Math.PI);
@@ -91,7 +91,7 @@ export const NarrativeGraph: React.FC<NarrativeGraphProps> = ({ data, onSceneCli
   }
   // Example ideal emotional satisfaction: steady increase to 80
   if (allMetricNames.includes('Emotional Satisfaction')) {
-    const emoIdeal = filteredData.map((d, idx) => {
+    const emoIdeal = filteredData.map((_d, idx) => {
       const progress = idx / Math.max(filteredData.length - 1, 1);
       return 20 + 60 * progress;
     });

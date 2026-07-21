@@ -2,9 +2,9 @@ import { create } from 'zustand';
 
 interface ProjectContextState {
   selectedBookId: number | null;
-  activeTab: 'books' | 'plots' | 'write' | 'analytics';
+  activeTab: 'books' | 'plots' | 'write' | 'analytics' | 'planning' | 'style-lab' | 'audit';
   setSelectedBookId: (id: number | null) => void;
-  setActiveTab: (tab: 'books' | 'plots' | 'write' | 'analytics') => void;
+  setActiveTab: (tab: 'books' | 'plots' | 'write' | 'analytics' | 'planning' | 'style-lab' | 'audit') => void;
 }
 
 export const useProjectStore = create<ProjectContextState>((set) => ({

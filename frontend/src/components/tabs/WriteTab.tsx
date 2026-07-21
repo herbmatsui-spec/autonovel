@@ -1,7 +1,5 @@
-import React from 'react';
 import { Book, Chapter, Bible } from '@/types';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { LoadingState } from '@/components/ui/LoadingState';
 import { StatusMessage } from '@/components/ui/StatusMessage';
 import { WritingForm } from '../write/WritingForm';
 import { ImportForm } from '../write/ImportForm';

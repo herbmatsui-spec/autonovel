@@ -23,8 +23,19 @@ def mock_requests_get():
         yield mock_get
 
 
+@pytest.fixture
+def mock_httpx():
+    """Mock httpx.Client to simulate backend health status."""
+    with patch("httpx.Client") as mock_client:
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"status": "ok", "database": "ok", "worker": "ok"}
+        mock_client.return_value.__enter__.return_value.get.return_value = mock_response
+        yield mock_client
+
+
 @pytest.mark.asyncio
-async def test_app_main_easy_mode_success(mock_st_context, mock_requests_get, monkeypatch):
+async def test_app_main_easy_mode_success(mock_st_context, mock_requests_get, mock_httpx, monkeypatch):
     """ケースA: 正常系 - 簡易モード。APIキーおよびバックエンドが正常。"""
     import streamlit_app.app as app
     from streamlit_app.state import UIStateStore
@@ -38,7 +49,7 @@ async def test_app_main_easy_mode_success(mock_st_context, mock_requests_get, mo
     monkeypatch.setattr(app, "render_landing", landing_mock)
 
     engine_service_mock = MagicMock()
-    monkeypatch.setattr("streamlit_app.engine_service.EngineService.get_instance", lambda api_key=None: engine_service_mock)
+    monkeypatch.setattr("src.engine_service.EngineService.get_instance", lambda api_key=None: engine_service_mock)
 
     UIStateStore.get_runtime().app_mode = "easy"
 
@@ -49,7 +60,7 @@ async def test_app_main_easy_mode_success(mock_st_context, mock_requests_get, mo
 
 
 @pytest.mark.asyncio
-async def test_app_main_advanced_mode_success(mock_st_context, mock_requests_get, monkeypatch):
+async def test_app_main_advanced_mode_success(mock_st_context, mock_requests_get, mock_httpx, monkeypatch):
     """ケースB: 正常系 - 詳細モード。APIキーおよびバックエンドが正常。"""
     import streamlit_app.app as app
     from streamlit_app.state import UIStateStore
@@ -63,7 +74,7 @@ async def test_app_main_advanced_mode_success(mock_st_context, mock_requests_get
     monkeypatch.setattr(app, "render_landing", landing_mock)
 
     engine_service_mock = MagicMock()
-    monkeypatch.setattr("streamlit_app.engine_service.EngineService.get_instance", lambda api_key=None: engine_service_mock)
+    monkeypatch.setattr("src.engine_service.EngineService.get_instance", lambda api_key=None: engine_service_mock)
 
     UIStateStore.get_runtime().app_mode = "advanced"
 
@@ -74,11 +85,12 @@ async def test_app_main_advanced_mode_success(mock_st_context, mock_requests_get
 
 
 @pytest.mark.asyncio
-async def test_app_main_backend_error(mock_st_context, mock_requests_get, monkeypatch):
+async def test_app_main_backend_error(mock_st_context, mock_requests_get, mock_httpx, monkeypatch):
     """ケースC: 異常系 - バックエンド未接続。自動起動UIの表示を確認。"""
     import streamlit_app.app as app
 
     mock_requests_get.side_effect = Exception("Connection refused")
+    mock_httpx.return_value.__enter__.return_value.get.side_effect = Exception("Connection refused")
 
     title_mock = MagicMock()
     monkeypatch.setattr("streamlit_app.ui_utils.render_centered_title", title_mock)
@@ -100,7 +112,7 @@ async def test_app_main_backend_error(mock_st_context, mock_requests_get, monkey
 
 
 @pytest.mark.asyncio
-async def test_app_main_missing_or_invalid_api_key(mock_st_context, mock_requests_get, monkeypatch):
+async def test_app_main_missing_or_invalid_api_key(mock_st_context, mock_requests_get, mock_httpx, monkeypatch):
     """ケースD: 異常系 - APIキー無効/空。ランディング画面が表示される。"""
     import streamlit_app.app as app
 

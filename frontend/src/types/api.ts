@@ -87,6 +87,11 @@ export interface EpisodeGenerateParams {
   do_refine: boolean;
   env_state: Record<string, string>;
   pipeline_mode: boolean;
+  mode?: 'final' | 'candidates';
+}
+
+export interface EpisodeGenerateCandidatesParams extends EpisodeGenerateParams {
+  mode: 'candidates';
 }
 
 export interface PlanGenerationParams {
@@ -109,6 +114,7 @@ export interface PlotExpandParams {
   book_id: number;
   gen_from: number;
   gen_to: number;
+  mode?: 'final' | 'candidates';
 }
 
 export interface PlotRebuildParams {
@@ -180,4 +186,12 @@ export interface NarrativeMetricTrend {
   ep_num: number;
   scene_num: number;
   scores: Record<string, number>;
+}
+
+export interface HealthStatus {
+  status: string;
+  database: string;
+  worker: string;
+  huey_backend: string;
+  queue_depth: number;
 }

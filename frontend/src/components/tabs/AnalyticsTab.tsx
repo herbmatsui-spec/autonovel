@@ -1,5 +1,3 @@
-import React from 'react';
-import { Button } from '@/components/ui/button';
 import { Tooltip } from '@/components/Tooltip';
 import type { Book, OptimizationHistory, PendingPatch, PromptVersion, NarrativeMetricTrend } from '@/types';
 import { PatchReviewPanel } from '../PatchReviewPanel';
@@ -17,7 +15,7 @@ interface AnalyticsTabProps {
   getExportPackageUrl: (bookId: number, apiKey: string) => string;
   apiKey: string;
   onRefresh: () => void;
-  setActiveTab: (tab: string) => void;
+  setActiveTab: (tab: 'books' | 'plots' | 'write' | 'analytics') => void;
 }
 
 export function AnalyticsTab({
@@ -121,11 +119,10 @@ export function AnalyticsTab({
 
           {/* HITL Pending Patches */}
           <div className="glass-panel" style={{ padding: '1.75rem' }}>
-            <PatchReviewPanel
-              bookId={selectedBook.id}
-              patches={pendingPatches}
-              onRefresh={onRefresh}
-            />
+          <PatchReviewPanel
+            patches={pendingPatches}
+            onRefresh={onRefresh}
+          />
           </div>
 
           {/* Prompt Versions History */}

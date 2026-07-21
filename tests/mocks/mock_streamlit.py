@@ -1,4 +1,5 @@
 import sys
+import time
 import types
 from unittest.mock import MagicMock
 
@@ -33,6 +34,12 @@ class MockStreamlitContext:
         self.app_mode_select = "easy"
         self.buttons_clicked = set()
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        return False
+
     def set_api_key(self, api_key: str):
         self.api_key_input = api_key
 
@@ -43,16 +50,16 @@ class MockStreamlitContext:
         self.buttons_clicked.add(label)
 
     def toast(self, message, icon=None):
-        self.context.toast_calls.append((message, icon))
-        self.context.toast_calls_with_icon = (message, icon)
+        self.toast_calls.append((message, icon))
+        self.toast_calls_with_icon = (message, icon)
 
     def error(self, message):
-        self.context.error_calls.append(message)
-        self.context.error_calls_with_message = message
+        self.error_calls.append(message)
+        self.error_calls_with_message = message
 
     def write(self, message):
-        self.context.write_calls.append(message)
-        self.context.write_calls_with_message = message
+        self.write_calls.append(message)
+        self.write_calls_with_message = message
 
     def markdown(self, body, unsafe_allow_html=False):
         pass
@@ -88,41 +95,54 @@ class MockStreamlitContext:
         pass
 
     def metric(self, label, value):
-        self.context.metrics[label] = value
-        self.context.metrics_with_label_value = (label, value)
+        self.metrics[label] = value
+        self.metrics_with_label_value = (label, value)
 
     def columns(self, spec):
         return [MagicMock() for _ in range(spec if isinstance(spec, int) else len(spec))]
 
     def click_button(self, label: str):
-        self.context.buttons_clicked.add(label)
-        self.context.button_clicked = label
+        self.buttons_clicked.add(label)
+        self.button_clicked = label
 
     def rerun(self):
-        self.context.rerun_called = True
-        self.context.rerun_called_with_timestamp = time.time()
+        self.rerun_called = True
+        self.rerun_called_with_timestamp = time.time()
         pass
 
+    def button(self, label, key=None, type="secondary", **kwargs):
+        return label in self.buttons_clicked
+
+    def spinner(self, text, **kwargs):
+        return self
+
+    def empty(self):
+        return MagicMock()
+
+    @property
+    def sidebar(self):
+        return self
+
     def captured_toasts(self):
-        return self.context.toast_calls
+        return self.toast_calls
 
     def captured_errors(self):
-        return self.context.error_calls
+        return self.error_calls
 
     def captured_write_calls(self):
-        return self.context.write_calls
+        return self.write_calls
 
     def captured_metrics(self):
-        return self.context.metrics
+        return self.metrics
 
     def captured_buttons_clicked(self):
-        return list(self.context.buttons_clicked)
+        return list(self.buttons_clicked)
 
     def captured_rerun(self):
-        return self.context.rerun_called
+        return self.rerun_called
 
     def captured_navigation_run(self):
-        return self.context.navigation_run_called
+        return self.navigation_run_called
 
     def navigation(self, pages):
         class MockNavigation:
@@ -131,7 +151,12 @@ class MockStreamlitContext:
             def run(self):
                 self.ctx.navigation_run_called = True
                 self.ctx.navigation_run_called_with_time = time.time()
-        return MockNavigation(self.context)
+        return MockNavigation(self)
+
+    def fragment(self, *args, **kwargs):
+        def decorator(func):
+            return func
+        return decorator
 
     class Page:
         def __init__(self, page, title=None, icon=None, url_path=None, default=False):
@@ -156,6 +181,15 @@ class MockStreamlitModule:
 
     def __getattr__(self, name):
         return getattr(self.context, name)
+
+
+class _CtxManager:
+    def __init__(self, ctx):
+        self.ctx = ctx
+    def __enter__(self):
+        return self.ctx
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        return False
 
 
 def patch_streamlit(context: MockStreamlitContext):

@@ -68,6 +68,7 @@ export function WritingForm({
         <div>
           <label className="block text-xs mb-1">1話あたり文字数</label>
           <NumberInput
+            label="1話あたり文字数"
             value={wordCount}
             onChange={setWordCount}
             min={500}

@@ -1,14 +1,13 @@
-import React from 'react';
 import { Button } from '@/components/ui/button';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { StatusMessage } from '@/components/ui/StatusMessage';
-import { Book } from '@/types';
+import type { Book } from '@/types';
 import { useBooks } from '@/hooks/useBooks';
 
 interface BooksTabProps {
-  selectedBook: any; // Temporary any, will refine
-  setSelectedBook: (book: Book) => void;
+  selectedBook: Book | null;
+  setSelectedBook: (book: Book | null) => void;
   setShowCreateModal: (show: boolean) => void;
 }
 

@@ -2,13 +2,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useUserSettingsStore } from "../store/useUserSettingsStore";
 import { useProjectStore } from "../store/useProjectStore";
-import { useBooks } from "../hooks/useBooks";
+import { useBookStore } from "../store/useBookStore";
 import { toast } from 'sonner';
 
 export function Sidebar() {
   const { apiKey, setApiKey, modelType, setModelType } = useUserSettingsStore();
   const { activeTab, setActiveTab } = useProjectStore();
-  const { selectedBook } = useBooks();
+  const { selectedBook } = useBookStore();
 
   return (
     <aside
@@ -110,6 +110,39 @@ export function Sidebar() {
           aria-label="品質および販促分析ページへ"
         >
           📈 品質＆販促
+        </Button>
+        <Button
+          variant={activeTab === 'planning' ? 'default' : 'secondary'}
+          onClick={() => setActiveTab('planning')}
+          className="justify-start w-full"
+          aria-current={activeTab === 'planning' ? 'page' : undefined}
+          aria-label="企画立案ページへ"
+        >
+          📋 企画立案
+        </Button>
+        <Button
+          variant={activeTab === 'style-lab' ? 'default' : 'secondary'}
+          onClick={() => setActiveTab('style-lab')}
+          className="justify-start w-full"
+          aria-current={activeTab === 'style-lab' ? 'page' : undefined}
+          aria-label="文体ラボページへ"
+        >
+          🧬 文体ラボ
+        </Button>
+        <Button
+          variant={activeTab === 'audit' ? 'default' : 'secondary'}
+          onClick={() => {
+            if (!selectedBook) {
+              toast.warning('最初に作品を選択してください。');
+              return;
+            }
+            setActiveTab('audit');
+          }}
+          className="justify-start w-full"
+          aria-current={activeTab === 'audit' ? 'page' : undefined}
+          aria-label="品質監査ページへ"
+        >
+          ⚖️ 品質監査
         </Button>
       </nav>
 

@@ -10,7 +10,10 @@ app = __import__(__name__)
 import warnings
 
 import streamlit as st
-from streamlit.errors import StreamlitAPIException
+try:
+    from streamlit.errors import StreamlitAPIException
+except ImportError:
+    StreamlitAPIException = Exception
 
 # ==========================================
 # アプリ初期化

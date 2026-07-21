@@ -7,6 +7,7 @@ import { useBookStore } from '@/store/useBookStore';
 import { useUIStore } from '@/store/useUIStore';
 import { useWritingStore } from '@/store/useWritingStore';
 import { useTaskStore } from '@/store/useTaskStore';
+import { useBookDetails } from './useBookDetails';
 import {
   generateEasy,
   generateEpisodes,
@@ -14,70 +15,29 @@ import {
   critiqueOptimize,
   importChapter,
   generateMarketing,
-  getPlots,
-  getChapters,
-  getBible,
-  getOptHistory,
-  getPendingPatches,
-  getPromptVersions,
-  getNarrativeMetricsTrend,
   stopTask,
 } from '@/api';
 import type { EasyModeParams } from '@/types';
 
-/**
- * Hook that encapsulates all action handlers previously defined in App.tsx.
- * It receives the `setLoading` function from the component (App) to manage the
- * local loading spinner, and returns the same handler signatures for direct use
- * in the component.
- */
 export function useAppActions(setLoading: (b: boolean) => void) {
-  // Global settings
   const { apiKey, temperature, modelType } = useUserSettingsStore();
-
-  // Project / tab state
-  const { activeTab, setActiveTab } = useProjectStore();
-
-  // Book store (selected book, plots, chapters, bible)
-  const {
-    selectedBook,
-    setSelectedBook,
-    setPlots,
-    setChapters,
-    setBible,
-    chapters,
-    bible,
-    plots,
-  } = useBookStore();
-
-  // UI store (modal open/close, global error)
-  const { setCreateModalOpen, setGlobalError, setOptHistory, setPendingPatches, setPromptVersions, setMetricTrend } = useUIStore();
+  const { activeTab } = useProjectStore();
+  const { selectedBook } = useBookStore();
+  const { setCreateModalOpen, setGlobalError } = useUIStore();
   const { easyWordCount } = useEasyModeStore();
-
-  // Writing store (writing params & import form)
   const {
     writeFrom,
-    setWriteFrom,
     writeTo,
-    setWriteTo,
     writePassion,
-    setWritePassion,
     importEpNum,
-    setImportEpNum,
     importText,
-    setImportText,
     importDoRefine,
-    setImportDoRefine,
     resetImport,
-    genre,
-    title,
     wordCount,
-    platform,
   } = useWritingStore();
   const { setError: setWritingError } = useWritingStore();
-
-  // Task store (active task id & status)
-  const { setActiveTaskId, activeTaskId, setTaskStatus, taskStatus } = useTaskStore();
+  const { setActiveTaskId, activeTaskId, setTaskStatus } = useTaskStore();
+  const { loadBookDetails } = useBookDetails(selectedBook?.id ?? null, activeTab);
 
   const getConfig = () => ({
     temperature,
@@ -132,12 +92,6 @@ export function useAppActions(setLoading: (b: boolean) => void) {
         do_refine: true,
         env_state: {},
         pipeline_mode: true,
-        series_config: {
-          title,
-          genre,
-          word_count: wordCount,
-          platform,
-        },
       });
       setActiveTaskId(taskId);
       setWritingError(null);
@@ -234,35 +188,6 @@ export function useAppActions(setLoading: (b: boolean) => void) {
       setGlobalError('マーケティング生成に失敗しました: ' + err.message);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const loadBookDetails = async (bookId: number) => {
-    try {
-      if (activeTab === 'plots') {
-        const data = await getPlots(bookId);
-        setPlots(data);
-      } else if (activeTab === 'write') {
-        const chData = await getChapters(bookId);
-        setChapters(chData);
-        const bibleData = await getBible(bookId);
-        setBible(bibleData);
-      } else if (activeTab === 'analytics') {
-        const histData = await getOptHistory(bookId);
-        setOptHistory(histData);
-        const patchesData = await getPendingPatches(bookId);
-        setPendingPatches(patchesData);
-        const versionsData = await getPromptVersions(bookId);
-        setPromptVersions(versionsData);
-        try {
-          const trendData = await getNarrativeMetricsTrend(bookId, 1);
-          setMetricTrend(trendData);
-        } catch (e) {
-          console.error('Error loading narrative metrics:', e);
-        }
-      }
-    } catch (err: any) {
-      console.error('Error loading book details:', err);
     }
   };
 
