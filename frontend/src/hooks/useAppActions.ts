@@ -69,6 +69,10 @@ export function useAppActions(setLoading: (b: boolean) => void) {
     importDoRefine,
     setImportDoRefine,
     resetImport,
+    genre,
+    title,
+    wordCount,
+    platform,
   } = useWritingStore();
 
   // Task store (active task id & status)
@@ -123,10 +127,16 @@ export function useAppActions(setLoading: (b: boolean) => void) {
         write_from: writeFrom,
         write_to: writeTo,
         passion: writePassion,
-        word_count: easyWordCount,
+        word_count: easyWordCount || wordCount,
         do_refine: true,
         env_state: {},
         pipeline_mode: true,
+        series_config: {
+          title,
+          genre,
+          word_count: wordCount,
+          platform,
+        },
       });
       setActiveTaskId(taskId);
     } catch (err: any) {

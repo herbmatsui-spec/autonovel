@@ -2,9 +2,11 @@ import { Chapter } from '@/types';
 
 interface ChapterCardProps {
   chapter: Chapter;
+  qualityScore?: number;
+  killerPhrase?: string;
 }
 
-export function ChapterCard({ chapter }: ChapterCardProps) {
+export function ChapterCard({ chapter, qualityScore, killerPhrase }: ChapterCardProps) {
   const ch = chapter;
   return (
     <div
@@ -29,6 +31,42 @@ export function ChapterCard({ chapter }: ChapterCardProps) {
           {new Date(ch.created_at).toLocaleDateString()}
         </span>
       </div>
+      {killerPhrase && (
+        <div
+          style={{
+            fontSize: '0.8rem',
+            padding: '0.25rem 0.5rem',
+            background: 'rgba(239,68,68,0.15)',
+            borderRadius: '4px',
+            marginBottom: '0.5rem',
+            display: 'inline-block',
+          }}
+        >
+          🔥 キラーフレーズ: {killerPhrase}
+        </div>
+      )}
+      {qualityScore !== undefined && (
+        <div style={{ marginBottom: '0.5rem' }}>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>
+            品質スコア: {Math.round(qualityScore * 100)}%
+          </div>
+          <div style={{ height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px' }}>
+            <div
+              style={{
+                width: `${qualityScore * 100}%`,
+                height: '100%',
+                borderRadius: '2px',
+                background:
+                  qualityScore > 0.8
+                    ? '#22c55e'
+                    : qualityScore > 0.5
+                      ? '#eab308'
+                      : '#ef4444',
+              }}
+            />
+          </div>
+        </div>
+      )}
       <p
         style={{
           fontSize: '0.85rem',

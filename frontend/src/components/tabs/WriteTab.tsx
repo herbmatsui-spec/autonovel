@@ -7,6 +7,7 @@ import { WritingForm } from '../write/WritingForm';
 import { ImportForm } from '../write/ImportForm';
 import { BiblePanel } from '../write/BiblePanel';
 import { ChapterCard } from '../write/ChapterCard';
+import { usePagination } from '@/hooks/usePagination';
 
 interface WriteTabProps {
   selectedBook: Book;
@@ -27,6 +28,14 @@ interface WriteTabProps {
   setImportDoRefine: (val: boolean) => void;
   handleImportChapter: (e: React.FormEvent) => void;
   activeTaskId: string | null;
+  genre: string;
+  setGenre: (val: string) => void;
+  title: string;
+  setTitle: (val: string) => void;
+  wordCount: number;
+  setWordCount: (val: number) => void;
+  platform: string;
+  setPlatform: (val: string) => void;
 }
 
 export function WriteTab({
@@ -47,7 +56,17 @@ export function WriteTab({
   setImportDoRefine,
   handleImportChapter,
   activeTaskId,
+  genre,
+  setGenre,
+  title,
+  setTitle,
+  wordCount,
+  setWordCount,
+  platform,
+  setPlatform,
 }: WriteTabProps) {
+  const { page, setPage, totalPages, paginatedItems } = usePagination(chapters.length, 5);
+
   return (
     <div className="animate-fade-in grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="flex flex-col gap-8 lg:col-span-2">
@@ -60,6 +79,14 @@ export function WriteTab({
           setWritePassion={setWritePassion}
           onSubmit={handleTriggerWriting}
           disabled={!!activeTaskId}
+          genre={genre}
+          setGenre={setGenre}
+          title={title}
+          setTitle={setTitle}
+          wordCount={wordCount}
+          setWordCount={setWordCount}
+          platform={platform}
+          setPlatform={setPlatform}
         />
 
         <div>
@@ -73,11 +100,34 @@ export function WriteTab({
               description="上のフォームから自動執筆を開始してください。"
             />
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-              {chapters.map((ch) => (
-                <ChapterCard key={ch.ep_num} chapter={ch} />
-              ))}
-            </div>
+            <>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                {paginatedItems(chapters).map((ch) => (
+                  <ChapterCard key={ch.ep_num} chapter={ch} qualityScore={ch.quality_score} killerPhrase={ch.killer_phrase} />
+                ))}
+              </div>
+              {totalPages > 1 && (
+                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', marginTop: '1rem', alignItems: 'center' }}>
+                  <button
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    className="btn btn-secondary"
+                  >
+                    ← 前
+                  </button>
+                  <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                    ページ {page} / {totalPages} （{chapters.length}話中）
+                  </span>
+                  <button
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                    className="btn btn-secondary"
+                  >
+                    次 →
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

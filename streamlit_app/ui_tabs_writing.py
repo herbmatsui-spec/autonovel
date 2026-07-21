@@ -31,6 +31,12 @@ def _ensure_ui_initialized() -> None:
         set_ui(poll_interval=1)
     if get_ui("current_book_id", None) is None:
         set_ui(current_book_id=1)
+    if get_ui("generation_history", None) is None:
+        set_ui(generation_history=[])
+    if get_ui("active_task_id", None) is None:
+        set_ui(active_task_id=None)
+    if get_ui("writing_progress", None) is None:
+        set_ui(writing_progress={"current_ep": 0, "total": 0, "status": "idle"})
 
 # ----------------------------------------------------------------------
 # ユーティリティ：指数バックオフ付きリトライデコレータ

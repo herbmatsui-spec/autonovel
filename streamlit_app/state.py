@@ -34,6 +34,17 @@ class UIState(BaseModel):
     selected_item_id: Optional[str] = None
     current_book_id: Optional[int] = None
     
+    # 生成履歴
+    generation_history: list[dict[str, Any]] = Field(default_factory=list)
+    
+    # 執筆進捗
+    active_task_id: Optional[str] = None
+    writing_progress: dict[str, Any] = Field(default_factory=lambda: {
+        "current_ep": 0,
+        "total": 0,
+        "status": "idle",
+    })
+    
     # 検索/フィルタ
     search_query: str = ""
     filter_settings: dict[str, Any] = Field(default_factory=dict)
