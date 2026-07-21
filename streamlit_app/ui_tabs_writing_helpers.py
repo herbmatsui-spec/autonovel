@@ -34,7 +34,7 @@ def _render_series_config_form() -> dict[str, Any]:
         target_word_count = st.slider("1話あたり文字数", 1000, 5000, 3000)
         book_id = st.number_input("Book ID", value=get_ui("current_book_id", 1), min_value=1)
 
-        st.text_input("API Key", "your_api_key_here", key="api_key_input")
+        st.caption("API Key はサイドバーから入力してください。")
 
         if st.button("🚀 執筆開始", key="btn_write_start"):
             try:
@@ -387,10 +387,10 @@ def _render_episode_viewer() -> None:
                         st.write(f"文字数: {episode.get('word_count', '不明')}")
                         st.write(f"品質スコア: {episode.get('quality_score', '不明')}")
 
-                                if st.button(f"話{episode['ep_num']}内容を表示", key=f"btn_{episode['ep_num']}"):
-                                    try:
-                                        book_id = get_ui("current_book_id", 1)
-                                        detail_data = api_client.get_episode_detail(book_id, episode["ep_num"])
+                        if st.button(f"話{episode['ep_num']}内容を表示", key=f"btn_{episode['ep_num']}"):
+                            try:
+                                book_id = get_ui("current_book_id", 1)
+                                detail_data = api_client.get_episode_detail(book_id, episode["ep_num"])
                                 st.write("内容:")
                                 st.write(detail_data.get("content", "内容取得エラー"))
                                 if "killer_phrase" in detail_data:

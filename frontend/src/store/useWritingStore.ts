@@ -11,6 +11,8 @@ interface WritingState {
   title: string;
   wordCount: number;
   platform: string;
+  showPreview: boolean;
+  error: string | null;
   setWriteFrom: (val: number) => void;
   setWriteTo: (val: number) => void;
   setWritePassion: (val: number) => void;
@@ -21,6 +23,9 @@ interface WritingState {
   setTitle: (val: string) => void;
   setWordCount: (val: number) => void;
   setPlatform: (val: string) => void;
+  setShowPreview: (val: boolean) => void;
+  setError: (msg: string | null) => void;
+  clearError: () => void;
   resetImport: () => void;
 }
 
@@ -38,6 +43,8 @@ export const useWritingStore = create<WritingState>((set) => ({
   title: '無題の小説',
   wordCount: 3000,
   platform: 'kakuyomu',
+  showPreview: false,
+  error: null,
   ...DEFAULT_IMPORT,
   setWriteFrom: (val) => set({ writeFrom: val }),
   setWriteTo: (val) => set({ writeTo: val }),
@@ -49,5 +56,8 @@ export const useWritingStore = create<WritingState>((set) => ({
   setTitle: (val) => set({ title: val }),
   setWordCount: (val) => set({ wordCount: val }),
   setPlatform: (val) => set({ platform: val }),
+  setShowPreview: (val) => set({ showPreview: val }),
+  setError: (msg) => set({ error: msg }),
+  clearError: () => set({ error: null }),
   resetImport: () => set({ ...DEFAULT_IMPORT }),
 }));

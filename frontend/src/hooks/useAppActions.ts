@@ -74,6 +74,7 @@ export function useAppActions(setLoading: (b: boolean) => void) {
     wordCount,
     platform,
   } = useWritingStore();
+  const { setError: setWritingError } = useWritingStore();
 
   // Task store (active task id & status)
   const { setActiveTaskId, activeTaskId, setTaskStatus, taskStatus } = useTaskStore();
@@ -139,8 +140,11 @@ export function useAppActions(setLoading: (b: boolean) => void) {
         },
       });
       setActiveTaskId(taskId);
+      setWritingError(null);
     } catch (err: any) {
-      toast.error('執筆タスクの起動に失敗しました: ' + err.message);
+      const msg = '執筆タスクの起動に失敗しました: ' + err.message;
+      toast.error(msg);
+      setWritingError(msg);
     }
   };
 
@@ -200,9 +204,12 @@ export function useAppActions(setLoading: (b: boolean) => void) {
       });
       toast.success('エピソードのインポートに成功しました。');
       resetImport();
+      setWritingError(null);
       await loadBookDetails(selectedBook.id);
     } catch (err: any) {
-      setGlobalError('インポートに失敗しました: ' + err.message);
+      const msg = 'インポートに失敗しました: ' + err.message;
+      setGlobalError(msg);
+      setWritingError(msg);
     } finally {
       setLoading(false);
     }

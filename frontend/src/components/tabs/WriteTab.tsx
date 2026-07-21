@@ -8,6 +8,7 @@ import { ImportForm } from '../write/ImportForm';
 import { BiblePanel } from '../write/BiblePanel';
 import { ChapterCard } from '../write/ChapterCard';
 import { usePagination } from '@/hooks/usePagination';
+import { useWritingStore } from '@/store/useWritingStore';
 
 interface WriteTabProps {
   selectedBook: Book;
@@ -36,6 +37,8 @@ interface WriteTabProps {
   setWordCount: (val: number) => void;
   platform: string;
   setPlatform: (val: string) => void;
+  showPreview: boolean;
+  setShowPreview: (val: boolean) => void;
 }
 
 export function WriteTab({
@@ -64,11 +67,19 @@ export function WriteTab({
   setWordCount,
   platform,
   setPlatform,
+  showPreview,
+  setShowPreview,
 }: WriteTabProps) {
+  const { error, clearError } = useWritingStore();
   const { page, setPage, totalPages, paginatedItems } = usePagination(chapters.length, 5);
 
   return (
     <div className="animate-fade-in grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {error && (
+        <div className="glass-panel p-4" style={{ borderColor: 'var(--accent-red)' }}>
+          <StatusMessage type="error" message={error} onClose={clearError} />
+        </div>
+      )}
       <div className="flex flex-col gap-8 lg:col-span-2">
         <WritingForm
           writeFrom={writeFrom}
@@ -143,6 +154,8 @@ export function WriteTab({
           setImportDoRefine={setImportDoRefine}
           onSubmit={handleImportChapter}
           disabled={!!activeTaskId}
+          showPreview={showPreview}
+          setShowPreview={setShowPreview}
         />
       </div>
     </div>

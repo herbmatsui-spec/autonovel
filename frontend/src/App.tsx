@@ -74,20 +74,26 @@ export default function App() {
    const isCreateModalOpen = useUIStore((s) => s.isCreateModalOpen);
    const { activeTaskId, setActiveTaskId, taskStatus, setTaskStatus } = useTaskStore();
 const {
-     writeFrom,
-     setWriteFrom,
-     writeTo,
-     setWriteTo,
-     writePassion,
-     setWritePassion,
-     importEpNum,
-     setImportEpNum,
-     importText,
-     setImportText,
-     importDoRefine,
-     setImportDoRefine,
-     resetImport
-   } = useWritingStore();
+      writeFrom,
+      setWriteFrom,
+      writeTo,
+      setWriteTo,
+      writePassion,
+      setWritePassion,
+      importEpNum,
+      setImportEpNum,
+      importText,
+      setImportText,
+      importDoRefine,
+      setImportDoRefine,
+      resetImport,
+      genre,
+      title,
+      wordCount,
+      platform,
+      showPreview,
+      setShowPreview,
+    } = useWritingStore();
   const { easyWordCount } = useEasyModeStore();
 
   // ----- Local UI/cached (analytics-specific) state kept in App -----
@@ -239,6 +245,12 @@ const {
                  importDoRefine={importDoRefine}
                  setImportDoRefine={setImportDoRefine}
                  activeTaskId={activeTaskId}
+                 genre={genre}
+                 title={title}
+                 wordCount={wordCount}
+                 platform={platform}
+                 showPreview={showPreview}
+                 setShowPreview={setShowPreview}
                />
             </div>
           </div>

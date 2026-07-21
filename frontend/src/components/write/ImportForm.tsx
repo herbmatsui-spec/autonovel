@@ -9,6 +9,8 @@ interface ImportFormProps {
   setImportDoRefine: (val: boolean) => void;
   onSubmit: (e: React.FormEvent) => void;
   disabled: boolean;
+  showPreview: boolean;
+  setShowPreview: (val: boolean) => void;
 }
 
 export function ImportForm({
@@ -20,6 +22,8 @@ export function ImportForm({
   setImportDoRefine,
   onSubmit,
   disabled,
+  showPreview,
+  setShowPreview,
 }: ImportFormProps) {
   return (
     <form
@@ -29,10 +33,27 @@ export function ImportForm({
     >
       <h4 className="m-0 text-base">📥 手動チャプターインポート</h4>
       <NumberInput label="話数" value={importEpNum} onChange={setImportEpNum} min={1} />
-      <div>
-        <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>
-          本文テキスト
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <input
+          type="checkbox"
+          id="previewImport"
+          checked={showPreview}
+          onChange={(e) => setShowPreview(e.target.checked)}
+          style={{ width: 'auto' }}
+        />
+        <label htmlFor="previewImport" className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+          インポート前にプレビューを表示
         </label>
+      </div>
+      <div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>
+            本文テキスト
+          </label>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+            {importText.length.toLocaleString()}文字
+          </span>
+        </div>
         <textarea
           value={importText}
           onChange={(e) => setImportText(e.target.value)}
@@ -41,6 +62,14 @@ export function ImportForm({
           required
         />
       </div>
+      {showPreview && importText && (
+        <div className="glass-panel p-4" style={{ marginTop: '0.5rem' }}>
+          <strong>プレビュー（冒頭200文字）:</strong>
+          <pre style={{ fontSize: '0.85rem', whiteSpace: 'pre-wrap', maxHeight: '200px', overflowY: 'auto' }}>
+            {importText.slice(0, 200)}...
+          </pre>
+        </div>
+      )}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
         <input
           type="checkbox"
