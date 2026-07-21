@@ -31,6 +31,7 @@ logger = logging.getLogger(__name__)
 # ==========================================
 _global_config: Optional[GlobalConfigModel] = None
 
+
 def get_config() -> GlobalConfigModel:
     global _global_config
     if _global_config is None:
@@ -38,11 +39,15 @@ def get_config() -> GlobalConfigModel:
         # (SSOT: settings.toml → Pydantic 検証 → 明示的環境変数マージ)
         try:
             from config.settings import ConfigManager
+
             _global_config = ConfigManager.get_config()
         except Exception as e:
             logger.critical(f"設定ファイルのバリデーションに失敗しました: {str(e)}")
-            raise SystemExit("設定ファイルのバリデーションに失敗しました。アプリケーションを終了します。")
+            raise SystemExit(
+                "設定ファイルのバリデーションに失敗しました。アプリケーションを終了します。"
+            )
     return _global_config
+
 
 def set_config(config: GlobalConfigModel) -> None:
     global _global_config
@@ -116,6 +121,7 @@ class GlobalConfig:
     def _persist_to_toml(self, config_model: GlobalConfigModel) -> None:
         """設定モデルを TOML ファイルに書き出す"""
         import tomli_w
+
         settings_path = BASE_DIR / "config" / "settings.toml"
         try:
             # Pydanticモデルを辞書に変換し、セクション分けして保存
@@ -146,9 +152,9 @@ PROMPT_TEMPLATES: Dict[str, str] = {
 """,
 }
 
+
 def get_prompt_template(name: str) -> str:
     path = BASE_DIR / "prompts" / "templates" / name
     if not path.exists():
         raise FileNotFoundError(f"Template not found: {path}")
     return path.read_text(encoding="utf-8")
-

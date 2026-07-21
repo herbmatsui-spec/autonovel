@@ -61,6 +61,7 @@ class StreamlitConfig(GlobalConfig):
         # 初期化時にセッション状態にデフォルト設定をロード
         if get_script_run_ctx() is not None:
             from streamlit_app.state import UIStateStore
+
             runtime_cfg = UIStateStore.get_runtime().config_data
             if not runtime_cfg:
                 # get_config() を通じて TOML から読み込まれた設定を UIStateStore に同期
@@ -70,6 +71,7 @@ class StreamlitConfig(GlobalConfig):
         """設定値を取得する（セッション状態があれば優先）"""
         if get_script_run_ctx() is not None:
             from streamlit_app.state import UIStateStore
+
             cfg = UIStateStore.get_runtime().config_data
             if cfg:
                 return cfg.get(key, default)
@@ -78,6 +80,7 @@ class StreamlitConfig(GlobalConfig):
     def update(self, **kwargs) -> None:
         """複数の設定値を一括更新し、セッションおよび TOML へ反映する"""
         from streamlit_app.state import UIStateStore
+
         # 1. バリデーションとモデル更新
         current_cfg_dict = (
             UIStateStore.get_runtime().config_data or get_config().model_dump()
@@ -136,7 +139,9 @@ class StreamlitConfig(GlobalConfig):
                 self.set(config_key, choice)
 
         st.subheader("🤖 モデル設定")
-        st.caption("各工程で使用するAIモデルを選択します。OpenRouter等のOpenAI互換モデルも指定可能です。")
+        st.caption(
+            "各工程で使用するAIモデルを選択します。OpenRouter等のOpenAI互換モデルも指定可能です。"
+        )
         render_model_selector(
             "model_planning",
             "📝 プロット用モデル",
@@ -156,7 +161,9 @@ class StreamlitConfig(GlobalConfig):
         st.divider()
 
         st.subheader("🔑 OpenRouter / OpenAI互換プロバイダ")
-        st.caption("モデルに OpenAI互換モデル（「/」を含むIDや gpt/claude/llama 等）を選んだ場合に使用します。")
+        st.caption(
+            "モデルに OpenAI互換モデル（「/」を含むIDや gpt/claude/llama 等）を選んだ場合に使用します。"
+        )
         openrouter_key = st.text_input(
             "API Key",
             type="password",
@@ -218,4 +225,3 @@ class StreamlitConfig(GlobalConfig):
             on_change=lambda: _sync("auto_backup", "cfg_auto_backup"),
             help="データを更新する際に、自動的にデータベースのバックアップを作成します。",
         )
-

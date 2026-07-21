@@ -150,9 +150,7 @@ class EroticCurve:
 
         sorted_senses = params.get_sorted_sensory_priority()
 
-        def get_sensory_focus_for_phase(
-            phase: str, default: List[str]
-        ) -> List[str]:
+        def get_sensory_focus_for_phase(phase: str, default: List[str]) -> List[str]:
             """フェーズとデフォルト感覚から重み付けされた感覚リストを返す"""
             senses = []
             for sense in sorted_senses:
@@ -163,9 +161,7 @@ class EroticCurve:
         base_desire = min(intensity * 18 + 15, 95)
         peak_desire = min(intensity * 20, 100)
 
-        build_senses = get_sensory_focus_for_phase(
-            "build", ["gaze", "scent", "breath"]
-        )
+        build_senses = get_sensory_focus_for_phase("build", ["gaze", "scent", "breath"])
         beats = [
             EroticBeat(
                 phase="build",
@@ -194,9 +190,7 @@ class EroticCurve:
                 )
             beats[0].sub_beats = sub_builds
 
-        peak_senses = get_sensory_focus_for_phase(
-            "peak", ["touch", "breath", "sound", "scent"]
-        )
+        peak_senses = get_sensory_focus_for_phase("peak", ["touch", "breath", "sound", "scent"])
         peak_count = params.get_beat_count_for_phase("peak")
 
         if peak_count > 1 and intensity >= 3:
@@ -234,9 +228,7 @@ class EroticCurve:
                 )
             )
 
-        afterglow_senses = get_sensory_focus_for_phase(
-            "afterglow", ["touch", "gaze"]
-        )
+        afterglow_senses = get_sensory_focus_for_phase("afterglow", ["touch", "gaze"])
         afterglow_desire = min(20 + intensity * 2, 40)
         afterglow = EroticBeat(
             phase="afterglow",
@@ -253,9 +245,7 @@ class EroticCurve:
                     EroticBeat(
                         phase="afterglow",
                         desire_level=max(afterglow_desire - 10 * (i + 1), 15),
-                        sensory_focus=get_sensory_focus_for_phase(
-                            "afterglow", ["touch", "breath"]
-                        ),
+                        sensory_focus=get_sensory_focus_for_phase("afterglow", ["touch", "breath"]),
                         consent_state="established",
                     )
                 )
@@ -264,4 +254,3 @@ class EroticCurve:
         beats.append(afterglow)
 
         return EroticCurve(beats=beats, target_intensity=intensity)
-

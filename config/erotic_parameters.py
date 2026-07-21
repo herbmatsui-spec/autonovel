@@ -32,13 +32,9 @@ class EroticParameters:
     enabled: bool = False
     base_intensity: int = 2
 
-    sensory_weights: Dict[str, int] = field(
-        default_factory=lambda: DEFAULT_SENSORY_WEIGHTS.copy()
-    )
+    sensory_weights: Dict[str, int] = field(default_factory=lambda: DEFAULT_SENSORY_WEIGHTS.copy())
 
-    pace_ratios: Dict[str, int] = field(
-        default_factory=lambda: DEFAULT_PACE_RATIOS.copy()
-    )
+    pace_ratios: Dict[str, int] = field(default_factory=lambda: DEFAULT_PACE_RATIOS.copy())
 
     metaphor_density: int = 50
     psychology_depth: int = 50
@@ -73,9 +69,7 @@ class EroticParameters:
             reverse=True,
         )
 
-    def get_sensory_focus_for_phase(
-        self, phase: str, base_senses: List[str]
-    ) -> List[str]:
+    def get_sensory_focus_for_phase(self, phase: str, base_senses: List[str]) -> List[str]:
         """指定されたフェーズと基本感覚リストから、重み付けされた感覚リストを返す。
 
         Args:
@@ -130,9 +124,7 @@ class EroticParameters:
         return cls(
             enabled=data.get("enabled", False),
             base_intensity=data.get("base_intensity", 2),
-            sensory_weights=data.get(
-                "sensory_weights", DEFAULT_SENSORY_WEIGHTS.copy()
-            ),
+            sensory_weights=data.get("sensory_weights", DEFAULT_SENSORY_WEIGHTS.copy()),
             pace_ratios=data.get("pace_ratios", DEFAULT_PACE_RATIOS.copy()),
             metaphor_density=data.get("metaphor_density", 50),
             psychology_depth=data.get("psychology_depth", 50),

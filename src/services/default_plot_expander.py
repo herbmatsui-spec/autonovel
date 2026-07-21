@@ -79,7 +79,11 @@ class DefaultPlotExpander:
                 try:
                     existing = await self.repo.get_plot(book_id, ep_num, branch_id=branch_id)
                     if existing and not force:
-                        if hasattr(existing, "detailed_blueprint") and existing.detailed_blueprint and len(existing.detailed_blueprint) > 50:
+                        if (
+                            hasattr(existing, "detailed_blueprint")
+                            and existing.detailed_blueprint
+                            and len(existing.detailed_blueprint) > 50
+                        ):
                             if reporter:
                                 reporter.report(f"Ep.{ep_num}: 既存プロットを再利用", "debug")
                             return existing
@@ -94,7 +98,9 @@ class DefaultPlotExpander:
                         reporter=reporter,
                     )
                     if not plot_res.success:
-                        logger.error(f"Plot generation failed for Ep.{ep_num}: {plot_res.error_message}")
+                        logger.error(
+                            f"Plot generation failed for Ep.{ep_num}: {plot_res.error_message}"
+                        )
                         return None
 
                     plots = UltraFastPlotBatch.model_validate(plot_res.metadata).plots

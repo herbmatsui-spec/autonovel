@@ -15,9 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 class InfraContainer(containers.DeclarativeContainer):
-    wiring_config = containers.WiringConfiguration(
-        packages=["src", "kernels", "prompts"]
-    )
+    wiring_config = containers.WiringConfiguration(packages=["src", "kernels", "prompts"])
 
     config = providers.Singleton(GlobalConfigModel.load)
 
@@ -38,9 +36,7 @@ class InfraContainer(containers.DeclarativeContainer):
         client_provider=chroma_client_provider,
     )
 
-    audit_logger = providers.Singleton(
-        lambda: None
-    )
+    audit_logger = providers.Singleton(lambda: None)
 
     cooldown = providers.Singleton(
         "src.backend.engine_utils.AdaptiveCooldown",

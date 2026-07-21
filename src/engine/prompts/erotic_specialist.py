@@ -82,9 +82,7 @@ class EroticSpecialist:
             parts.append(self._build_video_pattern_section(params, intensity))
 
         for beat in curve.beats:
-            parts.append(
-                f"\n【{beat.phase.upper()} フェーズ - 欲望レベル: {beat.desire_level}】"
-            )
+            parts.append(f"\n【{beat.phase.upper()} フェーズ - 欲望レベル: {beat.desire_level}】")
             template = get_template_for_phase(beat.phase)
             filled = Template(template).substitute(
                 desire_level=beat.desire_level,
@@ -114,9 +112,7 @@ class EroticSpecialist:
         )
         parts.append(
             f"\n・使用可能な擬音・擬態語（{min(6 + intensity, 15)}件）:\n"
-            + "\n".join(
-                f"  - {o}" for o in vocab["onomatopoeia"][:min(6 + intensity, 15)]
-            )
+            + "\n".join(f"  - {o}" for o in vocab["onomatopoeia"][: min(6 + intensity, 15)])
         )
 
         parts.append(self._build_layered_psychology_prompt(intensity, params))
@@ -154,9 +150,7 @@ class EroticSpecialist:
             base = int(base * (params.psychology_depth / 50))
         return min(base, 20)
 
-    def _build_video_pattern_section(
-        self, params: "EroticParameters", intensity: int
-    ) -> str:
+    def _build_video_pattern_section(self, params: "EroticParameters", intensity: int) -> str:
         """映像パターンセクションを生成する"""
         sections = ["", "【映像パターン技術の適用】"]
 
@@ -164,15 +158,11 @@ class EroticSpecialist:
             enabled_patterns = params.video_pattern_preference
         else:
             enabled_patterns = [
-                name
-                for name, p in VIDEO_PATTERNS.items()
-                if p.recommended_intensity <= intensity
+                name for name, p in VIDEO_PATTERNS.items() if p.recommended_intensity <= intensity
             ]
 
         sections.append(
-            get_all_pattern_instructions(
-                enabled_patterns, {"include_hints": intensity >= 3}
-            )
+            get_all_pattern_instructions(enabled_patterns, {"include_hints": intensity >= 3})
         )
 
         return "\n".join(sections)
@@ -218,9 +208,7 @@ class EroticSpecialist:
                 if sense in SENSORY_PRIORITY:
                     weight = params.sensory_weights.get(sense, 50)
                     priority_desc = SENSORY_PRIORITY[sense]
-                    lines.append(
-                        f"  - {priority_desc}を重点的に描写 (重み: {weight}%)"
-                    )
+                    lines.append(f"  - {priority_desc}を重点的に描写 (重み: {weight}%)")
         else:
             for sense in beat.sensory_focus:
                 if sense in SENSORY_PRIORITY:
@@ -261,17 +249,13 @@ class EroticSpecialist:
                 depth_addition = "（標準レベル: 陶酔・恍惚を含む）"
 
         if intensity >= 4:
-            lines.append(
-                f"以下の心理プロセスを各シーンで最低1つは含めること{depth_addition}:"
-            )
+            lines.append(f"以下の心理プロセスを各シーンで最低1つは含めること{depth_addition}:")
             lines.append("  - 「思考が停止する」または「思考が暴走する」")
             lines.append("  - 「自我の境界が曖昧になる」")
             lines.append("  - 「時間感覚の歪み・消失」")
             lines.append("  - 「快楽と苦痛の境界の消失」")
         elif intensity >= 3:
-            lines.append(
-                f"以下の心理表現を各シーンで最低1つは使用すること{depth_addition}:"
-            )
+            lines.append(f"以下の心理表現を各シーンで最低1つは使用すること{depth_addition}:")
             lines.append("  - 陶酔、恍惚、自失、快楽の飽和")
             lines.append("  - 抗えない吸引力、抵抗の糸が切れる")
         return "\n".join(lines)
@@ -288,9 +272,7 @@ class EroticSpecialist:
         afterglow_beats = [b for b in curve.beats if b.phase == "afterglow"]
 
         if len(build_beats) > 1:
-            lines.append(
-                f"  - 溜め（build）は{len(build_beats)}段階で段階的に構築すること"
-            )
+            lines.append(f"  - 溜め（build）は{len(build_beats)}段階で段階的に構築すること")
         if len(peak_beats) > 1:
             lines.append(
                 f"  - ピーク（peak）は{len(peak_beats)}回繰り返され、各レベルで極限を描写すること"
@@ -308,13 +290,9 @@ class EroticSpecialist:
         density_addition = ""
         if params and params.metaphor_density:
             if params.metaphor_density >= 80:
-                density_addition = (
-                    "\n8. 比喩の密度を上げ、感覚の多层構造を明示的に描写すること"
-                )
+                density_addition = "\n8. 比喩の密度を上げ、感覚の多层構造を明示的に描写すること"
             elif params.metaphor_density <= 30:
-                density_addition = (
-                    "\n8. 比喩は控えめにし、直接的な感覚描写を重視すること"
-                )
+                density_addition = "\n8. 比喩は控えめにし、直接的な感覚描写を重視すること"
 
         return f"""
 【強度5（過激）専用の品質基準】

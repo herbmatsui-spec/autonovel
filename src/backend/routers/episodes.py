@@ -2,7 +2,9 @@ from fastapi import APIRouter
 from config.container import Container
 from src.backend.database.uow import UnitOfWork
 from src.models.api_schemas import (
-    EpisodeGenerateRequest, EpisodeGenerateCandidatesRequest, RetryFailedRequest,
+    EpisodeGenerateRequest,
+    EpisodeGenerateCandidatesRequest,
+    RetryFailedRequest,
     ChapterImportRequest,
 )
 from src.backend.task_helpers import create_task as _create_task
@@ -10,6 +12,7 @@ from src.core.observability import TraceContext
 from src.backend.auth import validate_api_key_or_raise
 
 router = APIRouter(prefix="/api/episodes", tags=["episodes"])
+
 
 @router.get("/chapters/{book_id}")
 async def get_chapters(book_id: int):
@@ -21,7 +24,7 @@ async def get_chapters(book_id: int):
             "title": c.title,
             "content": c.content,
             "summary": c.summary,
-            "created_at": c.created_at
+            "created_at": c.created_at,
         }
         for c in chapters
     ]
@@ -29,6 +32,7 @@ async def get_chapters(book_id: int):
 
 def generate_task_id(prefix: str) -> str:
     import uuid
+
     return f"{prefix}_{uuid.uuid4().hex[:12]}"
 
 
@@ -36,8 +40,11 @@ def generate_task_id(prefix: str) -> str:
 async def generate_episodes(req: EpisodeGenerateRequest):
     validate_api_key_or_raise(req.api_key)
     from src.backend.tasks import execute_service_workflow
+
     task_id = generate_task_id("write")
-    await _create_task(task_id, "執筆タスクを開始中...", total_steps=req.write_to - req.write_from + 1)
+    await _create_task(
+        task_id, "執筆タスクを開始中...", total_steps=req.write_to - req.write_from + 1
+    )
     execute_service_workflow(
         task_id=task_id,
         api_key=req.api_key,
@@ -52,9 +59,9 @@ async def generate_episodes(req: EpisodeGenerateRequest):
             "do_refine": req.do_refine,
             "env_state": req.env_state,
             "pipeline_mode": req.pipeline_mode,
-            "mode": "final"
+            "mode": "final",
         },
-        trace_id=TraceContext.get_trace_id()
+        trace_id=TraceContext.get_trace_id(),
     )
     return {"task_id": task_id}
 
@@ -63,8 +70,11 @@ async def generate_episodes(req: EpisodeGenerateRequest):
 async def generate_episodes_candidates(req: EpisodeGenerateCandidatesRequest):
     validate_api_key_or_raise(req.api_key)
     from src.backend.tasks import execute_service_workflow
+
     task_id = generate_task_id("write_candidates")
-    await _create_task(task_id, "本文候補案を生成中...", total_steps=req.write_to - req.write_from + 1)
+    await _create_task(
+        task_id, "本文候補案を生成中...", total_steps=req.write_to - req.write_from + 1
+    )
     execute_service_workflow(
         task_id=task_id,
         api_key=req.api_key,
@@ -79,9 +89,9 @@ async def generate_episodes_candidates(req: EpisodeGenerateCandidatesRequest):
             "do_refine": req.do_refine,
             "env_state": req.env_state,
             "pipeline_mode": req.pipeline_mode,
-            "mode": "candidates"
+            "mode": "candidates",
         },
-        trace_id=TraceContext.get_trace_id()
+        trace_id=TraceContext.get_trace_id(),
     )
     return {"task_id": task_id}
 
@@ -90,6 +100,7 @@ async def generate_episodes_candidates(req: EpisodeGenerateCandidatesRequest):
 async def retry_failed_episodes(req: RetryFailedRequest):
     validate_api_key_or_raise(req.api_key)
     from src.backend.tasks import execute_service_workflow
+
     task_id = generate_task_id("retry_failed")
     await _create_task(task_id, "失敗エピソードの修復を開始中...", total_steps=1)
     execute_service_workflow(
@@ -97,12 +108,8 @@ async def retry_failed_episodes(req: RetryFailedRequest):
         api_key=req.api_key,
         config_dict=req.config,
         method_name="retry_failed_episodes_workflow",
-        kwargs={
-            "book_id": req.book_id,
-            "passion": req.passion,
-            "word_count": req.word_count
-        },
-        trace_id=TraceContext.get_trace_id()
+        kwargs={"book_id": req.book_id, "passion": req.passion, "word_count": req.word_count},
+        trace_id=TraceContext.get_trace_id(),
     )
     return {"task_id": task_id}
 
@@ -111,6 +118,7 @@ async def retry_failed_episodes(req: RetryFailedRequest):
 async def import_chapter(req: ChapterImportRequest):
     validate_api_key_or_raise(req.api_key)
     from src.backend.tasks import execute_service_workflow
+
     task_id = generate_task_id("import")
     await _create_task(task_id, "手書き原稿のインポートと研磨を開始中...", total_steps=1)
     execute_service_workflow(
@@ -122,8 +130,8 @@ async def import_chapter(req: ChapterImportRequest):
             "book_id": req.book_id,
             "ep_num": req.ep_num,
             "import_text": req.import_text,
-            "do_refine": req.do_refine
+            "do_refine": req.do_refine,
         },
-        trace_id=TraceContext.get_trace_id()
+        trace_id=TraceContext.get_trace_id(),
     )
     return {"task_id": task_id}

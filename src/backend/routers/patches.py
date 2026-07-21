@@ -13,22 +13,30 @@ from src.backend.auth import require_api_key
 
 router = APIRouter(prefix="/api/patches", tags=["patches"])
 
+
 @router.get("/{book_id}/pending")
 async def get_pending_patches(book_id: int):
     from src.backend.database.uow import UnitOfWork
+
     async with UnitOfWork(Container.db()) as uow:
         patches = await uow.misc.get_pending_patches(book_id)
     return patches
 
+
 @router.post("/{patch_id}/approve")
-async def approve_patch(patch_id: int, req: Optional[Any] = None, api_key: str = Depends(require_api_key)):
+async def approve_patch(
+    patch_id: int, req: Optional[Any] = None, api_key: str = Depends(require_api_key)
+):
     from src.backend.database.uow import UnitOfWork
+
     async with UnitOfWork(Container.db()) as uow:
         # 該当パッチの取得
         result = await uow.session.execute(select(PendingPatch).where(PendingPatch.id == patch_id))
         patch = result.scalar_one_or_none()
         if not patch:
-            raise NotFoundError("Patch not found", resource_type="PendingPatch", resource_id=str(patch_id))
+            raise NotFoundError(
+                "Patch not found", resource_type="PendingPatch", resource_id=str(patch_id)
+            )
 
         if patch.status != "pending":
             raise ValidationError(f"Patch is already {patch.status}")
@@ -37,7 +45,9 @@ async def approve_patch(patch_id: int, req: Optional[Any] = None, api_key: str =
         if patch.patch_type == "config":
             validation = PatchValidator.validate_config_patch(patch.patch_content)
             if not validation.is_safe:
-                raise ValidationError(f"Config patch validation failed: {', '.join(validation.errors)}")
+                raise ValidationError(
+                    f"Config patch validation failed: {', '.join(validation.errors)}"
+                )
 
             # GlobalConfigに即時適用
             for k, v in validation.sanitized_patch.items():
@@ -46,7 +56,9 @@ async def approve_patch(patch_id: int, req: Optional[Any] = None, api_key: str =
         elif patch.patch_type == "prompt":
             validation = PatchValidator.validate_prompt_patch(patch.patch_content)
             if not validation.is_safe:
-                raise ValidationError(f"Prompt patch validation failed: {', '.join(validation.errors)}")
+                raise ValidationError(
+                    f"Prompt patch validation failed: {', '.join(validation.errors)}"
+                )
 
             # プロンプトパッチをアクティブ化する
             ver_res = await uow.session.execute(
@@ -59,9 +71,7 @@ async def approve_patch(patch_id: int, req: Optional[Any] = None, api_key: str =
             if ver:
                 pvm = PromptVersionManager(uow.db)
                 await uow.prompt_versions.set_active_prompt_version(
-                    book_id=patch.book_id,
-                    prompt_key="optimized_prompt_patch",
-                    version_id=ver.id
+                    book_id=patch.book_id, prompt_key="optimized_prompt_patch", version_id=ver.id
                 )
 
             # GlobalConfigに反映
@@ -72,15 +82,21 @@ async def approve_patch(patch_id: int, req: Optional[Any] = None, api_key: str =
 
     return {"message": "Patch approved and applied successfully"}
 
+
 @router.post("/{patch_id}/reject")
-async def reject_patch(patch_id: int, req: Optional[Any] = None, api_key: str = Depends(require_api_key)):
+async def reject_patch(
+    patch_id: int, req: Optional[Any] = None, api_key: str = Depends(require_api_key)
+):
     from src.backend.database.uow import UnitOfWork
+
     async with UnitOfWork(Container.db()) as uow:
         # 該当パッチの取得
         result = await uow.session.execute(select(PendingPatch).where(PendingPatch.id == patch_id))
         patch = result.scalar_one_or_none()
         if not patch:
-            raise NotFoundError("Patch not found", resource_type="PendingPatch", resource_id=str(patch_id))
+            raise NotFoundError(
+                "Patch not found", resource_type="PendingPatch", resource_id=str(patch_id)
+            )
 
         if patch.status != "pending":
             raise ValidationError(f"Patch is already {patch.status}")
@@ -88,17 +104,21 @@ async def reject_patch(patch_id: int, req: Optional[Any] = None, api_key: str = 
         await uow.misc.update_patch_status(patch_id, "rejected")
     return {"message": "Patch rejected successfully"}
 
+
 @router.post("/{patch_id}/edit")
 async def edit_patch(patch_id: int, req: Any, api_key: str = Depends(require_api_key)):
     # Note: PatchEditRequest should be imported from api_schemas in the actual final version
     # For now, we assume it's handled by the request body
     from src.backend.database.uow import UnitOfWork
+
     async with UnitOfWork(Container.db()) as uow:
         # 該当パッチの取得
         result = await uow.session.execute(select(PendingPatch).where(PendingPatch.id == patch_id))
         patch = result.scalar_one_or_none()
         if not patch:
-            raise NotFoundError("Patch not found", resource_type="PendingPatch", resource_id=str(patch_id))
+            raise NotFoundError(
+                "Patch not found", resource_type="PendingPatch", resource_id=str(patch_id)
+            )
 
         if patch.status != "pending":
             raise ValidationError(f"Cannot edit patch in status: {patch.status}")
@@ -107,11 +127,15 @@ async def edit_patch(patch_id: int, req: Any, api_key: str = Depends(require_api
         if patch.patch_type == "config":
             validation = PatchValidator.validate_config_patch(req.content)
             if not validation.is_safe:
-                raise ValidationError(f"Config patch validation failed: {', '.join(validation.errors)}")
+                raise ValidationError(
+                    f"Config patch validation failed: {', '.join(validation.errors)}"
+                )
         elif patch.patch_type == "prompt":
             validation = PatchValidator.validate_prompt_patch(req.content)
             if not validation.is_safe:
-                raise ValidationError(f"Prompt patch validation failed: {', '.join(validation.errors)}")
+                raise ValidationError(
+                    f"Prompt patch validation failed: {', '.join(validation.errors)}"
+                )
 
         # パッチ内容を書き換え
         patch.patch_content = req.content

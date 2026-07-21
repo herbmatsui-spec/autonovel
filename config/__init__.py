@@ -121,5 +121,5 @@ __all__ = [
     "EroticCurve",
     "get_vocabulary_for_tier",
     "get_preset",
-    "get_preset_names"
+    "get_preset_names",
 ]

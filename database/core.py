@@ -10,11 +10,13 @@ from config.constants import DATABASE_URL
 # Base class for all models
 Base = declarative_base()
 
+
 class DatabaseManager:
     """
     Database connection manager utilizing SQLAlchemy.
     Handles engine creation and session management.
     """
+
     _instance = None
 
     def __new__(cls):
@@ -32,17 +34,9 @@ class DatabaseManager:
             # Force synchronous driver for SQLite if the URL uses sqlite+aiosqlite
             sync_url = db_url.replace("sqlite+aiosqlite", "sqlite")
             self.engine = create_engine(
-                sync_url,
-                echo=False,
-                pool_size=5,
-                max_overflow=10,
-                pool_timeout=30
+                sync_url, echo=False, pool_size=5, max_overflow=10, pool_timeout=30
             )
-            self.SessionLocal = sessionmaker(
-                autocommit=False,
-                autoflush=False,
-                bind=self.engine
-            )
+            self.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
             self._initialized = True
             self.logger.info("DatabaseManager initialized successfully.")
         except Exception as e:
@@ -66,4 +60,3 @@ class DatabaseManager:
         except Exception as e:
             self.logger.error(f"Error during DB initialization: {e}")
             raise
-

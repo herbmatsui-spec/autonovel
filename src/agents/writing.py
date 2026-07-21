@@ -15,7 +15,16 @@ class WritingAgent(BaseAgent):
     """執筆を担当するエージェント。
     プロンプトマネージャと LLM サービスを使用して、エピソード本文を生成する。
     """
-    def __init__(self, repo: Any = None, llm: Optional[LLMService] = None, prompt_manager: Optional[IPromptManager] = None, style_rag: Any = None, rag_prefetch: Any = None, plot_expander: Any = None):
+
+    def __init__(
+        self,
+        repo: Any = None,
+        llm: Optional[LLMService] = None,
+        prompt_manager: Optional[IPromptManager] = None,
+        style_rag: Any = None,
+        rag_prefetch: Any = None,
+        plot_expander: Any = None,
+    ):
         super().__init__(repo=repo, llm=llm, style_rag=style_rag, rag_prefetch=rag_prefetch)
         self.prompt_manager = prompt_manager
         self._plot_expander = plot_expander
@@ -57,7 +66,9 @@ class WritingAgent(BaseAgent):
         try:
             return await self.repo.get_chapter(branch_id, ep_num - 1)
         except Exception as e:
-            logger.debug(f"Previous chapter not found for book={book_id}, branch={branch_id}, ep={ep_num}: {e}")
+            logger.debug(
+                f"Previous chapter not found for book={book_id}, branch={branch_id}, ep={ep_num}: {e}"
+            )
             return None
 
     async def _get_active_chars(self, chars: List[Any], plot: Any) -> List[Any]:
@@ -134,7 +145,9 @@ class WritingAgent(BaseAgent):
                         ctx += "\n".join([f"- {c}" for c in changes[:10]])
         return ctx
 
-    def _build_prev_ctx(self, prev_chapter: Optional[Any], book_id: int, branch_id: int, ep_num: int) -> str:
+    def _build_prev_ctx(
+        self, prev_chapter: Optional[Any], book_id: int, branch_id: int, ep_num: int
+    ) -> str:
         """前話までの文脈を整形する。"""
         if prev_chapter is None:
             return ""
@@ -207,7 +220,14 @@ class WritingAgent(BaseAgent):
             logger.debug(f"Bible not found for book_id={book_id}: {e}")
             return None
 
-    async def build_full_writing_context(self, book_id: int, branch_id: int, ep_num: int, target_word_count: int, style_tag: Optional[str] = None) -> Dict[str, Any]:
+    async def build_full_writing_context(
+        self,
+        book_id: int,
+        branch_id: int,
+        ep_num: int,
+        target_word_count: int,
+        style_tag: Optional[str] = None,
+    ) -> Dict[str, Any]:
         """執筆に必要な完全なコンテキストを構築する。"""
         plot = await self._get_plot(book_id, branch_id, ep_num)
         if plot is None:
@@ -235,12 +255,19 @@ class WritingAgent(BaseAgent):
                     "detailed_blueprint": getattr(plot, "detailed_blueprint", "") or "",
                     "scenes": getattr(plot, "scenes", []) or [],
                     "summary": getattr(plot, "summary", "") or "",
-                    "current_chain_phase": getattr(plot, "current_chain_phase", "Friction") or "Friction",
+                    "current_chain_phase": getattr(plot, "current_chain_phase", "Friction")
+                    or "Friction",
                     "title": getattr(plot, "title", "") or "",
                     "tension": getattr(plot, "tension", 50) or 50,
                 }
         else:
-            plot_dict = {"ep_num": ep_num, "detailed_blueprint": "", "scenes": [], "summary": "", "current_chain_phase": "Friction"}
+            plot_dict = {
+                "ep_num": ep_num,
+                "detailed_blueprint": "",
+                "scenes": [],
+                "summary": "",
+                "current_chain_phase": "Friction",
+            }
 
         pov_name = ""
         if active_chars:
@@ -349,8 +376,9 @@ class WritingAgent(BaseAgent):
 
             try:
                 from src.services.erotic_afterglow_evaluator import AfterglowEvaluator
+
                 evaluator = AfterglowEvaluator()
-                afterglow_candidate = result[len(result) * 3 // 4:]
+                afterglow_candidate = result[len(result) * 3 // 4 :]
                 afterglow_ok, afterglow_issues = evaluator.evaluate(afterglow_candidate)
                 if not afterglow_ok:
                     logger.warning(
@@ -387,7 +415,18 @@ class WritingAgent(BaseAgent):
     def plot_expander(self, value):
         self._plot_expander = value
 
-    async def generate_episodes(self, book_id, start_ep, end_ep, passion, target_word_count, is_easy_mode, reporter, branch_id=1, style_tag=None):
+    async def generate_episodes(
+        self,
+        book_id,
+        start_ep,
+        end_ep,
+        passion,
+        target_word_count,
+        is_easy_mode,
+        reporter,
+        branch_id=1,
+        style_tag=None,
+    ):
         """簡易エピソード生成。成功時は生成文字数（>0）を返す。失敗時は 0。"""
         total_chars = 0
         for ep in range(start_ep, end_ep + 1):
@@ -406,7 +445,18 @@ class WritingAgent(BaseAgent):
                 return 0
         return total_chars
 
-    async def generate_episodes_pipeline(self, book_id, start_ep, end_ep, passion, target_word_count, is_easy_mode, reporter, branch_id=1, style_tag=None):
+    async def generate_episodes_pipeline(
+        self,
+        book_id,
+        start_ep,
+        end_ep,
+        passion,
+        target_word_count,
+        is_easy_mode,
+        reporter,
+        branch_id=1,
+        style_tag=None,
+    ):
         """エピソード生成パイプライン。成功時は (total_chars, []) 、失敗時は (0, [failed_eps]) を返す。"""
         total_chars = 0
         failed_episodes: List[Dict[str, Any]] = []
@@ -532,4 +582,3 @@ class WritingAgent(BaseAgent):
             branch_id=kwargs.get("branch_id", 1),
             style_tag=kwargs.get("style_tag"),
         )
-

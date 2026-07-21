@@ -49,11 +49,16 @@ async def require_api_key(request: Request) -> str:
     if not api_key:
         raise HTTPException(
             status_code=401,
-            detail={"error_code": "UNAUTHORIZED", "error_message": "API キーが指定されていません。X-API-Key ヘッダーを設定してください。"},
+            detail={
+                "error_code": "UNAUTHORIZED",
+                "error_message": "API キーが指定されていません。X-API-Key ヘッダーを設定してください。",
+            },
         )
     service = get_api_key_service()
     if not service.validate(api_key):
-        logger.warning(f"Invalid API key attempt from {request.client.host if request.client else 'unknown'}")
+        logger.warning(
+            f"Invalid API key attempt from {request.client.host if request.client else 'unknown'}"
+        )
         raise HTTPException(
             status_code=403,
             detail={"error_code": "FORBIDDEN", "error_message": "API キーが無効です。"},

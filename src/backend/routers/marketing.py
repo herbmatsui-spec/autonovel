@@ -10,10 +10,12 @@ from src.backend.auth import validate_api_key_or_raise
 
 router = APIRouter(tags=["marketing"])
 
+
 @router.post("/api/marketing/generate")
 async def generate_marketing(req: MarketingGenerateRequest):
     validate_api_key_or_raise(req.api_key)
     import time
+
     task_id = f"marketing_{int(time.time())}"
     await create_task(task_id, "マーケティング情報の生成を開始中...", total_steps=1)
 
@@ -22,19 +24,18 @@ async def generate_marketing(req: MarketingGenerateRequest):
         api_key=req.api_key,
         config_dict={},
         method_name="marketing_generation_workflow",
-        kwargs={
-            "book_id": req.book_id,
-            "latest_ep": req.latest_ep
-        },
-        trace_id=TraceContext.get_trace_id()
+        kwargs={"book_id": req.book_id, "latest_ep": req.latest_ep},
+        trace_id=TraceContext.get_trace_id(),
     )
     return {"task_id": task_id}
+
 
 @router.post("/api/marketing/export_package/{book_id}")
 async def export_package_post(book_id: int, api_key_req: Any):
     # Original server.py had a pass here
     # Keeping the endpoint for compatibility but as it was a no-op
     return {"message": "Export package POST is not implemented"}
+
 
 @router.get("/api/marketing/export_package/{book_id}")
 async def export_package_get(book_id: int, api_key: str):
@@ -43,5 +44,5 @@ async def export_package_get(book_id: int, api_key: str):
     return Response(
         content=zip_data,
         media_type="application/zip",
-        headers={"Content-Disposition": f'attachment; filename="{zip_filename}"'}
+        headers={"Content-Disposition": f'attachment; filename="{zip_filename}"'},
     )

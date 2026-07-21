@@ -74,6 +74,7 @@ def estimate_intensity_from_text(text: str) -> int:
             if keyword in text:
                 # 否定表現の直後は除外（例: "背徳なし"）
                 import re
+
                 negated_pattern = re.compile(keyword + r"(?!.)", re.DOTALL)
                 # 簡易的否定チェック: 同じ文内に「なし」「ない」が無いか確認
                 if keyword + "なし" in text or keyword + "ない" in text:

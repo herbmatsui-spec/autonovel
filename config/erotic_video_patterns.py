@@ -227,14 +227,10 @@ def get_pattern(name: str) -> Optional[VideoPattern]:
 
 def get_patterns_for_intensity(intensity: int) -> List[VideoPattern]:
     """指定された強度适用的パターンをすべて返す。"""
-    return [
-        p for p in VIDEO_PATTERNS.values() if p.recommended_intensity <= intensity
-    ]
+    return [p for p in VIDEO_PATTERNS.values() if p.recommended_intensity <= intensity]
 
 
-def get_patterns_by_sensory_focus(
-    sense: str, min_intensity: int = 0
-) -> List[VideoPattern]:
+def get_patterns_by_sensory_focus(sense: str, min_intensity: int = 0) -> List[VideoPattern]:
     """指定された感覚に関連するパターンを返す。"""
     return [
         p
@@ -243,9 +239,7 @@ def get_patterns_by_sensory_focus(
     ]
 
 
-def get_literary_instructions_for_pattern(
-    pattern_name: str, params: Optional[Dict] = None
-) -> str:
+def get_literary_instructions_for_pattern(pattern_name: str, params: Optional[Dict] = None) -> str:
     """指定されたパターンの文学的指示を生成する。
 
     Args:
@@ -279,9 +273,7 @@ def get_literary_instructions_for_pattern(
     return "\n".join(lines)
 
 
-def get_all_pattern_instructions(
-    enabled_patterns: List[str], params: Optional[Dict] = None
-) -> str:
+def get_all_pattern_instructions(enabled_patterns: List[str], params: Optional[Dict] = None) -> str:
     """有効なパターンのすべての指示を連結して返す。"""
     if not enabled_patterns:
         return ""

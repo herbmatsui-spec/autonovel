@@ -14,6 +14,7 @@ from src.backend.auth import require_api_key
 
 router = APIRouter(prefix="/api/tasks", tags=["tasks"])
 
+
 @router.get("/{task_id}/status")
 async def get_task_status(task_id: str):
     redis_client = get_redis_client()
@@ -34,6 +35,7 @@ async def get_task_status(task_id: str):
         return {"is_running": False, "message": "タスクが見つかりません", "logs": []}
     return json.loads(row.value)
 
+
 @router.get("/{task_id}/stream")
 async def stream_task_status(task_id: str):
     return StreamingResponse(
@@ -43,8 +45,9 @@ async def stream_task_status(task_id: str):
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
             "X-Accel-Buffering": "no",  # Disable Nginx buffering
-        }
+        },
     )
+
 
 @router.post("/{task_id}/stop")
 async def stop_task(task_id: str, api_key: str = Depends(require_api_key)):
@@ -71,7 +74,9 @@ async def stop_task(task_id: str, api_key: str = Depends(require_api_key)):
 
     state_dict["is_running"] = False
     state_dict["error"] = "ユーザーにより停止されました"
-    state_dict["logs"].append(f"[{time.strftime('%H:%M:%S')}] 🛑 ユーザーにより停止命令が出されました。")
+    state_dict["logs"].append(
+        f"[{time.strftime('%H:%M:%S')}] 🛑 ユーザーにより停止命令が出されました。"
+    )
 
     state_json = json.dumps(state_dict)
     if redis_client is not None:
@@ -81,5 +86,7 @@ async def stop_task(task_id: str, api_key: str = Depends(require_api_key)):
         except Exception:
             pass
 
-    await db.save_internal_state(f"task_status:{task_id}", state_json, time.strftime('%Y-%m-%d %H:%M:%S'))
+    await db.save_internal_state(
+        f"task_status:{task_id}", state_json, time.strftime("%Y-%m-%d %H:%M:%S")
+    )
     return {"message": "Stop request registered"}

@@ -8,12 +8,23 @@ from typing import Any, Dict, Optional
 from pydantic import BaseModel
 
 from src.models.api_schemas import (
-    EasyModeRequest, EpisodeGenerateRequest, EpisodeGenerateCandidatesRequest,
-    PlanGenerationRequest, RetryFailedRequest, PlotExpandRequest,
-    PlotExpandCandidatesRequest, PlotRebuildRequest, CritiqueOptimizeRequest,
-    AuditPlanRequest, ChapterImportRequest, MarketingGenerateRequest,
-    RefineEroticRequest, PatchActionRequest, PatchEditRequest,
-    RollbackRequest, ResolveIssueRequest,
+    EasyModeRequest,
+    EpisodeGenerateRequest,
+    EpisodeGenerateCandidatesRequest,
+    PlanGenerationRequest,
+    RetryFailedRequest,
+    PlotExpandRequest,
+    PlotExpandCandidatesRequest,
+    PlotRebuildRequest,
+    CritiqueOptimizeRequest,
+    AuditPlanRequest,
+    ChapterImportRequest,
+    MarketingGenerateRequest,
+    RefineEroticRequest,
+    PatchActionRequest,
+    PatchEditRequest,
+    RollbackRequest,
+    ResolveIssueRequest,
 )
 
 from contextlib import asynccontextmanager
@@ -31,6 +42,7 @@ from src.backend.tasks import execute_service_workflow
 
 setup_logging()
 
+
 # Startup DB migration using lifespan context manager
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -41,6 +53,7 @@ async def lifespan(app: FastAPI):
         yield
     except Exception:
         import traceback
+
         logger.error(traceback.format_exc())
         raise
     except BaseException as e:
@@ -65,6 +78,7 @@ async def lifespan(app: FastAPI):
             logger.error(f"リソース解放中にエラーが発生しました: {e}")
         logger.info("全てのリソースを解放しました。サーバーを終了します。")
 
+
 import uuid
 
 
@@ -79,7 +93,9 @@ from src.core.observability import TraceContext
 app = FastAPI(title="覇権小説エンジン API", version="3.0", lifespan=lifespan)
 
 from src.backend.error_handlers import register_error_handlers
+
 register_error_handlers(app)
+
 
 @app.middleware("http")
 async def add_trace_id_middleware(request: Request, call_next):
@@ -98,6 +114,7 @@ async def add_trace_id_middleware(request: Request, call_next):
         # リクエスト終了後にコンテキストをクリーンアップ
         TraceContext.clear()
 
+
 @app.middleware("http")
 async def add_security_headers_middleware(request: Request, call_next):
     response = await call_next(request)
@@ -107,6 +124,7 @@ async def add_security_headers_middleware(request: Request, call_next):
     response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     return response
 
+
 from collections import defaultdict
 from datetime import datetime, timedelta
 import time
@@ -115,18 +133,18 @@ _rate_limit_store: dict[str, list[float]] = defaultdict(list)
 _RATE_LIMIT_MAX_REQUESTS = 100
 _RATE_LIMIT_WINDOW_SECONDS = 60
 
+
 @app.middleware("http")
 async def rate_limit_middleware(request: Request, call_next):
     client_ip = request.client.host if request.client else "unknown"
     now = time.time()
     window_start = now - _RATE_LIMIT_WINDOW_SECONDS
 
-    _rate_limit_store[client_ip] = [
-        t for t in _rate_limit_store[client_ip] if t > window_start
-    ]
+    _rate_limit_store[client_ip] = [t for t in _rate_limit_store[client_ip] if t > window_start]
 
     if len(_rate_limit_store[client_ip]) >= _RATE_LIMIT_MAX_REQUESTS:
         from fastapi.responses import JSONResponse
+
         return JSONResponse(
             status_code=429,
             content={"error": "Too Many Requests", "detail": "リクエスト数が制限を超えました。"},
@@ -135,8 +153,10 @@ async def rate_limit_middleware(request: Request, call_next):
     _rate_limit_store[client_ip].append(now)
     return await call_next(request)
 
+
 # CORS middleware
 from config.cors_config import get_allowed_origins
+
 
 def configure_cors(app: FastAPI):
     allowed_origins = get_allowed_origins()
@@ -149,26 +169,48 @@ def configure_cors(app: FastAPI):
         allow_headers=["*"],
     )
 
+
 configure_cors(app)
 
 # Request timeout configuration (Step 38)
 from starlette.middleware.base import BaseHTTPMiddleware
 
+
 class TimeoutMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         try:
             import asyncio
+
             return await asyncio.wait_for(call_next(request), timeout=30.0)
         except asyncio.TimeoutError:
             from fastapi.responses import JSONResponse
+
             return JSONResponse(
                 status_code=504,
-                content={"error": "Gateway Timeout", "detail": "リクエストがタイムアウトしました。"},
+                content={
+                    "error": "Gateway Timeout",
+                    "detail": "リクエストがタイムアウトしました。",
+                },
             )
+
 
 app.add_middleware(TimeoutMiddleware)
 
-from src.backend.routers import commercial, health, books, plots, episodes, tasks, patches, issues, marketing, prompt_versions, metrics, misc, novel
+from src.backend.routers import (
+    commercial,
+    health,
+    books,
+    plots,
+    episodes,
+    tasks,
+    patches,
+    issues,
+    marketing,
+    prompt_versions,
+    metrics,
+    misc,
+    novel,
+)
 
 app.include_router(health.router)
 app.include_router(books.router)
@@ -185,13 +227,10 @@ app.include_router(novel.router)
 app.include_router(commercial.router)
 
 
-
 # Deprecated narrative metrics endpoint moved to src/backend/routers/misc.py
 
 
 from src.backend.engine_helpers import get_engine as resolve_engine
-
-
 
 
 # Bible and Optimization History endpoints moved to src/backend/routers/misc.py
@@ -199,7 +238,6 @@ from src.backend.engine_helpers import get_engine as resolve_engine
 # Patches router endpoints moved to src/backend/routers/patches.py
 
 # Prompt Versions router endpoints moved to src/backend/routers/prompt_versions.py
-
 
 
 # 各ルーターに移譲済み:
@@ -221,6 +259,7 @@ from src.backend.engine_helpers import get_engine as resolve_engine
 from src.backend.task_helpers import create_task as _create_task
 from src.backend.auth import validate_api_key_or_raise
 
+
 @app.post("/api/refine_erotic")
 async def refine_erotic(req: RefineEroticRequest):
     validate_api_key_or_raise(req.api_key)
@@ -237,9 +276,10 @@ async def refine_erotic(req: RefineEroticRequest):
             "intensity": req.intensity,
             "platform_preset": req.platform_preset,
         },
-        trace_id=TraceContext.get_trace_id()
+        trace_id=TraceContext.get_trace_id(),
     )
     return {"task_id": task_id}
+
 
 # Heavy operations enqueued via Huey
 @app.post("/api/easy_mode/generate")
@@ -260,11 +300,12 @@ async def generate_easy(req: EasyModeRequest):
             "initial_limit": req.initial_limit,
             "word_count": req.word_count,
             "concept": req.concept,
-            "tone_vibe": req.tone_vibe
+            "tone_vibe": req.tone_vibe,
         },
-        trace_id=TraceContext.get_trace_id()
+        trace_id=TraceContext.get_trace_id(),
     )
     return {"task_id": task_id}
+
 
 @app.post("/api/critique/optimize")
 async def critique_optimize(req: CritiqueOptimizeRequest):
@@ -276,21 +317,16 @@ async def critique_optimize(req: CritiqueOptimizeRequest):
         api_key=req.api_key,
         config_dict=req.config,
         method_name="run_critique_optimization_workflow",
-        kwargs={
-            "book_id": req.book_id
-        },
-        trace_id=TraceContext.get_trace_id()
+        kwargs={"book_id": req.book_id},
+        trace_id=TraceContext.get_trace_id(),
     )
     return {"task_id": task_id}
 
-# Marketing router endpoints moved to src/backend/routers/marketing.py
 
+# Marketing router endpoints moved to src/backend/routers/marketing.py
 
 
 # Narrative Metrics trend endpoint moved to src/backend/routers/misc.py
 
 
-
 # Prompt Metrics API endpoints moved to src/backend/routers/metrics.py
-
-

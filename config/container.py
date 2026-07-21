@@ -32,5 +32,3 @@ def get_container() -> Container:
     if _container_singleton is None:
         _container_singleton = Container()
     return _container_singleton
-
-
