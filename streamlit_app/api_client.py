@@ -33,13 +33,19 @@ def _request(method: str, path: str, timeout: float = 10.0, **kwargs: Any) -> An
     is_body_method = method.upper() in {"POST", "PUT", "PATCH"}
 
     async def _async_req():
-        return await client.request(
+        res = await client.request(
             method=method,
-            path=path,
+            url=path,
             params=None if is_body_method else kwargs,
             json=kwargs if is_body_method else None,
             timeout=timeout,
         )
+        if res is not None and hasattr(res, "json"):
+            try:
+                return res.json()
+            except Exception:
+                return res.text
+        return res
 
     try:
         from streamlit_app.utils.async_helper import run_async
@@ -49,20 +55,48 @@ def _request(method: str, path: str, timeout: float = 10.0, **kwargs: Any) -> An
         logger.error(f"Resilient API request failed {method} {path}: {exc}")
         raise
 
+def generate_easy(**kwargs) -> str:
+    data = _request("POST", "/easy_mode/generate", **kwargs)
+    return data.get("task_id", "unknown")
+
+def generate_episodes(**kwargs) -> str:
+    data = _request("POST", "/episodes/generate", **kwargs)
+    return data.get("task_id", "unknown")
+
+def expand_plots(**kwargs) -> str:
+    data = _request("POST", "/plots/expand", **kwargs)
+    return data.get("task_id", "unknown")
+
+def rebuild_plots(**kwargs) -> str:
+    data = _request("POST", "/plots/rebuild", **kwargs)
+    return data.get("task_id", "unknown")
+
+def critique_optimize(**kwargs) -> str:
+    data = _request("POST", "/critique/optimize", **kwargs)
+    return data.get("task_id", "unknown")
+
+def plan_generation(**kwargs) -> str:
+    data = _request("POST", "/plots/plan_generation", **kwargs)
+    return data.get("task_id", "unknown")
+
+def retry_failed_episodes(**kwargs) -> str:
+    data = _request("POST", "/episodes/retry_failed", **kwargs)
+    return data.get("task_id", "unknown")
+
 def start_plan_generation(**kwargs) -> str:
-    data = _request("POST", "/plan/generate", **kwargs)
+    data = _request("POST", "/plots/plan_generation", **kwargs)
     return data.get("task_id", "unknown")
 
 def start_plot_expansion(**kwargs) -> str:
-    data = _request("POST", "/plot/expand", **kwargs)
+    data = _request("POST", "/plots/expand", **kwargs)
     return data.get("task_id", "unknown")
 
 def start_episode_writing(**kwargs) -> str:
-    data = _request("POST", "/writing/start", **kwargs)
+    data = _request("POST", "/episodes/generate", **kwargs)
     return data.get("task_id", "unknown")
 
 def get_task_status(task_id: str, timeout: float = 5.0) -> Dict[str, Any]:
-    return _request("GET", f"/tasks/{task_id}", timeout=timeout) or {}
+    return _request("GET", f"/tasks/{task_id}/status", timeout=timeout) or {}
 
 
 def get_episodes(book_id: int, timeout: float = 10.0) -> Dict[str, Any]:

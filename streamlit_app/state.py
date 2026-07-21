@@ -222,6 +222,8 @@ class UIStateStore:
         self._toast_store = ToastStore()
         self._session_store = SessionStore()
 
+    _subscribers = BaseStore._subscribers
+
     @staticmethod
     def get_runtime():
         return SessionStore.get_runtime()

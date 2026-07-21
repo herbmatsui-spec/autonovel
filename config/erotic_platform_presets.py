@@ -1,37 +1,35 @@
-"""
-config/erotic_platform_presets.py
-繝励Λ繝・ヨ繝輔か繝ｼ繝蛻･縲瑚｡ｨ迴ｾ縺ｮ蠑ｷ縺輔阪・繝ｪ繧ｻ繝・ヨ螳夂ｾｩ
-"""
+import base64
 from typing import Any, Dict, List
+
+def _b(s: str) -> str:
+    return base64.b64decode(s).decode("utf-8")
 
 PLATFORM_PRESETS: Dict[str, Dict[str, Any]] = {
     "kakuyomu_romance": {
-        "name": "繧ｫ繧ｯ繝ｨ繝・域°諢帙き繝・ざ繝ｪ・・",
+        "name": _b("44Kr44Kv44Oo44Og77yI5oGL5oSb44Kr44OG44K044Oq44O877yJ"),
         "max_intensity": 2,
         "allowed_vocabulary_tier": "mild",
         "censorship_mode": "heavy",
-        "description": "逶ｴ謗･逧・↑螳倩・謠丞・縺ｯ繧ｫ繝・ヨ縺励∫､ｺ蜚・↓縺ｨ縺ｩ繧√ｋ",
+        "description": "直接的な官能描写はカットし、暗示にとどめる",
     },
     "nocturn_novel": {
-        "name": "繝弱け繧ｿ繝ｼ繝ｳ繝弱・繝ｫ繧ｺ・・15逶ｸ蠖難ｼ・",
+        "name": _b("44OO44Kv44K/44O844Oz44OO44OZ44Or44K677yIUjE155u45b2T77yJ"),
         "max_intensity": 3,
         "allowed_vocabulary_tier": "moderate",
         "censorship_mode": "partial",
-        "description": "豈泌湊逧・↑螳倩・謠丞・繧定ｨｱ螳ｹ縲ら峩謗･蜷咲ｧｰ縺ｯ莨丞ｭ怜喧",
+        "description": "比喩的な官能描写を許容。直接名称は伏字化",
     },
     "adult_selfhost": {
-        "name": "閾ｪ繧ｵ繧､繝・繝輔Ν陦ｨ迴ｾ",
+        "name": _b("6Ieq44K144Kk44OI44OV44Or6KGo54++77yIUjE477yJ"),
         "max_intensity": 5,
         "allowed_vocabulary_tier": "intense",
         "censorship_mode": "none",
-        "description": "陦ｨ迴ｾ縺ｮ蛻ｶ髯舌↑縺暦ｼ亥０い逅・ぎ繝ｼ繝峨Λ繧､繝ｳ縺ｮ縺ｿ驕ｩ逕ｨ・・",
+        "description": "表現の制限なし（倫理ガイドラインのみ適用）",
     },
 }
 
 def get_preset(name: str) -> Dict[str, Any]:
-    """繝励Μ繧ｻ繝・ヨ蜷阪°繧峨・繝ｪ繧ｻ繝・ヨ險ｭ螳壹ｒ蜿門ｾ励ょｭ伜惠縺励↑縺・ｴ蜷医・kakuyomu_romance繧定ｿ斐☆縲・"""
     return PLATFORM_PRESETS.get(name, PLATFORM_PRESETS["kakuyomu_romance"])
 
 def get_preset_names() -> List[str]:
-    """蛻ｩ逕ｨ蜿ｯ閭ｽ縺ｪ繝励Μ繧ｻ繝・ヨ蜷阪・繝ｪ繧ｹ繝医ｒ霑斐☆縲・"""
     return list(PLATFORM_PRESETS.keys())

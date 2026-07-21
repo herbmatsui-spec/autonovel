@@ -20,6 +20,16 @@ class UIEventType(str, Enum):
     BOOK_UPDATED = "book_updated"
     BOOK_DELETED = "book_deleted"
 
+    # コントローラーリクエストイベント
+    REQUEST_GENERATE_PLAN = "request_generate_plan"
+    REQUEST_AUDIT_PLAN = "request_audit_plan"
+    REQUEST_EXPAND_PLOT = "request_expand_plot"
+    REQUEST_WRITE_EPISODE = "request_write_episode"
+    REQUEST_IMPORT_CHAPTER = "request_import_chapter"
+    REQUEST_DELETE_CHAPTER = "request_delete_chapter"
+    REQUEST_DELETE_BOOK = "request_delete_book"
+    REQUEST_REBUILD_PLOT = "request_rebuild_plot"
+
 
 @dataclass
 class UIEvent:
@@ -58,10 +68,19 @@ class UIEventBus:
                 h for h in self._subscribers[event_type] if h != handler
             ]
 
-    def publish(self, event: UIEvent) -> None:
+    def publish(self, event: UIEvent) -> Optional[Dict[str, Any]]:
         handlers = self._subscribers.get(event.type, [])
+        result = None
         for handler in handlers:
             try:
-                handler(event)
+                if hasattr(handler, "handle_event"):
+                    result = handler.handle_event(event)
+                else:
+                    result = handler(event)
             except Exception as e:
                 logger.warning(f"Error in event handler for {event.type}: {e}")
+        return result
+
+    def emit(self, event: UIEvent) -> Optional[Dict[str, Any]]:
+        """publish のエイリアス"""
+        return self.publish(event)

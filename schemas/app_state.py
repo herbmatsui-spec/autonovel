@@ -75,8 +75,8 @@ class AppStateModel(BaseModel):
     # 各種ウィザード状態
     wizard: WizardState = Field(default_factory=WizardState)
 
-    # バックグラウンドタスク状態
-    active_job: Any | None = None
+    # バックグラウンドタスク状態 (ProgressStateProxy は動的オブジェクトのため JSON シリアライズ除外)
+    active_job: Any | None = Field(default=None, exclude=True)
 
     # 履歴・キャッシュ
     last_action_timestamp: float | None = None

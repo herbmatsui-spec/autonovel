@@ -10,11 +10,10 @@ class MockSessionState(dict):
 @pytest.fixture
 def mock_st_session_state(monkeypatch):
     """Mock Streamlit session_state using mock_streamlit fixture"""
-    from tests.mocks.mock_streamlit import mock_st_context
-    mock_st = mock_st_context()
-    # We'll use the mock_st_context fixture which patches streamlit
-    # The actual session_state manipulation will be done through the mock
-    return mock_st_session_state
+    from tests.mocks.mock_streamlit import MockStreamlitContext, patch_streamlit
+    ctx = MockStreamlitContext()
+    mock_st = patch_streamlit(ctx)
+    return mock_st
 
 
 def test_state_persistence_across_reruns(mock_st_session_state):
@@ -55,3 +54,23 @@ def test_subscriber_notification(mock_st_session_state):
     assert callback_calls[0] == 999
     
     UIStateStore._subscribers.clear()
+
+
+def test_ui_state_store_delegation_methods():
+    """UIStateStoreに必要なDelegationメソッドが存在することを確認するテスト"""
+    methods_to_check = [
+        "get_runtime",
+        "get_runtime_state",
+        "get_monitored_jobs",
+        "set_active_job",
+        "clear_active_job",
+        "get_poll_fail_count",
+        "increment_poll_fail_count",
+        "reset_poll_fail_count",
+        "get_api_key_input",
+        "set_api_key_input",
+        "get_rerun_count",
+        "increment_rerun_count",
+    ]
+    for method in methods_to_check:
+        assert hasattr(UIStateStore, method), f"UIStateStore is missing static method: {method}"

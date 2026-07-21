@@ -1,69 +1,398 @@
-# ============================================================
-# config/settings.toml — 設定の単一真理源 (SSOT)
-#
-# このファイルがアプリケーション設定の唯一の真実源です。
-# 全てのスカラー設定は [general] セクションに集約され、
-# schemas/config.py の GlobalConfigModel (Pydantic) によって統制・検証されます。
-#
-# 上書きルール:
-#   1. この TOML が基本値 (SSOT)
-#   2. 環境変数は明示的マッピング (schemas/config.py の ENV_OVERRIDE_MAP)
-#      経由でのみ上書き可能 (例: KAKU_FAIL_FAST_MODE=true, REDIS_URL=...)
-#   3. 拡張設定 (domain_profiles / interaction_matrix / tropes / system_plugins)
-#      は別ファイルからマージされる (後方互換のため)
-# ============================================================
-
 [general]
-
-# ===================== モデル設定 =====================
-model_writing          = "gemma-4-31b-it"
-model_planning         = "gemini-3.1-flash-lite"
-model_plot_expansion   = "gemma-4-31b-it"
-model_climax           = "gemma-4-31b-it"
-model_stable_fallback  = "gemma-4-31b-it"
-model_ultra_stable     = "gemma-4-31b-it"
-model_embedding        = "text-embedding-004"
-
-# ===================== データベース設定 =====================
-# NOTE: 環境変数 DATABASE_URL で上書き可能 (EnvOverrideMap 経由)
-database_url           = "sqlite+aiosqlite:///kaku_hegemony_v2.db"
-
-# ===================== Redis キャッシュ設定 =====================
-# NOTE: 環境変数 REDIS_URL で上書き可能
-redis_url              = ""
-redis_max_connections  = 10
-redis_default_ttl      = 3600
-redis_namespace        = "kaku:cache"
-
-# ===================== プロンプトキャッシュ設定 =====================
-prompt_cache_max_size  = 100
-
-# ===================== コンテキストウィンドウ最適化設定 =====================
+model_writing = "gemma-4-31b-it"
+model_planning = "gemini-3.1-flash-lite"
+model_plot_expansion = "gemma-4-31b-it"
+model_climax = "gemma-4-31b-it"
+model_stable_fallback = "gemma-4-31b-it"
+model_ultra_stable = "gemma-4-31b-it"
+model_embedding = "text-embedding-004"
+openai_base_url = "https://openrouter.ai/api/v1"
+openai_api_key = ""
+database_url = "sqlite+aiosqlite:///kaku_hegemony_v2.db"
+redis_url = ""
+redis_max_connections = 10
+redis_default_ttl = 3600
+redis_namespace = "kaku:cache"
+prompt_cache_max_size = 100
 context_window_target_ratio = 0.85
-context_window_min_reserve  = 2000
-context_trimming_enabled    = true
-prefetch_enabled            = true
-prefetch_episode_count      = 3
-hybrid_search_alpha         = 0.5
-
-# ===================== エッジ保全設定 =====================
-similarity_threshold = 0.75   # コサイン類似度閾値 (0.0-1.0)
-enable_semantic = true         # 意味的判定の有効/無効
-semantic_fallback_string = true  # 意味的判定失敗時の文字列チェック復帰
-
-# ===================== 実行制御フラグ =====================
-fail_fast_mode    = false
+context_window_min_reserve = 2000
+context_trimming_enabled = true
+prefetch_enabled = true
+prefetch_episode_count = 3
+hybrid_search_alpha = 0.5
+stress_catharsis_threshold = 85
+stress_filler_threshold = 35
+stress_climax_bonus = 50
+stress_hate_gain_base = 2
+max_history_len = 30
+auto_backup = true
+safe_append_mode = "auto"
+cooldown_base = 0.0
+cooldown_min = 0.0
+cooldown_max = 90.0
+max_concurrency = 0
+optimized_prompt_patch = ""
+fail_fast_mode = false
 enable_dogfeeding = true
 enable_heavy_audit = true
-
-# ===================== AI挙動設定 =====================
-draft_polish_enabled           = true
-polishing_min_content_ratio    = 0.5
-actor_critic_enabled           = true
-actor_critic_max_iterations    = 2
+similarity_threshold = 0.75
+enable_semantic_edge_preservation = true
+draft_polish_enabled = true
+polishing_min_content_ratio = 0.5
+actor_critic_enabled = true
+actor_critic_max_iterations = 2
 actor_critic_severity_threshold = "Major"
-specialized_amplifier_enabled  = true
+specialized_amplifier_enabled = true
+enable_nsfw = false
+safety_filter_level = "BLOCK_ONLY_HIGH"
+catharsis_threshold = 65
+catharsis_reset_value = 0
+min_immersion_score = 0.0
+ENV_OVERRIDE_PREFIX = "KAKU_"
 
-# ===================== NSFW/セーフティ設定 =====================
-enable_nsfw          = false
-safety_filter_level  = "BLOCK_ONLY_HIGH"
+[general.domain_profiles.fantasy_hegemony]
+DISABLE_CATHARSIS_ENGINE = false
+STRESS_CATHARSIS_THRESHOLD = 85
+STRESS_FILLER_THRESHOLD = 35
+STRESS_CLIMAX_BONUS = 50
+STRESS_HATE_GAIN_BASE = 20
+SPECULATIVE_BRANCH_CATHARSIS_NAME = "Catharsis"
+SPECULATIVE_INSTRUCTION_CATHARSIS = "【⚠️分岐プロット（カタルシス強め）】\nこのエピソードは読者のカタルシスを最大化する構成（ざまぁ・圧倒的勝利等）に特化させてください。"
+AUDIT_TRIGGER_KEYWORDS = [
+    "魔法",
+    "スキル",
+    "能力",
+    "加護",
+    "呪い",
+    "代償",
+    "コスト",
+    "禁忌",
+    "制約",
+    "ルール",
+    "死",
+    "殺",
+    "滅",
+    "敗北",
+    "勝利",
+    "決戦",
+    "戦闘",
+    "激闘",
+    "王",
+    "皇帝",
+    "神",
+    "教義",
+    "因果",
+    "運命",
+    "伏線",
+    "真実",
+    "正体",
+    "裏切り",
+    "契約",
+    "誓約",
+    "儀式",
+]
+AUDIT_WORDS_CATHARSIS = [
+    "ざまぁ",
+    "圧倒的勝利",
+    "破滅",
+    "ヘイト",
+    "屈服",
+]
+DE_AI_MODE = "strict"
+AUDITOR_PERSONA = "覇権プロデューサー"
+AUDITOR_INSTRUCTIONS = "「バズるキーワードを追加しろ」「カタルシスが足りない」と指摘する敏腕プロデューサー。商用出版でランキング1位を狙える具体的な修正案を出力せよ。"
+WEIGHT_EMOTIONAL_RESONANCE = 1.0
+WEIGHT_THEMATIC_DEPTH = 0.5
+WEIGHT_LITERARY_BEAUTY = 0.5
+WEIGHT_BASE_ENGAGEMENT = 4.0
+
+[general.domain_profiles.modern_drama]
+DISABLE_CATHARSIS_ENGINE = false
+STRESS_CATHARSIS_THRESHOLD = 75
+STRESS_FILLER_THRESHOLD = 30
+STRESS_CLIMAX_BONUS = 40
+STRESS_HATE_GAIN_BASE = 15
+SPECULATIVE_BRANCH_CATHARSIS_NAME = "HighTension"
+SPECULATIVE_INSTRUCTION_CATHARSIS = "【⚠️分岐プロット（高テンション・心理的対立）】\nこのエピソードは登場人物間の心理的緊張や人間関係の劇的な変化を最大化する構成に特化させてください。"
+AUDIT_TRIGGER_KEYWORDS = [
+    "裏切り",
+    "葛藤",
+    "秘密",
+    "対立",
+    "崩壊",
+    "和解",
+    "告白",
+    "嘘",
+    "過去",
+]
+AUDIT_WORDS_CATHARSIS = [
+    "感情の爆発",
+    "社会的復権",
+    "和解",
+    "真実の暴露",
+]
+DE_AI_MODE = "strict"
+AUDITOR_PERSONA = "覇権プロデューサー"
+AUDITOR_INSTRUCTIONS = "「バズるキーワードを追加しろ」「カタルシスが足りない」と指摘する敏腕プロデューサー。商用出版でランキング1位を狙える具体的な修正案を出力せよ。"
+WEIGHT_EMOTIONAL_RESONANCE = 1.0
+WEIGHT_THEMATIC_DEPTH = 0.5
+WEIGHT_LITERARY_BEAUTY = 0.5
+WEIGHT_BASE_ENGAGEMENT = 4.0
+
+[general.domain_profiles.mystery]
+DISABLE_CATHARSIS_ENGINE = false
+STRESS_CATHARSIS_THRESHOLD = 80
+STRESS_FILLER_THRESHOLD = 25
+STRESS_CLIMAX_BONUS = 45
+STRESS_HATE_GAIN_BASE = 15
+SPECULATIVE_BRANCH_CATHARSIS_NAME = "Resolution"
+SPECULATIVE_INSTRUCTION_CATHARSIS = "【⚠️分岐プロット（謎解き・真相解明）】\nこのエピソードは伏線回収と驚き（真犯人の特定やトリックの看破）を最大化する構成に特化させてください。"
+AUDIT_TRIGGER_KEYWORDS = [
+    "トリック",
+    "アリバイ",
+    "動機",
+    "証拠",
+    "推理",
+    "謎",
+    "真真",
+    "解明",
+    "偽装",
+    "伏線",
+]
+AUDIT_WORDS_CATHARSIS = [
+    "謎解き",
+    "チェックメイト",
+    "真相暴露",
+    "トリック看破",
+]
+DE_AI_MODE = "relaxed"
+AUDITOR_PERSONA = "ベテラン編集者"
+AUDITOR_INSTRUCTIONS = "「論理的な整合性が足りない」「謎解きの伏線が回収されていない」「トリックのリアリティを追求せよ」と指摘する文芸誌のベテラン編集者。"
+WEIGHT_EMOTIONAL_RESONANCE = 1.0
+WEIGHT_THEMATIC_DEPTH = 2.0
+WEIGHT_LITERARY_BEAUTY = 1.0
+WEIGHT_BASE_ENGAGEMENT = 3.0
+
+[general.domain_profiles.slice_of_life]
+DISABLE_CATHARSIS_ENGINE = true
+STRESS_CATHARSIS_THRESHOLD = 0
+STRESS_FILLER_THRESHOLD = 0
+STRESS_CLIMAX_BONUS = 0
+STRESS_HATE_GAIN_BASE = 0
+SPECULATIVE_BRANCH_CATHARSIS_NAME = "Fulfillment"
+SPECULATIVE_INSTRUCTION_CATHARSIS = "【⚠️分岐プロット（日常の充足）】\nこのエピソードはキャラクター同士の穏やかな交流や、新しい料理・道具の発見による満足感を最大化する構成に特化させてください。"
+AUDIT_TRIGGER_KEYWORDS = [
+    "発見",
+    "交流",
+    "料理",
+    "ほのぼの",
+    "友情",
+    "絆",
+]
+AUDIT_WORDS_CATHARSIS = [
+    "充足",
+    "平穏",
+    "発見",
+    "喜び",
+]
+DE_AI_MODE = "relaxed"
+AUDITOR_PERSONA = "ベテラン編集者"
+AUDITOR_INSTRUCTIONS = "「テーマの深みが足りない」「内面描写が安直である」「比喩表現をもっと洗練させろ」と指摘する文芸誌のベテラン編集者。"
+WEIGHT_EMOTIONAL_RESONANCE = 3.0
+WEIGHT_THEMATIC_DEPTH = 1.0
+WEIGHT_LITERARY_BEAUTY = 2.0
+WEIGHT_BASE_ENGAGEMENT = 1.5
+
+[general.domain_profiles.tragedy]
+DISABLE_CATHARSIS_ENGINE = false
+STRESS_CATHARSIS_THRESHOLD = 90
+STRESS_FILLER_THRESHOLD = 40
+STRESS_CLIMAX_BONUS = 60
+STRESS_HATE_GAIN_BASE = 10
+SPECULATIVE_BRANCH_CATHARSIS_NAME = "TragicClimax"
+SPECULATIVE_INSTRUCTION_CATHARSIS = "【⚠️分岐プロット（悲劇的クライマックス）】\nこのエピソードは登場人物の破滅や避けられない悲劇的結末を美しく描き出す構成に特化させてください。"
+AUDIT_TRIGGER_KEYWORDS = [
+    "破滅",
+    "衰退",
+    "孤独",
+    "運命",
+    "沈黙",
+    "崩壊",
+]
+AUDIT_WORDS_CATHARSIS = [
+    "滅び",
+    "喪失",
+    "悲哀",
+    "諦念",
+]
+DE_AI_MODE = "none"
+AUDITOR_PERSONA = "文芸誌のベテラン編集者"
+AUDITOR_INSTRUCTIONS = "「テーマの深みが足りない」「内面描写が安直である」「比喩表現をもっと洗練させろ」と指摘する文芸誌のベテラン編集者。"
+WEIGHT_EMOTIONAL_RESONANCE = 2.0
+WEIGHT_THEMATIC_DEPTH = 3.0
+WEIGHT_LITERARY_BEAUTY = 3.0
+WEIGHT_BASE_ENGAGEMENT = 1.0
+
+[general.interaction_matrix]
+decay_rate = 0.98
+min_value = 0.0
+max_value = 100.0
+
+[general.interaction_matrix.resonance]
+resonance = 0.05
+hegemony = -0.2
+conflict = -0.1
+serenity = 0.2
+
+[general.interaction_matrix.hegemony]
+resonance = -0.1
+hegemony = 0.05
+conflict = 0.1
+serenity = -0.1
+
+[general.interaction_matrix.conflict]
+resonance = -0.1
+hegemony = 0.2
+conflict = 0.05
+serenity = -0.2
+
+[general.interaction_matrix.serenity]
+resonance = 0.1
+hegemony = -0.2
+conflict = -0.3
+serenity = 0.05
+
+[general.tropes]
+tropes = [
+    "AI相棒",
+    "SF",
+    "VRMMO",
+    "ざまぁ",
+    "ざまあ",
+    "ざまあら",
+    "すれ違い",
+    "のんびり最強",
+    "官能",
+    "ものづくり",
+    "もふもふ",
+    "ギルド運営",
+    "グルメ",
+    "サバイバル",
+    "シンデレラ",
+    "スキル強奪",
+    "ステータス偽装",
+    "スローライフ",
+    "ダンジョン",
+    "ダークヒーロー",
+    "チート",
+    "テイマー",
+    "デスゲーム",
+    "トーナメント",
+    "ハクスラ",
+    "バズり",
+    "ブラフ",
+    "ミステリー",
+    "ミリタリー",
+    "ライバル",
+    "ライブ配信",
+    "ラブコメ",
+    "ループ",
+    "下克上",
+    "世代交代",
+    "世界の真実",
+    "両片想い",
+    "人間不信",
+    "兵法",
+    "内政",
+    "努力",
+    "勘違い",
+    "召喚",
+    "合理的思考",
+    "商会無双",
+    "因果応報",
+    "執念",
+    "大逆転",
+    "契約結婚",
+    "婚約破棄",
+    "学園",
+    "実力隠し",
+    "工房経営",
+    "師匠",
+    "幼馴染",
+    "式神無双",
+    "影の支配者",
+    "復讐",
+    "心理戦",
+    "悪役令嬢",
+    "成り上がり",
+    "戦記",
+    "技術革新",
+    "探偵",
+    "文明無双",
+    "料理",
+    "断罪",
+    "断罪回避",
+    "格差恋愛",
+    "正体表白",
+    "死に戻り",
+    "泥臭い",
+    "溺愛",
+    "無双",
+    "無自覚無双",
+    "現代怪異",
+    "現代知識",
+    "田舎暮らし",
+    "癒やし",
+    "知略",
+    "知識の蓄積",
+    "破滅フラグ",
+    "第三勢力",
+    "純愛",
+    "組織再建",
+    "絶望",
+    "絶望からの逆転",
+    "聖女",
+    "聖獣",
+    "職人",
+    "胃袋掌握",
+    "能ある鷹",
+    "規格外",
+    "謎解き",
+    "蹂躙",
+    "転生",
+    "追放",
+    "逆転",
+    "遺物修復",
+    "錬金術",
+    "限界突破",
+    "陰陽師",
+    "頂上決戦",
+    "領地経営",
+    "飯テロ",
+    "魔導具",
+    "黒幕",
+]
+title_patterns = [
+    "追放された最強の〜",
+    "実は〜だった件",
+]
+
+[general.tropes.forbidden_words_replacements]
+"蹂躙" = "圧倒"
+
+[general.system_plugins.debate_agent]
+module = "src.agents.debate"
+class = "NullDebateAgent"
+
+[general.system_plugins.audit_service]
+module = "src.services.audit_service"
+class = "ProducerAuditService"
+
+[general.wave_pattern_ratio]
+small = 0.7
+medium = 0.15
+large = 0.15
+
+[general.catharsis_density_range]
+min = 2
+max = 5
