@@ -32,6 +32,7 @@ def _render_series_config_form() -> dict[str, Any]:
 
         target_episodes = st.slider("話数", 1, 20, 10)
         target_word_count = st.slider("1話あたり文字数", 1000, 5000, 3000)
+        book_id = st.number_input("Book ID", value=get_ui("current_book_id", 1), min_value=1)
 
         st.text_input("API Key", "your_api_key_here", key="api_key_input")
 
@@ -42,6 +43,7 @@ def _render_series_config_form() -> dict[str, Any]:
         "keywords": keywords,
         "target_episodes": target_episodes,
         "target_word_count": target_word_count,
+        "book_id": book_id,
     }
 
 
@@ -57,8 +59,10 @@ def _render_commercial_pipeline(form_data: dict[str, Any]) -> None:
         st.error("キーワードを入力してください")
         return
 
+    book_id = form_data.get("book_id", get_ui("current_book_id", 1))
     commercial_config = {
         "series_config": {
+            "book_id": book_id,
             "title": form_data["title"],
             "genre": form_data["genre"],
             "concept": form_data["synopsis"],
@@ -155,6 +159,8 @@ def _poll_pipeline_status(task_id: str) -> None:
 
                 if status == "completed":
                     st.success("パイプラインが完了しました")
+                    if status_data.get("book_id"):
+                        set_ui(current_book_id=status_data["book_id"])
                     _fetch_and_display_report()
                     break
                 elif status == "failed":
@@ -175,7 +181,8 @@ def _poll_pipeline_status(task_id: str) -> None:
 def _fetch_and_display_report() -> None:
     """制作レポートを取得して表示・ダウンロード"""
     try:
-        report_data = api_client.get_novel_report(book_id=1, timeout=30.0)
+        book_id = get_ui("current_book_id", 1)
+        report_data = api_client.get_novel_report(book_id=book_id, timeout=30.0)
         if not report_data:
             st.error("レポート取得失敗: 空レスポンス")
             return
@@ -226,7 +233,8 @@ def _render_episode_viewer() -> None:
 
     if gen_task_id is not None and st.button("エピソード一覧を表示"):
         try:
-            episodes_data = api_client.get_episodes(1)
+            book_id = get_ui("current_book_id", 1)
+            episodes_data = api_client.get_episodes(book_id)
             episodes = episodes_data.get("episodes", [])
             if episodes:
                 st.subheader("エピソード一覧")
@@ -236,9 +244,10 @@ def _render_episode_viewer() -> None:
                         st.write(f"文字数: {episode.get('word_count', '不明')}")
                         st.write(f"品質スコア: {episode.get('quality_score', '不明')}")
 
-                        if st.button(f"話{episode['ep_num']}内容を表示", key=f"btn_{episode['ep_num']}"):
-                            try:
-                                detail_data = api_client.get_episode_detail(1, episode["ep_num"])
+                                if st.button(f"話{episode['ep_num']}内容を表示", key=f"btn_{episode['ep_num']}"):
+                                    try:
+                                        book_id = get_ui("current_book_id", 1)
+                                        detail_data = api_client.get_episode_detail(book_id, episode["ep_num"])
                                 st.write("内容:")
                                 st.write(detail_data.get("content", "内容取得エラー"))
                                 if "killer_phrase" in detail_data:

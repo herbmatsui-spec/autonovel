@@ -29,6 +29,8 @@ def _ensure_ui_initialized() -> None:
         set_ui(api_retry_state={"attempts": 0, "max_attempts": 3, "backoff": 1})
     if get_ui("poll_interval", None) is None:
         set_ui(poll_interval=1)
+    if get_ui("current_book_id", None) is None:
+        set_ui(current_book_id=1)
 
 # ----------------------------------------------------------------------
 # ユーティリティ：指数バックオフ付きリトライデコレータ

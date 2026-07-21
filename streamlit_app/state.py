@@ -32,6 +32,7 @@ class UIState(BaseModel):
     
     # 選択状態
     selected_item_id: Optional[str] = None
+    current_book_id: Optional[int] = None
     
     # 検索/フィルタ
     search_query: str = ""
