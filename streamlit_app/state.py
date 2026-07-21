@@ -8,48 +8,56 @@ from typing import Any, Optional
 import streamlit as st
 from pydantic import BaseModel, Field
 
+from schemas.app_state import AppStateModel
+from src.models.emotional_hook import EmotionalHookSpec
+
 # -----------------------------------------------------------------------------
 # 型定義
 # -----------------------------------------------------------------------------
 
+
 class WizardState(BaseModel):
     """ウィザード形式の入力状態を管理するモデル"""
+
     step: int = 1
     data: dict[str, Any] = Field(default_factory=dict)
     is_complete: bool = False
+
 
 class UIState(BaseModel):
     """
     UI層の非永続的な状態（フォーム入力、UIフラグ、一時的な選択状態など）を管理するモデル。
     AppStateModel に含めると永続化コストが高くなる一時的な状態をここに集約する。
     """
+
     # フォーム状態
     form_data: dict[str, Any] = Field(default_factory=dict)
-    
+
     # UI表示フラグ
     show_modal: bool = False
     active_tab: str = "home"
-    
+
     # 選択状態
     selected_item_id: Optional[str] = None
     current_book_id: Optional[int] = None
-    
+
     # 生成履歴
     generation_history: list[dict[str, Any]] = Field(default_factory=list)
-    
+
     # 執筆進捗
     active_task_id: Optional[str] = None
-    writing_progress: dict[str, Any] = Field(default_factory=lambda: {
-        "current_ep": 0,
-        "total": 0,
-        "status": "idle",
-    })
-    
+    writing_progress: dict[str, Any] = Field(
+        default_factory=lambda: {
+            "current_ep": 0,
+            "total": 0,
+            "status": "idle",
+        }
+    )
+
     # 検索/フィルタ
     search_query: str = ""
     filter_settings: dict[str, Any] = Field(default_factory=dict)
 
-from schemas.app_state import AppStateModel
 
 # Note: AppStateModel is now defined in schemas/app_state.py to avoid circular imports
 # and to centralize the schema definition.
@@ -58,6 +66,7 @@ from schemas.app_state import AppStateModel
 # セッションアクセサ
 # -----------------------------------------------------------------------------
 
+
 class SessionManager:
     """
     UIStateStore / AppStateModel と st.session_state の同期、および永続化を管理するクラス。
@@ -65,15 +74,19 @@ class SessionManager:
     UIコンポーネントは SessionManager や st.session_state に直接アクセスせず、
     UIStateStore を介して状態を読み書きすること。
     """
+
     from streamlit_app.state_keys import APP_STATE_KEY
+
     _STATE_KEY = APP_STATE_KEY
 
     @classmethod
     def _get_storage_path(cls):
         """セッション固有の保存パスを生成する"""
         from pathlib import Path
+
         try:
             from streamlit.runtime.scriptrunner import get_script_run_ctx
+
             ctx = get_script_run_ctx()
             session_id = ctx.session_id if ctx else "default"
         except Exception:
@@ -113,6 +126,7 @@ class SessionManager:
                 f.write(state.model_dump_json(indent=2, exclude={"active_job"}))
         except Exception as e:
             import logging
+
             logging.getLogger(__name__).error(f"Session state save failed: {e}")
 
     @classmethod
@@ -126,6 +140,7 @@ class SessionManager:
                     return AppStateModel.model_validate_json(data)
         except Exception as e:
             import logging
+
             logging.getLogger(__name__).error(f"Session state load failed: {e}")
         return None
 
@@ -146,6 +161,7 @@ class SessionManager:
                 ui_state.form_data[key] = value
             return value
         return default
+
 
 # 便利なショートカット関数
 def get_session() -> AppStateModel:
@@ -176,11 +192,11 @@ def desires_to_hook(desires: list[str]) -> Optional["EmotionalHookSpec"]:
     hook_name = DESIRE_TO_HOOK_MAP.get(first)
     if hook_name is None:
         return None
-    from src.models.emotional_hook import EmotionalHookSpec
     return EmotionalHookSpec(
         hook_name=hook_name,
         one_line_intent=first,
     )
+
 
 # -----------------------------------------------------------------------------
 # 状態管理クラスの分離 (Single Responsibility Principle)
@@ -188,7 +204,8 @@ def desires_to_hook(desires: list[str]) -> Optional["EmotionalHookSpec"]:
 # UIStateStore は 475 行・40 以上の静的メソッドを持ち SRP に反していたため、
 # 責務を JobStore / SessionStore / PollStateStore / ToastStore へ分割した。
 # 現在は合成パターンを採用し、各ストアのインスタンスを保持する。
-from streamlit_app.stores import (
+from streamlit_app.stores import (  # noqa: E402
+    BaseStore,
     JobStore,
     PollStateStore,
     SessionStore,
@@ -381,6 +398,7 @@ class UIStateStore:
         存在しない場合は初期化して返す。
         """
         from streamlit_app.state_keys import UI_STATE_KEY
+
         if UI_STATE_KEY not in st.session_state:
             st.session_state[UI_STATE_KEY] = UIState()
         return st.session_state[UI_STATE_KEY]
@@ -412,6 +430,7 @@ class UIStateStore:
         UI状態をデフォルト値にリセットする。
         """
         from streamlit_app.state_keys import UI_STATE_KEY
+
         st.session_state[UI_STATE_KEY] = UIState()
 
     def set_form_data(self, key: str, value: Any) -> None:

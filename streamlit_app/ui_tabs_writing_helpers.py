@@ -27,7 +27,9 @@ def _render_series_config_form() -> dict[str, Any]:
         st.subheader("基本情報")
         title = st.text_input("タイトル", "覇者の帰還")
         genre = st.selectbox("ジャンル", ["fantasy", "slice_of_life", "mystery", "drama", "comedy"])
-        synopsis = st.text_area("概要", "かつて最強とされた戦士が10年の眠りから覚醒し、", height=100)
+        synopsis = st.text_area(
+            "概要", "かつて最強とされた戦士が10年の眠りから覚醒し、", height=100
+        )
         keywords = st.text_input("キーワード（カンマ区切り）", "戦士,覇権,転生")
 
         target_episodes = st.slider("話数", 1, 20, 10)
@@ -47,11 +49,13 @@ def _render_series_config_form() -> dict[str, Any]:
                 task_id = task_result.get("task_id") or task_result.get("trace_id")
                 if task_id:
                     set_ui(active_task_id=task_id)
-                    set_ui(writing_progress={
-                        "current_ep": 1,
-                        "total": target_episodes,
-                        "status": "running",
-                    })
+                    set_ui(
+                        writing_progress={
+                            "current_ep": 1,
+                            "total": target_episodes,
+                            "status": "running",
+                        }
+                    )
                     st.success(f"執筆タスク開始 (task_id={task_id})")
                 else:
                     st.warning("タスクIDが取得できませんでした")
@@ -184,12 +188,14 @@ def _poll_pipeline_status(task_id: str) -> None:
                     if status_data.get("book_id"):
                         set_ui(current_book_id=status_data["book_id"])
                     history = get_ui("generation_history", [])
-                    history.append({
-                        "ep_num": status_data.get("ep_num", "?"),
-                        "status": "completed",
-                        "timestamp": "完了",
-                        "word_count": status_data.get("word_count", "N/A"),
-                    })
+                    history.append(
+                        {
+                            "ep_num": status_data.get("ep_num", "?"),
+                            "status": "completed",
+                            "timestamp": "完了",
+                            "word_count": status_data.get("word_count", "N/A"),
+                        }
+                    )
                     set_ui(generation_history=history)
                     _fetch_and_display_report()
                     break
@@ -224,27 +230,33 @@ def _poll_writing_status(task_id: str, max_wait: int = 300) -> None:
                 status = status_data.get("status", "running")
                 current_ep = status_data.get("current_ep", 1)
                 total_eps = status_data.get("total_eps", 1)
-                set_ui(writing_progress={
-                    "current_ep": current_ep,
-                    "total": total_eps,
-                    "status": status,
-                })
+                set_ui(
+                    writing_progress={
+                        "current_ep": current_ep,
+                        "total": total_eps,
+                        "status": status,
+                    }
+                )
 
                 if status == "completed":
                     st.success("全エピソード生成完了！")
-                    set_ui(writing_progress={
-                        "current_ep": total_eps,
-                        "total": total_eps,
-                        "status": "completed",
-                    })
+                    set_ui(
+                        writing_progress={
+                            "current_ep": total_eps,
+                            "total": total_eps,
+                            "status": "completed",
+                        }
+                    )
                     set_ui(active_task_id=None)
                     history = get_ui("generation_history", [])
-                    history.append({
-                        "ep_num": total_eps,
-                        "status": "completed",
-                        "timestamp": "完了",
-                        "word_count": status_data.get("word_count", "N/A"),
-                    })
+                    history.append(
+                        {
+                            "ep_num": total_eps,
+                            "status": "completed",
+                            "timestamp": "完了",
+                            "word_count": status_data.get("word_count", "N/A"),
+                        }
+                    )
                     set_ui(generation_history=history)
                     break
                 elif status == "failed":
@@ -260,6 +272,7 @@ def _poll_writing_status(task_id: str, max_wait: int = 300) -> None:
 
         elapsed += interval
         import time
+
         time.sleep(interval)
 
     if status not in ("completed", "failed"):
@@ -334,7 +347,9 @@ def _render_generation_status() -> None:
     history = get_ui("generation_history", [])
     if history:
         for item in reversed(history[-10:]):
-            with st.expander(f"第{item.get('ep_num', '?')}話 - {item.get('timestamp', '時刻不明')}"):
+            with st.expander(
+                f"第{item.get('ep_num', '?')}話 - {item.get('timestamp', '時刻不明')}"
+            ):
                 st.write(f"ステータス: {item.get('status', '不明')}")
                 st.write(f"文字数: {item.get('word_count', 'N/A')}")
     else:
@@ -347,13 +362,15 @@ def _render_generation_status() -> None:
         submitted = st.form_submit_button("フィードバックを送信")
         if submitted and fb_text.strip():
             history = get_ui("generation_history", [])
-            history.append({
-                "ep_num": fb_ep,
-                "status": "feedback",
-                "timestamp": "未定",
-                "word_count": "N/A",
-                "feedback": fb_text.strip(),
-            })
+            history.append(
+                {
+                    "ep_num": fb_ep,
+                    "status": "feedback",
+                    "timestamp": "未定",
+                    "word_count": "N/A",
+                    "feedback": fb_text.strip(),
+                }
+            )
             set_ui(generation_history=history)
             st.success("フィードバックを記録しました")
         elif submitted:
@@ -387,10 +404,14 @@ def _render_episode_viewer() -> None:
                         st.write(f"文字数: {episode.get('word_count', '不明')}")
                         st.write(f"品質スコア: {episode.get('quality_score', '不明')}")
 
-                        if st.button(f"話{episode['ep_num']}内容を表示", key=f"btn_{episode['ep_num']}"):
+                        if st.button(
+                            f"話{episode['ep_num']}内容を表示", key=f"btn_{episode['ep_num']}"
+                        ):
                             try:
                                 book_id = get_ui("current_book_id", 1)
-                                detail_data = api_client.get_episode_detail(book_id, episode["ep_num"])
+                                detail_data = api_client.get_episode_detail(
+                                    book_id, episode["ep_num"]
+                                )
                                 st.write("内容:")
                                 st.write(detail_data.get("content", "内容取得エラー"))
                                 if "killer_phrase" in detail_data:
