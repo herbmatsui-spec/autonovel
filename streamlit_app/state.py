@@ -222,6 +222,14 @@ class UIStateStore:
         self._toast_store = ToastStore()
         self._session_store = SessionStore()
 
+    @staticmethod
+    def get_runtime():
+        return SessionStore.get_runtime()
+
+    @staticmethod
+    def get_runtime_state():
+        return SessionStore.get_runtime()
+
     # Delegate to JobStore
     @staticmethod
     def get_monitored_jobs():

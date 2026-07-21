@@ -23,6 +23,7 @@ class AppRuntimeState(BaseModel):
     UIStateStore.get_runtime_value でアクセスされていたものを構造化する。
     """
     app_mode: str = "easy"
+    llm_provider: str = "gemini"
     is_api_key_valid: bool = False
     forbidden_patterns: list[str] = Field(default_factory=list)
     selected_desires: list[str] = Field(default_factory=lambda: ["カタルシス"])

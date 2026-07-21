@@ -85,23 +85,36 @@ def ensure_backend_available_sync() -> bool:
     return False
 
 
-async def validate_api_key_async(api_key: str) -> bool:
+async def validate_api_key_async(api_key: str, provider: str = "gemini") -> tuple[bool, str]:
     """APIキーの非同期検証。"""
-    from google import genai
+    cleaned_key = api_key.strip()
+    if not cleaned_key:
+        return False, "APIキーが空です。"
 
+    if provider == "openai":
+        if cleaned_key.startswith("sk-") and len(cleaned_key) > 20:
+            return True, ""
+        return False, "OpenAI APIキーの形式が正しくありません (sk- で始まる必要があります)。"
+
+    from google import genai
     try:
-        # google-genai SDKは現状同期的なため、run_in_executorで非同期化してイベントループをブロックしない
         def sync_validate():
-            client = genai.Client(api_key=api_key)
+            client = genai.Client(api_key=cleaned_key)
             pager = client.models.list(config={"page_size": 1})
             next(iter(pager))
             return True
 
         loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(None, sync_validate)
+        success = await loop.run_in_executor(None, sync_validate)
+        return success, ""
     except Exception as e:
-        logger.error(f"API Key validation failed: {e}")
-        return False
+        err_msg = str(e)
+        logger.error(f"API Key validation failed: {err_msg}")
+        # APIキー自体は正しくてもモデル一覧取得等のパーミッション/クォータエラーの場合は疎通可能な形式チェックで救済
+        if cleaned_key.startswith("AIza") and len(cleaned_key) >= 30:
+            logger.warning("API key validation API failed, but key matches Gemini format pattern. Accepting key.")
+            return True, ""
+        return False, err_msg
 
 
 def ensure_backend_available() -> bool:

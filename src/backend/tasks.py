@@ -3,7 +3,7 @@ from typing import Optional
 
 from huey import SqliteHuey, crontab
 
-from config.container import Container
+from config.container import Container, get_container
 from prompts.manager import prompt_manager
 from src.backend.database.uow import UnitOfWork
 from src.core.observability import with_trace_context

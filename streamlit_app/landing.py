@@ -89,23 +89,6 @@ def render_landing() -> None:
     st.info("👈 左側のサイドバーに Gemini API キーを入力し、「確定」ボタンを押して開始してください。")
 
     st.markdown("""
-            text-align: center;
-            color: var(--text-muted);
-            font-size: 0.9rem;
-        }
-        .footer-links {
-            margin-bottom: 1rem;
-        }
-        .footer-links a {
-            color: var(--text-secondary);
-            text-decoration: none;
-            margin: 0 10px;
-            transition: color 0.2s;
-        }
-        .footer-links a:hover {
-            color: var(--primary-color);
-        }
-        </style> -->
         <footer class="app-footer">
             <div class="footer-links">
                 <a href="#">利用規約</a>

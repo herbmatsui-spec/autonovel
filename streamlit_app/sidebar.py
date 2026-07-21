@@ -52,8 +52,6 @@ def render_api_key_section(session) -> tuple[str | None, bool]:
     )
 
     # プロバイダ選択
-    from streamlit_app.state import UIStateStore
-
     current_provider = UIStateStore.get_runtime().llm_provider
     provider_options = ["gemini", "openai"]
     selected_provider = st.selectbox(
@@ -76,16 +74,16 @@ def render_api_key_section(session) -> tuple[str | None, bool]:
         if api_key:
             with st.spinner("APIキーを検証中..."):
                 try:
-                    is_valid = asyncio.run(validate_api_key_async(api_key))
+                    is_valid, err_detail = asyncio.run(validate_api_key_async(api_key, selected_provider))
                     UIStateStore.get_runtime().is_api_key_valid = is_valid
                     if is_valid:
-                        session.api_key = api_key
+                        session.api_key = api_key.strip()
                         SessionManager.save_state(session)
                         UIStateStore.get_runtime().app_mode = DEFAULT_APP_MODE
                         st.success("APIキーが確定されました。")
                         st.rerun()
                     else:
-                        st.error("無効なAPIキーです。")
+                        st.error(f"無効なAPIキーです。({err_detail})" if err_detail else "無効なAPIキーです。")
                 except Exception as e:
                     st.error(f"検証エラー: {e}")
         else:
