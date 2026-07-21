@@ -47,7 +47,9 @@ def render_visual_roadmap(active_tab_index: int) -> None:
     ]
 
     # カスタムCSSでステップバーを構築
-    </style> --> -->
+    st.markdown("""
+    <style>
+    </style>
     """, unsafe_allow_html=True)
 
     html_steps = "<div class='roadmap-container'>"

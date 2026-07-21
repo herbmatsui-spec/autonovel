@@ -69,10 +69,10 @@ def ensure_backend_available_sync() -> bool:
     st.write("バックエンドサーバーがダウンしているか、起動中です。")
 
     if st.button("🔄 バックエンドを自動起動する", type="primary"):
-        from streamlit_app.backend_launcher import start_backend_processes
+        from streamlit_app.backend_launcher import start_backend
         with st.spinner("バックエンドを起動しています..."):
-            success = start_backend_processes()
-            if success:
+            proc = start_backend()
+            if proc is not None:
                 deadline = time.time() + BACKEND_STARTUP_WAIT_SEC
                 while time.time() < deadline:
                     if check_backend_health_sync().get("status") == "ok":

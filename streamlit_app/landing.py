@@ -10,8 +10,6 @@ def render_landing() -> None:
     """ランディングページ（APIキー未入力時）を表示する"""
     from streamlit_app.ui_utils import render_centered_title
 
-    st.markdown("""
-
     render_centered_title(
         "異世界小説生成プラットフォーム",
         "あなたの想像力を、プロ品質の文章とロジカルなプロットに変換します。"
@@ -85,6 +83,7 @@ def render_landing() -> None:
     col_faq1, col_faq2 = st.columns(2)
     with col_faq1:
         with st.expander("どのような小説に向いていますか？"):
+            st.write("エンターテインメント小説、ライトノベル、web小説などに最適です。")
 
     st.divider()
     st.info("👈 左側のサイドバーに Gemini API キーを入力し、「確定」ボタンを押して開始してください。")

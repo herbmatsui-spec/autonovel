@@ -37,7 +37,13 @@ def inject_focus_css() -> None:
     """入力フィールドのフォーカス維持のためのCSSを注入 (session_stateを用いて一度だけ)"""
     from streamlit_app.state_keys import CSS_INJECTED_KEY
     if not UIStateStore().ui_state.form_data.get(CSS_INJECTED_KEY, False):
-            </style> -->
+        st.markdown("""
+        <style>
+            input:focus, textarea:focus, [contenteditable]:focus {
+                outline: none !important;
+                box-shadow: 0 0 0 2px var(--primary-color) !important;
+            }
+        </style>
         """, unsafe_allow_html=True)
         UIStateStore().update_ui_state(CSS_INJECTED_KEY=True)
 

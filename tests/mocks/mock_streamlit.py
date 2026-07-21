@@ -148,6 +148,16 @@ class MockStreamlitContext:
                 return func
             return decorator
 
+
+class MockStreamlitModule:
+    """streamlit モジュール全体をモックするラッパー"""
+    def __init__(self, context: MockStreamlitContext):
+        self.context = context
+
+    def __getattr__(self, name):
+        return getattr(self.context, name)
+
+
 def patch_streamlit(context: MockStreamlitContext):
     """sys.modules['streamlit'] をモックに置き換える"""
     mock_st = MockStreamlitModule(context)
