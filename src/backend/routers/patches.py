@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from typing import Optional, Any
 import json
 from sqlalchemy import select
@@ -9,6 +9,7 @@ from src.backend.patch_validator import PatchValidator
 from src.backend.prompt_version_manager import PromptVersionManager
 from src.backend.database.models import PendingPatch, PromptVersion
 from src.core.exceptions import NotFoundError, ValidationError
+from src.backend.auth import require_api_key
 
 router = APIRouter(prefix="/api/patches", tags=["patches"])
 
@@ -20,7 +21,7 @@ async def get_pending_patches(book_id: int):
     return patches
 
 @router.post("/{patch_id}/approve")
-async def approve_patch(patch_id: int, req: Optional[Any] = None):
+async def approve_patch(patch_id: int, req: Optional[Any] = None, api_key: str = Depends(require_api_key)):
     from src.backend.database.uow import UnitOfWork
     async with UnitOfWork(Container.db()) as uow:
         # 該当パッチの取得
@@ -72,7 +73,7 @@ async def approve_patch(patch_id: int, req: Optional[Any] = None):
     return {"message": "Patch approved and applied successfully"}
 
 @router.post("/{patch_id}/reject")
-async def reject_patch(patch_id: int, req: Optional[Any] = None):
+async def reject_patch(patch_id: int, req: Optional[Any] = None, api_key: str = Depends(require_api_key)):
     from src.backend.database.uow import UnitOfWork
     async with UnitOfWork(Container.db()) as uow:
         # 該当パッチの取得
@@ -88,7 +89,7 @@ async def reject_patch(patch_id: int, req: Optional[Any] = None):
     return {"message": "Patch rejected successfully"}
 
 @router.post("/{patch_id}/edit")
-async def edit_patch(patch_id: int, req: Any):
+async def edit_patch(patch_id: int, req: Any, api_key: str = Depends(require_api_key)):
     # Note: PatchEditRequest should be imported from api_schemas in the actual final version
     # For now, we assume it's handled by the request body
     from src.backend.database.uow import UnitOfWork

@@ -202,13 +202,30 @@ from src.backend.engine_helpers import get_engine as resolve_engine
 
 
 
+# 各ルーターに移譲済み:
+# - /api/plots/*         → routers/plots.py
+# - /api/episodes/*      → routers/episodes.py
+# - /api/books/*         → routers/books.py
+# - /api/patches/*       → routers/patches.py
+# - /api/issues/*        → routers/issues.py
+# - /api/marketing/*     → routers/marketing.py
+# - /api/prompt_versions/* → routers/prompt_versions.py
+# - /api/metrics/*       → routers/metrics.py
+# - /api/narrative_metrics/* → routers/misc.py
+# - /api/bibles/*        → routers/misc.py
+# - /api/optimization_history/* → routers/misc.py
+# - /api/produce, /status, /episodes, /report → routers/novel.py
+# - /api/commercial/run  → routers/commercial.py
+
+# server.py に残存するエンドポイント (既存ルータープレフィックスに適合しない為)
 from src.backend.task_helpers import create_task as _create_task
+from src.backend.auth import validate_api_key_or_raise
 
 @app.post("/api/refine_erotic")
 async def refine_erotic(req: RefineEroticRequest):
+    validate_api_key_or_raise(req.api_key)
     task_id = generate_task_id("refine_erotic")
     await _create_task(task_id, "官能研磨タスクを開始中...", total_steps=1)
-
     execute_service_workflow(
         task_id=task_id,
         api_key=req.api_key,
@@ -227,10 +244,9 @@ async def refine_erotic(req: RefineEroticRequest):
 # Heavy operations enqueued via Huey
 @app.post("/api/easy_mode/generate")
 async def generate_easy(req: EasyModeRequest):
+    validate_api_key_or_raise(req.api_key)
     task_id = generate_task_id("easy")
     await _create_task(task_id, "タスクを開始中...", total_steps=3)
-
-    # Enqueue task
     execute_service_workflow(
         task_id=task_id,
         api_key=req.api_key,
@@ -250,171 +266,11 @@ async def generate_easy(req: EasyModeRequest):
     )
     return {"task_id": task_id}
 
-@app.post("/api/plots/plan_generation")
-async def plan_generation(req: PlanGenerationRequest):
-    task_id = generate_task_id("plan_gen")
-    await _create_task(task_id, "企画作成を開始中...", total_steps=1)
-    execute_service_workflow(
-        task_id=task_id,
-        api_key=req.api_key,
-        config_dict=req.config,
-        method_name="plan_generation_workflow",
-        kwargs={"params": req.params},
-        trace_id=TraceContext.get_trace_id()
-    )
-    return {"task_id": task_id}
-
-@app.post("/api/episodes/retry_failed")
-async def retry_failed_episodes(req: RetryFailedRequest):
-    task_id = generate_task_id("retry_failed")
-    await _create_task(task_id, "失敗エピソードの修復を開始中...", total_steps=1)
-    execute_service_workflow(
-        task_id=task_id,
-        api_key=req.api_key,
-        config_dict=req.config,
-        method_name="retry_failed_episodes_workflow",
-        kwargs={
-            "book_id": req.book_id,
-            "passion": req.passion,
-            "word_count": req.word_count
-        },
-        trace_id=TraceContext.get_trace_id()
-    )
-    return {"task_id": task_id}
-
-@app.post("/api/episodes/generate")
-async def generate_episodes(req: EpisodeGenerateRequest):
-    task_id = generate_task_id("write")
-    await _create_task(task_id, "執筆タスクを開始中...", total_steps=req.write_to - req.write_from + 1)
-
-    execute_service_workflow(
-        task_id=task_id,
-        api_key=req.api_key,
-        config_dict=req.config,
-        method_name="episode_writing_workflow",
-        kwargs={
-            "book_id": req.book_id,
-            "write_from": req.write_from,
-            "write_to": req.write_to,
-            "passion": req.passion,
-            "word_count": req.word_count,
-            "do_refine": req.do_refine,
-            "env_state": req.env_state,
-            "pipeline_mode": req.pipeline_mode,
-            "mode": "final"
-        },
-        trace_id=TraceContext.get_trace_id()
-    )
-    return {"task_id": task_id}
-
-@app.post("/api/episodes/generate_candidates")
-async def generate_episodes_candidates(req: EpisodeGenerateCandidatesRequest):
-    task_id = generate_task_id("write_candidates")
-    await _create_task(task_id, "本文候補案を生成中...", total_steps=req.write_to - req.write_from + 1)
-
-    execute_service_workflow(
-        task_id=task_id,
-        api_key=req.api_key,
-        config_dict=req.config,
-        method_name="episode_writing_workflow",
-        kwargs={
-            "book_id": req.book_id,
-            "write_from": req.write_from,
-            "write_to": req.write_to,
-            "passion": req.passion,
-            "word_count": req.word_count,
-            "do_refine": req.do_refine,
-            "env_state": req.env_state,
-            "pipeline_mode": req.pipeline_mode,
-            "mode": "candidates"
-        },
-        trace_id=TraceContext.get_trace_id()
-    )
-    return {"task_id": task_id}
-
-@app.post("/api/plots/expand")
-async def expand_plots(req: PlotExpandRequest):
-    task_id = generate_task_id("plot_expand")
-    await _create_task(task_id, "プロット作成を開始中...", total_steps=req.gen_to - req.gen_from + 1)
-
-    execute_service_workflow(
-        task_id=task_id,
-        api_key=req.api_key,
-        config_dict=req.config,
-        method_name="plot_expansion_workflow",
-        kwargs={
-            "book_id": req.book_id,
-            "gen_from": req.gen_from,
-            "gen_to": req.gen_to,
-            "mode": "final"
-        },
-        trace_id=TraceContext.get_trace_id()
-    )
-    return {"task_id": task_id}
-
-@app.post("/api/plots/expand_candidates")
-async def expand_plots_candidates(req: PlotExpandCandidatesRequest):
-    task_id = generate_task_id("plot_candidates")
-    await _create_task(task_id, "プロット候補案を生成中...", total_steps=req.gen_to - req.gen_from + 1)
-
-    execute_service_workflow(
-        task_id=task_id,
-        api_key=req.api_key,
-        config_dict=req.config,
-        method_name="plot_expansion_workflow",
-        kwargs={
-            "book_id": req.book_id,
-            "gen_from": req.gen_from,
-            "gen_to": req.gen_to,
-            "mode": "candidates"
-        },
-        trace_id=TraceContext.get_trace_id()
-    )
-    return {"task_id": task_id}
-
-@app.post("/api/plots/rebuild")
-async def rebuild_plots(req: PlotRebuildRequest):
-    task_id = generate_task_id("plot_rebuild")
-
-    db = Container.db()
-    initial_state = {
-        "is_running": True,
-        "current_step": 0,
-        "total_steps": 1,
-        "message": "プロット再構築を開始中...",
-        "sub_message": "キューの待機中",
-        "streaming_text": "",
-        "logs": [f"[{time.strftime('%H:%M:%S')}] 🚀 プロット再構築タスクを登録しました。"],
-        "error": None,
-        "result_data": None,
-        "token_usage": {"prompt": 0, "completion": 0, "calls": 0},
-        "start_time": time.time(),
-        "last_updated": time.time()
-    }
-    await db.save_internal_state(
-        f"task_status:{task_id}",
-        json.dumps(initial_state),
-        time.strftime('%Y-%m-%d %H:%M:%S')
-    )
-
-    execute_service_workflow(
-        task_id=task_id,
-        api_key=req.api_key,
-        config_dict=req.config,
-        method_name="plot_rebuild_workflow",
-        kwargs={
-            "params": req.params
-        },
-        trace_id=TraceContext.get_trace_id()
-    )
-    return {"task_id": task_id}
-
 @app.post("/api/critique/optimize")
 async def critique_optimize(req: CritiqueOptimizeRequest):
+    validate_api_key_or_raise(req.api_key)
     task_id = generate_task_id("critique")
-
     await _create_task(task_id, "品質分析を開始中...", total_steps=1)
-
     execute_service_workflow(
         task_id=task_id,
         api_key=req.api_key,
@@ -422,48 +278,6 @@ async def critique_optimize(req: CritiqueOptimizeRequest):
         method_name="run_critique_optimization_workflow",
         kwargs={
             "book_id": req.book_id
-        },
-        trace_id=TraceContext.get_trace_id()
-    )
-    return {"task_id": task_id}
-
-# Synchronous endpoints (lightweight)
-@app.post("/api/plots/audit")
-async def audit_plan(req: AuditPlanRequest):
-    engine = resolve_engine(req.api_key)
-    res = await engine.planner.audit_producer_plan(
-        req.genre,
-        req.keywords, req.trend_memo,
-        sanctuary=req.sanctuary,
-        originality_score=req.originality_score,
-        platform=req.platform
-    )
-    if not res:
-        from src.core.exceptions import AppError
-        raise AppError("Audit failed")
-    return {
-        "refined_keywords": res.refined_keywords,
-        "refined_concept": res.refined_concept,
-        "refined_mc_suggestion": res.refined_mc_suggestion,
-        "recommended_tropes": res.recommended_tropes,
-        "candidates": [c.model_dump() for c in res.candidates]
-    }
-
-@app.post("/api/chapters/import")
-async def import_chapter(req: ChapterImportRequest):
-    task_id = generate_task_id("import")
-    await _create_task(task_id, "手書き原稿のインポートと研磨を開始中...", total_steps=1)
-
-    execute_service_workflow(
-        task_id=task_id,
-        api_key=req.api_key,
-        config_dict={},
-        method_name="chapter_import_workflow",
-        kwargs={
-            "book_id": req.book_id,
-            "ep_num": req.ep_num,
-            "import_text": req.import_text,
-            "do_refine": req.do_refine
         },
         trace_id=TraceContext.get_trace_id()
     )

@@ -321,7 +321,7 @@ def _wizard_step_indicator(current: int, total: int = 4) -> None:
             )
         with col2:
             # --- パラメータプリセットカード (提案6) ---
-            from config.base import PLANNING_PRESETS
+            from config.constants import PLANNING_PRESETS
             st.markdown("### ⚡ おすすめ設定プリセット")
 
             # プリセットを2列のカード形式で表示
@@ -518,7 +518,7 @@ def render_planning_tab(state: Dict[str, Any], engine: UltimateHegemonyEngine) -
 
                 e_col1, e_col2, e_col3 = st.columns(3)
                 with e_col1:
-                    from config.base import CATHARSIS_DENSITY_PRESETS
+                    from config.constants import CATHARSIS_DENSITY_PRESETS
                     catharsis_label_options = {v["label"]: k for k, v in CATHARSIS_DENSITY_PRESETS.items()}
                     catharsis_label_selected = st.selectbox(
                         "カタルシス密度",

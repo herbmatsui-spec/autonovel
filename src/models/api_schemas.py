@@ -1,5 +1,9 @@
 """
 models/api_schemas.py — フロントエンド/バックエンド共通のAPIデータモデル
+
+このファイルが API スキーマの単一真理源 (SSOT) です。
+関連の重複定義が存在していた database/schemas.py は削除済み。
+新規スキーマは必ずこのファイルに追加してください。
 """
 from __future__ import annotations
 

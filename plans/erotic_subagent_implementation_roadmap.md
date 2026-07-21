@@ -84,9 +84,9 @@
 
 ### Step 5: DB `plot` テーブルへ `erotic_intensity` カラム追加（マイグレーション）
 - 変更対象:
-  - ORM: [`src/backend/database/models.py`](src/backend/database/models.py:80) の [`Plot`](src/backend/database/models.py:80) → `Column(Integer, default=0)` 追加
-  - Schema: [`src/backend/database/schemas.py`](src/backend/database/schemas.py:36) の [`PlotSchema`](src/backend/database/schemas.py:36) に `erotic_intensity: Optional[int] = None`
-  - Pydantic: [`src/models/db.py`](src/models/db.py:73) の [`PlotDbModel`](src/models/db.py:73) に `erotic_intensity: int = 0`
+   - ORM: [`src/backend/database/models.py`](src/backend/database/models.py:80) の [`Plot`](src/backend/database/models.py:80) → `Column(Integer, default=0)` 追加
+   - Pydantic: [`src/models/api_schemas.py`](src/models/api_schemas.py:38) の [`PlotSchema`](src/models/api_schemas.py:38) に `erotic_intensity: Optional[int] = None`
+   - Pydantic: [`src/models/db.py`](src/models/db.py:73) の [`PlotDbModel`](src/models/db.py:73) に `erotic_intensity: int = 0`
   - Repo: [`src/backend/database/repositories/plot.py`](src/backend/database/repositories/plot.py:18) の [`PlotRepository`](src/backend/database/repositories/plot.py:18) に upsert/getterで同カラムを取り扱うロジック追加
 - マイグレーション:
   - [`alembic/`](alembic/1) 直下に新規 revision `add_erotic_intensity_to_plot` を作成。`ALTER TABLE plot ADD COLUMN erotic_intensity INTEGER DEFAULT 0 NOT NULL;`

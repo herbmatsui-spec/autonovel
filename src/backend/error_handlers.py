@@ -21,11 +21,11 @@ class ErrorResponse(BaseModel):
 async def hegemony_error_handler(request: Request, exc: HegemonyError) -> JSONResponse:
     logger.warning(f"Hegemony Error [{exc.error_code}]: {exc.message}")
     return JSONResponse(
-        status_code=exc.status_code,
+        status_code=getattr(exc, "status_code", 500),
         content=ErrorResponse(
-            error_code=exc.error_code,
-            error_message=exc.message,
-            detail=str(exc.original) if exc.original else None,
+            error_code=getattr(exc, "error_code", "INTERNAL_ERROR"),
+            error_message=getattr(exc, "message", str(exc)),
+            detail=str(getattr(exc, "original", None)) if getattr(exc, "original", None) else None,
         ).model_dump(),
     )
 

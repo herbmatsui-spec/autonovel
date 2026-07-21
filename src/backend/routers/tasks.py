@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 import json
 import time
@@ -10,6 +10,7 @@ from src.backend.sse import task_event_generator
 from sqlalchemy import select
 from src.backend.database.models import InternalState
 from src.core.exceptions import NotFoundError
+from src.backend.auth import require_api_key
 
 router = APIRouter(prefix="/api/tasks", tags=["tasks"])
 
@@ -46,7 +47,7 @@ async def stream_task_status(task_id: str):
     )
 
 @router.post("/{task_id}/stop")
-async def stop_task(task_id: str):
+async def stop_task(task_id: str, api_key: str = Depends(require_api_key)):
     # Retrieve current task status, set stop event
     redis_client = get_redis_client()
     state_dict = None

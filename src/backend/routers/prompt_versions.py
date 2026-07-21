@@ -4,6 +4,7 @@ from src.models.api_schemas import RollbackRequest
 from config.container import Container
 from src.backend.database import UnitOfWork
 from config.project_context import GlobalConfig
+from src.backend.auth import validate_api_key_or_raise
 
 router = APIRouter(tags=["prompt_versions"])
 
@@ -15,6 +16,7 @@ async def get_prompt_versions(book_id: int):
 
 @router.post("/api/prompt_versions/{book_id}/rollback")
 async def rollback_prompt_version(book_id: int, req: RollbackRequest):
+    validate_api_key_or_raise(req.api_key)
     from src.backend.prompt_version_manager import PromptVersionManager
     pvm = PromptVersionManager(Container.db())
 

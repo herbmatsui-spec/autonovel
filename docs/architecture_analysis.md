@@ -15,7 +15,7 @@
 ### 2.1 モデル統合の戦略
 - `SQLAlchemy` モデルを「真実のソース（Source of Truth）」とする。
 - `Pydantic` モデルは `SQLAlchemy` モデルから自動生成、あるいは変換ロジックを共通化することで、手動メンテナンスを不要にする。
-- 新しい共通基盤 `database/schemas.py` 等への移行を検討する。
+- 重複していた `database/schemas.py` は使用実態がなく削除済み。API スキーマは `models/api_schemas.py` に一元化。
 
 ### 2.2 レイヤーの再定義
 - `services/` レイヤーを有効化し、ビジネスロジックを分離する。

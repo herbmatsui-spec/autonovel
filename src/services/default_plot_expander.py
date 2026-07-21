@@ -12,7 +12,7 @@ import json
 import logging
 from typing import Any, List, Optional
 
-from config.base import MODEL_PLOT_EXPANSION
+from config.constants import MODEL_PLOT_EXPANSION
 from src.core.interfaces import IPlotExpander, IReporter, IRepository
 from src.models.plot import UltraFastPlotBatch
 

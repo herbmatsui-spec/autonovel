@@ -59,7 +59,6 @@ graph TD
     streamlit_app.ui_tabs_writing --> streamlit_app.proxy
     src.models.__init__ --> src.models.world
     demo --> src.backend.database.core
-    src.backend.database.schemas --> src.models.base
     config.container --> config.project_context
     src.llm.openai_provider --> src.backend.engine_utils
     src.backend.database.repo_character --> src.backend.database.core

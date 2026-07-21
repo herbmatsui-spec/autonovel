@@ -18,7 +18,7 @@ from .archetypes_new import (
     WIZARD_GENRE_OPTIONS,
     resolve_archetype_key,
 )
-from .base import (
+from .constants import (
     ACTOR_CRITIC_ENABLED,
     ACTOR_CRITIC_MAX_ITERATIONS,
     ACTOR_CRITIC_SEVERITY_THRESHOLD,

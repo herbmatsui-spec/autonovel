@@ -5,7 +5,7 @@ from typing import Generator
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
-from config.base import DATABASE_URL
+from config.constants import DATABASE_URL
 
 # Base class for all models
 Base = declarative_base()

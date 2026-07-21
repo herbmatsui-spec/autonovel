@@ -19,7 +19,7 @@ import logging
 import os
 from typing import Any, Dict, Optional
 
-from config.base import (
+from config.constants import (
     BASE_DIR,
 )
 from config.models import GlobalConfigModel

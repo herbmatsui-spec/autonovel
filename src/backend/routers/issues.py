@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from typing import Any
 import json
 import time
@@ -6,6 +6,7 @@ import time
 from config.container import Container
 from src.backend.database.uow import UnitOfWork
 from src.core.exceptions import NotFoundError, ValidationError
+from src.backend.auth import require_api_key
 
 router = APIRouter(prefix="/api/issues", tags=["issues"])
 
@@ -15,7 +16,7 @@ async def get_issues(book_id: int):
         return await uow.issues.get_book_issues(book_id)
 
 @router.post("/{issue_id}/resolve")
-async def resolve_issue(issue_id: int, req: Any):
+async def resolve_issue(issue_id: int, req: Any, api_key: str = Depends(require_api_key)):
     # Note: ResolveIssueRequest should be imported from api_schemas
     async with UnitOfWork(Container.db()) as uow:
         issue = await uow.audit.get_issue(issue_id)

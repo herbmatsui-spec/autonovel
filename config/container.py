@@ -1,6 +1,6 @@
 from dependency_injector import containers, providers
 
-from config.base import DATABASE_URL
+from config.constants import DATABASE_URL
 from config.project_context import GlobalConfig
 from schemas.config import GlobalConfigModel
 from src.backend.database.core import DatabaseManager

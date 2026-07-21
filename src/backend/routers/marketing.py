@@ -6,11 +6,13 @@ from src.backend.engine_helpers import get_engine
 from src.backend.task_helpers import create_task
 from src.backend.tasks import execute_service_workflow
 from src.core.observability import TraceContext
+from src.backend.auth import validate_api_key_or_raise
 
 router = APIRouter(tags=["marketing"])
 
 @router.post("/api/marketing/generate")
 async def generate_marketing(req: MarketingGenerateRequest):
+    validate_api_key_or_raise(req.api_key)
     import time
     task_id = f"marketing_{int(time.time())}"
     await create_task(task_id, "マーケティング情報の生成を開始中...", total_steps=1)

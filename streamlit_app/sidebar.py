@@ -229,7 +229,7 @@ def render_sidebar_settings() -> None:
             """, unsafe_allow_html=True)
 
             # 強度スライダーとプラットフォームプリセット選択
-            from config.base import EROTIC_INTENSITY_SCALE
+            from config.constants import EROTIC_INTENSITY_SCALE
             erotic_intensity = st.slider(
                 "🌡️ 官能描写の強度",
                 min_value=0,
@@ -256,6 +256,121 @@ def render_sidebar_settings() -> None:
             if selected_preset != session.config.get("erotic_platform_preset"):
                 session.config["erotic_platform_preset"] = selected_preset
                 SessionManager.save_state(session)
+
+            # 詳細エロエージェント設定
+            with st.expander("🎬 官能エージェント詳細設定", expanded=False):
+                st.caption("詳細なパラメータ調整（上級者向け）")
+
+                use_video_patterns = st.checkbox(
+                    "映像パターン技術を有効にする",
+                    value=session.config.get("erotic_use_video_patterns", True),
+                    help="Fanza等の動画を参考にした文学技法の適用",
+                )
+                if use_video_patterns != session.config.get("erotic_use_video_patterns"):
+                    session.config["erotic_use_video_patterns"] = use_video_patterns
+                    SessionManager.save_state(session)
+
+                st.caption("🎯 感覚ウェイト調整")
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    touch_w = st.slider(
+                        "触覚", 0, 100,
+                        session.config.get("erotic_sensory_touch", 80),
+                        help="触れ屋の重視度"
+                    )
+                    scent_w = st.slider(
+                        "嗅覚", 0, 100,
+                        session.config.get("erotic_sensory_scent", 60),
+                        help="匂いの重視度"
+                    )
+                with col2:
+                    sound_w = st.slider(
+                        "聴覚", 0, 100,
+                        session.config.get("erotic_sensory_sound", 70),
+                        help="音・喘ぎの重視度"
+                    )
+                    gaze_w = st.slider(
+                        "視線", 0, 100,
+                        session.config.get("erotic_sensory_gaze", 50),
+                        help="見つめることの重視度"
+                    )
+                with col3:
+                    breath_w = st.slider(
+                        "呼吸", 0, 100,
+                        session.config.get("erotic_sensory_breath", 75),
+                        help="息遣いの重視度"
+                    )
+                    taste_w = st.slider(
+                        "味覚", 0, 100,
+                        session.config.get("erotic_sensory_taste", 30),
+                        help="唇・口の中の感覚の重視度"
+                    )
+
+                sensory_weights = {
+                    "touch": touch_w,
+                    "scent": scent_w,
+                    "sound": sound_w,
+                    "gaze": gaze_w,
+                    "breath": breath_w,
+                    "taste": taste_w,
+                }
+                if sensory_weights != session.config.get("erotic_sensory_weights"):
+                    session.config["erotic_sensory_weights"] = sensory_weights
+                    SessionManager.save_state(session)
+
+                st.caption("⏱️ ペーシング比率")
+                col4, col5, col6 = st.columns(3)
+                with col4:
+                    build_r = st.slider(
+                        "溜め(Build)", 1, 10,
+                        session.config.get("erotic_pace_build", 3),
+                        help="溜めフェーズの詳細度"
+                    )
+                with col5:
+                    peak_r = st.slider(
+                        "頂点(Peak)", 1, 10,
+                        session.config.get("erotic_pace_peak", 2),
+                        help="ピークフェーズの質"
+                    )
+                with col6:
+                    afterglow_r = st.slider(
+                        "余韻(Afterglow)", 1, 10,
+                        session.config.get("erotic_pace_afterglow", 2),
+                        help="事後描写の分量"
+                    )
+
+                pace_ratios = {"build": build_r, "peak": peak_r, "afterglow": afterglow_r}
+                if pace_ratios != session.config.get("erotic_pace_ratios"):
+                    session.config["erotic_pace_ratios"] = pace_ratios
+                    SessionManager.save_state(session)
+
+                st.caption("📝 品質パラメータ")
+                metaphor_d = st.slider(
+                    "比喩密度", 0, 100,
+                    session.config.get("erotic_metaphor_density", 50),
+                    help="比喩表現の使用頻度"
+                )
+                psych_d = st.slider(
+                    "心理描写深度", 0, 100,
+                    session.config.get("erotic_psychology_depth", 50),
+                    help="心理描写の細かさ"
+                )
+                if metaphor_d != session.config.get("erotic_metaphor_density"):
+                    session.config["erotic_metaphor_density"] = metaphor_d
+                    SessionManager.save_state(session)
+                if psych_d != session.config.get("erotic_psychology_depth"):
+                    session.config["erotic_psychology_depth"] = psych_d
+                    SessionManager.save_state(session)
+
+                # リセットボタン
+                if st.button("🔄 エロ設定をリセット", use_container_width=True):
+                    session.config["erotic_sensory_weights"] = None
+                    session.config["erotic_pace_ratios"] = None
+                    session.config["erotic_metaphor_density"] = 50
+                    session.config["erotic_psychology_depth"] = 50
+                    session.config["erotic_use_video_patterns"] = True
+                    SessionManager.save_state(session)
+                    st.rerun()
 
         GlobalConfig().display_sidebar()
 

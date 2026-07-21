@@ -13,6 +13,7 @@ from src.models.api_schemas import (
 )
 from src.services.novel_producer import NovelProducer
 from src.services.report_generator import ReportGenerator
+from src.backend.auth import require_api_key
 
 router = APIRouter(prefix="/api/novel", tags=["novel"])
 
@@ -21,7 +22,7 @@ producer = NovelProducer()
 report_generator = ReportGenerator()
 
 @router.post("/produce", response_model=ProduceNovelResponse)
-async def produce_novel(req: ProduceNovelRequest):
+async def produce_novel(req: ProduceNovelRequest, api_key: str = Depends(require_api_key)):
     """作品全話生成を開始するエンドポイント"""
     # プロジェクト作成
     from src.models.production_config import NovelProject

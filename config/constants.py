@@ -3,12 +3,14 @@ import os
 from pathlib import Path
 
 """
-config/base.py — 旧設定定数モジュール (後方互換用・非推奨)
+config/constants.py — アプリケーション定数・不変設定の単一真理源 (SSOT)
 
-⚠️ 非推奨: 実行時設定の単一真理源 (SSOT) は `config/settings.toml` に移行しました。
-実行時の設定値は `ProjectContext.get_setting("...")` 経由で取得してください。
-本モジュールの定数は既存コードの互換性維持のためのみ残されています。
-新しいコードでは `from config.project_context import ProjectContext` を使用してください。
+このモジュールは実行時には変更しない設定値を集約します。
+モデル名、ファイルパス、叙事性パラメータ、コスト係数、プランニングプリセット等を定義。
+
+参照:
+    - 環境変数ベースの設定は config/settings.py を使用
+    - ランタイム変更可能な設定は ProjectContext.get_setting() 経由でアクセス
 """
 
 # ==========================================

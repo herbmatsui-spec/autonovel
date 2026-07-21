@@ -12,7 +12,7 @@ from typing import Any
 import streamlit as st
 from streamlit.runtime.scriptrunner import get_script_run_ctx
 
-from config.base import (
+from config.constants import (
     SAFE_APPEND_MODE_DEFAULT,
     SAFE_APPEND_MODE_OPTIONS,
 )
