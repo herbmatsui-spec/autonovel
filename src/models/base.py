@@ -59,6 +59,7 @@ class GenerateResult(BaseModel):
     story_content: str = ""
     error_type: Optional[str] = None
     error_message: Optional[str] = None
+    token_usage: Optional[Dict[str, Any]] = None
 
     def unwrap_or(self, default_meta: Dict[str, Any], default_story: str) -> Tuple[Dict[str, Any], str]:
         """成功時は結果を、失敗時はデフォルト値を返す便利メソッド"""

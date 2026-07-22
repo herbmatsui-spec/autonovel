@@ -13,6 +13,7 @@ from src.backend.engine_utils import AdaptiveCooldown, safe_model_validate
 from src.backend.sanitizer import OutputSanitizer
 from src.core.exceptions import LLMUnrecoverableError
 from src.core.observability import StructuredLogger
+from src.models import GenerateResult
 from src.models.base import get_gemini_schema
 from src.services.retry_decorator import RetryState, with_llm_retry
 
@@ -131,26 +132,16 @@ class LLMGenerateResultProxy:
                 temp=request.temp
             )
             response = self._normalize_response(response)
-            class GenerateResult(dict):
-                def __init__(self, response):
-                    super().__init__()
-                    self["success"] = response.success
-                    self["metadata"] = response.metadata
-                    self["story_content"] = response.content
-                    self["token_usage"] = {
-                        "prompt": LLMGenerateResultProxy._usage_metric(response.usage, "prompt_tokens", 0),
-                        "completion": LLMGenerateResultProxy._usage_metric(response.usage, "completion_tokens", 0),
-                        "calls": 1
-                    }
-                @property
-                def success(self): return self["success"]
-                @property
-                def metadata(self): return self["metadata"]
-                @property
-                def story_content(self): return self["story_content"]
-                @property
-                def token_usage(self): return self["token_usage"]
-            return GenerateResult(response)
+            return GenerateResult(
+                success=response.success,
+                metadata=response.metadata,
+                story_content=response.content,
+                token_usage={
+                    "prompt": LLMGenerateResultProxy._usage_metric(response.usage, "prompt_tokens", 0),
+                    "completion": LLMGenerateResultProxy._usage_metric(response.usage, "completion_tokens", 0),
+                    "calls": 1,
+                },
+            )
         else:
             from src.llm.model_router import resolve_model
             purpose = args[0] if len(args) > 0 else kwargs.get('purpose')
@@ -158,7 +149,7 @@ class LLMGenerateResultProxy:
             response_schema = args[2] if len(args) > 2 else kwargs.get('response_schema')
             system_instruction = args[3] if len(args) > 3 else kwargs.get('system_instruction')
             model_name = resolve_model(purpose)
-            
+
             provider = self.get_client(model_name)
             response = await provider.generate_json(
                 model_name=model_name,
@@ -167,16 +158,17 @@ class LLMGenerateResultProxy:
                 system_instruction=system_instruction,
                 temp=kwargs.get('temp', 0.7)
             )
-            return {
-                "success": response.success,
-                "metadata": response.metadata,
-                "story_content": response.content,
-                "token_usage": {
-                    "prompt": response.usage.get("prompt_tokens", 0) if response.usage else 0,
-                    "completion": response.usage.get("completion_tokens", 0) if response.usage else 0,
-                    "calls": 1
-                }
-            }
+            response = self._normalize_response(response)
+            return GenerateResult(
+                success=response.success,
+                metadata=response.metadata,
+                story_content=response.content,
+                token_usage={
+                    "prompt": LLMGenerateResultProxy._usage_metric(response.usage, "prompt_tokens", 0),
+                    "completion": LLMGenerateResultProxy._usage_metric(response.usage, "completion_tokens", 0),
+                    "calls": 1,
+                },
+            )
 
     async def generate_text(self, *args, **kwargs):
         is_request_obj = False
@@ -196,30 +188,23 @@ class LLMGenerateResultProxy:
                 temp=request.temp
             )
             response = self._normalize_response(response)
-            class GenerateResult(dict):
-                def __init__(self, response):
-                    super().__init__()
-                    self["success"] = response.success
-                    self["story_content"] = response.content
-                    self["token_usage"] = {
-                        "prompt": LLMGenerateResultProxy._usage_metric(response.usage, "prompt_tokens", 0),
-                        "completion": LLMGenerateResultProxy._usage_metric(response.usage, "completion_tokens", 0),
-                        "calls": 1
-                    }
-                @property
-                def success(self): return self["success"]
-                @property
-                def story_content(self): return self["story_content"]
-                @property
-                def token_usage(self): return self["token_usage"]
-            return GenerateResult(response)
+            return GenerateResult(
+                success=response.success,
+                metadata=getattr(response, "metadata", None),
+                story_content=response.content,
+                token_usage={
+                    "prompt": LLMGenerateResultProxy._usage_metric(response.usage, "prompt_tokens", 0),
+                    "completion": LLMGenerateResultProxy._usage_metric(response.usage, "completion_tokens", 0),
+                    "calls": 1,
+                },
+            )
         else:
             from src.llm.model_router import select_model
             purpose = args[0] if len(args) > 0 else kwargs.get('purpose')
             prompt = args[1] if len(args) > 1 else kwargs.get('prompt')
             system_instruction = args[2] if len(args) > 2 else kwargs.get('system_instruction')
             model_name = select_model(purpose)
-            
+
             provider = self.get_client(model_name)
             response = await provider.generate_text(
                 model_name=model_name,
@@ -227,7 +212,17 @@ class LLMGenerateResultProxy:
                 system_instruction=system_instruction,
                 temp=kwargs.get('temp', 0.7)
             )
-            return response.content
+            response = self._normalize_response(response)
+            return GenerateResult(
+                success=response.success,
+                metadata=getattr(response, "metadata", None),
+                story_content=response.content,
+                token_usage={
+                    "prompt": LLMGenerateResultProxy._usage_metric(response.usage, "prompt_tokens", 0),
+                    "completion": LLMGenerateResultProxy._usage_metric(response.usage, "completion_tokens", 0),
+                    "calls": 1,
+                },
+            )
 
     def generate(self, *args, **kwargs):
         logger.debug("LLMGenerateResultProxy.generate() called - returning empty placeholder")
