@@ -1,15 +1,69 @@
-export function StyleLabTab() {
+import { useState } from 'react';
+import type { Book } from '@/types';
+import { analyzeStyleDna } from '@/api';
+import { toast } from 'sonner';
+
+interface StyleLabTabProps {
+  selectedBook?: Book | null;
+}
+
+export function StyleLabTab({ selectedBook }: StyleLabTabProps) {
+  const [sample, setSample] = useState('');
+  const [result, setResult] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleAnalyze = async () => {
+    if (!sample.trim()) {
+      toast.warning('分析用のテキストを入力してください。');
+      return;
+    }
+    try {
+      setLoading(true);
+      const dna = await analyzeStyleDna(sample);
+      setResult(dna);
+      toast.success('文体分析が完了しました。');
+    } catch (err: any) {
+      toast.error('分析に失敗しました: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="animate-fade-in flex flex-col gap-8">
       <div>
-        <h3 style={{ fontSize: '1.2rem', color: '#fff' }}>🧬 文体ラボ</h3>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-          文章のスタイル分析と最適化機能を提供します。
+        <h3 className="text-xl text-white font-bold">🧬 文体ラボ</h3>
+        <p className="text-secondary text-sm">
+          文章のスタイルDNAを解析し、文体の特徴を可視化します。
         </p>
       </div>
-      <div className="glass-panel" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-        <p>文体ラボ機能は現在開発中です。次期リリースで実装予定です。</p>
+
+      <div className="glass-panel p-6">
+        <label className="block text-sm font-semibold mb-2">分析用サンプル</label>
+        <textarea
+          rows={8}
+          value={sample}
+          onChange={(e) => setSample(e.target.value)}
+          className="w-full p-3 text-sm rounded bg-background border border-border resize-y"
+          placeholder="分析したい文章をここに貼り付け..."
+        />
+        <button
+          onClick={handleAnalyze}
+          disabled={loading}
+          className="btn btn-primary mt-4"
+        >
+          {loading ? '分析中...' : '🔬 分析開始'}
+        </button>
       </div>
+
+      {result && (
+        <div className="glass-panel p-6">
+          <h4 className="text-sm font-bold mb-3">📊 分析結果</h4>
+          <pre className="text-xs whitespace-pre-wrap bg-background p-4 rounded border border-border">
+            {JSON.stringify(result, null, 2)}
+          </pre>
+        </div>
+      )}
     </div>
   );
 }
