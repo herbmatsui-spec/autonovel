@@ -218,3 +218,12 @@ class AppContainer(containers.DeclarativeContainer):
         config=providers.Factory(EngineConfig.create, api_key=api_key, cooldown=cooldown),
         engine=engine,
     )
+    redis_cache = providers.Factory(
+        "src.services.redis_cache.RedisCacheService"
+    )
+    prompt_cache = providers.Factory(
+        "src.services.redis_cache.PromptCacheService",
+        redis_cache=redis_cache,
+        semantic_cache=None,
+        l1_cache=None,
+    )

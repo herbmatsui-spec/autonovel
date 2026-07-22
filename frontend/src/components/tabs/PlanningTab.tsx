@@ -54,8 +54,8 @@ export function PlanningTab({ selectedBook, handlePlanGeneration }: PlanningTabP
   return (
     <div className="animate-fade-in flex flex-col gap-8">
       <div>
-        <h3 style={{ fontSize: '1.2rem', color: '#fff' }}>📋 企画立案</h3>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+        <h3 className="text-[1.2rem] text-white font-bold">📋 企画立案</h3>
+        <p className="text-[0.85rem] text-secondary">
           小説の基本設定を入力して、AIによる企画案を生成します。
         </p>
       </div>
@@ -63,7 +63,7 @@ export function PlanningTab({ selectedBook, handlePlanGeneration }: PlanningTabP
       <form onSubmit={handleSubmit} className="glass-panel p-6 flex flex-col gap-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>ジャンル</label>
+            <label className="block text-xs mb-1 text-secondary">ジャンル</label>
             <select value={genre} onChange={(e) => setGenre(e.target.value)} className="w-full">
               <option value="ファンタジー">ファンタジー</option>
               <option value="ロマンス">ロマンス</option>
@@ -73,7 +73,7 @@ export function PlanningTab({ selectedBook, handlePlanGeneration }: PlanningTabP
             </select>
           </div>
           <div>
-            <label className="block text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>文体スタイル</label>
+            <label className="block text-xs mb-1 text-secondary">文体スタイル</label>
             <select value={styleKey} onChange={(e) => setStyleKey(e.target.value)} className="w-full">
               <option value="style_web_standard">Web標準</option>
               <option value="style_literary">文学風</option>
@@ -83,7 +83,7 @@ export function PlanningTab({ selectedBook, handlePlanGeneration }: PlanningTabP
         </div>
 
         <div>
-          <label className="block text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>キーワード（カンマ区切り）</label>
+          <label className="block text-xs mb-1 text-secondary">キーワード（カンマ区切り）</label>
           <input
             type="text"
             value={keywords}
@@ -95,26 +95,26 @@ export function PlanningTab({ selectedBook, handlePlanGeneration }: PlanningTabP
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>目標話数</label>
+            <label className="block text-xs mb-1 text-secondary">目標話数</label>
             <input type="number" value={targetEps} onChange={(e) => setTargetEps(Number(e.target.value))} min={10} max={200} className="w-full" />
           </div>
           <div>
-            <label className="block text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>初期プロット数</label>
+            <label className="block text-xs mb-1 text-secondary">初期プロット数</label>
             <input type="number" value={initialLimit} onChange={(e) => setInitialLimit(Number(e.target.value))} min={1} max={50} className="w-full" />
           </div>
           <div>
-            <label className="block text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>チート強度</label>
+            <label className="block text-xs mb-1 text-secondary">チート強度</label>
             <input type="number" value={cheatScale} onChange={(e) => setCheatScale(Number(e.target.value))} min={0} max={5} className="w-full" />
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>システム支援率 (%)</label>
+            <label className="block text-xs mb-1 text-secondary">システム支援率 (%)</label>
             <input type="number" value={systemAssist} onChange={(e) => setSystemAssist(Number(e.target.value))} min={0} max={100} className="w-full" />
           </div>
           <div>
-            <label className="block text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>コスト厳格度</label>
+            <label className="block text-xs mb-1 text-secondary">コスト厳格度</label>
             <input type="number" value={costSeverity} onChange={(e) => setCostSeverity(Number(e.target.value))} min={1} max={5} className="w-full" />
           </div>
         </div>

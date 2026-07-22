@@ -2,7 +2,7 @@ import asyncio
 import inspect
 import logging
 from functools import wraps
-from typing import Any, Dict
+from typing import Any, Dict, Optional, Protocol
 
 from pydantic import ValidationError
 
@@ -14,6 +14,20 @@ from src.core.exceptions import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+class CooldownProtocol(Protocol):
+    async def wait(self) -> None: ...
+    def on_success(self) -> None: ...
+    def on_rate_limit(self) -> None: ...
+    def on_error(self) -> None: ...
+
+
+class LLMClientProtocol(Protocol):
+    cooldown: Optional[CooldownProtocol]
+    _lock: Optional[Any]
+    _active_requests: int
+    _consecutive_5xx: int
 
 class RetryState:
     """LLM呼び出しの試行状態を追跡・管理するクラス"""
@@ -104,29 +118,27 @@ def with_llm_retry():
                     )
 
                 # cooldown待機
-                if hasattr(self, "cooldown") and self.cooldown:
+                if self.cooldown is not None:
                     await self.cooldown.wait()
 
                 # 並行リクエスト数のインクリメント
-                if hasattr(self, "_lock"):
+                if self._lock is not None:
                     with self._lock:
-                        if hasattr(self, "_active_requests"):
-                            self._active_requests += 1
-                else:
-                    if hasattr(self, "_active_requests"):
                         self._active_requests += 1
+                else:
+                    self._active_requests += 1
 
                 try:
                     # メソッド実行
                     result = await func(self, *args, **kwargs)
 
                     # 成功時の後処理
-                    if hasattr(self, "cooldown") and self.cooldown:
+                    if self.cooldown is not None:
                         self.cooldown.on_success()
-                    if hasattr(self, "_lock") and hasattr(self, "_consecutive_5xx"):
+                    if self._lock is not None:
                         with self._lock:
                             self._consecutive_5xx = 0
-                    elif hasattr(self, "_consecutive_5xx"):
+                    else:
                         self._consecutive_5xx = 0
 
                     return result
@@ -188,7 +200,7 @@ def with_llm_retry():
                         raise LLMTemporaryError(f"Temporary LLM error persisted after {state.max_retries} attempts: {e}") from e
 
                     # 動的クールダウンと並行抑制
-                    if hasattr(self, "cooldown") and self.cooldown:
+                    if self.cooldown is not None:
                         if any(x in err_msg for x in ["429", "quota", "503"]):
                             self.cooldown.on_rate_limit()
                         else:
@@ -215,15 +227,13 @@ def with_llm_retry():
 
                     # 5xx 連続エラーのカウントアップとモデルフォールバック
                     if is_timeout or any(x in err_msg for x in ["503", "500", "deadline", "exhausted"]):
-                        if hasattr(self, "_lock") and hasattr(self, "_consecutive_5xx"):
+                        if self._lock is not None:
                             with self._lock:
                                 self._consecutive_5xx += 1
                                 fail_count = self._consecutive_5xx
-                        elif hasattr(self, "_consecutive_5xx"):
+                        else:
                             self._consecutive_5xx += 1
                             fail_count = self._consecutive_5xx
-                        else:
-                            fail_count = 1
 
                         if fail_count >= 2:
                             from config import MODEL_STABLE_FALLBACK
@@ -243,17 +253,15 @@ def with_llm_retry():
 
                 finally:
                     # 並行リクエスト数のデクリメント
-                    if hasattr(self, "_lock"):
+                    if self._lock is not None:
                         with self._lock:
-                            if hasattr(self, "_active_requests"):
-                                self._active_requests -= 1
-                                if self._active_requests < 0:
-                                    self._active_requests = 0
-                    else:
-                        if hasattr(self, "_active_requests"):
                             self._active_requests -= 1
                             if self._active_requests < 0:
                                 self._active_requests = 0
+                    else:
+                        self._active_requests -= 1
+                        if self._active_requests < 0:
+                            self._active_requests = 0
 
                 state.attempt += 1
 

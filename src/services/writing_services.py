@@ -64,12 +64,12 @@ class GenerationLoopManager:
         final_content, final_meta, is_integrity_ok = "", {}, True
         is_causal_ok, causal_reason, failures = True, "", []
         rate = 1.0
-        blueprint = ctx["plot"].detailed_blueprint or ""
-        engine_key = ctx.get("engine_key", "unknown")
+        blueprint = ctx.plot.detailed_blueprint or ""
+        engine_key = ctx.engine_key or "unknown"
 
         monitor = PlotIntegrityMonitor(self.pm, self.llm)
 
-        threshold = self.narrative.get_integrity_threshold(ctx["genre_str"], ctx.get("prev_integrity", 100), engine_key=engine_key)
+        threshold = self.narrative.get_integrity_threshold(ctx.genre_str, ctx.prev_integrity, engine_key=engine_key)
         fail_fast = ProjectContext.get_setting("fail_fast_mode", False)
 
         for ac_iter in range(max_ac_iter):
@@ -130,8 +130,8 @@ class GenerationLoopManager:
             auditor = LogicalAuditor(self.repo, self.pm, self.llm.generate_json, None)
             metrics_repo = NarrativeMetricRepository(self.repo.session)
 
-            book_id = ctx["book"].id if hasattr(ctx["book"], "id") else ctx["book"].book_id
-            branch_id = ctx.get("branch_id", 1)
+            book_id = ctx.book.id if hasattr(ctx.book, "id") else ctx.book.book_id
+            branch_id = ctx.branch_id
 
             scored_scores = await auditor.score_narrative_metrics(
                 book_id=book_id,
@@ -170,14 +170,14 @@ class GenerationLoopManager:
 
 
     async def _phase_prepare_context(self, ep_num: int, ctx: WritingContext, sys_inst: str, fw_prompt: str, is_easy_mode: bool, reporter) -> Tuple[WritingGenerationContext, bool, bool, bool, int]:
-        current_tension = ctx.get("current_tension", 0)
-        is_catharsis = getattr(ctx.get("plot"), "is_catharsis", False)
+        current_tension = ctx.current_tension
+        is_catharsis = getattr(ctx.plot, "is_catharsis", False)
 
         # style_key and write_rule_type extraction
-        style_dna_dict = json.loads(ctx["book"].style_dna) if isinstance(ctx["book"].style_dna, str) else (ctx["book"].style_dna or {})
+        style_dna_dict = json.loads(ctx.book.style_dna) if isinstance(ctx.book.style_dna, str) else (ctx.book.style_dna or {})
         style_key = str(style_dna_dict.get("mode", "style_web_standard"))
 
-        prose_samples = ctx.get("prose_samples", [])
+        prose_samples = ctx.prose_samples
         prose_sample = prose_samples[0] if prose_samples else ""
 
         pov_instruction = self._determine_pov_instruction(ep_num, current_tension, is_catharsis, reporter)
@@ -186,10 +186,10 @@ class GenerationLoopManager:
             fw_prompt=fw_prompt,
             pov_instruction=pov_instruction,
             style_key=style_key,
-            target_word_count=ctx.get("target_word_count", 2000),
+            target_word_count=ctx.target_word_count,
             enable_polishing=not is_easy_mode,
             prose_sample=prose_sample,
-            plot=ctx.get("plot")
+            plot=ctx.plot
         )
 
 
@@ -249,7 +249,7 @@ class GenerationLoopManager:
                     normalized_changes.append(item)
 
             changes_obj = EpisodeStatusChanges(character_status_changes=normalized_changes)
-            prev_ws = ctx.get("prev_world_state") or {}
+            prev_ws = ctx.prev_world_state or {}
             StateValidator.validate_transitions(prev_ws, changes_obj)
         except StateContradictionError as e:
             logger.warning(f"Deterministic state verification failed: {e}")
@@ -361,11 +361,11 @@ class GenerationLoopManager:
 
     def _calculate_ncs_score(self, ep_num: int, ctx: WritingContext) -> int:
         from config import AUDIT_TRIGGER_KEYWORDS
-        summary_text = ((getattr(ctx["plot"], "summary", "") or "") + (getattr(ctx["plot"], "detailed_blueprint", "") or "")).lower()
+        summary_text = ((getattr(ctx.plot, "summary", "") or "") + (getattr(ctx.plot, "detailed_blueprint", "") or "")).lower()
         ncs_score = 0
-        if getattr(ctx["plot"], "is_catharsis", False): ncs_score += 50
+        if getattr(ctx.plot, "is_catharsis", False): ncs_score += 50
         if any(kw in summary_text for kw in AUDIT_TRIGGER_KEYWORDS): ncs_score += 30
-        if ep_num <= 3 or ep_num >= (ctx["book"].target_eps or 50) - 2: ncs_score += 30
+        if ep_num <= 3 or ep_num >= (ctx.book.target_eps or 50) - 2: ncs_score += 30
         return ncs_score
 
     async def _expand_scene_beats(self, ep_num: int, blueprint: str, temp: float, reporter) -> str:
@@ -536,7 +536,7 @@ class GenerationLoopManager:
         failures = []
 
         if should_heavy_audit and monitor and any(kw in content for kw in AUDIT_TRIGGER_KEYWORDS):
-            bible = ctx.get("bible")
+            bible = ctx.bible
             world_settings_str = ""
             active_constraints = []
             if bible:
@@ -617,7 +617,7 @@ class GenerationLoopManager:
             msg += " (Dogfeeding Score too low)"
         logger.warning(f"{msg} [Lazy Patch] 次話以降のプロット・執筆に修正指示（遅延パッチ）を登録し、この話数はそのまま進行します。")
 
-        book_id = ctx["book"].id if hasattr(ctx["book"], "id") else ctx["book"].book_id
+        book_id = ctx.book.id if hasattr(ctx.book, "id") else ctx.book.book_id
         obs = f"第{ep_num}話の執筆において矛盾・品質低下を検知しました。指摘: {msg}"
         corr = "設定制約およびキャラクターの行動原則を絶対遵守し、前話で発生した上記の矛盾を自然に解消・修正する描写を組み込んでください。"
         try:

@@ -10,6 +10,10 @@ async def test_with_llm_retry_success():
     class DummyClient:
         def __init__(self):
             self.calls = 0
+            self.cooldown = None
+            self._lock = None
+            self._active_requests = 0
+            self._consecutive_5xx = 0
 
         @with_llm_retry()
         async def generate(self, model_name="test_model", **kwargs):
@@ -26,6 +30,10 @@ async def test_with_llm_retry_retry_then_success():
     class DummyClient:
         def __init__(self):
             self.calls = 0
+            self.cooldown = None
+            self._lock = None
+            self._active_requests = 0
+            self._consecutive_5xx = 0
 
         @with_llm_retry()
         async def generate(self, model_name="test_model", **kwargs):
@@ -44,6 +52,10 @@ async def test_with_llm_retry_max_retries_exceeded():
     class DummyClient:
         def __init__(self):
             self.calls = 0
+            self.cooldown = None
+            self._lock = None
+            self._active_requests = 0
+            self._consecutive_5xx = 0
 
         @with_llm_retry()
         async def generate(self, model_name="test_model", **kwargs):

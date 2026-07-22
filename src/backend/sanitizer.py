@@ -16,6 +16,233 @@ logger = logging.getLogger(__name__)
 
 CONTENT_SEPARATOR = "### NOVEL CONTENT ###"
 
+
+class NormalizationFlow:
+    """normalize_metadata()の責務を4つのレベルに分割したクラス
+
+    1. 入力データ型調整
+    2. エイリアス解決
+    3. 値変換
+        4. デフォルト付与
+    """
+
+    def __init__(self) -> None:
+        self._wrapper_keys = {
+            "metadata", "response", "data", "plot", "episode_data",
+            "plot_episode", "episode", "results", "output", "content",
+            "roadmap", "arc_roadmap", "chapter"
+        }
+        self._force_str_keys = [
+            "detailed_blueprint", "script_content", "final_content", "title",
+            "one_line_summary", "magic_cost_and_taboo", "social_hierarchy_and_discrimination",
+            "geopolitics_and_economy", "religious_dogma_and_heresy", "rewrite_suggestion",
+            "personality", "ability", "background", "tone", "iron_constraint",
+            "summary", "keywords", "thought_process"
+        ]
+        self._numeric_fields = ["stress_delta", "love_delta", "tension"]
+        self._ep_num_aliases = ["episode_num", "episode_number", "episode", "ep_no", "ep", "no", "number", "chapter"]
+        self._scene_num_aliases = ["scene_id", "id", "scene_no", "index", "sceneNumber"]
+        self._severity_map = {
+            "critical": "Critical", "致命的": "Critical", "high": "Critical", "極めて重い": "Critical",
+            "major": "Major", "重大": "Major", "medium": "Major", "重い": "Major",
+            "minor": "Minor", "軽微": "Minor", "low": "Minor", "軽い": "Minor"
+        }
+        self._beat_valid_types = ["導入", "展開", "結末", "状況", "内面葛藤", "具体的行動", "余韻"]
+
+    def unwrap_nested_metadata(self, data: Any) -> Any:
+        """ネストされたデータ構造をフラット化（10回ループ）"""
+        for _ in range(10):
+            if not isinstance(data, dict):
+                break
+            unwrapped = False
+            if len(data) == 1:
+                k = list(data.keys())[0]
+                if k.lower() in self._wrapper_keys and isinstance(data[k], dict):
+                    data = data[k]
+                    unwrapped = True
+            else:
+                for wk in self._wrapper_keys:
+                    if wk in data and isinstance(data[wk], dict):
+                        inner = data.pop(wk)
+                        for ik, iv in inner.items():
+                            if ik not in data:
+                                data[ik] = iv
+                        unwrapped = True
+                        break
+            if not unwrapped:
+                break
+        return data
+
+    def resolve_aliases(self, data: dict) -> dict:
+        """エイリアス解決（ep_num, scene_number, severity, detailed_blueprint, final_content）"""
+        if not isinstance(data, dict):
+            return data
+
+        if "ep_num" not in data:
+            for alias in self._ep_num_aliases:
+                if alias in data:
+                    try:
+                        val = data[alias]
+                        data["ep_num"] = int(val) if isinstance(val, (int, float)) else int(re.search(r'\d+', str(val)).group())
+                        break
+                    except Exception:
+                        pass
+
+        if "scene_number" not in data:
+            for alias in self._scene_num_aliases:
+                if alias in data:
+                    try:
+                        val = data[alias]
+                        data["scene_number"] = int(val) if isinstance(val, (int, float)) else int(re.search(r'-?\d+', str(val)).group())
+                        break
+                    except Exception:
+                        pass
+
+        if "severity" in data:
+            sev = str(data["severity"]).lower()
+            data["severity"] = "Minor"
+            for key, value in self._severity_map.items():
+                if key in sev:
+                    data["severity"] = value
+                    break
+
+        if "detailed_blueprint" not in data:
+            for alias in ["outline", "summary", "synopsis", "description", "body", "story"]:
+                if alias in data and isinstance(data[alias], str) and len(data[alias]) > 50:
+                    data["detailed_blueprint"] = data[alias]
+                    break
+
+        if "final_content" not in data:
+            for alias in ["script_content", "story", "manuscript", "text", "body", "content"]:
+                if alias in data and isinstance(data[alias], str) and len(data[alias]) > 100:
+                    data["final_content"] = data[alias]
+                    break
+
+        return data
+
+    def coerce_types(self, data: dict) -> dict:
+        """型強制変換（文字列強制変換 + next_hook修復 + 数値キャスト）"""
+        if not isinstance(data, dict):
+            return data
+
+        for str_key in self._force_str_keys:
+            if str_key in data:
+                val = data[str_key]
+                if val is None:
+                    data[str_key] = ""
+                elif isinstance(val, list):
+                    sep = "\n\n" if any(x in str_key for x in ["content", "blueprint", "script"]) else ", "
+                    data[str_key] = sep.join([str(x) for x in val])
+                elif not isinstance(val, str):
+                    data[str_key] = json.dumps(val, ensure_ascii=False)
+
+        if "next_hook" in data:
+            if isinstance(data["next_hook"], str):
+                try:
+                    data["next_hook"] = json.loads(data["next_hook"])
+                except Exception:
+                    data["next_hook"] = {"type": "New Crisis", "description": data["next_hook"]}
+            elif data["next_hook"] is None:
+                data["next_hook"] = {"type": "Quiet Foreshadowing", "description": "続く"}
+
+        for num_key in self._numeric_fields:
+            if num_key in data and not isinstance(data[num_key], int):
+                try:
+                    data[num_key] = int(re.search(r'-?\d+', str(data[num_key])).group())
+                except Exception:
+                    data[num_key] = 0
+
+        return data
+
+    def normalize_lists(self, data: list, key_name: Optional[str]) -> list:
+        """リスト構造正規化（scenes/beats/story_threads等）"""
+        if key_name == "scenes":
+            data = [{"action": x} if isinstance(x, str) else x for x in data]
+            for i, item in enumerate(data):
+                if isinstance(item, dict) and "scene_number" not in item:
+                    item["scene_number"] = item.get("id") or item.get("no") or (i + 1)
+        elif key_name == "climax_scenes":
+            data = [{"event": x} if isinstance(x, str) else x for x in data]
+        elif key_name == "foreshadowing_map":
+            data = [{"description": x} if isinstance(x, str) else x for x in data]
+        elif key_name == "beats":
+            data = [{"action_description": x} if isinstance(x, str) else x for x in data]
+            for item in data:
+                if isinstance(item, dict):
+                    if "beat_type" in item:
+                        bt = str(item["beat_type"])
+                        for vt in self._beat_valid_types:
+                            if vt in bt:
+                                item["beat_type"] = vt
+                                break
+                    for kw_field in ["sensory_keywords", "psychology_keywords"]:
+                        if kw_field in item and isinstance(item[kw_field], str):
+                            item[kw_field] = [x.strip() for x in re.split(r'[,、]', item[kw_field]) if x.strip()]
+        elif key_name == "recovered_items":
+            data = [{"foreshadowing_id": x} if isinstance(x, str) else x for x in data]
+        elif key_name == "missing_items":
+            data = [x.get("description", str(x)) if isinstance(x, dict) else str(x) for x in data]
+        elif key_name == "story_threads":
+            data = [x if isinstance(x, dict) else {"description": str(x), "status": "Active", "setup_episode": 0} for x in data]
+
+        if key_name in ["full_story_roadmap", "roadmap", "arc_roadmap", "plots"]:
+            for i, item in enumerate(data):
+                if isinstance(item, dict) and "ep_num" not in item:
+                    item["ep_num"] = i + 1
+
+        return data
+
+    def apply_defaults(self, data: dict, is_root: bool) -> dict:
+        """デフォルト値付与（burned_cost_or_loot, antagonist_status）"""
+        if not isinstance(data, dict):
+            return data
+
+        is_story_obj = is_root or "one_line_summary" in data or "detailed_blueprint" in data
+        if is_story_obj:
+            if "burned_cost_or_loot" not in data:
+                data["burned_cost_or_loot"] = "特になし"
+            if "antagonist_status" not in data:
+                data["antagonist_status"] = "現状維持"
+
+        return data
+
+    def normalize_metadata(self, data: Any, key_name: Optional[str] = None, is_root: bool = True) -> Any:
+        """AIが生成するメタデータ構造の揺れ（ネスト・キー名）を吸収して正規化する"""
+        if data is None or data == "":
+            return {} if is_root else data
+
+        if is_root and not isinstance(data, dict):
+            return {"raw_data": data}
+
+        if isinstance(data, list):
+            normalized = [self.normalize_metadata(item, key_name, is_root=False) for item in data]
+            normalized = self.normalize_lists(normalized, key_name)
+            return normalized
+
+        if not isinstance(data, dict):
+            return {} if is_root else data
+
+        data = self.unwrap_nested_metadata(data)
+        data = self.resolve_aliases(data)
+        data = self.coerce_types(data)
+        data = self.apply_defaults(data, is_root)
+
+        for k, v in data.items():
+            if k == "current_chain_phase":
+                val = str(v).lower()
+                if any(x in val for x in ["hate", "stress", "絶望", "試練"]):
+                    data[k] = "Hate"
+                elif any(x in val for x in ["prep", "ready", "準備"]):
+                    data[k] = "Prep"
+                elif any(x in val for x in ["payoff", "climax", "ざまぁ", "爆発"]):
+                    data[k] = "Payoff"
+
+            if isinstance(v, (dict, list)):
+                data[k] = self.normalize_metadata(v, key_name=k, is_root=False)
+
+        return data
+
+
 # ==========================================
 # TonePerfector（口調強制補正）
 # ==========================================
@@ -25,7 +252,8 @@ class TonePerfector:
     @staticmethod
     def enforce_tone(text: str, characters: List[CharacterRegistry]) -> str:
         for char in characters:
-            if not char.name: continue
+            if not char.name:
+                continue
 
             # 台詞内の人称置換ロジック
             def replace_pronouns(match):
@@ -56,6 +284,7 @@ class TonePerfector:
 # ==========================================
 class OutputSanitizer:
     """AI出力の修復・正規化を担う静的ユーティリティクラス"""
+    _normalization_flow = NormalizationFlow()
 
     @staticmethod
     def parse_llm_json(text: str) -> Dict[str, Any]:
@@ -149,213 +378,13 @@ class OutputSanitizer:
     @staticmethod
     def normalize_metadata(data: Any, key_name: Optional[str] = None, is_root: bool = True) -> Any:
         """AIが生成するメタデータ構造の揺れ（ネスト・キー名）を吸収して正規化する"""
-        if data is None or data == "":
-            return {} if is_root else data
-
-        # ルート要素が辞書でない場合の救済処理（'str' object has no attribute 'get' 対策）
-        if is_root and not isinstance(data, dict):
-            return {"raw_data": data}
-
-        if isinstance(data, list):
-            normalized = [OutputSanitizer.normalize_metadata(item, key_name, is_root=False) for item in data]
-
-            # リスト内の要素が文字列の場合、期待される辞書構造へ強制変換
-            if key_name == "scenes":
-                normalized = [{"action": x} if isinstance(x, str) else x for x in normalized]
-
-            # 文字列リストをオブジェクトリストへ強制変換（Pydantic ValidationError 対策）
-            if key_name == "climax_scenes":
-                normalized = [{"event": x} if isinstance(x, str) else x for x in normalized]
-            elif key_name == "foreshadowing_map":
-                normalized = [{"description": x} if isinstance(x, str) else x for x in normalized]
-            elif key_name == "scenes":
-                normalized = [{"action": x} if isinstance(x, str) else x for x in normalized]
-            elif key_name == "beats":
-                normalized = [{"action_description": x} if isinstance(x, str) else x for x in normalized]
-            elif key_name == "recovered_items":
-                # 文字列が来た場合は foreshadowing_id として扱う
-                normalized = [{"foreshadowing_id": x} if isinstance(x, str) else x for x in normalized]
-            elif key_name == "missing_items":
-                # オブジェクトが来た場合は説明文を抽出するか文字列化する
-                normalized = [x.get("description", str(x)) if isinstance(x, dict) else str(x) for x in normalized]
-            elif key_name == "story_threads":
-                normalized = [x if isinstance(x, dict) else {"description": str(x), "status": "Active", "setup_episode": 0} for x in normalized]
-
-            # ロードマップ等のリストで話数(ep_num)が欠落している場合の自動補完
-            if key_name in ["full_story_roadmap", "roadmap", "arc_roadmap", "plots"]:
-                for i, item in enumerate(normalized):
-                    if isinstance(item, dict) and "ep_num" not in item:
-                        item["ep_num"] = i + 1
-
-            if key_name == "scenes":
-                for i, item in enumerate(normalized):
-                    if isinstance(item, dict) and "scene_number" not in item:
-                        item["scene_number"] = item.get("id") or item.get("no") or (i + 1)
-            if key_name == "beats":
-                # beat_type の正規化（"A:状況" -> "状況" など）
-                valid_types = ["導入", "展開", "結末", "状況", "内面葛藤", "具体的行動", "余韻"]
-                for item in normalized:
-                    if isinstance(item, dict) and "beat_type" in item:
-                        bt = str(item["beat_type"])
-                        for vt in valid_types:
-                            if vt in bt:
-                                item["beat_type"] = vt
-                                break
-                    # キーワード類が文字列で来た場合のリスト化
-                    for kw_field in ["sensory_keywords", "psychology_keywords"]:
-                        if isinstance(item, dict) and kw_field in item:
-                            val = item[kw_field]
-                            if isinstance(val, str):
-                                item[kw_field] = [x.strip() for x in re.split(r'[,、]', val) if x.strip()]
-
-            return normalized
-        if not isinstance(data, dict):
-            return {} if is_root else data
-
-        # NOTE: 個別のキー名エイリアス（consistent -> is_consistent 等）は
-        # models.py の AliasChoices で処理するため、ここでは構造の正規化のみを行う。
-
-        # 文字列強制変換
-        force_str_keys = [
-            "detailed_blueprint", "script_content", "final_content", "title", "one_line_summary",
-            "magic_cost_and_taboo", "social_hierarchy_and_discrimination",
-            "geopolitics_and_economy", "religious_dogma_and_heresy", "rewrite_suggestion",
-            "personality", "ability", "background", "tone", "iron_constraint", "summary", "keywords",
-            "thought_process"
-        ]
-        for str_key in force_str_keys:
-            if str_key in data:
-                val = data[str_key]
-                if val is None:
-                    data[str_key] = ""
-                elif isinstance(val, list):
-                    # AIがリスト形式で返してきた場合、適切な区切り文字で文字列に変換
-                    sep = "\n\n" if any(x in str_key for x in ["content", "blueprint", "script"]) else ", "
-                    data[str_key] = sep.join([str(x) for x in val])
-                elif not isinstance(val, str):
-                    data[str_key] = json.dumps(val, ensure_ascii=False)
-
-        # next_hook が文字列で返ってきた場合の修復
-        if "next_hook" in data and isinstance(data["next_hook"], str):
-            try:
-                data["next_hook"] = json.loads(data["next_hook"])
-            except:
-                data["next_hook"] = {
-                    "type": "New Crisis",
-                    "description": data["next_hook"]
-                }
-        elif "next_hook" in data and data["next_hook"] is None:
-            data["next_hook"] = {"type": "Quiet Foreshadowing", "description": "続く"}
-
-
-        # 段階的ネスト解除
-        wrapper_keys = (
-            "metadata", "response", "data", "plot", "episode_data", "plot_episode",
-            "episode", "results", "output", "content", "roadmap", "arc_roadmap", "chapter"
-        )
-        for _ in range(10):
-            if not isinstance(data, dict):
-                break
-            unwrapped = False
-            if len(data) == 1:
-                k = list(data.keys())[0]
-                if k.lower() in wrapper_keys and isinstance(data[k], dict):
-                    data = data[k]
-                    unwrapped = True
-            else:
-                for wk in wrapper_keys:
-                    if wk in data and isinstance(data[wk], dict):
-                        inner = data.pop(wk)
-                        for ik, iv in inner.items():
-                            if ik not in data:
-                                data[ik] = iv
-                        unwrapped = True
-                        break
-            if not unwrapped:
-                break
-
-        # ep_num エイリアス解決
-        if "ep_num" not in data:
-            for alias in ["episode_num", "episode_number", "episode", "ep_no", "ep", "no", "number", "chapter"]:
-                if alias in data:
-                    try:
-                        val = data[alias]
-                        data["ep_num"] = int(val) if isinstance(val, (int, float)) else int(re.search(r'\d+', str(val)).group())
-                        break
-                    except Exception:
-                        pass
-
-        # scene_number エイリアス解決
-        if "scene_number" not in data:
-            for alias in ["scene_id", "id", "scene_no", "index", "sceneNumber"]:
-                if alias in data:
-                    try:
-                        val = data[alias]
-                        data["scene_number"] = int(val) if isinstance(val, (int, float)) else int(re.search(r'\d+', str(val)).group())
-                        break
-                    except Exception:
-                        pass
-
-        # severity エイリアス・正規化 (Literal["Minor", "Major", "Critical"] 対策)
-        if "severity" in data:
-            sev = str(data["severity"]).lower()
-            if any(x in sev for x in ["critical", "致命的", "high", "極めて重い"]):
-                data["severity"] = "Critical"
-            elif any(x in sev for x in ["major", "重大", "medium", "重い"]):
-                data["severity"] = "Major"
-            elif any(x in sev for x in ["minor", "軽微", "low", "軽い"]):
-                data["severity"] = "Minor"
-            else:
-                data["severity"] = "Minor"
-
-        # 数値キャスト
-        for num_key in ["stress_delta", "love_delta", "tension"]:
-            if num_key in data and not isinstance(data[num_key], int):
-                try:
-                    data[num_key] = int(re.search(r'-?\d+', str(data[num_key])).group())
-                except Exception:
-                    data[num_key] = 0
-
-        # detailed_blueprint エイリアス
-        if "detailed_blueprint" not in data:
-            for alias in ["outline", "summary", "synopsis", "description", "body", "story"]:
-                if alias in data and isinstance(data[alias], str) and len(data[alias]) > 50:
-                    data["detailed_blueprint"] = data[alias]
-                    break
-
-        # final_content エイリアス
-        if "final_content" not in data:
-            for alias in ["script_content", "story", "manuscript", "text", "body", "content"]:
-                if alias in data and isinstance(data[alias], str) and len(data[alias]) > 100:
-                    data["final_content"] = data[alias]
-                    break
-
-        # burned_cost_or_loot / antagonist_status デフォルト
-        is_story_obj = is_root or "one_line_summary" in data or "detailed_blueprint" in data
-        if is_story_obj:
-            if "burned_cost_or_loot" not in data:
-                data["burned_cost_or_loot"] = "特になし"
-            if "antagonist_status" not in data:
-                data["antagonist_status"] = "現状維持"
-
-        # 再帰処理
-        for k, v in data.items():
-            # current_chain_phase の正規化
-            if k == "current_chain_phase":
-                val = str(v).lower()
-                if any(x in val for x in ["hate", "stress", "絶望", "試練"]): data[k] = "Hate"
-                elif any(x in val for x in ["prep", "ready", "準備"]): data[k] = "Prep"
-                elif any(x in val for x in ["payoff", "climax", "ざまぁ", "爆発"]): data[k] = "Payoff"
-
-            if isinstance(v, (dict, list)):
-                data[k] = OutputSanitizer.normalize_metadata(v, key_name=k, is_root=False)
-
-        return data
+        return OutputSanitizer._normalization_flow.normalize_metadata(data, key_name, is_root)
 
     @staticmethod
     def fix_json(text: str) -> str:
         """壊れたJSON文字列を可能な限り修復する"""
-        if not text: return "{}"
+        if not text:
+            return "{}"
 
         # JSONを囲むテキストの除去を強化
         text = text.strip()
@@ -404,8 +433,10 @@ class OutputSanitizer:
         # 括弧の自動補完
         stack = []
         for ch in text:
-            if ch == '{':   stack.append('}')
-            elif ch == '[': stack.append(']')
+            if ch == '{':
+                stack.append('}')
+            elif ch == '[':
+                stack.append(']')
             elif ch in ('}', ']') and stack and stack[-1] == ch:
                 stack.pop()
         text += "".join(reversed(stack))
@@ -637,7 +668,8 @@ class TextFormatter:
         # 台本形式の除去ロジックをより高速な単一パスの置換へ統合
         def _process_dialogue_line(match):
             notes = re.findall(r'[（(](.*?)[）)]', match.group(1))
-            if notes: return "。".join(notes) + "。\n" + match.group(2)
+            if notes:
+                return "。".join(notes) + "。\n" + match.group(2)
             return match.group(1).strip() + "\n" + match.group(2)
 
         # 「セリフ」または『セリフ』の前に何かがある行を対象
@@ -661,7 +693,7 @@ class TextFormatter:
         max_chars_per_line = 35 if kanji_rate > 35 else 45
         force_break_at_period = kanji_rate > 33
 
-        lines         = [l.strip() for l in text.split('\n')]
+        lines         = [line.strip() for line in text.split('\n')]
         new_lines     = []
         narrative_cnt = 0
 

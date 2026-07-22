@@ -1,44 +1,48 @@
-import json
+import asyncio
+from collections import defaultdict
+from contextlib import asynccontextmanager
 import logging
-import os
-import sys
 import time
+import uuid
 from typing import Any, Dict, Optional
 
-from pydantic import BaseModel
-
-from src.models.api_schemas import (
-    EasyModeRequest,
-    EpisodeGenerateRequest,
-    EpisodeGenerateCandidatesRequest,
-    PlanGenerationRequest,
-    RetryFailedRequest,
-    PlotExpandRequest,
-    PlotExpandCandidatesRequest,
-    PlotRebuildRequest,
-    CritiqueOptimizeRequest,
-    AuditPlanRequest,
-    ChapterImportRequest,
-    MarketingGenerateRequest,
-    RefineEroticRequest,
-    PatchActionRequest,
-    PatchEditRequest,
-    RollbackRequest,
-    ResolveIssueRequest,
-)
-
-from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import select
-
-logger = logging.getLogger(__name__)
+from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from config.container import Container
+from config.cors_config import get_allowed_origins
 from config.logging_config import setup_logging
+
+from src.backend.auth import validate_api_key_or_raise
 from src.backend.database import UnitOfWork, init_db
-from src.backend.engine import UltimateHegemonyEngine
+from src.backend.error_handlers import register_error_handlers
+from src.backend.routers import (
+    books,
+    commercial,
+    episodes,
+    health,
+    issues,
+    marketing,
+    metrics,
+    misc,
+    novel,
+    patches,
+    plots,
+    prompt_versions,
+    tasks,
+)
+from src.backend.task_helpers import create_task as _create_task
 from src.backend.tasks import execute_service_workflow
+from src.core.observability import TraceContext
+from src.models.api_schemas import (
+    CritiqueOptimizeRequest,
+    EasyModeRequest,
+    RefineEroticRequest,
+)
+
+logger = logging.getLogger(__name__)
 
 setup_logging()
 
@@ -79,25 +83,10 @@ async def lifespan(app: FastAPI):
         logger.info("全てのリソースを解放しました。サーバーを終了します。")
 
 
-import uuid
-
-
 def generate_task_id(prefix: str) -> str:
     return f"{prefix}_{uuid.uuid4().hex[:12]}"
 
 
-from fastapi import Request
-
-from src.core.observability import TraceContext
-
-app = FastAPI(title="覇権小説エンジン API", version="3.0", lifespan=lifespan)
-
-from src.backend.error_handlers import register_error_handlers
-
-register_error_handlers(app)
-
-
-@app.middleware("http")
 async def add_trace_id_middleware(request: Request, call_next):
     # リクエストヘッダーに X-Trace-ID があれば使用し、なければ UUID を生成
     trace_id = request.headers.get("X-Trace-ID") or str(uuid.uuid4())
@@ -115,7 +104,6 @@ async def add_trace_id_middleware(request: Request, call_next):
         TraceContext.clear()
 
 
-@app.middleware("http")
 async def add_security_headers_middleware(request: Request, call_next):
     response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
@@ -125,16 +113,11 @@ async def add_security_headers_middleware(request: Request, call_next):
     return response
 
 
-from collections import defaultdict
-from datetime import datetime, timedelta
-import time
-
 _rate_limit_store: dict[str, list[float]] = defaultdict(list)
 _RATE_LIMIT_MAX_REQUESTS = 100
 _RATE_LIMIT_WINDOW_SECONDS = 60
 
 
-@app.middleware("http")
 async def rate_limit_middleware(request: Request, call_next):
     client_ip = request.client.host if request.client else "unknown"
     now = time.time()
@@ -143,8 +126,6 @@ async def rate_limit_middleware(request: Request, call_next):
     _rate_limit_store[client_ip] = [t for t in _rate_limit_store[client_ip] if t > window_start]
 
     if len(_rate_limit_store[client_ip]) >= _RATE_LIMIT_MAX_REQUESTS:
-        from fastapi.responses import JSONResponse
-
         return JSONResponse(
             status_code=429,
             content={"error": "Too Many Requests", "detail": "リクエスト数が制限を超えました。"},
@@ -152,10 +133,6 @@ async def rate_limit_middleware(request: Request, call_next):
 
     _rate_limit_store[client_ip].append(now)
     return await call_next(request)
-
-
-# CORS middleware
-from config.cors_config import get_allowed_origins
 
 
 def configure_cors(app: FastAPI):
@@ -170,21 +147,11 @@ def configure_cors(app: FastAPI):
     )
 
 
-configure_cors(app)
-
-# Request timeout configuration (Step 38)
-from starlette.middleware.base import BaseHTTPMiddleware
-
-
 class TimeoutMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         try:
-            import asyncio
-
             return await asyncio.wait_for(call_next(request), timeout=30.0)
         except asyncio.TimeoutError:
-            from fastapi.responses import JSONResponse
-
             return JSONResponse(
                 status_code=504,
                 content={
@@ -194,70 +161,50 @@ class TimeoutMiddleware(BaseHTTPMiddleware):
             )
 
 
-app.add_middleware(TimeoutMiddleware)
+def create_app() -> FastAPI:
+    """FastAPIアプリケーションを構築して返すファクトリ関数。"""
+    setup_logging()
 
-from src.backend.routers import (
-    commercial,
-    health,
-    books,
-    plots,
-    episodes,
-    tasks,
-    patches,
-    issues,
-    marketing,
-    prompt_versions,
-    metrics,
-    misc,
-    novel,
-)
+    application = FastAPI(
+        title="覇権小説エンジン API",
+        version="3.0",
+        lifespan=lifespan,
+    )
 
-app.include_router(health.router)
-app.include_router(books.router)
-app.include_router(plots.router)
-app.include_router(episodes.router)
-app.include_router(tasks.router)
-app.include_router(patches.router)
-app.include_router(issues.router)
-app.include_router(marketing.router)
-app.include_router(prompt_versions.router)
-app.include_router(metrics.router)
-app.include_router(misc.router)
-app.include_router(novel.router)
-app.include_router(commercial.router)
+    # エラーハンドラ
+    register_error_handlers(application)
 
+    # ミドルウェア
+    application.add_middleware(TimeoutMiddleware)
+    configure_cors(application)
 
-# Deprecated narrative metrics endpoint moved to src/backend/routers/misc.py
+    application.middleware("http")(rate_limit_middleware)
+    application.middleware("http")(add_security_headers_middleware)
+    application.middleware("http")(add_trace_id_middleware)
 
+    # ルーター登録
+    router_list = [
+        health,
+        books,
+        plots,
+        episodes,
+        tasks,
+        patches,
+        issues,
+        marketing,
+        prompt_versions,
+        metrics,
+        misc,
+        novel,
+        commercial,
+    ]
+    for r in router_list:
+        application.include_router(r.router)
 
-from src.backend.engine_helpers import get_engine as resolve_engine
-
-
-# Bible and Optimization History endpoints moved to src/backend/routers/misc.py
-
-# Patches router endpoints moved to src/backend/routers/patches.py
-
-# Prompt Versions router endpoints moved to src/backend/routers/prompt_versions.py
+    return application
 
 
-# 各ルーターに移譲済み:
-# - /api/plots/*         → routers/plots.py
-# - /api/episodes/*      → routers/episodes.py
-# - /api/books/*         → routers/books.py
-# - /api/patches/*       → routers/patches.py
-# - /api/issues/*        → routers/issues.py
-# - /api/marketing/*     → routers/marketing.py
-# - /api/prompt_versions/* → routers/prompt_versions.py
-# - /api/metrics/*       → routers/metrics.py
-# - /api/narrative_metrics/* → routers/misc.py
-# - /api/bibles/*        → routers/misc.py
-# - /api/optimization_history/* → routers/misc.py
-# - /api/produce, /status, /episodes, /report → routers/novel.py
-# - /api/commercial/run  → routers/commercial.py
-
-# server.py に残存するエンドポイント (既存ルータープレフィックスに適合しない為)
-from src.backend.task_helpers import create_task as _create_task
-from src.backend.auth import validate_api_key_or_raise
+app = create_app()
 
 
 @app.post("/api/refine_erotic")
@@ -321,12 +268,3 @@ async def critique_optimize(req: CritiqueOptimizeRequest):
         trace_id=TraceContext.get_trace_id(),
     )
     return {"task_id": task_id}
-
-
-# Marketing router endpoints moved to src/backend/routers/marketing.py
-
-
-# Narrative Metrics trend endpoint moved to src/backend/routers/misc.py
-
-
-# Prompt Metrics API endpoints moved to src/backend/routers/metrics.py

@@ -7,14 +7,18 @@ import asyncio
 import functools
 import logging
 import shutil
+import sqlite3
 import time
 import traceback
 from pathlib import Path
 from typing import Any, List, Optional
+from urllib.parse import urlparse
 
 import aiosqlite
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import sessionmaker
 
-from config import BASE_DIR
+from config import BASE_DIR, DATABASE_URL
 
 logger = logging.getLogger(__name__)
 
@@ -299,6 +303,25 @@ def get_db_manager() -> DatabaseManager:
     manager = DatabaseManager(DATABASE_URL)
     _GLOBAL_DB_MANAGER = manager
     return manager
+
+
+_sync_engine = None
+_sync_session_factory = None
+
+
+def get_sync_db_manager():
+    """同期的なDB操作用のエンジンとセッションファクトリを取得する"""
+    global _sync_engine, _sync_session_factory
+    if _sync_engine is None:
+        from config import DATABASE_URL
+        sync_url = DATABASE_URL
+        if "sqlite+aiosqlite" in sync_url:
+            sync_url = sync_url.replace("sqlite+aiosqlite:///", "sqlite:///")
+        elif "postgresql+asyncpg" in sync_url:
+            sync_url = sync_url.replace("postgresql+asyncpg://", "postgresql://")
+        _sync_engine = create_engine(sync_url)
+        _sync_session_factory = sessionmaker(bind=_sync_engine, expire_on_commit=False)
+    return _sync_session_factory
 
 
 def set_db_manager(manager: Optional[DatabaseManager]) -> None:

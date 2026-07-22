@@ -50,6 +50,24 @@ class DataRepositoryFacade:
 
         return wrapper
 
+    def save_internal_state_sync(self, key: str, value: Any) -> None:
+        """同期的に内部状態を保存する"""
+        from src.backend.database.core import get_sync_db_manager
+        from src.backend.database.models import InternalState
+        import json
+        import time
+
+        SessionLocal = get_sync_db_manager()
+        with SessionLocal() as session:
+            state = session.query(InternalState).filter_by(key=key).one_or_none()
+            if not state:
+                state = InternalState(key=key)
+                session.add(state)
+            state.value = json.dumps(value, ensure_ascii=False) if not isinstance(value, str) else value
+            state.updated_at = time.strftime('%Y-%m-%dT%H:%M:%S')
+            session.commit()
+
+
 # DataRepository をエイリアスとして公開
 DataRepository = DataRepositoryFacade
 

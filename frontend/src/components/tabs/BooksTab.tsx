@@ -18,8 +18,8 @@ export function BooksTab({ selectedBook, setSelectedBook, setShowCreateModal }: 
     <div className="animate-fade-in flex flex-col gap-8">
       <div className="flex justify-between items-center">
         <div>
-          <h3 style={{ fontSize: '1.2rem', color: '#fff' }}>作成済みの小説一覧</h3>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>現在データベースに保存されている小説の企画及び執筆データです。</p>
+          <h3 className="text-[1.2rem] text-white font-bold">作成済みの小説一覧</h3>
+          <p className="text-[0.85rem] text-[var(--text-secondary)]">現在データベースに保存されている小説の企画及び執筆データです。</p>
         </div>
         <Button onClick={() => setShowCreateModal(true)}>
           ➕ 新規自動生成 (かんたんモード)
@@ -44,30 +44,28 @@ export function BooksTab({ selectedBook, setSelectedBook, setShowCreateModal }: 
           {books.map((book) => {
             const isActive = selectedBook?.id === book.id;
             return (
-              <div 
-                key={book.id} 
-                className="glass-panel" 
+              <div
+                key={book.id}
+                className="glass-panel cursor-pointer transition-all"
                 onClick={() => setSelectedBook(book)}
-                style={{ 
-                  padding: '1.75rem', 
-                  cursor: 'pointer', 
+                style={{
+                  padding: '1.75rem',
                   borderColor: isActive ? 'var(--accent-indigo)' : 'var(--border)',
                   boxShadow: isActive ? 'var(--shadow-glow)' : 'none',
-                  position: 'relative'
                 }}
               >
-                <h4 style={{ fontSize: '1.15rem', marginBottom: '0.5rem', color: '#fff' }}>{book.title}</h4>
-                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+                <h4 className="text-[1.15rem] text-white font-semibold mb-2">{book.title}</h4>
+                <div className="flex gap-2 mb-4">
                   <span className="badge badge-purple">{book.genre}</span>
-                  <span className="badge badge-emerald" style={{ color: 'var(--accent-cyan)', borderColor: 'rgba(6, 182, 212, 0.2)', backgroundColor: 'rgba(6, 182, 212, 0.1)' }}>
+                  <span className="badge badge-emerald">
                     目標: {book.target_eps}話
                   </span>
                 </div>
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: 1.5, display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 3, overflow: 'hidden' }}>
+                <p className="text-sm text-secondary mb-6 line-clamp-3">
                   {book.synopsis || 'あらすじはまだ生成されていません。'}
                 </p>
-                
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+
+                <div className="flex justify-between items-center text-sm text-muted">
                   <span>作成: {new Date(book.created_at).toLocaleDateString()}</span>
                   <Button
                     variant="destructive"

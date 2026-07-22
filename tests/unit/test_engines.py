@@ -31,7 +31,9 @@ class MockCooldown:
 class MockLLMClient:
     def __init__(self):
         self.cooldown = MockCooldown()
+        self._lock = None
         self._active_requests = 0
+        self._consecutive_5xx = 0
         self.calls = 0
         self.fail_until = 0
         self.fail_with_validation = False

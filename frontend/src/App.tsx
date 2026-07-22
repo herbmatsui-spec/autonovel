@@ -141,7 +141,8 @@ export default function App() {
   } = useAppActions(_setLoading);
 
   return (
-    <div style={{ display: 'flex', width: '100%', minHeight: '100vh', background: 'var(--bg-main)' }}>
+    <HealthGate>
+      <div className="flex w-full min-h-screen bg-[var(--bg-main)]">
 
       <Sidebar />
 
@@ -285,6 +286,7 @@ export default function App() {
            onSubmit={handleCreateEasyMode}
          />
       )}
-    </div>
+      </div>
+    </HealthGate>
   );
 }

@@ -35,6 +35,41 @@ class ContextManager:
     def __init__(self, repo: DataRepository):
         self.repo = repo
 
+    @staticmethod
+    def _parse_character_registry(char) -> dict:
+        """キャラクターオブジェクトから registry_data を安全に辞書として取得する。
+
+        CharacterDbModel.to_safe_dict() が使える場合はそれを利用し、
+        CharacterRegistry 等の Pydantic モデルの場合は model_dump() にフォールバックする。
+        """
+        char_name = getattr(char, "name", "unknown")
+        try:
+            # CharacterDbModel の場合: 専用メソッドを使用
+            if hasattr(char, "to_safe_dict"):
+                return char.to_safe_dict()
+            # registry_data 属性がある場合: 手動パース
+            if hasattr(char, "registry_data"):
+                rd = char.registry_data
+                if isinstance(rd, dict):
+                    return rd
+                if isinstance(rd, str) and rd.strip():
+                    return json.loads(rd)
+                return {}
+            # Pydantic モデルの場合: model_dump()
+            if hasattr(char, "model_dump"):
+                return char.model_dump()
+            return {}
+        except (json.JSONDecodeError, AttributeError) as e:
+            logger.warning(
+                f"Failed to parse registry_data for character '{char_name}': {e}"
+            )
+            return {}
+        except Exception as e:
+            logger.error(
+                f"Unexpected error reading character registry for '{char_name}': {e}"
+            )
+            return {}
+
     def filter_active_characters(self, plots: Union[PlotDbModel, List[PlotDbModel]], all_chars: List[CharacterDbModel], char_states: Dict[str, str], recent_ctx: str = "") -> str:
         plot_list = plots if isinstance(plots, list) else [plots]
         # 検索範囲を拡大：設計図だけでなく、あらすじや台本案からもキャラを検出
@@ -51,19 +86,7 @@ class ContextManager:
             # 重要キャラクター（主人公・ヒロイン・ヴィラン・ライバル）は常に含めるか、登場が確認された場合のみに絞る
             is_important = any(role in (c.role or "") for role in ["主人公", "ヒロイン", "悪役", "ライバル"])
             if (c.name in search_area) or (c.name in recent_ctx) or is_important:
-                try:
-                    if hasattr(c, "registry_data"):
-                        reg = c.registry_data if isinstance(c.registry_data, dict) else (json.loads(c.registry_data) if isinstance(c.registry_data, str) else {})
-                    elif hasattr(c, "model_dump"):
-                        reg = c.model_dump()
-                    else:
-                        reg = {}
-                except json.JSONDecodeError as e:
-                    logger.warning(f"Failed to parse registry_data for character {getattr(c, 'name', 'unknown')}: {e}")
-                    reg = {}
-                except Exception as e:
-                    logger.error(f"Unexpected error reading character data: {e}")
-                    reg = {}
+                reg = self._parse_character_registry(c)
                 lines.append(
                     f"■ {c.name} ({c.role})\n"
                     f"  - Personality/Ability: {reg.get('personality', '')} / {reg.get('ability', '')}\n"
@@ -210,22 +233,7 @@ class ContextManager:
                 continue
 
             if c.name not in search_area and not is_important: continue
-            try:
-                if hasattr(c, "registry_data"):
-                    reg = c.registry_data if isinstance(c.registry_data, dict) else (json.loads(c.registry_data) if isinstance(c.registry_data, str) else {})
-                elif hasattr(c, "model_dump"):
-                    reg = c.model_dump()
-                else:
-                    reg = {}
-            except json.JSONDecodeError as e:
-                logger.warning(f"Failed to parse registry_data for character: {e}")
-                reg = {}
-            except AttributeError as e:
-                logger.warning(f"Character has no registry_data attribute: {e}")
-                reg = {}
-            except Exception as e:
-                logger.error(f"Unexpected error reading character registry: {e}")
-                reg = {}
+            reg = self._parse_character_registry(c)
             static_lines.append(f"■ {c.name} ({c.role}): {reg.get('tone')}\n  Ability: {reg.get('ability')}\n  IronConst: {reg.get('iron_constraint') or reg.get('iron_const') or ''}")
             state = char_states.get(c.name, "通常")
             dynamic_lines.append(f"■ {c.name}: {state}")

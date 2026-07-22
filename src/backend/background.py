@@ -5,12 +5,78 @@ background.py - バックグラウンド処理・進捗管理モジュール
 from __future__ import annotations
 
 import asyncio
+import datetime
+import json
 import logging
 import threading
 import time
+from abc import ABC, abstractmethod
 from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
+
+
+class SaveStrategy(ABC):
+    @abstractmethod
+    def save(self, state: "ProgressState", state_json: str, now: str) -> None:
+        ...
+
+
+class RedisSaveStrategy(SaveStrategy):
+    def save(self, state: "ProgressState", state_json: str, now: str) -> None:
+        from src.backend.redis_util import get_redis_client
+        redis_client = get_redis_client()
+        if redis_client is None:
+            raise RuntimeError("Redis client is not available")
+        try:
+            redis_client.set(f"task_status:{state.task_id}", state_json, ex=86400)
+            redis_client.publish(f"task_events:{state.task_id}", state_json)
+        except Exception as e:
+            logger.error(f"[ProgressState] Failed to save to Redis: {e}")
+            raise
+
+
+class AsyncDbSaveStrategy(SaveStrategy):
+    def save(self, state: "ProgressState", state_json: str, now: str) -> None:
+        if state.repo is None:
+            return
+        try:
+            loop = asyncio.get_running_loop()
+            task = loop.create_task(state.repo.db.save_internal_state(f"task_status:{state.task_id}", state_json, now))
+            task.add_done_callback(lambda t: logger.error(f"[ProgressState] DB Save error: {t.exception()}") if not t.cancelled() and t.exception() else None)
+        except RuntimeError:
+            raise RuntimeError("No running event loop for async DB save")
+
+
+class SyncDbSaveStrategy(SaveStrategy):
+    def save(self, state: "ProgressState", state_json: str, now: str) -> None:
+        if state.repo is None:
+            return
+        try:
+            state.repo.save_internal_state_sync(
+                f"task_status:{state.task_id}", state_json
+            )
+        except Exception as e:
+            logger.error(f"[ProgressState] Sync DB save failed: {e}")
+
+
+class NoOpSaveStrategy(SaveStrategy):
+    def save(self, state: "ProgressState", state_json: str, now: str) -> None:
+        pass
+
+
+def _select_strategy(state: "ProgressState") -> SaveStrategy:
+    from src.backend.redis_util import get_redis_client
+    redis_client = get_redis_client()
+    if redis_client is not None:
+        return RedisSaveStrategy()
+    if state.repo is None:
+        return NoOpSaveStrategy()
+    try:
+        asyncio.get_running_loop()
+        return AsyncDbSaveStrategy()
+    except RuntimeError:
+        return SyncDbSaveStrategy()
 
 
 # ==========================================
@@ -41,6 +107,7 @@ class ProgressState:
         self._stop_event   = threading.Event()
         # スレッド間でのトークン受け渡し用
         self.token_usage   = {"prompt": 0, "completion": 0, "calls": 0}
+        self._save_strategy = _select_strategy(self)
 
         if not skip_initial_save:
             self._save_to_db()
@@ -76,12 +143,8 @@ class ProgressState:
         return self._stop_event.is_set()
 
     def _save_to_db(self) -> None:
-        """状態をインメモリKVS（Redis）またはDBに保存する"""
         if not self.task_id:
             return
-
-        import datetime
-        import json
 
         state_dict = {
             "is_running": self.is_running,
@@ -108,30 +171,8 @@ class ProgressState:
                     return str(obj)
 
         state_json = json.dumps(state_dict, cls=StateEncoder)
-
-        # Check Redis availability
-        from src.backend.redis_util import get_redis_client
-        redis_client = get_redis_client()
-        if redis_client is not None:
-            try:
-                # Save to Redis with 24 hours TTL
-                redis_client.set(f"task_status:{self.task_id}", state_json, ex=86400)
-                # Publish event to Redis channel for SSE streaming
-                redis_client.publish(f"task_events:{self.task_id}", state_json)
-                return
-            except Exception as e:
-                logger.error(f"[ProgressState] Failed to save to Redis: {e}. Falling back to SQLite.")
-
-        if not self.repo:
-            return
-
-        try:
-            now = datetime.datetime.now().isoformat()
-            loop = asyncio.get_running_loop()
-            task = loop.create_task(self.repo.db.save_internal_state(f"task_status:{self.task_id}", state_json, now))
-            task.add_done_callback(lambda t: logger.error(f"[ProgressState] DB Save error: {t.exception()}") if not t.cancelled() and t.exception() else None)
-        except RuntimeError:
-            asyncio.run(self.repo.db.save_internal_state(f"task_status:{self.task_id}", state_json, now))
+        now = datetime.datetime.now().isoformat()
+        self._save_strategy.save(self, state_json, now)
 
     def update(
         self,

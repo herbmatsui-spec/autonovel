@@ -85,6 +85,36 @@ async def _process_outbox_events_async():
                 logger.error(f"Failed to process outbox event {event.id}: {e}")
 
 
+def _create_workflow(method_name: str, **services):
+    """WORKFLOW_REGISTRY からワークフローを検索しインスタンス化する。"""
+    from src.backend.workflows import WORKFLOW_REGISTRY
+
+    workflow_cls = WORKFLOW_REGISTRY.get(method_name)
+    if workflow_cls is None:
+        raise ValueError(f"Unknown workflow method: {method_name}")
+    return workflow_cls(**services)
+
+
+def _build_service_dict(container):
+    """コンテナからワークフローに必要な全サービスを取得して辞書として返す。"""
+    engine = container.engine()
+    return {
+        "planner": container.planning_service(),
+        "writing": container.writer(),
+        "writing_service": container.writing_service(),
+        "repo": container.repo(),
+        "critique": container.critique(),
+        "narrative": container.narrative(),
+        "marketing": container.marketing(),
+        "bible_agent": container.bible_generator(),
+        "plot_agent": container.plot_expander(),
+        "formatter": container.formatter(),
+        "vector_store": container.vector_store(),
+        "llm_client": container.genai_client(),
+        "tension": engine,
+    }
+
+
 @huey.task(retries=3, retry_delay=5)
 @with_trace_context
 def execute_service_workflow(task_id: str, api_key: str, config_dict: dict, method_name: str, kwargs: dict, trace_id: Optional[str] = None):
@@ -106,91 +136,10 @@ def execute_service_workflow(task_id: str, api_key: str, config_dict: dict, meth
                 db=Container.db(),
             )
 
-            # サービスをコンテナから取得して注入（engine への依存を排除）
-            planner = container.planner()
-            writing = container.writer()
-            writing_service = container.writing_service()
-            planning_service = container.planning_service()
-            repo = container.repo()
-            critique = container.critique()
-            narrative = container.narrative()
-            marketing = container.marketing()
-            bible_agent = container.bible_generator()
-            plot_agent = container.plot_expander()
-            formatter = container.formatter()
-            vector_store = container.vector_store()
-            llm_client = container.genai_client()
-            # TensionService は engine のメソッドを委譲（後方互換）
-            engine = container.engine()
-            tension = engine
+            services = _build_service_dict(container)
+            state.repo = services["repo"]
 
-            state.repo = repo
-
-            if method_name == "full_auto_workflow":
-                from src.backend.workflows.full_auto_workflow import FullAutoWorkflow
-                workflow = FullAutoWorkflow(
-                    planner=planning_service, writing=writing, repo=repo,
-                    writing_service=writing_service, narrative=narrative,
-                    marketing=marketing, bible_agent=bible_agent,
-                    plot_agent=plot_agent, formatter=formatter,
-                    vector_store=vector_store, llm_client=llm_client,
-                )
-            elif method_name == "episode_writing_workflow":
-                from src.backend.workflows.episode_writing_workflow import EpisodeWritingWorkflow
-                workflow = EpisodeWritingWorkflow(
-                    writing=writing, repo=repo, writing_service=writing_service,
-                    vector_store=vector_store, llm_client=llm_client,
-                )
-            elif method_name == "plan_generation_workflow":
-                from src.backend.workflows.plan_generation_workflow import PlanGenerationWorkflow
-                workflow = PlanGenerationWorkflow(
-                    planner=planning_service, repo=repo,
-                )
-            elif method_name == "plot_expansion_workflow":
-                from src.backend.workflows.plot_expansion_workflow import PlotExpansionWorkflow
-                workflow = PlotExpansionWorkflow(
-                    planner=planner, repo=repo,
-                    narrative=narrative, tension=tension,
-                )
-            elif method_name == "plot_rebuild_workflow":
-                from src.backend.workflows.plot_rebuild_workflow import PlotRebuildWorkflow
-                workflow = PlotRebuildWorkflow(
-                    planner=planner, repo=repo,
-                )
-            elif method_name == "run_critique_optimization_workflow":
-                from src.backend.workflows.critique_optimization_workflow import (
-                    CritiqueOptimizationWorkflow,
-                )
-                workflow = CritiqueOptimizationWorkflow(
-                    critique=critique, repo=repo,
-                )
-            elif method_name == "retry_failed_episodes_workflow":
-                from src.backend.workflows.retry_failed_episodes_workflow import (
-                    RetryFailedEpisodesWorkflow,
-                )
-                workflow = RetryFailedEpisodesWorkflow(
-                    writing=writing, repo=repo,
-                )
-            elif method_name == "chapter_import_workflow":
-                from src.backend.workflows.chapter_import_workflow import ChapterImportWorkflow
-                workflow = ChapterImportWorkflow(
-                    writing=writing, repo=repo,
-                )
-            elif method_name == "marketing_generation_workflow":
-                from src.backend.workflows.marketing_generation_workflow import (
-                    MarketingGenerationWorkflow,
-                )
-                workflow = MarketingGenerationWorkflow(
-                    marketing=marketing, repo=repo,
-                )
-            elif method_name == "refine_erotic_workflow":
-                from src.backend.workflows.refine_erotic_workflow import RefineEroticWorkflow
-                workflow = RefineEroticWorkflow(
-                    repo=repo,
-                )
-            else:
-                raise ValueError(f"Unknown workflow method: {method_name}")
-
+            workflow = _create_workflow(method_name, **services)
             res = await workflow.execute(reporter, **kwargs)
 
             state.result_data = res
@@ -208,6 +157,7 @@ def execute_service_workflow(task_id: str, api_key: str, config_dict: dict, meth
         asyncio.run(_run())
     except Exception as e:
         logger.error(f"Task execution failed: {e}", exc_info=True)
+
 
 
 @huey.task(retries=3, retry_delay=5)

@@ -15,7 +15,6 @@ try:
 except ImportError:
     REDIS_AVAILABLE = False
     redis = None
-
 from config import get_config
 
 logger = logging.getLogger(__name__)
@@ -23,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 class RedisCacheService:
     """Redis をバックエンドとした分散キャッシュサービス.
-    
+
     特徴:
     - 非同期操作 (redis.asyncio)
     - 自動シリアライゼーション (JSON/文字列)
@@ -92,10 +91,10 @@ class RedisCacheService:
 
     async def get(self, key: str) -> Optional[Any]:
         """キャッシュから値を取得.
-        
+
         Args:
             key: キャッシュキー (ネームスペースなし)
-            
+
         Returns:
             値 (存在しない場合は None)
         """
@@ -123,14 +122,14 @@ class RedisCacheService:
         xx: bool = False
     ) -> bool:
         """キャッシュに値を設定.
-        
+
         Args:
             key: キャッシュキー
             value: 保存する値 (JSONシリアライズ可能)
             ttl: 有効期限 (秒). None の場合はデフォルトTTL
             nx: キーが存在しない場合のみ設定
             xx: キーが存在する場合のみ更新
-            
+
         Returns:
             設定成功時 True
         """
@@ -207,7 +206,7 @@ class RedisCacheService:
 
     async def invalidate_pattern(self, pattern: str) -> int:
         """パターンに一致するキーを一括削除 (SCAN + DEL).
-        
+
         注意: 本番環境では大量キー削除時のブロッキングを避けるため、
         LUAスクリプトや UNLINK を使用することを推奨。
         """
@@ -289,11 +288,11 @@ class RedisCacheService:
 
 class PromptCacheService:
     """プロンプトキャッシュ専用の高レベルインターフェース.
-    
+
     SemanticCacheManager (ChromaDB) と RedisCacheService を組み合わせ、
     L1(インメモリ) -> L2(Redis) -> L3(セマンティック/ChromaDB) の
     3層キャッシュ階層を提供する。
-    
+
     拡張機能:
     - タスクタイプ別TTLポリシー
     - キャッシュヒット率メトリクス収集
@@ -348,7 +347,7 @@ class PromptCacheService:
         template_version: str = "1.0",
     ) -> str:
         """プロンプトキャッシュ用の一意キーを生成.
-        
+
         形式: prompt:{template_name}:{model_id}:{template_version}:{prompt_hash[:16]}
         """
         return f"prompt:{template_name}:{model_id}:{template_version}:{prompt_hash[:16]}"
@@ -414,7 +413,7 @@ class PromptCacheService:
         **params: Any
     ) -> Optional[Any]:
         """3層キャッシュから応答を取得.
-        
+
         検索順序: L1 (インメモリ) -> L2 (Redis) -> L3 (セマンティック/ChromaDB)
         """
         prompt_hash = self.compute_prompt_hash(prompt, **params)
@@ -614,11 +613,11 @@ class PromptCacheService:
         task_type: str = "generation",
     ) -> int:
         """キャッシュウォーミング: 事前に複数のエントリをキャッシュに投入.
-        
+
         Args:
             entries: 各要素は {template_name, prompt, response, model_id, genre?, temperature?, template_version?, **params}
             task_type: タスクタイプ（TTL決定用）
-        
+
         Returns:
             成功して格納されたエントリ数
         """
@@ -655,10 +654,10 @@ class PromptCacheService:
         **common_params: Any
     ) -> int:
         """次のエピソード用プロンプトをプリフェッチ（予測的キャッシュ）.
-        
+
         将来的に必要になる可能性の高いプロンプトを事前に生成・キャッシュしておく。
         実際の生成は非同期でバックグラウンド実行想定。
-        
+
         Args:
             book_id: 書籍ID
             current_ep: 現在のエピソード番号
@@ -666,7 +665,7 @@ class PromptCacheService:
             template_name: 使用するテンプレート名
             model_id: 使用するモデルID
             **common_params: 共通パラメータ
-        
+
         Returns:
             プリフェッチしたエピソード数
         """
@@ -675,9 +674,9 @@ class PromptCacheService:
         prefetched = 0
 
         for i in range(1, next_ep_count + 1):
-            next_ep = current_ep + i
             # 予測プロンプトキーを生成（実際のプロンプト生成は別途必要）
             # ここではキー構造のみを準備し、生成は外部で行う
+            _ = current_ep + i
             prefetched += 1
 
         await self._record_prefetch()
@@ -693,10 +692,10 @@ class PromptCacheService:
         top_k: int = 5,
     ) -> List[Dict[str, Any]]:
         """類似プロンプトに基づいてキャッシュウォーミング候補を取得.
-        
+
         セマンティックキャッシュから類似プロンプトを検索し、
         それらのキャッシュエントリをウォーミング候補として返す。
-        
+
         Returns:
             ウォーミング候補のリスト（各要素: prompt, response, similarity_score）
         """
@@ -729,42 +728,26 @@ class PromptCacheService:
         return []
 
 
-# シングルトンインスタンス (遅延初期化)
-_redis_cache_instance: Optional[RedisCacheService] = None
-_prompt_cache_instance: Optional[PromptCacheService] = None
-
-
 async def get_redis_cache() -> RedisCacheService:
-    """Redisキャッシュサービスのシングルトンインスタンスを取得."""
-    global _redis_cache_instance
-    if _redis_cache_instance is None:
-        _redis_cache_instance = RedisCacheService()
-        # 接続確認
-        if not await _redis_cache_instance.health_check():
-            logger.warning("Redis health check failed. Cache will operate in degraded mode.")
-    return _redis_cache_instance
+    container = __get_app_container()
+    return container.redis_cache()
 
 
 async def get_prompt_cache(
     semantic_cache: Optional[Any] = None,
     l1_cache: Optional[Any] = None,
 ) -> PromptCacheService:
-    """プロンプトキャッシュサービスのシングルトンインスタンスを取得."""
-    global _prompt_cache_instance
-    if _prompt_cache_instance is None:
-        redis_cache = await get_redis_cache()
-        _prompt_cache_instance = PromptCacheService(
-            redis_cache=redis_cache,
-            semantic_cache=semantic_cache,
-            l1_cache=l1_cache,
-        )
-    return _prompt_cache_instance
+    container = __get_app_container()
+    return container.prompt_cache(semantic_cache=semantic_cache, l1_cache=l1_cache)
+
+
+def __get_app_container():
+    from src.core.container import AppContainer
+    return AppContainer()
 
 
 async def close_cache_services():
     """全キャッシュサービスをクローズ."""
-    global _redis_cache_instance, _prompt_cache_instance
-    if _redis_cache_instance:
-        await _redis_cache_instance.close()
-        _redis_cache_instance = None
-    _prompt_cache_instance = None
+    container = AppContainer()
+    if container.redis_cache:
+        await container.redis_cache().close()
