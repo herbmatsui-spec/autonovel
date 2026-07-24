@@ -29,11 +29,14 @@ venv/
 env/
 chroma_db/
 test_chroma_db/
-kaku_hegemony_v2.db*
-*.db-shm
-*.db-wal
 .mypy_cache/
-tmp_replace_normalize.py
 storage/
-huey.db
+
+# === Repository Hygiene: temporary/debug files exclusion ===
+*.log
+*.zip
+/*.json
+autonovel2
+=*
+$null
 start_app.bat

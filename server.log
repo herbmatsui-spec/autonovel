@@ -1,6 +1,0 @@
-Starting FastAPI Backend...
-==================================================
-INFO:     Will watch for changes in these directories: ['D:\\claude2\\backend']
-WARNING:backend.redis_util:Redis is not available: Timeout connecting to server. Falling back to SQLite.
-ERROR:    [WinError 10013] アクセス許可で禁じられた方法でソケットにアクセスしようとしました。
-[Huey] Redis not available. Falling back to SQLite backend at: D:\claude2\backend\kaku_hegemony_v2_huey.db

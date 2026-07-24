@@ -21,10 +21,6 @@ import { AnalyticsTab } from '@/components/tabs/AnalyticsTab';
 import { PlanningTab } from '@/components/tabs/PlanningTab';
 import { StyleLabTab } from '@/components/tabs/StyleLabTab';
 import { AuditTab } from '@/components/tabs/AuditTab';
-import { LandingTab } from '@/components/tabs/LandingTab';
-import { StrategyTab } from '@/components/tabs/StrategyTab';
-import { MonitorTab } from '@/components/tabs/MonitorTab';
-import { ImportTab } from '@/components/tabs/ImportTab';
 import { HealthGate } from '@/components/HealthGate';
 import { EasyModeDialog } from '@/components/dialogs/EasyModeDialog';
 import { TaskMonitor } from '@/components/panels/TaskMonitor';
@@ -271,7 +267,7 @@ export default function App() {
 
 {/* -------------------- TAB 7: AUDIT -------------------- */}
         {activeTab === 'audit' && selectedBook && (
-          <AuditTab selectedBook={selectedBook} />
+          <AuditTab selectedBook={selectedBook} apiKey={apiKey} />
         )}
       </main>
 

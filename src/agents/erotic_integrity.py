@@ -303,7 +303,7 @@ class SceneStateSnapshot(BaseModel):
 class SceneContinuityTracker:
     """一般シーンの一貫性を追跡する。SQLiteでの永続化に対応。"""
 
-    def __init__(self, db_path: str = "kaku_hegemony_v2.db"):
+    def __init__(self, db_path: str = "storage/db/kaku_hegemony_v2.db"):
         self.db_path = db_path
         self._init_db()
 
@@ -1409,7 +1409,7 @@ class ContinuityReport(BaseModel):
 class ContinuityTracker:
     """連続話間のキャラクター状態一貫性を追跡する。SQLiteでの永続化に対応。"""
 
-    def __init__(self, db_path: str = "kaku_hegemony_v2.db"):
+    def __init__(self, db_path: str = "storage/db/kaku_hegemony_v2.db"):
         self.db_path = db_path
         self._snapshots: Dict[int, Dict[str, CharacterStateSnapshot]] = {}
         self._init_db()
@@ -2335,7 +2335,7 @@ class EroticIntegrityChecker:
         "後輩",
     ]
 
-    def __init__(self, db_path: str = "kaku_hegemony_v2.db"):
+    def __init__(self, db_path: str = "storage/db/kaku_hegemony_v2.db"):
         self.clothing_events: List[EroticIntegrityChecker.ClothingEvent] = []
         self.quality_scorer = EroticQualityScorer()
         self.continuity_tracker = ContinuityTracker(db_path=db_path)

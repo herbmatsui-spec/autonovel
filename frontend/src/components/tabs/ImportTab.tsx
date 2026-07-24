@@ -6,7 +6,7 @@ interface ImportTabProps {
   handleImportChapter: (e: React.FormEvent) => Promise<void>;
 }
 
-export function ImportTab({ selectedBook, handleImportChapter }: ImportTabProps) {
+export function ImportTab({ selectedBook: _selectedBook, handleImportChapter }: ImportTabProps) {
   const [epNum, setEpNum] = useState<number>(1);
   const [importText, setImportText] = useState('');
   const [doRefine, setDoRefine] = useState(true);

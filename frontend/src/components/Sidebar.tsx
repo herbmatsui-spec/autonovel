@@ -2,13 +2,10 @@ import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useUserSettingsStore } from "../store/useUserSettingsStore";
-import { useProjectStore } from "../store/useProjectStore";
+import { useProjectStore, TabId } from "../store/useProjectStore";
 import { useBookStore } from "../store/useBookStore";
 import { useWritingStore } from "../store/useWritingStore";
 import { toast } from 'sonner';
-import { getBooks, checkBackendHealth } from "../api";
-
-type TabId = 'landing' | 'books' | 'plots' | 'write' | 'analytics' | 'planning' | 'style-lab' | 'audit' | 'monitor' | 'strategy' | 'import';
 
 function requireBook(selectedBook: unknown, action: () => void) {
   if (!selectedBook) {
@@ -23,7 +20,6 @@ export function Sidebar() {
   const { activeTab, setActiveTab } = useProjectStore();
   const { selectedBook } = useBookStore();
   const { wordCount, setWordCount } = useWritingStore();
-  const [backendStatus, setBackendStatus] = useState<'checking' | 'online' | 'offline'>('checking');
   const [tokenUsage] = useState({ calls: 0, cost: 0 });
 
   const navAction = (tab: TabId, needsBook = true) => () => {
@@ -65,95 +61,53 @@ export function Sidebar() {
 
         {/* ⚙️ API Key & Model */}
         <section>
-          <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">⚙️ システム設定</h3>
-          <div className="space-y-2 glass-panel p-3 text-xs">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">⚙️ システム設定</h3>
+          <div className="bg-slate-900/90 border border-slate-700/80 rounded-lg p-3 text-xs space-y-3 shadow-sm">
             <div>
-              <label htmlFor="api-key" className="block text-muted-foreground mb-0.5 font-semibold text-xs">Gemini API Key</label>
+              <label htmlFor="api-key" className="block text-slate-100 font-bold text-xs mb-1">Gemini API Key</label>
               <Input
                 id="api-key"
                 type="password"
                 placeholder="AI_KEY_..."
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
+                className="w-full text-xs px-2.5 py-1.5 rounded bg-slate-950 text-white font-medium border border-slate-600 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 aria-label="Gemini APIキーを入力"
               />
             </div>
             <div>
-              <label htmlFor="model-select" className="block text-muted-foreground mb-0.5 font-semibold text-xs">モデル</label>
+              <label htmlFor="model-select" className="block text-slate-100 font-bold text-xs mb-1">モデル</label>
               <select
                 id="model-select"
                 value={modelType}
                 onChange={(e) => setModelType(e.target.value)}
-                className="w-full text-xs p-1.5 rounded bg-background border border-border"
+                className="w-full text-xs px-2.5 py-1.5 rounded bg-slate-950 text-white font-medium border border-slate-600 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 aria-label="使用するAIモデルを選択"
               >
-                <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
-                <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
-                <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                <option value="gemini-3.1-flash-lite" className="bg-slate-950 text-white">gemini-3.1-flash-lite</option>
+                <option value="gemini-3.5-flash" className="bg-slate-950 text-white">gemini-3.5-flash</option>
+                <option value="gemma4-31b-it" className="bg-slate-950 text-white">gemma4-31b-it</option>
+                <option value="gemini-2.5-pro" className="bg-slate-950 text-white">Gemini 2.5 Pro</option>
+                <option value="gemini-2.5-flash" className="bg-slate-950 text-white">Gemini 2.5 Flash</option>
+                <option value="gemini-1.5-pro" className="bg-slate-950 text-white">Gemini 1.5 Pro</option>
               </select>
             </div>
           </div>
         </section>
 
-        <hr className="border-border" />
-
-        {/* 🎮 操作モード */}
-        <section>
-          <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">🎮 操作モード</h3>
-          <div className="glass-sm p-2 text-xs">
-            <p className="text-muted-foreground">上級者モード（全機能）</p>
-          </div>
-        </section>
-
-        <hr className="border-border" />
-
-        {/* 🛠️ 執筆パラメータ */}
-        <section>
-          <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">🛠️ 執筆パラメータ</h3>
-          <div className="space-y-2 glass-sm p-2 text-xs">
-            <div>
-              <label htmlFor="word-count" className="block text-muted-foreground mb-0.5 font-semibold">目標文字数/話</label>
-              <input
-                id="word-count"
-                type="number"
-                min={1000}
-                max={5000}
-                step={100}
-                value={wordCount}
-                onChange={(e) => setWordCount(Number(e.target.value))}
-                className="w-full text-xs p-1.5 rounded bg-background border border-border"
-              />
-            </div>
-            <div>
-              <label htmlFor="temperature" className="block text-muted-foreground mb-0.5 font-semibold">Temperature</label>
-              <input
-                id="temperature"
-                type="range"
-                min={0}
-                max={1}
-                step={0.05}
-                value={temperature}
-                onChange={(e) => setTemperature(Number(e.target.value))}
-                className="w-full"
-              />
-              <span className="text-xs text-muted-foreground">{temperature.toFixed(2)}</span>
-            </div>
-          </div>
-        </section>
-
-        <hr className="border-border" />
+        <hr className="border-slate-800" />
 
         {/* 💰 リソース状況 */}
         <section>
-          <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">💰 リソース状況</h3>
-          <div className="glass-sm p-2 text-xs space-y-1">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">API呼び出し</span>
-              <span className="font-mono font-semibold">{tokenUsage.calls}回</span>
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">💰 リソース状況</h3>
+          <div className="bg-slate-900/90 border border-slate-700/80 rounded-lg p-2.5 text-xs space-y-1.5">
+            <div className="flex justify-between items-center">
+              <span className="text-slate-200 font-medium">API呼び出し</span>
+              <span className="font-mono font-bold text-white bg-slate-800 px-1.5 py-0.5 rounded text-2xs">{tokenUsage.calls}回</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">推定コスト</span>
-              <span className="font-mono font-semibold">${tokenUsage.cost.toFixed(4)}</span>
+            <div className="flex justify-between items-center">
+              <span className="text-slate-200 font-medium">推定コスト</span>
+              <span className="font-mono font-bold text-emerald-400 bg-slate-800 px-1.5 py-0.5 rounded text-2xs">${tokenUsage.cost.toFixed(4)}</span>
             </div>
           </div>
         </section>

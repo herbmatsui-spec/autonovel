@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Book } from '../../types';
-import { getPlots, getChapters, getBible } from '../../api';
+import { getPlots, getBible } from '../../api';
 
 interface StrategyTabProps {
   selectedBook: Book;
@@ -22,17 +22,14 @@ function SubTabButton({ active, onClick, children }: { active: boolean; onClick:
 export function StrategyTab({ selectedBook }: StrategyTabProps) {
   const [activeSubTab, setActiveSubTab] = useState(0);
   const [plots, setPlots] = useState<any[]>([]);
-  const [chapters, setChapters] = useState<any[]>([]);
   const [bible, setBible] = useState<any>(null);
 
   useEffect(() => {
     Promise.all([
       getPlots(selectedBook.id),
-      getChapters(selectedBook.id),
       getBible(selectedBook.id),
-    ]).then(([p, c, b]) => {
+    ]).then(([p, b]) => {
       setPlots(p);
-      setChapters(c);
       setBible(b);
     }).catch(console.error);
   }, [selectedBook.id]);

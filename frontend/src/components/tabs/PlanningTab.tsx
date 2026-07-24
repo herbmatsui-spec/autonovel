@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { planGeneration } from '@/api';
-import type { PlanGenerationParams } from '@/types';
+import { useState, useEffect } from 'react';
+import { planGeneration, getPlanningOptions } from '@/api';
+import type { PlanGenerationParams, PlanningOptions } from '@/types/api';
+import { useWritingStore } from '@/store/useWritingStore';
 import { toast } from 'sonner';
 
 interface PlanningTabProps {
@@ -9,7 +10,11 @@ interface PlanningTabProps {
 }
 
 export function PlanningTab({ selectedBook, handlePlanGeneration }: PlanningTabProps) {
+  const [options, setOptions] = useState<PlanningOptions | null>(null);
+  const { wordCount, setWordCount } = useWritingStore();
+
   const [genre, setGenre] = useState('ファンタジー');
+  const [archetype, setArchetype] = useState('王道ざまぁ（爽快感最大）');
   const [keywords, setKeywords] = useState('追放, チート, ざまぁ');
   const [targetEps, setTargetEps] = useState(50);
   const [initialLimit, setInitialLimit] = useState(25);
@@ -18,6 +23,16 @@ export function PlanningTab({ selectedBook, handlePlanGeneration }: PlanningTabP
   const [systemAssist, setSystemAssist] = useState(70);
   const [costSeverity, setCostSeverity] = useState(2);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    getPlanningOptions().then(data => {
+      setOptions(data);
+      if (data.story_archetypes.length > 0) setArchetype(data.story_archetypes[0]);
+    }).catch(err => {
+      console.error('Failed to load planning options:', err);
+      toast.error('オプションの読み込みに失敗しました');
+    });
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,6 +47,7 @@ export function PlanningTab({ selectedBook, handlePlanGeneration }: PlanningTabP
         config: {},
         params: {
           genre,
+          archetype,
           keywords,
           style_key: styleKey,
           target_eps: targetEps,
@@ -39,6 +55,7 @@ export function PlanningTab({ selectedBook, handlePlanGeneration }: PlanningTabP
           cheat_scale: cheatScale,
           system_assist: systemAssist,
           cost_severity: costSeverity,
+          word_count: wordCount,
         },
       };
       await planGeneration(params);
@@ -70,16 +87,39 @@ export function PlanningTab({ selectedBook, handlePlanGeneration }: PlanningTabP
               <option value="ミステリー">ミステリー</option>
               <option value="ホラー">ホラー</option>
               <option value="SF">SF</option>
+              <option value="官能/ロマンス">官能/ロマンス</option>
+              <option value="現代">現代</option>
+              <option value="歴史">歴史</option>
+              <option value="その他">その他</option>
             </select>
           </div>
           <div>
-            <label className="block text-xs mb-1 text-secondary">文体スタイル</label>
-            <select value={styleKey} onChange={(e) => setStyleKey(e.target.value)} className="w-full">
-              <option value="style_web_standard">Web標準</option>
-              <option value="style_literary">文学風</option>
-              <option value="style_light">ライトノベル風</option>
+            <label className="block text-xs mb-1 text-secondary">アーキタイプ (物語の型)</label>
+            <select value={archetype} onChange={(e) => setArchetype(e.target.value)} className="w-full">
+              {options?.story_archetypes.map(arch => (
+                <option key={arch} value={arch}>{arch}</option>
+              ))}
+              {!options && <option value={archetype}>{archetype}</option>}
             </select>
           </div>
+        </div>
+
+        <div>
+          <label className="block text-xs mb-1 text-secondary">文体スタイル</label>
+          <select value={styleKey} onChange={(e) => setStyleKey(e.target.value)} className="w-full">
+            {options ? (
+              Object.entries(options.style_definitions).map(([key, val]) => (
+                <option key={key} value={key}>{val.name}</option>
+              ))
+            ) : (
+              <option value="style_web_standard">Web標準</option>
+            )}
+          </select>
+          {options && options.style_definitions[styleKey] && (
+            <p className="text-[0.7rem] text-muted-foreground mt-1">
+              {options.style_definitions[styleKey].description}
+            </p>
+          )}
         </div>
 
         <div>
@@ -95,6 +135,10 @@ export function PlanningTab({ selectedBook, handlePlanGeneration }: PlanningTabP
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
+            <label className="block text-xs mb-1 text-secondary">目標文字数/話</label>
+            <input type="number" value={wordCount} onChange={(e) => setWordCount(Number(e.target.value))} min={1000} max={5000} step={100} className="w-full" />
+          </div>
+          <div>
             <label className="block text-xs mb-1 text-secondary">目標話数</label>
             <input type="number" value={targetEps} onChange={(e) => setTargetEps(Number(e.target.value))} min={10} max={200} className="w-full" />
           </div>
@@ -102,13 +146,13 @@ export function PlanningTab({ selectedBook, handlePlanGeneration }: PlanningTabP
             <label className="block text-xs mb-1 text-secondary">初期プロット数</label>
             <input type="number" value={initialLimit} onChange={(e) => setInitialLimit(Number(e.target.value))} min={1} max={50} className="w-full" />
           </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-xs mb-1 text-secondary">チート強度</label>
             <input type="number" value={cheatScale} onChange={(e) => setCheatScale(Number(e.target.value))} min={0} max={5} className="w-full" />
           </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-xs mb-1 text-secondary">システム支援率 (%)</label>
             <input type="number" value={systemAssist} onChange={(e) => setSystemAssist(Number(e.target.value))} min={0} max={100} className="w-full" />
@@ -126,3 +170,4 @@ export function PlanningTab({ selectedBook, handlePlanGeneration }: PlanningTabP
     </div>
   );
 }
+

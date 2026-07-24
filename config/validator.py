@@ -27,7 +27,10 @@ class ConfigValidator:
             if not Path(path).exists():
                 raise FileNotFoundError(f"設定ファイルが見つかりません: {path}")
             with open(path, "rb") as f:
-                import tomllib
+                try:
+                    import tomllib
+                except ModuleNotFoundError:
+                    import tomli as tomllib
                 data = tomllib.load(f)
             # [general] セクションを正しく抽出
             flat_data = data.get("general", {})

@@ -1,3 +1,7 @@
+import os
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+
 import asyncio
 from collections import defaultdict
 from contextlib import asynccontextmanager

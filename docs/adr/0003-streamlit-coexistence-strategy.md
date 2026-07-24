@@ -1,8 +1,22 @@
 # ADR-0003: Streamlit共存・廃止方針
 
 **Date:** 2026-07-11
-**Status:** Accepted
+**Status:** Superseded (2026-07-22)
 **Decider(s):** 開発チーム
+
+### Superseded Update (2026-07-22)
+
+本 ADR の前提（「React (frontend/src/): 実装は空」）は現時点で成立しない。
+React frontend は完了（`plans/STREAMLIT_TO_REACT_MIGRATION_72_STEPS.md` Step 72 参照）。
+Streamlit は `pages_config.py` により React 移行通知ページに抑制済み。
+現在の責務配置:
+- 有効UI: `frontend/src/` (React + Zustand, ~3,600 LOC)
+- Streamlit層 (`streamlit_app/`): デッドコード（Controller/EventBus/Proxy/Stores/Actions ~5,000 LOC）。`archive/streamlit_retired/` へのアーカイブ実施済み。
+- 継続参照: `streamlit_app/api_client.py` (バックエンド接続検証), `streamlit_app/health_check.py`
+
+を含む誰でも確認可能な形で記録するため、本ファイルを `docs/adr/` に残す。
+
+**Replacement:** `plans/STREAMLIT_TO_REACT_MIGRATION_72_STEPS.md` (72-step migration completion report, 2026-07-22)
 
 ### 1. Context and Problem Statement
 

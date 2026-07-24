@@ -8,7 +8,7 @@ from prompts.manager import prompt_manager
 from src.backend.database.uow import UnitOfWork
 from src.core.observability import with_trace_context
 
-huey = SqliteHuey('kaku_hegemony_v2_huey.db')
+huey = SqliteHuey('storage/db/kaku_hegemony_v2_huey.db')
 logger = logging.getLogger('huey')
 
 _CONFIG_OVERRIDE_KEYS = {

@@ -16,9 +16,9 @@ import type {
   AuditPlanParams,
   ChapterImportParams,
   MarketingGenerateParams,
-  PendingPatch,
   PromptVersion,
   NarrativeMetricTrend,
+  PlanningOptions,
 } from './types/api';
 
 export type {
@@ -42,9 +42,10 @@ export type {
   PendingPatch,
   PromptVersion,
   NarrativeMetricTrend,
+  PlanningOptions,
 };
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8200/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 async function apiRequest<T>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(url, {
@@ -99,6 +100,10 @@ export async function getTaskStatus(taskId: string): Promise<TaskStatus> {
 
 export async function stopTask(taskId: string): Promise<void> {
   return apiRequest(`${API_BASE_URL}/tasks/${taskId}/stop`, { method: 'POST' });
+}
+
+export async function getPlanningOptions(): Promise<PlanningOptions> {
+  return apiRequest(`${API_BASE_URL}/config/planning_options`);
 }
 
 export function connectTaskStream(
@@ -189,7 +194,7 @@ export async function auditPlan(params: AuditPlanParams): Promise<any> {
 }
 
 export async function importChapter(params: ChapterImportParams): Promise<any> {
-  return apiRequest(`${API_BASE_URL}/chapters/import`, {
+  return apiRequest(`${API_BASE_URL}/episodes/chapters/import`, {
     method: 'POST',
     body: JSON.stringify(params),
   });
@@ -197,6 +202,20 @@ export async function importChapter(params: ChapterImportParams): Promise<any> {
 
 export async function generateMarketing(params: MarketingGenerateParams): Promise<any> {
   return apiRequest(`${API_BASE_URL}/marketing/generate`, {
+    method: 'POST',
+    body: JSON.stringify(params),
+  });
+}
+
+export type CommercialPipelineParams = {
+  book_id: number;
+  config?: Record<string, any>;
+  samples?: any[];
+  platforms?: string[];
+};
+
+export async function runCommercialPipeline(params: CommercialPipelineParams): Promise<any> {
+  return apiRequest(`${API_BASE_URL.replace('/api', '')}/commercial/run`, {
     method: 'POST',
     body: JSON.stringify(params),
   });
@@ -256,4 +275,43 @@ export async function checkBackendHealth(): Promise<{
 }> {
   const baseUrl = API_BASE_URL.replace('/api', '');
   return apiRequest(`${baseUrl}/health`);
+}
+
+export async function analyzeStyleDna(sample: string): Promise<any> {
+  return apiRequest(`${API_BASE_URL}/marketing/analyze_style_dna`, {
+    method: 'POST',
+    body: JSON.stringify({ sample }),
+  });
+}
+
+export async function getIssues(bookId: number): Promise<any[]> {
+  const data = await apiRequest<{ issues?: any[] }>(`${API_BASE_URL}/issues/books/${bookId}`);
+  return data?.issues ?? [];
+}
+
+export async function resolveIssue(issueId: number, action: string, apiKey: string): Promise<any> {
+  return apiRequest(`${API_BASE_URL}/issues/${issueId}/resolve`, {
+    method: 'POST',
+    body: JSON.stringify({ action, api_key: apiKey }),
+  });
+}
+
+export async function exportPackage(bookId: number, apiKey: string): Promise<any> {
+  return apiRequest(`${API_BASE_URL}/marketing/export_package/${bookId}`, {
+    method: 'POST',
+    body: JSON.stringify({ api_key: apiKey }),
+  });
+}
+
+export type RefineEroticParams = {
+  book_id: number;
+  intensity: number;
+  platform_preset: string;
+};
+
+export async function refineErotic(params: RefineEroticParams): Promise<any> {
+  return apiRequest(`${API_BASE_URL}/refine_erotic`, {
+    method: 'POST',
+    body: JSON.stringify(params),
+  });
 }

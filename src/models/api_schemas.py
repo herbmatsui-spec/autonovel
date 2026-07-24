@@ -39,7 +39,7 @@ class BookSchema(BaseModel):
     concept: Optional[str] = ""
     synopsis: Optional[str] = ""
     target_eps: int = 0
-    cumulative_stress: float = 0.0
+    cumulative_stress: Optional[float] = 0.0
     created_at: Optional[datetime] = None
 
 

@@ -33,7 +33,7 @@ MODEL_ULTRA_STABLE = "gemma-4-31b-it"
 # ファイルパス
 # ==========================================
 BASE_DIR = Path(__file__).parent.parent.absolute()
-DB_FILE = "kaku_hegemony_v2.db"
+DB_FILE = "storage/db/kaku_hegemony_v2.db"
 DATABASE_URL = os.environ.get("DATABASE_URL", f"sqlite+aiosqlite:///{BASE_DIR}/{DB_FILE}")
 
 

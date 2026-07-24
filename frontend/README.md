@@ -1,6 +1,6 @@
 # React + TypeScript + Vite
 
-**Status: not implemented yet** — このプロジェクトは현재実装が保留中です。バックエンド (Streamlit) との役割分担と廃止方針については [docs/adr/0003-streamlit-coexistence-strategy.md](../../docs/adr/0003-streamlit-coexistence-strategy.md) を参照してください。
+現在のメイン UI です。`streamlit_app/` は廃止予定で、このフロントエンドへ移行済みです。詳細は [docs/adr/0003-streamlit-coexistence-strategy.md](../../docs/adr/0003-streamlit-coexistence-strategy.md) を参照してください。
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 

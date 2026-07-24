@@ -9,6 +9,7 @@ from src.backend.auth import require_api_key
 router = APIRouter(prefix="/api/books", tags=["books"])
 
 
+@router.get("", response_model=list[BookSchema])
 @router.get("/", response_model=list[BookSchema])
 async def list_books():
     async with UnitOfWork(Container.db()) as uow:
@@ -22,7 +23,7 @@ async def list_books():
             "concept": b.concept,
             "synopsis": b.synopsis,
             "target_eps": b.target_eps,
-            "cumulative_stress": b.cumulative_tension,
+            "cumulative_stress": b.cumulative_tension or 0.0,
             "created_at": b.created_at,
         }
         for b in books
@@ -45,7 +46,7 @@ async def get_book(book_id: int):
         "concept": b.concept,
         "synopsis": b.synopsis,
         "target_eps": b.target_eps,
-        "cumulative_stress": b.cumulative_tension,
+        "cumulative_stress": b.cumulative_tension or 0.0,
         "created_at": b.created_at,
     }
 

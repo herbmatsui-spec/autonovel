@@ -6,8 +6,6 @@ interface MonitorTabProps {
   selectedBook: Book;
 }
 
-const tw = (className: string) => className;
-
 function MetricCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
   return (
     <div className="glass-sm p-4 rounded-lg text-center">

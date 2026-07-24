@@ -2,12 +2,14 @@ import { useState } from 'react';
 import type { Book } from '@/types';
 import { analyzeStyleDna } from '@/api';
 import { toast } from 'sonner';
+import { useUserSettingsStore } from '@/store/useUserSettingsStore';
 
 interface StyleLabTabProps {
   selectedBook?: Book | null;
 }
 
-export function StyleLabTab({ selectedBook }: StyleLabTabProps) {
+export function StyleLabTab({ selectedBook: _selectedBook }: StyleLabTabProps) {
+  const apiKey = useUserSettingsStore((s) => s.apiKey);
   const [sample, setSample] = useState('');
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -15,6 +17,10 @@ export function StyleLabTab({ selectedBook }: StyleLabTabProps) {
   const handleAnalyze = async () => {
     if (!sample.trim()) {
       toast.warning('分析用のテキストを入力してください。');
+      return;
+    }
+    if (!apiKey || apiKey.length < 10) {
+      toast.warning('有効なAPIキーを入力してください。');
       return;
     }
     try {

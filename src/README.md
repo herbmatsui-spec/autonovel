@@ -1,3 +1,3 @@
 # src
 
-Business‑logic layer for the streamlit app. The original UI‑centric files in `streamlit_app/` now delegate heavy lifting to modules under this package.
+Business-logic layer for the React frontend. The main UI is implemented in `frontend/` as a React + TypeScript app, while this package provides backend APIs, services, and domain models.

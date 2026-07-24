@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useEasyModeStore } from '@/store/useEasyModeStore';
-import type { EasyModeParams } from '@/types';
+import { getPlanningOptions } from '@/api';
+import type { EasyModeParams, PlanningOptions } from '@/types';
 
 interface Props {
   isOpen: boolean;
@@ -24,17 +25,38 @@ export function EasyModeDialog({ isOpen, onClose, onSubmit }: Props) {
     setEasyConcept,
   } = useEasyModeStore();
 
+  const [easyGenres, setEasyGenres] = useState<PlanningOptions['easy_genres'] | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedGenreKey, setSelectedGenreKey] = useState('');
+
+  useEffect(() => {
+    if (!isOpen) return;
+    getPlanningOptions()
+      .then(data => {
+        setEasyGenres(data.easy_genres);
+        const firstKey = Object.keys(data.easy_genres)[0] || '';
+        setSelectedGenreKey(firstKey);
+        if (firstKey && data.easy_genres[firstKey]) {
+          setEasyGenre(data.easy_genres[firstKey].genre);
+          setEasyArchetype(data.easy_genres[firstKey].archetype);
+        }
+        setIsLoading(false);
+      })
+      .catch(err => {
+        console.error('Failed to load easy genres:', err);
+        setIsLoading(false);
+      });
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
-  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === 'Escape') {
-      onClose();
+  const handleGenreChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const key = e.target.value;
+    setSelectedGenreKey(key);
+    const preset = easyGenres?.[key];
+    if (preset) {
+      setEasyGenre(preset.genre);
+      setEasyArchetype(preset.archetype);
     }
   };
 
@@ -53,6 +75,11 @@ export function EasyModeDialog({ isOpen, onClose, onSubmit }: Props) {
       tone_vibe: 0.65,
     });
   };
+
+  const genreOptions = easyGenres ? Object.keys(easyGenres) : [];
+  const archetypeOptions = easyGenres
+    ? Array.from(new Set(Object.values(easyGenres).map(v => v.archetype)))
+    : ['avenger', 'reincarnation', 'villainess', 'struggler'];
 
   return (
     <div
@@ -73,7 +100,21 @@ export function EasyModeDialog({ isOpen, onClose, onSubmit }: Props) {
         
         <div>
           <label htmlFor="easy-genre" className="block text-sm text-text-secondary mb-1">ジャンル</label>
-          <input id="easy-genre" type="text" value={easyGenre} onChange={(e) => setEasyGenre(e.target.value)} required />
+          <select
+            id="easy-genre"
+            value={selectedGenreKey}
+            onChange={handleGenreChange}
+            disabled={isLoading || !easyGenres}
+            required
+          >
+            {isLoading || !easyGenres ? (
+              <option value="">読み込み中...</option>
+            ) : (
+              genreOptions.map(key => (
+                <option key={key} value={key}>{key}</option>
+              ))
+            )}
+          </select>
         </div>
         
         <div>
@@ -85,10 +126,9 @@ export function EasyModeDialog({ isOpen, onClose, onSubmit }: Props) {
           <div>
             <label htmlFor="easy-archetype" className="block text-sm text-text-secondary mb-1">主人公タイプ (アーキタイプ)</label>
             <select id="easy-archetype" value={easyArchetype} onChange={(e) => setEasyArchetype(e.target.value)}>
-              <option value="avenger">アヴェンジャー型（復讐・暗黒）</option>
-              <option value="reincarnation">転生賢者型（俺TUEEE・無双）</option>
-              <option value="villainess">悪役令嬢型（破滅回避・心理戦）</option>
-              <option value="struggler">ストラグラー型（泥臭い成長）</option>
+              {archetypeOptions.map(arch => (
+                <option key={arch} value={arch}>{arch}</option>
+              ))}
             </select>
           </div>
           <div>

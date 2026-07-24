@@ -195,3 +195,10 @@ export interface HealthStatus {
   huey_backend: string;
   queue_depth: number;
 }
+
+export interface PlanningOptions {
+  easy_genres: Record<string, any>;
+  story_archetypes: string[];
+  style_definitions: Record<string, { name: string; description: string }>;
+  planning_presets: Record<string, any>;
+}

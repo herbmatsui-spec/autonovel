@@ -1,0 +1,240 @@
+/* ==========================================================================
+   Design System Tokens (Dark Mode Preferred)
+   ========================================================================== */
+:root {
+  --primary-color: #e94560;
+  --primary-hover: #ff6b81;
+  --bg-main: #0f0f23;
+  --bg-card: rgba(255, 255, 255, 0.05);
+  --bg-card-hover: rgba(255, 255, 255, 0.08);
+  --border: rgba(255, 255, 255, 0.1);
+  --border-focus: rgba(233, 69, 96, 0.5);
+  --text-main: #e0e0e0;
+  --text-muted: #888888;
+  --text-secondary: #aaaaaa;
+}
+
+/* ==========================================================================
+   Global UI Components
+   ========================================================================== */
+.stTextArea textarea { transition: none !important; }
+div[data-testid="stProgress"] { min-height: 25px; }
+div[data-testid="stMetric"] { min-height: 70px; }
+.stAlert { transition: opacity 0.2s ease-in-out; }
+
+/* Centered title styles */
+.centered-title {
+  text-align: center;
+  padding: 2rem 0;
+}
+.centered-title h1 {
+  margin-bottom: 0.5rem;
+}
+.centered-title p {
+  color: var(--text-muted);
+}
+
+/* Hero Section Styles */
+.hero-section {
+  background: linear-gradient(135deg, rgba(20, 20, 35, 0.9), rgba(40, 40, 60, 0.8)),
+              linear-gradient(to right, #1a1a2e, #16213e);
+  background-size: cover;
+  padding: 60px 20px;
+  border-radius: 20px;
+  text-align: center;
+  color: white;
+  margin-bottom: 40px;
+  border: 1px solid var(--primary-color);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.hero-title {
+  font-size: 3rem !important;
+  font-weight: 800 !important;
+  background: -webkit-linear-gradient(#fff, #e94560);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: 3px;
+}
+
+/* Feature Cards & Badges */
+.feature-card {
+  padding: 1.5rem;
+  border-radius: 15px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  height: 100%;
+}
+.feature-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 5px 15px rgba(233, 69, 96, 0.2);
+  border-color: var(--primary-color);
+}
+
+.feature-icon {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+.trust-badge-container {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  margin: 2rem 0;
+  flex-wrap: wrap;
+}
+
+.trust-badge {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 0.8rem 1.5rem;
+  border-radius: 50px;
+  font-size: 0.9rem;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.trust-badge strong {
+  color: var(--primary-color);
+}
+
+/* Workflow Container */
+.workflow-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 0;
+  gap: 1rem;
+  text-align: center;
+}
+
+.workflow-step {
+  flex: 1;
+  padding: 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.workflow-step strong {
+  font-size: 1.1rem;
+}
+.workflow-step small {
+  color: var(--text-muted);
+}
+
+.workflow-arrow {
+  font-size: 1.5rem;
+  color: var(--primary-color);
+  font-weight: bold;
+}
+
+/* Roadmap Styles */
+.roadmap-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding: 1rem 0;
+}
+
+.roadmap-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  flex: 1;
+}
+
+.roadmap-step .step-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #222;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.2rem;
+  border: 2px solid #555;
+  z-index: 2;
+  transition: all 0.3s ease;
+}
+
+.roadmap-step .step-label {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-weight: bold;
+}
+
+.roadmap-step.active .step-icon {
+  background: linear-gradient(135deg, #e94560 0%, #ff6b81 100%);
+  color: white;
+  border-color: #e94560;
+  box-shadow: 0 0 15px rgba(233, 69, 96, 0.6);
+  transform: scale(1.1);
+}
+
+.roadmap-step.active .step-label {
+  color: #e94560;
+}
+
+.roadmap-step.completed .step-icon {
+  background: linear-gradient(135deg, #4caf50 0%, #8bc34a 100%);
+  color: white;
+  border-color: #4caf50;
+}
+
+.roadmap-step .roadmap-line {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(to right, #444, #222);
+  z-index: 1;
+}
+
+.roadmap-step:last-child .roadmap-line {
+  display: none;
+}
+
+/* Utilities */
+.text-muted {
+  color: var(--text-muted);
+}
+
+.phase-badge {
+  padding: 10px 5px;
+  border-radius: 6px;
+  text-align: center;
+  font-weight: bold;
+  font-size: 0.85em;
+}
+
+/* Footer */
+.app-footer {
+  margin-top: 4rem;
+  padding: 2rem 0;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.footer-links {
+  margin-bottom: 0.8rem;
+}
+
+.footer-links a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  margin: 0 12px;
+  transition: color 0.2s;
+}
+
+.footer-links a:hover {
+  color: var(--primary-color);
+}
