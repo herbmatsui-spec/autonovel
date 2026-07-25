@@ -3,8 +3,10 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
+
 class HealingPipeline:
     """不整合修復パイプライン"""
+
     def __init__(self, llm: Any, prompt_manager: Any):
         self.llm = llm
         self.prompt_manager = prompt_manager

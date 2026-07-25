@@ -1,6 +1,7 @@
 """
 src/core/state/ui_store.py — UI層の状態アクセスをカプセル化するストア
 """
+
 from typing import Any, Callable
 
 import streamlit as st
@@ -15,6 +16,7 @@ class UIStateStore:
     st.session_state への直接アクセスを排除し、AppStateModel / AppRuntimeState 経由での
     型安全な操作を強制する。
     """
+
     _subscribers: dict[str, list[Callable[[Any], None]]] = {}
 
     @staticmethod
@@ -27,7 +29,9 @@ class UIStateStore:
         return get_session().runtime
 
     @staticmethod
-    def update(update_func: Callable[[AppStateModel], None], notify_keys: list[str] | None = None) -> None:
+    def update(
+        update_func: Callable[[AppStateModel], None], notify_keys: list[str] | None = None
+    ) -> None:
         """
         状態を安全に更新し、保存する。
         update_func は AppStateModel を受け取り、変更を加える関数であること。
@@ -76,6 +80,7 @@ class UIStateStore:
                 callback(value)
             except Exception as e:
                 import logging
+
                 logging.getLogger(__name__).error(f"State change callback failed for {key}: {e}")
 
     # ==========================================================================
@@ -202,7 +207,10 @@ class UIStateStore:
 
     @staticmethod
     def set_easy_genre(genre_key: str) -> None:
-        UIStateStore.update(lambda s: setattr(s.runtime, "easy_genre_key", genre_key), notify_keys=["easy_genre_key"])
+        UIStateStore.update(
+            lambda s: setattr(s.runtime, "easy_genre_key", genre_key),
+            notify_keys=["easy_genre_key"],
+        )
 
     # ==========================================================================
     # API Key Validation
@@ -233,10 +241,12 @@ class UIStateStore:
 
     @staticmethod
     def reset_api_key_validation() -> None:
-        UIStateStore.update(lambda s: (
-            setattr(s.runtime, "api_key_validation_state", "idle"),
-            setattr(s.runtime, "api_key_validation_error", ""),
-        ))
+        UIStateStore.update(
+            lambda s: (
+                setattr(s.runtime, "api_key_validation_state", "idle"),
+                setattr(s.runtime, "api_key_validation_error", ""),
+            )
+        )
 
     # ==========================================================================
     # Toast Notification

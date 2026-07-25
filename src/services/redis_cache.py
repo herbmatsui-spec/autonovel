@@ -3,6 +3,7 @@
 商用環境でのマルチワーカー/マルチインスタンス構成に対応するため、
 インメモリキャッシュ(L1)の上位にRedis(L2)を配置し、キャッシュの共有と永続化を実現する。
 """
+
 import asyncio
 import hashlib
 import json
@@ -11,6 +12,7 @@ from typing import Any, Dict, List, Optional
 
 try:
     import redis.asyncio as redis
+
     REDIS_AVAILABLE = True
 except ImportError:
     REDIS_AVAILABLE = False
@@ -49,7 +51,9 @@ class RedisCacheService:
             max_connections: 接続プールの最大接続数
         """
         if not REDIS_AVAILABLE:
-            logger.warning("redis.asyncio がインストールされていません。Redisキャッシュは無効化されます。")
+            logger.warning(
+                "redis.asyncio がインストールされていません。Redisキャッシュは無効化されます。"
+            )
             self._client = None
             self._pool = None
             return
@@ -60,7 +64,7 @@ class RedisCacheService:
         # 接続URLの決定
         if redis_url is None:
             config = get_config()
-            redis_url = getattr(config, 'redis_url', None) or "redis://localhost:6379/0"
+            redis_url = getattr(config, "redis_url", None) or "redis://localhost:6379/0"
 
         # 接続プールの作成
         self._pool = redis.ConnectionPool.from_url(
@@ -114,12 +118,7 @@ class RedisCacheService:
             return None
 
     async def set(
-        self,
-        key: str,
-        value: Any,
-        ttl: Optional[int] = None,
-        nx: bool = False,
-        xx: bool = False
+        self, key: str, value: Any, ttl: Optional[int] = None, nx: bool = False, xx: bool = False
     ) -> bool:
         """キャッシュに値を設定.
 
@@ -141,13 +140,7 @@ class RedisCacheService:
             serialized = self._serialize(value)
             ttl = ttl or self.default_ttl
 
-            result = await self._client.set(
-                full_key,
-                serialized,
-                ex=ttl,
-                nx=nx,
-                xx=xx
-            )
+            result = await self._client.set(full_key, serialized, ex=ttl, nx=nx, xx=xx)
             if result:
                 logger.debug(f"[REDIS CACHE SET] key={key}, ttl={ttl}")
             return bool(result)
@@ -303,16 +296,16 @@ class PromptCacheService:
 
     # タスクタイプ別デフォルトTTL（秒）
     DEFAULT_TTL_BY_TASK_TYPE: Dict[str, int] = {
-        "generation": 7 * 24 * 3600,        # 7日 - 本文生成
-        "plot_expansion": 14 * 24 * 3600,   # 14日 - プロット展開
-        "audit": 3 * 24 * 3600,             # 3日 - 監査/品質チェック
-        "polishing": 5 * 24 * 3600,         # 5日 - 推敲
-        "critique": 2 * 24 * 3600,          # 2日 - 批評/フィードバック
-        "bible_extraction": 30 * 24 * 3600, # 30日 - バイブル抽出（再利用性高）
-        "character_arc": 14 * 24 * 3600,    # 14日 - キャラクター弧
-        "world_creation": 30 * 24 * 3600,   # 30日 - 世界観構築
-        "marketing": 7 * 24 * 3600,         # 7日 - マーケティング
-        "default": 7 * 24 * 3600,           # 7日 - デフォルト
+        "generation": 7 * 24 * 3600,  # 7日 - 本文生成
+        "plot_expansion": 14 * 24 * 3600,  # 14日 - プロット展開
+        "audit": 3 * 24 * 3600,  # 3日 - 監査/品質チェック
+        "polishing": 5 * 24 * 3600,  # 5日 - 推敲
+        "critique": 2 * 24 * 3600,  # 2日 - 批評/フィードバック
+        "bible_extraction": 30 * 24 * 3600,  # 30日 - バイブル抽出（再利用性高）
+        "character_arc": 14 * 24 * 3600,  # 14日 - キャラクター弧
+        "world_creation": 30 * 24 * 3600,  # 30日 - 世界観構築
+        "marketing": 7 * 24 * 3600,  # 7日 - マーケティング
+        "default": 7 * 24 * 3600,  # 7日 - デフォルト
     }
 
     def __init__(
@@ -364,7 +357,9 @@ class PromptCacheService:
         """タスクタイプに基づくTTLを取得."""
         if custom_ttl is not None:
             return custom_ttl
-        return self.DEFAULT_TTL_BY_TASK_TYPE.get(task_type, self.DEFAULT_TTL_BY_TASK_TYPE["default"])
+        return self.DEFAULT_TTL_BY_TASK_TYPE.get(
+            task_type, self.DEFAULT_TTL_BY_TASK_TYPE["default"]
+        )
 
     async def _record_hit(self, layer: str) -> None:
         """ヒットを記録."""
@@ -410,7 +405,7 @@ class PromptCacheService:
         genre: str = "general",
         temperature: float = 0.7,
         template_version: str = "1.0",
-        **params: Any
+        **params: Any,
     ) -> Optional[Any]:
         """3層キャッシュから応答を取得.
 
@@ -433,7 +428,9 @@ class PromptCacheService:
                 cached = await self.redis.get(cache_key)
                 if cached is not None:
                     await self._record_hit("l2")
-                    logger.info(f"[PROMPT CACHE] L2 (Redis) HIT: {template_name} (task={task_type})")
+                    logger.info(
+                        f"[PROMPT CACHE] L2 (Redis) HIT: {template_name} (task={task_type})"
+                    )
                     # L1 にも格納して次回高速化
                     if self.l1:
                         self.l1[l1_key] = cached
@@ -454,7 +451,9 @@ class PromptCacheService:
                 )
                 if similar is not None:
                     await self._record_hit("l3")
-                    logger.info(f"[PROMPT CACHE] L3 (Semantic) HIT: {template_name} (task={task_type})")
+                    logger.info(
+                        f"[PROMPT CACHE] L3 (Semantic) HIT: {template_name} (task={task_type})"
+                    )
                     # Redis と L1 にも格納
                     if self.redis:
                         try:
@@ -483,7 +482,7 @@ class PromptCacheService:
         temperature: float = 0.7,
         template_version: str = "1.0",
         ttl: Optional[int] = None,
-        **params: Any
+        **params: Any,
     ) -> None:
         """3層キャッシュに応答を保存."""
         prompt_hash = self.compute_prompt_hash(prompt, **params)
@@ -518,7 +517,9 @@ class PromptCacheService:
                 await self._record_error()
 
         await self._record_set()
-        logger.info(f"[PROMPT CACHE] STORED: {template_name} (task={task_type}, ttl={effective_ttl}s, key={cache_key})")
+        logger.info(
+            f"[PROMPT CACHE] STORED: {template_name} (task={task_type}, ttl={effective_ttl}s, key={cache_key})"
+        )
 
     async def invalidate_book(self, book_id: int) -> int:
         """特定の書籍に関連するキャッシュを無効化 (Redis パターン削除)."""
@@ -550,7 +551,9 @@ class PromptCacheService:
                 keys_to_delete = [k for k in self.l1.keys() if f":{task_type}:" in k]
                 for k in keys_to_delete:
                     del self.l1[k]
-            logger.info(f"[PROMPT CACHE] Invalidated task_type {task_type}: {deleted} keys + {len(keys_to_delete)} L1 entries")
+            logger.info(
+                f"[PROMPT CACHE] Invalidated task_type {task_type}: {deleted} keys + {len(keys_to_delete)} L1 entries"
+            )
             return deleted
         return 0
 
@@ -641,7 +644,9 @@ class PromptCacheService:
                 await self._record_error()
 
         await self._record_warm_cache()
-        logger.info(f"[PROMPT CACHE] Warmed {success_count}/{len(entries)} entries for task_type={task_type}")
+        logger.info(
+            f"[PROMPT CACHE] Warmed {success_count}/{len(entries)} entries for task_type={task_type}"
+        )
         return success_count
 
     async def prefetch_next_episodes(
@@ -651,7 +656,7 @@ class PromptCacheService:
         next_ep_count: int = 3,
         template_name: str = "plot_expansion",
         model_id: str = "gemini-2.5-pro",
-        **common_params: Any
+        **common_params: Any,
     ) -> int:
         """次のエピソード用プロンプトをプリフェッチ（予測的キャッシュ）.
 
@@ -680,7 +685,9 @@ class PromptCacheService:
             prefetched += 1
 
         await self._record_prefetch()
-        logger.info(f"[PROMPT CACHE] Prefetch prepared for book={book_id}, episodes {current_ep+1}~{current_ep+next_ep_count}")
+        logger.info(
+            f"[PROMPT CACHE] Prefetch prepared for book={book_id}, episodes {current_ep + 1}~{current_ep + next_ep_count}"
+        )
         return prefetched
 
     async def warm_by_similarity(
@@ -716,11 +723,13 @@ class PromptCacheService:
 
             if similar:
                 await self._record_warm_cache()
-                return [{
-                    "prompt": seed_prompt,
-                    "response": similar,
-                    "similarity_score": 1.0,  # 実際の類似度は実装時に取得
-                }]
+                return [
+                    {
+                        "prompt": seed_prompt,
+                        "response": similar,
+                        "similarity_score": 1.0,  # 実際の類似度は実装時に取得
+                    }
+                ]
         except Exception as e:
             logger.warning(f"[PROMPT CACHE] Warm by similarity failed: {e}")
             await self._record_error()
@@ -743,6 +752,7 @@ async def get_prompt_cache(
 
 def __get_app_container():
     from src.core.container import AppContainer
+
     return AppContainer()
 
 

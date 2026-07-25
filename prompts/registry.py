@@ -20,11 +20,13 @@ from time import time
 @dataclass
 class CachedTemplate:
     """テンプレートのキャッシュエントリーを保持する。"""
+
     source: str
     mtime: float
     metadata: Dict[str, Any]
     pure_template: str
     timestamp: float = field(default_factory=time)
+
 
 class PromptRegistry:
     """
@@ -32,6 +34,7 @@ class PromptRegistry:
     プロンプトテンプレートをファイル、DB、およびメモリ上の設定から階層的に解決し、
     動的なバージョニングと A/B テストをサポートする。
     """
+
     def __init__(self, templates_dir: Optional[str] = None, db_manager: Any = None):
         if templates_dir is None:
             current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -71,10 +74,7 @@ class PromptRegistry:
         self.fs_loader = FileSystemLoader(search_paths)
         self.dict_loader = DictLoader(PROMPT_TEMPLATES)
 
-        self.jinja_env = Environment(
-            loader=self.fs_loader,
-            autoescape=select_autoescape()
-        )
+        self.jinja_env = Environment(loader=self.fs_loader, autoescape=select_autoescape())
 
     def _update_cache_lru(self, template_name: str, cached_template: CachedTemplate):
         """LRUキャッシュを更新し、最大サイズを超えた場合は最古のエントリを削除する。"""
@@ -91,23 +91,23 @@ class PromptRegistry:
         """Initialize metrics for a template if not already present."""
         if template_name not in self._metrics:
             self._metrics[template_name] = {
-                'hits': 0,
-                'total_time_ms': 0.0,
-                'avg_time_ms': 0.0,
-                'last_accessed': None,
-                'error_count': 0
+                "hits": 0,
+                "total_time_ms": 0.0,
+                "avg_time_ms": 0.0,
+                "last_accessed": None,
+                "error_count": 0,
             }
 
     def record_hit(self, template_name: str, duration_ms: float = 0.0, error: bool = False):
         """Record a template access hit with timing and error info."""
         self._init_metric(template_name)
         metric = self._metrics[template_name]
-        metric['hits'] += 1
-        metric['total_time_ms'] += duration_ms
-        metric['avg_time_ms'] = metric['total_time_ms'] / metric['hits']
-        metric['last_accessed'] = time.time()
+        metric["hits"] += 1
+        metric["total_time_ms"] += duration_ms
+        metric["avg_time_ms"] = metric["total_time_ms"] / metric["hits"]
+        metric["last_accessed"] = time.time()
         if error:
-            metric['error_count'] += 1
+            metric["error_count"] += 1
 
     def get_metrics(self) -> Dict[str, Dict[str, Any]]:
         """Get current metrics snapshot."""
@@ -128,7 +128,11 @@ class PromptRegistry:
         """
 
         # 拡張子補正
-        if not template_name.endswith(".j2") and not template_name.endswith(".html") and "." not in template_name:
+        if (
+            not template_name.endswith(".j2")
+            and not template_name.endswith(".html")
+            and "." not in template_name
+        ):
             template_name = f"{template_name}.j2"
 
         # --- キャッシュチェック ---
@@ -185,10 +189,7 @@ class PromptRegistry:
         # フロントマターを解析してキャッシュに保存
         metadata, pure_template = self.parse_frontmatter(source)
         cached_entry = CachedTemplate(
-            source=source,
-            mtime=mtime,
-            metadata=metadata,
-            pure_template=pure_template
+            source=source, mtime=mtime, metadata=metadata, pure_template=pure_template
         )
         self._update_cache_lru(template_name, cached_entry)
 
@@ -206,10 +207,16 @@ class PromptRegistry:
                     pass
         return {}, source
 
-    def render(self, template_name: str, context: Dict[str, Any], book_id: Optional[BookId] = None) -> str:
+    def render(
+        self, template_name: str, context: Dict[str, Any], book_id: Optional[BookId] = None
+    ) -> str:
         """同期レンダリング (DB override は無視される)"""
         # 拡張子補正
-        if not template_name.endswith(".j2") and not template_name.endswith(".html") and "." not in template_name:
+        if (
+            not template_name.endswith(".j2")
+            and not template_name.endswith(".html")
+            and "." not in template_name
+        ):
             template_name = f"{template_name}.j2"
 
         # キャッシュから pure_template を取得してコンパイルコストを削減
@@ -230,18 +237,25 @@ class PromptRegistry:
         metadata, pure_template = self.parse_frontmatter(source)
         return self.jinja_env.from_string(pure_template).render(**context)
 
-    async def render_async(self, template_name: str, context: Dict[str, Any], book_id: Optional[BookId] = None) -> str:
+    async def render_async(
+        self, template_name: str, context: Dict[str, Any], book_id: Optional[BookId] = None
+    ) -> str:
         """
         非同期レンダリング。DB上の最新最適化プロンプトを優先的に適用する。
         """
         # 拡張子補正
-        if not template_name.endswith(".j2") and not template_name.endswith(".html") and "." not in template_name:
+        if (
+            not template_name.endswith(".j2")
+            and not template_name.endswith(".html")
+            and "." not in template_name
+        ):
             template_name = f"{template_name}.j2"
 
         source = None
         if book_id and self.db_manager:
             try:
                 from src.backend.database.uow import UnitOfWork
+
                 async with UnitOfWork(self.db_manager) as uow:
                     ver = await uow.prompt_versions.get_active_version(book_id, template_name)
                     if ver:
@@ -254,4 +268,3 @@ class PromptRegistry:
 
         metadata, pure_template = self.parse_frontmatter(source)
         return self.jinja_env.from_string(pure_template).render(**context)
-

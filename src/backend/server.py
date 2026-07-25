@@ -1,27 +1,26 @@
 import os
 import sys
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 import asyncio
-from collections import defaultdict
-from contextlib import asynccontextmanager
+import importlib
 import logging
 import time
 import uuid
-from typing import Any, Dict, Optional
+from collections import defaultdict
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
-import importlib
 
 from config.container import Container
 from config.cors_config import get_allowed_origins
 from config.logging_config import setup_logging
-
 from src.backend.auth import validate_api_key_or_raise
-from src.backend.database import UnitOfWork, init_db
+from src.backend.database import init_db
 from src.backend.error_handlers import register_error_handlers
 from src.core.observability import TraceContext
 from src.models.api_schemas import (

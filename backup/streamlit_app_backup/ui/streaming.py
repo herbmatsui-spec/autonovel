@@ -4,7 +4,6 @@ import typing
 from typing import Any, List, Optional
 
 import streamlit as st
-
 from streamlit_app.ui.ui_types import StreamDisplayInterface
 
 T = typing.TypeVar("T")

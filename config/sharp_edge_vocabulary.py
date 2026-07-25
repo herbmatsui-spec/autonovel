@@ -5,6 +5,7 @@ config/sharp_edge_vocabulary.py
 高品質化の過程で角が削られるのを防ぐため、
 3つの角を固定し、品質監査で保全を強制する。
 """
+
 from typing import Dict, List
 
 SHARP_EDGE_TYPES: List[str] = [

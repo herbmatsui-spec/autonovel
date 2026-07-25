@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Tuple
+from typing import Tuple
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -24,7 +24,7 @@ class RetryPolicy(BaseModel):
 
         delay = self.base_delay
         if self.exponential_backoff and attempt > 0:
-            delay = self.base_delay * (2 ** attempt)
+            delay = self.base_delay * (2**attempt)
 
         delay = min(delay, self.max_delay)
 

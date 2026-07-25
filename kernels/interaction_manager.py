@@ -10,11 +10,12 @@ class InteractionManager:
     """
     カーネル間相互作用行列 (KIM) を管理し、状態ベクトルを更新するマネージャー。
     """
+
     def __init__(self, config_path: str = "config/interaction_matrix.yaml"):
         self.config = self._load_config(config_path)
 
     def _load_config(self, path: str) -> InteractionConfig:
-        with open(path, 'r', encoding='utf-8') as f:
+        with open(path, "r", encoding="utf-8") as f:
             data = yaml.safe_load(f)
         # yaml構造をInteractionConfigの形式に変換
         matrix = {}
@@ -24,12 +25,14 @@ class InteractionManager:
 
         return InteractionConfig(
             matrix=matrix,
-            decay_rate=data.get('decay_rate', 0.98),
-            min_value=data.get('min_value', 0.0),
-            max_value=data.get('max_value', 100.0)
+            decay_rate=data.get("decay_rate", 0.98),
+            min_value=data.get("min_value", 0.0),
+            max_value=data.get("max_value", 100.0),
         )
 
-    async def compute_next_state(self, current_state: KernelState, external_impact: Dict[str, float], context: KernelContext) -> KernelState:
+    async def compute_next_state(
+        self, current_state: KernelState, external_impact: Dict[str, float], context: KernelContext
+    ) -> KernelState:
         """
         相互作用行列を用いて次の状態を計算する。
         S_{t+1} = clamp(S_t * decay + M * S_t + I, min, max)
@@ -63,10 +66,13 @@ class InteractionManager:
         現在の状態ベクトルを人間が理解しやすい形式の記述に変換する（プロンプト用）。
         """
         descriptions = []
-        if state.hegemony > 70: descriptions.append("強力な覇権的支配が場を支配している")
-        if state.resonance > 70: descriptions.append("深い魂の共鳴が起きている")
-        if state.conflict > 70: descriptions.append("激しい葛藤が衝突している")
-        if state.serenity > 70: descriptions.append("静謐な空気が流れている")
+        if state.hegemony > 70:
+            descriptions.append("強力な覇権的支配が場を支配している")
+        if state.resonance > 70:
+            descriptions.append("深い魂の共鳴が起きている")
+        if state.conflict > 70:
+            descriptions.append("激しい葛藤が衝突している")
+        if state.serenity > 70:
+            descriptions.append("静謐な空気が流れている")
 
         return " / ".join(descriptions) if descriptions else "安定した均衡状態にある"
-

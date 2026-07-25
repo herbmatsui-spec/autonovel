@@ -25,20 +25,17 @@ async def test_gemini_api_client_generate_json():
 
     api_client = GeminiApiClient(client=mock_client, cooldown=mock_cooldown)
 
-    request = LLMRequestOptions(
-        model_name="test_model",
-        prompt="Test prompt"
-    )
+    request = LLMRequestOptions(model_name="test_model", prompt="Test prompt")
 
     metadata, story, raw = await api_client.generate_json(
-        model_name="test_model",
-        prompt="Test prompt"
+        model_name="test_model", prompt="Test prompt"
     )
 
     assert metadata["success"] is True
-    assert story == ''
+    assert story == ""
     mock_cooldown.wait.assert_called_once()
     mock_cooldown.on_success.assert_called_once()
+
 
 @pytest.mark.asyncio
 async def test_gemini_api_client_generate_text():
@@ -53,22 +50,16 @@ async def test_gemini_api_client_generate_text():
             self.text = text
             self.usage_metadata = None
 
-    mock_response = MockResponse('Generated text')
+    mock_response = MockResponse("Generated text")
     mock_client.models.generate_content_async = AsyncMock(return_value=mock_response)
     mock_client.models.generate_content = MagicMock(return_value=mock_response)
 
     api_client = GeminiApiClient(client=mock_client, cooldown=mock_cooldown)
 
-    request = LLMRequestOptions(
-        model_name="test_model",
-        prompt="Test prompt"
-    )
+    request = LLMRequestOptions(model_name="test_model", prompt="Test prompt")
 
-    text, raw = await api_client.generate_text(
-        model_name="test_model",
-        prompt="Test prompt"
-    )
+    text, raw = await api_client.generate_text(model_name="test_model", prompt="Test prompt")
 
-    assert text == 'Generated text'
+    assert text == "Generated text"
     mock_cooldown.wait.assert_called_once()
     mock_cooldown.on_success.assert_called_once()

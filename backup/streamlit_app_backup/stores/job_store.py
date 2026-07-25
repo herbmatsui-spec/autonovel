@@ -7,6 +7,7 @@ streamlit_app/stores/job_store.py — ジョブ(バックグラウンドタス�
 - フラグメントバージョン管理(Reactive Update 用)
 - 処理ロック(is_processing)の管理
 """
+
 from __future__ import annotations
 
 from typing import Any

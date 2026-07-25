@@ -3,8 +3,10 @@ from typing import Any, Dict
 
 logger = logging.getLogger(__name__)
 
+
 class NarrativeScoringService:
     """ナラティブスコアリングサービス（簡易実装）"""
+
     def __init__(self, llm: Any, prompt_manager: Any):
         self.llm = llm
         self.prompt_manager = prompt_manager

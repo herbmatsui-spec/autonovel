@@ -12,7 +12,6 @@ import time
 import traceback
 from pathlib import Path
 from typing import Any, List, Optional
-from urllib.parse import urlparse
 
 import aiosqlite
 from sqlalchemy import create_engine, text
@@ -35,12 +34,18 @@ def retry_with_logging(retries: int = 15, base_delay: float = 0.1, max_delay: fl
                     return await func(*args, **kwargs)
                 except (aiosqlite.Error, sqlite3.Error, OSError, asyncio.TimeoutError) as e:
                     if i == retries - 1:
-                        logger.error(f"Final error in {func.__name__} after {retries} retries: {e}\n{traceback.format_exc()}")
+                        logger.error(
+                            f"Final error in {func.__name__} after {retries} retries: {e}\n{traceback.format_exc()}"
+                        )
                         raise
-                    delay = min(base_delay * (1.5 ** i), max_delay)
-                    logger.warning(f"Retry {i+1}/{retries} in {func.__name__} after {delay:.1f}s due to: {e}")
+                    delay = min(base_delay * (1.5**i), max_delay)
+                    logger.warning(
+                        f"Retry {i + 1}/{retries} in {func.__name__} after {delay:.1f}s due to: {e}"
+                    )
                     await asyncio.sleep(delay)
+
         return wrapper
+
     return decorator
 
 
@@ -73,14 +78,14 @@ class WorkspaceManager:
 # ==========================================
 # DatabaseManager（低レベルSQLite/PostgreSQL操作 - SQLAlchemy コネクションプール版）
 # ==========================================
-from sqlalchemy import event, text
+from sqlalchemy import event
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 
 class DatabaseConnectionWrapper:
     def __init__(self, sql_conn, dbapi_conn):
-        super().__setattr__('sql_conn', sql_conn)
-        super().__setattr__('dbapi_conn', dbapi_conn)
+        super().__setattr__("sql_conn", sql_conn)
+        super().__setattr__("dbapi_conn", dbapi_conn)
 
     @property
     def cursor(self):
@@ -90,7 +95,7 @@ class DatabaseConnectionWrapper:
         return getattr(self.dbapi_conn, name)
 
     def __setattr__(self, name, value):
-        if name in ('sql_conn', 'dbapi_conn'):
+        if name in ("sql_conn", "dbapi_conn"):
             super().__setattr__(name, value)
         else:
             setattr(self.dbapi_conn, name, value)
@@ -101,6 +106,7 @@ class DatabaseConnectionWrapper:
         except Exception:
             pass
         await self.sql_conn.close()
+
 
 class DatabaseManager:
     def __init__(self, db_url: str, pool_size: int = 10):
@@ -124,19 +130,18 @@ class DatabaseManager:
             max_overflow=20,
             pool_recycle=1200,
             pool_pre_ping=True,
-            connect_args=connect_args
+            connect_args=connect_args,
         )
 
         # Ensure is_plot_twist column exists in SQLite database
         # (Skipped: Schema updates should be handled by Alembic migrations)
 
         self.session_factory = async_sessionmaker(
-            bind=self.engine,
-            class_=AsyncSession,
-            expire_on_commit=False
+            bind=self.engine, class_=AsyncSession, expire_on_commit=False
         )
 
         if is_sqlite:
+
             @event.listens_for(self.engine.sync_engine, "connect")
             def set_sqlite_pragma(dbapi_connection, connection_record):
                 cursor = dbapi_connection.cursor()
@@ -195,7 +200,11 @@ class DatabaseManager:
         import warnings
 
         if isinstance(sql, str):
-            warnings.warn("DatabaseManager.execute() with raw string is deprecated. Please use sqlalchemy.text() or repositories instead.", DeprecationWarning, stacklevel=2)
+            warnings.warn(
+                "DatabaseManager.execute() with raw string is deprecated. Please use sqlalchemy.text() or repositories instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
             sql = text(sql)
 
         logger.warning(f"DatabaseManager.execute called: {sql}")
@@ -207,7 +216,11 @@ class DatabaseManager:
         import warnings
 
         if isinstance(sql, str):
-            warnings.warn("DatabaseManager.fetch_one() with raw string is deprecated. Please use sqlalchemy.text() or repositories instead.", DeprecationWarning, stacklevel=2)
+            warnings.warn(
+                "DatabaseManager.fetch_one() with raw string is deprecated. Please use sqlalchemy.text() or repositories instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
             sql = text(sql)
 
         logger.warning(f"DatabaseManager.fetch_one called: {sql}")
@@ -220,7 +233,11 @@ class DatabaseManager:
         import warnings
 
         if isinstance(sql, str):
-            warnings.warn("DatabaseManager.fetch_all() with raw string is deprecated. Please use sqlalchemy.text() or repositories instead.", DeprecationWarning, stacklevel=2)
+            warnings.warn(
+                "DatabaseManager.fetch_all() with raw string is deprecated. Please use sqlalchemy.text() or repositories instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
             sql = text(sql)
 
         logger.warning(f"DatabaseManager.fetch_all called: {sql}")
@@ -236,6 +253,7 @@ class DatabaseManager:
     async def save_internal_state(self, key: str, value: str, updated_at: Any = None) -> None:
         """データベース非依存な UPSERT 処理で internal_state を保存する"""
         from datetime import datetime
+
         from sqlalchemy import select
 
         from src.backend.database.models import InternalState
@@ -260,13 +278,8 @@ class DatabaseManager:
                     existing.value = value
                     existing.updated_at = dt_val
                 else:
-                    new_state = InternalState(
-                        key=key,
-                        value=value,
-                        updated_at=dt_val
-                    )
+                    new_state = InternalState(key=key, value=value, updated_at=dt_val)
                     session.add(new_state)
-
 
 
 # ==========================================
@@ -274,11 +287,11 @@ class DatabaseManager:
 # ==========================================
 _GLOBAL_DB_MANAGER: Optional[DatabaseManager] = None
 
+
 def init_db(db_path: str):
     """データベースのマイグレーションを同期的に実行"""
     from alembic.config import Config
 
-    from config import DATABASE_URL
 
     sync_url = DATABASE_URL
     if "sqlite+aiosqlite" in sync_url:
@@ -304,6 +317,7 @@ def init_db(db_path: str):
     # create_all の後は不整合が起きる可能性があるため、ここでは create_all を優先する
     # command.upgrade(alembic_cfg, "head")
 
+
 def get_db_manager() -> DatabaseManager:
     """
     DBマネージャーを取得。
@@ -312,7 +326,7 @@ def get_db_manager() -> DatabaseManager:
     if _GLOBAL_DB_MANAGER is not None:
         return _GLOBAL_DB_MANAGER
 
-    from config import DATABASE_URL
+
     manager = DatabaseManager(DATABASE_URL)
     _GLOBAL_DB_MANAGER = manager
     return manager
@@ -327,6 +341,7 @@ def get_sync_db_manager():
     global _sync_engine, _sync_session_factory
     if _sync_engine is None:
         from config import DATABASE_URL
+
         sync_url = DATABASE_URL
         if "sqlite+aiosqlite" in sync_url:
             sync_url = sync_url.replace("sqlite+aiosqlite:///", "sqlite:///")
@@ -341,7 +356,3 @@ def set_db_manager(manager: Optional[DatabaseManager]) -> None:
     """グローバルDBマネージャーを明示的にセット（主にテスト用DIで使用）"""
     global _GLOBAL_DB_MANAGER
     _GLOBAL_DB_MANAGER = manager
-
-
-
-

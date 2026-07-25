@@ -1,4 +1,3 @@
-
 import os
 import sys
 from pathlib import Path
@@ -17,6 +16,7 @@ try:
 
     print("Attempting to import UltimateHegemonyEngine...")
     from backend.engine import UltimateHegemonyEngine
+
     print("Successfully imported UltimateHegemonyEngine")
 
     print("Attempting to instantiate engine (with dummy key)...")
@@ -27,5 +27,5 @@ try:
 except Exception as e:
     print(f"\n[ERROR] {type(e).__name__}: {e}")
     import traceback
-    traceback.print_exc()
 
+    traceback.print_exc()

@@ -11,6 +11,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+
 class PipelineContext(BaseModel):
     book_id: int
     branch_id: int
@@ -33,13 +34,19 @@ class PipelineContext(BaseModel):
     def to_dict(self) -> Dict[str, Any]:
         return self.model_dump(exclude={"bible", "scheduler"})
 
+
 class PipelineStep:
-    async def execute(self, ep_num: int, ctx: PipelineContext, agent: WritingAgent, reporter: Any) -> bool:
+    async def execute(
+        self, ep_num: int, ctx: PipelineContext, agent: WritingAgent, reporter: Any
+    ) -> bool:
         """Execute step. Returns True to continue, False to halt/break."""
         raise NotImplementedError()
 
+
 class PlotReadyStep(PipelineStep):
-    async def execute(self, ep_num: int, ctx: PipelineContext, agent: WritingAgent, reporter: Any) -> bool:
+    async def execute(
+        self, ep_num: int, ctx: PipelineContext, agent: WritingAgent, reporter: Any
+    ) -> bool:
         if ctx.scheduler is None:
             return False
         try:
@@ -53,8 +60,11 @@ class PlotReadyStep(PipelineStep):
                 reporter.report(f"❌ 第{ep_num}話 プロット待機エラー: {e}", "error")
             return False
 
+
 class PrefetchStep(PipelineStep):
-    async def execute(self, ep_num: int, ctx: PipelineContext, agent: WritingAgent, reporter: Any) -> bool:
+    async def execute(
+        self, ep_num: int, ctx: PipelineContext, agent: WritingAgent, reporter: Any
+    ) -> bool:
         if agent.style_rag and agent.rag_prefetch:
             try:
                 plot = await agent.repo.get_plot(ctx.branch_id, ep_num)
@@ -64,14 +74,17 @@ class PrefetchStep(PipelineStep):
                         book_id=ctx.book_id,
                         branch_id=ctx.branch_id,
                         ep_num=ep_num,
-                        plot_blueprint=plot.detailed_blueprint or plot.summary or ""
+                        plot_blueprint=plot.detailed_blueprint or plot.summary or "",
                     )
             except Exception as e:
                 logger.warning(f"RAG prefetch failed for Ep.{ep_num}: {e}")
         return True
 
+
 class ApplyPatchStep(PipelineStep):
-    async def execute(self, ep_num: int, ctx: PipelineContext, agent: WritingAgent, reporter: Any) -> bool:
+    async def execute(
+        self, ep_num: int, ctx: PipelineContext, agent: WritingAgent, reporter: Any
+    ) -> bool:
         if ep_num > 1:
             try:
                 prev_ch = await agent.repo.get_chapter(ctx.branch_id, ep_num - 1)
@@ -81,21 +94,36 @@ class ApplyPatchStep(PipelineStep):
                         plot = await agent.repo.get_plot(ctx.branch_id, ep_num)
                         if plot:
                             patched_blueprint = f"【前話からの確定事実（パッチ）】\n{insight_text}\n\n{plot.detailed_blueprint}"
-                            await agent.repo.update_plot_blueprint(ctx.branch_id, ep_num, patched_blueprint)
+                            await agent.repo.update_plot_blueprint(
+                                ctx.branch_id, ep_num, patched_blueprint
+                            )
                             if reporter:
-                                reporter.report(f"🔧 第{ep_num}話: 前話の確定事実をプロットにパッチ当てしました。", "info")
+                                reporter.report(
+                                    f"🔧 第{ep_num}話: 前話の確定事実をプロットにパッチ当てしました。",
+                                    "info",
+                                )
             except Exception as e:
                 logger.error(f"Failed to apply patch for Ep.{ep_num}: {e}")
         return True
 
+
 class DraftingStep(PipelineStep):
-    async def execute(self, ep_num: int, ctx: PipelineContext, agent: WritingAgent, reporter: Any) -> bool:
+    async def execute(
+        self, ep_num: int, ctx: PipelineContext, agent: WritingAgent, reporter: Any
+    ) -> bool:
         try:
             if reporter:
                 reporter.report(f"✍️ 第{ep_num}話の本編を執筆中...", "info")
             count = await agent.generate_episodes(
-                ctx.book_id, ep_num, ep_num, ctx.passion, ctx.target_word_count,
-                ctx.is_easy_mode, reporter, branch_id=ctx.branch_id, style_tag=ctx.style_tag
+                ctx.book_id,
+                ep_num,
+                ep_num,
+                ctx.passion,
+                ctx.target_word_count,
+                ctx.is_easy_mode,
+                reporter,
+                branch_id=ctx.branch_id,
+                style_tag=ctx.style_tag,
             )
             if count == 0:
                 raise RuntimeError(f"第{ep_num}話の本文生成結果が空（0文字）です。")
@@ -116,23 +144,30 @@ class DraftingStep(PipelineStep):
 
             if reporter:
                 reporter.update_progress(
-                    ctx.written_count, ctx.total_to_write,
+                    ctx.written_count,
+                    ctx.total_to_write,
                     f"🚀 執筆パイプライン ({ctx.written_count}/{ctx.total_to_write}話)",
-                    f"第{ep_num}話の執筆が完了しました。 ({count}文字)"
+                    f"第{ep_num}話の執筆が完了しました。 ({count}文字)",
                 )
             return True
         except Exception as e:
             logger.error(f"Writing failed for Ep.{ep_num}: {e}", exc_info=True)
             ctx.failed_episodes.append({"ep_num": ep_num, "error_message": str(e)})
             if reporter:
-                reporter.report(f"❌ 第{ep_num}話 執筆エラー: {e}。パイプライン処理を緊急停止しました。", "error")
+                reporter.report(
+                    f"❌ 第{ep_num}話 執筆エラー: {e}。パイプライン処理を緊急停止しました。",
+                    "error",
+                )
             raise e
+
 
 class WritingPipeline:
     def __init__(self, steps: List[PipelineStep]):
         self.steps = steps
 
-    async def execute(self, ctx: PipelineContext, agent: WritingAgent, reporter: Any) -> Tuple[int, List[Dict[str, Any]]]:
+    async def execute(
+        self, ctx: PipelineContext, agent: WritingAgent, reporter: Any
+    ) -> Tuple[int, List[Dict[str, Any]]]:
         book = await agent.repo.get_book(ctx.book_id)
         if ctx.branch_id is None:
             ctx.branch_id = book.current_branch_id if book and book.current_branch_id else 1
@@ -141,13 +176,30 @@ class WritingPipeline:
         ctx.written_count = 0
 
         bible = await agent.repo.get_latest_bible(ctx.book_id)
-        settings = bible.settings if isinstance(bible.settings, dict) else json.loads(bible.settings or "{}") if bible else {}
+        settings = (
+            bible.settings
+            if isinstance(bible.settings, dict)
+            else json.loads(bible.settings or "{}")
+            if bible
+            else {}
+        )
         arcs = settings.get("arcs") or getattr(bible, "arcs", []) if bible else []
         ctx.bible = bible
         ctx.settings = settings
 
         from src.agents.writing_scheduler import StreamingPlotScheduler
-        scheduler = StreamingPlotScheduler(agent.repo, agent.llm, agent.pm, agent.planner, ctx.book_id, ctx.branch_id, arcs, ctx.end_ep, reporter)
+
+        scheduler = StreamingPlotScheduler(
+            agent.repo,
+            agent.llm,
+            agent.pm,
+            agent.planner,
+            ctx.book_id,
+            ctx.branch_id,
+            arcs,
+            ctx.end_ep,
+            reporter,
+        )
         await scheduler.schedule_plot_generation(ctx.start_ep, bible, settings)
         ctx.scheduler = scheduler
 
@@ -171,7 +223,10 @@ class WritingPipeline:
                     if reporter and hasattr(reporter, "state"):
                         state_dict = ctx.to_dict()
                         state_dict["current_ep_num"] = ep_num
-                        reporter.state.result_data = {"pipeline_type": "writing", "context": state_dict}
+                        reporter.state.result_data = {
+                            "pipeline_type": "writing",
+                            "context": state_dict,
+                        }
                         reporter.state._save_to_db()
                     raise e
 
@@ -180,13 +235,18 @@ class WritingPipeline:
                     if reporter and hasattr(reporter, "state"):
                         state_dict = ctx.to_dict()
                         state_dict["current_ep_num"] = ep_num
-                        reporter.state.result_data = {"pipeline_type": "writing", "context": state_dict}
+                        reporter.state.result_data = {
+                            "pipeline_type": "writing",
+                            "context": state_dict,
+                        }
                         reporter.state._save_to_db()
                     return ctx.total_chars, ctx.failed_episodes
 
         return ctx.total_chars, ctx.failed_episodes
 
-    async def resume(self, ctx_data: Dict[str, Any], agent: WritingAgent, reporter: Any) -> Tuple[int, List[Dict[str, Any]]]:
+    async def resume(
+        self, ctx_data: Dict[str, Any], agent: WritingAgent, reporter: Any
+    ) -> Tuple[int, List[Dict[str, Any]]]:
         """失敗したエピソード番号からパイプラインを再開します"""
         current_ep_num = ctx_data.pop("current_ep_num", ctx_data["start_ep"])
         ctx = PipelineContext(**ctx_data)
@@ -196,13 +256,30 @@ class WritingPipeline:
             ctx.branch_id = book.current_branch_id if book and book.current_branch_id else 1
 
         bible = await agent.repo.get_latest_bible(ctx.book_id)
-        settings = bible.settings if isinstance(bible.settings, dict) else json.loads(bible.settings or "{}") if bible else {}
+        settings = (
+            bible.settings
+            if isinstance(bible.settings, dict)
+            else json.loads(bible.settings or "{}")
+            if bible
+            else {}
+        )
         arcs = settings.get("arcs") or getattr(bible, "arcs", []) if bible else []
         ctx.bible = bible
         ctx.settings = settings
 
         from src.agents.writing_scheduler import StreamingPlotScheduler
-        scheduler = StreamingPlotScheduler(agent.repo, agent.llm, agent.pm, agent.planner, ctx.book_id, ctx.branch_id, arcs, ctx.end_ep, reporter)
+
+        scheduler = StreamingPlotScheduler(
+            agent.repo,
+            agent.llm,
+            agent.pm,
+            agent.planner,
+            ctx.book_id,
+            ctx.branch_id,
+            arcs,
+            ctx.end_ep,
+            reporter,
+        )
         await scheduler.schedule_plot_generation(current_ep_num, bible, settings)
         ctx.scheduler = scheduler
 
@@ -224,7 +301,10 @@ class WritingPipeline:
                     if reporter and hasattr(reporter, "state"):
                         state_dict = ctx.to_dict()
                         state_dict["current_ep_num"] = ep_num
-                        reporter.state.result_data = {"pipeline_type": "writing", "context": state_dict}
+                        reporter.state.result_data = {
+                            "pipeline_type": "writing",
+                            "context": state_dict,
+                        }
                         reporter.state._save_to_db()
                     return ctx.total_chars, ctx.failed_episodes
 

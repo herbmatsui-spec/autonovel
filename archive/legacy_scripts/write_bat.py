@@ -12,4 +12,3 @@ pause
 with open(fpath, "w", encoding="cp932") as f:
     f.write(code)
 print("run_demo.bat has been written successfully.")
-

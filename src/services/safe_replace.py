@@ -3,6 +3,7 @@ src/services/safe_replace.py
 複数パターンの置換を1パスで安全に実行する置換器。
 順次 str.replace() による二重置換問題を解消する。
 """
+
 import re
 from typing import Dict, List, Tuple
 
@@ -10,7 +11,7 @@ from typing import Dict, List, Tuple
 class SafeReplacer:
     """
     複数の置換ルールを1パスで適用する安全な置換器。
-    
+
     順次 str.replace() を行うと、1回目の置換結果が2回目のキーと
     衝突して意図しない二重置換が発生する。このクラスは正規表現の
     1パス置換（re.sub）を用いて、各パターンの最初のマッチのみを
@@ -38,10 +39,10 @@ class SafeReplacer:
     def replace(self, text: str) -> str:
         """
         全マッピングを1パスで安全に置換する。
-        
+
         Args:
             text: 置換対象テキスト
-        
+
         Returns:
             置換後テキスト
         """

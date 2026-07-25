@@ -11,8 +11,7 @@ def main():
     print("Testing gemma-4-31b-it WITHOUT JSON mode:")
     try:
         response = client.models.generate_content(
-            model="gemma-4-31b-it",
-            contents="Hello, please write a short 1-sentence greeting."
+            model="gemma-4-31b-it", contents="Hello, please write a short 1-sentence greeting."
         )
         print(f"Success! Response: {response.text}")
     except Exception as e:
@@ -20,18 +19,16 @@ def main():
 
     print("\nTesting gemma-4-31b-it WITH JSON mode:")
     try:
-        config = genai_types.GenerateContentConfig(
-            response_mime_type="application/json"
-        )
+        config = genai_types.GenerateContentConfig(response_mime_type="application/json")
         response = client.models.generate_content(
             model="gemma-4-31b-it",
             contents="Output a JSON with a single key 'greeting' containing a greeting.",
-            config=config
+            config=config,
         )
         print(f"Success! Response: {response.text}")
     except Exception as e:
         print(f"Failed WITH JSON: {e}")
 
+
 if __name__ == "__main__":
     main()
-

@@ -14,6 +14,7 @@ class LLMProviderFactory:
     モデル名に基づいて適切な LLMProvider を提供するファクトリクラス。
     依存性の注入 (DI) を容易にし、アプリケーション層を特定の SDK から切り離す。
     """
+
     def __init__(self, genai_client: genai.Client, cooldown: AdaptiveCooldown):
         # プロバイダーのインスタンス化
         self._providers: Dict[str, LLMProvider] = {

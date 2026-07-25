@@ -1,4 +1,5 @@
 """tests/test_quality_scorer.py - QualityScorer のテスト"""
+
 import pytest
 
 from src.services.quality_scorer import QualityScorer
@@ -15,7 +16,9 @@ class TestQualityScorer:
     @pytest.mark.asyncio
     async def test_score_coherence_good_text(self, scorer):
         """整合性スコア: 良いテキスト"""
-        text = "しかし、状況は変わっていた。そのため、主人公は決意を固めた。こうして、物語は動き出す。"
+        text = (
+            "しかし、状況は変わっていた。そのため、主人公は決意を固めた。こうして、物語は動き出す。"
+        )
         score = await scorer.score_coherence(text)
         assert 0.0 <= score <= 1.0
 
@@ -79,7 +82,7 @@ class TestQualityScorer:
         """全スコア一括算出"""
         text = "しかし、最強の戦士が姿を現した。太郎は驚きを隠せなかった。こうして、運命が始まる。"
         metrics = await scorer.score_all(text)
-        
+
         assert metrics.coherence_score == await scorer.score_coherence(text)
         assert metrics.character_consistency == await scorer.score_character_consistency(text)
         assert metrics.pacing_score == await scorer.score_pacing(text)

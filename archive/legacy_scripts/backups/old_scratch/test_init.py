@@ -12,6 +12,6 @@ async def test_init():
     print(f"Repo: {engine.repo}")
     print(f"Config: {engine.config.get('max_concurrency')}")
 
+
 if __name__ == "__main__":
     asyncio.run(test_init())
-

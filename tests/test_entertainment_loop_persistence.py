@@ -2,6 +2,7 @@
 tests/test_entertainment_loop_persistence.py
 src/backend/entertainment_loop.py のDB保存処理の統合テスト。
 """
+
 from unittest.mock import AsyncMock
 
 import pytest
@@ -23,16 +24,22 @@ class DummyChecker:
 class TestEntertainmentLoopPersistence:
     @pytest.mark.asyncio
     async def test_save_on_pass(self):
-        checker = DummyChecker(EntertainmentCheckResult(
-            interest_score=80,
-            physiological_reaction="カタルシス",
-            would_continue_reading=True,
-            feedback="良い",
-        ))
+        checker = DummyChecker(
+            EntertainmentCheckResult(
+                interest_score=80,
+                physiological_reaction="カタルシス",
+                would_continue_reading=True,
+                feedback="良い",
+            )
+        )
         repo = AsyncMock()
         result = await run_entertainment_first_loop(
-            checker, "plot", "opening",
-            repo=repo, book_id=1, ep_num=1,
+            checker,
+            "plot",
+            "opening",
+            repo=repo,
+            book_id=1,
+            ep_num=1,
         )
         assert result.interest_score == 80
         repo.save_entertainment_check_log.assert_called_once()
@@ -43,17 +50,23 @@ class TestEntertainmentLoopPersistence:
 
     @pytest.mark.asyncio
     async def test_save_on_fail(self):
-        checker = DummyChecker(EntertainmentCheckResult(
-            interest_score=40,
-            physiological_reaction="無反応",
-            would_continue_reading=False,
-            feedback="bad",
-        ))
+        checker = DummyChecker(
+            EntertainmentCheckResult(
+                interest_score=40,
+                physiological_reaction="無反応",
+                would_continue_reading=False,
+                feedback="bad",
+            )
+        )
         repo = AsyncMock()
         result = await run_entertainment_first_loop(
-            checker, "plot", "opening",
+            checker,
+            "plot",
+            "opening",
             max_retries=0,
-            repo=repo, book_id=1, ep_num=1,
+            repo=repo,
+            book_id=1,
+            ep_num=1,
         )
         assert result.interest_score == 40
         repo.save_entertainment_check_log.assert_called_once()

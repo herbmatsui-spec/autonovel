@@ -3,7 +3,6 @@ src/core/container.py - 依存性注入コンテナ (AppContainer)
 全サービスのDI構成を定義する。
 """
 
-
 import logging
 
 from dependency_injector import containers, providers
@@ -22,9 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 class AppContainer(containers.DeclarativeContainer):
-    wiring_config = containers.WiringConfiguration(
-        packages=["src"]
-    )
+    wiring_config = containers.WiringConfiguration(packages=["src"])
 
     # 外部入力 (起動時に上書き可能)
     api_key = providers.Object("DUMMY")
@@ -34,29 +31,18 @@ class AppContainer(containers.DeclarativeContainer):
     vector_store = providers.Singleton(lambda: None)  # ChromaVectorStore 必要に応じて差し替え
     audit_logger = providers.Singleton(lambda: None)
     cooldown = providers.Singleton(
-        "src.backend.engine_utils.AdaptiveCooldown",
-        base_sec=2.0,
-        min_sec=0.5,
-        max_sec=10.0
+        "src.backend.engine_utils.AdaptiveCooldown", base_sec=2.0, min_sec=0.5, max_sec=10.0
     )
     # StatusReporter ファクトリ (PlanningService 等が利用)
     # 注意: src/shared/utils.StatusReporter は Protocol。具象クラスである
     #       src/backend/background.StatusReporter を生成する。
-    reporter_factory = providers.Factory(
-        "src.backend.background.StatusReporter"
-    )
-    genai_client = providers.Singleton(
-        "src.core.llm_gateway.create_genai_client",
-        api_key=api_key
-    )
+    reporter_factory = providers.Factory("src.backend.background.StatusReporter")
+    genai_client = providers.Singleton("src.core.llm_gateway.create_genai_client", api_key=api_key)
     llm_factory = providers.Singleton(
-        "src.core.llm_gateway.LLMProviderFactory",
-        genai_client=genai_client,
-        cooldown=cooldown
+        "src.core.llm_gateway.LLMProviderFactory", genai_client=genai_client, cooldown=cooldown
     )
     semantic_cache = providers.Singleton(
-        "src.core.llm_gateway.SemanticCacheManager",
-        vector_store=vector_store
+        "src.core.llm_gateway.SemanticCacheManager", vector_store=vector_store
     )
     edge_preserver = providers.Singleton(
         "src.backend.sharp_edge_preserver.SemanticEdgePreserver",
@@ -65,46 +51,29 @@ class AppContainer(containers.DeclarativeContainer):
         use_semantic=True,
     )
     llm = providers.Singleton(
-        "src.core.llm_gateway.LLMGenerateResultProxy",
-        llm_factory=llm_factory
+        "src.core.llm_gateway.LLMGenerateResultProxy", llm_factory=llm_factory
     )
     connection_pipeline = providers.Singleton(
         lambda: None  # デフォルトはパススルー
     )
 
     # データアクセス
-    repo = providers.Singleton(
-        DataRepository,
-        db=db
-    )
-    uow = providers.Factory(
-        UnitOfWork,
-        db=db
-    )
+    repo = providers.Singleton(DataRepository, db=db)
+    uow = providers.Factory(UnitOfWork, db=db)
 
     # Prompt管理
     pm = providers.Singleton(PromptManager)
 
     # 設定
-    ctx_mgr = providers.Singleton(
-        ContextManager,
-        repo=repo
-    )
+    ctx_mgr = providers.Singleton(ContextManager, repo=repo)
     global_config = providers.Singleton(get_config)
 
     # エージェント・サービス
     auditor = providers.Singleton(
-        "src.agents.LogicalAuditor",
-        repo=repo,
-        pm=pm,
-        llm=llm,
-        ctx_mgr=ctx_mgr
+        "src.agents.LogicalAuditor", repo=repo, pm=pm, llm=llm, ctx_mgr=ctx_mgr
     )
     marketing = providers.Singleton(
-        "src.agents.MarketingAgent",
-        repo=repo,
-        prompt_manager=pm,
-        llm=llm
+        "src.agents.MarketingAgent", repo=repo, prompt_manager=pm, llm=llm
     )
     bible_generator = providers.Singleton(
         "src.services.bible_service.WorldBibleGenerator",
@@ -113,7 +82,7 @@ class AppContainer(containers.DeclarativeContainer):
         pm=pm,
         debate=None,
         marketing=marketing,
-        auditor=auditor
+        auditor=auditor,
     )
     plot_expander = providers.Singleton(
         "src.agents.plot.PlotAgent",
@@ -127,18 +96,9 @@ class AppContainer(containers.DeclarativeContainer):
             llm=llm,
         ),
     )
-    planner = providers.Singleton(
-        "src.agents.PlanningAgent",
-        repo=repo,
-        llm=llm,
-        prompt_manager=pm
-    )
+    planner = providers.Singleton("src.agents.PlanningAgent", repo=repo, llm=llm, prompt_manager=pm)
     validator = providers.Singleton(
-        "src.agents.LogicalAuditor",
-        repo=repo,
-        pm=pm,
-        llm=llm,
-        ctx_mgr=ctx_mgr
+        "src.agents.LogicalAuditor", repo=repo, pm=pm, llm=llm, ctx_mgr=ctx_mgr
     )
     narrative = providers.Singleton(
         "src.backend.engine_narrative.NarrativeController",
@@ -147,18 +107,16 @@ class AppContainer(containers.DeclarativeContainer):
         ctx_mgr=ctx_mgr,
         generate_json=llm.provided.generate_json,
         logic_validator=validator,
-        auditor=auditor
+        auditor=auditor,
     )
     critique = providers.Singleton(
         "src.backend.engine_critique.CritiqueAgent",
         repo=repo,
         pm=pm,
-        generate_json=llm.provided.generate_json
+        generate_json=llm.provided.generate_json,
     )
     style_rag = providers.Singleton(
-        "src.backend.engine_style_rag.StyleRagManager",
-        client=genai_client,
-        repo=repo
+        "src.backend.engine_style_rag.StyleRagManager", client=genai_client, repo=repo
     )
     writer = providers.Singleton(
         "src.agents.WritingAgent",
@@ -168,9 +126,7 @@ class AppContainer(containers.DeclarativeContainer):
         style_rag=style_rag,
         plot_expander=plot_expander,
     )
-    formatter = providers.Singleton(
-        "src.backend.sanitizer.TextFormatter"
-    )
+    formatter = providers.Singleton("src.backend.sanitizer.TextFormatter")
     # PlanningService: 企画・プロット生成を担当 (ADR-0004)
     planning_service = providers.Factory(
         "src.backend.planning_service.PlanningService",
@@ -209,7 +165,7 @@ class AppContainer(containers.DeclarativeContainer):
         plot_agent=plot_expander,
         style_rag=style_rag,
         llm=llm,
-        cooldown=cooldown
+        cooldown=cooldown,
     )
     # EngineFacade: UltimateHegemonyEngine を内包し、後方互換インターフェースを
     # 提供する薄いファサード。将来的なサービス分解 (ADR-0004) への移行足場。
@@ -218,9 +174,7 @@ class AppContainer(containers.DeclarativeContainer):
         config=providers.Factory(EngineConfig.create, api_key=api_key, cooldown=cooldown),
         engine=engine,
     )
-    redis_cache = providers.Factory(
-        "src.services.redis_cache.RedisCacheService"
-    )
+    redis_cache = providers.Factory("src.services.redis_cache.RedisCacheService")
     prompt_cache = providers.Factory(
         "src.services.redis_cache.PromptCacheService",
         redis_cache=redis_cache,

@@ -1,6 +1,7 @@
 """
 progress.py - バックグラウンドタスクの進捗監視および状態管理用プロキシ
 """
+
 from __future__ import annotations
 
 import logging
@@ -15,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 class ProgressStateProxy:
     """バックグラウンドタスクの進捗状態をAPI経由で監視・保持するプロキシクラス"""
+
     def __init__(self, task_id: str):
         self.task_id = task_id
         self.trace_id: str = "N/A"
@@ -43,7 +45,7 @@ class ProgressStateProxy:
             "streaming_text": self.streaming_text,
             "logs_len": len(self.logs),
             "error": self.error,
-            "result_data": self.result_data
+            "result_data": self.result_data,
         }
 
     def refresh(self, timeout: float = 5.0) -> bool:
@@ -73,8 +75,10 @@ class ProgressStateProxy:
         # 前回との差分（今回の増分）のみを記録
         incremental_usage = {
             "prompt": max(0, raw_usage.get("prompt", 0) - self._last_api_tokens.get("prompt", 0)),
-            "completion": max(0, raw_usage.get("completion", 0) - self._last_api_tokens.get("completion", 0)),
-            "calls": max(0, raw_usage.get("calls", 0) - self._last_api_tokens.get("calls", 0))
+            "completion": max(
+                0, raw_usage.get("completion", 0) - self._last_api_tokens.get("completion", 0)
+            ),
+            "calls": max(0, raw_usage.get("calls", 0) - self._last_api_tokens.get("calls", 0)),
         }
         self.token_usage = incremental_usage
         self._last_api_tokens = raw_usage

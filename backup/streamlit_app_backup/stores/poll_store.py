@@ -6,6 +6,7 @@ streamlit_app/stores/poll_store.py — ポーリングとタスク進捗の状�
 - ポーリングスキップ期限(poll_skip_until)の取得・設定
 - エピソードごとの保存状態(save_status)の管理
 """
+
 from __future__ import annotations
 
 from streamlit_app.stores.base import BaseStore

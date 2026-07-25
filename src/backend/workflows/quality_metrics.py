@@ -6,7 +6,7 @@ WritingGraphManager の Actor-Critic ループで生成された各エピソー�
 提供する。低性能 LLM でもオーバーヘッドが小さくなるようシンプルに保つ。
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
 
@@ -77,8 +77,12 @@ class QualityMetricsCollector:
             }
         baseline = self.genre_baselines[genre]
         count = baseline["count"]
-        baseline["integrity_rate"] = (baseline["integrity_rate"] * count + (1.0 if metrics.integrity_ok else 0.0)) / (count + 1)
-        baseline["causal_rate"] = (baseline["causal_rate"] * count + (1.0 if metrics.causal_ok else 0.0)) / (count + 1)
+        baseline["integrity_rate"] = (
+            baseline["integrity_rate"] * count + (1.0 if metrics.integrity_ok else 0.0)
+        ) / (count + 1)
+        baseline["causal_rate"] = (
+            baseline["causal_rate"] * count + (1.0 if metrics.causal_ok else 0.0)
+        ) / (count + 1)
         baseline["avg_rate"] = (baseline["avg_rate"] * count + metrics.rate) / (count + 1)
         baseline["count"] = count + 1
 

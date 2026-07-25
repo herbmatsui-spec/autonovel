@@ -5,6 +5,7 @@ Context Caching Service - Gemini API のサーバーサイドキャッシュを�
 
 v4.0: 覇権エンジンの高速化基盤
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -17,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 class CacheEntry:
     """個別キャッシュエントリのメタデータ"""
+
     def __init__(self, cache_name: str, created_at: float, ttl_seconds: int):
         self.cache_name = cache_name
         self.created_at = created_at
@@ -28,7 +30,7 @@ class CacheEntry:
 
 class ContextCacheManager:
     """Gemini Context Caching API のラッパー。
-    
+
     ワールドバイブルやシステムプロンプトなどの不変コンテンツを
     サーバーサイドでキャッシュし、リクエストごとの入力トークン処理を最大80%削減する。
     """
@@ -47,17 +49,17 @@ class ContextCacheManager:
         cache_key: str,
         contents: list,
         system_instruction: Optional[str] = None,
-        ttl_minutes: int = 60
+        ttl_minutes: int = 60,
     ) -> Optional[str]:
         """
         キャッシュを取得。存在しなければ作成する。
-        
+
         Args:
             cache_key: キャッシュの識別子
             contents: キャッシュするコンテンツのリスト
             system_instruction: システムプロンプト
             ttl_minutes: キャッシュのTTL（分）
-            
+
         Returns: cached_content の名前（キャッシュID）、失敗時は None
         """
         # 既存キャッシュのチェック
@@ -75,6 +77,7 @@ class ContextCacheManager:
             from google.genai import types as genai_types
 
             from src.core.executor_manager import executor_manager
+
             cached_content = await executor_manager.run_io(
                 self.client.caches.create,
                 model=self.model_name,
@@ -82,13 +85,11 @@ class ContextCacheManager:
                     contents=contents,
                     system_instruction=system_instruction,
                     ttl=f"{ttl_minutes * 60}s",
-                    display_name=cache_key
-                )
+                    display_name=cache_key,
+                ),
             )
             self._cache_registry[cache_key] = CacheEntry(
-                cache_name=cached_content.name,
-                created_at=time.time(),
-                ttl_seconds=ttl_minutes * 60
+                cache_name=cached_content.name, created_at=time.time(), ttl_seconds=ttl_minutes * 60
             )
             logger.info(f"[CACHE CREATED] {cache_key} -> {cached_content.name}")
             return cached_content.name
@@ -117,5 +118,5 @@ class ContextCacheManager:
             "total_entries": len(self._cache_registry),
             "active": active,
             "expired": expired,
-            "keys": list(self._cache_registry.keys())
+            "keys": list(self._cache_registry.keys()),
         }

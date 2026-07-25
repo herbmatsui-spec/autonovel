@@ -1,6 +1,5 @@
 import logging
 import uuid
-from typing import Dict, Any
 
 from src.models.easy_mode_schemas import PromotionRequest, PromotionResponse
 from src.services.digest_service import _BOOK_STORE
@@ -17,7 +16,9 @@ class PromotionService:
 
         if not book_data:
             # 存在しない場合でもテストやフォールバックで空データを生成登録
-            logger.warning(f"Book data for {book_id} not found in memory store. Initializing default.")
+            logger.warning(
+                f"Book data for {book_id} not found in memory store. Initializing default."
+            )
             book_data = {
                 "book_id": book_id,
                 "title": "昇格作品",

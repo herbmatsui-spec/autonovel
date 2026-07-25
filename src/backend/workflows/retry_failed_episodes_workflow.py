@@ -8,6 +8,7 @@ from .base_workflow import BaseWorkflow
 
 class RetryFailedEpisodesWorkflow(BaseWorkflow):
     """失敗したエピソードをスキャンし、自動で再試行・修復するバックグラウンドジョブ"""
+
     async def execute(self, reporter: StatusReporter, **kwargs) -> Dict[str, Any]:
         book_id = kwargs["book_id"]
         passion = kwargs["passion"]
@@ -24,6 +25,6 @@ class RetryFailedEpisodesWorkflow(BaseWorkflow):
             word_count=word_count,
             reporter=reporter,
             is_easy_mode=True,
-            max_retries=0
+            max_retries=0,
         )
         return {"chars_count": chars, "failed_episodes": failed, "book_id": book_id}

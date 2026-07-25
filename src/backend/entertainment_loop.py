@@ -4,6 +4,7 @@ src/backend/entertainment_loop.py
 
 「面白さ検証 -> 興味不足なら基幹構造戻し -> 興味OKなら品質整備」の順序を強制する。
 """
+
 from __future__ import annotations
 
 import logging

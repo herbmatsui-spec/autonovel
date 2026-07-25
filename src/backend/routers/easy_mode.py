@@ -1,4 +1,5 @@
 import logging
+
 from fastapi import APIRouter, HTTPException, status
 
 from src.models.easy_mode_schemas import (
@@ -63,7 +64,7 @@ async def promote_to_advanced(request: PromotionRequest):
     """かんたんモードで生成した作品を上級者モードへ引き継ぐ"""
     try:
         return promotion_service.promote(request)
-    except KeyError as ke:
+    except KeyError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="指定された作品データが見つかりません。",

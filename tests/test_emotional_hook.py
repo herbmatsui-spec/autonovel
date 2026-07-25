@@ -2,6 +2,7 @@
 tests/test_emotional_hook.py
 src/models/emotional_hook.py の単体テスト。
 """
+
 import logging
 
 import pytest

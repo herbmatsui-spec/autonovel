@@ -8,27 +8,30 @@ from kernels.connection import ConnectionState
 
 
 class ResonanceType(Enum):
-    SUDDEN_BOND = "sudden_bond"      # 急激な絆の深化（告白、共闘など）
-    BREAKUP = "breakup"              # 関係の破綻（決別、裏切りなど）
-    TENSION_EXPLOSION = "explosion"   # 緊張の爆発（激しい衝突、情熱的なぶつかり合い）
-    TRUST_ANCHOR = "trust_anchor"    # 絶対的信頼の確立（究極の献身など）
-    PSYCHOLOGICAL_SYNC = "sync"      # 心理的同期（言葉なき理解、呼吸の同調）
+    SUDDEN_BOND = "sudden_bond"  # 急激な絆の深化（告白、共闘など）
+    BREAKUP = "breakup"  # 関係の破綻（決別、裏切りなど）
+    TENSION_EXPLOSION = "explosion"  # 緊張の爆発（激しい衝突、情熱的なぶつかり合い）
+    TRUST_ANCHOR = "trust_anchor"  # 絶対的信頼の確立（究極の献身など）
+    PSYCHOLOGICAL_SYNC = "sync"  # 心理的同期（言葉なき理解、呼吸の同調）
+
 
 class ResonanceEvent(BaseModel):
     event_type: ResonanceType
     trigger_condition: str
     plot_impact: str
     suggested_scenes: List[str]
-    resonance_level_gain: int = 1 # 同期レベルの上昇量
+    resonance_level_gain: int = 1  # 同期レベルの上昇量
+
 
 class ResonanceKernel(KernelBase[ConnectionState, Optional[ResonanceEvent]]):
     """
     感情状態の閾値判定を行い、プロット上の転換点（共鳴イベント）をトリガーするカーネル。
     単なる数値的閾値だけでなく、心理的な「同期」を設計する。
     """
+
     def __init__(self, kernel_id: str = "resonance_kernel"):
         super().__init__(kernel_id)
-        self.state_value = 0.0 # Interaction Matrix用
+        self.state_value = 0.0  # Interaction Matrix用
 
     # (Removed duplicate __init__ above)
 
@@ -37,30 +40,32 @@ class ResonanceKernel(KernelBase[ConnectionState, Optional[ResonanceEvent]]):
         ResonanceType.SUDDEN_BOND: {
             "affection": 85,
             "trust": 70,
-            "description": "互いの親愛と信頼が極めて高い状態で共鳴した"
+            "description": "互いの親愛と信頼が極めて高い状態で共鳴した",
         },
         ResonanceType.BREAKUP: {
             "affection": 20,
             "trust": 20,
-            "description": "互いの親愛と信頼が底をつき、修復不可能な状態になった"
+            "description": "互いの親愛と信頼が底をつき、修復不可能な状態になった",
         },
         ResonanceType.TENSION_EXPLOSION: {
             "tension": 90,
-            "description": "心理的な緊張が限界点に達し、何らかの形で爆発するタイミング"
+            "description": "心理的な緊張が限界点に達し、何らかの形で爆発するタイミング",
         },
         ResonanceType.TRUST_ANCHOR: {
             "trust": 95,
             "dependence": 70,
-            "description": "絶対的な信頼と精神的な依存が結びつき、不可分な関係となった"
+            "description": "絶対的な信頼と精神的な依存が結びつき、不可分な関係となった",
         },
         ResonanceType.PSYCHOLOGICAL_SYNC: {
             "trust": 80,
             "affection": 80,
-            "description": "高い信頼と親愛に基づき、意識せずとも思考や感情が同期し始めた"
-        }
+            "description": "高い信頼と親愛に基づき、意識せずとも思考や感情が同期し始めた",
+        },
     }
 
-    async def execute(self, input_data: ConnectionState, context: KernelContext) -> Optional[ResonanceEvent]:
+    async def execute(
+        self, input_data: ConnectionState, context: KernelContext
+    ) -> Optional[ResonanceEvent]:
         """
         現在の感情状態をチェックし、トリガーされるべき共鳴イベントを返す。
         """
@@ -78,55 +83,69 @@ class ResonanceKernel(KernelBase[ConnectionState, Optional[ResonanceEvent]]):
                 event_type=ResonanceType.TENSION_EXPLOSION,
                 trigger_condition=self.THRESHOLDS[ResonanceType.TENSION_EXPLOSION]["description"],
                 plot_impact="物語の停滞を打破する激しい感情的衝突、または情熱的な展開への転換",
-                suggested_scenes=["激しい口論", "衝動的な告白", "身体的な衝突/接触"]
+                suggested_scenes=["激しい口論", "衝動的な告白", "身体的な衝突/接触"],
             )
 
         # 2. 心理的同期 (PSYCHOLOGICAL_SYNC) - 新設: 緩やかながらに深い同期
-        if state.trust >= self.THRESHOLDS[ResonanceType.PSYCHOLOGICAL_SYNC]["trust"] and \
-           state.affection >= self.THRESHOLDS[ResonanceType.PSYCHOLOGICAL_SYNC]["affection"]:
+        if (
+            state.trust >= self.THRESHOLDS[ResonanceType.PSYCHOLOGICAL_SYNC]["trust"]
+            and state.affection >= self.THRESHOLDS[ResonanceType.PSYCHOLOGICAL_SYNC]["affection"]
+        ):
             return ResonanceEvent(
                 event_type=ResonanceType.PSYCHOLOGICAL_SYNC,
                 trigger_condition=self.THRESHOLDS[ResonanceType.PSYCHOLOGICAL_SYNC]["description"],
                 plot_impact="『言葉を必要としない理解』の成立。二人の間に独自の精神的領域が構築される",
-                suggested_scenes=["同時に同じことを口にする", "視線一つで意図を完璧に汲み取る", "静寂が心地よい共有時間となる"],
-                resonance_level_gain=1
+                suggested_scenes=[
+                    "同時に同じことを口にする",
+                    "視線一つで意図を完璧に汲み取る",
+                    "静寂が心地よい共有時間となる",
+                ],
+                resonance_level_gain=1,
             )
 
         # 3. 急激な絆の深化 (SUDDEN_BOND)
-        if state.affection >= self.THRESHOLDS[ResonanceType.SUDDEN_BOND]["affection"] and \
-           state.trust >= self.THRESHOLDS[ResonanceType.SUDDEN_BOND]["trust"]:
+        if (
+            state.affection >= self.THRESHOLDS[ResonanceType.SUDDEN_BOND]["affection"]
+            and state.trust >= self.THRESHOLDS[ResonanceType.SUDDEN_BOND]["trust"]
+        ):
             return ResonanceEvent(
                 event_type=ResonanceType.SUDDEN_BOND,
                 trigger_condition=self.THRESHOLDS[ResonanceType.SUDDEN_BOND]["description"],
                 plot_impact="関係性のステージが一段階上がり、共犯関係や恋人関係への移行",
                 suggested_scenes=["深い秘密の共有", "運命的な共闘", "精神的な結合"],
-                resonance_level_gain=2
+                resonance_level_gain=2,
             )
 
         # 4. 関係の破綻 (BREAKUP)
-        if state.affection <= self.THRESHOLDS[ResonanceType.BREAKUP]["affection"] and \
-           state.trust <= self.THRESHOLDS[ResonanceType.BREAKUP]["trust"]:
+        if (
+            state.affection <= self.THRESHOLDS[ResonanceType.BREAKUP]["affection"]
+            and state.trust <= self.THRESHOLDS[ResonanceType.BREAKUP]["trust"]
+        ):
             return ResonanceEvent(
                 event_type=ResonanceType.BREAKUP,
                 trigger_condition=self.THRESHOLDS[ResonanceType.BREAKUP]["description"],
                 plot_impact="これまでの関係性の完全な拒絶、あるいは絶望的な断絶",
-                suggested_scenes=["決別宣言", "決定的な裏切り", "冷徹な突き放し"]
+                suggested_scenes=["決別宣言", "決定的な裏切り", "冷徹な突き放し"],
             )
 
         # 5. 絶対的信頼の確立 (TRUST_ANCHOR)
-        if state.trust >= self.THRESHOLDS[ResonanceType.TRUST_ANCHOR]["trust"] and \
-           state.dependence >= self.THRESHOLDS[ResonanceType.TRUST_ANCHOR]["dependence"]:
+        if (
+            state.trust >= self.THRESHOLDS[ResonanceType.TRUST_ANCHOR]["trust"]
+            and state.dependence >= self.THRESHOLDS[ResonanceType.TRUST_ANCHOR]["dependence"]
+        ):
             return ResonanceEvent(
                 event_type=ResonanceType.TRUST_ANCHOR,
                 trigger_condition=self.THRESHOLDS[ResonanceType.TRUST_ANCHOR]["description"],
                 plot_impact="相互依存的な強固な絆の確立。物語の精神的支柱となる関係への進化",
                 suggested_scenes=["命を預け合う誓い", "絶望の中での唯一の救いとしての再認"],
-                resonance_level_gain=2
+                resonance_level_gain=2,
             )
 
         return None
 
-    def generate_plot_injection_prompt(self, char_a: str, char_b: str, event: ResonanceEvent) -> str:
+    def generate_plot_injection_prompt(
+        self, char_a: str, char_b: str, event: ResonanceEvent
+    ) -> str:
         """
         プロットエンジンへ注入するための共鳴イベント指示文を生成する。
         """
@@ -199,16 +218,16 @@ def destined_connection_builder(
     char_a: str,
     char_b: str,
     resonance_pattern: str = "mutual_healing",
-    current_scene_context: str = ""
+    current_scene_context: str = "",
 ) -> Dict[str, Any]:
     """運命的な結びつきを持つキャラクター間の関係を構築する
-    
+
     Args:
         char_a: 運命的な結びつきを持つキャラクター1
         char_b: 運命的な結びつきを持つキャラクター2
         resonance_pattern: 結びつきのパターン（first_meeting, soul_recognition, fated_duel, mutual_healing）
         current_scene_context: 現在のシーン文脈
-    
+
     Returns:
         運命共鳴イベントデータ辞書
     """
@@ -229,8 +248,7 @@ def destined_connection_builder(
         "characters": (char_a, char_b),
         "pattern": resonance_pattern,
         "pattern_description": DESTINED_RESONANCE_PATTERNS.get(
-            resonance_pattern,
-            "互いを補完し合う運命的な結びつき"
+            resonance_pattern, "互いを補完し合う運命的な結びつき"
         ),
         "scene_elements": scene_data["elements"],
         "intensity": scene_data["intensity"],
@@ -240,10 +258,7 @@ def destined_connection_builder(
 
 
 def _generate_destined_plot_instruction(
-    char_a: str,
-    char_b: str,
-    pattern: str,
-    scene_data: Dict
+    char_a: str, char_b: str, pattern: str, scene_data: Dict
 ) -> str:
     """運命共鳴シーンのプロット指示文を生成"""
     element_list = "\n".join([f"  - {elem}" for elem in scene_data["elements"]])
@@ -304,12 +319,12 @@ def _get_bond_deepening_triggers(pattern: str) -> List[str]:
 
 def is_destined_connection(char_a: str, char_b: str, characters: Dict) -> bool:
     """2キャラクターが運命的な結びつきを持つかチェック
-    
+
     Args:
         char_a: キャラクター名A
         char_b: キャラクター名B
         characters: 全キャラクター辞書
-    
+
     Returns:
         運命的な結びつきを持つか
     """
@@ -333,4 +348,3 @@ def is_destined_connection(char_a: str, char_b: str, characters: Dict) -> bool:
     is_targeted_b = char_a in resonance_targets_b
 
     return (has_destined_a or has_destined_b) and (is_targeted_a or is_targeted_b)
-

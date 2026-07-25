@@ -1,4 +1,3 @@
-
 import pytest
 
 from src.services.errors import LLMTemporaryError
@@ -25,6 +24,7 @@ async def test_with_llm_retry_success():
     assert result["success"] is True
     assert client.calls == 1
 
+
 @pytest.mark.asyncio
 async def test_with_llm_retry_retry_then_success():
     class DummyClient:
@@ -46,6 +46,7 @@ async def test_with_llm_retry_retry_then_success():
     result = await client.generate(max_retries=3)
     assert result["success"] is True
     assert client.calls == 3
+
 
 @pytest.mark.asyncio
 async def test_with_llm_retry_max_retries_exceeded():

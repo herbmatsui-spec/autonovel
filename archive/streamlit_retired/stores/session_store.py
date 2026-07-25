@@ -7,6 +7,7 @@ streamlit_app/stores/session_store.py — セッション/ランタイム設定�
 - APIキー入力欄の取得・設定
 - 再描画回数(rerun_count)の取得・インクリメント
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -33,7 +34,10 @@ class SessionStore(BaseStore):
     @staticmethod
     def set_easy_genre(genre_key: str) -> None:
         """簡易モードのジャンル設定を更新する"""
-        SessionStore.update(lambda s: setattr(s.runtime, "easy_genre_key", genre_key), notify_keys=["easy_genre_key"])
+        SessionStore.update(
+            lambda s: setattr(s.runtime, "easy_genre_key", genre_key),
+            notify_keys=["easy_genre_key"],
+        )
 
     # ==========================================================================
     # API Key Validation
@@ -71,10 +75,12 @@ class SessionStore(BaseStore):
     @staticmethod
     def reset_api_key_validation() -> None:
         """APIキー検証状態を完全リセット"""
-        SessionStore.update(lambda s: (
-            setattr(s.runtime, "api_key_validation_state", "idle"),
-            setattr(s.runtime, "api_key_validation_error", ""),
-        ))
+        SessionStore.update(
+            lambda s: (
+                setattr(s.runtime, "api_key_validation_state", "idle"),
+                setattr(s.runtime, "api_key_validation_error", ""),
+            )
+        )
 
     # ==========================================================================
     # API Key Input & Rerun

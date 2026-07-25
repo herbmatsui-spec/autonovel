@@ -2,7 +2,7 @@
 tests/test_state_desires_to_hook.py
 streamlit_app/state.py の desires_to_hook の単体テスト。
 """
-import pytest
+
 
 from streamlit_app.state import DESIRE_TO_HOOK_MAP, desires_to_hook
 
@@ -26,5 +26,6 @@ class TestDesiresToHook:
 
     def test_all_desire_map_keys_are_valid_hooks(self):
         from config.emotional_hook_vocabulary import validate_hook
+
         for desire, hook_name in DESIRE_TO_HOOK_MAP.items():
             assert validate_hook(hook_name), f"{desire} -> {hook_name} が不正です"

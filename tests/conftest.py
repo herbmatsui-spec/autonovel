@@ -1,7 +1,7 @@
-import os
 import sys
 import tempfile
 from pathlib import Path
+
 import pytest
 
 # 動的パス解決: プロジェクトルートおよびサブパッケージを sys.path に追加
@@ -15,14 +15,17 @@ if str(WORKSPACE_ROOT) not in sys.path:
 
 try:
     from sqlalchemy import create_engine
+
     from src.backend.database.core import DatabaseManager
     from src.backend.database.models import Base
+
     HAS_SQLALCHEMY = True
 except ImportError:
     HAS_SQLALCHEMY = False
     create_engine = None
     DatabaseManager = None
     Base = None
+
 
 @pytest.fixture
 async def real_db_manager():
@@ -52,6 +55,7 @@ async def real_db_manager():
     except OSError:
         pass
 
+
 @pytest.fixture
 def mock_llm():
     """
@@ -59,4 +63,5 @@ def mock_llm():
     MockGeminiApiClient インスタンスを返し、レスポンスを事前定義できる。
     """
     from tests.mocks.mock_llm import MockGeminiApiClient
+
     return MockGeminiApiClient()

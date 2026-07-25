@@ -4,6 +4,7 @@ config/erotic_video_patterns.py
 
 Fanza等の動画を参考にした「映像パターン → 文学技法」の変換テーブル。
 """
+
 from dataclasses import dataclass
 from typing import Dict, List, Optional
 

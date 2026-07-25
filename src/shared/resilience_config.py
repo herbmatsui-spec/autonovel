@@ -9,11 +9,13 @@ from .retry_policy import RetryPolicy
 
 logger = logging.getLogger(__name__)
 
+
 class ResilienceConfigLoader:
     """
     Loader for resilience configurations defined in YAML.
     Provides RetryPolicy and CircuitBreakerConfig for various services.
     """
+
     _instance = None
     _config_data: Dict[str, Any] = {}
     _config_path = "config/resilience.yaml"
@@ -27,12 +29,14 @@ class ResilienceConfigLoader:
     def _load_config(self):
         """Loads the YAML configuration file from disk."""
         if not os.path.exists(self._config_path):
-            logger.warning(f"Resilience config file not found at {self._config_path}. Using defaults.")
+            logger.warning(
+                f"Resilience config file not found at {self._config_path}. Using defaults."
+            )
             self._config_data = {}
             return
 
         try:
-            with open(self._config_path, 'r', encoding='utf-8') as f:
+            with open(self._config_path, "r", encoding="utf-8") as f:
                 self._config_data = yaml.safe_load(f) or {}
             logger.info(f"Successfully loaded resilience config from {self._config_path}")
         except Exception as e:
@@ -50,14 +54,21 @@ class ResilienceConfigLoader:
         default_settings = self._config_data.get("default", {})
 
         # 2. Merge settings: Service specific > Default > DataClass defaults
-        retry_data = {**default_settings.get("retry_policy", {}), **service_settings.get("retry_policy", {})}
-        cb_data = {**default_settings.get("circuit_breaker", {}), **service_settings.get("circuit_breaker", {})}
+        retry_data = {
+            **default_settings.get("retry_policy", {}),
+            **service_settings.get("retry_policy", {}),
+        }
+        cb_data = {
+            **default_settings.get("circuit_breaker", {}),
+            **service_settings.get("circuit_breaker", {}),
+        }
 
         # 3. Instantiate data classes (filtering out None/invalid values)
         retry_policy = RetryPolicy(**{k: v for k, v in retry_data.items() if v is not None})
         cb_config = CircuitBreakerConfig(**{k: v for k, v in cb_data.items() if v is not None})
 
         return retry_policy, cb_config
+
 
 # Global instance for easy access
 resilience_config = ResilienceConfigLoader()

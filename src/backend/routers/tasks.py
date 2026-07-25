@@ -1,16 +1,16 @@
-from fastapi import APIRouter, HTTPException, Depends
-from fastapi.responses import StreamingResponse
 import json
 import time
-from typing import Any, Dict
+
+from fastapi import APIRouter, Depends
+from fastapi.responses import StreamingResponse
+from sqlalchemy import select
 
 from config.container import Container
+from src.backend.auth import require_api_key
+from src.backend.database.models import InternalState
 from src.backend.redis_util import get_redis_client
 from src.backend.sse import task_event_generator
-from sqlalchemy import select
-from src.backend.database.models import InternalState
 from src.core.exceptions import NotFoundError
-from src.backend.auth import require_api_key
 
 router = APIRouter(prefix="/api/tasks", tags=["tasks"])
 

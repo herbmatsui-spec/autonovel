@@ -1,7 +1,6 @@
+import json
 import os
 from typing import List
-
-import json
 
 from config.settings import Settings
 

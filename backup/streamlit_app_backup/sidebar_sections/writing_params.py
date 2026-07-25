@@ -1,14 +1,16 @@
 """
 streamlit_app/sidebar_sections/writing_params.py - 執筆パラメータ設定パネル
 """
+
 from __future__ import annotations
 
 import streamlit as st
-from config.streamlit_adapter import StreamlitConfig as GlobalConfig
 from streamlit_app.ui.components.nsfw_disclaimer import render_nsfw_disclaimer
-from streamlit_app.ui_components import inject_focus_css
-from streamlit_app.state import UIStateStore, SessionManager, get_session
 from streamlit_app.ui.icons import ICON_SETTINGS, ICON_WRITING
+from streamlit_app.ui_components import inject_focus_css
+
+from config.streamlit_adapter import StreamlitConfig as GlobalConfig
+from streamlit_app.state import SessionManager, UIStateStore, get_session
 
 HOOK_OPTIONS = [
     "カタルシス",
@@ -21,6 +23,7 @@ HOOK_OPTIONS = [
     "畏敬",
 ]
 DEFAULT_DESIRES = ["カタルシス"]
+
 
 def render_sidebar_settings() -> None:
     """禁止表現設定や読者欲望設定など、執筆のパラメータ設定パネルを描画する。"""
@@ -185,18 +188,34 @@ def render_sidebar_settings() -> None:
                 st.caption("🎯 感覚ウェイト調整")
                 col1, col2, col3 = st.columns(3)
                 with col1:
-                    touch_w = st.slider("触覚", 0, 100, session.config.get("erotic_sensory_touch", 80))
-                    scent_w = st.slider("嗅覚", 0, 100, session.config.get("erotic_sensory_scent", 60))
+                    touch_w = st.slider(
+                        "触覚", 0, 100, session.config.get("erotic_sensory_touch", 80)
+                    )
+                    scent_w = st.slider(
+                        "嗅覚", 0, 100, session.config.get("erotic_sensory_scent", 60)
+                    )
                 with col2:
-                    sound_w = st.slider("聴覚", 0, 100, session.config.get("erotic_sensory_sound", 70))
-                    gaze_w = st.slider("視線", 0, 100, session.config.get("erotic_sensory_gaze", 50))
+                    sound_w = st.slider(
+                        "聴覚", 0, 100, session.config.get("erotic_sensory_sound", 70)
+                    )
+                    gaze_w = st.slider(
+                        "視線", 0, 100, session.config.get("erotic_sensory_gaze", 50)
+                    )
                 with col3:
-                    breath_w = st.slider("呼吸", 0, 100, session.config.get("erotic_sensory_breath", 75))
-                    taste_w = st.slider("味覚", 0, 100, session.config.get("erotic_sensory_taste", 30))
+                    breath_w = st.slider(
+                        "呼吸", 0, 100, session.config.get("erotic_sensory_breath", 75)
+                    )
+                    taste_w = st.slider(
+                        "味覚", 0, 100, session.config.get("erotic_sensory_taste", 30)
+                    )
 
                 sensory_weights = {
-                    "touch": touch_w, "scent": scent_w, "sound": sound_w,
-                    "gaze": gaze_w, "breath": breath_w, "taste": taste_w,
+                    "touch": touch_w,
+                    "scent": scent_w,
+                    "sound": sound_w,
+                    "gaze": gaze_w,
+                    "breath": breath_w,
+                    "taste": taste_w,
                 }
                 if sensory_weights != session.config.get("erotic_sensory_weights"):
                     session.config["erotic_sensory_weights"] = sensory_weights
@@ -205,11 +224,17 @@ def render_sidebar_settings() -> None:
                 st.caption("⏱️ ペーシング比率")
                 col4, col5, col6 = st.columns(3)
                 with col4:
-                    build_r = st.slider("溜め(Build)", 1, 10, session.config.get("erotic_pace_build", 3))
+                    build_r = st.slider(
+                        "溜め(Build)", 1, 10, session.config.get("erotic_pace_build", 3)
+                    )
                 with col5:
-                    peak_r = st.slider("頂点(Peak)", 1, 10, session.config.get("erotic_pace_peak", 2))
+                    peak_r = st.slider(
+                        "頂点(Peak)", 1, 10, session.config.get("erotic_pace_peak", 2)
+                    )
                 with col6:
-                    afterglow_r = st.slider("余韻(Afterglow)", 1, 10, session.config.get("erotic_pace_afterglow", 2))
+                    afterglow_r = st.slider(
+                        "余韻(Afterglow)", 1, 10, session.config.get("erotic_pace_afterglow", 2)
+                    )
 
                 pace_ratios = {"build": build_r, "peak": peak_r, "afterglow": afterglow_r}
                 if pace_ratios != session.config.get("erotic_pace_ratios"):
@@ -217,8 +242,12 @@ def render_sidebar_settings() -> None:
                     SessionManager.save_state(session)
 
                 st.caption("📝 品質パラメータ")
-                metaphor_d = st.slider("比喩密度", 0, 100, session.config.get("erotic_metaphor_density", 50))
-                psych_d = st.slider("心理描写深度", 0, 100, session.config.get("erotic_psychology_depth", 50))
+                metaphor_d = st.slider(
+                    "比喩密度", 0, 100, session.config.get("erotic_metaphor_density", 50)
+                )
+                psych_d = st.slider(
+                    "心理描写深度", 0, 100, session.config.get("erotic_psychology_depth", 50)
+                )
                 if metaphor_d != session.config.get("erotic_metaphor_density"):
                     session.config["erotic_metaphor_density"] = metaphor_d
                     SessionManager.save_state(session)

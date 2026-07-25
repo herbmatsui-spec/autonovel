@@ -21,4 +21,3 @@ with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
                 print(f"Found non-truncated in line {i} step content:")
                 print(content)
                 print("=" * 80)
-

@@ -51,8 +51,8 @@ class DigestService:
             # 1. 全体あらすじ・プロット生成
             synopsis_prompt = f"""
 タイトル: {title}
-キャッチコピー: {selected_plan.get('logline')}
-主人公: {selected_plan.get('protagonist_summary')}
+キャッチコピー: {selected_plan.get("logline")}
+主人公: {selected_plan.get("protagonist_summary")}
 
 上記作品の全体あらすじ（300文字程度）と全10話の章構成プロットを作成してください。
 """

@@ -6,8 +6,14 @@ from src.llm.model_router import resolve_model, select_model
 logger = logging.getLogger(__name__)
 
 _PURPOSES = (
-    "planning", "plot_expansion", "writing", "climax",
-    "fallback", "ultra_stable", "audit", "marketing",
+    "planning",
+    "plot_expansion",
+    "writing",
+    "climax",
+    "fallback",
+    "ultra_stable",
+    "audit",
+    "marketing",
 )
 
 

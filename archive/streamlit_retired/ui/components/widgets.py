@@ -2,44 +2,63 @@
 streamlit_app/ui/components/widgets.py - 共通UIコンポーネント
 ビジネスロジックを排除し、純粋な表示とイベント発行のみを行う。
 """
+
 from __future__ import annotations
 
 import time
 from typing import Any
 
 import streamlit as st
-
-from streamlit_app.event_bus import UIEventType
 from streamlit_app.progress import ProgressStateProxy
-from streamlit_app.state import UIStateStore
 from streamlit_app.ui.icons import ICON_PACKAGE, ICON_SETTINGS
 
+from streamlit_app.event_bus import UIEventType
+from streamlit_app.state import UIStateStore
 
-def render_primary_button(label: str, key: str, on_click: Any = None, use_container_width: bool = True, icon: str = "") -> bool:
+
+def render_primary_button(
+    label: str, key: str, on_click: Any = None, use_container_width: bool = True, icon: str = ""
+) -> bool:
     """
     デザインシステムに基づいた共通プライマリボタン。
     アイコンの自動付与とスタイルの統一を行う。
     """
     full_label = f"{icon} {label}" if icon else label
-    return st.button(full_label, key=key, on_click=on_click, type="primary", use_container_width=use_container_width)
+    return st.button(
+        full_label,
+        key=key,
+        on_click=on_click,
+        type="primary",
+        use_container_width=use_container_width,
+    )
 
-def render_secondary_button(label: str, key: str, on_click: Any = None, use_container_width: bool = True, icon: str = "") -> bool:
+
+def render_secondary_button(
+    label: str, key: str, on_click: Any = None, use_container_width: bool = True, icon: str = ""
+) -> bool:
     """
     デザインシステムに基づいた共通セカンダリボタン。
     """
     full_label = f"{icon} {label}" if icon else label
-    return st.button(full_label, key=key, on_click=on_click, use_container_width=use_container_width)
+    return st.button(
+        full_label, key=key, on_click=on_click, use_container_width=use_container_width
+    )
+
 
 def inject_focus_css() -> None:
     """集中執筆モード: 明朝体・落ち着いた配色に変更"""
-    st.markdown("""
+    st.markdown(
+        """
     <style>
     body { font-family: "Yu Mincho", "游明朝", serif !important; background: #fdfaf5; }
     .stTextArea textarea { font-family: "Yu Mincho", "游明朝", serif !important; line-height: 2.0; }
     header[data-testid="stHeader"] { display: none !important; }
     section[data-testid="stSidebar"] { display: none !important; }
     </style>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
+
 
 def render_section_header(title: str, subtitle: str = "", icon: str = "") -> None:
     """
@@ -49,8 +68,12 @@ def render_section_header(title: str, subtitle: str = "", icon: str = "") -> Non
     full_title = f"{icon} {title}" if icon else title
     st.markdown(f"### {full_title}")
     if subtitle:
-        st.markdown(f"<div style='color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;'>{subtitle}</div>", unsafe_allow_html=True)
+        st.markdown(
+            f"<div style='color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;'>{subtitle}</div>",
+            unsafe_allow_html=True,
+        )
     st.write("---")
+
 
 @st.fragment
 def progress_fragment(run_key: str, controller_manager: Any) -> None:
@@ -109,7 +132,10 @@ def progress_fragment(run_key: str, controller_manager: Any) -> None:
             res = job.result_data
             if isinstance(res, dict) and "book_id" in res:
                 st.success(f"📖 新しい作品『{res.get('title', '無題')}』が生成されました。")
-                UIStateStore.update(lambda s: setattr(s, "current_book_id", res["book_id"]), notify_keys=["current_book_id"])
+                UIStateStore.update(
+                    lambda s: setattr(s, "current_book_id", res["book_id"]),
+                    notify_keys=["current_book_id"],
+                )
                 if run_key != "easy_job":
                     UIStateStore.get_runtime().app_mode = "advanced"
 
@@ -117,7 +143,9 @@ def progress_fragment(run_key: str, controller_manager: Any) -> None:
                 st.subheader("🎉 次のステップへ進みましょう！")
                 col_next1, col_next2, col_next3 = st.columns(3)
                 with col_next1:
-                    if render_secondary_button("詳細を微調整する", key=f"adj_{run_key}", icon=ICON_SETTINGS):
+                    if render_secondary_button(
+                        "詳細を微調整する", key=f"adj_{run_key}", icon=ICON_SETTINGS
+                    ):
                         UIStateStore.get_runtime().app_mode = "advanced"
                         st.rerun()
                 with col_next2:
@@ -125,7 +153,9 @@ def progress_fragment(run_key: str, controller_manager: Any) -> None:
                         UIStateStore.get_runtime().app_mode = "easy"
                         st.rerun()
                 with col_next3:
-                    if render_secondary_button("宣伝・納品を行う", key=f"promo_{run_key}", icon=ICON_PACKAGE):
+                    if render_secondary_button(
+                        "宣伝・納品を行う", key=f"promo_{run_key}", icon=ICON_PACKAGE
+                    ):
                         UIStateStore.get_runtime().app_mode = "advanced"
                         st.rerun()
                 st.info(f"✍️ 合計 {res['chars_count']:,} 文字を執筆しました。")
@@ -138,20 +168,22 @@ def progress_fragment(run_key: str, controller_manager: Any) -> None:
                         UIEventType.REQUEST_WRITE_EPISODE,
                         {
                             "book_id": res["book_id"],
-                            "write_from": 1, # 実際には失敗分を特定して渡すべき
+                            "write_from": 1,  # 実際には失敗分を特定して渡すべき
                             "write_to": 100,
                             "passion": ui_state.get_value("last_passion", 0.6),
                             "word_count": ui_state.get_value("last_word_count", 2500),
                             "do_refine": True,
                             "env_state": {},
-                            "pipeline_mode": True
-                        }
+                            "pipeline_mode": True,
+                        },
                     )
                     st.rerun()
 
             with st.expander("📜 実行詳細ログを表示"):
                 st.code("\n".join(job.logs))
-            if render_secondary_button("結果を確認する", key=f"confirm_{run_key}", icon="🔄", use_container_width=False):
+            if render_secondary_button(
+                "結果を確認する", key=f"confirm_{run_key}", icon="🔄", use_container_width=False
+            ):
                 UIStateStore.clear_active_job()
                 st.rerun()
 

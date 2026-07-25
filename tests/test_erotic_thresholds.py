@@ -2,6 +2,7 @@
 tests/test_erotic_thresholds.py
 官能閾値のユニットテスト。
 """
+
 from config.erotic_thresholds import (
     AFTERGLOW_MIN_CHARS,
     AFTERGLOW_MIN_PARAGRAPHS,

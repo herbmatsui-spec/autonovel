@@ -6,11 +6,13 @@ from pydantic import BaseModel
 
 class LLMResponse(BaseModel):
     """LLMからの共通レスポンス形式"""
+
     content: str
     metadata: Dict[str, Any] = {}
     usage: Dict[str, int] = {}
     success: bool = True
     error: Optional[str] = None
+
 
 class LLMProvider(ABC):
     """
@@ -25,7 +27,7 @@ class LLMProvider(ABC):
         prompt: str,
         system_instruction: Optional[str] = None,
         temperature: float = 0.7,
-        **kwargs
+        **kwargs,
     ) -> LLMResponse:
         """テキスト生成"""
         pass
@@ -38,7 +40,7 @@ class LLMProvider(ABC):
         response_schema: Optional[Any] = None,
         system_instruction: Optional[str] = None,
         temperature: float = 0.7,
-        **kwargs
+        **kwargs,
     ) -> LLMResponse:
         """構造化データ(JSON)生成"""
         pass

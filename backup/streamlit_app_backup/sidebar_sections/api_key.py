@@ -1,14 +1,17 @@
 """
 streamlit_app/sidebar_sections/api_key.py - APIキー入力セクション
 """
+
 from __future__ import annotations
 
 import asyncio
+
 import streamlit as st
+from streamlit_app.ui.icons import ICON_SETTINGS
 
 from streamlit_app.health_check import validate_api_key_async
-from streamlit_app.state import UIStateStore, SessionManager
-from streamlit_app.ui.icons import ICON_SETTINGS
+from streamlit_app.state import SessionManager, UIStateStore
+
 
 def render_api_key_section(session) -> tuple[str | None, bool]:
     """APIキー入力セクションの描画とキー検証を行う。"""
@@ -32,7 +35,9 @@ def render_api_key_section(session) -> tuple[str | None, bool]:
     selected_provider = st.selectbox(
         "LLM Provider",
         provider_options,
-        index=provider_options.index(current_provider) if current_provider in provider_options else 0,
+        index=provider_options.index(current_provider)
+        if current_provider in provider_options
+        else 0,
         help="Gemini (Google) or OpenAI",
     )
     UIStateStore.get_runtime().llm_provider = selected_provider
@@ -46,7 +51,9 @@ def render_api_key_section(session) -> tuple[str | None, bool]:
         if api_key:
             with st.spinner("APIキーを検証中..."):
                 try:
-                    is_valid, err_detail = asyncio.run(validate_api_key_async(api_key, selected_provider))
+                    is_valid, err_detail = asyncio.run(
+                        validate_api_key_async(api_key, selected_provider)
+                    )
                     UIStateStore.get_runtime().is_api_key_valid = is_valid
                     if is_valid:
                         session.api_key = api_key.strip()
@@ -54,7 +61,11 @@ def render_api_key_section(session) -> tuple[str | None, bool]:
                         st.success("APIキーが確定されました。")
                         st.rerun()
                     else:
-                        st.error(f"無効なAPIキーです。({err_detail})" if err_detail else "無効なAPIキーです。")
+                        st.error(
+                            f"無効なAPIキーです。({err_detail})"
+                            if err_detail
+                            else "無効なAPIキーです。"
+                        )
                 except Exception as e:
                     st.error(f"検証エラー: {e}")
         else:

@@ -1,8 +1,10 @@
 """
 streamlit_app/event_bus.py - UI Event Bus and Event Models
 """
+
 from enum import Enum
 from typing import Any, Dict, List, Optional, Protocol
+
 from pydantic import BaseModel, Field
 
 
@@ -19,8 +21,7 @@ class UIEvent(BaseModel):
 
 
 class UIEventHandler(Protocol):
-    def handle_event(self, event: UIEvent) -> Optional[Dict[str, Any]]:
-        ...
+    def handle_event(self, event: UIEvent) -> Optional[Dict[str, Any]]: ...
 
 
 class UIEventBus:

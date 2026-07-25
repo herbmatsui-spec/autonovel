@@ -6,8 +6,10 @@ from src.services.audit_service import AuditService
 
 logger = logging.getLogger(__name__)
 
+
 class ParallelAudit:
     """複数の監査を並列実行するユーティリティ"""
+
     def __init__(self, audit_service: AuditService):
         self.audit_service = audit_service
 

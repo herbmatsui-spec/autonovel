@@ -4,13 +4,12 @@
 WritingService は WritingAgent を内包し、generate_episodes_pipeline /
 generate_episodes / analyze_and_import_chapter を委譲する。
 """
+
 from typing import Any, List, Tuple
 
 import pytest
 
-from src.backend.protocols import WritingPort
 from src.backend.writing_service import WritingService
-from src.shared.utils import StatusReporter
 
 
 class _FakeWriter:
@@ -21,21 +20,41 @@ class _FakeWriter:
         self.has_import = True
 
     async def generate_episodes_pipeline(
-        self, book_id, start_ep, end_ep, passion, target_word_count, is_easy_mode,
-        reporter, branch_id=1, style_tag=None,
+        self,
+        book_id,
+        start_ep,
+        end_ep,
+        passion,
+        target_word_count,
+        is_easy_mode,
+        reporter,
+        branch_id=1,
+        style_tag=None,
     ) -> Tuple[int, List[Any]]:
         self.calls.append(("generate_episodes_pipeline", book_id, start_ep, end_ep))
         return 100, [1, 2, 3]
 
     async def generate_episodes(
-        self, book_id, start_ep, end_ep, passion, target_word_count, is_easy_mode,
-        reporter, branch_id=1, style_tag=None,
+        self,
+        book_id,
+        start_ep,
+        end_ep,
+        passion,
+        target_word_count,
+        is_easy_mode,
+        reporter,
+        branch_id=1,
+        style_tag=None,
     ) -> int:
         self.calls.append(("generate_episodes", book_id, start_ep, end_ep))
         return 50
 
     async def analyze_and_import_chapter(
-        self, book_id, ep_num, import_text, do_refine=True,
+        self,
+        book_id,
+        ep_num,
+        import_text,
+        do_refine=True,
     ) -> dict:
         self.calls.append(("analyze_and_import_chapter", book_id, ep_num))
         return {"status": "success"}
@@ -57,8 +76,13 @@ def service() -> WritingService:
 @pytest.mark.asyncio
 async def test_generate_episodes_pipeline_delegates(service: WritingService) -> None:
     chars, failed = await service.generate_episodes_pipeline(
-        book_id=1, start_ep=1, end_ep=3, passion=0.6,
-        target_word_count=2000, is_easy_mode=True, reporter=None,
+        book_id=1,
+        start_ep=1,
+        end_ep=3,
+        passion=0.6,
+        target_word_count=2000,
+        is_easy_mode=True,
+        reporter=None,
     )
     assert chars == 100
     assert failed == [1, 2, 3]
@@ -68,8 +92,13 @@ async def test_generate_episodes_pipeline_delegates(service: WritingService) -> 
 @pytest.mark.asyncio
 async def test_generate_episodes_delegates(service: WritingService) -> None:
     chars = await service.generate_episodes(
-        book_id=1, start_ep=1, end_ep=3, passion=0.6,
-        target_word_count=2000, is_easy_mode=True, reporter=None,
+        book_id=1,
+        start_ep=1,
+        end_ep=3,
+        passion=0.6,
+        target_word_count=2000,
+        is_easy_mode=True,
+        reporter=None,
     )
     assert chars == 50
     assert service.writer.calls[-1][0] == "generate_episodes"
@@ -78,7 +107,10 @@ async def test_generate_episodes_delegates(service: WritingService) -> None:
 @pytest.mark.asyncio
 async def test_analyze_and_import_chapter_delegates(service: WritingService) -> None:
     result = await service.analyze_and_import_chapter(
-        book_id=1, ep_num=2, import_text="本文", do_refine=True,
+        book_id=1,
+        ep_num=2,
+        import_text="本文",
+        do_refine=True,
     )
     assert result == {"status": "success"}
     assert service.writer.calls[-1][0] == "analyze_and_import_chapter"

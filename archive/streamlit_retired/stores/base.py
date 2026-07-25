@@ -5,6 +5,7 @@ st.session_state / AppStateModel への型安全なアクセス、変更通知(s
 および更新ヘルパ(update / update_runtime) を提供する。
 各機能ストア(JobStore 等)はこのクラスを継承して固有の責務のみを持つ。
 """
+
 from __future__ import annotations
 
 from typing import Any, Callable
@@ -37,15 +38,18 @@ class BaseStore:
     def get_runtime_state() -> AppRuntimeState:
         """[DEPRECATED] UIStateStore.get_runtime() を使用してください。"""
         import warnings
+
         warnings.warn(
             "BaseStore.get_runtime_state is deprecated. Use BaseStore.get_runtime() instead.",
             DeprecationWarning,
-            stacklevel=2
+            stacklevel=2,
         )
         return get_session().runtime
 
     @staticmethod
-    def update(update_func: Callable[[AppStateModel], None], notify_keys: list[str] | None = None) -> None:
+    def update(
+        update_func: Callable[[AppStateModel], None], notify_keys: list[str] | None = None
+    ) -> None:
         """
         状態を安全に更新し、保存する。
         update_func は AppStateModel を受け取り、変更を加える関数であること。
@@ -96,12 +100,14 @@ class BaseStore:
                 callback(value)
             except Exception as e:
                 import logging
+
                 logging.getLogger(__name__).error(f"State change callback failed for {key}: {e}")
 
     @staticmethod
     def get_book_plots(book_id: int) -> list[Any]:
         """UI層が直接Engineにアクセスせず、EngineService経由でプロットデータを取得するためのメソッド。"""
         from src.engine_service import EngineService
+
         service = EngineService.get_instance()
         return service.get_book_plots(book_id)
 
@@ -112,11 +118,12 @@ class BaseStore:
         UIStateStore.get_runtime() を使用して属性にアクセスしてください。
         """
         import warnings
+
         warnings.warn(
             "BaseStore.get_runtime_value is deprecated and will be removed. "
             "Use BaseStore.get_runtime() instead.",
             DeprecationWarning,
-            stacklevel=2
+            stacklevel=2,
         )
         state = get_session()
         return getattr(state.runtime, key, default)

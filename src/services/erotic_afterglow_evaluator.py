@@ -2,6 +2,7 @@
 src/services/erotic_afterglow_evaluator.py
 afterglow フェーズ専用の品質評価サービス
 """
+
 from typing import List, Tuple
 
 from config.erotic_thresholds import AFTERGLOW_MIN_CHARS, AFTERGLOW_MIN_PARAGRAPHS
@@ -10,7 +11,16 @@ from config.erotic_thresholds import AFTERGLOW_MIN_CHARS, AFTERGLOW_MIN_PARAGRAP
 class AfterglowEvaluator:
     """afterglow フェーズの質評価を行う。"""
 
-    EMOTIONAL_SETTLING_KEYWORDS = ["沈静", "静けさ", "余韻", "穏やか", "温もり", "安らぎ", "沈降", "静まる"]
+    EMOTIONAL_SETTLING_KEYWORDS = [
+        "沈静",
+        "静けさ",
+        "余韻",
+        "穏やか",
+        "温もり",
+        "安らぎ",
+        "沈降",
+        "静まる",
+    ]
     DISTANCE_RECONFIRM_KEYWORDS = ["距離", "近了", "確認", "並べ", "隣", "寄り添う", "離れた"]
     FOREShadow_KEYWORDS = ["次", "話", "伏線", "予感", "接下来", "明らかになる", "待ち望む"]
 

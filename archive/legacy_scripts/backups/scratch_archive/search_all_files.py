@@ -9,20 +9,19 @@ for root, dirs, files in os.walk("."):
             continue
         try:
             if zipfile.is_zipfile(path):
-                with zipfile.ZipFile(path, 'r') as z:
+                with zipfile.ZipFile(path, "r") as z:
                     for name in z.namelist():
                         try:
                             with z.open(name) as f:
-                                content = f.read().decode('utf-8', errors='ignore')
+                                content = f.read().decode("utf-8", errors="ignore")
                                 if keyword in content:
                                     print(f"Found in zip: {path} -> {name} (size: {len(content)})")
                         except Exception:
                             pass
             else:
-                with open(path, 'r', encoding='utf-8', errors='ignore') as f:
+                with open(path, "r", encoding="utf-8", errors="ignore") as f:
                     content = f.read()
                     if keyword in content:
                         print(f"Found in file: {path} (size: {len(content)})")
         except Exception:
             pass
-

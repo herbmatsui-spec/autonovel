@@ -1,18 +1,20 @@
 """
 tests/test_commercial_end_to_end.py — Commercial Pipeline エンドツーエンドテスト
 """
+
 import asyncio
-import json
-import time
-from typing import Dict, Any
+from typing import Any, Dict
 
 import httpx
 import pytest
 
+
 # ----------------------------------------------------------------------
 # ユーティリティ: ステータスポーリング
 # ----------------------------------------------------------------------
-async def wait_for_task_completion(task_id: str, client: httpx.AsyncClient, timeout: int = 30) -> Dict[str, Any]:
+async def wait_for_task_completion(
+    task_id: str, client: httpx.AsyncClient, timeout: int = 30
+) -> Dict[str, Any]:
     """
     タスクのステータスをポーリングし、完了または失敗になるまで待機する。
     Returns the final status payload from the API.
@@ -59,18 +61,16 @@ async def test_commercial_pipeline_end_to_end():
             "concept": "テスト用のファンタジー作品",
             "keywords": ["テスト", "ファンタジー", "世界観"],
             "target_eps": 2,
-            "target_word_count_per_episode": 1500
+            "target_word_count_per_episode": 1500,
         },
         "samples": [],
-        "platforms": ["kakuyomu"]
+        "platforms": ["kakuyomu"],
     }
 
     async with httpx.AsyncClient(timeout=60.0) as client:
         # POSTでパイプライン実行リクエスト
         resp = await client.post(
-            "http://localhost:8000/api/commercial/run",
-            json=commercial_config,
-            timeout=60.0
+            "http://localhost:8000/api/commercial/run", json=commercial_config, timeout=60.0
         )
         assert resp.status_code == 200, f"商用化APIが失敗: {resp.status_code} {resp.text}"
         result = resp.json()
@@ -89,8 +89,13 @@ async def test_commercial_pipeline_end_to_end():
         # ---------- 4. レポート構造検証 ----------
         # 必須 fields（簡易チェック）
         required_keys = [
-            "title", "genre", "target_word_count", "token_usage",
-            "episode_summaries", "quality_metrics", "total_generation_time"
+            "title",
+            "genre",
+            "target_word_count",
+            "token_usage",
+            "episode_summaries",
+            "quality_metrics",
+            "total_generation_time",
         ]
         for key in required_keys:
             assert key in report_data, f"レポートに必須キー '{key}' が欠如しています"

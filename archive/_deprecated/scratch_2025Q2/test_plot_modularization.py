@@ -1,4 +1,3 @@
-
 from models.plot import DramaEpisode, MysteryEpisode, SliceOfLifeEpisode, plot_episode_factory
 
 
@@ -15,7 +14,7 @@ def test_regression_flat_data():
         "is_catharsis": False,
         "knowledge_delta": "0.2",  # String for float testing
         "truth_convergence": 0.1,
-        "qol_delta": 5,            # Comfort engine data in a generic PlotEpisode
+        "qol_delta": 5,  # Comfort engine data in a generic PlotEpisode
         "veneration_gain": 0.1,
     }
 
@@ -42,6 +41,7 @@ def test_regression_flat_data():
     assert serialized["knowledge_delta"] == 0.2
     print("OK: Backward compatibility passed.")
 
+
 def test_factory_specialization():
     print("Testing: Factory specialization...")
     data = {"ep_num": 2, "title": "推理の時間"}
@@ -62,13 +62,10 @@ def test_factory_specialization():
     assert hasattr(drama, "comfort")
     print("OK: Factory specialization passed.")
 
+
 def test_extra_engines():
     print("Testing: extra_engines catch-all...")
-    data = {
-        "ep_num": 3,
-        "unknown_battle_score": 99,
-        "unexpected_field": "some value"
-    }
+    data = {"ep_num": 3, "unknown_battle_score": 99, "unexpected_field": "some value"}
     ep = plot_episode_factory("generic", **data)
 
     assert ep.extra_engines["unknown_battle_score"] == 99
@@ -77,17 +74,14 @@ def test_extra_engines():
     assert ep.unknown_battle_score == 99
     print("OK: Extra engines catch-all passed.")
 
+
 def test_wrapper_peeling():
     print("Testing: Wrapper peeling...")
-    wrapped_data = {
-        "metadata": {
-            "ep_num": 4,
-            "title": "ラップされたデータ"
-        }
-    }
+    wrapped_data = {"metadata": {"ep_num": 4, "title": "ラップされたデータ"}}
     ep = plot_episode_factory("generic", **wrapped_data)
     assert ep.core_info.ep_num == 4
     print("OK: Wrapper peeling passed.")
+
 
 if __name__ == "__main__":
     try:
@@ -100,6 +94,6 @@ if __name__ == "__main__":
         print(f"\nFAILED: {e}")
     except Exception as e:
         import traceback
+
         traceback.print_exc()
         print(f"\nERROR: {e}")
-

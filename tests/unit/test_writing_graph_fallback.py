@@ -30,10 +30,25 @@ def manager():
 def test_create_initial_state_has_required_keys(manager):
     state = manager._create_initial_state(1, {}, "sys", "fw", 0.5, False)
     for key in (
-        "ep_num", "passion", "is_easy_mode", "context", "sys_inst", "fw_prompt",
-        "ac_iter", "max_ac_iter", "should_heavy_audit", "should_dogfeed",
-        "should_beat_decompose", "gen_ctx", "draft_content", "final_meta",
-        "is_integrity_ok", "is_causal_ok", "causal_reason", "failures", "status",
+        "ep_num",
+        "passion",
+        "is_easy_mode",
+        "context",
+        "sys_inst",
+        "fw_prompt",
+        "ac_iter",
+        "max_ac_iter",
+        "should_heavy_audit",
+        "should_dogfeed",
+        "should_beat_decompose",
+        "gen_ctx",
+        "draft_content",
+        "final_meta",
+        "is_integrity_ok",
+        "is_causal_ok",
+        "causal_reason",
+        "failures",
+        "status",
     ):
         assert key in state, f"missing key: {key}"
     assert state["ac_iter"] == 0
@@ -48,42 +63,50 @@ def test_route_after_audit_easy_mode(manager):
 
 def test_route_after_audit_quality_skip(manager):
     state = manager._create_initial_state(1, {}, "sys", "fw", 0.5, False)
-    state.update({
-        "quality_skip": True,
-        "is_integrity_ok": True,
-        "is_causal_ok": True,
-    })
+    state.update(
+        {
+            "quality_skip": True,
+            "is_integrity_ok": True,
+            "is_causal_ok": True,
+        }
+    )
     assert manager.route_after_audit(state) == "finish"
 
 
 def test_route_after_audit_max_iter_reached(manager):
     state = manager._create_initial_state(1, {}, "sys", "fw", 0.5, False)
-    state.update({
-        "is_integrity_ok": True,
-        "is_causal_ok": True,
-        "ac_iter": state["max_ac_iter"],
-    })
+    state.update(
+        {
+            "is_integrity_ok": True,
+            "is_causal_ok": True,
+            "ac_iter": state["max_ac_iter"],
+        }
+    )
     assert manager.route_after_audit(state) == "finish"
 
 
 def test_route_after_audit_goes_to_critic(manager):
     state = manager._create_initial_state(1, {}, "sys", "fw", 0.5, False)
-    state.update({
-        "is_integrity_ok": True,
-        "is_causal_ok": True,
-        "should_heavy_audit": True,
-        "ac_iter": 0,
-    })
+    state.update(
+        {
+            "is_integrity_ok": True,
+            "is_causal_ok": True,
+            "should_heavy_audit": True,
+            "ac_iter": 0,
+        }
+    )
     assert manager.route_after_audit(state) == "critic"
 
 
 def test_route_after_audit_causal_fail_heals(manager):
     state = manager._create_initial_state(1, {}, "sys", "fw", 0.5, False)
-    state.update({
-        "is_integrity_ok": True,
-        "is_causal_ok": False,
-        "should_heavy_audit": True,
-    })
+    state.update(
+        {
+            "is_integrity_ok": True,
+            "is_causal_ok": False,
+            "should_heavy_audit": True,
+        }
+    )
     assert manager.route_after_audit(state) == "heal"
 
 
@@ -99,7 +122,9 @@ def test_route_after_critic_triggered_retry(manager):
     assert manager.route_after_critic(state) == "retry"
 
 
-@pytest.mark.skipif(HAS_LANGGRAPH, reason="workflow=None フォールバック確認のため langgraph 未導入環境でのみ実行")
+@pytest.mark.skipif(
+    HAS_LANGGRAPH, reason="workflow=None フォールバック確認のため langgraph 未導入環境でのみ実行"
+)
 @pytest.mark.anyio
 async def test_run_fallback_no_keyerror(manager):
     """workflow=None のとき run() が KeyError なしに完了する最低限の確認"""

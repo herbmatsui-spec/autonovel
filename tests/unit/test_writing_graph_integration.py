@@ -5,7 +5,6 @@ WritingGraphManager と StreamingPlotScheduler の統合テスト
 がスケジューラなし・ありの両方で安全に動作することを確認する。
 """
 
-import asyncio
 
 import pytest
 
@@ -46,6 +45,7 @@ def manager():
     m._checkpoint_metadata = {}
     m._scheduler = None
     from src.backend.workflows.quality_metrics import QualityMetricsCollector
+
     m.metrics_collector = QualityMetricsCollector()
     return m
 
@@ -62,6 +62,7 @@ async def test_run_with_dependencies_no_scheduler(manager):
 @pytest.mark.anyio
 async def test_check_dependency_low_quality(manager):
     from src.backend.workflows.quality_metrics import QualityMetrics
+
     m = QualityMetrics(1, True, False, 0.0, 1, 70, 1.0, genre="x", dogfeed_ok=False)
     manager.metrics_collector.record(m)
     ok = await manager._check_dependency(2, 1)

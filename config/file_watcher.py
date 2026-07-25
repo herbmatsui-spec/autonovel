@@ -12,10 +12,8 @@ from config.validator import ConfigValidator
 
 
 class AppNotifier(Protocol):
-    def toast_notify(self, key: str, message: str, icon: str) -> None:
-        ...
-    def reload_app(self) -> None:
-        ...
+    def toast_notify(self, key: str, message: str, icon: str) -> None: ...
+    def reload_app(self) -> None: ...
 
 
 class ConfigFileHandler(FileSystemEventHandler):
@@ -36,7 +34,7 @@ class ConfigFileHandler(FileSystemEventHandler):
             "config/system_plugins.yaml",
             "config/tropes.json",
             "config/interaction_matrix.yaml",
-            "config/domain_profiles/"
+            "config/domain_profiles/",
         ]
 
         file_path = event.src_path
@@ -71,10 +69,16 @@ class ConfigFileHandler(FileSystemEventHandler):
             # バリデーションを実行
             try:
                 ConfigValidator.validate_all()
-                self.notifier.toast_notify("config_reload", "設定ファイルが更新されました。アプリをリロードします。", icon="🔄")
+                self.notifier.toast_notify(
+                    "config_reload",
+                    "設定ファイルが更新されました。アプリをリロードします。",
+                    icon="🔄",
+                )
                 self.notifier.reload_app()
             except Exception as e:
-                self.notifier.toast_notify("config_error", f"設定ファイルの再読み込みに失敗しました: {str(e)}", icon="❌")
+                self.notifier.toast_notify(
+                    "config_error", f"設定ファイルの再読み込みに失敗しました: {str(e)}", icon="❌"
+                )
 
 
 class ConfigFileWatcher:
@@ -106,15 +110,18 @@ class ConfigFileWatcher:
     def _on_change(self):
         pass
 
+
 # アプリ起動時に自動で起動
 class DefaultNotifier:
     def toast_notify(self, key: str, message: str, icon: str) -> None:
         UIStateStore.toast_notify(key, message, icon=icon)
+
     def reload_app(self) -> None:
         import streamlit as st
+
         st.experimental_rerun()
+
 
 watcher = ConfigFileWatcher(DefaultNotifier())
 if __name__ == "__main__":
     watcher.start()
-

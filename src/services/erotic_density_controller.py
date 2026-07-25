@@ -1,12 +1,14 @@
 """
 src/services/erotic_density_controller.py
 螳倩・蟇・ｺｦ繧ｳ繝ｳ繝医Ο繝ｼ繝ｩ 窶・Book蜈ｨ菴薙・繝舌Λ繝ｳ繧ｹ繧堤ｮ｡逅・☆繧九・"""
+
 import logging
 from typing import List
 
 from config.erotic_thresholds import MAX_CONSECUTIVE_PEAK_EPISODES
 
 logger = logging.getLogger(__name__)
+
 
 class EroticDensityController:
     """Book蜈ｨ菴薙・螳倩・繧ｷ繝ｼ繝ｳ蟇・ｺｦ縺ｨ髢馴囈繧堤ｮ｡逅・☆繧九・"""
@@ -50,5 +52,7 @@ class EroticDensityController:
             return 0.0
         avg = sum(intensities) / len(intensities)
         if avg > 4.0:
-            logger.warning(f"Book蜈ｨ菴薙・蟷ｳ蝮・ｼｷ蠎ｦ縺鶏avg:{avg:.1f}縺ｨ鬮倥☆縺弱∪縺吶りｪｭ閠・夢蜉ｴ縺ｮ蜿ｯ閭ｽ諤ｧ縺後≠繧翫∪縺吶＄")
+            logger.warning(
+                f"Book蜈ｨ菴薙・蟷ｳ蝮・ｼｷ蠎ｦ縺鶏avg:{avg:.1f}縺ｨ鬮倥☆縺弱∪縺吶りｪｭ閠・夢蜉ｴ縺ｮ蜿ｯ閭ｽ諤ｧ縺後≠繧翫∪縺吶＄"
+            )
         return avg

@@ -10,11 +10,13 @@ class ConnectionMilestone(BaseModel):
     """
     関係性が大きく変動した重要な出来事（絆の履歴）を定義する。
     """
+
     timestamp: datetime = Field(default_factory=datetime.now)
     event_description: str
     emotional_impact: Dict[str, float]  # {"affection": +10.0, "trust": -5.0, ...}
-    context_tags: List[str]            # ["雨の日", "口論", "共闘"]
-    importance: float = Field(default=1.0, ge=0.0, le=1.0)            # 重要度
+    context_tags: List[str]  # ["雨の日", "口論", "共闘"]
+    importance: float = Field(default=1.0, ge=0.0, le=1.0)  # 重要度
+
 
 class MemoryKernel(KernelBase[Dict[str, Any], Any]):
     """
@@ -33,18 +35,28 @@ class MemoryKernel(KernelBase[Dict[str, Any], Any]):
         action = input_data.get("action")
         if action == "add":
             return self.add_milestone(
-                input_data["char_a"], input_data["char_b"],
-                input_data["event"], input_data["impact"],
-                input_data["tags"], input_data.get("importance", 1.0)
+                input_data["char_a"],
+                input_data["char_b"],
+                input_data["event"],
+                input_data["impact"],
+                input_data["tags"],
+                input_data.get("importance", 1.0),
             )
         elif action == "recall":
             return self.generate_recall_prompt(
-                input_data["char_a"], input_data["char_b"],
-                input_data["current_tags"]
+                input_data["char_a"], input_data["char_b"], input_data["current_tags"]
             )
         return None
 
-    def add_milestone(self, char_a: str, char_b: str, event: str, impact: Dict[str, float], tags: List[str], importance: float = 1.0):
+    def add_milestone(
+        self,
+        char_a: str,
+        char_b: str,
+        event: str,
+        impact: Dict[str, float],
+        tags: List[str],
+        importance: float = 1.0,
+    ):
         """
         重要な出来事を履歴に追加する。
         """
@@ -57,11 +69,13 @@ class MemoryKernel(KernelBase[Dict[str, Any], Any]):
             event_description=event,
             emotional_impact=impact,
             context_tags=tags,
-            importance=importance
+            importance=importance,
         )
         self.history[pair].append(milestone)
 
-    def recall_relevant_memories(self, char_a: str, char_b: str, current_tags: List[str], limit: int = 2) -> List[ConnectionMilestone]:
+    def recall_relevant_memories(
+        self, char_a: str, char_b: str, current_tags: List[str], limit: int = 2
+    ) -> List[ConnectionMilestone]:
         """
         現在の文脈（タグ）に基づき、関連性の高い過去の記憶を抽出する。
         """
@@ -181,8 +195,7 @@ class GrowthMilestone:
         growth_descriptions = []
         for entry in recent_growth:
             template = GROWTH_INVESTMENT_MEMORY_TYPES.get(
-                entry["type"],
-                GROWTH_INVESTMENT_MEMORY_TYPES["power_gain"]
+                entry["type"], GROWTH_INVESTMENT_MEMORY_TYPES["power_gain"]
             )["memory_template"]
             desc = template.format(
                 character=self.character_name,
@@ -202,7 +215,9 @@ class GrowthMilestone:
         if self.current_power_level > 0:
             ratio = self.current_power_level / max(current_enemy_level, 1.0)
             if ratio >= 1.5:
-                power_comparison = "【完壁な力差】この程度の敵なら、{character}の現在の実力で压倒的に有利"
+                power_comparison = (
+                    "【完壁な力差】この程度の敵なら、{character}の現在の実力で压倒的に有利"
+                )
             elif ratio >= 1.0:
                 power_comparison = "【互角以上の戦い】ようやく実力が並び、勝利が見えてきた"
             elif ratio >= 0.7:
@@ -227,12 +242,12 @@ def growth_investment_memory_tracker(
 ) -> str:
     """
     GROWTH_INVESTMENT役キャラクターの成長記録に基づくメモリプロンプトを生成。
-    
+
     Args:
         character_name: キャラクター名
         growth_log: 成長記録のリスト
         current_phase: 現在の成長段階
-    
+
     Returns:
         成長投資メモリオブジェクトのJSON文字列
     """
@@ -269,4 +284,3 @@ def generate_investment_return_scene_prompt(
         f"  4. 「ここで報われた」と感じる山場の感情的な峰值\n"
         f"※ 成長投資型キャラクターにおいては、この瞬間が最大的カタルシスポイントになります。"
     )
-

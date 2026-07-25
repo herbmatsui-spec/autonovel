@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 class UIEventType(str, Enum):
     """UIイベントの種類"""
+
     JOB_STARTED = "job_started"
     JOB_COMPLETED = "job_completed"
     JOB_UPDATED = "job_updated"
@@ -34,6 +35,7 @@ class UIEventType(str, Enum):
 @dataclass
 class UIEvent:
     """UIイベントデータ"""
+
     type: UIEventType
     payload: Any
     timestamp: float = 0.0

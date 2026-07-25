@@ -18,9 +18,15 @@ class AuditRepository(BaseRepository):
     """監査Issueに関するDB操作をまとめたリポジトリ"""
 
     async def create_audit_issue(
-        self, book_id: int, ep_num: int, category: str, severity: str,
-        description: str, evidence_past: str = "", evidence_current: str = "",
-        constraint_for_next_ep: str = ""
+        self,
+        book_id: int,
+        ep_num: int,
+        category: str,
+        severity: str,
+        description: str,
+        evidence_past: str = "",
+        evidence_current: str = "",
+        constraint_for_next_ep: str = "",
     ) -> int:
         issue = AuditIssue(
             book_id=book_id,
@@ -31,7 +37,7 @@ class AuditRepository(BaseRepository):
             evidence_past=evidence_past,
             evidence_current=evidence_current,
             constraint_for_next_ep=constraint_for_next_ep,
-            status="open"
+            status="open",
         )
         self.session.add(issue)
         await self.session.flush()
@@ -42,7 +48,9 @@ class AuditRepository(BaseRepository):
         row = result.scalar_one_or_none()
         return self._to_dict(row) if row else None
 
-    async def get_issues_by_book(self, book_id: int, status: Optional[str] = None) -> List[AuditIssueDbModel]:
+    async def get_issues_by_book(
+        self, book_id: int, status: Optional[str] = None
+    ) -> List[AuditIssueDbModel]:
         stmt = select(AuditIssue).where(AuditIssue.book_id == book_id)
         if status:
             stmt = stmt.where(AuditIssue.status == status)
@@ -51,10 +59,11 @@ class AuditRepository(BaseRepository):
         rows = result.scalars().all()
         return [self._to_dict(r) for r in rows]
 
-    async def update_issue_status(self, issue_id: int, status: str, resolved_note: str = "") -> None:
+    async def update_issue_status(
+        self, issue_id: int, status: str, resolved_note: str = ""
+    ) -> None:
         await self.session.execute(
             update(AuditIssue)
             .where(AuditIssue.id == issue_id)
             .values(status=status, resolved_note=resolved_note)
         )
-

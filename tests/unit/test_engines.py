@@ -1,4 +1,3 @@
-
 import pytest
 from pydantic import BaseModel, ValidationError
 
@@ -7,6 +6,7 @@ from src.services.retry_decorator import RetryState, with_llm_retry
 
 class DummyModel(BaseModel):
     name: str
+
 
 class MockCooldown:
     def __init__(self):
@@ -46,7 +46,7 @@ class MockLLMClient:
         prompt: str,
         temp: float = 0.7,
         max_retries: int = 3,
-        retry_state: RetryState = None
+        retry_state: RetryState = None,
     ):
         self.calls += 1
         if self.calls <= self.fail_until:
@@ -54,7 +54,9 @@ class MockLLMClient:
                 # Raise ValidationError
                 # In Pydantic V2, validation errors require a model
                 try:
-                    DummyModel(name=123)  # This will succeed since Pydantic coerses int to str, let's pass a dict
+                    DummyModel(
+                        name=123
+                    )  # This will succeed since Pydantic coerses int to str, let's pass a dict
                     DummyModel.model_validate({"name": {"nested": "dict"}})
                 except ValidationError as ve:
                     raise ve

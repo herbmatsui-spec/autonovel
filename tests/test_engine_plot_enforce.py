@@ -2,16 +2,15 @@
 tests/test_engine_plot_enforce.py
 src/backend/engine_plot.py の面白さ優先順序強制テスト。
 """
+
 import json
 
 import pytest
 
-from src.models.db import PlotDbModel
 from src.backend.engine_plot import (
-    ENFORCE_ENTERTAINMENT_FIRST,
     ensure_emotional_hook_set,
-    resolve_emotional_hook,
 )
+from src.models.db import PlotDbModel
 
 
 class TestEnsureEmotionalHookSet:

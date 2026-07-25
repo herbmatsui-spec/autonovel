@@ -6,25 +6,41 @@ import psycopg2
 from psycopg2 import extras
 
 # 設定
-SQLITE_DB_PATH = 'i:/claude2/kaku_hegemony_v2.db'
+SQLITE_DB_PATH = "i:/claude2/kaku_hegemony_v2.db"
 PG_CONN_PARAMS = {
     "dbname": "kaku_hegemony_db",
     "user": "postgres",
     "password": "password",
     "host": "localhost",
-    "port": "5432"
+    "port": "5432",
 }
 
 # 移行対象テーブル (依存関係を考慮した順序)
 TABLES = [
-    'books', 'custom_styles', 'internal_state', 'style_fragments',
-    'bible', 'branches', 'chapters', 'characters', 'optimization_history',
-    'pending_patches', 'rules', 'masterpieces', 'outbox', 'background_tasks',
-    'audit_issues', 'foreshadowing', 'character_arcs', 'plot', 'prompt_versions'
+    "books",
+    "custom_styles",
+    "internal_state",
+    "style_fragments",
+    "bible",
+    "branches",
+    "chapters",
+    "characters",
+    "optimization_history",
+    "pending_patches",
+    "rules",
+    "masterpieces",
+    "outbox",
+    "background_tasks",
+    "audit_issues",
+    "foreshadowing",
+    "character_arcs",
+    "plot",
+    "prompt_versions",
 ]
 
-logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
+
 
 def migrate_table(sqlite_cursor, pg_cursor, table_name):
     logger.info(f"Migrating table: {table_name}...")
@@ -54,6 +70,7 @@ def migrate_table(sqlite_cursor, pg_cursor, table_name):
         logger.error(f"Error migrating {table_name}: {e}")
         raise e
 
+
 def main():
     sqlite_conn = None
     pg_conn = None
@@ -79,9 +96,11 @@ def main():
         logger.error(f"Migration failed: {e}")
         sys.exit(1)
     finally:
-        if sqlite_conn: sqlite_conn.close()
-        if pg_conn: pg_conn.close()
+        if sqlite_conn:
+            sqlite_conn.close()
+        if pg_conn:
+            pg_conn.close()
+
 
 if __name__ == "__main__":
     main()
-

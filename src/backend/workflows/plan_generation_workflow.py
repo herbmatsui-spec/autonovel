@@ -7,6 +7,7 @@ from .base_workflow import BaseWorkflow
 
 class PlanGenerationWorkflow(BaseWorkflow):
     """企画生成ワークフロー"""
+
     async def execute(self, reporter: StatusReporter, **kwargs) -> Dict[str, Any]:
         params = kwargs["params"]
         book_id, bible = await self.planner.create_hegemony_plan(

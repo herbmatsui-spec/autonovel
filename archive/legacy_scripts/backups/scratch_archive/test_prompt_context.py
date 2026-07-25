@@ -42,7 +42,7 @@ class TestPromptContext(unittest.TestCase):
             keywords="magic, sword",
             archetype="hero",
             custom_hook="my hook",
-            engine_key="comfort"
+            engine_key="comfort",
         )
         res_ctx = self.pm.build_character_concept_prompt(context=ctx)
         self.assertEqual(res_indiv, res_ctx)
@@ -56,7 +56,7 @@ class TestPromptContext(unittest.TestCase):
             keywords="magic, sword",
             trend_instruction="trend info",
             custom_hook="my hook",
-            engine_key="enigma"
+            engine_key="enigma",
         )
         res_ctx = self.pm.build_title_generation_prompt(context=ctx)
         self.assertEqual(res_indiv, res_ctx)
@@ -71,7 +71,7 @@ class TestPromptContext(unittest.TestCase):
             keywords="magic, sword",
             concept="hero concept",
             style_key="style_web_standard",
-            engine_key="conflict"
+            engine_key="conflict",
         )
         res_ctx = self.pm.build_mc_creation_prompt(context=ctx)
         self.assertEqual(res_indiv, res_ctx)
@@ -86,7 +86,7 @@ class TestPromptContext(unittest.TestCase):
             causality_map=[],
             mc_name="MC_Name",
             genre="fantasy",
-            keywords="magic"
+            keywords="magic",
         )
         res_ctx = self.pm.build_sub_char_creation_prompt(context=ctx)
         self.assertEqual(res_indiv, res_ctx)
@@ -94,10 +94,19 @@ class TestPromptContext(unittest.TestCase):
     def test_build_bible_creation_prompt(self):
         # We need a dummy BaseModel
         from pydantic import BaseModel
+
         class DummyBibleSchema(BaseModel):
             pass
+
         res_indiv = self.pm.build_bible_creation_prompt(
-            None, DummyBibleSchema, "{}", "concept desc", 10, "fantasy", "style_web_standard", "conflict"
+            None,
+            DummyBibleSchema,
+            "{}",
+            "concept desc",
+            10,
+            "fantasy",
+            "style_web_standard",
+            "conflict",
         )
         ctx = BibleCreationContext(
             bible_core_schema=DummyBibleSchema,
@@ -106,15 +115,17 @@ class TestPromptContext(unittest.TestCase):
             target_eps=10,
             genre="fantasy",
             style_key="style_web_standard",
-            engine_key="conflict"
+            engine_key="conflict",
         )
         res_ctx = self.pm.build_bible_creation_prompt(context=ctx)
         self.assertEqual(res_indiv, res_ctx)
 
     def test_build_roadmap_prompt(self):
         from pydantic import BaseModel
+
         class DummyRoadmapSchema(BaseModel):
             pass
+
         res_indiv = self.pm.build_roadmap_prompt(
             None, "Title", "Synopsis", 10, DummyRoadmapSchema, "fantasy", "enigma"
         )
@@ -124,7 +135,7 @@ class TestPromptContext(unittest.TestCase):
             target_eps=10,
             roadmap_list_schema=DummyRoadmapSchema,
             genre="fantasy",
-            engine_key="enigma"
+            engine_key="enigma",
         )
         res_ctx = self.pm.build_roadmap_prompt(context=ctx)
         self.assertEqual(res_indiv, res_ctx)
@@ -146,14 +157,23 @@ class TestPromptContext(unittest.TestCase):
             engine_key="enigma",
             truth_ledger={},
             foreshadowing_map=[],
-            world_rules={}
+            world_rules={},
         )
         res_ctx = self.pm.build_plot_expansion_prompt(context=ctx)
         self.assertEqual(res_indiv, res_ctx)
 
     def test_build_rebuild_plot_outline_prompt(self):
         res_indiv = self.pm.build_rebuild_plot_outline_prompt(
-            None, "Title", 1, 10, "synopsis", "keywords", "trend", ["fs1", "fs2"], "fantasy", "conflict"
+            None,
+            "Title",
+            1,
+            10,
+            "synopsis",
+            "keywords",
+            "trend",
+            ["fs1", "fs2"],
+            "fantasy",
+            "conflict",
         )
         ctx = RebuildPlotOutlineContext(
             book_title="Title",
@@ -164,7 +184,7 @@ class TestPromptContext(unittest.TestCase):
             trend_memo="trend",
             pending_foreshadowing=["fs1", "fs2"],
             genre="fantasy",
-            engine_key="conflict"
+            engine_key="conflict",
         )
         res_ctx = self.pm.build_rebuild_plot_outline_prompt(context=ctx)
         self.assertEqual(res_indiv, res_ctx)
@@ -182,18 +202,28 @@ class TestPromptContext(unittest.TestCase):
             trend_memo="trend",
             plot_pattern_key="pattern",
             genre="fantasy",
-            engine_key="conflict"
+            engine_key="conflict",
         )
         res_ctx = self.pm.build_roadmap_rebuild_prompt(context=ctx)
         self.assertEqual(res_indiv, res_ctx)
 
     def test_build_final_writing_prompt(self):
         import random
+
         plot_data = {"scenes": []}
 
         random.seed(42)
         res_indiv = self.pm.build_final_writing_prompt(
-            None, 1, plot_data, "script text", 1000, "thought", {}, [], genre_str="fantasy", engine_key="enigma"
+            None,
+            1,
+            plot_data,
+            "script text",
+            1000,
+            "thought",
+            {},
+            [],
+            genre_str="fantasy",
+            engine_key="enigma",
         )
 
         random.seed(42)
@@ -205,7 +235,7 @@ class TestPromptContext(unittest.TestCase):
             plot_thought_process="thought",
             truth_ledger={},
             foreshadowing_map=[],
-            kwargs={"genre_str": "fantasy", "engine_key": "enigma"}
+            kwargs={"genre_str": "fantasy", "engine_key": "enigma"},
         )
         res_ctx = self.pm.build_final_writing_prompt(context=ctx)
 
@@ -216,12 +246,15 @@ class TestPromptContext(unittest.TestCase):
             print(res_ctx[0][:1000])
 
             import difflib
-            diff = list(difflib.unified_diff(
-                res_indiv[0].splitlines(),
-                res_ctx[0].splitlines(),
-                fromfile='res_indiv',
-                tofile='res_ctx'
-            ))
+
+            diff = list(
+                difflib.unified_diff(
+                    res_indiv[0].splitlines(),
+                    res_ctx[0].splitlines(),
+                    fromfile="res_indiv",
+                    tofile="res_ctx",
+                )
+            )
             print("\n".join(diff[:50]))
 
         self.assertEqual(res_indiv, res_ctx)
@@ -239,11 +272,11 @@ class TestPromptContext(unittest.TestCase):
             contamination_score=0,
             contamination_map={},
             axes=[],
-            engine_key="conflict"
+            engine_key="conflict",
         )
         res_ctx = self.pm.build_hegemony_dogfeeding_prompt(context=ctx)
         self.assertEqual(res_indiv, res_ctx)
 
+
 if __name__ == "__main__":
     unittest.main()
-

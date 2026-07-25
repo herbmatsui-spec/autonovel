@@ -14,6 +14,7 @@ async def run_audit():
     world_settings_json = "{}"
 
     from models import HegemonyAuditResult
+
     schema_json = HegemonyAuditResult.model_json_schema()
 
     # engine_prompts の build_plot_integrity_audit_prompt をエミュレート
@@ -38,20 +39,19 @@ async def run_audit():
         config = genai_types.GenerateContentConfig(
             temperature=0.1,
             response_mime_type="application/json",
-            response_schema=flatten_pydantic_schema(schema_json)
+            response_schema=flatten_pydantic_schema(schema_json),
         )
 
         def _call():
-            return client.models.generate_content(
-                model=model, contents=[prompt], config=config
-            )
+            return client.models.generate_content(model=model, contents=[prompt], config=config)
 
         res = await asyncio.to_thread(_call)
         print("Success!")
         print(f"Response: {res.text}")
     except Exception:
         import traceback
+
         traceback.print_exc()
 
-asyncio.run(run_audit())
 
+asyncio.run(run_audit())

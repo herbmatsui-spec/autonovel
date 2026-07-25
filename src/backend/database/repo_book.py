@@ -1,5 +1,7 @@
 from __future__ import annotations
+
 from typing import Any
+
 from src.backend.database.repo_protocols import IRepository
 
 """
@@ -8,7 +10,7 @@ database/repo_book.py - 作品(Books)データ操作用のリポジトリMixin
 import json
 import logging
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from sqlalchemy import delete, select, update
 
@@ -32,14 +34,24 @@ class BookRepositoryMixin(IRepository):
         target_eps = book_data.get("target_eps", 10)
         style_dna = book_data.get("style_dna", {})
         marketing_data = book_data.get("marketing_data", {})
-        
+
         # Call the original implementation (renamed below or handled here)
-        book_id = await self._create_book_impl(title, genre, concept, synopsis, target_eps, style_dna, marketing_data)
+        book_id = await self._create_book_impl(
+            title, genre, concept, synopsis, target_eps, style_dna, marketing_data
+        )
         return str(book_id)
 
     @retry_with_logging()
-    async def _create_book_impl(self, title: str, genre: str, concept: str, synopsis: str,
-                                 target_eps: int, style_dna: dict, marketing_data: dict) -> int:
+    async def _create_book_impl(
+        self,
+        title: str,
+        genre: str,
+        concept: str,
+        synopsis: str,
+        target_eps: int,
+        style_dna: dict,
+        marketing_data: dict,
+    ) -> int:
         async with self._get_session() as session:
             book = Book(
                 title=title,
@@ -49,7 +61,7 @@ class BookRepositoryMixin(IRepository):
                 target_eps=target_eps,
                 style_dna=json.dumps(style_dna, ensure_ascii=False),
                 marketing_data=json.dumps(marketing_data, ensure_ascii=False),
-                created_at=time.strftime('%Y-%m-%dT%H:%M:%S')
+                created_at=time.strftime("%Y-%m-%dT%H:%M:%S"),
             )
             session.add(book)
             await session.flush()
@@ -63,7 +75,7 @@ class BookRepositoryMixin(IRepository):
             if not book:
                 return None
             d = self._to_dict(book)
-            d = self._parse_row(d, ['style_dna', 'marketing_data'])
+            d = self._parse_row(d, ["style_dna", "marketing_data"])
             return BookDbModel(**d)
 
     @retry_with_logging()
@@ -71,7 +83,10 @@ class BookRepositoryMixin(IRepository):
         async with self._get_session() as session:
             result = await session.execute(select(Book).order_by(Book.id.desc()))
             books = result.scalars().all()
-            return [BookDbModel(**self._parse_row(self._to_dict(b), ['style_dna', 'marketing_data'])) for b in books]
+            return [
+                BookDbModel(**self._parse_row(self._to_dict(b), ["style_dna", "marketing_data"]))
+                for b in books
+            ]
 
     @retry_with_logging()
     async def update_book_cumulative_tension(self, book_id: int, tension: int) -> None:
@@ -91,14 +106,15 @@ class BookRepositoryMixin(IRepository):
     @retry_with_logging()
     async def delete_book(self, book_id: int) -> None:
         async with self._get_session() as session:
-            await session.execute(
-                delete(Book).where(Book.id == book_id)
-            )
+            await session.execute(delete(Book).where(Book.id == book_id))
 
     @retry_with_logging()
-    async def update_book_marketing_data(self, book_id: int, title: str, marketing_data: Dict[str, Any]) -> None:
+    async def update_book_marketing_data(
+        self, book_id: int, title: str, marketing_data: Dict[str, Any]
+    ) -> None:
         """作品名とマーケティングデータを更新する。既存のデータがある場合はマージを試みる。"""
         import traceback
+
         async with self._get_session() as session:
             result = await session.execute(select(Book.marketing_data).where(Book.id == book_id))
             row_val = result.scalar_one_or_none()
@@ -107,14 +123,15 @@ class BookRepositoryMixin(IRepository):
                 try:
                     current_data = json.loads(row_val) if isinstance(row_val, str) else row_val
                 except Exception as e:
-                    logger.warning(f"Failed to parse marketing_data JSON: {e}\n{traceback.format_exc()}")
+                    logger.warning(
+                        f"Failed to parse marketing_data JSON: {e}\n{traceback.format_exc()}"
+                    )
 
             merged = {**current_data, **marketing_data}
             await session.execute(
-                update(Book).where(Book.id == book_id).values(
-                    title=title,
-                    marketing_data=json.dumps(merged, ensure_ascii=False)
-                )
+                update(Book)
+                .where(Book.id == book_id)
+                .values(title=title, marketing_data=json.dumps(merged, ensure_ascii=False))
             )
 
     @retry_with_logging()
@@ -129,7 +146,9 @@ class BookRepositoryMixin(IRepository):
     async def recalculate_book_tension(self, book_id: int, branch_id: int = 1) -> int:
         """指定ブランチの全チャプターの tension_delta を合計して累積テンションを再計算し、DBを更新する"""
         async with self._get_session() as session:
-            result = await session.execute(select(Chapter.tension_delta).where(Chapter.branch_id == branch_id))
+            result = await session.execute(
+                select(Chapter.tension_delta).where(Chapter.branch_id == branch_id)
+            )
             rows = result.scalars().all()
             total_tension = sum(t or 0 for t in rows)
             await session.execute(
@@ -141,7 +160,9 @@ class BookRepositoryMixin(IRepository):
     async def recalculate_book_comfort(self, book_id: int, branch_id: int = 1) -> Tuple[int, int]:
         """指定ブランチの全チャプターの qol_delta を合計して累積QOLを再計算し、DBを更新する"""
         async with self._get_session() as session:
-            result = await session.execute(select(Chapter.qol_delta).where(Chapter.branch_id == branch_id))
+            result = await session.execute(
+                select(Chapter.qol_delta).where(Chapter.branch_id == branch_id)
+            )
             rows = result.scalars().all()
             total_qol = sum(q or 0 for q in rows)
 
@@ -155,10 +176,9 @@ class BookRepositoryMixin(IRepository):
             integrity = latest_plot_score if latest_plot_score is not None else 100
 
             await session.execute(
-                update(Book).where(Book.id == book_id).values(
-                    cumulative_qol=total_qol,
-                    sanctuary_integrity=integrity
-                )
+                update(Book)
+                .where(Book.id == book_id)
+                .values(cumulative_qol=total_qol, sanctuary_integrity=integrity)
             )
             return total_qol, integrity
 
@@ -169,7 +189,7 @@ class BookRepositoryMixin(IRepository):
             plot_result = await session.execute(
                 select(Plot.cost_score)
                 .where(Plot.branch_id == branch_id)
-                .where(Plot.status == 'expanded')
+                .where(Plot.status == "expanded")
                 .order_by(Plot.ep_num.desc())
                 .limit(1)
             )
@@ -180,4 +200,3 @@ class BookRepositoryMixin(IRepository):
                 update(Book).where(Book.id == book_id).values(cumulative_cost=total_cost)
             )
             return total_cost
-

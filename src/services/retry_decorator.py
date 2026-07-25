@@ -29,8 +29,10 @@ class LLMClientProtocol(Protocol):
     _active_requests: int
     _consecutive_5xx: int
 
+
 class RetryState:
     """LLM呼び出しの試行状態を追跡・管理するクラス"""
+
     def __init__(self, max_retries: int, temp: float, model_name: str, reporter: Any = None):
         self.max_retries = max_retries
         self.attempt = 0
@@ -40,6 +42,7 @@ class RetryState:
         self.reporter = reporter
         self.error_feedback = ""
         self.consecutive_5xx = 0
+
 
 def _extract_llm_params(func, args, kwargs) -> Dict[str, Any]:
     """引数から max_retries, temp, model_name, reporter を動的に抽出する"""
@@ -91,8 +94,10 @@ def _extract_llm_params(func, args, kwargs) -> Dict[str, Any]:
         "reporter": func_args.get("reporter", None),
     }
 
+
 def with_llm_retry():
     """LLM呼び出しのリトライ処理を共通化するカスタムデコレータ"""
+
     def decorator(func):
         @wraps(func)
         async def wrapper(self, *args, **kwargs):
@@ -105,7 +110,7 @@ def with_llm_retry():
                     max_retries=params["max_retries"],
                     temp=params["temp"],
                     model_name=params["model_name"],
-                    reporter=params["reporter"]
+                    reporter=params["reporter"],
                 )
                 kwargs["retry_state"] = state
 
@@ -114,7 +119,7 @@ def with_llm_retry():
                 if state.attempt > 0 and state.reporter and hasattr(state.reporter, "report"):
                     state.reporter.report(
                         f"🔄 JSON生成再試行中 ({state.attempt + 1}/{state.max_retries}) | モデル: {state.model_name}",
-                        "warning"
+                        "warning",
                     )
 
                 # cooldown待機
@@ -146,16 +151,21 @@ def with_llm_retry():
                 except ValidationError as ve:
                     # Pydanticのバリデーションエラー
                     from src.backend.sanitizer import OutputSanitizer
+
                     state.error_feedback = OutputSanitizer.format_validation_error(ve)
-                    logger.warning(f"Validation failed (Attempt {state.attempt + 1}): {state.error_feedback}")
+                    logger.warning(
+                        f"Validation failed (Attempt {state.attempt + 1}): {state.error_feedback}"
+                    )
                     if state.attempt == state.max_retries - 1:
-                        raise LLMValidationError(f"Validation failed after {state.max_retries} attempts: {state.error_feedback}") from ve
+                        raise LLMValidationError(
+                            f"Validation failed after {state.max_retries} attempts: {state.error_feedback}"
+                        ) from ve
                     # 適応的温度調整: バリデーションエラー時は温度を下げる
                     state.temp = max(0.0, state.temp - 0.1)
                     if state.reporter and hasattr(state.reporter, "report"):
                         state.reporter.report(
                             f"🔄 出力形式エラーを検知。精度を高めるため温度を下げて再試行します (Temp: {state.temp:.1f})",
-                            "warning"
+                            "warning",
                         )
 
                 except (LLMUnrecoverableError, LLMTokenLimitError, LLMValidationError) as e:
@@ -170,26 +180,62 @@ def with_llm_retry():
                     err_msg = str(e).lower() or repr(e).lower()
 
                     # 1. トークン超過の判定（Fail-Fast対象）
-                    if any(x in err_msg for x in ["token limit", "context window", "too many tokens", "resource exhausted"]):
+                    if any(
+                        x in err_msg
+                        for x in [
+                            "token limit",
+                            "context window",
+                            "too many tokens",
+                            "resource exhausted",
+                        ]
+                    ):
                         logger.error(f"❌ Token limit exceeded. Fail-Fast. Error: {e}")
                         raise LLMTokenLimitError(f"Token limit exceeded: {e}") from e
 
                     # モデル名未指定の判定を追加
                     if "model is required" in err_msg:
-                        logger.error(f"❌ AIモデル名が空の状態でAPIが呼ばれました。UIの詳細設定でモデル名が空欄になっていないか確認してください。 Error: {e}")
+                        logger.error(
+                            f"❌ AIモデル名が空の状態でAPIが呼ばれました。UIの詳細設定でモデル名が空欄になっていないか確認してください。 Error: {e}"
+                        )
                         raise LLMUnrecoverableError(f"Model name is empty: {e}") from e
 
                     # 2. 復旧不可能なエラーの判定（Fail-Fast対象）
-                    if any(x in err_msg for x in ["404", "not found", "unauthorized", "invalid key", "api key", "unauthenticated"]):
+                    if any(
+                        x in err_msg
+                        for x in [
+                            "404",
+                            "not found",
+                            "unauthorized",
+                            "invalid key",
+                            "api key",
+                            "unauthenticated",
+                        ]
+                    ):
                         logger.error(f"❌ Fatal unrecoverable LLM error. Fail-Fast. Error: {e}")
                         raise LLMUnrecoverableError(f"Fatal unrecoverable LLM error: {e}") from e
 
                     # 3. 一時的なエラーの判定
-                    is_timeout = isinstance(e, asyncio.TimeoutError) or "timeout" in err_msg or "deadline" in err_msg
-                    is_retryable = any(
-                        x in err_msg
-                        for x in ["429", "quota", "503", "unavailable", "500", "502", "internal", "bad gateway"]
-                    ) or is_timeout
+                    is_timeout = (
+                        isinstance(e, asyncio.TimeoutError)
+                        or "timeout" in err_msg
+                        or "deadline" in err_msg
+                    )
+                    is_retryable = (
+                        any(
+                            x in err_msg
+                            for x in [
+                                "429",
+                                "quota",
+                                "503",
+                                "unavailable",
+                                "500",
+                                "502",
+                                "internal",
+                                "bad gateway",
+                            ]
+                        )
+                        or is_timeout
+                    )
 
                     if not is_retryable:
                         logger.error(f"❌ Non-retryable error. Fail-Fast. Error: {e}")
@@ -197,7 +243,9 @@ def with_llm_retry():
 
                     if state.attempt == state.max_retries - 1:
                         logger.error(f"❌ Max retries reached for temporary error: {e}")
-                        raise LLMTemporaryError(f"Temporary LLM error persisted after {state.max_retries} attempts: {e}") from e
+                        raise LLMTemporaryError(
+                            f"Temporary LLM error persisted after {state.max_retries} attempts: {e}"
+                        ) from e
 
                     # 動的クールダウンと並行抑制
                     if self.cooldown is not None:
@@ -210,23 +258,25 @@ def with_llm_retry():
                     # 適応的バックオフ戦略
                     # 429 (Too Many Requests) の場合はより強力な指数バックオフを適用
                     if "429" in err_msg or "quota" in err_msg:
-                        wait_time = min(2.0 * (2 ** state.attempt), 60.0)
+                        wait_time = min(2.0 * (2**state.attempt), 60.0)
                     # 5xx系サーバーエラーの場合は中程度のバックオフ
                     elif any(x in err_msg for x in ["503", "500", "unavailable"]):
-                        wait_time = min(3.0 * (2 ** state.attempt), 20.0)
+                        wait_time = min(3.0 * (2**state.attempt), 20.0)
                     # その他の一時的エラー
                     else:
-                        wait_time = min(1.0 * (2 ** state.attempt), 10.0)
+                        wait_time = min(1.0 * (2**state.attempt), 10.0)
 
                     # UIへの警告表示
                     if state.reporter and hasattr(state.reporter, "report"):
                         state.reporter.report(
                             f"🔄 API一時エラーを検知 (試行 {state.attempt + 1})。{wait_time:.1f}秒後にリトライします...",
-                            "warning"
+                            "warning",
                         )
 
                     # 5xx 連続エラーのカウントアップとモデルフォールバック
-                    if is_timeout or any(x in err_msg for x in ["503", "500", "deadline", "exhausted"]):
+                    if is_timeout or any(
+                        x in err_msg for x in ["503", "500", "deadline", "exhausted"]
+                    ):
                         if self._lock is not None:
                             with self._lock:
                                 self._consecutive_5xx += 1
@@ -237,17 +287,35 @@ def with_llm_retry():
 
                         if fail_count >= 2:
                             from config import MODEL_STABLE_FALLBACK
+
                             try:
                                 from config import MODEL_ULTRA_STABLE
                             except ImportError:
                                 MODEL_ULTRA_STABLE = MODEL_STABLE_FALLBACK
 
-                            if state.model_name != MODEL_ULTRA_STABLE and (state.attempt >= 2 or state.model_name == MODEL_STABLE_FALLBACK):
-                                state.model_name = MODEL_ULTRA_STABLE if MODEL_ULTRA_STABLE else "gemini-3.1-flash-lite"
-                                logger.warning(f"[Gemini FALLBACK] Persistent 5xx. Switching to ULTRA_STABLE: {state.model_name}")
-                            elif state.model_name != MODEL_STABLE_FALLBACK and MODEL_STABLE_FALLBACK != state.original_model_name:
-                                state.model_name = MODEL_STABLE_FALLBACK if MODEL_STABLE_FALLBACK else "gemini-3.1-flash-lite"
-                                logger.warning(f"[Gemini FALLBACK] 5xx detected. Switching to STABLE_FALLBACK: {state.model_name}")
+                            if state.model_name != MODEL_ULTRA_STABLE and (
+                                state.attempt >= 2 or state.model_name == MODEL_STABLE_FALLBACK
+                            ):
+                                state.model_name = (
+                                    MODEL_ULTRA_STABLE
+                                    if MODEL_ULTRA_STABLE
+                                    else "gemini-3.1-flash-lite"
+                                )
+                                logger.warning(
+                                    f"[Gemini FALLBACK] Persistent 5xx. Switching to ULTRA_STABLE: {state.model_name}"
+                                )
+                            elif (
+                                state.model_name != MODEL_STABLE_FALLBACK
+                                and MODEL_STABLE_FALLBACK != state.original_model_name
+                            ):
+                                state.model_name = (
+                                    MODEL_STABLE_FALLBACK
+                                    if MODEL_STABLE_FALLBACK
+                                    else "gemini-3.1-flash-lite"
+                                )
+                                logger.warning(
+                                    f"[Gemini FALLBACK] 5xx detected. Switching to STABLE_FALLBACK: {state.model_name}"
+                                )
 
                     await asyncio.sleep(wait_time)
 
@@ -266,5 +334,7 @@ def with_llm_retry():
                 state.attempt += 1
 
             raise LLMTemporaryError("Max retries exceeded")
+
         return wrapper
+
     return decorator

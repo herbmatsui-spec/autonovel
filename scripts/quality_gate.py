@@ -10,15 +10,10 @@ def run_command(command, description):
         env["PYTHONIOENCODING"] = "utf-8"
 
         # Use capture_output=True and handle decoding manually to avoid cp932 errors
-        result = subprocess.run(
-            command,
-            shell=True,
-            capture_output=True,
-            env=env
-        )
+        result = subprocess.run(command, shell=True, capture_output=True, env=env)
 
-        stdout = result.stdout.decode('utf-8', errors='replace')
-        stderr = result.stderr.decode('utf-8', errors='replace')
+        stdout = result.stdout.decode("utf-8", errors="replace")
+        stderr = result.stderr.decode("utf-8", errors="replace")
 
         if result.returncode == 0:
             print(f"[OK] {description} passed.")
@@ -36,6 +31,7 @@ def run_command(command, description):
         print(f"[ERROR] Error executing {description}: {e}")
         return False
 
+
 def main():
     # 1. Ruff Linting
     ruff_success = run_command("py -m ruff check src", "Ruff Linting")
@@ -49,12 +45,9 @@ def main():
         env = os.environ.copy()
         env["PYTHONIOENCODING"] = "utf-8"
         complexity_result = subprocess.run(
-            "py -m radon cc src -n B",
-            shell=True,
-            capture_output=True,
-            env=env
+            "py -m radon cc src -n B", shell=True, capture_output=True, env=env
         )
-        stdout = complexity_result.stdout.decode('utf-8', errors='replace')
+        stdout = complexity_result.stdout.decode("utf-8", errors="replace")
         if not stdout.strip():
             print("[OK] No high-complexity functions found (all Grade A).")
             radon_success = True
@@ -72,10 +65,14 @@ def main():
         sys.exit(0)
     else:
         print("FAILURE: QUALITY GATE FAILED")
-        if not ruff_success: print("- Ruff Linting failed")
-        if not mypy_success: print("- Mypy Type Checking failed")
-        if not radon_success: print("- High complexity code detected")
+        if not ruff_success:
+            print("- Ruff Linting failed")
+        if not mypy_success:
+            print("- Mypy Type Checking failed")
+        if not radon_success:
+            print("- High complexity code detected")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

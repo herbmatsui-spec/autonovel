@@ -1,22 +1,25 @@
-from typing import List, List, Dict, Optional
-from dataclasses import dataclass
 import random
+from dataclasses import dataclass
+from typing import Dict, List
+
 
 @dataclass
 class NonVerbalCue:
     """
     非言語的な描写（視線、仕草、距離感）を定義する。
     """
+
     cue: str
     dimension: str  # "affection", "trust", "dependence", "tension"
-    level: str       # "low", "mid", "high"
+    level: str  # "low", "mid", "high"
     intensity: str  # "subtle" (微細), "obvious" (明白), "intense" (強烈)
+
 
 class BodyLanguageGenerator:
     """
     感情状態から非言語的な描写（身体性）を自動生成するエンジン。
     """
-    
+
     # 非言語描写ライブラリ
     CUE_LIBRARY = {
         "affection": {
@@ -34,7 +37,7 @@ class BodyLanguageGenerator:
                 NonVerbalCue("熱を帯びた視線でじっと見つめる", "affection", "high", "intense"),
                 NonVerbalCue("無意識に相手の服の袖を掴む", "affection", "high", "obvious"),
                 NonVerbalCue("相手の呼吸に合わせるように深く頷く", "affection", "high", "subtle"),
-            ]
+            ],
         },
         "trust": {
             "low": [
@@ -49,26 +52,36 @@ class BodyLanguageGenerator:
             ],
             "high": [
                 NonVerbalCue("完全に無防備な姿勢で相手に身を任せる", "trust", "high", "obvious"),
-                NonVerbalCue("視線を合わせずとも、相手の意図を察して動く", "trust", "high", "subtle"),
+                NonVerbalCue(
+                    "視線を合わせずとも、相手の意図を察して動く", "trust", "high", "subtle"
+                ),
                 NonVerbalCue("深く長い溜息をつき、全ての緊張を解く", "trust", "high", "obvious"),
-            ]
+            ],
         },
         "dependence": {
             "low": [
-                NonVerbalCue("あえて一人で完結させようと背を向ける", "dependence", "low", "obvious"),
+                NonVerbalCue(
+                    "あえて一人で完結させようと背を向ける", "dependence", "low", "obvious"
+                ),
                 NonVerbalCue("相手の助けを遮るように手を出す", "dependence", "low", "obvious"),
                 NonVerbalCue("自立心を誇示するように顎を上げる", "dependence", "low", "subtle"),
             ],
             "mid": [
                 NonVerbalCue("ふと相手の顔色を伺う", "dependence", "mid", "subtle"),
                 NonVerbalCue("心地よい距離で寄り添う", "dependence", "mid", "subtle"),
-                NonVerbalCue("迷った時にさりげなく相手の反応を確認する", "dependence", "mid", "subtle"),
+                NonVerbalCue(
+                    "迷った時にさりげなく相手の反応を確認する", "dependence", "mid", "subtle"
+                ),
             ],
             "high": [
-                NonVerbalCue("相手の視線が外れると不安げに眉を寄せる", "dependence", "high", "obvious"),
+                NonVerbalCue(
+                    "相手の視線が外れると不安げに眉を寄せる", "dependence", "high", "obvious"
+                ),
                 NonVerbalCue("縋るように相手の視線を追い求める", "dependence", "high", "intense"),
-                NonVerbalCue("物理的な接触がないと落ち着かない様子を見せる", "dependence", "high", "obvious"),
-            ]
+                NonVerbalCue(
+                    "物理的な接触がないと落ち着かない様子を見せる", "dependence", "high", "obvious"
+                ),
+            ],
         },
         "tension": {
             "low": [
@@ -78,48 +91,52 @@ class BodyLanguageGenerator:
             ],
             "mid": [
                 NonVerbalCue("わずかに身体を強張らせる", "tension", "mid", "subtle"),
-                NonVerbalCue("相手との距離を測るように、ゆっくりと近づく", "tension", "mid", "subtle"),
+                NonVerbalCue(
+                    "相手との距離を測るように、ゆっくりと近づく", "tension", "mid", "subtle"
+                ),
                 NonVerbalCue("視線がぶつかり、僅かに火花が散る", "tension", "mid", "obvious"),
             ],
             "high": [
                 NonVerbalCue("呼吸が浅くなり、肩が上下する", "tension", "high", "obvious"),
                 NonVerbalCue("指先が微かに震える", "tension", "high", "subtle"),
-                NonVerbalCue("逃げ場のない至近距離で、互いの熱量を感じる", "tension", "high", "intense"),
-            ]
-        }
+                NonVerbalCue(
+                    "逃げ場のない至近距離で、互いの熱量を感じる", "tension", "high", "intense"
+                ),
+            ],
+        },
     }
 
-    def generate_cues(self, state: 'ConnectionState', num_cues: int = 2) -> List[str]:
+    def generate_cues(self, state: "ConnectionState", num_cues: int = 2) -> List[str]:
         """
         現在の感情状態に基づき、シーンに挿入すべき非言語描写を生成する。
         """
         candidates = []
-        
+
         dims = {
             "affection": state.affection,
             "trust": state.trust,
             "dependence": state.dependence,
-            "tension": state.tension
+            "tension": state.tension,
         }
-        
+
         for dim, val in dims.items():
             level = "low" if val <= 30 else ("high" if val >= 70 else "mid")
             cues = self.CUE_LIBRARY[dim][level]
             candidates.extend(cues)
-            
+
         if not candidates:
             return []
-            
+
         selected = random.sample(candidates, min(num_cues, len(candidates)))
         return [s.cue for s in selected]
 
-    def generate_non_verbal_prompt(self, char_a: str, char_b: str, state: 'ConnectionState') -> str:
+    def generate_non_verbal_prompt(self, char_a: str, char_b: str, state: "ConnectionState") -> str:
         """
         LLMへの指示として、挿入すべき非言語描写をフォーマットして出力する。
         """
         cues = self.generate_cues(state)
         cues_str = "、".join(cues)
-        
+
         return (
             f"【{char_a}の非言語描写ガイドライン】\n"
             f"以下の身体的反応を、シーンの適切な箇所にト書きとして挿入してください：\n"
@@ -189,12 +206,9 @@ GAP_MOE_BODY_LANGUAGE = {
 }
 
 
-def gap_expression_patterns(
-    surface_attribute: str,
-    hidden_attribute: str
-) -> Dict[str, List[str]]:
+def gap_expression_patterns(surface_attribute: str, hidden_attribute: str) -> Dict[str, List[str]]:
     """ギャップ萌えの身体言語パターンを取得
-    
+
     Returns:
         {"surface": [...], "gap": [...]} 身体言語リスト
     """
@@ -202,17 +216,17 @@ def gap_expression_patterns(
     pair_key = (surface_attribute, hidden_attribute)
     if pair_key in GAP_MOE_BODY_LANGUAGE:
         return GAP_MOE_BODY_LANGUAGE[pair_key]
-    
+
     # 逆順でも探す
     reverse_key = (hidden_attribute, surface_attribute)
     if reverse_key in GAP_MOE_BODY_LANGUAGE:
         return GAP_MOE_BODY_LANGUAGE[reverse_key]
-    
+
     # 部分的マッチを試みる
     for key, value in GAP_MOE_BODY_LANGUAGE.items():
         if surface_attribute in key[0] or hidden_attribute in key[1]:
             return value
-    
+
     # フォールバック：汎用ギャップ表現
     return {
         "surface_behavior": [
@@ -227,17 +241,14 @@ def gap_expression_patterns(
 
 
 def generate_gap_moe_scene_prompt(
-    character_name: str,
-    surface_attribute: str,
-    hidden_attribute: str,
-    trigger_situation: str = ""
+    character_name: str, surface_attribute: str, hidden_attribute: str, trigger_situation: str = ""
 ) -> str:
     """ギャップ萌え場面の生成プロンプトを作成"""
     patterns = gap_expression_patterns(surface_attribute, hidden_attribute)
-    
+
     surface_list = "\n".join([f"  - {s}" for s in patterns["surface_behavior"]])
     gap_list = "\n".join([f"  - {g}" for g in patterns["gap_revealing_behavior"]])
-    
+
     return f"""
 【ギャップ萌え場面の生成 - {character_name}】
 
@@ -262,4 +273,3 @@ def generate_gap_moe_scene_prompt(
 
 状況: {trigger_situation or "（指定なし）"}
 """
-

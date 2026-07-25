@@ -5,6 +5,7 @@ src/agents/early_entertainment_checker.py
 品質を評価せず、面白さのみを検証し、興味スコアを返す。
 LLM推論結果のJSONパース失敗時は interest_score=0 のフォールバックを返す。
 """
+
 from __future__ import annotations
 
 import logging
@@ -17,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 class EarlyEntertainmentChecker:
     """ラフプロット・冒頭500字による早期面白さ検証エージェント"""
+
     def __init__(self, llm: Any, prompt_manager: Any):
         self.llm = llm
         self.prompt_manager = prompt_manager

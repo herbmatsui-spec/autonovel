@@ -1,4 +1,5 @@
 import pytest
+
 from streamlit_app import api_client
 from tests.mocks.mock_api_client import MockApiClient
 

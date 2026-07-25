@@ -2,6 +2,7 @@
 tests/integration/test_erotic_full_pipeline.py
 エンドツーエンドのスモークテスト。
 """
+
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -56,7 +57,12 @@ def test_density_controller_allow_peak():
 
 
 def test_integrity_checker_clothing():
-    EroticIntegrityChecker.check_all = lambda self, text, consent_state=None, **kw: (True, [], None, None)
+    EroticIntegrityChecker.check_all = lambda self, text, consent_state=None, **kw: (
+        True,
+        [],
+        None,
+        None,
+    )
     checker = EroticIntegrityChecker()
     ok, issues, _, _ = checker.check_all("彼女は衣を解いた。静かに横たわる。")
     assert ok is True
@@ -70,6 +76,7 @@ def test_integrity_checker_consent_implicit_ok():
 
 def test_diversity_score_compute():
     from config.erotic_vocabulary import METAPHOR_BANK
+
     text = "瞳を星の瞬きに例える 声が風鈴の音に例える 体温を夕暮れの大地に例える"
     score = compute_diversity_score(text, METAPHOR_BANK)
     assert 0.0 <= score <= 1.0
@@ -85,6 +92,7 @@ def test_platform_preset_count():
 
 def test_intensity_scale_r15():
     from config.erotic_thresholds import INTENSITY_EXTREME, INTENSITY_R15, INTENSITY_SAFE_MAX
+
     assert INTENSITY_SAFE_MAX < INTENSITY_R15 < INTENSITY_EXTREME
 
 
@@ -120,13 +128,20 @@ async def test_refine_erotic_workflow_mock():
     # EroticIntegrityChecker を成功させるモック
     try:
         from src.agents.erotic_integrity import EroticIntegrityChecker
-        EroticIntegrityChecker.check_all = lambda self, text, consent_state=None, **kw: (True, [], None, None)
+
+        EroticIntegrityChecker.check_all = lambda self, text, consent_state=None, **kw: (
+            True,
+            [],
+            None,
+            None,
+        )
     except ImportError:
         pass
 
     # AfterglowEvaluator を成功させるモック
     try:
         from src.services.erotic_afterglow_evaluator import AfterglowEvaluator
+
         AfterglowEvaluator.evaluate = lambda self, text: (True, [])
     except ImportError:
         pass
@@ -139,11 +154,7 @@ async def test_refine_erotic_workflow_mock():
     workflow.engine = mock_engine
 
     result = await workflow.execute(
-        book_id=1,
-        ep_num=1,
-        intensity=2,
-        platform_preset="kakuyomu_romance",
-        reporter=MagicMock()
+        book_id=1, ep_num=1, intensity=2, platform_preset="kakuyomu_romance", reporter=MagicMock()
     )
 
     assert result["success"] is True

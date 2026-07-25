@@ -5,6 +5,7 @@ from src.services.llm_service import LLMService
 
 logger = logging.getLogger(__name__)
 
+
 class EngineService:
     """アプリケーションの中心的なビジネスロジックを担うサービス。
     現段階では以下のメソッドを提供し、簡易的なデータ操作と Gemini 呼び出しを行う。
@@ -59,6 +60,7 @@ class EngineService:
     @property
     def engine(self):
         return self.llm
+
     async def generate_plot(self, prompt: str) -> Dict[str, Any]:
         """LLM にプロット生成プロンプトを投げ、JSON 結果を取得する。"""
         result = await self.llm.generate_json(

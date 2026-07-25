@@ -1,9 +1,9 @@
 """tests/test_token_tracker.py - TokenTracker のテスト"""
-import pytest
+
 import time
 
-from src.services.token_tracker import TokenTracker
 from src.models.report import TokenUsageReport
+from src.services.token_tracker import TokenTracker
 
 
 class TestTokenTracker:
@@ -31,7 +31,7 @@ class TestTokenTracker:
         tracker = TokenTracker()
         tracker.add_usage(100, 200, ep_num=1)
         tracker.add_usage(150, 250, ep_num=2)
-        
+
         usages = tracker.get_episode_usages()
         assert len(usages) == 2
         assert usages[0]["ep_num"] == 1
@@ -52,7 +52,7 @@ class TestTokenTracker:
         tracker.start()
         time.sleep(0.1)
         tracker.stop()
-        
+
         report = tracker.get_report()
         assert report.generation_time_seconds >= 0.1
 
@@ -64,7 +64,7 @@ class TestTokenTracker:
         tracker.start()
         time.sleep(0.05)
         tracker.stop()
-        
+
         report = tracker.get_report()
         assert isinstance(report, TokenUsageReport)
         assert report.total_tokens == 3000
@@ -79,6 +79,6 @@ class TestTokenTracker:
         tracker.add_usage(100, 200)
         tracker.increment_episode_count()
         tracker.reset()
-        
+
         assert tracker.total_tokens == 0
         assert tracker.episode_count == 0

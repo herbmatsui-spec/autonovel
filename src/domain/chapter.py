@@ -9,17 +9,25 @@ if TYPE_CHECKING:
 
 class ChapterBase(BaseModel):
     """章の基底モデル"""
+
     ep_num: int = Field(..., ge=1, description="エピソード番号")
     title: str = Field(..., min_length=1, max_length=200, description="章タイトル")
     content: str = Field(default="", description="本文内容")
-    status: str = Field(default="draft", pattern=r"^(draft|writing|completed|archived)$", description="ステータス")
+    status: str = Field(
+        default="draft", pattern=r"^(draft|writing|completed|archived)$", description="ステータス"
+    )
     word_count: int = Field(default=0, ge=0, description="文字数")
-    created_at: float = Field(default_factory=lambda: datetime.now().timestamp(), description="作成日時")
-    updated_at: float = Field(default_factory=lambda: datetime.now().timestamp(), description="更新日時")
+    created_at: float = Field(
+        default_factory=lambda: datetime.now().timestamp(), description="作成日時"
+    )
+    updated_at: float = Field(
+        default_factory=lambda: datetime.now().timestamp(), description="更新日時"
+    )
 
 
 class ChapterCreate(BaseModel):
     """章作成リクエスト"""
+
     title: str = Field(..., min_length=1, max_length=200)
     content: str = Field(default="")
     ep_num: Optional[int] = Field(default=None, ge=1)
@@ -27,6 +35,7 @@ class ChapterCreate(BaseModel):
 
 class Chapter(ChapterBase):
     """章エンティティ — 完全なデータモデル"""
+
     id: int = Field(..., ge=1, description="章ID")
     characters: List["Character"] = Field(default_factory=list, description="登場キャラクター")
     tension: float = Field(default=0.0, ge=0.0, le=1.0, description="緊張度")

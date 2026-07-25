@@ -5,6 +5,7 @@
 - 実際のサービス実装 (WorldBibleGenerator, WritingAgent 等) が
   Protocol の構造的サブタイプになっていること（メソッド存在確認）
 """
+
 from src.backend import protocols
 
 
@@ -52,8 +53,8 @@ def test_repo_port_methods():
 
 def test_real_implementations_satisfy_protocols():
     """実サービス実装が Protocol の必須メソッドを備えているか（構造的確認）。"""
-    from src.services.bible_service import WorldBibleGenerator
     from src.agents.writing import WritingAgent
+    from src.services.bible_service import WorldBibleGenerator
 
     # WorldBibleGenerator は create_hegemony_plan を実装 (PlanningPort の核心)
     assert hasattr(WorldBibleGenerator, "create_hegemony_plan")

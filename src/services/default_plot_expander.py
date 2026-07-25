@@ -5,6 +5,7 @@ IPlotExpander プロトコルの標準実装。
 bible_service.py の超高速プロット生成ロジックを再利用し、
 PlotAgent から独立して呼び出せるようにする。
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -13,7 +14,7 @@ import logging
 from typing import Any, List, Optional
 
 from config.constants import MODEL_PLOT_EXPANSION
-from src.core.interfaces import IPlotExpander, IReporter, IRepository
+from src.core.interfaces import IReporter, IRepository
 from src.models.plot import UltraFastPlotBatch
 
 logger = logging.getLogger(__name__)

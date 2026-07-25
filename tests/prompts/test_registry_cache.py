@@ -31,6 +31,7 @@ def test_prompt_registry_cache_hit():
     assert source1 == source2
     assert registry._template_cache["test_prompt.j2"].mtime == initial_mtime
 
+
 def test_prompt_registry_cache_expiration():
     """ファイルが更新された際にキャッシュが正しく無効化されることを検証する"""
     test_dir = os.path.abspath("tests/prompts/temp_templates")
@@ -54,6 +55,7 @@ def test_prompt_registry_cache_expiration():
     # 2回目の呼び出し: キャッシュはあるが mtime が新しいため更新されるべき
     source2 = registry._get_template_source_sync("test_prompt_update.j2")
     assert source2 == "Version 2"
+
 
 def test_prompt_registry_lru_eviction():
     """キャッシュが最大サイズに達したときに古いエントリが削除されることを検証する"""

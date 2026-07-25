@@ -21,11 +21,11 @@ class PromptRegistry:
     def get(self, template_name: str, **variables) -> str:
         """
         テンプレートを取得し、レンダリング時間とヒット数を記録します。
-        
+
         Args:
             template_name: テンプレート名
             **variables: テンプレート変数
-            
+
         Returns:
             レンダリングされたテンプレート文字列
         """
@@ -41,17 +41,17 @@ class PromptRegistry:
             # メトリクスを更新
             if template_name not in self._metrics:
                 self._metrics[template_name] = {
-                    'hits': 0,
-                    'total_time_ms': 0.0,
-                    'avg_time_ms': 0.0,
-                    'last_accessed': time.time()
+                    "hits": 0,
+                    "total_time_ms": 0.0,
+                    "avg_time_ms": 0.0,
+                    "last_accessed": time.time(),
                 }
 
             metrics = self._metrics[template_name]
-            metrics['hits'] += 1
-            metrics['total_time_ms'] += elapsed_ms
-            metrics['avg_time_ms'] = metrics['total_time_ms'] / metrics['hits']
-            metrics['last_accessed'] = time.time()
+            metrics["hits"] += 1
+            metrics["total_time_ms"] += elapsed_ms
+            metrics["avg_time_ms"] = metrics["total_time_ms"] / metrics["hits"]
+            metrics["last_accessed"] = time.time()
 
             return rendered
         except Exception as e:
@@ -59,30 +59,31 @@ class PromptRegistry:
             elapsed_ms = (time.perf_counter() - start_time) * 1000
             if template_name not in self._metrics:
                 self._metrics[template_name] = {
-                    'hits': 0,
-                    'total_time_ms': 0.0,
-                    'avg_time_ms': 0.0,
-                    'error_count': 0,
-                    'last_accessed': time.time()
+                    "hits": 0,
+                    "total_time_ms": 0.0,
+                    "avg_time_ms": 0.0,
+                    "error_count": 0,
+                    "last_accessed": time.time(),
                 }
 
             metrics = self._metrics[template_name]
-            metrics['hits'] += 1
-            metrics['total_time_ms'] += elapsed_ms
-            metrics['avg_time_ms'] = metrics['total_time_ms'] / metrics['hits']
-            metrics['error_count'] = metrics.get('error_count', 0) + 1
-            metrics['last_accessed'] = time.time()
+            metrics["hits"] += 1
+            metrics["total_time_ms"] += elapsed_ms
+            metrics["avg_time_ms"] = metrics["total_time_ms"] / metrics["hits"]
+            metrics["error_count"] = metrics.get("error_count", 0) + 1
+            metrics["last_accessed"] = time.time()
 
             raise e
 
     def get_metrics(self) -> Dict[str, Dict[str, Any]]:
         """収集されたメトリクスを返す（コピー）."""
         import copy
+
         return copy.deepcopy(self._metrics)
 
     def reset_metrics(self, template_name: Optional[str] = None) -> None:
         """メトリクスをリセットする。
-        
+
         Args:
             template_name: 特定のテンプレートのみリセットする場合は指定。
                          Noneの場合はすべてのメトリクスをリセット。
@@ -110,4 +111,4 @@ class PromptRegistry:
 
 
 # エクスポート用
-__all__ = ['PromptRegistry']
+__all__ = ["PromptRegistry"]

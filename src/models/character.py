@@ -11,16 +11,19 @@ from src.models.base import MODEL_CONFIG_DEFAULTS, extract_int
 
 class CharacterConcept(BaseModel):
     """キャラクターの初期コンセプト案"""
-    name:            str             = Field(..., description="キャラクター名（仮）")
-    trait:           str             = Field(..., description="特性・二つ名")
-    core_idea:       str             = Field(..., description="コアコンセプト・核心")
-    appeal_point:    str             = Field(..., description="読者への訴求点・カタルシス要素")
-    villain_concept: Optional[str]   = Field(default=None, description="想定される敵対者像")
+
+    name: str = Field(..., description="キャラクター名（仮）")
+    trait: str = Field(..., description="特性・二つ名")
+    core_idea: str = Field(..., description="コアコンセプト・核心")
+    appeal_point: str = Field(..., description="読者への訴求点・カタルシス要素")
+    villain_concept: Optional[str] = Field(default=None, description="想定される敵対者像")
 
     model_config = MODEL_CONFIG_DEFAULTS
 
+
 class CharacterConceptList(BaseModel):
     """キャラクターコンセプト案のリスト"""
+
     concepts: List[CharacterConcept] = Field(default_factory=list)
 
     @model_validator(mode="before")
@@ -35,16 +38,19 @@ class CharacterConceptList(BaseModel):
 
     model_config = MODEL_CONFIG_DEFAULTS
 
+
 class CharacterRelationship(BaseModel):
     target_char_name: str = Field(
         default="不明",
         description="関係性を持つ相手のキャラクター名",
-        validation_alias=AliasChoices("target_char_name", "target", "name", "to", "char")
+        validation_alias=AliasChoices("target_char_name", "target", "name", "to", "char"),
     )
     type: str = Field(
         default="関係者",
         description="関係性の種類（例: ライバル, 師弟, 依存, 秘密の恋人, 恩人, 宿敵）",
-        validation_alias=AliasChoices("type", "relation", "relationship", "relation_type", "kind", "role", "label")
+        validation_alias=AliasChoices(
+            "type", "relation", "relationship", "relation_type", "kind", "role", "label"
+        ),
     )
     description: str = Field(default="", description="関係性の具体的な内容や背景")
     intensity: int = Field(default=3, ge=1, le=5, description="関係性の強度（1:弱い〜5:強い）")
@@ -68,34 +74,83 @@ class CharacterRelationship(BaseModel):
                         data["scores"][k] = extract_int(v)
         return data
 
+
 class CharacterRegistry(BaseModel):
-    name:                str             = Field(default="", validation_alias=AliasChoices("name", "char_name", "character_name"))
-    role:                str             = Field(default="", validation_alias=AliasChoices("role", "position", "job", "class"))
-    gender:              str             = Field(default="")
-    age:                 str             = Field(default="")
-    appearance:          str             = Field(default="", validation_alias=AliasChoices("appearance", "visual", "look"))
-    personality:         str             = Field(default="", validation_alias=AliasChoices("personality", "traits", "character", "nature"))
-    surface_persona:     str             = Field(default="", description="周囲からどう見られているか、演じている役割")
-    inner_conflict:      str             = Field(default="", description="演じている自分と本当の望みの間の葛藤")
-    core_trauma:         str             = Field(default="", description="過去のトラウマや原初の欠落")
-    save_the_cat_event:  str             = Field(default="", description="読者が共感する人間味ある善行")
-    first_person:        str             = Field(default="私", description="一人称", validation_alias=AliasChoices("first_person", "fp", "i", "first"))
-    second_person:       str             = Field(default="貴方", description="二人称", validation_alias=AliasChoices("second_person", "sp", "you", "second"))
-    suffix_style:        str             = Field(default="", description="特徴的な語尾", validation_alias=AliasChoices("suffix_style", "suffix", "style"))
-    suffix_patterns:     List[str]       = Field(default_factory=list, description="語尾検証用の正規表現パターン（例: ['〜だわ$', '〜ですわ$']）")
-    known_facts:         List[str]       = Field(default_factory=list, description="このキャラが知っている事実（Truth Ledger）")
-    unknown_facts:       List[str]       = Field(default_factory=list, description="このキャラが知らない事実（会話で漏らしてはいけない）")
-    ability:             str             = Field(default="", validation_alias=AliasChoices("ability", "power", "skill", "magic"))
-    background:          str             = Field(default="", validation_alias=AliasChoices("background", "bg", "history", "story"))
-    tone:                str             = Field(default="", validation_alias=AliasChoices("tone", "voice", "manner"))
-    iron_constraint:     str             = Field(default="", description="絶対に破らない行動原則・禁忌", validation_alias=AliasChoices("iron_constraint", "iron_const", "rule", "taboo"))
-    fate_link:           str             = Field(default="", description="世界の因果律との繋がり")
-    social_mask_vs_truth: str            = Field(default="", description="表向きの社会的仮面と、夜一人でいる時に見せる剥き出しの真実の対比")
-    pronouns:            Dict[str, str]  = Field(default_factory=dict)
-    relationships:       List[CharacterRelationship] = Field(default_factory=list, validation_alias=AliasChoices("relationships", "relations", "rels"))
-    dialogue_samples:    List[str]       = Field(default_factory=list, validation_alias=AliasChoices("dialogue_samples", "dlg_smp", "samples", "quotes"))
-    keywords:            List[str]       = Field(default_factory=list, validation_alias=AliasChoices("keywords", "kws", "tags"))
-    expansion_hooks:     List[str]       = Field(default_factory=list, validation_alias=AliasChoices("expansion_hooks", "exp_hooks", "hooks", "hooks_list"), description="描写を膨らせるための固有要素")
+    name: str = Field(
+        default="", validation_alias=AliasChoices("name", "char_name", "character_name")
+    )
+    role: str = Field(default="", validation_alias=AliasChoices("role", "position", "job", "class"))
+    gender: str = Field(default="")
+    age: str = Field(default="")
+    appearance: str = Field(
+        default="", validation_alias=AliasChoices("appearance", "visual", "look")
+    )
+    personality: str = Field(
+        default="", validation_alias=AliasChoices("personality", "traits", "character", "nature")
+    )
+    surface_persona: str = Field(
+        default="", description="周囲からどう見られているか、演じている役割"
+    )
+    inner_conflict: str = Field(default="", description="演じている自分と本当の望みの間の葛藤")
+    core_trauma: str = Field(default="", description="過去のトラウマや原初の欠落")
+    save_the_cat_event: str = Field(default="", description="読者が共感する人間味ある善行")
+    first_person: str = Field(
+        default="私",
+        description="一人称",
+        validation_alias=AliasChoices("first_person", "fp", "i", "first"),
+    )
+    second_person: str = Field(
+        default="貴方",
+        description="二人称",
+        validation_alias=AliasChoices("second_person", "sp", "you", "second"),
+    )
+    suffix_style: str = Field(
+        default="",
+        description="特徴的な語尾",
+        validation_alias=AliasChoices("suffix_style", "suffix", "style"),
+    )
+    suffix_patterns: List[str] = Field(
+        default_factory=list,
+        description="語尾検証用の正規表現パターン（例: ['〜だわ$', '〜ですわ$']）",
+    )
+    known_facts: List[str] = Field(
+        default_factory=list, description="このキャラが知っている事実（Truth Ledger）"
+    )
+    unknown_facts: List[str] = Field(
+        default_factory=list, description="このキャラが知らない事実（会話で漏らしてはいけない）"
+    )
+    ability: str = Field(
+        default="", validation_alias=AliasChoices("ability", "power", "skill", "magic")
+    )
+    background: str = Field(
+        default="", validation_alias=AliasChoices("background", "bg", "history", "story")
+    )
+    tone: str = Field(default="", validation_alias=AliasChoices("tone", "voice", "manner"))
+    iron_constraint: str = Field(
+        default="",
+        description="絶対に破らない行動原則・禁忌",
+        validation_alias=AliasChoices("iron_constraint", "iron_const", "rule", "taboo"),
+    )
+    fate_link: str = Field(default="", description="世界の因果律との繋がり")
+    social_mask_vs_truth: str = Field(
+        default="", description="表向きの社会的仮面と、夜一人でいる時に見せる剥き出しの真実の対比"
+    )
+    pronouns: Dict[str, str] = Field(default_factory=dict)
+    relationships: List[CharacterRelationship] = Field(
+        default_factory=list, validation_alias=AliasChoices("relationships", "relations", "rels")
+    )
+    dialogue_samples: List[str] = Field(
+        default_factory=list,
+        validation_alias=AliasChoices("dialogue_samples", "dlg_smp", "samples", "quotes"),
+    )
+    keywords: List[str] = Field(
+        default_factory=list, validation_alias=AliasChoices("keywords", "kws", "tags")
+    )
+    expansion_hooks: List[str] = Field(
+        default_factory=list,
+        validation_alias=AliasChoices("expansion_hooks", "exp_hooks", "hooks", "hooks_list"),
+        description="描写を膨らせるための固有要素",
+    )
 
     model_config = MODEL_CONFIG_DEFAULTS
 
@@ -131,11 +186,13 @@ class CharacterRegistry(BaseModel):
                 "tone": ["tone", "voice", "manner"],
                 "iron_constraint": ["iron_constraint", "iron_const", "rule", "taboo"],
                 "fate_link": ["fate_link"],
-                "social_mask_vs_truth": ["social_mask_vs_truth"]
+                "social_mask_vs_truth": ["social_mask_vs_truth"],
             }
             for f, aliases in str_fields.items():
                 if not any(a in data for a in aliases):
-                    data[f] = "私" if f == "first_person" else "貴方" if f == "second_person" else ""
+                    data[f] = (
+                        "私" if f == "first_person" else "貴方" if f == "second_person" else ""
+                    )
         return data
 
     @field_validator("keywords", "dialogue_samples", "expansion_hooks", mode="before")
@@ -144,7 +201,7 @@ class CharacterRegistry(BaseModel):
         """文字列、None、または単一オブジェクトが来た場合にリストに変換・正規化する"""
         if isinstance(v, str):
             # カンマ、読点、改行で分割してリスト化
-            return [x.strip() for x in re.split(r'[,、\n]', v) if x.strip()]
+            return [x.strip() for x in re.split(r"[,、\n]", v) if x.strip()]
         if v is None:
             return []
         if not isinstance(v, list):
@@ -167,6 +224,7 @@ class CharacterRegistry(BaseModel):
     def get_context_prompt(self, current_state: str = "") -> str:
         """AIへの投入用に全フィールドを展開した詳細プロンプト文字列を生成する"""
         import json as _json
+
         prompt = f"■ {self.name} ({self.role})"
         if current_state:
             prompt += f" [CURRENT STATE: {current_state}]"
@@ -177,7 +235,9 @@ class CharacterRegistry(BaseModel):
         prompt += f"- IronConst: {self.iron_constraint}\n"
         prompt += f"- Background: {self.background}\n"
         prompt += f"- ExpansionHooks: {', '.join(self.expansion_hooks)}\n"
-        rels_list = [r.model_dump() if hasattr(r, "model_dump") else r for r in (self.relationships or [])]
+        rels_list = [
+            r.model_dump() if hasattr(r, "model_dump") else r for r in (self.relationships or [])
+        ]
         rels_str = _json.dumps(rels_list, ensure_ascii=False)
         prompt += f"- Rels: {rels_str}\n"
         prompt += f"- DlgSmp: {_json.dumps(self.dialogue_samples, ensure_ascii=False)}\n"

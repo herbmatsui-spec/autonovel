@@ -18,6 +18,7 @@ from typing import Any, Dict, List, Optional, Tuple
 try:
     from langgraph.checkpoint.memory import MemorySaver
     from langgraph.graph import END, StateGraph
+
     HAS_LANGGRAPH = True
 except ImportError:
     MemorySaver = None  # type: ignore
@@ -36,8 +37,10 @@ MAX_RETRY_DELAY = 30.0  # 最大リトライ遅延（秒）
 RETRY_BACKOFF_FACTOR = 2.0  # 指数バックオフ係数
 QUALITY_THRESHOLD_EARLY_EXIT = 0.95  # 早期終了の品質閾値
 
+
 class WritingGraphState(Dict[str, Any]):
     """LangGraph State for the Writing Actor-Critic Loop"""
+
     ep_num: int
     passion: float
     is_easy_mode: bool
@@ -61,6 +64,7 @@ class WritingGraphState(Dict[str, Any]):
     # Status
     status: str
 
+
 class WritingGraphManager:
     """商用化対応LangGraphマネージャー - パフォーマンス最適化版"""
 
@@ -69,7 +73,7 @@ class WritingGraphManager:
     _cache_ttl = 300  # キャッシュTTL（秒）
 
     def __init__(self, manager):
-        self.manager = manager # GenerationLoopManager instance
+        self.manager = manager  # GenerationLoopManager instance
         self.workflow = self._build_graph()
         # チェックポインター設定（長時間運用対応）
         self.checkpointer = None
@@ -79,6 +83,7 @@ class WritingGraphManager:
         self._checkpoint_metadata: Dict[str, Any] = {}
         # 品質メトリクス収集（ジャンル別トレンド分析用）
         from .quality_metrics import QualityMetricsCollector
+
         self.metrics_collector = QualityMetricsCollector()
         # StreamingPlotScheduler 統合（依存関係管理用、None=未注入）
         self._scheduler: Optional[Any] = None
@@ -108,20 +113,11 @@ class WritingGraphManager:
         workflow.add_conditional_edges(
             "audit",
             self.route_after_audit,
-            {
-                "finish": "dogfeed",
-                "critic": "critic",
-                "heal": "healing"
-            }
+            {"finish": "dogfeed", "critic": "critic", "heal": "healing"},
         )
 
         workflow.add_conditional_edges(
-            "critic",
-            self.route_after_critic,
-            {
-                "retry": "drafting",
-                "finish": "dogfeed"
-            }
+            "critic", self.route_after_critic, {"retry": "drafting", "finish": "dogfeed"}
         )
 
         workflow.add_edge("healing", "dogfeed")
@@ -148,10 +144,7 @@ class WritingGraphManager:
     @classmethod
     def _set_cached_gen_ctx(cls, cache_key: str, gen_ctx: Any) -> None:
         """gen_ctxをキャッシュに保持"""
-        cls._gen_ctx_cache[cache_key] = {
-            "gen_ctx": gen_ctx,
-            "timestamp": time.time()
-        }
+        cls._gen_ctx_cache[cache_key] = {"gen_ctx": gen_ctx, "timestamp": time.time()}
         # キャッシュサイズ制限
         if len(cls._gen_ctx_cache) > 100:
             oldest = min(cls._gen_ctx_cache.items(), key=lambda x: x[1]["timestamp"])
@@ -169,8 +162,14 @@ class WritingGraphManager:
         logger.info(f"LangGraph: Preparing context for Ep.{state.get('ep_num', 'unknown')}")
 
         # キャッシュキーの生成
-        genre_str = state.get("context", {}).get("genre_str", "unknown") if isinstance(state.get("context"), dict) else "unknown"
-        cache_key = f"ep{state.get('ep_num', 'unknown')}_{genre_str}_{state.get('is_easy_mode', False)}"
+        genre_str = (
+            state.get("context", {}).get("genre_str", "unknown")
+            if isinstance(state.get("context"), dict)
+            else "unknown"
+        )
+        cache_key = (
+            f"ep{state.get('ep_num', 'unknown')}_{genre_str}_{state.get('is_easy_mode', False)}"
+        )
 
         # キャッシュからgen_ctxを取得 시도
         cached_gen_ctx = self._get_cached_gen_ctx(cache_key)
@@ -187,15 +186,28 @@ class WritingGraphManager:
             retry_delay = DEFAULT_RETRY_DELAY
             for attempt in range(3):
                 try:
-                    gen_ctx, should_dogfeed, should_heavy_audit, should_beat_decompose, ncs_score = await self.manager._phase_prepare_context(
-                        state.get("ep_num"), state.get("context"), state.get("sys_inst"), state.get("fw_prompt"), state.get("is_easy_mode", False), None
+                    (
+                        gen_ctx,
+                        should_dogfeed,
+                        should_heavy_audit,
+                        should_beat_decompose,
+                        ncs_score,
+                    ) = await self.manager._phase_prepare_context(
+                        state.get("ep_num"),
+                        state.get("context"),
+                        state.get("sys_inst"),
+                        state.get("fw_prompt"),
+                        state.get("is_easy_mode", False),
+                        None,
                     )
                     # 成功したらキャッシュに保存
                     self._set_cached_gen_ctx(cache_key, gen_ctx)
                     break
                 except Exception as e:
                     if attempt < 2:
-                        logger.warning(f"node_prepare attempt {attempt + 1} failed: {e}, retrying in {retry_delay}s")
+                        logger.warning(
+                            f"node_prepare attempt {attempt + 1} failed: {e}, retrying in {retry_delay}s"
+                        )
                         await asyncio.sleep(retry_delay)
                         retry_delay = min(retry_delay * RETRY_BACKOFF_FACTOR, MAX_RETRY_DELAY)
                     else:
@@ -203,6 +215,7 @@ class WritingGraphManager:
                         raise
 
         from config.project_context import ProjectContext
+
         base_max_ac_iter = ProjectContext.get_setting("actor_critic_max_iterations", 2)
         max_ac_iter = 1 if ncs_score < 40 else base_max_ac_iter
 
@@ -217,7 +230,7 @@ class WritingGraphManager:
             "should_heavy_audit": should_heavy_audit,
             "should_dogfeed": should_dogfeed,
             "should_beat_decompose": should_beat_decompose,
-            "ac_iter": 0
+            "ac_iter": 0,
         }
 
     async def node_drafting(self, state: WritingGraphState):
@@ -231,14 +244,23 @@ class WritingGraphManager:
         for attempt in range(3):
             try:
                 content, meta = await self.manager._phase_drafting(
-                    state["ep_num"], blueprint, temp, state["should_beat_decompose"], state["gen_ctx"], None
+                    state["ep_num"],
+                    blueprint,
+                    temp,
+                    state["should_beat_decompose"],
+                    state["gen_ctx"],
+                    None,
                 )
                 # 成功時: コンテンツ品質チェック
                 if content and len(content) > 100:
-                    logger.info(f"Drafting completed for Ep.{state['ep_num']} (attempt {attempt + 1}), length: {len(content)}")
+                    logger.info(
+                        f"Drafting completed for Ep.{state['ep_num']} (attempt {attempt + 1}), length: {len(content)}"
+                    )
                     return {"draft_content": content, "final_meta": meta}
                 else:
-                    logger.warning(f"Drafting produced insufficient content ({len(content) if content else 0} chars), retrying...")
+                    logger.warning(
+                        f"Drafting produced insufficient content ({len(content) if content else 0} chars), retrying..."
+                    )
                     last_error = "Insufficient content generated"
             except Exception as e:
                 last_error = e
@@ -266,30 +288,54 @@ class WritingGraphManager:
                 "failures": [],
                 "ac_iter": state["ac_iter"] + 1,
                 "threshold": 0,
-                "rate": 1.0
+                "rate": 1.0,
             }
 
         from src.agents.audit import PlotIntegrityMonitor
+
         monitor = PlotIntegrityMonitor(self.manager.pm, self.manager.llm)
         blueprint = state["context"]["plot"].detailed_blueprint
         engine_key = state["context"].get("engine_key", "unknown")
-        threshold = self.manager.narrative.get_integrity_threshold(state["context"]["genre_str"], state["context"].get("prev_integrity", 100), engine_key=engine_key)
+        threshold = self.manager.narrative.get_integrity_threshold(
+            state["context"]["genre_str"],
+            state["context"].get("prev_integrity", 100),
+            engine_key=engine_key,
+        )
 
         # 指数関数的バックオフ付きリトライ
         retry_delay = DEFAULT_RETRY_DELAY
         last_error = None
         for attempt in range(3):
             try:
-                is_integrity_ok, rate, is_causal_ok, causal_reason, failures = await self.manager._phase_audit(
-                    state["ep_num"], state["context"], state["draft_content"], state["final_meta"], blueprint, threshold, state["should_heavy_audit"], monitor
+                (
+                    is_integrity_ok,
+                    rate,
+                    is_causal_ok,
+                    causal_reason,
+                    failures,
+                ) = await self.manager._phase_audit(
+                    state["ep_num"],
+                    state["context"],
+                    state["draft_content"],
+                    state["final_meta"],
+                    blueprint,
+                    threshold,
+                    state["should_heavy_audit"],
+                    monitor,
                 )
 
                 # 品質が極めて高い場合は早期終了フラグ
-                quality_skip = rate >= QUALITY_THRESHOLD_EARLY_EXIT and is_integrity_ok and is_causal_ok
+                quality_skip = (
+                    rate >= QUALITY_THRESHOLD_EARLY_EXIT and is_integrity_ok and is_causal_ok
+                )
                 if quality_skip:
-                    logger.info(f"High quality detected (rate={rate:.2f}) for Ep.{state['ep_num']}, suggesting early termination")
+                    logger.info(
+                        f"High quality detected (rate={rate:.2f}) for Ep.{state['ep_num']}, suggesting early termination"
+                    )
 
-                logger.info(f"Audit completed for Ep.{state['ep_num']}: integrity={is_integrity_ok}, causal={is_causal_ok}, rate={rate:.2f}")
+                logger.info(
+                    f"Audit completed for Ep.{state['ep_num']}: integrity={is_integrity_ok}, causal={is_causal_ok}, rate={rate:.2f}"
+                )
                 return {
                     "is_integrity_ok": is_integrity_ok,
                     "is_causal_ok": is_causal_ok,
@@ -299,7 +345,7 @@ class WritingGraphManager:
                     "monitor": monitor,
                     "threshold": threshold,
                     "rate": rate,
-                    "quality_skip": quality_skip
+                    "quality_skip": quality_skip,
                 }
             except Exception as e:
                 last_error = e
@@ -317,7 +363,7 @@ class WritingGraphManager:
             "ac_iter": state["ac_iter"] + 1,
             "monitor": monitor,
             "threshold": threshold,
-            "rate": 0.0
+            "rate": 0.0,
         }
 
     def route_after_audit(self, state: WritingGraphState) -> str:
@@ -328,17 +374,23 @@ class WritingGraphManager:
 
         # 品質が極めて高い場合は早期終了
         if state.get("quality_skip") and state.get("is_integrity_ok") and state.get("is_causal_ok"):
-            logger.info(f"Early exit triggered for Ep.{state.get('ep_num')} due to high quality (rate >= {QUALITY_THRESHOLD_EARLY_EXIT})")
+            logger.info(
+                f"Early exit triggered for Ep.{state.get('ep_num')} due to high quality (rate >= {QUALITY_THRESHOLD_EARLY_EXIT})"
+            )
             return "finish"
 
         # 整合性・因果性双方がOKで、反復回数の上限に達していない場合
         if state.get("is_integrity_ok") and state.get("is_causal_ok"):
             # 反復回数が残っているかチェック
             if state.get("ac_iter", 0) >= state.get("max_ac_iter", 2):
-                logger.info(f"Max iterations ({state.get('max_ac_iter', 2)}) reached for Ep.{state.get('ep_num')}, finishing")
+                logger.info(
+                    f"Max iterations ({state.get('max_ac_iter', 2)}) reached for Ep.{state.get('ep_num')}, finishing"
+                )
                 return "finish"
             # 重監査モードで、まだ改善の余地がある場合
-            if state.get("should_heavy_audit", True) and state.get("ac_iter", 0) < state.get("max_ac_iter", 2):
+            if state.get("should_heavy_audit", True) and state.get("ac_iter", 0) < state.get(
+                "max_ac_iter", 2
+            ):
                 return "critic"
             return "finish"
 
@@ -347,7 +399,9 @@ class WritingGraphManager:
             return "heal"
 
         # 反復可能で重監査モードの場合
-        if state.get("ac_iter", 0) < state.get("max_ac_iter", 2) and state.get("should_heavy_audit", True):
+        if state.get("ac_iter", 0) < state.get("max_ac_iter", 2) and state.get(
+            "should_heavy_audit", True
+        ):
             return "critic"
 
         return "finish"
@@ -363,7 +417,13 @@ class WritingGraphManager:
         for attempt in range(3):
             try:
                 triggered = await self.manager._phase_critic(
-                    state["ac_iter"], state["ep_num"], state["draft_content"], blueprint, state["failures"], state["gen_ctx"], None
+                    state["ac_iter"],
+                    state["ep_num"],
+                    state["draft_content"],
+                    blueprint,
+                    state["failures"],
+                    state["gen_ctx"],
+                    None,
                 )
                 logger.info(f"Critic completed for Ep.{state['ep_num']}: triggered={triggered}")
                 return {"critic_triggered": triggered}
@@ -382,10 +442,14 @@ class WritingGraphManager:
         if state.get("critic_triggered"):
             # 最大反復回数に達していない場合のみリトライ
             if state.get("ac_iter", 0) < state.get("max_ac_iter", 2):
-                logger.info(f"Critic triggered retry for Ep.{state.get('ep_num')} (iter {state.get('ac_iter', 0)}/{state.get('max_ac_iter', 2)})")
+                logger.info(
+                    f"Critic triggered retry for Ep.{state.get('ep_num')} (iter {state.get('ac_iter', 0)}/{state.get('max_ac_iter', 2)})"
+                )
                 return "retry"
             else:
-                logger.info(f"Max iterations reached, skipping critic retry for Ep.{state.get('ep_num')}")
+                logger.info(
+                    f"Max iterations reached, skipping critic retry for Ep.{state.get('ep_num')}"
+                )
         return "finish"
 
     async def node_healing(self, state: WritingGraphState):
@@ -399,13 +463,25 @@ class WritingGraphManager:
         for attempt in range(3):
             try:
                 content, is_causal_ok, causal_reason = await self.manager._phase_healing(
-                    state["ep_num"], state["draft_content"], state["context"], blueprint, state["causal_reason"], state["failures"], state.get("monitor")
+                    state["ep_num"],
+                    state["draft_content"],
+                    state["context"],
+                    blueprint,
+                    state["causal_reason"],
+                    state["failures"],
+                    state.get("monitor"),
                 )
                 logger.info(f"Healing completed for Ep.{state['ep_num']}: causal_ok={is_causal_ok}")
-                return {"draft_content": content, "is_causal_ok": is_causal_ok, "causal_reason": causal_reason}
+                return {
+                    "draft_content": content,
+                    "is_causal_ok": is_causal_ok,
+                    "causal_reason": causal_reason,
+                }
             except Exception as e:
                 last_error = e
-                logger.warning(f"Healing attempt {attempt + 1} failed for Ep.{state['ep_num']}: {e}")
+                logger.warning(
+                    f"Healing attempt {attempt + 1} failed for Ep.{state['ep_num']}: {e}"
+                )
                 if attempt < 2:
                     await asyncio.sleep(retry_delay + random.uniform(0, 0.2))
                     retry_delay = min(retry_delay * RETRY_BACKOFF_FACTOR, MAX_RETRY_DELAY)
@@ -414,7 +490,7 @@ class WritingGraphManager:
         return {
             "draft_content": state["draft_content"],  # 元のコンテンツを保持
             "is_causal_ok": False,
-            "causal_reason": str(last_error)
+            "causal_reason": str(last_error),
         }
 
     async def node_dogfeed(self, state: WritingGraphState):
@@ -423,7 +499,9 @@ class WritingGraphManager:
 
         # dogfoodが不要またはeasy_modeの場合はスキップ
         if not state.get("should_dogfeed", True) or state.get("is_easy_mode", False):
-            logger.info(f"Dogfeed skipped for Ep.{state.get('ep_num')} (should_dogfeed={state.get('should_dogfeed', True)}, easy={state.get('is_easy_mode', False)})")
+            logger.info(
+                f"Dogfeed skipped for Ep.{state.get('ep_num')} (should_dogfeed={state.get('should_dogfeed', True)}, easy={state.get('is_easy_mode', False)})"
+            )
             return {"dogfeed_ok": True}
 
         # 指数関数的バックオフ付きリトライ
@@ -432,14 +510,23 @@ class WritingGraphManager:
         for attempt in range(3):
             try:
                 dogfeed_ok = await self.manager._run_dogfeeding_loop(
-                    state["ep_num"], state["draft_content"], state["passion"], 0.7, state["should_dogfeed"],
-                    state["ac_iter"], state["max_ac_iter"], state["gen_ctx"], None
+                    state["ep_num"],
+                    state["draft_content"],
+                    state["passion"],
+                    0.7,
+                    state["should_dogfeed"],
+                    state["ac_iter"],
+                    state["max_ac_iter"],
+                    state["gen_ctx"],
+                    None,
                 )
                 logger.info(f"Dogfeed completed for Ep.{state['ep_num']}: ok={dogfeed_ok}")
                 return {"dogfeed_ok": dogfeed_ok}
             except Exception as e:
                 last_error = e
-                logger.warning(f"Dogfeed attempt {attempt + 1} failed for Ep.{state['ep_num']}: {e}")
+                logger.warning(
+                    f"Dogfeed attempt {attempt + 1} failed for Ep.{state['ep_num']}: {e}"
+                )
                 if attempt < 2:
                     await asyncio.sleep(retry_delay + random.uniform(0, 0.2))
                     retry_delay = min(retry_delay * RETRY_BACKOFF_FACTOR, MAX_RETRY_DELAY)
@@ -458,12 +545,13 @@ class WritingGraphManager:
             "rate": state.get("rate", 0),
             "is_integrity_ok": state.get("is_integrity_ok", False),
             "is_causal_ok": state.get("is_causal_ok", False),
-            "timestamp": time.time()
+            "timestamp": time.time(),
         }
 
         # 品質メトリクスを記録
         try:
             from .quality_metrics import QualityMetrics
+
             ctx = state.get("context")
             genre = None
             if isinstance(ctx, dict):
@@ -478,24 +566,46 @@ class WritingGraphManager:
                 timestamp=time.time(),
                 genre=genre,
                 dogfeed_ok=state.get("dogfeed_ok", True),
-                causal_reason=state.get("causal_reason", "")
+                causal_reason=state.get("causal_reason", ""),
             )
             self.metrics_collector.record(metrics)
         except Exception as e:
             logger.warning(f"Failed to record quality metrics for Ep.{ep_num}: {e}")
 
-        if not (state.get("is_integrity_ok") and state.get("is_causal_ok") and state.get("dogfeed_ok", True)) and not state.get("is_easy_mode", False):
+        if not (
+            state.get("is_integrity_ok")
+            and state.get("is_causal_ok")
+            and state.get("dogfeed_ok", True)
+        ) and not state.get("is_easy_mode", False):
             await self.manager._register_lazy_patch(
-                ep_num, state.get("context"), state.get("is_integrity_ok", False), state.get("rate", 1.0), state.get("threshold", 0),
-                state.get("is_causal_ok", False), state.get("causal_reason", ""), state.get("dogfeed_ok", True), None
+                ep_num,
+                state.get("context"),
+                state.get("is_integrity_ok", False),
+                state.get("rate", 1.0),
+                state.get("threshold", 0),
+                state.get("is_causal_ok", False),
+                state.get("causal_reason", ""),
+                state.get("dogfeed_ok", True),
+                None,
             )
 
-        logger.info(f"Finalized Ep.{ep_num}: integrity={state.get('is_integrity_ok')}, causal={state.get('is_causal_ok')}, dogfeed={state.get('dogfeed_ok', True)}")
+        logger.info(
+            f"Finalized Ep.{ep_num}: integrity={state.get('is_integrity_ok')}, causal={state.get('is_causal_ok')}, dogfeed={state.get('dogfeed_ok', True)}"
+        )
         return {"status": "completed"}
 
-    def _create_initial_state(self, ep_num: int, ctx: Any, sys_inst: str, fw_prompt: str, passion: float, is_easy_mode: bool) -> Dict[str, Any]:
+    def _create_initial_state(
+        self,
+        ep_num: int,
+        ctx: Any,
+        sys_inst: str,
+        fw_prompt: str,
+        passion: float,
+        is_easy_mode: bool,
+    ) -> Dict[str, Any]:
         """初期状態を生成（フォールバック・LangGraph共通）"""
         from config.project_context import ProjectContext
+
         base_max = ProjectContext.get_setting("actor_critic_max_iterations", 2)
         return {
             "ep_num": ep_num,
@@ -516,13 +626,23 @@ class WritingGraphManager:
             "is_causal_ok": False,
             "causal_reason": "",
             "failures": [],
-            "status": "pending"
+            "status": "pending",
         }
 
-    async def run(self, ep_num: int, ctx: Any, sys_inst: str, fw_prompt: str, passion: float, is_easy_mode: bool) -> Tuple[str, Dict[str, Any], bool]:
+    async def run(
+        self,
+        ep_num: int,
+        ctx: Any,
+        sys_inst: str,
+        fw_prompt: str,
+        passion: float,
+        is_easy_mode: bool,
+    ) -> Tuple[str, Dict[str, Any], bool]:
         """実行メソッド - チェックポイント対応"""
         logger.info(f"Starting LangGraph execution for Ep.{ep_num} (easy_mode={is_easy_mode})")
-        initial_state = self._create_initial_state(ep_num, ctx, sys_inst, fw_prompt, passion, is_easy_mode)
+        initial_state = self._create_initial_state(
+            ep_num, ctx, sys_inst, fw_prompt, passion, is_easy_mode
+        )
 
         if self.workflow is None:
             # LangGraph 非依存のフォールバック: ノードを順次実行
@@ -549,11 +669,17 @@ class WritingGraphManager:
                 state.update(await self.node_healing(state))
             state.update(await self.node_dogfeed(state))
             state.update(await self.node_finalize(state))
-            return state.get("draft_content", ""), state.get("final_meta", {}), state.get("is_integrity_ok", False)
+            return (
+                state.get("draft_content", ""),
+                state.get("final_meta", {}),
+                state.get("is_integrity_ok", False),
+            )
 
         try:
             res = await self.workflow.ainvoke(initial_state)
-            logger.info(f"LangGraph completed for Ep.{ep_num}: integrity={res.get('is_integrity_ok')}, causal={res.get('is_causal_ok')}")
+            logger.info(
+                f"LangGraph completed for Ep.{ep_num}: integrity={res.get('is_integrity_ok')}, causal={res.get('is_causal_ok')}"
+            )
             return res["draft_content"], res["final_meta"], res["is_integrity_ok"]
         except Exception as e:
             logger.error(f"LangGraph execution failed for Ep.{ep_num}: {e}")
@@ -613,7 +739,9 @@ class WritingGraphManager:
         if prev_metrics is None:
             return True  # 記録なしは許可
         if prev_metrics.overall_quality < 0.7:
-            logger.warning(f"Dependency Ep.{depends_on} has low quality (score={prev_metrics.overall_quality:.2f})")
+            logger.warning(
+                f"Dependency Ep.{depends_on} has low quality (score={prev_metrics.overall_quality:.2f})"
+            )
             return False
         return True
 
@@ -627,12 +755,22 @@ class WritingGraphManager:
         except Exception as e:
             logger.warning(f"Ep.{ep_num}: Failed to wait for Ep.{depends_on}: {e}")
 
-    async def run_with_dependencies(self, ep_num: int, ctx: Any, sys_inst: str, fw_prompt: str,
-                                    passion: float, is_easy_mode: bool, depends_on: Optional[int] = None) -> Tuple[str, Dict[str, Any], bool]:
+    async def run_with_dependencies(
+        self,
+        ep_num: int,
+        ctx: Any,
+        sys_inst: str,
+        fw_prompt: str,
+        passion: float,
+        is_easy_mode: bool,
+        depends_on: Optional[int] = None,
+    ) -> Tuple[str, Dict[str, Any], bool]:
         """依存関係付き実行"""
         if depends_on is not None:
             quality_ok = await self._check_dependency(ep_num, depends_on)
             if not quality_ok:
-                logger.warning(f"Ep.{ep_num}: Dependency Ep.{depends_on} quality issue, but proceeding")
+                logger.warning(
+                    f"Ep.{ep_num}: Dependency Ep.{depends_on} quality issue, but proceeding"
+                )
             await self._wait_for_dependency(ep_num, depends_on)
         return await self.run(ep_num, ctx, sys_inst, fw_prompt, passion, is_easy_mode)

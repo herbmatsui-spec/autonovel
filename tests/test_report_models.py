@@ -1,12 +1,12 @@
 """tests/test_report_models.py - レポートモデルのテスト"""
-import pytest
+
 from datetime import datetime
 
 from src.models.report import (
-    TokenUsageReport,
-    QualityMetricsReport,
     EpisodeSummary,
-    ProductionReport
+    ProductionReport,
+    QualityMetricsReport,
+    TokenUsageReport,
 )
 
 
@@ -57,7 +57,7 @@ class TestQualityMetricsReport:
             pacing_score=0.78,
             hook_retention=0.82,
             emotional_resonance=0.75,
-            commercial_viability=0.88
+            commercial_viability=0.88,
         )
         assert report.coherence_score == 0.85
         assert report.character_consistency == 0.90
@@ -74,7 +74,7 @@ class TestEpisodeSummary:
             title="第1話 始まり",
             word_count=3000,
             summary="物語の幕開け。",
-            quality_score=0.85
+            quality_score=0.85,
         )
         assert summary.ep_num == 1
         assert summary.title == "第1話 始まり"
@@ -86,10 +86,7 @@ class TestProductionReport:
 
     def test_create_minimal(self):
         """最小構成で作成"""
-        report = ProductionReport(
-            title="テスト作品",
-            genre="fantasy"
-        )
+        report = ProductionReport(title="テスト作品", genre="fantasy")
         assert report.title == "テスト作品"
         assert report.genre == "fantasy"
         assert report.target_word_count == 3000
@@ -102,7 +99,7 @@ class TestProductionReport:
             input_tokens=80000,
             output_tokens=70000,
             episode_count=10,
-            generation_time_seconds=300.0
+            generation_time_seconds=300.0,
         )
         quality_metrics = QualityMetricsReport(
             coherence_score=0.85,
@@ -110,7 +107,7 @@ class TestProductionReport:
             pacing_score=0.78,
             hook_retention=0.82,
             emotional_resonance=0.75,
-            commercial_viability=0.88
+            commercial_viability=0.88,
         )
         episodes = [
             EpisodeSummary(
@@ -118,7 +115,7 @@ class TestProductionReport:
                 title=f"第{i}話",
                 word_count=3000,
                 summary=f"第{i}話の要約",
-                quality_score=0.8
+                quality_score=0.8,
             )
             for i in range(1, 11)
         ]
@@ -130,7 +127,7 @@ class TestProductionReport:
             quality_metrics=quality_metrics,
             episode_summaries=episodes,
             total_generation_time=300.0,
-            created_at=datetime.now()
+            created_at=datetime.now(),
         )
         assert report.title == "覇者の帰還"
         assert report.token_usage.total_tokens == 150000

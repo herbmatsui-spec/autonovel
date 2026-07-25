@@ -1,6 +1,7 @@
 """
 streamlit_app/utils/profiler.py — UI/Backendパフォーマンス計測ユーティリティ
 """
+
 import functools
 import logging
 import time
@@ -10,13 +11,15 @@ import streamlit as st
 
 logger = logging.getLogger(__name__)
 
+
 def profile_performance(name: str = None):
     """
     関数の実行時間を計測し、ログ出力およびStreamlitのトーストで通知するデコレータ。
-    
+
     Args:
         name: 計測名。指定しない場合は関数名を使用する。
     """
+
     def decorator(func: Callable):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -38,12 +41,15 @@ def profile_performance(name: str = None):
                     st.toast(f"⌛ {label} に {duration:.2f}秒かかりました", icon="⏱️")
 
         return wrapper
+
     return decorator
+
 
 class PerformanceTracker:
     """
     コンテキストマネージャ形式で特定のブロックの時間を計測する。
     """
+
     def __init__(self, label: str):
         self.label = label
         self.start_time = 0.0

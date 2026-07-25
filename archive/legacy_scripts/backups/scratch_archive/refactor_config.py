@@ -488,4 +488,3 @@ else:
 with open(config_path, "w", encoding="utf-8") as f:
     f.write(content)
 print("Config.py refactored and written successfully.")
-

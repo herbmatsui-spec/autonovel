@@ -1,6 +1,8 @@
-from schemas.config import GlobalConfigModel
-from pydantic_settings import BaseSettings
 from functools import lru_cache
+
+from pydantic_settings import BaseSettings
+
+from schemas.config import GlobalConfigModel
 
 
 class ConfigManager:

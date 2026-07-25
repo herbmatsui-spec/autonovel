@@ -1,6 +1,7 @@
 """
 src/core/state/state_manager.py — Streamlit セッション状態の型安全な管理
 """
+
 from __future__ import annotations
 
 import logging
@@ -15,16 +16,20 @@ from schemas.app_state import AppStateModel
 
 logger = logging.getLogger(__name__)
 
+
 class WizardState(BaseModel):
     """ウィザード形式の入力状態を管理するモデル"""
+
     step: int = 1
     data: dict[str, Any] = Field(default_factory=dict)
     is_complete: bool = False
+
 
 class SessionManager:
     """
     UIStateStore / AppStateModel と st.session_state の同期、および永続化を管理するクラス。
     """
+
     _STATE_KEY = "app_state_model"
 
     @classmethod
@@ -32,6 +37,7 @@ class SessionManager:
         """セッション固有の保存パスを生成する"""
         try:
             from streamlit.runtime.scriptrunner import get_script_run_ctx
+
             ctx = get_script_run_ctx()
             session_id = ctx.session_id if ctx else "default"
         except Exception:
@@ -89,6 +95,7 @@ class SessionManager:
         """状態をリセットする"""
         if cls._STATE_KEY in st.session_state:
             del st.session_state[cls._STATE_KEY]
+
 
 def get_session() -> AppStateModel:
     """現在のセッション状態を返すショートカット"""

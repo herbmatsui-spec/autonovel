@@ -11,10 +11,8 @@ RefineEroticWorkflow 等) は WritingService を依存対象にし、EngineFacad
 - generate_episodes: 単発執筆（WritingAgent へ委譲）
 - analyze_and_import_chapter: 手書き原稿インポート（委譲先があれば）
 """
-from typing import Any, List, Optional, Tuple
 
-from src.backend.protocols import WritingPort
-from src.shared.utils import StatusReporter
+from typing import Any, List, Tuple
 
 
 class WritingService:

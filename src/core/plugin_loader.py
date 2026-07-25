@@ -6,10 +6,10 @@ from typing import Optional
 
 
 class PluginLoader:
-    _instance: Optional['PluginLoader'] = None
+    _instance: Optional["PluginLoader"] = None
 
     @staticmethod
-    def get_instance() -> 'PluginLoader':
+    def get_instance() -> "PluginLoader":
         if PluginLoader._instance is None:
             PluginLoader._instance = PluginLoader()
         return PluginLoader._instance

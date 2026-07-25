@@ -1,6 +1,7 @@
 """
 health_check.py - バックエンドの死活監視およびAPIキー検証ロジック
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -15,6 +16,7 @@ logger = logging.getLogger(__name__)
 BACKEND_HEALTH_URL = "http://localhost:8200/health"
 BACKEND_HEALTH_TIMEOUT_SEC = 2.0
 BACKEND_STARTUP_WAIT_SEC = 10
+
 
 async def check_backend_health() -> dict[str, str]:
     """バックエンドサーバーのヘルスステータスを取得する（非同期実装）"""
@@ -47,9 +49,10 @@ def ensure_backend_available_sync() -> bool:
         return True
 
     from streamlit_app.ui_utils import render_centered_title
+
     render_centered_title(
         "⚠️ システムステータス（バックエンド未接続）",
-        "APIサーバーとの通信が確立されていません。以下の状態を確認・復旧してください。"
+        "APIサーバーとの通信が確立されていません。以下の状態を確認・復旧してください。",
     )
 
     st.write("### 🔌 接続ダッシュボード")
@@ -70,6 +73,7 @@ def ensure_backend_available_sync() -> bool:
 
     if st.button("🔄 バックエンドを自動起動する", type="primary"):
         from streamlit_app.backend_launcher import start_backend
+
         with st.spinner("バックエンドを起動しています..."):
             proc = start_backend()
             if proc is not None:
@@ -81,7 +85,9 @@ def ensure_backend_available_sync() -> bool:
             else:
                 st.error("バックエンドの起動に失敗しました。ログを確認してください。")
 
-    st.error("※ 自動起動で解決しない場合は、黒い画面（コマンドプロンプト）のプロセスを一度すべて終了させ、アプリフォルダ内の `run_all.bat` を直接ダブルクリックして再起動してください。")
+    st.error(
+        "※ 自動起動で解決しない場合は、黒い画面（コマンドプロンプト）のプロセスを一度すべて終了させ、アプリフォルダ内の `run_all.bat` を直接ダブルクリックして再起動してください。"
+    )
     return False
 
 
@@ -97,7 +103,9 @@ async def validate_api_key_async(api_key: str, provider: str = "gemini") -> tupl
         return False, "OpenAI APIキーの形式が正しくありません (sk- で始まる必要があります)。"
 
     from google import genai
+
     try:
+
         def sync_validate():
             client = genai.Client(api_key=cleaned_key)
             pager = client.models.list(config={"page_size": 1})
@@ -112,7 +120,9 @@ async def validate_api_key_async(api_key: str, provider: str = "gemini") -> tupl
         logger.error(f"API Key validation failed: {err_msg}")
         # APIキー自体は正しくてもモデル一覧取得等のパーミッション/クォータエラーの場合は疎通可能な形式チェックで救済
         if cleaned_key.startswith("AIza") and len(cleaned_key) >= 30:
-            logger.warning("API key validation API failed, but key matches Gemini format pattern. Accepting key.")
+            logger.warning(
+                "API key validation API failed, but key matches Gemini format pattern. Accepting key."
+            )
             return True, ""
         return False, err_msg
 
@@ -128,9 +138,10 @@ def ensure_backend_available() -> bool:
         return True
 
     from streamlit_app.ui_utils import render_centered_title
+
     render_centered_title(
         "⚠️ システムステータス（バックエンド未接続）",
-        "APIサーバーとの通信が確立されていません。以下の状態を確認・復旧してください。"
+        "APIサーバーとの通信が確立されていません。以下の状態を確認・復旧してください。",
     )
 
     st.write("### 🔌 接続ダッシュボード")
@@ -151,6 +162,7 @@ def ensure_backend_available() -> bool:
 
     if st.button("🔄 バックエンドを自動起動する", type="primary"):
         from streamlit_app.backend_launcher import start_backend
+
         with st.spinner("バックエンドを起動しています..."):
             proc = start_backend()
             if proc is not None:
@@ -165,5 +177,7 @@ def ensure_backend_available() -> bool:
             else:
                 st.error("バックエンドの起動に失敗しました。ログを確認してください。")
 
-    st.error("※ 自動起動で解決しない場合は、黒い画面（コマンドプロンプト）のプロセスを一度すべて終了させ、アプリフォルダ内の `run_all.bat` を直接ダブルクリックして再起動してください。")
+    st.error(
+        "※ 自動起動で解決しない場合は、黒い画面（コマンドプロンプト）のプロセスを一度すべて終了させ、アプリフォルダ内の `run_all.bat` を直接ダブルクリックして再起動してください。"
+    )
     return False

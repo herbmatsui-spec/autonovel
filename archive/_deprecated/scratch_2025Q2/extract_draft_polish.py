@@ -29,4 +29,3 @@ with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
                     break
             except Exception:
                 pass
-

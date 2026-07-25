@@ -3,13 +3,16 @@ app.py - 覇権小説自動生成ツール v3.0 エントリーポイント
 起動方法:
     streamlit run app.py
 """
+
 from __future__ import annotations
 
 import logging
+
 app = __import__(__name__)
 import warnings
 
 import streamlit as st
+
 try:
     from streamlit.errors import StreamlitAPIException
 except ImportError:
@@ -44,6 +47,7 @@ from streamlit_app.state import UIStateStore
 DEFAULT_APP_MODE = "easy"
 DEFAULT_DESIRES = ["カタルシス"]
 
+
 def _init_session() -> None:
     """型安全なセッション状態の初期値設定"""
     # 1. RuntimeState の初期化
@@ -62,11 +66,13 @@ def _init_session() -> None:
     # ここでデフォルトのUI状態を設定する場合に利用
     UIStateStore().update_ui_state(active_tab="home")
 
+
 def _run_navigation(api_key: str) -> None:
     """Gemini APIキーを使用してエンジンを初期化し、ナビゲーションメニューを実行する。"""
     try:
         # EngineService.get_instance 等を利用して、シングルトンまたはキャッシュされたサービスを取得する
         from src.engine_service import EngineService
+
         # 既存の EngineService は api_key ベースでインスタンスをキャッシュしているため、これを利用
         service = EngineService.get_instance(api_key=api_key)
 
@@ -75,10 +81,12 @@ def _run_navigation(api_key: str) -> None:
     except Exception as e:
         # TODO: エラーハンドリングの移行
         from streamlit_app.utils.errors import AppErrorHandler
+
         AppErrorHandler.handle(e, "エンジンの初期化に失敗しました")
         return
 
     from streamlit_app.pages_config import get_pages
+
     pages_dict = get_pages()
 
     mode = UIStateStore.get_runtime().app_mode
@@ -91,6 +99,7 @@ def _run_navigation(api_key: str) -> None:
     else:
         st.error("ページが見つかりません。")
 
+
 def main() -> None:
     """メインエントリーポイント"""
     # 高級感のあるフローティングサイドバーCSSの注入
@@ -98,7 +107,9 @@ def main() -> None:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
     # 状態変更イベントの登録
-    UIStateStore.subscribe("active_job", lambda job: st.toast("🚀 バックグラウンド処理を開始しました", icon="⚙️"))
+    UIStateStore.subscribe(
+        "active_job", lambda job: st.toast("🚀 バックグラウンド処理を開始しました", icon="⚙️")
+    )
 
     # プラグインの初期化
     PluginLoader.get_instance().load_all_plugins()
@@ -113,6 +124,7 @@ def main() -> None:
 
     if UIStateStore.get_runtime().backend_connection_error:
         from streamlit_app.utils.errors import AppErrorHandler
+
         AppErrorHandler.show_connection_error()
 
     with st.sidebar:
@@ -125,6 +137,7 @@ def main() -> None:
         return
 
     _run_navigation(api_key)
+
 
 if __name__ == "__main__":
     main()

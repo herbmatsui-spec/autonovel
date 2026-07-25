@@ -2,6 +2,7 @@
 tests/test_sharp_edge.py
 src/models/sharp_edge.py の単体テスト。
 """
+
 import logging
 
 import pytest

@@ -2,6 +2,7 @@
 tests/test_erotic_density_controller.py
 密度コントローラのユニットテスト。
 """
+
 from src.services.erotic_density_controller import EroticDensityController
 
 
@@ -10,6 +11,7 @@ def test_should_allow_peak_edge_cases():
     assert controller.should_allow_peak([]) is True
     assert controller.should_allow_peak([3]) is True
     assert controller.should_allow_peak([4, 5, 4]) is False
+
 
 def test_recommend_intensity_by_progress():
     controller = EroticDensityController()
@@ -20,6 +22,7 @@ def test_recommend_intensity_by_progress():
     # 邨ら乢 (90%)
     assert controller.recommend_intensity(9, 10, 4) >= 4
 
+
 def test_recommend_intensity_bounds():
     controller = EroticDensityController()
     # 華企剞5
@@ -27,13 +30,16 @@ def test_recommend_intensity_bounds():
     # 華矩剞1
     assert controller.recommend_intensity(1, 10, 0) >= 1
 
+
 def test_avg_intensity_empty():
     controller = EroticDensityController()
     assert controller.compute_avg_intensity([]) == 0.0
 
+
 def test_avg_intensity_normal():
     controller = EroticDensityController()
     assert controller.compute_avg_intensity([1, 2, 3, 4, 5]) == 3.0
+
 
 def test_suggest_next_intensity():
     controller = EroticDensityController()

@@ -7,6 +7,7 @@ from .base_workflow import BaseWorkflow
 
 class PlotRebuildWorkflow(BaseWorkflow):
     """プロット再構築ワークフロー: 再構築から詳細展開までを実行"""
+
     async def execute(self, reporter: StatusReporter, **kwargs) -> Dict[str, Any]:
         params = kwargs["params"]
         results = await self.planner.rebuild_hegemony_plot(
@@ -19,6 +20,6 @@ class PlotRebuildWorkflow(BaseWorkflow):
             cost_severity=params["cost_severity"],
             cheat_scale=params["cheat_scale"],
             system_assist=params["system_assist"],
-            reporter=reporter
+            reporter=reporter,
         )
         return {"done": True, "count": len(results)}

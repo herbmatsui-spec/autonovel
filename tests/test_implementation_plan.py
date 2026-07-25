@@ -1,7 +1,7 @@
-import pytest
 from pathlib import Path
+
+from config.erotic_pacing import EroticCurve
 from config.validator import ConfigValidator
-from config.erotic_pacing import EroticCurve, HAS_EROTIC_PARAMETERS
 
 
 def test_config_validator_path_resolution():

@@ -1,6 +1,7 @@
 """
 streamlit_app/utils/async_manager.py — 非同期タスクの統合管理
 """
+
 import asyncio
 import logging
 from typing import Any, Coroutine, Dict, TypeVar
@@ -11,11 +12,13 @@ logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
+
 class AsyncTaskManager:
     """
     アプリケーション全体で非同期タスクのライフサイクルを管理する。
     並列リクエストの制御や、キャンセル可能なタスクの管理を行う。
     """
+
     _instance = None
 
     def __new__(cls):
@@ -28,6 +31,7 @@ class AsyncTaskManager:
         """
         複数のコルーチンを並列に実行し、すべての結果が揃うまで待機する。
         """
+
         async def _gather():
             return await asyncio.gather(*coros, return_exceptions=True)
 
@@ -65,5 +69,6 @@ class AsyncTaskManager:
         """すべての管理タスクをキャンセルする"""
         for task_id in list(self._tasks.keys()):
             self.cancel_task(task_id)
+
 
 async_task_manager = AsyncTaskManager()

@@ -14,19 +14,22 @@ from datetime import datetime
 
 class CorrelationFilter(logging.Filter):
     """ログレコードに相関IDを付与するフィルタ"""
+
     def filter(self, record: logging.LogRecord) -> bool:
         record.correlation_id = correlation_id_var.get() or "N/A"
         return True
 
+
 class JsonLogFormatter(logging.Formatter):
     """構造化JSONログ用のフォーマッタ"""
+
     def format(self, record: logging.LogRecord) -> str:
         log_data = {
             "timestamp": datetime.fromtimestamp(record.created).isoformat(),
             "level": record.levelname,
             "message": record.getMessage(),
             "logger": record.name,
-            "trace_id": getattr(record, 'correlation_id', "N/A"),
+            "trace_id": getattr(record, "correlation_id", "N/A"),
             "filename": record.filename,
             "lineno": record.lineno,
         }
@@ -35,6 +38,7 @@ class JsonLogFormatter(logging.Formatter):
             log_data["exception"] = self.formatException(record.exc_info)
 
         return json.dumps(log_data, ensure_ascii=False)
+
 
 def setup_tracing(log_level: int = logging.INFO, log_file: Optional[str] = "app.log"):
     """
@@ -49,7 +53,7 @@ def setup_tracing(log_level: int = logging.INFO, log_file: Optional[str] = "app.
 
     # 相関IDを出力するカスタムフォーマッタ
     formatter = logging.Formatter(
-        '[%(asctime)s] [%(levelname)s] [TraceID: %(correlation_id)s] [%(name)s] %(message)s'
+        "[%(asctime)s] [%(levelname)s] [TraceID: %(correlation_id)s] [%(name)s] %(message)s"
     )
 
     # フィルタ
@@ -65,11 +69,15 @@ def setup_tracing(log_level: int = logging.INFO, log_file: Optional[str] = "app.
     # ファイル出力 (JSON構造化ログ)
     if log_file:
         from logging.handlers import RotatingFileHandler
-        fh = RotatingFileHandler(log_file, maxBytes=10*1024*1024, backupCount=5, encoding="utf-8")
+
+        fh = RotatingFileHandler(
+            log_file, maxBytes=10 * 1024 * 1024, backupCount=5, encoding="utf-8"
+        )
         fh.setLevel(log_level)
         fh.addFilter(corr_filter)
         fh.setFormatter(JsonLogFormatter())
         logger.addHandler(fh)
+
 
 def set_correlation_id(cid: Optional[str] = None) -> str:
     """新しい相関IDを発行し、コンテキストにセットする"""
@@ -77,12 +85,15 @@ def set_correlation_id(cid: Optional[str] = None) -> str:
     correlation_id_var.set(new_id)
     return new_id
 
+
 def get_correlation_id() -> Optional[str]:
     """現在の相関IDを取得する"""
     return correlation_id_var.get()
 
+
 class TracingContext:
     """with文でスコープ内の相関IDを管理するコンテキストマネージャ"""
+
     def __init__(self, cid: Optional[str] = None):
         self.cid = cid or str(uuid.uuid4())
         self.token = None

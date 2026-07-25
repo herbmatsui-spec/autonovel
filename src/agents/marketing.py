@@ -1,22 +1,28 @@
 # agents/marketing.py
-import logging
-from typing import Any, Dict, Optional, Tuple
 import io
 import json
+import logging
 import zipfile
+from typing import Any, Dict, Optional, Tuple
 
 from src.agents.base import BaseAgent
 from src.services.llm_service import LLMService
 
 logger = logging.getLogger(__name__)
 
+
 class MarketingAgent(BaseAgent):
     """マーケティング素材（表紙案、キャッチコピー、あらすじ）を生成するエージェント。"""
-    def __init__(self, repo: Any = None, llm: Optional[LLMService] = None, prompt_manager: Any = None):
+
+    def __init__(
+        self, repo: Any = None, llm: Optional[LLMService] = None, prompt_manager: Any = None
+    ):
         super().__init__(repo=repo, llm=llm)
         self.prompt_manager = prompt_manager
 
-    async def generate_pack(self, book_title: str, synopsis: str, latest_ep: int, **kwargs) -> Dict[str, Any]:
+    async def generate_pack(
+        self, book_title: str, synopsis: str, latest_ep: int, **kwargs
+    ) -> Dict[str, Any]:
         if self.prompt_manager is None:
             raise ValueError("PromptManager is required for MarketingAgent")
         prompt = self.prompt_manager.build_marketing_pack_prompt(
@@ -34,10 +40,12 @@ class MarketingAgent(BaseAgent):
         book = await self.repo.get_book(book_id)
         if not book:
             raise ValueError("作品が見つかりません。")
-        
+
         branch_id = book.current_branch_id if book and book.current_branch_id else 1
 
-        chapters = await self.repo.get_all_non_anchor_chapters(book_id, branch_id=branch_id, order_by="ep_num")
+        chapters = await self.repo.get_all_non_anchor_chapters(
+            book_id, branch_id=branch_id, order_by="ep_num"
+        )
         chars = await self.repo.get_all_characters(book_id)
         bible = await self.repo.get_latest_bible(book_id)
         plots = await self.repo.get_all_plots(book_id, branch_id=branch_id)
@@ -51,7 +59,11 @@ class MarketingAgent(BaseAgent):
             # 02: キャラクター・世界観設定
             settings_str = ""
             if bible and bible.settings:
-                settings_str = json.dumps(bible.settings, ensure_ascii=False, indent=2) if isinstance(bible.settings, dict) else str(bible.settings)
+                settings_str = (
+                    json.dumps(bible.settings, ensure_ascii=False, indent=2)
+                    if isinstance(bible.settings, dict)
+                    else str(bible.settings)
+                )
 
             setting_text = f"【世界観設定】\n{settings_str}\n\n"
             setting_text += "【キャラクター設定】\n"
@@ -84,13 +96,17 @@ class MarketingAgent(BaseAgent):
                 "book_id": book.id,
                 "title": book.title,
                 "genre": book.genre,
-                "chapters": [{"ep_num": c.ep_num, "title": c.title, "content": c.content} for c in chapters],
+                "chapters": [
+                    {"ep_num": c.ep_num, "title": c.title, "content": c.content} for c in chapters
+                ],
                 "characters": [{"name": c.name, "role": c.role} for c in chars],
-                "plots": [{"ep_num": p.ep_num, "title": p.title, "one_line_summary": p.one_line_summary} for p in plots],
+                "plots": [
+                    {"ep_num": p.ep_num, "title": p.title, "one_line_summary": p.one_line_summary}
+                    for p in plots
+                ],
             }
             z.writestr("04_データダンプ.json", json.dumps(dump, ensure_ascii=False, indent=2))
 
         zip_data = buf.getvalue()
         zip_filename = f"export_{book_id}.zip"
         return zip_data, zip_filename
-

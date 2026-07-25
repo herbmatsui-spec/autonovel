@@ -10,6 +10,7 @@ engine_facade.py - UltimateHegemonyEngine の後方互換ファサード。
     今後のフェーズ (ADR-0004) で、内包する engine を
     CoreEngine + 5つのドメインサービスへ段階的に置換していく。
 """
+
 from __future__ import annotations
 
 import logging
@@ -73,9 +74,7 @@ class EngineFacade:
         genre: str,
         story_type: Optional[str] = None,
     ) -> float:
-        return await self._engine.determine_target_tension(
-            book_id, ep_num, genre, story_type
-        )
+        return await self._engine.determine_target_tension(book_id, ep_num, genre, story_type)
 
     async def validate_tension_deviation(
         self,

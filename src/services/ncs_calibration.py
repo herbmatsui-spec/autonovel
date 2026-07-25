@@ -2,6 +2,7 @@
 src/services/ncs_calibration.py
 Narrative Coherence Scorer (NCS) モジュール。
 """
+
 from typing import Any, Dict, List
 
 
@@ -31,12 +32,14 @@ class NarrativeCoherenceScorer:
             重み付き平均のNCSスコア (0.0-1.0)
         """
         return (
-            self.weights["plot_continuity"] * plot_score +
-            self.weights["character_consistency"] * char_score +
-            self.weights["theme_unity"] * theme_score
+            self.weights["plot_continuity"] * plot_score
+            + self.weights["character_consistency"] * char_score
+            + self.weights["theme_unity"] * theme_score
         )
 
-    def calibrate_diversity_threshold(self, training_data: List[Dict[str, Any]]) -> Dict[str, float]:
+    def calibrate_diversity_threshold(
+        self, training_data: List[Dict[str, Any]]
+    ) -> Dict[str, float]:
         """erotic_diversity_score の閾値を人間評価データから校正する。
 
         Args:

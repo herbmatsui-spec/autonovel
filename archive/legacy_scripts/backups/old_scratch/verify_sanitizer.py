@@ -1,7 +1,7 @@
 import sys
 
 # Add project root to path
-sys.path.append(r'i:\claude2')
+sys.path.append(r"i:\claude2")
 
 from backend.sanitizer import (
     PhysiologicalTranslator,
@@ -67,6 +67,6 @@ def test_sanitizer():
     if any(v in optimized for v in PHYSIOLOGICAL_REPLACEMENTS.values()):
         print("✅ Physiological translation integrated in optimizer")
 
+
 if __name__ == "__main__":
     test_sanitizer()
-

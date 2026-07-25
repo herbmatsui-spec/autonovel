@@ -1,7 +1,7 @@
-import time
 from typing import Any, Dict
 
 import streamlit as st
+from streamlit_app.proxy import UltimateHegemonyEngineProxy as UltimateHegemonyEngine
 
 from config import (
     COST_INPUT_FLASH,
@@ -14,7 +14,6 @@ from config import (
 from src.core.plugin_loader import PluginLoader
 from streamlit_app.controllers.manager import UIControllerManager
 from streamlit_app.event_bus import UIEventType
-from streamlit_app.proxy import UltimateHegemonyEngineProxy as UltimateHegemonyEngine
 from streamlit_app.state import UIStateStore
 
 
@@ -303,8 +302,8 @@ def _wizard_step_indicator(current: int, total: int = 4) -> None:
                     <div style="border: {border_style}; border-radius: 8px; padding: 10px; background-color: {bg_color}; height: 180px; margin-bottom: -45px; pointer-events: none;">
                         <div style="text-align: center; font-size: 2.5rem; margin-bottom: 5px;">{emoji}</div>
                         <div style="font-weight: bold; text-align: center; margin-bottom: 5px; color: white;">{name}</div>
-                        <div style="font-size: 0.8rem; color: #aaa; margin-bottom: 5px; height: 50px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{preset.summary or ''}</div>
-                        <div style="font-size: 0.7rem; color: #4caf50; text-align: center;">#{preset.trend_tag or ''}</div>
+                        <div style="font-size: 0.8rem; color: #aaa; margin-bottom: 5px; height: 50px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{preset.summary or ""}</div>
+                        <div style="font-size: 0.7rem; color: #4caf50; text-align: center;">#{preset.trend_tag or ""}</div>
                     </div>
                     """,
                         unsafe_allow_html=True,

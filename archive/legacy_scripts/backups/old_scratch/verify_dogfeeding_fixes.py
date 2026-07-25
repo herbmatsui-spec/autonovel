@@ -20,12 +20,15 @@ def test_signature():
     else:
         print(f"Failure: narrative_controller is not optional. Default: {last_param.default}")
 
+
 def test_style_key_access():
     print("\nVerifying robust style_key access...")
+
     class MockBook:
         def __init__(self, style_dna, genre):
             self.style_dna = style_dna
             self.genre = genre
+
         @property
         def style_key(self):
             if isinstance(self.style_dna, dict):
@@ -46,7 +49,7 @@ def test_style_key_access():
     profile = GenreClassifier.classify(getattr(bad_book, "style_key", "default"), bad_book.genre)
     print(f"Access via getattr (bad object): {profile}")
 
+
 if __name__ == "__main__":
     test_signature()
     test_style_key_access()
-

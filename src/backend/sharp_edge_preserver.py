@@ -2,6 +2,7 @@
 src/backend/sharp_edge_preserver.py
 品質向上（磨き上げ）の前後で「角」が削られていないかを検証するモジュール。
 """
+
 from __future__ import annotations
 
 import logging
@@ -14,6 +15,7 @@ logger = logging.getLogger(__name__)
 # Attempt to import semantic cache infrastructure
 try:
     from src.services.semantic_cache import SemanticCacheManager
+
     SEMANTIC_CACHE_IMPORTED = True
 except ImportError:
     SEMANTIC_CACHE_IMPORTED = False
@@ -69,24 +71,28 @@ class SemanticEdgePreserver:
         # Step 2: Semantic similarity check on string-lost candidates
         semantic_lost = []
         for edge in string_lost:
-            similarity = await self._semantic_compare(
-                before_content, after_content, edge
-            )
+            similarity = await self._semantic_compare(before_content, after_content, edge)
             if similarity < self.similarity_threshold:
                 semantic_lost.append(edge)
                 logger.debug(
                     "意味的類似度で削除検出: %s (similarity=%.2f < %.2f)",
-                    edge.edge_type, similarity, self.similarity_threshold
+                    edge.edge_type,
+                    similarity,
+                    self.similarity_threshold,
                 )
             else:
                 logger.debug(
                     "意味的類似度で保持確認: %s (similarity=%.2f >= %.2f)",
-                    edge.edge_type, similarity, self.similarity_threshold
+                    edge.edge_type,
+                    similarity,
+                    self.similarity_threshold,
                 )
 
         return semantic_lost, string_lost
 
-    def _check_string_only(self, after_content: str, edges: List[SharpEdgeSpec]) -> List[SharpEdgeSpec]:
+    def _check_string_only(
+        self, after_content: str, edges: List[SharpEdgeSpec]
+    ) -> List[SharpEdgeSpec]:
         """文字列チェック（key_phrase もしくは description[:20]）のみを行う実装"""
         if not edges:
             return []
@@ -110,7 +116,9 @@ class SemanticEdgePreserver:
                 if desc_phrase and desc_phrase in after_lower:
                     preserved = True
                     logger.debug(
-                        "description[:20]で保持確認 (key_phraseなし): %s (%s)", edge.edge_type, desc_phrase
+                        "description[:20]で保持確認 (key_phraseなし): %s (%s)",
+                        edge.edge_type,
+                        desc_phrase,
                     )
 
             if not preserved:
@@ -138,15 +146,14 @@ class SemanticEdgePreserver:
         # Priority 1: embedding-based cosine similarity
         if self.semantic_cache is not None:
             try:
-                return await self.semantic_cache.compute_similarity(
-                    key_phrase, after_content
-                )
+                return await self.semantic_cache.compute_similarity(key_phrase, after_content)
             except Exception as e:
                 logger.warning(f"Semantic similarity failed: {e}")
 
         # Priority 2: N-gram Jaccard fallback (embedding-free, low-latency)
         if self.use_ngram_fallback:
             from src.backend.engine_utils import compute_ngram_similarity
+
             ngram_sim = compute_ngram_similarity(key_phrase, after_content)
             # Treat a decent N-gram overlap as a positive signal
             return ngram_sim
@@ -154,7 +161,9 @@ class SemanticEdgePreserver:
         return 0.0
 
 
-def check_edges_preserved(before_content: str, after_content: str, edges: List[SharpEdgeSpec]) -> List[SharpEdgeSpec]:
+def check_edges_preserved(
+    before_content: str, after_content: str, edges: List[SharpEdgeSpec]
+) -> List[SharpEdgeSpec]:
     """
     品質向上前後のコンテンツを比較し、削除された角を検出する（同期版・後方互換）。
 
@@ -185,7 +194,11 @@ def check_edges_preserved(before_content: str, after_content: str, edges: List[S
             desc_phrase = edge.description.strip()[:20].lower()
             if desc_phrase and desc_phrase in after_lower:
                 preserved = True
-                logger.debug("description[:20]で保持確認 (key_phraseなし): %s (%s)", edge.edge_type, desc_phrase)
+                logger.debug(
+                    "description[:20]で保持確認 (key_phraseなし): %s (%s)",
+                    edge.edge_type,
+                    desc_phrase,
+                )
 
         if not preserved:
             lost.append(edge)

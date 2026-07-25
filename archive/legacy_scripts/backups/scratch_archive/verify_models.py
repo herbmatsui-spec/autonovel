@@ -17,6 +17,6 @@ def test_model():
     core.absolute_dictionary = {"Protagonist": "Alvin"}
     print(f"Updated absolute_dictionary: {core.absolute_dictionary}")
 
+
 if __name__ == "__main__":
     test_model()
-

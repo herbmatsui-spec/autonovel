@@ -4,13 +4,15 @@ src/backend/auth.py — API 認証ユーティリティ
 api_key の検証逻辑を提供する。現在はシンプルな許可リスト方式を採用し、
 将来的に JWT/OAuth 等へ置き換え可能な抽象化レイヤーとする。
 """
+
 from __future__ import annotations
 
-import os
 import logging
+import os
 from typing import List, Optional
 
-from fastapi import Request, HTTPException
+from fastapi import HTTPException, Request
+
 from src.core.exceptions import AppError
 
 logger = logging.getLogger(__name__)

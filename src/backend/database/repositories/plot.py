@@ -20,7 +20,10 @@ from src.backend.database.repositories.base import BaseRepository
 
 class PlotRepository(BaseRepository):
     """Plotテーブルに関するDB操作をまとめたMixin"""
-    async def get_plot(self, book_id_or_branch_id: int, ep_num: int, branch_id: Optional[int] = None) -> Optional['PlotDbModel']:
+
+    async def get_plot(
+        self, book_id_or_branch_id: int, ep_num: int, branch_id: Optional[int] = None
+    ) -> Optional["PlotDbModel"]:
         target_branch_id = branch_id if branch_id is not None else book_id_or_branch_id
         result = await self.session.execute(
             select(Plot).where(Plot.branch_id == target_branch_id).where(Plot.ep_num == ep_num)
@@ -29,17 +32,34 @@ class PlotRepository(BaseRepository):
         if not plot:
             return None
         from src.models import PlotDbModel
-        return PlotDbModel(**self._parse_row(self._to_dict(plot), ['scenes', 'next_hook', 'healed_fields']))
-    async def get_all_plots(self, book_id_or_branch_id: int, branch_id: Optional[int] = None) -> List['PlotDbModel']:
+
+        return PlotDbModel(
+            **self._parse_row(self._to_dict(plot), ["scenes", "next_hook", "healed_fields"])
+        )
+
+    async def get_all_plots(
+        self, book_id_or_branch_id: int, branch_id: Optional[int] = None
+    ) -> List["PlotDbModel"]:
         target_branch_id = branch_id if branch_id is not None else book_id_or_branch_id
         result = await self.session.execute(
             select(Plot).where(Plot.branch_id == target_branch_id).order_by(Plot.ep_num)
         )
         plots = result.scalars().all()
         from src.models import PlotDbModel
-        return [PlotDbModel(**self._parse_row(self._to_dict(p), ['scenes', 'next_hook', 'healed_fields', 'state_integrity_score'])) for p in plots]
 
-    async def get_plots_with_tension(self, book_id: int, from_ep: int = 1, to_ep: int = 9999) -> List[PlotDbModel]:
+        return [
+            PlotDbModel(
+                **self._parse_row(
+                    self._to_dict(p),
+                    ["scenes", "next_hook", "healed_fields", "state_integrity_score"],
+                )
+            )
+            for p in plots
+        ]
+
+    async def get_plots_with_tension(
+        self, book_id: int, from_ep: int = 1, to_ep: int = 9999
+    ) -> List[PlotDbModel]:
         """指定範囲のプロットをtension順に取得する（波パターン分析用）"""
         result = await self.session.execute(
             select(Plot)
@@ -49,30 +69,69 @@ class PlotRepository(BaseRepository):
         )
         plots = result.scalars().all()
         from src.models import PlotDbModel
-        return [PlotDbModel(**self._parse_row(self._to_dict(p), ['scenes', 'next_hook', 'healed_fields', 'state_integrity_score'])) for p in plots]
+
+        return [
+            PlotDbModel(
+                **self._parse_row(
+                    self._to_dict(p),
+                    ["scenes", "next_hook", "healed_fields", "state_integrity_score"],
+                )
+            )
+            for p in plots
+        ]
+
     @retry_on_lock()
     async def create_or_replace_plot(
-        self, book_id: int, ep_num: int, thought_process: str, title: str, summary: str, detailed_blueprint: str,
-        next_hook: str, tension: int, tension_delta: int = 0, catharsis: int = 0, love_meter: int = 0, is_catharsis: bool = False, catharsis_type: str = "なし",
-        scenes: Any = None, status: str = "expanded", misunderstanding_gap: str = "",
-        lite_model_director_notes: str = "", script_content: str = "",
+        self,
+        book_id: int,
+        ep_num: int,
+        thought_process: str,
+        title: str,
+        summary: str,
+        detailed_blueprint: str,
+        next_hook: str,
+        tension: int,
+        tension_delta: int = 0,
+        catharsis: int = 0,
+        love_meter: int = 0,
+        is_catharsis: bool = False,
+        catharsis_type: str = "なし",
+        scenes: Any = None,
+        status: str = "expanded",
+        misunderstanding_gap: str = "",
+        lite_model_director_notes: str = "",
+        script_content: str = "",
         current_chain_phase: str = "Friction",
-        resolution_style: str = "Cheat", burned_cost_or_loot: str = "なし",
-        antagonist_status: str = "現状維持", thematic_milestone: str = "なし",
-        state_integrity_score: int = 100, emotional_resonance_score: int = 0, healed_fields: Any = None, branch_id: int = 1,
-        is_micro_catharsis: bool = False, information_asymmetry_level: float = 0.0,
+        resolution_style: str = "Cheat",
+        burned_cost_or_loot: str = "なし",
+        antagonist_status: str = "現状維持",
+        thematic_milestone: str = "なし",
+        state_integrity_score: int = 100,
+        emotional_resonance_score: int = 0,
+        healed_fields: Any = None,
+        branch_id: int = 1,
+        is_micro_catharsis: bool = False,
+        information_asymmetry_level: float = 0.0,
         cost_score: float = 0.0,
-        qol_delta: int = 0, discovery_item: str = "", sanctuary_event: str = "", is_locked: bool = False,
-        stress: Optional[int] = None, is_plot_twist: bool = False,
-        is_simulation: bool = False, simulation_id: Optional[str] = None,
+        qol_delta: int = 0,
+        discovery_item: str = "",
+        sanctuary_event: str = "",
+        is_locked: bool = False,
+        stress: Optional[int] = None,
+        is_plot_twist: bool = False,
+        is_simulation: bool = False,
+        simulation_id: Optional[str] = None,
         candidates: str = "[]",
-        erotic_intensity: int = 0
+        erotic_intensity: int = 0,
     ) -> None:
         if stress is not None:
             tension_delta = stress
         sim_id = simulation_id if simulation_id is not None else ""
         result = await self.session.execute(
-            select(Plot).where(Plot.branch_id == branch_id).where(Plot.ep_num == ep_num).where(Plot.simulation_id == sim_id)
+            select(Plot)
+            .where(Plot.branch_id == branch_id)
+            .where(Plot.ep_num == ep_num)
+            .where(Plot.simulation_id == sim_id)
         )
         plot_obj = result.scalar_one_or_none()
         if not plot_obj:
@@ -84,14 +143,22 @@ class PlotRepository(BaseRepository):
         plot_obj.title = title
         plot_obj.summary = summary
         plot_obj.detailed_blueprint = detailed_blueprint
-        plot_obj.next_hook = json.dumps(next_hook, ensure_ascii=False) if isinstance(next_hook, (dict, list)) else (next_hook or "{}")
+        plot_obj.next_hook = (
+            json.dumps(next_hook, ensure_ascii=False)
+            if isinstance(next_hook, (dict, list))
+            else (next_hook or "{}")
+        )
         plot_obj.tension = tension
         plot_obj.tension_delta = tension_delta
         plot_obj.catharsis = catharsis
         plot_obj.love_meter = love_meter
         plot_obj.is_catharsis = is_catharsis
         plot_obj.catharsis_type = catharsis_type
-        plot_obj.scenes = json.dumps(scenes, ensure_ascii=False) if isinstance(scenes, (list, dict)) else (scenes or "[]")
+        plot_obj.scenes = (
+            json.dumps(scenes, ensure_ascii=False)
+            if isinstance(scenes, (list, dict))
+            else (scenes or "[]")
+        )
         plot_obj.status = status
         plot_obj.misunderstanding_gap = misunderstanding_gap
         plot_obj.lite_model_director_notes = lite_model_director_notes
@@ -104,7 +171,11 @@ class PlotRepository(BaseRepository):
         plot_obj.thematic_milestone = thematic_milestone
         plot_obj.state_integrity_score = state_integrity_score
         plot_obj.emotional_resonance_score = emotional_resonance_score
-        plot_obj.healed_fields = json.dumps(healed_fields, ensure_ascii=False) if isinstance(healed_fields, list) else (healed_fields or "[]")
+        plot_obj.healed_fields = (
+            json.dumps(healed_fields, ensure_ascii=False)
+            if isinstance(healed_fields, list)
+            else (healed_fields or "[]")
+        )
         plot_obj.is_micro_catharsis = is_micro_catharsis
         plot_obj.information_asymmetry_level = information_asymmetry_level
         plot_obj.cost_score = cost_score
@@ -116,13 +187,18 @@ class PlotRepository(BaseRepository):
         plot_obj.simulation_id = sim_id
         plot_obj.candidates = candidates
         plot_obj.erotic_intensity = erotic_intensity
+
     @retry_on_lock()
     async def save_plot(self, branch_id: int, ep_num: int, plot: Any) -> None:
         """Pydanticモデル（PlotEpisode）をデータベースのplotテーブルに一括登録/更新する。"""
-        branch_result = await self.session.execute(select(Branch.book_id).where(Branch.id == branch_id))
+        branch_result = await self.session.execute(
+            select(Branch.book_id).where(Branch.id == branch_id)
+        )
         row = branch_result.fetchone()
         if not row:
-            book_result = await self.session.execute(select(Book.id).order_by(Book.id.desc()).limit(1))
+            book_result = await self.session.execute(
+                select(Book.id).order_by(Book.id.desc()).limit(1)
+            )
             latest_book = book_result.scalar_one_or_none()
             if latest_book:
                 book_id = latest_book
@@ -138,7 +214,10 @@ class PlotRepository(BaseRepository):
             elif isinstance(plot.next_hook, dict):
                 next_hook_data = plot.next_hook
             else:
-                next_hook_data = {"type": getattr(plot.next_hook, "type", ""), "description": getattr(plot.next_hook, "description", "")}
+                next_hook_data = {
+                    "type": getattr(plot.next_hook, "type", ""),
+                    "description": getattr(plot.next_hook, "description", ""),
+                }
 
         scenes_data = []
         if hasattr(plot, "scenes") and plot.scenes:
@@ -181,23 +260,31 @@ class PlotRepository(BaseRepository):
             healed_fields=healed_fields_data,
             branch_id=branch_id,
             is_micro_catharsis=bool(getattr(plot, "is_micro_catharsis", False)),
-            information_asymmetry_level=float(getattr(plot, "information_asymmetry_level", 0.0) or 0.0),
+            information_asymmetry_level=float(
+                getattr(plot, "information_asymmetry_level", 0.0) or 0.0
+            ),
             cost_score=float(getattr(plot, "cost_score", 0.0) or 0.0),
             qol_delta=int(getattr(plot, "qol_delta", 0) or 0),
             discovery_item=getattr(plot, "discovery_item", "") or "",
             sanctuary_event=getattr(plot, "sanctuary_event", "") or "",
             is_locked=bool(getattr(plot, "is_locked", False)),
-            candidates=json.dumps(getattr(plot, "candidates", []), ensure_ascii=False) if hasattr(plot, "candidates") else "[]",
-            erotic_intensity=int(getattr(plot, "erotic_intensity", 0) or 0)
+            candidates=json.dumps(getattr(plot, "candidates", []), ensure_ascii=False)
+            if hasattr(plot, "candidates")
+            else "[]",
+            erotic_intensity=int(getattr(plot, "erotic_intensity", 0) or 0),
         )
+
     @retry_on_lock()
-    async def update_plot_status_tension_love(self, branch_id: int, ep_num: int, tension_delta: int, love_meter: int) -> None:
+    async def update_plot_status_tension_love(
+        self, branch_id: int, ep_num: int, tension_delta: int, love_meter: int
+    ) -> None:
         await self.session.execute(
             update(Plot)
             .where(Plot.branch_id == branch_id)
             .where(Plot.ep_num == ep_num)
-            .values(status='completed', tension_delta=tension_delta, love_meter=love_meter)
+            .values(status="completed", tension_delta=tension_delta, love_meter=love_meter)
         )
+
     @retry_on_lock()
     async def reset_plot_status(self, branch_id: int, ep_num: int) -> None:
         """プロットのステータスを計画済みに戻し、設計図や個別統計を完全にリセットする"""
@@ -206,13 +293,21 @@ class PlotRepository(BaseRepository):
             .where(Plot.branch_id == branch_id)
             .where(Plot.ep_num == ep_num)
             .values(
-                status='planned', tension_delta=0, love_meter=0,
-                detailed_blueprint='', thought_process='',
-                script_content='', scenes='[]', is_locked=False
+                status="planned",
+                tension_delta=0,
+                love_meter=0,
+                detailed_blueprint="",
+                thought_process="",
+                script_content="",
+                scenes="[]",
+                is_locked=False,
             )
         )
+
     @retry_on_lock()
-    async def update_plot_blueprint(self, branch_id: int, ep_num: int, detailed_blueprint: str) -> None:
+    async def update_plot_blueprint(
+        self, branch_id: int, ep_num: int, detailed_blueprint: str
+    ) -> None:
         """プロットの設計図を直接更新する"""
         await self.session.execute(
             update(Plot)
@@ -220,6 +315,7 @@ class PlotRepository(BaseRepository):
             .where(Plot.ep_num == ep_num)
             .values(detailed_blueprint=detailed_blueprint)
         )
+
     @retry_on_lock()
     async def update_plot_lock_status(self, branch_id: int, ep_num: int, is_locked: bool) -> None:
         """プロットのロック状態を更新する"""
@@ -229,12 +325,16 @@ class PlotRepository(BaseRepository):
             .where(Plot.ep_num == ep_num)
             .values(is_locked=is_locked)
         )
+
     @retry_on_lock()
     async def delete_plots_from(self, branch_id: int, start_ep: int) -> None:
         await self.session.execute(
             delete(Plot).where(Plot.branch_id == branch_id).where(Plot.ep_num >= start_ep)
         )
-    async def get_plots_before_limit_1(self, branch_id: int, ep_num: int) -> Optional['PlotDbModel']:
+
+    async def get_plots_before_limit_1(
+        self, branch_id: int, ep_num: int
+    ) -> Optional["PlotDbModel"]:
         """ep_num より前の最新プロットを1件取得（直前プロットの状態参照用）"""
         result = await self.session.execute(
             select(Plot)
@@ -247,8 +347,17 @@ class PlotRepository(BaseRepository):
         if not plot:
             return None
         from src.models import PlotDbModel
-        return PlotDbModel(**self._parse_row(self._to_dict(plot), ['scenes', 'next_hook', 'healed_fields', 'state_integrity_score']))
-    async def get_plots_between(self, branch_id: int, start_ep: int, end_ep: int) -> List['PlotDbModel']:
+
+        return PlotDbModel(
+            **self._parse_row(
+                self._to_dict(plot),
+                ["scenes", "next_hook", "healed_fields", "state_integrity_score"],
+            )
+        )
+
+    async def get_plots_between(
+        self, branch_id: int, start_ep: int, end_ep: int
+    ) -> List["PlotDbModel"]:
         """start_ep〜end_ep の範囲のプロットを取得"""
         result = await self.session.execute(
             select(Plot)
@@ -258,10 +367,28 @@ class PlotRepository(BaseRepository):
         )
         plots = result.scalars().all()
         from src.models import PlotDbModel
-        return [PlotDbModel(**self._parse_row(self._to_dict(p), ['scenes', 'next_hook', 'healed_fields', 'state_integrity_score'])) for p in plots]
+
+        return [
+            PlotDbModel(
+                **self._parse_row(
+                    self._to_dict(p),
+                    ["scenes", "next_hook", "healed_fields", "state_integrity_score"],
+                )
+            )
+            for p in plots
+        ]
 
     @retry_on_lock()
-    async def add_foreshadowing(self, book_id: int, branch_id: int, fw_id: str, description: str, placement_ep: int, importance: int = 1, note: str = "") -> None:
+    async def add_foreshadowing(
+        self,
+        book_id: int,
+        branch_id: int,
+        fw_id: str,
+        description: str,
+        placement_ep: int,
+        importance: int = 1,
+        note: str = "",
+    ) -> None:
         """伏線を新しく登録する"""
         fw = Foreshadowing(
             book_id=book_id,
@@ -271,12 +398,14 @@ class PlotRepository(BaseRepository):
             placement_ep=placement_ep,
             importance=importance,
             note=note,
-            status="pending"
+            status="pending",
         )
         self.session.add(fw)
 
     @retry_on_lock()
-    async def update_foreshadowing_recovery(self, fw_id: str, recovery_ep: int, note: str = "") -> None:
+    async def update_foreshadowing_recovery(
+        self, fw_id: str, recovery_ep: int, note: str = ""
+    ) -> None:
         """伏線の回収エピソードを登録し、ステータスを recovered に更新する"""
         await self.session.execute(
             update(Foreshadowing)
@@ -284,7 +413,9 @@ class PlotRepository(BaseRepository):
             .values(recovery_ep=recovery_ep, status="recovered", note=note)
         )
 
-    async def get_unrecovered_foreshadowings(self, book_id: int, branch_id: int = 1) -> List[Foreshadowing]:
+    async def get_unrecovered_foreshadowings(
+        self, book_id: int, branch_id: int = 1
+    ) -> List[Foreshadowing]:
         """未回収の伏線一覧を取得する"""
         result = await self.session.execute(
             select(Foreshadowing)
@@ -316,13 +447,23 @@ class PlotRepository(BaseRepository):
         return [{"ep_num": row[0], "tension": row[1]} for row in rows]
 
     @retry_on_lock()
-    async def save_character_arc(self, book_id: int, branch_id: int, character_id: int, ep_num: int, state_summary: str, arc_delta: Optional[str] = None, trigger_event: Optional[str] = None, confidence: float = 1.0) -> None:
+    async def save_character_arc(
+        self,
+        book_id: int,
+        branch_id: int,
+        character_id: int,
+        ep_num: int,
+        state_summary: str,
+        arc_delta: Optional[str] = None,
+        trigger_event: Optional[str] = None,
+        confidence: float = 1.0,
+    ) -> None:
         """キャラクターアークの状態を保存または更新する"""
         result = await self.session.execute(
             select(CharacterArc).where(
                 CharacterArc.branch_id == branch_id,
                 CharacterArc.character_id == character_id,
-                CharacterArc.ep_num == ep_num
+                CharacterArc.ep_num == ep_num,
             )
         )
         arc_obj = result.scalar_one_or_none()
@@ -336,7 +477,9 @@ class PlotRepository(BaseRepository):
         arc_obj.trigger_event = trigger_event
         arc_obj.confidence = confidence
 
-    async def get_character_arc_history(self, branch_id: int, character_id: int) -> List[CharacterArc]:
+    async def get_character_arc_history(
+        self, branch_id: int, character_id: int
+    ) -> List[CharacterArc]:
         """特定のキャラクターの全エピソードにおけるアーク履歴を取得する"""
         result = await self.session.execute(
             select(CharacterArc)
@@ -346,7 +489,9 @@ class PlotRepository(BaseRepository):
         )
         return result.scalars().all()
 
-    async def get_latest_character_arc(self, branch_id: int, character_id: int, ep_num: int) -> Optional[CharacterArc]:
+    async def get_latest_character_arc(
+        self, branch_id: int, character_id: int, ep_num: int
+    ) -> Optional[CharacterArc]:
         """指定エピソード以前の最新のキャラクター状態を取得する"""
         result = await self.session.execute(
             select(CharacterArc)

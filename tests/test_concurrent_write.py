@@ -11,25 +11,27 @@ from src.backend.database.core import DatabaseManager, init_db
 @pytest.mark.asyncio
 async def test_concurrent_write_load():
     # 1. テスト用の一時的なDBファイルを作成
-    fd, db_path = tempfile.mkstemp(suffix='.db')
+    fd, db_path = tempfile.mkstemp(suffix=".db")
     os.close(fd)
 
     try:
         # DBの初期化
         init_db(db_path)
-        db_url = f'sqlite+aiosqlite:///{db_path}'
+        db_url = f"sqlite+aiosqlite:///{db_path}"
         manager = DatabaseManager(db_url)
 
         # テスト用テーブルの作成
         async with manager.get_session() as session:
             async with session.begin():
-                await session.execute(text("""
+                await session.execute(
+                    text("""
                     CREATE TABLE IF NOT EXISTS load_test (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         val TEXT,
                         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
                     )
-                """))
+                """)
+                )
 
         # 2. 同時書き込み処理の定義
         async def write_worker(worker_id, iterations=20):
@@ -40,7 +42,7 @@ async def test_concurrent_write_load():
                         async with session.begin():
                             await session.execute(
                                 text("INSERT INTO load_test (val) VALUES (:v)"),
-                                {"v": f"worker_{worker_id}_iter_{i}"}
+                                {"v": f"worker_{worker_id}_iter_{i}"},
                             )
                 except Exception as e:
                     # ここで "database is locked" が発生しないかを確認

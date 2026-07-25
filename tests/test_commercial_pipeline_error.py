@@ -1,11 +1,12 @@
 """
 tests/test_commercial_pipeline_error.py — CommercialPipeline エラー処理単体テスト
 """
-import pytest
-import asyncio
-from src.backend.workflows.commercial_pipeline import CommercialPipeline, PipelineError
+
 from unittest.mock import patch
-from src.services.episode_writer import EpisodeWriter
+
+import pytest
+
+from src.backend.workflows.commercial_pipeline import CommercialPipeline, PipelineError
 
 
 @patch("src.services.episode_writer.EpisodeWriter.write")

@@ -10,6 +10,7 @@ def _reset_config_cache():
     """ConfigManager / project_context のメモリキャッシュをリセット"""
     ConfigManager._instance = None
     import config.project_context as pc
+
     pc._global_config = None
 
 

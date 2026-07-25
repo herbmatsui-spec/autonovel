@@ -2,6 +2,7 @@
 tests/test_ncs_calibration.py
 NCS キャリブレーションのユニットテスト。
 """
+
 from src.services.ncs_calibration import NarrativeCoherenceScorer
 
 
@@ -43,6 +44,12 @@ def test_calculate_ncs_empty():
 
 def test_ncs_weights():
     scorer = NarrativeCoherenceScorer()
-    assert abs(scorer.weights["plot_continuity"] +
-               scorer.weights["character_consistency"] +
-               scorer.weights["theme_unity"] - 1.0) < 0.001
+    assert (
+        abs(
+            scorer.weights["plot_continuity"]
+            + scorer.weights["character_consistency"]
+            + scorer.weights["theme_unity"]
+            - 1.0
+        )
+        < 0.001
+    )

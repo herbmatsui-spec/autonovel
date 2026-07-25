@@ -8,6 +8,7 @@ from src.backend.database.models import Base
 
 T = TypeVar("T", bound=Base)
 
+
 class BaseRepository(Generic[T]):
     def __init__(self, session: AsyncSession):
         self.session = session
@@ -17,7 +18,9 @@ class BaseRepository(Generic[T]):
         raise NotImplementedError
 
     async def get(self, id: int) -> Optional[T]:
-        result = await self.session.execute(select(self.model_class).where(self.model_class.id == id)) # type: ignore
+        result = await self.session.execute(
+            select(self.model_class).where(self.model_class.id == id)
+        )  # type: ignore
         return result.scalar_one_or_none()
 
     async def get_all(self) -> List[T]:
@@ -33,7 +36,7 @@ class BaseRepository(Generic[T]):
 
     @retry_on_lock()
     async def delete_by_id(self, id: int) -> None:
-        await self.session.execute(delete(self.model_class).where(self.model_class.id == id)) # type: ignore
+        await self.session.execute(delete(self.model_class).where(self.model_class.id == id))  # type: ignore
 
     def _to_dict(self, instance) -> dict:
         if not instance:
@@ -42,6 +45,7 @@ class BaseRepository(Generic[T]):
 
     def _parse_row(self, row: dict, json_fields: list) -> dict:
         import json
+
         for f in json_fields:
             if f in row and isinstance(row[f], str):
                 try:
@@ -49,4 +53,3 @@ class BaseRepository(Generic[T]):
                 except (json.JSONDecodeError, TypeError):
                     pass
         return row
-

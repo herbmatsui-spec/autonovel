@@ -11,7 +11,9 @@ def test_prompt_registry_performance():
     template_path = os.path.join(test_dir, "perf_test.j2")
 
     with open(template_path, "w", encoding="utf-8") as f:
-        f.write("---\nversion: 1.0\n---\nHello {{ name }}! This is a performance test template. " * 10)
+        f.write(
+            "---\nversion: 1.0\n---\nHello {{ name }}! This is a performance test template. " * 10
+        )
 
     registry = PromptRegistry(templates_dir=test_dir)
     context = {"name": "Zoo"}

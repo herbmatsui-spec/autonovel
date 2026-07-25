@@ -8,6 +8,7 @@ config/validator.py の統合テスト
   - models.yaml → settings マージ
   - エラーメッセージ改善
 """
+
 from contextlib import contextmanager
 from pathlib import Path
 

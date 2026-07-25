@@ -1,4 +1,3 @@
-
 import pytest
 
 
@@ -10,16 +9,10 @@ async def test_character_repository(real_uow):
 
         # Test create_character
         await uow.characters.create_character(
-            book_id=book_id,
-            name="Alice",
-            role="Protagonist",
-            registry_data={"age": 20}
+            book_id=book_id, name="Alice", role="Protagonist", registry_data={"age": 20}
         )
         await uow.characters.create_character(
-            book_id=book_id,
-            name="Bob",
-            role="Antagonist",
-            registry_data={"age": 30}
+            book_id=book_id, name="Bob", role="Antagonist", registry_data={"age": 30}
         )
 
         # Test get_all_characters

@@ -5,7 +5,9 @@ from pydantic import AliasChoices, BaseModel, Field, model_validator
 
 class CharacterRegistry(BaseModel):
     name: Optional[str] = Field(default="", validation_alias=AliasChoices("name", "char_name"))
-    iron_constraint: Optional[str] = Field(default="", validation_alias=AliasChoices("iron_constraint", "iron_const"))
+    iron_constraint: Optional[str] = Field(
+        default="", validation_alias=AliasChoices("iron_constraint", "iron_const")
+    )
 
     @model_validator(mode="before")
     @classmethod
@@ -17,8 +19,10 @@ class CharacterRegistry(BaseModel):
                     data[f] = data.get(f, "")
         return data
 
+
 class WorldBibleCore(BaseModel):
     mc_profile: CharacterRegistry = Field(default_factory=CharacterRegistry)
+
 
 # Test 1: Empty dict
 try:
@@ -43,4 +47,3 @@ try:
     print(f"Success: {res.mc_profile.iron_constraint=}")
 except Exception as e:
     print(f"Failed: {e}")
-

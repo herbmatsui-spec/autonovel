@@ -5,6 +5,7 @@ src/backend/engine_plot.py
 感情起点（EmotionalHookSpec）をPlotから取得し、
 プロンプト生成へ注入する責務を持つ。
 """
+
 from __future__ import annotations
 
 import json
@@ -131,7 +132,7 @@ def _parse_sharp_edges(raw: Optional[str]) -> List[SharpEdgeSpec]:
                     edge_type=edge_type,
                     description=description,
                     key_phrase=key_phrase,
-                    preserve_on_quality_polish=item.get("preserve_on_quality_polish", True)
+                    preserve_on_quality_polish=item.get("preserve_on_quality_polish", True),
                 )
                 parsed.append(spec)
             except ValidationError:
@@ -193,7 +194,9 @@ async def enforce_entertainment_gate(
     ENFORCE_ENTERTAINMENT_FIRST が True で、最終 interest_score < threshold の場合は
     RuntimeError を送出し、基幹構造の再設計を要求する。
     """
-    from src.backend.entertainment_loop import EntertainmentCheckResult, run_entertainment_first_loop
+    from src.backend.entertainment_loop import (
+        run_entertainment_first_loop,
+    )
 
     result = await run_entertainment_first_loop(
         checker=checker,

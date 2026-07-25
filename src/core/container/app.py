@@ -2,9 +2,10 @@
 AppContainer2 - アプリケーション層のDIコンテナ (後方互換名: AppContainer)
 InfraContainer を継承し、エージェント・サービス・エンジンを定義する。
 """
+
 import logging
 
-from dependency_injector import containers, providers
+from dependency_injector import providers
 
 from src.backend.database import DataRepository, UnitOfWork
 from src.backend.engine_config import EngineConfig
@@ -45,9 +46,7 @@ class AppContainer2(InfraContainer):
         "src.core.llm_gateway.LLMGenerateResultProxy",
         llm_factory=llm_factory,
     )
-    connection_pipeline = providers.Singleton(
-        lambda: None
-    )
+    connection_pipeline = providers.Singleton(lambda: None)
 
     repo = providers.Singleton(
         DataRepository,
@@ -175,9 +174,7 @@ class AppContainer2(InfraContainer):
         ),
         engine=engine,
     )
-    redis_cache = providers.Factory(
-        "src.services.redis_cache.RedisCacheService"
-    )
+    redis_cache = providers.Factory("src.services.redis_cache.RedisCacheService")
     prompt_cache = providers.Factory(
         "src.services.redis_cache.PromptCacheService",
         redis_cache=redis_cache,

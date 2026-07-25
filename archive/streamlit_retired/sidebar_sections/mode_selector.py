@@ -1,11 +1,14 @@
 """
 streamlit_app/sidebar_sections/mode_selector.py - モード選択セクション
 """
+
 from __future__ import annotations
 
 import streamlit as st
-from streamlit_app.state import UIStateStore
 from streamlit_app.ui.icons import ICON_PLANNING, ICON_SETTINGS
+
+from streamlit_app.state import UIStateStore
+
 
 def render_mode_selector() -> None:
     """アプリの動作モード（かんたん/上級者）選択ラジオボタンを描画する。"""

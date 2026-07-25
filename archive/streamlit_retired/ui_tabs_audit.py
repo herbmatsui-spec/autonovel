@@ -5,6 +5,7 @@ import streamlit as st
 
 def render_audit_tab(state: Dict[str, Any], engine: Any, book_id: int) -> None:
     from streamlit_app.ui.icons import ICON_AUDIT
+
     st.header(f"{ICON_AUDIT} 監査・チケット管理ダッシュボード")
     st.write(
         "物語の論理矛盾（生死、所持品、位置、時系列、能力など）や世界観設定のズレを、"
@@ -30,16 +31,19 @@ def render_audit_tab(state: Dict[str, Any], engine: Any, book_id: int) -> None:
             render_primary_button,
             render_secondary_button,
         )
+
         for iss in open_issues:
             with st.container(border=True):
                 # Severity-based badge color
-                sev = iss.get('severity', 'Medium')
+                sev = iss.get("severity", "Medium")
                 sev_color = "🔴" if sev == "High" else "🟡" if sev == "Medium" else "🔵"
 
                 col1, col2 = st.columns([3, 1])
                 with col1:
                     st.markdown(f"### {sev_color} Issue #{iss.get('id')} : `{iss.get('category')}`")
-                    st.caption(f"重要度: {sev} | 対象話数: 第{iss.get('ep_num')}話 | 起票: {iss.get('created_at')}")
+                    st.caption(
+                        f"重要度: {sev} | 対象話数: 第{iss.get('ep_num')}話 | 起票: {iss.get('created_at')}"
+                    )
                     st.markdown(f"**矛盾の内容:**\n{iss.get('description')}")
 
                     with st.expander("🔍 根拠・制約の詳細を確認"):
@@ -52,20 +56,29 @@ def render_audit_tab(state: Dict[str, Any], engine: Any, book_id: int) -> None:
 
                 with col2:
                     st.markdown("#### 🛠️ 解決アクション")
-                    if render_primary_button("🪄 AIクイック修正", key=f"autofix_{iss.get('id')}", icon="🪄"):
+                    if render_primary_button(
+                        "🪄 AIクイック修正", key=f"autofix_{iss.get('id')}", icon="🪄"
+                    ):
                         import streamlit_app.actions as actions
+
                         with st.spinner("AIが最適な修正案を構築中..."):
-                            actions.resolve_issue(engine, iss.get('id'), "Auto-Fix")
+                            actions.resolve_issue(engine, iss.get("id"), "Auto-Fix")
                             st.rerun()
 
-                    if render_secondary_button("🔮 伏線として登録", key=f"foreshadow_{iss.get('id')}", icon="🔮"):
+                    if render_secondary_button(
+                        "🔮 伏線として登録", key=f"foreshadow_{iss.get('id')}", icon="🔮"
+                    ):
                         import streamlit_app.actions as actions
-                        actions.resolve_issue(engine, iss.get('id'), "Foreshadowing")
+
+                        actions.resolve_issue(engine, iss.get("id"), "Foreshadowing")
                         st.rerun()
 
-                    if render_secondary_button("😎 無視する", key=f"ignore_{iss.get('id')}", icon="😎"):
+                    if render_secondary_button(
+                        "😎 無視する", key=f"ignore_{iss.get('id')}", icon="😎"
+                    ):
                         import streamlit_app.actions as actions
-                        actions.resolve_issue(engine, iss.get('id'), "Ignore")
+
+                        actions.resolve_issue(engine, iss.get("id"), "Ignore")
                         st.rerun()
 
     if other_issues:

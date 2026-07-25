@@ -9,11 +9,12 @@ try:
         AI_CONTAMINATION_WORDS,
         STRESS_CATHARSIS_THRESHOLD,
     )
+
     print("Successfully imported constants from config")
     print(f"AI_CONTAMINATION_WORDS: {AI_CONTAMINATION_WORDS[:2]}...")
     print(f"STRESS_CATHARSIS_THRESHOLD: {STRESS_CATHARSIS_THRESHOLD}")
 except Exception as e:
     print(f"Error: {e}")
     import traceback
-    traceback.print_exc()
 
+    traceback.print_exc()

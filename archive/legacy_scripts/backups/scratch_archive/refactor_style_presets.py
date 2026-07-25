@@ -27,4 +27,3 @@ content += getattr_code
 with open(path, "w", encoding="utf-8") as f:
     f.write(content)
 print("config_style_presets.py refactored successfully.")
-

@@ -1,13 +1,13 @@
 from __future__ import annotations
+
 from typing import Any, Dict, List, Optional
-from typing import Any
+
 from src.backend.database.repo_protocols import IRepository
 
 """
 database/repo_plot.py - プロット(Plots)データ操作用のリポジトリMixin
 """
 import json
-from typing import Any, List, Optional
 
 from sqlalchemy import delete, select, update
 
@@ -20,7 +20,9 @@ class PlotRepositoryMixin(IRepository):
     """Plotテーブルに関するDB操作をまとめたMixin"""
 
     @retry_with_logging()
-    async def get_plot(self, book_id_or_branch_id: int, ep_num: int, branch_id: Optional[int] = None) -> Optional[PlotDbModel]:
+    async def get_plot(
+        self, book_id_or_branch_id: int, ep_num: int, branch_id: Optional[int] = None
+    ) -> Optional[PlotDbModel]:
         target_branch_id = branch_id if branch_id is not None else book_id_or_branch_id
         async with self._get_session() as session:
             result = await session.execute(
@@ -29,32 +31,68 @@ class PlotRepositoryMixin(IRepository):
             plot = result.scalar_one_or_none()
             if not plot:
                 return None
-            return PlotDbModel(**self._parse_row(self._to_dict(plot), ['scenes', 'next_hook', 'healed_fields']))
+            return PlotDbModel(
+                **self._parse_row(self._to_dict(plot), ["scenes", "next_hook", "healed_fields"])
+            )
 
     @retry_with_logging()
-    async def get_all_plots(self, book_id_or_branch_id: int, branch_id: Optional[int] = None) -> List[PlotDbModel]:
+    async def get_all_plots(
+        self, book_id_or_branch_id: int, branch_id: Optional[int] = None
+    ) -> List[PlotDbModel]:
         target_branch_id = branch_id if branch_id is not None else book_id_or_branch_id
         async with self._get_session() as session:
             result = await session.execute(
                 select(Plot).where(Plot.branch_id == target_branch_id).order_by(Plot.ep_num)
             )
             plots = result.scalars().all()
-            return [PlotDbModel(**self._parse_row(self._to_dict(p), ['scenes', 'next_hook', 'healed_fields', 'state_integrity_score'])) for p in plots]
+            return [
+                PlotDbModel(
+                    **self._parse_row(
+                        self._to_dict(p),
+                        ["scenes", "next_hook", "healed_fields", "state_integrity_score"],
+                    )
+                )
+                for p in plots
+            ]
 
     @retry_with_logging()
     async def create_or_replace_plot(
-        self, book_id: int, ep_num: int, thought_process: str, title: str, summary: str, detailed_blueprint: str,
-        next_hook: str, tension: int, tension_delta: int = 0, catharsis: int = 0, love_meter: int = 0, is_catharsis: bool = False, catharsis_type: str = "なし",
-        scenes: Any = None, status: str = "expanded", misunderstanding_gap: str = "",
-        lite_model_director_notes: str = "", script_content: str = "",
+        self,
+        book_id: int,
+        ep_num: int,
+        thought_process: str,
+        title: str,
+        summary: str,
+        detailed_blueprint: str,
+        next_hook: str,
+        tension: int,
+        tension_delta: int = 0,
+        catharsis: int = 0,
+        love_meter: int = 0,
+        is_catharsis: bool = False,
+        catharsis_type: str = "なし",
+        scenes: Any = None,
+        status: str = "expanded",
+        misunderstanding_gap: str = "",
+        lite_model_director_notes: str = "",
+        script_content: str = "",
         current_chain_phase: str = "Friction",
-        resolution_style: str = "Cheat", burned_cost_or_loot: str = "なし",
-        antagonist_status: str = "現状維持", thematic_milestone: str = "なし",
-        state_integrity_score: int = 100, emotional_resonance_score: int = 0, healed_fields: Any = None, branch_id: int = 1,
-        is_micro_catharsis: bool = False, information_asymmetry_level: float = 0.0,
+        resolution_style: str = "Cheat",
+        burned_cost_or_loot: str = "なし",
+        antagonist_status: str = "現状維持",
+        thematic_milestone: str = "なし",
+        state_integrity_score: int = 100,
+        emotional_resonance_score: int = 0,
+        healed_fields: Any = None,
+        branch_id: int = 1,
+        is_micro_catharsis: bool = False,
+        information_asymmetry_level: float = 0.0,
         cost_score: float = 0.0,
-        qol_delta: int = 0, discovery_item: str = "", sanctuary_event: str = "", is_locked: bool = False,
-        stress: Optional[int] = None
+        qol_delta: int = 0,
+        discovery_item: str = "",
+        sanctuary_event: str = "",
+        is_locked: bool = False,
+        stress: Optional[int] = None,
     ) -> None:
         if stress is not None:
             tension_delta = stress
@@ -73,14 +111,22 @@ class PlotRepositoryMixin(IRepository):
             plot_obj.title = title
             plot_obj.summary = summary
             plot_obj.detailed_blueprint = detailed_blueprint
-            plot_obj.next_hook = json.dumps(next_hook, ensure_ascii=False) if isinstance(next_hook, (dict, list)) else (next_hook or "{}")
+            plot_obj.next_hook = (
+                json.dumps(next_hook, ensure_ascii=False)
+                if isinstance(next_hook, (dict, list))
+                else (next_hook or "{}")
+            )
             plot_obj.tension = tension
             plot_obj.tension_delta = tension_delta
             plot_obj.catharsis = catharsis
             plot_obj.love_meter = love_meter
             plot_obj.is_catharsis = is_catharsis
             plot_obj.catharsis_type = catharsis_type
-            plot_obj.scenes = json.dumps(scenes, ensure_ascii=False) if isinstance(scenes, (list, dict)) else (scenes or "[]")
+            plot_obj.scenes = (
+                json.dumps(scenes, ensure_ascii=False)
+                if isinstance(scenes, (list, dict))
+                else (scenes or "[]")
+            )
             plot_obj.status = status
             plot_obj.misunderstanding_gap = misunderstanding_gap
             plot_obj.lite_model_director_notes = lite_model_director_notes
@@ -92,7 +138,11 @@ class PlotRepositoryMixin(IRepository):
             plot_obj.thematic_milestone = thematic_milestone
             plot_obj.state_integrity_score = state_integrity_score
             plot_obj.emotional_resonance_score = emotional_resonance_score
-            plot_obj.healed_fields = json.dumps(healed_fields, ensure_ascii=False) if isinstance(healed_fields, list) else (healed_fields or "[]")
+            plot_obj.healed_fields = (
+                json.dumps(healed_fields, ensure_ascii=False)
+                if isinstance(healed_fields, list)
+                else (healed_fields or "[]")
+            )
             plot_obj.is_micro_catharsis = is_micro_catharsis
             plot_obj.information_asymmetry_level = information_asymmetry_level
             plot_obj.cost_score = cost_score
@@ -118,15 +168,21 @@ class PlotRepositoryMixin(IRepository):
     async def _save_plot_impl(self, branch_id: int, ep_num: int, plot: Any) -> None:
         """Pydanticモデル（PlotEpisode）をデータベースのplotテーブルに一括登録/更新する。"""
         async with self._get_session() as session:
-            branch_result = await session.execute(select(Branch.book_id).where(Branch.id == branch_id))
+            branch_result = await session.execute(
+                select(Branch.book_id).where(Branch.id == branch_id)
+            )
             row = branch_result.fetchone()
             if not row:
-                book_result = await session.execute(select(Book.id).order_by(Book.id.desc()).limit(1))
+                book_result = await session.execute(
+                    select(Book.id).order_by(Book.id.desc()).limit(1)
+                )
                 latest_book = book_result.scalar_one_or_none()
                 if latest_book:
                     book_id = latest_book
                 else:
-                    raise ValueError(f"Branch with ID {branch_id} does not exist and no books found.")
+                    raise ValueError(
+                        f"Branch with ID {branch_id} does not exist and no books found."
+                    )
             else:
                 book_id = row[0]
 
@@ -137,7 +193,10 @@ class PlotRepositoryMixin(IRepository):
             elif isinstance(plot.next_hook, dict):
                 next_hook_data = plot.next_hook
             else:
-                next_hook_data = {"type": getattr(plot.next_hook, "type", ""), "description": getattr(plot.next_hook, "description", "")}
+                next_hook_data = {
+                    "type": getattr(plot.next_hook, "type", ""),
+                    "description": getattr(plot.next_hook, "description", ""),
+                }
 
         scenes_data = []
         if hasattr(plot, "scenes") and plot.scenes:
@@ -180,22 +239,26 @@ class PlotRepositoryMixin(IRepository):
             healed_fields=healed_fields_data,
             branch_id=branch_id,
             is_micro_catharsis=bool(getattr(plot, "is_micro_catharsis", False)),
-            information_asymmetry_level=float(getattr(plot, "information_asymmetry_level", 0.0) or 0.0),
+            information_asymmetry_level=float(
+                getattr(plot, "information_asymmetry_level", 0.0) or 0.0
+            ),
             cost_score=float(getattr(plot, "cost_score", 0.0) or 0.0),
             qol_delta=int(getattr(plot, "qol_delta", 0) or 0),
             discovery_item=getattr(plot, "discovery_item", "") or "",
             sanctuary_event=getattr(plot, "sanctuary_event", "") or "",
-            is_locked=bool(getattr(plot, "is_locked", False))
+            is_locked=bool(getattr(plot, "is_locked", False)),
         )
 
     @retry_with_logging()
-    async def update_plot_status_tension_love(self, branch_id: int, ep_num: int, tension_delta: int, love_meter: int) -> None:
+    async def update_plot_status_tension_love(
+        self, branch_id: int, ep_num: int, tension_delta: int, love_meter: int
+    ) -> None:
         async with self._get_session() as session:
             await session.execute(
                 update(Plot)
                 .where(Plot.branch_id == branch_id)
                 .where(Plot.ep_num == ep_num)
-                .values(status='completed', tension_delta=tension_delta, love_meter=love_meter)
+                .values(status="completed", tension_delta=tension_delta, love_meter=love_meter)
             )
 
     @retry_with_logging()
@@ -207,9 +270,14 @@ class PlotRepositoryMixin(IRepository):
                 .where(Plot.branch_id == branch_id)
                 .where(Plot.ep_num == ep_num)
                 .values(
-                    status='planned', tension_delta=0, love_meter=0,
-                    detailed_blueprint='', thought_process='',
-                    script_content='', scenes='[]', is_locked=False
+                    status="planned",
+                    tension_delta=0,
+                    love_meter=0,
+                    detailed_blueprint="",
+                    thought_process="",
+                    script_content="",
+                    scenes="[]",
+                    is_locked=False,
                 )
             )
 
@@ -228,7 +296,9 @@ class PlotRepositoryMixin(IRepository):
             return False
 
     @retry_with_logging()
-    async def _update_plot_blueprint_impl(self, branch_id: int, ep_num: int, detailed_blueprint: str) -> None:
+    async def _update_plot_blueprint_impl(
+        self, branch_id: int, ep_num: int, detailed_blueprint: str
+    ) -> None:
         """プロットの設計図を直接更新する"""
         async with self._get_session() as session:
             await session.execute(
@@ -270,10 +340,17 @@ class PlotRepositoryMixin(IRepository):
             plot = result.scalar_one_or_none()
             if not plot:
                 return None
-            return PlotDbModel(**self._parse_row(self._to_dict(plot), ['scenes', 'next_hook', 'healed_fields', 'state_integrity_score']))
+            return PlotDbModel(
+                **self._parse_row(
+                    self._to_dict(plot),
+                    ["scenes", "next_hook", "healed_fields", "state_integrity_score"],
+                )
+            )
 
     @retry_with_logging()
-    async def get_plots_between(self, branch_id: int, start_ep: int, end_ep: int) -> List[PlotDbModel]:
+    async def get_plots_between(
+        self, branch_id: int, start_ep: int, end_ep: int
+    ) -> List[PlotDbModel]:
         """start_ep〜end_ep の範囲のプロットを取得"""
         async with self._get_session() as session:
             result = await session.execute(
@@ -283,34 +360,45 @@ class PlotRepositoryMixin(IRepository):
                 .order_by(Plot.ep_num)
             )
             plots = result.scalars().all()
-            return [PlotDbModel(**self._parse_row(self._to_dict(p), ['scenes', 'next_hook', 'healed_fields', 'state_integrity_score'])) for p in plots]
+            return [
+                PlotDbModel(
+                    **self._parse_row(
+                        self._to_dict(p),
+                        ["scenes", "next_hook", "healed_fields", "state_integrity_score"],
+                    )
+                )
+                for p in plots
+            ]
 
     @retry_with_logging()
     async def get_erotic_intensity(self, branch_id: int, ep_num: int) -> int:
         """指定エピソードの官能強度を返す。未設定なら0。"""
         async with self._get_session() as session:
             result = await session.execute(
-                select(Plot)
-                .where(Plot.branch_id == branch_id)
-                .where(Plot.ep_num == ep_num)
+                select(Plot).where(Plot.branch_id == branch_id).where(Plot.ep_num == ep_num)
             )
             plot = result.scalar_one_or_none()
             if plot is None:
                 return 0
-            return getattr(plot, 'erotic_intensity', 0) or 0
+            return getattr(plot, "erotic_intensity", 0) or 0
 
     @retry_with_logging()
     async def get_total_episodes(self, book_id: int) -> int:
         """指定された本の全エピソード数を取得する。"""
         async with self._get_session() as session:
             result = await session.execute(
-                select(Plot.ep_num).where(Plot.book_id == book_id).order_by(Plot.ep_num.desc()).limit(1)
+                select(Plot.ep_num)
+                .where(Plot.book_id == book_id)
+                .order_by(Plot.ep_num.desc())
+                .limit(1)
             )
             max_ep = result.scalar_one_or_none()
             return max_ep if max_ep is not None else 0
 
     @retry_with_logging()
-    async def update_plot_target_tension(self, book_id: int, ep_num: int, target_tension: float) -> None:
+    async def update_plot_target_tension(
+        self, book_id: int, ep_num: int, target_tension: float
+    ) -> None:
         """プロットの目標テンション値を更新する。"""
         async with self._get_session() as session:
             await session.execute(
@@ -332,7 +420,9 @@ class PlotRepositoryMixin(IRepository):
             )
 
     @retry_with_logging()
-    async def update_plot_quality_polish_status(self, book_id: int, ep_num: int, status: str) -> None:
+    async def update_plot_quality_polish_status(
+        self, book_id: int, ep_num: int, status: str
+    ) -> None:
         """品質磨き上げステータスを更新する。"""
         async with self._get_session() as session:
             await session.execute(
@@ -393,4 +483,3 @@ class PlotRepositoryMixin(IRepository):
             )
             session.add(log)
             await session.flush()
-

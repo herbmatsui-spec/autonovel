@@ -1,8 +1,8 @@
 import os
+
 from fastapi.testclient import TestClient
 
 # Import the FastAPI application instance
-
 
 
 def get_expected_origins() -> list[str]:
@@ -10,6 +10,7 @@ def get_expected_origins() -> list[str]:
     Mirrors the logic in `config/cors_config.py`.
     """
     import json
+
     origins_env = os.getenv("CORS_ALLOWED_ORIGINS", "")
     if origins_env:
         try:
@@ -27,6 +28,7 @@ def test_health_cors_header():
     test_origin = "http://example.com"
     os.environ["CORS_ALLOWED_ORIGINS"] = f'["{test_origin}"]'
     from src.backend.server import app
+
     client = TestClient(app)
     response = client.get("/health", headers={"Origin": test_origin})
     assert response.status_code == 200, "Health endpoint should return 200"

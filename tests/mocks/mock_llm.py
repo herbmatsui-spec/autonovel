@@ -4,6 +4,7 @@ from typing import Any, Callable, Dict, Optional, Tuple
 
 class MockGeminiApiClient:
     """Mock for GeminiApiClient to be used in integration tests."""
+
     def __init__(self):
         self.call_history = []
         self.mock_json_responses = {}
@@ -19,7 +20,7 @@ class MockGeminiApiClient:
         self.mock_text_responses[model_name_or_prompt] = response
 
     def add_exception(self, model_name_or_prompt: str, exception: Exception):
-        if not hasattr(self, 'mock_exceptions'):
+        if not hasattr(self, "mock_exceptions"):
             self.mock_exceptions = {}
         self.mock_exceptions[model_name_or_prompt] = exception
 
@@ -33,23 +34,25 @@ class MockGeminiApiClient:
         max_retries: int = 5,
         stream_callback: Optional[Callable[[str], None]] = None,
         retry_state: Optional[Any] = None,
-        **kwargs
+        **kwargs,
     ) -> Tuple[Dict[str, Any], str, Any]:
 
         # Check for mock exceptions
-        if hasattr(self, 'mock_exceptions'):
+        if hasattr(self, "mock_exceptions"):
             for k, v in self.mock_exceptions.items():
                 if k in (model_name or "") or k in (prompt or ""):
                     raise v
 
-        self.call_history.append({
-            "method": "generate_json",
-            "model_name": model_name,
-            "prompt": prompt,
-            "system_instruction": system_instruction,
-            "response_schema": response_schema,
-            "temp": temp
-        })
+        self.call_history.append(
+            {
+                "method": "generate_json",
+                "model_name": model_name,
+                "prompt": prompt,
+                "system_instruction": system_instruction,
+                "response_schema": response_schema,
+                "temp": temp,
+            }
+        )
 
         res = self.default_json_response
         for k, v in self.mock_json_responses.items():
@@ -74,22 +77,24 @@ class MockGeminiApiClient:
         max_retries: int = 5,
         stream_callback: Optional[Callable[[str], None]] = None,
         retry_state: Optional[Any] = None,
-        **kwargs
+        **kwargs,
     ) -> Tuple[str, Any]:
 
         # Check for mock exceptions
-        if hasattr(self, 'mock_exceptions'):
+        if hasattr(self, "mock_exceptions"):
             for k, v in self.mock_exceptions.items():
                 if k in (model_name or "") or k in (prompt or ""):
                     raise v
 
-        self.call_history.append({
-            "method": "generate_text",
-            "model_name": model_name,
-            "prompt": prompt,
-            "system_instruction": system_instruction,
-            "temp": temp
-        })
+        self.call_history.append(
+            {
+                "method": "generate_text",
+                "model_name": model_name,
+                "prompt": prompt,
+                "system_instruction": system_instruction,
+                "temp": temp,
+            }
+        )
 
         res = self.default_text_response
         for k, v in self.mock_text_responses.items():
@@ -99,6 +104,7 @@ class MockGeminiApiClient:
 
         if stream_callback:
             import inspect
+
             if inspect.iscoroutinefunction(stream_callback):
                 await stream_callback(res)
             else:
@@ -129,7 +135,10 @@ class MockModels:
         prompt = contents[0] if isinstance(contents, list) else contents
         is_json = False
         if config:
-            is_json = getattr(config, "response_mime_type", None) == "application/json" or getattr(config, "response_schema", None) is not None
+            is_json = (
+                getattr(config, "response_mime_type", None) == "application/json"
+                or getattr(config, "response_schema", None) is not None
+            )
 
         class MockUsage:
             def __init__(self):
@@ -151,12 +160,14 @@ class MockModels:
                     break
             text = res
 
-        self.client.call_history.append({
-            "method": "generate_json" if is_json else "generate_text",
-            "model_name": model,
-            "prompt": prompt,
-            "config": config
-        })
+        self.client.call_history.append(
+            {
+                "method": "generate_json" if is_json else "generate_text",
+                "model_name": model,
+                "prompt": prompt,
+                "config": config,
+            }
+        )
 
         return MockResponse(text, MockUsage())
 
@@ -165,17 +176,21 @@ class MockModels:
 
     async def generate_content_stream_async(self, model: str, contents: Any, config: Any = None):
         res = self.generate_content(model, contents, config)
+
         class AsyncStream:
             def __init__(self, item):
                 self.item = item
                 self.done = False
+
             def __aiter__(self):
                 return self
+
             async def __anext__(self):
                 if self.done:
                     raise StopAsyncIteration
                 self.done = True
                 return self.item
+
         return AsyncStream(res)
 
     def generate_content_stream(self, model: str, contents: Any, config: Any = None):
@@ -199,7 +214,7 @@ class LLMGenerateResultMockProxy:
                 system_instruction=request.system_instruction,
                 response_schema=request.response_schema,
                 temp=request.temp,
-                **kwargs
+                **kwargs,
             )
         else:
             res, text, usage = await self.mock_llm.generate_json(*args, **kwargs)
@@ -209,16 +224,18 @@ class LLMGenerateResultMockProxy:
         if len(args) == 1 and hasattr(args[0], "prompt"):
             request = args[0]
             text, usage = await self.mock_llm.generate_text(
-                model_name=getattr(request, "model_name", None) or getattr(request, "purpose", "writing"),
+                model_name=getattr(request, "model_name", None)
+                or getattr(request, "purpose", "writing"),
                 prompt=request.prompt,
                 system_instruction=request.system_instruction,
                 temp=getattr(request, "temp", 0.7),
-                **kwargs
+                **kwargs,
             )
         else:
             purpose = kwargs.pop("purpose", None)
             if purpose and "model_name" not in kwargs:
                 from src.llm.model_router import select_model
+
                 kwargs["model_name"] = select_model(purpose)
             text, usage = await self.mock_llm.generate_text(*args, **kwargs)
         return GenerateResult(success=True, story_content=text)

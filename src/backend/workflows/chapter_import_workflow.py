@@ -7,6 +7,7 @@ from .base_workflow import BaseWorkflow
 
 class ChapterImportWorkflow(BaseWorkflow):
     """本文インポートワークフロー"""
+
     async def execute(self, reporter: Optional[StatusReporter] = None, **kwargs) -> Dict[str, Any]:
         book_id = kwargs["book_id"]
         ep_num = kwargs["ep_num"]

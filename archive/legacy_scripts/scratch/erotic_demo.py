@@ -43,18 +43,14 @@ async def main():
         "scene_setting": "戦いの夜、傷を負ったセシルを手当てする二人だけの静かな天幕の中。",
         "plot": {
             "title": "天幕の中の温もり",
-            "summary": "冷え切った夜、天幕の中で傷の手当てをするうちに、二人の距離が急接近する。"
-        }
+            "summary": "冷え切った夜、天幕の中で傷の手当てをするうちに、二人の距離が急接近する。",
+        },
     }
 
     print("\n[INFO] 「官能A」を使ってエピソードの執筆を開始します...")
     try:
         # 執筆開始
-        result = await agent.write_episode(
-            book_id=999,
-            ep_num=1,
-            context=context
-        )
+        result = await agent.write_episode(book_id=999, ep_num=1, context=context)
 
         print("\n==================================================")
         print("🎉 執筆完了！生成されたテキスト:")
@@ -64,6 +60,7 @@ async def main():
 
         # 伏字フィルタもテスト適用してみる
         from formatters.erotic_censor import apply_censorship
+
         print("\n📱 出力プラットフォーム (カクヨム恋愛向け) での伏字フィルタ後:")
         print("--------------------------------------------------\n")
         censored = apply_censorship(result, "kakuyomu_romance")
@@ -73,7 +70,9 @@ async def main():
     except Exception as e:
         print(f"\n🚨 エラー発生: {e}")
         import traceback
+
         traceback.print_exc()
+
 
 if __name__ == "__main__":
     asyncio.run(main())

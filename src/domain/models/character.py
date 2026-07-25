@@ -12,6 +12,7 @@ class Character(BaseModel):
     Character ドメインエンティティ。
     登場人物の属性と役割を保持する。
     """
+
     id: CharacterId
     book_id: BookId
     name: str

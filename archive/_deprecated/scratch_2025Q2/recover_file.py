@@ -25,4 +25,3 @@ with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
                 out.write("\n".join(cleaned_lines))
             print("Successfully recovered line 136 content to scratch/recovered_engine_prompts.py")
             break
-

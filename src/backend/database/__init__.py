@@ -25,5 +25,3 @@ from .core import (
 )
 from .repository import DataRepository
 from .uow import UnitOfWork
-
-

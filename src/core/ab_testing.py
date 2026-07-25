@@ -5,18 +5,22 @@ from config.project_context import ProjectContext
 
 logger = logging.getLogger(__name__)
 
+
 class RuleABTester:
     """
     ルール変更の影響評価（A/Bテスト）を自動化するモジュール。
     指定されたキーワードを含むテストテキストに対して、
     ルール適用前（A）と適用後（B）のテキストを生成・比較評価します。
     """
+
     def __init__(self, engine: Any):
         self.engine = engine
 
     async def run_rule_ab_test(self, target_word: str, instruction: str) -> Dict[str, Any]:
         # 1. テスト用の文脈/段落の生成 (またはデフォルトのサンプル文脈)
-        sample_context = "彼はその光景を見て驚愕した。あまりの出来事に、言葉を失って立ち尽くすしかなかった。"
+        sample_context = (
+            "彼はその光景を見て驚愕した。あまりの出来事に、言葉を失って立ち尽くすしかなかった。"
+        )
         if target_word.lower() not in sample_context:
             sample_context = f"敵の軍勢が一瞬で城壁を蹂躙した。人々は絶望し、静寂が広がった。その圧倒的な光景に、誰もが驚愕し、あるいは歓喜の声をあげた。キーワード: {target_word}"
 
@@ -36,7 +40,9 @@ class RuleABTester:
 
         text_b = sample_context
         try:
-            res_b = await self.engine._generate_text(ProjectContext.get_setting("model_lightweight"), prompt_b)
+            res_b = await self.engine._generate_text(
+                ProjectContext.get_setting("model_lightweight"), prompt_b
+            )
             if res_b.success and res_b.story_content:
                 text_b = res_b.story_content.strip()
         except Exception as e:
@@ -57,22 +63,27 @@ class RuleABTester:
             f"■ 段落B:\n{text_b}\n\n"
             f"【出力フォーマット（厳密に以下のJSON形式で返してください。他のテキストは含めないでください）】:\n"
             f"{{\n"
-            f"  \"score_a\": 70,\n"
-            f"  \"score_b\": 90,\n"
-            f"  \"winner\": \"B\",\n"
-            f"  \"rationale\": \"段落Bは抽象語を使わず、具体的な情景や生理反応で表現されており、描写の具体性が劇的に向上しているため。\"\n"
+            f'  "score_a": 70,\n'
+            f'  "score_b": 90,\n'
+            f'  "winner": "B",\n'
+            f'  "rationale": "段落Bは抽象語を使わず、具体的な情景や生理反応で表現されており、描写の具体性が劇的に向上しているため。"\n'
             f"}}"
         )
 
         try:
             from pydantic import BaseModel, Field
+
             class ABEvalSchema(BaseModel):
                 score_a: int = Field(description="段落Aのスコア (0-100)")
                 score_b: int = Field(description="段落Bのスコア (0-100)")
                 winner: str = Field(description="どちらが優れているか ('A' または 'B')")
                 rationale: str = Field(description="評価の理由")
 
-            res_eval = await self.engine.llm.generate_json(ProjectContext.get_setting("model_planning"), eval_prompt, response_schema=ABEvalSchema)
+            res_eval = await self.engine.llm.generate_json(
+                ProjectContext.get_setting("model_planning"),
+                eval_prompt,
+                response_schema=ABEvalSchema,
+            )
             if res_eval.success and res_eval.metadata:
                 eval_data = res_eval.metadata
                 return {
@@ -81,7 +92,7 @@ class RuleABTester:
                     "score_a": eval_data.get("score_a", 50),
                     "score_b": eval_data.get("score_b", 50),
                     "winner": eval_data.get("winner", "Equal"),
-                    "rationale": eval_data.get("rationale", "")
+                    "rationale": eval_data.get("rationale", ""),
                 }
         except Exception as e:
             logger.error(f"Error during A/B test evaluation: {e}")
@@ -93,5 +104,5 @@ class RuleABTester:
             "score_a": 50,
             "score_b": 50,
             "winner": "Equal",
-            "rationale": "評価中にエラーが発生しました。"
+            "rationale": "評価中にエラーが発生しました。",
         }

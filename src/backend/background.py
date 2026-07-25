@@ -2,6 +2,7 @@
 background.py - バックグラウンド処理・進捗管理モジュール
 スレッドセーフな進捗状態 (ProgressState) と DB 保存処理を定義。
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -18,13 +19,13 @@ logger = logging.getLogger(__name__)
 
 class SaveStrategy(ABC):
     @abstractmethod
-    def save(self, state: "ProgressState", state_json: str, now: str) -> None:
-        ...
+    def save(self, state: "ProgressState", state_json: str, now: str) -> None: ...
 
 
 class RedisSaveStrategy(SaveStrategy):
     def save(self, state: "ProgressState", state_json: str, now: str) -> None:
         from src.backend.redis_util import get_redis_client
+
         redis_client = get_redis_client()
         if redis_client is None:
             raise RuntimeError("Redis client is not available")
@@ -42,8 +43,16 @@ class AsyncDbSaveStrategy(SaveStrategy):
             return
         try:
             loop = asyncio.get_running_loop()
-            task = loop.create_task(state.repo.db.save_internal_state(f"task_status:{state.task_id}", state_json, now))
-            task.add_done_callback(lambda t: logger.error(f"[ProgressState] DB Save error: {t.exception()}") if not t.cancelled() and t.exception() else None)
+            task = loop.create_task(
+                state.repo.db.save_internal_state(f"task_status:{state.task_id}", state_json, now)
+            )
+            task.add_done_callback(
+                lambda t: (
+                    logger.error(f"[ProgressState] DB Save error: {t.exception()}")
+                    if not t.cancelled() and t.exception()
+                    else None
+                )
+            )
         except RuntimeError:
             raise RuntimeError("No running event loop for async DB save")
 
@@ -53,9 +62,7 @@ class SyncDbSaveStrategy(SaveStrategy):
         if state.repo is None:
             return
         try:
-            state.repo.save_internal_state_sync(
-                f"task_status:{state.task_id}", state_json
-            )
+            state.repo.save_internal_state_sync(f"task_status:{state.task_id}", state_json)
         except Exception as e:
             logger.error(f"[ProgressState] Sync DB save failed: {e}")
 
@@ -67,6 +74,7 @@ class NoOpSaveStrategy(SaveStrategy):
 
 def _select_strategy(state: "ProgressState") -> SaveStrategy:
     from src.backend.redis_util import get_redis_client
+
     redis_client = get_redis_client()
     if redis_client is not None:
         return RedisSaveStrategy()
@@ -84,29 +92,30 @@ def _select_strategy(state: "ProgressState") -> SaveStrategy:
 # ==========================================
 class ProgressState:
     """UIとバックグラウンド処理を繋ぐスレッド安全な進捗状態"""
+
     def __init__(
         self,
         is_running: bool = False,
         task_id: Optional[str] = None,
         repo: Optional[Any] = None,
-        skip_initial_save: bool = False
+        skip_initial_save: bool = False,
     ):
-        self.is_running    = is_running
-        self.task_id       = task_id or f"task_{int(time.time())}"
-        self.repo          = repo
-        self.current_step  = 0
-        self.total_steps   = 0
-        self.message       = "準備中..."
-        self.sub_message   = ""
+        self.is_running = is_running
+        self.task_id = task_id or f"task_{int(time.time())}"
+        self.repo = repo
+        self.current_step = 0
+        self.total_steps = 0
+        self.message = "準備中..."
+        self.sub_message = ""
         self.streaming_text = ""
-        self.logs          = []
-        self.error         = None
-        self.result_data   = None
-        self.start_time    = time.time()
-        self.last_updated  = time.time()
-        self._stop_event   = threading.Event()
+        self.logs = []
+        self.error = None
+        self.result_data = None
+        self.start_time = time.time()
+        self.last_updated = time.time()
+        self._stop_event = threading.Event()
         # スレッド間でのトークン受け渡し用
-        self.token_usage   = {"prompt": 0, "completion": 0, "calls": 0}
+        self.token_usage = {"prompt": 0, "completion": 0, "calls": 0}
         self._save_strategy = _select_strategy(self)
 
         if not skip_initial_save:
@@ -128,12 +137,14 @@ class ProgressState:
         if not hasattr(self, "_last_stop_check") or now - self._last_stop_check > 1.5:
             self._last_stop_check = now
             from src.backend.redis_util import get_redis_client
+
             redis_client = get_redis_client()
             if redis_client:
                 try:
                     val = redis_client.get(f"task_status:{self.task_id}")
                     if val:
                         import json
+
                         state_dict = json.loads(val)
                         if not state_dict.get("is_running", True):
                             self._stop_event.set()
@@ -158,7 +169,7 @@ class ProgressState:
             "result_data": self.result_data,
             "token_usage": self.token_usage,
             "start_time": self.start_time,
-            "last_updated": self.last_updated
+            "last_updated": self.last_updated,
         }
 
         class StateEncoder(json.JSONEncoder):
@@ -188,7 +199,7 @@ class ProgressState:
         clean_full_msg = full_msg.strip()
         if not self.logs or self.logs[-1].split("] ", 1)[-1].strip() != clean_full_msg:
             self.logs.append(f"[{time.strftime('%H:%M:%S')}] {full_msg}")
-        self.message     = message
+        self.message = message
         self.sub_message = sub_message
         if step is not None:
             self.current_step = step
@@ -209,6 +220,7 @@ class BackgroundReporter:
     def __init__(self, state: ProgressState):
         self.state = state
         from src.core.observability import get_structured_logger
+
         self.logger = get_structured_logger("BackgroundReporter")
 
     def report(self, message: str, level: str = "info") -> None:
@@ -239,7 +251,11 @@ class BackgroundReporter:
 
     def report_exception(self, e: Exception, context: str = "") -> None:
         """例外をキャッチしてエラーとして報告する"""
-        error_msg = f"{context} - {type(e).__name__}: {str(e)}" if context else f"{type(e).__name__}: {str(e)}"
+        error_msg = (
+            f"{context} - {type(e).__name__}: {str(e)}"
+            if context
+            else f"{type(e).__name__}: {str(e)}"
+        )
         self.logger.exception(f"Unhandled exception in background task: {error_msg}")
         self.state.update(message="🚨 エラーが発生しました", error=error_msg)
 
@@ -279,5 +295,9 @@ class StatusReporter:
 
     def report_exception(self, e: Exception, context: str = "") -> None:
         """例外をキャッチしてエラーとして報告する。"""
-        error_msg = f"{context} - {type(e).__name__}: {str(e)}" if context else f"{type(e).__name__}: {str(e)}"
+        error_msg = (
+            f"{context} - {type(e).__name__}: {str(e)}"
+            if context
+            else f"{type(e).__name__}: {str(e)}"
+        )
         self.report(error_msg, level="error")

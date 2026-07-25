@@ -3,6 +3,7 @@ engine.py - 覇権AIエンジンコアモジュール
 Gemini API との対話、プロット生成、本文執筆の全ロジックを集約。
 UltimateHegemonyEngine が全機能を統合する。
 """
+
 from __future__ import annotations
 
 import logging
@@ -39,7 +40,7 @@ class UltimateHegemonyEngine:
         plot_agent,
         style_rag,
         llm,
-        cooldown
+        cooldown,
     ):
         self.api_key = api_key
         self.planner = bible_agent
@@ -67,10 +68,7 @@ class UltimateHegemonyEngine:
         self.client = None
         self.current_ep_num = 0
 
-
-
     async def sync_bible(self, book_id: int, reporter=None):
-
         """
         Bibleのライフサイクル同期（承認済み設定のマージ -> 最適化 -> 整合性監査）を実行する。
         """
@@ -82,7 +80,13 @@ class UltimateHegemonyEngine:
         """
         await self.repo.resolve_pending_setting(setting_id, status)
 
-    async def determine_target_tension(self, book_id: int, ep_num: int, genre: str, story_type: Optional[str] = None) -> float:
+    async def determine_target_tension(
+        self, book_id: int, ep_num: int, genre: str, story_type: Optional[str] = None
+    ) -> float:
+        import logging
+
+        log = logging.getLogger("debug.engine")
+        log.debug(f"determine_target_tension called: book_id={book_id}, ep_num={ep_num}")
         """
         現在の進行度とジャンルに基づき、このエピソードが到達すべき目標Tension値を計算し、DBに保存する。
         """
@@ -104,7 +108,9 @@ class UltimateHegemonyEngine:
 
         return target_val
 
-    async def validate_tension_deviation(self, ep_num: int, generated_tension: float, book_id: int, tolerance: float = 0.2) -> Tuple[bool, float]:
+    async def validate_tension_deviation(
+        self, ep_num: int, generated_tension: float, book_id: int, tolerance: float = 0.2
+    ) -> Tuple[bool, float]:
         """
         生成されたtension値が目標値から許容範囲内にあるか検証する。
         returns: (is_valid, deviation)
@@ -119,4 +125,3 @@ class UltimateHegemonyEngine:
 
         is_valid = deviation <= tolerance
         return is_valid, deviation
-

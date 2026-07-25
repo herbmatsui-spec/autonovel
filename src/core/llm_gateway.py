@@ -19,13 +19,17 @@ from src.services.retry_decorator import RetryState, with_llm_retry
 
 logger = StructuredLogger(__name__)
 
+
 def create_genai_client(api_key: str):
     """Gemini API クライアントを作成する"""
     from google import genai
+
     return genai.Client(api_key=api_key)
+
 
 class LLMProviderFactory:
     """LLMプロバイダの抽象化"""
+
     def __init__(self, genai_client, cooldown):
         self.genai_client = genai_client
         self.cooldown = cooldown
@@ -54,19 +58,22 @@ class LLMProviderFactory:
             providers.append("gemini")
         try:
             import openai  # noqa: F401
+
             providers.append("openai")
         except ImportError:
             pass
         return providers
 
+
 class SemanticCacheManager:
     """意味的キャッシュマネージャ"""
+
     def __init__(self, vector_store=None):
         self.vector_store = vector_store
 
     def get(self, key: str):
         try:
-            if self.vector_store and hasattr(self.vector_store, 'get'):
+            if self.vector_store and hasattr(self.vector_store, "get"):
                 return self.vector_store.get(key)
             return None
         except Exception as e:
@@ -75,13 +82,15 @@ class SemanticCacheManager:
 
     def set(self, key: str, value: Any, ttl: int = 3600):
         try:
-            if self.vector_store and hasattr(self.vector_store, 'set'):
+            if self.vector_store and hasattr(self.vector_store, "set"):
                 self.vector_store.set(key, value, ttl)
         except Exception as e:
             logger.warning(f"Cache set failed for key={key}: {e}")
 
+
 class LLMGenerateResultProxy:
     """LLM生成結果のプロキシ"""
+
     def __init__(self, llm_factory=None, factory=None):
         self.llm_factory = llm_factory or factory
 
@@ -91,11 +100,14 @@ class LLMGenerateResultProxy:
     @staticmethod
     def _normalize_response(response: Any) -> Any:
         class _Response:
-            def __init__(self, success: bool, content: Any = None, metadata: Any = None, usage: Any = None):
+            def __init__(
+                self, success: bool, content: Any = None, metadata: Any = None, usage: Any = None
+            ):
                 self.success = success
                 self.content = content
                 self.metadata = metadata
                 self.usage = usage
+
         if isinstance(response, tuple):
             if len(response) == 2:
                 content, usage = response
@@ -118,10 +130,10 @@ class LLMGenerateResultProxy:
         if args and not isinstance(args[0], str):
             request = args[0]
             is_request_obj = True
-        elif 'request' in kwargs:
-            request = kwargs['request']
+        elif "request" in kwargs:
+            request = kwargs["request"]
             is_request_obj = True
-        
+
         if is_request_obj:
             provider = self.get_client(request.model_name)
             response = await provider.generate_json(
@@ -129,7 +141,7 @@ class LLMGenerateResultProxy:
                 prompt=request.prompt,
                 response_schema=request.response_schema,
                 system_instruction=request.system_instruction,
-                temp=request.temp
+                temp=request.temp,
             )
             response = self._normalize_response(response)
             return GenerateResult(
@@ -137,17 +149,22 @@ class LLMGenerateResultProxy:
                 metadata=response.metadata,
                 story_content=response.content,
                 token_usage={
-                    "prompt": LLMGenerateResultProxy._usage_metric(response.usage, "prompt_tokens", 0),
-                    "completion": LLMGenerateResultProxy._usage_metric(response.usage, "completion_tokens", 0),
+                    "prompt": LLMGenerateResultProxy._usage_metric(
+                        response.usage, "prompt_tokens", 0
+                    ),
+                    "completion": LLMGenerateResultProxy._usage_metric(
+                        response.usage, "completion_tokens", 0
+                    ),
                     "calls": 1,
                 },
             )
         else:
             from src.llm.model_router import resolve_model
-            purpose = args[0] if len(args) > 0 else kwargs.get('purpose')
-            prompt = args[1] if len(args) > 1 else kwargs.get('prompt')
-            response_schema = args[2] if len(args) > 2 else kwargs.get('response_schema')
-            system_instruction = args[3] if len(args) > 3 else kwargs.get('system_instruction')
+
+            purpose = args[0] if len(args) > 0 else kwargs.get("purpose")
+            prompt = args[1] if len(args) > 1 else kwargs.get("prompt")
+            response_schema = args[2] if len(args) > 2 else kwargs.get("response_schema")
+            system_instruction = args[3] if len(args) > 3 else kwargs.get("system_instruction")
             model_name = resolve_model(purpose)
 
             provider = self.get_client(model_name)
@@ -156,7 +173,7 @@ class LLMGenerateResultProxy:
                 prompt=prompt,
                 response_schema=response_schema,
                 system_instruction=system_instruction,
-                temp=kwargs.get('temp', 0.7)
+                temp=kwargs.get("temp", 0.7),
             )
             response = self._normalize_response(response)
             return GenerateResult(
@@ -164,8 +181,12 @@ class LLMGenerateResultProxy:
                 metadata=response.metadata,
                 story_content=response.content,
                 token_usage={
-                    "prompt": LLMGenerateResultProxy._usage_metric(response.usage, "prompt_tokens", 0),
-                    "completion": LLMGenerateResultProxy._usage_metric(response.usage, "completion_tokens", 0),
+                    "prompt": LLMGenerateResultProxy._usage_metric(
+                        response.usage, "prompt_tokens", 0
+                    ),
+                    "completion": LLMGenerateResultProxy._usage_metric(
+                        response.usage, "completion_tokens", 0
+                    ),
                     "calls": 1,
                 },
             )
@@ -175,17 +196,17 @@ class LLMGenerateResultProxy:
         if args and not isinstance(args[0], str):
             request = args[0]
             is_request_obj = True
-        elif 'request' in kwargs:
-            request = kwargs['request']
+        elif "request" in kwargs:
+            request = kwargs["request"]
             is_request_obj = True
-            
+
         if is_request_obj:
             provider = self.get_client(request.model_name)
             response = await provider.generate_text(
                 model_name=request.model_name,
                 prompt=request.prompt,
                 system_instruction=request.system_instruction,
-                temp=request.temp
+                temp=request.temp,
             )
             response = self._normalize_response(response)
             return GenerateResult(
@@ -193,16 +214,21 @@ class LLMGenerateResultProxy:
                 metadata=getattr(response, "metadata", None),
                 story_content=response.content,
                 token_usage={
-                    "prompt": LLMGenerateResultProxy._usage_metric(response.usage, "prompt_tokens", 0),
-                    "completion": LLMGenerateResultProxy._usage_metric(response.usage, "completion_tokens", 0),
+                    "prompt": LLMGenerateResultProxy._usage_metric(
+                        response.usage, "prompt_tokens", 0
+                    ),
+                    "completion": LLMGenerateResultProxy._usage_metric(
+                        response.usage, "completion_tokens", 0
+                    ),
                     "calls": 1,
                 },
             )
         else:
             from src.llm.model_router import select_model
-            purpose = args[0] if len(args) > 0 else kwargs.get('purpose')
-            prompt = args[1] if len(args) > 1 else kwargs.get('prompt')
-            system_instruction = args[2] if len(args) > 2 else kwargs.get('system_instruction')
+
+            purpose = args[0] if len(args) > 0 else kwargs.get("purpose")
+            prompt = args[1] if len(args) > 1 else kwargs.get("prompt")
+            system_instruction = args[2] if len(args) > 2 else kwargs.get("system_instruction")
             model_name = select_model(purpose)
 
             provider = self.get_client(model_name)
@@ -210,7 +236,7 @@ class LLMGenerateResultProxy:
                 model_name=model_name,
                 prompt=prompt,
                 system_instruction=system_instruction,
-                temp=kwargs.get('temp', 0.7)
+                temp=kwargs.get("temp", 0.7),
             )
             response = self._normalize_response(response)
             return GenerateResult(
@@ -218,8 +244,12 @@ class LLMGenerateResultProxy:
                 metadata=getattr(response, "metadata", None),
                 story_content=response.content,
                 token_usage={
-                    "prompt": LLMGenerateResultProxy._usage_metric(response.usage, "prompt_tokens", 0),
-                    "completion": LLMGenerateResultProxy._usage_metric(response.usage, "completion_tokens", 0),
+                    "prompt": LLMGenerateResultProxy._usage_metric(
+                        response.usage, "prompt_tokens", 0
+                    ),
+                    "completion": LLMGenerateResultProxy._usage_metric(
+                        response.usage, "completion_tokens", 0
+                    ),
                     "calls": 1,
                 },
             )
@@ -228,11 +258,13 @@ class LLMGenerateResultProxy:
         logger.debug("LLMGenerateResultProxy.generate() called - returning empty placeholder")
         return {}, "", None
 
+
 class GeminiApiClient:
     """
     Google GenAI SDKとの低レベル通信を担当。
     リトライ、指数バックオフ、温度減衰、エラーハンドリングを集約。
     """
+
     def __init__(self, client: genai.Client, cooldown: AdaptiveCooldown):
         self.client = client
         self.cooldown = cooldown
@@ -249,7 +281,7 @@ class GeminiApiClient:
         max_retries: int = 5,
         stream_callback: Optional[Callable[[str], None]] = None,
         retry_state: Optional[RetryState] = None,
-        nsfw_mode: bool = False
+        nsfw_mode: bool = False,
     ) -> Tuple[Dict[str, Any], str, Any]:
         # リトライ状態から現在のパラメータを取得
         current_temp = retry_state.temp
@@ -269,7 +301,14 @@ class GeminiApiClient:
         usage = None
 
         for mode in schema_modes:
-            config = self.build_config_for_mode(system_instruction, current_temp, attempt, response_schema, mode, nsfw_mode=nsfw_mode)
+            config = self.build_config_for_mode(
+                system_instruction,
+                current_temp,
+                attempt,
+                response_schema,
+                mode,
+                nsfw_mode=nsfw_mode,
+            )
 
             # プロンプト構築（スキーマ要求とエラーフィードバックの注入）
             full_prompt = prompt
@@ -283,8 +322,12 @@ class GeminiApiClient:
                     full_prompt += f"\n\n【出力スキーマ指示】\n以下のJSONスキーマ構造に完全に従って、JSONオブジェクトのみを出力してください。余計なマークダウンや説明は一切不要です。\n```json\n{schema_json}\n```"
                 elif hasattr(response_schema, "model_fields"):
                     fields = list(response_schema.model_fields.keys())
-                    full_prompt += f"\n\n※重要: JSONには以下のキーを必ず含めてください: {', '.join(fields)}"
-                full_prompt += "\n\nCRITICAL: Output MUST be valid JSON ONLY. Start with '{' and end with '}'."
+                    full_prompt += (
+                        f"\n\n※重要: JSONには以下のキーを必ず含めてください: {', '.join(fields)}"
+                    )
+                full_prompt += (
+                    "\n\nCRITICAL: Output MUST be valid JSON ONLY. Start with '{' and end with '}'."
+                )
 
             full_text = ""
             usage = None
@@ -302,15 +345,22 @@ class GeminiApiClient:
                         if chunk.usage_metadata:
                             usage = chunk.usage_metadata
                 else:
+
                     def _call():
                         # 404 NOT_FOUND 回避のため、モデル名に 'models/' プレフィックスが付いていない場合は付与する
-                        model_with_prefix = current_model if current_model.startswith('models/') else f'models/{current_model}'
+                        model_with_prefix = (
+                            current_model
+                            if current_model.startswith("models/")
+                            else f"models/{current_model}"
+                        )
                         return self.client.models.generate_content(
                             model=model_with_prefix, contents=[full_prompt], config=config
                         )
+
                     try:
                         from src.core.async_utils import safe_timeout
                         from src.core.executor_manager import executor_manager
+
                         async with safe_timeout(120.0):
                             response = await executor_manager.run_io(_call)
                     except asyncio.TimeoutError as e:
@@ -319,16 +369,28 @@ class GeminiApiClient:
                         raise ValueError("API応答が空です。")
 
                     full_text = response.text
-                    usage = getattr(response, 'usage_metadata', None)
+                    usage = getattr(response, "usage_metadata", None)
 
                 # 成功したらループを抜け出す
                 last_error = None
                 break
             except Exception as e:
                 err_msg = str(e).lower()
-                is_schema_error = any(x in err_msg for x in ["schema", "invalid argument", "bad request", "400", "properties", "additionalproperties"])
+                is_schema_error = any(
+                    x in err_msg
+                    for x in [
+                        "schema",
+                        "invalid argument",
+                        "bad request",
+                        "400",
+                        "properties",
+                        "additionalproperties",
+                    ]
+                )
                 if is_schema_error and mode != "prompt_fallback":
-                    logger.warning(f"Gemini API schema error with mode '{mode}' (attempt={attempt}): {e}. Falling back to next schema mode.")
+                    logger.warning(
+                        f"Gemini API schema error with mode '{mode}' (attempt={attempt}): {e}. Falling back to next schema mode."
+                    )
                     last_error = e
                     continue
                 else:
@@ -344,7 +406,9 @@ class GeminiApiClient:
             safe_model_validate(response_schema, metadata)
 
         duration = time.time() - start_time
-        logger.info(f"✅ API Success: model={current_model}, len={len(prompt)}, dur={duration:.2f}s, parallel={self._active_requests}")
+        logger.info(
+            f"✅ API Success: model={current_model}, len={len(prompt)}, dur={duration:.2f}s, parallel={self._active_requests}"
+        )
         return metadata, story, usage
 
     @with_llm_retry()
@@ -357,13 +421,20 @@ class GeminiApiClient:
         max_retries: int = 5,
         stream_callback: Optional[Callable[[str], None]] = None,
         retry_state: Optional[RetryState] = None,
-        nsfw_mode: bool = False
+        nsfw_mode: bool = False,
     ) -> Tuple[str, Any]:
         current_temp = retry_state.temp
         current_model = retry_state.model_name
 
         start_time = time.time()
-        config = self.build_config_for_mode(system_instruction, current_temp, retry_state.attempt, None, "native", nsfw_mode=nsfw_mode)
+        config = self.build_config_for_mode(
+            system_instruction,
+            current_temp,
+            retry_state.attempt,
+            None,
+            "native",
+            nsfw_mode=nsfw_mode,
+        )
 
         try:
             from src.core.async_utils import safe_timeout
@@ -376,7 +447,11 @@ class GeminiApiClient:
                     collected: List[str] = []
                     last_usage = None
                     # 404 NOT_FOUND 回避のため、モデル名に 'models/' プレフィックスが付いていない場合は付与する
-                    model_with_prefix = current_model if current_model.startswith('models/') else f'models/{current_model}'
+                    model_with_prefix = (
+                        current_model
+                        if current_model.startswith("models/")
+                        else f"models/{current_model}"
+                    )
                     for chunk in self.client.models.generate_content_stream(
                         model=model_with_prefix,
                         contents=[prompt],
@@ -395,9 +470,14 @@ class GeminiApiClient:
                 async with safe_timeout(180.0):
                     full_text, usage = await asyncio.to_thread(_run_stream)
             else:
+
                 def _run_once():
                     # 404 NOT_FOUND 回避のため、モデル名に 'models/' プレフィックスが付いていない場合は付与する
-                    model_with_prefix = current_model if current_model.startswith('models/') else f'models/{current_model}'
+                    model_with_prefix = (
+                        current_model
+                        if current_model.startswith("models/")
+                        else f"models/{current_model}"
+                    )
                     return self.client.models.generate_content(
                         model=model_with_prefix,
                         contents=prompt,
@@ -412,18 +492,38 @@ class GeminiApiClient:
             story = OutputSanitizer._clean_story(full_text)
 
             duration = time.time() - start_time
-            logger.info(f"✅ Text API Success: model={current_model}, len={len(prompt)}, dur={duration:.2f}s")
+            logger.info(
+                f"✅ Text API Success: model={current_model}, len={len(prompt)}, dur={duration:.2f}s"
+            )
             return story, usage
 
         except Exception as e:
-            if not await self._handle_error(e, current_model, retry_state.attempt, retry_state.max_retries):
+            if not await self._handle_error(
+                e, current_model, retry_state.attempt, retry_state.max_retries
+            ):
                 raise e
             raise e
 
-    def build_config(self, system_instruction: Optional[str], temp: float, attempt: int, response_schema: Any = None) -> genai_types.GenerateContentConfig:
-        return self.build_config_for_mode(system_instruction, temp, attempt, response_schema, "native")
+    def build_config(
+        self,
+        system_instruction: Optional[str],
+        temp: float,
+        attempt: int,
+        response_schema: Any = None,
+    ) -> genai_types.GenerateContentConfig:
+        return self.build_config_for_mode(
+            system_instruction, temp, attempt, response_schema, "native"
+        )
 
-    def build_config_for_mode(self, system_instruction: Optional[str], temp: float, attempt: int, response_schema: Any, mode: str, nsfw_mode: bool = False) -> genai_types.GenerateContentConfig:
+    def build_config_for_mode(
+        self,
+        system_instruction: Optional[str],
+        temp: float,
+        attempt: int,
+        response_schema: Any,
+        mode: str,
+        nsfw_mode: bool = False,
+    ) -> genai_types.GenerateContentConfig:
         # リトライごとに温度を下げることで、AIの迷走を抑える
         current_temp = max(0.0, temp - (attempt * 0.15))
 
@@ -451,22 +551,42 @@ class GeminiApiClient:
 
         return config
 
-    async def _handle_error(self, e: Exception, model_name: str, attempt: int, max_retries: int) -> bool:
+    async def _handle_error(
+        self, e: Exception, model_name: str, attempt: int, max_retries: int
+    ) -> bool:
         err_msg = str(e).lower()
-        if any(x in err_msg for x in ["429", "quota", "503", "unavailable", "500", "502", "internal", "bad gateway"]):
-            retry_match = re.search(r'retry\s+in\s+([\d\.]+)', err_msg)
+        if any(
+            x in err_msg
+            for x in ["429", "quota", "503", "unavailable", "500", "502", "internal", "bad gateway"]
+        ):
+            retry_match = re.search(r"retry\s+in\s+([\d\.]+)", err_msg)
             if retry_match:
                 base_wait = float(retry_match.group(1))
             else:
-                base_wait = 2.0 ** attempt
+                base_wait = 2.0**attempt
 
             wait_time = min(base_wait, 60.0)
-            logger.warning(f"Retrying (Attempt {attempt+1}) after {wait_time:.1f}s due to API congestion.")
+            logger.warning(
+                f"Retrying (Attempt {attempt + 1}) after {wait_time:.1f}s due to API congestion."
+            )
             self.cooldown.on_rate_limit()
             await asyncio.sleep(wait_time)
             return True
 
-        if any(x in err_msg for x in ["401", "403", "unauthorized", "invalid key", "api key", "404", "not found", "400", "bad request"]):
+        if any(
+            x in err_msg
+            for x in [
+                "401",
+                "403",
+                "unauthorized",
+                "invalid key",
+                "api key",
+                "404",
+                "not found",
+                "400",
+                "bad request",
+            ]
+        ):
             logger.error(f"❌ Unrecoverable Gemini API error: {e}")
             raise LLMUnrecoverableError(f"Unrecoverable Gemini API error: {e}") from e
 
@@ -478,6 +598,7 @@ class OpenAIApiClient:
     OpenAI互換APIエンドポイントとの通信を担当。
     (vLLM, Ollama, OpenRouter, Together AI等に対応)
     """
+
     def __init__(self, cooldown: AdaptiveCooldown):
         self.cooldown = cooldown
         self._active_requests = 0
@@ -492,12 +613,14 @@ class OpenAIApiClient:
         temp: float = 1.0,
         max_retries: int = 5,
         stream_callback: Optional[Callable[[str], None]] = None,
-        retry_state: Optional[RetryState] = None
+        retry_state: Optional[RetryState] = None,
     ) -> Tuple[Dict[str, Any], str, Any]:
         try:
             import openai
         except ImportError:
-            raise ImportError("OpenAI / Gemma integration requires the 'openai' python package. Please install it with 'pip install openai'.")
+            raise ImportError(
+                "OpenAI / Gemma integration requires the 'openai' python package. Please install it with 'pip install openai'."
+            )
 
         from config.project_context import ProjectContext
 
@@ -526,13 +649,19 @@ class OpenAIApiClient:
         messages.append({"role": "user", "content": prompt})
 
         if error_feedback:
-            messages[-1]["content"] = f"【🚨出力形式エラー報告🚨】\n前回の出力に以下の不備がありました: {error_feedback}\n\n{prompt}"
+            messages[-1]["content"] = (
+                f"【🚨出力形式エラー報告🚨】\n前回の出力に以下の不備がありました: {error_feedback}\n\n{prompt}"
+            )
 
         if response_schema and hasattr(response_schema, "model_fields"):
             fields = list(response_schema.model_fields.keys())
             if "※重要:" not in messages[-1]["content"]:
-                messages[-1]["content"] += f"\n\n※重要: JSONには以下のキーを必ず含めてください: {', '.join(fields)}"
-                messages[-1]["content"] += "\n\nCRITICAL: Output MUST be valid JSON ONLY. Start with '{' and end with '}'."
+                messages[-1]["content"] += (
+                    f"\n\n※重要: JSONには以下のキーを必ず含めてください: {', '.join(fields)}"
+                )
+                messages[-1]["content"] += (
+                    "\n\nCRITICAL: Output MUST be valid JSON ONLY. Start with '{' and end with '}'."
+                )
 
         response_format = None
         if response_schema:
@@ -545,6 +674,7 @@ class OpenAIApiClient:
         start_time = time.time()
         try:
             from src.core.async_utils import safe_timeout
+
             async with safe_timeout(120.0):
                 response = await client.chat.completions.create(
                     model=current_model,
@@ -558,12 +688,26 @@ class OpenAIApiClient:
             raise TimeoutError(f"OpenAI API timed out after 120s: {e}")
         except Exception as e:
             err_msg = str(e).lower()
-            if any(x in err_msg for x in ["401", "403", "unauthorized", "invalid key", "api key", "404", "not found", "400", "bad request"]):
+            if any(
+                x in err_msg
+                for x in [
+                    "401",
+                    "403",
+                    "unauthorized",
+                    "invalid key",
+                    "api key",
+                    "404",
+                    "not found",
+                    "400",
+                    "bad request",
+                ]
+            ):
                 logger.error(f"❌ Unrecoverable OpenAI API error: {e}")
                 raise LLMUnrecoverableError(f"Unrecoverable OpenAI API error: {e}") from e
             if any(x in err_msg for x in ["429", "quota", "too many requests"]):
                 logger.warning(f"⚠️ OpenAI Rate Limit exceeded: {e}")
                 from src.core.exceptions import LLMTemporaryError
+
                 raise LLMTemporaryError(f"OpenAI Rate Limit: {e}") from e
             raise e
 
@@ -587,5 +731,7 @@ class OpenAIApiClient:
             safe_model_validate(response_schema, metadata)
 
         self.cooldown.on_success()
-        logger.info(f"✅ OpenAI Success: model={current_model}, len={len(prompt)}, dur={duration:.2f}s")
+        logger.info(
+            f"✅ OpenAI Success: model={current_model}, len={len(prompt)}, dur={duration:.2f}s"
+        )
         return metadata, story, usage

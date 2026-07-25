@@ -1,4 +1,3 @@
-
 path = r"i:\claude2\backend\engine_prompts.py"
 with open(path, "r", encoding="utf-8") as f:
     content = f.read()
@@ -12,4 +11,3 @@ with open(path, "w", encoding="utf-8") as f:
     f.write(new_content)
 
 print("Replacement complete.")
-

@@ -1,9 +1,12 @@
 import pytest
+
 from src.core.plugin_loader import PluginLoader
 from src.core.plugin_schema import ArchetypePreset
 
 
-@pytest.mark.skip(reason="PluginLoader.get_plugin() は未実装。plugins/ ディレクトリが空のためスキップ")
+@pytest.mark.skip(
+    reason="PluginLoader.get_plugin() は未実装。plugins/ ディレクトリが空のためスキップ"
+)
 def test_archetype_visual_metadata_loading():
     """
     Phase 9: 統合テスト
@@ -35,7 +38,9 @@ def test_archetype_visual_metadata_loading():
     assert preset.trend_tag == "Web小説の王道"
 
 
-@pytest.mark.skip(reason="PluginLoader.get_plugin() は未実装。plugins/ ディレクトリが空のためスキップ")
+@pytest.mark.skip(
+    reason="PluginLoader.get_plugin() は未実装。plugins/ ディレクトリが空のためスキップ"
+)
 def test_custom_archetype_defaults():
     """
     カスタムアーキタイプなど、メタデータが空の場合にNoneまたはデフォルト値になるか確認

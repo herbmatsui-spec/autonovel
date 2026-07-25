@@ -1,19 +1,19 @@
 from fastapi import APIRouter
+
 from config.container import Container
-from src.backend.database.uow import UnitOfWork
-from src.models.api_schemas import (
-    PlanGenerationRequest,
-    PlotExpandRequest,
-    PlotExpandCandidatesRequest,
-    PlotRebuildRequest,
-    CritiqueOptimizeRequest,
-    AuditPlanRequest,
-)
-from src.backend.task_helpers import create_task as _create_task
-from src.backend.engine_helpers import get_engine as resolve_engine
-from src.core.observability import TraceContext
-from src.core.exceptions import AppError
 from src.backend.auth import validate_api_key_or_raise
+from src.backend.database.uow import UnitOfWork
+from src.backend.engine_helpers import get_engine as resolve_engine
+from src.backend.task_helpers import create_task as _create_task
+from src.core.exceptions import AppError
+from src.core.observability import TraceContext
+from src.models.api_schemas import (
+    AuditPlanRequest,
+    PlanGenerationRequest,
+    PlotExpandCandidatesRequest,
+    PlotExpandRequest,
+    PlotRebuildRequest,
+)
 
 router = APIRouter(prefix="/api/plots", tags=["plots"])
 
@@ -113,7 +113,9 @@ async def expand_plots_candidates(req: PlotExpandCandidatesRequest):
 @router.post("/rebuild")
 async def rebuild_plots(req: PlotRebuildRequest):
     validate_api_key_or_raise(req.api_key)
-    import time, json
+    import json
+    import time
+
     from src.backend.tasks import execute_service_workflow
 
     task_id = generate_task_id("plot_rebuild")

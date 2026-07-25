@@ -38,7 +38,9 @@ class EngineLLMClient:
             try:
                 loop = asyncio.get_running_loop()
             except RuntimeError:
-                return GenerateResult(success=False, error_type="LOOP_ERROR", error_message="No running event loop")
+                return GenerateResult(
+                    success=False, error_type="LOOP_ERROR", error_message="No running event loop"
+                )
 
             if not hasattr(self._local, "sems"):
                 self._local.sems = {}
@@ -49,11 +51,12 @@ class EngineLLMClient:
 
             async with self._local.sems[loop]:
                 metadata, story_content, usage = await self.ai_api.generate_json(
-                    model_name, prompt,
+                    model_name,
+                    prompt,
                     system_instruction=system_instruction,
                     response_schema=response_schema,
                     temp=temp,
-                    stream_callback=stream_callback
+                    stream_callback=stream_callback,
                 )
 
                 if expected_ep_num and metadata.get("ep_num") != expected_ep_num:
@@ -62,9 +65,9 @@ class EngineLLMClient:
                 if usage:
                     reporter_obj = getattr(stream_callback, "__self__", None)
                     self._safe_update_token_stats(
-                        getattr(usage, 'prompt_token_count', 0),
-                        getattr(usage, 'candidates_token_count', 0),
-                        reporter=reporter_obj
+                        getattr(usage, "prompt_token_count", 0),
+                        getattr(usage, "candidates_token_count", 0),
+                        reporter=reporter_obj,
                     )
 
                 return GenerateResult(success=True, metadata=metadata, story_content=story_content)
@@ -78,4 +81,3 @@ class EngineLLMClient:
 
     async def generate_text(self, *args, **kwargs):
         return await self.generate_json(*args, **kwargs)
-

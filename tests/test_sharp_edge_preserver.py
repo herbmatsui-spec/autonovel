@@ -2,6 +2,7 @@
 tests/test_sharp_edge_preserver.py
 src/backend/sharp_edge_preserver.py の単体テスト。
 """
+
 import pytest
 
 from src.backend.sharp_edge_preserver import check_edges_preserved
@@ -54,7 +55,9 @@ class TestCheckEdgesPreservedWithKeyPhrase:
     def test_key_phrase_preserved(self):
         """key_phrase が after_content に含まれる場合は保持されたと判定"""
         edges = [
-            SharpEdgeSpec(edge_type="protagonist_flaw", description="長い説明文", key_phrase="深淵で得た力")
+            SharpEdgeSpec(
+                edge_type="protagonist_flaw", description="長い説明文", key_phrase="深淵で得た力"
+            )
         ]
         after = "深淵で得た力 が彼を新たな存在として蘇らせた。"
         result = check_edges_preserved("before", after, edges)
@@ -63,7 +66,9 @@ class TestCheckEdgesPreservedWithKeyPhrase:
     def test_key_phrase_removed(self):
         """key_phrase が after_content に含まれない場合は削除されたと判定"""
         edges = [
-            SharpEdgeSpec(edge_type="protagonist_flaw", description="長い説明文", key_phrase="深淵で得た力")
+            SharpEdgeSpec(
+                edge_type="protagonist_flaw", description="長い説明文", key_phrase="深淵で得た力"
+            )
         ]
         after = "彼は新たな力を得た。"  # key_phrase なし
         result = check_edges_preserved("before", after, edges)
@@ -82,7 +87,11 @@ class TestCheckEdgesPreservedWithKeyPhrase:
     def test_key_phrase_priority_over_description(self):
         """key_phrase がある場合、description[:20] の一致は無視される"""
         edges = [
-            SharpEdgeSpec(edge_type="ending_pullback", description="結末は唐突に終わった", key_phrase="突然の幕切れ")
+            SharpEdgeSpec(
+                edge_type="ending_pullback",
+                description="結末は唐突に終わった",
+                key_phrase="突然の幕切れ",
+            )
         ]
         after = "突然の幕切れで物語が終わった"
         # key_phrase = "突然の幕切れ" は含まれる
@@ -93,7 +102,9 @@ class TestCheckEdgesPreservedWithKeyPhrase:
     def test_key_phrase_case_insensitive(self):
         """key_phrase の一致判定は大文字小文字を区別しない（ASCII）"""
         edges = [
-            SharpEdgeSpec(edge_type="protagonist_flaw", description="説明", key_phrase="Deep Hidden Power")
+            SharpEdgeSpec(
+                edge_type="protagonist_flaw", description="説明", key_phrase="Deep Hidden Power"
+            )
         ]
         after = "THE DEEP HIDDEN POWER GRANTED HIM NEW LIFE"
         result = check_edges_preserved("before", after, edges)
@@ -103,7 +114,9 @@ class TestCheckEdgesPreservedWithKeyPhrase:
     def test_key_phrase_with_whitespace(self):
         """key_phrase はtrimされてから一致判定される"""
         edges = [
-            SharpEdgeSpec(edge_type="ending_pullback", description="説明", key_phrase=" 余韻のある終わり方 ")
+            SharpEdgeSpec(
+                edge_type="ending_pullback", description="説明", key_phrase=" 余韻のある終わり方 "
+            )
         ]
         after = "before after 余韻のある終わり方"
         result = check_edges_preserved("before", after, edges)
@@ -115,20 +128,24 @@ class TestNgramSimilarity:
 
     def test_identical_text_returns_one(self):
         from src.backend.engine_utils import compute_ngram_similarity
+
         assert compute_ngram_similarity("深淵で得た力", "深淵で得た力") == 1.0
 
     def test_empty_input_returns_zero(self):
         from src.backend.engine_utils import compute_ngram_similarity
+
         assert compute_ngram_similarity("", "何か") == 0.0
         assert compute_ngram_similarity("何か", "") == 0.0
 
     def test_unrelated_text_low_score(self):
         from src.backend.engine_utils import compute_ngram_similarity
+
         score = compute_ngram_similarity("りんごが好き", "電車は速い")
         assert 0.0 <= score <= 0.2
 
     def test_partial_overlap_mid_score(self):
         from src.backend.engine_utils import compute_ngram_similarity
+
         score = compute_ngram_similarity("深淵で得た力が彼を蘇らせた", "深淵で得た力が新たな存在に")
         assert 0.3 <= score <= 1.0
 
@@ -139,9 +156,12 @@ class TestSemanticEdgePreserver:
     @pytest.mark.asyncio
     async def test_string_only_mode_returns_lost_list(self):
         from src.backend.sharp_edge_preserver import SemanticEdgePreserver
+
         preserver = SemanticEdgePreserver(semantic_cache=None, use_semantic=False)
         edges = [
-            SharpEdgeSpec(edge_type="protagonist_flaw", description="説明", key_phrase="深淵で得た力")
+            SharpEdgeSpec(
+                edge_type="protagonist_flaw", description="説明", key_phrase="深淵で得た力"
+            )
         ]
         after = "深淵で得た力 が彼を新たな存在として蘇らせた。"
         semantic_lost, string_lost = await preserver.check_edges_preserved("before", after, edges)
@@ -154,9 +174,13 @@ class TestSemanticEdgePreserver:
         from src.backend.sharp_edge_preserver import SemanticEdgePreserver
 
         # semantic_cache なしだが use_ngram_fallback=True の場合
-        preserver = SemanticEdgePreserver(semantic_cache=None, use_semantic=True, use_ngram_fallback=True)
+        preserver = SemanticEdgePreserver(
+            semantic_cache=None, use_semantic=True, use_ngram_fallback=True
+        )
         edges = [
-            SharpEdgeSpec(edge_type="ending_pullback", description="説明", key_phrase="余韻のある終わり方")
+            SharpEdgeSpec(
+                edge_type="ending_pullback", description="説明", key_phrase="余韻のある終わり方"
+            )
         ]
         # key_phrase を含む本文 → N-gram 類似度が高く、保持と判定
         after = "この物語は余韻のある終わり方で読者の心に残る。"
@@ -174,9 +198,13 @@ class TestSemanticEdgePreserver:
                 # 字面は一致しないが、意味的には保持されていると判定
                 return 0.9
 
-        preserver = SemanticEdgePreserver(semantic_cache=FakeCache(), use_semantic=True, similarity_threshold=0.75)
+        preserver = SemanticEdgePreserver(
+            semantic_cache=FakeCache(), use_semantic=True, similarity_threshold=0.75
+        )
         edges = [
-            SharpEdgeSpec(edge_type="protagonist_flaw", description="説明", key_phrase="深淵で得た力")
+            SharpEdgeSpec(
+                edge_type="protagonist_flaw", description="説明", key_phrase="深淵で得た力"
+            )
         ]
         # 本文には key_phrase を含まない（字面不一致）が意味的には保持
         after = "彼は深海から得た力によって再生した。"
@@ -195,13 +223,16 @@ class TestSemanticEdgePreserver:
                 # 意味的にも失われている
                 return 0.1
 
-        preserver = SemanticEdgePreserver(semantic_cache=FakeCache(), use_semantic=True, similarity_threshold=0.75)
+        preserver = SemanticEdgePreserver(
+            semantic_cache=FakeCache(), use_semantic=True, similarity_threshold=0.75
+        )
         edges = [
-            SharpEdgeSpec(edge_type="protagonist_flaw", description="説明", key_phrase="深淵で得た力")
+            SharpEdgeSpec(
+                edge_type="protagonist_flaw", description="説明", key_phrase="深淵で得た力"
+            )
         ]
         after = "彼は平凡な毎日を送っていた。"
         semantic_lost, string_lost = await preserver.check_edges_preserved("before", after, edges)
         # 両方で失われたと判定
         assert len(semantic_lost) == 1
         assert len(string_lost) == 1
-

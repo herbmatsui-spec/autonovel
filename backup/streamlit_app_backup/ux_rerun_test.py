@@ -4,6 +4,7 @@ ux_rerun_test.py — Rerun UX テストページ（テスト用スクリプト�
 注意: 本ファイルはテスト用途のため、st.session_state は MockJob 保持にのみ使用。
 実際のアプリコードでは UIStateStore 経由で状態管理してください。
 """
+
 from typing import Any
 
 import streamlit as st
@@ -79,4 +80,6 @@ if st.button("Reset Job"):
     UIStateStore.set_active_job(MockJob(), run_key="test_job_key")
     st.rerun()
 
-st.info("Observe: If the text area loses focus or the text disappears/flickers when the progress bar updates, the fragment is triggering a full rerun.")
+st.info(
+    "Observe: If the text area loses focus or the text disappears/flickers when the progress bar updates, the fragment is triggering a full rerun."
+)

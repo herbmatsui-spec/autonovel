@@ -9,7 +9,9 @@ from src.agents.audit import LogicalAuditor
 async def test_score_narrative_metrics():
     # Setup
     mock_repo = MagicMock()
-    mock_repo.get_latest_narrative_metrics = AsyncMock(return_value={"tension": 50, "emotional_satisfaction": 50, "mystery_density": 50})
+    mock_repo.get_latest_narrative_metrics = AsyncMock(
+        return_value={"tension": 50, "emotional_satisfaction": 50, "mystery_density": 50}
+    )
 
     mock_pm = MagicMock()
     mock_pm.build_narrative_scoring_prompt = AsyncMock(return_value="Test Prompt")
@@ -25,7 +27,9 @@ async def test_score_narrative_metrics():
         }
     }
 
-    auditor = LogicalAuditor(repo=mock_repo, pm=mock_pm, generate_json=mock_generate_json, ctx_mgr=MagicMock())
+    auditor = LogicalAuditor(
+        repo=mock_repo, pm=mock_pm, generate_json=mock_generate_json, ctx_mgr=MagicMock()
+    )
 
     result = await auditor.score_narrative_metrics(
         book_id=1,
@@ -33,7 +37,7 @@ async def test_score_narrative_metrics():
         ep_num=2,
         scene_num=1,
         scene_content="Test content",
-        context="Test context"
+        context="Test context",
     )
 
     assert isinstance(result, list)

@@ -112,4 +112,3 @@ goto IDLE
 with open(fpath, "w", encoding="cp932") as f:
     f.write(code)
 print("launch.bat has been written successfully in CP932.")
-

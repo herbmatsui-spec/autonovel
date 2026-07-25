@@ -9,11 +9,20 @@ workspace = Path(os.getcwd())
 if str(workspace) not in sys.path:
     sys.path.insert(0, str(workspace))
 
+
 def check_imports():
     print("--- 🔍 Checking Imports ---")
     modules = [
-        "config", "database", "models", "engine", "agents.planning", "agents.writing",
-        "kernels.conflict", "kernels.comfort", "kernels.connection", "kernels.enigma"
+        "config",
+        "database",
+        "models",
+        "engine",
+        "agents.planning",
+        "agents.writing",
+        "kernels.conflict",
+        "kernels.comfort",
+        "kernels.connection",
+        "kernels.enigma",
     ]
     for mod in modules:
         try:
@@ -21,6 +30,7 @@ def check_imports():
             print(f"✅ {mod}: OK")
         except Exception as e:
             print(f"❌ {mod}: FAILED ({e})")
+
 
 def check_db_schema():
     print("\n--- 🗄️ Checking DB Schema ---")
@@ -52,10 +62,12 @@ def check_db_schema():
             print(f"❌ Table '{table}': ERROR ({e})")
     conn.close()
 
+
 async def check_engine_init():
     print("\n--- ⚙️ Checking Engine Initialization ---")
     try:
         from backend.engine import UltimateHegemonyEngine
+
         # Mock API Key
         engine = UltimateHegemonyEngine(api_key="mock_key")
         print("✅ Engine Instance: OK")
@@ -76,8 +88,8 @@ async def check_engine_init():
     except Exception as e:
         print(f"❌ Engine Init: FAILED ({e})")
 
+
 if __name__ == "__main__":
     check_imports()
     check_db_schema()
     asyncio.run(check_engine_init())
-

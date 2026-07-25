@@ -1,6 +1,7 @@
 """tests/fixtures/erotic_mocks/__init__.py
 テスト用モック官能小説の読み込みヘルパー。
 """
+
 from pathlib import Path
 
 MOCKS_DIR = Path(__file__).parent

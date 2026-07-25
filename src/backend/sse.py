@@ -7,6 +7,7 @@ from src.backend.redis_util import get_redis_client
 
 logger = logging.getLogger(__name__)
 
+
 async def task_event_generator(task_id: str) -> AsyncGenerator[str, None]:
     """
     Server-Sent Events (SSE) 用のタスク進捗イベントジェネレータ。
@@ -24,10 +25,13 @@ async def task_event_generator(task_id: str) -> AsyncGenerator[str, None]:
 
                 from config.container import Container
                 from src.backend.database.models import InternalState
+
                 db = Container.db()
                 try:
                     async with db.get_session() as session:
-                        stmt = select(InternalState).where(InternalState.key == f"task_status:{task_id}")
+                        stmt = select(InternalState).where(
+                            InternalState.key == f"task_status:{task_id}"
+                        )
                         result = await session.execute(stmt)
                         row = result.scalar_one_or_none()
                         if row:
@@ -76,6 +80,7 @@ async def task_event_generator(task_id: str) -> AsyncGenerator[str, None]:
     async for event in _sqlite_polling_fallback(task_id):
         yield event
 
+
 async def _sqlite_polling_fallback(task_id: str) -> AsyncGenerator[str, None]:
     """
     Redis未接続時のデータベース（SQLite/PostgreSQL）1秒ポーリングによるフォールバック。
@@ -118,11 +123,11 @@ async def _sqlite_polling_fallback(task_id: str) -> AsyncGenerator[str, None]:
 
                         state = json.loads(val)
                         if not state.get("is_running", True):
-                            logger.info(f"[SSE] Task {task_id} completed. Closing database polling.")
+                            logger.info(
+                                f"[SSE] Task {task_id} completed. Closing database polling."
+                            )
                             break
         except Exception as e:
             logger.error(f"[SSE] Database polling error: {e}")
 
         await asyncio.sleep(1.0)
-
-

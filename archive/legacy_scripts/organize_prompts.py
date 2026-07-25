@@ -28,4 +28,3 @@ for file in files:
 
     print(f"Moving {file} to {dest_path}")
     shutil.move(source_path, dest_path)
-

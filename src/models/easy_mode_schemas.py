@@ -1,12 +1,13 @@
 from enum import Enum
-from typing import List, Optional
+from typing import List
+
 from pydantic import BaseModel, Field
 
 
 class GachaPlanType(str, Enum):
-    ROYAL = "royal"         # 王道案
-    CURVEBALL = "curveball" # 変化球案
-    DARK = "dark"           # ダーク案
+    ROYAL = "royal"  # 王道案
+    CURVEBALL = "curveball"  # 変化球案
+    DARK = "dark"  # ダーク案
 
 
 class DigestStatus(str, Enum):
@@ -32,7 +33,9 @@ class GachaRequest(BaseModel):
 
 class GachaResponse(BaseModel):
     request_id: str = Field(..., description="ガチャリクエスト全体のID")
-    plans: List[GachaPlan] = Field(..., description="生成された3つの企画案", min_length=3, max_length=3)
+    plans: List[GachaPlan] = Field(
+        ..., description="生成された3つの企画案", min_length=3, max_length=3
+    )
 
 
 class DigestRequest(BaseModel):
@@ -45,7 +48,9 @@ class DigestResponse(BaseModel):
     title: str = Field(..., description="タイトル")
     synopsis: str = Field(..., description="全体あらすじ")
     episode_1_text: str = Field(..., description="第1話の本文テキスト")
-    climax_preview_text: str = Field(..., description="クライマックス（見せ場）のプレビューテキスト")
+    climax_preview_text: str = Field(
+        ..., description="クライマックス（見せ場）のプレビューテキスト"
+    )
     status: DigestStatus = Field(..., description="生成ステータス")
 
 

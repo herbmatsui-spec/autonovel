@@ -1,14 +1,17 @@
-import os
 import pytest
+
 from src.agents.erotic_integrity import (
-    CharacterStateSnapshot, ContinuityTracker,
-    EroticIntegrityChecker, ContinuityReport
+    CharacterStateSnapshot,
+    ContinuityTracker,
+    EroticIntegrityChecker,
 )
+
 
 @pytest.fixture
 def temp_db(tmp_path):
     db_file = tmp_path / "test_continuity.db"
     return str(db_file)
+
 
 class TestCharacterStateSnapshot:
     def test_default_values(self):
@@ -20,11 +23,11 @@ class TestCharacterStateSnapshot:
 
     def test_custom_values(self):
         snap = CharacterStateSnapshot(
-            character_name="花子", episode_num=3,
-            stamina_level="exhausted", psych_state="euphoric"
+            character_name="花子", episode_num=3, stamina_level="exhausted", psych_state="euphoric"
         )
         assert snap.stamina_level == "exhausted"
         assert snap.psych_state == "euphoric"
+
 
 class TestContinuityTracker:
     def test_save_and_get(self, temp_db):
@@ -37,7 +40,9 @@ class TestContinuityTracker:
 
     def test_get_previous(self, temp_db):
         tracker = ContinuityTracker(db_path=temp_db)
-        snap = CharacterStateSnapshot(character_name="花子", episode_num=1, stamina_level="exhausted")
+        snap = CharacterStateSnapshot(
+            character_name="花子", episode_num=1, stamina_level="exhausted"
+        )
         tracker.save_snapshot(snap)
         prev = tracker.get_previous_snapshot(2, "花子")
         assert prev is not None
@@ -46,6 +51,7 @@ class TestContinuityTracker:
     def test_get_nonexistent(self, temp_db):
         tracker = ContinuityTracker(db_path=temp_db)
         assert tracker.get_snapshot(99, "存在しない") is None
+
 
 class TestStaminaChecks:
     def test_stamina_contradiction(self, temp_db):
@@ -71,6 +77,7 @@ class TestStaminaChecks:
         issues = tracker.check_stamina_continuity(2, "花子", text)
         assert len(issues) == 0
 
+
 class TestPsychChecks:
     def test_psych_contradiction(self, temp_db):
         tracker = ContinuityTracker(db_path=temp_db)
@@ -84,12 +91,12 @@ class TestPsychChecks:
         assert len(issues) > 0
         assert "心理矛盾" in issues[0]
 
+
 class TestClothingContinuity:
     def test_clothing_contradiction(self, temp_db):
         tracker = ContinuityTracker(db_path=temp_db)
         snap = CharacterStateSnapshot(
-            character_name="花子", episode_num=1,
-            clothing_state="fully_undressed"
+            character_name="花子", episode_num=1, clothing_state="fully_undressed"
         )
         tracker.save_snapshot(snap)
 
@@ -101,8 +108,7 @@ class TestClothingContinuity:
     def test_clothing_with_time_passage(self, temp_db):
         tracker = ContinuityTracker(db_path=temp_db)
         snap = CharacterStateSnapshot(
-            character_name="花子", episode_num=1,
-            clothing_state="fully_undressed"
+            character_name="花子", episode_num=1, clothing_state="fully_undressed"
         )
         tracker.save_snapshot(snap)
 
@@ -110,31 +116,29 @@ class TestClothingContinuity:
         issues = tracker.check_clothing_continuity(2, "花子", text)
         assert len(issues) == 0  # 翌朝 → 時間経過でリセット許容
 
+
 class TestIntimacyContinuity:
     def test_intimacy_regression(self, temp_db):
         tracker = ContinuityTracker(db_path=temp_db)
-        snap = CharacterStateSnapshot(
-            character_name="花子", episode_num=1,
-            intimacy_level="bonded"
-        )
+        snap = CharacterStateSnapshot(character_name="花子", episode_num=1, intimacy_level="bonded")
         tracker.save_snapshot(snap)
 
         text = "花子は初対面の見知らぬ相手のように振る舞った。他人行儀な態度だった。"
         issues = tracker.check_intimacy_regression(2, "花子", text)
         assert len(issues) > 0
 
+
 class TestLocationContinuity:
     def test_location_contradiction(self, temp_db):
         tracker = ContinuityTracker(db_path=temp_db)
-        snap = CharacterStateSnapshot(
-            character_name="花子", episode_num=1, location="indoor"
-        )
+        snap = CharacterStateSnapshot(character_name="花子", episode_num=1, location="indoor")
         tracker.save_snapshot(snap)
 
         text = "花子は外の森の中を歩いていた。空の下で鳥の声を聞いた。"
         issues = tracker.check_location_continuity(2, "花子", text)
         assert len(issues) > 0
         assert "場所矛盾" in issues[0]
+
 
 class TestIntegration:
     def test_check_all_with_continuity(self, temp_db):

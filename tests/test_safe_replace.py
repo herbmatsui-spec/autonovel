@@ -3,6 +3,7 @@ tests/test_safe_replace.py
 SafeReplacer のユニットテスト。
 二重置換問題が解消されていることを保証する。
 """
+
 from src.services.safe_replace import SafeReplacer
 
 
@@ -21,10 +22,12 @@ class TestSafeReplacer:
 
     def test_no_double_replacement(self):
         """二重置換の防止: 値が別キーと衝突しても再置換されない"""
-        replacer = SafeReplacer({
-            "抱く": "肌を重ねる",
-            "肌を重ねる": "二人の夜を過ごす",
-        })
+        replacer = SafeReplacer(
+            {
+                "抱く": "肌を重ねる",
+                "肌を重ねる": "二人の夜を過ごす",
+            }
+        )
         result = replacer.replace("彼は彼女を抱く")
         assert result == "彼は彼女を肌を重ねる"
         assert "二人の夜を過ごす" not in result
@@ -61,11 +64,13 @@ class TestSafeReplacer:
 
     def test_chain_prevention_extensive(self):
         """3段チェーンの防止"""
-        replacer = SafeReplacer({
-            "A": "B",
-            "B": "C",
-            "C": "D",
-        })
+        replacer = SafeReplacer(
+            {
+                "A": "B",
+                "B": "C",
+                "C": "D",
+            }
+        )
         assert replacer.replace("A") == "B"
         assert replacer.replace("B") == "C"
         assert replacer.replace("ABC") == "BCD"

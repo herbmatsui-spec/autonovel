@@ -18,10 +18,27 @@ _PURPOSES = set(_DEFAULTS.keys())
 # DeepSeek, Command, Gemini-via-OpenRouter 等）とみなすプレフィックス/キーワード。
 # OpenRouter のモデルIDは "anthropic/claude-3.5-sonnet" のように "/" を含む。
 _OPENAI_COMPAT_HINTS = (
-    "gpt", "claude", "llama", "mistral", "qwen", "deepseek",
-    "command", "anthropic", "openrouter", "sonar", "glm", "yi-",
-    "phi", "cohere", "meta/", "mistralai/", "google/", "openai/",
-    "anthropic/", "deepseek/", "qwen/",
+    "gpt",
+    "claude",
+    "llama",
+    "mistral",
+    "qwen",
+    "deepseek",
+    "command",
+    "anthropic",
+    "openrouter",
+    "sonar",
+    "glm",
+    "yi-",
+    "phi",
+    "cohere",
+    "meta/",
+    "mistralai/",
+    "google/",
+    "openai/",
+    "anthropic/",
+    "deepseek/",
+    "qwen/",
 )
 
 
@@ -50,6 +67,7 @@ def select_model(purpose: str = "writing") -> str:
     key = f"model_{purpose}"
     try:
         from config.project_context import get_config
+
         value = getattr(get_config(), key, None)
         if value:
             return str(value)

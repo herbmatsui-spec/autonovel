@@ -1,9 +1,9 @@
-import asyncio
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 try:
     from langgraph.graph import END, StateGraph
+
     HAS_LANGGRAPH = True
 except ImportError:
     END = None  # type: ignore
@@ -14,23 +14,24 @@ from src.backend.workflows.graph_state import WorkflowState
 
 logger = logging.getLogger(__name__)
 
+
 class PlotGraphManager:
     """
     LangGraphを用いたプロット生成オーケストレーター
     手続き的な PlotGenerationPipeline を宣言的なグラフ構造に移行
     """
+
     def __init__(self, engine):
         self.engine = engine
         self.repo = engine.repo
         self.pm = engine.pm
         self.ctx_mgr = engine.ctx_mgr
-        self.generate_json = engine.generate_json # LLM client proxy
+        self.generate_json = engine.generate_json  # LLM client proxy
         self.logic_validator = engine.logic_validator
         self.auditor = engine.auditor
         self.narrative = engine.narrative
 
         self.workflow = self._build_graph()
-
 
     def _state_to_dict(self, state):
         if hasattr(state, "model_dump"):
@@ -44,7 +45,7 @@ class PlotGraphManager:
         )
         return {
             "context_alignment": {"character_context": char_ctx, "previous_context": prev_ctx},
-            "status": "context_aligned"
+            "status": "context_aligned",
         }
 
     async def node_generate_blueprint(self, state) -> Dict[str, Any]:
@@ -52,21 +53,14 @@ class PlotGraphManager:
         prompt = f"Generate plot blueprint for book {state_dict.get('book_id')}, ep {state_dict.get('ep_num')}"
         res = await self.generate_json("gemini-3.1-flash-lite", prompt, response_schema=None)
         blueprint = res.metadata if res.success else {}
-        return {
-            "blueprint": blueprint,
-            "status": "blueprint_generated"
-        }
+        return {"blueprint": blueprint, "status": "blueprint_generated"}
 
     async def node_audit_plot(self, state) -> Dict[str, Any]:
         state_dict = self._state_to_dict(state)
         audit_result = await self.auditor.audit(state_dict.get("blueprint", {}))
         if hasattr(audit_result, "model_dump"):
             audit_result = audit_result.model_dump()
-        return {
-            "audit_results": [audit_result],
-            "is_consistent": True,
-            "status": "audit_completed"
-        }
+        return {"audit_results": [audit_result], "is_consistent": True, "status": "audit_completed"}
 
     def should_retry_blueprint(self, state) -> str:
         return "proceed"
@@ -75,10 +69,7 @@ class PlotGraphManager:
         state_dict = self._state_to_dict(state)
         blueprint = state_dict.get("blueprint", {})
         scenes = blueprint.get("scenes", [])
-        return {
-            "scenes": scenes,
-            "status": "scenes_expanded"
-        }
+        return {"scenes": scenes, "status": "scenes_expanded"}
 
     async def node_save_plot(self, state) -> Dict[str, Any]:
         state_dict = self._state_to_dict(state)
@@ -90,10 +81,7 @@ class PlotGraphManager:
             "scenes": state_dict.get("scenes", []),
         }
         await self.repo.create_or_replace_plot(plot_data)
-        return {
-            "final_plot": plot_data,
-            "status": "completed"
-        }
+        return {"final_plot": plot_data, "status": "completed"}
 
     def _build_graph(self):
         if not HAS_LANGGRAPH or StateGraph is None:
@@ -119,10 +107,7 @@ class PlotGraphManager:
         workflow.add_conditional_edges(
             "audit_plot",
             self.should_retry_blueprint,
-            {
-                "retry": "generate_blueprint",
-                "proceed": "expand_scenes"
-            }
+            {"retry": "generate_blueprint", "proceed": "expand_scenes"},
         )
 
         workflow.add_edge("expand_scenes", "save_plot")
@@ -137,7 +122,7 @@ class PlotGraphManager:
             "branch_id": branch_id,
             "retry_count": 0,
             "max_retries": 3,
-            "status": "starting"
+            "status": "starting",
         }
 
         if self.workflow is None:
@@ -148,7 +133,9 @@ class PlotGraphManager:
             audit = await self.node_audit_plot(state)
             state.update(audit)
             attempts = 0
-            while self.should_retry_blueprint(state) == "retry" and attempts < state.get("max_retries", 3):
+            while self.should_retry_blueprint(state) == "retry" and attempts < state.get(
+                "max_retries", 3
+            ):
                 state.update(await self.node_generate_blueprint(state))
                 state.update(await self.node_audit_plot(state))
                 attempts += 1

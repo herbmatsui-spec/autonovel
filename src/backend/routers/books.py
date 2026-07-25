@@ -1,10 +1,9 @@
-from fastapi import APIRouter, HTTPException, Depends
-from src.backend.engine_helpers import get_engine as resolve_engine
-from src.backend.task_helpers import create_task as _create_create_task
+from fastapi import APIRouter, Depends
+
 from config.container import Container
+from src.backend.auth import require_api_key
 from src.backend.database.uow import UnitOfWork
 from src.models.api_schemas import BookSchema
-from src.backend.auth import require_api_key
 
 router = APIRouter(prefix="/api/books", tags=["books"])
 

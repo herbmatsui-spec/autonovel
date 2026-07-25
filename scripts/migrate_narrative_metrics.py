@@ -59,6 +59,6 @@ def apply_narrative_metrics_migration():
         logger.error(f"Failed to apply narrative metrics migration: {e}")
         raise
 
+
 if __name__ == "__main__":
     apply_narrative_metrics_migration()
-

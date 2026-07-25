@@ -8,6 +8,7 @@ from engine_service import HegemonyService
 
 class TerminalReporter:
     """CLI環境用のステータスレポーター"""
+
     def __init__(self):
         self.state = ProgressState()
 
@@ -18,6 +19,7 @@ class TerminalReporter:
     def update_progress(self, current: int, total: int, text: str, sub_text: str = ""):
         pct = (current / total) * 100 if total > 0 else 0
         print(f"📊 [{pct:3.0f}%] {text} | {sub_text}")
+
 
 async def main():
     # 1. APIキーの取得
@@ -43,7 +45,7 @@ async def main():
             target_eps=2,
             initial_limit=2,
             word_count=1500,
-            reporter=reporter
+            reporter=reporter,
         )
         print("\n✅ テスト成功!")
         print(f"📖 生成された作品ID: {result['book_id']}")
@@ -51,6 +53,6 @@ async def main():
     except Exception as e:
         print(f"\n❌ テスト失敗: {e}")
 
+
 if __name__ == "__main__":
     asyncio.run(main())
-

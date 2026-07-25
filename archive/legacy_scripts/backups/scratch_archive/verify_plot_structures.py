@@ -2,10 +2,11 @@ import os
 import sys
 
 # Append the project root to path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 try:
     from config import PLOT_STRUCTURES
+
     print("Successfully imported config.py!")
     print(f"Number of plot structures: {len(PLOT_STRUCTURES)}")
 
@@ -41,4 +42,3 @@ if plugin and plugin.plot_structures is not None:
     print("Plugin plot_structures count:", len(plugin.plot_structures))
 else:
     print("Plugin plot_structures is None")
-

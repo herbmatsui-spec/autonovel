@@ -1,7 +1,9 @@
 """
 streamlit_app/stores.py - Modular UI state stores
 """
+
 from typing import Any, Callable, Dict, List, Optional
+
 import streamlit as st
 
 
@@ -11,6 +13,7 @@ class BaseStore:
     @classmethod
     def get(cls) -> Any:
         from streamlit_app.state import SessionManager
+
         return SessionManager.get_state()
 
     @classmethod
@@ -18,12 +21,15 @@ class BaseStore:
         class MockRuntime:
             rerun_count = 0
             config_data = {}
+
         if "runtime_state" not in st.session_state:
             st.session_state["runtime_state"] = MockRuntime()
         return st.session_state["runtime_state"]
 
     @classmethod
-    def update(cls, update_func: Callable[[Any], None], notify_keys: Optional[List[str]] = None) -> None:
+    def update(
+        cls, update_func: Callable[[Any], None], notify_keys: Optional[List[str]] = None
+    ) -> None:
         state = cls.get()
         update_func(state)
         if notify_keys:
@@ -47,6 +53,7 @@ class BaseStore:
         def unsubscribe():
             if key in cls._subscribers and callback in cls._subscribers[key]:
                 cls._subscribers[key].remove(callback)
+
         return unsubscribe
 
     @classmethod

@@ -1,5 +1,5 @@
 """Engine helper functions."""
-from src.backend.engine import UltimateHegemonyEngine
+
 from src.backend.engine_config import EngineConfig
 from src.backend.engine_facade import EngineFacade
 from src.core.container import make_container

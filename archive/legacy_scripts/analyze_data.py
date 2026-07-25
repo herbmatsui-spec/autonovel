@@ -2,12 +2,12 @@ import json
 
 
 def analyze_tropes():
-    tropes_file = 'config/tropes.json'
-    arch_file = 'config/data/archetypes.json'
+    tropes_file = "config/tropes.json"
+    arch_file = "config/data/archetypes.json"
 
     try:
-        with open(tropes_file, 'r', encoding='utf-8') as f:
-            tropes_data = json.load(f).get('tropes', [])
+        with open(tropes_file, "r", encoding="utf-8") as f:
+            tropes_data = json.load(f).get("tropes", [])
     except Exception as e:
         print(f"Error reading {tropes_file}: {e}")
         tropes_set = set()
@@ -15,7 +15,7 @@ def analyze_tropes():
         trop_set = set(tropes_data)
 
     try:
-        with open(arch_file, 'r', encoding='utf-8') as f:
+        with open(arch_file, "r", encoding="utf-8") as f:
             arch_data = json.load(f)
     except Exception as e:
         print(f"Error reading {arch_file}: {e}")
@@ -24,14 +24,14 @@ def analyze_tropes():
     all_arch_tropes = set()
 
     # From PLOT_STRUCTURES
-    for p in arch_data.get('PLOT_STRUCTURES', {}).values():
-        all_arch_tropes.update(p.get('key_tropes', []))
+    for p in arch_data.get("PLOT_STRUCTURES", {}).values():
+        all_arch_tropes.update(p.get("key_tropes", []))
 
     # From STORY_ARCHETYPES
-    for a in arch_data.get('STORY_ARCHETYPES', {}).values():
-        keywords = a.get('keywords')
+    for a in arch_data.get("STORY_ARCHETYPES", {}).values():
+        keywords = a.get("keywords")
         if keywords and isinstance(keywords, str):
-            all_arch_tropes.update([k.strip() for k in keywords.split(',')])
+            all_arch_tropes.update([k.strip() for k in keywords.split(",")])
         elif keywords and isinstance(keywords, list):
             all_arch_tropes.update([k.strip() for k in keywords])
 
@@ -44,6 +44,6 @@ def analyze_tropes():
     print(f"Tropes in tropes.json NOT in archetypes: {trop_set - all_arch_tropes}")
     print(f"Tropes in archetypes NOT in tropes.json: {all_arch_tropes - trop_set}")
 
-if __name__ == '__main__':
-    analyze_tropes()
 
+if __name__ == "__main__":
+    analyze_tropes()

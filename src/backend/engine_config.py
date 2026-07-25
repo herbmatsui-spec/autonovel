@@ -5,6 +5,7 @@ UltimateHegemonyEngine が抱えていた「42引数爆発」の根本原因（�
 位置引数執着）を解消するため、エンジン構築に必要なランタイム設定を
 1つの frozen dataclass に集約する。
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass

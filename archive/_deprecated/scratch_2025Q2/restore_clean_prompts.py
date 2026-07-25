@@ -1,4 +1,3 @@
-
 legacy_path = r"i:\claude2\engine_prompts.py"
 target_path = r"i:\claude2\backend\engine_prompts.py"
 
@@ -17,4 +16,3 @@ with open(target_path, "w", encoding="utf-8") as f:
     f.write(code)
 
 print("Restored clean base backend/engine_prompts.py")
-

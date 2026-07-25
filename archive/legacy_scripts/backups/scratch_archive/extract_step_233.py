@@ -2,7 +2,7 @@ import json
 
 log_path = r"C:\Users\keide\.gemini\antigravity-ide\brain\c7365df4-738d-4991-a317-74d243bcbfce\.system_generated\logs\transcript.jsonl"
 
-with open(log_path, 'r', encoding='utf-8') as f:
+with open(log_path, "r", encoding="utf-8") as f:
     for line in f:
         try:
             data = json.loads(line)
@@ -15,4 +15,3 @@ with open(log_path, 'r', encoding='utf-8') as f:
                     print("Recovered to scratch/writing_range_recovered.py")
         except Exception as e:
             print("Error:", e)
-

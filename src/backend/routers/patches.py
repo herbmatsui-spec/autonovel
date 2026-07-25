@@ -1,15 +1,15 @@
-from fastapi import APIRouter, HTTPException, Depends
-from typing import Optional, Any
-import json
+from typing import Any, Optional
+
+from fastapi import APIRouter, Depends
 from sqlalchemy import select
 
 from config.container import Container
 from config.project_context import GlobalConfig
+from src.backend.auth import require_api_key
+from src.backend.database.models import PendingPatch, PromptVersion
 from src.backend.patch_validator import PatchValidator
 from src.backend.prompt_version_manager import PromptVersionManager
-from src.backend.database.models import PendingPatch, PromptVersion
 from src.core.exceptions import NotFoundError, ValidationError
-from src.backend.auth import require_api_key
 
 router = APIRouter(prefix="/api/patches", tags=["patches"])
 

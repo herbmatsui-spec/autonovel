@@ -2,7 +2,7 @@ import os
 import sys
 
 # Add the root directory to path to allow imports
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from backend.sanitizer import PhysiologicalTranslator
 
@@ -23,9 +23,11 @@ def test_translator():
     # Check if EXTENDED_REPLACEMENTS worked
     assert "激怒" in res_light, "Light genre should not translate '激怒' with extended map"
     assert "激怒" not in res_dark, "Dark genre should translate '激怒'"
-    assert "血の色に染まり" in res_dark, "Dark genre should apply extended physiological replacement"
+    assert "血の色に染まり" in res_dark, (
+        "Dark genre should apply extended physiological replacement"
+    )
     print("\n[OK] PhysiologicalTranslator logic works perfectly!")
+
 
 if __name__ == "__main__":
     test_translator()
-

@@ -21,10 +21,9 @@ class BaseFormatter(ABC):
         is_catharsis: bool = False,
         tension: int = 50,
         tension_delta: int = 0,
-        **kwargs
+        **kwargs,
     ) -> str:
         """
         与えられたテキストをプラットフォームや設定に合わせて整形する。
         """
         pass
-

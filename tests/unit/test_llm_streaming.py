@@ -40,14 +40,13 @@ async def test_gemini_api_client_streaming_callback():
 
     # Callback to track streaming
     received_chunks = []
+
     def stream_callback(chunk):
         received_chunks.append(chunk)
 
     # Execute
     text, raw = await api_client.generate_text(
-        model_name="test_model",
-        prompt="Test prompt",
-        stream_callback=stream_callback
+        model_name="test_model", prompt="Test prompt", stream_callback=stream_callback
     )
 
     # Assertions

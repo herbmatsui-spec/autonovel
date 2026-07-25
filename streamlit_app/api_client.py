@@ -12,6 +12,7 @@ API_BASE_URL = "http://127.0.0.1:8200/api"
 # It uses the "backend_api" policy from config/resilience.yaml
 _resilient_client: Optional[ResilientHttpClient] = None
 
+
 def get_client() -> ResilientHttpClient:
     global _resilient_client
     if _resilient_client is None:
@@ -19,9 +20,10 @@ def get_client() -> ResilientHttpClient:
         _resilient_client = ResilientHttpClient(
             base_url=API_BASE_URL,
             retry_policy=config.retry_policy,
-            circuit_breaker=config.circuit_breaker
+            circuit_breaker=config.circuit_breaker,
         )
     return _resilient_client
+
 
 def _request(method: str, path: str, timeout: float = 10.0, **kwargs: Any) -> Any:
     """
@@ -49,51 +51,63 @@ def _request(method: str, path: str, timeout: float = 10.0, **kwargs: Any) -> An
 
     try:
         from streamlit_app.utils.async_helper import run_async
+
         return run_async(_async_req())
 
     except Exception as exc:
         logger.error(f"Resilient API request failed {method} {path}: {exc}")
         raise
 
+
 def generate_easy(**kwargs) -> str:
     data = _request("POST", "/easy_mode/generate", **kwargs)
     return data.get("task_id", "unknown")
+
 
 def generate_episodes(**kwargs) -> str:
     data = _request("POST", "/episodes/generate", **kwargs)
     return data.get("task_id", "unknown")
 
+
 def expand_plots(**kwargs) -> str:
     data = _request("POST", "/plots/expand", **kwargs)
     return data.get("task_id", "unknown")
+
 
 def rebuild_plots(**kwargs) -> str:
     data = _request("POST", "/plots/rebuild", **kwargs)
     return data.get("task_id", "unknown")
 
+
 def critique_optimize(**kwargs) -> str:
     data = _request("POST", "/critique/optimize", **kwargs)
     return data.get("task_id", "unknown")
+
 
 def plan_generation(**kwargs) -> str:
     data = _request("POST", "/plots/plan_generation", **kwargs)
     return data.get("task_id", "unknown")
 
+
 def retry_failed_episodes(**kwargs) -> str:
     data = _request("POST", "/episodes/retry_failed", **kwargs)
     return data.get("task_id", "unknown")
+
 
 def start_plan_generation(**kwargs) -> str:
     data = _request("POST", "/plots/plan_generation", **kwargs)
     return data.get("task_id", "unknown")
 
+
 def start_plot_expansion(**kwargs) -> str:
     data = _request("POST", "/plots/expand", **kwargs)
     return data.get("task_id", "unknown")
 
+
 def start_episode_writing(**kwargs) -> str:
     data = _request("POST", "/episodes/generate", **kwargs)
     return data.get("task_id", "unknown")
+
 
 def get_task_status(task_id: str, timeout: float = 5.0) -> Dict[str, Any]:
     return _request("GET", f"/tasks/{task_id}/status", timeout=timeout) or {}
@@ -121,19 +135,31 @@ def run_commercial_pipeline(
     timeout: float = 180.0,
 ) -> Dict[str, Any]:
     """商用化パイプラインを実行する"""
-    return _request(
-        "POST",
-        "/commercial/run",
-        timeout=timeout,
-        series_config=series_config,
-        samples=samples or [],
-        platforms=platforms or [],
-    ) or {}
+    return (
+        _request(
+            "POST",
+            "/commercial/run",
+            timeout=timeout,
+            series_config=series_config,
+            samples=samples or [],
+            platforms=platforms or [],
+        )
+        or {}
+    )
+
 
 def stop_task(task_id: str) -> None:
     _request("POST", f"/tasks/{task_id}/stop")
 
-def start_erotic_refinement(api_key: str, config: dict, book_id: int, ep_num: int, intensity: int = 2, platform_preset: str = "kakuyomu_romance") -> str:
+
+def start_erotic_refinement(
+    api_key: str,
+    config: dict,
+    book_id: int,
+    ep_num: int,
+    intensity: int = 2,
+    platform_preset: str = "kakuyomu_romance",
+) -> str:
     """官能研磨タスクを開始する。task_idを返す。"""
     data = _request(
         "POST",
@@ -143,7 +169,7 @@ def start_erotic_refinement(api_key: str, config: dict, book_id: int, ep_num: in
         book_id=book_id,
         ep_num=ep_num,
         intensity=intensity,
-        platform_preset=platform_preset
+        platform_preset=platform_preset,
     )
     return data.get("task_id", "unknown")
 
@@ -173,9 +199,18 @@ def get_chapters(book_id: int) -> list:
     return data.get("chapters", []) if isinstance(data, dict) else (data or [])
 
 
-def create_chapter(book_id: int, ep_num: int, title: str, content: str, summary: str,
-                  killer_phrase: str = "", ai_insight: str = "", world_state: dict = None,
-                  trinity_review_log: dict = None, created_at: str = None) -> None:
+def create_chapter(
+    book_id: int,
+    ep_num: int,
+    title: str,
+    content: str,
+    summary: str,
+    killer_phrase: str = "",
+    ai_insight: str = "",
+    world_state: dict = None,
+    trinity_review_log: dict = None,
+    created_at: str = None,
+) -> None:
     _request(
         "POST",
         f"/chapters/{book_id}",
@@ -217,24 +252,37 @@ def export_package(api_key: str, book_id: int):
 
 def generate_marketing(api_key: str, book_id: int, latest_ep: int) -> Optional[dict]:
     return _request(
-        "POST", "/marketing/generate",
-        api_key=api_key, book_id=book_id, latest_ep=latest_ep,
+        "POST",
+        "/marketing/generate",
+        api_key=api_key,
+        book_id=book_id,
+        latest_ep=latest_ep,
     )
 
 
-def audit_producer_plan(api_key: str, genre: str, keywords: str, trend_memo: str,
-                        sanctuary: str = "", originality_score: int = 50,
-                        platform: str = "カクヨム/なろう") -> dict:
-    return _request(
-        "POST", "/plots/audit",
-        api_key=api_key,
-        genre=genre,
-        keywords=keywords,
-        trend_memo=trend_memo,
-        sanctuary=sanctuary,
-        originality_score=originality_score,
-        platform=platform,
-    ) or {}
+def audit_producer_plan(
+    api_key: str,
+    genre: str,
+    keywords: str,
+    trend_memo: str,
+    sanctuary: str = "",
+    originality_score: int = 50,
+    platform: str = "カクヨム/なろう",
+) -> dict:
+    return (
+        _request(
+            "POST",
+            "/plots/audit",
+            api_key=api_key,
+            genre=genre,
+            keywords=keywords,
+            trend_memo=trend_memo,
+            sanctuary=sanctuary,
+            originality_score=originality_score,
+            platform=platform,
+        )
+        or {}
+    )
 
 
 def get_issues(book_id: int) -> list:
@@ -243,17 +291,30 @@ def get_issues(book_id: int) -> list:
 
 
 def resolve_issue(issue_id: int, action: str, api_key: str) -> dict:
-    return _request(
-        "POST", f"/issues/{issue_id}/resolve",
-        action=action, api_key=api_key,
-    ) or {}
+    return (
+        _request(
+            "POST",
+            f"/issues/{issue_id}/resolve",
+            action=action,
+            api_key=api_key,
+        )
+        or {}
+    )
 
 
 def import_chapter(api_key: str, book_id: int, ep_num: int, text: str, do_refine: bool) -> dict:
-    return _request(
-        "POST", "/chapters/import",
-        api_key=api_key, book_id=book_id, ep_num=ep_num, text=text, do_refine=do_refine,
-    ) or {}
+    return (
+        _request(
+            "POST",
+            "/chapters/import",
+            api_key=api_key,
+            book_id=book_id,
+            ep_num=ep_num,
+            text=text,
+            do_refine=do_refine,
+        )
+        or {}
+    )
 
 
 # -----------------------------------------------------------------------------
@@ -277,6 +338,7 @@ def commercial_run(config: dict) -> dict:
 
     try:
         from streamlit_app.utils.async_helper import run_async
+
         return run_async(_async_req()) or {}
     except Exception as exc:
         logger.error(f"Commercial pipeline request failed: {exc}")

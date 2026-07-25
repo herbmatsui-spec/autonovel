@@ -6,6 +6,7 @@ print("Imported HegemonyAuditResult successfully.")
 
 response_schema = HegemonyAuditResult
 
+
 def _resolve_refs(schema_dict: dict, defs: dict) -> dict:
     if isinstance(schema_dict, dict):
         if "$ref" in schema_dict:
@@ -22,6 +23,7 @@ def _resolve_refs(schema_dict: dict, defs: dict) -> dict:
         return [_resolve_refs(item, defs) for item in schema_dict]
     return schema_dict
 
+
 def _clean_schema(schema_dict: dict) -> dict:
     if isinstance(schema_dict, dict):
         if "additionalProperties" in schema_dict:
@@ -32,7 +34,11 @@ def _clean_schema(schema_dict: dict) -> dict:
             del schema_dict["default"]
 
         if "anyOf" in schema_dict:
-            types = [t for t in schema_dict["anyOf"] if isinstance(t, dict) and t.get("type") != "null" and t.get("type") != "NULL"]
+            types = [
+                t
+                for t in schema_dict["anyOf"]
+                if isinstance(t, dict) and t.get("type") != "null" and t.get("type") != "NULL"
+            ]
             if types:
                 valid_type = types[0]
                 del schema_dict["anyOf"]
@@ -47,6 +53,7 @@ def _clean_schema(schema_dict: dict) -> dict:
         schema_dict = [_clean_schema(item) for item in schema_dict]
     return schema_dict
 
+
 print("Running _resolve_refs and _clean_schema...")
 raw_schema = response_schema.model_json_schema()
 defs = raw_schema.pop("$defs", {})
@@ -55,4 +62,3 @@ if defs:
 clean_schema = _clean_schema(raw_schema)
 print("Finished successfully! Clean schema:")
 print(json.dumps(clean_schema, indent=2, ensure_ascii=False))
-

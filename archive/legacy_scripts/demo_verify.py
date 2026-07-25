@@ -1,30 +1,31 @@
 """
 demo.py - バランス調整後 実作品生成・検証スクリプト
 """
+
 import asyncio
 import os
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 
-import config as app_config
-
 from dependency_injector import containers
 
+import config as app_config
 from src.backend.database.core import DatabaseManager
 from src.backend.engine import UltimateHegemonyEngine
 from src.backend.workflows.full_auto_workflow import FullAutoWorkflow
 from src.core.container import AppContainer
-from src.shared.utils import StatusReporter
 
 
 class DemoAppContainer(AppContainer):
     """streamlit_app パッケージを配線対象から除外したコンテナ（UI非依存でCLI実行用）"""
+
     wiring_config = containers.WiringConfiguration(packages=["src"])
 
 
 class CLIStatusReporter:
     """StatusReporterプロトコル実装: CLI出力用"""
+
     def report(self, message: str, level: str = "info") -> None:
         prefix = "[ERROR]" if level == "error" else "[WARN]" if level == "warning" else "[INFO]"
         print(f"{prefix} {message}")
@@ -46,15 +47,18 @@ async def main():
     db_url = "sqlite+aiosqlite:///demo_verify_balance.db"
     app_config.DATABASE_URL = db_url
     import config.base
+
     config.base.DATABASE_URL = db_url
 
     from src.backend.database.core import init_db
+
     init_db("demo_verify_balance.db")
     db_manager = DatabaseManager(db_url)
 
     # streamlit_app 配線エラーを回避するため、エンジンが参照するコンテナを
     # スコープ限定版 (src のみ配線) に差し替える
     import src.backend.engine as engine_module
+
     engine_module.AppContainer = DemoAppContainer
 
     engine = UltimateHegemonyEngine(api_key=api_key, db_manager=db_manager)
@@ -90,18 +94,21 @@ async def main():
         print(f"  Failed Eps:  {result.get('failed_episodes')}")
 
         # 生成された作品内容を表示
-        from src.models.db import PlotDbModel
+
         book_id = result["book_id"]
         plots = await engine.repo.plot.get_all_plots(book_id)
         if plots:
             plot = plots[0]
             print(f"\n  --- Plot #{plot.ep_num} ---")
-            content = getattr(plot, "content", None) or getattr(plot, "draft", None) or "（本文未取得）"
+            content = (
+                getattr(plot, "content", None) or getattr(plot, "draft", None) or "（本文未取得）"
+            )
             print(f"  Content preview: {str(content)[:500]}")
             print(f"  Target Tension:  {getattr(plot, 'target_tension', 'N/A')}")
             hook_raw = getattr(plot, "emotional_hook_json", None)
             if hook_raw:
                 import json
+
                 hook = json.loads(hook_raw)
                 print(f"  Emotional Hook: {hook}")
             edges_raw = getattr(plot, "sharp_edges_json", None)
@@ -113,11 +120,14 @@ async def main():
         print("\n  --- All Plots ---")
         for p in plots:
             content_preview = (getattr(p, "content", "") or getattr(p, "draft", "") or "")[:80]
-            print(f"    Ep#{p.ep_num}: tension={getattr(p, 'target_tension', '?')}, content={content_preview}...")
+            print(
+                f"    Ep#{p.ep_num}: tension={getattr(p, 'target_tension', '?')}, content={content_preview}..."
+            )
 
-    except Exception as e:
+    except Exception:
         import traceback
-        print(f"\n[ERROR] 実行中にエラーが発生しました:")
+
+        print("\n[ERROR] 実行中にエラーが発生しました:")
         traceback.print_exc()
 
 

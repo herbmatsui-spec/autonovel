@@ -9,19 +9,21 @@ from src.models.world import WorldState
 
 
 class EpisodeDraft(BaseModel):
-    ep_num:                  int             = Field(default=0)
-    anti_pattern_prediction: str             = Field(default="")
-    initial_manuscript:      str             = Field(default="")
-    entertainment_audit:     str             = Field(default="")
-    audit_checklist:         Dict[str, bool] = Field(default_factory=dict)
-    final_content:           str             = Field(default="")
-    candidates:              List[EpisodeDraft] = Field(default_factory=list, description="AIが提示した複数の本文候補案")
-    self_critique:           str             = Field(default="")
-    summary:                 str             = Field(default="")
-    tension_delta:           int             = Field(default=0)
-    love_delta:              int             = Field(default=0)
-    next_world_state:        WorldState      = Field(default_factory=WorldState)
-    cost_consumed:           int             = Field(default=0)
+    ep_num: int = Field(default=0)
+    anti_pattern_prediction: str = Field(default="")
+    initial_manuscript: str = Field(default="")
+    entertainment_audit: str = Field(default="")
+    audit_checklist: Dict[str, bool] = Field(default_factory=dict)
+    final_content: str = Field(default="")
+    candidates: List[EpisodeDraft] = Field(
+        default_factory=list, description="AIが提示した複数の本文候補案"
+    )
+    self_critique: str = Field(default="")
+    summary: str = Field(default="")
+    tension_delta: int = Field(default=0)
+    love_delta: int = Field(default=0)
+    next_world_state: WorldState = Field(default_factory=WorldState)
+    cost_consumed: int = Field(default=0)
 
     @model_validator(mode="before")
     @classmethod
@@ -35,11 +37,15 @@ class EpisodeDraft(BaseModel):
 
     model_config = MODEL_CONFIG_DEFAULTS
 
+
 class CharacterStatusChange(BaseModel):
     character: str = Field(..., description="キャラクター名")
     location: str = Field(..., description="現在の居場所")
-    inventory_changes: List[str] = Field(default_factory=list, description="持ち物の変化（例: ['剣を失った', '聖杯を得た']）")
+    inventory_changes: List[str] = Field(
+        default_factory=list, description="持ち物の変化（例: ['剣を失った', '聖杯を得た']）"
+    )
     status: str = Field(..., description="現在のステータス（生存/死亡/負傷/封印など）")
+
 
 class EpisodeMetadata(BaseModel):
     title: str = Field(default="", description="エピソードのサブタイトル")
@@ -47,31 +53,41 @@ class EpisodeMetadata(BaseModel):
     tension_delta: int = Field(default=0, description="この話での緊張・摩擦の変化量")
     qol_delta: int = Field(default=0, description="この話でのQOL（生活の質）変化量")
     love_delta: int = Field(default=0, description="この話でのヒロイン等の好感度変化量")
-    ai_insight: str = Field(default="", description="確定した事実や設定の変更、伏線の回収状況に関するメモ")
-    next_world_state: WorldState = Field(default_factory=WorldState, description="次のエピソード開始時の世界の状態メタデータ")
-    character_status_changes: List[CharacterStatusChange] = Field(default_factory=list, description="この話で発生した各キャラのステータス変更（生死、所持品、位置）")
-
+    ai_insight: str = Field(
+        default="", description="確定した事実や設定の変更、伏線の回収状況に関するメモ"
+    )
+    next_world_state: WorldState = Field(
+        default_factory=WorldState, description="次のエピソード開始時の世界の状態メタデータ"
+    )
+    character_status_changes: List[CharacterStatusChange] = Field(
+        default_factory=list,
+        description="この話で発生した各キャラのステータス変更（生死、所持品、位置）",
+    )
 
     model_config = MODEL_CONFIG_DEFAULTS
 
+
 class EpisodeFinalDraft(BaseModel):
-    ep_num:          int        = Field(...)
-    final_content:   str        = Field(..., description="コンテと台本を統合した決定稿")
-    summary:         str        = Field(default="")
-    tension_delta:   int        = Field(default=0)
-    love_delta:      int        = Field(default=0)
+    ep_num: int = Field(...)
+    final_content: str = Field(..., description="コンテと台本を統合した決定稿")
+    summary: str = Field(default="")
+    tension_delta: int = Field(default=0)
+    love_delta: int = Field(default=0)
     next_world_state: WorldState = Field(default_factory=WorldState)
 
     model_config = MODEL_CONFIG_DEFAULTS
 
+
 class StyleDNA(BaseModel):
-    name:        str = Field(default="")
+    name: str = Field(default="")
     instruction: str = Field(default="")
 
     model_config = MODEL_CONFIG_DEFAULTS
 
+
 class StyleFragment(BaseModel):
     """RAG用：覇権作品の文体断片データ"""
+
     id: Optional[int] = None
     tag: str = Field(..., description="シーン属性（戦闘、心理、逆転、濡れ場等）")
     content: str = Field(..., description="理想的な文章の断片（100-500文字）")
@@ -80,10 +96,11 @@ class StyleFragment(BaseModel):
 
     model_config = MODEL_CONFIG_DEFAULTS
 
+
 class MarketingPack(BaseModel):
-    catchphrase:    str       = Field(default="")
-    kakuyomu_notes: str       = Field(default="")
-    tags:           List[str] = Field(default_factory=list)
+    catchphrase: str = Field(default="")
+    kakuyomu_notes: str = Field(default="")
+    tags: List[str] = Field(default_factory=list)
 
     @model_validator(mode="before")
     @classmethod
@@ -96,6 +113,7 @@ class MarketingPack(BaseModel):
         return data
 
     model_config = MODEL_CONFIG_DEFAULTS
+
 
 # --- Phase 4: Pydantic models for Writing Context and Workflow Results ---
 from src.models.db import BibleDbModel, BookDbModel, CharacterDbModel, PlotDbModel
@@ -134,6 +152,7 @@ class WritingContext(BaseModel):
 
     model_config = MODEL_CONFIG_DEFAULTS
 
+
 class FullAutoWorkflowResult(BaseModel):
     book_id: Optional[int] = None
     title: str = ""
@@ -146,16 +165,19 @@ class FullAutoWorkflowResult(BaseModel):
 
     model_config = MODEL_CONFIG_DEFAULTS
 
+
 class PlanGenerationResult(BaseModel):
     book_id: int
     title: str
 
     model_config = MODEL_CONFIG_DEFAULTS
 
+
 class PlotExpansionResult(BaseModel):
     count: int
 
     model_config = MODEL_CONFIG_DEFAULTS
+
 
 class RetryFailedEpisodesResult(BaseModel):
     book_id: int
@@ -164,12 +186,14 @@ class RetryFailedEpisodesResult(BaseModel):
 
     model_config = MODEL_CONFIG_DEFAULTS
 
+
 class EpisodeWritingResult(BaseModel):
     book_id: int
     chars_count: int
     failed_episodes: List[Dict[str, Any]] = Field(default_factory=list)
 
     model_config = MODEL_CONFIG_DEFAULTS
+
 
 class PlotRebuildResult(BaseModel):
     done: bool

@@ -38,6 +38,7 @@ def on_create(target, connection, **kw):
 # Core tables
 # ==========================================
 
+
 class Book(Base):
     __tablename__ = "books"
 
@@ -97,7 +98,9 @@ class Plot(Base):
     __tablename__ = "plots"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    target_tension = Column(Float, nullable=True, comment="動的に計算された目標テンション値 (0.0-1.0)")
+    target_tension = Column(
+        Float, nullable=True, comment="動的に計算された目標テンション値 (0.0-1.0)"
+    )
     book_id = Column(Integer, ForeignKey("books.id", ondelete="CASCADE"), nullable=False)
     branch_id = Column(Integer, default=1, nullable=False)
     ep_num = Column(Integer, nullable=False)
@@ -218,6 +221,7 @@ class Foreshadowing(Base):
 # Outbox / ChromaDB sync
 # ==========================================
 
+
 class Outbox(Base):
     __tablename__ = "outbox"
 
@@ -232,6 +236,7 @@ class Outbox(Base):
 # ==========================================
 # Prompt management
 # ==========================================
+
 
 class PromptVersion(Base):
     __tablename__ = "prompt_versions"
@@ -271,6 +276,7 @@ class PromptUsageLog(Base):
 # Rules & Mastering
 # ==========================================
 
+
 class Rule(Base):
     __tablename__ = "rules"
 
@@ -299,6 +305,7 @@ class Masterpiece(Base):
 # Audit
 # ==========================================
 
+
 class AuditIssue(Base):
     __tablename__ = "audit_issues"
 
@@ -319,6 +326,7 @@ class AuditIssue(Base):
 # ==========================================
 # Misc / Utility tables
 # ==========================================
+
 
 class OptimizationHistory(Base):
     __tablename__ = "optimization_history"
@@ -418,6 +426,4 @@ class EntertainmentCheckLog(Base):
     feedback = Column(Text, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
 
-    __table_args__ = (
-        Index("idx_entertainment_check_log_book_ep", "book_id", "ep_num"),
-    )
+    __table_args__ = (Index("idx_entertainment_check_log_book_ep", "book_id", "ep_num"),)

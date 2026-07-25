@@ -4,6 +4,7 @@ RAG Prefetch Service - プロット確定時にRAG検索を先行実行し、
 
 v4.0: 執筆時のRAG検索待ち時間をゼロにする先行キャッシュ基盤
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -16,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 class RagPrefetchService:
     """プロット確定時にRAG検索結果を先行キャッシュする。
-    
+
     プロットが確定した時点で、執筆に必要な以下の3種類のRAG検索を
     バックグラウンドで並列実行し、結果をメモリにキャッシュする:
     1. スタイルサンプル検索（文体RAG）
@@ -33,15 +34,10 @@ class RagPrefetchService:
         return f"{book_id}_{ep_num}"
 
     async def prefetch_for_episode(
-        self,
-        engine: Any,
-        book_id: int,
-        branch_id: int,
-        ep_num: int,
-        plot_blueprint: str
+        self, engine: Any, book_id: int, branch_id: int, ep_num: int, plot_blueprint: str
     ) -> None:
         """プロット確定直後に呼び出す。RAG検索をバックグラウンドで開始する。
-        
+
         Args:
             engine: UltimateHegemonyEngine インスタンス
             book_id: 作品ID
@@ -54,21 +50,23 @@ class RagPrefetchService:
             return
 
         from src.core.async_utils import fire_and_forget
+
         task = fire_and_forget(
             self._do_prefetch(engine, book_id, branch_id, ep_num, plot_blueprint),
-            name=f"prefetch_ep_{ep_num}"
+            name=f"prefetch_ep_{ep_num}",
         )
         self._pending_tasks[key] = task
 
-    async def _do_prefetch(self, engine: Any, book_id: int, branch_id: int,
-                           ep_num: int, blueprint: str) -> None:
+    async def _do_prefetch(
+        self, engine: Any, book_id: int, branch_id: int, ep_num: int, blueprint: str
+    ) -> None:
         """バックグラウンドで3種類のRAG検索を並列実行する"""
         key = self.cache_key(book_id, ep_num)
         try:
             tasks = []
 
             # 1. スタイルRAG検索
-            if hasattr(engine, 'style_rag') and engine.style_rag:
+            if hasattr(engine, "style_rag") and engine.style_rag:
                 tasks.append(
                     engine.style_rag.find_best_samples(
                         scene_description=blueprint, phase="Prep", top_k=3
@@ -78,24 +76,21 @@ class RagPrefetchService:
                 tasks.append(asyncio.coroutine(lambda: [])())
 
             # 2. 過去ログRAG検索
-            if hasattr(engine, 'repo') and hasattr(engine.repo, 'get_relevant_past_logs'):
+            if hasattr(engine, "repo") and hasattr(engine.repo, "get_relevant_past_logs"):
                 tasks.append(
-                    engine.repo.get_relevant_past_logs(
-                        branch_id, ep_num, query_text=blueprint
-                    )
+                    engine.repo.get_relevant_past_logs(branch_id, ep_num, query_text=blueprint)
                 )
             else:
                 tasks.append(asyncio.coroutine(lambda: "")())
 
             # 3. プロジェクトインテリジェンス
-            if hasattr(engine, 'get_project_intelligence'):
-                tasks.append(
-                    engine.get_project_intelligence(book_id, context=blueprint)
-                )
+            if hasattr(engine, "get_project_intelligence"):
+                tasks.append(engine.get_project_intelligence(book_id, context=blueprint))
             else:
                 tasks.append(asyncio.coroutine(lambda: {})())
 
             from src.core.async_utils import run_parallel
+
             results = await run_parallel(tasks, return_exceptions=True)
 
             style_samples = results[0] if not isinstance(results[0], Exception) else []
@@ -106,7 +101,7 @@ class RagPrefetchService:
                 "style_samples": style_samples,
                 "rag_context": rag_ctx,
                 "intelligence": intel,
-                "prefetched": True
+                "prefetched": True,
             }
 
             # LRU: 古いキャッシュを破棄
@@ -150,5 +145,5 @@ class RagPrefetchService:
             "cached_episodes": len(self._cache),
             "pending_tasks": len(self._pending_tasks),
             "max_size": self._max_cache_size,
-            "keys": list(self._cache.keys())
+            "keys": list(self._cache.keys()),
         }

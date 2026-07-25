@@ -4,4 +4,3 @@ from .base import BaseFormatter
 from .kakuyomu import KakuyomuFormatter
 
 __all__ = ["BaseFormatter", "KakuyomuFormatter"]
-

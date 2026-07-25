@@ -47,4 +47,3 @@ HOOK_CURVE_MAP = {
 def select_curve_by_hook(hook_name: str) -> str:
     """感情起点名から適用するtension曲線名を返す。未知フックは DEFAULT_CURVE。"""
     return HOOK_CURVE_MAP.get(hook_name, DEFAULT_CURVE)
-

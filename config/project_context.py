@@ -13,6 +13,7 @@ config/base.py に定義された定数や動的設定値に一元アクセス�
     このモジュールは Streamlit に依存しません。
     Streamlit UI との連携が必要な場合は config.streamlit_adapter を使用してください。
 """
+
 from __future__ import annotations
 
 import logging

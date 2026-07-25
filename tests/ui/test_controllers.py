@@ -25,6 +25,7 @@ def test_ui_controller_manager_emit():
     assert event.type == UIEventType.REQUEST_GENERATE_PLAN
     assert event.payload == payload
 
+
 def test_ui_controller_manager_stream_injection():
     mock_engine = MagicMock()
     manager = UIControllerManager(mock_engine)

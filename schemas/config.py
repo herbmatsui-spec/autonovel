@@ -8,6 +8,7 @@ schemas/config.py — SSOT: グローバル設定モデル
 
 デフォルト値は本番運用値（旧 project_context.py 由来）を採用しています。
 """
+
 from __future__ import annotations
 
 import logging
@@ -73,7 +74,7 @@ class GlobalConfigModel(BaseModel):
     max_concurrency: int = 0
     optimized_prompt_patch: str = ""  # AIによる自己最適化パッチ
 
-# ===================== 実行制御フラグ =====================
+    # ===================== 実行制御フラグ =====================
     fail_fast_mode: bool = False
     enable_dogfeeding: bool = True
     enable_heavy_audit: bool = True
@@ -105,11 +106,10 @@ class GlobalConfigModel(BaseModel):
     catharsis_reset_value: int = 0
     wave_pattern_ratio: Dict[str, float] = Field(
         default={"small": 0.7, "medium": 0.15, "large": 0.15},
-        description="カタルシスパターンの割合設定"
+        description="カタルシスパターンの割合設定",
     )
     catharsis_density_range: Dict[str, int] = Field(
-        default={"min": 2, "max": 5},
-        description="カタルシス密度スライダー設定"
+        default={"min": 2, "max": 5}, description="カタルシス密度スライダー設定"
     )
     min_immersion_score: float = Field(default=0.0, description="没入スコアの最低閾値 (0.0-100.0)")
 
@@ -239,15 +239,18 @@ class GlobalConfigModel(BaseModel):
     def from_toml(cls, path: Path) -> GlobalConfigModel:
         """
         TOML ファイルから設定を読み込む（非推奨）
-        
+
         Deprecated: ConfigValidator.validate_all() を使用してください。
         このメソッドは後方互換性のために残されていますが、拡張設定（domain_profiles,
         interaction_matrix, tropes, system_plugins）は読み込まれません。
         """
         logger = __import__("logging").getLogger(__name__)
-        logger.warning("[DEPRECATED] GlobalConfigModel.from_toml() が呼ばれました。ConfigValidator.validate_all() を使用してください。")
+        logger.warning(
+            "[DEPRECATED] GlobalConfigModel.from_toml() が呼ばれました。ConfigValidator.validate_all() を使用してください。"
+        )
         logger.debug(f"[LOAD] GlobalConfigModel.from_toml() called: path={path}")
         import tomllib
+
         if not path.exists():
             logger.debug("[LOAD] from_toml: path not found, returning default")
             return cls.default()
@@ -264,23 +267,26 @@ class GlobalConfigModel(BaseModel):
     def load(cls) -> GlobalConfigModel:
         """
         ConfigValidator.validate_all() に委譲して設定を読み込む（SSOT）。
-        
+
         このメソッドは後方互換性のためのラッパーです。
         内部では ConfigValidator.validate_all() を呼び、全設定ファイルを
         バリデーション・マージした GlobalConfigModel を返します。
         """
         logger = __import__("logging").getLogger(__name__)
-        logger.debug("[LOAD] ===== GlobalConfigModel.load() called (delegating to ConfigValidator) ====")
+        logger.debug(
+            "[LOAD] ===== GlobalConfigModel.load() called (delegating to ConfigValidator) ===="
+        )
         import traceback
+
         logger.debug(f"[LOAD] Call stack: {''.join(traceback.format_stack()[:-1])}")
 
         from config.validator import ConfigValidator
+
         validated = ConfigValidator.validate_all()
         result = validated["settings"]
 
         logger.debug("[LOAD] GlobalConfigModel.load() delegation completed")
         return result
-
 
     @classmethod
     def default(cls) -> GlobalConfigModel:
@@ -295,6 +301,7 @@ class GlobalConfigModel(BaseModel):
 
 class ModelRegistryModel(BaseModel):
     """モデルレジストリ（config/models.yaml 用）"""
+
     planning: str = "gemini-3.1-flash-lite"
     plot_expansion: str = "gemma-4-31b-it"
     writing: str = "gemma-4-31b-it"
@@ -305,47 +312,90 @@ class ModelRegistryModel(BaseModel):
 
 class SystemPluginsModel(BaseModel):
     """システムプラグイン設定（config/system_plugins.yaml 用）"""
+
     debate_agent: Dict[str, str] = Field(
         default_factory=lambda: {"module": "src.agents.debate", "class": "NullDebateAgent"}
     )
     audit_service: Dict[str, str] = Field(
-        default_factory=lambda: {"module": "src.services.audit_service", "class": "ProducerAuditService"}
+        default_factory=lambda: {
+            "module": "src.services.audit_service",
+            "class": "ProducerAuditService",
+        }
     )
 
 
 class TropesModel(BaseModel):
     """トロープ設定（config/tropes.json 用）"""
-    tropes: List[str] = Field(default_factory=lambda: [
-        "ざまぁ", "断罪", "成り上がり", "無自覚無双", "圧倒的報復", "追放ざまぁ",
-        "ヤンデレヒロイン", "実は有能な従者", "狂信的な配下", "不遇な天才", "共依存",
-        "戦わない最強", "復讐しない追放者", "善人すぎる悪役", "官能", "誘惑"
-    ])
-    title_patterns: List[str] = Field(default_factory=lambda: [
-        "追放された最強の〜", "実は〜だった件"
-    ])
-    forbidden_words_replacements: Dict[str, str] = Field(default_factory=lambda: {
-        "蹂躙": "「蹂躙」という言葉を直接使わず、代わりにそれを想起させる具体的な破壊現象（例：踏み潰される土、引き裂かれる旗、崩落する壁、悲鳴を上げる鉄、砕け散る瓦礫）を3話以上描写せよ。",
-        "驚愕": "「驚愕」や「驚きを隠せない」といった抽象語を使わず、喉の鳴る音、震える指先、呼吸の停止、産毛の逆立ち等の生理現象で描写せよ。",
-        "絶望": "「絶望」を使わず、色彩を失う視界、胃の腑に沈む鉛の重さ、肺を圧迫する空気、凍りつく思考等の物理的感覚で描写せよ。",
-        "静寂": "「静寂」を使わず、風の音だけが響く感覚、自分の心臓の音だけが耳元でうるさいほどの無音、肌にまとわりつく空気の重さ等で描写せよ。",
-        "圧倒": "「圧倒的」「圧倒された」を使わず、相手との体格差、魔圧による重圧、逃げ場のない包囲感、あるいは「蛇に睨まれた蛙」のような身体的硬直を描写せよ。",
-        "歓喜": "「歓喜」「喜びに震える」を使わず、顔の筋肉が勝手に緩む感覚、心臓が跳ねるような鼓動、視界が急激に明るく開ける主観的変化で描写せよ。"
-    })
+
+    tropes: List[str] = Field(
+        default_factory=lambda: [
+            "ざまぁ",
+            "断罪",
+            "成り上がり",
+            "無自覚無双",
+            "圧倒的報復",
+            "追放ざまぁ",
+            "ヤンデレヒロイン",
+            "実は有能な従者",
+            "狂信的な配下",
+            "不遇な天才",
+            "共依存",
+            "戦わない最強",
+            "復讐しない追放者",
+            "善人すぎる悪役",
+            "官能",
+            "誘惑",
+        ]
+    )
+    title_patterns: List[str] = Field(
+        default_factory=lambda: ["追放された最強の〜", "実は〜だった件"]
+    )
+    forbidden_words_replacements: Dict[str, str] = Field(
+        default_factory=lambda: {
+            "蹂躙": "「蹂躙」という言葉を直接使わず、代わりにそれを想起させる具体的な破壊現象（例：踏み潰される土、引き裂かれる旗、崩落する壁、悲鳴を上げる鉄、砕け散る瓦礫）を3話以上描写せよ。",
+            "驚愕": "「驚愕」や「驚きを隠せない」といった抽象語を使わず、喉の鳴る音、震える指先、呼吸の停止、産毛の逆立ち等の生理現象で描写せよ。",
+            "絶望": "「絶望」を使わず、色彩を失う視界、胃の腑に沈む鉛の重さ、肺を圧迫する空気、凍りつく思考等の物理的感覚で描写せよ。",
+            "静寂": "「静寂」を使わず、風の音だけが響く感覚、自分の心臓の音だけが耳元でうるさいほどの無音、肌にまとわりつく空気の重さ等で描写せよ。",
+            "圧倒": "「圧倒的」「圧倒された」を使わず、相手との体格差、魔圧による重圧、逃げ場のない包囲感、あるいは「蛇に睨まれた蛙」のような身体的硬直を描写せよ。",
+            "歓喜": "「歓喜」「喜びに震える」を使わず、顔の筋肉が勝手に緩む感覚、心臓が跳ねるような鼓動、視界が急激に明るく開ける主観的変化で描写せよ。",
+        }
+    )
 
 
 class InteractionMatrixModel(BaseModel):
     """インタラクションマトリクス（config/interaction_matrix.yaml 用）"""
+
     resonance: Dict[str, float] = Field(
-        default_factory=lambda: {"resonance": 0.05, "hegemony": -0.2, "conflict": -0.1, "serenity": 0.2}
+        default_factory=lambda: {
+            "resonance": 0.05,
+            "hegemony": -0.2,
+            "conflict": -0.1,
+            "serenity": 0.2,
+        }
     )
     hegemony: Dict[str, float] = Field(
-        default_factory=lambda: {"resonance": -0.1, "hegemony": 0.05, "conflict": 0.1, "serenity": -0.1}
+        default_factory=lambda: {
+            "resonance": -0.1,
+            "hegemony": 0.05,
+            "conflict": 0.1,
+            "serenity": -0.1,
+        }
     )
     conflict: Dict[str, float] = Field(
-        default_factory=lambda: {"resonance": -0.1, "hegemony": 0.2, "conflict": 0.05, "serenity": -0.2}
+        default_factory=lambda: {
+            "resonance": -0.1,
+            "hegemony": 0.2,
+            "conflict": 0.05,
+            "serenity": -0.2,
+        }
     )
     serenity: Dict[str, float] = Field(
-        default_factory=lambda: {"resonance": 0.1, "hegemony": -0.2, "conflict": -0.3, "serenity": 0.05}
+        default_factory=lambda: {
+            "resonance": 0.1,
+            "hegemony": -0.2,
+            "conflict": -0.3,
+            "serenity": 0.05,
+        }
     )
     decay_rate: float = 0.98
     min_value: float = 0.0
@@ -354,6 +404,7 @@ class InteractionMatrixModel(BaseModel):
 
 class DomainProfileModel(BaseModel):
     """ドメインプロファイル（config/domain_profiles/*.json 用）"""
+
     DISABLE_CATHARSIS_ENGINE: bool = False
     STRESS_CATHARSIS_THRESHOLD: int = 85
     STRESS_FILLER_THRESHOLD: int = 35
@@ -364,11 +415,41 @@ class DomainProfileModel(BaseModel):
         "【⚠️分岐プロット（カタルシス強め）】\n"
         "このエピソードは読者のカタルシスを最大化する構成（ざまぁ・圧倒的勝利等）に特化させてください。"
     )
-    AUDIT_TRIGGER_KEYWORDS: List[str] = Field(default_factory=lambda: [
-        "魔法", "スキル", "能力", "加護", "呪い", "代償", "コスト", "禁忌", "制約", "ルール",
-        "死", "殺", "滅", "敗北", "勝利", "決戦", "戦闘", "激闘", "王", "皇帝", "神", "教義",
-        "因果", "運命", "伏線", "真実", "正体", "裏切り", "契約", "誓約", "儀式"
-    ])
+    AUDIT_TRIGGER_KEYWORDS: List[str] = Field(
+        default_factory=lambda: [
+            "魔法",
+            "スキル",
+            "能力",
+            "加護",
+            "呪い",
+            "代償",
+            "コスト",
+            "禁忌",
+            "制約",
+            "ルール",
+            "死",
+            "殺",
+            "滅",
+            "敗北",
+            "勝利",
+            "決戦",
+            "戦闘",
+            "激闘",
+            "王",
+            "皇帝",
+            "神",
+            "教義",
+            "因果",
+            "運命",
+            "伏線",
+            "真実",
+            "正体",
+            "裏切り",
+            "契約",
+            "誓約",
+            "儀式",
+        ]
+    )
     AUDIT_WORDS_CATHARSIS: List[str] = Field(
         default_factory=lambda: ["ざまぁ", "圧倒的勝利", "破滅", "ヘイト", "屈服"]
     )
@@ -382,4 +463,3 @@ class DomainProfileModel(BaseModel):
     WEIGHT_THEMATIC_DEPTH: float = 0.5
     WEIGHT_LITERARY_BEAUTY: float = 0.5
     WEIGHT_BASE_ENGAGEMENT: float = 4.0
-

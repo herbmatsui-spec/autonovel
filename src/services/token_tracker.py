@@ -1,6 +1,7 @@
 """
 src/services/token_tracker.py — トークン使用量追跡サービス
 """
+
 import time
 from typing import Any, Dict, List, Optional
 
@@ -26,7 +27,7 @@ class TokenTracker:
 
     def add_usage(self, input_tokens: int, output_tokens: int, ep_num: Optional[int] = None):
         """使用量を加算
-        
+
         Args:
             input_tokens: 入力トークン数
             output_tokens: 出力トークン数
@@ -35,14 +36,16 @@ class TokenTracker:
         self.input_tokens += input_tokens
         self.output_tokens += output_tokens
         self.total_tokens += input_tokens + output_tokens
-        
+
         if ep_num is not None:
-            self.episode_usages.append({
-                "ep_num": ep_num,
-                "input_tokens": input_tokens,
-                "output_tokens": output_tokens,
-                "total_tokens": input_tokens + output_tokens
-            })
+            self.episode_usages.append(
+                {
+                    "ep_num": ep_num,
+                    "input_tokens": input_tokens,
+                    "output_tokens": output_tokens,
+                    "total_tokens": input_tokens + output_tokens,
+                }
+            )
 
     def increment_episode_count(self):
         """エピソード数をインクリメント"""
@@ -54,7 +57,7 @@ class TokenTracker:
 
     def get_report(self) -> TokenUsageReport:
         """レポートを取得
-        
+
         Returns:
             TokenUsageReport: トークン使用量レポート
         """
@@ -69,12 +72,12 @@ class TokenTracker:
             input_tokens=self.input_tokens,
             output_tokens=self.output_tokens,
             episode_count=self.episode_count,
-            generation_time_seconds=generation_time
+            generation_time_seconds=generation_time,
         )
 
     def get_episode_usages(self) -> List[Dict[str, Any]]:
         """エピソード毎の使用量を取得
-        
+
         Returns:
             List[Dict[str, Any]]: エピソード毎の使用量リスト
         """

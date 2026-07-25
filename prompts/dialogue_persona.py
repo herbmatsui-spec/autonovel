@@ -9,4 +9,3 @@ Your core principles:
 3. Linguistic Asymmetry: Characters with different power levels or emotional states use different rhythmic patterns and vocabularies.
 4. Emotional Leakage: True feelings should only emerge through cracks in the linguistic mask (stutters, sudden shifts in politeness, unnatural silence).
 """
-

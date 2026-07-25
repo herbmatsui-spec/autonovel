@@ -1,17 +1,16 @@
 """tests/test_erotic_mocks.py
 テスト用モック官能小説の検証テスト。
 """
+
 import pytest
 
 from tests.fixtures.erotic_mocks import (
     count_phases,
-    estimate_intensity_from_text,
     extract_intensity_from_metadata,
     get_all_mock_names,
     get_mock_metadata,
     load_mock,
 )
-
 
 MOCK_FILES = {
     "mock_erotic_pure_love.md": {
@@ -70,9 +69,9 @@ class TestEroticMocks:
 
         assert "想定強度" in metadata, f"{filename}: missing 想定強度 in metadata"
         actual_intensity = extract_intensity_from_metadata(metadata)
-        assert (
-            actual_intensity == expected_intensity
-        ), f"{filename}: metadata intensity {actual_intensity} != expected {expected_intensity}"
+        assert actual_intensity == expected_intensity, (
+            f"{filename}: metadata intensity {actual_intensity} != expected {expected_intensity}"
+        )
 
     @pytest.mark.parametrize(
         "filename,expected_intensity",
@@ -86,9 +85,9 @@ class TestEroticMocks:
         """各モックが最低文字数を持つことを確認。"""
         text = load_mock(filename)
         min_lengths = {3: 1000, 4: 1500, 5: 2000}
-        assert (
-            len(text) >= min_lengths[expected_intensity]
-        ), f"{filename}: too short ({len(text)} < {min_lengths[expected_intensity]})"
+        assert len(text) >= min_lengths[expected_intensity], (
+            f"{filename}: too short ({len(text)} < {min_lengths[expected_intensity]})"
+        )
 
     @pytest.mark.parametrize(
         "filename,expected_intensity",
@@ -103,9 +102,9 @@ class TestEroticMocks:
         text = load_mock(filename)
         metadata = get_mock_metadata(text)
         actual = extract_intensity_from_metadata(metadata)
-        assert (
-            actual == expected_intensity
-        ), f"{filename}: metadata intensity {actual} != expected {expected_intensity}"
+        assert actual == expected_intensity, (
+            f"{filename}: metadata intensity {actual} != expected {expected_intensity}"
+        )
 
     def test_mock_pure_love_has_consent_expressions(self):
         """純愛モックが同意表現を含むことを確認。"""

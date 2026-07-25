@@ -3,7 +3,6 @@ prompts/plotting.py
 プロット生成用の定数テンプレートを定義するモジュール。
 """
 
-
 EMOTIONAL_HOOK_TEMPLATE = (
     "本話の刺さり: {one_line_intent}"
     "（目標tensionピーク: {target_tension_peak}/100、"

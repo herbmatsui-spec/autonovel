@@ -10,11 +10,6 @@ class TraceLogger:
 
     def log_event(self, book_id: int, event_type: str, data: dict):
         log_file = os.path.join(self.log_dir, f"book_{book_id}.jsonl")
-        log_entry = {
-            "timestamp": datetime.now().isoformat(),
-            "event": event_type,
-            "data": data
-        }
+        log_entry = {"timestamp": datetime.now().isoformat(), "event": event_type, "data": data}
         with open(log_file, "a", encoding="utf-8") as f:
             f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
-

@@ -2,14 +2,13 @@
 tests/test_engine_plot_hook_integration.py
 src/backend/engine_plot.py の統合テスト。
 """
+
 import json
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
 from src.backend.engine_plot import (
-    ENFORCE_ENTERTAINMENT_FIRST,
-    _build_default_hook,
     get_emotional_hook_for_plot,
     resolve_emotional_hook,
 )
@@ -63,8 +62,11 @@ class TestGetEmotionalHookForPlot:
     @pytest.mark.asyncio
     async def test_repo_load_used_when_plot_has_no_hook(self):
         loaded = PlotDbModel(
-            book_id=1, ep_num=1,
-            emotional_hook_json=json.dumps({"hook_name": "chilling", "one_line_intent": "寒気", "target_tension_peak": 90})
+            book_id=1,
+            ep_num=1,
+            emotional_hook_json=json.dumps(
+                {"hook_name": "chilling", "one_line_intent": "寒気", "target_tension_peak": 90}
+            ),
         )
         repo = MagicMock()
         repo.get_plot = AsyncMock(return_value=loaded)

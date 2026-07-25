@@ -9,28 +9,33 @@ from pydantic import BaseModel
 T_input = TypeVar("T_input", bound=BaseModel)
 T_output = TypeVar("T_output", bound=BaseModel)
 
+
 class KernelState(BaseModel):
     """
     各カーネルの現在の強度や状態を保持するベクトルデータ。
     """
+
     resonance: float = 0.0
     hegemony: float = 0.0
     conflict: float = 0.0
     serenity: float = 0.0
+
 
 class KernelContext(BaseModel):
     """
     すべてのカーネル間で共有される標準的なコンテキスト。
     trace_idなどの共通メタデータと、カーネル固有のデータを保持する。
     """
+
     trace_id: str
     narrative_state: Optional[Any] = None  # 現在の物語状態 (NarrativeState)
     narrative_node: Optional[Any] = None  # 現在の状態ノード (NarrativeStateNode)
     global_state: Dict[str, Any] = {}
     # システム全体で共有する状態
-    local_state: Dict[str, Any] = {}       # 現在のカーネル処理内での一時的な状態
-    metadata: Dict[str, Any] = {}           # 実行オプションや設定
-    config: Optional[Any] = None            # GlobalConfigModel への参照
+    local_state: Dict[str, Any] = {}  # 現在のカーネル処理内での一時的な状態
+    metadata: Dict[str, Any] = {}  # 実行オプションや設定
+    config: Optional[Any] = None  # GlobalConfigModel への参照
+
 
 class KernelBase(ABC, Generic[T_input, T_output]):
     """
@@ -59,4 +64,3 @@ class KernelBase(ABC, Generic[T_input, T_output]):
         カーネルの初期設定を行う。
         """
         pass
-

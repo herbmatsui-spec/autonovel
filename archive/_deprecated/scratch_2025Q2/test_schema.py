@@ -7,19 +7,24 @@ class Foreshadowing(BaseModel):
     clue: str = Field(description="Clue")
     resolution: str = Field(description="Resolution")
 
+
 class NarrativeConstraint(BaseModel):
     name: str = Field(description="Constraint name")
+
 
 class ClimaxScene(BaseModel):
     description: str = Field(description="Scene description")
     foreshadowing_refs: List[str] = Field(description="Refs")
+
 
 class Output(BaseModel):
     foreshadowing_map: List[Foreshadowing]
     active_constraints: List[NarrativeConstraint]
     climax_scenes: List[ClimaxScene]
 
+
 raw_schema = Output.model_json_schema()
+
 
 def _resolve_refs(schema_dict: dict, defs: dict) -> dict:
     if isinstance(schema_dict, dict):
@@ -40,6 +45,7 @@ def _resolve_refs(schema_dict: dict, defs: dict) -> dict:
         return [_resolve_refs(item, defs) for item in schema_dict]
     return schema_dict
 
+
 def _clean_schema(schema_dict: dict) -> dict:
     if isinstance(schema_dict, dict):
         if "additionalProperties" in schema_dict:
@@ -58,6 +64,7 @@ def _clean_schema(schema_dict: dict) -> dict:
         schema_dict = [_clean_schema(item) for item in schema_dict]
     return schema_dict
 
+
 import json
 
 defs = raw_schema.pop("$defs", {})
@@ -65,4 +72,3 @@ if defs:
     raw_schema = _resolve_refs(raw_schema, defs)
 clean_schema = _clean_schema(raw_schema)
 print(json.dumps(clean_schema, indent=2))
-

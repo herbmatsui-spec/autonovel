@@ -11,7 +11,7 @@ class SerenityKernel(KernelBase):
     """
 
     def __init__(self, **kwargs):
-        self.state_value = 0.0 # Interaction Matrix用
+        self.state_value = 0.0  # Interaction Matrix用
         super().__init__(**kwargs)
         self.persona = SERENITY_PERSONA
 
@@ -25,16 +25,17 @@ class SerenityKernel(KernelBase):
         緊張度の低下後の安定期、または物語が過剰に加速し「休息」が必要なタイミングを検知する。
         物語の状態（Narrative State）に応じて、介入の閾値を動的に調整する。
         """
-        analytics = getattr(context, 'analytics', None)
+        analytics = getattr(context, "analytics", None)
         if not analytics:
             return False
 
         # 物語状態の取得
         from kernels.graph import NarrativeState
-        narrative_state = getattr(context, 'narrative_state', None)
+
+        narrative_state = getattr(context, "narrative_state", None)
 
         # 優先カーネルの確認
-        priority_kernels = context.global_state.get('priority_kernels', [])
+        priority_kernels = context.global_state.get("priority_kernels", [])
         is_priority = "serenity" in priority_kernels
 
         # 状態に応じた介入感度の調整
@@ -50,8 +51,8 @@ class SerenityKernel(KernelBase):
         if is_priority:
             sensitivity_multiplier *= 1.5
 
-        tension = getattr(analytics, 'tension', 0)
-        tension_delta = getattr(analytics, 'tension_delta', 0)
+        tension = getattr(analytics, "tension", 0)
+        tension_delta = getattr(analytics, "tension_delta", 0)
 
         # 1. 激しい衝突の後の「凪」の状態 (Tensionが急落し、低水準で安定している)
         # 優先カーネルである場合は、より広い範囲で「休息が必要」と判断する
@@ -60,11 +61,11 @@ class SerenityKernel(KernelBase):
             return True
 
         # 2. 物語の加速しすぎ防止 (Pacingが速すぎて、読者が情緒的な整理をする時間がない場合)
-        if getattr(analytics, 'is_too_fast', False):
+        if getattr(analytics, "is_too_fast", False):
             return True
 
         # 3. 明示的な「休息/日常シーン」の要求がある場合
-        if getattr(context, 'request_serenity', False):
+        if getattr(context, "request_serenity", False):
             return True
 
         return False
@@ -102,6 +103,7 @@ class SerenityKernel(KernelBase):
 
     def _select_serenity_pattern(self, level: int) -> dict:
         import json
+
         try:
             with open("config/data/serenity_patterns.json", "r", encoding="utf-8") as f:
                 patterns = json.load(f)
@@ -135,7 +137,7 @@ class SerenityKernel(KernelBase):
         現在の心理状態と物語の文脈から、静謐の深度（Level 1-5）を決定する。
         """
         # 信頼度、親密度、および直前の緊張度から算出
-        return 2 # デフォルト値
+        return 2  # デフォルト値
 
     def _get_sensory_anchors(self, level: int) -> List[str]:
         """
@@ -144,4 +146,3 @@ class SerenityKernel(KernelBase):
         # 例: Level 1 -> "温かいお茶", "遠くの鳥の声"
         # Level 4 -> "完全な静寂", "同期した呼吸"
         return []
-

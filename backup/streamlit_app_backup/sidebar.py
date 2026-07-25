@@ -1,16 +1,18 @@
 """
 sidebar.py - アプリケーションのサイドバー描画および作品管理UI (オーケストレーター)
 """
+
 from __future__ import annotations
 
 import streamlit as st
-
 from streamlit_app.sidebar_sections.api_key import render_api_key_section
 from streamlit_app.sidebar_sections.book_manager import render_book_selector
 from streamlit_app.sidebar_sections.mode_selector import render_mode_selector
 from streamlit_app.sidebar_sections.token_usage import render_token_usage
 from streamlit_app.sidebar_sections.writing_params import render_sidebar_settings
+
 from streamlit_app.state import UIStateStore, get_session
+
 
 def render_sidebar(engine_ready: bool = False) -> str | None:
     UIStateStore.increment_rerun_count()
@@ -45,6 +47,7 @@ def render_sidebar(engine_ready: bool = False) -> str | None:
     render_token_usage()
 
     return api_key
+
 
 # 後方互換性の再エクスポート
 __all__ = ["render_sidebar", "render_book_selector"]

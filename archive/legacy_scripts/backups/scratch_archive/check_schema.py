@@ -10,4 +10,3 @@ if os.path.exists(db_path):
     conn.close()
 else:
     print("DB file not found")
-

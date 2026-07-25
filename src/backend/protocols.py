@@ -5,6 +5,7 @@ protocols.py - エンジン分解 (ADR-0004) のための共有インターフ�
 BibleService / TensionService) が実装し、ワークフローが依存する Protocol を定義する。
 Protocol を使うことで、実装の置換・モックが import サイクルなしで可能になる。
 """
+
 from __future__ import annotations
 
 from typing import Any, Optional, Protocol, Tuple
@@ -31,17 +32,13 @@ class PlanningPort(Protocol):
         initial_plot_limit: int = 3,
         config: Any = None,
         reporter: Any = None,
-    ) -> Tuple[int, Any]:
-        ...
+    ) -> Tuple[int, Any]: ...
 
-    async def expand_plots(self, *args: Any, **kwargs: Any) -> Any:
-        ...
+    async def expand_plots(self, *args: Any, **kwargs: Any) -> Any: ...
 
-    async def rebuild_hegemony_plot(self, *args: Any, **kwargs: Any) -> Any:
-        ...
+    async def rebuild_hegemony_plot(self, *args: Any, **kwargs: Any) -> Any: ...
 
-    async def audit_bible_completeness(self, bible: Any, reporter: Any = None) -> bool:
-        ...
+    async def audit_bible_completeness(self, bible: Any, reporter: Any = None) -> bool: ...
 
 
 # ---------------------------------------------------------------------------
@@ -61,8 +58,7 @@ class WritingPort(Protocol):
         reporter: Any,
         branch_id: int = 1,
         style_tag: Any = None,
-    ) -> Tuple[int, list]:
-        ...
+    ) -> Tuple[int, list]: ...
 
     async def generate_episodes(
         self,
@@ -75,11 +71,9 @@ class WritingPort(Protocol):
         reporter: Any,
         branch_id: int = 1,
         style_tag: Any = None,
-    ) -> int:
-        ...
+    ) -> int: ...
 
-    async def analyze_and_import_chapter(self, *args: Any, **kwargs: Any) -> Any:
-        ...
+    async def analyze_and_import_chapter(self, *args: Any, **kwargs: Any) -> Any: ...
 
 
 # ---------------------------------------------------------------------------
@@ -88,11 +82,9 @@ class WritingPort(Protocol):
 class CritiquePort(Protocol):
     """品質最適化・論理監査を担当するサービスのインターフェース。"""
 
-    async def run_iterative_gap_analysis(self, book_id: int, *args: Any, **kwargs: Any) -> Any:
-        ...
+    async def run_iterative_gap_analysis(self, book_id: int, *args: Any, **kwargs: Any) -> Any: ...
 
-    async def audit_plot_as_issues(self, *args: Any, **kwargs: Any) -> Any:
-        ...
+    async def audit_plot_as_issues(self, *args: Any, **kwargs: Any) -> Any: ...
 
 
 # ---------------------------------------------------------------------------
@@ -101,14 +93,11 @@ class CritiquePort(Protocol):
 class BiblePort(Protocol):
     """設定集 (Bible) の同期・承認管理を担当するサービスのインターフェース。"""
 
-    async def sync_bible_lifecycle(self, book_id: int, reporter: Any = None) -> Any:
-        ...
+    async def sync_bible_lifecycle(self, book_id: int, reporter: Any = None) -> Any: ...
 
-    async def resolve_pending_setting(self, setting_id: int, status: str) -> None:
-        ...
+    async def resolve_pending_setting(self, setting_id: int, status: str) -> None: ...
 
-    async def get_latest_bible(self, book_id: int) -> Optional[Any]:
-        ...
+    async def get_latest_bible(self, book_id: int) -> Optional[Any]: ...
 
 
 # ---------------------------------------------------------------------------
@@ -123,8 +112,7 @@ class TensionPort(Protocol):
         ep_num: int,
         genre: str,
         story_type: Optional[str] = None,
-    ) -> float:
-        ...
+    ) -> float: ...
 
     async def validate_tension_deviation(
         self,
@@ -132,8 +120,7 @@ class TensionPort(Protocol):
         generated_tension: float,
         book_id: int,
         tolerance: float = 0.2,
-    ) -> Tuple[bool, float]:
-        ...
+    ) -> Tuple[bool, float]: ...
 
 
 # ---------------------------------------------------------------------------
@@ -142,22 +129,17 @@ class TensionPort(Protocol):
 class DataRepositoryPort(Protocol):
     """ワークフローが読み取りで利用するリポジトリ操作のインターフェース。"""
 
-    async def get_book(self, book_id: int) -> Optional[Any]:
-        ...
+    async def get_book(self, book_id: int) -> Optional[Any]: ...
 
-    async def get_total_episodes(self, book_id: int) -> int:
-        ...
+    async def get_total_episodes(self, book_id: int) -> int: ...
 
-    async def get_latest_bible(self, book_id: int) -> Optional[Any]:
-        ...
+    async def get_latest_bible(self, book_id: int) -> Optional[Any]: ...
 
     @property
-    def plots(self) -> Any:
-        ...
+    def plots(self) -> Any: ...
 
     @property
-    def books(self) -> Any:
-        ...
+    def books(self) -> Any: ...
 
 
 __all__ = [

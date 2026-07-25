@@ -1,4 +1,3 @@
-
 import pytest
 
 
@@ -20,7 +19,7 @@ async def test_plot_repository(real_uow):
             next_hook={"hook": "test"},
             tension=50,
             scenes=[],
-            branch_id=branch_id
+            branch_id=branch_id,
         )
 
         # Test get_plot
@@ -34,7 +33,9 @@ async def test_plot_repository(real_uow):
         assert len(plots) == 1
 
         # Test update_plot_status_tension_love
-        await uow.plots.update_plot_status_tension_love(branch_id, 1, tension_delta=10, love_meter=5)
+        await uow.plots.update_plot_status_tension_love(
+            branch_id, 1, tension_delta=10, love_meter=5
+        )
         plot_updated = await uow.plots.get_plot(branch_id, 1)
         assert plot_updated.status == "completed"
         assert plot_updated.tension_delta == 10

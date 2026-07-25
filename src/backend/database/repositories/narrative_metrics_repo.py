@@ -22,12 +22,11 @@ class NarrativeMetricRepository(BaseRepository[NarrativeMetric]):
         # 1. 同一エピソードの前のシーンを検索
         if scene_num > 1:
             result = await self.session.execute(
-                select(NarrativeMetric)
-                .where(
+                select(NarrativeMetric).where(
                     NarrativeMetric.book_id == book_id,
                     NarrativeMetric.branch_id == branch_id,
                     NarrativeMetric.ep_num == ep_num,
-                    NarrativeMetric.scene_num == scene_num - 1
+                    NarrativeMetric.scene_num == scene_num - 1,
                 )
             )
             metrics = result.scalars().all()
@@ -41,7 +40,7 @@ class NarrativeMetricRepository(BaseRepository[NarrativeMetric]):
                 .where(
                     NarrativeMetric.book_id == book_id,
                     NarrativeMetric.branch_id == branch_id,
-                    NarrativeMetric.ep_num == ep_num - 1
+                    NarrativeMetric.ep_num == ep_num - 1,
                 )
                 .order_by(desc(NarrativeMetric.scene_num))
             )
@@ -50,12 +49,11 @@ class NarrativeMetricRepository(BaseRepository[NarrativeMetric]):
             if latest_scene:
                 # そのシーンの全指標を再取得
                 result = await self.session.execute(
-                    select(NarrativeMetric)
-                    .where(
+                    select(NarrativeMetric).where(
                         NarrativeMetric.book_id == book_id,
                         NarrativeMetric.branch_id == branch_id,
                         NarrativeMetric.ep_num == ep_num - 1,
-                        NarrativeMetric.scene_num == latest_scene.scene_num
+                        NarrativeMetric.scene_num == latest_scene.scene_num,
                     )
                 )
                 metrics = result.scalars().all()
@@ -64,7 +62,13 @@ class NarrativeMetricRepository(BaseRepository[NarrativeMetric]):
         return None
 
     async def save_scene_metrics(
-        self, book_id: int, branch_id: int, ep_num: int, scene_num: int, scores: List[Dict[str, Any]], version: Optional[int] = None
+        self,
+        book_id: int,
+        branch_id: int,
+        ep_num: int,
+        scene_num: int,
+        scores: List[Dict[str, Any]],
+        version: Optional[int] = None,
     ) -> None:
         """
         シーンの指標を保存する。
@@ -75,12 +79,11 @@ class NarrativeMetricRepository(BaseRepository[NarrativeMetric]):
         # 現在の最新バージョンを確認
         if version is None:
             result = await self.session.execute(
-                select(func.max(NarrativeMetric.version))
-                .where(
+                select(func.max(NarrativeMetric.version)).where(
                     NarrativeMetric.book_id == book_id,
                     NarrativeMetric.branch_id == branch_id,
                     NarrativeMetric.ep_num == ep_num,
-                    NarrativeMetric.scene_num == scene_num
+                    NarrativeMetric.scene_num == scene_num,
                 )
             )
             current_max = result.scalar()
@@ -96,21 +99,24 @@ class NarrativeMetricRepository(BaseRepository[NarrativeMetric]):
                 metric_name=s["metric_name"],
                 score=s["score"],
                 reasoning=s.get("reasoning", ""),
-                version=version
+                version=version,
             )
             self.add(metric)
 
-    async def delete_scene_metrics(self, book_id: int, branch_id: int, ep_num: int, scene_num: int) -> None:
+    async def delete_scene_metrics(
+        self, book_id: int, branch_id: int, ep_num: int, scene_num: int
+    ) -> None:
         """
         指定されたシーンの全バージョンの指標を削除する。
         """
         from sqlalchemy import delete
+
         await self.session.execute(
             delete(NarrativeMetric).where(
                 NarrativeMetric.book_id == book_id,
                 NarrativeMetric.branch_id == branch_id,
                 NarrativeMetric.ep_num == ep_num,
-                NarrativeMetric.scene_num == scene_num
+                NarrativeMetric.scene_num == scene_num,
             )
         )
 
@@ -132,16 +138,11 @@ class NarrativeMetricRepository(BaseRepository[NarrativeMetric]):
                 NarrativeMetric.ep_num,
                 NarrativeMetric.scene_num,
                 NarrativeMetric.metric_name,
-                func.max(NarrativeMetric.version).label("max_version")
+                func.max(NarrativeMetric.version).label("max_version"),
             )
-            .where(
-                NarrativeMetric.book_id == book_id,
-                NarrativeMetric.branch_id == branch_id
-            )
+            .where(NarrativeMetric.book_id == book_id, NarrativeMetric.branch_id == branch_id)
             .group_by(
-                NarrativeMetric.ep_num,
-                NarrativeMetric.scene_num,
-                NarrativeMetric.metric_name
+                NarrativeMetric.ep_num, NarrativeMetric.scene_num, NarrativeMetric.metric_name
             )
         ).subquery()
 
@@ -150,10 +151,10 @@ class NarrativeMetricRepository(BaseRepository[NarrativeMetric]):
             select(NarrativeMetric)
             .join(
                 subq,
-                (NarrativeMetric.ep_num == subq.c.ep_num) &
-                (NarrativeMetric.scene_num == subq.c.scene_num) &
-                (NarrativeMetric.metric_name == subq.c.metric_name) &
-                (NarrativeMetric.version == subq.c.max_version)
+                (NarrativeMetric.ep_num == subq.c.ep_num)
+                & (NarrativeMetric.scene_num == subq.c.scene_num)
+                & (NarrativeMetric.metric_name == subq.c.metric_name)
+                & (NarrativeMetric.version == subq.c.max_version),
             )
             .order_by(NarrativeMetric.ep_num, NarrativeMetric.scene_num)
         )

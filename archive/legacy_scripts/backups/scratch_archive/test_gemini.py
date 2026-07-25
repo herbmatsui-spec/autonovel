@@ -16,4 +16,3 @@ if api_key:
         print(f"Error listing models: {e}")
 else:
     print("No GEMINI_API_KEY env var set.")
-

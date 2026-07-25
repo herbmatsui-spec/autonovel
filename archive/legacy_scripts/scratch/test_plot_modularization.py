@@ -1,4 +1,3 @@
-
 import os
 import sys
 
@@ -17,7 +16,7 @@ def test_flat_data_routing():
         "tension_delta": 10,
         "knowledge_delta": 0.3,
         "unknown_engine_value": "Something New",
-        "script_content": "Once upon a time..."
+        "script_content": "Once upon a time...",
     }
 
     # Test with default PlotEpisode
@@ -25,37 +24,45 @@ def test_flat_data_routing():
 
     # Verify core_info (the critical fix)
     assert ep.core_info.ep_num == 1, f"Expected ep_num 1, got {ep.core_info.ep_num}"
-    assert ep.core_info.title == "The First Mystery", f"Expected title 'The First Mystery', got {ep.core_info.title}"
+    assert ep.core_info.title == "The First Mystery", (
+        f"Expected title 'The First Mystery', got {ep.core_info.title}"
+    )
 
     # Verify analytics
     assert ep.analytics.tension == 50, f"Expected tension 50, got {ep.analytics.tension}"
 
     # Verify extra_engines
-    assert ep.extra_engines.get("unknown_engine_value") == "Something New", "Expected unknown_engine_value in extra_engines"
+    assert ep.extra_engines.get("unknown_engine_value") == "Something New", (
+        "Expected unknown_engine_value in extra_engines"
+    )
 
     # Verify generic fields
     assert ep.script_content == "Once upon a time...", "Expected script_content to be preserved"
 
     print("OK: Flat data routing verified.")
 
+
 def test_factory_specialization():
     print("Testing factory specialization...")
     data = {"ep_num": 2, "title": "Mystery Night"}
 
     mystery_ep = plot_episode_factory("mystery", **data)
-    assert isinstance(mystery_ep, MysteryEpisode), f"Expected MysteryEpisode, got {type(mystery_ep)}"
+    assert isinstance(mystery_ep, MysteryEpisode), (
+        f"Expected MysteryEpisode, got {type(mystery_ep)}"
+    )
 
     drama_ep = plot_episode_factory("drama", **data)
     assert isinstance(drama_ep, DramaEpisode), f"Expected DramaEpisode, got {type(drama_ep)}"
 
     print("OK: Factory specialization verified.")
 
+
 def test_nested_data_preservation():
     print("Testing nested data preservation...")
     nested_data = {
         "core_info": {"ep_num": 3, "title": "Nested Title"},
         "analytics": {"tension": 70},
-        "script_content": "Nested content"
+        "script_content": "Nested content",
     }
 
     ep = PlotEpisode(**nested_data)
@@ -64,6 +71,7 @@ def test_nested_data_preservation():
     assert ep.script_content == "Nested content"
 
     print("OK: Nested data preservation verified.")
+
 
 if __name__ == "__main__":
     try:
@@ -77,6 +85,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\nERROR: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
-

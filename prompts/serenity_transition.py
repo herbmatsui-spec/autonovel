@@ -2,7 +2,7 @@
 Serenity Transition Logic: From Tension to Stillness
 
 Goal:
-Prevent jarring shifts when moving from high-tension states (Hegemony/Conflict) to low-tension states (Serenity). 
+Prevent jarring shifts when moving from high-tension states (Hegemony/Conflict) to low-tension states (Serenity).
 The goal is a 'deceleration curve' that mimics the natural calming of the human nervous system.
 
 Transition Path (The Deceleration Curve):
@@ -36,6 +36,5 @@ Implementation Guidelines:
 TRANSITION_LOGIC = {
     "path": ["Physical Release", "Sensory Grounding", "Shared Silence", "Serenity Arrival"],
     "required_beats": 2,
-    "recommended_levels": "Start at Level 1, gradually increase as the scene deepens."
+    "recommended_levels": "Start at Level 1, gradually increase as the scene deepens.",
 }
-

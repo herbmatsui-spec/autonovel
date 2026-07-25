@@ -80,7 +80,7 @@ def test_config_validator_load_domain_profiles():
         "modern_drama.json",
         "mystery.json",
         "slice_of_life.json",
-        "tragedy.json"
+        "tragedy.json",
     ]
 
     for file in domain_files:

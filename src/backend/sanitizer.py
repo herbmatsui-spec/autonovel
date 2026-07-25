@@ -3,6 +3,7 @@ sanitizer.py - AI出力修復・検証モジュール
 AIが返す壊れたJSONの修復、メタデータ正規化、
 テキスト品質検証（視点・リズム・口調）を担う。
 """
+
 from __future__ import annotations
 
 import json
@@ -28,24 +29,65 @@ class NormalizationFlow:
 
     def __init__(self) -> None:
         self._wrapper_keys = {
-            "metadata", "response", "data", "plot", "episode_data",
-            "plot_episode", "episode", "results", "output", "content",
-            "roadmap", "arc_roadmap", "chapter"
+            "metadata",
+            "response",
+            "data",
+            "plot",
+            "episode_data",
+            "plot_episode",
+            "episode",
+            "results",
+            "output",
+            "content",
+            "roadmap",
+            "arc_roadmap",
+            "chapter",
         }
         self._force_str_keys = [
-            "detailed_blueprint", "script_content", "final_content", "title",
-            "one_line_summary", "magic_cost_and_taboo", "social_hierarchy_and_discrimination",
-            "geopolitics_and_economy", "religious_dogma_and_heresy", "rewrite_suggestion",
-            "personality", "ability", "background", "tone", "iron_constraint",
-            "summary", "keywords", "thought_process"
+            "detailed_blueprint",
+            "script_content",
+            "final_content",
+            "title",
+            "one_line_summary",
+            "magic_cost_and_taboo",
+            "social_hierarchy_and_discrimination",
+            "geopolitics_and_economy",
+            "religious_dogma_and_heresy",
+            "rewrite_suggestion",
+            "personality",
+            "ability",
+            "background",
+            "tone",
+            "iron_constraint",
+            "summary",
+            "keywords",
+            "thought_process",
         ]
         self._numeric_fields = ["stress_delta", "love_delta", "tension"]
-        self._ep_num_aliases = ["episode_num", "episode_number", "episode", "ep_no", "ep", "no", "number", "chapter"]
+        self._ep_num_aliases = [
+            "episode_num",
+            "episode_number",
+            "episode",
+            "ep_no",
+            "ep",
+            "no",
+            "number",
+            "chapter",
+        ]
         self._scene_num_aliases = ["scene_id", "id", "scene_no", "index", "sceneNumber"]
         self._severity_map = {
-            "critical": "Critical", "致命的": "Critical", "high": "Critical", "極めて重い": "Critical",
-            "major": "Major", "重大": "Major", "medium": "Major", "重い": "Major",
-            "minor": "Minor", "軽微": "Minor", "low": "Minor", "軽い": "Minor"
+            "critical": "Critical",
+            "致命的": "Critical",
+            "high": "Critical",
+            "極めて重い": "Critical",
+            "major": "Major",
+            "重大": "Major",
+            "medium": "Major",
+            "重い": "Major",
+            "minor": "Minor",
+            "軽微": "Minor",
+            "low": "Minor",
+            "軽い": "Minor",
         }
         self._beat_valid_types = ["導入", "展開", "結末", "状況", "内面葛藤", "具体的行動", "余韻"]
 
@@ -83,7 +125,11 @@ class NormalizationFlow:
                 if alias in data:
                     try:
                         val = data[alias]
-                        data["ep_num"] = int(val) if isinstance(val, (int, float)) else int(re.search(r'\d+', str(val)).group())
+                        data["ep_num"] = (
+                            int(val)
+                            if isinstance(val, (int, float))
+                            else int(re.search(r"\d+", str(val)).group())
+                        )
                         break
                     except Exception:
                         pass
@@ -93,7 +139,11 @@ class NormalizationFlow:
                 if alias in data:
                     try:
                         val = data[alias]
-                        data["scene_number"] = int(val) if isinstance(val, (int, float)) else int(re.search(r'-?\d+', str(val)).group())
+                        data["scene_number"] = (
+                            int(val)
+                            if isinstance(val, (int, float))
+                            else int(re.search(r"-?\d+", str(val)).group())
+                        )
                         break
                     except Exception:
                         pass
@@ -131,7 +181,11 @@ class NormalizationFlow:
                 if val is None:
                     data[str_key] = ""
                 elif isinstance(val, list):
-                    sep = "\n\n" if any(x in str_key for x in ["content", "blueprint", "script"]) else ", "
+                    sep = (
+                        "\n\n"
+                        if any(x in str_key for x in ["content", "blueprint", "script"])
+                        else ", "
+                    )
                     data[str_key] = sep.join([str(x) for x in val])
                 elif not isinstance(val, str):
                     data[str_key] = json.dumps(val, ensure_ascii=False)
@@ -148,7 +202,7 @@ class NormalizationFlow:
         for num_key in self._numeric_fields:
             if num_key in data and not isinstance(data[num_key], int):
                 try:
-                    data[num_key] = int(re.search(r'-?\d+', str(data[num_key])).group())
+                    data[num_key] = int(re.search(r"-?\d+", str(data[num_key])).group())
                 except Exception:
                     data[num_key] = 0
 
@@ -177,13 +231,20 @@ class NormalizationFlow:
                                 break
                     for kw_field in ["sensory_keywords", "psychology_keywords"]:
                         if kw_field in item and isinstance(item[kw_field], str):
-                            item[kw_field] = [x.strip() for x in re.split(r'[,、]', item[kw_field]) if x.strip()]
+                            item[kw_field] = [
+                                x.strip() for x in re.split(r"[,、]", item[kw_field]) if x.strip()
+                            ]
         elif key_name == "recovered_items":
             data = [{"foreshadowing_id": x} if isinstance(x, str) else x for x in data]
         elif key_name == "missing_items":
             data = [x.get("description", str(x)) if isinstance(x, dict) else str(x) for x in data]
         elif key_name == "story_threads":
-            data = [x if isinstance(x, dict) else {"description": str(x), "status": "Active", "setup_episode": 0} for x in data]
+            data = [
+                x
+                if isinstance(x, dict)
+                else {"description": str(x), "status": "Active", "setup_episode": 0}
+                for x in data
+            ]
 
         if key_name in ["full_story_roadmap", "roadmap", "arc_roadmap", "plots"]:
             for i, item in enumerate(data):
@@ -206,7 +267,9 @@ class NormalizationFlow:
 
         return data
 
-    def normalize_metadata(self, data: Any, key_name: Optional[str] = None, is_root: bool = True) -> Any:
+    def normalize_metadata(
+        self, data: Any, key_name: Optional[str] = None, is_root: bool = True
+    ) -> Any:
         """AIが生成するメタデータ構造の揺れ（ネスト・キー名）を吸収して正規化する"""
         if data is None or data == "":
             return {} if is_root else data
@@ -260,10 +323,16 @@ class TonePerfector:
                 dialogue = match.group(0)
                 # 一人称の強制置換（AIが間違えやすいため）
                 if char.first_person:
-                    dialogue = re.sub(r'(私|僕|俺|あたし|自分)(?=[、。！？こと。をにが」])', char.first_person, dialogue)
+                    dialogue = re.sub(
+                        r"(私|僕|俺|あたし|自分)(?=[、。！？こと。をにが」])",
+                        char.first_person,
+                        dialogue,
+                    )
                 # 二人称の強制置換
                 if char.second_person:
-                    dialogue = re.sub(r'(君|あなた|お前|貴様)(?=[、。！？をにが」])', char.second_person, dialogue)
+                    dialogue = re.sub(
+                        r"(君|あなた|お前|貴様)(?=[、。！？をにが」])", char.second_person, dialogue
+                    )
 
                 # 語尾の簡易補正（例：なのだ、だわ、ですわ等）
                 if char.suffix_style:
@@ -271,19 +340,21 @@ class TonePerfector:
                     # 実際にはより高度な形態素解析が必要だが、ここではAIの補完として動作
                     if "〜" in char.suffix_style:
                         suffix = char.suffix_style.replace("〜", "")
-                        dialogue = re.sub(r'([。？！])(?=」)', f"{suffix}\\1", dialogue)
+                        dialogue = re.sub(r"([。？！])(?=」)", f"{suffix}\\1", dialogue)
 
                 return dialogue
 
             # 会話文（「」内）を抽出して置換を適用
-            text = re.sub(r'「.*?」', replace_pronouns, text, flags=re.DOTALL)
+            text = re.sub(r"「.*?」", replace_pronouns, text, flags=re.DOTALL)
 
         return text
+
 
 # OutputSanitizer（JSON修復・メタデータ正規化）
 # ==========================================
 class OutputSanitizer:
     """AI出力の修復・正規化を担う静的ユーティリティクラス"""
+
     _normalization_flow = NormalizationFlow()
 
     @staticmethod
@@ -294,7 +365,7 @@ class OutputSanitizer:
         if not text:
             return {}
         # 最も外側の波括弧を抽出（LLMが前後にテキストを付けても対応）
-        json_match = re.search(r'(\{.*\})', text.strip(), re.DOTALL)
+        json_match = re.search(r"(\{.*\})", text.strip(), re.DOTALL)
         if not json_match:
             return {}
 
@@ -321,20 +392,31 @@ class OutputSanitizer:
                 story_content = parts[1].strip()
                 metadata = OutputSanitizer.parse_llm_json(parts[2])
                 if metadata:
-                    return OutputSanitizer.normalize_metadata(metadata), OutputSanitizer._clean_story(story_content)
+                    return OutputSanitizer.normalize_metadata(
+                        metadata
+                    ), OutputSanitizer._clean_story(story_content)
 
         # 2. JSON末尾抽出
         metadata = OutputSanitizer.parse_llm_json(text)
         if metadata:
             # 文字列の最後にあるJSONらしき部分を特定
-            json_match = re.search(r'(\{.*\})(?:\s|`|#)*$', text.strip(), re.DOTALL)
+            json_match = re.search(r"(\{.*\})(?:\s|`|#)*$", text.strip(), re.DOTALL)
             if json_match:
-                story_content = (text[:json_match.start()] + text[json_match.end():]).strip()
+                story_content = (text[: json_match.start()] + text[json_match.end() :]).strip()
                 # [thought_process] 等のブロックを広範囲に除去
-                story_content = re.sub(r'\[(thought_process|DIRECTOR_NOTE|METADATA_JSON|CONTENT_SEPARATOR|SCENE|BEAT)\].*?(\n\n|\Z)', '', story_content, flags=re.DOTALL | re.IGNORECASE).strip()
+                story_content = re.sub(
+                    r"\[(thought_process|DIRECTOR_NOTE|METADATA_JSON|CONTENT_SEPARATOR|SCENE|BEAT)\].*?(\n\n|\Z)",
+                    "",
+                    story_content,
+                    flags=re.DOTALL | re.IGNORECASE,
+                ).strip()
                 if len(story_content) < 50:
-                    story_content = metadata.get("final_content") or metadata.get("script_content") or ""
-                return OutputSanitizer.normalize_metadata(metadata), OutputSanitizer._clean_story(story_content)
+                    story_content = (
+                        metadata.get("final_content") or metadata.get("script_content") or ""
+                    )
+                return OutputSanitizer.normalize_metadata(metadata), OutputSanitizer._clean_story(
+                    story_content
+                )
 
         # 3. プレーンテキストフォールバック
         return {}, OutputSanitizer._clean_story(text)
@@ -344,36 +426,53 @@ class OutputSanitizer:
         """AIのメタ発言・余計な一言を削除"""
         # 行頭の定型句のみを削除し、文中の言葉は残す
         meta_patterns = [
-            r'^(?:JSON形式で出力します|了解しました|以下はプロットです|承知しました|以下に執筆します|こちらが本文です|ハイ、喜んで|かしこまりました|考えました|修正しました|提供された.*?に基づいて|かしこまりました。).*?$',
-            r'^(第.*話|エピソード.*|サブタイトル.*)[:：].*$', # 重複するサブタイトル行を除去
-            r'^(?:\[METADATA_JSON\].*?)$',
-            r'^(?:\[thought_process\].*?)$'
+            r"^(?:JSON形式で出力します|了解しました|以下はプロットです|承知しました|以下に執筆します|こちらが本文です|ハイ、喜んで|かしこまりました|考えました|修正しました|提供された.*?に基づいて|かしこまりました。).*?$",
+            r"^(第.*話|エピソード.*|サブタイトル.*)[:：].*$",  # 重複するサブタイトル行を除去
+            r"^(?:\[METADATA_JSON\].*?)$",
+            r"^(?:\[thought_process\].*?)$",
         ]
         for pat in meta_patterns:
-            text = re.sub(pat, '', text, flags=re.MULTILINE | re.IGNORECASE)
+            text = re.sub(pat, "", text, flags=re.MULTILINE | re.IGNORECASE)
 
-        text = re.sub(r'\[(DIRECTOR_NOTE|thought_process)\].*?(?=' + re.escape(CONTENT_SEPARATOR) + r'|\[|\Z)', '', text, flags=re.DOTALL | re.IGNORECASE)
+        text = re.sub(
+            r"\[(DIRECTOR_NOTE|thought_process)\].*?(?="
+            + re.escape(CONTENT_SEPARATOR)
+            + r"|\[|\Z)",
+            "",
+            text,
+            flags=re.DOTALL | re.IGNORECASE,
+        )
         text = text.replace("[NOVEL_CONTENT]", "").replace("[METADATA_JSON]", "")
         text = text.replace(CONTENT_SEPARATOR, "")
-        text = re.sub(r'\[RESERVE_DESCRIPTION:.*?\]', '', text) # 残留した描写予約タグを削除
+        text = re.sub(r"\[RESERVE_DESCRIPTION:.*?\]", "", text)  # 残留した描写予約タグを削除
 
         # 内部構造タグ（[SCENE X]等）の除去。ただし「第1話」などのタイトル行は、後に本文として使う可能性があるため、
         # 明らかにメタデータ的な記述（[SCENE...]）のみをターゲットにする
-        text = re.sub(r'^[#\s\*]*\[(SCENE|Scene|シーン|BEAT|Beat|ビート)\s*[\d一二三四五六七八九十]+\]?[:：\s\*]*.*$', '', text, flags=re.IGNORECASE | re.MULTILINE)
+        text = re.sub(
+            r"^[#\s\*]*\[(SCENE|Scene|シーン|BEAT|Beat|ビート)\s*[\d一二三四五六七八九十]+\]?[:：\s\*]*.*$",
+            "",
+            text,
+            flags=re.IGNORECASE | re.MULTILINE,
+        )
 
         # 執筆フェーズ等のブロックタグ除去
-        text = re.sub(r'\[(DIRECTOR_NOTE|METADATA_JSON|NOVEL_CONTENT|SCRIPT|PLOT|BEAT|ANALYSIS|REFINE)\].*$', '', text, flags=re.IGNORECASE | re.MULTILINE)
+        text = re.sub(
+            r"\[(DIRECTOR_NOTE|METADATA_JSON|NOVEL_CONTENT|SCRIPT|PLOT|BEAT|ANALYSIS|REFINE)\].*$",
+            "",
+            text,
+            flags=re.IGNORECASE | re.MULTILINE,
+        )
 
         # 孤立したブラケットタグ [ ... ] の除去（AIの内部メモ対策）
-        text = re.sub(r'\[[^\]]{1,100}\]', '', text)
+        text = re.sub(r"\[[^\]]{1,100}\]", "", text)
 
         # Markdown装飾記号の除去（小説本文には不要なボールド、イタリック、打ち消し線）
-        text = re.sub(r'(\*\*|__|\*|_|~~)', '', text)
+        text = re.sub(r"(\*\*|__|\*|_|~~)", "", text)
 
         # 区切り線（水平線）の除去
-        text = re.sub(r'^\s*[-*#=_]{3,}\s*$', '', text, flags=re.MULTILINE)
+        text = re.sub(r"^\s*[-*#=_]{3,}\s*$", "", text, flags=re.MULTILINE)
 
-        return re.sub(r'\n{4,}', '\n\n', text).strip()
+        return re.sub(r"\n{4,}", "\n\n", text).strip()
 
     @staticmethod
     def normalize_metadata(data: Any, key_name: Optional[str] = None, is_root: bool = True) -> Any:
@@ -389,15 +488,15 @@ class OutputSanitizer:
         # JSONを囲むテキストの除去を強化
         text = text.strip()
         # 最初に見つかった '{' から 最後に見つかった '}' までを抽出
-        match = re.search(r'(\{.*\})', text, re.DOTALL)
+        match = re.search(r"(\{.*\})", text, re.DOTALL)
         if match:
             text = match.group(1)
 
         # JSON内のコメント（// または /* */）を確実に除去
-        text = re.sub(r'//.*?\n', '\n', text)
-        text = re.sub(r'/\*.*?\*/', '', text, flags=re.DOTALL)
+        text = re.sub(r"//.*?\n", "\n", text)
+        text = re.sub(r"/\*.*?\*/", "", text, flags=re.DOTALL)
 
-        start = text.find('{')
+        start = text.find("{")
         if start == -1:
             return "{}"
 
@@ -405,47 +504,47 @@ class OutputSanitizer:
         count = 0
         end = -1
         for i in range(start, len(text)):
-            if text[i] == '{':
+            if text[i] == "{":
                 count += 1
-            elif text[i] == '}':
+            elif text[i] == "}":
                 count -= 1
                 if count == 0:
                     end = i
                     break
 
         if end != -1:
-            text = text[start:end + 1]
+            text = text[start : end + 1]
         else:
             # Fallback if braces are not balanced
-            end_fallback = text.rfind('}')
+            end_fallback = text.rfind("}")
             if end_fallback != -1:
-                text = text[start:end_fallback + 1]
+                text = text[start : end_fallback + 1]
             else:
                 return "{}"
 
         # Python形式クォートの修正
         text = re.sub(r"([{,]\s*)\'([a-zA-Z0-9_.]+)\'\s*:", r'\1"\2":', text)
-        text = re.sub(r"([{,]\s*)([a-zA-Z0-9_]+)\s*:",      r'\1"\2":', text)
-        text = re.sub(r':\s*\'(.*?)\'(?=\s*[,}\]])', r': "\1"', text, flags=re.DOTALL)
+        text = re.sub(r"([{,]\s*)([a-zA-Z0-9_]+)\s*:", r'\1"\2":', text)
+        text = re.sub(r":\s*\'(.*?)\'(?=\s*[,}\]])", r': "\1"', text, flags=re.DOTALL)
         # 末尾カンマ（リストや辞書の最後）を削除
-        text = re.sub(r',\s*([}\]])', r'\1', text)
+        text = re.sub(r",\s*([}\]])", r"\1", text)
 
         # 括弧の自動補完
         stack = []
         for ch in text:
-            if ch == '{':
-                stack.append('}')
-            elif ch == '[':
-                stack.append(']')
-            elif ch in ('}', ']') and stack and stack[-1] == ch:
+            if ch == "{":
+                stack.append("}")
+            elif ch == "[":
+                stack.append("]")
+            elif ch in ("}", "]") and stack and stack[-1] == ch:
                 stack.pop()
         text += "".join(reversed(stack))
 
         try:
             json.loads(text)
         except json.JSONDecodeError:
-            if text and text[-1] not in ('}', ']'):
-                text += '}'
+            if text and text[-1] not in ("}", "]"):
+                text += "}"
 
         return text
 
@@ -453,15 +552,15 @@ class OutputSanitizer:
     def format_validation_error(ve) -> str:
         """PydanticのValidationErrorをAIが理解しやすい日本語に変換する"""
         type_map = {
-            "missing":     "が不足しています。必ず含めてください。",
+            "missing": "が不足しています。必ず含めてください。",
             "string_type": "は文字列である必要があります。",
-            "int_type":    "は整数である必要があります。",
-            "enum":        "は指定された選択肢から選ぶ必要があります。",
+            "int_type": "は整数である必要があります。",
+            "enum": "は指定された選択肢から選ぶ必要があります。",
         }
         msgs = []
         for err in ve.errors():
-            loc  = ".".join(str(x) for x in err["loc"])
-            msg  = type_map.get(err["type"], f"にエラーがあります（原因: {err['msg']}）")
+            loc = ".".join(str(x) for x in err["loc"])
+            msg = type_map.get(err["type"], f"にエラーがあります（原因: {err['msg']}）")
             msgs.append(f"・項目 '{loc}' {msg}")
         return "\n".join(msgs)
 
@@ -475,19 +574,21 @@ class ContentValidator:
     @staticmethod
     def check_rhythm(text: str) -> List[str]:
         errors = []
-        sentences = [s.strip() for s in re.split(r'[。？！]', text) if s.strip()]
+        sentences = [s.strip() for s in re.split(r"[。？！]", text) if s.strip()]
         if len(sentences) < 5:
             return errors
 
         lengths = [len(s) for s in sentences]
-        avg     = sum(lengths) / len(lengths)
+        avg = sum(lengths) / len(lengths)
         std_dev = (sum((x - avg) ** 2 for x in lengths) / len(lengths)) ** 0.5
 
         if std_dev < 8.0:
-            errors.append(f"リズム警告: 文章の長さが均一すぎます（偏差:{std_dev:.1f}）。長短を混ぜてください。")
+            errors.append(
+                f"リズム警告: 文章の長さが均一すぎます（偏差:{std_dev:.1f}）。長短を混ぜてください。"
+            )
 
         endings = [s[-2:] if len(s) >= 2 else s[-1:] for s in sentences]
-        count   = 1
+        count = 1
         for i in range(1, len(endings)):
             if endings[i] == endings[i - 1]:
                 count += 1
@@ -505,7 +606,9 @@ class ContentValidator:
         if ep_num == 1:
             keywords = ["いつか", "必ず", "予感", "兆し", "復讐", "逆転", "本当の力", "片鱗"]
             if not any(k in text for k in keywords):
-                errors.append("商用警告: 第1話に『カタルシスの予約（解決の予感）』が不足しています。読者が次を読みたくなる『反撃の兆し』を強調してください。")
+                errors.append(
+                    "商用警告: 第1話に『カタルシスの予約（解決の予感）』が不足しています。読者が次を読みたくなる『反撃の兆し』を強調してください。"
+                )
         return errors
 
     @staticmethod
@@ -516,9 +619,9 @@ class ContentValidator:
     @staticmethod
     def _regex_auto_correct_rhythm(text: str, target_std: float = 12.0) -> str:
         """正規表現ベースのリズム補正実装（SudachiPy不在時のフォールバック）"""
-        parts     = re.split(r'([。？！\n])', text)
+        parts = re.split(r"([。？！\n])", text)
         sentences: List[Dict] = []
-        temp      = ""
+        temp = ""
         for p in parts:
             if p in "。？！\n":
                 if temp.strip():
@@ -553,7 +656,9 @@ class ContentValidator:
                     i += 1
                 elif i + 1 < len(sentences) and len(s["text"]) < 20 and sentences[i + 1]["text"]:
                     ns = sentences[i + 1]
-                    new_sentences.append({"text": s["text"] + "、" + ns["text"], "punct": ns["punct"]})
+                    new_sentences.append(
+                        {"text": s["text"] + "、" + ns["text"], "punct": ns["punct"]}
+                    )
                     i += 2
                 else:
                     new_sentences.append(s)
@@ -570,7 +675,7 @@ class ContentValidator:
         if not text:
             return {"kanji_rate": 0, "is_heavy": False}
 
-        kanji_count = len(re.findall(r'[\u4E00-\u9FFF]', text))
+        kanji_count = len(re.findall(r"[\u4E00-\u9FFF]", text))
         total_count = len(text)
         rate = (kanji_count / total_count) * 100 if total_count > 0 else 0
 
@@ -578,7 +683,9 @@ class ContentValidator:
         return {
             "kanji_rate": round(rate, 1),
             "is_heavy": rate > 35,
-            "advice": "漢字が多すぎます。ひらがなを増やして『白く』すると読みやすくなります。" if rate > 35 else "適切な密度です。"
+            "advice": "漢字が多すぎます。ひらがなを増やして『白く』すると読みやすくなります。"
+            if rate > 35
+            else "適切な密度です。",
         }
 
 
@@ -587,6 +694,7 @@ class ContentValidator:
 # ==========================================
 class SeriousnessFilter:
     """文脈のシリアス度を判定し、記号や語彙の最終的な微調整を行う"""
+
     def filter(self, text: str, is_light: bool = True) -> str:
         if is_light:
             return text
@@ -594,7 +702,7 @@ class SeriousnessFilter:
         # シリアスな文体の場合、感嘆符と疑問符の組み合わせを落ち着いた表現に置換
         text = text.replace("！？", "。").replace("！！", "。")
         # 三点リーダーの過剰な連続を抑制
-        text = re.sub(r'…{4,}', '……', text)
+        text = re.sub(r"…{4,}", "……", text)
         return text
 
 
@@ -606,15 +714,15 @@ class TextFormatter:
     def remove_ai_isms(text: str) -> str:
         """AI特有の定型句（AI-isms）を自然な表現に置換または削除する"""
         ai_isms = [
-            (r'言うまでもない[がか]?、?', ''),
-            (r'特筆すべきは、', ''),
-            (r'その時だった。?', ''),
-            (r'誰の目にも明らかだった。?', ''),
-            (r'息を呑[むん]だ。?', '言葉を失った。'),
-            (r'目を丸くした。?', '瞬きを忘れた。'),
-            (r'驚きを隠せなかった。?', '絶句した。'),
-            (r'静寂が支配した。?', '水を打ったような静けさが落ちた。'),
-            (r'言うまでもない。', ''),
+            (r"言うまでもない[がか]?、?", ""),
+            (r"特筆すべきは、", ""),
+            (r"その時だった。?", ""),
+            (r"誰の目にも明らかだった。?", ""),
+            (r"息を呑[むん]だ。?", "言葉を失った。"),
+            (r"目を丸くした。?", "瞬きを忘れた。"),
+            (r"驚きを隠せなかった。?", "絶句した。"),
+            (r"静寂が支配した。?", "水を打ったような静けさが落ちた。"),
+            (r"言うまでもない。", ""),
         ]
         for pattern, replacement in ai_isms:
             text = re.sub(pattern, replacement, text)
@@ -628,13 +736,13 @@ class TextFormatter:
             return text
 
         # デバッグ：二重付与を防ぎつつ、読者が「次を読みたくなる」余韻を強制
-        text = text.rstrip('。')
-        if not text.endswith('――') and not text.endswith('……'):
-            text += '――'
+        text = text.rstrip("。")
+        if not text.endswith("――") and not text.endswith("……"):
+            text += "――"
 
         # 最後の文を視覚的に分離して余韻を持たせる
         # 最後の改行以降を取得
-        parts = text.rsplit('\n\n', 1)
+        parts = text.rsplit("\n\n", 1)
         if len(parts) == 2:
             main_text, last_para = parts
             return f"{main_text}\n\n　――{last_para.strip()}"
@@ -655,32 +763,41 @@ class TextFormatter:
 
         # AI前置き・コードブロック除去 (FixedTextFormatterの改善を統合)
         text = re.sub(
-            r'^(はい|承知|了解|以下|これ|Here|Sure|JSON形式で出力します|了解しました).*?(\n|$)',
-            '', text, flags=re.IGNORECASE | re.MULTILINE
+            r"^(はい|承知|了解|以下|これ|Here|Sure|JSON形式で出力します|了解しました).*?(\n|$)",
+            "",
+            text,
+            flags=re.IGNORECASE | re.MULTILINE,
         ).strip()
-        text = re.sub(r'```.*?```', '', text, flags=re.DOTALL)
+        text = re.sub(r"```.*?```", "", text, flags=re.DOTALL)
 
         # 構造タグ・メタタグの最終除去（堅牢なパイプラインの最終ゲート）
-        struct_tags = r'(SCENE|Scene|シーン|CHAPTER|Chapter|第\d+話|EPISODE|Episode|エピソード)'
-        text = re.sub(r'^[#\s\*]*\[?' + struct_tags + r'\s*[\d一二三四五六七八九十]+\]?[:：\s\*]*.*$', '', text, flags=re.IGNORECASE | re.MULTILINE)
-        text = re.sub(r'\[.*?\]', '', text)
+        struct_tags = r"(SCENE|Scene|シーン|CHAPTER|Chapter|第\d+話|EPISODE|Episode|エピソード)"
+        text = re.sub(
+            r"^[#\s\*]*\[?" + struct_tags + r"\s*[\d一二三四五六七八九十]+\]?[:：\s\*]*.*$",
+            "",
+            text,
+            flags=re.IGNORECASE | re.MULTILINE,
+        )
+        text = re.sub(r"\[.*?\]", "", text)
 
         # 台本形式の除去ロジックをより高速な単一パスの置換へ統合
         def _process_dialogue_line(match):
-            notes = re.findall(r'[（(](.*?)[）)]', match.group(1))
+            notes = re.findall(r"[（(](.*?)[）)]", match.group(1))
             if notes:
                 return "。".join(notes) + "。\n" + match.group(2)
             return match.group(1).strip() + "\n" + match.group(2)
 
         # 「セリフ」または『セリフ』の前に何かがある行を対象
         # DOTALLフラグは不要、MULTILINEで各行の先頭を^でマッチ
-        text = re.sub(r'^([^「『\n]+)([「『].*?[」』])', _process_dialogue_line, text, flags=re.MULTILINE)
+        text = re.sub(
+            r"^([^「『\n]+)([「『].*?[」』])", _process_dialogue_line, text, flags=re.MULTILINE
+        )
 
         # 記号の統一
-        text = re.sub(r'\.{3,}', '……', text)
-        text = re.sub(r'[…・]{1,}', '……', text)
+        text = re.sub(r"\.{3,}", "……", text)
+        text = re.sub(r"[…・]{1,}", "……", text)
         text = text.replace("。。", "。")
-        text = re.sub(r'([？！])(?![\s　」』])', r'\1　', text)
+        text = re.sub(r"([？！])(?![\s　」』])", r"\1　", text)
 
         # --- 「白さ」の動的制御 (Category A: Implementation) ---
         analysis = ContentValidator.analyze_word_heaviness(text)
@@ -693,8 +810,8 @@ class TextFormatter:
         max_chars_per_line = 35 if kanji_rate > 35 else 45
         force_break_at_period = kanji_rate > 33
 
-        lines         = [line.strip() for line in text.split('\n')]
-        new_lines     = []
+        lines = [line.strip() for line in text.split("\n")]
+        new_lines = []
         narrative_cnt = 0
 
         for line in lines:
@@ -704,10 +821,10 @@ class TextFormatter:
                 narrative_cnt = 0
                 continue
             # 全角インデントの自動付与（特定の記号以外）
-            if line[0] not in ['「', '『', '（', '<', '【', '［', '〔', '〈', '《']:
-                line = '　' + line
+            if line[0] not in ["「", "『", "（", "<", "【", "［", "〔", "〈", "《"]:
+                line = "　" + line
 
-            is_dialogue = line.strip().startswith(('「', '『', '（'))
+            is_dialogue = line.strip().startswith(("「", "『", "（"))
 
             if is_dialogue:
                 # 会話文の前には空行を確保
@@ -734,7 +851,7 @@ class TextFormatter:
                     narrative_cnt = 0
 
         result = "\n".join(new_lines).strip()
-        result = re.sub(r'\n{3,}', '\n\n', result)
+        result = re.sub(r"\n{3,}", "\n\n", result)
 
         # 改善案5: 「引き（クリフハンガー）」の視覚的強調
         return TextFormatter.enforce_cliffhanger(result)
@@ -760,4 +877,3 @@ class AtmosphereGenerator:
         if weather == "晴天":
             anchors.append("目を細めるような強い陽光")
         return anchors
-

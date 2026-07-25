@@ -1,4 +1,5 @@
 """tests/test_api_integration.py - APIエンドポイント統合テスト"""
+
 import pytest
 from httpx import AsyncClient
 
@@ -16,7 +17,7 @@ async def test_produce_novel_endpoint():
         "target_episodes": 3,
         "target_word_count": 2000,
         "style_key": "default",
-        "engine_key": "standard"
+        "engine_key": "standard",
     }
     async with AsyncClient(app=app, base_url="http://test") as client:
         response = await client.post("/api/novel/produce", json=payload)
@@ -24,6 +25,7 @@ async def test_produce_novel_endpoint():
         data = response.json()
         assert data["status"] == "completed"
         assert data["project_id"] == 1
+
 
 @pytest.mark.asyncio
 async def test_get_novel_status():
@@ -35,6 +37,7 @@ async def test_get_novel_status():
         assert "status" in data
         assert "progress_percent" in data
 
+
 @pytest.mark.asyncio
 async def test_list_episodes():
     async with AsyncClient(app=app, base_url="http://test") as client:
@@ -43,6 +46,7 @@ async def test_list_episodes():
         data = response.json()
         assert "episodes" in data
         assert isinstance(data["episodes"], list)
+
 
 @pytest.mark.asyncio
 async def test_get_report():

@@ -13,6 +13,6 @@ def check_signature():
     print(f"Signature: {sig}")
     print(f"Parameters: {list(sig.parameters.keys())}")
 
+
 if __name__ == "__main__":
     check_signature()
-

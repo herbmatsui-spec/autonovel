@@ -10,14 +10,15 @@ async def test_sse_endpoint_no_task(monkeypatch):
     """
     タスクが存在しない、または無効な場合のSSEストリームの挙動を確認する。
     """
-    fd, temp_db_path = tempfile.mkstemp(suffix='.db')
+    fd, temp_db_path = tempfile.mkstemp(suffix=".db")
     os.close(fd)
 
-    db_url = f'sqlite+aiosqlite:///{temp_db_path}'
-    monkeypatch.setattr('config.DATABASE_URL', db_url)
-    monkeypatch.setattr('config.base.DATABASE_URL', db_url)
+    db_url = f"sqlite+aiosqlite:///{temp_db_path}"
+    monkeypatch.setattr("config.DATABASE_URL", db_url)
+    monkeypatch.setattr("config.base.DATABASE_URL", db_url)
 
     from src.backend.database.core import set_db_manager
+
     set_db_manager(None)
 
     from src.backend.server import app

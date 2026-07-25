@@ -2,7 +2,7 @@ import sqlite3
 
 
 def check_db():
-    conn = sqlite3.connect('kaku_hegemony_v2.db')
+    conn = sqlite3.connect("kaku_hegemony_v2.db")
     cursor = conn.cursor()
 
     print("--- Tables ---")
@@ -18,6 +18,6 @@ def check_db():
     for row in cursor.fetchall():
         print(row)
 
+
 if __name__ == "__main__":
     check_db()
-

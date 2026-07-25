@@ -4,19 +4,23 @@ Gemini Context Caching (静的コンテンツキャッシュ) と
 分散キャッシュ (Redis + ChromaDB セマンティックキャッシュ) を統合し、
 統一的なインターフェースを提供する。
 """
+
 import logging
 from typing import Any, Dict, Optional
 
 from cachetools import LRUCache
+
+
 # コンテキストキャッシュの無効化（一時的な処置）
 class CachedContent:
     pass
 
+
 class CachingPlaceholder:
     CachedContent = CachedContent
 
-caching = CachingPlaceholder()
 
+caching = CachingPlaceholder()
 
 
 from src.services.redis_cache import (
@@ -36,6 +40,7 @@ class PromptCacheManager:
     Gemini Context Caching を管理するクラス。
     静的なプロンプトコンテンツをキャッシュし、API呼び出し時のコストとレイテンシを削減する。
     """
+
     def __init__(self):
         self._cache_map: Dict[str, caching.CachedContent] = {}
 
@@ -44,7 +49,7 @@ class PromptCacheManager:
         cache_key: str,
         contents: list,
         model_name: str = "gemini-3.1-flash-lite",
-        ttl_minutes: int = 60
+        ttl_minutes: int = 60,
     ) -> caching.CachedContent:
         """
         キャッシュが存在すれば取得、なければ作成する。
@@ -59,9 +64,7 @@ class PromptCacheManager:
         # Note: 実際の実装では genai.caching.CachedContent.create を使用
         # モデル名やコンテンツの構造はAPI仕様に従う
         cache = caching.CachedContent.create(
-            model=model_name,
-            contents=contents,
-            ttl=f"{ttl_minutes * 60}s"
+            model=model_name, contents=contents, ttl=f"{ttl_minutes * 60}s"
         )
         self._cache_map[cache_key] = cache
         return cache
@@ -75,7 +78,7 @@ class PromptCacheManager:
 
 class UnifiedPromptCache:
     """統合プロンプトキャッシュ.
-    
+
     L1: インメモリ LRU (完全一致)
     L2: Redis 分散キャッシュ (完全一致)
     L3: ChromaDB セマンティックキャッシュ (類似検索)
@@ -125,7 +128,7 @@ class UnifiedPromptCache:
         genre: str = "general",
         temperature: float = 0.7,
         template_version: str = "1.0",
-        **params: Any
+        **params: Any,
     ) -> Optional[Any]:
         """キャッシュから応答を取得 (L1 -> L2 -> L3 の順で検索)."""
         cache = await self._ensure_prompt_cache()
@@ -137,7 +140,7 @@ class UnifiedPromptCache:
             genre=genre,
             temperature=temperature,
             template_version=template_version,
-            **params
+            **params,
         )
 
     async def cache_response(
@@ -151,7 +154,7 @@ class UnifiedPromptCache:
         temperature: float = 0.7,
         template_version: str = "1.0",
         ttl: Optional[int] = None,
-        **params: Any
+        **params: Any,
     ) -> None:
         """応答をキャッシュに保存 (L1, L2, L3 すべてに保存)."""
         cache = await self._ensure_prompt_cache()
@@ -165,7 +168,7 @@ class UnifiedPromptCache:
             temperature=temperature,
             template_version=template_version,
             ttl=ttl,
-            **params
+            **params,
         )
 
     # === Gemini Context Caching (L4) 用メソッド ===
@@ -175,7 +178,7 @@ class UnifiedPromptCache:
         cache_key: str,
         contents: list,
         model_name: str = "gemini-3.1-flash-lite",
-        ttl_minutes: int = 60
+        ttl_minutes: int = 60,
     ) -> caching.CachedContent:
         """Gemini Context Cache を取得または作成."""
         return self._context_cache_manager.get_or_create_cache(

@@ -11,9 +11,13 @@ class DialogueConfig(BaseModel):
     """
     キャラクター間の呼称や敬語レベルを定義する。
     """
+
     honorific_level: str = Field(..., description="formal (敬語), casual (タメ口), mixed (混在)")
-    addressing_style: str = Field(..., description="last_name (名字), first_name (名前), nickname (愛称), title (役職/肩書き)")
-    suffix: str           # "様", "さん", "くん", "ちゃん", "無し"
+    addressing_style: str = Field(
+        ..., description="last_name (名字), first_name (名前), nickname (愛称), title (役職/肩書き)"
+    )
+    suffix: str  # "様", "さん", "くん", "ちゃん", "無し"
+
 
 class DialogueKernel(KernelBase[ConnectionState, DialogueConfig]):
     """
@@ -64,26 +68,26 @@ class DialogueKernel(KernelBase[ConnectionState, DialogueConfig]):
             honorific_level = "mixed"
 
         return DialogueConfig(
-            honorific_level=honorific_level,
-            addressing_style=addressing_style,
-            suffix=suffix
+            honorific_level=honorific_level, addressing_style=addressing_style, suffix=suffix
         )
 
-    def generate_dialogue_instruction(self, char_a: str, char_b: str, config: DialogueConfig) -> str:
+    def generate_dialogue_instruction(
+        self, char_a: str, char_b: str, config: DialogueConfig
+    ) -> str:
         """
         LLM向けの具体的なダイアログ指示文を生成する。
         """
         style_map = {
             "formal": "極めて礼儀正しく、厳格な敬語を使用してください。",
             "casual": "親密な間柄としてのタメ口、あるいは崩れた口調を使用してください。",
-            "mixed": "基本は丁寧ですが、時折親しみのある砕けた表現を混ぜてください。"
+            "mixed": "基本は丁寧ですが、時折親しみのある砕けた表現を混ぜてください。",
         }
 
         address_map = {
             "nickname": "相手を愛称や特別な呼び方で呼んでください。",
             "first_name": "相手を名前で呼んでください。",
             "last_name": "相手を名字で呼んでください。",
-            "title": "相手を役職や肩書き、あるいは様付けで呼んでください。"
+            "title": "相手を役職や肩書き、あるいは様付けで呼んでください。",
         }
 
         return (
@@ -136,19 +140,21 @@ def avatar_desire_dialogue_generator(
 ) -> str:
     """
     AVATAR_OF_DESIRE役キャラクターのダイアログを生成する。
-    
+
     Args:
         avatar_char: アバターキャラクター名
         desire_target: 願望対象（能力・地位・関係性など）
         dialogue_type: ダイアログタイプ (ideal_self/wish_fulfillment/heroic_declaration/self_improvement/triumph_over_situations)
         intensity: 強度係数 (0.0-1.0)
-    
+
     Returns:
         生成されたダイアログ指示文
     """
     import random
 
-    patterns = AVATAR_DESIRE_DIALOGUE_PATTERNS.get(dialogue_type, AVATAR_DESIRE_DIALOGUE_PATTERNS["ideal_self"])
+    patterns = AVATAR_DESIRE_DIALOGUE_PATTERNS.get(
+        dialogue_type, AVATAR_DESIRE_DIALOGUE_PATTERNS["ideal_self"]
+    )
     base_template = random.choice(patterns)
 
     # 強度に応じた修飾
@@ -180,12 +186,12 @@ def generate_avatar_fulfillment_scene(
 ) -> str:
     """
     読者願望充足シーンのダイアログプロンプトを生成する。
-    
+
     Args:
         avatar_char: アバターキャラクター
         reader_desire: 読者が抱く願望（例：「最強」「美しい異性からの承認」「复仇」）
         scene_context: シーンの文脈・状況
-    
+
     Returns:
         願望充足シーン用のダイアログ指示
     """
@@ -200,4 +206,3 @@ def generate_avatar_fulfillment_scene(
         f"  3. 願望成就の瞬間には强いカタルシス効果を持たせる\n"
         f"  4. 短絡的な満足ではなく、夢をldquo;少しずつrdquo;叶めていく過程を描写し、投資심을育成"
     )
-

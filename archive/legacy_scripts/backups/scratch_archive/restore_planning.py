@@ -1,4 +1,3 @@
-
 file_path = "agents/planning.py"
 
 # Read current planning.py
@@ -22,11 +21,15 @@ if stop_idx == -1:
         if "sem = asyncio.Semaphore" in line:
             # We want to keep everything up to when `_process_episode` loop does ability checks
             # Let's find "should_audit = ncs_score >= 40"
-            if "should_audit = ncs_score >= 40" in lines[idx+20]:
+            if "should_audit = ncs_score >= 40" in lines[idx + 20]:
                 pass
     # Let's hardcode the search for lines we want to cut
     for idx, line in enumerate(lines):
-        if "max_ability_retries = 3" in line or "AbilityConsistencyChecker" in line or "Ability consistency check" in line:
+        if (
+            "max_ability_retries = 3" in line
+            or "AbilityConsistencyChecker" in line
+            or "Ability consistency check" in line
+        ):
             stop_idx = idx
             break
 
@@ -376,4 +379,3 @@ with open(file_path, "w", encoding="utf-8") as f:
     f.write(final_content)
 
 print("Reconstructed planning.py successfully!")
-

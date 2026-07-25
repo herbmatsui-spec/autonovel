@@ -25,6 +25,6 @@ Alvin was walking in the dark forest.
     assert content == "Alvin was walking in the dark forest."
     print("Sanitizer test passed!")
 
+
 if __name__ == "__main__":
     test_sanitizer()
-

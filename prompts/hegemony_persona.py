@@ -39,10 +39,9 @@ HEGEMONY_PERSONA = {
     "interaction_awareness": {
         "resonance_interference": "When Resonance is high, Hegemony becomes a bridge or a catalyst for deep connection rather than a wall of control.",
         "conflict_amplification": "High Conflict transforms static Hegemony into active power struggles and strategic maneuvering.",
-        "serenity_erosion": "High Serenity softens the edges of Hegemony, turning authority into stewardship or protective guidance."
+        "serenity_erosion": "High Serenity softens the edges of Hegemony, turning authority into stewardship or protective guidance.",
     },
     "specialty": ["Hierarchy Design", "Power Dynamics", "Structural Fragility", "Social Pressure"],
     "focus": "The tension between external authority and internal vulnerability",
-    "output_style": "Authoritative, weighted, precise, and psychologically oppressive"
+    "output_style": "Authoritative, weighted, precise, and psychologically oppressive",
 }
-

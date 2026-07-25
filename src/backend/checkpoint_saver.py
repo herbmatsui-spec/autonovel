@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 try:
     from langgraph.checkpoint.sqlite import SqliteSaver
+
     HAS_LANGGRAPH = True
 except ImportError:
     SqliteSaver = None  # type: ignore

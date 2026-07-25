@@ -1,4 +1,3 @@
-import datetime
 import json
 import unittest.mock
 
@@ -6,9 +5,7 @@ import pytest
 
 from src.backend.background import (
     AsyncDbSaveStrategy,
-    ProgressState,
     RedisSaveStrategy,
-    SaveStrategy,
     SyncDbSaveStrategy,
     _select_strategy,
 )
@@ -69,7 +66,9 @@ def test_async_db_save_strategy_no_loop():
     state.repo = DummyRepo()
 
     strategy = AsyncDbSaveStrategy()
-    with unittest.mock.patch("asyncio.get_running_loop", side_effect=RuntimeError("no running loop")):
+    with unittest.mock.patch(
+        "asyncio.get_running_loop", side_effect=RuntimeError("no running loop")
+    ):
         with pytest.raises(RuntimeError, match="No running event loop"):
             strategy.save(state, "{}", "2024-01-01T00:00:00")
 
@@ -80,7 +79,9 @@ def test_sync_db_save_strategy_skips_save():
     state.repo = DummyRepo()
 
     strategy = SyncDbSaveStrategy()
-    with unittest.mock.patch("asyncio.get_running_loop", side_effect=RuntimeError("no running loop")):
+    with unittest.mock.patch(
+        "asyncio.get_running_loop", side_effect=RuntimeError("no running loop")
+    ):
         strategy.save(state, "{}", "2024-01-01T00:00:00")
 
 
@@ -110,6 +111,8 @@ def test_select_strategy_falls_back_to_sync_db():
     state.repo = unittest.mock.Mock()
 
     with unittest.mock.patch("src.backend.redis_util.get_redis_client", return_value=None):
-        with unittest.mock.patch("asyncio.get_running_loop", side_effect=RuntimeError("no running loop")):
+        with unittest.mock.patch(
+            "asyncio.get_running_loop", side_effect=RuntimeError("no running loop")
+        ):
             strategy = _select_strategy(state)
             assert isinstance(strategy, SyncDbSaveStrategy)

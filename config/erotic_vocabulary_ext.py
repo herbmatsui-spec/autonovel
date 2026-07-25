@@ -19,6 +19,7 @@ config/erotic_vocabulary_ext.py
 - INTENSE_ONOMATOPOEIA: 生理的な反応（脈拍、呼吸、体液）に特化した擬音・擬態語。
 - INTENSE_PSYCHOLOGY: 精神的溶解、衝動の制御不能状態などの心理描写。
 """
+
 from typing import Dict, List
 
 from config.erotic_vocabulary import (

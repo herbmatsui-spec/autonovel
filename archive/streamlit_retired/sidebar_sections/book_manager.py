@@ -1,14 +1,17 @@
 """
 streamlit_app/sidebar_sections/book_manager.py - 作品管理・選択セクション
 """
+
 from __future__ import annotations
 
 import streamlit as st
+
 from src.engine_service import EngineService
 from streamlit_app.state import UIStateStore, get_session
 
 STRESS_THRESHOLD_HIGH = 65
 STRESS_THRESHOLD_MEDIUM = 40
+
 
 def render_book_selector(service: EngineService) -> int | None:
     """作品選択ボックスをサイドバーに描画し、選択中の作品IDを管理する。"""
@@ -44,8 +47,10 @@ def render_book_selector(service: EngineService) -> int | None:
             book_detail = detail["book"]
             stress = detail["stress"]
             stress_icon = (
-                "🔴" if stress >= STRESS_THRESHOLD_HIGH
-                else "🟡" if stress >= STRESS_THRESHOLD_MEDIUM
+                "🔴"
+                if stress >= STRESS_THRESHOLD_HIGH
+                else "🟡"
+                if stress >= STRESS_THRESHOLD_MEDIUM
                 else "🟢"
             )
             st.caption(f"ジャンル: {book_detail.genre}")

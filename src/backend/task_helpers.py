@@ -1,8 +1,10 @@
 """Task state helper functions."""
+
 import json
 import time
 
 from config.container import Container
+
 
 async def create_task(task_id: str, message: str, total_steps: int = 1) -> None:
     """タスクの初期状態をDBに保存する。"""
@@ -19,10 +21,8 @@ async def create_task(task_id: str, message: str, total_steps: int = 1) -> None:
         "result_data": None,
         "token_usage": {"prompt": 0, "completion": 0, "calls": 0},
         "start_time": time.time(),
-        "last_updated": time.time()
+        "last_updated": time.time(),
     }
     await db.save_internal_state(
-        f"task_status:{task_id}",
-        json.dumps(initial_state),
-        time.strftime('%Y-%m-%d %H:%M:%S')
+        f"task_status:{task_id}", json.dumps(initial_state), time.strftime("%Y-%m-%d %H:%M:%S")
     )

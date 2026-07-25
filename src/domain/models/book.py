@@ -12,6 +12,7 @@ class Book:
     Book ドメインエンティティ。
     DBモデル(src.backend.database.models.Book)とは独立し、ビジネスロジックを保持する。
     """
+
     id: BookId
     title: str
     genre: str
@@ -29,12 +30,8 @@ class Book:
 
     def update_tension(self, delta: int) -> Book:
         """緊張感を更新した新しいBookインスタンスを返す（不変性の維持）"""
-        return Book(
-            **{**self.__dict__, "cumulative_tension": self.cumulative_tension + delta}
-        )
+        return Book(**{**self.__dict__, "cumulative_tension": self.cumulative_tension + delta})
 
     def update_qol(self, delta: int) -> Book:
         """QOLを更新した新しいBookインスタンスを返す"""
-        return Book(
-            **{**self.__dict__, "cumulative_qol": self.cumulative_qol + delta}
-        )
+        return Book(**{**self.__dict__, "cumulative_qol": self.cumulative_qol + delta})

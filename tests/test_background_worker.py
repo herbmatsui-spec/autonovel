@@ -13,12 +13,14 @@ async def test_background_worker_success():
     huey.immediate = True
 
     from config.container import Container
+
     db = Container.db()
     task_id = f"test_task_{int(time.time())}"
 
     import asyncio
+
     # Mock Redis so ProgressState saves to SQLite instead of Redis
-    with unittest.mock.patch('src.backend.redis_util.get_redis_client', return_value=None):
+    with unittest.mock.patch("src.backend.redis_util.get_redis_client", return_value=None):
         # Run the Huey task synchronously
         task_coro = run_test_coro(task_id, "Hello from test")
 
@@ -28,16 +30,25 @@ async def test_background_worker_success():
                 await task
 
         # Direct insert test
-        await db.save_internal_state(f"task_status:{task_id}", json.dumps({
-            "is_running": False,
-            "result_data": "SuccessValue",
-            "error": None,
-            "logs": ["Hello from test"]
-        }), "2024-01-01T00:00:00")
+        await db.save_internal_state(
+            f"task_status:{task_id}",
+            json.dumps(
+                {
+                    "is_running": False,
+                    "result_data": "SuccessValue",
+                    "error": None,
+                    "logs": ["Hello from test"],
+                }
+            ),
+            "2024-01-01T00:00:00",
+        )
 
     from sqlalchemy import text
+
     async with db.get_session() as session:
-        result2 = await session.execute(text("SELECT value FROM internal_state WHERE key = :k"), {"k": f"task_status:{task_id}"})
+        result2 = await session.execute(
+            text("SELECT value FROM internal_state WHERE key = :k"), {"k": f"task_status:{task_id}"}
+        )
         row = result2.fetchone()
 
     # Fetch result from DB to verify execution

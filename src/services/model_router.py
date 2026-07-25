@@ -17,14 +17,17 @@ class ModelTier:
             # 高速な校正、要約、単純な抽出 (Ollama / vLLM などのローカル軽量モデルやクラウドAPI)
             return cfg.model_ultra_stable
 
+
 class ModelRouter:
     """タスクの性質と難易度に基づいて最適なモデルをルーティングする"""
 
     @classmethod
-    def get_model_for_task(cls, task_type: str, difficulty_score: int = 50, current_tension: int = 0) -> str:
+    def get_model_for_task(
+        cls, task_type: str, difficulty_score: int = 50, current_tension: int = 0
+    ) -> str:
         """
         タスクの難易度や重要性（ストレス値）に応じてモデルを選択する
-        
+
         Args:
             task_type: タスクの種類 ("planning", "writing", "audit", "formatting" など)
             difficulty_score: プロットの複雑さや重要度 (0-100)

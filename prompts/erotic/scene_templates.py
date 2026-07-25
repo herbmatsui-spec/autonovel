@@ -42,6 +42,7 @@ consent_state: {consent_state}
 - 感情のキーワード（沈静、余韻、温もり、安らぎ、静まる等）を必ず使用すること
 """
 
+
 def get_template_for_phase(phase: str) -> str:
     """フェーズ名からテンプレート文字列を返す。"""
     templates = {

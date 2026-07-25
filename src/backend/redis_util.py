@@ -10,6 +10,7 @@ REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 _redis_client = None
 _redis_available = None
 
+
 def get_redis_client():
     global _redis_client, _redis_available
     if _redis_available is False:
@@ -31,6 +32,6 @@ def get_redis_client():
         logger.warning(f"Redis is not available: {e}. Falling back to SQLite.")
         return None
 
+
 def is_redis_available():
     return get_redis_client() is not None
-

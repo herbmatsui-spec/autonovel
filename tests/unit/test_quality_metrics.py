@@ -5,7 +5,14 @@ QualityMetrics / QualityMetricsCollector の単体テスト
 from src.backend.workflows.quality_metrics import QualityMetrics, QualityMetricsCollector
 
 
-def _make(ep_num: int, genre: str = "fantasy", integrity: bool = True, causal: bool = True, rate: float = 0.9, dogfeed_ok: bool = True) -> QualityMetrics:
+def _make(
+    ep_num: int,
+    genre: str = "fantasy",
+    integrity: bool = True,
+    causal: bool = True,
+    rate: float = 0.9,
+    dogfeed_ok: bool = True,
+) -> QualityMetrics:
     return QualityMetrics(
         ep_num=ep_num,
         integrity_ok=integrity,

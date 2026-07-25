@@ -1,5 +1,6 @@
 import sys
-sys.path.insert(0, 'D:/R15/cR15/src')
+
+sys.path.insert(0, "D:/R15/cR15/src")
 
 from src.models.sharp_edge import SharpEdgeSpec
 
@@ -43,6 +44,7 @@ except Exception as e:
 
 # Test 5: preserve_on_quality_polish warning
 import logging
+
 logging.basicConfig(level=logging.WARNING)
 edge5 = SharpEdgeSpec(
     edge_type="protagonist_flaw",

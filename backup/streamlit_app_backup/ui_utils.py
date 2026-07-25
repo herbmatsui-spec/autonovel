@@ -9,6 +9,8 @@ def trigger_app_rerun():
         st.rerun(scope="app")
     except TypeError:
         st.rerun()
+
+
 def render_sidebar_section(title: str, content_func: Callable, expanded: bool = True):
     """汎用的なサイドバーのセクション表示"""
     with st.sidebar.expander(title, expanded=expanded):
@@ -17,15 +19,20 @@ def render_sidebar_section(title: str, content_func: Callable, expanded: bool = 
 
 def render_centered_title(title: str, subtitle: str):
     """中央揃えのタイトル表示"""
-    st.markdown(f"""
+    st.markdown(
+        f"""
     <div class="centered-title">
         <h1>{title}</h1>
         <p>{subtitle}</p>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
 
-def render_action_card(title: str, description: str, action_func: Callable, button_label: str = "実行"):
+def render_action_card(
+    title: str, description: str, action_func: Callable, button_label: str = "実行"
+):
     """アクションカードの表示"""
     with st.container(border=True):
         st.subheader(title)
@@ -47,10 +54,13 @@ def render_visual_roadmap(active_tab_index: int) -> None:
     ]
 
     # カスタムCSSでステップバーを構築
-    st.markdown("""
+    st.markdown(
+        """
     <style>
     </style>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
     html_steps = "<div class='roadmap-container'>"
     for i, step in enumerate(steps):
@@ -63,8 +73,8 @@ def render_visual_roadmap(active_tab_index: int) -> None:
         html_steps += f"""
         <div class='roadmap-step {status_class}'>
             <div class='roadmap-line'></div>
-            <div class='step-icon'>{step['icon']}</div>
-            <div class='step-label'>{step['label']}</div>
+            <div class='step-icon'>{step["icon"]}</div>
+            <div class='step-label'>{step["label"]}</div>
         </div>
         """
     html_steps += "</div>"

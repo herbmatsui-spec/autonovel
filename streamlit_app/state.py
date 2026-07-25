@@ -1,6 +1,7 @@
 """
 streamlit_app/state.py — Streamlit セッション状態の型安全な管理
 """
+
 from __future__ import annotations
 
 from typing import Any, Optional

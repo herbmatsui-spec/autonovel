@@ -22,7 +22,9 @@ with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
 
                 # Check if it is a user input or response that has a code block
                 content = obj.get("content", "")
-                if "def build_drafting_prompt" in content and "def build_drafting_prompt" not in [x[3] for x in found_blocks]:
+                if "def build_drafting_prompt" in content and "def build_drafting_prompt" not in [
+                    x[3] for x in found_blocks
+                ]:
                     if "UnicodeEncodeError" not in content and "Match on line" not in content:
                         found_blocks.append((idx, "content", len(content), content))
             except Exception:
@@ -34,6 +36,7 @@ found_blocks.sort(key=lambda x: x[2], reverse=True)
 for i, (idx, source, size, val) in enumerate(found_blocks[:5]):
     print(f"Block {i}: Line {idx}, source {source}, size {size}")
     # Write to a file
-    with open(f"i:\\claude2\\scratch\\drafting_candidate_{idx}_{source}.py", "w", encoding="utf-8") as out:
+    with open(
+        f"i:\\claude2\\scratch\\drafting_candidate_{idx}_{source}.py", "w", encoding="utf-8"
+    ) as out:
         out.write(val)
-

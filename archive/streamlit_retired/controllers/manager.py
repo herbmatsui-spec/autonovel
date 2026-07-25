@@ -3,8 +3,9 @@ from __future__ import annotations
 from typing import Any, Dict, Optional
 
 import streamlit_app.actions as actions
-from streamlit_app.event_bus import UIEvent, UIEventBus, UIEventType
 from streamlit_app.proxy import UltimateHegemonyEngineProxy
+
+from streamlit_app.event_bus import UIEvent, UIEventBus, UIEventType
 from streamlit_app.state import UIStateStore
 
 
@@ -13,6 +14,7 @@ class BaseController:
     コントローラーの基底クラス。
     EventBusからイベントを受け取り、ビジネスロジック(actions)を呼び出す。
     """
+
     def __init__(self, engine: UltimateHegemonyEngineProxy, stream_display: Optional[Any] = None):
         self.engine = engine
         self.stream_display = stream_display
@@ -20,8 +22,10 @@ class BaseController:
     def handle_event(self, event: UIEvent) -> Optional[Dict[str, Any]]:
         raise NotImplementedError("Subclasses must implement handle_event")
 
+
 class PlanningController(BaseController):
     """企画立案に関するイベントを処理するコントローラー"""
+
     def handle_event(self, event: UIEvent) -> Optional[Dict[str, Any]]:
         payload = event.payload
 
@@ -40,14 +44,16 @@ class PlanningController(BaseController):
                 trend_memo=payload.get("concept", ""),
                 sanctuary=payload.get("sanctuary", ""),
                 originality_score=payload.get("originality_score", 50),
-                platform=payload.get("platform", "カクヨム/なろう")
+                platform=payload.get("platform", "カクヨム/なろう"),
             )
             return {"status": "completed", "data": audit_res}
 
         return None
 
+
 class WritingController(BaseController):
     """プロット・執筆に関するイベントを処理するコントローラー"""
+
     def handle_event(self, event: UIEvent) -> Optional[Dict[str, Any]]:
         payload = event.payload
 
@@ -56,7 +62,7 @@ class WritingController(BaseController):
                 self.engine,
                 book_id=payload["book_id"],
                 gen_from=payload["gen_from"],
-                gen_to=payload["gen_to"]
+                gen_to=payload["gen_to"],
             )
             return {"status": "started"}
 
@@ -70,7 +76,7 @@ class WritingController(BaseController):
                 word_count=payload["word_count"],
                 do_refine=payload["do_refine"],
                 env_state=payload["env_state"],
-                pipeline_mode=payload["pipeline_mode"]
+                pipeline_mode=payload["pipeline_mode"],
             )
             return {"status": "started"}
 
@@ -80,32 +86,35 @@ class WritingController(BaseController):
                 book_id=payload["book_id"],
                 ep_num=payload["ep_num"],
                 text=payload["text"],
-                do_refine=payload["do_refine"]
+                do_refine=payload["do_refine"],
             )
             return {"status": "completed", "data": res}
 
         if event.type == UIEventType.REQUEST_DELETE_CHAPTER:
             actions.delete_chapter(
-                engine=self.engine,
-                book_id=payload["book_id"],
-                ep_num=payload["ep_num"]
+                engine=self.engine, book_id=payload["book_id"], ep_num=payload["ep_num"]
             )
             return {"status": "completed"}
 
         return None
 
+
 class SystemController(BaseController):
     """システム・作品管理に関するイベントを処理するコントローラー"""
+
     def handle_event(self, event: UIEvent) -> Optional[Dict[str, Any]]:
         payload = event.payload
 
         if event.type == UIEventType.REQUEST_DELETE_BOOK:
             from src.engine_service import EngineService
+
             service = EngineService.get_instance()
             service.delete_book(payload["book_id"])
 
             # 状態の更新
-            UIStateStore.update(lambda s: setattr(s, "current_book_id", None), notify_keys=["current_book_id"])
+            UIStateStore.update(
+                lambda s: setattr(s, "current_book_id", None), notify_keys=["current_book_id"]
+            )
             return {"status": "completed"}
 
         if event.type == UIEventType.REQUEST_REBUILD_PLOT:
@@ -114,10 +123,12 @@ class SystemController(BaseController):
 
         return None
 
+
 class UIControllerManager:
     """
     すべてのコントローラーを管理し、EventBusに登録する。
     """
+
     _instance = None
 
     def __new__(cls, *args, **kwargs):
@@ -126,7 +137,8 @@ class UIControllerManager:
         return cls._instance
 
     def __init__(self, engine: UltimateHegemonyEngineProxy, stream_display: Optional[Any] = None):
-        if hasattr(self, "_initialized"): return
+        if hasattr(self, "_initialized"):
+            return
 
         self.engine = engine
         self.bus = UIEventBus()
@@ -156,7 +168,9 @@ class UIControllerManager:
         self.bus.subscribe(UIEventType.REQUEST_DELETE_BOOK, self.system_ctrl)
         self.bus.subscribe(UIEventType.REQUEST_REBUILD_PLOT, self.system_ctrl)
 
-    def emit(self, event_type: UIEventType, payload: Dict[str, Any], stream_display: Optional[Any] = None) -> Optional[Dict[str, Any]]:
+    def emit(
+        self, event_type: UIEventType, payload: Dict[str, Any], stream_display: Optional[Any] = None
+    ) -> Optional[Dict[str, Any]]:
         """UIからイベントを発行するためのエントリーポイント"""
         # 呼び出し時に stream_display が渡された場合は、一時的にコントローラーの display を更新
         # (本来はDIコンテナで管理すべきだが、現状のシングルトン構造での暫定対応)

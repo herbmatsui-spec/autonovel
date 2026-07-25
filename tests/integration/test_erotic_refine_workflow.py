@@ -2,6 +2,7 @@
 tests/integration/test_erotic_refine_workflow.py
 refine_erotic_workflowの統合テスト。
 """
+
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -33,6 +34,7 @@ async def test_refine_erotic_workflow_success():
     original_metaphor_filter = None
     try:
         from src.engine.prompts.erotic_specialist import EroticSpecialist
+
         original_metaphor_filter = EroticSpecialist.metaphor_filter
         EroticSpecialist.metaphor_filter = lambda self, text, intensity: text  # 変更なし
     except ImportError:
@@ -42,8 +44,14 @@ async def test_refine_erotic_workflow_success():
     original_check_all = None
     try:
         from src.agents.erotic_integrity import EroticIntegrityChecker
+
         original_check_all = EroticIntegrityChecker.check_all
-        EroticIntegrityChecker.check_all = lambda self, text, consent_state=None: (True, [], None, None)
+        EroticIntegrityChecker.check_all = lambda self, text, consent_state=None: (
+            True,
+            [],
+            None,
+            None,
+        )
     except ImportError:
         pass
 
@@ -51,6 +59,7 @@ async def test_refine_erotic_workflow_success():
     original_evaluate = None
     try:
         from src.services.erotic_afterglow_evaluator import AfterglowEvaluator
+
         original_evaluate = AfterglowEvaluator.evaluate
         AfterglowEvaluator.evaluate = lambda self, text: (True, [])
     except ImportError:
@@ -63,7 +72,7 @@ async def test_refine_erotic_workflow_success():
             ep_num=1,
             intensity=3,
             platform_preset="kakuyomu_romance",
-            reporter=MagicMock()  # ロガーはモック
+            reporter=MagicMock(),  # ロガーはモック
         )
 
         # アサーション
@@ -79,12 +88,15 @@ async def test_refine_erotic_workflow_success():
         # モックを元に戻す
         if original_metaphor_filter:
             from src.engine.prompts.erotic_specialist import EroticSpecialist
+
             EroticSpecialist.metaphor_filter = original_metaphor_filter
         if original_check_all:
             from src.agents.erotic_integrity import EroticIntegrityChecker
+
             EroticIntegrityChecker.check_all = original_check_all
         if original_evaluate:
             from src.services.erotic_afterglow_evaluator import AfterglowEvaluator
+
             AfterglowEvaluator.evaluate = original_evaluate
 
 
@@ -112,8 +124,14 @@ async def test_refine_erotic_workflow_failure():
     original_check_all = None
     try:
         from src.agents.erotic_integrity import EroticIntegrityChecker
+
         original_check_all = EroticIntegrityChecker.check_all
-        EroticIntegrityChecker.check_all = lambda self, text, consent_state=None: (False, ["テストエラー"], None, None)
+        EroticIntegrityChecker.check_all = lambda self, text, consent_state=None: (
+            False,
+            ["テストエラー"],
+            None,
+            None,
+        )
     except ImportError:
         pass
 
@@ -124,7 +142,7 @@ async def test_refine_erotic_workflow_failure():
             ep_num=1,
             intensity=2,
             platform_preset="kakuyomu_romance",
-            reporter=MagicMock()
+            reporter=MagicMock(),
         )
 
         # アサーション
@@ -135,4 +153,5 @@ async def test_refine_erotic_workflow_failure():
         # モックを元に戻す
         if original_check_all:
             from src.agents.erotic_integrity import EroticIntegrityChecker
+
             EroticIntegrityChecker.check_all = original_check_all

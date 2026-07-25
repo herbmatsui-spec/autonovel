@@ -182,7 +182,9 @@ class MockLLMClient:
     """テスト用のモックLLMクライアント"""
 
     def __init__(self, response: str = None, should_fail: bool = False):
-        self.response = response or """```json
+        self.response = (
+            response
+            or """```json
 {
   "title": "モックタイトル",
   "logline": "モックログライン",
@@ -192,6 +194,7 @@ class MockLLMClient:
   "genre_metadata": {"genre": "standard"}
 }
 ```"""
+        )
         self.should_fail = should_fail
         self.call_count = 0
         self.last_prompt = None
@@ -215,6 +218,7 @@ class TestLoadGenreConfig:
     def test_load_genre_config_success(self, temp_project_dir):
         """正常にジャンル設定が読み込まれること"""
         import scripts.generate_plot as gp
+
         original_base_dir = gp.BASE_DIR
         gp.BASE_DIR = temp_project_dir
 
@@ -235,6 +239,7 @@ class TestLoadGenreConfig:
     def test_load_genre_config_caching(self, temp_project_dir):
         """キャッシュが機能すること"""
         import scripts.generate_plot as gp
+
         original_base_dir = gp.BASE_DIR
         gp.BASE_DIR = temp_project_dir
 
@@ -252,6 +257,7 @@ class TestLoadNovelizeTemplate:
     def test_load_novelize_template_success(self, temp_project_dir):
         """正常にテンプレートが読み込まれること"""
         import scripts.generate_plot as gp
+
         original_base_dir = gp.BASE_DIR
         gp.BASE_DIR = temp_project_dir
 
@@ -270,6 +276,7 @@ class TestGetGenreProfile:
     def test_get_genre_profile_exists(self, temp_project_dir):
         """存在するジャンルが取得できること"""
         import scripts.generate_plot as gp
+
         original_base_dir = gp.BASE_DIR
         gp.BASE_DIR = temp_project_dir
 
@@ -283,6 +290,7 @@ class TestGetGenreProfile:
     def test_get_genre_profile_fallback(self, temp_project_dir):
         """存在しないジャンルは standard にフォールバックすること"""
         import scripts.generate_plot as gp
+
         original_base_dir = gp.BASE_DIR
         gp.BASE_DIR = temp_project_dir
 
@@ -304,11 +312,14 @@ class TestSelectKeywordsForGenre:
     def test_select_keywords_user_priority(self, temp_project_dir):
         """ユーザー指定キーワードが優先されること"""
         import scripts.generate_plot as gp
+
         original_base_dir = gp.BASE_DIR
         gp.BASE_DIR = temp_project_dir
 
         try:
-            selected = select_keywords_for_genre("light", count=3, user_keywords=["ほのぼの", "カフェ"])
+            selected = select_keywords_for_genre(
+                "light", count=3, user_keywords=["ほのぼの", "カフェ"]
+            )
             assert "ほのぼの" in selected
             assert "カフェ" in selected
             assert len(selected) == 3
@@ -318,6 +329,7 @@ class TestSelectKeywordsForGenre:
     def test_select_keywords_random_fill(self, temp_project_dir):
         """不足分がランダムに補填されること"""
         import scripts.generate_plot as gp
+
         original_base_dir = gp.BASE_DIR
         gp.BASE_DIR = temp_project_dir
 
@@ -331,6 +343,7 @@ class TestSelectKeywordsForGenre:
     def test_select_keywords_no_user_keywords(self, temp_project_dir):
         """ユーザーキーワードなしでも動作すること"""
         import scripts.generate_plot as gp
+
         original_base_dir = gp.BASE_DIR
         gp.BASE_DIR = temp_project_dir
 
@@ -369,7 +382,9 @@ class TestBuildPromptVariables:
         assert "冒険" in variables["plots_text"]
         assert "魔法" in variables["plots_text"]
 
-    def test_build_prompt_variables_with_custom_values(self, sample_input_params, sample_genre_profile):
+    def test_build_prompt_variables_with_custom_values(
+        self, sample_input_params, sample_genre_profile
+    ):
         """カスタム値が正しく反映されること"""
         variables = build_prompt_variables(
             input_params=sample_input_params,
@@ -402,6 +417,7 @@ class TestRenderNovelizePrompt:
     def test_render_novelize_prompt(self, temp_project_dir):
         """テンプレートが正しくレンダリングされること"""
         import scripts.generate_plot as gp
+
         original_base_dir = gp.BASE_DIR
         gp.BASE_DIR = temp_project_dir
 
@@ -470,14 +486,16 @@ class TestParseLLMPlotResponse:
 
     def test_parse_json_without_code_block(self):
         """コードブロックなしのJSONもパースできること"""
-        json_str = json.dumps({
-            "title": "ノーコードブロック",
-            "logline": "ログライン",
-            "synopsis": "あらすじテキスト。十分な長さがあります。",
-            "beats": ["ビート1", "ビート2", "ビート3"],
-            "characters": [],
-            "genre_metadata": {}
-        })
+        json_str = json.dumps(
+            {
+                "title": "ノーコードブロック",
+                "logline": "ログライン",
+                "synopsis": "あらすじテキスト。十分な長さがあります。",
+                "beats": ["ビート1", "ビート2", "ビート3"],
+                "characters": [],
+                "genre_metadata": {},
+            }
+        )
 
         output = parse_llm_plot_response(json_str)
         assert output.title == "ノーコードブロック"
@@ -523,7 +541,8 @@ class TestValidateGeneratedPlot:
         output = PlotGenerationOutput(
             title="有効なタイトル",
             logline="有効なログライン",
-            synopsis="これは十分な長さのあらすじです。主人公が冒険して成長していく物語で、非常に面白い展開になります。" * 2,
+            synopsis="これは十分な長さのあらすじです。主人公が冒険して成長していく物語で、非常に面白い展開になります。"
+            * 2,
             beats=["ビート1", "ビート2", "ビート3", "ビート4"],
             characters=[{"name": "主人公", "role": "main"}],
         )
@@ -816,18 +835,28 @@ class TestBuildArgParser:
     def test_parser_custom_args(self):
         """カスタム引数が正しくパースされること"""
         parser = build_arg_parser()
-        args = parser.parse_args([
-            "--genre", "light",
-            "--keywords", "ほのぼの,カフェ",
-            "--count", "3",
-            "--output-dir", "./custom/output",
-            "--format", "md",
-            "--target-length", "5000",
-            "--temperature", "0.9",
-            "--max-tokens", "6000",
-            "--verbose",
-            "--dry-run",
-        ])
+        args = parser.parse_args(
+            [
+                "--genre",
+                "light",
+                "--keywords",
+                "ほのぼの,カフェ",
+                "--count",
+                "3",
+                "--output-dir",
+                "./custom/output",
+                "--format",
+                "md",
+                "--target-length",
+                "5000",
+                "--temperature",
+                "0.9",
+                "--max-tokens",
+                "6000",
+                "--verbose",
+                "--dry-run",
+            ]
+        )
 
         assert args.genre == "light"
         assert args.keywords == "ほのぼの,カフェ"
@@ -859,11 +888,12 @@ class TestRunGeneratePlotIntegration:
     async def test_run_generate_plot_dry_run(self, temp_project_dir, sample_input_params):
         """ドライランモードでプロンプトが生成されること"""
         import scripts.generate_plot as gp
+
         original_base_dir = gp.BASE_DIR
         gp.BASE_DIR = temp_project_dir
 
         try:
-            with patch.object(gp, 'call_llm_for_plot', new_callable=AsyncMock) as mock_llm:
+            with patch.object(gp, "call_llm_for_plot", new_callable=AsyncMock) as mock_llm:
                 mock_llm.return_value = """```json
 {
   "title": "統合テストタイトル",
@@ -887,6 +917,7 @@ class TestRunGeneratePlotIntegration:
     async def test_run_generate_plot_with_constraints(self, temp_project_dir):
         """ジャンル制約が適用されること"""
         import scripts.generate_plot as gp
+
         original_base_dir = gp.BASE_DIR
         gp.BASE_DIR = temp_project_dir
 
@@ -897,7 +928,7 @@ class TestRunGeneratePlotIntegration:
                 target_length=3000,
             )
 
-            with patch.object(gp, 'call_llm_for_plot', new_callable=AsyncMock) as mock_llm:
+            with patch.object(gp, "call_llm_for_plot", new_callable=AsyncMock) as mock_llm:
                 mock_llm.return_value = """```json
 {
   "title": "ダークテスト",
@@ -930,20 +961,28 @@ class TestCLIIntegration:
     async def test_cli_dry_run(self, temp_project_dir, tmp_path, capsys):
         """CLIドライランが動作すること"""
         import scripts.generate_plot as gp
+
         original_base_dir = gp.BASE_DIR
         gp.BASE_DIR = temp_project_dir
 
         try:
             parser = build_arg_parser()
-            args = parser.parse_args([
-                "--genre", "light",
-                "--keywords", "ほのぼの,カフェ",
-                "--count", "2",
-                "--output-dir", str(tmp_path),
-                "--format", "json",
-                "--dry-run",
-                "--verbose",
-            ])
+            args = parser.parse_args(
+                [
+                    "--genre",
+                    "light",
+                    "--keywords",
+                    "ほのぼの,カフェ",
+                    "--count",
+                    "2",
+                    "--output-dir",
+                    str(tmp_path),
+                    "--format",
+                    "json",
+                    "--dry-run",
+                    "--verbose",
+                ]
+            )
 
             results = await gp.run_cli_generation(args)
 
@@ -958,19 +997,26 @@ class TestCLIIntegration:
     async def test_cli_actual_generation(self, temp_project_dir, tmp_path):
         """CLI実際の生成が動作すること"""
         import scripts.generate_plot as gp
+
         original_base_dir = gp.BASE_DIR
         gp.BASE_DIR = temp_project_dir
 
         try:
             parser = build_arg_parser()
-            args = parser.parse_args([
-                "--genre", "standard",
-                "--count", "1",
-                "--output-dir", str(tmp_path),
-                "--format", "json",
-            ])
+            args = parser.parse_args(
+                [
+                    "--genre",
+                    "standard",
+                    "--count",
+                    "1",
+                    "--output-dir",
+                    str(tmp_path),
+                    "--format",
+                    "json",
+                ]
+            )
 
-            with patch.object(gp, 'call_llm_for_plot', new_callable=AsyncMock) as mock_llm:
+            with patch.object(gp, "call_llm_for_plot", new_callable=AsyncMock) as mock_llm:
                 mock_llm.return_value = """```json
 {
   "title": "CLIテストタイトル",
@@ -1006,13 +1052,14 @@ class TestGenreSpecificGeneration:
     async def test_each_genre_generation(self, genre, temp_project_dir):
         """各ジャンルで生成が動作すること"""
         import scripts.generate_plot as gp
+
         original_base_dir = gp.BASE_DIR
         gp.BASE_DIR = temp_project_dir
 
         try:
             input_params = PlotGenerationInput(genre=genre)
 
-            with patch.object(gp, 'call_llm_for_plot', new_callable=AsyncMock) as mock_llm:
+            with patch.object(gp, "call_llm_for_plot", new_callable=AsyncMock) as mock_llm:
                 mock_llm.return_value = f'''```json
 {{
   "title": "{genre}タイトル",

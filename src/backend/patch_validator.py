@@ -9,6 +9,7 @@ from config.project_context import GlobalConfigModel
 
 logger = logging.getLogger(__name__)
 
+
 class ValidationResult(BaseModel):
     is_safe: bool
     errors: List[str]
@@ -20,9 +21,20 @@ class PatchValidator:
     """AIが生成したパッチ（Config修正/プロンプト修正）の妥当性と安全性を検証するガードレール"""
 
     DANGEROUS_FUNCTIONS = {
-        "exec", "eval", "os.system", "subprocess.run", "subprocess.Popen",
-        "subprocess.call", "subprocess.check_call", "subprocess.check_output",
-        "__import__", "open", "getattr", "setattr", "delattr", "shutil.rmtree"
+        "exec",
+        "eval",
+        "os.system",
+        "subprocess.run",
+        "subprocess.Popen",
+        "subprocess.call",
+        "subprocess.check_call",
+        "subprocess.check_output",
+        "__import__",
+        "open",
+        "getattr",
+        "setattr",
+        "delattr",
+        "shutil.rmtree",
     }
 
     @classmethod
@@ -49,7 +61,9 @@ class PatchValidator:
                         k = k.strip()
                         v = v.strip()
                         # クォーテーションの除去と簡易キャスト
-                        if (v.startswith('"') and v.endswith('"')) or (v.startswith("'") and v.endswith("'")):
+                        if (v.startswith('"') and v.endswith('"')) or (
+                            v.startswith("'") and v.endswith("'")
+                        ):
                             v = v[1:-1]
                         elif v.lower() == "true":
                             v = True
@@ -93,7 +107,9 @@ class PatchValidator:
                 TempModel(val=value)
                 validated_fields[key] = value
             except ValidationError as ve:
-                errors.append(f"Type mismatch for key '{key}'. Expected {expected_type}, got {type(value).__name__} ({value}). Error: {str(ve)}")
+                errors.append(
+                    f"Type mismatch for key '{key}'. Expected {expected_type}, got {type(value).__name__} ({value}). Error: {str(ve)}"
+                )
 
         # 3. AST を用いた危険なPython構文/文字列の検出 (Config値にスクリプトが混入するのを防止)
         for key, value in validated_fields.items():
@@ -119,8 +135,12 @@ class PatchValidator:
                                     parts.append(curr.id)
                                 func_name = ".".join(reversed(parts))
 
-                            if func_name in cls.DANGEROUS_FUNCTIONS or any(df in func_name for df in cls.DANGEROUS_FUNCTIONS):
-                                errors.append(f"Security Alert: Dangerous function call '{func_name}' detected in config key '{key}'")
+                            if func_name in cls.DANGEROUS_FUNCTIONS or any(
+                                df in func_name for df in cls.DANGEROUS_FUNCTIONS
+                            ):
+                                errors.append(
+                                    f"Security Alert: Dangerous function call '{func_name}' detected in config key '{key}'"
+                                )
                 except SyntaxError:
                     # パースエラーになる場合はコードではないプレーン文字列なので安全
                     pass
@@ -130,7 +150,7 @@ class PatchValidator:
             is_safe=is_safe,
             errors=errors,
             warnings=warnings,
-            sanitized_patch=validated_fields if is_safe else None
+            sanitized_patch=validated_fields if is_safe else None,
         )
 
     @classmethod
@@ -155,7 +175,7 @@ class PatchValidator:
             "execute system command",
             "sql injection",
             "前の指示を無視",
-            "システムプロンプトを上書き"
+            "システムプロンプトを上書き",
         ]
 
         lower_content = patch_content.lower()
@@ -167,7 +187,9 @@ class PatchValidator:
         for df in cls.DANGEROUS_FUNCTIONS:
             # プロンプト内に `import os; os.system(...)` などの記述があるかを正規表現等で警戒
             if df in patch_content:
-                warnings.append(f"Dangerous function/module keyword '{df}' detected in prompt content")
+                warnings.append(
+                    f"Dangerous function/module keyword '{df}' detected in prompt content"
+                )
 
         # プロンプトパッチは警告のみとし、重大な破損や明らかな脅威以外は is_safe=True で通すが、警告を結果に残す
         is_safe = len(errors) == 0
@@ -175,6 +197,5 @@ class PatchValidator:
             is_safe=is_safe,
             errors=errors,
             warnings=warnings,
-            sanitized_patch={"prompt_content": patch_content} if is_safe else None
+            sanitized_patch={"prompt_content": patch_content} if is_safe else None,
         )
-

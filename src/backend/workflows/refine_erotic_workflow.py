@@ -2,6 +2,7 @@
 src/backend/workflows/refine_erotic_workflow.py
 螳倩・繧ｷ繝ｼ繝ｳ遐皮｣ｨ逕ｨ繝ｯ繝ｼ繧ｯ繝輔Ο繝ｼ
 """
+
 from typing import Any, Dict, Optional
 
 from config.erotic_pacing import EroticCurve
@@ -12,6 +13,7 @@ from .base_workflow import BaseWorkflow
 
 class RefineEroticWorkflow(BaseWorkflow):
     """螳倩・繧ｷ繝ｼ繝ｳ縺ｮ遐皮｣ｨ繝ｻ謨ｴ蜷域ｧ繝√ぉ繝・け繧定｡後≧繝ｯ繝ｼ繧ｯ繝輔Ο繝�"""
+
     async def execute(self, reporter: Optional[StatusReporter] = None, **kwargs) -> Dict[str, Any]:
         book_id = kwargs["book_id"]
         ep_num = kwargs["ep_num"]
@@ -32,11 +34,13 @@ class RefineEroticWorkflow(BaseWorkflow):
 
             # 2. EroticSpecialist 縺ｫ繧医ｋ豈泌湊陦ｨ迴ｾ縺ｮ螟画鋤 (metaphor_filter)
             from src.engine.prompts.erotic_specialist import EroticSpecialist
+
             specialist = EroticSpecialist()
             refined_content = specialist.metaphor_filter(original_content, intensity)
 
             # 3. 謨ｴ蜷域ｧ繝√ぉ繝・け (EroticIntegrityChecker)
             from src.agents.erotic_integrity import EroticIntegrityChecker
+
             checker = EroticIntegrityChecker()
             # 情報から同意状態を取得
             curve = EroticCurve.create_default(intensity)
@@ -46,6 +50,7 @@ class RefineEroticWorkflow(BaseWorkflow):
 
             # 3.5. afterglow 蜩∬ｳｪ隧穂ｾ｡・・eak 縺ｮ蠕後↓ afterglow 縺後≠繧句ｴ蜷茨ｼ・
             from src.services.erotic_afterglow_evaluator import AfterglowEvaluator
+
             evaluator = AfterglowEvaluator()
             # afterglow 驛ｨ蛻・ｒ邁｡譏捺歓蜃ｺ・域怙蠕後・ 1/4 繧・afterglow 蛯ｾ蜷代→縺励※隧穂ｾ｡・・
             afterglow_start = len(refined_content) * 3 // 4
@@ -82,5 +87,5 @@ class RefineEroticWorkflow(BaseWorkflow):
             "success": True,
             "issues": [],
             "is_ok": is_ok and afterglow_ok,
-            "intensity_applied": intensity
+            "intensity_applied": intensity,
         }

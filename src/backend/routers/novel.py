@@ -1,19 +1,21 @@
 """
 src/backend/routers/novel.py — 小説制作関連APIエンドポイント
 """
-from fastapi import APIRouter, HTTPException, Depends
-from typing import List, Dict, Any
 
+from typing import Any, Dict, List
+
+from fastapi import APIRouter, Depends, HTTPException
+
+from src.backend.auth import require_api_key
 from src.models.api_schemas import (
-    ProduceNovelRequest,
-    ProduceNovelResponse,
-    NovelStatusResponse,
     EpisodeListResponse,
     NovelReportResponse,
+    NovelStatusResponse,
+    ProduceNovelRequest,
+    ProduceNovelResponse,
 )
 from src.services.novel_producer import NovelProducer
 from src.services.report_generator import ReportGenerator
-from src.backend.auth import require_api_key
 
 router = APIRouter(prefix="/api/novel", tags=["novel"])
 

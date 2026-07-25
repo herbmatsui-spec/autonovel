@@ -11,6 +11,7 @@ class MockEventHandler:
         self.handled_events.append(event)
         return {"status": "success", "payload": event.payload}
 
+
 def test_event_bus_subscription_and_emission():
     bus = UIEventBus()
     handler = MockEventHandler()
@@ -28,6 +29,7 @@ def test_event_bus_subscription_and_emission():
     assert len(handler.handled_events) == 1
     assert handler.handled_events[0].type == UIEventType.REQUEST_GENERATE_PLAN
     assert handler.handled_events[0].payload == payload
+
 
 def test_event_bus_no_handler():
     bus = UIEventBus()

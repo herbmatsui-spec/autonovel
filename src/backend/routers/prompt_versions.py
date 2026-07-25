@@ -1,10 +1,10 @@
-from typing import Any, Dict, Optional, List
-from fastapi import APIRouter, Depends, HTTPException
-from src.models.api_schemas import RollbackRequest
+from fastapi import APIRouter
+
 from config.container import Container
-from src.backend.database import UnitOfWork
 from config.project_context import GlobalConfig
 from src.backend.auth import validate_api_key_or_raise
+from src.backend.database import UnitOfWork
+from src.models.api_schemas import RollbackRequest
 
 router = APIRouter(tags=["prompt_versions"])
 

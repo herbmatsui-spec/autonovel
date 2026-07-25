@@ -23,9 +23,8 @@ for file_name in ["scratch\\line_94.json", "scratch\\line_136.json", "scratch\\l
                 for i, line in enumerate(lines):
                     if "def build_drafting_prompt" in line:
                         found = True
-                        print("\n".join(lines[i:i+40]))
+                        print("\n".join(lines[i : i + 40]))
                         print("=" * 60)
                         break
     except Exception as e:
         print(f"Error reading {file_name}: {e}")
-

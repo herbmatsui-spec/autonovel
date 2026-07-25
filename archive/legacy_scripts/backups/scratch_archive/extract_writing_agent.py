@@ -12,7 +12,9 @@ if start_match:
 
     with open("scratch/writing_agent_original.py", "w", encoding="utf-8") as out:
         out.write(writing_agent_code)
-    print("Extracted WritingAgent class to scratch/writing_agent_original.py. Size:", len(writing_agent_code))
+    print(
+        "Extracted WritingAgent class to scratch/writing_agent_original.py. Size:",
+        len(writing_agent_code),
+    )
 else:
     print("class WritingAgent not found in the file.")
-

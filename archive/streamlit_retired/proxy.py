@@ -1,15 +1,17 @@
 import logging
 from typing import Any, Dict, Generic, List, Optional, TypeVar
 
+from streamlit_app.progress import ProgressStateProxy, run_in_background
+
 from src.core.container import make_container
 from streamlit_app import api_client
-from streamlit_app.progress import ProgressStateProxy, run_in_background
 from streamlit_app.workflow_types import WorkflowType
 
 logger = logging.getLogger(__name__)
 
 # コンテナのキャッシュを管理する内部辞書
 _container_cache: dict[str, "AppContainer"] = {}
+
 
 def get_di_container(api_key: str = "DUMMY"):
     """
@@ -28,6 +30,7 @@ def get_di_container(api_key: str = "DUMMY"):
 
     return _container_cache[api_key]
 
+
 from src.models.api_schemas import (
     BibleSchema,
     BookSchema,
@@ -36,10 +39,12 @@ from src.models.api_schemas import (
     PlotSchema,
 )
 
-T = TypeVar('T')
+T = TypeVar("T")
+
 
 class SchemaProxy(Generic[T]):
     """Pydanticスキーマを軽量にラップし、型安全なアクセスを提供する汎用プロキシ"""
+
     _schema_cls: type[T]
 
     def __init__(self, d: dict | T):
@@ -51,20 +56,26 @@ class SchemaProxy(Generic[T]):
     def model_dump(self) -> dict:
         return self._data.model_dump()
 
+
 class BookProxy(SchemaProxy[BookSchema]):
     _schema_cls = BookSchema
+
 
 class PlotProxy(SchemaProxy[PlotSchema]):
     _schema_cls = PlotSchema
 
+
 class ChapterProxy(SchemaProxy[ChapterSchema]):
     _schema_cls = ChapterSchema
+
 
 class BibleProxy(SchemaProxy[BibleSchema]):
     _schema_cls = BibleSchema
 
+
 class OptimizationHistoryProxy(SchemaProxy[OptimizationReportSchema]):
     _schema_cls = OptimizationReportSchema
+
 
 class DataRepositoryProxy:
     def get_all_books(self) -> List[BookProxy]:
@@ -94,11 +105,35 @@ class DataRepositoryProxy:
         history = api_client.get_opt_history(book_id)
         return [OptimizationHistoryProxy(h) for h in history]
 
-    def create_chapter(self, book_id: int, ep_num: int, title: str, content: str, summary: str, killer_phrase: str = "", ai_insight: str = "", world_state: dict = None, trinity_review_log: dict = None, created_at: str = None) -> None:
-        api_client.create_chapter(book_id, ep_num, title, content, summary, killer_phrase, ai_insight, world_state, trinity_review_log, created_at)
+    def create_chapter(
+        self,
+        book_id: int,
+        ep_num: int,
+        title: str,
+        content: str,
+        summary: str,
+        killer_phrase: str = "",
+        ai_insight: str = "",
+        world_state: dict = None,
+        trinity_review_log: dict = None,
+        created_at: str = None,
+    ) -> None:
+        api_client.create_chapter(
+            book_id,
+            ep_num,
+            title,
+            content,
+            summary,
+            killer_phrase,
+            ai_insight,
+            world_state,
+            trinity_review_log,
+            created_at,
+        )
 
     def delete_chapter(self, book_id: int, ep_num: int) -> None:
         api_client.delete_chapter(book_id, ep_num)
+
 
 class CritiqueProxy:
     def __init__(self, api_key: str):
@@ -106,6 +141,7 @@ class CritiqueProxy:
 
     def run_dry_run(self, book_id: int, test_ep: int, prompt_patch: str) -> Dict[str, Any]:
         return {"success": True, "log": "Proxy run_dry_run"}
+
 
 class MarketingProxy:
     def __init__(self, api_key: str):
@@ -128,6 +164,7 @@ class MarketingProxy:
             print(f"Error fetching export package: {e}")
             return b"", "export.zip"
 
+
 class PlannerProxy:
     def __init__(self, api_key: str):
         self.api_key = api_key
@@ -135,30 +172,32 @@ class PlannerProxy:
     def create_hegemony_plan(self, **kwargs) -> tuple:
         pass
 
+
 class NarrativeProxy:
     def __init__(self, api_key: str):
         self.api_key = api_key
 
-    def get_stress_history_data(self, chapters: List[ChapterProxy], plots: List[PlotProxy]) -> List[Dict[str, Any]]:
+    def get_stress_history_data(
+        self, chapters: List[ChapterProxy], plots: List[PlotProxy]
+    ) -> List[Dict[str, Any]]:
         res = []
         cumulative = 0
         for p in plots:
             ep_num = p.ep_num
-            if getattr(p, 'is_catharsis', False):
+            if getattr(p, "is_catharsis", False):
                 cumulative = 0  # カタルシス発動でストレス値をリセット
             else:
-                stress_val = getattr(p, 'stress', 0) or 0
+                stress_val = getattr(p, "stress", 0) or 0
                 if not stress_val:
-                    stress_val = (p.tension - 50) if (getattr(p, 'tension', 50) or 50) > 50 else 0
+                    stress_val = (p.tension - 50) if (getattr(p, "tension", 50) or 50) > 50 else 0
                 cumulative += max(0, stress_val)
-            res.append({
-                "話数": ep_num,
-                "ストレス蓄積値": cumulative
-            })
+            res.append({"話数": ep_num, "ストレス蓄積値": cumulative})
         return res
+
 
 class CandidateProxy:
     """プロデューサー企画監査における候補プランのプロキシ"""
+
     def __init__(self, c: dict):
         self.plan_name = c.get("plan_name", "")
         self.plan_type = c.get("plan_type", "")
@@ -170,14 +209,17 @@ class CandidateProxy:
         self.anti_tropes = c.get("anti_tropes", [])
         self.hybrid_idea = c.get("hybrid_idea", "")
 
+
 class AuditResultProxy:
     """プロデューサー企画監査結果のプロキシ"""
+
     def __init__(self, d: dict):
         self.refined_keywords = d.get("refined_keywords", "")
         self.refined_concept = d.get("refined_concept", "")
         self.refined_mc_suggestion = d.get("refined_mc_suggestion", "")
         self.recommended_tropes = d.get("recommended_tropes", [])
         self.candidates = [CandidateProxy(c) for c in d.get("candidates", [])]
+
 
 class UltimateHegemonyEngineProxy:
     def __init__(self, api_key: str):
@@ -234,7 +276,7 @@ class UltimateHegemonyEngineProxy:
                 trend_memo=trend_memo,
                 sanctuary=sanctuary,
                 originality_score=originality_score,
-                platform=platform
+                platform=platform,
             )
             return AuditResultProxy(data)
         except Exception as e:
@@ -247,13 +289,22 @@ class UltimateHegemonyEngineProxy:
     def resolve_issue(self, issue_id: int, action: str) -> Dict[str, Any]:
         return api_client.resolve_issue(issue_id, action, self.api_key)
 
-    def generate_erotic_scene(self, book_id: int, ep_num: int, intensity: int = 2, platform_preset: str = "kakuyomu_romance") -> Optional[str]:
+    def generate_erotic_scene(
+        self,
+        book_id: int,
+        ep_num: int,
+        intensity: int = 2,
+        platform_preset: str = "kakuyomu_romance",
+    ) -> Optional[str]:
         """官能シーンの生成・研磨を開始する。"""
         try:
             from streamlit_app.state import get_session
+
             session = get_session()
             config_dict = session.config if hasattr(session, "config") else {}
-            return api_client.start_erotic_refinement(self.api_key, config_dict, book_id, ep_num, intensity, platform_preset)
+            return api_client.start_erotic_refinement(
+                self.api_key, config_dict, book_id, ep_num, intensity, platform_preset
+            )
         except Exception as e:
             logger.error(f"generate_erotic_scene failed: {e}")
             return None
@@ -263,13 +314,19 @@ class HegemonyServiceProxy:
     def __init__(self, engine: UltimateHegemonyEngineProxy):
         self.engine = engine
 
-    def chapter_import_workflow(self, book_id: int, ep_num: int, text: str, do_refine: bool) -> Dict[str, Any]:
+    def chapter_import_workflow(
+        self, book_id: int, ep_num: int, text: str, do_refine: bool
+    ) -> Dict[str, Any]:
         # chapter_import は即時レスポンスを返すAPIであるため、run_in_backgroundではなく直接呼び出す
         result = api_client.import_chapter(self.engine.api_key, book_id, ep_num, text, do_refine)
 
         from streamlit_app.state import get_session
+
         session = get_session()
-        if session.config.get("enable_nsfw", False) and session.config.get("erotic_intensity", 0) > 0:
+        if (
+            session.config.get("enable_nsfw", False)
+            and session.config.get("erotic_intensity", 0) > 0
+        ):
             from src.agents.erotic_integrity import EroticIntegrityChecker
             from src.engine.prompts.erotic_specialist import EroticSpecialist
 
@@ -284,6 +341,5 @@ class HegemonyServiceProxy:
 
         return result
 
-    def dispatch_workflow(self, workflow_type: WorkflowType, **kwargs) -> 'ProgressStateProxy':
+    def dispatch_workflow(self, workflow_type: WorkflowType, **kwargs) -> "ProgressStateProxy":
         return run_in_background(workflow_type, **kwargs)
-

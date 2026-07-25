@@ -1,14 +1,15 @@
 import asyncio
+import io
 import os
 import sys
-import io
 
 # 標準出力のエンコーディング問題を回避するため、UTF-8で固定
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 
 # .envファイルから環境変数を読み込む
 try:
     from dotenv import load_dotenv
+
     load_dotenv()
 except ImportError:
     pass
@@ -19,6 +20,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from src.agents.writing import WritingAgent
 from src.core.container import make_container
+
 
 async def main():
     api_key = os.getenv("GEMINI_API_KEY")
@@ -51,16 +53,12 @@ async def main():
         "plot": {
             "title": "雨の聖域と孤独な魂",
             "summary": "絶望に染まったカイが、リリアの献身的なアプローチによって、凍りついた心と身体を溶かしていく一夜の物語。精神的な救済から、抑えていた情動の爆発へと繋がる。",
-        }
+        },
     }
 
     try:
         # 執筆開始
-        result = await agent.write_episode(
-            book_id=1001,
-            ep_num=1,
-            context=context
-        )
+        result = await agent.write_episode(book_id=1001, ep_num=1, context=context)
 
         output_file = "generated_work_for_report.txt"
         with open(output_file, "w", encoding="utf-8") as f:
@@ -70,8 +68,10 @@ async def main():
         with open("generated_work_for_report.txt", "w", encoding="utf-8") as f:
             f.write(f"エラー発生: {str(e)}\n")
         import traceback
+
         with open("generated_work_for_report.txt", "a", encoding="utf-8") as f:
             traceback.print_exc(file=f)
+
 
 if __name__ == "__main__":
     asyncio.run(main())

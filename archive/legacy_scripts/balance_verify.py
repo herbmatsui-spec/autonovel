@@ -7,6 +7,7 @@ balance_verify.py
   B: 尖り保全      (sharp edge 提案 + DeAIAuditor での削除検出)
   C: 早期面白さ検証 (EarlyEntertainmentChecker の interest_score)
 """
+
 import asyncio
 import json
 import os
@@ -19,14 +20,12 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 from google import genai
 from google.genai import types as genai_types
 
-from config import MODEL_WRITING
+from prompts.manager import PromptManager
 from src.agents.audit import DeAIAuditor
 from src.agents.early_entertainment_checker import EarlyEntertainmentChecker
 from src.backend.tension_curve_config import select_curve_by_hook
 from src.models.emotional_hook import EmotionalHookSpec
 from src.models.sharp_edge import SharpEdgeSpec
-from prompts.manager import PromptManager
-
 
 MODEL = "gemini-2.5-flash"  # 実APIキーで利用可能な無料枠モデル
 
@@ -85,7 +84,7 @@ class RealLLM:
                 if any(x in msg for x in ("503", "429", "UNAVAILABLE", "RESOURCE_EXHAUSTED")):
                     last_err = e
                     wait = 5.0 * (attempt + 1)
-                    print(f"  ※一時的エラー({attempt+1}/5)、{wait:.0f}s待機: {msg[:80]}")
+                    print(f"  ※一時的エラー({attempt + 1}/5)、{wait:.0f}s待機: {msg[:80]}")
                     time.sleep(wait)
                     continue
                 raise
@@ -135,6 +134,7 @@ async def main():
     print(f"  選択された曲線: {curve_name}")
 
     from prompts.plotting import EMOTIONAL_HOOK_TEMPLATE
+
     hook_injection = EMOTIONAL_HOOK_TEMPLATE.format(
         one_line_intent=hook.one_line_intent,
         target_tension_peak=hook.target_tension_peak,
@@ -178,7 +178,9 @@ async def main():
         if isinstance(parsed, list):
             for item in parsed:
                 if isinstance(item, dict) and item.get("edge_type") in (
-                    "ending_pullback", "protagonist_flaw", "abnormal_dialogue"
+                    "ending_pullback",
+                    "protagonist_flaw",
+                    "abnormal_dialogue",
                 ):
                     edges.append(SharpEdgeSpec(**item))
     except Exception:
@@ -217,7 +219,9 @@ async def main():
     print(f"  feedback              : {result.feedback}")
 
     gate = result.interest_score >= 60
-    print(f"\n  >>> 面白さゲート(>=60): {'合格 → 本文執筆へ進行' if gate else '不合格 → 基幹構造の再設計が必要'}")
+    print(
+        f"\n  >>> 面白さゲート(>=60): {'合格 → 本文執筆へ進行' if gate else '不合格 → 基幹構造の再設計が必要'}"
+    )
 
     # ---------------------------------------------------------------
     # 総合判定

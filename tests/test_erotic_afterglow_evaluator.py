@@ -2,6 +2,7 @@
 tests/test_erotic_afterglow_evaluator.py
 afterglow評価のユニットテスト。
 """
+
 from src.services.erotic_afterglow_evaluator import AfterglowEvaluator
 
 

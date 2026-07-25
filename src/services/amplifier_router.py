@@ -3,29 +3,56 @@ from typing import Any, Dict
 
 
 class AmplifierType(str, Enum):
-    COMBAT      = "combat"       # 戦闘・魔法・物理
-    PSYCHOLOGY  = "psychology"   # ヘイト・内面葛藤・屈辱
-    SCENERY     = "scenery"      # 情景・飯テロ・日常
-    CATHARSIS   = "catharsis"    # カタルシス・逆転・圧倒
-    NONE        = "none"         # 汎用（fallback）
+    COMBAT = "combat"  # 戦闘・魔法・物理
+    PSYCHOLOGY = "psychology"  # ヘイト・内面葛藤・屈辱
+    SCENERY = "scenery"  # 情景・飯テロ・日常
+    CATHARSIS = "catharsis"  # カタルシス・逆転・圧倒
+    NONE = "none"  # 汎用（fallback）
+
 
 # catharsis_type -> AmplifierType 判定キーワード
 _CATHARSIS_TYPE_MAP = {
-    AmplifierType.COMBAT:      ["戦闘", "battle", "fight", "魔法", "物理", "power", "overwhelming"],
-    AmplifierType.PSYCHOLOGY:  ["傲慢", "屈服", "崩壊", "collapse", "humiliation", "精神的", "psychological", "内的", "葛藤"],
-    AmplifierType.SCENERY:     ["日常", "スローライフ", "飯テロ", "食事", "環境", "生活", "fulfillment"],
-    AmplifierType.CATHARSIS:   ["逆転", "reversal", "ざまぁ", "断罪", "報復", "retribution", "status"],
+    AmplifierType.COMBAT: ["戦闘", "battle", "fight", "魔法", "物理", "power", "overwhelming"],
+    AmplifierType.PSYCHOLOGY: [
+        "傲慢",
+        "屈服",
+        "崩壊",
+        "collapse",
+        "humiliation",
+        "精神的",
+        "psychological",
+        "内的",
+        "葛藤",
+    ],
+    AmplifierType.SCENERY: [
+        "日常",
+        "スローライフ",
+        "飯テロ",
+        "食事",
+        "環境",
+        "生活",
+        "fulfillment",
+    ],
+    AmplifierType.CATHARSIS: [
+        "逆転",
+        "reversal",
+        "ざまぁ",
+        "断罪",
+        "報復",
+        "retribution",
+        "status",
+    ],
 }
 
 # beat_type -> AmplifierType 優先マップ
 _BEAT_TYPE_MAP = {
     "具体的行動": AmplifierType.COMBAT,
-    "内面葛藤":   AmplifierType.PSYCHOLOGY,
-    "状況":       AmplifierType.SCENERY,
-    "余韻":       AmplifierType.SCENERY,
-    "結末":       AmplifierType.CATHARSIS,
-    "展開":       AmplifierType.NONE,
-    "導入":       AmplifierType.NONE,
+    "内面葛藤": AmplifierType.PSYCHOLOGY,
+    "状況": AmplifierType.SCENERY,
+    "余韻": AmplifierType.SCENERY,
+    "結末": AmplifierType.CATHARSIS,
+    "展開": AmplifierType.NONE,
+    "導入": AmplifierType.NONE,
 }
 
 PERSONA_MAP = {
@@ -35,6 +62,7 @@ PERSONA_MAP = {
     AmplifierType.CATHARSIS: "[カタルシス演出家]",
     AmplifierType.NONE: "[汎用推敲者]",
 }
+
 
 def detect_amplifier_type(
     beat_type: str = "導入",
@@ -67,6 +95,7 @@ def detect_amplifier_type(
 
     return AmplifierType.NONE
 
+
 def get_episode_dominant_amplifier(plot_data: Dict[str, Any]) -> AmplifierType:
     """
     エピソード全体の設定から代表的なAmplifierTypeを判定する。
@@ -77,7 +106,7 @@ def get_episode_dominant_amplifier(plot_data: Dict[str, Any]) -> AmplifierType:
             beat_type="結末",
             action_description="",
             is_catharsis=True,
-            catharsis_type=plot_data.get("catharsis_type", "なし")
+            catharsis_type=plot_data.get("catharsis_type", "なし"),
         )
 
     phase = plot_data.get("current_chain_phase", "")
@@ -97,9 +126,7 @@ def get_episode_dominant_amplifier(plot_data: Dict[str, Any]) -> AmplifierType:
 
     if max_impact >= 70 and dominant_desc:
         return detect_amplifier_type(
-            beat_type="展開",
-            action_description=dominant_desc,
-            is_catharsis=False
+            beat_type="展開", action_description=dominant_desc, is_catharsis=False
         )
 
     return AmplifierType.NONE

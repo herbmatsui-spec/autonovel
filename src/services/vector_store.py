@@ -8,6 +8,7 @@ logger = logging.getLogger(__name__)
 
 try:
     import chromadb
+
     HAS_CHROMA = True
 except Exception as e:
     logger.warning(
@@ -18,11 +19,11 @@ except Exception as e:
 
 try:
     from rank_bm25 import BM25Okapi
+
     HAS_BM25 = True
 except Exception as e:
     logger.warning(
-        f"[VECTOR STORE] Failed to import rank_bm25: {e}. "
-        "BM25 hybrid search will be disabled."
+        f"[VECTOR STORE] Failed to import rank_bm25: {e}. BM25 hybrid search will be disabled."
     )
     HAS_BM25 = False
 
@@ -32,12 +33,26 @@ from abc import ABC, abstractmethod
 
 class BaseVectorStore(ABC):
     """ベクトルデータベース操作の抽象基底クラス"""
+
     @abstractmethod
-    async def add_documents(self, collection_name: str, ids: List[str], documents: List[str], embeddings: List[List[float]], metadatas: Optional[List[Dict[str, Any]]] = None):
+    async def add_documents(
+        self,
+        collection_name: str,
+        ids: List[str],
+        documents: List[str],
+        embeddings: List[List[float]],
+        metadatas: Optional[List[Dict[str, Any]]] = None,
+    ):
         pass
 
     @abstractmethod
-    async def search(self, collection_name: str, query_embedding: List[float], top_k: int = 5, where: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+    async def search(
+        self,
+        collection_name: str,
+        query_embedding: List[float],
+        top_k: int = 5,
+        where: Optional[Dict[str, Any]] = None,
+    ) -> List[Dict[str, Any]]:
         pass
 
     @abstractmethod
@@ -51,25 +66,29 @@ class BaseVectorStore(ABC):
 
 class CollectionType(Enum):
     """ベクトルコレクションの種類定義"""
-    SEMANTIC_CACHE = "semantic_cache"       # セマンティックキャッシュ（意味的類似検索）
-    STYLE_MEMORY = "style_memory"           # 文体・文調メモリ（スタイルRAG）
-    WORLD_MEMORY = "world_memory"           # 世界観・設定メモリ（世界観RAG）
-    CHARACTER_MEMORY = "character_memory"   # キャラクター・プロットメモリ（キャラRAG）
-    NARRATIVE_MEMORY = "narrative_memory"   # 物語・シーンメモリ（ナラティブRAG）
-    EPISODE_MEMORY = "episode_memory"       # エピソード内容メモリ（本文RAG）
+
+    SEMANTIC_CACHE = "semantic_cache"  # セマンティックキャッシュ（意味的類似検索）
+    STYLE_MEMORY = "style_memory"  # 文体・文調メモリ（スタイルRAG）
+    WORLD_MEMORY = "world_memory"  # 世界観・設定メモリ（世界観RAG）
+    CHARACTER_MEMORY = "character_memory"  # キャラクター・プロットメモリ（キャラRAG）
+    NARRATIVE_MEMORY = "narrative_memory"  # 物語・シーンメモリ（ナラティブRAG）
+    EPISODE_MEMORY = "episode_memory"  # エピソード内容メモリ（本文RAG）
 
 
 class CollectionConfig(BaseModel):
     """コレクション設定"""
+
     name: str
     space: str = "cosine"
     description: str = ""
     metadata_schema: Dict[str, Any] = Field(default_factory=dict)
-    hnsw_params: Dict[str, Any] = Field(default_factory=lambda: {
-        "hnsw:construction_ef": 100,
-        "hnsw:search_ef": 50,
-        "hnsw:M": 16,
-    })
+    hnsw_params: Dict[str, Any] = Field(
+        default_factory=lambda: {
+            "hnsw:construction_ef": 100,
+            "hnsw:search_ef": 50,
+            "hnsw:M": 16,
+        }
+    )
 
     def get_metadata(self) -> Dict[str, Any]:
         """ChromaDB用のメタデータを生成"""
@@ -166,6 +185,7 @@ class ChromaClientProvider:
     ChromaDBクライアントのライフサイクルを管理するプロバイダー。
     シングルトンとして動作し、接続の再利用と遅延初期化を提供する。
     """
+
     def __init__(self, db_path: str = "./chroma_db"):
         self.db_path = db_path
         self._client = None
@@ -179,22 +199,31 @@ class ChromaClientProvider:
             return self._client
 
         if not HAS_CHROMA:
-            logger.warning("[CHROMA PROVIDER] chromadb is not installed. Vector features will be disabled.")
+            logger.warning(
+                "[CHROMA PROVIDER] chromadb is not installed. Vector features will be disabled."
+            )
             return None
 
         import time
+
         for attempt in range(retries):
             try:
-                logger.info(f"[CHROMA PROVIDER] Initializing ChromaDB client at {self.db_path} (Attempt {attempt + 1}/{retries})")
+                logger.info(
+                    f"[CHROMA PROVIDER] Initializing ChromaDB client at {self.db_path} (Attempt {attempt + 1}/{retries})"
+                )
                 self._client = chromadb.PersistentClient(path=self.db_path)
                 return self._client
             except Exception as e:
-                delay = base_delay * (2 ** attempt)
-                logger.error(f"[CHROMA PROVIDER] Failed to initialize ChromaDB: {e}. Retrying in {delay}s...")
+                delay = base_delay * (2**attempt)
+                logger.error(
+                    f"[CHROMA PROVIDER] Failed to initialize ChromaDB: {e}. Retrying in {delay}s..."
+                )
                 if attempt < retries - 1:
                     time.sleep(delay)
                 else:
-                    logger.critical(f"[CHROMA PROVIDER] All {retries} attempts to initialize ChromaDB failed.")
+                    logger.critical(
+                        f"[CHROMA PROVIDER] All {retries} attempts to initialize ChromaDB failed."
+                    )
 
         return None
 
@@ -216,6 +245,7 @@ class ChromaVectorStore(BaseVectorStore):
     複数の独立したコレクション（インデックス構造）を管理し、
     用途別の最適化された検索を提供する。
     """
+
     def __init__(self, client_provider: ChromaClientProvider):
         self.client_provider = client_provider
         self._collections: Dict[str, Any] = {}
@@ -228,11 +258,13 @@ class ChromaVectorStore(BaseVectorStore):
         """プロバイダー経由でクライアントを取得する"""
         return self.client_provider.get_client()
 
-    def initialize_collections(self, collection_types: Optional[List[CollectionType]] = None) -> Dict[str, bool]:
+    def initialize_collections(
+        self, collection_types: Optional[List[CollectionType]] = None
+    ) -> Dict[str, bool]:
         """
         指定されたコレクションタイプを初期化する。
         未指定の場合は全デフォルトコレクションを初期化。
-        
+
         Returns:
             {collection_name: success} のマップ
         """
@@ -263,7 +295,9 @@ class ChromaVectorStore(BaseVectorStore):
                 existing_meta = existing.metadata or {}
                 # HNSWパラメータが異なる場合は警告
                 if existing_meta.get("hnsw:space") != config.space:
-                    logger.warning(f"[VECTOR STORE] Collection '{config.name}' has different space: {existing_meta.get('hnsw:space')} vs {config.space}")
+                    logger.warning(
+                        f"[VECTOR STORE] Collection '{config.name}' has different space: {existing_meta.get('hnsw:space')} vs {config.space}"
+                    )
             except Exception:
                 # 存在しない場合は作成
                 pass
@@ -271,11 +305,12 @@ class ChromaVectorStore(BaseVectorStore):
             # メタデータ込みで取得または作成
             metadata = config.get_metadata()
             self._collections[config.name] = self.client.get_or_create_collection(
-                name=config.name,
-                metadata=metadata
+                name=config.name, metadata=metadata
             )
             self._initialized_collections.add(config.name)
-            logger.info(f"[VECTOR STORE] Initialized collection '{config.name}' with space={config.space}")
+            logger.info(
+                f"[VECTOR STORE] Initialized collection '{config.name}' with space={config.space}"
+            )
             return True
         except Exception as e:
             logger.error(f"[VECTOR STORE] Failed to initialize collection '{config.name}': {e}")
@@ -287,7 +322,9 @@ class ChromaVectorStore(BaseVectorStore):
             return None
         if name not in self._collections:
             try:
-                self._collections[name] = self.client.get_or_create_collection(name=name, metadata=metadata)
+                self._collections[name] = self.client.get_or_create_collection(
+                    name=name, metadata=metadata
+                )
             except Exception as e:
                 logger.error(f"[VECTOR STORE] Failed to get/create collection {name}: {e}")
                 return None
@@ -297,21 +334,31 @@ class ChromaVectorStore(BaseVectorStore):
         """コレクションタイプから設定を取得"""
         return DEFAULT_COLLECTIONS[collection_type]
 
-    async def add_documents(self, collection_name: str, ids: List[str], documents: List[str], embeddings: List[List[float]], metadatas: Optional[List[Dict[str, Any]]] = None):
+    async def add_documents(
+        self,
+        collection_name: str,
+        ids: List[str],
+        documents: List[str],
+        embeddings: List[List[float]],
+        metadatas: Optional[List[Dict[str, Any]]] = None,
+    ):
         """ドキュメントをベクトルDBに追加する"""
         collection = self.get_collection(collection_name)
         if not collection:
-            logger.warning(f"[VECTOR STORE] Skipping add_documents: Collection '{collection_name}' not available.")
+            logger.warning(
+                f"[VECTOR STORE] Skipping add_documents: Collection '{collection_name}' not available."
+            )
             return
-        collection.add(
-            ids=ids,
-            documents=documents,
-            embeddings=embeddings,
-            metadatas=metadatas
-        )
+        collection.add(ids=ids, documents=documents, embeddings=embeddings, metadatas=metadatas)
         logger.info(f"[VECTOR STORE] Added {len(ids)} documents to collection '{collection_name}'")
 
-    async def search(self, collection_name: str, query_embedding: List[float], top_k: int = 5, where: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+    async def search(
+        self,
+        collection_name: str,
+        query_embedding: List[float],
+        top_k: int = 5,
+        where: Optional[Dict[str, Any]] = None,
+    ) -> List[Dict[str, Any]]:
         """ベクトル類似度検索を実行する"""
         collection = self.get_collection(collection_name)
         if not collection:
@@ -321,18 +368,20 @@ class ChromaVectorStore(BaseVectorStore):
             query_embeddings=[query_embedding],
             n_results=top_k,
             where=where,
-            include=["documents", "metadatas", "distances"]
+            include=["documents", "metadatas", "distances"],
         )
 
         output = []
         if results["ids"] and len(results["ids"][0]) > 0:
             for i in range(len(results["ids"][0])):
-                output.append({
-                    "id": results["ids"][0][i],
-                    "content": results["documents"][0][i],
-                    "metadata": results["metadatas"][0][i],
-                    "distance": results["distances"][0][i]
-                })
+                output.append(
+                    {
+                        "id": results["ids"][0][i],
+                        "content": results["documents"][0][i],
+                        "metadata": results["metadatas"][0][i],
+                        "distance": results["distances"][0][i],
+                    }
+                )
         return output
 
     async def search_with_score(
@@ -364,7 +413,9 @@ class ChromaVectorStore(BaseVectorStore):
         if not collection:
             return
         collection.delete(ids=ids)
-        logger.info(f"[VECTOR STORE] Deleted {len(ids)} documents from collection '{collection_name}'")
+        logger.info(
+            f"[VECTOR STORE] Deleted {len(ids)} documents from collection '{collection_name}'"
+        )
 
     async def clear_collection(self, collection_name: str):
         """コレクションを空にする"""
@@ -407,8 +458,11 @@ class ChromaVectorStore(BaseVectorStore):
         def tokenize(text: str) -> List[str]:
             # 日本語文字と英数字を分離してトークン化
             import re
+
             # 英数字の単語 + 日本語文字（ひらがな、カタカナ、漢字）
-            tokens = re.findall(r'[a-zA-Z0-9]+|[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]+', text.lower())
+            tokens = re.findall(
+                r"[a-zA-Z0-9]+|[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]+", text.lower()
+            )
             # さらに文字単位でも分割（日本語の部分一致対応）
             char_tokens = list(text.lower())
             return tokens + char_tokens
@@ -422,9 +476,18 @@ class ChromaVectorStore(BaseVectorStore):
             "doc_ids": doc_ids,
             "documents": documents,
         }
-        logger.info(f"[VECTOR STORE] Built BM25 index for collection '{collection_name}' with {len(documents)} documents")
+        logger.info(
+            f"[VECTOR STORE] Built BM25 index for collection '{collection_name}' with {len(documents)} documents"
+        )
 
-    async def add_documents_with_bm25(self, collection_name: str, ids: List[str], documents: List[str], embeddings: List[List[float]], metadatas: Optional[List[Dict[str, Any]]] = None):
+    async def add_documents_with_bm25(
+        self,
+        collection_name: str,
+        ids: List[str],
+        documents: List[str],
+        embeddings: List[List[float]],
+        metadatas: Optional[List[Dict[str, Any]]] = None,
+    ):
         """ドキュメントをベクトルDBに追加し、BM25インデックスも更新する"""
         # 通常のベクトル追加
         await self.add_documents(collection_name, ids, documents, embeddings, metadatas)
@@ -452,7 +515,7 @@ class ChromaVectorStore(BaseVectorStore):
     ) -> List[Dict[str, Any]]:
         """
         ハイブリッド検索: ベクトル類似度検索 + BM25キーワード検索
-        
+
         Args:
             collection_name: 検索対象コレクション名
             query_text: 検索クエリテキスト（BM25用）
@@ -461,7 +524,7 @@ class ChromaVectorStore(BaseVectorStore):
             where: メタデータフィルタ
             alpha: ベクトル検索の重み (0.0-1.0)。1.0でベクトルのみ、0.0でBM25のみ
             min_score: 結合スコアの最小閾値
-            
+
         Returns:
             結合スコア順の検索結果リスト
         """
@@ -482,7 +545,10 @@ class ChromaVectorStore(BaseVectorStore):
             # クエリをトークン化
             def tokenize(text: str) -> List[str]:
                 import re
-                tokens = re.findall(r'[a-zA-Z0-9]+|[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]+', text.lower())
+
+                tokens = re.findall(
+                    r"[a-zA-Z0-9]+|[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]+", text.lower()
+                )
                 char_tokens = list(text.lower())
                 return tokens + char_tokens
 
@@ -490,7 +556,9 @@ class ChromaVectorStore(BaseVectorStore):
             bm25_scores = bm25.get_scores(query_tokens)
 
             # 上位候補を取得
-            top_indices = sorted(range(len(bm25_scores)), key=lambda i: bm25_scores[i], reverse=True)[:top_k * 3]
+            top_indices = sorted(
+                range(len(bm25_scores)), key=lambda i: bm25_scores[i], reverse=True
+            )[: top_k * 3]
 
             # BM25スコアを正規化 (0-1)
             max_bm25 = max(bm25_scores) if bm25_scores else 1.0
@@ -501,13 +569,15 @@ class ChromaVectorStore(BaseVectorStore):
                 if bm25_scores[idx] <= 0:
                     continue
                 normalized_bm25 = (bm25_scores[idx] - min_bm25) / bm25_range
-                bm25_results.append({
-                    "id": doc_ids[idx],
-                    "content": documents[idx],
-                    "bm25_score": bm25_scores[idx],
-                    "normalized_bm25": normalized_bm25,
-                    "metadata": {},  # メタデータは別途取得が必要な場合がある
-                })
+                bm25_results.append(
+                    {
+                        "id": doc_ids[idx],
+                        "content": documents[idx],
+                        "bm25_score": bm25_scores[idx],
+                        "normalized_bm25": normalized_bm25,
+                        "metadata": {},  # メタデータは別途取得が必要な場合がある
+                    }
+                )
 
         # 結果を結合
         # ベクトル結果をIDでマップ化
@@ -532,15 +602,19 @@ class ChromaVectorStore(BaseVectorStore):
                 if not metadata and bm25_result:
                     metadata = bm25_result.get("metadata", {})
 
-                combined_results.append({
-                    "id": doc_id,
-                    "content": vector_result.get("content") if vector_result else bm25_result.get("content", ""),
-                    "metadata": metadata,
-                    "vector_similarity": vector_sim,
-                    "bm25_score": bm25_result.get("bm25_score", 0.0) if bm25_result else 0.0,
-                    "normalized_bm25": bm25_norm,
-                    "combined_score": combined_score,
-                })
+                combined_results.append(
+                    {
+                        "id": doc_id,
+                        "content": vector_result.get("content")
+                        if vector_result
+                        else bm25_result.get("content", ""),
+                        "metadata": metadata,
+                        "vector_similarity": vector_sim,
+                        "bm25_score": bm25_result.get("bm25_score", 0.0) if bm25_result else 0.0,
+                        "normalized_bm25": bm25_norm,
+                        "combined_score": combined_score,
+                    }
+                )
 
         # 結合スコア降順でソート
         combined_results.sort(key=lambda x: x["combined_score"], reverse=True)
@@ -554,20 +628,28 @@ class ChromaVectorStore(BaseVectorStore):
 
         collection = self.get_collection(collection_name)
         if not collection:
-            logger.warning(f"[VECTOR STORE] Collection '{collection_name}' not found for BM25 rebuild")
+            logger.warning(
+                f"[VECTOR STORE] Collection '{collection_name}' not found for BM25 rebuild"
+            )
             return
 
         try:
             # 全ドキュメントを取得
             results = collection.get(include=["documents", "metadatas"])
             if not results["ids"] or len(results["ids"]) == 0:
-                logger.info(f"[VECTOR STORE] Collection '{collection_name}' is empty, skipping BM25 rebuild")
+                logger.info(
+                    f"[VECTOR STORE] Collection '{collection_name}' is empty, skipping BM25 rebuild"
+                )
                 return
 
             documents = results["documents"]
             doc_ids = results["ids"]
 
             self._build_bm25_index(collection_name, documents, doc_ids)
-            logger.info(f"[VECTOR STORE] Rebuilt BM25 index for '{collection_name}' with {len(documents)} documents")
+            logger.info(
+                f"[VECTOR STORE] Rebuilt BM25 index for '{collection_name}' with {len(documents)} documents"
+            )
         except Exception as e:
-            logger.error(f"[VECTOR STORE] Failed to rebuild BM25 index for '{collection_name}': {e}")
+            logger.error(
+                f"[VECTOR STORE] Failed to rebuild BM25 index for '{collection_name}': {e}"
+            )

@@ -1,7 +1,6 @@
-import pytest
 
 from src.core.container import AppContainer
-from src.services.redis_cache import RedisCacheService, PromptCacheService
+from src.services.redis_cache import PromptCacheService, RedisCacheService
 
 
 def test_app_container_returns_redis_cache():

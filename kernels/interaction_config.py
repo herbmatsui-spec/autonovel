@@ -8,6 +8,7 @@ class InteractionConfig(BaseModel):
     カーネル間の相互作用係数を定義する設定モデル。
     matrix[target][source] = coefficient
     """
+
     # 相互作用行列: target_kernel -> {source_kernel: coefficient}
     # 例: "resonance": {"hegemony": -0.2} は、覇権が共鳴を抑制することを意味する
     matrix: Dict[str, Dict[str, float]] = Field(
@@ -25,4 +26,3 @@ class InteractionConfig(BaseModel):
     # 状態のクランプ範囲
     min_value: float = 0.0
     max_value: float = 100.0
-

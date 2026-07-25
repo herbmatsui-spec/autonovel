@@ -2,9 +2,9 @@
 config/erotic_parameters.py
 官能エージェント用の調整可能なパラメータ定義モジュール。
 """
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional
 
+from dataclasses import dataclass, field
+from typing import Dict, List
 
 DEFAULT_SENSORY_WEIGHTS = {
     "touch": 80,

@@ -1,4 +1,3 @@
-
 import pytest
 
 from src.agents.audit import InternalLogicValidator
@@ -21,23 +20,25 @@ async def test_enigma_red_herring_and_catharsis():
     # カタルシスフラグを立てる
     ep.analytics.is_catharsis = True
     ep.enigma.knowledge_delta = 0.8  # 高い驚き
-    ep.enigma.truth_convergence = 0.9 # 高い納得感
+    ep.enigma.truth_convergence = 0.9  # 高い納得感
     ep.enigma.unfairness_score = 0.0  # フェア
 
     # Red Herringを排除せずに計算
     score1 = ep.calculate_mystery_catharsis()
-    assert score1 == int((0.8 * 0.9) * 100) # 72
+    assert score1 == int((0.8 * 0.9) * 100)  # 72
 
     # Red Herringを排除してから再計算 (ボーナスが付与される)
     ep.enigma.eliminate_red_herring(rh_id, 2, "血ではなくケチャップだった")
     score2 = ep.calculate_mystery_catharsis()
     assert score2 > score1
 
+
 @pytest.mark.asyncio
 async def test_internal_logic_validator_stubs():
     """
     フェーズ3,4,5: Audit機能の実行テスト (スタブとして例外を出さずに返るか)
     """
+
     class DummyPromptManager:
         pass
 
@@ -46,9 +47,12 @@ async def test_internal_logic_validator_stubs():
             class Res:
                 success = True
                 metadata = {"is_consistent": True, "is_fair": True, "is_optimal": True}
+
             return Res()
 
-    validator = InternalLogicValidator(pm=DummyPromptManager(), generate_json=DummyLLM().generate_json)
+    validator = InternalLogicValidator(
+        pm=DummyPromptManager(), generate_json=DummyLLM().generate_json
+    )
 
     # Phase 3
     is_ok, errs = await validator.validate_alibi_and_timeline("blueprint", "script")

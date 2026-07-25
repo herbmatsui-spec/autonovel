@@ -1,6 +1,7 @@
 """
 streamlit_app/state_keys.py — st.session_state のキー定数管理
 """
+
 from typing import Final
 
 # アプリ全体で共有されるセッション状態のキーを定数化し、タイポの防止と管理を容易にする。

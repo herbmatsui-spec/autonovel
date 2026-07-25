@@ -5,6 +5,7 @@ from typing import Any, Dict
 
 class DataLoader:
     """Loads and caches JSON configurations for rule externalization."""
+
     def __init__(self, data_dir: str | Path):
         self.data_dir = Path(data_dir)
         self._cache: Dict[str, Any] = {}

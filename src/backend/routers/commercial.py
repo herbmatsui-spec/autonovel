@@ -1,12 +1,14 @@
 """
 src/backend/routers/commercial.py — Commercial Pipeline API
 """
-from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel
-from typing import List, Dict, Any
 
-from src.backend.workflows.commercial_pipeline import CommercialPipeline
+from typing import Any, Dict, List
+
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
+
 from src.backend.auth import require_api_key
+from src.backend.workflows.commercial_pipeline import CommercialPipeline
 
 router = APIRouter(prefix="/commercial", tags=["commercial"])
 

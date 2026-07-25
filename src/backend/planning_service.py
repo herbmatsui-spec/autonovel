@@ -9,12 +9,10 @@ UltimateHegemonyEngine から分離したサービス。
 - create_hegemony_plan: 企画生成 (WorldBibleGenerator へ委譲)
 - audit_bible_completeness: 整合性監査 (bible_generator.auditor へ委譲)
 """
+
 from __future__ import annotations
 
 from typing import Any, Optional, Tuple
-
-from src.backend.protocols import PlanningPort
-from src.shared.utils import StatusReporter
 
 
 class PlanningService:

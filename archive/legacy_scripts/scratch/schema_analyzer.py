@@ -1,13 +1,29 @@
 import sqlite3
 import sys
 
-DB_PATH = 'i:/claude2/kaku_hegemony_v2.db'
+DB_PATH = "i:/claude2/kaku_hegemony_v2.db"
 TABLES = [
-    'books', 'custom_styles', 'internal_state', 'style_fragments', 'bible',
-    'branches', 'chapters', 'characters', 'optimization_history', 'pending_patches',
-    'rules', 'masterpieces', 'outbox', 'background_tasks', 'audit_issues',
-    'foreshadowing', 'character_arcs', 'plot', 'prompt_versions'
+    "books",
+    "custom_styles",
+    "internal_state",
+    "style_fragments",
+    "bible",
+    "branches",
+    "chapters",
+    "characters",
+    "optimization_history",
+    "pending_patches",
+    "rules",
+    "masterpieces",
+    "outbox",
+    "background_tasks",
+    "audit_issues",
+    "foreshadowing",
+    "character_arcs",
+    "plot",
+    "prompt_versions",
 ]
+
 
 def analyze_schema():
     try:
@@ -41,6 +57,6 @@ def analyze_schema():
         print(f"Error: {e}")
         sys.exit(1)
 
+
 if __name__ == "__main__":
     analyze_schema()
-

@@ -9,14 +9,18 @@ from src.backend.database import UnitOfWork
 @pytest.mark.asyncio
 async def test_unit_of_work_commit():
     from config.container import Container
+
     db = Container.db()
 
     # テーブル初期化
     async with db.get_session() as session:
         async with session.begin():
-            await session.execute(text("CREATE TABLE IF NOT EXISTS uow_test (id INTEGER PRIMARY KEY, val TEXT)"))
+            await session.execute(
+                text("CREATE TABLE IF NOT EXISTS uow_test (id INTEGER PRIMARY KEY, val TEXT)")
+            )
             await session.execute(text("DELETE FROM uow_test"))
-            await session.execute(text("""
+            await session.execute(
+                text("""
                 CREATE TABLE IF NOT EXISTS outbox (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     event_type VARCHAR(64) NOT NULL,
@@ -27,7 +31,8 @@ async def test_unit_of_work_commit():
                     processed_at DATETIME,
                     error_message TEXT
                 )
-            """))
+            """)
+            )
             await session.execute(text("DELETE FROM outbox"))
 
     # 正常系コミットテスト
@@ -52,14 +57,18 @@ async def test_unit_of_work_commit():
     payload = json.loads(outbox_rows[0]["payload"])
     assert payload["id"] == "doc_uow"
 
+
 @pytest.mark.asyncio
 async def test_unit_of_work_rollback():
     from config.container import Container
+
     db = Container.db()
 
     async with db.get_session() as session:
         async with session.begin():
-            await session.execute(text("CREATE TABLE IF NOT EXISTS uow_test (id INTEGER PRIMARY KEY, val TEXT)"))
+            await session.execute(
+                text("CREATE TABLE IF NOT EXISTS uow_test (id INTEGER PRIMARY KEY, val TEXT)")
+            )
             await session.execute(text("DELETE FROM uow_test"))
             await session.execute(text("DELETE FROM outbox"))
 
@@ -67,7 +76,9 @@ async def test_unit_of_work_rollback():
     try:
         async with UnitOfWork(db) as uow:
             conn = await uow.session.connection()
-            await conn.exec_driver_sql("INSERT INTO uow_test (id, val) VALUES (?, ?)", (2, "failed"))
+            await conn.exec_driver_sql(
+                "INSERT INTO uow_test (id, val) VALUES (?, ?)", (2, "failed")
+            )
             uow.stage_chroma_add("test_col", "doc_failed", "failed content", [0.1])
             raise ValueError("Forced error to trigger rollback")
     except ValueError:

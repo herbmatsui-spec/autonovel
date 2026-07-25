@@ -1,5 +1,5 @@
 import logging
-from typing import TYPE_CHECKING, Any, Awaitable, Callable, List, Optional, Dict
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, Dict, List, Optional
 
 from src.agents.base import BaseAgent
 
@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 class PlotAgent(BaseAgent):
     """プロット設計、アーク分割などを担当"""
+
     def __init__(
         self,
         repo: "IRepository",
@@ -59,8 +60,8 @@ class PlotAgent(BaseAgent):
             RuntimeError: プロット生成失敗時
         """
         # まず_plot_expanderを優先使用
-        if hasattr(self, '_plot_expander') and self._plot_expander is not None:
-            if hasattr(self._plot_expander, 'expand_single_plot'):
+        if hasattr(self, "_plot_expander") and self._plot_expander is not None:
+            if hasattr(self._plot_expander, "expand_single_plot"):
                 try:
                     result = await self._plot_expander.expand_single_plot(
                         book_id=0,
@@ -132,9 +133,11 @@ class PlotAgent(BaseAgent):
 
         for attempt in range(max_retries):
             if reporter:
-                reporter.update_progress(ep_num - self._start_ep_for_rebuild, 
-                                        self._total_eps_for_rebuild + 1, 
-                                        f"第{ep_num}話のプロット監査実行中 (試行 {attempt + 1})...")
+                reporter.update_progress(
+                    ep_num - self._start_ep_for_rebuild,
+                    self._total_eps_for_rebuild + 1,
+                    f"第{ep_num}話のプロット監査実行中 (試行 {attempt + 1})...",
+                )
 
             # ----- 論理整合性監査 -----
             audit_passed = True
@@ -156,8 +159,9 @@ class PlotAgent(BaseAgent):
                         reporter.report(f"⚠️ {error_msg}", "warning")
 
             # ----- 因果律監査 -----
-            if audit_passed and self._auditor and hasattr(self._auditor, 'check_integrity'):
+            if audit_passed and self._auditor and hasattr(self._auditor, "check_integrity"):
                 from src.agents.audit import PlotIntegrityMonitor
+
                 if reporter:
                     reporter.report(f"⚖️ {ep_num}話: 監査実行中... (因果律チェック)", "info")
 
@@ -168,7 +172,9 @@ class PlotAgent(BaseAgent):
                     def extract_keywords(self, blueprint: str) -> List[str]:
                         return []
 
-                    monitor.extract_keywords = extract_keywords.__get__(monitor, PlotIntegrityMonitor)
+                    monitor.extract_keywords = extract_keywords.__get__(
+                        monitor, PlotIntegrityMonitor
+                    )
 
                     keywords = monitor.extract_keywords(plot_data.detailed_blueprint)
 
@@ -198,7 +204,9 @@ class PlotAgent(BaseAgent):
             # ----- リトライ -----
             if attempt < max_retries - 1:
                 if reporter:
-                    reporter.report(f"🔄 {ep_num}話: 監査不合格、リトライ {attempt + 2}/{max_retries}", "info")
+                    reporter.report(
+                        f"🔄 {ep_num}話: 監査不合格、リトライ {attempt + 2}/{max_retries}", "info"
+                    )
 
                 # 修正指示付きで再生成
                 retry_prompt = f"{plot_data.detailed_blueprint}\n\n\n【⚠️ 前回監査エラー(修正指示)】\n以下のエラーを解消するようにプロットを修正してください:\n{last_error_summary}"
@@ -218,7 +226,9 @@ class PlotAgent(BaseAgent):
                     continue
 
         # ----- 最大リトライ超過 -----
-        raise RuntimeError(f"{ep_num}話: 監査リトライ最大回数({max_retries})を超過。最終エラー: {last_error_summary}")
+        raise RuntimeError(
+            f"{ep_num}話: 監査リトライ最大回数({max_retries})を超過。最終エラー: {last_error_summary}"
+        )
 
     async def _archive_and_save_plots(
         self,
@@ -248,10 +258,12 @@ class PlotAgent(BaseAgent):
         try:
             async with self._uow_factory():
                 if reporter:
-                    reporter.report(f"💾 データベースを更新中... (第{start_ep}話以降のアーカイブ/保存)", "info")
+                    reporter.report(
+                        f"💾 データベースを更新中... (第{start_ep}話以降のアーカイブ/保存)", "info"
+                    )
 
                 # 古いプロットを削除
-                if hasattr(self.repo, 'archive_plots_from'):
+                if hasattr(self.repo, "archive_plots_from"):
                     await self.repo.archive_plots_from(branch_id, start_ep, new_total)
                 else:
                     # 代替メソッド: delete_plots_from
@@ -294,7 +306,7 @@ class PlotAgent(BaseAgent):
 
         lines = ["【過去文脈】"]
         for p in past_plots:
-            summary = getattr(p, 'summary', '') or getattr(p, 'one_line_summary', '') or ''
+            summary = getattr(p, "summary", "") or getattr(p, "one_line_summary", "") or ""
             lines.append(f"- 第{p.ep_num}話: {summary}")
         return "\n".join(lines)
 
@@ -311,12 +323,13 @@ class PlotAgent(BaseAgent):
             世界設定JSON文字列
         """
         import json
+
         bible = await self.repo.get_latest_bible(book_id)
         if not bible:
             return "{}"
 
         settings = {}
-        if hasattr(bible, 'settings') and bible.settings:
+        if hasattr(bible, "settings") and bible.settings:
             if isinstance(bible.settings, str):
                 try:
                     settings = json.loads(bible.settings)
@@ -351,8 +364,13 @@ class PlotAgent(BaseAgent):
         return self.llm
 
     async def expand_plots(
-        self, book_id: int, ep_nums: List[int], arcs: List["Arc"],
-        reporter: Optional["IReporter"] = None, force: bool = False, branch_id: Optional[int] = None,
+        self,
+        book_id: int,
+        ep_nums: List[int],
+        arcs: List["Arc"],
+        reporter: Optional["IReporter"] = None,
+        force: bool = False,
+        branch_id: Optional[int] = None,
     ) -> List["PlotDetail"]:
         """各エピソードのプロット詳細を展開する（実際のLLM呼び出し）"""
         self._ensure_services()
@@ -371,9 +389,17 @@ class PlotAgent(BaseAgent):
         return results
 
     async def rebuild_hegemony_plot(
-        self, book_id: int, start_ep: int, new_total_eps: int, keywords: str,
-        trend_memo: str, plot_pattern_key: str, cost_severity: int, cheat_scale: int,
-        system_assist: int, reporter: Optional["IReporter"] = None
+        self,
+        book_id: int,
+        start_ep: int,
+        new_total_eps: int,
+        keywords: str,
+        trend_memo: str,
+        plot_pattern_key: str,
+        cost_severity: int,
+        cheat_scale: int,
+        system_assist: int,
+        reporter: Optional["IReporter"] = None,
     ) -> List["PlotEpisode"]:
         """
         第X話以降のプロット再構築機能を実行する。
@@ -407,13 +433,13 @@ class PlotAgent(BaseAgent):
             return []
 
         branch_id = await self._get_book_branch(book_id)
-        
+
         # リポジトリのget_latest_bibleメソッドの存在確認
-        if not hasattr(self.repo, 'get_latest_bible'):
+        if not hasattr(self.repo, "get_latest_bible"):
             if reporter:
                 reporter.report("リポジトリにget_latest_bibleメソッドがありません。", "error")
             return []
-            
+
         bible = await self.repo.get_latest_bible(book_id)
         if not bible:
             if reporter:
@@ -422,7 +448,7 @@ class PlotAgent(BaseAgent):
 
         # 過去文脈の構築
         past_context = await self._build_past_context(branch_id, start_ep)
-        
+
         # 世界設定の取得
         world_settings = await self._get_world_settings(book_id)
 
@@ -445,7 +471,7 @@ class PlotAgent(BaseAgent):
             start_ep=start_ep,
             reporter=reporter,
         )
-        
+
         if not arc_metadata:
             if reporter:
                 reporter.report("アークメタデータの生成に失敗しました。処理を中止します。", "error")
@@ -454,7 +480,7 @@ class PlotAgent(BaseAgent):
         # エピソードごとのプロット生成
         new_plots: List["PlotEpisode"] = []
         total_eps = new_total_eps - start_ep + 1
-        
+
         # 再構築ヘルパーのためのインスタンス変数を設定
         self._start_ep_for_rebuild = start_ep
         self._total_eps_for_rebuild = total_eps
@@ -471,7 +497,7 @@ class PlotAgent(BaseAgent):
                     reporter=reporter,
                     system_overrides=system_overrides,
                 )
-                
+
                 # プロットに対して監査ループを適用
                 plot_data = await self._apply_audit_loop(
                     book_id=book_id,
@@ -483,11 +509,11 @@ class PlotAgent(BaseAgent):
                     max_retries=3,
                     system_overrides=system_overrides,
                 )
-                
+
                 # 正しい話数の設定
                 plot_data.ep_num = ep_num
                 new_plots.append(plot_data)
-                
+
             except Exception as e:
                 logger.error(f"Episode {ep_num} プロット生成エラー: {e}")
                 if reporter:
@@ -518,4 +544,3 @@ class PlotAgent(BaseAgent):
     async def run(self, *args, **kwargs):
         logger.info("PlotAgent run invoked")
         return await self.expand_plots(**kwargs)
-

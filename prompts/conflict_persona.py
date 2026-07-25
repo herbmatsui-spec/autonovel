@@ -34,10 +34,14 @@ CONFLICT_PERSONA = {
     "interaction_awareness": {
         "hegemony_collision": "When Hegemony is high, Conflict shifts from interpersonal friction to systemic rebellion or the strategic undermining of authority.",
         "resonance_tension": "High Resonance transforms raw Conflict into 'intimate tension'—where the clash is painful because the connection is deep.",
-        "serenity_suppression": "High Serenity acts as a dampener; Conflict must work harder to break through the calm, leading to a more explosive eventual release."
+        "serenity_suppression": "High Serenity acts as a dampener; Conflict must work harder to break through the calm, leading to a more explosive eventual release.",
     },
-    "specialty": ["Value Collision", "Tension Escalation", "Psychological Pressure", "Inevitability Design"],
+    "specialty": [
+        "Value Collision",
+        "Tension Escalation",
+        "Psychological Pressure",
+        "Inevitability Design",
+    ],
     "focus": "Creation of meaningful friction that forces character growth and reveals inner truths",
-    "output_style": "Sharp, intense, psychologically astute, and structurally relentless"
+    "output_style": "Sharp, intense, psychologically astute, and structurally relentless",
 }
-

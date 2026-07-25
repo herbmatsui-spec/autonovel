@@ -1,4 +1,3 @@
-
 file_path = r"i:\claude2\start_app.bat"
 
 try:
@@ -17,10 +16,9 @@ taskkill /F /IM streamlit.exe >nul 2>&1
 """
 
 if kill_logic.strip() not in content:
-    content = content.replace('set PYTHONPATH=%cd%', 'set PYTHONPATH=%cd%\n' + kill_logic)
+    content = content.replace("set PYTHONPATH=%cd%", "set PYTHONPATH=%cd%\n" + kill_logic)
 
 with open(file_path, "w", encoding=encoding_used) as f:
     f.write(content)
 
 print(f"Fixed start_app.bat using {encoding_used}")
-

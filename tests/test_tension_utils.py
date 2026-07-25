@@ -13,17 +13,20 @@ def test_select_tension_curve():
     # Default
     assert select_tension_curve("unknown") == "standard"
 
+
 def test_calculate_progress():
     assert calculate_progress(1, 10) == 0.0
     assert calculate_progress(5, 10) == 0.4
     assert calculate_progress(10, 10) == 0.9
     assert calculate_progress(1, 0) == 0.0
 
+
 def test_get_target_tension_boundaries():
     # Test start boundary
     assert get_target_tension("standard", -0.1) == EMOTIONAL_CURVES["standard"][0][1]
     # Test end boundary
     assert get_target_tension("standard", 1.1) == EMOTIONAL_CURVES["standard"][-1][1]
+
 
 def test_get_target_tension_interpolation():
     # standard: (0.0, 0.2) -> (0.2, 0.4)
@@ -37,19 +40,23 @@ def test_get_target_tension_interpolation():
     tension_zamaa = get_target_tension("zamaa_heavy", 0.25)
     assert tension_zamaa == pytest.approx(0.85)
 
+
 def test_get_target_tension_invalid_curve():
     # Should fallback to default curve
     tension = get_target_tension("non_existent", 0.0)
     assert tension == EMOTIONAL_CURVES["standard"][0][1]
+
 
 def test_select_curve_by_hook_known():
     assert select_curve_by_hook("catharsis") == "zamaa_heavy"
     assert select_curve_by_hook("empathy_peak") == "slow_burn"
     assert select_curve_by_hook("serenity") == "slow_burn"
 
+
 def test_select_curve_by_hook_unknown():
     assert select_curve_by_hook("unknown_hook") == "standard"
     assert select_curve_by_hook("") == "standard"
+
 
 def test_get_target_tension_with_hook_name():
     # catharsis -> zamaa_heavy: (0.0, 0.3) -> (0.1, 0.8)
@@ -57,10 +64,12 @@ def test_get_target_tension_with_hook_name():
     tension = get_target_tension("standard", 0.1, hook_name="catharsis")
     assert tension == pytest.approx(0.8)
 
+
 def test_get_target_tension_hook_name_none_preserves_legacy():
     # curve_name が優先される
     tension = get_target_tension("standard", 0.1, hook_name=None)
     assert tension == pytest.approx(0.3)
+
 
 def test_get_target_tension_unknown_hook_falls_back():
     tension = get_target_tension("standard", 0.1, hook_name="unknown_hook")

@@ -24,5 +24,3 @@ WORKFLOW_REGISTRY = {
     "marketing_generation_workflow": MarketingGenerationWorkflow,
     "refine_erotic_workflow": RefineEroticWorkflow,
 }
-
-

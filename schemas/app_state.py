@@ -7,21 +7,26 @@ from pydantic import BaseModel, Field
 
 class WizardState(BaseModel):
     """ウィザード形式の入力状態を管理するモデル"""
+
     step: int = 1
     data: dict[str, Any] = Field(default_factory=dict)
     is_complete: bool = False
 
+
 class TokenStats(BaseModel):
     """APIトークン使用量統計"""
+
     prompt: int = 0
     completion: int = 0
     calls: int = 0
+
 
 class AppRuntimeState(BaseModel):
     """
     UI層で利用される非永続的なランタイム状態。
     UIStateStore.get_runtime_value でアクセスされていたものを構造化する。
     """
+
     app_mode: str = "easy"
     llm_provider: str = "gemini"
     is_api_key_valid: bool = False
@@ -46,7 +51,9 @@ class AppRuntimeState(BaseModel):
     poll_fail_count: dict[str, int] = Field(default_factory=dict)
     poll_skip_until: dict[str, float] = Field(default_factory=dict)
     # フラグメントごとのバージョン管理 (Reactive Update 用)
-    fragment_versions: dict[str, int] = Field(default_factory=lambda: {"status": 0, "logs": 0, "usage": 0})
+    fragment_versions: dict[str, int] = Field(
+        default_factory=lambda: {"status": 0, "logs": 0, "usage": 0}
+    )
     # === st.session_state 置き換え用 新規フィールド ===
     # api_key_future のシリアライズ可能な状態
     # "idle" / "pending" / "valid" / "invalid" / "error"
@@ -60,10 +67,12 @@ class AppRuntimeState(BaseModel):
     # 設定データキャッシュ (config/streamlit_adapter の st.session_state.config 置き換え)
     config_data: dict[str, Any] = Field(default_factory=dict)
 
+
 class AppStateModel(BaseModel):
     """
     アプリケーション全体のセッション状態を定義するルートモデル。
     """
+
     # 認証・基本設定
     api_key: str | None = None
     config: dict[str, Any] = Field(default_factory=dict)
@@ -85,8 +94,4 @@ class AppStateModel(BaseModel):
     # UI-specific runtime state
     runtime: AppRuntimeState = Field(default_factory=AppRuntimeState)
 
-    model_config = {
-        "arbitrary_types_allowed": True,
-        "protected_namespaces": ()
-    }
-
+    model_config = {"arbitrary_types_allowed": True, "protected_namespaces": ()}

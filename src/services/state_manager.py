@@ -8,6 +8,7 @@ from src.core.container import AppContainer
 
 logger = logging.getLogger(__name__)
 
+
 class StateManager:
     """アプリケーション状態の管理を行うサービス"""
 

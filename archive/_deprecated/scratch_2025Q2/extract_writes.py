@@ -17,7 +17,9 @@ with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
 
                     code = args.get("CodeContent", "") or args.get("ReplacementContent", "")
                     if "build_drafting_prompt" in code:
-                        print(f"  -> Found 'build_drafting_prompt' in CodeContent (length {len(code)})!")
+                        print(
+                            f"  -> Found 'build_drafting_prompt' in CodeContent (length {len(code)})!"
+                        )
                         # Let's save it to a separate file so we can inspect it!
                         out_name = f"i:\\claude2\\scratch\\code_line_{idx}_{tc_idx}.py"
                         with open(out_name, "w", encoding="utf-8") as out:
@@ -25,4 +27,3 @@ with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
                         print(f"  Saved to {out_name}")
             except Exception as e:
                 print(f"Error parsing line {idx}: {e}")
-

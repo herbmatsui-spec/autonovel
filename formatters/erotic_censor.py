@@ -3,6 +3,7 @@ formatters/erotic_censor.py
 プラットフォーム別の伏字（shading）変換フォーマッター。
 リファクタリング済み: 固定dict → config/platform_censorship_rules.py 参照
 """
+
 from typing import Dict
 
 from config.erotic_platform_presets import get_preset

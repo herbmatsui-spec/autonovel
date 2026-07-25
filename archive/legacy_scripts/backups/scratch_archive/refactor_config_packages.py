@@ -1,4 +1,3 @@
-
 # 1. Refactor config/base.py
 base_path = "d:/claude2/config/base.py"
 with open(base_path, "r", encoding="utf-8") as f:
@@ -71,7 +70,7 @@ to_remove = [
     'VILLAIN_STRATEGIES: Dict[str, str] = _data.get("VILLAIN_STRATEGIES", {})',
     'DEBUFF_PROFILES: Dict[str, str] = _data.get("DEBUFF_PROFILES", {})',
     'CHARACTER_EXPANSION_THEMES: Dict[str, List[str]] = _data.get("CHARACTER_EXPANSION_THEMES", {})',
-    'ANTI_PATTERNS: Dict[str, List[str]] = _data.get("ANTI_PATTERNS", {})'
+    'ANTI_PATTERNS: Dict[str, List[str]] = _data.get("ANTI_PATTERNS", {})',
 ]
 
 for s in to_remove:
@@ -213,7 +212,7 @@ with open(archetypes_path, "r", encoding="utf-8") as f:
 content = content.replace("\r\n", "\n")
 
 # Comment out PLOT_STRUCTURES
-old_plot_struct = "PLOT_STRUCTURES: Dict[str, Dict[str, Any]] = _data.get(\"PLOT_STRUCTURES\", {})"
+old_plot_struct = 'PLOT_STRUCTURES: Dict[str, Dict[str, Any]] = _data.get("PLOT_STRUCTURES", {})'
 if old_plot_struct in content:
     content = content.replace(old_plot_struct, "# " + old_plot_struct)
     print("Commented out PLOT_STRUCTURES in archetypes.py")
@@ -238,4 +237,3 @@ content += archetypes_getattr
 with open(archetypes_path, "w", encoding="utf-8") as f:
     f.write(content)
 print("config/archetypes.py refactored successfully.")
-

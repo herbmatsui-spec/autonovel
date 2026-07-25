@@ -13,6 +13,7 @@ def test_config_file_handler_initialization():
     assert handler.notifier == mock_notifier
     assert handler.callback == mock_callback
 
+
 def test_config_file_handler_on_modified_triggers_callback():
     """設定ファイル変更時に正しく反応するかテスト"""
     mock_notifier = MagicMock()

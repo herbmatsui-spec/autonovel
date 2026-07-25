@@ -30,6 +30,7 @@ logger = logging.getLogger(__name__)
 
 class GenreProfile(BaseModel):
     """ジャンルプロファイル（genres.json の各エントリに対応）"""
+
     name: str
     description: str
     evaluation_axes: List[str] = Field(default_factory=list)
@@ -39,6 +40,7 @@ class GenreProfile(BaseModel):
 
 class PlotGenerationInput(BaseModel):
     """プロット生成入力パラメータ"""
+
     genre: str = "standard"
     seed_keywords: List[str] = Field(default_factory=list)
     target_length: int = 3000
@@ -59,6 +61,7 @@ class PlotGenerationInput(BaseModel):
 
 class PlotGenerationOutput(BaseModel):
     """プロット生成結果"""
+
     title: str
     logline: str
     synopsis: str
@@ -200,7 +203,7 @@ def build_prompt_variables(
 ) -> Dict[str, Any]:
     """
     novelize_prompt.j2 テンプレートに渡す変数 dict を構築
-    
+
     Args:
         input_params: 生成パラメータ
         genre_profile: ジャンルプロファイル
@@ -211,14 +214,17 @@ def build_prompt_variables(
         scripts_text: スクリプトテキスト
         char_context: キャラクター文脈
         prev_context: 前回文脈
-        
+
     Returns:
         テンプレート変数辞書
     """
     # デフォルトのスタイル指示・ルールセットを取得（PromptManager経由で後で解決）
     variables = {
-        "style_instruction": style_instruction or f"【ジャンル: {genre_profile.name}】{genre_profile.description}",
-        "rule_set_content": rule_set_content or genre_profile.constraint_profile or "【制約】特になし",
+        "style_instruction": style_instruction
+        or f"【ジャンル: {genre_profile.name}】{genre_profile.description}",
+        "rule_set_content": rule_set_content
+        or genre_profile.constraint_profile
+        or "【制約】特になし",
         "plots_text": plots_text or f"【キーワード】{', '.join(selected_keywords)}",
         "scripts_text": scripts_text or "",
         "char_context": char_context or "【キャラクター】未設定",
@@ -232,11 +238,11 @@ def build_prompt_variables(
 def render_novelize_prompt(template: Template, variables: Dict[str, Any]) -> str:
     """
     Jinja2テンプレートをレンダリングしてプロンプト文字列を生成
-    
+
     Args:
         template: Jinja2 Template オブジェクト
         variables: テンプレート変数
-        
+
     Returns:
         レンダリングされたプロンプト文字列
     """
@@ -257,15 +263,15 @@ async def call_llm_for_plot(
 ) -> str:
     """
     LLMを呼び出してプロット生成レスポンスを取得
-    
+
     Args:
         prompt: 生成プロンプト
         temperature: 温度パラメータ
         max_tokens: 最大トークン数
-        
+
     Returns:
         LLM生成テキスト
-        
+
     Note:
         既存のLLMクライアント（services/llm_client.py等）がある場合はそれを使用。
         ここではシンプルなラッパーとして実装し、必要に応じて差し替え可能。
@@ -300,13 +306,13 @@ async def call_llm_for_plot(
 def parse_llm_plot_response(raw_response: str) -> PlotGenerationOutput:
     """
     LLMレスポンスから PlotGenerationOutput をパース
-    
+
     Args:
         raw_response: LLM生成テキスト（JSONブロック含む想定）
-        
+
     Returns:
         パース済み PlotGenerationOutput
-        
+
     Raises:
         ValueError: パース失敗時
     """
@@ -374,13 +380,13 @@ def _heuristic_parse_fallback(text: str) -> PlotGenerationOutput:
 def validate_generated_plot(output: PlotGenerationOutput) -> bool:
     """
     生成されたプロットの妥当性を検証
-    
+
     Args:
         output: 生成結果
-        
+
     Returns:
         妥当なら True
-        
+
     Raises:
         ValueError: 重大な不備がある場合
     """
@@ -421,11 +427,11 @@ def apply_genre_constraints(
 ) -> PlotGenerationOutput:
     """
     ジャンル制約プロファイルを生成結果に適用
-    
+
     Args:
         output: 生成結果
         genre_profile: ジャンルプロファイル
-        
+
     Returns:
         制約適用済みの生成結果（新しいインスタンス）
     """
@@ -444,7 +450,10 @@ def apply_genre_constraints(
         metadata["has_strict_constraints"] = True
 
     # カタルシス必須チェック（dark, psychological_horror）
-    if "カタルシス" in genre_profile.constraint_profile or "犠牲" in genre_profile.constraint_profile:
+    if (
+        "カタルシス" in genre_profile.constraint_profile
+        or "犠牲" in genre_profile.constraint_profile
+    ):
         metadata["requires_catharsis"] = True
 
     return PlotGenerationOutput(
@@ -466,12 +475,12 @@ def save_plot_output(
 ) -> Path:
     """
     生成結果をファイル保存
-    
+
     Args:
         output: 生成結果
         output_dir: 出力ディレクトリ
         fmt: 出力形式 ("json" or "md")
-        
+
     Returns:
         保存されたファイルパス
     """
@@ -541,13 +550,13 @@ def _format_plot_as_markdown(output: PlotGenerationOutput) -> str:
 async def run_generate_plot(input_params: PlotGenerationInput) -> PlotGenerationOutput:
     """
     プロット生成メインパイプライン
-    
+
     Args:
         input_params: 生成パラメータ
-        
+
     Returns:
         生成されたプロット情報
-        
+
     Raises:
         ValueError: 無効なジャンル等
         RuntimeError: LLM呼び出し失敗等
@@ -618,6 +627,7 @@ async def run_generate_plot(input_params: PlotGenerationInput) -> PlotGeneration
 def build_arg_parser() -> argparse.ArgumentParser:
     """CLI引数パーサーを構築"""
     import argparse
+
     parser = argparse.ArgumentParser(
         prog="generate_plot",
         description="ストーリープロット自動生成ツール - novelize_prompt.j2 と genres.json を使用してプロットを生成",
@@ -730,7 +740,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
-        "--verbose", "-v",
+        "--verbose",
+        "-v",
         action="store_true",
         help="詳細ログ出力",
     )
@@ -773,16 +784,18 @@ async def run_cli_generation(args: argparse.Namespace) -> List[PlotGenerationOut
     results = []
 
     for i in range(args.count):
-        logger.info(f"Generating plot {i+1}/{args.count} (genre={args.genre})")
+        logger.info(f"Generating plot {i + 1}/{args.count} (genre={args.genre})")
 
         if args.dry_run:
             # ドライラン: プロンプトのみ生成して表示
             genre_profile = get_genre_profile(args.genre)
-            selected_keywords = select_keywords_for_genre(args.genre, count=5, user_keywords=seed_keywords)
+            selected_keywords = select_keywords_for_genre(
+                args.genre, count=5, user_keywords=seed_keywords
+            )
             variables = build_prompt_variables(input_params, genre_profile, selected_keywords)
             template = load_novelize_template()
             prompt = render_novelize_prompt(template, variables)
-            print(f"\n=== DRY RUN: Plot {i+1} Prompt ===")
+            print(f"\n=== DRY RUN: Plot {i + 1} Prompt ===")
             print(prompt)
             print("=== END DRY RUN ===\n")
             continue
@@ -800,11 +813,13 @@ async def run_cli_generation(args: argparse.Namespace) -> List[PlotGenerationOut
             results.append(output)
 
             # 簡易サマリ表示
-            print(f"  ✓ Plot {i+1}: {output.title} ({len(output.synopsis)} chars, {len(output.beats)} beats)")
+            print(
+                f"  ✓ Plot {i + 1}: {output.title} ({len(output.synopsis)} chars, {len(output.beats)} beats)"
+            )
 
         except Exception as e:
-            logger.error(f"Generation {i+1} failed: {e}")
-            print(f"  ✗ Plot {i+1} failed: {e}")
+            logger.error(f"Generation {i + 1} failed: {e}")
+            print(f"  ✗ Plot {i + 1} failed: {e}")
 
     return results
 
@@ -816,7 +831,9 @@ def main():
 
     # ログレベル設定
     if args.verbose:
-        logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+        logging.basicConfig(
+            level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        )
     else:
         logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
@@ -824,6 +841,7 @@ def main():
 
     # 非同期実行
     import asyncio
+
     try:
         results = asyncio.run(run_cli_generation(args))
 
@@ -850,5 +868,5 @@ def main():
 if __name__ == "__main__":
     import argparse
     import sys
-    main()
 
+    main()

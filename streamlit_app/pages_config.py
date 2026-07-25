@@ -28,11 +28,15 @@ from streamlit_app.ui_tabs_writing import (
 )
 
 # 共通エラー・警告メッセージ定数
-MSG_SELECT_BOOK_FIRST = "👈 まず「企画立案」タブから作品を生成するか、サイドバーで作品を選択してください。"
+MSG_SELECT_BOOK_FIRST = (
+    "👈 まず「企画立案」タブから作品を生成するか、サイドバーで作品を選択してください。"
+)
+
 
 def _get_engine():
     # api_key is already in session if we reached here
     return EngineService.get_instance()
+
 
 def _wrap_easy_mode():
     state = UIStateStore.get_runtime_state()
@@ -40,13 +44,16 @@ def _wrap_easy_mode():
     progress_fragment("easy_job", engine=engine)
     # render_easy_mode is now in ui_tabs_planning.py, but this is a wrapper for a page.
     from streamlit_app.ui_tabs_planning import render_easy_mode
+
     render_easy_mode(state, engine)
+
 
 def _make_tab_wrapper(render_func, requires_book: bool = True, passes_state: bool = True):
     """
     タブのラッパー関数を生成する高階関数。
     重複コードを排除し、状態取得、エンジン取得、進捗表示、作品選択の共通フローをカプセル化する。
     """
+
     def wrapper():
         engine = _get_engine()
         progress_fragment("global_job", engine=engine)
@@ -67,20 +74,26 @@ def _make_tab_wrapper(render_func, requires_book: bool = True, passes_state: boo
             args.append(book_id)
 
         render_func(*args)
+
     return wrapper
+
 
 # 共通ラッパーファクトリを利用したタブ定義
 _wrap_planning_tab = _make_tab_wrapper(render_planning_tab, requires_book=False, passes_state=True)
-_wrap_plot_tab     = _make_tab_wrapper(render_plot_tab,     requires_book=True,  passes_state=True)
-_wrap_writing_tab  = _make_tab_wrapper(render_writing_tab,  requires_book=True,  passes_state=True)
-_wrap_monitor_tab  = _make_tab_wrapper(render_monitor_tab,  requires_book=True,  passes_state=True)
-_wrap_audit_tab    = _make_tab_wrapper(render_audit_tab,    requires_book=True,  passes_state=True)
-_wrap_import_tab   = _make_tab_wrapper(render_import_tab,   requires_book=True,  passes_state=False)
-_wrap_style_lab_tab = _make_tab_wrapper(render_style_lab_tab, requires_book=False, passes_state=False)
-_wrap_strategy_tab = _make_tab_wrapper(render_strategy_tab, requires_book=True,  passes_state=False)
-_wrap_promo_tab    = _make_tab_wrapper(render_promo_tab,    requires_book=True,  passes_state=True)
-_wrap_rebuild_tab  = _make_tab_wrapper(render_rebuild_tab,  requires_book=True,  passes_state=False)
-_wrap_metrics_tab  = _make_tab_wrapper(render_prompt_metrics_dashboard, requires_book=False, passes_state=False)
+_wrap_plot_tab = _make_tab_wrapper(render_plot_tab, requires_book=True, passes_state=True)
+_wrap_writing_tab = _make_tab_wrapper(render_writing_tab, requires_book=True, passes_state=True)
+_wrap_monitor_tab = _make_tab_wrapper(render_monitor_tab, requires_book=True, passes_state=True)
+_wrap_audit_tab = _make_tab_wrapper(render_audit_tab, requires_book=True, passes_state=True)
+_wrap_import_tab = _make_tab_wrapper(render_import_tab, requires_book=True, passes_state=False)
+_wrap_style_lab_tab = _make_tab_wrapper(
+    render_style_lab_tab, requires_book=False, passes_state=False
+)
+_wrap_strategy_tab = _make_tab_wrapper(render_strategy_tab, requires_book=True, passes_state=False)
+_wrap_promo_tab = _make_tab_wrapper(render_promo_tab, requires_book=True, passes_state=True)
+_wrap_rebuild_tab = _make_tab_wrapper(render_rebuild_tab, requires_book=True, passes_state=False)
+_wrap_metrics_tab = _make_tab_wrapper(
+    render_prompt_metrics_dashboard, requires_book=False, passes_state=False
+)
 
 
 def get_pages():

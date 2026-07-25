@@ -1,4 +1,3 @@
-
 import os
 import subprocess
 
@@ -13,15 +12,21 @@ def generate_architecture():
     # クラス図の生成
     cmd_class = [
         "pyreverse",
-        "-o", "png",
-        "-p", "Claude2_System",
-        "--output-directory", output_dir,
-        "core", "agents", "services"
+        "-o",
+        "png",
+        "-p",
+        "Claude2_System",
+        "--output-directory",
+        output_dir,
+        "core",
+        "agents",
+        "services",
     ]
 
     print("Generating class diagrams...")
     subprocess.run(cmd_class, check=True)
     print(f"Diagrams generated in {output_dir}")
+
 
 if __name__ == "__main__":
     try:
@@ -29,4 +34,3 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Error generating architecture: {e}")
         print("Ensure pyreverse (part of pylint) is installed: pip install pylint")
-

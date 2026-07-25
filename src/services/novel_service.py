@@ -5,6 +5,7 @@ from src.core.interfaces import IRepository
 
 class NovelService:
     """小説全体管理サービス"""
+
     def __init__(self, repo: IRepository):
         self.repo = repo
 

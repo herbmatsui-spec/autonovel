@@ -34,6 +34,7 @@ EXTRA_ABSTRACTIONS: Final[dict[str, str]] = {
     "感情": "沈静の波",
 }
 
+
 def get_combined_mappings():
     """
     Combine all metaphor mappings into a single dictionary.
@@ -41,5 +42,6 @@ def get_combined_mappings():
     combined = DIRECT_TO_METAPHOR.copy()
     combined.update(EXTRA_ABSTRACTIONS)
     return combined
+
 
 __all__ = ["DIRECT_TO_METAPHOR", "EXTRA_ABSTRACTIONS", "get_combined_mappings"]

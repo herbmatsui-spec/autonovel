@@ -2,6 +2,7 @@
 This script performs import checks and basic instantiation of the key modules
 required by streamlit_app/app.py.
 """
+
 import importlib
 
 MODULES = [
@@ -73,12 +74,16 @@ def main() -> int:
         return 1
 
     from src.engine_service import EngineService
+
     service = EngineService(api_key="test")
     assert service.engine is not None
 
     from src.agents.state_validator import StateValidatorAgent
+
     validator = StateValidatorAgent()
-    issues = importlib.import_module("asyncio").run(validator.validate({"api_key": None, "app_mode": "easy"}))
+    issues = importlib.import_module("asyncio").run(
+        validator.validate({"api_key": None, "app_mode": "easy"})
+    )
     assert isinstance(issues, list)
 
     print("Step 48 validation passed.")
@@ -87,4 +92,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

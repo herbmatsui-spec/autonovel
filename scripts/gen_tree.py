@@ -7,14 +7,26 @@ def generate_tree(start_path: str, output_file: str):
     Excludes common noise directories like .git, __pycache__, etc.
     """
     exclude_dirs = {
-        '.git', '__pycache__', '.mypy_cache', '.pytest_cache',
-        '.dockerignore', '.gitignore', 'htmlcov', '.test_venv'
+        ".git",
+        "__pycache__",
+        ".mypy_cache",
+        ".pytest_cache",
+        ".dockerignore",
+        ".gitignore",
+        "htmlcov",
+        ".test_venv",
     }
 
     # Fix: Use a set for exclude_dirs properly
     exclude_set = {
-        '.git', '__pycache__', '.mypy_cache', '.pytest_cache',
-        '.dockerignore', '.gitignore', 'htmlcov', '.test_venv'
+        ".git",
+        "__pycache__",
+        ".mypy_cache",
+        ".pytest_cache",
+        ".dockerignore",
+        ".gitignore",
+        "htmlcov",
+        ".test_venv",
     }
 
     tree_lines = []
@@ -29,7 +41,7 @@ def generate_tree(start_path: str, output_file: str):
             if entry.name in exclude_set:
                 continue
 
-            is_last = (i == len(entries) - 1)
+            is_last = i == len(entries) - 1
             connector = "└── " if is_last else "├── "
 
             tree_lines.append(f"{prefix}{connector}{entry.name}")
@@ -47,6 +59,7 @@ def generate_tree(start_path: str, output_file: str):
         f.write("```text\n")
         f.write("\n".join(tree_lines))
         f.write("\n```\n")
+
 
 if __name__ == "__main__":
     # Root of the project is 2 levels up from this script (scripts/gen_tree.py)

@@ -1,5 +1,6 @@
 from src.backend.workflows import WORKFLOW_REGISTRY, BaseWorkflow
 
+
 def test_all_workflows_registered():
     """全10ワークフローがレジストリに登録されていること"""
     expected_keys = [

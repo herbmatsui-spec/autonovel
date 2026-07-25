@@ -11,4 +11,3 @@ if os.path.exists(path):
             if not line:
                 break
             print(repr(line))
-

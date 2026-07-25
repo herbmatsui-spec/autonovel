@@ -1,8 +1,10 @@
 import base64
 from typing import Any, Dict, List
 
+
 def _b(s: str) -> str:
     return base64.b64decode(s).decode("utf-8")
+
 
 PLATFORM_PRESETS: Dict[str, Dict[str, Any]] = {
     "kakuyomu_romance": {
@@ -28,8 +30,10 @@ PLATFORM_PRESETS: Dict[str, Dict[str, Any]] = {
     },
 }
 
+
 def get_preset(name: str) -> Dict[str, Any]:
     return PLATFORM_PRESETS.get(name, PLATFORM_PRESETS["kakuyomu_romance"])
+
 
 def get_preset_names() -> List[str]:
     return list(PLATFORM_PRESETS.keys())

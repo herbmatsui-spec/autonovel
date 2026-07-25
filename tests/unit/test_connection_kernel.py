@@ -10,9 +10,11 @@ class MockLLMEngine:
     def __init__(self):
         self.generate = AsyncMock()
 
+
 class MockKernelEngine:
     def __init__(self):
         self.llm = MockLLMEngine()
+
 
 @pytest.mark.asyncio
 async def test_connection_kernel_stagnation_trigger():
@@ -46,7 +48,7 @@ async def test_connection_kernel_stagnation_trigger():
     engine.llm.generate.side_effect = [
         "Initial scene proposal...",
         "Polished scene proposal...",
-        "APPROVED\nReasoning: Bond growth is earned."
+        "APPROVED\nReasoning: Bond growth is earned.",
     ]
 
     result = await kernel.execute(context)
@@ -55,6 +57,7 @@ async def test_connection_kernel_stagnation_trigger():
     assert "scene_proposal" in result
     assert "analytics_update" in result
     assert engine.llm.generate.call_count == 3
+
 
 @pytest.mark.asyncio
 async def test_connection_kernel_no_trigger():

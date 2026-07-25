@@ -1,8 +1,8 @@
 def test_key_phrase_tests():
-    import logging
     import pytest
-    from src.models.sharp_edge import SharpEdgeSpec
     from pydantic import ValidationError
+
+    from src.models.sharp_edge import SharpEdgeSpec
 
     def test_key_phrase_default_empty():
         edge = SharpEdgeSpec(
@@ -34,6 +34,7 @@ def test_key_phrase_tests():
             key_phrase="あ" * 20,
         )
         assert len(edge.key_phrase) == 20
+
 
 if __name__ == "__main__":
     test_key_phrase_tests()

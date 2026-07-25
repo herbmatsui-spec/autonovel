@@ -4,17 +4,21 @@ config/streamlit_adapter.py — Streamlit 環境向け設定アダプター
 このモジュールは Streamlit に依存する設定管理機能を提供します。
 CLI やテストからはインポートしないでください。
 """
+
 from __future__ import annotations
 
 import logging
 from typing import Any
 
 import streamlit as st
+
 try:
     from streamlit.runtime.scriptrunner import get_script_run_ctx
 except ImportError:
+
     def get_script_run_ctx():
         return None
+
 
 from config.constants import (
     SAFE_APPEND_MODE_DEFAULT,

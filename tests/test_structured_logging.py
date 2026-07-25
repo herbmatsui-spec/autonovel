@@ -19,7 +19,9 @@ def setup_test_logger(logger_name="test_logger"):
     handler = logging.StreamHandler(log_output)
 
     # JSONフォーマッタの設定
-    formatter = jsonlogger.JsonFormatter('%(timestamp)s %(level)s %(name)s %(message)s %(trace_id)s')
+    formatter = jsonlogger.JsonFormatter(
+        "%(timestamp)s %(level)s %(name)s %(message)s %(trace_id)s"
+    )
     handler.setFormatter(formatter)
 
     logger.addHandler(handler)
@@ -28,6 +30,7 @@ def setup_test_logger(logger_name="test_logger"):
     logger.addFilter(TraceIdFilter())
 
     return logger, log_output
+
 
 def test_structured_logger_metadata():
     """
@@ -51,6 +54,7 @@ def test_structured_logger_metadata():
     # (上の行で test_userid としたので修正)
     # 実際には以下のように書き直します
 
+
 def test_structured_logger_metadata_fixed():
     logger_name = "meta_test_fixed"
     setup_test_logger(logger_name)
@@ -68,6 +72,7 @@ def test_structured_logger_metadata_fixed():
     assert log_json["message"] == "Book created"
     assert log_json["book_id"] == test_book_id
     assert log_json["user_id"] == test_user_id
+
 
 def test_structured_logger_with_trace_id():
     """
@@ -93,6 +98,7 @@ def test_structured_logger_with_trace_id():
     finally:
         TraceContext.clear()
 
+
 def test_structured_logger_extra_param():
     """
     'extra' キーワード引数が渡された場合に、それが正しく処理されることを検証する。
@@ -103,7 +109,9 @@ def test_structured_logger_extra_param():
     logger_base = logging.getLogger(logger_name)
     output = logger_base.handlers[0].stream
 
-    s_logger.info("Custom extra test", extra={"custom_field": "custom_value"}, other_field="other_value")
+    s_logger.info(
+        "Custom extra test", extra={"custom_field": "custom_value"}, other_field="other_value"
+    )
 
     log_line = output.getvalue().strip()
     log_json = json.loads(log_line)

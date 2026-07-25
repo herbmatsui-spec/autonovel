@@ -36,6 +36,7 @@ def mock_resilient_client(monkeypatch):
 
     # get_client() がこのモックを返すように差し替え
     import streamlit_app.api_client as api_client
+
     monkeypatch.setattr(api_client, "get_client", lambda: client)
     return client
 
@@ -100,16 +101,24 @@ def test_start_erotic_refinement_sends_post(mock_resilient_client):
     from streamlit_app.api_client import start_erotic_refinement
 
     task_id = start_erotic_refinement(
-        api_key="k", config={}, book_id=5, ep_num=7,
-        intensity=3, platform_preset="kakuyomu_romance",
+        api_key="k",
+        config={},
+        book_id=5,
+        ep_num=7,
+        intensity=3,
+        platform_preset="kakuyomu_romance",
     )
 
     mock_resilient_client.request.assert_awaited_once_with(
         method="POST",
         path="/refine_erotic",
         json={
-            "api_key": "k", "config": {}, "book_id": 5, "ep_num": 7,
-            "intensity": 3, "platform_preset": "kakuyomu_romance",
+            "api_key": "k",
+            "config": {},
+            "book_id": 5,
+            "ep_num": 7,
+            "intensity": 3,
+            "platform_preset": "kakuyomu_romance",
         },
         timeout=10.0,
     )

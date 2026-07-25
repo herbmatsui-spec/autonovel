@@ -5,7 +5,6 @@ Commercial Roles Test Suite
 フェーズ5（ステップ43-48）：テスト・統合
 """
 
-
 from config.archetypes import (
     COMMERCIAL_ROLE_DESCRIPTIONS,
     PLEASURE_TRIGGER_KEYWORDS,
@@ -42,6 +41,7 @@ from prompts.commercial_prompts import (
 # =============================================================================
 # ステップ43: 商業的役割データ構造テスト
 # =============================================================================
+
 
 class TestCommercialRoleEnums:
     """CommercialRole 列挙体のテスト"""
@@ -120,6 +120,7 @@ class TestCharacterCommercialMeta:
 # =============================================================================
 # ステップ44: カーネル統合テスト
 # =============================================================================
+
 
 class TestPleasureGraph:
     """PleasureGraph カーネルのテスト"""
@@ -208,15 +209,14 @@ class TestHateAmplificationLoop:
 # ステップ45: プロンプトレジストリテスト
 # =============================================================================
 
+
 class TestCommercialPromptRegistry:
     """商用プロンプトレジストリのテスト"""
 
     def test_commercial_role_prompt_registry(self):
         """商業的役割プロンプトが取得できる"""
         prompt = commercial_role_prompt_registry(
-            role="avatar_of_desire",
-            character_name="テストキャラ",
-            prompt_type="scene_generation"
+            role="avatar_of_desire", character_name="テストキャラ", prompt_type="scene_generation"
         )
         assert "テストキャラ" in prompt
         assert len(prompt) > 0
@@ -256,7 +256,7 @@ class TestCommercialPromptRegistry:
         pack = generate_full_commercial_prompt_pack(
             character_name="テストキャラ",
             commercial_roles=["avatar_of_desire", "growth_investment"],
-            target_market="web novel"
+            target_market="web novel",
         )
 
         # 必須キーが存在
@@ -273,15 +273,13 @@ class TestCommercialPromptRegistry:
 # ステップ46: データローダー統合テスト
 # =============================================================================
 
+
 class TestCommercialDataLoader:
     """CommercialDataLoader のテスト"""
 
     def test_role_platform_score(self):
         """役割とプラットフォームの相性スコアが取得できる"""
-        score = CommercialDataLoader.get_role_platform_score(
-            "avatar_of_desire",
-            "カクヨム/なろう"
-        )
+        score = CommercialDataLoader.get_role_platform_score("avatar_of_desire", "カクヨム/なろう")
         assert 0.0 <= score <= 1.0
 
     def test_get_optimal_roles_for_platform(self):
@@ -313,11 +311,7 @@ class TestCommercialDataLoader:
         profile = {
             "commercial_roles": ["avatar_of_desire", "growth_investment"],
         }
-        score = CommercialDataLoader.calculate_commercial_score(
-            profile,
-            "カクヨム/なろう",
-            "追放"
-        )
+        score = CommercialDataLoader.calculate_commercial_score(profile, "カクヨム/なろう", "追放")
         assert 0.0 <= score <= 2.0
 
 
@@ -354,6 +348,7 @@ class TestLoadCommercialSettings:
 # =============================================================================
 # ステップ47-48: ユーティリティ関数テスト
 # =============================================================================
+
 
 class TestUtilityFunctions:
     """ユーティリティ関数のテスト"""
@@ -408,6 +403,7 @@ class TestUtilityFunctions:
 # 統合テスト
 # =============================================================================
 
+
 class TestCommercialIntegration:
     """商用化システムの統合テスト"""
 
@@ -431,18 +427,12 @@ class TestCommercialIntegration:
 
         # 4. プロンプトパック生成
         pack = generate_full_commercial_prompt_pack(
-            character_name=profile["name"],
-            commercial_roles=roles,
-            target_market="web novel"
+            character_name=profile["name"], commercial_roles=roles, target_market="web novel"
         )
         assert len(pack) > 10
 
         # 5. 商業スコア計算
-        score = CommercialDataLoader.calculate_commercial_score(
-            profile,
-            "カクヨム/なろう",
-            "追放"
-        )
+        score = CommercialDataLoader.calculate_commercial_score(profile, "カクヨム/なろう", "追放")
         assert 0.0 <= score <= 2.0
 
         # 6. 市場トレンド取得

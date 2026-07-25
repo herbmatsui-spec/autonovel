@@ -6,6 +6,7 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
+
 class GeminiClient:
     """Gemini API ラッパークラス。
     JSON 出力やテキスト出力を非同期で取得できるシンプルなインターフェースを提供する。

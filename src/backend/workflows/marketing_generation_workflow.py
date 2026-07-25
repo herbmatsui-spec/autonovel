@@ -7,6 +7,7 @@ from .base_workflow import BaseWorkflow
 
 class MarketingGenerationWorkflow(BaseWorkflow):
     """マーケティング情報生成ワークフロー"""
+
     async def execute(self, reporter: Optional[StatusReporter] = None, **kwargs) -> Dict[str, Any]:
         book_id = kwargs["book_id"]
         latest_ep = kwargs["latest_ep"]
@@ -19,7 +20,5 @@ class MarketingGenerationWorkflow(BaseWorkflow):
             reporter.set_message("マーケティングパックを生成中...")
             reporter.add_log("マーケティングエージェントを起動しました")
 
-        result = await self.marketing.generate_marketing_pack(
-            book.title, book.synopsis, latest_ep
-        )
+        result = await self.marketing.generate_marketing_pack(book.title, book.synopsis, latest_ep)
         return result

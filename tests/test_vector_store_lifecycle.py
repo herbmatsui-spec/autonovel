@@ -1,7 +1,6 @@
-
 import pytest
 
-from config.container import Container, get_container
+from config.container import get_container
 from src.services.vector_store import ChromaClientProvider, ChromaVectorStore
 
 
@@ -31,6 +30,7 @@ async def test_chroma_provider_lifecycle():
     client3 = provider.get_client()
     assert client3 is not None
     assert provider._client is not None
+
 
 @pytest.mark.asyncio
 async def test_vector_store_lazy_loading():

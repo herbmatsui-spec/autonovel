@@ -4,10 +4,10 @@ src/models/emotional_hook.py
 
 品質は感情の従属変数であることを型で強制する。
 """
+
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -23,6 +23,7 @@ class EmotionalHookSpec(BaseModel):
     subordinate_to_quality=True は「品質はこの感情に従属する」ことを意味する。
     False の場合は警告ログを出力し、品質監査時に感情を殺さないチェックを緩和する。
     """
+
     hook_name: str = Field(..., description="感情起点名")
     one_line_intent: str = Field(..., max_length=120, description="1行で表した刺さり")
     target_tension_peak: int = Field(default=80, ge=0, le=100, description="目標tensionピーク値")

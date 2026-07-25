@@ -13,9 +13,10 @@ for line_num in [94, 136, 396]:
                     print(f"Line {line_num}: type={obj.get('type')}")
                     # In transcript.jsonl, the output of the tool call might be in a different field or under tool_calls/output
                     # Let's write the JSON to a file for investigation
-                    with open(f"i:\\claude2\\scratch\\line_{line_num}.json", "w", encoding="utf-8") as out:
+                    with open(
+                        f"i:\\claude2\\scratch\\line_{line_num}.json", "w", encoding="utf-8"
+                    ) as out:
                         json.dump(obj, out, indent=2, ensure_ascii=False)
                     print(f"Saved line {line_num} to scratch\\line_{line_num}.json")
                 except Exception as e:
                     print(f"Error for line {line_num}: {e}")
-

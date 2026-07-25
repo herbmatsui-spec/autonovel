@@ -1,12 +1,16 @@
 from __future__ import annotations
-from typing import Any, Dict, List, Optional
+
+from typing import Any, Dict
+
 from src.backend.database.repo_protocols import IRepository
+
 
 class InMemoryRepository(IRepository):
     """
     テストおよび開発用のインメモリリポジトリ。
     SQLAlchemyへの依存を排除し、高速なテスト実行を可能にする。
     """
+
     def __init__(self):
         self.books: Dict[str, Any] = {}
         self.plots: Dict[str, Any] = {}

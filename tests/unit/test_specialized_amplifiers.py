@@ -14,7 +14,9 @@ def test_detect_amplifier_type():
 
     # Test fallback mapping by description
     assert detect_amplifier_type(action_description="魔力が迸る戦闘") == AmplifierType.COMBAT
-    assert detect_amplifier_type(action_description="敵の傲慢さと内的葛藤") == AmplifierType.PSYCHOLOGY
+    assert (
+        detect_amplifier_type(action_description="敵の傲慢さと内的葛藤") == AmplifierType.PSYCHOLOGY
+    )
     assert detect_amplifier_type(action_description="美味しい食事と日常") == AmplifierType.SCENERY
     assert detect_amplifier_type(action_description="圧倒的ざまぁ逆転劇") == AmplifierType.CATHARSIS
 

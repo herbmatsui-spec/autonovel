@@ -5,6 +5,7 @@ config/emotional_hook_vocabulary.py
 高品質≠面白い問題を解決するため、まず「何を感じさせるか」を
 1行で定義し、品質はその感情の従属変数として扱う。
 """
+
 from typing import Dict, Tuple
 
 EMOTIONAL_HOOKS: Dict[str, Tuple[str, str, int]] = {

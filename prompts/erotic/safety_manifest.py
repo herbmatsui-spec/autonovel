@@ -28,6 +28,7 @@ SAFETY_MANIFEST = """
    - 感情の沈降、距離感の再設定、次話への伏線を含めること。
 """
 
+
 def get_safety_prefix() -> str:
     """セーフティ・マニフェストの文字列を返す。"""
     return SAFETY_MANIFEST.strip()

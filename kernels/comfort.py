@@ -1,15 +1,18 @@
+from typing import TYPE_CHECKING, Tuple
+
 from kernels.base import KernelBase
 from prompts.comfort_persona import COMFORT_PERSONA
 from src.core.observability import get_structured_logger
-from typing import TYPE_CHECKING, Tuple
 
 logger = get_structured_logger("comfort_kernel")
 
+
 class ComfortKernel(KernelBase):
     """
-    ComfortKernel handles the generation and refinement of scenes 
+    ComfortKernel handles the generation and refinement of scenes
     dedicated to emotional relief, redemption, and catharsis.
     """
+
     def __init__(self, engine):
         super().__init__(engine)
         self.persona = COMFORT_PERSONA
@@ -20,32 +23,35 @@ class ComfortKernel(KernelBase):
         Evaluates trigger conditions to determine if a cathartic intervention is needed.
         """
         if not await self.should_intervene(context):
-            logger.info("No immediate need for cathartic intervention", kernel=self.persona['name'])
+            logger.info("No immediate need for cathartic intervention", kernel=self.persona["name"])
             return None
 
-        logger.info("Trigger detected! Initiating cathartic resolution sequence", kernel=self.persona['name'])
+        logger.info(
+            "Trigger detected! Initiating cathartic resolution sequence",
+            kernel=self.persona["name"],
+        )
         return await self.generate_comfort_scene(context)
 
     async def should_intervene(self, context) -> bool:
         """
         Analyzes PlotAnalytics to determine if the Comfort engine should take lead.
         """
-        analytics = getattr(context, 'analytics', None)
+        analytics = getattr(context, "analytics", None)
         if not analytics:
             return False
 
         # 1. Explicit Request: If the plot explicitly marks this as a catharsis event
-        if getattr(analytics, 'is_catharsis', False):
+        if getattr(analytics, "is_catharsis", False):
             return True
 
         # 2. High Tension Trigger: Tension is too high for too long (reader fatigue)
-        tension = getattr(analytics, 'tension', 0)
-        tension_delta = getattr(analytics, 'tension_delta', 0)
+        tension = getattr(analytics, "tension", 0)
+        tension_delta = getattr(analytics, "tension_delta", 0)
         if tension >= 80 and tension_delta >= 0:
             return True
 
         # 3. Resolution Gap: Tension dropped but catharsis is missing
-        if tension < 40 and getattr(analytics, 'catharsis', 0) < 30:
+        if tension < 40 and getattr(analytics, "catharsis", 0) < 30:
             # If tension is low but no emotional payoff was delivered, Comfort should fill the gap
             return True
 
@@ -62,9 +68,9 @@ class ComfortKernel(KernelBase):
         patterns = self._load_comfort_patterns()
 
         # 2. Prepare context for the prompt
-        narrative_summary = getattr(context, 'summary', "No summary available")
-        target_chars = getattr(context, 'characters', ["Main Character"])
-        analytics = getattr(context, 'analytics', None)
+        narrative_summary = getattr(context, "summary", "No summary available")
+        target_chars = getattr(context, "characters", ["Main Character"])
+        analytics = getattr(context, "analytics", None)
 
         # 3. Select the best pattern based on current state (Simple matching logic for now)
         # In a full implementation, this would use LLM to match the 'Lack' to the pattern's 'trigger_condition'
@@ -73,8 +79,10 @@ class ComfortKernel(KernelBase):
         prompt_vars = {
             "context": {"narrative_summary": narrative_summary},
             "target_characters": target_chars,
-            "analytics": analytics if analytics else {"tension": 0, "tension_delta": 0, "emotional_state": "Unknown"},
-            "selected_pattern": selected_pattern
+            "analytics": analytics
+            if analytics
+            else {"tension": 0, "tension_delta": 0, "emotional_state": "Unknown"},
+            "selected_pattern": selected_pattern,
         }
 
         # 4. Render prompt and call LLM
@@ -84,7 +92,7 @@ class ComfortKernel(KernelBase):
 
             response = await self.engine.llm.generate(
                 prompt=prompt_text,
-                system_message=f"You are {self.persona['name']}: {self.persona['role']}. {self.persona['focus']}"
+                system_message=f"You are {self.persona['name']}: {self.persona['role']}. {self.persona['focus']}",
             )
 
             impact = self._parse_analytics_impact(response)
@@ -95,16 +103,18 @@ class ComfortKernel(KernelBase):
             # 5. Audit Loop: Ensure the quality of the rescue
             final_scene, final_impact = await self._run_audit_loop(polished_scene, impact)
 
-            logger.info("Pattern applied, polished, and audited",
-                         kernel=self.persona['name'],
-                         pattern_id=selected_pattern['id'],
-                         impact=final_impact)
+            logger.info(
+                "Pattern applied, polished, and audited",
+                kernel=self.persona["name"],
+                pattern_id=selected_pattern["id"],
+                impact=final_impact,
+            )
 
             return {
                 "scene_proposal": final_scene,
                 "raw_event": response,
                 "analytics_update": final_impact,
-                "applied_pattern": selected_pattern['id']
+                "applied_pattern": selected_pattern["id"],
             }
 
         except Exception as e:
@@ -115,7 +125,7 @@ class ComfortKernel(KernelBase):
         """Loads rescue patterns from the config file."""
         path = "config/data/comfort_patterns.json"
         if os.path.exists(path):
-            with open(path, 'r', encoding='utf-8') as f:
+            with open(path, "r", encoding="utf-8") as f:
                 return json.load(f).get("comfort_patterns", [])
         return []
 
@@ -126,17 +136,21 @@ class ComfortKernel(KernelBase):
         """
         patterns = self._load_comfort_patterns()
         if not patterns:
-            return {"id": "generic", "name": "Generic Comfort", "approach": "General emotional relief"}
+            return {
+                "id": "generic",
+                "name": "Generic Comfort",
+                "approach": "General emotional relief",
+            }
 
-        tension = getattr(analytics, 'tension', 0)
+        tension = getattr(analytics, "tension", 0)
 
         # High tension + physical threat -> physical_salvation
         if tension >= 80 and "danger" in summary.lower():
-            return next((p for p in patterns if p['id'] == 'physical_salvation'), patterns[0])
+            return next((p for p in patterns if p["id"] == "physical_salvation"), patterns[0])
 
         # Isolation/Loneliness -> fated_encounter
         if "alone" in summary.lower() or "lonely" in summary.lower():
-            return next((p for p in patterns if p['id'] == 'fated_encounter'), patterns[0])
+            return next((p for p in patterns if p["id"] == "fated_encounter"), patterns[0])
 
         # Default to validation or a random pattern
         return patterns[0]
@@ -146,19 +160,20 @@ class ComfortKernel(KernelBase):
         Extracts numerical impact values from the LLM response.
         """
         import re
+
         impacts = {}
         patterns = {
             "catharsis": r"catharsis:\s*(\d+)",
             "qol_delta": r"qol_delta:\s*(-?\d+)",
             "veneration_gain": r"veneration_gain:\s*([\d.]+)",
-            "tension_new": r"tension_new:\s*(\d+)"
+            "tension_new": r"tension_new:\s*(\d+)",
         }
 
         for key, pattern in patterns.items():
             match = re.search(pattern, text)
             if match:
                 val = match.group(1)
-                impacts[key] = float(val) if '.' in val else int(val)
+                impacts[key] = float(val) if "." in val else int(val)
 
         return impacts
 
@@ -173,32 +188,43 @@ class ComfortKernel(KernelBase):
 
         for attempt in range(max_retries):
             prompt_manager = PromptManager()
-            audit_prompt = prompt_manager.render("comfort_audit_prompt", comfort_scene=current_scene)
+            audit_prompt = prompt_manager.render(
+                "comfort_audit_prompt", comfort_scene=current_scene
+            )
 
             audit_response = await self.engine.llm.generate(
                 prompt=audit_prompt,
-                system_message="You are the Lead Narrative Auditor, specializing in Emotional Resonance and Catharsis."
+                system_message="You are the Lead Narrative Auditor, specializing in Emotional Resonance and Catharsis.",
             )
 
             if "APPROVED" in audit_response:
-                logger.info("Audit passed", kernel=self.persona['name'], attempt=attempt + 1)
+                logger.info("Audit passed", kernel=self.persona["name"], attempt=attempt + 1)
                 return current_scene, current_impact
 
-            logger.warning("Audit failed, attempting revision", kernel=self.persona['name'], attempt=attempt + 1, max_retries=max_retries)
+            logger.warning(
+                "Audit failed, attempting revision",
+                kernel=self.persona["name"],
+                attempt=attempt + 1,
+                max_retries=max_retries,
+            )
 
             # Use the audit feedback to regenerate the scene
             revision_prompt = f"The previous version was rejected. Please revise it based on these instructions:\n\n{audit_response}\n\nOriginal Scene:\n{current_scene}"
 
             current_scene = await self.engine.llm.generate(
                 prompt=revision_prompt,
-                system_message=f"You are {self.persona['name']}: {self.persona['role']}. Focus on fixing the audit failures."
+                system_message=f"You are {self.persona['name']}: {self.persona['role']}. Focus on fixing the audit failures.",
             )
             # Re-polish the revised scene
             current_scene = await self.apply_afterglow_polish(current_scene)
             # Update impact based on the new scene
             current_impact = self._parse_analytics_impact(current_scene)
 
-        logger.error("Audit failed after maximum retries", kernel=self.persona['name'], max_retries=max_retries)
+        logger.error(
+            "Audit failed after maximum retries",
+            kernel=self.persona["name"],
+            max_retries=max_retries,
+        )
         return current_scene, current_impact
 
     async def apply_afterglow_polish(self, scene_text: str) -> str:
@@ -206,13 +232,16 @@ class ComfortKernel(KernelBase):
         Refines the generated scene to deepen the emotional afterglow.
         """
         from prompts.manager import PromptManager
+
         try:
             prompt_manager = PromptManager()
-            prompt_text = prompt_manager.render("afterglow_polish_prompt", cathartic_scene=scene_text)
+            prompt_text = prompt_manager.render(
+                "afterglow_polish_prompt", cathartic_scene=scene_text
+            )
 
             polished_text = await self.engine.llm.generate(
                 prompt=prompt_text,
-                system_message=f"You are {self.persona['name']}: Specialist in Afterglow and Emotional Resonance."
+                system_message=f"You are {self.persona['name']}: Specialist in Afterglow and Emotional Resonance.",
             )
             return polished_text
         except Exception as e:
@@ -223,7 +252,6 @@ class ComfortKernel(KernelBase):
 # ==========================================
 # 商用役割：全肯定キャラクター トリガー関数（ステップ14）
 # ==========================================
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     pass
@@ -269,17 +297,17 @@ def unconditional_supporter_trigger(
     supporter_char: str,
     target_char: str,
     emotional_state: str,
-    failure_detected: bool = False
+    failure_detected: bool = False,
 ) -> Tuple[str, float]:
     """全肯定キャラクターのトリガー条件をチェックし、適切なセリフを生成
-    
+
     Args:
         context: 物語コンテキスト
         supporter_char: 全肯定キャラクター名
         target_char: 対象キャラクター名
         emotional_state: 対象キャラクターの感情状態
         failure_detected: 失敗イベントが発生したか
-    
+
     Returns:
         (生成セリフ, 安心度スコア（0-100））
     """
@@ -307,10 +335,10 @@ def should_trigger_unconditional_support(
     tension: float,
     protagonist_emotional_state: str,
     has_commercial_role_supporter: bool,
-    recent_comfort_scene_ago: int = 999  # 前回のcomfort場面からの経過tick
+    recent_comfort_scene_ago: int = 999,  # 前回のcomfort場面からの経過tick
 ) -> Tuple[bool, str]:
     """全肯定 поддержка トリガーをチェック
-    
+
     Returns:
         (トリガーするか, トリガー理由)
     """
@@ -330,4 +358,3 @@ def should_trigger_unconditional_support(
         return True, "安らぎの提供が長時間ない"
 
     return False, "トリガー条件未充足"
-

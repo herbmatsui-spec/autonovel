@@ -1,12 +1,16 @@
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from tests.mocks.test_harness import BackendTestHarness
+
+import pytest
+
 from src.backend.workflows.episode_writing_workflow import EpisodeWritingWorkflow
 from src.shared.utils import StatusReporter
+from tests.mocks.test_harness import BackendTestHarness
+
 
 @pytest.fixture
 def harness():
     return BackendTestHarness()
+
 
 @pytest.mark.asyncio
 async def test_episode_writing_workflow_pipeline_success(harness):
@@ -25,20 +29,20 @@ async def test_episode_writing_workflow_pipeline_success(harness):
     do_refine = True
     env_state = {}
     pipeline_mode = True
-    
+
     # Mock writing service
     mock_writing = AsyncMock()
-    mock_writing.generate_episodes_pipeline.return_value = (15000, [3]) # chars_count, failed_list
-    
+    mock_writing.generate_episodes_pipeline.return_value = (15000, [3])  # chars_count, failed_list
+
     # Workflow Instance
     workflow = EpisodeWritingWorkflow()
     workflow.writing = mock_writing
     # Mock for prefetch components to avoid errors
     workflow.vector_store = MagicMock()
     workflow.llm_client = MagicMock()
-    
+
     reporter = MagicMock(spec=StatusReporter)
-    
+
     # Patch the task enqueue function
     with patch("src.backend.tasks.enqueue_audit_after_write") as mock_enqueue:
         result = await workflow.execute(
@@ -51,24 +55,27 @@ async def test_episode_writing_workflow_pipeline_success(harness):
             do_refine=do_refine,
             env_state=env_state,
             pipeline_mode=pipeline_mode,
-            mode="final"
+            mode="final",
         )
-        
+
         # Assertions
         assert result["chars_count"] == 15000
         assert result["failed_episodes"] == [3]
         assert result["book_id"] == book_id
-        
+
         # Verify writing service call
         mock_writing.generate_episodes_pipeline.assert_called_once_with(
             book_id, write_from, write_to, passion, word_count, reporter=reporter, mode="final"
         )
-        
+
         # Verify audit enqueue
         mock_enqueue.assert_called_once_with(book_id, write_from, write_to)
-        
+
         # Verify reporter report for audit
-        reporter.report.assert_any_call("⚖️ 非同期の論理監査タスク (Shadow Mode) をエンキューしました。", "info")
+        reporter.report.assert_any_call(
+            "⚖️ 非同期の論理監査タスク (Shadow Mode) をエンキューしました。", "info"
+        )
+
 
 @pytest.mark.asyncio
 async def test_episode_writing_workflow_standard_success(harness):
@@ -85,17 +92,17 @@ async def test_episode_writing_workflow_standard_success(harness):
     do_refine = False
     env_state = {"some": "state"}
     pipeline_mode = False
-    
+
     mock_writing = AsyncMock()
     mock_writing.generate_episodes.return_value = 5000
-    
+
     workflow = EpisodeWritingWorkflow()
     workflow.writing = mock_writing
     workflow.vector_store = MagicMock()
     workflow.llm_client = MagicMock()
-    
+
     reporter = MagicMock(spec=StatusReporter)
-    
+
     with patch("src.backend.tasks.enqueue_audit_after_write") as mock_enqueue:
         result = await workflow.execute(
             reporter=reporter,
@@ -107,14 +114,21 @@ async def test_episode_writing_workflow_standard_success(harness):
             do_refine=do_refine,
             env_state=env_state,
             pipeline_mode=pipeline_mode,
-            mode="final"
+            mode="final",
         )
-        
+
         assert result["chars_count"] == 5000
         assert result["book_id"] == book_id
-        
+
         mock_writing.generate_episodes.assert_called_once_with(
-            book_id, write_from, write_to, passion, word_count, do_refine,
-            reporter=reporter, env_state=env_state, mode="final"
+            book_id,
+            write_from,
+            write_to,
+            passion,
+            word_count,
+            do_refine,
+            reporter=reporter,
+            env_state=env_state,
+            mode="final",
         )
         mock_enqueue.assert_called_once_with(book_id, write_from, write_to)

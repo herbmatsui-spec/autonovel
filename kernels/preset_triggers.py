@@ -12,6 +12,7 @@ def trigger_hegemony_collapse_resonance_burst(current: KernelState, next: Kernel
     hegemony_drop = current.hegemony - next.hegemony
     return hegemony_drop > 20.0 and next.resonance > 40.0
 
+
 async def action_hegemony_collapse_resonance_burst(context: Any, pipeline: Any):
     """
     共鳴イベントを強制的に生成し、物語に劇的な転換をもたらす。
@@ -23,28 +24,35 @@ async def action_hegemony_collapse_resonance_burst(context: Any, pipeline: Any):
         event_type=ResonanceType.SUDDEN_BOND,
         trigger_condition="覇権構造の崩壊に伴う、精神的な急接近",
         plot_impact="支配関係が消滅し、対等または新たな信頼関係への劇的転換",
-        suggested_scenes=["崩れ落ちる権威への共感", "仮面を脱ぎ捨てた本音の衝突", "不可避な感情の爆発"],
-        resonance_level_gain=3
+        suggested_scenes=[
+            "崩れ落ちる権威への共感",
+            "仮面を脱ぎ捨てた本音の衝突",
+            "不可避な感情の爆発",
+        ],
+        resonance_level_gain=3,
     )
 
     # パイプライン経由でイベントを通知（実装はpipeline側の拡張に依存）
-    if hasattr(pipeline, 'inject_resonance_event'):
+    if hasattr(pipeline, "inject_resonance_event"):
         await pipeline.inject_resonance_event(event, context)
     else:
         # 暫定的にコンテキストのglobal_stateに保存
-        context.global_state['forced_resonance_event'] = event
+        context.global_state["forced_resonance_event"] = event
+
 
 def create_preset_triggers() -> TriggerRegistry:
     registry = TriggerRegistry()
 
     # 1. 覇権崩壊 -> 共鳴爆発
-    registry.register(InteractionTrigger(
-        trigger_id="hegemony_collapse_burst",
-        name="覇権崩壊による共鳴爆発",
-        condition=trigger_hegemony_collapse_resonance_burst,
-        action=action_hegemony_collapse_resonance_burst,
-        cooldown=5
-    ))
+    registry.register(
+        InteractionTrigger(
+            trigger_id="hegemony_collapse_burst",
+            name="覇権崩壊による共鳴爆発",
+            condition=trigger_hegemony_collapse_resonance_burst,
+            action=action_hegemony_collapse_resonance_burst,
+            cooldown=5,
+        )
+    )
 
     # 2. 葛藤の極致 -> 静謐への転落 (Catastrophic Silence)
     def trigger_conflict_to_silence(current: KernelState, next: KernelState) -> bool:
@@ -52,15 +60,17 @@ def create_preset_triggers() -> TriggerRegistry:
 
     async def action_conflict_to_silence(context: Any, pipeline: Any):
         print("[KIM Trigger] Conflict Peak -> Catastrophic Silence activated!")
-        context.global_state['forced_mood'] = "heavy_silence"
+        context.global_state["forced_mood"] = "heavy_silence"
 
-    registry.register(InteractionTrigger(
-        trigger_id="conflict_catastrophic_silence",
-        name="絶望的な静寂",
-        condition=trigger_conflict_to_silence,
-        action=action_conflict_to_silence,
-        cooldown=4
-    ))
+    registry.register(
+        InteractionTrigger(
+            trigger_id="conflict_catastrophic_silence",
+            name="絶望的な静寂",
+            condition=trigger_conflict_to_silence,
+            action=action_conflict_to_silence,
+            cooldown=4,
+        )
+    )
 
     return registry
 
@@ -68,6 +78,7 @@ def create_preset_triggers() -> TriggerRegistry:
 # =============================================================================
 # ステップ24: Status Flip Trigger Preset (地位反転トリガー)
 # =============================================================================
+
 
 def trigger_status_flip_low_to_high(current: KernelState, next: KernelState) -> bool:
     """
@@ -86,9 +97,9 @@ async def action_status_flip_low_to_high(context: Any, pipeline: Any):
     print("[KIM Trigger] Status Flip (Low->High) activated!")
 
     # 過去の屈辱的な記憶を唤起
-    context.global_state['status_flip_mode'] = "low_to_high"
-    context.global_state['forced_mood'] = "triumphant_revelation"
-    context.global_state['narrativebeat'] = "過去の雪辱"
+    context.global_state["status_flip_mode"] = "low_to_high"
+    context.global_state["forced_mood"] = "triumphant_revelation"
+    context.global_state["narrativebeat"] = "過去の雪辱"
 
 
 def trigger_status_flip_high_to_low(current: KernelState, next: KernelState) -> bool:
@@ -106,9 +117,9 @@ async def action_status_flip_high_to_low(context: Any, pipeline: Any):
     """
     print("[KIM Trigger] Status Flip (High->Low) activated!")
 
-    context.global_state['status_flip_mode'] = "high_to_low"
-    context.global_state['forced_mood'] = "schadenfreude"
-    context.global_state['narrativebeat'] = "天罰による降格"
+    context.global_state["status_flip_mode"] = "high_to_low"
+    context.global_state["forced_mood"] = "schadenfreude"
+    context.global_state["narrativebeat"] = "天罰による降格"
 
 
 def trigger_status_flip_relationship_reversal(current: KernelState, next: KernelState) -> bool:
@@ -129,9 +140,9 @@ async def action_status_flip_relationship_reversal(context: Any, pipeline: Any):
     """
     print("[KIM Trigger] Status Flip (Relationship Reversal) activated!")
 
-    context.global_state['status_flip_mode'] = "relationship_reversal"
-    context.global_state['forced_mood'] = "power_reversal_revelation"
-    context.global_state['narrativebeat'] = "服従の鎖の解除"
+    context.global_state["status_flip_mode"] = "relationship_reversal"
+    context.global_state["forced_mood"] = "power_reversal_revelation"
+    context.global_state["narrativebeat"] = "服従の鎖の解除"
 
 
 STATUS_FLIP_TIMING_CONFIG: Dict[str, Dict[str, Any]] = {
@@ -163,31 +174,37 @@ def register_status_flip_triggers(registry: TriggerRegistry) -> None:
     ステータス反転トリガーをレジストリに追加する。
     """
     # 低→高 反転
-    registry.register(InteractionTrigger(
-        trigger_id="status_flip_low_to_high",
-        name="ステータス反転（低→高）",
-        condition=trigger_status_flip_low_to_high,
-        action=action_status_flip_low_to_high,
-        cooldown=10  # 長いクールダウンで何度も触发 방지
-    ))
+    registry.register(
+        InteractionTrigger(
+            trigger_id="status_flip_low_to_high",
+            name="ステータス反転（低→高）",
+            condition=trigger_status_flip_low_to_high,
+            action=action_status_flip_low_to_high,
+            cooldown=10,  # 長いクールダウンで何度も触发 방지
+        )
+    )
 
     # 高→低 反転（悪役用）
-    registry.register(InteractionTrigger(
-        trigger_id="status_flip_high_to_low",
-        name="ステータス反転（高→低）",
-        condition=trigger_status_flip_high_to_low,
-        action=action_status_flip_high_to_low,
-        cooldown=8
-    ))
+    registry.register(
+        InteractionTrigger(
+            trigger_id="status_flip_high_to_low",
+            name="ステータス反転（高→低）",
+            condition=trigger_status_flip_high_to_low,
+            action=action_status_flip_high_to_low,
+            cooldown=8,
+        )
+    )
 
     # 関係性反転
-    registry.register(InteractionTrigger(
-        trigger_id="status_flip_relationship_reversal",
-        name="関係性主従反転",
-        condition=trigger_status_flip_relationship_reversal,
-        action=action_status_flip_relationship_reversal,
-        cooldown=6
-    ))
+    registry.register(
+        InteractionTrigger(
+            trigger_id="status_flip_relationship_reversal",
+            name="関係性主従反転",
+            condition=trigger_status_flip_relationship_reversal,
+            action=action_status_flip_relationship_reversal,
+            cooldown=6,
+        )
+    )
 
 
 def generate_status_flip_scene_prompt(
@@ -199,14 +216,14 @@ def generate_status_flip_scene_prompt(
 ) -> str:
     """
     ステータス反転シーンのプロンプトを生成。
-    
+
     Args:
         flip_type: 反転タイプ (low_to_high/high_to_low/relationship_reversal)
         character_low: 低いステータスのキャラクター
         character_high: 高いステータスのキャラクター
         flip_reason: 反転の理由・動機
         timing: 反転のタイミング設定
-    
+
     Returns:
         シーン生成プロンプト
     """
@@ -239,4 +256,3 @@ def generate_status_flip_scene_prompt(
         f"■ 反転理由: {flip_reason}\n"
         f"※ ステータス反転は、商業的物語において最も強力なカタルシスポイントの1つです。"
     )
-

@@ -2,6 +2,7 @@
 streamlit_app/backend_launcher.py — バックエンド API サーバーの起動を管理する。
 uvicorn を使って FastAPI アプリをサブプロセスで起動し、起動完了を待機する。
 """
+
 from __future__ import annotations
 
 import logging
@@ -16,6 +17,7 @@ _BACKEND_HOST = "127.0.0.1"
 _BACKEND_PORT = 8200  # must match docker-compose.yml
 _BACKEND_URL = f"http://{_BACKEND_HOST}:{_BACKEND_PORT}/health"
 _STARTUP_TIMEOUT = 30.0  # 秒
+
 
 def _find_backend_entrypoint() -> str:
     """バックエンドの FastAPI エントリポイントを探す。"""
@@ -35,12 +37,15 @@ def start_backend() -> Optional[subprocess.Popen]:
     try:
         import requests  # noqa: F401
     except Exception:
-        logger.warning("requests is not installed; cannot check backend health. Install 'requests' to enable backend launcher.")
+        logger.warning(
+            "requests is not installed; cannot check backend health. Install 'requests' to enable backend launcher."
+        )
         return None
 
     # 簡易的な起動済みチェック
     try:
         import requests as req
+
         resp = req.get(_BACKEND_URL, timeout=2)
         if resp.status_code == 200:
             logger.info("Backend is already running.")
@@ -54,9 +59,12 @@ def start_backend() -> Optional[subprocess.Popen]:
         "-m",
         "uvicorn",
         "src.backend.server:app",
-        "--host", _BACKEND_HOST,
-        "--port", str(_BACKEND_PORT),
-        "--log-level", "info",
+        "--host",
+        _BACKEND_HOST,
+        "--port",
+        str(_BACKEND_PORT),
+        "--log-level",
+        "info",
     ]
     logger.info(f"Starting backend server: {' '.join(cmd)}")
     try:

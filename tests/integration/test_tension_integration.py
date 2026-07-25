@@ -11,24 +11,29 @@ from tests.mocks.mock_llm import MockGeminiApiClient as MockLLM
 class MockStatusReporter:
     def __init__(self):
         self.reports = []
+
     def report(self, message, level="info"):
         self.reports.append({"message": message, "level": level})
+
 
 @pytest.mark.asyncio
 async def test_tension_integration_workflow():
     # 1. Setup mocks
     mock_llm = MockLLM()
     # LLMが返すプロットエピソードの形式を模倣
-    mock_llm.add_json_response(".*", {
-        "episodes": [
-            {
-                "ep_num": 1,
-                "tension": 0.8, # 目標からわざと逸脱させる (targetは通常 0.1-0.3 程度)
-                "summary": "Test plot episode 1",
-                "detailed_blueprint": "Detailed blueprint 1"
-            }
-        ]
-    })
+    mock_llm.add_json_response(
+        ".*",
+        {
+            "episodes": [
+                {
+                    "ep_num": 1,
+                    "tension": 0.8,  # 目標からわざと逸脱させる (targetは通常 0.1-0.3 程度)
+                    "summary": "Test plot episode 1",
+                    "detailed_blueprint": "Detailed blueprint 1",
+                }
+            ]
+        },
+    )
 
     # Mock Repository
     # Mock Repository
@@ -57,8 +62,12 @@ async def test_tension_integration_workflow():
     engine.repo = mock_repo
     engine.ai_api = mock_llm
     engine.planner = mock_planner
-    engine.determine_target_tension = UltimateHegemonyEngine.determine_target_tension.__get__(engine, UltimateHegemonyEngine)
-    engine.validate_tension_deviation = UltimateHegemonyEngine.validate_tension_deviation.__get__(engine, UltimateHegemonyEngine)
+    engine.determine_target_tension = UltimateHegemonyEngine.determine_target_tension.__get__(
+        engine, UltimateHegemonyEngine
+    )
+    engine.validate_tension_deviation = UltimateHegemonyEngine.validate_tension_deviation.__get__(
+        engine, UltimateHegemonyEngine
+    )
 
     # Workflow setup
     workflow = PlotExpansionWorkflow(engine=engine)
@@ -71,7 +80,7 @@ async def test_tension_integration_workflow():
         "gen_from": 1,
         "gen_to": 1,
         "genre": "Fantasy",
-        "story_type": "standard"
+        "story_type": "standard",
     }
 
     await workflow.execute(reporter, **kwargs)
@@ -85,20 +94,24 @@ async def test_tension_integration_workflow():
     assert len(tension_warnings) > 0, "Tension deviation warning should be reported"
     assert tension_warnings[0]["level"] == "warn"
 
+
 @pytest.mark.asyncio
 async def test_tension_integration_success():
     # 正常系: tensionが目標範囲内である場合
     mock_llm = MockLLM()
-    mock_llm.add_json_response(".*", {
-        "episodes": [
-            {
-                "ep_num": 1,
-                "tension": 0.25, # 0.2 target に対して許容範囲内 (tolerance=0.2)
-                "summary": "Test plot episode 1",
-                "detailed_blueprint": "Detailed blueprint 1"
-            }
-        ]
-    })
+    mock_llm.add_json_response(
+        ".*",
+        {
+            "episodes": [
+                {
+                    "ep_num": 1,
+                    "tension": 0.25,  # 0.2 target に対して許容範囲内 (tolerance=0.2)
+                    "summary": "Test plot episode 1",
+                    "detailed_blueprint": "Detailed blueprint 1",
+                }
+            ]
+        },
+    )
 
     mock_repo = AsyncMock()
     mock_repo.get_total_episodes.return_value = 10
@@ -122,13 +135,22 @@ async def test_tension_integration_success():
     engine.repo = mock_repo
     engine.ai_api = mock_llm
     engine.planner = mock_planner
-    engine.determine_target_tension = UltimateHegemonyEngine.determine_target_tension.__get__(engine, UltimateHegemonyEngine)
-    engine.validate_tension_deviation = UltimateHegemonyEngine.validate_tension_deviation.__get__(engine, UltimateHegemonyEngine)
+    engine.determine_target_tension = UltimateHegemonyEngine.determine_target_tension.__get__(
+        engine, UltimateHegemonyEngine
+    )
+    engine.validate_tension_deviation = UltimateHegemonyEngine.validate_tension_deviation.__get__(
+        engine, UltimateHegemonyEngine
+    )
     workflow = PlotExpansionWorkflow(engine=engine)
     reporter = MockStatusReporter()
 
-    await workflow.execute(reporter, **{"book_id": 1, "gen_from": 1, "gen_to": 1, "genre": "Fantasy", "story_type": "standard"})
+    await workflow.execute(
+        reporter,
+        **{"book_id": 1, "gen_from": 1, "gen_to": 1, "genre": "Fantasy", "story_type": "standard"},
+    )
 
     # 警告が出ていないことを確認
     tension_warnings = [r for r in reporter.reports if "Tensionが目標から逸脱" in r["message"]]
-    assert len(tension_warnings) == 0, "Tension deviation warning should NOT be reported for valid values"
+    assert len(tension_warnings) == 0, (
+        "Tension deviation warning should NOT be reported for valid values"
+    )

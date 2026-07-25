@@ -1,4 +1,5 @@
 """EngineConfig のユニットテスト。"""
+
 from src.backend.engine_config import EngineConfig
 from src.backend.engine_utils import AdaptiveCooldown
 

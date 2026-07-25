@@ -5,4 +5,3 @@ cur = conn.cursor()
 cur.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='plot';")
 print(cur.fetchone()[0])
 conn.close()
-

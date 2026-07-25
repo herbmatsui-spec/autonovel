@@ -23,26 +23,26 @@ class EnigmaKernel(KernelBase):
         """
         情報の欠落や、物語の停滞、または伏線回収のタイミングを検知して介入する。
         """
-        analytics = getattr(context, 'analytics', None)
+        analytics = getattr(context, "analytics", None)
         if not analytics:
             return False
 
         # 1. 情報の停滞: 読者が「次に何が起きるか」を完全に予想できてしまい、好奇心が低下している場合
-        curiosity_level = getattr(analytics, 'curiosity', 50)
+        curiosity_level = getattr(analytics, "curiosity", 50)
         if curiosity_level < 40:
             return True
 
         # 2. 伏線回収のタイミング: 蓄積された伏線（Foreshadowing count）がある程度溜まっている場合
         # (context.foreshadowing に蓄積されている想定)
-        foreshadowing = getattr(context, 'foreshadowing', [])
+        foreshadowing = getattr(context, "foreshadowing", [])
         if len(foreshadowing) >= 3:
             # 回収のタイミングを判断するロジック（例: tensionが高まった瞬間など）
-            tension = getattr(analytics, 'tension', 0)
+            tension = getattr(analytics, "tension", 0)
             if tension > 70:
                 return True
 
         # 3. 謎の不在: 物語に「問い」が存在せず、単なるイベントの羅列になっている場合
-        if getattr(analytics, 'is_too_predictable', False):
+        if getattr(analytics, "is_too_predictable", False):
             return True
 
         return False
@@ -78,8 +78,8 @@ class EnigmaKernel(KernelBase):
         """
         現在の伏線数と物語の緊張度から、提示(Setup)か回収(Payoff)かを判定する。
         """
-        foreshadowing = getattr(context, 'foreshadowing', [])
-        tension = getattr(context.analytics, 'tension', 0)
+        foreshadowing = getattr(context, "foreshadowing", [])
+        tension = getattr(context.analytics, "tension", 0)
 
         if len(foreshadowing) >= 3 and tension > 70:
             return "payoff"
@@ -89,11 +89,12 @@ class EnigmaKernel(KernelBase):
 
     def _select_enigma_pattern(self, event_type: str) -> dict:
         import json
+
         try:
             with open("config/data/enigma_patterns.json", "r", encoding="utf-8") as f:
                 patterns = json.load(f)
             # イベントタイプに適したパターンを返す
-            return patterns[0] # 簡易的に最初を返す
+            return patterns[0]  # 簡易的に最初を返す
         except Exception:
             return {"pattern_id": "default", "name": "General Mystery"}
 
@@ -116,7 +117,7 @@ class EnigmaKernel(KernelBase):
         return {
             "reader_gap": "known",
             "protagonist_gap": "unknown",
-            "asymmetry_type": "dramatic_irony"
+            "asymmetry_type": "dramatic_irony",
         }
 
 
@@ -161,10 +162,10 @@ def information_monopoly_builder(
     protagonist_name: str,
     secret_holder_name: str,
     secret_type: str = "future_knowledge",
-    context: str = ""
+    context: str = "",
 ) -> Tuple[InformationMonopoly, str]:
     """情報独占を構築し、対応する伏線場面を生成
-    
+
     Returns:
         (InformationMonopolyオブジェクト, 場面生成プロンプト)
     """
@@ -184,7 +185,7 @@ def information_monopoly_builder(
 
 要点:
 1. {protagonist_name}は{secret_holder_name}の发言や行動に\"なぜ？\"と疑問を持つ
-2. {secret_holder_name}は{'知識显示うかにして満足げな态度を取る' if secret_type == 'future_knowledge' else '秘密を共有しない'}
+2. {secret_holder_name}は{"知識显示うかにして満足げな态度を取る" if secret_type == "future_knowledge" else "秘密を共有しない"}
 3. 読者と{protagonist_name}の間に「情報格差」が生まれる
 4. この優位性により、{secret_holder_name}得有lyな優越感を漂わせる
 
@@ -198,10 +199,10 @@ def build_information_hegemony_scene(
     protagonist_name: str,
     information_holder_name: str,
     monopoly: InformationMonopoly,
-    scene_type: str = "monopoly"  # "monopoly" | "partial_reveal" | "full_reveal"
+    scene_type: str = "monopoly",  # "monopoly" | "partial_reveal" | "full_reveal"
 ) -> str:
     """情報 hegemony 場面を生成
-    
+
     Args:
         protagonist_name: 主人公名
         information_holder_name: 情報保持者名
@@ -236,7 +237,7 @@ def build_information_hegemony_scene(
 
 {introduction_holder_name}が{prologue_name}に告げる。
 
-「一つだけ教えておこう。{'今後の展開についての秘密' if monopoly.secret_type == 'future_knowledge' else '真実はもっと複雑な'}」
+「一つだけ教えておこう。{"今後の展開についての秘密" if monopoly.secret_type == "future_knowledge" else "真実はもっと複雑な"}」
 
 {introduction_holder_name}は一部だけを明かし、残りは┗┓に置き去りにする。
 
@@ -247,18 +248,17 @@ def build_information_hegemony_scene(
 
 {introduction_holder_name}がついに全てを明かした。
 
-{introduction_holder_name}：「もう分かるだろう？ 最初から私は{'全てを知っていた' if monopoly.secret_type == 'future_knowledge' else '真実を把握していた'}」
+{introduction_holder_name}：「もう分かるだろう？ 最初から私は{"全てを知っていた" if monopoly.secret_type == "future_knowledge" else "真実を把握していた"}」
 
 {introduction_holder_name}の发言每一个が{prologue_name}の世界観を覆していく。
 
 {introduction_holder_name}が独占していた情報が、一気に共有された瞬間。
 {prologue_name}と{introduction_holder_name}の間に、「情報の壁」が崩れ落ちる。
 
-{introduction_holder_name}：「怖かったのは、{'未来を変えられるかもしれない' if monopoly.secret_type == 'future_knowledge' else '真実に触れたくない'}きみの姿だ」
+{introduction_holder_name}：「怖かったのは、{"未来を変えられるかもしれない" if monopoly.secret_type == "future_knowledge" else "真実に触れたくない"}きみの姿だ」
 
 読者の持つ「全程認知」と{introduction_holder_name}の「 Exclusiveな知識」が一致し、知的カタルシスが発生する。
-"""
+""",
     }
 
     return templates.get(scene_type, templates["monopoly"])
-

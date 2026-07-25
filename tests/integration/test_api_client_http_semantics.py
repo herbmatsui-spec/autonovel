@@ -1,5 +1,7 @@
 """api_client の HTTP 语义テスト"""
-from unittest.mock import patch, MagicMock, AsyncMock
+
+from unittest.mock import MagicMock, patch
+
 import streamlit_app.api_client as api_client
 
 

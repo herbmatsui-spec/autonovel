@@ -16,7 +16,11 @@ with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
                         for k, v in args.items():
                             if isinstance(v, str) and "build_drafting_prompt" in v:
                                 # Let's ignore search queries or python scripts we wrote ourselves
-                                if "log_path =" not in v and "def test_build_drafting_prompt" not in v and "import json" not in v:
+                                if (
+                                    "log_path =" not in v
+                                    and "def test_build_drafting_prompt" not in v
+                                    and "import json" not in v
+                                ):
                                     found.append((step_idx, tc.get("name"), k, len(v), v))
             except Exception:
                 pass
@@ -30,4 +34,3 @@ for idx, (step_idx, name, key, length, val) in enumerate(found[:5]):
     with open(out_path, "w", encoding="utf-8") as out:
         out.write(val)
     print(f"  Saved to {out_path}")
-

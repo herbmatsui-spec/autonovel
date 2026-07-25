@@ -1,4 +1,3 @@
-
 import pytest
 
 from src.engine_service import EngineService
@@ -10,6 +9,7 @@ def test_engine_service_initialization():
     service = EngineService(api_key="test-key")
     assert service is not None
     assert service.engine is not None
+
 
 def test_get_instance_in_session():
     """Streamlitセッション経由でインスタンスが取得できるか"""

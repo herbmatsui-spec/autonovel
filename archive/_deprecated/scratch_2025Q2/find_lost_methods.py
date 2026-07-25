@@ -17,8 +17,7 @@ with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
                     print(f"Line {i} content contains method definition:")
                     # Find start of def build_beat_mapping_prompt
                     idx = content.find("def build_beat_mapping_prompt")
-                    print(content[idx:idx+2500])
+                    print(content[idx : idx + 2500])
                     print("=" * 80)
             except Exception as e:
                 print(f"Error parsing line {i}: {e}")
-

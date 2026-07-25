@@ -1,10 +1,12 @@
-
 from pydantic import AliasChoices, BaseModel, Field
 
 
 class CharacterRegistry(BaseModel):
     name: str = Field(default="", validation_alias=AliasChoices("name", "char_name"))
-    iron_constraint: str = Field(default="", validation_alias=AliasChoices("iron_constraint", "iron_const"))
+    iron_constraint: str = Field(
+        default="", validation_alias=AliasChoices("iron_constraint", "iron_const")
+    )
+
 
 try:
     obj = CharacterRegistry.model_validate({})
@@ -23,4 +25,3 @@ try:
     print(f"Alias dict: {obj.iron_constraint=}")
 except Exception as e:
     print(f"Alias dict failed: {e}")
-

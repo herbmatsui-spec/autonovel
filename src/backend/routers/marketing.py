@@ -1,12 +1,14 @@
-from typing import Any, Dict, Optional
-from fastapi import APIRouter, Depends, HTTPException
+from typing import Any
+
+from fastapi import APIRouter
 from fastapi.responses import Response
-from src.models.api_schemas import MarketingGenerateRequest
+
+from src.backend.auth import validate_api_key_or_raise
 from src.backend.engine_helpers import get_engine
 from src.backend.task_helpers import create_task
 from src.backend.tasks import execute_service_workflow
 from src.core.observability import TraceContext
-from src.backend.auth import validate_api_key_or_raise
+from src.models.api_schemas import MarketingGenerateRequest
 
 router = APIRouter(tags=["marketing"])
 

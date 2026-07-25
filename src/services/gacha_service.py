@@ -2,7 +2,8 @@ import asyncio
 import json
 import logging
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
+
 from pydantic import ValidationError
 
 from src.models.easy_mode_schemas import (
@@ -64,7 +65,7 @@ JSONキー:
                     content = res.get("story_content", {})
                     if isinstance(content, str):
                         content = json.loads(content)
-                    
+
                     plan_id = f"plan_{uuid.uuid4().hex[:6]}"
                     return GachaPlan(
                         plan_id=plan_id,
@@ -75,7 +76,9 @@ JSONキー:
                         charm_point=content.get("charm_point", "魅力ポイント準備中"),
                     )
                 except (ValidationError, json.JSONDecodeError, Exception) as e:
-                    logger.warning(f"Plan generation failed (attempt {attempt + 1}/{max_retries + 1}): {e}")
+                    logger.warning(
+                        f"Plan generation failed (attempt {attempt + 1}/{max_retries + 1}): {e}"
+                    )
                     if attempt == max_retries:
                         # フォールバックプラン
                         plan_id = f"plan_{uuid.uuid4().hex[:6]}"

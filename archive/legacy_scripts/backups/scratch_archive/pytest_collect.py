@@ -6,5 +6,5 @@ class Collector:
         for item in session.items:
             print(f"{item.nodeid} -> {item.fspath}")
 
-pytest.main(['--collect-only'], plugins=[Collector()])
 
+pytest.main(["--collect-only"], plugins=[Collector()])

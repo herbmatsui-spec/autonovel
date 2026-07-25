@@ -16,4 +16,3 @@ with open(log_path, "r", encoding="utf-8") as f:
                     print("Extracted to scratch/planning_recovered.py successfully!")
         except Exception as e:
             print("Error parsing line:", e)
-

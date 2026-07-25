@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 
 class WorkflowState(BaseModel):
     """グラフ全体で共有される状態"""
+
     book_id: int
     ep_num: int
     branch_id: int
@@ -18,10 +19,12 @@ class WorkflowState(BaseModel):
     # 制御フラグ
     retry_count: int = Field(default=0)
     max_retries: int = Field(default=3)
-    status: str = Field(default="pending") # 'success', 'failed', 'needs_retry'
+    status: str = Field(default="pending")  # 'success', 'failed', 'needs_retry'
+
 
 class PlotNodeOutput(BaseModel):
     """ノード間のデータ受け渡し用モデル"""
+
     status: str
     data: Dict[str, Any]
     error: Optional[str] = None

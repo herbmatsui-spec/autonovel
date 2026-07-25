@@ -1,4 +1,3 @@
-
 from models import CharacterRegistry
 
 # Input has alias but not primary name
@@ -26,4 +25,3 @@ try:
         print("FAIL: Defaults were not injected.")
 except Exception as e:
     print(f"Error: {e}")
-

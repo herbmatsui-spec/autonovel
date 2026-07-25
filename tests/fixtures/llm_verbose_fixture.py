@@ -1,14 +1,17 @@
 import json
 import random
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
+
 from src.models.sharp_edge import SharpEdgeSpec
+
 
 class LLMVerboseFixture:
     """
     実LLMが生成しがちな冗長な説明文 (Verbose Description) を提供するフィクスチャ。
     リテラル一致に依存しない保全テストに使用する。
     """
+
     def __init__(self, data_path: Optional[str] = None):
         if data_path is None:
             data_path = str(Path(__file__).parent / "verbose_edges.json")
@@ -43,11 +46,9 @@ class LLMVerboseFixture:
             description = self.get_description_by_index(edge_type, index)
         else:
             description = self.get_random_description(edge_type)
-        
-        return SharpEdgeSpec(
-            edge_type=edge_type,
-            description=description
-        )
+
+        return SharpEdgeSpec(edge_type=edge_type, description=description)
+
 
 # Singleton instance for easy access in tests
 verbose_fixture = LLMVerboseFixture()

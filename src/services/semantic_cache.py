@@ -2,8 +2,8 @@ import asyncio
 import datetime
 import json
 import logging
-import uuid
 import math
+import uuid
 from typing import Any, Dict, List, Optional
 
 from config import MODEL_EMBEDDING
@@ -21,6 +21,7 @@ class SemanticCacheManager:
     ChromaDB と Gemini Embedding API を活用し、意味的に類似した過去の生成結果をキャッシュする。
     L1キャッシュとしてインメモリの完全一致キャッシュ（LRUCache）を前段に挟む。
     """
+
     COLLECTION_NAME = "semantic_cache"
 
     def __init__(self, vector_store: Any, client: Any, embedding_model: str = MODEL_EMBEDDING):
@@ -53,12 +54,12 @@ class SemanticCacheManager:
             return self._l2_embedding_cache[text_hash]
 
         try:
+
             def _call():
-                return self.client.models.embed_content(
-                    model=self.embedding_model,
-                    contents=[text]
-                )
+                return self.client.models.embed_content(model=self.embedding_model, contents=[text])
+
             from src.core.executor_manager import executor_manager
+
             res = await executor_manager.run_cpu(_call)
             vec = res.embeddings[0].values
 
@@ -76,7 +77,7 @@ class SemanticCacheManager:
         genre: str = "general",
         temperature: float = 0.7,
         threshold: float = 0.95,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> Optional[Any]:
         """
         類似したキャッシュエントリを検索する。
@@ -84,7 +85,9 @@ class SemanticCacheManager:
         # 1. L1 完全一致インメモリキャッシュチェック
         l1_key = self._get_l1_key(prompt, task_type, genre, temperature)
         if l1_key in self._l1_cache:
-            logger.info(f"🧠 [L1 EXACT CACHE HIT] Bypassing Embedding API & ChromaDB! (task_type={task_type})")
+            logger.info(
+                f"🧠 [L1 EXACT CACHE HIT] Bypassing Embedding API & ChromaDB! (task_type={task_type})"
+            )
             return self._l1_cache[l1_key]
 
         if not self.vector_store or not self.client:
@@ -96,12 +99,7 @@ class SemanticCacheManager:
             return None
 
         # ハイブリッド検索フィルタリング (task_type と genre の完全一致)
-        where = {
-            "$and": [
-                {"task_type": task_type},
-                {"genre": genre}
-            ]
-        }
+        where = {"$and": [{"task_type": task_type}, {"genre": genre}]}
 
         # コサイン類似度の閾値判定
         # cosine distance = 1 - cosine_similarity
@@ -112,10 +110,7 @@ class SemanticCacheManager:
         self.vector_store.get_collection(self.COLLECTION_NAME, metadata={"hnsw:space": "cosine"})
 
         results = await self.vector_store.search(
-            collection_name=self.COLLECTION_NAME,
-            query_embedding=vec,
-            top_k=5,
-            where=where
+            collection_name=self.COLLECTION_NAME, query_embedding=vec, top_k=5, where=where
         )
 
         best_hit = None
@@ -135,7 +130,9 @@ class SemanticCacheManager:
             if cached_input_length > 0:
                 len_diff_ratio = abs(input_len - cached_input_length) / max(1, cached_input_length)
                 if len_diff_ratio > 0.5:
-                    logger.debug(f"[SEMANTIC CACHE] Rejected hit due to input length difference: {input_len} vs {cached_input_length}")
+                    logger.debug(
+                        f"[SEMANTIC CACHE] Rejected hit due to input length difference: {input_len} vs {cached_input_length}"
+                    )
                     continue
 
             if dist < best_distance:
@@ -148,15 +145,19 @@ class SemanticCacheManager:
             meta["last_accessed"] = datetime.datetime.now().isoformat()
 
             # 非同期でアクセス日時を更新して保存
-            asyncio.create_task(self.vector_store.add_documents(
-                collection_name=self.COLLECTION_NAME,
-                ids=[doc_id],
-                documents=[best_hit["content"]],
-                embeddings=[vec],
-                metadatas=[meta]
-            ))
+            asyncio.create_task(
+                self.vector_store.add_documents(
+                    collection_name=self.COLLECTION_NAME,
+                    ids=[doc_id],
+                    documents=[best_hit["content"]],
+                    embeddings=[vec],
+                    metadatas=[meta],
+                )
+            )
 
-            logger.info(f"🧠 [SEMANTIC CACHE HIT] Similarity: {1.0 - best_distance:.4f} (task_type={task_type})")
+            logger.info(
+                f"🧠 [SEMANTIC CACHE HIT] Similarity: {1.0 - best_distance:.4f} (task_type={task_type})"
+            )
 
             content_str = best_hit["content"]
             if meta.get("is_json"):
@@ -175,7 +176,7 @@ class SemanticCacheManager:
         task_type: str,
         genre: str = "general",
         temperature: float = 0.7,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """
         キャッシュを追加する。
@@ -206,7 +207,7 @@ class SemanticCacheManager:
             "input_length": len(prompt),
             "is_json": is_json,
             "created_at": datetime.datetime.now().isoformat(),
-            "last_accessed": datetime.datetime.now().isoformat()
+            "last_accessed": datetime.datetime.now().isoformat(),
         }
 
         # コサイン空間コレクションを確保
@@ -218,7 +219,7 @@ class SemanticCacheManager:
             ids=[doc_id],
             documents=[content_str],
             embeddings=[vec],
-            metadatas=[metadata]
+            metadatas=[metadata],
         )
         logger.info(f"[SEMANTIC CACHE ADD] task_type={task_type}, length={len(content_str)}")
 
@@ -230,7 +231,9 @@ class SemanticCacheManager:
         キャッシュサイズが上限を超えた場合、最も古くアクセスされていない（LRU）キャッシュを自動削除する。
         """
         try:
-            collection = self.vector_store.get_collection(self.COLLECTION_NAME, metadata={"hnsw:space": "cosine"})
+            collection = self.vector_store.get_collection(
+                self.COLLECTION_NAME, metadata={"hnsw:space": "cosine"}
+            )
             if not collection:
                 return
 
@@ -238,6 +241,7 @@ class SemanticCacheManager:
                 return collection.get(include=["metadatas"])
 
             from src.core.executor_manager import executor_manager
+
             data = await executor_manager.run_io(_get_all)
             ids = data.get("ids", [])
             metadatas = data.get("metadatas", [])
@@ -259,7 +263,9 @@ class SemanticCacheManager:
 
             if delete_ids:
                 await self.vector_store.delete_by_id(self.COLLECTION_NAME, delete_ids)
-                logger.info(f"[SEMANTIC CACHE EVICTION] Evicted {len(delete_ids)} old cache entries.")
+                logger.info(
+                    f"[SEMANTIC CACHE EVICTION] Evicted {len(delete_ids)} old cache entries."
+                )
 
         except Exception as e:
             logger.error(f"[SEMANTIC CACHE EVICTION] Failed: {e}")
@@ -284,6 +290,7 @@ class SemanticCacheManager:
             temperature: 生成温度
         """
         from prompts.manager import PromptManager
+
         pm = PromptManager()
 
         next_ep = current_ep_num + 1
@@ -302,7 +309,9 @@ class SemanticCacheManager:
                     )
                     prefetch_prompts.append((task_type, prompt))
                 except Exception as e:
-                    logger.debug(f"[PREFETCH] Could not prefetch drafting prompt for ep{next_ep}: {e}")
+                    logger.debug(
+                        f"[PREFETCH] Could not prefetch drafting prompt for ep{next_ep}: {e}"
+                    )
 
             elif task_type == "polishing":
                 # -Polishing プロンプトも先行レンダリング
@@ -316,7 +325,9 @@ class SemanticCacheManager:
                     )
                     prefetch_prompts.append((task_type, prompt))
                 except Exception as e:
-                    logger.debug(f"[PREFETCH] Could not prefetch polishing prompt for ep{next_ep}: {e}")
+                    logger.debug(
+                        f"[PREFETCH] Could not prefetch polishing prompt for ep{next_ep}: {e}"
+                    )
 
         # プリフェッチしたプロンプトをL1キャッシュに Warming として登録
         # (実際のEmbedding計算はバックグラウンドで実行される)
@@ -325,9 +336,13 @@ class SemanticCacheManager:
             l1_key = self._get_l1_key(prompt, task_type, genre, temperature)
             # 実際のEmbedding計算は非同期でバックグラウンド実行
             asyncio.create_task(self._prefetch_embedding(prompt, task_type, genre, temperature))
-            logger.info(f"[PREFETCH] Queued prefetch for ep{next_ep} task={task_type}, key={l1_key[:16]}...")
+            logger.info(
+                f"[PREFETCH] Queued prefetch for ep{next_ep} task={task_type}, key={l1_key[:16]}..."
+            )
 
-    async def _prefetch_embedding(self, prompt: str, task_type: str, genre: str, temperature: float) -> None:
+    async def _prefetch_embedding(
+        self, prompt: str, task_type: str, genre: str, temperature: float
+    ) -> None:
         """バックグラウンドでEmbeddingを計算し、キャッシュをウォーミングする"""
         try:
             vec = await self._get_embedding(prompt)

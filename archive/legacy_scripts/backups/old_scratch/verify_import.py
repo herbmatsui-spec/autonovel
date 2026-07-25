@@ -11,6 +11,6 @@ try:
     print("Successfully imported ui_components!")
 except Exception:
     import traceback
+
     traceback.print_exc()
     sys.exit(1)
-

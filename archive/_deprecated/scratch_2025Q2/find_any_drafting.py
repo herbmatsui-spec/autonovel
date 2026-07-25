@@ -41,4 +41,3 @@ if best_block:
     print(f"Successfully wrote best block (len={max_len}) to {output_path}")
 else:
     print("No block found.")
-

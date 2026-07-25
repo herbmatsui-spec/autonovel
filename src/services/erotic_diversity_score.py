@@ -4,6 +4,7 @@ src/services/erotic_diversity_score.py
 
 このモジュールは、テキスト内の官能語彙の多様性を評価するための関数を提供します。
 """
+
 import math
 from collections import Counter
 from typing import List
@@ -41,12 +42,15 @@ def compute_diversity_score(text: str, vocabulary_bank: List[str]) -> float:
         return 0.0
 
     # シャノンエントロピーを計算
-    entropy = -sum((count / total) * math.log2(count / total) for count in counts.values() if count > 0)
+    entropy = -sum(
+        (count / total) * math.log2(count / total) for count in counts.values() if count > 0
+    )
     # 最大エントロピー（すべての語彙が同じ頻度で現れる場合）
     max_entropy = math.log2(len(counts)) if len(counts) > 1 else 1.0
     # 正規化（0.0〜1.0の範囲に収める）
     diversity = entropy / max_entropy if max_entropy > 0 else 0.0
     return min(1.0, diversity)
+
 
 def classify_diversity(score: float) -> str:
     """多様性スコアを閾値に基づいて分類する。"""
@@ -56,6 +60,7 @@ def classify_diversity(score: float) -> str:
         return "warn"
     else:
         return "fail"
+
 
 def check_diversity(text: str, vocabulary_bank: list) -> dict:
     """スコア計算と分類を一度に行うユーティリティ。"""
@@ -67,6 +72,7 @@ def check_diversity(text: str, vocabulary_bank: list) -> dict:
         "classification": classification,
         "warnings": warnings,
     }
+
 
 def check_repetition(text: str, vocabulary_bank: List[str], max_repeat: int = 3) -> List[str]:
     """語彙の過度な繰り返しをチェックし、警告メッセージのリストを返す。

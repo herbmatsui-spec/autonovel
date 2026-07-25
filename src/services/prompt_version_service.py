@@ -3,13 +3,13 @@ from __future__ import annotations
 import logging
 from typing import Optional
 
-from dependency_injector import providers
-from dependency_injector.wiring import inject, Provide
+from dependency_injector.wiring import Provide, inject
 
 from src.backend.database.uow import UnitOfWork
 from src.core.container import AppContainer
 
 logger = logging.getLogger(__name__)
+
 
 class PromptVersionService:
     """プロンプトのバージョン管理とA/Bテストを行うサービス"""
@@ -21,7 +21,9 @@ class PromptVersionService:
     ):
         self.uow = uow
 
-    async def register_prompt_version(self, book_id: int, prompt_key: str, version_tag: str, content: str, is_active: bool = False) -> int:
+    async def register_prompt_version(
+        self, book_id: int, prompt_key: str, version_tag: str, content: str, is_active: bool = False
+    ) -> int:
         """新しいプロンプトバージョンを登録する"""
         async with self.uow:
             prompt_repo = self.uow.prompt_versions
@@ -33,7 +35,7 @@ class PromptVersionService:
                 prompt_key=prompt_key,
                 version_tag=version_tag,
                 content=content,
-                is_active=is_active
+                is_active=is_active,
             )
             await self.uow.commit()
             return version.id

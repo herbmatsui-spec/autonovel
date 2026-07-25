@@ -8,6 +8,7 @@ logging.basicConfig(level=logging.INFO)
 
 db_path = "test_corruption.db"
 
+
 def setup_corrupt_db():
     if os.path.exists(db_path):
         os.remove(db_path)
@@ -21,8 +22,9 @@ def setup_corrupt_db():
 
     # Corrupt it by overwriting the header or random parts
     with open(db_path, "r+b") as f:
-        f.seek(100) # Past the header
+        f.seek(100)  # Past the header
         f.write(b"this is corruption" * 100)
+
 
 def test_recovery():
     print("--- Starting recovery test ---")
@@ -52,13 +54,14 @@ def test_recovery():
     corrupt_files = [f for f in os.listdir(".") if f.startswith(db_path + ".corrupt_")]
     if corrupt_files:
         print(f"SUCCESS: Found corrupted backup file: {corrupt_files[0]}")
-        for f in corrupt_files: os.remove(f)
+        for f in corrupt_files:
+            os.remove(f)
     else:
         print("FAILURE: Corrupted backup file not found.")
 
     if os.path.exists(db_path):
         os.remove(db_path)
 
+
 if __name__ == "__main__":
     test_recovery()
-

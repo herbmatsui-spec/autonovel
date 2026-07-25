@@ -4,6 +4,7 @@
 PlanningService は WorldBibleGenerator を内包し、create_hegemony_plan /
 audit_bible_completeness を委譲する。
 """
+
 from typing import Any, Tuple
 
 import pytest
@@ -53,9 +54,7 @@ def test_init_attributes() -> None:
 @pytest_mark_async
 async def test_create_hegemony_plan_delegates() -> None:
     svc, bible_gen = _make_service()
-    book_id, bible = await svc.create_hegemony_plan(
-        genre="fantasy", keywords="勇者", target_eps=10
-    )
+    book_id, bible = await svc.create_hegemony_plan(genre="fantasy", keywords="勇者", target_eps=10)
     assert book_id == 7
     assert bible == {"title": "demo"}
     assert bible_gen.calls[0][0] == "create_hegemony_plan"

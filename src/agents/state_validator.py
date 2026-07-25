@@ -5,6 +5,7 @@ from src.agents.base import BaseAgent
 
 logger = logging.getLogger(__name__)
 
+
 class StateValidatorAgent(BaseAgent):
     """ランタイム状態の不整合を検出するエージェント。"""
 
@@ -20,4 +21,3 @@ class StateValidatorAgent(BaseAgent):
     async def run(self, *args, **kwargs):
         state = kwargs.get("state", {})
         return await self.validate(state)
-

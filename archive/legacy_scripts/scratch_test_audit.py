@@ -30,7 +30,7 @@ async def test():
         prompt=prompt,
         response_schema=HegemonyAuditResult,
         temp=0.1,
-        use_cache=False
+        use_cache=False,
     )
 
     print("Sending generate_json request to gemini-3.1-flash-lite...")
@@ -41,5 +41,5 @@ async def test():
     except Exception as e:
         print("Failed with error:", e)
 
-asyncio.run(test())
 
+asyncio.run(test())

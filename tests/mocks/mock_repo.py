@@ -13,8 +13,10 @@ class MockOutboxEvent:
         self.status = "pending"
         self.processed_at = None
 
+
 class MockBaseRepository:
     """汎用的なインメモリリポジトリモック"""
+
     def __init__(self):
         self.data = {}
 
@@ -36,7 +38,7 @@ class MockBookRepository(MockBaseRepository):
             "title": title,
             "genre": genre,
             "target_eps": target_eps,
-            "created_at": datetime.now()
+            "created_at": datetime.now(),
         }
         return b_id
 
@@ -75,7 +77,9 @@ class MockBibleRepository(MockBaseRepository):
 
 
 class MockBranchRepository(MockBaseRepository):
-    async def create_branch(self, book_id: int, name: str, parent_id: Optional[int] = None, fork_ep_num: int = 0) -> int:
+    async def create_branch(
+        self, book_id: int, name: str, parent_id: Optional[int] = None, fork_ep_num: int = 0
+    ) -> int:
         b_id = len(self.data) + 1
         self.data[b_id] = {
             "id": b_id,
@@ -83,12 +87,13 @@ class MockBranchRepository(MockBaseRepository):
             "name": name,
             "parent_id": parent_id,
             "fork_ep_num": fork_ep_num,
-            "created_at": datetime.now().isoformat()
+            "created_at": datetime.now().isoformat(),
         }
         return b_id
 
     async def get_branches(self, book_id: int) -> List[Any]:
         from src.models import BranchDbModel
+
         res = []
         for b in self.data.values():
             if b.get("book_id") == book_id:
@@ -102,20 +107,23 @@ class MockBranchRepository(MockBaseRepository):
 class MockCharacterRepository(MockBaseRepository):
     async def get_all_characters(self, book_id: int) -> List[Any]:
         from src.models import CharacterDbModel
+
         res = []
         for c in self.data.values():
             if c.get("book_id") == book_id:
                 res.append(CharacterDbModel(**c))
         return res
 
-    async def create_character(self, book_id: int, name: str, role: str, registry_data: Any) -> None:
+    async def create_character(
+        self, book_id: int, name: str, role: str, registry_data: Any
+    ) -> None:
         c_id = len(self.data) + 1
         self.data[c_id] = {
             "id": c_id,
             "book_id": book_id,
             "name": name,
             "role": role,
-            "registry_data": registry_data
+            "registry_data": registry_data,
         }
 
     async def update_character_registry(self, char_id: int, registry_data: Any) -> None:
@@ -130,9 +138,13 @@ class MockRulesRepository(MockBaseRepository):
         self.masterpieces = {}
 
     async def create_rule(
-        self, target_word: str, instruction: str, level: str = "global",
-        domain: str = "all", character_name: Optional[str] = None,
-        status: str = "active"
+        self,
+        target_word: str,
+        instruction: str,
+        level: str = "global",
+        domain: str = "all",
+        character_name: Optional[str] = None,
+        status: str = "active",
     ) -> int:
         r_id = len(self.data) + 1
         self.data[r_id] = {
@@ -144,7 +156,7 @@ class MockRulesRepository(MockBaseRepository):
             "character_name": character_name,
             "status": status,
             "created_at": datetime.now().isoformat(),
-            "updated_at": datetime.now().isoformat()
+            "updated_at": datetime.now().isoformat(),
         }
         return r_id
 
@@ -167,19 +179,27 @@ class MockRulesRepository(MockBaseRepository):
         return res
 
     async def update_rule(
-        self, rule_id: int, target_word: str, instruction: str, level: str,
-        domain: str, character_name: Optional[str], status: str
+        self,
+        rule_id: int,
+        target_word: str,
+        instruction: str,
+        level: str,
+        domain: str,
+        character_name: Optional[str],
+        status: str,
     ) -> None:
         if rule_id in self.data:
-            self.data[rule_id].update({
-                "target_word": target_word,
-                "instruction": instruction,
-                "level": level,
-                "domain": domain,
-                "character_name": character_name,
-                "status": status,
-                "updated_at": datetime.now().isoformat()
-            })
+            self.data[rule_id].update(
+                {
+                    "target_word": target_word,
+                    "instruction": instruction,
+                    "level": level,
+                    "domain": domain,
+                    "character_name": character_name,
+                    "status": status,
+                    "updated_at": datetime.now().isoformat(),
+                }
+            )
 
     async def update_rule_status(self, rule_id: int, status: str) -> None:
         if rule_id in self.data:
@@ -190,14 +210,16 @@ class MockRulesRepository(MockBaseRepository):
         if rule_id in self.data:
             del self.data[rule_id]
 
-    async def create_masterpiece(self, emotion_or_scene: str, content: str, vector: Optional[List[float]] = None) -> int:
+    async def create_masterpiece(
+        self, emotion_or_scene: str, content: str, vector: Optional[List[float]] = None
+    ) -> int:
         m_id = len(self.masterpieces) + 1
         self.masterpieces[m_id] = {
             "id": m_id,
             "emotion_or_scene": emotion_or_scene,
             "content": content,
             "vector_json": json.dumps(vector) if vector is not None else None,
-            "created_at": datetime.now().isoformat()
+            "created_at": datetime.now().isoformat(),
         }
         return m_id
 
@@ -211,9 +233,15 @@ class MockRulesRepository(MockBaseRepository):
 
 class MockAuditRepository(MockBaseRepository):
     async def create_audit_issue(
-        self, book_id: int, ep_num: int, category: str, severity: str,
-        description: str, evidence_past: str = "", evidence_current: str = "",
-        constraint_for_next_ep: str = ""
+        self,
+        book_id: int,
+        ep_num: int,
+        category: str,
+        severity: str,
+        description: str,
+        evidence_past: str = "",
+        evidence_current: str = "",
+        constraint_for_next_ep: str = "",
     ) -> int:
         i_id = len(self.data) + 1
         self.data[i_id] = {
@@ -226,14 +254,16 @@ class MockAuditRepository(MockBaseRepository):
             "evidence_past": evidence_past,
             "evidence_current": evidence_current,
             "constraint_for_next_ep": constraint_for_next_ep,
-            "status": "open"
+            "status": "open",
         }
         return i_id
 
     async def get_issue(self, issue_id: int) -> Optional[Dict[str, Any]]:
         return self.data.get(issue_id)
 
-    async def get_issues_by_book(self, book_id: int, status: Optional[str] = None) -> List[Dict[str, Any]]:
+    async def get_issues_by_book(
+        self, book_id: int, status: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
         res = []
         for i in self.data.values():
             if i.get("book_id") == book_id:
@@ -241,7 +271,9 @@ class MockAuditRepository(MockBaseRepository):
                     res.append(i)
         return res
 
-    async def update_issue_status(self, issue_id: int, status: str, resolved_note: str = "") -> None:
+    async def update_issue_status(
+        self, issue_id: int, status: str, resolved_note: str = ""
+    ) -> None:
         if issue_id in self.data:
             self.data[issue_id]["status"] = status
             self.data[issue_id]["resolved_note"] = resolved_note
@@ -249,9 +281,15 @@ class MockAuditRepository(MockBaseRepository):
 
 class MockPromptVersionRepository(MockBaseRepository):
     async def create_prompt_version(
-        self, book_id: int, prompt_key: str, version_tag: str, content: str,
-        score_before: Optional[float] = None, score_after: Optional[float] = None,
-        ab_test_metrics: Optional[Dict[str, Any]] = None, is_active: bool = False
+        self,
+        book_id: int,
+        prompt_key: str,
+        version_tag: str,
+        content: str,
+        score_before: Optional[float] = None,
+        score_after: Optional[float] = None,
+        ab_test_metrics: Optional[Dict[str, Any]] = None,
+        is_active: bool = False,
     ) -> Any:
         v_id = len(self.data) + 1
         version = {
@@ -264,7 +302,7 @@ class MockPromptVersionRepository(MockBaseRepository):
             "score_after": score_after,
             "ab_test_metrics": ab_test_metrics or {},
             "is_active": is_active,
-            "created_at": datetime.now().isoformat()
+            "created_at": datetime.now().isoformat(),
         }
         self.data[v_id] = version
         return version
@@ -280,16 +318,24 @@ class MockPromptVersionRepository(MockBaseRepository):
         res = sorted(res, key=lambda x: x.get("created_at"), reverse=True)
         return res[:limit]
 
-    async def get_active_prompt_version(self, book_id: int, prompt_key: str) -> Optional[Dict[str, Any]]:
+    async def get_active_prompt_version(
+        self, book_id: int, prompt_key: str
+    ) -> Optional[Dict[str, Any]]:
         for v in self.data.values():
-            if v.get("book_id") == book_id and v.get("prompt_key") == prompt_key and v.get("is_active"):
+            if (
+                v.get("book_id") == book_id
+                and v.get("prompt_key") == prompt_key
+                and v.get("is_active")
+            ):
                 return v
         return None
 
-    async def set_active_prompt_version(self, book_id: int, prompt_key: str, version_id: int) -> None:
+    async def set_active_prompt_version(
+        self, book_id: int, prompt_key: str, version_id: int
+    ) -> None:
         for v in self.data.values():
             if v.get("book_id") == book_id and v.get("prompt_key") == prompt_key:
-                v["is_active"] = (v.get("id") == version_id)
+                v["is_active"] = v.get("id") == version_id
 
     async def update_score_after(self, version_id: int, score: float) -> None:
         if version_id in self.data:
@@ -307,6 +353,7 @@ class MockMiscRepository(MockBaseRepository):
 
 class MockRepository:
     """テスト用に簡易的に利用する統合Repository"""
+
     def __init__(self, db=None):
         self.db = db or MockDatabaseManager()
         self.books = {}
@@ -374,20 +421,26 @@ class MockUnitOfWork:
         self._chroma_deletions = []
         self.outbox = []
 
-    def stage_chroma_add(self, collection: str, doc_id: str, doc_content: str, embedding: List[float], metadata: Optional[Dict[str, Any]] = None):
-        self._chroma_additions.append({
-            "collection": collection,
-            "id": doc_id,
-            "content": doc_content,
-            "embedding": embedding,
-            "metadata": metadata
-        })
+    def stage_chroma_add(
+        self,
+        collection: str,
+        doc_id: str,
+        doc_content: str,
+        embedding: List[float],
+        metadata: Optional[Dict[str, Any]] = None,
+    ):
+        self._chroma_additions.append(
+            {
+                "collection": collection,
+                "id": doc_id,
+                "content": doc_content,
+                "embedding": embedding,
+                "metadata": metadata,
+            }
+        )
 
     def stage_chroma_delete(self, collection: str, ids: List[str]):
-        self._chroma_deletions.append({
-            "collection": collection,
-            "ids": ids
-        })
+        self._chroma_deletions.append({"collection": collection, "ids": ids})
 
     async def get_pending_outbox_events(self) -> List[Any]:
         return [e for e in self.outbox if e.status == "pending"]
@@ -397,7 +450,6 @@ class MockUnitOfWork:
             if e.id == event_id:
                 e.status = "done"
                 e.processed_at = datetime.now()
-
 
     async def __aenter__(self):
         self.session = self.db.get_session()

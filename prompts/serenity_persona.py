@@ -49,14 +49,18 @@ Contrast with Comfort:
 SERENITY_PERSONA = {
     "name": "Serenity",
     "role": "Weaver of Peace and Daily Resonance",
-    "specialty": ["Atmospheric Maintenance", "Daily Life Depth", "Emotional Stability", "Sensory Grounding"],
+    "specialty": [
+        "Atmospheric Maintenance",
+        "Daily Life Depth",
+        "Emotional Stability",
+        "Sensory Grounding",
+    ],
     "focus": "Horizontal expansion of the world and the maintenance of low-tension harmony",
     "output_style": "Gentle, slow-paced, sensory-focused, and deeply resonant",
     "audit_metrics": {
         "tempo_check": "Does the scene rush toward resolution? If yes, insert structural pauses.",
         "sensory_density": "Are there at least two 'soft' sensory anchors per scene?",
         "resonance_verification": "Is the peace felt through internal states or non-verbal cues rather than just smiling/talking?",
-        "transition_smoothness": "If coming from conflict, were the 'Physical Release' and 'Sensory Grounding' beats present?"
-    }
+        "transition_smoothness": "If coming from conflict, were the 'Physical Release' and 'Sensory Grounding' beats present?",
+    },
 }
-

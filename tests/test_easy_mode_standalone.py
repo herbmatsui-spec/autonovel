@@ -1,17 +1,18 @@
-import sys
-import os
 import asyncio
+import os
+import sys
 
 sys.path.insert(0, os.path.abspath("."))
 
 from src.models.easy_mode_schemas import (
-    GachaRequest,
     DigestRequest,
+    GachaRequest,
     PromotionRequest,
 )
-from src.services.gacha_service import GachaService
 from src.services.digest_service import DigestService
+from src.services.gacha_service import GachaService
 from src.services.promotion_service import PromotionService
+
 
 async def main():
     print("--- 1. Testing GachaService ---")
@@ -20,7 +21,7 @@ async def main():
     res = await gacha_service.generate_plans(req)
     print(f"Request ID: {res.request_id}")
     print(f"Plans count: {len(res.plans)}")
-    
+
     assert len(res.plans) == 3
     selected_plan_id = res.plans[0].plan_id
 
@@ -42,6 +43,7 @@ async def main():
     assert promo_res.success is True
 
     print("\n[SUCCESS] All standalone unit tests passed successfully!")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

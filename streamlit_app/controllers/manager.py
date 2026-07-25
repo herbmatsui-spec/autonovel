@@ -1,8 +1,9 @@
 """
 streamlit_app/controllers/manager.py - UI Controller Manager
 """
+
 from typing import Any, Dict, Optional
-from unittest.mock import MagicMock
+
 from streamlit_app.event_bus import UIEvent, UIEventBus, UIEventType
 
 
@@ -29,7 +30,9 @@ class UIControllerManager:
         self.bus.subscribe(UIEventType.REQUEST_GENERATE_EPISODE, self.writing_ctrl)
         self.bus.subscribe(UIEventType.REQUEST_CANCEL_JOB, self.system_ctrl)
 
-    def emit(self, event_type: UIEventType, payload: Dict[str, Any], stream_display: Optional[Any] = None) -> Optional[Dict[str, Any]]:
+    def emit(
+        self, event_type: UIEventType, payload: Dict[str, Any], stream_display: Optional[Any] = None
+    ) -> Optional[Dict[str, Any]]:
         if stream_display is not None:
             self.planning_ctrl.stream_display = stream_display
             self.writing_ctrl.stream_display = stream_display

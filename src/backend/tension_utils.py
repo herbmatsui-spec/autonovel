@@ -21,6 +21,7 @@ def select_tension_curve(genre: str, story_type: Optional[str] = None) -> str:
 
     return genre_map.get(genre.lower(), DEFAULT_CURVE)
 
+
 def calculate_progress(current_episode: int, total_episodes: int) -> float:
     """
     現在のエピソード番号から物語の進行度（0.0 〜 1.0）を計算する。
@@ -29,6 +30,7 @@ def calculate_progress(current_episode: int, total_episodes: int) -> float:
         return 0.0
     # エピソードの開始時点での進行度を計算
     return (current_episode - 1) / total_episodes
+
 
 def get_target_tension(curve_name: str, progress: float, hook_name: Optional[str] = None) -> float:
     """
@@ -50,7 +52,7 @@ def get_target_tension(curve_name: str, progress: float, hook_name: Optional[str
     # 線形補間
     for i in range(len(curve) - 1):
         p1, t1 = curve[i]
-        p2, t2 = curve[i+1]
+        p2, t2 = curve[i + 1]
         if p1 <= progress <= p2:
             # 補間式: t = t1 + (t2 - t1) * (progress - p1) / (p2 - p1)
             return t1 + (t2 - t1) * (progress - p1) / (p2 - p1)

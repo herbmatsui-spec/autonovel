@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from services.errors import retry_on_lock
 
 if TYPE_CHECKING:
-    from config.container import Container
+    pass
 
 from src.backend.database.core import DatabaseManager
 from src.backend.database.models import Outbox
@@ -31,10 +31,12 @@ from src.backend.database.uow_context import current_uow
 
 logger = logging.getLogger(__name__)
 
+
 class UnitOfWork:
     """
     SQLite のトランザクション整合性と ChromaDB への同期（Outboxパターン）を保証する Unit of Work。
     """
+
     @inject
     def __init__(self, db: DatabaseManager = Provide["db"]):
         self.db = db
@@ -56,15 +58,24 @@ class UnitOfWork:
         self._chroma_additions: List[Dict[str, Any]] = []
         self._chroma_deletions: List[Dict[str, Any]] = []
 
-    def stage_chroma_add(self, collection: str, doc_id: str, doc_content: str, embedding: List[float], metadata: Optional[Dict[str, Any]] = None):
+    def stage_chroma_add(
+        self,
+        collection: str,
+        doc_id: str,
+        doc_content: str,
+        embedding: List[float],
+        metadata: Optional[Dict[str, Any]] = None,
+    ):
         """ChromaDBへのドキュメント追加をステージング"""
-        self._chroma_additions.append({
-            "collection": collection,
-            "id": doc_id,
-            "content": doc_content,
-            "embedding": embedding,
-            "metadata": metadata
-        })
+        self._chroma_additions.append(
+            {
+                "collection": collection,
+                "id": doc_id,
+                "content": doc_content,
+                "embedding": embedding,
+                "metadata": metadata,
+            }
+        )
 
     @property
     def bible(self) -> BibleRepository:
@@ -134,22 +145,20 @@ class UnitOfWork:
 
     def stage_chroma_delete(self, collection: str, ids: List[str]):
         """ChromaDBからのドキュメント削除をステージング"""
-        self._chroma_deletions.append({
-            "collection": collection,
-            "ids": ids
-        })
+        self._chroma_deletions.append({"collection": collection, "ids": ids})
 
     async def __aenter__(self) -> UnitOfWork:
         self.session = self.db.get_session()
         if self.session is None:
             raise RuntimeError("Session not initialized")
         await self.session.begin()
-        self._token = current_uow.set(self) # type: ignore
+        self._token = current_uow.set(self)  # type: ignore
         return self
 
     async def get_pending_outbox_events(self) -> List[Outbox]:
         """未処理のアウトボックスイベントを取得"""
         from sqlalchemy import select
+
         if self.session is None:
             raise RuntimeError("Session not initialized")
         result = await self.session.execute(
@@ -162,6 +171,7 @@ class UnitOfWork:
         import datetime
 
         from sqlalchemy import update
+
         if self.session is None:
             raise RuntimeError("Session not initialized")
         await self.session.execute(
@@ -180,13 +190,18 @@ class UnitOfWork:
                 # コミット前に、ステージングされたChromaDB操作をoutboxに記録
                 if self.session is None:
                     raise RuntimeError("Session not initialized")
+
                 async def _commit_with_retry():
-                    await self.outbox_service.flush(self.session, self._chroma_additions, self._chroma_deletions)
+                    await self.outbox_service.flush(
+                        self.session, self._chroma_additions, self._chroma_deletions
+                    )
                     await self.session.commit()
 
                 # retry_on_lock(retries=...)(func) returns the wrapper. We then call the wrapper.
-                await retry_on_lock()( _commit_with_retry)()
-                logger.info(f"[UOW] SQLite transaction committed with retry. Staged {len(self._chroma_additions)} Chroma adds, {len(self._chroma_deletions)} Chroma deletes to outbox.")
+                await retry_on_lock()(_commit_with_retry)()
+                logger.info(
+                    f"[UOW] SQLite transaction committed with retry. Staged {len(self._chroma_additions)} Chroma adds, {len(self._chroma_deletions)} Chroma deletes to outbox."
+                )
         except Exception as e:
             logger.error(f"[UOW] Error finalizing transaction: {e}")
             raise

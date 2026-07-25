@@ -8,11 +8,15 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("test_integration")
 
+
 def test_imports():
     logger.info("Step 1: Testing imports...")
     try:
         from config.narrative import AUDIT_TRIGGER_KEYWORDS
-        logger.info(f"✓ config.narrative imports OK. Trigger keywords count: {len(AUDIT_TRIGGER_KEYWORDS)}")
+
+        logger.info(
+            f"✓ config.narrative imports OK. Trigger keywords count: {len(AUDIT_TRIGGER_KEYWORDS)}"
+        )
 
         logger.info("✓ sanitizer imports OK.")
 
@@ -21,28 +25,35 @@ def test_imports():
         logger.error(f"✗ Import test failed: {e}", exc_info=True)
         sys.exit(1)
 
+
 def test_world_rules_pydantic():
     logger.info("\nStep 2: Testing Pydantic WorldRules initialization...")
     try:
         from models import WorldRules
+
         # location_sensory_map が空のデフォルトで動くか
         rules = WorldRules()
-        assert hasattr(rules, "location_sensory_map"), "location_sensory_map field is missing in WorldRules"
+        assert hasattr(rules, "location_sensory_map"), (
+            "location_sensory_map field is missing in WorldRules"
+        )
         logger.info("✓ Default WorldRules initialization OK.")
 
         # location_sensory_map を指定して動くか
         custom_map = {
             "深淵の森": {
                 "安堵": "微かな腐敗臭を伴う冷たい弛緩",
-                "光": "目に刺さるような異物感と疼き"
+                "光": "目に刺さるような異物感と疼き",
             }
         }
         rules_custom = WorldRules(location_sensory_map=custom_map)
-        assert rules_custom.location_sensory_map["深淵の森"]["安堵"] == "微かな腐敗臭を伴う冷たい弛緩"
+        assert (
+            rules_custom.location_sensory_map["深淵の森"]["安堵"] == "微かな腐敗臭を伴う冷たい弛緩"
+        )
         logger.info("✓ Custom WorldRules initialization and validation OK.")
     except Exception as e:
         logger.error(f"✗ WorldRules Pydantic test failed: {e}", exc_info=True)
         sys.exit(1)
+
 
 def test_physiological_translator():
     logger.info("\nStep 3: Testing PhysiologicalTranslator dynamic overrides...")
@@ -65,10 +76,10 @@ def test_physiological_translator():
         assert "脳髄に冷たい魔力の澱みが溜まり" in translated_mage, "Mage override failed"
 
         # 4. 場所「深淵の森」の感覚オーバーレイ適用
-        location_overlay = {
-            "恐怖": "肌に冷たい粘液が這い回るような、実体のない嫌悪感"
-        }
-        translated_loc = PhysiologicalTranslator.translate(text_normal, location_map=location_overlay)
+        location_overlay = {"恐怖": "肌に冷たい粘液が這い回るような、実体のない嫌悪感"}
+        translated_loc = PhysiologicalTranslator.translate(
+            text_normal, location_map=location_overlay
+        )
         logger.info(f"Location Overlay: '{text_normal}' -> '{translated_loc}'")
         assert "肌に冷たい粘液が這い回る" in translated_loc, "Location overlay override failed"
 
@@ -76,6 +87,7 @@ def test_physiological_translator():
     except Exception as e:
         logger.error(f"✗ PhysiologicalTranslator test failed: {e}", exc_info=True)
         sys.exit(1)
+
 
 def test_vocabulary_optimizer_integration():
     logger.info("\nStep 4: Testing VocabularyOptimizer deduplicate integration...")
@@ -92,21 +104,17 @@ def test_vocabulary_optimizer_integration():
 
         # 2. アーキタイプあり
         out_warrior = VocabularyOptimizer.deduplicate(
-            text,
-            sanitizer_policy=sanitizer_policy,
-            archetypes=["武人"]
+            text, sanitizer_policy=sanitizer_policy, archetypes=["武人"]
         )
         logger.info(f"Optimizer Warrior: {out_warrior}")
-        assert "五感が極限まで研ぎ澄まされ" in out_warrior, "Optimizer Archetype pass-through failed"
+        assert "五感が極限まで研ぎ澄まされ" in out_warrior, (
+            "Optimizer Archetype pass-through failed"
+        )
 
         # 3. 場所オーバーレイあり
-        location_overlay = {
-            "恐怖": "背筋に凍りつくような針を突き立てられる激痛"
-        }
+        location_overlay = {"恐怖": "背筋に凍りつくような針を突き立てられる激痛"}
         out_loc = VocabularyOptimizer.deduplicate(
-            text,
-            sanitizer_policy=sanitizer_policy,
-            location_map=location_overlay
+            text, sanitizer_policy=sanitizer_policy, location_map=location_overlay
         )
         logger.info(f"Optimizer Location: {out_loc}")
         assert "背筋に凍りつくような針" in out_loc, "Optimizer Location pass-through failed"
@@ -115,6 +123,7 @@ def test_vocabulary_optimizer_integration():
     except Exception as e:
         logger.error(f"✗ VocabularyOptimizer integration test failed: {e}", exc_info=True)
         sys.exit(1)
+
 
 def test_audit_triggers():
     logger.info("\nStep 5: Testing V4.6 Triggered Audit logic...")
@@ -138,6 +147,7 @@ def test_audit_triggers():
         logger.error(f"✗ Audit triggers test failed: {e}", exc_info=True)
         sys.exit(1)
 
+
 if __name__ == "__main__":
     logger.info("=== Hegemony Engine V4.6 Integration Test Starting ===")
     test_imports()
@@ -146,4 +156,3 @@ if __name__ == "__main__":
     test_vocabulary_optimizer_integration()
     test_audit_triggers()
     logger.info("\n=== ALL INTEGRATION TESTS PASSED SUCCESSFULLY! ===")
-

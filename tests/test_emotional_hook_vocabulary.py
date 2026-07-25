@@ -2,7 +2,7 @@
 tests/test_emotional_hook_vocabulary.py
 config/emotional_hook_vocabulary.py の単体テスト。
 """
-import pytest
+
 
 from config.emotional_hook_vocabulary import (
     EMOTIONAL_HOOKS,

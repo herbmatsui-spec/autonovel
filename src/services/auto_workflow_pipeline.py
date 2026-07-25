@@ -13,6 +13,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+
 class WorkflowContext(BaseModel):
     genre: str
     keywords: str
@@ -31,32 +32,61 @@ class WorkflowContext(BaseModel):
     title: str = ""
     easy_parameters: Dict[str, Any] = Field(default_factory=dict)
 
+
 class WorkflowStep:
-    async def execute(self, ctx: WorkflowContext, engine: UltimateHegemonyEngine, reporter: StatusReporter) -> bool:
+    async def execute(
+        self, ctx: WorkflowContext, engine: UltimateHegemonyEngine, reporter: StatusReporter
+    ) -> bool:
         """Execute step. Returns True to continue, False to halt/break."""
         raise NotImplementedError()
 
+
 class InferenceStep(WorkflowStep):
-    async def execute(self, ctx: WorkflowContext, engine: UltimateHegemonyEngine, reporter: StatusReporter) -> bool:
+    async def execute(
+        self, ctx: WorkflowContext, engine: UltimateHegemonyEngine, reporter: StatusReporter
+    ) -> bool:
         if ctx.user_prompt:
             try:
-                reporter.report(f"🔮 1行プロンプトから覇権企画を自動強化（推論）中: 「{ctx.user_prompt}」", "info")
-                inference = await engine.planner.infer_easy_mode_params(ctx.user_prompt, reporter=reporter)
+                reporter.report(
+                    f"🔮 1行プロンプトから覇権企画を自動強化（推論）中: 「{ctx.user_prompt}」",
+                    "info",
+                )
+                inference = await engine.planner.infer_easy_mode_params(
+                    ctx.user_prompt, reporter=reporter
+                )
 
                 ctx.genre = inference.genre_key or ctx.genre
-                ctx.concept = f"{ctx.concept}\n{inference.core_idea}".strip() if ctx.concept else inference.core_idea
+                ctx.concept = (
+                    f"{ctx.concept}\n{inference.core_idea}".strip()
+                    if ctx.concept
+                    else inference.core_idea
+                )
                 if inference.mc_concept:
-                    ctx.keywords = f"{ctx.keywords}, {inference.mc_concept}" if ctx.keywords else inference.mc_concept
+                    ctx.keywords = (
+                        f"{ctx.keywords}, {inference.mc_concept}"
+                        if ctx.keywords
+                        else inference.mc_concept
+                    )
                 ctx.title = inference.title_idea
-                reporter.report(f"✨ 自動強化完了！ ジャンル: {ctx.genre} / コンセプト推論成功", "info")
+                reporter.report(
+                    f"✨ 自動強化完了！ ジャンル: {ctx.genre} / コンセプト推論成功", "info"
+                )
             except Exception as e:
-                reporter.report(f"⚠️ 自動強化に失敗しましたが、既存のパラメータで続行します。: {e}", "warning")
+                reporter.report(
+                    f"⚠️ 自動強化に失敗しましたが、既存のパラメータで続行します。: {e}", "warning"
+                )
         return True
 
+
 class PlanStep(WorkflowStep):
-    async def execute(self, ctx: WorkflowContext, engine: UltimateHegemonyEngine, reporter: StatusReporter) -> bool:
+    async def execute(
+        self, ctx: WorkflowContext, engine: UltimateHegemonyEngine, reporter: StatusReporter
+    ) -> bool:
         from config import STORY_ARCHETYPES
-        p_settings = STORY_ARCHETYPES.get(ctx.archetype_key, STORY_ARCHETYPES["王道ざまぁ（爽快感最大）"])
+
+        p_settings = STORY_ARCHETYPES.get(
+            ctx.archetype_key, STORY_ARCHETYPES["王道ざまぁ（爽快感最大）"]
+        )
         try:
             reporter.update_progress(0, 3, "STEP 1/3: 覇権企画を生成中...")
             book_id, bible = await engine.planner.create_hegemony_plan(
@@ -86,26 +116,30 @@ class PlanStep(WorkflowStep):
                 "cost_severity": p_settings.get("cost_severity", 2),
                 "target_eps": ctx.target_eps,
                 "concept": ctx.concept,
-                "tone_vibe": ctx.tone_vibe
+                "tone_vibe": ctx.tone_vibe,
             }
 
             # P1-16: Store catharsis pattern info for visualization
             try:
-                if hasattr(bible, 'catharsis_pattern') and bible.catharsis_pattern:
+                if hasattr(bible, "catharsis_pattern") and bible.catharsis_pattern:
                     ctx.easy_parameters["catharsis_pattern"] = (
                         bible.catharsis_pattern.model_dump()
-                        if hasattr(bible.catharsis_pattern, 'model_dump')
+                        if hasattr(bible.catharsis_pattern, "model_dump")
                         else dict(bible.catharsis_pattern)
                     )
-                elif isinstance(bible, dict) and 'catharsis_pattern' in bible:
-                    ctx.easy_parameters["catharsis_pattern"] = bible['catharsis_pattern']
-                elif isinstance(bible, dict) and 'catharsis_positions' in bible:
-                    ctx.easy_parameters["catharsis_positions"] = bible['catharsis_positions']
+                elif isinstance(bible, dict) and "catharsis_pattern" in bible:
+                    ctx.easy_parameters["catharsis_pattern"] = bible["catharsis_pattern"]
+                elif isinstance(bible, dict) and "catharsis_positions" in bible:
+                    ctx.easy_parameters["catharsis_positions"] = bible["catharsis_positions"]
             except Exception:
                 pass  # Silent fail for visualization
 
             # 健全性チェック
-            if getattr(engine.planner, "plan_auditor", None) and not await engine.planner.plan_auditor.audit_bible_completeness(bible, reporter=reporter):
+            if getattr(
+                engine.planner, "plan_auditor", None
+            ) and not await engine.planner.plan_auditor.audit_bible_completeness(
+                bible, reporter=reporter
+            ):
                 # We stop the pipeline
                 return False
 
@@ -113,11 +147,17 @@ class PlanStep(WorkflowStep):
                 return False
             return True
         except Exception as e:
-            reporter.report(f"🚨 企画生成中にエラーが発生しました: {e}. APIキーや入力設定を確認してください。", "error")
+            reporter.report(
+                f"🚨 企画生成中にエラーが発生しました: {e}. APIキーや入力設定を確認してください。",
+                "error",
+            )
             raise
 
+
 class WriteStep(WorkflowStep):
-    async def execute(self, ctx: WorkflowContext, engine: UltimateHegemonyEngine, reporter: StatusReporter) -> bool:
+    async def execute(
+        self, ctx: WorkflowContext, engine: UltimateHegemonyEngine, reporter: StatusReporter
+    ) -> bool:
         if ctx.book_id is None:
             return False
         try:
@@ -129,18 +169,26 @@ class WriteStep(WorkflowStep):
                 passion=ctx.tone_vibe,
                 target_word_count=ctx.word_count,
                 reporter=reporter,
-                is_easy_mode=True
+                is_easy_mode=True,
             )
             ctx.chars_count = chars_count
             ctx.failed_episodes = failed_episodes
 
             # 自動再試行 (失敗したエピソードのみをピンポイントで再試行)
             if failed_episodes and not reporter.state.should_stop():
-                err_details = " / ".join([f"第{f.get('ep_num', '?')}話: {f.get('error_message', '不明')}" for f in failed_episodes])
-                reporter.report(f"🔄 {len(failed_episodes)}件のエピソードで不備を検知 ({err_details})。ピンポイント修復中...", "warning")
+                err_details = " / ".join(
+                    [
+                        f"第{f.get('ep_num', '?')}話: {f.get('error_message', '不明')}"
+                        for f in failed_episodes
+                    ]
+                )
+                reporter.report(
+                    f"🔄 {len(failed_episodes)}件のエピソードで不備を検知 ({err_details})。ピンポイント修復中...",
+                    "warning",
+                )
 
                 # 失敗したエピソードの範囲を特定し、その範囲のみを再生成
-                failed_eps_nums = [f.get('ep_num') for f in failed_episodes if f.get('ep_num')]
+                failed_eps_nums = [f.get("ep_num") for f in failed_episodes if f.get("ep_num")]
                 if failed_eps_nums:
                     start_retry = min(failed_eps_nums)
                     end_retry = max(failed_eps_nums)
@@ -151,7 +199,7 @@ class WriteStep(WorkflowStep):
                         passion=ctx.tone_vibe,
                         target_word_count=ctx.word_count,
                         reporter=reporter,
-                        is_easy_mode=True
+                        is_easy_mode=True,
                     )
                     ctx.chars_count += retry_chars
                     ctx.failed_episodes = still_failed
@@ -160,11 +208,17 @@ class WriteStep(WorkflowStep):
                 return False
             return True
         except Exception as e:
-            reporter.report(f"🚨 本文執筆中にエラーが発生しました: {e}. プロットやキャラクター設定に問題がないか確認してください。", "error")
+            reporter.report(
+                f"🚨 本文執筆中にエラーが発生しました: {e}. プロットやキャラクター設定に問題がないか確認してください。",
+                "error",
+            )
             raise
 
+
 class PackageStep(WorkflowStep):
-    async def execute(self, ctx: WorkflowContext, engine: UltimateHegemonyEngine, reporter: StatusReporter) -> bool:
+    async def execute(
+        self, ctx: WorkflowContext, engine: UltimateHegemonyEngine, reporter: StatusReporter
+    ) -> bool:
         if ctx.book_id is None:
             return False
         try:
@@ -179,11 +233,14 @@ class PackageStep(WorkflowStep):
             reporter.report(f"🚨 納品データの準備中にエラーが発生しました: {e}", "error")
             raise
 
+
 class AutoWorkflowPipeline:
     def __init__(self, steps: List[WorkflowStep]):
         self.steps = steps
 
-    async def execute(self, ctx: WorkflowContext, engine: UltimateHegemonyEngine, reporter: StatusReporter) -> FullAutoWorkflowResult:
+    async def execute(
+        self, ctx: WorkflowContext, engine: UltimateHegemonyEngine, reporter: StatusReporter
+    ) -> FullAutoWorkflowResult:
         reporter.report("🚀 全自動モード開始！", "info")
 
         for step in self.steps:
@@ -200,7 +257,7 @@ class AutoWorkflowPipeline:
                     chars_count=ctx.chars_count,
                     failed_episodes=ctx.failed_episodes,
                     status=status,
-                    easy_parameters=ctx.easy_parameters
+                    easy_parameters=ctx.easy_parameters,
                 )
 
         return FullAutoWorkflowResult(
@@ -211,5 +268,5 @@ class AutoWorkflowPipeline:
             zip_data=ctx.zip_data,
             zip_filename=ctx.zip_filename,
             status="success",
-            easy_parameters=ctx.easy_parameters
+            easy_parameters=ctx.easy_parameters,
         )

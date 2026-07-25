@@ -1,6 +1,7 @@
 """
 config/models.py — 設定モデルの集約・再エクスポート用モジュール
 """
+
 from schemas.config import (
     DomainProfileModel,
     GlobalConfigModel,
@@ -16,6 +17,5 @@ __all__ = [
     "SystemPluginsModel",
     "TropesModel",
     "InteractionMatrixModel",
-    "DomainProfileModel"
+    "DomainProfileModel",
 ]
-

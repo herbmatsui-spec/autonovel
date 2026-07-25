@@ -15,9 +15,15 @@ class PromptVersionRepository(BaseRepository):
 
     @retry_on_lock()
     async def create_prompt_version(
-        self, book_id: int, prompt_key: str, version_tag: str, content: str,
-        score_before: Optional[float] = None, score_after: Optional[float] = None,
-        ab_test_metrics: Optional[Dict[str, Any]] = None, is_active: bool = False
+        self,
+        book_id: int,
+        prompt_key: str,
+        version_tag: str,
+        content: str,
+        score_before: Optional[float] = None,
+        score_after: Optional[float] = None,
+        ab_test_metrics: Optional[Dict[str, Any]] = None,
+        is_active: bool = False,
     ) -> PromptVersion:
         """新しいプロンプトバージョンを作成"""
         version = PromptVersion(
@@ -29,7 +35,7 @@ class PromptVersionRepository(BaseRepository):
             score_after=score_after,
             ab_test_metrics=json.dumps(ab_test_metrics or {}, ensure_ascii=False),
             is_active=is_active,
-            created_at=datetime.now()
+            created_at=datetime.now(),
         )
         self.session.add(version)
         await self.session.flush()
@@ -42,10 +48,12 @@ class PromptVersionRepository(BaseRepository):
         )
         row = result.scalar_one_or_none()
         if row:
-            return self._parse_row(self._to_dict(row), ['ab_test_metrics'])
+            return self._parse_row(self._to_dict(row), ["ab_test_metrics"])
         return None
 
-    async def get_prompt_versions(self, book_id: int, limit: int = 20) -> List[PromptVersionDbModel]:
+    async def get_prompt_versions(
+        self, book_id: int, limit: int = 20
+    ) -> List[PromptVersionDbModel]:
         """本に紐づくプロンプトバージョン一覧を取得"""
         result = await self.session.execute(
             select(PromptVersion)
@@ -54,9 +62,11 @@ class PromptVersionRepository(BaseRepository):
             .limit(limit)
         )
         rows = result.scalars().all()
-        return [self._parse_row(self._to_dict(r), ['ab_test_metrics']) for r in rows]
+        return [self._parse_row(self._to_dict(r), ["ab_test_metrics"]) for r in rows]
 
-    async def get_active_prompt_version(self, book_id: int, prompt_key: str) -> Optional[PromptVersionDbModel]:
+    async def get_active_prompt_version(
+        self, book_id: int, prompt_key: str
+    ) -> Optional[PromptVersionDbModel]:
         """現在アクティブなプロンプトバージョンを取得"""
         result = await self.session.execute(
             select(PromptVersion)
@@ -66,11 +76,13 @@ class PromptVersionRepository(BaseRepository):
         )
         row = result.scalar_one_or_none()
         if row:
-            return self._parse_row(self._to_dict(row), ['ab_test_metrics'])
+            return self._parse_row(self._to_dict(row), ["ab_test_metrics"])
         return None
 
     @retry_on_lock()
-    async def set_active_prompt_version(self, book_id: int, prompt_key: str, version_id: int) -> None:
+    async def set_active_prompt_version(
+        self, book_id: int, prompt_key: str, version_id: int
+    ) -> None:
         """指定したバージョンをアクティブに設定し、他を非アクティブにする"""
         # すべて非アクティブ化
         await self.session.execute(
@@ -81,18 +93,14 @@ class PromptVersionRepository(BaseRepository):
         )
         # 指定したIDをアクティブ化
         await self.session.execute(
-            update(PromptVersion)
-            .where(PromptVersion.id == version_id)
-            .values(is_active=True)
+            update(PromptVersion).where(PromptVersion.id == version_id).values(is_active=True)
         )
 
     @retry_on_lock()
     async def update_score_after(self, version_id: int, score: float) -> None:
         """適用後のA/Bテストスコア（評価値）を更新"""
         await self.session.execute(
-            update(PromptVersion)
-            .where(PromptVersion.id == version_id)
-            .values(score_after=score)
+            update(PromptVersion).where(PromptVersion.id == version_id).values(score_after=score)
         )
 
     @retry_on_lock()

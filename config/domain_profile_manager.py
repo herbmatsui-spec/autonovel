@@ -4,6 +4,7 @@ config/domain_profile_manager.py — ドメインプロファイルの重み・�
 DomainProfileManager:  スコアリング重み係数を管理する
 DomainProfileService:  ドメイン固有のテキスト生成補助メソッドを提供する
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List
@@ -14,9 +15,9 @@ _domain_values: Dict[str, Any] = {}
 # デフォルト重み係数
 _DEFAULT_WEIGHTS: Dict[str, float] = {
     "WEIGHT_EMOTIONAL_RESONANCE": 1.0,
-    "WEIGHT_THEMATIC_DEPTH":      1.0,
-    "WEIGHT_LITERARY_BEAUTY":     1.0,
-    "WEIGHT_BASE_ENGAGEMENT":     1.0,
+    "WEIGHT_THEMATIC_DEPTH": 1.0,
+    "WEIGHT_LITERARY_BEAUTY": 1.0,
+    "WEIGHT_BASE_ENGAGEMENT": 1.0,
 }
 
 
@@ -71,33 +72,58 @@ class DomainProfileService:
         "カクヨム/なろう": {
             "name": "カクヨム/小説家になろう",
             "description": "テンプレ設定、追放ざまぁ、WEB小説特有の超速ペーシング、読者の即時カタルシスと承認欲求充足が極めて重要。",
-            "preferred_tropes": ["追放・ざまぁ", "チート・ユニークスキル", "無自覚・勘違い", "パーティー追放からのソロ無双"],
-            "tone": "コミカルかつスカッとする、テンポ重視、説明的すぎず分かりやすい地の文"
+            "preferred_tropes": [
+                "追放・ざまぁ",
+                "チート・ユニークスキル",
+                "無自覚・勘違い",
+                "パーティー追放からのソロ無双",
+            ],
+            "tone": "コミカルかつスカッとする、テンポ重視、説明的すぎず分かりやすい地の文",
         },
         "アルファポリス": {
             "name": "アルファポリス",
             "description": "スローライフ、もふもふ動物、お仕事もの、女性向け異世界恋愛。まったりした日常描写や、明確な悪意のない穏やかなストーリーが好まれる。",
-            "preferred_tropes": ["もふもふ・精霊契約", "スローライフ・開拓", "料理・生産職", "悪役令嬢の領地経営"],
-            "tone": "穏やかで丁寧、アットホーム、過度な暴力描写は避ける"
+            "preferred_tropes": [
+                "もふもふ・精霊契約",
+                "スローライフ・開拓",
+                "料理・生産職",
+                "悪役令嬢の領地経営",
+            ],
+            "tone": "穏やかで丁寧、アットホーム、過度な暴力描写は避ける",
         },
         "ノベルアップ＋": {
             "name": "ノベルアップ＋",
             "description": "読者と作者の距離が近く、メタフィクション要素、ゲーム風ステータス、ちょっと尖ったニッチな設定やギャグが許容されやすい。",
-            "preferred_tropes": ["ステータス・システム画面", "メタ要素・パロディ", "ダークヒーロー", "独自のニッチ職業"],
-            "tone": "賑やか、ポップ、ライトノベルらしい軽快なセリフ回し"
+            "preferred_tropes": [
+                "ステータス・システム画面",
+                "メタ要素・パロディ",
+                "ダークヒーロー",
+                "独自のニッチ職業",
+            ],
+            "tone": "賑やか、ポップ、ライトノベルらしい軽快なセリフ回し",
         },
         "ライト文芸": {
             "name": "ライト文芸",
             "description": "キャラクター文芸、現代のファンタジー、怪異・あやかし、謎解き、心理描写やエモーショナルな人間関係を重視。イラスト映えするキャラクター描写。",
-            "preferred_tropes": ["怪異・あやかしとの共生", "日常の謎・ライトミステリ", "契約結婚・すれ違いの愛", "京都・和風レトロな舞台"],
-            "tone": "情緒的、情感豊かな描写、キャラクターの繊細な心理変化に焦点を当てる"
+            "preferred_tropes": [
+                "怪異・あやかしとの共生",
+                "日常の謎・ライトミステリ",
+                "契約結婚・すれ違いの愛",
+                "京都・和風レトロな舞台",
+            ],
+            "tone": "情緒的、情感豊かな描写、キャラクターの繊細な心理変化に焦点を当てる",
         },
         "一般エンタメ": {
             "name": "一般エンタメ",
             "description": "普遍的なテーマ性、論理的整合性の高さ、深い人間ドラマ、しっかりした世界観構築。ご都合主義を排したリアルな葛藤と展開。",
-            "preferred_tropes": ["成長ドラマ", "謎解き・サスペンス", "職業・業界のリアルな内幕", "宿命の対決"],
-            "tone": "重厚、叙情的、リアリズムを重視し、安易なステータスやご都合チートは避ける"
-        }
+            "preferred_tropes": [
+                "成長ドラマ",
+                "謎解き・サスペンス",
+                "職業・業界のリアルな内幕",
+                "宿命の対決",
+            ],
+            "tone": "重厚、叙情的、リアリズムを重視し、安易なステータスやご都合チートは避ける",
+        },
     }
 
     @classmethod
@@ -112,21 +138,21 @@ class DomainProfileService:
 
     # ジャンル別のあらすじ構成要素（テーマ・結末）
     _THEME_MAP: Dict[str, str] = {
-        "追放":       "不当な追放から這い上がり、圧倒的な力で旧勢力に報復する物語。",
-        "ざまぁ":      "積み重なった屈辱を一気に晴らす爽快なカタルシスを描く物語。",
-        "悪役令嬢":    "断罪イベントを回避しつつ、真の幸福をつかみ取る逆転劇。",
+        "追放": "不当な追放から這い上がり、圧倒的な力で旧勢力に報復する物語。",
+        "ざまぁ": "積み重なった屈辱を一気に晴らす爽快なカタルシスを描く物語。",
+        "悪役令嬢": "断罪イベントを回避しつつ、真の幸福をつかみ取る逆転劇。",
         "スローライフ": "競争から離れ、自らのペースで充実した日常を築く癒やしの物語。",
-        "飯テロ":      "絶品料理と人との交流を軸に、穏やかな日常を彩る物語。",
-        "転生":        "異世界での新しい人生を切り開く、成長と冒険の物語。",
+        "飯テロ": "絶品料理と人との交流を軸に、穏やかな日常を彩る物語。",
+        "転生": "異世界での新しい人生を切り開く、成長と冒険の物語。",
     }
 
     _ENDING_MAP: Dict[str, str] = {
-        "追放":       "最終的に旧勢力が崩壊し、主人公が真の評価を得て悲願を果たす。",
-        "ざまぁ":      "かつての迫害者が完全に断罪され、主人公は揺るぎない地位を確立する。",
-        "悪役令嬢":    "主人公は断罪の運命を覆し、真の幸福とパートナーを手に入れる。",
+        "追放": "最終的に旧勢力が崩壊し、主人公が真の評価を得て悲願を果たす。",
+        "ざまぁ": "かつての迫害者が完全に断罪され、主人公は揺るぎない地位を確立する。",
+        "悪役令嬢": "主人公は断罪の運命を覆し、真の幸福とパートナーを手に入れる。",
         "スローライフ": "理想の生活拠点が完成し、かけがえのない仲間と静かな幸福を享受する。",
-        "飯テロ":      "料理を通じた絆が広がり、主人公はなくてはならない存在として認められる。",
-        "転生":        "前世の知識と経験を活かし、新しい世界で唯一無二の居場所を確立する。",
+        "飯テロ": "料理を通じた絆が広がり、主人公はなくてはならない存在として認められる。",
+        "転生": "前世の知識と経験を活かし、新しい世界で唯一無二の居場所を確立する。",
     }
 
     @classmethod
@@ -239,7 +265,6 @@ class DomainProfileService:
 # =============================================================================
 
 
-
 class CommercialDataLoader:
     """
     商用化作品生成のためのデータローダー。
@@ -316,11 +341,11 @@ class CommercialDataLoader:
     # 商業的スコアリング重み
     COMMERCIAL_WEIGHTS: Dict[str, float] = {
         "WEIGHT_CHARACTER_COMMERCIAL_VALUE": 1.2,  # キャラクターの商業的価値
-        "WEIGHT_PLEASURE_CATHARSIS": 1.5,         # カタルシス設計
-        "WEIGHT_READER_INVESTMENT": 1.3,           # 読者投資度
-        "WEIGHT_PLATFORM_FIT": 1.1,                # プラットフォーム適合性
-        "WEIGHT_HOOK_EFFECTIVENESS": 1.0,          # フックの効果
-        "WEIGHT_SERIES_POTENTIAL": 0.9,            # シリーズ化ポテンシャル
+        "WEIGHT_PLEASURE_CATHARSIS": 1.5,  # カタルシス設計
+        "WEIGHT_READER_INVESTMENT": 1.3,  # 読者投資度
+        "WEIGHT_PLATFORM_FIT": 1.1,  # プラットフォーム適合性
+        "WEIGHT_HOOK_EFFECTIVENESS": 1.0,  # フックの効果
+        "WEIGHT_SERIES_POTENTIAL": 0.9,  # シリーズ化ポテンシャル
     }
 
     # 市場トレンドデータ（簡易版）
@@ -353,11 +378,11 @@ class CommercialDataLoader:
     def get_role_platform_score(cls, role: str, platform: str) -> float:
         """
         商業的役割とプラットフォームの相性スコアを返す。
-        
+
         Args:
             role: 商業的役割名
             platform: プラットフォーム名
-        
+
         Returns:
             相性スコア (0.0-1.0)
         """
@@ -368,7 +393,7 @@ class CommercialDataLoader:
     def get_optimal_roles_for_platform(cls, platform: str) -> List[Tuple[str, float]]:
         """
         プラットフォームに最も効果的な商業的役割ランキングを返す。
-        
+
         Returns:
             役割名とスコアのタプルのリスト
         """
@@ -383,18 +408,17 @@ class CommercialDataLoader:
     def get_commercial_weight(cls, weight_key: str) -> float:
         """商業的スコアリング重みを返す。"""
         return cls.COMMERCIAL_WEIGHTS.get(
-            weight_key,
-            cls.COMMERCIAL_WEIGHTS.get("WEIGHT_CHARACTER_COMMERCIAL_VALUE", 1.0)
+            weight_key, cls.COMMERCIAL_WEIGHTS.get("WEIGHT_CHARACTER_COMMERCIAL_VALUE", 1.0)
         )
 
     @classmethod
     def get_default_roles_for_genre(cls, genre: str) -> List[str]:
         """
         ジャンルに応じたデフォルト商業的役割リストを返す。
-        
+
         Args:
             genre: ジャンル文字列
-        
+
         Returns:
             推奨商業的役割リスト
         """
@@ -436,12 +460,12 @@ class CommercialDataLoader:
     ) -> float:
         """
         キャラクターのプロファイルから商業スコアを算出。
-        
+
         Args:
             character_profile: キャラクターパロファイル
             platform: プラットフォーム名
             genre: ジャンル
-        
+
         Returns:
             商業スコア (0.0-2.0)
         """
@@ -451,12 +475,12 @@ class CommercialDataLoader:
         roles = character_profile.get("commercial_roles", [])
         if roles:
             role_avg = sum(cls.get_role_platform_score(r, platform) for r in roles) / len(roles)
-            base_score *= (0.5 + role_avg)
+            base_score *= 0.5 + role_avg
 
         # ジャンルとの一致度を加成
         default_roles = cls.get_default_roles_for_genre(genre)
         genre_bonus = len(set(roles) & set(default_roles)) / max(len(default_roles), 1)
-        base_score *= (1.0 + genre_bonus * 0.3)
+        base_score *= 1.0 + genre_bonus * 0.3
 
         return min(base_score, 2.0)  # 上限2.0
 
@@ -489,10 +513,7 @@ class ABTestConfig:
     def get_test_variants(cls, test_name: str) -> List[Dict[str, Any]]:
         """テスト名のバライエーションリストを返す。"""
         variants = cls.TEST_PATTERNS.get(test_name, {})
-        return [
-            {"key": key, **value}
-            for key, value in variants.items()
-        ]
+        return [{"key": key, **value} for key, value in variants.items()]
 
     @classmethod
     def get_default_test_suite(cls) -> Dict[str, List[str]]:
@@ -507,7 +528,7 @@ class ABTestConfig:
 def load_commercial_settings() -> Dict[str, Any]:
     """
     商用化設定を全て読み込んで返す。
-    
+
     Returns:
         設定辞書を包括的に返す
     """

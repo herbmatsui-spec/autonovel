@@ -37,7 +37,9 @@ class ConfigValidator:
     @staticmethod
     def load_settings_toml(path: str = "autonovel/config/settings.toml") -> GlobalConfigModel:
         resolved_path = ConfigValidator._resolve_config_path(path)
-        logger.debug(f"[LOAD] ConfigValidator.load_settings_toml() called from: path={resolved_path}")
+        logger.debug(
+            f"[LOAD] ConfigValidator.load_settings_toml() called from: path={resolved_path}"
+        )
         try:
             if not resolved_path.exists():
                 raise FileNotFoundError(f"設定ファイルが見つかりません: {resolved_path}")
@@ -66,7 +68,11 @@ class ConfigValidator:
                 raise FileNotFoundError(f"設定ファイルが見つかりません: {resolved_path}")
             with open(resolved_path, "r", encoding="utf-8") as f:
                 data = yaml.safe_load(f)
-            result = ModelRegistryModel(**data["model_registry"]) if "model_registry" in data else ModelRegistryModel()
+            result = (
+                ModelRegistryModel(**data["model_registry"])
+                if "model_registry" in data
+                else ModelRegistryModel()
+            )
             logger.debug(f"[LOAD] models.yaml loaded: planning={result.planning}")
             return result
         except Exception as e:
@@ -74,15 +80,21 @@ class ConfigValidator:
             raise
 
     @staticmethod
-    def load_system_plugins_yaml(path: str = "autonovel/config/system_plugins.yaml") -> SystemPluginsModel:
+    def load_system_plugins_yaml(
+        path: str = "autonovel/config/system_plugins.yaml",
+    ) -> SystemPluginsModel:
         resolved_path = ConfigValidator._resolve_config_path(path)
-        logger.debug(f"[LOAD] ConfigValidator.load_system_plugins_yaml() called from: path={resolved_path}")
+        logger.debug(
+            f"[LOAD] ConfigValidator.load_system_plugins_yaml() called from: path={resolved_path}"
+        )
         try:
             if not resolved_path.exists():
                 raise FileNotFoundError(f"設定ファイルが見つかりません: {resolved_path}")
             with open(resolved_path, "r", encoding="utf-8") as f:
                 data = yaml.safe_load(f)
-            result = SystemPluginsModel(**data["plugins"]) if "plugins" in data else SystemPluginsModel()
+            result = (
+                SystemPluginsModel(**data["plugins"]) if "plugins" in data else SystemPluginsModel()
+            )
             logger.debug("[LOAD] system_plugins.yaml loaded")
             return result
         except Exception as e:
@@ -113,9 +125,13 @@ class ConfigValidator:
             raise
 
     @staticmethod
-    def load_interaction_matrix_yaml(path: str = "autonovel/config/interaction_matrix.yaml") -> InteractionMatrixModel:
+    def load_interaction_matrix_yaml(
+        path: str = "autonovel/config/interaction_matrix.yaml",
+    ) -> InteractionMatrixModel:
         resolved_path = ConfigValidator._resolve_config_path(path)
-        logger.debug(f"[LOAD] ConfigValidator.load_interaction_matrix_yaml() called from: path={resolved_path}")
+        logger.debug(
+            f"[LOAD] ConfigValidator.load_interaction_matrix_yaml() called from: path={resolved_path}"
+        )
         try:
             if not resolved_path.exists():
                 raise FileNotFoundError(f"設定ファイルが見つかりません: {resolved_path}")
@@ -131,7 +147,9 @@ class ConfigValidator:
     @staticmethod
     def load_domain_profile_json(path: str) -> DomainProfileModel:
         resolved_path = ConfigValidator._resolve_config_path(path)
-        logger.debug(f"[LOAD] ConfigValidator.load_domain_profile_json() called from: path={resolved_path}")
+        logger.debug(
+            f"[LOAD] ConfigValidator.load_domain_profile_json() called from: path={resolved_path}"
+        )
         try:
             if not resolved_path.exists():
                 raise FileNotFoundError(f"ドメインプロファイルが見つかりません: {resolved_path}")
@@ -149,17 +167,18 @@ class ConfigValidator:
         """
         全設定ファイルをバリデーションし、成功した場合は辞書形式で返す。
         `settings` キーには全設定がマージされた GlobalConfigModel が格納される。
-        
+
         Args:
             strict: True（デフォルト）→ 1ファイルでも失敗したら例外を投げる
                     False → 失敗したファイルはデフォルト値で代替し、可能な限り続行
-        
+
         Returns:
             各設定ファイルのパース結果を含む辞書。
             失敗した項目はデフォルト値のインスタンスで埋められる（strict=False時）。
         """
         logger.debug("[LOAD] ===== ConfigValidator.validate_all() called ====")
         import traceback
+
         logger.debug(f"[LOAD] Call stack: {''.join(traceback.format_stack()[:-1])}")
 
         # 安全ロードヘルパー: strict=False 時に例外をデフォルト値で代替
@@ -174,29 +193,21 @@ class ConfigValidator:
 
         # 1. 個別ファイルをロード
         settings_model = _safe_load(
-            ConfigValidator.load_settings_toml,
-            lambda: GlobalConfigModel(),
-            "settings.toml"
+            ConfigValidator.load_settings_toml, lambda: GlobalConfigModel(), "settings.toml"
         )
         models = _safe_load(
-            ConfigValidator.load_models_yaml,
-            lambda: ModelRegistryModel(),
-            "models.yaml"
+            ConfigValidator.load_models_yaml, lambda: ModelRegistryModel(), "models.yaml"
         )
         plugins = _safe_load(
             ConfigValidator.load_system_plugins_yaml,
             lambda: SystemPluginsModel(),
-            "system_plugins.yaml"
+            "system_plugins.yaml",
         )
-        tropes = _safe_load(
-            ConfigValidator.load_tropes_json,
-            lambda: TropesModel(),
-            "tropes.json"
-        )
+        tropes = _safe_load(ConfigValidator.load_tropes_json, lambda: TropesModel(), "tropes.json")
         interaction = _safe_load(
             ConfigValidator.load_interaction_matrix_yaml,
             lambda: InteractionMatrixModel(),
-            "interaction_matrix.yaml"
+            "interaction_matrix.yaml",
         )
 
         # 2. ドメインプロファイルの読み込み
@@ -222,7 +233,10 @@ class ConfigValidator:
             "ultra_stable": "model_ultra_stable",
         }
         for yaml_key, model_key in model_key_map.items():
-            if model_key not in merged_dict or merged_dict[model_key] == GlobalConfigModel.model_fields[model_key].default:
+            if (
+                model_key not in merged_dict
+                or merged_dict[model_key] == GlobalConfigModel.model_fields[model_key].default
+            ):
                 val = getattr(models, yaml_key, None)
                 if val:
                     merged_dict[model_key] = val
@@ -246,7 +260,9 @@ class ConfigValidator:
             if strict:
                 raise ValueError(f"設定整合性エラー: {err}")
 
-        logger.debug(f"[LOAD] ===== ConfigValidator.validate_all() completed: {len(domain_profiles)} domain profiles ====")
+        logger.debug(
+            f"[LOAD] ===== ConfigValidator.validate_all() completed: {len(domain_profiles)} domain profiles ===="
+        )
 
         return {
             "settings": merged_settings,
@@ -254,6 +270,5 @@ class ConfigValidator:
             "plugins": plugins,
             "tropes": tropes,
             "interaction": interaction,
-            "domain_profiles": domain_profiles
+            "domain_profiles": domain_profiles,
         }
-

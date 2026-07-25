@@ -10,10 +10,12 @@ class SocialRole:
     """
     社会的役割（外面的な関係性）を定義する。
     """
+
     role_name: str  # "上司-部下", "教師-生徒", "敵対関係", "他人"
     expected_affection: float  # 期待される親愛度 (0-100)
-    expected_trust: float       # 期待される信頼度 (0-100)
-    expected_distance: str      # "distant", "standard", "close"
+    expected_trust: float  # 期待される信頼度 (0-100)
+    expected_distance: str  # "distant", "standard", "close"
+
 
 class ConflictKernel(KernelBase):
     """
@@ -22,7 +24,7 @@ class ConflictKernel(KernelBase):
     """
 
     def __init__(self, **kwargs):
-        self.state_value = 0.0 # Interaction Matrix用
+        self.state_value = 0.0  # Interaction Matrix用
         super().__init__(**kwargs)
         self.persona = CONFLICT_PERSONA
 
@@ -32,13 +34,13 @@ class ConflictKernel(KernelBase):
         return None
 
     async def should_intervene(self, context) -> bool:
-        analytics = getattr(context, 'analytics', None)
+        analytics = getattr(context, "analytics", None)
         if not analytics:
             return False
 
-        tension = getattr(analytics, 'tension', 0)
-        tension_delta = getattr(analytics, 'tension_delta', 0)
-        is_too_easy = getattr(analytics, 'is_too_easy', False)
+        tension = getattr(analytics, "tension", 0)
+        tension_delta = getattr(analytics, "tension_delta", 0)
+        is_too_easy = getattr(analytics, "is_too_easy", False)
 
         # 1. 緊張度が低すぎる、または停滞している場合（物語の脱力防止）
         if tension < 30 or (tension < 60 and tension_delta <= 0):
@@ -85,6 +87,7 @@ class ConflictKernel(KernelBase):
         状況に応じて最適な対立パターンを選択する。
         """
         import json
+
         try:
             with open("config/data/conflict_patterns.json", "r", encoding="utf-8") as f:
                 patterns = json.load(f)
@@ -93,7 +96,11 @@ class ConflictKernel(KernelBase):
             # ここではデモンストレーションとしてランダムまたは優先度の高いものを返す
             return patterns[0]
         except Exception:
-            return {"pattern_id": "default", "name": "General Conflict", "tension_impact": "moderate"}
+            return {
+                "pattern_id": "default",
+                "name": "General Conflict",
+                "tension_impact": "moderate",
+            }
 
     async def _run_audit_loop(self, scene: str, context, max_retries: int = 2):
         """
@@ -115,7 +122,7 @@ class ConflictKernel(KernelBase):
             pass
         return scene
 
-    def analyze_gap(self, role: SocialRole, state: 'ConnectionState') -> Dict:
+    def analyze_gap(self, role: SocialRole, state: "ConnectionState") -> Dict:
         """
         社会的役割と現在の感情状態の乖離を分析する。
         """
@@ -132,7 +139,7 @@ class ConflictKernel(KernelBase):
             "affection_gap": affection_gap,
             "trust_gap": trust_gap,
             "intensity": gap_intensity,
-            "type": self._determine_gap_type(affection_gap, trust_gap)
+            "type": self._determine_gap_type(affection_gap, trust_gap),
         }
 
     def _determine_gap_type(self, aff_gap: float, tru_gap: float) -> str:
@@ -146,7 +153,9 @@ class ConflictKernel(KernelBase):
             return "suppressed_hostility"
         return "standard"
 
-    def generate_conflict_prompt(self, char_a: str, char_b: str, role: SocialRole, state: 'ConnectionState') -> str:
+    def generate_conflict_prompt(
+        self, char_a: str, char_b: str, role: SocialRole, state: "ConnectionState"
+    ) -> str:
         analysis = self.analyze_gap(role, state)
         if analysis["intensity"] == "none":
             return ""
@@ -157,12 +166,12 @@ class ConflictKernel(KernelBase):
             "reluctant_reliance": "相手を嫌悪しているが、能力や状況的に信頼せざるを得ない",
             "hidden_affection": "社会的な役割の制約により、内面の深い好意を隠している",
             "suppressed_hostility": "外面的な礼儀や役割の下に、激しい憎悪や拒絶を押し殺している",
-            "standard": "内面と外面に乖離がある"
+            "standard": "内面と外面に乖離がある",
         }
 
         intensity_desc = {
             "moderate": "時折、ふとした瞬間にその矛盾が漏れ出る",
-            "severe": "常に激しい葛藤があり、精神的な負荷がかかっている"
+            "severe": "常に激しい葛藤があり、精神的な負荷がかかっている",
         }
 
         return (
@@ -224,6 +233,7 @@ HATE_ACCUMULATION_PATTERNS = {
 
 class HateMagnetState:
     """憎悪集積キャラクターの状態"""
+
     def __init__(self, character_name: str):
         self.character_name = character_name
         self.hate_accumulated = 0.0  # 0-100
@@ -234,17 +244,21 @@ class HateMagnetState:
         pattern = HATE_ACCUMULATION_PATTERNS.get(pattern_key)
         if pattern:
             self.hate_accumulated = min(100.0, self.hate_accumulated + pattern["accumulation_rate"])
-            self.transgressions.append({
-                "pattern": pattern_key,
-                "description": pattern["description"],
-                "context": context,
-                "at_time": len(self.transgressions)
-            })
-            self.audience_anger_level = min(100.0, self.audience_anger_level + pattern["accumulation_rate"] * 0.8)
+            self.transgressions.append(
+                {
+                    "pattern": pattern_key,
+                    "description": pattern["description"],
+                    "context": context,
+                    "at_time": len(self.transgressions),
+                }
+            )
+            self.audience_anger_level = min(
+                100.0, self.audience_anger_level + pattern["accumulation_rate"] * 0.8
+            )
 
     def should_trigger_catharsis(self) -> Tuple[bool, float]:
         """カタルシス（報復）トリガー条件をチェック
-        
+
         Returns:
             (トリガーするか, カタルシス強度0-100)
         """
@@ -265,29 +279,31 @@ class HateMagnetState:
             "transgression_count": len(self.transgressions),
             "most_heinous_act": max(
                 self.transgressions,
-                key=lambda t: HATE_ACCUMULATION_PATTERNS.get(t["pattern"], {}).get("accumulation_rate", 0)
-            ) if self.transgressions else None,
+                key=lambda t: HATE_ACCUMULATION_PATTERNS.get(t["pattern"], {}).get(
+                    "accumulation_rate", 0
+                ),
+            )
+            if self.transgressions
+            else None,
             "should_include_elements": [
                 "retribution_proportional_to_hate",
                 "authority_loss",
                 "public_fall_from_grace",
                 "protagonist_vindication",
-            ]
+            ],
         }
 
 
 def hate_amplification_loop(
-    hate_magnet_state: HateMagnetState,
-    story_progress: float,
-    story_arc_type: str = "exile_rise"
+    hate_magnet_state: HateMagnetState, story_progress: float, story_arc_type: str = "exile_rise"
 ) -> Tuple[str, List[str], bool]:
     """憎悪増幅ループを回し、次の憎悪アクションを決定
-    
+
     Args:
         hate_magnet_state: 憎悪集積キャラクターの状態
         story_progress: 物語進行度（0.0-1.0）
         story_arc_type: 物語弧タイプ
-    
+
     Returns:
         (推奨アクションタイプ, 生成されるセリフリスト, カタルシスが発生するか)
     """
@@ -297,11 +313,7 @@ def hate_amplification_loop(
 
     if trigger_catharsis:
         # カタルシス場面を推奨
-        return (
-            "CATHARSIS_TRIGGER",
-            [],
-            True
-        )
+        return ("CATHARSIS_TRIGGER", [], True)
 
     # まだカタルシスが発生していない場合、憎悪を蓄積するアクションを選択
     # 物語の段階に応じてアクションを選ぶ
@@ -321,6 +333,7 @@ def hate_amplification_loop(
 
     # 推奨アクションを選択
     import random
+
     recommended_action = random.choice(action_pool)
     pattern = HATE_ACCUMULATION_PATTERNS[recommended_action]
 
@@ -331,10 +344,7 @@ def hate_amplification_loop(
 
 
 def generate_hate_magnet_scene_prompt(
-    villain_name: str,
-    protagonist_name: str,
-    action_type: str,
-    context: str = ""
+    villain_name: str, protagonist_name: str, action_type: str, context: str = ""
 ) -> str:
     """憎悪集積キャラクターの場面生成プロンプトを作成"""
     pattern = HATE_ACCUMULATION_PATTERNS.get(action_type, {})
@@ -362,4 +372,3 @@ def generate_hate_magnet_scene_prompt(
 
 文脈: {context or "（指定なし）"}
 """
-

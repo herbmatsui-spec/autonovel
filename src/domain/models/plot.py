@@ -12,6 +12,7 @@ class PlotEpisode(BaseModel):
     PlotEpisode ドメインエンティティ。
     エピソード単位のプロット詳細と分析データを保持する。
     """
+
     book_id: BookId
     branch_id: int
     ep_num: int

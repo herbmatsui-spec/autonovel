@@ -1,12 +1,13 @@
 """src/engine/prompts/erotic_specialist.py
 官能シーン専門プロンプトエンジン。
 """
+
 import logging
 from string import Template
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from config.erotic_direct_mappings import get_combined_mappings
-from config.erotic_pacing import EroticCurve, EroticBeat
+from config.erotic_pacing import EroticBeat, EroticCurve
 from prompts.erotic.safety_manifest import get_safety_prefix
 from src.services.safe_replace import SafeReplacer
 
@@ -221,9 +222,9 @@ class EroticSpecialist:
             lines.append("  ※ 余韻時: 感覚の消退と共存の双方を描写する")
 
         if beat.desire_level >= 70:
-            lines.append(f"  ※ 高欲望時: 理性の揺らぎ・判断力の低下を描写")
+            lines.append("  ※ 高欲望時: 理性の揺らぎ・判断力の低下を描写")
         elif beat.desire_level >= 85:
-            lines.append(f"  ※ 極限時: 自我の消失・抵抗の放棄を描写")
+            lines.append("  ※ 極限時: 自我の消失・抵抗の放棄を描写")
 
         return "\n".join(lines) if lines else ""
 
@@ -232,15 +233,17 @@ class EroticSpecialist:
     ) -> str:
         """心理描写の深度を確保する補足"""
         if intensity <= 2:
-            return "\n".join([
-                "",
-                "【低過激度（0〜2）での官能・焦らし表現の指針】",
-                "直接的な性描写を避けつつ、以下の要素を強調して「読者が興奮できる（抜ける）」作品にすること:",
-                "  1. フェティシズム: 特定の部位（うなじ、指先、吐息、視線など）や衣服（匂い、擦れる音）へのフェティッシュな執着を緻密に描写する。",
-                "  2. 心理的葛藤: 理性と欲望の狭間で揺れ動く葛藤や、触れられたいのに触れられないもどかしさを内面描写として深く掘り下げる。",
-                "  3. シチュエーションによる焦らし: 密室、誰かに見られるかもしれない状況、主従関係の逆転など、状況が生み出す背徳感や緊張感を煽る。",
-                "  - 肉体的な接触は最小限（手をつなぐ、耳元で囁く程度）に留め、それによって生じる『熱』や『震え』を最大化して描写すること。"
-            ])
+            return "\n".join(
+                [
+                    "",
+                    "【低過激度（0〜2）での官能・焦らし表現の指針】",
+                    "直接的な性描写を避けつつ、以下の要素を強調して「読者が興奮できる（抜ける）」作品にすること:",
+                    "  1. フェティシズム: 特定の部位（うなじ、指先、吐息、視線など）や衣服（匂い、擦れる音）へのフェティッシュな執着を緻密に描写する。",
+                    "  2. 心理的葛藤: 理性と欲望の狭間で揺れ動く葛藤や、触れられたいのに触れられないもどかしさを内面描写として深く掘り下げる。",
+                    "  3. シチュエーションによる焦らし: 密室、誰かに見られるかもしれない状況、主従関係の逆転など、状況が生み出す背徳感や緊張感を煽る。",
+                    "  - 肉体的な接触は最小限（手をつなぐ、耳元で囁く程度）に留め、それによって生じる『熱』や『震え』を最大化して描写すること。",
+                ]
+            )
 
         lines = [
             "",

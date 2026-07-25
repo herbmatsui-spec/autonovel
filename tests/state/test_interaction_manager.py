@@ -6,13 +6,13 @@ from kernels.interaction_manager import InteractionManager
 def test_interaction_matrix_calculation():
     # 簡易的な設定でテスト
     config = InteractionConfig(
-        decay_rate=1.0, # 減衰なし
+        decay_rate=1.0,  # 減衰なし
         matrix={
             "resonance": {"resonance": 0.0, "hegemony": -0.5, "conflict": -0.2, "serenity": 0.1},
             "hegemony": {"resonance": -0.1, "hegemony": 0.0, "conflict": 0.2, "serenity": -0.1},
             "conflict": {"resonance": -0.2, "hegemony": 0.3, "conflict": 0.0, "serenity": -0.5},
             "serenity": {"resonance": 0.1, "hegemony": -0.2, "conflict": -0.3, "serenity": 0.0},
-        }
+        },
     )
     manager = InteractionManager(config)
 
@@ -30,10 +30,14 @@ def test_interaction_matrix_calculation():
     # 10 + (80 * 0.2) = 26
     assert next_state.conflict == 26
 
+
 def test_state_clamping():
     config = InteractionConfig(
         decay_rate=1.0,
-        matrix={k: {ik: 10.0 for ik in ["resonance", "hegemony", "conflict", "serenity"]} for k in ["resonance", "hegemony", "conflict", "serenity"]}
+        matrix={
+            k: {ik: 10.0 for ik in ["resonance", "hegemony", "conflict", "serenity"]}
+            for k in ["resonance", "hegemony", "conflict", "serenity"]
+        },
     )
     manager = InteractionManager(config)
     initial_state = KernelState(resonance=90, hegemony=90, conflict=90, serenity=90)
@@ -46,10 +50,14 @@ def test_state_clamping():
     assert next_state.conflict == 100
     assert next_state.serenity == 100
 
+
 def test_decay_logic():
     config = InteractionConfig(
-        decay_rate=0.5, # 強い減衰
-        matrix={k: {ik: 0.0 for ik in ["resonance", "hegemony", "conflict", "serenity"]} for k in ["resonance", "hegemony", "conflict", "serenity"]}
+        decay_rate=0.5,  # 強い減衰
+        matrix={
+            k: {ik: 0.0 for ik in ["resonance", "hegemony", "conflict", "serenity"]}
+            for k in ["resonance", "hegemony", "conflict", "serenity"]
+        },
     )
     manager = InteractionManager(config)
     initial_state = KernelState(resonance=100, hegemony=100, conflict=100, serenity=100)

@@ -10,7 +10,13 @@ class ChromaOutboxService:
     """
     ChromaDB同期用のアウトボックスイベントのデータベース永続化を担当するサービス。
     """
-    async def flush(self, session: AsyncSession, additions: List[Dict[str, Any]], deletions: List[Dict[str, Any]]):
+
+    async def flush(
+        self,
+        session: AsyncSession,
+        additions: List[Dict[str, Any]],
+        deletions: List[Dict[str, Any]],
+    ):
         """
         ステージングされた追加および削除のイベントを Outbox テーブルに追加する。
         """
@@ -22,4 +28,3 @@ class ChromaOutboxService:
             payload = json.dumps(delete, ensure_ascii=False)
             event = Outbox(event_type="chroma_delete", payload=payload)
             session.add(event)
-

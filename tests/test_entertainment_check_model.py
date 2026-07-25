@@ -2,6 +2,7 @@
 tests/test_entertainment_check_model.py
 src/models/entertainment_check.py の単体テスト。
 """
+
 import pytest
 from pydantic import ValidationError
 

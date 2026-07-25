@@ -12,7 +12,7 @@ def test_dramatic_arc_simulation():
             "hegemony": {"resonance": -0.3, "hegemony": 0.0, "conflict": 0.1, "serenity": -0.1},
             "conflict": {"resonance": -0.1, "hegemony": 0.2, "conflict": 0.0, "serenity": -0.2},
             "serenity": {"resonance": 0.1, "hegemony": -0.1, "conflict": -0.2, "serenity": 0.0},
-        }
+        },
     )
     manager = InteractionManager(config)
 
@@ -33,6 +33,7 @@ def test_dramatic_arc_simulation():
     assert state.hegemony < 90
     assert state.resonance > 10
 
+
 def test_conflict_escalation_simulation():
     config = InteractionConfig(
         decay_rate=0.9,
@@ -41,7 +42,7 @@ def test_conflict_escalation_simulation():
             "hegemony": {"resonance": -0.1, "hegemony": 0.0, "conflict": 0.4, "serenity": -0.1},
             "conflict": {"resonance": -0.2, "hegemony": 0.3, "conflict": 0.0, "serenity": -0.5},
             "serenity": {"resonance": 0.1, "hegemony": -0.2, "conflict": -0.4, "serenity": 0.0},
-        }
+        },
     )
     manager = InteractionManager(config)
 

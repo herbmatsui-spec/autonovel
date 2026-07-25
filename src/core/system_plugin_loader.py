@@ -8,6 +8,7 @@ import yaml
 
 logger = logging.getLogger(__name__)
 
+
 class SystemPluginLoader:
     """
     動的にシステムプラグイン（オプショナルなモジュール/クラス）をロードするためのローダー。
@@ -17,7 +18,9 @@ class SystemPluginLoader:
 
     _config: Optional[Dict[str, Any]] = None
     _class_cache: Dict[str, Type] = {}
-    _config_path = os.path.join(Path(__file__).parent.parent.parent, "config", "system_plugins.yaml")
+    _config_path = os.path.join(
+        Path(__file__).parent.parent.parent, "config", "system_plugins.yaml"
+    )
 
     @classmethod
     def _load_config(cls) -> Dict[str, Any]:
@@ -40,7 +43,9 @@ class SystemPluginLoader:
         return cls._config
 
     @classmethod
-    def get_plugin_class(cls, plugin_name: str, default_class: Optional[Type] = None) -> Optional[Type]:
+    def get_plugin_class(
+        cls, plugin_name: str, default_class: Optional[Type] = None
+    ) -> Optional[Type]:
         """
         指定されたプラグイン名に対応するクラスを動的にロードして返す。
         ロードに失敗した場合や設定が存在しない場合は、default_class を返す。
@@ -50,7 +55,9 @@ class SystemPluginLoader:
 
         config = cls._load_config()
         if plugin_name not in config:
-            logger.debug(f"Plugin '{plugin_name}' is not defined in system_plugins.yaml. Using default.")
+            logger.debug(
+                f"Plugin '{plugin_name}' is not defined in system_plugins.yaml. Using default."
+            )
             return default_class
 
         plugin_info = config[plugin_name]

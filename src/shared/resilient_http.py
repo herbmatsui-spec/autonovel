@@ -9,31 +9,30 @@ from .retry_policy import RetryPolicy
 
 logger = logging.getLogger(__name__)
 
+
 class CircuitBreakerOpenException(Exception):
     """Exception raised when the circuit breaker is in OPEN state."""
+
     pass
+
 
 class ResilientHttpClient:
     """
     A resilient HTTP client that integrates retry logic and circuit breaking.
     """
+
     def __init__(
         self,
         name: str,
         retry_policy: RetryPolicy = RetryPolicy(),
-        cb_config: Optional[CircuitBreakerConfig] = None
+        cb_config: Optional[CircuitBreakerConfig] = None,
     ):
         self.name = name
         self.retry_policy = retry_policy
         self.circuit_breaker = CircuitBreaker(name, cb_config or CircuitBreakerConfig())
         self.client = httpx.AsyncClient(timeout=httpx.Timeout(30.0, connect=5.0))
 
-    async def request(
-        self,
-        method: str,
-        url: str,
-        **kwargs: Any
-    ) -> httpx.Response:
+    async def request(self, method: str, url: str, **kwargs: Any) -> httpx.Response:
         """
         Executes an HTTP request with resilience patterns.
         """
@@ -55,7 +54,7 @@ class ResilientHttpClient:
                     raise httpx.HTTPStatusError(
                         f"Retryable status code: {response.status_code}",
                         request=response.request,
-                        response=response
+                        response=response,
                     )
 
                 # Success: Record and return

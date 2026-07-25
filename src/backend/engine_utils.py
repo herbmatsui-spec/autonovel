@@ -29,7 +29,7 @@ def compute_ngram_similarity(text1: str, text2: str, n: int = 2) -> float:
         s = s.replace(" ", "").lower()
         if len(s) < n:
             return set()
-        return set(s[i:i+n] for i in range(len(s) - n + 1))
+        return set(s[i : i + n] for i in range(len(s) - n + 1))
 
     grams1 = get_ngrams(text1, n)
     grams2 = get_ngrams(text2, n)
@@ -62,6 +62,7 @@ def compute_cosine_similarity(vec1: List[float], vec2: List[float]) -> float:
 
     return dot / (norm1 * norm2)
 
+
 def is_light_style(style_key: str, genre: str) -> bool:
     """スタイルまたはジャンルから、コミカル/ライトな作風かを一元判定する"""
     style_cfg = STYLE_DEFINITIONS.get(style_key, {})
@@ -73,6 +74,7 @@ def is_light_style(style_key: str, genre: str) -> bool:
     if any(k in genre for k in light_keywords):
         return True
     return False
+
 
 def safe_model_validate(model_cls: Any, data: Any) -> Any:
     """
@@ -88,11 +90,12 @@ def safe_model_validate(model_cls: Any, data: Any) -> Any:
             return model_cls.model_validate(data)
         raise
 
+
 def verify_character_tone(original_text: str, corrected_text: str) -> List[str]:
     """リズム補正前後で台詞の口調が変わっていないか検証する。"""
     errors: List[str] = []
-    dialogues_orig = re.findall(r'「(.*?)」', original_text, re.DOTALL)
-    dialogues_corr = re.findall(r'「(.*?)」', corrected_text, re.DOTALL)
+    dialogues_orig = re.findall(r"「(.*?)」", original_text, re.DOTALL)
+    dialogues_corr = re.findall(r"「(.*?)」", corrected_text, re.DOTALL)
 
     if abs(len(dialogues_orig) - len(dialogues_corr)) > 1:
         errors.append("口調警告: 台詞の総数が大幅に変化しています。")
@@ -101,30 +104,42 @@ def verify_character_tone(original_text: str, corrected_text: str) -> List[str]:
     try:
         from sudachipy import dictionary as sudachi_dict
         from sudachipy import tokenizer as sudachi_tokenizer
+
         tokenizer_obj = sudachi_dict.Dictionary().create()
         mode = sudachi_tokenizer.Tokenizer.SplitMode.C
 
         for i, (orig, corr) in enumerate(zip(dialogues_orig, dialogues_corr)):
             if orig == corr:
                 continue
+
             def _get_end(txt):
-                tokens = [t for t in tokenizer_obj.tokenize(txt.strip(), mode) if t.part_of_speech()[0] not in ["補助記号"]]
+                tokens = [
+                    t
+                    for t in tokenizer_obj.tokenize(txt.strip(), mode)
+                    if t.part_of_speech()[0] not in ["補助記号"]
+                ]
                 return tokens[-1] if tokens else None
+
             orig_end, corr_end = _get_end(orig), _get_end(corr)
             if not orig_end or not corr_end:
                 continue
             if orig_end.part_of_speech()[0] in ["助動詞", "助詞"]:
                 if orig_end.surface() != corr_end.surface():
-                    errors.append(f"口調警告: 第{i+1}番目の台詞文末が変化: 「{orig_end.surface()}」→「{corr_end.surface()}」")
+                    errors.append(
+                        f"口調警告: 第{i + 1}番目の台詞文末が変化: 「{orig_end.surface()}」→「{corr_end.surface()}」"
+                    )
     except ImportError:
         for i, (orig, corr) in enumerate(zip(dialogues_orig, dialogues_corr)):
             if orig == corr:
                 continue
-            orig_end = re.sub(r'[？！。、]','', orig.strip())[-2:]
-            corr_end = re.sub(r'[？！。、]','', corr.strip())[-2:]
+            orig_end = re.sub(r"[？！。、]", "", orig.strip())[-2:]
+            corr_end = re.sub(r"[？！。、]", "", corr.strip())[-2:]
             if orig_end != corr_end:
-                errors.append(f"口調警告: 第{i+1}番目の台詞文末が変化: 「{orig_end}」→「{corr_end}」")
+                errors.append(
+                    f"口調警告: 第{i + 1}番目の台詞文末が変化: 「{orig_end}」→「{corr_end}」"
+                )
     return errors
+
 
 def safe_run_async(coro):
     """Streamlitのイベントループ内で非同期処理を安全に実行する"""
@@ -132,6 +147,7 @@ def safe_run_async(coro):
         loop = asyncio.get_running_loop()
         if loop.is_running():
             import concurrent.futures
+
             def _worker(c):
                 new_loop = asyncio.new_event_loop()
                 try:
@@ -155,14 +171,17 @@ class AdaptiveCooldown:
     TokenBucketをラップし、APIの負荷状況に応じて補充レートを動的に調整する。
     旧来の wait/on_success 等のインターフェースを維持しつつ、内部的にTokenBucketで流量制御を行う。
     """
-    def __init__(self, base_sec: float, min_sec: float, max_sec: float, name: str = "adaptive_cooldown"):
+
+    def __init__(
+        self, base_sec: float, min_sec: float, max_sec: float, name: str = "adaptive_cooldown"
+    ):
         # base_sec を 1秒あたりのリクエスト数(fill_rate)に変換
         # 例: base_sec=2.0s -> fill_rate=0.5 req/s
         initial_fill_rate = 1.0 / max(0.1, base_sec)
         self.bucket = TokenBucket(
-            capacity=1.0, # バーストを抑えるため基本1
+            capacity=1.0,  # バーストを抑えるため基本1
             fill_rate=initial_fill_rate,
-            name=name
+            name=name,
         )
         self.min_rate = 1.0 / max(0.1, max_sec)
         self.max_rate = 1.0 / max(0.01, min_sec)
@@ -192,13 +211,13 @@ class AdaptiveCooldown:
 
     def on_rate_limit(self):
         """429/503エラー時に補充レートを大幅に下げる"""
-        self._fire_adjust_rate(0.4) # レートを60%削減
+        self._fire_adjust_rate(0.4)  # レートを60%削減
         if self.bucket.fill_rate < self.min_rate:
             self.bucket.fill_rate = self.min_rate
 
     def on_error(self):
         """一般エラー時に補充レートを少し下げる"""
-        self._fire_adjust_rate(0.8) # レートを20%削減
+        self._fire_adjust_rate(0.8)  # レートを20%削減
         if self.bucket.fill_rate < self.min_rate:
             self.bucket.fill_rate = self.min_rate
 
@@ -211,13 +230,13 @@ def safe_get(data: Any, key: str, default: Any = None) -> Any:
         return data.get(key, default)
     return getattr(data, key, default)
 
+
 def extract_markdown_content(text: str) -> str:
     """Extracts content from a markdown code block if present."""
     if not text:
         return ""
 
     # Remove markdown code block wrappers
-    text = re.sub(r'^```(?:markdown|md)?\s*\n', '', text, flags=re.IGNORECASE)
-    text = re.sub(r'\n```\s*$', '', text)
+    text = re.sub(r"^```(?:markdown|md)?\s*\n", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"\n```\s*$", "", text)
     return text.strip()
-

@@ -24,7 +24,6 @@ with open(output_path, "w", encoding="utf-8") as out:
     for item in extracted:
         out.write("# EXTRACTED BLOCK\n")
         out.write(item)
-        out.write("\n\n" + "="*80 + "\n\n")
+        out.write("\n\n" + "=" * 80 + "\n\n")
 
 print("Saved to scratch/extracted_methods.py")
-

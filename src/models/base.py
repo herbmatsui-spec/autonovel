@@ -34,26 +34,34 @@ class LLMRequestOptions:
 # ==========================================
 ChainPhase = Literal["Friction", "Prep", "Payoff", "Discovery", "Bonding", "Fulfillment", "Hate"]
 
-StyleKey = Literal["style_web_standard", "style_serious_fantasy", "style_psychological_loop",
-                   "style_chat_log", "style_villainess_elegant", "style_military_rational",
-                   "style_comedy_speed", "style_dark_hero", "style_overlord", "style_bookworm_daily", "style_light_fun"]
+StyleKey = Literal[
+    "style_web_standard",
+    "style_serious_fantasy",
+    "style_psychological_loop",
+    "style_chat_log",
+    "style_villainess_elegant",
+    "style_military_rational",
+    "style_comedy_speed",
+    "style_dark_hero",
+    "style_overlord",
+    "style_bookworm_daily",
+    "style_light_fun",
+]
 
 # Pydantic V2 internal configuration to prevent naming conflicts and allow 'model_' prefixes
 from pydantic import ConfigDict
 
-MODEL_CONFIG_DEFAULTS = ConfigDict(
-    populate_by_name=True,
-    extra="allow",
-    protected_namespaces=()
-)
+MODEL_CONFIG_DEFAULTS = ConfigDict(populate_by_name=True, extra="allow", protected_namespaces=())
 
 # ==========================================
 # 例外クラス (src.core.exceptions から統合)
 # ==========================================
 from src.core.exceptions import EngineError  # noqa: F401 - backward compat re-export
 
+
 class GenerateResult(BaseModel):
     """AI生成結果を保持するコンテナ"""
+
     success: bool
     metadata: Dict[str, Any] = Field(default_factory=dict)
     story_content: str = ""
@@ -61,13 +69,16 @@ class GenerateResult(BaseModel):
     error_message: Optional[str] = None
     token_usage: Optional[Dict[str, Any]] = None
 
-    def unwrap_or(self, default_meta: Dict[str, Any], default_story: str) -> Tuple[Dict[str, Any], str]:
+    def unwrap_or(
+        self, default_meta: Dict[str, Any], default_story: str
+    ) -> Tuple[Dict[str, Any], str]:
         """成功時は結果を、失敗時はデフォルト値を返す便利メソッド"""
         if self.success:
             return self.metadata, self.story_content
         return default_meta, default_story
 
     model_config = MODEL_CONFIG_DEFAULTS
+
 
 # ==========================================
 # Utility Functions
@@ -81,8 +92,17 @@ def extract_int(v: Any) -> int:
 
     # 特殊な単語の変換
     word_map = {
-        "extreme": 90, "high": 70, "medium": 50, "low": 20, "none": 0, "very high": 85,
-        "なし": 0, "低": 20, "中": 50, "高": 80, "最高": 100
+        "extreme": 90,
+        "high": 70,
+        "medium": 50,
+        "low": 20,
+        "none": 0,
+        "very high": 85,
+        "なし": 0,
+        "低": 20,
+        "中": 50,
+        "高": 80,
+        "最高": 100,
     }
     v_lower = v.lower()
     for word, val in word_map.items():
@@ -90,10 +110,11 @@ def extract_int(v: Any) -> int:
             return val
 
     # 数値の抽出
-    nums = re.findall(r'-?\d+', v)
+    nums = re.findall(r"-?\d+", v)
     if nums:
         return int(nums[0])
     return 0
+
 
 def normalize_chain_phase(v: Any) -> str:
     """ChainPhaseのゆらぎを補正する"""
@@ -103,13 +124,26 @@ def normalize_chain_phase(v: Any) -> str:
     if not isinstance(v, str):
         return "Friction"
     v_lower = v.lower()
-    if "friction" in v_lower or "軋轢" in v_lower or "hate" in v_lower or "ヘイト" in v_lower: return "Friction"
-    if "prep" in v_lower or "準備" in v_lower: return "Prep"
-    if "payoff" in v_lower or "カタルシス" in v_lower or "回収" in v_lower or "climax" in v_lower or "resolution" in v_lower: return "Payoff"
-    if "discovery" in v_lower or "発見" in v_lower: return "Discovery"
-    if "bonding" in v_lower or "絆" in v_lower or "交流" in v_lower: return "Bonding"
-    if "fulfillment" in v_lower or "充足" in v_lower or "安らぎ" in v_lower: return "Fulfillment"
+    if "friction" in v_lower or "軋轢" in v_lower or "hate" in v_lower or "ヘイト" in v_lower:
+        return "Friction"
+    if "prep" in v_lower or "準備" in v_lower:
+        return "Prep"
+    if (
+        "payoff" in v_lower
+        or "カタルシス" in v_lower
+        or "回収" in v_lower
+        or "climax" in v_lower
+        or "resolution" in v_lower
+    ):
+        return "Payoff"
+    if "discovery" in v_lower or "発見" in v_lower:
+        return "Discovery"
+    if "bonding" in v_lower or "絆" in v_lower or "交流" in v_lower:
+        return "Bonding"
+    if "fulfillment" in v_lower or "充足" in v_lower or "安らぎ" in v_lower:
+        return "Fulfillment"
     return "Friction"
+
 
 def ensure_str(v: Any) -> str:
     """文字列であることを保証する"""
@@ -158,7 +192,9 @@ class FlatModelMixin(BaseModel):
                 continue
 
             # モデルが get_routing_keys を持っていればそれを使い、なければフィールド名をすべて使う
-            routing_keys = getattr(model_cls, "get_routing_keys", lambda: list(model_cls.model_fields.keys()))()
+            routing_keys = getattr(
+                model_cls, "get_routing_keys", lambda: list(model_cls.model_fields.keys())
+            )()
 
             # フラットなデータから対象キーを抽出
             extracted = {k: data[k] for k in routing_keys if k in data}
@@ -171,6 +207,7 @@ class FlatModelMixin(BaseModel):
 
         return data
 
+
 # ==========================================
 # Gemini Schema Customization
 # ==========================================
@@ -180,7 +217,12 @@ try:
 
     class GeminiSchemaGenerator(GenerateJsonSchema):
         """Gemini API非対応のキー(title, description, default, additionalProperties)を除去するPydantic用スキーマジェネレータ"""
-        def generate(self, schema: core_schema.CoreSchema, mode: Literal['validation', 'serialization'] = 'validation') -> JsonSchemaValue:
+
+        def generate(
+            self,
+            schema: core_schema.CoreSchema,
+            mode: Literal["validation", "serialization"] = "validation",
+        ) -> JsonSchemaValue:
             json_schema = super().generate(schema, mode=mode)
             return self._clean_schema(json_schema)
 
@@ -188,23 +230,29 @@ try:
             if isinstance(obj, dict):
                 cleaned = {}
                 for k, v in obj.items():
-                    if k in ("title", "description", "default", "additionalProperties", "additional_properties"):
+                    if k in (
+                        "title",
+                        "description",
+                        "default",
+                        "additionalProperties",
+                        "additional_properties",
+                    ):
                         continue
                     cleaned[k] = self._clean_schema(v)
                 return cleaned
             elif isinstance(obj, list):
-                return [self._clean_schema(item) for item in obj] # type: ignore
-            return obj # type: ignore
+                return [self._clean_schema(item) for item in obj]  # type: ignore
+            return obj  # type: ignore
 
     def get_gemini_schema(model_class: Any) -> Dict[str, Any]:
         """指定したPydanticモデルクラスのGemini用JSONスキーマを取得する"""
         if hasattr(model_class, "model_json_schema"):
-            return model_class.model_json_schema(schema_generator=GeminiSchemaGenerator) # type: ignore
+            return model_class.model_json_schema(schema_generator=GeminiSchemaGenerator)  # type: ignore
         return {}
 
 except ImportError:
     # フォールバック (Pydantic v1互換やインポートエラー対策)
     def get_gemini_schema(model_class: Any) -> Dict[str, Any]:
         if hasattr(model_class, "model_json_schema"):
-            return model_class.model_json_schema() # type: ignore
+            return model_class.model_json_schema()  # type: ignore
         return {}

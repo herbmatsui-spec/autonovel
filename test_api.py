@@ -9,8 +9,8 @@ data = {
         "archetype_key": "test",
         "target_eps": 1,
         "initial_limit": 1,
-        "word_count": 1000
-    }
+        "word_count": 1000,
+    },
 }
 
 response = requests.post(url, json=data)

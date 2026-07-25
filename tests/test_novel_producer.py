@@ -1,8 +1,9 @@
 """tests/test_novel_producer.py - NovelProducer のテスト"""
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 
-from src.models.production_config import NovelProject, EpisodeResult, ProductionProgress
+
+import pytest
+
+from src.models.production_config import NovelProject, ProductionProgress
 from src.services.novel_producer import NovelProducer
 from src.services.token_tracker import TokenTracker
 
@@ -25,7 +26,7 @@ class TestNovelProducer:
             synopsis="テスト用の物語",
             keywords=["戦士", "魔法"],
             target_episodes=5,
-            target_word_count_per_episode=3000
+            target_word_count_per_episode=3000,
         )
 
     def test_init(self, producer):
@@ -38,7 +39,7 @@ class TestNovelProducer:
     def test_create_project(self, producer, sample_project):
         """プロジェクト作成テスト"""
         result = producer.create_project(sample_project)
-        
+
         assert result == sample_project
         assert producer._current_project == sample_project
         assert producer._progress is not None
@@ -47,17 +48,17 @@ class TestNovelProducer:
     def test_set_progress_callback(self, producer):
         """進捗コールバック設定テスト"""
         callback_called = []
-        
+
         def callback(progress):
             callback_called.append(progress)
-        
+
         producer.set_progress_callback(callback)
         assert producer.progress_callback is not None
 
     def test_get_progress(self, producer, sample_project):
         """進捗取得テスト"""
         producer.create_project(sample_project)
-        
+
         progress = producer.get_progress()
         assert progress is not None
         assert progress.status == "idle"
@@ -71,9 +72,9 @@ class TestNovelProducer:
     def test_update_progress(self, producer, sample_project):
         """進捗更新テスト"""
         producer.create_project(sample_project)
-        
+
         producer._update_progress("running", "テスト中")
-        
+
         assert producer._progress.status == "running"
         assert producer._progress.message == "テスト中"
 
@@ -83,11 +84,7 @@ class TestNovelProject:
 
     def test_create_minimal(self):
         """最小構成で作成"""
-        project = NovelProject(
-            title="テスト",
-            genre="fantasy",
-            synopsis="テスト"
-        )
+        project = NovelProject(title="テスト", genre="fantasy", synopsis="テスト")
         assert project.target_episodes == 10
         assert project.target_word_count_per_episode == 3000
         assert project.keywords == []
@@ -102,7 +99,7 @@ class TestNovelProject:
             target_episodes=10,
             target_word_count_per_episode=3000,
             style_key="epic",
-            engine_key="standard"
+            engine_key="standard",
         )
         assert project.title == "覇者の帰還"
         assert project.target_episodes == 10
@@ -115,10 +112,7 @@ class TestProductionProgress:
     def test_progress_percent(self):
         """進捗パーセント計算テスト"""
         progress = ProductionProgress(
-            current_episode=3,
-            total_episodes=10,
-            status="running",
-            completed_eps=[1, 2, 3]
+            current_episode=3, total_episodes=10, status="running", completed_eps=[1, 2, 3]
         )
         assert progress.progress_percent == 30.0
 
@@ -128,14 +122,11 @@ class TestProductionProgress:
             current_episode=10,
             total_episodes=10,
             status="completed",
-            completed_eps=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+            completed_eps=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
         )
         assert progress_complete.is_complete is True
-        
+
         progress_incomplete = ProductionProgress(
-            current_episode=5,
-            total_episodes=10,
-            status="running",
-            completed_eps=[1, 2, 3, 4, 5]
+            current_episode=5, total_episodes=10, status="running", completed_eps=[1, 2, 3, 4, 5]
         )
         assert progress_incomplete.is_complete is False

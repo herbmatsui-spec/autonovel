@@ -57,10 +57,14 @@ class CircuitBreaker:
             self.last_failure_time = time.time()
             if self.state == CircuitState.CLOSED:
                 if self.failure_count >= self.config.failure_threshold:
-                    print(f"[CircuitBreaker:{self.name}] Transitioning from CLOSED to OPEN (failures: {self.failure_count})")
+                    print(
+                        f"[CircuitBreaker:{self.name}] Transitioning from CLOSED to OPEN (failures: {self.failure_count})"
+                    )
                     self.state = CircuitState.OPEN
             elif self.state == CircuitState.HALF_OPEN:
-                print(f"[CircuitBreaker:{self.name}] Transitioning from HALF_OPEN to OPEN (probe failed)")
+                print(
+                    f"[CircuitBreaker:{self.name}] Transitioning from HALF_OPEN to OPEN (probe failed)"
+                )
                 self.state = CircuitState.OPEN
                 self.success_count = 0
 

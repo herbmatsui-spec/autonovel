@@ -1,6 +1,7 @@
 """
 Integration tests for DependencyContainer.
 """
+
 import pytest
 
 from streamlit_app.dependency_container import DependencyContainer, container
@@ -58,6 +59,7 @@ class TestDependencyContainer:
 
     def test_register_custom_instance(self):
         """Test registering custom instances."""
+
         class MockService:
             pass
 

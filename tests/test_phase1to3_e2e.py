@@ -4,16 +4,16 @@ Phase 1-3 (改善案A: 感情設計先行) の統合E2Eテスト。
 
 UI選択 -> フック構築 -> tension曲線選択 -> プロンプト注入 -> モックLLM応答 -> Plot.emotional_hook 永続化
 """
-import json
+
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
 from config.emotional_hook_vocabulary import get_hook_peak_tension
-from src.backend.tension_curve_config import select_curve_by_hook
 from src.backend.engine_plot import get_emotional_hook_for_plot, resolve_emotional_hook
-from src.models.emotional_hook import EmotionalHookSpec
+from src.backend.tension_curve_config import select_curve_by_hook
 from src.models.db import PlotDbModel
+from src.models.emotional_hook import EmotionalHookSpec
 from streamlit_app.state import desires_to_hook
 
 

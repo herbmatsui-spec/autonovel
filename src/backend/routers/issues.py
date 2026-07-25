@@ -1,12 +1,13 @@
-from fastapi import APIRouter, Depends
-from typing import Any
 import json
 import time
+from typing import Any
+
+from fastapi import APIRouter, Depends
 
 from config.container import Container
+from src.backend.auth import require_api_key
 from src.backend.database.uow import UnitOfWork
 from src.core.exceptions import NotFoundError, ValidationError
-from src.backend.auth import require_api_key
 
 router = APIRouter(prefix="/api/issues", tags=["issues"])
 

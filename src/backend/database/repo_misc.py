@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from src.backend.database.repositories.base import BaseRepository
 
 """
@@ -6,7 +7,6 @@ database/repo_misc.py - その他のデータ(Style Fragments, Custom Styles, In
 """
 import json
 import logging
-import time
 from typing import Any, Dict, List, Optional
 
 from sqlalchemy import delete, func, select, update
@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 
 from datetime import datetime
 
+
 class MiscRepositoryMixin(BaseRepository):
     """その他のテーブル(Style fragments, Internal state, Pending patches, Optimization, Background Tasks)に関するDB操作をまとめたMixin"""
 
@@ -36,7 +37,7 @@ class MiscRepositoryMixin(BaseRepository):
             opt = OptimizationHistory(
                 book_id=book_id,
                 report_json=json.dumps(report, ensure_ascii=False),
-                created_at=datetime.now()
+                created_at=datetime.now(),
             )
             session.add(opt)
 
@@ -49,18 +50,20 @@ class MiscRepositoryMixin(BaseRepository):
                 .order_by(OptimizationHistory.created_at.desc())
             )
             rows = result.scalars().all()
-            return [self._parse_row(self._to_dict(r), ['report_json']) for r in rows]
+            return [self._parse_row(self._to_dict(r), ["report_json"]) for r in rows]
 
     # ---------- Style Fragments (RAG) ----------
     @retry_with_logging()
-    async def add_style_fragment(self, tag: str, content: str, embedding: List[float], origin: str = "Master") -> None:
+    async def add_style_fragment(
+        self, tag: str, content: str, embedding: List[float], origin: str = "Master"
+    ) -> None:
         async with self._get_session() as session:
             frag = StyleFragment(
                 tag=tag,
                 content=content,
                 embedding_json=json.dumps(embedding),
                 origin=origin,
-                created_at=datetime.now()
+                created_at=datetime.now(),
             )
             session.add(frag)
 
@@ -88,7 +91,9 @@ class MiscRepositoryMixin(BaseRepository):
 
     # ---------- Custom Styles ----------
     @retry_with_logging()
-    async def save_custom_style(self, name: str, instruction: str, score: int, analysis: str) -> None:
+    async def save_custom_style(
+        self, name: str, instruction: str, score: int, analysis: str
+    ) -> None:
         async with self._get_session() as session:
             result = await session.execute(select(CustomStyle).where(CustomStyle.name == name))
             style = result.scalar_one_or_none()
@@ -103,18 +108,14 @@ class MiscRepositoryMixin(BaseRepository):
     @retry_with_logging()
     async def get_all_custom_styles(self) -> List[Dict[str, Any]]:
         async with self._get_session() as session:
-            result = await session.execute(
-                select(CustomStyle).order_by(CustomStyle.score.desc())
-            )
+            result = await session.execute(select(CustomStyle).order_by(CustomStyle.score.desc()))
             rows = result.scalars().all()
             return [self._to_dict(r) for r in rows]
 
     @retry_with_logging()
     async def delete_custom_style(self, style_id: int) -> None:
         async with self._get_session() as session:
-            await session.execute(
-                delete(CustomStyle).where(CustomStyle.id == style_id)
-            )
+            await session.execute(delete(CustomStyle).where(CustomStyle.id == style_id))
 
     # ---------- Internal State ----------
     @retry_with_logging()
@@ -126,38 +127,45 @@ class MiscRepositoryMixin(BaseRepository):
             if not state:
                 state = InternalState(key=key)
                 session.add(state)
-            state.value = json.dumps(value, ensure_ascii=False) if not isinstance(value, str) else value
+            state.value = (
+                json.dumps(value, ensure_ascii=False) if not isinstance(value, str) else value
+            )
             state.updated_at = datetime.now()
 
     @retry_with_logging()
     async def get_internal_state(self, key: str) -> Optional[Any]:
         """保存された内部状態を取得する"""
         async with self._get_session() as session:
-            result = await session.execute(select(InternalState.value).where(InternalState.key == key))
+            result = await session.execute(
+                select(InternalState.value).where(InternalState.key == key)
+            )
             row_val = result.scalar_one_or_none()
             if row_val is not None:
                 try:
                     return json.loads(row_val)
                 except (json.JSONDecodeError, TypeError) as e:
-                    logger.debug(f"Failed to parse internal_state JSON for key {key}, returning raw string: {e}")
+                    logger.debug(
+                        f"Failed to parse internal_state JSON for key {key}, returning raw string: {e}"
+                    )
                     return row_val
             return None
 
     # ---------- Pending Patches (Human-in-the-Loop) ----------
     @retry_with_logging()
     async def save_pending_patch(
-        self, book_id: int, patch_type: str,
-        patch_content: str, ab_test_result: Dict[str, Any]
+        self, book_id: int, patch_type: str, patch_content: str, ab_test_result: Dict[str, Any]
     ) -> int:
         """承認待ちパッチを保存"""
         async with self._get_session() as session:
             patch = PendingPatch(
                 book_id=book_id,
                 patch_type=patch_type,
-                patch_content=json.dumps(patch_content, ensure_ascii=False) if isinstance(patch_content, dict) else patch_content,
+                patch_content=json.dumps(patch_content, ensure_ascii=False)
+                if isinstance(patch_content, dict)
+                else patch_content,
                 ab_test_result=json.dumps(ab_test_result, ensure_ascii=False),
                 status="pending",
-                created_at=datetime.now()
+                created_at=datetime.now(),
             )
             session.add(patch)
             await session.flush()
@@ -170,11 +178,11 @@ class MiscRepositoryMixin(BaseRepository):
             result = await session.execute(
                 select(PendingPatch)
                 .where(PendingPatch.book_id == book_id)
-                .where(PendingPatch.status == 'pending')
+                .where(PendingPatch.status == "pending")
                 .order_by(PendingPatch.created_at.desc())
             )
             rows = result.scalars().all()
-            return [self._parse_row(self._to_dict(r), ['ab_test_result']) for r in rows]
+            return [self._parse_row(self._to_dict(r), ["ab_test_result"]) for r in rows]
 
     @retry_with_logging()
     async def update_patch_status(self, patch_id: int, status: str) -> None:
@@ -193,19 +201,27 @@ class MiscRepositoryMixin(BaseRepository):
             result = await session.execute(
                 select(PendingPatch)
                 .where(PendingPatch.book_id == book_id)
-                .where(PendingPatch.status == 'rejected')
+                .where(PendingPatch.status == "rejected")
                 .order_by(PendingPatch.reviewed_at.desc())
                 .limit(limit)
             )
             rows = result.scalars().all()
-            return [self._parse_row(self._to_dict(r), ['ab_test_result']) for r in rows]
+            return [self._parse_row(self._to_dict(r), ["ab_test_result"]) for r in rows]
 
     # ---------- Background Tasks ----------
     @retry_with_logging()
     async def save_background_task(
-        self, id: str, status: str, current_step: int, total_steps: int,
-        message: str, sub_message: str, streaming_text: str, logs: List[str],
-        error: Optional[str] = None, result_data: Optional[Any] = None
+        self,
+        id: str,
+        status: str,
+        current_step: int,
+        total_steps: int,
+        message: str,
+        sub_message: str,
+        streaming_text: str,
+        logs: List[str],
+        error: Optional[str] = None,
+        result_data: Optional[Any] = None,
     ) -> None:
         """バックグラウンドタスクの状態をDBに保存/更新する"""
         async with self._get_session() as session:
@@ -222,16 +238,19 @@ class MiscRepositoryMixin(BaseRepository):
             task.streaming_text = streaming_text
             task.logs = json.dumps(logs, ensure_ascii=False)
             task.error = error
-            task.result_data = json.dumps(result_data, ensure_ascii=False) if result_data is not None else None
+            task.result_data = (
+                json.dumps(result_data, ensure_ascii=False) if result_data is not None else None
+            )
             # updated_at will be set automatically on update or manually here if needed
 
     @retry_with_logging()
     async def get_background_task(self, task_id: str) -> Optional[Dict[str, Any]]:
         """バックグラウンドタスクの状態をDBから取得する"""
         async with self._get_session() as session:
-            result = await session.execute(select(BackgroundTask).where(BackgroundTask.id == task_id))
+            result = await session.execute(
+                select(BackgroundTask).where(BackgroundTask.id == task_id)
+            )
             task = result.scalar_one_or_none()
             if task:
-                return self._parse_row(self._to_dict(task), ['logs', 'result_data'])
+                return self._parse_row(self._to_dict(task), ["logs", "result_data"])
             return None
-

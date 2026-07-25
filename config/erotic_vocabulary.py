@@ -96,13 +96,22 @@ PSYCHOLOGY_TEMPLATES = [
 ]
 
 # 辞書ライクな構造。erotic engine が random で生成するため、
-#辞書の各リストは length に拠らないランダムアクセスを想定し、
+# 辞書の各リストは length に拠らないランダムアクセスを想定し、
 # 各要素は immutable であることが望ましい。
 VOCABULARY_TIERS = {
     "mild": {
-        "metaphors": METAPHOR_BANK[:5] + ["影を夕闇に例える", "笑顔を朝日のように例える", "声を風鈴の音に例える", "体温を夕暮れの大地に例える", "瞳を星の瞬きに例える"],
-        "onomatopoeia": ONOMATOPOEIA_BANK[:5] + ["静寂の沈黙", "心臓の鼓動", "衣の擦れ音", "呼吸の微かな音", "足音の静かなリズム"],
-        "psychology": PSYCHOLOGY_TEMPLATES[:5] + ["心の距離の縮小", "感情の波紋", "禁断の誘惑", "欲望の芽生え", "心の奥底への探求"],
+        "metaphors": METAPHOR_BANK[:5]
+        + [
+            "影を夕闇に例える",
+            "笑顔を朝日のように例える",
+            "声を風鈴の音に例える",
+            "体温を夕暮れの大地に例える",
+            "瞳を星の瞬きに例える",
+        ],
+        "onomatopoeia": ONOMATOPOEIA_BANK[:5]
+        + ["静寂の沈黙", "心臓の鼓動", "衣の擦れ音", "呼吸の微かな音", "足音の静かなリズム"],
+        "psychology": PSYCHOLOGY_TEMPLATES[:5]
+        + ["心の距離の縮小", "感情の波紋", "禁断の誘惑", "欲望の芽生え", "心の奥底への探求"],
     },
     "moderate": {
         "metaphors": METAPHOR_BANK,
@@ -110,7 +119,8 @@ VOCABULARY_TIERS = {
         "psychology": PSYCHOLOGY_TEMPLATES,
     },
     "full": {
-        "metaphors": METAPHOR_BANK + [
+        "metaphors": METAPHOR_BANK
+        + [
             "潮の満ち引きに例える情動",
             "溶岩のように広がる体温",
             "抗えない重力の指向",
@@ -120,14 +130,16 @@ VOCABULARY_TIERS = {
             "世界が遠のく感覚",
             "凍てつく空気の崩壊",
         ],
-        "onomatopoeia": ONOMATOPOEIA_BANK + [
+        "onomatopoeia": ONOMATOPOEIA_BANK
+        + [
             "荒い呼吸の連なり",
             "肌と肌が触れ合う微音",
             "乱れる髪の感触",
             "触れ合う肌の温度差",
             "崩れ落ちる緊張",
         ],
-        "psychology": PSYCHOLOGY_TEMPLATES + [
+        "psychology": PSYCHOLOGY_TEMPLATES
+        + [
             "境界の消失",
             "自我の融解",
             "世界との境界の曖昧化",
@@ -137,17 +149,19 @@ VOCABULARY_TIERS = {
     },
 }
 
+
 def get_vocabulary_for_tier(tier: str) -> dict:
     """指定ティアの語彙を返す。存在しないティアはmildにフォールバックする。
 
     Args:
         tier (str): 言語のティア ("mild", "moderate", "full", "intense")
-        
+
     Returns:
         dict: "metaphors", "onomatopoeia", "psychology" のリストを含む辞書
     """
     if tier == "intense":
         # 遅延インポートで循环参照を回避
         from config.erotic_vocabulary_ext import get_vocabulary_for_tier_ext
+
         return get_vocabulary_for_tier_ext("intense")
     return VOCABULARY_TIERS.get(tier, VOCABULARY_TIERS["mild"])

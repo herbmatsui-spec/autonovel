@@ -14,11 +14,12 @@ async def test():
             model="gemini-3.1-flash-lite",
             contents=["Hello! Say 'Key is working!'"],
         )
+
     try:
         response = await asyncio.to_thread(_call)
         print(f"Success! Response text: {response.text}")
     except Exception as e:
         print(f"Failed! Error: {e}")
 
-asyncio.run(test())
 
+asyncio.run(test())

@@ -1,4 +1,3 @@
-
 from pydantic import BaseModel, Field
 
 
@@ -16,7 +15,9 @@ class PlanningConfig(BaseModel):
     initial_plot_limit: int = Field(default=1, description="初期プロット生成数")
     tension_threshold: int = Field(default=85, description="緊張（テンション）閾値。")
     tension_gain: float = Field(default=1.0, description="緊張蓄積倍率")
-    engine_key: str = Field(default="conflict", description="エンジンキー（conflict / comfort / enigma / zamaa 等）")
+    engine_key: str = Field(
+        default="conflict", description="エンジンキー（conflict / comfort / enigma / zamaa 等）"
+    )
     enable_erotic: bool = Field(default=False, description="官能モードのオンオフ")
     erotic_intensity: int = Field(default=2, description="官能表現の過激度 (1-5)")
 
@@ -25,9 +26,8 @@ class PlanningConfig(BaseModel):
         # ざまぁエンジン使用時は、カタルシスを早期に誘発させるため閾値を自動的に下げる
         if self.engine_key == "zamaa":
             self.tension_threshold = 80
+
     run_debate: bool = Field(default=False, description="ディベートを実行するかどうか")
     ultra_fast: bool = Field(default=False, description="超高速モードを使用するかどうか")
 
-    model_config = {
-        "protected_namespaces": ()
-    }
+    model_config = {"protected_namespaces": ()}

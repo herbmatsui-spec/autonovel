@@ -3,7 +3,6 @@ from typing import Any, Dict
 
 from src.shared.utils import StatusReporter
 
-from ._shared_ops import enqueue_shadow_audit, trigger_prefetch
 from .base_workflow import BaseWorkflow
 
 logger = logging.getLogger(__name__)
@@ -11,6 +10,7 @@ logger = logging.getLogger(__name__)
 
 class EpisodeWritingWorkflow(BaseWorkflow):
     """執筆ワークフロー: 通常モードとパイプラインモードの切り替えを隠蔽"""
+
     async def execute(self, reporter: StatusReporter, **kwargs) -> Dict[str, Any]:
         book_id = kwargs["book_id"]
         write_from = kwargs["write_from"]
@@ -27,36 +27,50 @@ class EpisodeWritingWorkflow(BaseWorkflow):
 
         if pipeline_mode:
             chars_count, failed = await writing.generate_episodes_pipeline(
-                book_id, write_from, write_to, passion, word_count, reporter=reporter,
-                mode=mode
+                book_id, write_from, write_to, passion, word_count, reporter=reporter, mode=mode
             )
             # 執筆完了後にプリフェッチを実行して次のエピソード生成を高速化
             await self._trigger_prefetch(book_id, write_to, reporter)
             # 非同期で監査を走らせる (Shadow Mode)
             try:
                 from src.backend.tasks import enqueue_audit_after_write
+
                 enqueue_audit_after_write(book_id, write_from, write_to)
-                reporter.report("⚖️ 非同期の論理監査タスク (Shadow Mode) をエンキューしました。", "info")
+                reporter.report(
+                    "⚖️ 非同期の論理監査タスク (Shadow Mode) をエンキューしました。", "info"
+                )
             except Exception as e:
                 logger.error(f"Failed to enqueue shadow audit: {e}")
             return {"chars_count": chars_count, "failed_episodes": failed, "book_id": book_id}
         else:
             chars_count = await writing.generate_episodes(
-                book_id, write_from, write_to, passion, word_count, do_refine,
-                reporter=reporter, env_state=env_state, mode=mode
+                book_id,
+                write_from,
+                write_to,
+                passion,
+                word_count,
+                do_refine,
+                reporter=reporter,
+                env_state=env_state,
+                mode=mode,
             )
             # 執筆完了後にプリフェッチを実行して次のエピソード生成を高速化
             await self._trigger_prefetch(book_id, write_to, reporter)
             # 非同期で監査を走らせる (Shadow Mode)
             try:
                 from src.backend.tasks import enqueue_audit_after_write
+
                 enqueue_audit_after_write(book_id, write_from, write_to)
-                reporter.report("⚖️ 非同期の論理監査タスク (Shadow Mode) をエンキューしました。", "info")
+                reporter.report(
+                    "⚖️ 非同期の論理監査タスク (Shadow Mode) をエンキューしました。", "info"
+                )
             except Exception as e:
                 logger.error(f"Failed to enqueue shadow audit: {e}")
             return {"chars_count": chars_count, "book_id": book_id}
 
-    async def _trigger_prefetch(self, book_id: int, last_episode: int, reporter: StatusReporter) -> None:
+    async def _trigger_prefetch(
+        self, book_id: int, last_episode: int, reporter: StatusReporter
+    ) -> None:
         """
         執筆完了後に Semantic Cache のプリフェッチ機能を起動し、
         次のエピソード群のEmbeddingを先行計算してキャッシュをウォームアップする。
@@ -82,6 +96,7 @@ class EpisodeWritingWorkflow(BaseWorkflow):
 
             # バックグラウンドでプリフェッチを実行（執筆をブロックしない）
             import asyncio
+
             asyncio.create_task(
                 cache_manager.prefetch_by_pattern(
                     book_id=book_id,
@@ -90,8 +105,10 @@ class EpisodeWritingWorkflow(BaseWorkflow):
                     task_types=prefetch_task_types,
                 )
             )
-            reporter.report(f"🚀 Prefetch triggered for ep{next_ep}-ep{next_ep+2} (background)", "debug")
-            logger.info(f"[PREFETCH] Triggered for book_id={book_id}, ep{next_ep}-ep{next_ep+2}")
+            reporter.report(
+                f"🚀 Prefetch triggered for ep{next_ep}-ep{next_ep + 2} (background)", "debug"
+            )
+            logger.info(f"[PREFETCH] Triggered for book_id={book_id}, ep{next_ep}-ep{next_ep + 2}")
         except Exception as e:
             # プリフェッチ失敗は致命的なエラーではなくログ出力のみ
             logger.warning(f"[PREFETCH] Prefetch trigger failed: {e}")

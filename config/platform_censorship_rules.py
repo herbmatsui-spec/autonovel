@@ -2,6 +2,7 @@
 config/platform_censorship_rules.py
 プラットフォーム別の伏字変換ルール定義。
 """
+
 from typing import Dict, List
 
 PLATFORM_CENSORSHIP_RULES: Dict[str, List[Dict[str, str]]] = {

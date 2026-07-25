@@ -20,6 +20,7 @@ class OpenAIProvider(LLMProvider):
     OpenAI互換API (vLLM, OpenRouter, Together AI等) へのアダプター。
     内部的に OpenAIApiClient を利用して低レベル通信とリトライを管理する。
     """
+
     def __init__(self, cooldown: AdaptiveCooldown):
         self.internal_client = OpenAIApiClient(cooldown)
 
@@ -30,7 +31,7 @@ class OpenAIProvider(LLMProvider):
         prompt: str,
         system_instruction: Optional[str] = None,
         temperature: float = 0.7,
-        **kwargs
+        **kwargs,
     ) -> LLMResponse:
         try:
             # OpenAIApiClient.generate_text は Tuple[str, Any] を返す
@@ -39,13 +40,9 @@ class OpenAIProvider(LLMProvider):
                 prompt=prompt,
                 system_instruction=system_instruction,
                 temp=temperature,
-                **kwargs
+                **kwargs,
             )
-            return LLMResponse(
-                content=content,
-                usage=self._parse_usage(usage),
-                success=True
-            )
+            return LLMResponse(content=content, usage=self._parse_usage(usage), success=True)
         except Exception as e:
             # 例外のマッピング
             err_msg = str(e).lower()
@@ -72,7 +69,7 @@ class OpenAIProvider(LLMProvider):
         response_schema: Optional[Any] = None,
         system_instruction: Optional[str] = None,
         temperature: float = 0.7,
-        **kwargs
+        **kwargs,
     ) -> LLMResponse:
         try:
             # OpenAIApiClient.generate_json は Tuple[Dict, str, Any] を返す
@@ -82,13 +79,10 @@ class OpenAIProvider(LLMProvider):
                 response_schema=response_schema,
                 system_instruction=system_instruction,
                 temp=temperature,
-                **kwargs
+                **kwargs,
             )
             return LLMResponse(
-                content=content,
-                metadata=metadata,
-                usage=self._parse_usage(usage),
-                success=True
+                content=content, metadata=metadata, usage=self._parse_usage(usage), success=True
             )
         except Exception as e:
             # 例外のマッピング
@@ -115,9 +109,13 @@ class OpenAIProvider(LLMProvider):
 
         # usage_metadata が MockUsage 等の場合の対応
         return {
-            "prompt_tokens": getattr(usage_metadata, "prompt_token_count",
-                                   getattr(usage_metadata, "prompt_tokens", 0)),
-            "completion_tokens": getattr(usage_metadata, "candidates_token_count",
-                                       getattr(usage_metadata, "completion_tokens", 0)),
+            "prompt_tokens": getattr(
+                usage_metadata, "prompt_token_count", getattr(usage_metadata, "prompt_tokens", 0)
+            ),
+            "completion_tokens": getattr(
+                usage_metadata,
+                "candidates_token_count",
+                getattr(usage_metadata, "completion_tokens", 0),
+            ),
             "total_tokens": getattr(usage_metadata, "total_token_count", 0),
         }

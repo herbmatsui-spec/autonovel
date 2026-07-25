@@ -1,4 +1,3 @@
-
 import os
 import sys
 
@@ -16,6 +15,7 @@ class TestModel(BaseModel):
     age: int
     tags: List[str]
 
+
 def test():
     try:
         # Trigger validation error
@@ -25,6 +25,6 @@ def test():
         print("Formatted Error Message:")
         print(formatted)
 
+
 if __name__ == "__main__":
     test()
-

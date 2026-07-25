@@ -1,4 +1,5 @@
-from typing import Dict, Any
+from typing import Any, Dict
+
 
 def export_for_human_polish(chapter: Dict[str, Any]) -> str:
     """

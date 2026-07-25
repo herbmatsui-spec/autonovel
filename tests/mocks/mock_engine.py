@@ -5,8 +5,10 @@ from src.models import GenerateResult
 
 logger = logging.getLogger(__name__)
 
+
 class MockEngine:
     """Mock Engine simulating UltimateHegemonyEngine for integration tests."""
+
     def __init__(self, mock_llm=None):
         self.mock_llm = mock_llm
         self.repo = AsyncMock()

@@ -21,6 +21,7 @@ class DataRepositoryFacade:
     (async with UnitOfWork(db) as uow:) 内で、uow経由で行ってください。
     ファサード経由での暗黙的な自動トランザクション書き込みは推奨されません。
     """
+
     def __init__(self, db: DatabaseManager):
         self.db = db
 
@@ -29,34 +30,69 @@ class DataRepositoryFacade:
         メソッド呼び出しを動的に解決する。
         各Repository（Book, Plotなど）が持つメソッドであれば、UoWが保持するそのRepositoryに委譲する。
         """
+
         async def wrapper(*args, **kwargs):
+            import logging
+
+            log = logging.getLogger("debug.uow_flow")
             uow = current_uow.get()
+            log.debug(f"Calling {name} - UoW Context: {'Exists' if uow else 'None'}")
             if uow:
                 # 既存のUoWコンテキストがある場合はそれを利用
-                for repo_attr in ['books', 'plots', 'chapters', 'characters', 'branches', 'bible', 'misc', 'rules', 'audit', 'prompt_versions']:
+                for repo_attr in [
+                    "books",
+                    "plots",
+                    "chapters",
+                    "characters",
+                    "branches",
+                    "bible",
+                    "misc",
+                    "rules",
+                    "audit",
+                    "prompt_versions",
+                ]:
                     repo = getattr(uow, repo_attr)
                     if hasattr(repo, name):
-                         return await getattr(repo, name)(*args, **kwargs)
+                        log.debug(f"Resolved {name} via UoW {repo_attr}")
+                        return await getattr(repo, name)(*args, **kwargs)
                 raise AttributeError(f"DataRepositoryFacade (UoW mode) has no attribute '{name}'")
             else:
                 # 明示的なUoWがない場合は、単発のトランザクションとしてUoWを自動生成（後方互換）
+                log.warning(
+                    f"No UoW context for {name}. Falling back to Auto mode (New Transaction)."
+                )
                 from .uow import UnitOfWork
+
                 async with UnitOfWork(self.db) as temp_uow:
-                    for repo_attr in ['books', 'plots', 'chapters', 'characters', 'branches', 'bible', 'misc', 'rules', 'audit', 'prompt_versions']:
+                    for repo_attr in [
+                        "books",
+                        "plots",
+                        "chapters",
+                        "characters",
+                        "branches",
+                        "bible",
+                        "misc",
+                        "rules",
+                        "audit",
+                        "prompt_versions",
+                    ]:
                         repo = getattr(temp_uow, repo_attr)
                         if hasattr(repo, name):
-                             return await getattr(repo, name)(*args, **kwargs)
-                    raise AttributeError(f"DataRepositoryFacade (Auto mode) has no attribute '{name}'")
+                            log.debug(f"Resolved {name} via Auto-UoW {repo_attr}")
+                            return await getattr(repo, name)(*args, **kwargs)
+                    raise AttributeError(
+                        f"DataRepositoryFacade (Auto mode) has no attribute '{name}'"
+                    )
 
         return wrapper
 
     def save_internal_state_sync(self, key: str, value: Any) -> None:
         """同期的に内部状態を保存する"""
-        from typing import Any
-        from src.backend.database.core import get_sync_db_manager
-        from src.backend.database.models import InternalState
         import json
         import time
+
+        from src.backend.database.core import get_sync_db_manager
+        from src.backend.database.models import InternalState
 
         SessionLocal = get_sync_db_manager()
         with SessionLocal() as session:
@@ -64,11 +100,12 @@ class DataRepositoryFacade:
             if not state:
                 state = InternalState(key=key)
                 session.add(state)
-            state.value = json.dumps(value, ensure_ascii=False) if not isinstance(value, str) else value
-            state.updated_at = time.strftime('%Y-%m-%dT%H:%M:%S')
+            state.value = (
+                json.dumps(value, ensure_ascii=False) if not isinstance(value, str) else value
+            )
+            state.updated_at = time.strftime("%Y-%m-%dT%H:%M:%S")
             session.commit()
 
 
 # DataRepository をエイリアスとして公開
 DataRepository = DataRepositoryFacade
-

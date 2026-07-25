@@ -4,11 +4,13 @@ streamlit_app/dependency_container.py — Singleton DI Container for Core Servic
 Manges EngineService, PluginLoader, and ResilientHttpClient instances with lazy initialization
 and thread-safe singleton guarantees.
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, Optional, TypeVar
 
 T = TypeVar("T")
+
 
 class DependencyContainer:
     """Singleton container for managing core service dependencies.

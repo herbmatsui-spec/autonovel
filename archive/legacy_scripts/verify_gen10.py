@@ -1,12 +1,13 @@
 import os
 import time
-import requests
 from pathlib import Path
+
+import requests
 
 # Load .env
 env_path = Path(r"I:\R15\cR15\.env")
 if env_path.exists():
-    with open(env_path, 'r') as f:
+    with open(env_path, "r") as f:
         for line in f:
             line = line.strip()
             if line and not line.startswith("#") and "=" in line:
@@ -29,15 +30,11 @@ config = {
     "initial_limit": 3,
     "word_count": 3000,
     "concept": "検証用: 3000字×10話の自動生成テスト",
-    "tone_vibe": 0.7
+    "tone_vibe": 0.7,
 }
 
 # Prepare the request
-request_data = {
-    "api_key": api_key,
-    "config": config,
-    "trace_id": "verify10"
-}
+request_data = {"api_key": api_key, "config": config, "trace_id": "verify10"}
 
 # Make the API call
 print("Starting generation...")
@@ -51,14 +48,15 @@ try:
     print(f"Task ID: {result['task_id']}")
     print(f"Estimated cost: ${result.get('estimated_cost', 0):.4f}")
     print(f"Total time: {time.time() - t0:.2f} seconds")
-    
+
     # Check if generation is complete
     if "task_id" in result:
-        print("Generation in progress. Task ID:", result['task_id'])
+        print("Generation in progress. Task ID:", result["task_id"])
     else:
         print("Generation completed or failed:", result)
-        
+
 except Exception as e:
     print(f"Error: {e}")
     import traceback
+
     traceback.print_exc()

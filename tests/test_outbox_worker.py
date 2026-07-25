@@ -10,12 +10,14 @@ from src.backend.tasks import _process_outbox_events_async
 async def test_outbox_worker_success():
     # Setup test DB
     from config.container import Container
+
     db = Container.db()
 
     # Create the outbox table manually for tests to ensure isolated sqlite DB works
     async with db.get_session() as session:
         async with session.begin():
-            await session.execute(text("""
+            await session.execute(
+                text("""
                 CREATE TABLE IF NOT EXISTS outbox (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     event_type VARCHAR(64) NOT NULL,
@@ -26,7 +28,8 @@ async def test_outbox_worker_success():
                     processed_at DATETIME,
                     error_message TEXT
                 )
-            """))
+            """)
+            )
             # Clear existing events
             await session.execute(text("DELETE FROM outbox"))
 
@@ -36,12 +39,12 @@ async def test_outbox_worker_success():
                 "id": "doc1",
                 "content": "some content",
                 "embedding": [0.1, 0.2],
-                "metadata": {"key": "value"}
+                "metadata": {"key": "value"},
             }
 
             await session.execute(
                 text("INSERT INTO outbox (event_type, payload, status) VALUES (:e, :p, :s)"),
-                {"e": "chroma_add", "p": json.dumps(payload_add), "s": "pending"}
+                {"e": "chroma_add", "p": json.dumps(payload_add), "s": "pending"},
             )
 
     # Call the new outbox processing task

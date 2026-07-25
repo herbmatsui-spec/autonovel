@@ -12,6 +12,7 @@ def run_tests(run_idx, log_file):
 
     # Set PYTHONPATH
     import os
+
     env = os.environ.copy()
     env["PYTHONPATH"] = f"{os.getcwd()}/src;{os.getcwd()}"
 
@@ -19,7 +20,7 @@ def run_tests(run_idx, log_file):
         [sys.executable, "-m", "pytest", "tests/integration/test_app_integration.py", "-v"],
         capture_output=True,
         text=True,
-        env=env
+        env=env,
     )
 
     log_file.write("--- STDOUT ---\n")
@@ -29,9 +30,10 @@ def run_tests(run_idx, log_file):
     log_file.write(f"\nExit Code: {res.returncode}\n")
     log_file.flush()
 
-    success = (res.returncode == 0)
+    success = res.returncode == 0
     print(f"[{run_idx}/10] 結果: {'成功' if success else '失敗'}")
     return success
+
 
 def main():
     print("=========================================")
@@ -72,6 +74,6 @@ def main():
     else:
         sys.exit(1)
 
+
 if __name__ == "__main__":
     main()
-

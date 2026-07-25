@@ -3,8 +3,11 @@ tension_service.py - TensionService: テンション曲線・カタルシス管�
 
 UltimateHegemonyEngine から分離し、TensionPort インターフェースを実装する。
 """
+
 from typing import Any, Optional, Tuple
+
 from src.backend.protocols import TensionPort
+
 
 class TensionService(TensionPort):
     """テンション目標値の算出・検証を担当するサービス。"""
@@ -12,7 +15,7 @@ class TensionService(TensionPort):
     def __init__(
         self,
         tension_agent: Any,  # TensionAgent 実体 (Engine内部実装)
-        repo: Any,            # DataRepository
+        repo: Any,  # DataRepository
     ) -> None:
         self.tension_agent = tension_agent
         self.repo = repo

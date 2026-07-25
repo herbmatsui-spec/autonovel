@@ -10,15 +10,17 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+
 class StyleRagManager:
     """
     文体RAGマネージャー:
     シーンの文脈に基づき、最適な「覇権文章サンプル」をベクトル検索で取得する。
     """
+
     def __init__(self, client: Any, repo: Any):
         self.client = client
         self.repo = repo
-        self.embedding_model = "gemini-embedding-2" # 業界標準の高性能モデルに固定
+        self.embedding_model = "gemini-embedding-2"  # 業界標準の高性能モデルに固定
         # キャッシュ用辞書（Embeddingの再計算を避ける）
         self._embedding_cache: Dict[str, List[float]] = {}
 
@@ -28,12 +30,12 @@ class StyleRagManager:
             return self._embedding_cache[text]
 
         try:
+
             def _call():
-                return self.client.models.embed_content(
-                    model=self.embedding_model,
-                    contents=[text]
-                )
+                return self.client.models.embed_content(model=self.embedding_model, contents=[text])
+
             from src.core.executor_manager import executor_manager
+
             res = await executor_manager.run_cpu(_call)
             vec = res.embeddings[0].values
 
@@ -52,18 +54,27 @@ class StyleRagManager:
             return True
         return False
 
-    async def find_best_sample(self, scene_description: str, phase: str = "Hate", tag_hint: Optional[str] = None, top_k: int = 2) -> List[str]:
+    async def find_best_sample(
+        self,
+        scene_description: str,
+        phase: str = "Hate",
+        tag_hint: Optional[str] = None,
+        top_k: int = 2,
+    ) -> List[str]:
         """
         WritingAgentとのインターフェース用。
         """
         return await self.find_best_samples(
-            scene_description=scene_description,
-            phase=phase,
-            trope_hint=tag_hint,
-            top_k=top_k
+            scene_description=scene_description, phase=phase, trope_hint=tag_hint, top_k=top_k
         )
 
-    async def find_best_samples(self, scene_description: str, phase: str = "Hate", trope_hint: Optional[str] = None, top_k: int = 2) -> List[str]:
+    async def find_best_samples(
+        self,
+        scene_description: str,
+        phase: str = "Hate",
+        trope_hint: Optional[str] = None,
+        top_k: int = 2,
+    ) -> List[str]:
         """
         現在のシーンに最も近い文章サンプルを検索。
         1. クエリの強化（トロープとフェーズ情報を付与）
@@ -117,8 +128,11 @@ class StyleRagManager:
             return [self._get_fallback_sample(phase)]
 
         from src.core.observability import TraceContext, get_structured_logger
+
         logger = get_structured_logger("StyleRAG")
-        logger.info(f"🎯 Style RAG: Found {len(results)} samples.", trace_id=TraceContext.get_trace_id())
+        logger.info(
+            f"🎯 Style RAG: Found {len(results)} samples.", trace_id=TraceContext.get_trace_id()
+        )
         return results
 
     def _get_fallback_sample(self, phase: str) -> str:
@@ -129,7 +143,7 @@ class StyleRagManager:
             "Payoff": "静寂。先程まで勝ち誇っていた男の顔から、急速に色が失われる。「そ、そんな……」。理外の力。圧倒的な現実。観衆はただ、畏怖と共にその背中を見上げるしかなかった。",
             "Prep": "風が変わる。草原を歩く足取りは軽い。まだ誰も知らない、手に入れたばかりの力。それが体の奥底で、静かに、しかし確かに脈動を始めていた。",
             "Comedy": "「いや、おかしいだろ！」俺のツッコミが虚しく響く。目の前の美少女は、あろうことか伝説の聖剣でカボチャを切り刻んでいた。もったいねえ……。",
-            "Love": "不意に、視線が重なる。心臓が跳ねた。微かに香る、甘い香草の匂い。彼女の頬が朱に染まるのを見て、俺は言葉を失う。時間が、止まったようだった。"
+            "Love": "不意に、視線が重なる。心臓が跳ねた。微かに香る、甘い香草の匂い。彼女の頬が朱に染まるのを見て、俺は言葉を失う。時間が、止まったようだった。",
         }
         # キーがなければ Prep を返し、さらにランダム性を加味することも検討可能
         return fallbacks.get(phase) or random.choice(list(fallbacks.values()))
@@ -139,7 +153,9 @@ class StyleRagManager:
         if not samples:
             return ""
 
-        formatted_samples = "\n\n".join([f"【サンプル{i+1}】\n{s}" for i, s in enumerate(samples)])
+        formatted_samples = "\n\n".join(
+            [f"【サンプル{i + 1}】\n{s}" for i, s in enumerate(samples)]
+        )
 
         return (
             "\n### 🏆 覇権作品・文体エミュレーション（最高位の質感） ###\n"
@@ -153,4 +169,3 @@ class StyleRagManager:
             f"{formatted_samples}\n"
             "--------------------------\n"
         )
-

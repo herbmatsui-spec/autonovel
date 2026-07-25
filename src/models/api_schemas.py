@@ -5,6 +5,7 @@ models/api_schemas.py — フロントエンド/バックエンド共通のAPI�
 関連の重複定義が存在していた database/schemas.py は削除済み。
 新規スキーマは必ずこのファイルに追加してください。
 """
+
 from __future__ import annotations
 
 from datetime import datetime

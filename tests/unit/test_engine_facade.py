@@ -3,6 +3,7 @@
 既存の UltimateHegemonyEngine インスタンスを内包し、engine.* 呼び出しを
 そのまま委譲することを確認する。
 """
+
 from typing import Any, Optional, Tuple
 
 import pytest

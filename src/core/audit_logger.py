@@ -20,17 +20,27 @@ class AuditLogEntry(BaseModel):
 
 logger = logging.getLogger(__name__)
 
+
 class AuditLogger:
     """
     システムの全操作を記録する監査ログマネージャー。
     ファイルベースの永続化を行い、後からの追跡を可能にする。
     """
+
     def __init__(self, log_dir: str = "logs/audit"):
         self.log_dir = Path(log_dir)
         self.log_dir.mkdir(parents=True, exist_ok=True)
         self._current_log_file = self.log_dir / f"audit_{datetime.now().strftime('%Y%m%d')}.log"
 
-    def log(self, user_id: str, action: str, resource_id: str, status: str, details: Optional[Dict[str, Any]] = None, ip_address: str = "unknown"):
+    def log(
+        self,
+        user_id: str,
+        action: str,
+        resource_id: str,
+        status: str,
+        details: Optional[Dict[str, Any]] = None,
+        ip_address: str = "unknown",
+    ):
         entry = AuditLogEntry(
             timestamp=datetime.now().isoformat(),
             user_id=user_id,
@@ -38,7 +48,7 @@ class AuditLogger:
             resource_id=resource_id,
             status=status,
             details=details or {},
-            ip_address=ip_address
+            ip_address=ip_address,
         )
 
         log_line = f"[{entry.timestamp}] USER:{entry.user_id} ACTION:{entry.action} RES:{entry.resource_id} STATUS:{entry.status} IP:{entry.ip_address} DETAILS:{entry.details}\n"

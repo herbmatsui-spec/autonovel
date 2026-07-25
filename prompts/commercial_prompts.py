@@ -182,16 +182,18 @@ def commercial_role_prompt_registry(
 ) -> str:
     """
     商業的役割に応じたプロンプトを取得する。
-    
+
     Args:
         role: 商業的役割名
         character_name: キャラクター名
         prompt_type: プロンプトタイプ (scene_generation/character_building)
-    
+
     Returns:
         生成されたプロンプト文字列
     """
-    role_data = COMMERCIAL_ROLE_PROMPT_TEMPLATES.get(role, COMMERCIAL_ROLE_PROMPT_TEMPLATES["avatar_of_desire"])
+    role_data = COMMERCIAL_ROLE_PROMPT_TEMPLATES.get(
+        role, COMMERCIAL_ROLE_PROMPT_TEMPLATES["avatar_of_desire"]
+    )
     template = role_data.get(prompt_type, role_data["scene_generation"])
 
     return template.format(character=character_name)
@@ -200,11 +202,11 @@ def commercial_role_prompt_registry(
 def generate_commercial_role_summary(character_name: str, roles: List[str]) -> str:
     """
     キャラクターの商業的役割全てのサマリーを生成。
-    
+
     Args:
         character_name: キャラクター名
         roles: 役割リスト
-    
+
     Returns:
         役割サマリーのプロンプト
     """
@@ -216,8 +218,7 @@ def generate_commercial_role_summary(character_name: str, roles: List[str]) -> s
         role_infos.append(f"■ {name}: {desc}")
 
     return (
-        f"【{character_name}の商業的役割サマリー】\n"
-        + "\n".join(role_infos) + "\n"
+        f"【{character_name}の商業的役割サマリー】\n" + "\n".join(role_infos) + "\n"
         "※ これらの役割を意識した物語構築を行ってください。"
     )
 
@@ -286,17 +287,16 @@ def pleasure_prompt_registry(
 ) -> str:
     """
     快感設計（カタルシス）プロンプトを取得する。
-    
+
     Args:
         pleasure_type: 快感タイプ (catharsis_building/schadenfreude_building/tension_release_building/superiority_building/intimacy_building)
         context: オプションの文脈情報
-    
+
     Returns:
         快感設計プロンプト文字列
     """
     template = PLEASURE_GRAPH_PROMPT_TEMPLATES.get(
-        pleasure_type,
-        PLEASURE_GRAPH_PROMPT_TEMPLATES["catharsis_building"]
+        pleasure_type, PLEASURE_GRAPH_PROMPT_TEMPLATES["catharsis_building"]
     )
 
     if context:
@@ -314,11 +314,11 @@ def generate_pleasure_graph_prompt(
 ) -> str:
     """
     物語の進行度に応じた快感グラフ最適化プロンプトを生成。
-    
+
     Args:
         story_progress: 物語の進行度 (0.0-1.0)
         target_catharsis: 目標カタルシス値
-    
+
     Returns:
         快感バランス調整プロンプト
     """
@@ -341,7 +341,7 @@ def generate_pleasure_graph_prompt(
         f"■ 現在のフェーズ指示: {directive}\n"
         f"■ 快感設計原則:\n"
         f"  - 現在のカタルシス投資: {story_progress:.0%}的程度完了\n"
-        f"  - 残りの投資で {(1-story_progress):.0%} のカタルシスを構築\n"
+        f"  - 残りの投資で {(1 - story_progress):.0%} のカタルシスを構築\n"
         f"  - 山場に向けた伏線回収を意識してください"
     )
 
@@ -418,17 +418,16 @@ def marketing_prompt_registry(
 ) -> str:
     """
     マーケティング素材生成プロンプトを取得する。
-    
+
     Args:
         marketing_type: マーケティングタイプ (hook_generation/tagline_generation/synopsis_generation)
         context: オプションの文脈情報
-    
+
     Returns:
         マーケティングプロンプト文字列
     """
     template = MARKETING_PROMPT_TEMPLATES.get(
-        marketing_type,
-        MARKETING_PROMPT_TEMPLATES["hook_generation"]
+        marketing_type, MARKETING_PROMPT_TEMPLATES["hook_generation"]
     )
 
     if context:
@@ -446,17 +445,16 @@ def style_prompt_registry(
 ) -> str:
     """
     スタイルDNA抽出プロンプトを取得する。
-    
+
     Args:
         style_type: スタイルタイプ (voice_extraction/character_voice_extraction/rhythm_pattern_extraction)
         context: オプションの文脈情報
-    
+
     Returns:
         スタイルDNAプロンプト文字列
     """
     template = STYLE_DNA_PROMPT_TEMPLATES.get(
-        style_type,
-        STYLE_DNA_PROMPT_TEMPLATES["voice_extraction"]
+        style_type, STYLE_DNA_PROMPT_TEMPLATES["voice_extraction"]
     )
 
     if context:
@@ -534,18 +532,15 @@ def series_prompt_registry(
 ) -> str:
     """
     シリーズ展開プロンプトを取得する。
-    
+
     Args:
         series_type: シリーズタイプ (arc_planning/sequel_hooks/filler_strategy)
         context: オプションの文脈情報
-    
+
     Returns:
         シリーズ展開プロンプト文字列
     """
-    template = SERIES_EXPENSION_PROMPTS.get(
-        series_type,
-        SERIES_EXPENSION_PROMPTS["arc_planning"]
-    )
+    template = SERIES_EXPENSION_PROMPTS.get(series_type, SERIES_EXPENSION_PROMPTS["arc_planning"])
 
     if context:
         formatted = template
@@ -562,18 +557,15 @@ def ab_test_prompt_registry(
 ) -> str:
     """
     A/Bテスト用プロンプトを取得する。
-    
+
     Args:
         test_type: テストタイプ (opening_variation/conflictr_resolution_variation/romance_development_variation)
         context: オプションの文脈情報
-    
+
     Returns:
         A/Bテストプロンプト文字列
     """
-    template = AB_TEST_PROMPTS.get(
-        test_type,
-        AB_TEST_PROMPTS["opening_variation"]
-    )
+    template = AB_TEST_PROMPTS.get(test_type, AB_TEST_PROMPTS["opening_variation"])
 
     if context:
         formatted = template
@@ -591,12 +583,12 @@ def generate_full_commercial_prompt_pack(
 ) -> Dict[str, str]:
     """
     完全な商用プロンプトパックを生成。
-    
+
     Args:
         character_name: キャラクター名
         commercial_roles: 商業的役割リスト
         target_market: 目標市場 (web novel/kindle/comics)
-    
+
     Returns:
         プロンプトパック辞書
     """
@@ -605,9 +597,7 @@ def generate_full_commercial_prompt_pack(
     # 商業的役割プロンプト
     for role in commercial_roles:
         pack[f"commercial_role_{role}"] = commercial_role_prompt_registry(
-            role=role,
-            character_name=character_name,
-            prompt_type="scene_generation"
+            role=role, character_name=character_name, prompt_type="scene_generation"
         )
 
     # 快感設計プロンプト
@@ -658,4 +648,3 @@ def generate_full_commercial_prompt_pack(
         )
 
     return pack
-

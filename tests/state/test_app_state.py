@@ -12,11 +12,13 @@ def test_runtime_state_defaults():
     assert state.active_job_id is None
     assert state.backend_connection_error is False
 
+
 def test_runtime_state_validation():
     """不正な型が渡された場合にバリデーションエラーが発生するか検証"""
     with pytest.raises(ValidationError):
         # app_mode は str である必要があるが、リストを渡す
         AppRuntimeState(app_mode=["easy"])
+
 
 def test_wizard_state_defaults():
     """ウィザード状態のデフォルト値が正しく設定されているか検証"""
@@ -24,12 +26,14 @@ def test_wizard_state_defaults():
     assert wizard.step == 1
     assert wizard.data == {}
 
+
 def test_app_state_model_composition():
     """AppStateModel が正しく他のモデルを内包しているか検証"""
     state = AppStateModel()
     assert isinstance(state.runtime, AppRuntimeState)
     assert isinstance(state.wizard, WizardState)
     assert state.current_book_id is None
+
 
 def test_token_stats_validation():
     """TokenStats のバリデーションを検証"""

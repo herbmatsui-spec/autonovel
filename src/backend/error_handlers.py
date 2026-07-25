@@ -1,12 +1,15 @@
 """
 src/backend/error_handlers.py - FastAPI統一エラーハンドラ
 """
+
 import logging
 from typing import Optional
-from fastapi import Request, FastAPI
-from fastapi.responses import JSONResponse
+
+from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+
 from src.core.exceptions import HegemonyError
 
 logger = logging.getLogger(__name__)
