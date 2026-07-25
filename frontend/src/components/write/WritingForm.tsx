@@ -8,6 +8,7 @@ interface WritingFormProps {
   writePassion: number;
   setWritePassion: (val: number) => void;
   onSubmit: () => void;
+  onRefineErotic: (params: { intensity: number; platform_preset: string }) => void;
   disabled: boolean;
   genre: string;
   setGenre: (val: string) => void;
@@ -27,6 +28,7 @@ export function WritingForm({
   writePassion,
   setWritePassion,
   onSubmit,
+  onRefineErotic,
   disabled,
   genre,
   setGenre,
@@ -116,9 +118,18 @@ export function WritingForm({
           disabled={disabled}
         />
       </div>
-      <button className="btn btn-primary" onClick={onSubmit} disabled={disabled}>
-        ⚡ 自動執筆ワークフロー実行
-      </button>
+      <div className="flex gap-4">
+        <button className="btn btn-primary flex-1" onClick={onSubmit} disabled={disabled}>
+          ⚡ 自動執筆ワークフロー実行
+        </button>
+        <button
+          className="btn btn-secondary flex-1 border-rose-500 text-rose-500 hover:bg-rose-500/10"
+          onClick={() => onRefineErotic({ intensity: 5, platform_preset: 'standard' })}
+          disabled={disabled}
+        >
+          🔞 官能表現を洗練
+        </button>
+      </div>
     </div>
   );
 }

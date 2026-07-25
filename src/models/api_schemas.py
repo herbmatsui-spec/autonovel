@@ -141,6 +141,9 @@ class EasyModeRequest(AuthenticatedRequest):
     word_count: int
     concept: str = ""
     tone_vibe: float = 0.6
+    style_key: Optional[str] = "style_web_standard"
+    enable_erotic: bool = False
+    erotic_intensity: int = 2
 
 
 class EpisodeGenerateRequest(AuthenticatedRequest):

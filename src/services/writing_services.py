@@ -386,7 +386,7 @@ class GenerationLoopManager:
             try:
                 parsed = json.loads(beat_content)
                 if "beats" in parsed: beats_list = parsed["beats"]
-            except:
+            except (json.JSONDecodeError, ValueError):
                 pass
 
         if beats_list:
@@ -461,7 +461,7 @@ class GenerationLoopManager:
             else:
                 try:
                     plot_data = dict(gen_ctx.plot)
-                except:
+                except (TypeError, ValueError):
                     pass
 
         polish_prompt = await self.pm.build_polishing_prompt(

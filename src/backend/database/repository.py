@@ -52,6 +52,7 @@ class DataRepositoryFacade:
 
     def save_internal_state_sync(self, key: str, value: Any) -> None:
         """同期的に内部状態を保存する"""
+        from typing import Any
         from src.backend.database.core import get_sync_db_manager
         from src.backend.database.models import InternalState
         import json

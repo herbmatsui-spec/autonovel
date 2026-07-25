@@ -1,14 +1,14 @@
 import logging
 from typing import Optional
 
-from huey import SqliteHuey, crontab
+from huey import crontab
 
 from config.container import Container, get_container
 from prompts.manager import prompt_manager
 from src.backend.database.uow import UnitOfWork
 from src.core.observability import with_trace_context
+from src.backend.worker_config import huey
 
-huey = SqliteHuey('storage/db/kaku_hegemony_v2_huey.db')
 logger = logging.getLogger('huey')
 
 _CONFIG_OVERRIDE_KEYS = {

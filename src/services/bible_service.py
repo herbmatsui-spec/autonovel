@@ -73,6 +73,8 @@ class WorldBibleGenerator:
         cost_severity: int = 2,
         target_eps: int = 10,
         initial_plot_limit: int = 3,
+        enable_erotic: bool = False,
+        erotic_intensity: int = 2,
         config: PlanningConfig = None,
         reporter=None
     ) -> Tuple[int, WorldBible]:
@@ -94,6 +96,8 @@ class WorldBibleGenerator:
                 cost_severity=cost_severity,
                 target_eps=target_eps,
                 initial_plot_limit=initial_plot_limit,
+                enable_erotic=enable_erotic,
+                erotic_intensity=erotic_intensity,
                 ultra_fast=True # Default to fast for this workflow
             )
 

@@ -74,6 +74,16 @@ export interface EasyModeParams {
   word_count: number;
   concept?: string;
   tone_vibe?: number;
+  style_key?: string;
+  enable_erotic?: boolean;
+  erotic_intensity?: number;
+  // Illustration settings
+  enableIllustration?: boolean;
+  illustrationType?: 'cover' | 'episode' | 'both';
+  illustrationModel?: 'fast' | 'quality';
+  generateCover?: boolean;
+  generateEpisodeIllustrations?: boolean;
+  episodeInterval?: number;
 }
 
 export interface EpisodeGenerateParams {

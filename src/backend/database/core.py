@@ -233,11 +233,24 @@ class DatabaseManager:
             result = await conn.exec_driver_sql(sql, params)
             return result.lastrowid or 0
 
-    async def save_internal_state(self, key: str, value: str, updated_at: str) -> None:
+    async def save_internal_state(self, key: str, value: str, updated_at: Any = None) -> None:
         """データベース非依存な UPSERT 処理で internal_state を保存する"""
+        from datetime import datetime
         from sqlalchemy import select
 
         from src.backend.database.models import InternalState
+
+        dt_val: datetime
+        if isinstance(updated_at, datetime):
+            dt_val = updated_at
+        elif isinstance(updated_at, str):
+            try:
+                dt_val = datetime.fromisoformat(updated_at)
+            except ValueError:
+                dt_val = datetime.now()
+        else:
+            dt_val = datetime.now()
+
         async with self.get_session() as session:
             async with session.begin():
                 stmt = select(InternalState).where(InternalState.key == key)
@@ -245,12 +258,12 @@ class DatabaseManager:
                 existing = result.scalar_one_or_none()
                 if existing:
                     existing.value = value
-                    existing.updated_at = updated_at
+                    existing.updated_at = dt_val
                 else:
                     new_state = InternalState(
                         key=key,
                         value=value,
-                        updated_at=updated_at
+                        updated_at=dt_val
                     )
                     session.add(new_state)
 

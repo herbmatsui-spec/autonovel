@@ -189,6 +189,6 @@ class CharacterRegistry(BaseModel):
         if isinstance(data, str):
             try:
                 data = json.loads(data)
-            except:
+            except (json.JSONDecodeError, ValueError):
                 data = {}
         return cls.model_validate(data) if isinstance(data, dict) else cls()

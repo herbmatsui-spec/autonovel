@@ -320,7 +320,7 @@ class PlotAgent(BaseAgent):
             if isinstance(bible.settings, str):
                 try:
                     settings = json.loads(bible.settings)
-                except:
+                except (json.JSONDecodeError, ValueError):
                     settings = {}
             elif isinstance(bible.settings, dict):
                 settings = bible.settings

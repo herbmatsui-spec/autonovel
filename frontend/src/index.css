@@ -78,14 +78,20 @@
 
   /* Global Form Controls */
   input, select, textarea {
-    background-color: rgba(15, 17, 26, 0.8);
-    color: var(--text-primary);
-    border: 1px solid var(--border);
+    background-color: #1e293b; /* bg-slate-800 */
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 0.375rem;
     padding: 0.5rem 0.75rem;
     font-family: inherit;
     font-size: 0.875rem;
     transition: all 0.2s ease;
+  }
+
+  /* Target option elements inside select explicitly for Windows/Chrome */
+  select option {
+    background-color: #1e293b;
+    color: #ffffff;
   }
 
   input:focus, select:focus, textarea:focus {
@@ -544,3 +550,60 @@
     animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
 }
+
+/* Tooltip Styles */
+.tooltip-container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tooltip-icon {
+  cursor: help;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  background: rgba(255, 255, 255, 0.1);
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.tooltip-icon:hover {
+  color: var(--accent-indigo);
+  background: rgba(99, 102, 241, 0.2);
+}
+
+.tooltip-text {
+  visibility: hidden;
+  width: 240px;
+  background-color: #1e293b;
+  color: #f8fafc;
+  text-align: left;
+  border-radius: 6px;
+  padding: 8px 12px;
+  position: absolute;
+  z-index: 100;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0;
+  transition: opacity 0.2s, transform 0.2s;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  font-weight: normal;
+}
+
+.tooltip-container:hover .tooltip-text {
+  visibility: visible;
+  opacity: 1;
+  transform: translateX(-50%) translateY(-4px);
+}
+

@@ -14,6 +14,7 @@ import { useTaskStream } from '@/hooks/useTaskStream';
 import { useBookDetails } from '@/hooks/useBookDetails';
 import { useTaskMonitor } from '@/hooks/useTaskMonitor';
 import { Sidebar } from '@/components/Sidebar';
+import { LandingTab } from '@/components/tabs/LandingTab';
 import { BooksTab } from '@/components/tabs/BooksTab';
 import { PlotsTab } from '@/components/tabs/PlotsTab';
 import { WriteTab } from '@/components/tabs/WriteTab';
@@ -31,6 +32,7 @@ export default function App() {
   // Global Settings (existing store)
   const {
     apiKey,
+    setIsExpertMode,
   } = useUserSettingsStore();
 
   // Project context (existing store)
@@ -139,6 +141,7 @@ export default function App() {
     handleCritiqueOptimize,
     handleImportChapter,
     handleGenerateMarketing,
+    handleRefineErotic,
   } = useAppActions(_setLoading);
 
   return (
@@ -154,6 +157,7 @@ export default function App() {
         <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem', borderBottom: '1px solid var(--border)', paddingBottom: '1.25rem' }}>
           <div>
             <h1 style={{ fontSize: '2rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              {activeTab === 'landing' && '🚀 ホーム・ダッシュボード'}
               {activeTab === 'books' && '📚 作品管理・イージーモード'}
               {activeTab === 'plots' && '🗺️ ストーリープロット設計'}
               {activeTab === 'write' && '✍️ 自律的エピソード自動執筆'}
@@ -175,6 +179,15 @@ export default function App() {
           <ErrorBanner
             message={globalError}
             onClose={() => setGlobalError(null)}
+          />
+        )}
+
+        {/* -------------------- TAB 0: LANDING -------------------- */}
+        {activeTab === 'landing' && (
+          <LandingTab
+            setActiveTab={setActiveTab}
+            setCreateModalOpen={setCreateModalOpen}
+            setIsExpertMode={setIsExpertMode}
           />
         )}
 
@@ -205,6 +218,7 @@ export default function App() {
                   selectedBook={selectedBook}
                   handleTriggerWriting={handleTriggerWriting}
                   handleImportChapter={handleImportChapter}
+                  handleRefineErotic={handleRefineErotic}
                   chapters={chapters}
                   bible={bible}
                   writeFrom={writeFrom}
@@ -256,7 +270,10 @@ export default function App() {
         {activeTab === 'planning' && (
           <PlanningTab
             selectedBook={selectedBook}
-            handlePlanGeneration={() => loadBookDetails(selectedBook?.id ?? 0)}
+            handlePlanGeneration={async () => {
+              await loadBookDetails(selectedBook?.id ?? 0);
+              setActiveTab('plots');
+            }}
           />
         )}
 

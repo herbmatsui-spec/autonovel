@@ -4,9 +4,11 @@ import { checkBackendHealth } from '../../api';
 
 interface LandingTabProps {
   setActiveTab: (tab: TabId) => void;
+  setCreateModalOpen: (open: boolean) => void;
+  setIsExpertMode: (val: boolean) => void;
 }
 
-export function LandingTab({ setActiveTab }: LandingTabProps) {
+export function LandingTab({ setActiveTab, setCreateModalOpen, setIsExpertMode }: LandingTabProps) {
   const [health, setHealth] = useState<{ status: string; database: string; worker: string } | null>(null);
 
   useEffect(() => {
@@ -27,13 +29,16 @@ export function LandingTab({ setActiveTab }: LandingTabProps) {
         </p>
         <div className="flex justify-center gap-3 mt-6">
           <button
-            onClick={() => setActiveTab('easy')}
+            onClick={() => setCreateModalOpen(true)}
             className="px-6 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity"
           >
             ⚡ かんたんモードで開始
           </button>
           <button
-            onClick={() => setActiveTab('planning')}
+            onClick={() => {
+              setIsExpertMode(true);
+              setActiveTab('planning');
+            }}
             className="px-6 py-2.5 bg-secondary text-secondary-foreground rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity"
           >
             📋 上級者モード

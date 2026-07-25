@@ -1,10 +1,12 @@
 from dataclasses import dataclass, field
-from typing import List, Literal, Optional
+from typing import Any, List, Literal, Optional
 
 try:
     from config.erotic_parameters import EroticParameters
+    HAS_EROTIC_PARAMETERS = True
 except ImportError:
-    EroticParameters = None
+    EroticParameters = Any  # type: ignore
+    HAS_EROTIC_PARAMETERS = False
 
 
 @dataclass
@@ -134,11 +136,9 @@ class EroticCurve:
         Args:
             params: EroticParametersインスタンス
 
-        Returns:
-            パラメータに基づいたEroticCurve
         """
-        if EroticParameters is None:
-            return EroticCurve.create_default(params.base_intensity)
+        if not HAS_EROTIC_PARAMETERS:
+            return EroticCurve.create_default(params.base_intensity if hasattr(params, "base_intensity") else 2)
 
         if not params.enabled or params.base_intensity == 0:
             return EroticCurve.create_default(0)

@@ -12,11 +12,13 @@ router = APIRouter(tags=["system"])
 @router.get("/health")
 async def health_check():
     try:
+        from sqlalchemy import text
         db_manager = Container.db()
-        async with db_manager.engine.acquire() as conn:
-            await conn.execute("SELECT 1")
+        async with db_manager.engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
         db_status = "ok"
-    except Exception:
+    except Exception as e:
+        logger.warning(f"health db check failed: {e}")
         db_status = "error"
 
     worker_status = "ok"

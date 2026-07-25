@@ -104,7 +104,7 @@ class StyleRagManager:
                 v2 = np.array(json.loads(cand["embedding_json"]))
                 sim = np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
                 scored_samples.append((sim, cand["content"]))
-            except:
+            except Exception:
                 continue
 
         # 類似度順にソート

@@ -15,5 +15,5 @@ docker compose down --remove-orphans >nul 2>&1
 
 start "AutoOpenBrowser" cmd /c "timeout /t 30 >nul & start http://localhost:5173"
 
-docker compose up --build frontend-dev backend
+docker compose up --build frontend-dev backend worker
 pause

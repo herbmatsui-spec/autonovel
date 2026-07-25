@@ -11,7 +11,7 @@ interface ProjectContextState {
 
 export const useProjectStore = create<ProjectContextState>((set) => ({
   selectedBookId: null,
-  activeTab: 'books',
+  activeTab: 'landing',
   setSelectedBookId: (id) => set({ selectedBookId: id }),
   setActiveTab: (tab) => set({ activeTab: tab }),
 }));

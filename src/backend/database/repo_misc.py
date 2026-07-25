@@ -1,4 +1,5 @@
 from __future__ import annotations
+from src.backend.database.repositories.base import BaseRepository
 
 """
 database/repo_misc.py - その他のデータ(Style Fragments, Custom Styles, Internal State, Patches, Optimization, Background Tasks)操作用のリポジトリMixin
@@ -23,8 +24,10 @@ from src.backend.database.models import (
 logger = logging.getLogger(__name__)
 
 
-class MiscRepositoryMixin:
-    """その他のテーブル(Style fragments, Custom styles, Internal state, Pending patches, Optimization, Background Tasks)に関するDB操作をまとめたMixin"""
+from datetime import datetime
+
+class MiscRepositoryMixin(BaseRepository):
+    """その他のテーブル(Style fragments, Internal state, Pending patches, Optimization, Background Tasks)に関するDB操作をまとめたMixin"""
 
     # ---------- Optimization History ----------
     @retry_with_logging()
@@ -33,7 +36,7 @@ class MiscRepositoryMixin:
             opt = OptimizationHistory(
                 book_id=book_id,
                 report_json=json.dumps(report, ensure_ascii=False),
-                created_at=time.strftime('%Y-%m-%dT%H:%M:%S')
+                created_at=datetime.now()
             )
             session.add(opt)
 
@@ -57,7 +60,7 @@ class MiscRepositoryMixin:
                 content=content,
                 embedding_json=json.dumps(embedding),
                 origin=origin,
-                created_at=time.strftime('%Y-%m-%dT%H:%M:%S')
+                created_at=datetime.now()
             )
             session.add(frag)
 
@@ -95,7 +98,7 @@ class MiscRepositoryMixin:
             style.instruction = instruction
             style.score = score
             style.analysis = analysis
-            style.created_at = time.strftime('%Y-%m-%dT%H:%M:%S')
+            style.created_at = datetime.now()
 
     @retry_with_logging()
     async def get_all_custom_styles(self) -> List[Dict[str, Any]]:
@@ -124,7 +127,7 @@ class MiscRepositoryMixin:
                 state = InternalState(key=key)
                 session.add(state)
             state.value = json.dumps(value, ensure_ascii=False) if not isinstance(value, str) else value
-            state.updated_at = time.strftime('%Y-%m-%dT%H:%M:%S')
+            state.updated_at = datetime.now()
 
     @retry_with_logging()
     async def get_internal_state(self, key: str) -> Optional[Any]:
@@ -154,7 +157,7 @@ class MiscRepositoryMixin:
                 patch_content=json.dumps(patch_content, ensure_ascii=False) if isinstance(patch_content, dict) else patch_content,
                 ab_test_result=json.dumps(ab_test_result, ensure_ascii=False),
                 status="pending",
-                created_at=time.strftime('%Y-%m-%dT%H:%M:%S')
+                created_at=datetime.now()
             )
             session.add(patch)
             await session.flush()
@@ -180,7 +183,7 @@ class MiscRepositoryMixin:
             await session.execute(
                 update(PendingPatch)
                 .where(PendingPatch.id == patch_id)
-                .values(status=status, reviewed_at=time.strftime('%Y-%m-%dT%H:%M:%S'))
+                .values(status=status, reviewed_at=datetime.now())
             )
 
     @retry_with_logging()

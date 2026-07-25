@@ -8,17 +8,19 @@ Python パッケージ名: `kaku-hegemony` (v3.0.0)
 
 ## 🧱 システム構成
 
-本ツールは **FastAPI バックエンド** と **React UI** の 2 層構成です。重い生成処理は **Huey タスクワーカー**（Redis バックエンド、非導入時は SQLite へフォールバック）で非同期に実行されます。
+本ツールは **FastAPI バックエンド** と **2つのフロントエンド（React / Streamlit）** の構成です。重い生成処理は **Huey タスクワーカー**（Redis バックエンド、未導入時は SQLite へフォールバック）で非同期に実行されます。
 
 | コンポーネント | 役割 | 既定ポート |
 | --- | --- | --- |
 | `src/backend/server.py` | FastAPI バックエンド（REST API + SSE 進捗配信） | `8200` |
-| `frontend/` | React + TypeScript メイン UI | `3000` |
+| `frontend/` | React + TypeScript メイン UI（開発時） | `5173` |
+| `frontend/` (prod) | React プロダクション UI | `3000` |
+| `streamlit_app/` | Streamlit ローカル UI（開発・デモ用） | `8501` |
 | `src/backend/tasks.py` | Huey タスクワーカー（非同期生成パイプライン） | — |
 | `src/services/vector_store.py` | ChromaDB（RAG / 文体ラボ等のベクトル検索） | — |
 | `src/backend/database/` | SQLAlchemy + Alembic マイグレーション（既定は SQLite） | — |
 
-> **UI について**: メイン UI は `frontend/` の React + TypeScript (Vite) に移行済みです。旧 `streamlit_app/` は廃止予定です。
+> **UI について**: 現在は `streamlit_app/` と `frontend/` の両方を並行してメンテナンスしています。ローカル開発・デモ用途では `streamlit_app/` を、Web 配布・モダン UI 用途では `frontend/` を使用してください。
 
 ### ディレクトリ構成（抜粋）
 
@@ -26,7 +28,7 @@ Python パッケージ名: `kaku-hegemony` (v3.0.0)
 src/
   backend/     FastAPI サーバー・ルーター・エンジン・ワーカー
   services/    LLM / ベクトルストア / ビジネスロジック
-  agents/      AI オーケストレーション（ADR-0002）
+  agents/      AI オーケストレーション（WritingAgent 等）
   core/        監査可能性（Trace ID 等）・例外・共通ユーティリティ
   domain/      ドメインモデル
   llm/         Gemini クライアント・モデル選択
@@ -35,13 +37,18 @@ src/
   engine/      エンジン実装（プロンプト構築・ワークフロー）
   config/      設定・CORS
   prompts/     プロンプトテンプレート
-  schemas/     データスキーマ定義
+  api/         API ルーター
+  database/    データベースモデル・リポジトリ
 frontend/
   src/
     components/  UIコンポーネント
     store/      状態管理（Zustand）
     hooks/      UIロジック
     api.ts      バックエンドAPIクライアント
+streamlit_app/
+  app.py        Streamlit エントリーポイント
+  sidebar.py   サイドバー定義
+  ui_tabs_*.py 各タブ実装
 ```
 
 ---
@@ -65,7 +72,7 @@ frontend/
 *   **プロット再構築**: 途中でストーリーを変更したい場合に、それ以降のプロットを一貫性を保ったまま自動で再生成。
 
 ### 4. 官能描写モード（オプトイン方式）
-*   **NSFW オプトイン**: サイドバーの「高度な詳細設定」から「🔞 NSFWモードを有効化」を ON にすると、初回のみ `nsfw_disclaimer.py` による同意確認ダイアログが表示されます。同意することで `session.config["enable_nsfw"] = True` となり、セーフティフィルターが緩和されます。
+*   **NSFW オプトイン**: サイドバーの「高度な詳細設定」から「🔞 NSFWモードを有効化」を ON にすると、初回のみ同意確認ダイアログが表示されます。同意することでセーフティフィルターが緩和されます。
 *   **強度・プラットフォーム制御**: 同意後は「🌡️ 官能描写の強度」（0:ほのぼの 〜 5:過激）や、カクヨム恋愛等の「📱 出力プラットフォーム」プリセットを選択できます。
 *   **詳細エージェント設定**: 「🎬 官能エージェント詳細設定」から、映像パターン技術の適用、感覚ウェイト（触覚・嗅覚・聴覚・視線・呼吸・味覚）、ペーシング比率（Build / Peak / Afterglow）、品質パラメータ（比喩密度・心理描写深度）を細かく調整可能です。
 *   **セーフティマニフェスト**: 生成時には `prompts/erotic/safety_manifest.py` のセーフティ・マニフェストが最優先でプロンプトに挿入され、同意の明示・未成年禁止・表現方針・余韻の義務が自動適用されます。
@@ -76,14 +83,14 @@ frontend/
 ## 🛠️ 動作要件・セットアップ
 
 ### 1. 前提条件
-*   **Python**: 3.10 以上（開発・CI は 3.12 で動作確認）。Docker 環境は Python 3.10 ベースです。
+*   **Python**: 3.12 以上（開発・CI は 3.12 で動作確認）。Docker 環境は Python 3.10 ベースです。
 *   **Google Gemini API キー**: Google AI Studio 等から取得した有効な API キーが必要です（環境変数 `GEMINI_API_KEY`、または UI から入力）。
 *   **（任意）Redis**: タスクワーカー用。未導入の場合は SQLite へフォールバックします。
 *   **（任意）ChromaDB**: ベクトル検索（RAG）用。未導入の場合は機能が無効化されます。
 
 ### 2. Docker での起動（推奨）
 
-`docker-compose.yml` にバックエンド（`:8200`）とフロントエンド（`:3000`）が定義されています。
+`docker-compose.yml` にバックエンド（`:8200`）とフロントエンド（`:5173`）が定義されています。
 
 ```bash
 # 任意: 環境変数を .env に用意（GEMINI_API_KEY など）
@@ -93,10 +100,12 @@ docker compose up --build
 ```
 
 起動後:
-*   React UI: http://localhost:3000
+*   React UI: http://localhost:5173
 *   Backend API:  http://localhost:8200 （`/docs` で Swagger UI を確認可）
 
 ### 3. ローカルでの起動
+
+#### 方法A: Streamlit UI を使用する場合（開発・デモ向け）
 
 ```bash
 # 依存関係のインストール
@@ -112,11 +121,32 @@ uvicorn src.backend.server:app --host 127.0.0.1 --port 8200
 # 2) タスクワーカー (Huey)
 python -m huey.bin.huey_consumer src.backend.tasks.huey
 
-# 3) React UI
-cd frontend && npm install --legacy-peer-deps && npm run dev
+# 3) Streamlit UI
+streamlit run streamlit_app/app.py --server.port 8501 --server.address 127.0.0.1
 ```
 
-Windows の場合は `start_app.bat` を実行すると、上記プロセスをまとめて起動できます。
+#### 方法B: React フロントエンドを使用する場合
+
+```bash
+# 依存関係のインストール
+pip install -r requirements.txt
+cd frontend && npm install --legacy-peer-deps
+
+# 環境変数（例）
+export GEMINI_API_KEY="your-api-key"
+export PYTHONPATH="$(pwd)"
+
+# 1) バックエンド API
+uvicorn src.backend.server:app --host 127.0.0.1 --port 8200
+
+# 2) タスクワーカー (Huey)
+python -m huey.bin.huey_consumer src.backend.tasks.huey
+
+# 3) React UI（開発サーバー）
+cd frontend && npm run dev
+```
+
+Windows の場合は `start_app.bat`（Docker 版）または `run_all.bat`（Streamlit 版）を実行すると、上記プロセスをまとめて起動できます。
 
 ### 4. 環境変数
 
@@ -166,14 +196,14 @@ ruff format --check .
 # 型検査
 mypy --config-file pyproject.toml src/
 
-# テスト（ユニット / 統合）
+# テスト（ユニット）
 pytest tests/unit -q
+
+# テスト（統合）
 pytest tests/integration tests/test_vector_store_lifecycle.py -q
-pytest tests/integration/test_erotic_refine_workflow.py -q
-pytest tests/integration/test_erotic_full_pipeline.py -q
 ```
 
-統合テストは ChromaDB（`chroma:0.5.5`）と Redis（`redis:7`）のコンテナを必要とします。詳細は CI ワークフローを参照してください。
+統合テストは ChromaDB と Redis のコンテナを必要とします。詳細は CI ワークフローを参照してください。
 
 ---
 
@@ -189,4 +219,3 @@ pytest tests/integration/test_erotic_full_pipeline.py -q
 - Implemented Dependency Injection container for better modularity and testability.
 - Migrated domain workflows to a service-oriented architecture.
 - Verified all core unit tests pass.
-

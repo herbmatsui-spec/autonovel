@@ -181,8 +181,11 @@ class UnitOfWork:
                 if self.session is None:
                     raise RuntimeError("Session not initialized")
                 async def _commit_with_retry():
-                    await self.outbox_service.flush(self.session, self._chroma_additions, self._chroma_deletions)
-                    await self.session.commit()
+                    if self.session:
+                        await self.outbox_service.flush(self.session, self._chroma_additions, self._chroma_deletions)
+                        await self.session.commit()
+                    else:
+                        raise RuntimeError("Session is None during commit")
 
                 # retry_on_lock(retries=...)(func) returns the wrapper. We then call the wrapper.
                 await retry_on_lock()( _commit_with_retry)()

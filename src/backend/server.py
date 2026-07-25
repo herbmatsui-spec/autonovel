@@ -14,6 +14,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
+import importlib
 
 from config.container import Container
 from config.cors_config import get_allowed_origins
@@ -22,23 +23,6 @@ from config.logging_config import setup_logging
 from src.backend.auth import validate_api_key_or_raise
 from src.backend.database import UnitOfWork, init_db
 from src.backend.error_handlers import register_error_handlers
-from src.backend.routers import (
-    books,
-    commercial,
-    episodes,
-    health,
-    issues,
-    marketing,
-    metrics,
-    misc,
-    novel,
-    patches,
-    plots,
-    prompt_versions,
-    tasks,
-)
-from src.backend.task_helpers import create_task as _create_task
-from src.backend.tasks import execute_service_workflow
 from src.core.observability import TraceContext
 from src.models.api_schemas import (
     CritiqueOptimizeRequest,
@@ -186,24 +170,29 @@ def create_app() -> FastAPI:
     application.middleware("http")(add_security_headers_middleware)
     application.middleware("http")(add_trace_id_middleware)
 
-    # ルーター登録
-    router_list = [
-        health,
-        books,
-        plots,
-        episodes,
-        tasks,
-        patches,
-        issues,
-        marketing,
-        prompt_versions,
-        metrics,
-        misc,
-        novel,
-        commercial,
+    # ルーター登録（遅延ロード）
+    router_modules = [
+        "src.backend.routers.health",
+        "src.backend.routers.books",
+        "src.backend.routers.plots",
+        "src.backend.routers.episodes",
+        "src.backend.routers.tasks",
+        "src.backend.routers.patches",
+        "src.backend.routers.issues",
+        "src.backend.routers.marketing",
+        "src.backend.routers.prompt_versions",
+        "src.backend.routers.metrics",
+        "src.backend.routers.misc",
+        "src.backend.routers.novel",
+        "src.backend.routers.commercial",
+        "src.backend.routers.easy_mode",
     ]
-    for r in router_list:
-        application.include_router(r.router)
+    for module_path in router_modules:
+        try:
+            module = importlib.import_module(module_path)
+            application.include_router(module.router)
+        except ImportError as e:
+            logger.error(f"Failed to load router {module_path}: {e}")
 
     return application
 
@@ -213,6 +202,9 @@ app = create_app()
 
 @app.post("/api/refine_erotic")
 async def refine_erotic(req: RefineEroticRequest):
+    from src.backend.task_helpers import create_task as _create_task
+    from src.backend.tasks import execute_service_workflow
+
     validate_api_key_or_raise(req.api_key)
     task_id = generate_task_id("refine_erotic")
     await _create_task(task_id, "官能研磨タスクを開始中...", total_steps=1)
@@ -235,6 +227,9 @@ async def refine_erotic(req: RefineEroticRequest):
 # Heavy operations enqueued via Huey
 @app.post("/api/easy_mode/generate")
 async def generate_easy(req: EasyModeRequest):
+    from src.backend.task_helpers import create_task as _create_task
+    from src.backend.tasks import execute_service_workflow
+
     validate_api_key_or_raise(req.api_key)
     task_id = generate_task_id("easy")
     await _create_task(task_id, "タスクを開始中...", total_steps=3)
@@ -252,6 +247,9 @@ async def generate_easy(req: EasyModeRequest):
             "word_count": req.word_count,
             "concept": req.concept,
             "tone_vibe": req.tone_vibe,
+            "style_key": req.style_key,
+            "enable_erotic": req.enable_erotic,
+            "erotic_intensity": req.erotic_intensity,
         },
         trace_id=TraceContext.get_trace_id(),
     )
@@ -260,6 +258,9 @@ async def generate_easy(req: EasyModeRequest):
 
 @app.post("/api/critique/optimize")
 async def critique_optimize(req: CritiqueOptimizeRequest):
+    from src.backend.task_helpers import create_task as _create_task
+    from src.backend.tasks import execute_service_workflow
+
     validate_api_key_or_raise(req.api_key)
     task_id = generate_task_id("critique")
     await _create_task(task_id, "品質分析を開始中...", total_steps=1)

@@ -26,7 +26,7 @@ class FullAutoWorkflow(BaseWorkflow):
 
         # 1. 企画生成
         try:
-            reporter.update_progress(0, 3, "STEP 1/3: 覇権企画を生成中...")
+            reporter.update_progress(0, 4, "STEP 1/4: 覇権企画を生成中...")
             book_id, bible = await self.planner.create_hegemony_plan(
                 genre=genre,
                 keywords=keywords,
@@ -39,6 +39,8 @@ class FullAutoWorkflow(BaseWorkflow):
                 cost_severity=p_settings.get("cost_severity", 2),
                 target_eps=target_eps,
                 initial_plot_limit=3,
+                enable_erotic=kwargs.get("enable_erotic", False),
+                erotic_intensity=kwargs.get("erotic_intensity", 2),
                 reporter=reporter,
             )
             
@@ -89,7 +91,7 @@ class FullAutoWorkflow(BaseWorkflow):
 
         # 2. 並列執筆（プロット生成含む）
         try:
-            reporter.update_progress(1, 3, "STEP 2/3: 本文を自動執筆中...")
+            reporter.update_progress(1, 4, "STEP 2/4: 本文を自動執筆中...")
             chars_count, failed_episodes = await run_pipeline_with_retry(
                 writer=self.writing,
                 book_id=book_id,
@@ -110,7 +112,7 @@ class FullAutoWorkflow(BaseWorkflow):
 
         # 3. 納品パッケージ作成
         try:
-            reporter.update_progress(2, 3, "STEP 3/3: 納品パッケージを作成中...")
+            reporter.update_progress(2, 4, "STEP 3/4: 納品パッケージを作成中...")
             zip_data, zip_filename = None, f"export_{book_id}.zip"
         except Exception as e:
             reporter.report(f"🚨 納品パッケージ作成中にエラーが発生しました: {e}. 作品データが破損している可能性があります。", "error")
@@ -119,7 +121,33 @@ class FullAutoWorkflow(BaseWorkflow):
         book = await self.repo.get_book(book_id)
         actual_title = book.title if book else "名称未設定"
 
-        reporter.update_progress(3, 3, "全行程完了！")
+        # 4. 挿絵生成
+        illustrations = []
+        illustration_settings = kwargs.get("illustration_settings")
+        if illustration_settings and illustration_settings.get("enableIllustration"):
+            try:
+                reporter.update_progress(3, 4, "STEP 4/4: 挿絵を生成中...")
+                from src.backend.workflows.illustration_workflow import IllustrationWorkflow
+                from src.agents.illustration_agent import IllustrationAgent
+                from src.services.image_service import ImageService
+                import os
+
+                # 依存関係の解決 (実際にはDIコンテナから取得すべきだが、暫定的にここで生成)
+                img_service = ImageService(api_key=os.getenv("GOOGLE_GENAI_API_KEY", ""))
+                ill_agent = IllustrationAgent(image_service=img_service)
+                ill_workflow = IllustrationWorkflow(illustration_agent=ill_agent, repo=self.repo)
+                
+                ill_res = await ill_workflow.execute(
+                    reporter=reporter,
+                    book_id=book_id,
+                    settings=illustration_settings
+                )
+                if ill_res["status"] == "success":
+                    illustrations = ill_res.get("illustrations", [])
+            except Exception as e:
+                reporter.report(f"⚠️ 挿絵生成中にエラーが発生しましたが、作品は完成しています: {e}", "warning")
+
+        reporter.update_progress(4, 4, "全行程完了！")
         return {
             "book_id": book_id,
             "title": actual_title,
@@ -127,4 +155,5 @@ class FullAutoWorkflow(BaseWorkflow):
             "failed_episodes": failed_episodes,
             "zip_data": zip_data,
             "zip_filename": zip_filename,
+            "illustrations": illustrations,
         }

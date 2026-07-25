@@ -1,4 +1,7 @@
 from __future__ import annotations
+from typing import Any, Dict, List, Optional
+from typing import Any
+from src.backend.database.repo_protocols import IRepository
 
 """
 database/repo_plot.py - プロット(Plots)データ操作用のリポジトリMixin
@@ -13,7 +16,7 @@ from src.backend.database.models import Book, Branch, EntertainmentCheckLog, Plo
 from src.models import PlotDbModel
 
 
-class PlotRepositoryMixin:
+class PlotRepositoryMixin(IRepository):
     """Plotテーブルに関するDB操作をまとめたMixin"""
 
     @retry_with_logging()
@@ -98,8 +101,21 @@ class PlotRepositoryMixin:
             plot_obj.sanctuary_event = sanctuary_event
             plot_obj.is_locked = is_locked
 
+    async def save_plot(self, plot_data: Any) -> bool:
+        """IRepository interface implementation for save_plot."""
+        try:
+            branch_id = plot_data.get("branch_id")
+            ep_num = plot_data.get("ep_num")
+            plot = plot_data.get("plot")
+            if branch_id is None or ep_num is None or plot is None:
+                return False
+            await self._save_plot_impl(branch_id, ep_num, plot)
+            return True
+        except Exception:
+            return False
+
     @retry_with_logging()
-    async def save_plot(self, branch_id: int, ep_num: int, plot: Any) -> None:
+    async def _save_plot_impl(self, branch_id: int, ep_num: int, plot: Any) -> None:
         """Pydanticモデル（PlotEpisode）をデータベースのplotテーブルに一括登録/更新する。"""
         async with self._get_session() as session:
             branch_result = await session.execute(select(Branch.book_id).where(Branch.id == branch_id))
@@ -197,8 +213,22 @@ class PlotRepositoryMixin:
                 )
             )
 
+    async def update_plot_blueprint(self, book_id: str, blueprint: Any) -> bool:
+        """IRepository interface implementation for update_plot_blueprint."""
+        try:
+            # blueprint is expected to be a dict containing branch_id, ep_num, and detailed_blueprint
+            branch_id = blueprint.get("branch_id")
+            ep_num = blueprint.get("ep_num")
+            detailed_blueprint = blueprint.get("detailed_blueprint")
+            if branch_id is None or ep_num is None or detailed_blueprint is None:
+                return False
+            await self._update_plot_blueprint_impl(branch_id, ep_num, detailed_blueprint)
+            return True
+        except Exception:
+            return False
+
     @retry_with_logging()
-    async def update_plot_blueprint(self, branch_id: int, ep_num: int, detailed_blueprint: str) -> None:
+    async def _update_plot_blueprint_impl(self, branch_id: int, ep_num: int, detailed_blueprint: str) -> None:
         """プロットの設計図を直接更新する"""
         async with self._get_session() as session:
             await session.execute(

@@ -320,6 +320,46 @@ STYLE_DEFINITIONS: Dict[str, Dict[str, Any]] = {
         "golden_rules":   RULE_SET_B_RULES,
         "negative_prompt": RULE_SET_D_NEG,
     },
+    "style_mystery": {
+        "name":           "ミステリー（論理・観察）",
+        "instruction":    "【指針】感情を排した観察眼で微細な証拠を拾い上げよ。論理的な思考プロセスを階段を登るように構築し、読者に謎解きのカタルシスを与えよ。",
+        "dialogue_ratio": "50%",
+        "syntax_rhythm":  "理路整然とした長文。疑問符を多用し、読者を推理に巻き込む。",
+        "metaphor_dna":   "パズルのピース、見えない糸、時計の針。真実を「光を当てる」と表現。",
+        "noise_dna":      "パイプの煙、眼鏡を押し上げる指、靴音の反響。思考の静寂。",
+        "golden_rules":   RULE_SET_B_RULES,
+        "negative_prompt": RULE_SET_A_NEG,
+    },
+    "style_scifi": {
+        "name":           "SF・サイバーパンク",
+        "instruction":    "【指針】無機質なテクノロジー用語と、それに依存する人間の脆さを対比させよ。ネオンの色彩や機械音を強調し、サイバーな世界観を描写せよ。",
+        "dialogue_ratio": "30%",
+        "syntax_rhythm":  "カタカナ用語の多用。情報量の多い圧縮された文体。",
+        "metaphor_dna":   "電子の海、錆びた回路、ネオンの瞬き。肉体を「ハードウェア」と見なす視点。",
+        "noise_dna":      "冷却ファンの音、合成音声のノイズ、網膜ディスプレイの明滅。",
+        "golden_rules":   RULE_SET_A_RULES,
+        "negative_prompt": RULE_SET_D_NEG,
+    },
+    "style_romance": {
+        "name":           "王道ロマンス（甘々・胸キュン）",
+        "instruction":    "【指針】相手の一挙手一投足に心が揺れ動く様を、色彩豊かな比喩で描写せよ。触れ合う距離感や視線の交差を最も重要なイベントとして扱え。",
+        "dialogue_ratio": "60%",
+        "syntax_rhythm":  "流れるような柔らかい文体。心情の吐露には改行を用いて余韻を持たせる。",
+        "metaphor_dna":   "花の色、甘い香り、春の風。恋心を「溶けるような熱」と表現。",
+        "noise_dna":      "頬を染める熱、逸らす視線、無意識に触れる指先。",
+        "golden_rules":   RULE_SET_D_RULES,
+        "negative_prompt": RULE_SET_B_NEG,
+    },
+    "style_horror": {
+        "name":           "ホラー（真綿で首を絞める恐怖）",
+        "instruction":    "【指針】日常の隙間に潜む「何かの異変」を徐々に描写し、読者の背筋を冷やせ。直接的な怪異の描写は避け、影や足音、温度低下で恐怖を煽れ。",
+        "dialogue_ratio": "20%",
+        "syntax_rhythm":  "短い文と長い文の不規則なリズム。意味深な体言止め。",
+        "metaphor_dna":   "這い上がる冷気、泥のような暗闇、軋む床。恐怖を「臓腑を掴まれる」と表現。",
+        "noise_dna":      "聞こえるはずのない囁き、振り返る瞬間の硬直、急激な室温の低下。",
+        "golden_rules":   RULE_SET_C_RULES,
+        "negative_prompt": RULE_SET_A_NEG,
+    },
 }
 
 STYLE_DEFINITIONS["style_fantasy_erotic"] = {
@@ -331,7 +371,7 @@ STYLE_DEFINITIONS["style_fantasy_erotic"] = {
     "noise_dna":      "風が抜ける音、羽音、炎の震えるささやき。魔法の点滴感。",
     "golden_rules":   RULE_SET_B_RULES,
     "negative_prompt": RULE_SET_B_NEG,
-},
+}
 STYLE_DEFINITIONS["style_erotic_standard"] = {
     "name":           "情緒的官能（スタンダード）",
     "instruction":    "【指針】触覚、匂い、呼吸といった身体的感覚を主軸に、情緒と余韻を重視せよ。直接的すぎる露骨な名称は避け、文学的な比喩を用いて『肌の熱』や『心の昂ぶり』を多層的に記述せよ。",

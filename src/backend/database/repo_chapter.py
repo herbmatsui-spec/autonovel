@@ -3,6 +3,7 @@ from __future__ import annotations
 """
 database/repo_chapter.py - チャプター(Chapters)本文データ操作用のリポジトリMixin
 """
+from src.backend.database.repositories.base import BaseRepository
 import json
 import re
 from typing import Any, List, Optional
@@ -11,10 +12,10 @@ from sqlalchemy import delete, or_, select, update
 
 from src.backend.database.core import retry_with_logging
 from src.backend.database.models import Chapter
-from src.models import ChapterDbModel
+from src.backend.database.models import ChapterDbModel
 
 
-class ChapterRepositoryMixin:
+class ChapterRepositoryMixin(BaseRepository):
     """Chaptersテーブルに関するDB操作をまとめたMixin"""
 
     @retry_with_logging()

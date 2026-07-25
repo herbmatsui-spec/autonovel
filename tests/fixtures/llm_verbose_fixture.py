@@ -9,7 +9,9 @@ class LLMVerboseFixture:
     実LLMが生成しがちな冗長な説明文 (Verbose Description) を提供するフィクスチャ。
     リテラル一致に依存しない保全テストに使用する。
     """
-    def __init__(self, data_path: str = "tests/fixtures/verbose_edges.json"):
+    def __init__(self, data_path: Optional[str] = None):
+        if data_path is None:
+            data_path = str(Path(__file__).parent / "verbose_edges.json")
         self.data_path = data_path
         self.samples = self._load_samples()
 

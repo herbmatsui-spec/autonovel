@@ -3,6 +3,7 @@ from __future__ import annotations
 """
 database/repo_character.py - キャラクター(Characters)データ操作用のリポジトリMixin
 """
+from src.backend.database.repositories.base import BaseRepository
 import json
 from typing import Any, List
 
@@ -10,10 +11,10 @@ from sqlalchemy import select, update
 
 from src.backend.database.core import retry_with_logging
 from src.backend.database.models import Character
-from src.models import CharacterDbModel
+from src.backend.database.models import CharacterDbModel
 
 
-class CharacterRepositoryMixin:
+class CharacterRepositoryMixin(BaseRepository):
     """Charactersテーブルに関するDB操作をまとめたMixin"""
 
     @retry_with_logging()

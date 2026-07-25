@@ -14,7 +14,7 @@ try:
     REDIS_AVAILABLE = True
 except ImportError:
     REDIS_AVAILABLE = False
-    redis = None
+    redis: Any = None
 from config import get_config
 
 logger = logging.getLogger(__name__)

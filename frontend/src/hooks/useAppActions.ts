@@ -16,6 +16,7 @@ import {
   importChapter,
   generateMarketing,
   stopTask,
+  refineErotic,
 } from '@/api';
 import type { EasyModeParams } from '@/types';
 
@@ -59,11 +60,14 @@ export function useAppActions(setLoading: (b: boolean) => void) {
         genre: easy.easyGenre,
         keywords: easy.easyKeywords,
         archetype_key: easy.easyArchetype,
+        style_key: easy.easyStyleKey,
         target_eps: easy.easyTargetEps,
         initial_limit: 1,
         word_count: easy.easyWordCount,
         concept: easy.easyConcept,
         tone_vibe: 0.65,
+        enable_erotic: easy.enableErotic,
+        erotic_intensity: easy.eroticIntensity,
       });
       setActiveTaskId(taskId);
       setCreateModalOpen(false);
@@ -203,6 +207,27 @@ export function useAppActions(setLoading: (b: boolean) => void) {
     }
   };
 
+  const handleRefineErotic = async (params: { intensity: number; platform_preset: string }) => {
+    if (!selectedBook) return;
+    if (!apiKey) {
+      toast.warning('APIキーを入力してください。');
+      return;
+    }
+    try {
+      setLoading(true);
+      await refineErotic({
+        book_id: selectedBook.id,
+        ...params,
+      });
+      toast.success('官能表現の洗練が完了しました。');
+      await loadBookDetails(selectedBook.id);
+    } catch (err: any) {
+      toast.error('官能表現の洗練に失敗しました: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     handleCreateEasyMode,
     handleTriggerWriting,
@@ -210,6 +235,7 @@ export function useAppActions(setLoading: (b: boolean) => void) {
     handleCritiqueOptimize,
     handleImportChapter,
     handleGenerateMarketing,
+    handleRefineErotic,
     loadBookDetails,
     handleStopTask,
   };

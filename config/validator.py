@@ -21,12 +21,27 @@ logger = logging.getLogger(__name__)
 
 class ConfigValidator:
     @staticmethod
-    def load_settings_toml(path: str = "config/settings.toml") -> GlobalConfigModel:
-        logger.debug(f"[LOAD] ConfigValidator.load_settings_toml() called from: path={path}")
+    def _resolve_config_path(path_str: str) -> Path:
+        p = Path(path_str)
+        if p.exists():
+            return p.resolve()
+        base_dir = Path(__file__).resolve().parent.parent
+        candidate1 = base_dir / path_str
+        if candidate1.exists():
+            return candidate1.resolve()
+        candidate2 = base_dir / "config" / Path(path_str).name
+        if candidate2.exists():
+            return candidate2.resolve()
+        return p.resolve()
+
+    @staticmethod
+    def load_settings_toml(path: str = "autonovel/config/settings.toml") -> GlobalConfigModel:
+        resolved_path = ConfigValidator._resolve_config_path(path)
+        logger.debug(f"[LOAD] ConfigValidator.load_settings_toml() called from: path={resolved_path}")
         try:
-            if not Path(path).exists():
-                raise FileNotFoundError(f"設定ファイルが見つかりません: {path}")
-            with open(path, "rb") as f:
+            if not resolved_path.exists():
+                raise FileNotFoundError(f"設定ファイルが見つかりません: {resolved_path}")
+            with open(resolved_path, "rb") as f:
                 try:
                     import tomllib
                 except ModuleNotFoundError:
@@ -43,12 +58,13 @@ class ConfigValidator:
             raise
 
     @staticmethod
-    def load_models_yaml(path: str = "config/models.yaml") -> ModelRegistryModel:
-        logger.debug(f"[LOAD] ConfigValidator.load_models_yaml() called from: path={path}")
+    def load_models_yaml(path: str = "autonovel/config/models.yaml") -> ModelRegistryModel:
+        resolved_path = ConfigValidator._resolve_config_path(path)
+        logger.debug(f"[LOAD] ConfigValidator.load_models_yaml() called from: path={resolved_path}")
         try:
-            if not Path(path).exists():
-                raise FileNotFoundError(f"設定ファイルが見つかりません: {path}")
-            with open(path, "r", encoding="utf-8") as f:
+            if not resolved_path.exists():
+                raise FileNotFoundError(f"設定ファイルが見つかりません: {resolved_path}")
+            with open(resolved_path, "r", encoding="utf-8") as f:
                 data = yaml.safe_load(f)
             result = ModelRegistryModel(**data["model_registry"]) if "model_registry" in data else ModelRegistryModel()
             logger.debug(f"[LOAD] models.yaml loaded: planning={result.planning}")
@@ -58,12 +74,13 @@ class ConfigValidator:
             raise
 
     @staticmethod
-    def load_system_plugins_yaml(path: str = "config/system_plugins.yaml") -> SystemPluginsModel:
-        logger.debug(f"[LOAD] ConfigValidator.load_system_plugins_yaml() called from: path={path}")
+    def load_system_plugins_yaml(path: str = "autonovel/config/system_plugins.yaml") -> SystemPluginsModel:
+        resolved_path = ConfigValidator._resolve_config_path(path)
+        logger.debug(f"[LOAD] ConfigValidator.load_system_plugins_yaml() called from: path={resolved_path}")
         try:
-            if not Path(path).exists():
-                raise FileNotFoundError(f"設定ファイルが見つかりません: {path}")
-            with open(path, "r", encoding="utf-8") as f:
+            if not resolved_path.exists():
+                raise FileNotFoundError(f"設定ファイルが見つかりません: {resolved_path}")
+            with open(resolved_path, "r", encoding="utf-8") as f:
                 data = yaml.safe_load(f)
             result = SystemPluginsModel(**data["plugins"]) if "plugins" in data else SystemPluginsModel()
             logger.debug("[LOAD] system_plugins.yaml loaded")
@@ -73,12 +90,13 @@ class ConfigValidator:
             raise
 
     @staticmethod
-    def load_tropes_json(path: str = "config/tropes.json") -> TropesModel:
-        logger.debug(f"[LOAD] ConfigValidator.load_tropes_json() called from: path={path}")
+    def load_tropes_json(path: str = "autonovel/config/tropes.json") -> TropesModel:
+        resolved_path = ConfigValidator._resolve_config_path(path)
+        logger.debug(f"[LOAD] ConfigValidator.load_tropes_json() called from: path={resolved_path}")
         try:
-            if not Path(path).exists():
-                raise FileNotFoundError(f"設定ファイルが見つかりません: {path}")
-            with open(path, "r", encoding="utf-8") as f:
+            if not resolved_path.exists():
+                raise FileNotFoundError(f"設定ファイルが見つかりません: {resolved_path}")
+            with open(resolved_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
             result = TropesModel(**data)
             logger.debug(f"[LOAD] tropes.json loaded: {len(result.tropes)} tropes")
@@ -87,7 +105,7 @@ class ConfigValidator:
             # If JSON decode error, delete the invalid file to allow test cleanup
             if isinstance(e, json.JSONDecodeError):
                 try:
-                    Path(path).unlink(missing_ok=True)
+                    resolved_path.unlink(missing_ok=True)
                     logger.debug("Deleted invalid tropes.json after JSONDecodeError")
                 except Exception as del_e:
                     logger.warning(f"Failed to delete invalid tropes.json: {del_e}")
@@ -95,12 +113,13 @@ class ConfigValidator:
             raise
 
     @staticmethod
-    def load_interaction_matrix_yaml(path: str = "config/interaction_matrix.yaml") -> InteractionMatrixModel:
-        logger.debug(f"[LOAD] ConfigValidator.load_interaction_matrix_yaml() called from: path={path}")
+    def load_interaction_matrix_yaml(path: str = "autonovel/config/interaction_matrix.yaml") -> InteractionMatrixModel:
+        resolved_path = ConfigValidator._resolve_config_path(path)
+        logger.debug(f"[LOAD] ConfigValidator.load_interaction_matrix_yaml() called from: path={resolved_path}")
         try:
-            if not Path(path).exists():
-                raise FileNotFoundError(f"設定ファイルが見つかりません: {path}")
-            with open(path, "r", encoding="utf-8") as f:
+            if not resolved_path.exists():
+                raise FileNotFoundError(f"設定ファイルが見つかりません: {resolved_path}")
+            with open(resolved_path, "r", encoding="utf-8") as f:
                 data = yaml.safe_load(f)
             result = InteractionMatrixModel(**data)
             logger.debug("[LOAD] interaction_matrix.yaml loaded")
@@ -111,14 +130,15 @@ class ConfigValidator:
 
     @staticmethod
     def load_domain_profile_json(path: str) -> DomainProfileModel:
-        logger.debug(f"[LOAD] ConfigValidator.load_domain_profile_json() called from: path={path}")
+        resolved_path = ConfigValidator._resolve_config_path(path)
+        logger.debug(f"[LOAD] ConfigValidator.load_domain_profile_json() called from: path={resolved_path}")
         try:
-            if not Path(path).exists():
-                raise FileNotFoundError(f"ドメインプロファイルが見つかりません: {path}")
-            with open(path, "r", encoding="utf-8") as f:
+            if not resolved_path.exists():
+                raise FileNotFoundError(f"ドメインプロファイルが見つかりません: {resolved_path}")
+            with open(resolved_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
             result = DomainProfileModel(**data)
-            logger.debug(f"[LOAD] domain_profile loaded: {Path(path).stem}")
+            logger.debug(f"[LOAD] domain_profile loaded: {resolved_path.stem}")
             return result
         except Exception as e:
             logger.error(f"ドメインプロファイルの読み込みに失敗しました: {str(e)}")

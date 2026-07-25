@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { useUserSettingsStore } from "../store/useUserSettingsStore";
 import { useProjectStore, TabId } from "../store/useProjectStore";
 import { useBookStore } from "../store/useBookStore";
-import { useWritingStore } from "../store/useWritingStore";
+
 import { toast } from 'sonner';
 
 function requireBook(selectedBook: unknown, action: () => void) {
@@ -16,10 +16,9 @@ function requireBook(selectedBook: unknown, action: () => void) {
 }
 
 export function Sidebar() {
-  const { apiKey, setApiKey, modelType, setModelType, temperature, setTemperature } = useUserSettingsStore();
+  const { apiKey, setApiKey, modelType, setModelType, isExpertMode, setIsExpertMode } = useUserSettingsStore();
   const { activeTab, setActiveTab } = useProjectStore();
   const { selectedBook } = useBookStore();
-  const { wordCount, setWordCount } = useWritingStore();
   const [tokenUsage] = useState({ calls: 0, cost: 0 });
 
   const navAction = (tab: TabId, needsBook = true) => () => {
@@ -30,19 +29,21 @@ export function Sidebar() {
     }
   };
 
-  const tabs: { id: TabId; icon: string; label: string; needsBook: boolean }[] = [
-    { id: 'landing',     icon: '🚀', label: 'ホーム',       needsBook: false },
-    { id: 'books',       icon: '📚', label: '作品一覧',      needsBook: false },
-    { id: 'planning',    icon: '📋', label: '企画立案',      needsBook: false },
-    { id: 'plots',       icon: '📖', label: 'プロット設計',   needsBook: true },
-    { id: 'write',       icon: '✍️', label: '本文執筆',      needsBook: true },
-    { id: 'analytics',   icon: '📈', label: '品質＆販促',    needsBook: true },
-    { id: 'style-lab',   icon: '🧬', label: '文体ラボ',      needsBook: false },
-    { id: 'audit',       icon: '⚖️', label: '品質監査',      needsBook: true },
-    { id: 'monitor',     icon: '📡', label: '進捗モニター',  needsBook: true },
-    { id: 'strategy',    icon: '📈', label: '戦略分析',      needsBook: true },
-    { id: 'import',      icon: '📥', label: 'インポート',    needsBook: true },
-  ];
+  const allTabs = [
+    { id: 'landing',     icon: '🚀', label: 'ホーム',       needsBook: false, expertOnly: false },
+    { id: 'books',       icon: '📚', label: '作品一覧',      needsBook: false, expertOnly: false },
+    { id: 'planning',    icon: '📋', label: '企画立案',      needsBook: false, expertOnly: true },
+    { id: 'plots',       icon: '📖', label: 'プロット設計',   needsBook: true,  expertOnly: true },
+    { id: 'write',       icon: '✍️', label: '本文執筆',      needsBook: true,  expertOnly: false },
+    { id: 'analytics',   icon: '📈', label: '品質＆販促',    needsBook: true,  expertOnly: true },
+    { id: 'style-lab',   icon: '🧬', label: '文体ラボ',      needsBook: false, expertOnly: true },
+    { id: 'audit',       icon: '⚖️', label: '品質監査',      needsBook: true,  expertOnly: true },
+    { id: 'monitor',     icon: '📡', label: '進捗モニター',  needsBook: true,  expertOnly: true },
+    { id: 'strategy',    icon: '📈', label: '戦略分析',      needsBook: true,  expertOnly: true },
+    { id: 'import',      icon: '📥', label: 'インポート',    needsBook: true,  expertOnly: true },
+  ] as const;
+
+  const tabs = allTabs.filter(t => isExpertMode || !t.expertOnly);
 
   return (
     <aside
@@ -128,6 +129,19 @@ export function Sidebar() {
             </Button>
           ))}
         </nav>
+      </div>
+
+      {/* Mode Toggle */}
+      <div className="px-4 py-3 border-t border-slate-800 mt-auto">
+        <label className="flex items-center justify-between cursor-pointer">
+          <span className="text-xs font-bold text-slate-300">🎓 上級者モード</span>
+          <input
+            type="checkbox"
+            checked={isExpertMode}
+            onChange={(e) => setIsExpertMode(e.target.checked)}
+            className="w-4 h-4 accent-indigo-500 rounded cursor-pointer"
+          />
+        </label>
       </div>
 
       {/* Active Selected Book Summary in Sidebar */}

@@ -3,6 +3,7 @@ from __future__ import annotations
 """
 database/repo_rules.py - ルールおよびマスターピース操作用のリポジトリMixin
 """
+from src.backend.database.repositories.base import BaseRepository
 import json
 import logging
 import time
@@ -16,7 +17,7 @@ from src.backend.database.models import Masterpiece, Rule
 logger = logging.getLogger(__name__)
 
 
-class RulesRepositoryMixin:
+class RulesRepositoryMixin(BaseRepository):
     """rules および masterpieces テーブルに関するDB操作をまとめたMixin"""
 
     # ---------- Rules ----------

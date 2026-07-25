@@ -16,6 +16,7 @@ import type {
   AuditPlanParams,
   ChapterImportParams,
   MarketingGenerateParams,
+  PendingPatch,
   PromptVersion,
   NarrativeMetricTrend,
   PlanningOptions,

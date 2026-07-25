@@ -88,7 +88,9 @@ class ConfigFileWatcher:
             return
 
         # 設定ファイルのディレクトリを監視
-        config_dir = Path("config")
+        config_dir = Path(__file__).parent
+        if not config_dir.exists():
+            return
         self.observer.schedule(self.handler, str(config_dir), recursive=True)
         self.observer.start()
         self.is_running = True
@@ -113,5 +115,6 @@ class DefaultNotifier:
         st.experimental_rerun()
 
 watcher = ConfigFileWatcher(DefaultNotifier())
-watcher.start()
+if __name__ == "__main__":
+    watcher.start()
 

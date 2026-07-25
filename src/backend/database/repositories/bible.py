@@ -59,7 +59,7 @@ class BibleRepository(BaseRepository):
                 if book_obj.marketing_data:
                     try:
                         current_mkt = json.loads(book_obj.marketing_data)
-                    except:
+                    except (json.JSONDecodeError, ValueError):
                         pass
 
                 new_mkt = bible.marketing_assets.model_dump()

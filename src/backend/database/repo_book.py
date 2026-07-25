@@ -1,4 +1,6 @@
 from __future__ import annotations
+from typing import Any
+from src.backend.database.repo_protocols import IRepository
 
 """
 database/repo_book.py - 作品(Books)データ操作用のリポジトリMixin
@@ -17,12 +19,27 @@ from src.models import BookDbModel
 logger = logging.getLogger(__name__)
 
 
-class BookRepositoryMixin:
+class BookRepositoryMixin(IRepository):
     """Booksテーブルに関するDB操作をまとめたMixin"""
 
     @retry_with_logging()
-    async def create_book(self, title: str, genre: str, concept: str, synopsis: str,
-                          target_eps: int, style_dna: dict, marketing_data: dict) -> int:
+    async def create_book(self, book_data: Any) -> str:
+        """IRepository interface implementation for create_book."""
+        title = book_data.get("title", "Untitled")
+        genre = book_data.get("genre", "Unknown")
+        concept = book_data.get("concept", "")
+        synopsis = book_data.get("synopsis", "")
+        target_eps = book_data.get("target_eps", 10)
+        style_dna = book_data.get("style_dna", {})
+        marketing_data = book_data.get("marketing_data", {})
+        
+        # Call the original implementation (renamed below or handled here)
+        book_id = await self._create_book_impl(title, genre, concept, synopsis, target_eps, style_dna, marketing_data)
+        return str(book_id)
+
+    @retry_with_logging()
+    async def _create_book_impl(self, title: str, genre: str, concept: str, synopsis: str,
+                                 target_eps: int, style_dna: dict, marketing_data: dict) -> int:
         async with self._get_session() as session:
             book = Book(
                 title=title,

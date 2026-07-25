@@ -3,6 +3,7 @@ from __future__ import annotations
 """
 database/repo_bible.py - バイブル(Bible)データ操作用のリポジトリMixin
 """
+from src.backend.database.repositories.base import BaseRepository
 import json
 import logging
 import time
@@ -12,12 +13,12 @@ from sqlalchemy import select
 
 from src.backend.database.core import retry_with_logging
 from src.backend.database.models import Bible, Book, Branch, Character, Plot
-from src.models import BibleDbModel, WorldBible
+from src.backend.database.models import BibleDbModel, WorldBible
 
 logger = logging.getLogger(__name__)
 
 
-class BibleRepositoryMixin:
+class BibleRepositoryMixin(BaseRepository):
     """Bibleテーブルに関するDB操作をまとめたMixin"""
 
     @retry_with_logging()
@@ -63,7 +64,7 @@ class BibleRepositoryMixin:
                     if book_obj.marketing_data:
                         try:
                             current_mkt = json.loads(book_obj.marketing_data)
-                        except:
+                        except (json.JSONDecodeError, ValueError):
                             pass
 
                     new_mkt = bible.marketing_assets.model_dump()

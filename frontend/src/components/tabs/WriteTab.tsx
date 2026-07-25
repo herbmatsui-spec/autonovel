@@ -19,6 +19,7 @@ interface WriteTabProps {
   writePassion: number;
   setWritePassion: (val: number) => void;
   handleTriggerWriting: () => void;
+  handleRefineErotic: (params: { intensity: number; platform_preset: string }) => void;
   importEpNum: number;
   setImportEpNum: (val: number) => void;
   importText: string;
@@ -49,6 +50,7 @@ export function WriteTab({
   writePassion,
   setWritePassion,
   handleTriggerWriting,
+  handleRefineErotic,
   importEpNum,
   setImportEpNum,
   importText,
@@ -87,6 +89,7 @@ export function WriteTab({
           writePassion={writePassion}
           setWritePassion={setWritePassion}
           onSubmit={handleTriggerWriting}
+          onRefineErotic={handleRefineErotic}
           disabled={!!activeTaskId}
           genre={genre}
           setGenre={setGenre}

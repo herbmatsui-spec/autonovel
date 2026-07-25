@@ -9,11 +9,27 @@ services:
       - "8200:8200"
     environment:
       - PYTHONPATH=/app
+    volumes:
+      - app_storage:/app/storage
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8200/health"]
       interval: 10s
       timeout: 5s
       retries: 5
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kaku_worker
+    command: python -m huey.bin.huey_consumer src.backend.tasks.huey
+    environment:
+      - PYTHONPATH=/app
+    volumes:
+      - app_storage:/app/storage
+    depends_on:
+      backend:
+        condition: service_healthy
 
   frontend-dev:
     build:
@@ -37,3 +53,6 @@ services:
     depends_on:
       backend:
         condition: service_healthy
+
+volumes:
+  app_storage:
