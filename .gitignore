@@ -1,0 +1,22 @@
+# caches
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.kilo/node_modules/
+
+# build artifacts
+*.egg-info/
+__pycache__/
+*.pyc
+
+# legacy work files
+tmp_replace_normalize.py
+mypy_errors.txt
+mypy_out.txt
+ruff_e722.txt
+ruff_f841_src.txt
+backup/
+
+# frontend
+frontend/node_modules/
+frontend/dist/

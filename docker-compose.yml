@@ -1,49 +1,48 @@
-version: '3.8'
-
 services:
   backend:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: kaku_backend
-    command: uvicorn src.backend.server:app --host 0.0.0.0 --port 8200
+    container_name: autonovel_backend
     ports:
       - "8200:8200"
     environment:
       - PYTHONPATH=/app
     volumes:
-      - .:/app
+      - ./src:/app/src
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8200/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8200/health')"]
       interval: 10s
       timeout: 5s
       retries: 5
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: autonovel_worker
+    command: python -m huey.bin.huey_consumer src.backend.tasks.huey
+    environment:
+      - PYTHONPATH=/app
+    volumes:
+      - ./src:/app/src
+    depends_on:
+      backend:
+        condition: service_healthy
 
   frontend-dev:
     build:
       context: ./frontend
       dockerfile: Dockerfile
       target: dev
-    container_name: kaku_frontend_dev
+    container_name: autonovel_frontend_dev
     ports:
       - "5173:5173"
     volumes:
       - ./frontend:/app
-      - ./dist:/app/dist
+      - /app/node_modules
     environment:
       - CHOKIDAR_USEPOLLING=true
-
-  frontend-prod:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      target: production
-    container_name: kaku_frontend_prod
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./frontend:/app
-      - ./dist:/app/dist
     depends_on:
       backend:
         condition: service_healthy
