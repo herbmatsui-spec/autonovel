@@ -46,3 +46,20 @@ async def generate_content(input_data: EasyModeInput, current_chapter: str) -> G
     except SQLAlchemyError as e:
         logger.error(f"Database error: {str(e)}")
         raise HTTPException(status_code=500, detail="Database error")
+
+
+@router.get("/export/{book_id}")
+async def export_easy_mode_package(book_id: int):
+    """かんたんモードで作成された作品の納品パッケージ (ZIP) をエクスポートする"""
+    from fastapi.responses import Response
+    from src.services.marketing import MarketingAgent
+
+    agent = MarketingAgent()
+    zip_bytes, zip_filename = await agent.create_export_package(book_id)
+
+    return Response(
+        content=zip_bytes,
+        media_type="application/zip",
+        headers={"Content-Disposition": f"attachment; filename={zip_filename}"}
+    )
+
