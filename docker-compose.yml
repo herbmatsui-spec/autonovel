@@ -6,15 +6,27 @@ services:
     container_name: autonovel_backend
     ports:
       - "8200:8200"
+    depends_on:
+      db:
+        condition: service_healthy
     environment:
       - PYTHONPATH=/app
-    volumes:
-      - ./src:/app/src
+      - DATABASE_URL=postgresql://autonovel:autonovel@db:5432/autonovel
+      - REDIS_URL=redis://redis:6379/0
+      - HUEY_BACKEND=redis
+      - LOG_LEVEL=INFO
+#    volumes:
+#      - ./src:/app/src
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8200/health')"]
       interval: 10s
       timeout: 5s
       retries: 5
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   worker:
     build:
@@ -24,11 +36,46 @@ services:
     command: python -m huey.bin.huey_consumer src.backend.tasks.huey
     environment:
       - PYTHONPATH=/app
-    volumes:
-      - ./src:/app/src
+      - DATABASE_URL=postgresql://autonovel:autonovel@db:5432/autonovel
+      - REDIS_URL=redis://redis:6379/0
+      - HUEY_BACKEND=redis
+      - LOG_LEVEL=INFO
+#    volumes:
+#      - ./src:/app/src
     depends_on:
+      db:
+        condition: service_healthy
       backend:
         condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  db:
+    image: postgres:16
+    container_name: autonovel_db
+    environment:
+      - POSTGRES_USER=autonovel
+      - POSTGRES_PASSWORD=autonovel
+      - POSTGRES_DB=autonovel
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U autonovel -d autonovel"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: autonovel_redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   frontend-dev:
     build:
@@ -38,11 +85,14 @@ services:
     container_name: autonovel_frontend_dev
     ports:
       - "5173:5173"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
+#    volumes:
+#      - ./frontend:/app
+#      - /app/node_modules
     environment:
       - CHOKIDAR_USEPOLLING=true
     depends_on:
       backend:
         condition: service_healthy
+
+volumes:
+  postgres_data:

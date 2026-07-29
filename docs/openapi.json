@@ -1,0 +1,296 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "AutoNovel Backend",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/easy_mode/generate": {
+      "post": {
+        "tags": [
+          "easy_mode"
+        ],
+        "summary": "Generate Content",
+        "operationId": "generate_content_easy_mode_generate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EasyModeInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/easy_mode/export/{book_id}": {
+      "get": {
+        "tags": [
+          "easy_mode"
+        ],
+        "summary": "Export Easy Mode Package",
+        "description": "かんたんモードで作成された作品の納品パッケージ (ZIP) をエクスポートする。\n\nbook_id に対応する作品が DB に存在しなくてもフォールバックデータで\nZIP を生成して返却する仕様 (TC-12 参照)。",
+        "operationId": "export_easy_mode_package_easy_mode_export__book_id__get",
+        "parameters": [
+          {
+            "name": "book_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "title": "Book Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/easy_mode/status/{task_id}": {
+      "get": {
+        "tags": [
+          "easy_mode"
+        ],
+        "summary": "Get Task Status",
+        "description": "Return the status of a generation task.\n\nReturns \"pending\" if not yet completed, otherwise includes result.",
+        "operationId": "get_task_status_easy_mode_status__task_id__get",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Task Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Task Status Easy Mode Status  Task Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health",
+        "description": "ヘルスチェックエンドポイント (Phase 5: Step 55-57 拡充版)。\n\nDB 接続・Huey 生存確認・基本メトリクスを含めた総合ステータスを返す。\n全コンポーネント正常時は ``status=ok``、いずれか異常時は ``degraded``。\n互換性のため簡易 ``{\"status\": \"ok\"}`` のスーパーセットを返す。",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Health Health Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metrics": {
+      "get": {
+        "summary": "Get Metrics",
+        "description": "メトリクスエンドポイント (Phase 5: Step 58)。\n\nプロセス内カウンタ (タスク投入数 / 完了数 / 失敗数 / エクスポート数 /\nヘルスチェック呼出数) のスナップショットを返す。",
+        "operationId": "get_metrics_metrics_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "integer"
+                  },
+                  "type": "object",
+                  "title": "Response Get Metrics Metrics Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "EasyModeInput": {
+        "properties": {
+          "chapter_history": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Chapter History"
+          },
+          "current_chapter": {
+            "type": "string",
+            "title": "Current Chapter",
+            "default": ""
+          },
+          "character_params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Character Params"
+          },
+          "content_length_limit": {
+            "type": "integer",
+            "maximum": 10000.0,
+            "minimum": 1.0,
+            "title": "Content Length Limit",
+            "default": 2000
+          }
+        },
+        "type": "object",
+        "title": "EasyModeInput"
+      },
+      "GenerationResponse": {
+        "properties": {
+          "output": {
+            "type": "string",
+            "title": "Output",
+            "default": ""
+          },
+          "completion_time_ms": {
+            "type": "integer",
+            "title": "Completion Time Ms",
+            "default": 0
+          },
+          "error": {
+            "type": "string",
+            "title": "Error",
+            "default": ""
+          },
+          "suggestions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Suggestions"
+          }
+        },
+        "type": "object",
+        "title": "GenerationResponse"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

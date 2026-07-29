@@ -1,0 +1,33 @@
+"""SQLAlchemy engine と SessionLocal を初期化するデータベース設定モジュール。"""
+import os
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+from src.models import Base
+
+# 環境変数から DATABASE_URL を取得、デフォルトは SQLite
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./autonovel.db")
+
+# SQLite の場合は check_same_thread=False が必要
+engine_args = {}
+if DATABASE_URL.startswith("sqlite"):
+    engine_args["connect_args"] = {"check_same_thread": False}
+
+engine = create_engine(DATABASE_URL, **engine_args)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+def get_db():
+    """FastAPI 依存注入用の DB セッションジェネレーター"""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+def init_db() -> None:
+    """データベースのテーブルを初期化する"""
+    Base.metadata.create_all(bind=engine)
+
+
+__all__: list[str] = ["Base", "SessionLocal", "engine", "init_db", "DATABASE_URL"]

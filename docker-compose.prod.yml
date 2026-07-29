@@ -1,0 +1,132 @@
+# AutoNovel 本番構成 docker-compose。
+# 開発向け docker-compose.yml ではなく、別ファイルで本番用サービスを定義。
+# 使い方:
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# 構成:
+#   - backend   : FastAPI (uvicorn, port 8200 内部公開)
+#   - worker    : huey consumer (非同期生成タスク処理)
+#   - frontend  : nginx 配信 + /easy_mode/ リバースプロキシ (port 8080 公開)
+#   - postgres  : 作品/タスク永続化 (sqlite からの昇格)
+#   - redis     : Huey キュー + Result backend
+#
+# 注意: 本番運用にあたり、環境変数は .env またはデプロイ先の secrets から注入してください。
+# uvicorn のワーカー数は環境変数 UVICORN_WORKERS (既定 2) で調整。
+
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: autonovel-backend:0.2.0
+    environment:
+      - DATABASE_URL=postgresql+psycopg2://autonovel:${POSTGRES_PASSWORD:-autonovel}@postgres:5432/autonovel
+      - REDIS_URL=redis://redis:6379/0
+      - HUEY_BACKEND=redis
+      - UVICORN_WORKERS=${UVICORN_WORKERS:-2}
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    expose:
+      - "8200"
+    networks:
+      - autonovel
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: autonovel-backend:0.2.0
+    command: ["py", "-m", "huey.bin.huey_consumer", "src.backend.tasks.huey.huey", "-w", "2", "-k", "threadpool"]
+    environment:
+      - DATABASE_URL=postgresql+psycopg2://autonovel:${POSTGRES_PASSWORD:-autonovel}@postgres:5432/autonovel
+      - REDIS_URL=redis://redis:6379/0
+      - HUEY_BACKEND=redis
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - autonovel
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: production
+    image: autonovel-frontend:0.2.0
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+    networks:
+      - autonovel
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=autonovel
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-autonovel}
+      - POSTGRES_DB=autonovel
+    volumes:
+      - autonovel_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "autonovel", "-d", "autonovel"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+    networks:
+      - autonovel
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - autonovel_redis:/data
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+    networks:
+      - autonovel
+
+volumes:
+  autonovel_pgdata:
+  autonovel_redis:
+
+networks:
+  autonovel:
+    driver: bridge

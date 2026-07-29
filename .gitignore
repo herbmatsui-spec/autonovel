@@ -17,6 +17,9 @@ ruff_e722.txt
 ruff_f841_src.txt
 backup/
 
+# local dbs
+*.db
+
 # frontend
 frontend/node_modules/
 frontend/dist/
