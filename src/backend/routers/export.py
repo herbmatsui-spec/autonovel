@@ -10,7 +10,7 @@ from typing import Any, Dict, List
 
 from fastapi import APIRouter, HTTPException, Query
 
-from config.container import Container
+from src.core.container import AppContainer as Container
 from src.backend.database.models import Book, Chapter
 from src.backend.database.uow import UnitOfWork
 from src.services.exporters.base import get_exporter, list_platforms

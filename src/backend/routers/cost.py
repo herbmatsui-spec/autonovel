@@ -11,7 +11,7 @@ from typing import Any, Dict, Optional
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from config.container import Container
+from src.core.container import AppContainer as Container
 from src.backend.database.uow import UnitOfWork
 from src.services.cost_analytics import check_budget_alert, estimate_cost_usd
 

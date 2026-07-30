@@ -3,7 +3,7 @@ from typing import Any, Optional
 from fastapi import APIRouter, Depends
 from sqlalchemy import select
 
-from config.container import Container
+from src.core.container import AppContainer as Container
 from config.project_context import GlobalConfig
 from src.backend.auth import require_api_key
 from src.backend.database.models import PendingPatch, PromptVersion

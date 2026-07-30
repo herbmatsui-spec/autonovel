@@ -31,7 +31,6 @@ def make_container(api_key: str, db=None) -> AppContainer:
 
 __all__ = [
     "AppContainer",
-    "AppContainer2",
     "InfraContainer",
     "LLMGenerateResultProxy",
     "make_container",

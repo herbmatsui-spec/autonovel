@@ -3,7 +3,7 @@
 import json
 import time
 
-from config.container import Container
+from src.core.container import AppContainer as Container
 
 
 async def create_task(task_id: str, message: str, total_steps: int = 1) -> None:

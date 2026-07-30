@@ -23,7 +23,7 @@ async def task_event_generator(task_id: str) -> AsyncGenerator[str, None]:
             if not initial_state:
                 from sqlalchemy import select
 
-                from config.container import Container
+                from src.core.container import AppContainer as Container
                 from src.backend.database.models import InternalState
 
                 db = Container.db()
@@ -87,7 +87,7 @@ async def _sqlite_polling_fallback(task_id: str) -> AsyncGenerator[str, None]:
     """
     from sqlalchemy import select
 
-    from config.container import Container
+    from src.core.container import AppContainer as Container
     from src.backend.database.models import InternalState
 
     db = Container.db()

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 
-from config.container import Container
+from src.core.container import AppContainer as Container
 from src.backend.auth import require_api_key
 from src.backend.database.uow import UnitOfWork
 from src.models.api_schemas import BookSchema

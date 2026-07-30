@@ -16,7 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from config.container import Container
+from src.core.container import AppContainer as Container
 from config.cors_config import get_allowed_origins
 from config.logging_config import setup_logging
 from src.backend.auth import validate_api_key_or_raise

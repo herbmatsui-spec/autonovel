@@ -3,7 +3,7 @@ from typing import Optional
 
 from huey import crontab
 
-from config.container import Container, get_container
+from src.core.container import AppContainer as Container, get_container
 from prompts.manager import prompt_manager
 from src.backend.database.uow import UnitOfWork
 from src.core.observability import with_trace_context
@@ -126,7 +126,7 @@ def execute_service_workflow(task_id: str, api_key: str, config_dict: dict, meth
 
     async def _run():
         try:
-            from config.container import Container
+            from src.core.container import AppContainer as Container
             from src.core.container import make_container
 
             _apply_config_overrides(config_dict)
@@ -182,7 +182,7 @@ def run_test_coro(task_id: str, message: str, trace_id: Optional[str] = None):
 def async_score_narrative_metrics(book_id: int, branch_id: int, ep_num: int, trace_id: Optional[str] = None):
     """エピソードのスコアリングをバックグラウンドで実行するタスク"""
     import asyncio
-    from config.container import Container
+    from src.core.container import AppContainer as Container
     from src.agents.audit import LogicalAuditor
     from src.backend.database.repositories.narrative_metrics_repo import NarrativeMetricRepository
     from src.services.narrative_scoring_service import NarrativeScoringService
@@ -214,7 +214,7 @@ def async_score_narrative_metrics(book_id: int, branch_id: int, ep_num: int, tra
 def enqueue_audit_after_write(book_id: int, write_from: int, write_to: int, trace_id: Optional[str] = None):
     """執筆完了後の論理監査 (Shadow Mode) をバックグラウンドで実行するタスク。"""
     import asyncio
-    from config.container import Container
+    from src.core.container import AppContainer as Container
     from src.agents.audit import LogicalAuditor
 
     async def _run():

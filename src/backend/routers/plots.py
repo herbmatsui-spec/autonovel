@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from config.container import Container
+from src.core.container import AppContainer as Container
 from src.backend.auth import validate_api_key_or_raise
 from src.backend.database.uow import UnitOfWork
 from src.backend.engine_helpers import get_engine as resolve_engine

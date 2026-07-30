@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Query
 from pydantic import BaseModel
 
-from config.container import Container
+from src.core.container import AppContainer as Container
 from src.backend.database.uow import UnitOfWork
 from src.services.reproducibility import build_report, build_run_record
 
