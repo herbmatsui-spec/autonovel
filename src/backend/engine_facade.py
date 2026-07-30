@@ -52,14 +52,6 @@ class EngineFacade:
         return self._engine
 
     @property
-    def planner(self) -> Any:  # noqa: ANN401
-        return self._engine.planner
-
-    @property
-    def writer(self) -> Any:  # noqa: ANN401
-        return self._engine.writer
-
-    @property
     def repo(self) -> Any:  # noqa: ANN401
         return self._engine.repo
 
@@ -116,8 +108,28 @@ class EngineFacade:
         return self._engine.db
 
     @property
+    def planner(self) -> Any:  # noqa: ANN401
+        return self._engine.planner
+
+    @property
+    def writer(self) -> Any:  # noqa: ANN401
+        return self._engine.writer
+
+    @property
     def plot_service(self) -> Any:  # noqa: ANN401
         return self._engine.plot_service
+
+    @property
+    def logic_validator(self) -> Any:  # noqa: ANN401
+        return self._engine.validator
+
+    @property
+    def generate_json(self) -> Any:  # noqa: ANN401
+        return self._engine.llm.generate_json
+
+    def dispose(self) -> None:
+        if hasattr(self._engine.db, "engine"):
+            self._engine.db.engine.dispose()
 
     # ---- 明示的に委譲するメソッド (可読性・将来の置換のため) ----
 
