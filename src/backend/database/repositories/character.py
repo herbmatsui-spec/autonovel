@@ -21,10 +21,11 @@ from src.backend.database.repositories.base import BaseRepository
 class CharacterRepository(BaseRepository):
     """Charactersテーブルに関するDB操作をまとめたMixin"""
 
-    async def get_all_characters(self, book_id: int) -> List["CharacterDbModel"]:
+    async def get_all_characters(self, book_id: int):
+        from src.models import CharacterDbModel
+
         result = await self.session.execute(select(Character).where(Character.book_id == book_id))
         chars = result.scalars().all()
-        from src.models import CharacterDbModel
 
         return [
             CharacterDbModel(**self._parse_row(self._to_dict(c), ["registry_data"])) for c in chars
