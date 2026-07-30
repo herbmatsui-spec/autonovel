@@ -11,7 +11,36 @@ from typing import Callable
 
 from sqlalchemy.exc import OperationalError
 
+from src.core.exceptions import (
+    APIError,
+    AppError,
+    EngineError,
+    HegemonyError,
+    LLMError,
+    LLMTemporaryError,
+    LLMTokenLimitError,
+    LLMUnrecoverableError,
+    LLMValidationError,
+    PipelineError,
+    ValidationError,
+)
+
 logger = logging.getLogger(__name__)
+
+__all__ = [
+    "retry_on_lock",
+    "HegemonyError",
+    "EngineError",
+    "LLMError",
+    "LLMTemporaryError",
+    "LLMTokenLimitError",
+    "LLMValidationError",
+    "LLMUnrecoverableError",
+    "APIError",
+    "AppError",
+    "ValidationError",
+    "PipelineError",
+]
 
 
 def retry_on_lock(retries: int = 10, base_delay: float = 0.1, max_delay: float = 10.0):
