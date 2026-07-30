@@ -7,7 +7,7 @@ UltimateHegemonyEngine が全機能を統合する。
 from __future__ import annotations
 
 import logging
-from typing import Tuple
+from typing import Any, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -21,45 +21,84 @@ class UltimateHegemonyEngine:
     def __init__(
         self,
         api_key: str,
-        planner,
-        writer,
         repo,
         db,
-        pm,
-        ctx_mgr,
-        formatter,
-        validator,
-        auditor,
-        narrative,
-        critique,
-        marketing,
-        bible_agent,
-        plot_agent,
-        style_rag,
         llm,
         cooldown,
         plot_service,
+        **legacy,
     ):
         self.api_key = api_key
-        self.planner = bible_agent
-        self.planning_agent = planner
-        self.writer = writer
         self.repo = repo
         self.db = db
-        self.pm = pm
-        self.ctx_mgr = ctx_mgr
-        self.formatter = formatter
-        self.validator = validator
-        self.auditor = auditor
-        self.narrative = narrative
-        self.critique = critique
-        self.marketing = marketing
-        self.bible_agent = bible_agent
-        self.plot_agent = plot_agent
-        self.style_rag = style_rag
         self.llm = llm
         self.cooldown = cooldown
         self.plot_service = plot_service
+        self._legacy = legacy
+
+    def _legacy_dep(self, name: str) -> Any:
+        if name not in self._legacy:
+            raise AttributeError(
+                f"'{self.__class__.__name__}' has no lazy dependency '{name}'. "
+                "Inject it via constructor or upgrade the caller."
+            )
+        return self._legacy[name]
+
+    @property
+    def planner(self):
+        return self._legacy_dep("planner")
+
+    @property
+    def planning_agent(self):
+        return self._legacy_dep("planner")
+
+    @property
+    def writer(self):
+        return self._legacy_dep("writer")
+
+    @property
+    def pm(self):
+        return self._legacy_dep("pm")
+
+    @property
+    def ctx_mgr(self):
+        return self._legacy_dep("ctx_mgr")
+
+    @property
+    def formatter(self):
+        return self._legacy_dep("formatter")
+
+    @property
+    def validator(self):
+        return self._legacy_dep("validator")
+
+    @property
+    def auditor(self):
+        return self._legacy_dep("auditor")
+
+    @property
+    def narrative(self):
+        return self._legacy_dep("narrative")
+
+    @property
+    def critique(self):
+        return self._legacy_dep("critique")
+
+    @property
+    def marketing(self):
+        return self._legacy_dep("marketing")
+
+    @property
+    def bible_agent(self):
+        return self._legacy_dep("bible_agent")
+
+    @property
+    def plot_agent(self):
+        return self._legacy_dep("plot_agent")
+
+    @property
+    def style_rag(self):
+        return self._legacy_dep("style_rag")
 
     @property
     def ai_api(self):
@@ -83,6 +122,18 @@ class UltimateHegemonyEngine:
         )
         return self.llm
 
+    @property
+    def logic_validator(self):
+        return self.validator
+
+    @property
+    def generate_json(self):
+        return self.llm.generate_json
+
+    def dispose(self) -> None:
+        if hasattr(self.db, "engine"):
+            self.db.engine.dispose()
+
     async def sync_bible(self, book_id: int, reporter=None):
         """
         Bibleのライフサイクル同期（承認済み設定のマージ -> 最適化 -> 整合性監査）を実行する。
@@ -96,7 +147,7 @@ class UltimateHegemonyEngine:
         await self.repo.resolve_pending_setting(setting_id, status)
 
     async def determine_target_tension(
-        self, book_id: int, ep_num: int, genre: str, story_type: Optional[str] = None
+        self, book_id: int, ep_num: int, genre: str, story_type: str | None = None
     ) -> float:
         return await self.plot_service.determine_target_tension(
             book_id=book_id, ep_num=ep_num, genre=genre, story_type=story_type
