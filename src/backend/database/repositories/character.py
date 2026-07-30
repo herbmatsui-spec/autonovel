@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any, List
 
 from sqlalchemy import select, update
 
-from services.errors import retry_on_lock
+from src.services.errors import retry_on_lock
 from src.backend.database.models import Character
 
 if TYPE_CHECKING:

@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional
 
 from sqlalchemy import delete, func, select, update
 
-from services.errors import retry_on_lock
+from src.services.errors import retry_on_lock
 from src.backend.database.models import (
     BackgroundTask,
     CustomStyle,

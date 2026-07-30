@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from sqlalchemy import delete, select, update
 
-from services.errors import retry_on_lock
+from src.services.errors import retry_on_lock
 from src.backend.database.models import Book, Chapter, Plot
 
 if TYPE_CHECKING:

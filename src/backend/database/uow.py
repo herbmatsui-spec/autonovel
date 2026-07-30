@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from dependency_injector.wiring import Provide, inject
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from services.errors import retry_on_lock
+from src.services.errors import retry_on_lock
 
 if TYPE_CHECKING:
     pass

@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any, List, Optional
 
 from sqlalchemy import delete, select, update
 
-from services.errors import retry_on_lock
+from src.services.errors import retry_on_lock
 from src.backend.database.models import Book, Branch, CharacterArc, Foreshadowing, Plot
 
 if TYPE_CHECKING:

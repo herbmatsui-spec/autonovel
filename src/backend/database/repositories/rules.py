@@ -10,7 +10,7 @@ from typing import List, Optional
 
 from sqlalchemy import delete, or_, select, update
 
-from services.errors import retry_on_lock
+from src.services.errors import retry_on_lock
 from src.backend.database.models import Masterpiece, Rule
 
 logger = logging.getLogger(__name__)

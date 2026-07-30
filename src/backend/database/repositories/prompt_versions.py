@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional
 
 from sqlalchemy import select, update
 
-from services.errors import retry_on_lock
+from src.services.errors import retry_on_lock
 from src.backend.database.models import PromptVersion
 from src.backend.database.repositories.base import BaseRepository
 from src.models.prompt_version import PromptVersionDbModel

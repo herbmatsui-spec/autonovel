@@ -40,3 +40,13 @@ autonovel2
 =*
 $null
 start_app.bat
+
+# Database artifacts
+*.db-shm
+*.db-wal
+*.db-journal
+huey.db
+
+# Coverage reports
+.coverage
+coverage.xml

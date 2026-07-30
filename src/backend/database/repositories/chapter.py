@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any, List, Optional
 
 from sqlalchemy import delete, or_, select, update
 
-from services.errors import retry_on_lock
+from src.services.errors import retry_on_lock
 from src.backend.database.models import Chapter
 
 if TYPE_CHECKING:
