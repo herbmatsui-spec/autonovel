@@ -91,8 +91,14 @@ class DatabaseConnectionWrapper:
     def cursor(self):
         return self.dbapi_conn.cursor()
 
-    def __getattr__(self, name):
-        return getattr(self.dbapi_conn, name)
+    def commit(self):
+        return self.dbapi_conn.commit()
+
+    def rollback(self):
+        return self.dbapi_conn.rollback()
+
+    def execute(self, sql, params=()):
+        return self.dbapi_conn.execute(sql, params)
 
     def __setattr__(self, name, value):
         if name in ("sql_conn", "dbapi_conn"):

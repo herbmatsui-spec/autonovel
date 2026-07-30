@@ -843,39 +843,6 @@ class PlotEpisodeBase(FlatModelMixin, CoreEngineMixin, Generic[T]):
         """後方互換: analytics.tension_delta の別名。"""
         return self.analytics.tension_delta
 
-    def __getattr__(self, item: str) -> Any:
-        # Fallbacks for dynamic access and backwards compatibility
-        if item in ("detailed_blueprint", "title", "one_line_summary", "thought_process", "ep_num"):
-            core_info = self.__dict__.get("core_info")
-            if core_info and hasattr(core_info, item):
-                return getattr(core_info, item)
-
-        for sub_model in self.__class__._get_sub_model_names():
-            try:
-                model_instance = object.__getattribute__(self, sub_model)
-                if hasattr(model_instance, item):
-                    return getattr(model_instance, item)
-            except AttributeError:
-                pass
-
-        try:
-            extra_engines = object.__getattribute__(self, "extra_engines")
-            if item in extra_engines:
-                return extra_engines[item]
-        except AttributeError:
-            pass
-
-        raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{item}'")
-
-    def get(self, key: str, default=None):
-        """
-        辞書ライクなアクセスを提供する互換性用メソッド。
-        """
-        try:
-            return getattr(self, key)
-        except AttributeError:
-            return default
-
     def to_catharsis_summary(self) -> dict:
         """カタルシス関連データを要約して返す"""
         return {
