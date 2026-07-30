@@ -115,6 +115,10 @@ class EngineFacade:
     def db(self) -> Any:  # noqa: ANN401
         return self._engine.db
 
+    @property
+    def plot_service(self) -> Any:  # noqa: ANN401
+        return self._engine.plot_service
+
     # ---- 明示的に委譲するメソッド (可読性・将来の置換のため) ----
 
     async def sync_bible(self, book_id: int, reporter: Optional[Any] = None) -> Any:  # noqa: ANN401

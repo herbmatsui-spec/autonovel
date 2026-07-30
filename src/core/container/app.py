@@ -57,6 +57,12 @@ class AppContainer2(InfraContainer):
         db=InfraContainer.db,
     )
 
+    plot_service = providers.Factory(
+        "src.backend.plot_service.PlotService",
+        repo=repo,
+        llm=llm,
+    )
+
     pm = providers.Singleton(
         "prompts.manager.PromptManager",
     )
@@ -164,6 +170,7 @@ class AppContainer2(InfraContainer):
         style_rag=style_rag,
         llm=llm,
         cooldown=InfraContainer.cooldown,
+        plot_service=plot_service,
     )
     engine_facade = providers.Factory(
         "src.backend.engine_facade.EngineFacade",

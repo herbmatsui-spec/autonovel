@@ -11,9 +11,6 @@ from typing import Tuple
 
 logger = logging.getLogger(__name__)
 
-# サブモジュールと定数のインポート
-from src.backend.tension_utils import calculate_progress, get_target_tension, select_tension_curve
-
 
 # ==========================================
 # UltimateHegemonyEngine（メインエンジン）
@@ -41,6 +38,7 @@ class UltimateHegemonyEngine:
         style_rag,
         llm,
         cooldown,
+        plot_service,
     ):
         self.api_key = api_key
         self.planner = bible_agent
@@ -61,6 +59,7 @@ class UltimateHegemonyEngine:
         self.style_rag = style_rag
         self.llm = llm
         self.cooldown = cooldown
+        self.plot_service = plot_service
 
     @property
     def ai_api(self):
@@ -83,7 +82,6 @@ class UltimateHegemonyEngine:
             stacklevel=2,
         )
         return self.llm
-        self.current_ep_num = 0
 
     async def sync_bible(self, book_id: int, reporter=None):
         """
@@ -100,45 +98,16 @@ class UltimateHegemonyEngine:
     async def determine_target_tension(
         self, book_id: int, ep_num: int, genre: str, story_type: Optional[str] = None
     ) -> float:
-        import logging
-
-        log = logging.getLogger("debug.engine")
-        log.debug(f"determine_target_tension called: book_id={book_id}, ep_num={ep_num}")
-        """
-        現在の進行度とジャンルに基づき、このエピソードが到達すべき目標Tension値を計算し、DBに保存する。
-        """
-        # 1. 曲線選択
-        curve_name = select_tension_curve(genre, story_type)
-
-        # 2. 全エピソード数の取得
-        total_episodes = await self.repo.get_total_episodes(book_id)
-        if total_episodes == 0:
-            return 0.0
-
-        # 3. 進行度計算と目標値算出
-        progress = calculate_progress(ep_num, total_episodes)
-        target_val = get_target_tension(curve_name, progress)
-
-        # 4. DBに保存 (後続のプロンプト注入で使用するため)
-        # PlotDbModelのtarget_tensionカラムを更新
-        await self.repo.update_plot_target_tension(book_id, ep_num, target_val)
-
-        return target_val
+        return await self.plot_service.determine_target_tension(
+            book_id=book_id, ep_num=ep_num, genre=genre, story_type=story_type
+        )
 
     async def validate_tension_deviation(
         self, ep_num: int, generated_tension: float, book_id: int, tolerance: float = 0.2
     ) -> Tuple[bool, float]:
-        """
-        生成されたtension値が目標値から許容範囲内にあるか検証する。
-        returns: (is_valid, deviation)
-        """
-        # DBから目標値を取得
-        plot = await self.repo.get_plot(book_id_or_branch_id=book_id, ep_num=ep_num)
-        if not plot or plot.target_tension is None:
-            return True, 0.0
-
-        target = plot.target_tension
-        deviation = abs(generated_tension - target)
-
-        is_valid = deviation <= tolerance
-        return is_valid, deviation
+        return await self.plot_service.validate_tension_deviation(
+            ep_num=ep_num,
+            generated_tension=generated_tension,
+            book_id=book_id,
+            tolerance=tolerance,
+        )
