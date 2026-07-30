@@ -113,13 +113,33 @@ class ConfigFileWatcher:
 
 # アプリ起動時に自動で起動
 class DefaultNotifier:
+    def __init__(self, on_reload=None):
+        self.on_reload = on_reload
+
     def toast_notify(self, key: str, message: str, icon: str) -> None:
-        UIStateStore.toast_notify(key, message, icon=icon)
+        try:
+            from streamlit_app.stores.ui_store import UIStateStore
+
+            UIStateStore.toast_notify(key, message, icon=icon)
+        except ImportError:
+            pass
 
     def reload_app(self) -> None:
-        import streamlit as st
+        if self.on_reload is not None:
+            self.on_reload()
+        try:
+            import streamlit as st
 
-        st.experimental_rerun()
+            st.rerun()
+        except ImportError:
+            pass
+        except AttributeError:
+            try:
+                import streamlit as st
+
+                st.experimental_rerun()
+            except Exception:
+                pass
 
 
 watcher = ConfigFileWatcher(DefaultNotifier())

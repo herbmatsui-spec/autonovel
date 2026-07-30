@@ -43,6 +43,27 @@ __all__ = [
 ]
 
 
+class StreamlitErrorHandler:
+    """Streamlit UI 層専用のエラーハンドラ。コアロジックからは import しないこと。"""
+
+    @staticmethod
+    def show(error: Exception, context: str = "不明なエラー"):
+        import streamlit as st
+
+        logging.error(f"Error in {context}: {error}", exc_info=True)
+        st.error(f"❌ {context}: {str(error)}")
+
+    @staticmethod
+    def show_connection_error():
+        import streamlit as st
+
+        st.warning(
+            "⚠️ **バックエンドサーバーに接続できません。**\n"
+            "サーバーが起動しているか確認してください。",
+            icon="🚨",
+        )
+
+
 def retry_on_lock(retries: int = 10, base_delay: float = 0.1, max_delay: float = 10.0):
     """
     SQLiteの 'database is locked' エラー (OperationalError) に対して
