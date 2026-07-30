@@ -46,7 +46,7 @@ class DependencyContainer:
         if key not in self._instances:
             from src.engine_service import EngineService
 
-            self._instances[key] = EngineService.get_instance()
+            self._instances[key] = EngineService()
         return self._instances[key]
 
     def get_plugin_loader(self) -> Any:
@@ -59,7 +59,9 @@ class DependencyContainer:
         if key not in self._instances:
             from src.core.plugin_loader import PluginLoader
 
-            self._instances[key] = PluginLoader.get_instance()
+            instance = PluginLoader()
+            PluginLoader.load_all_plugins()
+            self._instances[key] = instance
         return self._instances[key]
 
     def get_resilient_http_client(self) -> Any:
