@@ -1,5 +1,6 @@
 """Structured logging utilities for the novel engine."""
 
+import contextvars
 import logging
 import uuid
 from datetime import datetime
@@ -9,21 +10,25 @@ from typing import Any, Dict, Optional
 class TraceContext:
     """Trace context for request correlation."""
 
-    _current_trace_id: Optional[str] = None
+    _current_trace_id: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar(
+        "_current_trace_id", default=None
+    )
 
     @classmethod
     def get_trace_id(cls) -> str:
-        if cls._current_trace_id is None:
-            cls._current_trace_id = str(uuid.uuid4())
-        return cls._current_trace_id
+        trace_id = cls._current_trace_id.get()
+        if trace_id is None:
+            trace_id = str(uuid.uuid4())
+            cls._current_trace_id.set(trace_id)
+        return trace_id
 
     @classmethod
     def set_trace_id(cls, trace_id: str):
-        cls._current_trace_id = trace_id
+        cls._current_trace_id.set(trace_id)
 
     @classmethod
     def clear(cls):
-        cls._current_trace_id = None
+        cls._current_trace_id.set(None)
 
 
 class TraceIdFilter(logging.Filter):

@@ -6,26 +6,16 @@ from typing import Optional
 
 
 class PluginLoader:
-    _instance: Optional["PluginLoader"] = None
-
     @staticmethod
-    def get_instance() -> "PluginLoader":
-        if PluginLoader._instance is None:
-            PluginLoader._instance = PluginLoader()
-        return PluginLoader._instance
-
-    def load_all_plugins(self) -> None:
+    def load_all_plugins() -> None:
         """plugins/ ディレクトリ下の .py ファイルを自動ロードする"""
         try:
-            # pluginsディレクトリのパスを特定
-            # /src/core/plugin_loader.py から見て ../../plugins
             plugins_path = pathlib.Path(__file__).parents[2] / "plugins"
 
             if not plugins_path.exists():
                 logging.warning(f"Plugins directory not found: {plugins_path}")
                 return
 
-            # パスを sys.path に追加してインポート可能にする
             if str(plugins_path.parent) not in sys.path:
                 sys.path.insert(0, str(plugins_path.parent))
 

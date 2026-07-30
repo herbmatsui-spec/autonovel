@@ -51,13 +51,69 @@ class EngineFacade:
         """内包する実体エンジン (今後の置換で消える一時的なアクセサ)。"""
         return self._engine
 
-    def __getattr__(self, name: str) -> Any:  # noqa: ANN401
-        """
-        未定義の属性は内包 engine へ委譲する。
-        これにより既存の engine.planner / engine.writer / engine.repo 等の
-        深いアクセスがそのまま動作する。
-        """
-        return getattr(self._engine, name)
+    @property
+    def planner(self) -> Any:  # noqa: ANN401
+        return self._engine.planner
+
+    @property
+    def writer(self) -> Any:  # noqa: ANN401
+        return self._engine.writer
+
+    @property
+    def repo(self) -> Any:  # noqa: ANN401
+        return self._engine.repo
+
+    @property
+    def llm(self) -> Any:  # noqa: ANN401
+        return self._engine.llm
+
+    @property
+    def pm(self) -> Any:  # noqa: ANN401
+        return self._engine.pm
+
+    @property
+    def ctx_mgr(self) -> Any:  # noqa: ANN401
+        return self._engine.ctx_mgr
+
+    @property
+    def formatter(self) -> Any:  # noqa: ANN401
+        return self._engine.formatter
+
+    @property
+    def validator(self) -> Any:  # noqa: ANN401
+        return self._engine.validator
+
+    @property
+    def auditor(self) -> Any:  # noqa: ANN401
+        return self._engine.auditor
+
+    @property
+    def narrative(self) -> Any:  # noqa: ANN401
+        return self._engine.narrative
+
+    @property
+    def critique(self) -> Any:  # noqa: ANN401
+        return self._engine.critique
+
+    @property
+    def marketing(self) -> Any:  # noqa: ANN401
+        return self._engine.marketing
+
+    @property
+    def bible_agent(self) -> Any:  # noqa: ANN401
+        return self._engine.bible_agent
+
+    @property
+    def plot_agent(self) -> Any:  # noqa: ANN401
+        return self._engine.plot_agent
+
+    @property
+    def style_rag(self) -> Any:  # noqa: ANN401
+        return self._engine.style_rag
+
+    @property
+    def db(self) -> Any:  # noqa: ANN401
+        return self._engine.db
 
     # ---- 明示的に委譲するメソッド (可読性・将来の置換のため) ----
 

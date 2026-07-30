@@ -833,17 +833,22 @@ class PlotEpisodeBase(FlatModelMixin, CoreEngineMixin, Generic[T]):
 
         return dumped
 
+    @property
+    def self_critique(self) -> str:
+        """後方互換: lite_model_director_notes の別名。"""
+        return self.lite_model_director_notes
+
+    @property
+    def stress(self) -> int:
+        """後方互換: analytics.tension_delta の別名。"""
+        return self.analytics.tension_delta
+
     def __getattr__(self, item: str) -> Any:
         # Fallbacks for dynamic access and backwards compatibility
         if item in ("detailed_blueprint", "title", "one_line_summary", "thought_process", "ep_num"):
             core_info = self.__dict__.get("core_info")
             if core_info and hasattr(core_info, item):
                 return getattr(core_info, item)
-
-        if item == "self_critique":
-            return self.lite_model_director_notes
-        if item == "stress":
-            return self.analytics.tension_delta
 
         for sub_model in self.__class__._get_sub_model_names():
             try:

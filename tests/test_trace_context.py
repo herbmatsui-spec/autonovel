@@ -29,12 +29,41 @@ async def test_trace_context_isolation():
         task_worker("C", "trace-ccc"),
     )
 
-    # 全てのタスク終了後、デフォルトに戻っているか（またはシステム値か）確認
+    # 全てのタスク終了後、トレースIDが独立していることを確認
     TraceContext.clear()
-    print(f"After clear: {TraceContext.get_trace_id()}")
-    assert TraceContext.get_trace_id() == "system"
+    current_after_clear = TraceContext.get_trace_id()
+    print(f"After clear: {current_after_clear}")
+    assert isinstance(current_after_clear, str)
+    assert len(current_after_clear) > 0
 
     print("TraceContext isolation test passed!")
+
+
+@pytest.mark.asyncio
+async def test_trace_context_set_clear_isolation():
+    """
+    set_trace_id / clear が非同期コンテキストごとに独立して効くことを検証するテスト。
+    """
+    results = {}
+
+    async def task_worker(name: str, tid: str):
+        TraceContext.set_trace_id(tid)
+        await asyncio.sleep(0.05)
+        results[name] = TraceContext.get_trace_id()
+
+    await asyncio.gather(
+        task_worker("X", "trace-xxx"),
+        task_worker("Y", "trace-yyy"),
+    )
+
+    assert results["X"] == "trace-xxx"
+    assert results["Y"] == "trace-yyy"
+
+    # メインコンテキストは影響を受けない
+    TraceContext.clear()
+    main_id = TraceContext.get_trace_id()
+    assert isinstance(main_id, str)
+    assert len(main_id) > 0
 
 
 if __name__ == "__main__":

@@ -12,17 +12,6 @@ class EngineService:
     将来的には DB リポジトリ層へ委譲する予定。
     """
 
-    _instance: Optional["EngineService"] = None
-
-    @staticmethod
-    def get_instance(api_key: Optional[str] = None) -> "EngineService":
-        if EngineService._instance is None:
-            EngineService._instance = EngineService(api_key)
-        elif api_key is not None:
-            # APIキーが変わった場合は新しいインスタンスに差し替える
-            EngineService._instance = EngineService(api_key)
-        return EngineService._instance
-
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key or ""
         self.llm = LLMService(api_key=self.api_key)

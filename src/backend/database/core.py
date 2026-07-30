@@ -320,12 +320,17 @@ def init_db(db_path: str):
 
 def get_db_manager() -> DatabaseManager:
     """
-    DBマネージャーを取得。
+    DBマネージャーを取得。DIコンテナ优先、フォールバックでグローバルSingleton。
     """
     global _GLOBAL_DB_MANAGER
     if _GLOBAL_DB_MANAGER is not None:
         return _GLOBAL_DB_MANAGER
 
+    try:
+        from src.core.container import InfraContainer
+        return InfraContainer.db()
+    except Exception:
+        pass
 
     manager = DatabaseManager(DATABASE_URL)
     _GLOBAL_DB_MANAGER = manager
@@ -356,3 +361,8 @@ def set_db_manager(manager: Optional[DatabaseManager]) -> None:
     """グローバルDBマネージャーを明示的にセット（主にテスト用DIで使用）"""
     global _GLOBAL_DB_MANAGER
     _GLOBAL_DB_MANAGER = manager
+    try:
+        from src.core.container import InfraContainer
+        InfraContainer.db.override(manager)
+    except Exception:
+        pass

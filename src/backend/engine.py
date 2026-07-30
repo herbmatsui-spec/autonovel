@@ -62,10 +62,27 @@ class UltimateHegemonyEngine:
         self.llm = llm
         self.cooldown = cooldown
 
-        # 後方互換性用のエイリアス
-        self.ai_api = llm
-        self.llm_client = llm
-        self.client = None
+    @property
+    def ai_api(self):
+        import warnings
+
+        warnings.warn(
+            "ai_api is deprecated, use llm instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.llm
+
+    @property
+    def llm_client(self):
+        import warnings
+
+        warnings.warn(
+            "llm_client is deprecated, use llm instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.llm
         self.current_ep_num = 0
 
     async def sync_bible(self, book_id: int, reporter=None):
