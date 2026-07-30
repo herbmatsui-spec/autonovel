@@ -39,15 +39,3 @@ class TokenUsageTracker:
 
     def get_summary(self) -> str:
         return f"API呼び出し: {self.stats['calls']}回 | 推定コスト: ${self.get_cost_usd():.4f}"
-
-    def display_cost_estimate(self, text: str, label: str = "内容") -> None:
-        """Streamlit上にトークン数と推定コストをキャプション表示する"""
-        try:
-            import streamlit as st
-
-            tokens = estimate_tokens(text)
-            avg_rate = (COST_INPUT_FLASH + COST_OUTPUT_FLASH) / 2
-            cost = tokens * avg_rate
-            st.caption(f"{label} 推定トークン: {tokens} (概算コスト: ${cost:.6f})")
-        except Exception:
-            pass
