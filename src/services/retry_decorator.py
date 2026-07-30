@@ -123,28 +123,32 @@ def with_llm_retry():
                     )
 
                 # cooldown待機
-                if self.cooldown is not None:
-                    await self.cooldown.wait()
+                cooldown = getattr(self, "cooldown", None)
+                if cooldown is not None:
+                    await cooldown.wait()
 
                 # 並行リクエスト数のインクリメント
-                if self._lock is not None:
-                    with self._lock:
-                        self._active_requests += 1
+                lock = getattr(self, "_lock", None)
+                active_requests = getattr(self, "_active_requests", 0)
+                if lock is not None:
+                    with lock:
+                        setattr(self, "_active_requests", active_requests + 1)
                 else:
-                    self._active_requests += 1
+                    setattr(self, "_active_requests", active_requests + 1)
 
                 try:
                     # メソッド実行
                     result = await func(self, *args, **kwargs)
 
                     # 成功時の後処理
-                    if self.cooldown is not None:
-                        self.cooldown.on_success()
-                    if self._lock is not None:
-                        with self._lock:
-                            self._consecutive_5xx = 0
+                    if cooldown is not None:
+                        cooldown.on_success()
+                    consecutive_5xx = getattr(self, "_consecutive_5xx", 0)
+                    if lock is not None:
+                        with lock:
+                            setattr(self, "_consecutive_5xx", 0)
                     else:
-                        self._consecutive_5xx = 0
+                        setattr(self, "_consecutive_5xx", 0)
 
                     return result
 
@@ -248,11 +252,12 @@ def with_llm_retry():
                         ) from e
 
                     # 動的クールダウンと並行抑制
-                    if self.cooldown is not None:
+                    cooldown = getattr(self, "cooldown", None)
+                    if cooldown is not None:
                         if any(x in err_msg for x in ["429", "quota", "503"]):
-                            self.cooldown.on_rate_limit()
+                            cooldown.on_rate_limit()
                         else:
-                            self.cooldown.on_error()
+                            cooldown.on_error()
 
                     # 待機時間の計算とスリープ (指数バックオフ)
                     # 適応的バックオフ戦略
@@ -277,13 +282,14 @@ def with_llm_retry():
                     if is_timeout or any(
                         x in err_msg for x in ["503", "500", "deadline", "exhausted"]
                     ):
-                        if self._lock is not None:
-                            with self._lock:
-                                self._consecutive_5xx += 1
-                                fail_count = self._consecutive_5xx
+                        lock = getattr(self, "_lock", None)
+                        if lock is not None:
+                            with lock:
+                                setattr(self, "_consecutive_5xx", getattr(self, "_consecutive_5xx", 0) + 1)
+                                fail_count = getattr(self, "_consecutive_5xx", 0)
                         else:
-                            self._consecutive_5xx += 1
-                            fail_count = self._consecutive_5xx
+                            setattr(self, "_consecutive_5xx", getattr(self, "_consecutive_5xx", 0) + 1)
+                            fail_count = getattr(self, "_consecutive_5xx", 0)
 
                         if fail_count >= 2:
                             from config import MODEL_STABLE_FALLBACK
@@ -321,15 +327,13 @@ def with_llm_retry():
 
                 finally:
                     # 並行リクエスト数のデクリメント
-                    if self._lock is not None:
-                        with self._lock:
-                            self._active_requests -= 1
-                            if self._active_requests < 0:
-                                self._active_requests = 0
+                    lock = getattr(self, "_lock", None)
+                    active_requests = getattr(self, "_active_requests", 0)
+                    if lock is not None:
+                        with lock:
+                            setattr(self, "_active_requests", max(0, active_requests - 1))
                     else:
-                        self._active_requests -= 1
-                        if self._active_requests < 0:
-                            self._active_requests = 0
+                        setattr(self, "_active_requests", max(0, active_requests - 1))
 
                 state.attempt += 1
 
