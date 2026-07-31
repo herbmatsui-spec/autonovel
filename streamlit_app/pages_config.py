@@ -34,8 +34,7 @@ MSG_SELECT_BOOK_FIRST = (
 
 
 def _get_engine():
-    # api_key is already in session if we reached here
-    return EngineService.get_instance()
+    return EngineService()
 
 
 def _wrap_easy_mode():

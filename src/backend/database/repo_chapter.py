@@ -10,7 +10,8 @@ from typing import Any, List, Optional
 from sqlalchemy import delete, or_, select, update
 
 from src.backend.database.core import retry_with_logging
-from src.backend.database.models import Chapter, ChapterDbModel
+from src.backend.database.models import Chapter
+from src.models.db import ChapterDbModel
 from src.backend.database.repositories.base import BaseRepository
 
 

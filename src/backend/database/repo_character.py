@@ -9,7 +9,8 @@ from typing import Any, List
 from sqlalchemy import select, update
 
 from src.backend.database.core import retry_with_logging
-from src.backend.database.models import Character, CharacterDbModel
+from src.backend.database.models import Character
+from src.models.db import CharacterDbModel
 from src.backend.database.repositories.base import BaseRepository
 
 

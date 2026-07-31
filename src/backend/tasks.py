@@ -3,7 +3,8 @@ from typing import Optional
 
 from huey import crontab
 
-from src.core.container import AppContainer as Container, get_container
+from src.core.container import AppContainer as Container
+from config.container import get_container
 from prompts.manager import prompt_manager
 from src.backend.database.uow import UnitOfWork
 from src.core.observability import with_trace_context

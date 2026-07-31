@@ -211,7 +211,7 @@ class LLMGenerateResultProxy:
             response = self._normalize_response(response)
             return GenerateResult(
                 success=response.success,
-                metadata=getattr(response, "metadata", None),
+                metadata=getattr(response, "metadata", None) or {},
                 story_content=response.content,
                 token_usage={
                     "prompt": LLMGenerateResultProxy._usage_metric(
@@ -241,7 +241,7 @@ class LLMGenerateResultProxy:
             response = self._normalize_response(response)
             return GenerateResult(
                 success=response.success,
-                metadata=getattr(response, "metadata", None),
+                metadata=getattr(response, "metadata", None) or {},
                 story_content=response.content,
                 token_usage={
                     "prompt": LLMGenerateResultProxy._usage_metric(

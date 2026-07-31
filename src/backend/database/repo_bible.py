@@ -13,13 +13,13 @@ from sqlalchemy import select
 from src.backend.database.core import retry_with_logging
 from src.backend.database.models import (
     Bible,
-    BibleDbModel,
     Book,
     Branch,
     Character,
     Plot,
-    WorldBible,
 )
+from src.models.bible import WorldBible
+from src.models.db import BibleDbModel
 from src.backend.database.repositories.base import BaseRepository
 
 logger = logging.getLogger(__name__)

@@ -9,7 +9,8 @@ from typing import List, Optional
 from sqlalchemy import select, update
 
 from src.backend.database.core import retry_with_logging
-from src.backend.database.models import Book, Branch, BranchDbModel, Chapter, Plot
+from src.backend.database.models import Book, Branch, Chapter, Plot
+from src.models.db import BranchDbModel
 from src.backend.database.repositories.base import BaseRepository
 
 

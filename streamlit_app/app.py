@@ -74,7 +74,7 @@ def _run_navigation(api_key: str) -> None:
         from src.engine_service import EngineService
 
         # 既存の EngineService は api_key ベースでインスタンスをキャッシュしているため、これを利用
-        service = EngineService.get_instance(api_key=api_key)
+        service = EngineService(api_key=api_key)
 
         # 必要に応じて NovelService (未提供) へのブリッジを行う
 
@@ -112,7 +112,7 @@ def main() -> None:
     )
 
     # プラグインの初期化
-    PluginLoader.get_instance().load_all_plugins()
+    PluginLoader.load_all_plugins()
 
     # 設定ファイルの変更監視
 
