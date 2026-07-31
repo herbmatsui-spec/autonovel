@@ -11,3 +11,16 @@ def display_cost_estimate(text: str, label: str = "内容") -> None:
     avg_rate = (COST_INPUT_FLASH + COST_OUTPUT_FLASH) / 2
     cost = tokens * avg_rate
     st.caption(f"{label} 推定トークン: {tokens} (概算コスト: ${cost:.6f})")
+
+
+def run_async(coro):
+    import asyncio
+    from concurrent.futures import ThreadPoolExecutor
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        return asyncio.run(coro)
+    else:
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            future = pool.submit(asyncio.run, coro)
+            return future.result()

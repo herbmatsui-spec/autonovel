@@ -35,12 +35,16 @@ def _request(method: str, path: str, timeout: float = 10.0, **kwargs: Any) -> An
     is_body_method = method.upper() in {"POST", "PUT", "PATCH"}
 
     async def _async_req():
+        req_kwargs: dict[str, Any] = {}
+        if is_body_method:
+            req_kwargs["json"] = kwargs
+        else:
+            req_kwargs["params"] = kwargs
         res = await client.request(
             method=method,
             url=path,
-            params=None if is_body_method else kwargs,
-            json=kwargs if is_body_method else None,
             timeout=timeout,
+            **req_kwargs,
         )
         if res is not None and hasattr(res, "json"):
             try:
@@ -50,7 +54,7 @@ def _request(method: str, path: str, timeout: float = 10.0, **kwargs: Any) -> An
         return res
 
     try:
-        from streamlit_app.utils.async_helper import run_async
+        from streamlit_app.utils import run_async
 
         return run_async(_async_req())
 
@@ -337,7 +341,7 @@ def commercial_run(config: dict) -> dict:
         )
 
     try:
-        from streamlit_app.utils.async_helper import run_async
+        from streamlit_app.utils import run_async
 
         return run_async(_async_req()) or {}
     except Exception as exc:

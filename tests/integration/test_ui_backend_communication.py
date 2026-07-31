@@ -52,14 +52,14 @@ def test_ui_imports_backend_http_client():
 
 
 def test_start_plan_generation_sends_post(mock_resilient_client):
-    """plan生成が POST /plan/generate へ送信され task_id を返すこと。"""
+    """plan生成が POST /plots/plan_generation へ送信され task_id を返すこと。"""
     from streamlit_app.api_client import start_plan_generation
 
     task_id = start_plan_generation(genre="fantasy", theme="勇者")
 
     mock_resilient_client.request.assert_awaited_once_with(
         method="POST",
-        path="/plan/generate",
+        url="/plots/plan_generation",
         json={"genre": "fantasy", "theme": "勇者"},
         timeout=10.0,
     )
@@ -67,14 +67,14 @@ def test_start_plan_generation_sends_post(mock_resilient_client):
 
 
 def test_start_plot_expansion_sends_post(mock_resilient_client):
-    """plot展開が POST /plot/expand へ送信されること。"""
+    """plot展開が POST /plots/expand へ送信されること。"""
     from streamlit_app.api_client import start_plot_expansion
 
     task_id = start_plot_expansion(book_id=1)
 
     mock_resilient_client.request.assert_awaited_once_with(
         method="POST",
-        path="/plot/expand",
+        url="/plots/expand",
         json={"book_id": 1},
         timeout=10.0,
     )
@@ -82,14 +82,14 @@ def test_start_plot_expansion_sends_post(mock_resilient_client):
 
 
 def test_start_episode_writing_sends_post(mock_resilient_client):
-    """episode執筆が POST /writing/start へ送信されること。"""
+    """episode執筆が POST /episodes/generate へ送信されること。"""
     from streamlit_app.api_client import start_episode_writing
 
     task_id = start_episode_writing(book_id=2, episode=3)
 
     mock_resilient_client.request.assert_awaited_once_with(
         method="POST",
-        path="/writing/start",
+        url="/episodes/generate",
         json={"book_id": 2, "episode": 3},
         timeout=10.0,
     )
@@ -111,7 +111,7 @@ def test_start_erotic_refinement_sends_post(mock_resilient_client):
 
     mock_resilient_client.request.assert_awaited_once_with(
         method="POST",
-        path="/refine_erotic",
+        url="/refine_erotic",
         json={
             "api_key": "k",
             "config": {},
@@ -133,8 +133,8 @@ def test_get_task_status_sends_get(mock_resilient_client):
 
     mock_resilient_client.request.assert_awaited_once_with(
         method="GET",
-        path="/tasks/task-123",
-        json={},
+        url="/tasks/task-123/status",
+        params={},
         timeout=5.0,
     )
     # get_task_status はレスポンスオブジェクトを返す (api_client の仕様)
@@ -149,7 +149,7 @@ def test_stop_task_sends_post(mock_resilient_client):
 
     mock_resilient_client.request.assert_awaited_once_with(
         method="POST",
-        path="/tasks/task-123/stop",
+        url="/tasks/task-123/stop",
         json={},
         timeout=10.0,
     )

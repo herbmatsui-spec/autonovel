@@ -197,3 +197,10 @@ def patch_streamlit(context: MockStreamlitContext):
     mock_st = MockStreamlitModule(context)
     sys.modules['streamlit'] = mock_st
     return mock_st
+
+
+def mock_st_context() -> MockStreamlitContext:
+    """テスト用モックの streamlit コンテキストを生成して patch する"""
+    ctx = MockStreamlitContext()
+    patch_streamlit(ctx)
+    return ctx
