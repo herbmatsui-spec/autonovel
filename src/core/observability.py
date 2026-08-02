@@ -46,7 +46,18 @@ class StructuredLogger(logging.LoggerAdapter):
         super().__init__(logging.getLogger(name), {})
 
     def process(self, msg: str, kwargs: Dict[str, Any]) -> tuple:
-        kwargs.setdefault("extra", {})
+        # Extract special kwargs that should not go into extra
+        special_keys = {"exc_info", "stack_info", "stacklevel", "extra"}
+        # Get user-provided extra dict or create empty one
+        extra = kwargs.get("extra", {}).copy()
+        # Add all non-special kwargs to extra
+        for key, value in list(kwargs.items()):
+            if key not in special_keys:
+                extra[key] = value
+                del kwargs[key]
+        # Ensure we have an extra dict
+        kwargs["extra"] = extra
+        # Add standard fields
         kwargs["extra"].setdefault("trace_id", TraceContext.get_trace_id())
         kwargs["extra"].setdefault("timestamp", datetime.now().isoformat())
         return msg, kwargs

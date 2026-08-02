@@ -83,10 +83,10 @@ def render_hooks_tab(state: Dict[str, Any], engine: Any, book_id: int) -> None:
                 else:
                     st.success("良好")
 
-            sugg = st.session_state.get(f"hook_sugg_{s['ep_num']}")
-            if sugg:
+            sugg_from_session = st.session_state.get(f"hook_sugg_{s['ep_num']}")
+            if sugg_from_session is not None:
                 st.markdown("**💡 修正案（章末）**")
-                st.write(sugg)
+                st.write(sugg_from_session)
                 if st.button("✔ この修正案を適用", key=f"hook_apply_{s['ep_num']}", use_container_width=True):
-                    _apply_fix(book_id, s["ep_num"], sugg)
+                    _apply_fix(book_id, s["ep_num"], sugg_from_session)
                     st.rerun()

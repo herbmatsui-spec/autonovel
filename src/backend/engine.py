@@ -21,11 +21,11 @@ class UltimateHegemonyEngine:
     def __init__(
         self,
         api_key: str,
-        repo,
-        db,
-        llm,
-        cooldown,
-        plot_service,
+        repo=None,
+        db=None,
+        llm=None,
+        cooldown=None,
+        plot_service=None,
         **legacy,
     ):
         self.api_key = api_key
@@ -33,8 +33,17 @@ class UltimateHegemonyEngine:
         self.db = db
         self.llm = llm
         self.cooldown = cooldown
-        self.plot_service = plot_service
         self._legacy = legacy
+        self.client = None
+        self.current_ep_num = 0
+
+        if plot_service is not None:
+            self.plot_service = plot_service
+        elif repo is not None:
+            from src.backend.plot_service import PlotService
+            self.plot_service = PlotService(repo=repo, llm=llm)
+        else:
+            self.plot_service = None
 
     def _legacy_dep(self, name: str) -> Any:
         if name not in self._legacy:

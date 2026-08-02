@@ -4,7 +4,9 @@ import re
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, Literal, Optional, Tuple
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
+
+from src.core.exceptions import EngineError  # noqa: F401 - backward compat re-export
 
 
 @dataclass
@@ -49,14 +51,12 @@ StyleKey = Literal[
 ]
 
 # Pydantic V2 internal configuration to prevent naming conflicts and allow 'model_' prefixes
-from pydantic import ConfigDict
 
 MODEL_CONFIG_DEFAULTS = ConfigDict(populate_by_name=True, extra="allow", protected_namespaces=())
 
 # ==========================================
 # 例外クラス (src.core.exceptions から統合)
 # ==========================================
-from src.core.exceptions import EngineError  # noqa: F401 - backward compat re-export
 
 
 class GenerateResult(BaseModel):

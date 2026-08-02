@@ -2,8 +2,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kernels.connection import ConnectionState
-from kernels.connection_kernel import ConnectionKernel
+from archive.kernels.connection import ConnectionState
+from archive.kernels.connection_kernel import ConnectionKernel
 
 
 class MockLLMEngine:

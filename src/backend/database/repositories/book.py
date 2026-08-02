@@ -10,8 +10,8 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from sqlalchemy import delete, select, update
 
-from src.services.errors import retry_on_lock
 from src.backend.database.models import Book, Chapter, Plot
+from src.services.errors import retry_on_lock
 
 if TYPE_CHECKING:
     from src.models import BookDbModel

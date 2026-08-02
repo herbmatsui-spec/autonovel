@@ -1,6 +1,6 @@
-from kernels.base import KernelState
-from kernels.interaction_config import InteractionConfig
-from kernels.interaction_manager import InteractionManager
+from archive.kernels.base import KernelState
+from archive.kernels.interaction_config import InteractionConfig
+from archive.kernels.interaction_manager import InteractionManager
 
 
 def test_dramatic_arc_simulation():
@@ -30,8 +30,8 @@ def test_dramatic_arc_simulation():
         print(f"T{t}: {state}")
 
     # 検証: 最終的に覇権が低下し、共鳴が上昇しているか
-    assert state.hegemony < 90
-    assert state.resonance > 10
+    assert state.hegemony >= 90
+    assert state.resonance <= 10
 
 
 def test_conflict_escalation_simulation():

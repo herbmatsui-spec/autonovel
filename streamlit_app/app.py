@@ -4,23 +4,20 @@ app.py - 覇権小説自動生成ツール v3.0 エントリーポイント
     streamlit run app.py
 """
 
-from __future__ import annotations
-
 import logging
-
-app = __import__(__name__)
 import warnings
 
+app = __import__(__name__)
 import streamlit as st
 
-try:
-    from streamlit.errors import StreamlitAPIException
-except ImportError:
-    StreamlitAPIException = Exception
+# try:
+#     from streamlit.errors import StreamlitAPIException
+# except ImportError:
+#     StreamlitAPIException = Exception
 
-# ==========================================
+# ==============================================================================
 # アプリ初期化
-# ==========================================
+# ==============================================================================
 try:
     st.set_page_config(
         page_title="覇権小説エンジン v3.0 | 次世代AIナラティブエンジニアリング",
@@ -28,7 +25,7 @@ try:
         layout="wide",
         initial_sidebar_state="expanded",
     )
-except StreamlitAPIException:
+except Exception:
     pass
 
 warnings.filterwarnings("ignore")
@@ -108,7 +105,7 @@ def main() -> None:
 
     # 状態変更イベントの登録
     UIStateStore.subscribe(
-        "active_job", lambda job: st.toast("🚀 バックグラウンド処理を開始しました", icon="⚙️")
+        "active_job", lambda job: (st.toast("🚀 バックグラウンド処理を開始しました", icon="⚙️"), None)[1]
     )
 
     # プラグインの初期化

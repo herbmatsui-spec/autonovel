@@ -11,8 +11,8 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Query
 from pydantic import BaseModel
 
-from src.core.container import AppContainer as Container
 from src.backend.database.uow import UnitOfWork
+from src.core.container import AppContainer as Container
 
 router = APIRouter(prefix="/api/collab", tags=["collab"])
 

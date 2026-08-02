@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends
 
-from src.core.container import AppContainer as Container
 from src.backend.auth import require_api_key
 from src.backend.database.uow import UnitOfWork
+from src.core.container import AppContainer as Container
 from src.models.api_schemas import BookSchema
 
 router = APIRouter(prefix="/api/books", tags=["books"])

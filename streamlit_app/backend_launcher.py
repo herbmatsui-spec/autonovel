@@ -10,6 +10,7 @@ import subprocess
 import sys
 import time
 from typing import Optional
+from typing import Any as AnyType
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +33,7 @@ def _find_backend_entrypoint() -> str:
     raise FileNotFoundError("Backend entrypoint not found")
 
 
-def start_backend() -> Optional[subprocess.Popen]:
+def start_backend() -> Optional[subprocess.Popen[AnyType]]:
     """バックエンドサーバーを起動する。すでに起動済みの場合は None を返す。"""
     try:
         import requests  # noqa: F401

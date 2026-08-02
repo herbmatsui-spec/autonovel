@@ -1,37 +1,43 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Optional
+import json
+from datetime import datetime
+from typing import Optional, Union
 
-from src.domain.types import BookId
+from pydantic import BaseModel
+
+from src.models.base import MODEL_CONFIG_DEFAULTS
 
 
-@dataclass(frozen=True)
-class Book:
-    """
-    Book ドメインエンティティ。
-    DBモデル(src.backend.database.models.Book)とは独立し、ビジネスロジックを保持する。
-    """
-
-    id: BookId
+class BookDbModel(BaseModel):
+    id: int
     title: str
-    genre: str
-    concept: str
-    synopsis: str
-    target_eps: int
-    style_dna: str
-    marketing_data: str
-    cumulative_tension: int = 0
-    cumulative_qol: int = 0
-    cumulative_cost: float = 0.0
-    sanctuary_integrity: int = 100
+    genre: Optional[str] = None
+    concept: Optional[str] = None
+    synopsis: Optional[str] = None
+    catchcopy: Optional[str] = None
+    target_eps: Optional[int] = None
+    style_dna: Optional[Union[dict, str]] = None
+    status: Optional[str] = None
+    created_at: Optional[datetime] = None
+    marketing_data: Optional[Union[dict, str]] = None
+    cumulative_tension: Optional[int] = 0
+    cumulative_qol: Optional[int] = 0
+    cumulative_cost: Optional[float] = 0.0
+    sanctuary_integrity: Optional[int] = 100
     current_branch_id: Optional[int] = None
-    created_at: Optional[str] = None
 
-    def update_tension(self, delta: int) -> Book:
-        """緊張感を更新した新しいBookインスタンスを返す（不変性の維持）"""
-        return Book(**{**self.__dict__, "cumulative_tension": self.cumulative_tension + delta})
+    @property
+    def style_key(self) -> str:
+        """style_dna からスタイルキー（mode）を安全に取得する"""
+        if isinstance(self.style_dna, dict):
+            return self.style_dna.get("mode", "default")
+        if isinstance(self.style_dna, str) and self.style_dna.strip():
+            try:
+                data = json.loads(self.style_dna)
+                return data.get("mode", "default")
+            except (json.JSONDecodeError, TypeError):
+                return "default"
+        return "default"
 
-    def update_qol(self, delta: int) -> Book:
-        """QOLを更新した新しいBookインスタンスを返す"""
-        return Book(**{**self.__dict__, "cumulative_qol": self.cumulative_qol + delta})
+    model_config = MODEL_CONFIG_DEFAULTS

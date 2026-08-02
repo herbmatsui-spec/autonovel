@@ -4,15 +4,15 @@ from __future__ import annotations
 database/repo_character.py - キャラクター(Characters)データ操作用のリポジトリMixin
 """
 import json
-from typing import TYPE_CHECKING, Any, List
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import select, update
 
-from src.services.errors import retry_on_lock
 from src.backend.database.models import Character
+from src.services.errors import retry_on_lock
 
 if TYPE_CHECKING:
-    from src.models import CharacterDbModel
+    pass
 
 
 from src.backend.database.repositories.base import BaseRepository

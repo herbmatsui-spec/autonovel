@@ -18,6 +18,7 @@ except ImportError:
     REDIS_AVAILABLE = False
     redis: Any = None
 from config import get_config
+from src.core.container import AppContainer
 
 logger = logging.getLogger(__name__)
 

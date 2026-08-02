@@ -29,7 +29,11 @@ class PlotService:
         """
         現在の進行度とジャンルに基づき、このエピソードが到達すべき目標Tension値を計算し、DBに保存する。
         """
-        from src.backend.tension_utils import calculate_progress, get_target_tension, select_tension_curve
+        from src.backend.tension_utils import (
+            calculate_progress,
+            get_target_tension,
+            select_tension_curve,
+        )
 
         curve_name = select_tension_curve(genre, story_type)
 

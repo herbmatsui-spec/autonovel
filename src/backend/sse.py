@@ -23,8 +23,8 @@ async def task_event_generator(task_id: str) -> AsyncGenerator[str, None]:
             if not initial_state:
                 from sqlalchemy import select
 
-                from src.core.container import AppContainer as Container
                 from src.backend.database.models import InternalState
+                from src.core.container import AppContainer as Container
 
                 db = Container.db()
                 try:
@@ -87,8 +87,8 @@ async def _sqlite_polling_fallback(task_id: str) -> AsyncGenerator[str, None]:
     """
     from sqlalchemy import select
 
-    from src.core.container import AppContainer as Container
     from src.backend.database.models import InternalState
+    from src.core.container import AppContainer as Container
 
     db = Container.db()
     logger.info(f"[SSE] Starting database polling fallback for task {task_id}")

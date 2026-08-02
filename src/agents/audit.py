@@ -2,7 +2,7 @@
 from typing import Any, Dict, List, Optional, Tuple
 
 from src.backend.sharp_edge_preserver import check_edges_preserved
-from src.models.audit import LogicalAuditIssueList
+from src.models.audit import CriticFeedback, LogicalAuditIssueList
 from src.models.db import PlotDbModel
 from src.models.sharp_edge import SharpEdgeSpec
 from src.services.llm_service import LLMService
@@ -199,7 +199,7 @@ class LogicalAuditor:
 
     async def generate_critic_feedback(
         self, issue_list: LogicalAuditIssueList, draft_content: str, blueprint: str
-    ) -> str:
+    ) -> CriticFeedback:
         """
         Criticエージェントとして、具体的な修正案を含むフィードバックを生成する。
         """

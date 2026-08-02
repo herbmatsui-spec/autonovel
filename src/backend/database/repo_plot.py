@@ -1,23 +1,39 @@
+# mypy: disable-error-code="attr-defined"
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
-
-from src.backend.database.repo_protocols import IRepository
-
-"""
-database/repo_plot.py - プロット(Plots)データ操作用のリポジトリMixin
-"""
-import json
+from contextlib import asynccontextmanager
+from typing import Any, AsyncGenerator, Dict, List, Optional
 
 from sqlalchemy import delete, select, update
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.backend.database.core import retry_with_logging
 from src.backend.database.models import Book, Branch, EntertainmentCheckLog, Plot
+from src.backend.database.repositories.base import BaseRepository
 from src.models import PlotDbModel
 
 
-class PlotRepositoryMixin(IRepository):
+class PlotRepositoryMixin(BaseRepository):
     """Plotテーブルに関するDB操作をまとめたMixin"""
+
+    @asynccontextmanager
+    async def _get_session(self) -> AsyncGenerator[AsyncSession, None]:
+        async with self.session as session:
+            yield session
+
+    def _parse_row(self, row: dict, json_fields: list) -> dict:
+        """
+        JSONフィールドの値をパースし、型を正規化する。
+        """
+        import json
+
+        for f in json_fields:
+            if f in row and isinstance(row[f], str):
+                try:
+                    row[f] = json.loads(row[f])
+                except (json.JSONDecodeError, TypeError):
+                    pass
+        return row
 
     @retry_with_logging()
     async def get_plot(

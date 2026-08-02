@@ -1,40 +1,32 @@
 import asyncio
-
+from unittest.mock import MagicMock
 import pytest
 
-from src.backend.background import BackgroundReporter
+from src.backend.background import BackgroundReporter, ProgressState
 from streamlit_app.state import AppStateModel, UIStateStore
 
 
 @pytest.mark.asyncio
 async def test_background_reporter_streaming_persistence():
-    """Mock Streamlit session state for testing background reporter functionality"""
-    # Mock Streamlit session state using mock_streamlit fixture
-    from tests.mocks.mock_streamlit import mock_st_context
+    """Test background reporter functionality with mock Streamlit"""
+    # Create a ProgressState instance (no streamlit needed for BackgroundReporter)
+    progress_state = ProgressState(task_id="test_task", skip_initial_save=True)
 
-    mock_st = mock_st_context()
+    # Setup reporter
+    reporter = BackgroundReporter(state=progress_state)
 
-    # Mock state for UIStateStore
-    mock_state = MagicMock(spec=AppStateModel)
-    mock_state.active_job = MagicMock()
+    # Test streaming text update
+    test_text = "This is a streaming chunk."
+    reporter.update_streaming_text(test_text)
 
-    # Set up the mock state
-    mock_state.active_job = MagicMock()
+    # Verify state was updated
+    assert progress_state.streaming_text == test_text
 
-    # Set up the background reporter
-    async with mock_st:  # This will patch streamlit appropriately
-        # Setup reporter
-        reporter = BackgroundReporter(state=mock_progress_state)
-
-        # Test streaming text update
-        test_text = "This is a streaming chunk."
-        reporter.update_streaming_text(test_text)
-
-        # Verify state was updated
-        assert mock_progress_state.streaming_text == test_text
-
-        # Verify that persistence was triggered via the repo's save method
-        mock_db.save_internal_state.assert_called()
+    # Test progress update
+    reporter.update_progress(1, 10, "Step 1", "Doing work")
+    assert progress_state.current_step == 1
+    assert progress_state.total_steps == 10
+    assert "Step 1" in progress_state.message
 
 
 @pytest.mark.asyncio

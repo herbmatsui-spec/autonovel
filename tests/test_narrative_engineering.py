@@ -1,10 +1,10 @@
 import asyncio
 from unittest.mock import MagicMock
 
-from kernels.base import KernelContext
-from kernels.connection import ConnectionState
-from kernels.graph import NarrativeState, NarrativeStateGraph, NarrativeStateManager
-from kernels.pipeline import ConnectionPipeline
+from archive.kernels.base import KernelContext
+from archive.kernels.connection import ConnectionState
+from archive.kernels.graph import NarrativeState, NarrativeStateGraph, NarrativeStateManager
+from archive.kernels.pipeline import ConnectionPipeline
 
 
 async def test_narrative_logic():
@@ -163,6 +163,6 @@ async def test_narrative_logic():
 
 
 if __name__ == "__main__":
-    from kernels.graph import NarrativeStateNode  # Local import for script
+    from archive.kernels.graph import NarrativeStateNode  # Local import for script
 
     asyncio.run(test_narrative_logic())

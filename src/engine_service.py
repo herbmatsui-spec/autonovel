@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 
 from src.services.llm_service import LLMService
 
@@ -12,11 +12,22 @@ class EngineService:
     将来的には DB リポジトリ層へ委譲する予定。
     """
 
+    _instance: ClassVar[Optional["EngineService"]] = None
+
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key or ""
         self.llm = LLMService(api_key=self.api_key)
         # 簡易インメモリ書籍リスト（後で DB に置き換える）
         self._books: List[Dict[str, Any]] = []
+
+    @classmethod
+    def get_instance(cls, api_key: Optional[str] = None) -> "EngineService":
+        """EngineServiceのシングルトンインスタンスを取得"""
+        if cls._instance is None:
+            cls._instance = cls(api_key)
+        elif api_key and not cls._instance.api_key:
+            cls._instance.api_key = api_key
+        return cls._instance
 
     # ---------------------------------------------------------------------
     # 書籍管理（簡易スタブ）

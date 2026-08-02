@@ -11,8 +11,8 @@ from sqlalchemy import delete, or_, select, update
 
 from src.backend.database.core import retry_with_logging
 from src.backend.database.models import Chapter
-from src.models.db import ChapterDbModel
 from src.backend.database.repositories.base import BaseRepository
+from src.models.db import ChapterDbModel
 
 
 class ChapterRepositoryMixin(BaseRepository):

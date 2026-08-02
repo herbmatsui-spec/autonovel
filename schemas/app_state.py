@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class WizardState(BaseModel):
@@ -19,6 +19,17 @@ class TokenStats(BaseModel):
     prompt: int = 0
     completion: int = 0
     calls: int = 0
+
+    @property
+    def total_tokens(self) -> int:
+        return self.prompt + self.completion
+
+    @field_validator('prompt', 'completion', 'calls')
+    @classmethod
+    def validate_non_negative(cls, v: int) -> int:
+        if v < 0:
+            raise ValueError('値は0以上である必要があります')
+        return v
 
 
 class AppRuntimeState(BaseModel):
@@ -67,6 +78,13 @@ class AppRuntimeState(BaseModel):
     # 設定データキャッシュ (config/streamlit_adapter の st.session_state.config 置き換え)
     config_data: dict[str, Any] = Field(default_factory=dict)
 
+    @property
+    def active_job_id(self) -> str | None:
+        if not self.active_job_ids:
+            return None
+        first_value = next(iter(self.active_job_ids.values()), None)
+        return first_value if isinstance(first_value, str) else None
+
 
 class AppStateModel(BaseModel):
     """
@@ -78,8 +96,8 @@ class AppStateModel(BaseModel):
     config: dict[str, Any] = Field(default_factory=dict)
 
     # 現在の操作対象
-    current_book_id: str | None = None
-    selected_episode_id: str | None = None
+    current_book_id: int | None = None
+    selected_episode_id: int | None = None
 
     # 各種ウィザード状態
     wizard: WizardState = Field(default_factory=WizardState)

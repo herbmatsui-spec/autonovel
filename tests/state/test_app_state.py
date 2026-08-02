@@ -37,9 +37,9 @@ def test_app_state_model_composition():
 
 def test_token_stats_validation():
     """TokenStats のバリデーションを検証"""
-    stats = TokenStats(prompt_tokens=100, completion_tokens=200)
+    stats = TokenStats(prompt=100, completion=200)
     assert stats.total_tokens == 300
 
     with pytest.raises(ValidationError):
         # 負の値は許容されない（正の整数であるべき）
-        TokenStats(prompt_tokens=-1)
+        TokenStats(prompt=-1)

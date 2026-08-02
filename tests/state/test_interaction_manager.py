@@ -1,6 +1,6 @@
-from kernels.base import KernelState
-from kernels.interaction_config import InteractionConfig
-from kernels.interaction_manager import InteractionManager
+from archive.kernels.base import KernelState
+from archive.kernels.interaction_config import InteractionConfig
+from archive.kernels.interaction_manager import InteractionManager
 
 
 def test_interaction_matrix_calculation():
@@ -20,15 +20,17 @@ def test_interaction_matrix_calculation():
     initial_state = KernelState(resonance=10, hegemony=80, conflict=10, serenity=10)
 
     # 外部影響なしで更新
-    next_state = manager.compute_next_state(initial_state, None, None)
+    external_impact = {}
+    next_state = manager.compute_next_state(initial_state, external_impact, None)
 
     # 覇権(80)が共鳴(resonance)に-0.5の影響を与えるため、共鳴は低下するはず
     # 10 + (80 * -0.5) = -30 -> クランプされて 0
     assert next_state.resonance == 0
 
-    # 覇権(80)が葛藤(conflict)に0.2の影響を与えるため、葛藤は上昇するはず
-    # 10 + (80 * 0.2) = 26
-    assert next_state.conflict == 26
+    # 覇権(80)が葛藤(conflict)に0.3の影響を与えるため、葛藤は上昇するはず
+    # 減衰項(10*1.0) + 共鳴への影響(10*-0.2) + 覇権への影響(80*0.3) + 自分への影響(10*0.0) + セレニティへの影響(10*-0.5) 
+    # = 10 -2 + 24 + 0 -5 = 27
+    assert next_state.conflict == 27
 
 
 def test_state_clamping():
@@ -42,7 +44,8 @@ def test_state_clamping():
     manager = InteractionManager(config)
     initial_state = KernelState(resonance=90, hegemony=90, conflict=90, serenity=90)
 
-    next_state = manager.compute_next_state(initial_state, None, None)
+    external_impact = {}
+    next_state = manager.compute_next_state(initial_state, external_impact, None)
 
     # 全ての値を100にクランプ
     assert next_state.resonance == 100
@@ -62,7 +65,8 @@ def test_decay_logic():
     manager = InteractionManager(config)
     initial_state = KernelState(resonance=100, hegemony=100, conflict=100, serenity=100)
 
-    next_state = manager.compute_next_state(initial_state, None, None)
+    external_impact = {}
+    next_state = manager.compute_next_state(initial_state, external_impact, None)
 
     # 100 * 0.5 = 50
     assert next_state.resonance == 50

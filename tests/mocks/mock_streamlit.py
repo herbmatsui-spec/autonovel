@@ -158,6 +158,11 @@ class MockStreamlitContext:
             return func
         return decorator
 
+    def dialog(self, title, width="medium"):
+        def decorator(func):
+            return func
+        return decorator
+
     class Page:
         def __init__(self, page, title=None, icon=None, url_path=None, default=False):
             self.page = page

@@ -5,11 +5,11 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 
-from src.core.container import AppContainer as Container
 from src.backend.auth import require_api_key
 from src.backend.database.models import InternalState
 from src.backend.redis_util import get_redis_client
 from src.backend.sse import task_event_generator
+from src.core.container import AppContainer as Container
 from src.core.exceptions import NotFoundError
 
 router = APIRouter(prefix="/api/tasks", tags=["tasks"])

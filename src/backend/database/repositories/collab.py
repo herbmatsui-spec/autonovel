@@ -7,8 +7,8 @@ from typing import List, Optional
 
 from sqlalchemy import select
 
-from src.services.errors import retry_on_lock
 from src.backend.database.models import Comment, ProjectMember
+from src.services.errors import retry_on_lock
 
 
 class CollabRepository:

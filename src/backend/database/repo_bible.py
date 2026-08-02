@@ -18,9 +18,9 @@ from src.backend.database.models import (
     Character,
     Plot,
 )
+from src.backend.database.repositories.base import BaseRepository
 from src.models.bible import WorldBible
 from src.models.db import BibleDbModel
-from src.backend.database.repositories.base import BaseRepository
 
 logger = logging.getLogger(__name__)
 

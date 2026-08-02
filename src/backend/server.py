@@ -16,12 +16,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from src.core.container import AppContainer as Container
 from config.cors_config import get_allowed_origins
 from config.logging_config import setup_logging
 from src.backend.auth import validate_api_key_or_raise
 from src.backend.database import init_db
 from src.backend.error_handlers import register_error_handlers
+from src.core.container import AppContainer as Container
 from src.core.observability import TraceContext
 from src.models.api_schemas import (
     CritiqueOptimizeRequest,

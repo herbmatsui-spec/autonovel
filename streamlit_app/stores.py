@@ -3,6 +3,7 @@ streamlit_app/stores.py - Modular UI state stores
 """
 
 from typing import Any, Callable, Dict, List, Optional
+from typing import cast
 
 import streamlit as st
 
@@ -19,8 +20,8 @@ class BaseStore:
     @classmethod
     def get_runtime(cls) -> Any:
         class MockRuntime:
-            rerun_count = 0
-            config_data = {}
+            rerun_count: int = 0
+            config_data: Dict[str, Any] = {}
 
         if "runtime_state" not in st.session_state:
             st.session_state["runtime_state"] = MockRuntime()
@@ -50,7 +51,7 @@ class BaseStore:
             cls._subscribers[key] = []
         cls._subscribers[key].append(callback)
 
-        def unsubscribe():
+        def unsubscribe() -> None:
             if key in cls._subscribers and callback in cls._subscribers[key]:
                 cls._subscribers[key].remove(callback)
 
@@ -67,12 +68,14 @@ class BaseStore:
 
     @classmethod
     def get_rerun_count(cls) -> int:
-        return getattr(cls.get_runtime(), "rerun_count", 0)
+        rt = cls.get_runtime()
+        count = getattr(rt, "rerun_count", 0)
+        return int(count)
 
     @classmethod
     def increment_rerun_count(cls) -> int:
         rt = cls.get_runtime()
-        count = getattr(rt, "rerun_count", 0) + 1
+        count = int(getattr(rt, "rerun_count", 0)) + 1
         setattr(rt, "rerun_count", count)
         return count
 
@@ -84,7 +87,8 @@ class BaseStore:
 class JobStore(BaseStore):
     @classmethod
     def get_monitored_jobs(cls) -> Dict[str, Any]:
-        return st.session_state.get("monitored_jobs", {})
+        jobs = st.session_state.get("monitored_jobs", {})
+        return cast(Dict[str, Any], jobs)
 
     @classmethod
     def set_active_job(cls, job: Any, run_key: str = "default") -> None:
@@ -100,13 +104,13 @@ class JobStore(BaseStore):
     @classmethod
     def bump_fragment_version(cls, part: str) -> int:
         key = f"frag_ver_{part}"
-        val = st.session_state.get(key, 0) + 1
+        val = int(st.session_state.get(key, 0)) + 1
         st.session_state[key] = val
         return val
 
     @classmethod
     def get_fragment_version(cls, part: str) -> int:
-        return st.session_state.get(f"frag_ver_{part}", 0)
+        return int(st.session_state.get(f"frag_ver_{part}", 0))
 
     @classmethod
     def set_job_id(cls, run_key: str, job_id: str) -> None:
@@ -124,13 +128,15 @@ class JobStore(BaseStore):
 
     @classmethod
     def is_processing(cls) -> bool:
-        return st.session_state.get("processing_lock", False)
+        val = st.session_state.get("processing_lock", False)
+        return bool(val)
 
 
 class PollStateStore(BaseStore):
     @classmethod
     def get_poll_fail_count(cls, run_key: str) -> int:
-        return st.session_state.get(f"poll_fail_{run_key}", 0)
+        val = st.session_state.get(f"poll_fail_{run_key}", 0)
+        return int(val)
 
     @classmethod
     def increment_poll_fail_count(cls, run_key: str) -> int:
@@ -144,7 +150,8 @@ class PollStateStore(BaseStore):
 
     @classmethod
     def get_poll_skip_until(cls, run_key: str) -> float:
-        return st.session_state.get(f"poll_skip_{run_key}", 0.0)
+        val = st.session_state.get(f"poll_skip_{run_key}", 0.0)
+        return float(val)
 
     @classmethod
     def set_poll_skip_until(cls, run_key: str, timestamp: float) -> None:
@@ -156,13 +163,15 @@ class PollStateStore(BaseStore):
 
     @classmethod
     def get_save_status(cls, ep_num: int) -> str:
-        return st.session_state.get(f"save_status_{ep_num}", "idle")
+        val = st.session_state.get(f"save_status_{ep_num}", "idle")
+        return str(val)
 
 
 class ToastStore(BaseStore):
     @classmethod
     def is_toast_notified(cls, key: str) -> bool:
-        return key in st.session_state.get("notified_toasts", set())
+        toasts = st.session_state.get("notified_toasts", set())
+        return key in toasts
 
     @classmethod
     def mark_toast_notified(cls, key: str) -> None:
@@ -197,7 +206,8 @@ class SessionStore(BaseStore):
 
     @classmethod
     def get_api_key_validation_state(cls) -> str:
-        return st.session_state.get("api_key_validation_state", "unvalidated")
+        val = st.session_state.get("api_key_validation_state", "unvalidated")
+        return str(val)
 
     @classmethod
     def set_api_key_validation_state(cls, state: str) -> None:
@@ -205,7 +215,8 @@ class SessionStore(BaseStore):
 
     @classmethod
     def get_api_key_validation_key(cls) -> str:
-        return st.session_state.get("api_key_validation_key", "")
+        val = st.session_state.get("api_key_validation_key", "")
+        return str(val)
 
     @classmethod
     def set_api_key_validation_key(cls, key: str) -> None:
@@ -213,7 +224,8 @@ class SessionStore(BaseStore):
 
     @classmethod
     def get_api_key_validation_error(cls) -> str:
-        return st.session_state.get("api_key_validation_error", "")
+        val = st.session_state.get("api_key_validation_error", "")
+        return str(val)
 
     @classmethod
     def set_api_key_validation_error(cls, msg: str) -> None:
@@ -227,7 +239,8 @@ class SessionStore(BaseStore):
 
     @classmethod
     def get_api_key_input(cls) -> str:
-        return st.session_state.get("api_key_input", "")
+        val = st.session_state.get("api_key_input", "")
+        return str(val)
 
     @classmethod
     def set_api_key_input(cls, value: str) -> None:

@@ -10,9 +10,9 @@ from typing import Any, Dict, List
 
 from fastapi import APIRouter, Query
 
-from src.core.container import AppContainer as Container
 from src.backend.database.models import Plot
 from src.backend.database.uow import UnitOfWork
+from src.core.container import AppContainer as Container
 from src.services.structure_validator import list_structures, validate
 
 router = APIRouter(prefix="/api/structure", tags=["structure"])

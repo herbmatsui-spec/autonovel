@@ -1,3 +1,4 @@
+# mypy: disable-error-code="attr-defined"
 from typing import Any, Dict, List, Optional
 
 from sqlalchemy import desc, select
@@ -31,7 +32,7 @@ class NarrativeMetricRepository(BaseRepository[NarrativeMetric]):
             )
             metrics = result.scalars().all()
             if metrics:
-                return self._aggregate_metrics(metrics)
+                return self._aggregate_metrics(list(metrics))
 
         # 2. 前のエピソードの最終シーンを検索
         if ep_num > 1:
@@ -57,7 +58,7 @@ class NarrativeMetricRepository(BaseRepository[NarrativeMetric]):
                     )
                 )
                 metrics = result.scalars().all()
-                return self._aggregate_metrics(metrics)
+                return self._aggregate_metrics(list(metrics))
 
         return None
 
@@ -124,7 +125,7 @@ class NarrativeMetricRepository(BaseRepository[NarrativeMetric]):
         """
         複数のMetricレコードを {metric_name: score} 形式に変換する。
         """
-        return {m.metric_name: m.score for m in metrics}
+        return {str(m.metric_name): int(m.metric_value) for m in metrics}
 
     async def get_trend_metrics(self, book_id: int, branch_id: int) -> List[Dict[str, Any]]:
         """

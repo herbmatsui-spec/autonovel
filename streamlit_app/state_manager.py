@@ -7,6 +7,7 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 from typing import Any, Optional
+from typing import cast
 
 import streamlit as st
 from pydantic import BaseModel, Field
@@ -56,7 +57,7 @@ class SessionManager:
                 state = AppStateModel()
             st.session_state[cls._STATE_KEY] = state
 
-        return st.session_state[cls._STATE_KEY]
+        return cast(AppStateModel, st.session_state[cls._STATE_KEY])
 
     @classmethod
     def save_state(cls, state: AppStateModel) -> None:

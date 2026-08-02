@@ -10,8 +10,8 @@ from typing import Any, Dict
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from src.core.container import AppContainer as Container
 from src.backend.database.uow import UnitOfWork
+from src.core.container import AppContainer as Container
 from src.services.hook_diagnoser import HOOK_THRESHOLD, HookDiagnoser
 
 router = APIRouter(prefix="/api/hooks", tags=["hooks"])

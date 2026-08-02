@@ -4,7 +4,8 @@ streamlit_app/state.py — Streamlit セッション状態の型安全な管理
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, cast
 
 import streamlit as st
 from pydantic import BaseModel, Field
@@ -81,7 +82,7 @@ class SessionManager:
     _STATE_KEY = APP_STATE_KEY
 
     @classmethod
-    def _get_storage_path(cls):
+    def _get_storage_path(cls) -> Path:
         """セッション固有の保存パスを生成する"""
         from pathlib import Path
 
@@ -107,7 +108,7 @@ class SessionManager:
                 state = AppStateModel()
             st.session_state[cls._STATE_KEY] = state
 
-        return st.session_state[cls._STATE_KEY]
+        return cast(AppStateModel, st.session_state[cls._STATE_KEY])
 
     @classmethod
     def save_state(cls, state: AppStateModel) -> None:
@@ -217,7 +218,7 @@ from streamlit_app.stores import (  # noqa: E402
 class UIStateStore:
     """UI state store implementation using composition pattern."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._job_store = JobStore()
         self._poll_store = PollStateStore()
         self._toast_store = ToastStore()
@@ -226,180 +227,176 @@ class UIStateStore:
     _subscribers = BaseStore._subscribers
 
     @staticmethod
-    def get_runtime():
+    def get_runtime() -> Any:
         return SessionStore.get_runtime()
 
     @staticmethod
-    def get_runtime_state():
+    def get_runtime_state() -> Any:
         return SessionStore.get_runtime()
 
     # Delegate to JobStore
     @staticmethod
-    def get_monitored_jobs():
+    def get_monitored_jobs() -> Dict[str, Any]:
         return JobStore.get_monitored_jobs()
 
     @staticmethod
-    def set_active_job(job, run_key="default"):
+    def set_active_job(job: Any, run_key: str = "default") -> None:
         return JobStore.set_active_job(job, run_key)
 
     @staticmethod
-    def clear_active_job(run_key="default"):
+    def clear_active_job(run_key: str = "default") -> None:
         return JobStore.clear_active_job(run_key)
 
     @staticmethod
-    def bump_fragment_version(part):
+    def bump_fragment_version(part: str) -> int:
         return JobStore.bump_fragment_version(part)
 
     @staticmethod
-    def get_fragment_version(part):
+    def get_fragment_version(part: str) -> int:
         return JobStore.get_fragment_version(part)
 
     @staticmethod
-    def set_job_id(run_key, job_id):
+    def set_job_id(run_key: str, job_id: str) -> None:
         return JobStore.set_job_id(run_key, job_id)
 
     @staticmethod
-    def clear_job_id(run_key):
+    def clear_job_id(run_key: str) -> None:
         return JobStore.clear_job_id(run_key)
 
     @staticmethod
-    def set_processing_lock(locked):
+    def set_processing_lock(locked: bool) -> None:
         return JobStore.set_processing_lock(locked)
 
     @staticmethod
-    def is_processing():
+    def is_processing() -> bool:
         return JobStore.is_processing()
 
     # Delegate to PollStateStore
     @staticmethod
-    def get_poll_fail_count(run_key):
+    def get_poll_fail_count(run_key: str) -> int:
         return PollStateStore.get_poll_fail_count(run_key)
 
     @staticmethod
-    def increment_poll_fail_count(run_key):
+    def increment_poll_fail_count(run_key: str) -> int:
         return PollStateStore.increment_poll_fail_count(run_key)
 
     @staticmethod
-    def reset_poll_fail_count(run_key):
+    def reset_poll_fail_count(run_key: str) -> None:
         return PollStateStore.reset_poll_fail_count(run_key)
 
     @staticmethod
-    def get_poll_skip_until(run_key):
+    def get_poll_skip_until(run_key: str) -> float:
         return PollStateStore.get_poll_skip_until(run_key)
 
     @staticmethod
-    def set_poll_skip_until(run_key, timestamp):
+    def set_poll_skip_until(run_key: str, timestamp: float) -> None:
         return PollStateStore.set_poll_skip_until(run_key, timestamp)
 
     @staticmethod
-    def set_save_status(ep_num, status):
+    def set_save_status(ep_num: int, status: str) -> None:
         return PollStateStore.set_save_status(ep_num, status)
 
     @staticmethod
-    def get_save_status(ep_num):
+    def get_save_status(ep_num: int) -> str:
         return PollStateStore.get_save_status(ep_num)
 
     # Delegate to ToastStore
     @staticmethod
-    def is_toast_notified(key):
+    def is_toast_notified(key: str) -> bool:
         return ToastStore.is_toast_notified(key)
 
     @staticmethod
-    def mark_toast_notified(key):
+    def mark_toast_notified(key: str) -> None:
         return ToastStore.mark_toast_notified(key)
 
     @staticmethod
-    def clear_toast_notified(key):
+    def clear_toast_notified(key: str) -> None:
         return ToastStore.clear_toast_notified(key)
 
     @staticmethod
-    def toast_notify(key, message, icon=None):
+    def toast_notify(key: str, message: str, icon: Optional[str] = None) -> None:
         return ToastStore.toast_notify(key, message, icon)
 
     # Delegate to SessionStore
     @staticmethod
-    def set_wizard_step(step):
+    def set_wizard_step(step: int) -> None:
         return SessionStore.set_wizard_step(step)
 
     @staticmethod
-    def update_wizard_data(data):
+    def update_wizard_data(data: Dict[str, Any]) -> None:
         return SessionStore.update_wizard_data(data)
 
     @staticmethod
-    def set_easy_genre(genre_key):
+    def set_easy_genre(genre_key: str) -> None:
         return SessionStore.set_easy_genre(genre_key)
 
     @staticmethod
-    def get_api_key_validation_state():
+    def get_api_key_validation_state() -> str:
         return SessionStore.get_api_key_validation_state()
 
     @staticmethod
-    def set_api_key_validation_state(state):
+    def set_api_key_validation_state(state: str) -> None:
         return SessionStore.set_api_key_validation_state(state)
 
     @staticmethod
-    def get_api_key_validation_key():
+    def get_api_key_validation_key() -> str:
         return SessionStore.get_api_key_validation_key()
 
     @staticmethod
-    def set_api_key_validation_key(key):
+    def set_api_key_validation_key(key: str) -> None:
         return SessionStore.set_api_key_validation_key(key)
 
     @staticmethod
-    def get_api_key_validation_error():
+    def get_api_key_validation_error() -> str:
         return SessionStore.get_api_key_validation_error()
 
     @staticmethod
-    def set_api_key_validation_error(msg):
+    def set_api_key_validation_error(msg: str) -> None:
         return SessionStore.set_api_key_validation_error(msg)
 
     @staticmethod
-    def reset_api_key_validation():
+    def reset_api_key_validation() -> None:
         return SessionStore.reset_api_key_validation()
 
     @staticmethod
-    def get_api_key_input():
+    def get_api_key_input() -> str:
         return SessionStore.get_api_key_input()
 
     @staticmethod
-    def set_api_key_input(value):
+    def set_api_key_input(value: str) -> None:
         return SessionStore.set_api_key_input(value)
 
-    # Delegate to BaseStore
+# Delegate to BaseStore
     @staticmethod
-    def get():
+    def get() -> Any:
         return BaseStore.get()
 
     @staticmethod
-    def get_runtime():
-        return BaseStore.get_runtime()
-
-    @staticmethod
-    def update(update_func, notify_keys=None):
+    def update(update_func: Callable[[AppStateModel], None], notify_keys: Optional[List[str]] = None) -> None:
         return BaseStore.update(update_func, notify_keys)
 
     @staticmethod
-    def update_runtime(key, value, notify=True):
+    def update_runtime(key: str, value: Any, notify: bool = True) -> None:
         return BaseStore.update_runtime(key, value, notify)
 
     @staticmethod
-    def subscribe(key, callback):
+    def subscribe(key: str, callback: Callable[[Any], None]) -> Callable[[], None]:
         return BaseStore.subscribe(key, callback)
 
     @staticmethod
-    def _notify(key, value):
+    def _notify(key: str, value: Any) -> None:
         return BaseStore._notify(key, value)
 
     @staticmethod
-    def get_rerun_count():
+    def get_rerun_count() -> int:
         return BaseStore.get_rerun_count()
 
     @staticmethod
-    def increment_rerun_count():
+    def increment_rerun_count() -> int:
         return BaseStore.increment_rerun_count()
 
     @staticmethod
-    def get_book_plots(book_id):
+    def get_book_plots(book_id: Any) -> List[Any]:
         return BaseStore.get_book_plots(book_id)
 
     @property
@@ -412,9 +409,9 @@ class UIStateStore:
 
         if UI_STATE_KEY not in st.session_state:
             st.session_state[UI_STATE_KEY] = UIState()
-        return st.session_state[UI_STATE_KEY]
+        return cast(UIState, st.session_state[UI_STATE_KEY])
 
-    def update_ui_state(self, **kwargs) -> None:
+    def update_ui_state(self, **kwargs: Any) -> None:
         """
         UI状態を更新する。キーワード引数で指定されたフィールドのみを更新する。
         """
@@ -468,4 +465,4 @@ class UIStateStore:
         """
         モーダル表示フラグを取得する。
         """
-        return self.get_ui_state_value("show_modal", False)
+        return bool(self.get_ui_state_value("show_modal", False))

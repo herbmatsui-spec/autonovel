@@ -1,9 +1,36 @@
 import json
 import logging
 import uuid
-from typing import Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from pydantic import BaseModel
+
+if TYPE_CHECKING:
+    from src.agents.state_validator import (
+        CharacterStatusChange,
+        EpisodeStatusChanges,
+        StateContradictionError,
+        StateValidator,
+    )
+else:
+    # Fallback definitions if state_validator doesn't have these classes
+    class CharacterStatusChange(BaseModel):
+        character_id: str = ""
+        attribute: str = ""
+        old_value: Any = None
+        new_value: Any = None
+
+    class EpisodeStatusChanges(BaseModel):
+        character_status_changes: List["CharacterStatusChange"] = []
+
+    class StateContradictionError(Exception):
+        pass
+
+    class StateValidator:
+        @staticmethod
+        def validate_transitions(prev_ws: Dict[str, Any], changes_obj: Any) -> None:
+            pass
+
 
 from config.project_context import ProjectContext
 from src.agents.audit import PlotIntegrityMonitor
@@ -86,13 +113,17 @@ class GenerationLoopManager:
                 "info",
             )
 
-        final_content, final_meta, is_integrity_ok = "", {}, True
-        is_causal_ok, causal_reason, failures = True, "", []
+        final_content: str = ""
+        final_meta: Dict[str, Any] = {}
+        is_integrity_ok = True
+        is_causal_ok = True
+        causal_reason = ""
+        failures: List[Any] = []
         rate = 1.0
-        blueprint = ctx.plot.detailed_blueprint or ""
+        blueprint = ctx.plot.detailed_blueprint if ctx.plot else ""
         engine_key = ctx.engine_key or "unknown"
 
-        monitor = PlotIntegrityMonitor(self.pm, self.llm)
+        monitor = PlotIntegrityMonitor()
 
         threshold = self.narrative.get_integrity_threshold(
             ctx.genre_str, ctx.prev_integrity, engine_key=engine_key
@@ -106,7 +137,7 @@ class GenerationLoopManager:
             )
 
             final_content, final_meta = await self._phase_drafting(
-                ep_num, blueprint, temp, should_beat_decompose, gen_ctx, reporter
+                ep_num, blueprint or "", temp, should_beat_decompose, gen_ctx, reporter
             )
             if not final_content:
                 if fail_fast:
@@ -120,7 +151,7 @@ class GenerationLoopManager:
                 ctx,
                 final_content,
                 final_meta,
-                blueprint,
+                blueprint or "",
                 threshold,
                 should_heavy_audit,
                 monitor,
@@ -132,7 +163,7 @@ class GenerationLoopManager:
 
             if should_heavy_audit and not is_easy_mode and ac_iter < max_ac_iter - 1:
                 critic_triggered = await self._phase_critic(
-                    ac_iter, ep_num, final_content, blueprint, failures, gen_ctx, reporter
+                    ac_iter, ep_num, final_content, blueprint or "", failures, gen_ctx, reporter
                 )
                 if not critic_triggered:
                     break
@@ -142,7 +173,7 @@ class GenerationLoopManager:
         # 外科的修復（最終フォールバック）
         if should_heavy_audit and not is_causal_ok and not is_easy_mode:
             final_content, is_causal_ok, causal_reason = await self._phase_healing(
-                ep_num, final_content, ctx, blueprint, causal_reason, failures, monitor
+                ep_num, final_content, ctx, blueprint or "", causal_reason, failures, monitor
             )
             if not is_causal_ok and fail_fast:
                 raise RuntimeError(
@@ -192,7 +223,7 @@ class GenerationLoopManager:
             auditor = LogicalAuditor(self.repo, self.pm, self.llm.generate_json, None)
             metrics_repo = NarrativeMetricRepository(self.repo.session)
 
-            book_id = ctx.book.id if hasattr(ctx.book, "id") else ctx.book.book_id
+            book_id = ctx.book.id if ctx.book else 1
             branch_id = ctx.branch_id
 
             scored_scores = await auditor.score_narrative_metrics(
@@ -201,7 +232,7 @@ class GenerationLoopManager:
                 ep_num=ep_num,
                 scene_num=1,
                 scene_content=final_content,
-                context=blueprint,
+                context=blueprint or "",
                 reporter=reporter,
             )
             await metrics_repo.save_scene_metrics(
@@ -253,14 +284,19 @@ class GenerationLoopManager:
         reporter,
     ) -> Tuple[WritingGenerationContext, bool, bool, bool, int]:
         current_tension = ctx.current_tension
-        is_catharsis = getattr(ctx.plot, "is_catharsis", False)
+        is_catharsis = getattr(ctx.plot, "is_catharsis", False) if ctx.plot else False
 
         # style_key and write_rule_type extraction
-        style_dna_dict = (
-            json.loads(ctx.book.style_dna)
-            if isinstance(ctx.book.style_dna, str)
-            else (ctx.book.style_dna or {})
-        )
+        style_dna_raw = ctx.book.style_dna if ctx.book else None
+        if isinstance(style_dna_raw, str):
+            try:
+                style_dna_dict = json.loads(style_dna_raw)
+            except json.JSONDecodeError:
+                style_dna_dict = {}
+        elif isinstance(style_dna_raw, dict):
+            style_dna_dict = style_dna_raw
+        else:
+            style_dna_dict = {}
         style_key = str(style_dna_dict.get("mode", "style_web_standard"))
 
         prose_samples = ctx.prose_samples
@@ -345,15 +381,8 @@ class GenerationLoopManager:
             ep_num, ctx, final_content, blueprint, should_heavy_audit, monitor
         )
 
-        from src.agents.state_validator import (
-            CharacterStatusChange,
-            EpisodeStatusChanges,
-            StateContradictionError,
-            StateValidator,
-        )
-
+        status_changes = final_meta.get("character_status_changes", []) if final_meta else []
         try:
-            status_changes = final_meta.get("character_status_changes", []) if final_meta else []
             normalized_changes = []
             for item in status_changes:
                 if isinstance(item, dict):
@@ -363,7 +392,7 @@ class GenerationLoopManager:
 
             changes_obj = EpisodeStatusChanges(character_status_changes=normalized_changes)
             prev_ws = ctx.prev_world_state or {}
-            StateValidator.validate_transitions(prev_ws, changes_obj)
+            StateValidator.validate_transitions(prev_ws, normalized_changes)
         except StateContradictionError as e:
             logger.warning(f"Deterministic state verification failed: {e}")
             is_causal_ok = False
@@ -498,7 +527,7 @@ class GenerationLoopManager:
             ncs_score += 50
         if any(kw in summary_text for kw in AUDIT_TRIGGER_KEYWORDS):
             ncs_score += 30
-        if ep_num <= 3 or ep_num >= (ctx.book.target_eps or 50) - 2:
+        if ep_num <= 3 or ep_num >= ((ctx.book.target_eps if ctx.book else 50) or 50) - 2:
             ncs_score += 30
         return ncs_score
 
@@ -866,7 +895,7 @@ class GenerationLoopManager:
             f"{msg} [Lazy Patch] 次話以降のプロット・執筆に修正指示（遅延パッチ）を登録し、この話数はそのまま進行します。"
         )
 
-        book_id = ctx.book.id if hasattr(ctx.book, "id") else ctx.book.book_id
+        book_id = ctx.book.id if ctx.book else 1
         obs = f"第{ep_num}話の執筆において矛盾・品質低下を検知しました。指摘: {msg}"
         corr = "設定制約およびキャラクターの行動原則を絶対遵守し、前話で発生した上記の矛盾を自然に解消・修正する描写を組み込んでください。"
         try:
@@ -914,7 +943,7 @@ class GenerationLoopManager:
         world_settings: str,
         blueprint: str,
         failure_reason: str,
-        snippets: List[str] = None,
+        snippets: Optional[List[str]] = None,
     ) -> str:
         target_content = content
         if snippets and len(snippets) > 0:

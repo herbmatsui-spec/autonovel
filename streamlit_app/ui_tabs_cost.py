@@ -18,7 +18,7 @@ def _fetch_summary(book_id: int) -> Dict[str, Any]:
         return {}
 
 
-def _post_record(book_id: int, task_type: str, inp: int, out: int, ep: int = None) -> None:
+def _post_record(book_id: int, task_type: str, inp: int, out: int, ep: int | None = None) -> None:
     try:
         from streamlit_app.api_client import _request
 

@@ -10,7 +10,7 @@
 - **項目 2: 強力な型安全性と静的解析の徹底**
 - **項目 5: プロンプトエンジニアリングのライフサイクル管理 (PromptOps)**
 
-### フェーズ 2: 堅牢性と観測可能性 (Robustness & Observability)
+### フェーズ 2:堅牢性と観測可能性 (Robustness & Observability)
 目的: システムの信頼性を高め、本番環境での挙動を完全に可視化する。
 - **項目 3: 非同期処理の堅牢化とバックプレッシャー制御**
 - **項目 4: 観測可能性 (Observability) の高度化**
@@ -62,8 +62,90 @@
 
 ---
 
+## フェーズ 2 詳細設計
+
+### 4. 観測可能性 (Observability) の高度化
+
+#### 4.1 OpenTelemetry 依存関係の追加 (Steps 1-3)
+- **ステップ 1**: `requirements.txt` に `opentelemetry-api>=1.24.0` を追加
+- **ステップ 2**: `requirements.txt` に `opentelemetry-sdk>=1.24.0` を追加
+- **ステップ 3**: `requirements.txt` に `opentelemetry-exporter-otlp>=1.24.0` を追加
+
+#### 4.2 OpenTelemetry 基盤の構築 (Steps 4-9)
+- **ステップ 4**: `pyproject.toml` に OpenTelemetry 依存関係を追加
+- **ステップ 5**: `oatentelemetry-sdk` の設定モジュールを `src/core/otel_setup.py` に作成
+- **ステップ 6**: OTLP エクスポーターの設定（JSON、OTLP HTTP、OTLP gRPC の3つの設定オプション）
+- **ステップ 7**: バッググラウンド/フロントエンド向けのトレーサー初期化関数
+- **ステップ 8**: 環境変数ベースの設定構成 (OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_SERVICE_NAME)
+- **ステップ 9**: デフォルトスペンダー/メトロクス収集の有効化
+
+#### 4.3 既存コードのOpenTelemetry化 (Steps 10-20)
+- **ステップ 10**: `src/core/observability.py` をリファクタリング（既存TraceContext保持、OTLPエクスポーター追加）
+- **ステップ 11**: FastAPI アプリケーションに `FastAPIInstrumentor` を適用
+- **ステップ 12**: HTTPクライアント (`requests`, `aiohttp`) 用インストルメンテーション
+- **ステップ 13**: データベース接続 (SQLAlchemy) 用インストルメンテーション
+- **ステップ 14**: ChromaDB クライアントのトレーシング
+- **ステップ 15**: Redis クライアントのトレーシング
+- **ステップ 16**: Huey バックグラウンドジョブのトレーシング
+- **ステップ 17**: LLM API 呼び出し (`google-genai`) 用スパン計測
+- **ステップ 18**: プロンプトテンプレートレンダリングのトレーシング
+- **ステップ 19**: コンテキスト管理 (`contextvars`) との連携
+- **ステップ 20**: 例外ハンドリングとエラースパンの強化
+
+#### 4.4 カスタムメトリクス実装 (Steps 21-27)
+- **ステップ 21**: `CostMetrics` クラスを `src/core/metrics.py` に作成
+- **ステップ 22**: LLMコスト計測 (トークン数 × 単価) 用メトリクスCollector
+- **ステップ 23**: 生成品質指標 (BLEU, ROUGE相当指標) 用メトリクス
+- **ステップ 24**: 応答時間レイテンシメトリクスの計測
+- **ステップ 25**: エラーレート計測メトリクス
+- **ステップ 26**: リクエスト数 / バックループ検出 用メトリクス
+- **ステップ 27**: カスタムプロップメトリックのRedis保存
+
+#### 4.5 OpenTelemetry Collector 設定 (Steps 28-32)
+- **ステップ 28**: `otel-collector-config.yaml` テンプレート作成
+- **ステップ 29**: エクスポート先設定 (Grafana Cloud/OTLP HTTPエンドポイント)
+- **ステップ 30**: データ処理パイプライン (batch, memory limiter) 設定
+- **ステップ 31**: サンプリングポリシー (head-based, tail-based) 設定
+- **ステップ 32**: 再送/バックオットレ抑制機能の有効化
+
+#### 4.6 Grafana ダッシュボード構築 (Steps 33-40)
+- **ステップ 33**: Grafana OTLP データソース接続設定
+- **ステップ 34**: '生成品質ダッシュボード' (Quality Dashboard) - BLEU/ROUGE類似度推移
+- **ステップ 35**: 'コスト分析ダッシュボード' (Cost Dashboard) - 日次/月次LLM利用コスト
+- **ステップ 36**: 'レイテンシダッシュボード' (Latency Dashboard) - P99/P95/P50応答時間
+- **ステップ 37**: 'エラーレートダッシュボード' (Error Dashboard) - エラー発生率推移
+- **ステップ 38**: 'トレーシングビューア' 用 dashboard の構築
+- **ステップ 39**: アラート用メトリクスの可視化パネル
+- **ステップ 40**: マルチサービスモニタリング用 Overview Dashboard
+
+#### 4.7 アラート設定 (Steps 41-46)
+- **ステップ 41**: P99 レイテンシアラート 定義 (5秒を超える場合)
+- **ステップ 42**: P95 レイテンシアラート 定義 (3秒を超える場合)
+- **ステップ 43**: エラーレート >= 5% のアラート設定
+- **ステップ 44**: LLM コスト閾値アラート (月間 $100超過時)
+- **ステップ 45**: バックプレッシャー検知アラート (キュー長 > 1000)
+- **ステップ 46**: 通知ルール (Slack/Email) の設定
+
+#### 4.8 本番運用準備 (Steps 47-48)
+- **ステップ 47**: 環境別設定 (dev/staging/prod) の分離
+- **ステップ 48**: ドキュメンテーション作成 (運用マニュアル, トラブルシューティングガイド)
+
+---
+
 ## 完了定義 (Definition of Done) - フェーズ 1
 1. [ ] `src/domain/` が構築され、主要なエンティティが DB モデルから分離されている。
 2. [ ] `mypy` による静的解析がエラーなく通り、`Any` の使用が極小化されている。
 3. [ ] プロンプトの変更が Python コードの変更を伴わず、設定ファイルまたは DB 経由で完結している。
 4. [ ] `NewType` により ID の型安全性が確保されている。
+
+## 完了定義 (Definition of Done) - フェーズ 2 項目4
+1. [ ] `pyproject.toml` / `requirements.txt` に OpenTelemetry 依存関係が追加されている
+2. [ ] `src/core/otel_setup.py` が作成され、OTLP エクスポーターが正しく設定されている
+3. [ ] `src/core/observability.py` が OpenTelemetry SDK と連携している
+4. [ ] FastAPI アプリケーションがトレースを生成している
+5. [ ] 主要サービス (LLM, DB, Redis, ChromaDB) がスパンを生成している
+6. [ ] コストメトリクスが正しく計測されている
+7. [ ] OpenTelemetry Collector 設定ファイルが作成されている
+8. [ ] Grafana ダッシュボード (4種) が作成され、データが表示されている
+9. [ ] P99/P95/エラーレート/コストアラートが設定され、正しく動作している
+10. [ ] 本番環境向け設定とドキュメントが整備されている

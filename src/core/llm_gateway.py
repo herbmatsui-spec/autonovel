@@ -161,7 +161,7 @@ class LLMGenerateResultProxy:
         else:
             from src.llm.model_router import resolve_model
 
-            purpose = args[0] if len(args) > 0 else kwargs.get("purpose")
+            purpose = (args[0] if len(args) > 0 else kwargs.get("purpose")) or "writing"
             prompt = args[1] if len(args) > 1 else kwargs.get("prompt")
             response_schema = args[2] if len(args) > 2 else kwargs.get("response_schema")
             system_instruction = args[3] if len(args) > 3 else kwargs.get("system_instruction")
@@ -226,7 +226,7 @@ class LLMGenerateResultProxy:
         else:
             from src.llm.model_router import select_model
 
-            purpose = args[0] if len(args) > 0 else kwargs.get("purpose")
+            purpose = (args[0] if len(args) > 0 else kwargs.get("purpose")) or "writing"
             prompt = args[1] if len(args) > 1 else kwargs.get("prompt")
             system_instruction = args[2] if len(args) > 2 else kwargs.get("system_instruction")
             model_name = select_model(purpose)
@@ -284,10 +284,10 @@ class GeminiApiClient:
         nsfw_mode: bool = False,
     ) -> Tuple[Dict[str, Any], str, Any]:
         # リトライ状態から現在のパラメータを取得
-        current_temp = retry_state.temp
-        current_model = retry_state.model_name
-        error_feedback = retry_state.error_feedback
-        attempt = retry_state.attempt
+        current_temp = retry_state.temp if retry_state else temp
+        current_model = retry_state.model_name if retry_state else model_name
+        error_feedback = retry_state.error_feedback if retry_state else ""
+        attempt = retry_state.attempt if retry_state else 0
 
         start_time = time.time()
 
@@ -336,7 +336,7 @@ class GeminiApiClient:
                 # ストリーミング対応
                 if stream_callback:
                     response_stream = self.client.models.generate_content_stream(
-                        model=current_model, contents=[full_prompt], config=config
+                        model=current_model, contents=full_prompt, config=config
                     )
                     for chunk in response_stream:
                         if chunk.text:
@@ -354,7 +354,7 @@ class GeminiApiClient:
                             else f"models/{current_model}"
                         )
                         return self.client.models.generate_content(
-                            model=model_with_prefix, contents=[full_prompt], config=config
+                            model=model_with_prefix, contents=full_prompt, config=config
                         )
 
                     try:
@@ -423,14 +423,14 @@ class GeminiApiClient:
         retry_state: Optional[RetryState] = None,
         nsfw_mode: bool = False,
     ) -> Tuple[str, Any]:
-        current_temp = retry_state.temp
-        current_model = retry_state.model_name
+        current_temp = retry_state.temp if retry_state else temp
+        current_model = retry_state.model_name if retry_state else model_name
 
         start_time = time.time()
         config = self.build_config_for_mode(
             system_instruction,
             current_temp,
-            retry_state.attempt,
+            retry_state.attempt if retry_state else 0,
             None,
             "native",
             nsfw_mode=nsfw_mode,
@@ -454,15 +454,17 @@ class GeminiApiClient:
                     )
                     for chunk in self.client.models.generate_content_stream(
                         model=model_with_prefix,
-                        contents=[prompt],
+                        contents=prompt,
                         config=config,
                     ):
                         if getattr(chunk, "text", None):
-                            collected.append(chunk.text)
-                            try:
-                                stream_callback(chunk.text)
-                            except Exception:
-                                pass
+                            text = chunk.text
+                            if text:
+                                collected.append(text)
+                                try:
+                                    stream_callback(text)
+                                except Exception:
+                                    pass
                         if getattr(chunk, "usage_metadata", None):
                             last_usage = chunk.usage_metadata
                     return "".join(collected), last_usage
@@ -499,7 +501,7 @@ class GeminiApiClient:
 
         except Exception as e:
             if not await self._handle_error(
-                e, current_model, retry_state.attempt, retry_state.max_retries
+                e, current_model, retry_state.attempt if retry_state else 0, retry_state.max_retries if retry_state else 5
             ):
                 raise e
             raise e
@@ -536,8 +538,8 @@ class GeminiApiClient:
         if nsfw_mode:
             config.safety_settings = [
                 genai_types.SafetySetting(
-                    category="HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                    threshold="BLOCK_ONLY_HIGH",
+                    category=genai_types.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+                    threshold=genai_types.HarmBlockThreshold.BLOCK_ONLY_HIGH,
                 ),
             ]
 
@@ -628,9 +630,9 @@ class OpenAIApiClient:
         api_key = ProjectContext.get_setting("openai_api_key") or "dummy"
         client = openai.AsyncOpenAI(base_url=base_url, api_key=api_key)
 
-        current_temp = retry_state.temp
-        current_model = retry_state.model_name
-        error_feedback = retry_state.error_feedback
+        current_temp = retry_state.temp if retry_state else temp
+        current_model = retry_state.model_name if retry_state else model_name
+        error_feedback = retry_state.error_feedback if retry_state else ""
 
         top_p = ProjectContext.get_setting("inference_top_p", 0.95)
         top_k = ProjectContext.get_setting("inference_top_k", 64)

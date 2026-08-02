@@ -160,6 +160,7 @@ ITEM_KEYWORDS = [
     "鍵",
     "薬",
     "宝箱",
+    "聖剣",
 ]
 
 # 同意確認キーワード（明示的）
@@ -276,9 +277,9 @@ METAPHOR_KEYWORDS = [
 class SceneStateSnapshot(BaseModel):
     """一般シーンの状態を保存するためのスナップショット。"""
 
-    character_name: str
-    episode_num: int
-    scene_type: str
+    character_name: Optional[str] = None
+    episode_num: Optional[int] = None
+    scene_type: Optional[str] = None
     injury_level: str = "none"
     attitude: str = "neutral"
     discoveries: Optional[List[str]] = None
@@ -377,7 +378,7 @@ class SceneContinuityTracker:
 
         # 判定用キーワード
         kw_map = {
-            "severe": ["致命的", "瀕死", "意識不明", "血の海", "絶望的", "崩れ落ち"],
+            "severe": ["致命的", "瀕死", "意識不明", "血の海", "絶望的", "崩れ落ち", "深い傷", "絶望"],
             "moderate": ["深手", "激痛", "出血", "骨折", "動けない", "呻き"],
             "light": ["かすり傷", "打撲", "軽い", "痛み", "切り傷", "違和感"],
         }
@@ -434,9 +435,9 @@ class SceneContinuityTracker:
 
         # 判定用キーワード
         kw_map = {
-            "hostile": ["拒絶", "怒り", "罵倒", "軽蔑", "激昂", "憎しみ", "突き放す"],
+            "hostile": ["拒絶", "怒り", "罵倒", "軽蔑", "激昂", "憎しみ", "突き放す", "敵意"],
             "tense": ["緊張", "気まずい", "沈黙", "警戒", "険しい", "冷ややか", "対立"],
-            "friendly": ["親密", "信頼", "微笑み", "穏やか", "快諾", "共感", "温かい"],
+            "friendly": ["親密", "信頼", "微笑み", "微笑んだ", "穏やか", "快諾", "共感", "温かい"],
         }
 
         for attitude, keywords in kw_map.items():
@@ -470,7 +471,7 @@ class SceneContinuityTracker:
         ):
             # 態度が急激に変化した（例: hostile -> friendly）場合に警告
             issues.append(
-                f"【整合性警告】{character_name}の態度が {prev_attitude} から {current_attitude} へ不自然に変化しています。心理描写やイベントによる変化があるか確認してください。"
+                f"【整合性警告】{character_name}の態度が不自然に変化しています（{prev_attitude} → {current_attitude}）。心理描写やイベントによる変化があるか確認してください。"
             )
 
         return issues
@@ -550,7 +551,7 @@ class SceneContinuityTracker:
             arriving_kw = ["到着", "辿り着", "着いた", "たどり着", "辿りつ"]
             if not any(kw in current_text for kw in arriving_kw):
                 issues.append(
-                    f"【移動断絶】{character_name}が前回出発したにもかかわらず、到着描写がありません。途中経路か到着シーンを追加してください。"
+                    f"【移動断絶】{character_name}が前回出発したにもかかわらず、到着の描写がありません。途中経路か到着シーンを追加してください。"
                 )
 
         # 前回「到着」で本次「出発」といきなり逆戻る場合、滞在描写があったか
@@ -607,6 +608,10 @@ class SceneContinuityTracker:
             return "recovering"
         if any(kw in text for kw in action_kw):
             return "action"
+        # 追加の行動判定キーワード
+        extra_action_kw = ["猛烈", "激しい", "剣を振る", "攻撃", "戦う", "闘う"]
+        if any(kw in text for kw in extra_action_kw):
+            return "action"
         return "unknown"
 
     def check_recovery_continuity(
@@ -633,6 +638,14 @@ class SceneContinuityTracker:
             elif current_state == "action":
                 issues.append(
                     f"【連戦警告】{character_name}が前回の戦闘で負った負傷（{prev_injury}）を抱えたまま再び戦闘しています。負傷の影響を描写してください。"
+                )
+
+        # 前回「休息中」で本次「行動」の場合、回復描写がないまま戦闘している
+        if prev_state in ("exhausted", "resting") and current_state == "action":
+            recovery_kw = ["回復", "元気", "癒え", "休息", "眠り", "休憩"]
+            if not any(kw in current_text for kw in recovery_kw):
+                issues.append(
+                    f"【整合性警告】{character_name}の回復描写がないまま、行動しています。休息からの回復プロセスを描写してください。"
                 )
 
         return issues

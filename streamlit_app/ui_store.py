@@ -242,12 +242,11 @@ class UIStateStore:
 
     @staticmethod
     def reset_api_key_validation() -> None:
-        UIStateStore.update(
-            lambda s: (
-                setattr(s.runtime, "api_key_validation_state", "idle"),
-                setattr(s.runtime, "api_key_validation_error", ""),
-            )
-        )
+        def _reset(s: AppStateModel) -> None:
+            setattr(s.runtime, "api_key_validation_state", "idle")
+            setattr(s.runtime, "api_key_validation_error", "")
+
+        UIStateStore.update(_reset)
 
     # ==========================================================================
     # Toast Notification
@@ -273,7 +272,7 @@ class UIStateStore:
             UIStateStore.update_runtime("toasted_notification_keys", current)
 
     @staticmethod
-    def toast_notify(key: str, message: str, icon: str = None) -> None:
+    def toast_notify(key: str, message: str, icon: str | None = None) -> None:
         if not UIStateStore.is_toast_notified(key):
             st.toast(message, icon=icon)
             UIStateStore.mark_toast_notified(key)

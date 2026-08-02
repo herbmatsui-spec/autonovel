@@ -4,6 +4,8 @@ sidebar.py - アプリケーションのサイドバー描画および作品管�
 
 from __future__ import annotations
 
+from typing import Optional
+
 import streamlit as st
 
 from streamlit_app.sidebar_sections.api_key import render_api_key_section
@@ -25,7 +27,13 @@ def render_sidebar(engine_ready: bool = False) -> str | None:
     session = get_session()
 
     st.markdown("### ⚙️ システム設定")
-    api_key, is_key_valid = render_api_key_section(session)
+    api_key_result = render_api_key_section(session)
+    
+    if api_key_result is None:
+        st.warning("有効なAPIキーを入力し、確定ボタンを押してください。")
+        return None
+    
+    api_key, is_key_valid = api_key_result
 
     if not api_key or not is_key_valid:
         st.warning("有効なAPIキーを入力し、確定ボタンを押してください。")

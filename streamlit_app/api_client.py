@@ -16,11 +16,11 @@ _resilient_client: Optional[ResilientHttpClient] = None
 def get_client() -> ResilientHttpClient:
     global _resilient_client
     if _resilient_client is None:
-        config = ResilienceConfigLoader().get_policy("backend_api")
+        retry_policy, cb_config = ResilienceConfigLoader().get_policy_for_service("backend_api")
         _resilient_client = ResilientHttpClient(
-            base_url=API_BASE_URL,
-            retry_policy=config.retry_policy,
-            circuit_breaker=config.circuit_breaker,
+            name="backend_api",
+            retry_policy=retry_policy,
+            cb_config=cb_config,
         )
     return _resilient_client
 
@@ -211,9 +211,9 @@ def create_chapter(
     summary: str,
     killer_phrase: str = "",
     ai_insight: str = "",
-    world_state: dict = None,
-    trinity_review_log: dict = None,
-    created_at: str = None,
+    world_state: Optional[dict] = None,
+    trinity_review_log: Optional[dict] = None,
+    created_at: Optional[str] = None,
 ) -> None:
     _request(
         "POST",
@@ -334,8 +334,8 @@ def commercial_run(config: dict) -> dict:
 
     async def _async_req():
         return await client.request(
-            method="POST",
-            path="/commercial/run",
+            "POST",
+            "/commercial/run",
             json=config,
             timeout=180.0,
         )

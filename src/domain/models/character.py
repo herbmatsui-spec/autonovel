@@ -1,24 +1,29 @@
 from __future__ import annotations
 
-from typing import Any, Dict
+import json
+from typing import Any, Dict, Optional, Union
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
-from src.domain.types import BookId, CharacterId
+from src.models.base import MODEL_CONFIG_DEFAULTS
 
 
-class Character(BaseModel):
-    """
-    Character ドメインエンティティ。
-    登場人物の属性と役割を保持する。
-    """
+class CharacterDbModel(BaseModel):
+    id: int
+    book_id: int
+    name: Optional[str] = None
+    role: Optional[str] = None
+    registry_data: Optional[Union[dict, str]] = None
 
-    id: CharacterId
-    book_id: BookId
-    name: str
-    role: str
-    registry_data: Dict[str, Any] = Field(default_factory=dict)  # JSON形式の属性データ
+    def to_safe_dict(self) -> Dict[str, Any]:
+        """registry_data を辞書として安全に取得する。文字列の場合は JSON パースを行う。"""
+        if isinstance(self.registry_data, dict):
+            return self.registry_data
+        if isinstance(self.registry_data, str) and self.registry_data.strip():
+            try:
+                return json.loads(self.registry_data)
+            except (json.JSONDecodeError, TypeError):
+                return {}
+        return {}
 
-    def get_attribute(self, key: str, default: Any = None) -> Any:
-        """レジストリデータから特定の属性を取得する"""
-        return self.registry_data.get(key, default)
+    model_config = MODEL_CONFIG_DEFAULTS

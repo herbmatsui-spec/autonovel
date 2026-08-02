@@ -12,9 +12,9 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Query
 from pydantic import BaseModel
 
-from src.core.container import AppContainer as Container
 from src.backend.database.models import PromptVersion
 from src.backend.database.uow import UnitOfWork
+from src.core.container import AppContainer as Container
 from src.services.prompt_comparison import build_comparison
 
 router = APIRouter(prefix="/api/prompt-compare", tags=["prompt-compare"])

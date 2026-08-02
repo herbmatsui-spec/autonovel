@@ -5,7 +5,7 @@ src/services/safe_replace.py
 """
 
 import re
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Pattern, Tuple
 
 
 class SafeReplacer:
@@ -32,7 +32,7 @@ class SafeReplacer:
         # 全パターンの正規表現を構築
         patterns = [re.escape(src) for src, _, _ in self._placeholders]
         if patterns:
-            self._combined_pattern = re.compile("|".join(patterns))
+            self._combined_pattern: Optional[Pattern[str]] = re.compile("|".join(patterns))
         else:
             self._combined_pattern = None
 

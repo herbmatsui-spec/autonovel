@@ -10,7 +10,6 @@ from typing import Any, Dict, List, Optional
 
 from sqlalchemy import delete, func, select, update
 
-from src.services.errors import retry_on_lock
 from src.backend.database.models import (
     BackgroundTask,
     CustomStyle,
@@ -19,6 +18,7 @@ from src.backend.database.models import (
     PendingPatch,
     StyleFragment,
 )
+from src.services.errors import retry_on_lock
 
 logger = logging.getLogger(__name__)
 

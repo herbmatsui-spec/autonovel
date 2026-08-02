@@ -23,7 +23,7 @@ from config.domain_profile_manager import (
     CommercialDataLoader,
     load_commercial_settings,
 )
-from kernels.graph import (
+from archive.kernels.graph import (
     PleasureGraph,
     PleasureType,
     build_default_pleasure_graph,
@@ -177,7 +177,7 @@ class TestHateAmplificationLoop:
 
     def test_hate_magnet_state_creation(self):
         """HateMagnetState が正しく作成できる"""
-        from kernels.conflict import HateMagnetState
+        from archive.kernels.conflict import HateMagnetState
 
         state = HateMagnetState(character_name="テスト悪役")
         assert state.character_name == "テスト悪役"
@@ -186,7 +186,7 @@ class TestHateAmplificationLoop:
 
     def test_add_transgression(self):
         """違反を追加できる"""
-        from kernels.conflict import HateMagnetState
+        from archive.kernels.conflict import HateMagnetState
 
         state = HateMagnetState(character_name="テスト悪役")
         state.add_transgression("arrogant_abuse", "テスト-context")
@@ -196,7 +196,7 @@ class TestHateAmplificationLoop:
 
     def test_should_trigger_catharsis(self):
         """カタルシストリガー判定ができる"""
-        from kernels.conflict import HateMagnetState
+        from archive.kernels.conflict import HateMagnetState
 
         state = HateMagnetState(character_name="テスト悪役")
         # 十分に蓄積されていない場合

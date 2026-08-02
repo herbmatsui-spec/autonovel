@@ -17,6 +17,11 @@ class CircuitBreakerConfig(BaseModel):
     half_open_max_success: int = 2
 
 
+class CircuitBreakerOpenException(Exception):
+    """Exception raised when the circuit breaker is in OPEN state."""
+    pass
+
+
 class CircuitBreaker:
     def __init__(self, name: str, config: CircuitBreakerConfig = CircuitBreakerConfig()):
         self.name = name

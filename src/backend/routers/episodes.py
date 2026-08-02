@@ -1,9 +1,9 @@
 from fastapi import APIRouter
 
-from src.core.container import AppContainer as Container
 from src.backend.auth import validate_api_key_or_raise
 from src.backend.database.uow import UnitOfWork
 from src.backend.task_helpers import create_task as _create_task
+from src.core.container import AppContainer as Container
 from src.core.observability import TraceContext
 from src.models.api_schemas import (
     ChapterImportRequest,

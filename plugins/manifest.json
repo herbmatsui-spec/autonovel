@@ -1,0 +1,11 @@
+{
+  "plugins": [
+    {
+      "name": "standard_archetypes",
+      "version": "1.0.0",
+      "format": "story",
+      "author": {"name": "core-team"},
+      "dependencies": []
+    }
+  ]
+}

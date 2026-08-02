@@ -4,12 +4,12 @@ from __future__ import annotations
 database/repo_plot.py - プロット(Plots)データ操作用のリポジトリMixin
 """
 import json
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from sqlalchemy import delete, select, update
 
-from src.services.errors import retry_on_lock
 from src.backend.database.models import Book, Branch, CharacterArc, Foreshadowing, Plot
+from src.services.errors import retry_on_lock
 
 if TYPE_CHECKING:
     from src.models import PlotDbModel
@@ -138,55 +138,55 @@ class PlotRepository(BaseRepository):
             plot_obj = Plot(branch_id=branch_id, ep_num=ep_num, simulation_id=sim_id)
             self.session.add(plot_obj)
 
-        plot_obj.book_id = book_id
-        plot_obj.thought_process = thought_process
-        plot_obj.title = title
-        plot_obj.summary = summary
-        plot_obj.detailed_blueprint = detailed_blueprint
+        plot_obj.book_id = book_id  # type: ignore[assignment]
+        plot_obj.thought_process = thought_process  # type: ignore[assignment]
+        plot_obj.title = title  # type: ignore[assignment]
+        plot_obj.summary = summary  # type: ignore[assignment]
+        plot_obj.detailed_blueprint = detailed_blueprint  # type: ignore[assignment]
         plot_obj.next_hook = (
             json.dumps(next_hook, ensure_ascii=False)
             if isinstance(next_hook, (dict, list))
             else (next_hook or "{}")
-        )
-        plot_obj.tension = tension
-        plot_obj.tension_delta = tension_delta
-        plot_obj.catharsis = catharsis
-        plot_obj.love_meter = love_meter
-        plot_obj.is_catharsis = is_catharsis
-        plot_obj.catharsis_type = catharsis_type
+        )  # type: ignore[assignment]
+        plot_obj.tension = tension  # type: ignore[assignment]
+        plot_obj.tension_delta = tension_delta  # type: ignore[assignment]
+        plot_obj.catharsis = catharsis  # type: ignore[assignment]
+        plot_obj.love_meter = love_meter  # type: ignore[assignment]
+        plot_obj.is_catharsis = is_catharsis  # type: ignore[assignment]
+        plot_obj.catharsis_type = catharsis_type  # type: ignore[assignment]
         plot_obj.scenes = (
             json.dumps(scenes, ensure_ascii=False)
             if isinstance(scenes, (list, dict))
             else (scenes or "[]")
-        )
-        plot_obj.status = status
-        plot_obj.misunderstanding_gap = misunderstanding_gap
-        plot_obj.lite_model_director_notes = lite_model_director_notes
-        plot_obj.script_content = script_content
-        plot_obj.current_chain_phase = current_chain_phase
-        plot_obj.resolution_style = resolution_style
-        plot_obj.is_plot_twist = is_plot_twist
-        plot_obj.burned_cost_or_loot = burned_cost_or_loot
-        plot_obj.antagonist_status = antagonist_status
-        plot_obj.thematic_milestone = thematic_milestone
-        plot_obj.state_integrity_score = state_integrity_score
-        plot_obj.emotional_resonance_score = emotional_resonance_score
+        )  # type: ignore[assignment]
+        plot_obj.status = status  # type: ignore[assignment]
+        plot_obj.misunderstanding_gap = misunderstanding_gap  # type: ignore[assignment]
+        plot_obj.lite_model_director_notes = lite_model_director_notes  # type: ignore[assignment]
+        plot_obj.script_content = script_content  # type: ignore[assignment]
+        plot_obj.current_chain_phase = current_chain_phase  # type: ignore[assignment]
+        plot_obj.resolution_style = resolution_style  # type: ignore[assignment]
+        plot_obj.is_plot_twist = is_plot_twist  # type: ignore[assignment]
+        plot_obj.burned_cost_or_loot = burned_cost_or_loot  # type: ignore[assignment]
+        plot_obj.antagonist_status = antagonist_status  # type: ignore[assignment]
+        plot_obj.thematic_milestone = thematic_milestone  # type: ignore[assignment]
+        plot_obj.state_integrity_score = state_integrity_score  # type: ignore[assignment]
+        plot_obj.emotional_resonance_score = emotional_resonance_score  # type: ignore[assignment]
         plot_obj.healed_fields = (
             json.dumps(healed_fields, ensure_ascii=False)
             if isinstance(healed_fields, list)
             else (healed_fields or "[]")
-        )
-        plot_obj.is_micro_catharsis = is_micro_catharsis
-        plot_obj.information_asymmetry_level = information_asymmetry_level
-        plot_obj.cost_score = cost_score
-        plot_obj.qol_delta = qol_delta
-        plot_obj.discovery_item = discovery_item
-        plot_obj.sanctuary_event = sanctuary_event
-        plot_obj.is_locked = is_locked
-        plot_obj.is_simulation = is_simulation
-        plot_obj.simulation_id = sim_id
-        plot_obj.candidates = candidates
-        plot_obj.erotic_intensity = erotic_intensity
+        )  # type: ignore[assignment]
+        plot_obj.is_micro_catharsis = is_micro_catharsis  # type: ignore[assignment]
+        plot_obj.information_asymmetry_level = information_asymmetry_level  # type: ignore[assignment]
+        plot_obj.cost_score = cost_score  # type: ignore[assignment]
+        plot_obj.qol_delta = qol_delta  # type: ignore[assignment]
+        plot_obj.discovery_item = discovery_item  # type: ignore[assignment]
+        plot_obj.sanctuary_event = sanctuary_event  # type: ignore[assignment]
+        plot_obj.is_locked = is_locked  # type: ignore[assignment]
+        plot_obj.is_simulation = is_simulation  # type: ignore[assignment]
+        plot_obj.simulation_id = sim_id  # type: ignore[assignment]
+        plot_obj.candidates = candidates  # type: ignore[assignment]
+        plot_obj.erotic_intensity = erotic_intensity  # type: ignore[assignment]
 
     @retry_on_lock()
     async def save_plot(self, branch_id: int, ep_num: int, plot: Any) -> None:

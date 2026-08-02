@@ -8,14 +8,18 @@ CLI やテストからはインポートしないでください。
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Any, Union
 
 import streamlit as st
 
 try:
+    from streamlit.errors import StreamlitAPIException
+except ImportError:
+    StreamlitAPIException = Exception  # type: ignore[misc,assignment]
+
+try:
     from streamlit.runtime.scriptrunner import get_script_run_ctx
 except ImportError:
-
     def get_script_run_ctx():
         return None
 
@@ -64,7 +68,7 @@ class StreamlitConfig(GlobalConfig):
     セッション状態との同期、UI コンポーネント表示を提供する。
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         # 初期化時にセッション状態にデフォルト設定をロード
         if get_script_run_ctx() is not None:
@@ -116,6 +120,131 @@ class StreamlitConfig(GlobalConfig):
         return st.session_state.get(widget_key)
 
     def display_sidebar(self) -> None:
+        """Streamlit サイドバーに設定 UI を描画する"""
+        st.header("⚙️ 詳細設定（Config）")
+
+        def _sync(key: str, widget_key: str) -> None:
+            value = StreamlitConfig._get_widget_value(widget_key)
+            if value is not None:
+                self.set(key, value)
+
+        def render_model_selector(config_key: str, label: str, help_text: str) -> None:
+            """用途別モデル選択（プリセット + 自由入力）。"""
+            current = self.get(config_key) or ""
+            options = list(PRESET_MODELS)
+            if current and current not in options:
+                options.append(current)
+            options.append(CUSTOM_MODEL)
+            default_index = options.index(current) if current in options else 0
+
+            choice = st.selectbox(label, options=options, index=default_index, help=help_text)
+            if choice == CUSTOM_MODEL:
+                custom = st.text_input(
+                    f"{label}（カスタム）",
+                    value=current,
+                    key=f"custom_{config_key}",
+                    help="OpenRouter 等のモデルIDを自由に入力できます（例: anthropic/claude-3.5-sonnet）。",
+                )
+                if custom and custom != current:
+                    self.set(config_key, custom)
+            elif choice != current:
+                self.set(config_key, choice)
+
+        st.subheader("🤖 モデル設定")
+        st.caption(
+            "各工程で使用するAIモデルを選択します。OpenRouter等のOpenAI互換モデルも指定可能です。"
+        )
+        render_model_selector(
+            "model_planning",
+            "📝 プロット用モデル",
+            "企画立案・プロット生成時に使用するAIモデルを選択します。",
+        )
+        render_model_selector(
+            "model_plot_expansion",
+            "🔍 詳細プロット用モデル",
+            "エピソードごとの詳細プロット展開時に使用するAIモデルを選択します。",
+        )
+        render_model_selector(
+            "model_writing",
+            "✍️ 執筆用モデル",
+            "本文執筆（小説生成）時に使用するAIモデルを選択します。",
+        )
+
+        st.divider()
+
+        st.subheader("🔑 OpenRouter / OpenAI互換プロバイダ")
+        st.caption(
+            "モデルに OpenAI互換モデル（「/」を含むIDや gpt/claude/llama 等）を選んだ場合に使用します。"
+        )
+        openrouter_key = st.text_input(
+            "API Key",
+            type="password",
+            value=self.get("openai_api_key") or "",
+            key="cfg_openai_api_key",
+            help="OpenRouter 等の OpenAI互換 API キー（例: sk-or-...）。",
+        )
+        if openrouter_key != (self.get("openai_api_key") or ""):
+            self.set("openai_api_key", openrouter_key)
+
+        base_url = st.text_input(
+            "API Base URL",
+            value=self.get("openai_base_url") or "https://openrouter.ai/api/v1",
+            key="cfg_openai_base_url",
+            help="OpenAI互換エンドポイント。既定は OpenRouter。",
+        )
+        if base_url != (self.get("openai_base_url") or ""):
+            self.set("openai_base_url", base_url)
+
+        st.divider()
+
+        st.subheader("🔄 動作設定")
+        st.number_input(
+            "履歴最大保持数",
+            min_value=1,
+            max_value=100,
+            value=self.get("max_history_len", 30),
+            key="cfg_max_history_len",
+            on_change=lambda: _sync("max_history_len", "cfg_max_history_len"),
+            help="メモリやコンテキストとして保持するエピソード履歴の最大数です。",
+        )
+        st.sidebar.number_input(
+            "最大並行処理数 (0=Auto)",
+            min_value=0,
+            max_value=20,
+            value=self.get("max_concurrency", 0),
+            key="cfg_max_concurrency",
+            on_change=lambda: _sync("max_concurrency", "cfg_max_concurrency"),
+            help="同時に実行する最大APIタスク数です。0を設定すると、CPUコア数に応じて自動最適化されます。",
+        )
+        st.sidebar.selectbox(
+            "安全追加モード",
+            options=SAFE_APPEND_MODE_OPTIONS,
+            index=SAFE_APPEND_MODE_OPTIONS.index(
+                self.get("safe_append_mode", SAFE_APPEND_MODE_DEFAULT)
+            ),
+            key="cfg_safe_append_mode",
+            on_change=lambda: _sync("safe_append_mode", "cfg_safe_append_mode"),
+            help="テキスト追加時にトークン上限を超えそうな場合の挙動（自動調整、警告のみ、エラー終了）を設定します。",
+        )
+
+        st.sidebar.divider()
+
+        st.subheader("📁 保存設定")
+        st.sidebar.toggle(
+            "自動バックアップ",
+            value=self.get("auto_backup", True),
+            key="cfg_auto_backup",
+            on_change=lambda: _sync("auto_backup", "cfg_auto_backup"),
+            help="データを更新する際に、自動的にデータベースのバックアップを作成します。",
+        )
+
+    @staticmethod
+    def _get_widget_value(widget_key: str) -> Any:
+        """
+        Streamlit ウィジェットの状態を読み取るラッパー。
+        st.session_state へのアクセスをこの1箇所に閉じ込める。
+        """
+        return st.session_state.get(widget_key)
         """Streamlit サイドバーに設定 UI を描画する"""
         st.header("⚙️ 詳細設定（Config）")
 

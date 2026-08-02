@@ -4,13 +4,16 @@ from typing import Any, Dict, List, Optional
 
 from sqlalchemy import select, update
 
-from src.services.errors import retry_on_lock
 from src.backend.database.models import PromptVersion
 from src.backend.database.repositories.base import BaseRepository
-from src.models.prompt_version import PromptVersionDbModel
+from src.domain.interfaces.prompt_repository import (
+    PromptVersionRepository as PromptVersionRepositoryInterface,
+)
+from src.domain.models.prompt_version import PromptVersionDbModel
+from src.services.errors import retry_on_lock
 
 
-class PromptVersionRepository(BaseRepository):
+class PromptVersionRepository(PromptVersionRepositoryInterface, BaseRepository):
     """CRUD interface for prompt_versions table"""
 
     @retry_on_lock()
@@ -24,7 +27,7 @@ class PromptVersionRepository(BaseRepository):
         score_after: Optional[float] = None,
         ab_test_metrics: Optional[Dict[str, Any]] = None,
         is_active: bool = False,
-    ) -> PromptVersion:
+    ) -> PromptVersionDbModel:
         """新しいプロンプトバージョンを作成"""
         version = PromptVersion(
             book_id=book_id,
@@ -39,7 +42,19 @@ class PromptVersionRepository(BaseRepository):
         )
         self.session.add(version)
         await self.session.flush()
-        return version
+        return PromptVersionDbModel(
+            id=version.id,
+            book_id=version.book_id,
+            prompt_key=version.prompt_key,
+            version_tag=version.version_tag,
+            content=version.content,
+            score_before=version.score_before,
+            score_after=version.score_after,
+            ab_test_metrics=json.loads(version.ab_test_metrics) if version.ab_test_metrics else None,
+            rollback_reason=version.rollback_reason,
+            is_active=version.is_active,
+            created_at=version.created_at.isoformat() if version.created_at else None,
+        )
 
     async def get_prompt_version(self, version_id: int) -> Optional[PromptVersionDbModel]:
         """IDからプロンプトバージョンを取得"""
@@ -48,7 +63,20 @@ class PromptVersionRepository(BaseRepository):
         )
         row = result.scalar_one_or_none()
         if row:
-            return self._parse_row(self._to_dict(row), ["ab_test_metrics"])
+            return self._to_domain_model(row)
+        return None
+
+    async def get_prompt_version_by_tag(self, book_id: int, prompt_key: str, version_tag: str) -> Optional[PromptVersionDbModel]:
+        """バージョンタグからプロンプトバージョンを取得"""
+        result = await self.session.execute(
+            select(PromptVersion)
+            .where(PromptVersion.book_id == book_id)
+            .where(PromptVersion.prompt_key == prompt_key)
+            .where(PromptVersion.version_tag == version_tag)
+        )
+        row = result.scalar_one_or_none()
+        if row:
+            return self._to_domain_model(row)
         return None
 
     async def get_prompt_versions(
@@ -62,7 +90,7 @@ class PromptVersionRepository(BaseRepository):
             .limit(limit)
         )
         rows = result.scalars().all()
-        return [self._parse_row(self._to_dict(r), ["ab_test_metrics"]) for r in rows]
+        return [self._to_domain_model(r) for r in rows]
 
     async def get_active_prompt_version(
         self, book_id: int, prompt_key: str
@@ -76,7 +104,7 @@ class PromptVersionRepository(BaseRepository):
         )
         row = result.scalar_one_or_none()
         if row:
-            return self._parse_row(self._to_dict(row), ["ab_test_metrics"])
+            return self._to_domain_model(row)
         return None
 
     @retry_on_lock()
@@ -119,4 +147,20 @@ class PromptVersionRepository(BaseRepository):
             update(PromptVersion)
             .where(PromptVersion.id == version_id)
             .values(is_active=False, rollback_reason=reason)
+        )
+
+    def _to_domain_model(self, row: PromptVersion) -> PromptVersionDbModel:
+        """Convert SQLAlchemy model to domain model."""
+        return PromptVersionDbModel(
+            id=row.id,
+            book_id=row.book_id,
+            prompt_key=row.prompt_key,
+            version_tag=row.version_tag,
+            content=row.content,
+            score_before=row.score_before,
+            score_after=row.score_after,
+            ab_test_metrics=json.loads(row.ab_test_metrics) if row.ab_test_metrics else None,
+            rollback_reason=row.rollback_reason,
+            is_active=row.is_active,
+            created_at=row.created_at.isoformat() if row.created_at else None,
         )

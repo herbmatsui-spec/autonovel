@@ -4,9 +4,9 @@ from typing import Any
 
 from fastapi import APIRouter, Depends
 
-from src.core.container import AppContainer as Container
 from src.backend.auth import require_api_key
 from src.backend.database.uow import UnitOfWork
+from src.core.container import AppContainer as Container
 from src.core.exceptions import NotFoundError, ValidationError
 
 router = APIRouter(prefix="/api/issues", tags=["issues"])

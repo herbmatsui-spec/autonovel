@@ -1,3 +1,4 @@
+import sys; sys.path.insert(0, "/workspaces/autonovel"); import src.kernels; print("Kernels package imported successfully in test context")
 import pytest
 
 from src.core.container.infra import InfraContainer

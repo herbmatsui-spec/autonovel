@@ -3,7 +3,7 @@ streamlit_app/event_bus.py - UI Event Bus and Event Models
 """
 
 from enum import Enum
-from typing import Any, Dict, List, Optional, Protocol
+from typing import Any, Dict, List, Optional, Protocol, Union
 
 from pydantic import BaseModel, Field
 
@@ -25,10 +25,10 @@ class UIEventHandler(Protocol):
 
 
 class UIEventBus:
-    def __init__(self):
-        self._subscribers: Dict[UIEventType, List[Any]] = {}
+    def __init__(self) -> None:
+        self._subscribers: Dict[UIEventType, List[UIEventHandler]] = {}
 
-    def subscribe(self, event_type: UIEventType, handler: Any) -> None:
+    def subscribe(self, event_type: UIEventType, handler: UIEventHandler) -> None:
         if event_type not in self._subscribers:
             self._subscribers[event_type] = []
         self._subscribers[event_type].append(handler)
@@ -38,7 +38,7 @@ class UIEventBus:
         if not handlers:
             return None
 
-        last_result = None
+        last_result: Optional[Dict[str, Any]] = None
         for handler in handlers:
             if hasattr(handler, "handle_event"):
                 res = handler.handle_event(event)

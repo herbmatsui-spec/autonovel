@@ -11,8 +11,8 @@ from typing import Any, Dict, Optional
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from src.core.container import AppContainer as Container
 from src.backend.database.uow import UnitOfWork
+from src.core.container import AppContainer as Container
 from src.services.cost_analytics import check_budget_alert, estimate_cost_usd
 
 router = APIRouter(prefix="/api/cost", tags=["cost"])
