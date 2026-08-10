@@ -4,7 +4,7 @@ from src.backend.auth import validate_api_key_or_raise
 from src.backend.database.uow import UnitOfWork
 from src.backend.engine_helpers import get_engine as resolve_engine
 from src.backend.task_helpers import create_task as _create_task
-from src.core.container import AppContainer as Container
+from src.core.container import AppContainer
 from src.core.exceptions import AppError
 from src.core.observability import TraceContext
 from src.models.api_schemas import (
@@ -20,7 +20,7 @@ router = APIRouter(prefix="/api/plots", tags=["plots"])
 
 @router.get("/{book_id}")
 async def get_plots(book_id: int):
-    async with UnitOfWork(Container.db()) as uow:
+    async with UnitOfWork(AppContainer.db()) as uow:
         plots = await uow.plots.get_all_plots(book_id)
     return [
         {
@@ -119,7 +119,7 @@ async def rebuild_plots(req: PlotRebuildRequest):
     from src.backend.tasks import execute_service_workflow
 
     task_id = generate_task_id("plot_rebuild")
-    db = Container.db()
+    db = AppContainer.db()
     initial_state = {
         "is_running": True,
         "current_step": 0,

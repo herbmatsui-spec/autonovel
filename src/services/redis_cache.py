@@ -18,7 +18,6 @@ except ImportError:
     REDIS_AVAILABLE = False
     redis: Any = None
 from config import get_config
-from src.core.container import AppContainer
 
 logger = logging.getLogger(__name__)
 
@@ -752,7 +751,6 @@ async def get_prompt_cache(
 
 
 def __get_app_container():
-    from src.core.container import AppContainer
 
     return AppContainer()
 

@@ -1,6 +1,6 @@
 from typing import List
 
-.base import KernelBase
+from .base import KernelBase
 from prompts.serenity_persona import SERENITY_PERSONA
 
 
@@ -30,7 +30,7 @@ class SerenityKernel(KernelBase):
             return False
 
         # 物語状態の取得
-        .graph import NarrativeState
+        from .graph import NarrativeState
 
         narrative_state = getattr(context, "narrative_state", None)
 

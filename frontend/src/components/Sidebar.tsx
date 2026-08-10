@@ -85,7 +85,7 @@ export function Sidebar() {
                 className="w-full text-xs px-2.5 py-1.5 rounded bg-slate-950 text-white font-medium border border-slate-600 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 aria-label="使用するAIモデルを選択"
               >
-                <option value="gemini-3.1-flash-lite" className="bg-slate-950 text-white">gemini-3.1-flash-lite</option>
+                <option value="gemini-3.5-flash-lite" className="bg-slate-950 text-white">gemini-3.5-flash-lite</option>
                 <option value="gemini-3.5-flash" className="bg-slate-950 text-white">gemini-3.5-flash</option>
                 <option value="gemma4-31b-it" className="bg-slate-950 text-white">gemma4-31b-it</option>
                 <option value="gemini-2.5-pro" className="bg-slate-950 text-white">Gemini 2.5 Pro</option>

@@ -1,6 +1,6 @@
 from typing import Dict, List, Optional, Tuple
 
-.base import KernelBase
+from .base import KernelBase
 from prompts.enigma_persona import ENIGMA_PERSONA
 
 

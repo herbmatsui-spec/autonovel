@@ -24,9 +24,9 @@ async def task_event_generator(task_id: str) -> AsyncGenerator[str, None]:
                 from sqlalchemy import select
 
                 from src.backend.database.models import InternalState
-                from src.core.container import AppContainer as Container
+                from src.core.container import AppContainer
 
-                db = Container.db()
+                db = AppContainer.db()
                 try:
                     async with db.get_session() as session:
                         stmt = select(InternalState).where(
@@ -88,9 +88,9 @@ async def _sqlite_polling_fallback(task_id: str) -> AsyncGenerator[str, None]:
     from sqlalchemy import select
 
     from src.backend.database.models import InternalState
-    from src.core.container import AppContainer as Container
+    from src.core.container import AppContainer
 
-    db = Container.db()
+    db = AppContainer.db()
     logger.info(f"[SSE] Starting database polling fallback for task {task_id}")
 
     # 最初のチェックでタスクが見つからない場合は終了する

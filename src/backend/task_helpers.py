@@ -3,12 +3,12 @@
 import json
 import time
 
-from src.core.container import AppContainer as Container
+from src.core.container import AppContainer
 
 
 async def create_task(task_id: str, message: str, total_steps: int = 1) -> None:
     """タスクの初期状態をDBに保存する。"""
-    db = Container.db()
+    db = AppContainer.db()
     initial_state = {
         "is_running": True,
         "current_step": 0,

@@ -11,7 +11,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from src.backend.database.uow import UnitOfWork
-from src.core.container import AppContainer as Container
+from src.core.container import AppContainer
 from src.services.hook_diagnoser import HOOK_THRESHOLD, HookDiagnoser
 
 router = APIRouter(prefix="/api/hooks", tags=["hooks"])
@@ -27,7 +27,7 @@ async def diagnose_hooks(book_id: int) -> Dict[str, Any]:
     """作品の全章についてフック強度を診断する。"""
     from src.backend.database.models import Chapter
 
-    async with UnitOfWork(Container.db()) as uow:
+    async with UnitOfWork(AppContainer.db()) as uow:
         result = await uow.session.execute(
             __import__("sqlalchemy").select(Chapter)
             .where(Chapter.book_id == book_id)
@@ -56,7 +56,7 @@ async def suggest_hook_fix(book_id: int, req: FixRequest) -> Dict[str, Any]:
 
     from src.backend.database.models import Chapter
 
-    async with UnitOfWork(Container.db()) as uow:
+    async with UnitOfWork(AppContainer.db()) as uow:
         result = await uow.session.execute(
             select(Chapter).where(Chapter.book_id == book_id).where(Chapter.ep_num == req.ep_num)
         )
@@ -80,7 +80,7 @@ async def apply_hook_fix(book_id: int, ep_num: int, payload: Dict[str, Any]) -> 
     if not new_tail:
         raise HTTPException(status_code=422, detail="content is required")
 
-    async with UnitOfWork(Container.db()) as uow:
+    async with UnitOfWork(AppContainer.db()) as uow:
         # branch_id=1 を既定とする（単一ブランチ前提）
         await uow.chapters.update_chapter_content(branch_id=1, ep_num=ep_num, content=new_tail)
     return {"status": "success", "ep_num": ep_num}

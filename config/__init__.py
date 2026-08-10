@@ -73,13 +73,6 @@ from .erotic_vocabulary import (
     VOCABULARY_TIERS,
     get_vocabulary_for_tier,
 )
-from .erotic_vocabulary_ext import (
-    INTENSE_METAPHORS,
-    INTENSE_ONOMATOPOEIA,
-    INTENSE_PSYCHOLOGY,
-    VOCABULARY_TIERS_EXT,
-    get_vocabulary_for_tier_ext,
-)
 from .models import GlobalConfigModel
 from .narrative import (
     ANTI_PATTERNS,
@@ -90,7 +83,7 @@ from .narrative import (
 )
 
 # 2. project_context から新しいシステム中枢クラスと定数を上書きエクスポート
-from .project_context import PROMPT_TEMPLATES, GlobalConfig, ProjectContext, get_config, set_config
+from .project_context import PROMPT_TEMPLATES, get_config, set_config
 from .styles import (
     DAILY_MICRO_HOOKS,
     FORBIDDEN_SUMMARY_PATTERNS,
@@ -109,8 +102,6 @@ from .styles import (
 )
 
 __all__ = [
-    "ProjectContext",
-    "GlobalConfig",
     "GlobalConfigModel",
     "set_config",
     "get_config",

@@ -1,221 +1,322 @@
 # ⚔️ 覇権小説エンジン v3.0
 
-「覇権小説エンジン v3.0」は、生成AI（Google Gemini）を活用し、Web小説プラットフォーム（カクヨム等）でランキング上位を狙える小説を自動・半自動で執筆・管理するための総合支援ツールです。
+**覇権小説エンジン**は、AI を使って小説を「かんたんに」「高品質に」書くためのツールです。
 
-Python パッケージ名: `kaku-hegemony` (v3.0.0)
+カクヨムなどの Web 小説サイトでランキング上位を狙える作品を、**ボタンひとつ**で自動生成します。
 
 ---
 
-## 🧱 システム構成
+## なにができる？
 
-本ツールは **FastAPI バックエンド** と **2つのフロントエンド（React / Streamlit）** の構成です。重い生成処理は **Huey タスクワーカー**（Redis バックエンド、未導入時は SQLite へフォールバック）で非同期に実行されます。
+### ✍️ 小説を自動で書いてくれる
 
-| コンポーネント | 役割 | 既定ポート |
-| --- | --- | --- |
-| `src/backend/server.py` | FastAPI バックエンド（REST API + SSE 進捗配信） | `8200` |
-| `frontend/` | React + TypeScript メイン UI（開発時） | `5173` |
-| `frontend/` (prod) | React プロダクション UI | `3000` |
-| `streamlit_app/` | Streamlit ローカル UI（開発・デモ用） | `8501` |
-| `src/backend/tasks.py` | Huey タスクワーカー（非同期生成パイプライン） | — |
-| `src/services/vector_store.py` | ChromaDB（RAG / 文体ラボ等のベクトル検索） | — |
-| `src/backend/database/` | SQLAlchemy + Alembic マイグレーション（既定は SQLite） | — |
+たとえば...
 
-> **UI について**: 現在は `streamlit_app/` と `frontend/` の両方を並行してメンテナンスしています。ローカル開発・デモ用途では `streamlit_app/` を、Web 配布・モダン UI 用途では `frontend/` を使用してください。
+> **「なろう系の異世界ファンタジーを今日中に書きたい」**
 
-### ディレクトリ構成（抜粋）
+→ ジャンルを選んで「生成」ボタンを押すだけ。数十秒〜数分で、企画からプロット（話の骨組み）、本文まですべて自動で作ります。
+
+### 🎮 2 つのモード
+
+| モード | こんな人に | 何ができるか |
+|---|---|---|
+| **かんたんモード** | とにかく今すぐ小説が欲しい人 | ジャンル選んでボタンを押すだけ。何も考えなくて OK |
+| **⚙ 上級者モード** | こだわりたい人 | 各話のプロットを編集したり、文章の濃さを変えたり、納得いくまで修正できる |
+
+### 😤「ざまぁ」展開を自動で仕組む
+
+面白い小説には「ストレス」と「解放」の波が大切です。
+
+このツールは物語中の**読者のストレスを自動計算**して、「そろそろ気持ちよくなれる場面を入れよう」と判断。適切なタイミングで「ざまぁ」展開（無双・逆転）をねじ込んでくれます。
+
+### 🔞 官能描写にも対応（オプトイン）
+
+NSFW モードを ON にすれば、官能的な描写を含む小説も書けます。
+オプトイン方式で、ON にしない限り生成されません。
+
+---
+
+## アーキテクチャ概要
 
 ```
-src/
-  backend/     FastAPI サーバー・ルーター・エンジン・ワーカー
-  services/    LLM / ベクトルストア / ビジネスロジック
-  agents/      AI オーケストレーション（WritingAgent 等）
-  core/        監査可能性（Trace ID 等）・例外・共通ユーティリティ
-  domain/      ドメインモデル
-  llm/         Gemini クライアント・モデル選択
-  infrastructure/  API クライアント・DI コンテナ
-  models/      Pydantic スキーマ
-  engine/      エンジン実装（プロンプト構築・ワークフロー）
-  config/      設定・CORS
-  prompts/     プロンプトテンプレート
-  api/         API ルーター
-  database/    データベースモデル・リポジトリ
-frontend/
-  src/
-    components/  UIコンポーネント
-    store/      状態管理（Zustand）
-    hooks/      UIロジック
-    api.ts      バックエンドAPIクライアント
-streamlit_app/
-  app.py        Streamlit エントリーポイント
-  sidebar.py   サイドバー定義
-  ui_tabs_*.py 各タブ実装
+┌─────────────────────────────────────────────────────────────┐
+│                        Frontend (React)                      │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌────────────┐  │
+│  │ EasyMode │  │ PlotsTab │  │ WriteTab │  │ AuditTab   │  │
+│  └──────────┘  └──────────┘  └──────────┘  └────────────┘  │
+│         │           │           │              │            │
+│         └───────────┴───────────┴──────────────┘            │
+│                         │                                     │
+│              ┌──────────▼──────────┐                          │
+│              │   API Client        │                          │
+│              │ (Resilient HTTP)    │                          │
+│              └──────────┬──────────┘                          │
+└─────────────────────────┼─────────────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│                     Backend (FastAPI)                        │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌────────────┐  │
+│  │ Server   │  │ Engine   │  │ Agents   │  │ LLM Gateway│  │
+│  └──────────┘  └──────────┘  └──────────┘  └────────────┘  │
+│         │           │           │              │            │
+│         └───────────┴───────────┴──────────────┘            │
+│                         │                                     │
+│         ┌───────────────┼───────────────┐                     │
+│         ▼               ▼               ▼                     │
+│  ┌──────────┐    ┌──────────┐    ┌──────────┐                │
+│  │ SQLite   │    │ ChromaDB │    │  Redis   │                │
+│  └──────────┘    └──────────┘    └──────────┘                │
+└─────────────────────────────────────────────────────────────┘
 ```
 
----
+### コアコンポーネント
 
-## 🚀 主な機能
-
-### 1. 2つの動作モード
-*   **かんたんモード（全自動）**: ジャンルを選択し、ボタンを1つ押すだけで、企画・プロット・執筆・納品までの全工程を完全自動で実行します。
-*   **上級者モード（半自動・詳細調整）**: 各種パラメータを自在に制御しながら、章ごとの執筆やプロットの再構築、文体のカスタマイズなどを行うことができます。
-
-### 2. ストレス感情曲線ループ（ざまぁ自動発動）
-*   物語の展開に応じた「累積ストレス値（Tension）」をシステムが自動的に監視・計算します。
-*   ストレスが一定値（例：65/100以上）に達すると、カタルシス（ざまぁ展開、主人公の無双、大逆転など）を自動的に発動させ、読者の購買欲求や感情の起伏をコントロールします。
-
-### 3. 多彩なコントロールパネル
-*   **企画立案**: ジャンル、メインターゲット、雰囲気（シリアス ↔ コミカル）、王道度（テンプレ重視 ↔ 芸術性重視）などの基本設定。
-*   **プロット管理**: エピソードごとのあらすじ、登場キャラクター、目標の感情値の編集・閲覧。
-*   **本文執筆**: 「情熱（Passion）」パラメータや「高解像度化（五感・心理描写の強化）」トグルを用いた、AIによる高品質な文章生成。
-*   **監査・チケット管理**: 整合性のチェックやアンチパターンの検知を行い、未解決の課題を「チケット（Issue）」として管理・修正。
-*   **文体ラボ**: キャラクター別の描写拡張テーマのカスタマイズ（RAG による類似文体検索を活用）。
-*   **プロット再構築**: 途中でストーリーを変更したい場合に、それ以降のプロットを一貫性を保ったまま自動で再生成。
-
-### 4. 官能描写モード（オプトイン方式）
-*   **NSFW オプトイン**: サイドバーの「高度な詳細設定」から「🔞 NSFWモードを有効化」を ON にすると、初回のみ同意確認ダイアログが表示されます。同意することでセーフティフィルターが緩和されます。
-*   **強度・プラットフォーム制御**: 同意後は「🌡️ 官能描写の強度」（0:ほのぼの 〜 5:過激）や、カクヨム恋愛等の「📱 出力プラットフォーム」プリセットを選択できます。
-*   **詳細エージェント設定**: 「🎬 官能エージェント詳細設定」から、映像パターン技術の適用、感覚ウェイト（触覚・嗅覚・聴覚・視線・呼吸・味覚）、ペーシング比率（Build / Peak / Afterglow）、品質パラメータ（比喩密度・心理描写深度）を細かく調整可能です。
-*   **セーフティマニフェスト**: 生成時には `prompts/erotic/safety_manifest.py` のセーフティ・マニフェストが最優先でプロンプトに挿入され、同意の明示・未成年禁止・表現方針・余韻の義務が自動適用されます。
-*   **バックエンド連携**: 官能描写の研磨は `/api/refine_erotic` エンドポイントを介して非同期で実行されます。
+| レイヤー | 技術スタック | 役割 |
+|---|---|---|
+| **Frontend** | React 18 + TypeScript + Vite + TailwindCSS | モダンな SPA UI、Zustand で状態管理 |
+| **Backend** | FastAPI + Uvicorn | REST API、非同期処理、ヘルスチェック |
+| **AI Orchestration** | LangGraph + Google Gemini | グラフベースの執筆パイプライン、リトライ/分岐制御 |
+| **Task Queue** | Huey + Redis | バックグラウンドジョブ管理、スケジューリング |
+| **Persistence** | SQLite (dev) / PostgreSQL (prod) + Alembic | データ永続化、マイグレーション管理 |
+| **Vector Store** | ChromaDB | RAG 用ベクトル検索、文脈記憶 |
 
 ---
 
-## 🛠️ 動作要件・セットアップ
+## 動かし方
 
-### 1. 前提条件
-*   **Python**: 3.12 以上（開発・CI は 3.12 で動作確認）。Docker 環境は Python 3.10 ベースです。
-*   **Google Gemini API キー**: Google AI Studio 等から取得した有効な API キーが必要です（環境変数 `GEMINI_API_KEY`、または UI から入力）。
-*   **（任意）Redis**: タスクワーカー用。未導入の場合は SQLite へフォールバックします。
-*   **（任意）ChromaDB**: ベクトル検索（RAG）用。未導入の場合は機能が無効化されます。
-
-### 2. Docker での起動（推奨）
-
-`docker-compose.yml` にバックエンド（`:8200`）とフロントエンド（`:5173`）が定義されています。
+### 方法 A: Docker でさくっと（おすすめ 🔰）
 
 ```bash
-# 任意: 環境変数を .env に用意（GEMINI_API_KEY など）
+# 1. Google AI Studio で API キーを取得（無料）
+# https://aistudio.google.com/app/apikey
+
+# 2. 設定ファイルをコピーしてキーを書く
 cp .env.example .env
+# → .env ファイルを開いて GEMINI_API_KEY=取得したキー を追記
 
+# 3. Docker を起動（開発用: フロントエンドは Vite dev server）
 docker compose up --build
+
+# または本番用ビルド（Nginx で静的配信）
+docker compose --profile prod up --build
 ```
 
-起動後:
-*   React UI: http://localhost:5173
-*   Backend API:  http://localhost:8200 （`/docs` で Swagger UI を確認可）
+立ち上がったらブラウザで以下を開いてください：
+- **開発モード**: http://localhost:5173 (Vite HMR 付き)
+- **本番モード**: http://localhost:3000 (Nginx 静的配信)
+- **バックエンド API**: http://localhost:8200/docs (Swagger UI)
 
-### 3. ローカルでの起動
-
-#### 方法A: Streamlit UI を使用する場合（開発・デモ向け）
-
-```bash
-# 依存関係のインストール
-pip install -r requirements.txt
-
-# 環境変数（例）
-export GEMINI_API_KEY="your-api-key"
-export PYTHONPATH="$(pwd)"
-
-# 1) バックエンド API
-uvicorn src.backend.server:app --host 127.0.0.1 --port 8200
-
-# 2) タスクワーカー (Huey)
-python -m huey.bin.huey_consumer src.backend.tasks.huey
-
-# 3) Streamlit UI
-streamlit run streamlit_app/app.py --server.port 8501 --server.address 127.0.0.1
-```
-
-#### 方法B: React フロントエンドを使用する場合
+### 方法 B: 手動で起動する（開発者向け）
 
 ```bash
-# 依存関係のインストール
+# 1. 依存ライブラリを入れる
 pip install -r requirements.txt
-cd frontend && npm install --legacy-peer-deps
 
-# 環境変数（例）
-export GEMINI_API_KEY="your-api-key"
+# 2. フロントエンド依存関係
+cd frontend && npm install && cd ..
+
+# 3. 環境変数を設定
+export GEMINI_API_KEY="ここにAPIキーを入力"
 export PYTHONPATH="$(pwd)"
 
-# 1) バックエンド API
-uvicorn src.backend.server:app --host 127.0.0.1 --port 8200
+# 4. バックエンド起動
+uvicorn src.backend.server:app --host 127.0.0.1 --port 8200 --reload
 
-# 2) タスクワーカー (Huey)
+# 5. （別のターミナルで）作業キュー起動
 python -m huey.bin.huey_consumer src.backend.tasks.huey
 
-# 3) React UI（開発サーバー）
+# 6. （さらに別のターミナルで）フロントエンド起動
 cd frontend && npm run dev
 ```
 
-Windows の場合は `start_app.bat`（Docker 版）または `run_all.bat`（Streamlit 版）を実行すると、上記プロセスをまとめて起動できます。
+これで以下にアクセスできます：
+- フロントエンド: **http://localhost:5173**
+- バックエンド API: **http://localhost:8200/docs**
 
-### 4. 環境変数
+### 必要なもの
 
-| 変数 | 説明 | 既定値 |
-| --- | --- | --- |
-| `GEMINI_API_KEY` | Google Gemini API キー | — |
-| `DATABASE_URL` | DB 接続先（SQLAlchemy）。未指定時はローカル SQLite | `sqlite+aiosqlite:///./kaku_hegemony_v2.db` |
-| `REDIS_URL` | Huey ワーカー用 Redis | `redis://localhost:6379/0`（未接続時は SQLite へフォールバック） |
-| `CHROMA_URL` | ChromaDB エンドポイント（任意） | ローカル永続化 |
-| `CORS_ALLOWED_ORIGINS` | 許可するオリジン（カンマ区切り / JSON 配列） | `http://localhost:5173` |
-| `VITE_API_URL` | フロントエンドが参照するバックエンド URL | `http://localhost:8200/api` |
-
----
-
-## 📖 基本的な使い方
-
-### 💡 かんたんモードでサクッと書く
-1.  サイドバーの「🎮 モード選択」で「🚀 かんたんモード」を選択します。
-2.  「ジャンル」を選択し、「小説を生成」ボタンをクリックします。
-3.  全自動パイプラインが走り、完了すると本文や成果物が出力されます。
-
-### ⚙️ 上級者モードでこだわり抜く
-1.  サイドバーで「⚙️ 上級者モード」を選択します。
-2.  **企画立案**: 「📋 企画立案」タブで、各種スライダーやテキストボックスを入力し、「新しい作品の企画を生成」を実行します。
-3.  **プロット調整**: 「📖 プロット管理」タブで、生成された各話のプロット（感情値やキャラクターの動き）をレビュー・修正します。
-4.  **執筆**: 「✍️ 本文執筆」タブからエピソードを指定し、目標文字数や表現スタイル（情熱度など）を設定して「執筆開始」をクリックします。
-5.  **監査と修正**: 「⚖️ 監査・チケット管理」タブで物語の矛盾点を検知し、必要に応じてプロットや本文を修正します。
-
-### 🔞 NSFWモード（官能描写）を利用する
-1.  サイドバーの「🛠️ コンテンツ制御設定」→「高度な詳細設定」を開きます。
-2.  「🔞 NSFWモードを有効化」トグルを ON にします。
-3.  初回は同意確認ダイアログが表示されるので、「同意して有効にする」をクリックします。
-4.  強度スライダー（0〜5）やプラットフォームプリセット、必要に応じて「🎬 官能エージェント詳細設定」で感覚ウェイトやペーシングを調整します。
-5.  通常通り執筆・生成を実行すると、官能描写が適用されます。OFF にすると設定がリセットされ、セーフティフィルターが元に戻ります。
+| 必須/任意 | 何に使うか |
+|---|---|
+| **必須** Python 3.12 以上 | バックエンド実行に必要 |
+| **必須** Node.js 22 以上 | フロントエンドビルドに必要 |
+| **必須** Gemini API キー | AI に小説を書かせるのに必要（Google AI Studio で無料取得可） |
+| **任意** Docker / Docker Compose | 面倒な環境構築をスキップしたい人向け |
+| **任意** Redis | 裏でジョブを管理する（Docker なら自動起動、ローカルなら別途必要） |
 
 ---
 
-## 🧪 テスト・品質管理
+## 使い方の流れ
 
-CI（`.github/workflows/ci.yml`）は lint（ruff）、型検査（mypy）、ユニット／統合テスト（pytest）を実行します。
+1. 起動するとブラウザにツールが表示されます
+2. 左のサイドバーから「**かんたんモード**」か「**上級者モード**」を選びます
+3. かんたんモードなら↓
+   - 「お好みのジャンル」を選択
+   - 「🎉 小説を生成」ボタンをクリック
+   - しばらく待つと → 企画 → プロット → 本文 → 納品 まで自動で完了
+4. 上級者モードなら↓
+   - タブを切り替えながら各工程を細かく編集・調整できます
 
-```bash
-# Lint / フォーマット確認
-ruff check src/ tests/
-ruff format --check .
+---
 
-# 型検査
-mypy --config-file pyproject.toml src/
+## しくみ（ざっくり）
 
-# テスト（ユニット）
-pytest tests/unit -q
+### 執筆パイプライン（LangGraph ベース）
 
-# テスト（統合）
-pytest tests/integration tests/test_vector_store_lifecycle.py -q
+```
+┌─────────┐    ┌─────────┐    ┌─────────┐    ┌─────────┐    ┌─────────┐
+│ Planning│───▶│  Plot   │───▶│ Writing │───▶│  Audit  │───▶│ Polish  │
+│  Agent  │    │  Agent  │    │  Agent  │    │ Agent   │    │ Agent   │
+└─────────┘    └─────────┘    └─────────┘    └─────────┘    └─────────┘
+     │            │            │            │            │
+     ▼            ▼            ▼            ▼            ▼
+  世界観設計   章構成・展開   本文生成      整合性検証    文体研磨
+  キャラ設定   フック設計     シーン描写    伏線回収      NSFW調整
 ```
 
-統合テストは ChromaDB と Redis のコンテナを必要とします。詳細は CI ワークフローを参照してください。
+バックエンドは、**Huey** というワーカーが AI とのやり取りを管理し、長い処理が詰まらないようにします。データは自動的に **SQLite** ファイルに保存され、特別な設定は不要です。
 
 ---
 
-## 📚 ドキュメント
+## 📊 監視・メトリクス
 
-*   アーキテクチャ方針: [docs/adr/0001-architecture-refactoring-policy.md](docs/adr/0001-architecture-refactoring-policy.md)
-*   AI オーケストレーション: [docs/adr/0002-ai-orchestration-framework.md](docs/adr/0002-ai-orchestration-framework.md)
-*   UI の共存・移行方針: [docs/adr/0003-streamlit-coexistence-strategy.md](docs/adr/0003-streamlit-coexistence-strategy.md)
-*   プラグインシステム: [docs/adr/002-plugin-system.md](docs/adr/002-plugin-system.md)
-*   エンジンの仲介レイヤ: [docs/adr/003-engine-mediator.md](docs/adr/003-engine-mediator.md)
-## Refactoring Update (ADR-0004)
-- Completed extraction of all core domain services (Planning, Writing, Critique, Bible, Tension).
-- Implemented Dependency Injection container for better modularity and testability.
-- Migrated domain workflows to a service-oriented architecture.
-- Verified all core unit tests pass.
+### ヘルスチェック (`/health`)
+
+システム全体の健全性を確認するエンドポイント。以下のコンポーネントを並列チェックします：
+
+| コンポーネント | チェック内容 |
+|--------------|-------------|
+| **Database** | SQLAlchemy 接続プールから接続取得 + `SELECT 1` 実行、レイテンシ測定 |
+| **Redis** | `PING` + `INFO clients` で接続数確認 |
+| **ChromaDB** | `heartbeat()` + コレクション一覧取得 |
+| **LLM Gateway** | 軽量テスト生成（1 token）で API 疎通確認 |
+| **Worker (Huey)** | バックエンド種類（Redis/SQLite）+ キュー深度 |
+
+**レスポンス例**:
+```json
+{
+  "status": "ok",
+  "version": "3.0.0",
+  "timestamp": "2026-08-08T01:44:30Z",
+  "checks": {
+    "database": {"status": "ok", "latency_ms": 12.3, "details": "pool=5/10", "error": ""},
+    "redis": {"status": "ok", "latency_ms": 3.1, "details": "connected_clients=5", "error": ""},
+    "chromadb": {"status": "ok", "latency_ms": 8.5, "details": "collections=3", "error": ""},
+    "llm_gateway": {"status": "ok", "latency_ms": 245.0, "details": "model=gemini-3.5-flash-lite, response_len=4", "error": ""},
+    "worker": {"status": "ok", "latency_ms": null, "details": "huey_backend=redis, queue_depth=0", "error": ""}
+  }
+}
+```
+
+**総合ステータス判定**:
+- 全 `ok` → `ok`
+- いずれか `degraded` → `degraded`
+- いずれか `error` → `unhealthy`
+- `not_configured` は警告だが全体を unhealthy にはしない
+
+### Prometheus メトリクス (`/metrics`)
+
+Prometheus 形式でメトリクスを公開。Grafana 等で可視化可能。
+
+#### 標準 HTTP メトリクス
+| メトリクス名 | タイプ | ラベル | 説明 |
+|-------------|--------|--------|------|
+| `http_requests_total` | Counter | method, path, status | HTTP リクエスト総数 |
+| `http_request_duration_seconds` | Histogram | method, path | リクエストレイテンシ |
+| `http_requests_in_progress` | Gauge | method, path | 進行中リクエスト数 |
+
+#### アプリケーション固有メトリクス
+| メトリクス名 | タイプ | ラベル | 説明 |
+|-------------|--------|--------|------|
+| `novel_generation_tasks_total` | Counter | workflow_type, status | 生成タスク総数 (started/completed/failed) |
+| `novel_generation_duration_seconds` | Histogram | workflow_type | 生成完了までの所要時間 |
+| `llm_api_calls_total` | Counter | model, status | LLM API 呼び出し数 (success/error/timeout) |
+| `llm_api_tokens_total` | Counter | model, type | 使用トークン数 (prompt/completion) |
+| `db_pool_connections_active` | Gauge | - | DB 接続プール使用中数 |
+| `db_pool_connections_idle` | Gauge | - | DB 接続プールアイドル数 |
+| `huey_queue_depth` | Gauge | - | Huey キュー深度 |
+| `huey_tasks_processed_total` | Counter | status | 処理済みタスク数 (success/error/retry) |
+| `chromadb_collections` | Gauge | - | ChromaDB コレクション数 |
+| `redis_connected_clients` | Gauge | - | Redis 接続クライアント数 |
+
+### 環境変数
+
+| 変数名 | 説明 | デフォルト |
+|--------|------|-----------|
+| `KAKU_HEALTH_CHECK_LLM` | LLM ヘルスチェックを無効化 (`false` で無効) | `true` |
+
+---
+
+## 🙋 よくある質問
+
+**Q: データはどこに保存されますか？**
+
+A: 開発用は SQLite（`storage/app.db`）、本番は PostgreSQL に自動保存されます。Docker ならボリュームマウントで永続化されます。
+
+**Q: 小説の権利はどうなりますか？**
+
+A: あなたの API キーで生成された小説は、あなたのものです。利用規約の詳細は Google Gemini API の公式ドキュメントをご確認ください。
+
+**Q: NSFW モードは大丈夫ですか？**
+
+A: デフォルトでは OFF になっており、ON にしない限り官能描写は生成されません。ON にする際も同意確認があります。
+
+**Q: React 版と Streamlit 版の違いは？**
+
+A: Streamlit 版は廃止済みです。現在は React + TypeScript 製のモダンなフロントエンド（`frontend/`）がメインです。詳細は [ADR-0003](docs/adr/0003-streamlit-coexistence-strategy.md) を参照。
+
+---
+
+## （開発者向け）さらに詳しく
+
+### ドキュメント
+
+- [アーキテクチャ全体図](docs/architecture/overview.md)
+- [プロジェクト構造](docs/architecture/structure.md)
+- [AI オーケストレーション](docs/adr/0002-ai-orchestration-framework.md)
+- [UI 設計方針](docs/adr/0003-streamlit-coexistence-strategy.md)
+- [開発者ガイド](docs/guides/developer_manual.md)
+- [デプロイメントガイド](docs/deployment_guide.md)
+
+### 主要コマンド
+
+```bash
+# テスト実行
+pytest                    # 全テスト
+pytest -xvs tests/       # 詳細出力
+
+# リンター・型チェック
+ruff check .             # Ruff リンター
+mypy src/                # 型チェック
+
+# フロントエンド開発
+cd frontend && npm run dev      # 開発サーバー
+cd frontend && npm run build    # 本番ビルド
+cd frontend && npm run lint     # ESLint
+
+# データベースマイグレーション
+alembic upgrade head     # マイグレーション適用
+alembic revision --autogenerate -m "message"  # 新規リビジョン生成
+```
+
+### 環境変数
+
+| 変数名 | 説明 | デフォルト |
+|---|---|---|
+| `GEMINI_API_KEY` | **必須** Google Gemini API キー | - |
+| `PYTHONPATH` | Python モジュール検索パス | `/app` (Docker) |
+| `DATABASE_URL` | DB 接続文字列 | `sqlite+aiosqlite:///storage/app.db` |
+| `REDIS_URL` | Redis 接続文字列 | `redis://localhost:6379/0` |
+| `LOG_LEVEL` | ログレベル | `INFO` |
+| `CORS_ALLOWED_ORIGINS` | CORS 許可オリジン | `http://localhost:5173,http://localhost:3000` |
+| `KAKU_HEALTH_CHECK_LLM` | LLM ヘルスチェックを無効化 (`false` で無効) | `true` |
+
+---
+
+## ライセンス
+
+このプロジェクトは個人利用・研究目的で提供されています。商用利用の際は Google Gemini API の利用規約をご確認ください。
+
+---
+
+**Enjoy Writing!** ⚔️📖

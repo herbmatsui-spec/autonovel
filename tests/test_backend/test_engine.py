@@ -275,7 +275,7 @@ async def test_engine_validate_tension_deviation(
 @pytest.mark.parametrize("index", range(10))
 def test_app_container_resolves_engine(index):
     # AppContainer から正しくインスタンス解決できるか
-    container = make_container(f"key-{index}")
+    container = AppContainer(f"key-{index}")
     engine = container.engine()
     assert isinstance(engine, UltimateHegemonyEngine)
     assert engine.api_key == f"key-{index}"

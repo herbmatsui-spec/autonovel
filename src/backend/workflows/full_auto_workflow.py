@@ -1,5 +1,9 @@
+import os
 from typing import Any, Dict
 
+from src.agents.illustration_agent import IllustrationAgent
+from src.backend.workflows.illustration_workflow import IllustrationWorkflow
+from src.services.image_service import ImageService
 from src.shared.utils import StatusReporter
 
 from ._shared_ops import run_pipeline_with_retry
@@ -152,16 +156,13 @@ class FullAutoWorkflow(BaseWorkflow):
         if illustration_settings and illustration_settings.get("enableIllustration"):
             try:
                 reporter.update_progress(3, 4, "STEP 4/4: 挿絵を生成中...")
-                import os
 
-                from src.agents.illustration_agent import IllustrationAgent
-                from src.backend.workflows.illustration_workflow import IllustrationWorkflow
-                from src.services.image_service import ImageService
-
-                # 依存関係の解決 (実際にはDIコンテナから取得すべきだが、暫定的にここで生成)
-                img_service = ImageService(api_key=os.getenv("GOOGLE_GENAI_API_KEY", ""))
-                ill_agent = IllustrationAgent(image_service=img_service)
-                ill_workflow = IllustrationWorkflow(illustration_agent=ill_agent, repo=self.repo)
+                ill_workflow = self.illustration_workflow or IllustrationWorkflow(
+                    illustration_agent=IllustrationAgent(
+                        image_service=ImageService(api_key=os.getenv("GOOGLE_GENAI_API_KEY", ""))
+                    ),
+                    repo=self.repo,
+                )
 
                 ill_res = await ill_workflow.execute(
                     reporter=reporter, book_id=book_id, settings=illustration_settings

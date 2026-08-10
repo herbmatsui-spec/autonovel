@@ -21,6 +21,7 @@ from src.backend.database.repositories import (
     BranchRepository,
     ChapterRepository,
     CharacterRepository,
+    IllustrationRepository,
     MiscRepository,
     PlotRepository,
     PromptMetricsRepository,
@@ -53,6 +54,7 @@ class UnitOfWork:
         self._audit: Optional[AuditRepository] = None
         self._prompt_versions: Optional[PromptVersionRepository] = None
         self._prompt_metrics: Optional[PromptMetricsRepository] = None
+        self._illustrations: Optional[IllustrationRepository] = None
 
         self.outbox_service = ChromaOutboxService()
         self._chroma_additions: List[Dict[str, Any]] = []
@@ -146,6 +148,12 @@ class UnitOfWork:
         if self._prompt_metrics is None:
             self._prompt_metrics = PromptMetricsRepository(self.session)
         return self._prompt_metrics
+
+    @property
+    def illustrations(self) -> IllustrationRepository:
+        if self._illustrations is None:
+            self._illustrations = IllustrationRepository(self.session)
+        return self._illustrations
 
     async def __aenter__(self) -> UnitOfWork:
         self.session = self.db.get_session()

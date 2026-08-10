@@ -36,6 +36,9 @@ class BaseWorkflow(ABC):
         vector_store: Optional[Any] = None,
         llm_client: Optional[Any] = None,
         tension: Optional[TensionPort] = None,
+        image_service: Optional[Any] = None,
+        illustration_agent: Optional[Any] = None,
+        illustration_workflow: Optional[Any] = None,
     ):
         self.engine = engine
         # WritingPort: 注入されなければ engine.writer で代用（後方互換）
@@ -114,6 +117,10 @@ class BaseWorkflow(ABC):
                 engine, "validate_tension_deviation"
             ):
                 self.tension = engine
+
+        self.image_service = image_service
+        self.illustration_agent = illustration_agent
+        self.illustration_workflow = illustration_workflow
 
     @abstractmethod
     async def execute(self, reporter: StatusReporter, **kwargs) -> Dict[str, Any]:

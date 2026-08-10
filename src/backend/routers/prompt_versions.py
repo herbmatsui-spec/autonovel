@@ -3,7 +3,7 @@ from fastapi import APIRouter
 from config.project_context import GlobalConfig
 from src.backend.auth import validate_api_key_or_raise
 from src.backend.database import UnitOfWork
-from src.core.container import AppContainer as Container
+from src.core.container import AppContainer
 from src.models.api_schemas import RollbackRequest
 
 router = APIRouter(tags=["prompt_versions"])
@@ -11,7 +11,7 @@ router = APIRouter(tags=["prompt_versions"])
 
 @router.get("/api/prompt_versions/{book_id}")
 async def get_prompt_versions(book_id: int):
-    async with UnitOfWork(Container.db()) as uow:
+    async with UnitOfWork(AppContainer.db()) as uow:
         versions = await uow.prompt_versions.get_prompt_versions(book_id)
     return versions
 
@@ -21,9 +21,9 @@ async def rollback_prompt_version(book_id: int, req: RollbackRequest):
     validate_api_key_or_raise(req.api_key)
     from src.backend.prompt_version_manager import PromptVersionManager
 
-    pvm = PromptVersionManager(Container.db())
+    pvm = PromptVersionManager(AppContainer.db())
 
-    async with UnitOfWork(Container.db()) as uow:
+    async with UnitOfWork(AppContainer.db()) as uow:
         # 指定バージョンの検証
         ver = await uow.prompt_versions.get_prompt_version(req.version_id)
         if not ver or ver["book_id"] != book_id:

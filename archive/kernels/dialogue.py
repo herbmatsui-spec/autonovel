@@ -2,8 +2,8 @@ from typing import Dict, List
 
 from pydantic import BaseModel, Field
 
-.base import KernelBase, KernelContext
-.connection import ConnectionState
+from .base import KernelBase, KernelContext
+from .connection import ConnectionState
 from prompts.dialogue_persona import DIALOGUE_PERSONA
 
 

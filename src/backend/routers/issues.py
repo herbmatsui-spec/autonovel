@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends
 
 from src.backend.auth import require_api_key
 from src.backend.database.uow import UnitOfWork
-from src.core.container import AppContainer as Container
+from src.core.container import AppContainer
 from src.core.exceptions import NotFoundError, ValidationError
 
 router = APIRouter(prefix="/api/issues", tags=["issues"])
@@ -14,14 +14,14 @@ router = APIRouter(prefix="/api/issues", tags=["issues"])
 
 @router.get("/books/{book_id}")
 async def get_issues(book_id: int):
-    async with UnitOfWork(Container.db()) as uow:
+    async with UnitOfWork(AppContainer.db()) as uow:
         return await uow.issues.get_book_issues(book_id)
 
 
 @router.post("/{issue_id}/resolve")
 async def resolve_issue(issue_id: int, req: Any, api_key: str = Depends(require_api_key)):
     # Note: ResolveIssueRequest should be imported from api_schemas
-    async with UnitOfWork(Container.db()) as uow:
+    async with UnitOfWork(AppContainer.db()) as uow:
         issue = await uow.audit.get_issue(issue_id)
         if not issue:
             raise NotFoundError(

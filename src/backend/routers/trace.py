@@ -11,7 +11,7 @@ from fastapi import APIRouter, Query
 from pydantic import BaseModel
 
 from src.backend.database.uow import UnitOfWork
-from src.core.container import AppContainer as Container
+from src.core.container import AppContainer
 from src.services.reproducibility import build_report, build_run_record
 
 router = APIRouter(prefix="/api/trace", tags=["trace"])
@@ -42,7 +42,7 @@ async def record_run(book_id: int, req: RunRequest) -> Dict[str, Any]:
         trace_id=req.trace_id,
         chapter_ep=req.chapter_ep,
     )
-    async with UnitOfWork(Container.db()) as uow:
+    async with UnitOfWork(AppContainer.db()) as uow:
         rid = await uow.trace.add(record)
     return {"status": "success", "id": rid, "input_hash": record["input_hash"]}
 
@@ -50,7 +50,7 @@ async def record_run(book_id: int, req: RunRequest) -> Dict[str, Any]:
 @router.get("/books/{book_id}/runs")
 async def list_runs(book_id: int, chapter_ep: Optional[int] = Query(None)) -> List[Dict[str, Any]]:
     """生成実行記録を取得する。"""
-    async with UnitOfWork(Container.db()) as uow:
+    async with UnitOfWork(AppContainer.db()) as uow:
         runs = await uow.trace.list_by_book(book_id, chapter_ep)
         return [await uow.trace.to_dict(r) for r in runs]
 
@@ -58,7 +58,7 @@ async def list_runs(book_id: int, chapter_ep: Optional[int] = Query(None)) -> Li
 @router.get("/books/{book_id}/report")
 async def reproducibility_report(book_id: int, chapter_ep: Optional[int] = Query(None)) -> Dict[str, Any]:
     """再現性レポート（Markdown）を生成する。"""
-    async with UnitOfWork(Container.db()) as uow:
+    async with UnitOfWork(AppContainer.db()) as uow:
         runs = await uow.trace.list_by_book(book_id, chapter_ep)
         runs_dict = [await uow.trace.to_dict(r) for r in runs]
     return build_report(runs_dict)

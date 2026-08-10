@@ -1,4 +1,5 @@
 import logging
+import warnings
 
 from dependency_injector import providers
 
@@ -10,23 +11,16 @@ logger = logging.getLogger(__name__)
 
 
 def make_container(api_key: str, db=None) -> AppContainer:
-    """APIキーから AppContainer を生成する。
-
-    Args:
-        api_key: LLM クライアント用の API キー。
-        db: 任意で外部の DatabaseManager を注入（InfraContainer の db を使用）。
-
-    Returns:
-        AppContainer インスタンス。初回生成時にログ出力。
+    """APIキーから AppContainer を生成する（非推�奨）。
+    代わりに AppContainer() を直接使用してください。
     """
+    warnings.warn("use AppContainer instead", DeprecationWarning, stacklevel=2)
     if db is None:
         db = InfraContainer.db()
-    container = AppContainer(
+    return AppContainer(
         api_key=providers.Object(api_key),
         db=providers.Object(db) if db is not None else providers.Object(InfraContainer.db()),
     )
-    logger.info(f"Initialized AppContainer for api_key: {api_key[:4]}***")
-    return container
 
 
 __all__ = [

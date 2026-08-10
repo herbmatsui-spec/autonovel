@@ -12,7 +12,7 @@ from fastapi import APIRouter, HTTPException, Query
 
 from src.backend.database.models import Book, Chapter
 from src.backend.database.uow import UnitOfWork
-from src.core.container import AppContainer as Container
+from src.core.container import AppContainer
 from src.services.exporters.base import get_exporter, list_platforms
 
 router = APIRouter(prefix="/api/export", tags=["export"])
@@ -32,7 +32,7 @@ async def export_book(
     """作品を指定プラットフォーム用に整形して出力する。"""
     from sqlalchemy import select
 
-    async with UnitOfWork(Container.db()) as uow:
+    async with UnitOfWork(AppContainer.db()) as uow:
         book = await uow.session.execute(select(Book).where(Book.id == book_id))
         book_row = book.scalar_one_or_none()
         if book_row is None:

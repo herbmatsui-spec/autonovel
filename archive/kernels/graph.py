@@ -14,10 +14,10 @@ class NarrativeState(Enum):
     CLIMAX = auto()  # クライマックス / 最大衝突
     RESOLUTION = auto()  # 解決 / 後日談
 
-
 from dataclasses import dataclass, field
 
-.connection import ConnectionState
+
+from .connection import ConnectionState
 
 
 @dataclass

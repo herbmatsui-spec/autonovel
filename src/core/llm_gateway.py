@@ -28,7 +28,7 @@ def create_genai_client(api_key: str):
 
 
 class LLMProviderFactory:
-    """LLMプロバイダの抽象化"""
+    """LLMプロバイダの�抽象化"""
 
     def __init__(self, genai_client, cooldown):
         self.genai_client = genai_client
@@ -37,8 +37,8 @@ class LLMProviderFactory:
     def get_client(self, provider: str = "gemini"):
         """モデル名から適切なAPIクライアントを返す。
 
-        OpenRouter 等の OpenAI互換モデルID ("anthropic/claude-3.5-sonnet" 等)
-        や、gpt/claude/llama 等のキーワードを含む場合は OpenAI 互換クライアントを返す。
+        OpenRouter 等の OpenAI互�換モデルID ("anthropic/claude-3.5-sonnet" 等)
+        や、gpt/claude/llama 等のキー�ーワードを含む場合は OpenAI 互�換クライアントを返す。
         """
         from src.llm.model_router import is_openai_compatible
 
@@ -262,13 +262,13 @@ class LLMGenerateResultProxy:
 class GeminiApiClient:
     """
     Google GenAI SDKとの低レベル通信を担当。
-    リトライ、指数バックオフ、温度減衰、エラーハンドリングを集約。
+    リトライ、指数バックオフ、温度減�衰、エラー�ーハンドリングを集約。
     """
 
     def __init__(self, client: genai.Client, cooldown: AdaptiveCooldown):
         self.client = client
         self.cooldown = cooldown
-        self._active_requests = 0  # 現在の並行実行数を追跡
+        self._active_requests = 0  # 現在の並行実行数を追�跡
 
     @with_llm_retry()
     async def generate_json(
@@ -310,10 +310,10 @@ class GeminiApiClient:
                 nsfw_mode=nsfw_mode,
             )
 
-            # プロンプト構築（スキーマ要求とエラーフィードバックの注入）
+            # プロンプト構�築（スキーマ要求とエラーフィードバックの注入）
             full_prompt = prompt
             if error_feedback:
-                full_prompt = f"【🚨出力形式エラー報告🚨】\n前回の出力に以下の不備がありました: {error_feedback}\n\n{prompt}"
+                full_prompt = f"【���🚨出力形式エラー報告���🚨】\n前回の出力に以下の不備がありました: {error_feedback}\n\n{prompt}"
 
             if response_schema:
                 if mode == "prompt_fallback":
@@ -347,7 +347,7 @@ class GeminiApiClient:
                 else:
 
                     def _call():
-                        # 404 NOT_FOUND 回避のため、モデル名に 'models/' プレフィックスが付いていない場合は付与する
+                        # 404 NOT_FOUND 回�避のため、モデル名に 'models/' プレフィックスが付いていない場合は付与する
                         model_with_prefix = (
                             current_model
                             if current_model.startswith("models/")
@@ -371,7 +371,7 @@ class GeminiApiClient:
                     full_text = response.text
                     usage = getattr(response, "usage_metadata", None)
 
-                # 成功したらループを抜け出す
+                # 成功したらループを�抜け出す
                 last_error = None
                 break
             except Exception as e:
@@ -407,7 +407,7 @@ class GeminiApiClient:
 
         duration = time.time() - start_time
         logger.info(
-            f"✅ API Success: model={current_model}, len={len(prompt)}, dur={duration:.2f}s, parallel={self._active_requests}"
+            f"��✅ API Success: model={current_model}, len={len(prompt)}, dur={duration:.2f}s, parallel={self._active_requests}"
         )
         return metadata, story, usage
 
@@ -446,7 +446,7 @@ class GeminiApiClient:
                 def _run_stream():
                     collected: List[str] = []
                     last_usage = None
-                    # 404 NOT_FOUND 回避のため、モデル名に 'models/' プレフィックスが付いていない場合は付与する
+                    # 404 NOT_FOUND 回�避のため、モデル名に 'models/' プレフィックスが付いていない場合は付与する
                     model_with_prefix = (
                         current_model
                         if current_model.startswith("models/")
@@ -465,8 +465,8 @@ class GeminiApiClient:
                                     stream_callback(text)
                                 except Exception:
                                     pass
-                        if getattr(chunk, "usage_metadata", None):
-                            last_usage = chunk.usage_metadata
+                            if getattr(chunk, "usage_metadata", None):
+                                last_usage = chunk.usage_metadata
                     return "".join(collected), last_usage
 
                 async with safe_timeout(180.0):
@@ -474,7 +474,7 @@ class GeminiApiClient:
             else:
 
                 def _run_once():
-                    # 404 NOT_FOUND 回避のため、モデル名に 'models/' プレフィックスが付いていない場合は付与する
+                    # 404 NOT_FOUND 回�避のため、モデル名に 'models/' プレフィックスが付いていない場合は付与する
                     model_with_prefix = (
                         current_model
                         if current_model.startswith("models/")
@@ -495,7 +495,7 @@ class GeminiApiClient:
 
             duration = time.time() - start_time
             logger.info(
-                f"✅ Text API Success: model={current_model}, len={len(prompt)}, dur={duration:.2f}s"
+                f"��✅ Text API Success: model={current_model}, len={len(prompt)}, dur={duration:.2f}s"
             )
             return story, usage
 
@@ -526,7 +526,7 @@ class GeminiApiClient:
         mode: str,
         nsfw_mode: bool = False,
     ) -> genai_types.GenerateContentConfig:
-        # リトライごとに温度を下げることで、AIの迷走を抑える
+        # リトライごとに温度を下げることで、AIの�迷走を�抑える
         current_temp = max(0.0, temp - (attempt * 0.15))
 
         config = genai_types.GenerateContentConfig(
@@ -534,7 +534,7 @@ class GeminiApiClient:
             system_instruction=system_instruction,
         )
 
-        # NSFWモード時のみセーフティフィルターを緩和
+        # NSFWモード時のみセーフティフィルターを�緩和
         if nsfw_mode:
             config.safety_settings = [
                 genai_types.SafetySetting(
@@ -559,7 +559,16 @@ class GeminiApiClient:
         err_msg = str(e).lower()
         if any(
             x in err_msg
-            for x in ["429", "quota", "503", "unavailable", "500", "502", "internal", "bad gateway"]
+            for x in [
+                "429",
+                "quota",
+                "503",
+                "unavailable",
+                "500",
+                "502",
+                "internal",
+                "bad gateway"
+            ]
         ):
             retry_match = re.search(r"retry\s+in\s+([\d\.]+)", err_msg)
             if retry_match:
@@ -589,7 +598,7 @@ class GeminiApiClient:
                 "bad request",
             ]
         ):
-            logger.error(f"❌ Unrecoverable Gemini API error: {e}")
+            logger.error(f"��❌ Unrecoverable Gemini API error: {e}")
             raise LLMUnrecoverableError(f"Unrecoverable Gemini API error: {e}") from e
 
         return False
@@ -597,7 +606,7 @@ class GeminiApiClient:
 
 class OpenAIApiClient:
     """
-    OpenAI互換APIエンドポイントとの通信を担当。
+    OpenAI互�換APIエンドポイントとの通信を担当。
     (vLLM, Ollama, OpenRouter, Together AI等に対応)
     """
 
@@ -633,7 +642,6 @@ class OpenAIApiClient:
         current_temp = retry_state.temp if retry_state else temp
         current_model = retry_state.model_name if retry_state else model_name
         error_feedback = retry_state.error_feedback if retry_state else ""
-
         top_p = ProjectContext.get_setting("inference_top_p", 0.95)
         top_k = ProjectContext.get_setting("inference_top_k", 64)
 
@@ -652,7 +660,7 @@ class OpenAIApiClient:
 
         if error_feedback:
             messages[-1]["content"] = (
-                f"【🚨出力形式エラー報告🚨】\n前回の出力に以下の不備がありました: {error_feedback}\n\n{prompt}"
+                f"【���🚨出力形式エラー報告���🚨】\n前回の出力に以下の不備がありました: {error_feedback}\n\n{prompt}"
             )
 
         if response_schema and hasattr(response_schema, "model_fields"):
@@ -704,10 +712,9 @@ class OpenAIApiClient:
                     "bad request",
                 ]
             ):
-                logger.error(f"❌ Unrecoverable OpenAI API error: {e}")
+                logger.error(f"��❌ Unrecoverable OpenAI API error: {e}")
                 raise LLMUnrecoverableError(f"Unrecoverable OpenAI API error: {e}") from e
             if any(x in err_msg for x in ["429", "quota", "too many requests"]):
-                logger.warning(f"⚠️ OpenAI Rate Limit exceeded: {e}")
                 from src.core.exceptions import LLMTemporaryError
 
                 raise LLMTemporaryError(f"OpenAI Rate Limit: {e}") from e
@@ -716,7 +723,7 @@ class OpenAIApiClient:
         full_text = response.choices[0].message.content or ""
         duration = time.time() - start_time
 
-        usage_metadata = response.usage
+        usage_metadata = response.choices[0].usage
         prompt_tokens = usage_metadata.prompt_tokens if usage_metadata else 0
         completion_tokens = usage_metadata.completion_tokens if usage_metadata else 0
 
@@ -734,6 +741,8 @@ class OpenAIApiClient:
 
         self.cooldown.on_success()
         logger.info(
-            f"✅ OpenAI Success: model={current_model}, len={len(prompt)}, dur={duration:.2f}s"
+            f"��✅ OpenAI Success: model={current_model}, len={len(prompt)}, dur={duration:.2f}s"
         )
         return metadata, story, usage
+
+LLMGateway = LLMGenerateResultProxy

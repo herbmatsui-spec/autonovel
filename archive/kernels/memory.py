@@ -3,7 +3,7 @@ from typing import Any, Dict, List
 
 from pydantic import BaseModel, Field
 
-.base import KernelBase, KernelContext
+from .base import KernelBase, KernelContext
 
 
 class ConnectionMilestone(BaseModel):

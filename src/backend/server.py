@@ -21,8 +21,9 @@ from config.logging_config import setup_logging
 from src.backend.auth import validate_api_key_or_raise
 from src.backend.database import init_db
 from src.backend.error_handlers import register_error_handlers
-from src.core.container import AppContainer as Container
+from src.core.container import AppContainer
 from src.core.observability import TraceContext
+from src.backend.observability.metrics import MetricsMiddleware
 from src.models.api_schemas import (
     CritiqueOptimizeRequest,
     EasyModeRequest,
@@ -38,7 +39,7 @@ setup_logging()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     try:
-        db_manager = Container.db()
+        db_manager = AppContainer.db()
         init_db(db_manager.db_path)
         logger.info("Database initialization complete.")
         yield
@@ -54,14 +55,14 @@ async def lifespan(app: FastAPI):
         logger.info("シャットダウン処理を開始します...")
         try:
             # SQLite 接続のクローズ
-            db_manager = Container.db()
+            db_manager = AppContainer.db()
             if db_manager and hasattr(db_manager, "engine") and db_manager.engine:
                 # データベースの非同期コネクションプールを強制的に破棄する
                 await db_manager.engine.dispose()
                 logger.info("データベースのコネクションを正常にクローズしました。")
 
             # ChromaDB 接続のクローズ
-            chroma_provider = Container.chroma_client_provider()
+            chroma_provider = AppContainer.chroma_client_provider()
             if chroma_provider:
                 chroma_provider.close()
                 logger.info("ChromaDB のコネクションを正常にクローズしました。")
@@ -165,6 +166,8 @@ def create_app() -> FastAPI:
     application.add_middleware(TimeoutMiddleware)
     configure_cors(application)
 
+    # HTTP メトリクスミドルウェア（最外側で全リクエスト計測）
+    application.middleware("http")(MetricsMiddleware())
     application.middleware("http")(rate_limit_middleware)
     application.middleware("http")(add_security_headers_middleware)
     application.middleware("http")(add_trace_id_middleware)
@@ -185,6 +188,7 @@ def create_app() -> FastAPI:
         "src.backend.routers.novel",
         "src.backend.routers.commercial",
         "src.backend.routers.easy_mode",
+        "src.backend.routers.illustrations",
     ]
     for module_path in router_modules:
         try:

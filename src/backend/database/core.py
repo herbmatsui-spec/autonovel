@@ -333,8 +333,8 @@ def get_db_manager() -> DatabaseManager:
         return _GLOBAL_DB_MANAGER
 
     try:
-        from src.core.container import InfraContainer
-        return InfraContainer.db()
+        from src.core.container import AppContainer
+        return AppContainer.db()
     except Exception:
         pass
 
@@ -368,7 +368,7 @@ def set_db_manager(manager: Optional[DatabaseManager]) -> None:
     global _GLOBAL_DB_MANAGER
     _GLOBAL_DB_MANAGER = manager
     try:
-        from src.core.container import InfraContainer
-        InfraContainer.db.override(manager)
+        from src.core.container import AppContainer
+        AppContainer.db.override(manager)
     except Exception:
         pass

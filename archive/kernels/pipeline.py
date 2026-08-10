@@ -2,12 +2,12 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel
 
-.base import KernelContext
-.connection import ConnectionState
-.dialogue import DialogueConfig, DialogueKernel
-.graph import NarrativeState, NarrativeStateGraph, NarrativeStateManager
-.memory import MemoryKernel
-.resonance import ResonanceKernel
+from .base import KernelContext
+from .connection import ConnectionState
+from .dialogue import DialogueConfig, DialogueKernel
+from .graph import NarrativeState, NarrativeStateGraph, NarrativeStateManager
+from .memory import MemoryKernel
+from .resonance import ResonanceKernel
 
 
 class SceneConnectionContext(BaseModel):
@@ -55,8 +55,8 @@ class ConnectionPipeline:
         else:
             self.narrative_mgr = None
 
-        .interaction_manager import InteractionManager
-        .preset_triggers import create_preset_triggers
+        from .interaction_manager import InteractionManager
+        from .preset_triggers import create_preset_triggers
 
         self.interaction_mgr = InteractionManager()
         self.trigger_registry = create_preset_triggers()
@@ -81,7 +81,7 @@ class ConnectionPipeline:
 
         # --- Kernel Interaction Matrix (KIM) 処理 ---
         # 現在のカーネル状態を収集
-        .base import KernelState
+        from .base import KernelState
 
         current_k_state = KernelState(
             resonance=self.resonance_eng.state_value,

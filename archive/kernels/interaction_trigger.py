@@ -2,7 +2,7 @@ from typing import Any, Callable, List
 
 from pydantic import BaseModel
 
-.base import KernelState
+from .base import KernelState
 
 
 class InteractionTrigger(BaseModel):

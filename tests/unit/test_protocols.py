@@ -19,7 +19,6 @@ def test_all_protocols_importable():
 def test_planning_port_methods():
     assert hasattr(protocols.PlanningPort, "create_hegemony_plan")
     assert hasattr(protocols.PlanningPort, "expand_plots")
-    assert hasattr(protocols.PlanningPort, "rebuild_hegemony_plot")
     assert hasattr(protocols.PlanningPort, "audit_bible_completeness")
 
 

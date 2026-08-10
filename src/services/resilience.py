@@ -22,9 +22,9 @@ def is_offline_mode_enabled() -> bool:
 def check_database() -> str:
     """DB の到達性を確認する（ok/error）。"""
     try:
-        from src.core.container import AppContainer as Container
+        from src.core.container import AppContainer
 
-        mgr = Container.db()
+        mgr = AppContainer.db()
         # 同期的な軽い確認
         import asyncio
 

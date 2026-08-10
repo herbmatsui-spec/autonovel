@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
-.base import KernelBase
+from .base import KernelBase
 from prompts.hegemony_persona import HEGEMONY_PERSONA
 
 

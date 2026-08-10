@@ -1,13 +1,13 @@
 # デフォルトモデルマッピング（必要に応じて追加）
 _DEFAULTS = {
-    "planning": "gemini-3.1-flash-lite",
+    "planning": "gemini-3.5-flash-lite",
     "plot_expansion": "gemma-4-31b-it",
     "writing": "gemma-4-31b-it",
     "climax": "gemma-4-31b-it",
     "fallback": "gemma-4-31b-it",
     "ultra_stable": "gemma-4-31b-it",
-    "audit": "gemini-3.1-flash-lite",
-    "marketing": "gemini-3.1-flash-lite",
+    "audit": "gemini-3.5-flash-lite",
+    "marketing": "gemini-3.5-flash-lite",
 }
 
 # select_model() で「用途」として解釈するキー群。
@@ -73,7 +73,7 @@ def select_model(purpose: str = "writing") -> str:
             return str(value)
     except Exception:
         pass
-    return _DEFAULTS.get(purpose, "gemini-3.1-flash-lite")
+    return _DEFAULTS.get(purpose, "gemini-3.5-flash-lite")
 
 
 def resolve_model(value: str) -> str:

@@ -40,7 +40,7 @@ class UltimateHegemonyEngine:
         if plot_service is not None:
             self.plot_service = plot_service
         elif repo is not None:
-            from src.backend.plot_service import PlotService
+            from src.services.plot_service import PlotService
             self.plot_service = PlotService(repo=repo, llm=llm)
         else:
             self.plot_service = None

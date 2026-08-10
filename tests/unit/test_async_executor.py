@@ -139,7 +139,7 @@ class TestAsyncExecutorTimeout:
 class TestAsyncExecutorCircuitBreaker:
     """Tests for circuit breaker integration."""
 
-@pytest.mark.asyncio
+    @pytest.mark.asyncio
     async def test_circuit_breaker_open_blocks_execution(self):
         """Test that open circuit breaker blocks execution immediately."""
         import time

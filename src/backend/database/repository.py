@@ -50,6 +50,7 @@ class DataRepositoryFacade:
                     "rules",
                     "audit",
                     "prompt_versions",
+                    "illustrations",
                 ]:
                     repo = getattr(uow, repo_attr)
                     if hasattr(repo, name):

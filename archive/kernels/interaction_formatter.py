@@ -1,6 +1,6 @@
 from typing import Any, Dict
 
-.base import KernelState
+from .base import KernelState
 
 
 class InteractionStateFormatter:

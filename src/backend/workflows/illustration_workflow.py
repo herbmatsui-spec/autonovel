@@ -47,7 +47,7 @@ class IllustrationWorkflow(BaseWorkflow):
             cover_request = IllustrationRequest(
                 book_id=book_id,
                 illustration_type=IllustrationType.COVER,
-                model=IllustrationModel[settings.get("illustrationModel", "QUALITY").upper()],
+                model=IllustrationModel(settings.get("illustrationModel", "auto").lower()),
                 safety_level=self._determine_safety_level(settings),
             )
             res = await self.illustration_agent.run(request=cover_request)
@@ -77,9 +77,9 @@ class IllustrationWorkflow(BaseWorkflow):
                         book_id=book_id,
                         illustration_type=IllustrationType.EPISODE,
                         episode_number=ep_num,
-                        model=IllustrationModel[
-                            settings.get("illustrationModel", "QUALITY").upper()
-                        ],
+                        model=IllustrationModel(
+                            settings.get("illustrationModel", "auto").lower()
+                        ),
                         safety_level=self._determine_safety_level(settings),
                     )
                     res = await self.illustration_agent.run(request=ep_request)

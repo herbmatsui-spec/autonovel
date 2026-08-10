@@ -8,7 +8,7 @@ from src.backend.auth import require_api_key
 from src.backend.database.models import PendingPatch, PromptVersion
 from src.backend.patch_validator import PatchValidator
 from src.backend.prompt_version_manager import PromptVersionManager
-from src.core.container import AppContainer as Container
+from src.core.container import AppContainer
 from src.core.exceptions import NotFoundError, ValidationError
 
 router = APIRouter(prefix="/api/patches", tags=["patches"])
@@ -18,7 +18,7 @@ router = APIRouter(prefix="/api/patches", tags=["patches"])
 async def get_pending_patches(book_id: int):
     from src.backend.database.uow import UnitOfWork
 
-    async with UnitOfWork(Container.db()) as uow:
+    async with UnitOfWork(AppContainer.db()) as uow:
         patches = await uow.misc.get_pending_patches(book_id)
     return patches
 
@@ -29,7 +29,7 @@ async def approve_patch(
 ):
     from src.backend.database.uow import UnitOfWork
 
-    async with UnitOfWork(Container.db()) as uow:
+    async with UnitOfWork(AppContainer.db()) as uow:
         # 該当パッチの取得
         result = await uow.session.execute(select(PendingPatch).where(PendingPatch.id == patch_id))
         patch = result.scalar_one_or_none()
@@ -89,7 +89,7 @@ async def reject_patch(
 ):
     from src.backend.database.uow import UnitOfWork
 
-    async with UnitOfWork(Container.db()) as uow:
+    async with UnitOfWork(AppContainer.db()) as uow:
         # 該当パッチの取得
         result = await uow.session.execute(select(PendingPatch).where(PendingPatch.id == patch_id))
         patch = result.scalar_one_or_none()
@@ -111,7 +111,7 @@ async def edit_patch(patch_id: int, req: Any, api_key: str = Depends(require_api
     # For now, we assume it's handled by the request body
     from src.backend.database.uow import UnitOfWork
 
-    async with UnitOfWork(Container.db()) as uow:
+    async with UnitOfWork(AppContainer.db()) as uow:
         # 該当パッチの取得
         result = await uow.session.execute(select(PendingPatch).where(PendingPatch.id == patch_id))
         patch = result.scalar_one_or_none()

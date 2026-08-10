@@ -27,7 +27,7 @@ class GlobalConfigModel(BaseModel):
 
     # ===================== モデル設定 =====================
     model_writing: str = "gemma-4-31b-it"
-    model_planning: str = "gemini-3.1-flash-lite"
+    model_planning: str = "gemini-3.5-flash-lite"
     model_plot_expansion: str = "gemma-4-31b-it"
     model_climax: str = "gemma-4-31b-it"
     model_stable_fallback: str = "gemma-4-31b-it"

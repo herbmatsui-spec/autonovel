@@ -1,6 +1,7 @@
 from functools import lru_cache
 
 from pydantic_settings import BaseSettings
+from pydantic import ConfigDict
 
 from schemas.config import GlobalConfigModel
 
@@ -24,14 +25,15 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./autonovel.db"
     # API server
     api_host: str = "0.0.0.0"
-    api_port: int = 8000
+    api_port: int = 8200
     # Logging
     log_level: str = "INFO"
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = False
+    model_config = ConfigDict(
+        env_file = ".env",
+        env_file_encoding = "utf-8",
+        case_sensitive = False,
+    )
 
 
 @lru_cache()

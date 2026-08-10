@@ -1,6 +1,6 @@
 [general]
 model_writing = "gemma-4-31b-it"
-model_planning = "gemini-3.1-flash-lite"
+model_planning = "gemini-3.5-flash-lite"
 model_plot_expansion = "gemma-4-31b-it"
 model_climax = "gemma-4-31b-it"
 model_stable_fallback = "gemma-4-31b-it"

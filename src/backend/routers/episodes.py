@@ -3,7 +3,7 @@ from fastapi import APIRouter
 from src.backend.auth import validate_api_key_or_raise
 from src.backend.database.uow import UnitOfWork
 from src.backend.task_helpers import create_task as _create_task
-from src.core.container import AppContainer as Container
+from src.core.container import AppContainer
 from src.core.observability import TraceContext
 from src.models.api_schemas import (
     ChapterImportRequest,
@@ -17,7 +17,7 @@ router = APIRouter(prefix="/api/episodes", tags=["episodes"])
 
 @router.get("/chapters/{book_id}")
 async def get_chapters(book_id: int):
-    async with UnitOfWork(Container.db()) as uow:
+    async with UnitOfWork(AppContainer.db()) as uow:
         chapters = await uow.chapters.get_all_non_anchor_chapters(book_id)
     return [
         {

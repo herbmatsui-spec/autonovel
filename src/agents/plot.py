@@ -11,7 +11,12 @@ logger = logging.getLogger(__name__)
 
 
 class PlotAgent(BaseAgent):
-    """プロット設計、アーク分割などを担当"""
+    """プロット展開のオーケストレーションを担当。
+
+    責務は ``PlotExpander`` を用いた各エピソードのプロット詳細展開
+    (expand_plots) のみ。アーク生成や再構築パイプラインの orchestration は
+    PlotRebuildWorkflow に委譲される。
+    """
 
     def __init__(
         self,
@@ -139,61 +144,14 @@ class PlotAgent(BaseAgent):
                     f"第{ep_num}話のプロット監査実行中 (試行 {attempt + 1})...",
                 )
 
-            # ----- 論理整合性監査 -----
-            audit_passed = True
-            if self._auditor:
-                if reporter:
-                    reporter.report(f"⚖️ {ep_num}話: 監査実行中... (論理整合性チェック)", "info")
-
-                logical_ok, logical_reason = await self._auditor.audit_logical_consistency(
-                    book_id=book_id,
-                    ep_num=ep_num,
-                    blueprint=plot_data.detailed_blueprint,
-                )
-
-                if not logical_ok:
-                    error_msg = f"論理監査失敗: {logical_reason}"
-                    last_error_summary = error_msg
-                    audit_passed = False
-                    if reporter:
-                        reporter.report(f"⚠️ {error_msg}", "warning")
-
-            # ----- 因果律監査 -----
-            if audit_passed and self._auditor and hasattr(self._auditor, "check_integrity"):
-                from src.agents.audit import PlotIntegrityMonitor
-
-                if reporter:
-                    reporter.report(f"⚖️ {ep_num}話: 監査実行中... (因果律チェック)", "info")
-
-                try:
-                    monitor = PlotIntegrityMonitor(pm=self.pm, llm=self._get_llm_client())
-
-                    # PlotIntegrityMonitor.extract_keywords コピー
-                    def extract_keywords(self, blueprint: str) -> List[str]:
-                        return []
-
-                    monitor.extract_keywords = extract_keywords.__get__(
-                        monitor, PlotIntegrityMonitor
-                    )
-
-                    keywords = monitor.extract_keywords(plot_data.detailed_blueprint)
-
-                    is_causal_ok, causal_score, causal_failures = await monitor.check_integrity(
-                        keywords=keywords,
-                        blueprint=plot_data.detailed_blueprint,
-                        content=plot_data.detailed_blueprint,
-                        threshold=0.7,
-                    )
-
-                    if not is_causal_ok:
-                        error_msg = f"因果律監査失敗: {causal_failures}"
-                        last_error_summary = error_msg
-                        audit_passed = False
-                        if reporter:
-                            reporter.report(f"⚠️ {error_msg}", "warning")
-                except Exception as e:
-                    if reporter:
-                        reporter.report(f"⚠️ 因果律監査エラー: {e}", "warning")
+            # ----- 監査の実行 -----
+            audit_passed, last_error_summary = await self._run_audits(
+                book_id=book_id,
+                ep_num=ep_num,
+                plot_data=plot_data,
+                last_error_summary=last_error_summary,
+                reporter=reporter,
+            )
 
             # ----- 監査合格の場合 -----
             if audit_passed:
@@ -209,8 +167,6 @@ class PlotAgent(BaseAgent):
                     )
 
                 # 修正指示付きで再生成
-                retry_prompt = f"{plot_data.detailed_blueprint}\n\n\n【⚠️ 前回監査エラー(修正指示)】\n以下のエラーを解消するようにプロットを修正してください:\n{last_error_summary}"
-
                 retry_result = await self._expand_single_plot(
                     book_title="",  # ブックタイトル取得をスキップして簡略化
                     ep_num=ep_num,
@@ -229,6 +185,84 @@ class PlotAgent(BaseAgent):
         raise RuntimeError(
             f"{ep_num}話: 監査リトライ最大回数({max_retries})を超過。最終エラー: {last_error_summary}"
         )
+
+    async def _run_audits(
+        self,
+        book_id: int,
+        ep_num: int,
+        plot_data: "PlotEpisode",
+        last_error_summary: str,
+        reporter: Optional["IReporter"] = None,
+    ) -> tuple[bool, str]:
+        """論理整合性監査と因果律監査を実行し、合格可否とエラー要約を返す."""
+        audit_passed = True
+
+        # ----- 論理整合性監査 -----
+        if self._auditor:
+            if reporter:
+                reporter.report(f"⚖️ {ep_num}話: 監査実行中... (論理整合性チェック)", "info")
+
+            logical_ok, logical_reason = await self._auditor.audit_logical_consistency(
+                book_id=book_id,
+                ep_num=ep_num,
+                blueprint=plot_data.detailed_blueprint,
+            )
+
+            if not logical_ok:
+                error_msg = f"論理監査失敗: {logical_reason}"
+                last_error_summary = error_msg
+                audit_passed = False
+                if reporter:
+                    reporter.report(f"⚠️ {error_msg}", "warning")
+
+        # ----- 因果律監査 -----
+        if audit_passed and self._auditor and hasattr(self._auditor, "check_integrity"):
+            causal_ok, last_error_summary = await self._run_causal_audit(
+                ep_num=ep_num, plot_data=plot_data, reporter=reporter
+            )
+            if not causal_ok:
+                audit_passed = False
+
+        return audit_passed, last_error_summary
+
+    async def _run_causal_audit(
+        self,
+        ep_num: int,
+        plot_data: "PlotEpisode",
+        reporter: Optional["IReporter"] = None,
+    ) -> tuple[bool, str]:
+        """因果律監査を実行し、合格可否とエラー要約を返す."""
+        from src.agents.audit import PlotIntegrityMonitor
+
+        if reporter:
+            reporter.report(f"⚖️ {ep_num}話: 監査実行中... (因果律チェック)", "info")
+
+        try:
+            monitor = PlotIntegrityMonitor(pm=self.pm, llm=self._get_llm_client())
+
+            def extract_keywords(self, blueprint: str) -> List[str]:
+                return []
+
+            monitor.extract_keywords = extract_keywords.__get__(monitor, PlotIntegrityMonitor)
+            keywords = monitor.extract_keywords(plot_data.detailed_blueprint)
+
+            is_causal_ok, _causal_score, causal_failures = await monitor.check_integrity(
+                keywords=keywords,
+                blueprint=plot_data.detailed_blueprint,
+                content=plot_data.detailed_blueprint,
+                threshold=0.7,
+            )
+
+            if not is_causal_ok:
+                error_msg = f"因果律監査失敗: {causal_failures}"
+                if reporter:
+                    reporter.report(f"⚠️ {error_msg}", "warning")
+                return False, error_msg
+            return True, ""
+        except Exception as e:
+            if reporter:
+                reporter.report(f"⚠️ 因果律監査エラー: {e}", "warning")
+            return True, ""
 
     async def _archive_and_save_plots(
         self,
@@ -387,159 +421,6 @@ class PlotAgent(BaseAgent):
             branch_id=branch_id,
         )
         return results
-
-    async def rebuild_hegemony_plot(
-        self,
-        book_id: int,
-        start_ep: int,
-        new_total_eps: int,
-        keywords: str,
-        trend_memo: str,
-        plot_pattern_key: str,
-        cost_severity: int,
-        cheat_scale: int,
-        system_assist: int,
-        reporter: Optional["IReporter"] = None,
-    ) -> List["PlotEpisode"]:
-        """
-        第X話以降のプロット再構築機能を実行する。
-
-        Args:
-            book_id: 書籍ID
-            start_ep: 再構築開始話数
-            new_total_eps: 新しい総話数
-            keywords: キーワード
-            trend_memo: トレンドメモ
-            plot_pattern_key: プロットパターンキー
-            cost_severity: コスト重要度
-            cheat_scale: チートスケール
-            system_assist: システムアシスト値
-            reporter: 進捗レポーター
-
-        Returns:
-            再構築されたプロットのリスト
-        """
-        # システムの初期化確認
-        self._ensure_services()
-
-        if reporter:
-            reporter.report(f"🔨 第{start_ep}話以降のプロット再構築を開始します...", "info")
-
-        # 準備フェーズ
-        book = await self.repo.get_book(book_id)
-        if not book:
-            if reporter:
-                reporter.report("作品が見つかりません。", "error")
-            return []
-
-        branch_id = await self._get_book_branch(book_id)
-
-        # リポジトリのget_latest_bibleメソッドの存在確認
-        if not hasattr(self.repo, "get_latest_bible"):
-            if reporter:
-                reporter.report("リポジトリにget_latest_bibleメソッドがありません。", "error")
-            return []
-
-        bible = await self.repo.get_latest_bible(book_id)
-        if not bible:
-            if reporter:
-                reporter.report("作品の世界観設定（Bible）が見つかりません。", "error")
-            return []
-
-        # 過去文脈の構築
-        past_context = await self._build_past_context(branch_id, start_ep)
-
-        # 世界設定の取得
-        world_settings = await self._get_world_settings(book_id)
-
-        # システムオーバーライドの構築
-        system_overrides = {
-            "cost_severity": cost_severity,
-            "cheat_scale": cheat_scale,
-            "system_assist": system_assist,
-            "trend_memo": trend_memo,
-        }
-
-        # 新しいアークメタデータの生成
-        arc_metadata = await self._generate_arc_metadata(
-            book_title=book.title,
-            past_context=past_context,
-            new_keywords=keywords,
-            trend_memo=trend_memo,
-            plot_pattern_key=plot_pattern_key,
-            new_total=new_total_eps,
-            start_ep=start_ep,
-            reporter=reporter,
-        )
-
-        if not arc_metadata:
-            if reporter:
-                reporter.report("アークメタデータの生成に失敗しました。処理を中止します。", "error")
-            return []
-
-        # エピソードごとのプロット生成
-        new_plots: List["PlotEpisode"] = []
-        total_eps = new_total_eps - start_ep + 1
-
-        # 再構築ヘルパーのためのインスタンス変数を設定
-        self._start_ep_for_rebuild = start_ep
-        self._total_eps_for_rebuild = total_eps
-
-        for ep_num in range(start_ep, new_total_eps + 1):
-            try:
-                # まず簡単なプロットを生成
-                plot_data = await self._expand_single_plot(
-                    book_title=book.title,
-                    ep_num=ep_num,
-                    arc_metadata=arc_metadata,
-                    past_context=past_context,
-                    world_settings=world_settings,
-                    reporter=reporter,
-                    system_overrides=system_overrides,
-                )
-
-                # プロットに対して監査ループを適用
-                plot_data = await self._apply_audit_loop(
-                    book_id=book_id,
-                    branch_id=branch_id,
-                    ep_num=ep_num,
-                    plot_data=plot_data,
-                    past_context=past_context,
-                    reporter=reporter,
-                    max_retries=3,
-                    system_overrides=system_overrides,
-                )
-
-                # 正しい話数の設定
-                plot_data.ep_num = ep_num
-                new_plots.append(plot_data)
-
-            except Exception as e:
-                logger.error(f"Episode {ep_num} プロット生成エラー: {e}")
-                if reporter:
-                    reporter.report(f"⚠️ Episode {ep_num} 処理中にエラー: {e}", "warning")
-                # エラーでも続行
-                continue
-
-        # 進捗レポート
-        if reporter:
-            completed = len(new_plots)
-            reporter.update_progress(completed, total_eps, f"完了: {completed}/{total_eps}話")
-            reporter.report(f"✅ プロット再構築完了: {len(new_plots)}話を生成", "success")
-
-        # データベースへの保存
-        if new_plots:
-            saved_plots = await self._archive_and_save_plots(
-                book_id=book_id,
-                branch_id=branch_id,
-                start_ep=start_ep,
-                new_total=new_total_eps,
-                new_plots=new_plots,
-                reporter=reporter,
-            )
-            return saved_plots
-
-        return new_plots
 
     async def run(self, *args, **kwargs):
         logger.info("PlotAgent run invoked")

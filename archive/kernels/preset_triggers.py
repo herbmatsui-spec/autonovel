@@ -1,8 +1,8 @@
 from typing import Any, Dict
 
-.base import KernelState
-.interaction_trigger import InteractionTrigger, TriggerRegistry
-.resonance import ResonanceEvent, ResonanceType
+from .base import KernelState
+from .interaction_trigger import InteractionTrigger, TriggerRegistry
+from .resonance import ResonanceEvent, ResonanceType
 
 
 def trigger_hegemony_collapse_resonance_burst(current: KernelState, next: KernelState) -> bool:

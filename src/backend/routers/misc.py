@@ -4,7 +4,7 @@ from typing import Optional
 from fastapi import APIRouter
 
 from src.backend.database import UnitOfWork
-from src.core.container import AppContainer as Container
+from src.core.container import AppContainer
 
 router = APIRouter(tags=["misc"])
 
@@ -17,7 +17,7 @@ async def get_narrative_metrics(book_id: int, branch_id: int = 1, ep_num: Option
             NarrativeMetricRepository,
         )
 
-        async with Container.db().get_session() as session:
+        async with AppContainer.db().get_session() as session:
             repo = NarrativeMetricRepository(session)
             if ep_num is not None:
                 trends = await repo.get_trend_metrics(book_id=book_id, branch_id=branch_id)
@@ -33,7 +33,7 @@ async def get_narrative_metrics(book_id: int, branch_id: int = 1, ep_num: Option
 
 @router.get("/api/bibles/{book_id}")
 async def get_bible(book_id: int):
-    async with UnitOfWork(Container.db()) as uow:
+    async with UnitOfWork(AppContainer.db()) as uow:
         b = await uow.bible.get_latest_bible(book_id)
     if not b:
         return {}
@@ -48,7 +48,7 @@ async def get_bible(book_id: int):
 
 @router.get("/api/optimization_history/{book_id}")
 async def get_opt_history(book_id: int):
-    async with UnitOfWork(Container.db()) as uow:
+    async with UnitOfWork(AppContainer.db()) as uow:
         history = await uow.misc.get_optimization_history(book_id)
     return [
         {
@@ -67,7 +67,7 @@ async def get_narrative_metrics_trend(book_id: int, branch_id: int):
     """
     書籍およびブランチごとの指標推移を取得する。
     """
-    async with UnitOfWork(Container.db()) as uow:
+    async with UnitOfWork(AppContainer.db()) as uow:
         metrics = await uow.narrative_metrics.get_trend_metrics(book_id, branch_id)
         return metrics
 

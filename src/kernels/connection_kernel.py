@@ -4,7 +4,7 @@ kernels/connection_kernel.py - 接続関連の基盤機能
 
 from typing import Any, Dict, Optional
 
-from ..infrastructure.connection import Connection as BaseConnection
+from .connection import Connection as BaseConnection
 from ..shared.network import NetworkUtils
 from .base import KernelBase, KernelState
 

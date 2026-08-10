@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 # ==========================================
 # モデル設定
 # ==========================================
-MODEL_PLANNING = "gemini-3.1-flash-lite"
+MODEL_PLANNING = "gemini-3.5-flash-lite"
 MODEL_PLOT_EXPANSION = "gemma-4-31b-it"
 MODEL_EMBEDDING = "gemini-embedding-2"
 MODEL_WRITING = "gemma-4-31b-it"  # Keep this as is, only change MODEL_PLOT_EXPANSION

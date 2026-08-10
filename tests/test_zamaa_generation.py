@@ -25,7 +25,7 @@ async def test_zamaa_plot_generation():
     # 2. Initialize PlotService via Container
     # Note: In a real test we might mock the LLM, but here we verify the pipeline flow
     try:
-        container = make_container(api_key="test-api-key")
+        container = AppContainer(api_key="test-api-key")
         plot_service = PlotService(container.repo())
 
         logger.info("Executing plot generation with zamaa engine...")

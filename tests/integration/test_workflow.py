@@ -181,7 +181,7 @@ async def test_full_auto_workflow_easy_mode(real_db_manager, mock_llm):
     AppContainer.repo.reset_override()
     AppContainer.uow.reset_override()
 
-    container = make_container("test-api-key", db=real_db_manager)
+    container = AppContainer("test-api-key", db=real_db_manager)
     db_from_container = container.db
     engine = container.engine()
     if hasattr(real_db_manager, "db"):
@@ -372,7 +372,7 @@ async def test_full_auto_workflow_normal_mode(real_db_manager, mock_llm):
     AppContainer.repo.reset_override()
     AppContainer.uow.reset_override()
 
-    container = make_container("test-api-key", db=real_db_manager)
+    container = AppContainer("test-api-key", db=real_db_manager)
     db_from_container = container.db
     engine = container.engine()
     if hasattr(real_db_manager, "db"):
@@ -419,7 +419,7 @@ async def test_full_auto_workflow_api_failure(real_db_manager, mock_llm):
     AppContainer.repo.reset_override()
     AppContainer.uow.reset_override()
 
-    container = make_container("test-api-key", db=real_db_manager)
+    container = AppContainer("test-api-key", db=real_db_manager)
     db_from_container = container.db
     engine = container.engine()
     if hasattr(real_db_manager, "db"):

@@ -9,7 +9,7 @@ from src.backend.auth import require_api_key
 from src.backend.database.models import InternalState
 from src.backend.redis_util import get_redis_client
 from src.backend.sse import task_event_generator
-from src.core.container import AppContainer as Container
+from src.core.container import AppContainer
 from src.core.exceptions import NotFoundError
 
 router = APIRouter(prefix="/api/tasks", tags=["tasks"])
@@ -26,7 +26,7 @@ async def get_task_status(task_id: str):
         except Exception:
             pass
 
-    db = Container.db()
+    db = AppContainer.db()
     async with db.get_session() as session:
         stmt = select(InternalState).where(InternalState.key == f"task_status:{task_id}")
         result = await session.execute(stmt)
@@ -62,7 +62,7 @@ async def stop_task(task_id: str, api_key: str = Depends(require_api_key)):
         except Exception:
             pass
 
-    db = Container.db()
+    db = AppContainer.db()
     if not state_dict:
         async with db.get_session() as session:
             stmt = select(InternalState).where(InternalState.key == f"task_status:{task_id}")

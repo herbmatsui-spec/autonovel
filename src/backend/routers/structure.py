@@ -12,7 +12,7 @@ from fastapi import APIRouter, Query
 
 from src.backend.database.models import Plot
 from src.backend.database.uow import UnitOfWork
-from src.core.container import AppContainer as Container
+from src.core.container import AppContainer
 from src.services.structure_validator import list_structures, validate
 
 router = APIRouter(prefix="/api/structure", tags=["structure"])
@@ -32,7 +32,7 @@ async def validate_structure(
     """作品のプロット構造を検証する。"""
     from sqlalchemy import select
 
-    async with UnitOfWork(Container.db()) as uow:
+    async with UnitOfWork(AppContainer.db()) as uow:
         result = await uow.session.execute(
             select(Plot)
             .where(Plot.book_id == book_id)

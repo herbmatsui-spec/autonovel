@@ -14,7 +14,7 @@ from pydantic import BaseModel
 
 from src.backend.database.models import PromptVersion
 from src.backend.database.uow import UnitOfWork
-from src.core.container import AppContainer as Container
+from src.core.container import AppContainer
 from src.services.prompt_comparison import build_comparison
 
 router = APIRouter(prefix="/api/prompt-compare", tags=["prompt-compare"])
@@ -29,7 +29,7 @@ class CompareRequest(BaseModel):
 @router.get("/books/{book_id}/versions")
 async def list_versions(book_id: int, prompt_key: str = Query(...)) -> List[Dict[str, Any]]:
     """作品の指定プロンプトキーのバージョン一覧を取得する。"""
-    async with UnitOfWork(Container.db()) as uow:
+    async with UnitOfWork(AppContainer.db()) as uow:
         from sqlalchemy import select
 
         result = await uow.session.execute(
@@ -53,7 +53,7 @@ async def compare(book_id: int, req: CompareRequest) -> Dict[str, Any]:
 
         raise HTTPException(status_code=422, detail="texts は必須です")
 
-    async with UnitOfWork(Container.db()) as uow:
+    async with UnitOfWork(AppContainer.db()) as uow:
         from sqlalchemy import select
 
         result = await uow.session.execute(
@@ -81,7 +81,7 @@ async def compare(book_id: int, req: CompareRequest) -> Dict[str, Any]:
 @router.post("/books/{book_id}/versions/{version_id}/activate")
 async def activate_version(book_id: int, version_id: int) -> Dict[str, Any]:
     """指定バージョンをアクティブ（採用）にする。"""
-    async with UnitOfWork(Container.db()) as uow:
+    async with UnitOfWork(AppContainer.db()) as uow:
         await uow.prompt_versions.set_active_prompt_version(book_id, "", -1)
         # prompt_key を取得してから正しくセット
         from sqlalchemy import select

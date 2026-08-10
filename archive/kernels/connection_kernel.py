@@ -1,5 +1,5 @@
-.base import KernelBase
-.connection import ConnectionStagnationDetector, ConnectionState, TranslationEngine
+from .base import KernelBase
+from .connection import ConnectionStagnationDetector, ConnectionState, TranslationEngine
 from prompts.connection_persona import CONNECTION_PERSONA
 from src.core.observability import get_structured_logger
 
@@ -62,7 +62,7 @@ class ConnectionKernel(KernelBase):
         Generates a scene designed to move characters from separate emotional orbits into a shared resonant state.
         Follows the pattern: Persona -> Trigger -> Pattern Library -> Polish -> Audit Loop.
         """
-        .graph import NarrativeState
+        from .graph import NarrativeState
         from prompts.manager import PromptManager
 
         # Phase 27: 物語状態に基づく遷移トリガーの判定

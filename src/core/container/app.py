@@ -62,7 +62,7 @@ class AppContainer2(InfraContainer):
     )
 
     plot_service = providers.Factory["PlotService"](
-        "src.backend.plot_service.PlotService",
+        "src.services.plot_service.PlotService",
         repo=repo,
         llm=llm,
     )
@@ -178,4 +178,17 @@ class AppContainer2(InfraContainer):
         redis_cache=redis_cache,
         semantic_cache=None,
         l1_cache=None,
+    )
+
+    image_service = providers.Factory["ImageService"](
+        "src.services.image_service.ImageService",
+        api_key=api_key,
+    )
+    illustration_agent = providers.Factory["IllustrationAgent"](
+        "src.agents.illustration_agent.IllustrationAgent",
+        image_service=image_service,
+    )
+    illustration_workflow = providers.Factory["IllustrationWorkflow"](
+        "src.backend.workflows.illustration_workflow.IllustrationWorkflow",
+        illustration_agent=illustration_agent,
     )

@@ -3,8 +3,8 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel
 
-.base import KernelBase, KernelContext
-.connection import ConnectionState
+from .base import KernelBase, KernelContext
+from .connection import ConnectionState
 
 
 class ResonanceType(Enum):

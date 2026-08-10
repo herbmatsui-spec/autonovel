@@ -12,7 +12,7 @@ def get_engine(api_key: str) -> EngineFacade:
     これにより呼び出し側 (routers / streamlit) は engine.* インターフェースを
     そのまま利用でき、将来のサービス分解 (ADR-0004) も影響なしに進められる。
     """
-    container = make_container(api_key)
+    container = AppContainer(api_key)
     legacy_engine = container.engine()
     config = EngineConfig.create(api_key=api_key, cooldown=legacy_engine.cooldown)
     return EngineFacade(config=config, engine=legacy_engine)

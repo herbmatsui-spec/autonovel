@@ -3,28 +3,21 @@ from typing import Any, Dict
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from src.agents.illustration_agent import IllustrationAgent
-from src.backend.workflows.illustration_workflow import IllustrationWorkflow
+from src.core.container import make_container
 from src.models.illustration import (
     IllustrationModel,
     IllustrationRequest,
     IllustrationType,
     SafetyLevel,
 )
-from src.services.image_service import ImageService
 from src.shared.utils import StatusReporter
 
 router = APIRouter()
 
 
-# 依存関係の注入用ヘルパー
 def get_illustration_workflow():
-    api_key = os.getenv("GOOGLE_GENAI_API_KEY", "")
-    img_service = ImageService(api_key=api_key)
-    ill_agent = IllustrationAgent(image_service=img_service)
-    # repoは本来DIコンテナから取得するが、ここでは簡略化してWorkflow内で管理させるか
-    # 実際にはserver.pyなどで注入される想定
-    return IllustrationWorkflow(illustration_agent=ill_agent)
+    container = AppContainer(api_key=os.getenv("GOOGLE_GENAI_API_KEY", ""))
+    return container.illustration_workflow()
 
 
 @router.post("/generate")
@@ -38,7 +31,7 @@ async def generate_illustration(
             book_id=request["book_id"],
             illustration_type=IllustrationType(request["illustration_type"]),
             episode_number=request.get("episode_number"),
-            model=IllustrationModel(request.get("model", "quality")),
+            model=IllustrationModel(request.get("model", "auto")),
             safety_level=SafetyLevel.R15_CONTENT
             if request.get("enable_r15")
             else SafetyLevel.BLOCK_SOME,
