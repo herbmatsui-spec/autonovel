@@ -17,7 +17,7 @@ jobs:
   # threshold defined in docs/, then they get promoted to blocking.
   #
   # NOTE: the mypy ENTRANCE errors (types.py shadowing stdlib, the stale
-  # src/streamlit_app/ duplicate, and the actions.py dual-module name) are
+  # duplicate, and the actions.py dual-module name) are
   # all resolved. mypy now parses the whole tree (285 files). The 1769
   # remaining errors are pre-existing strict-mode debt, not blockers.
   lint:
@@ -31,9 +31,9 @@ jobs:
           cache: "pip"
       - run: pip install -r requirements.txt ruff mypy
       - name: Lint (ruff)
-        run: ruff check src/ streamlit_app/ tests/
+        run: ruff check src/ tests/
       - name: Lint statistics (debt tracker)
-        run: ruff check src/ streamlit_app/ tests/ --statistics || true
+        run: ruff check src/ tests/ --statistics || true
 
   typecheck:
     runs-on: ubuntu-latest
@@ -46,9 +46,9 @@ jobs:
           cache: "pip"
       - run: pip install -r requirements.txt mypy
       - name: Type check (mypy)
-        run: mypy --config-file pyproject.toml src/ streamlit_app/
+        run: mypy --config-file pyproject.toml src/
       - name: Type statistics (debt tracker)
-        run: mypy --config-file pyproject.toml src/ streamlit_app/ --statistics || true
+        run: mypy --config-file pyproject.toml src/ --statistics || true
 
   # --- Blocking gates on CHANGED files only (no blanket pass for new code) ---
   # These make `continue-on-error` irrelevant for new contributions: any ruff/
@@ -125,7 +125,7 @@ jobs:
           cache: "pip"
       - run: pip install -r requirements.txt pytest pytest-asyncio pytest-xdist pytest-cov
       - name: Run unit tests with coverage
-        run: pytest -n auto tests/unit --cov=src --cov=streamlit_app --cov-report=xml --cov-report=term -q --junitxml=unit.xml
+        run: pytest -n auto tests/unit --cov=src --cov-report=xml --cov-report=term -q --junitxml=unit.xml
       - uses: actions/upload-artifact@v4
         with:
           name: coverage
@@ -138,9 +138,9 @@ jobs:
       chroma:
         image: chromadb/chroma:0.5.5
         ports:
-          - 8000:8000
+          - 8001:8000
         options: >-
-          --health-cmd "curl -f http://localhost:8000/api/v1/heartbeat"
+          --health-cmd "curl -f http://localhost:8001/api/v1/heartbeat"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 10
@@ -154,7 +154,7 @@ jobs:
           --health-timeout 5s
           --health-retries 10
     env:
-      CHROMA_URL: http://localhost:8000
+      CHROMA_URL: http://localhost:8001
       REDIS_URL: redis://localhost:6379/0
     steps:
       - uses: actions/checkout@v4

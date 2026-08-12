@@ -50,3 +50,9 @@ huey.db
 # Coverage reports
 .coverage
 coverage.xml
+
+# 迷子DBファイル
+*.db
+*.sqlite3
+kaku_hegemony_v2_huey.db
+huey*.db
