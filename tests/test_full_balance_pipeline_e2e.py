@@ -22,7 +22,7 @@ from src.models.db import PlotDbModel
 from src.models.emotional_hook import EmotionalHookSpec
 from src.models.entertainment_check import EntertainmentCheckResult
 from src.models.sharp_edge import SharpEdgeSpec
-from streamlit_app.state import desires_to_hook
+from src.core.state.desires import desires_to_hook
 
 
 class TestFullBalancePipelineE2e:

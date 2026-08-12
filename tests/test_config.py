@@ -44,7 +44,8 @@ def test_config_validator_load_models():
     """models.yaml の読み込みとバリデーションをテスト"""
     models = ConfigValidator.load_models_yaml()
     assert isinstance(models, ModelRegistryModel)
-    assert models.planning == "gemini-3.1-flash-lite"
+    # 実装側 (config/models.yaml, config/llm_profiles/*.yaml) と一致させる
+    assert models.planning == "gemini-3.5-flash-lite"
     assert models.plot_expansion == "gemma-4-31b-it"
 
 

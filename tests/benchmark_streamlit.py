@@ -1,7 +1,7 @@
 import logging
 import time
 
-from streamlit_app import api_client
+from src.infrastructure.api import api_client
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("benchmark")

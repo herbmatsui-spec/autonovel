@@ -1,10 +1,10 @@
 """
 tests/test_state_desires_to_hook.py
-streamlit_app/state.py の desires_to_hook の単体テスト。
+src.core.state.desires の desires_to_hook の単体テスト。
 """
 
 
-from streamlit_app.state import DESIRE_TO_HOOK_MAP, desires_to_hook
+from src.core.state.desires import DESIRE_TO_HOOK_MAP, desires_to_hook
 
 
 class TestDesiresToHook:

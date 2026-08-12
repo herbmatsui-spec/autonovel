@@ -14,7 +14,7 @@ from src.backend.engine_plot import get_emotional_hook_for_plot, resolve_emotion
 from src.backend.tension_curve_config import select_curve_by_hook
 from src.models.db import PlotDbModel
 from src.models.emotional_hook import EmotionalHookSpec
-from streamlit_app.state import desires_to_hook
+from src.core.state.desires import desires_to_hook
 
 
 class TestPhase1To3Integration:

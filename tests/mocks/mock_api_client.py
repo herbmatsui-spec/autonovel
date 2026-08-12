@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 
 
 class MockApiClient:
-    """Mock API Client simulating streamlit_app/api_client.py."""
+    """Mock API Client simulating src.infrastructure.api.api_client."""
 
     def __init__(self):
         self.books = {}

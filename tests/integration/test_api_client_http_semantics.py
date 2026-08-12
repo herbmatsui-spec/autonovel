@@ -2,7 +2,7 @@
 
 from unittest.mock import MagicMock, patch
 
-import streamlit_app.api_client as api_client
+from src.infrastructure.api import api_client
 
 
 def test_get_request_uses_params_not_json():
