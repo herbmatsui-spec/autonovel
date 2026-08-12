@@ -1,0 +1,41 @@
+{
+  "genre": "modern_cheat",
+  "description": "現代チート・都市伝説・裏社会ジャンル専用フック戦略パラメータ",
+  "opening_patterns": [
+    {
+      "name": "streamer_awakening",
+      "template": "『{{stream_title}}』\n視聴者数：{{viewer_count}}人\nコメント欄：『また今日も、何も起きないんだろうな』\n{{protagonist_name}}は、画面越しにニヤリと笑う。\n『起きるよ。今から、俺が『世界のバグ』になるから』\n——その夜、{{city_name}}で『{{first_incident}}』が発生した。",
+      "variables": ["stream_title", "viewer_count", "protagonist_name", "city_name", "first_incident"],
+      "effect": "配信者視点で現代感演出。視聴者の懐疑と主人公の自信対比。即座に事件発生で都市伝説開始。"
+    },
+    {
+      "name": "daily_bug_exploit",
+      "template": "満員電車。吊り革握った手が、一瞬『光った』。\n『{{annoying_passenger}}』が、音もなく『消えた』。\n周囲の乗客、誰も気づかない。\n{{protagonist_name}}は、スマホでニュース開く。\n『{{city_name}}駅、原因不明の『空白』発生。警察困惑』\n「よし、バグ修正完了。次、どこ行こうか」",
+      "variables": ["annoying_passenger", "protagonist_name", "city_name"],
+      "effect": "日常のストレス要素（迷惑客）をチートで『バグ修正』感覚で処理。ニュース記事風で客観性・都市伝説感演出。"
+    }
+  ],
+  "closing_patterns": [
+    {
+      "name": "incident_resolution_stream",
+      "template": "配信画面：『{{incident_name}}、解決。犯人：{{culprit_name}}。証拠：{{evidence}}』\nチャット欄、沈黙の後——爆発する。\n『嘘だろ……』『マジかよ』『都市伝説、本当だったんだ』\n{{protagonist_name}}は、配信終了ボタン押す。\n「また来週。次は、『{{next_target}}』だ」\n\n——次話、『{{next_ep_title}}』",
+      "variables": ["incident_name", "culprit_name", "evidence", "protagonist_name", "next_target", "next_ep_title"],
+      "effect": "配信形式で事件解決提示。チャット反応で読者代弁。次回標的予告で継続誘導。"
+    },
+    {
+      "name": "organization_confrontation",
+      "template": "『{{organization_name}}』のエージェント、{{agent_count}}名。\n全員、『{{status}}』で病院送り。\n{{protagonist_name}}は、最前列のエージェントのスマホ、遠隔操作で『通知』送る。\n『君たちの『上司』、次は俺が『面接』するから。覚悟しとけよ』\n\n——次話、『{{next_ep_title}}』",
+      "variables": ["organization_name", "agent_count", "status", "protagonist_name", "next_ep_title"],
+      "effect": "組織戦力を一方的に無力化。スマホ遠隔操作で『次の標的』宣言。現代的チート感と余裕の対比。"
+    }
+  ],
+  "cliffhanger_templates": [
+    "——{{protagonist_name}}のスマホに、『不明な送信元』からメッセージが届く。\n『{{mysterious_message}}』",
+    "——『{{urban_legend_name}}』の正体が、{{protagonist_name}}の『{{hidden_past}}』と繋がっていた。",
+    "——世界中の『配信者』が、同時に『同じ映像』を流し始めた。\nそれが、{{protagonist_name}}の『能力』だった。"
+  ],
+  "hook_intensity": 0.85,
+  "cliffhanger_frequency": 1.0,
+  "opening_hook_length_lines": 3,
+  "closing_hook_length_lines": 5
+}

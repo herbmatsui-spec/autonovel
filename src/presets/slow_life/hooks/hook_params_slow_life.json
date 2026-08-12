@@ -1,0 +1,41 @@
+{
+  "genre": "slow_life",
+  "description": "スローライフ・ほのぼの・癒やしジャンル専用フック戦略パラメータ",
+  "opening_patterns": [
+    {
+      "name": "peaceful_awakening",
+      "template": "目覚まし時計の音がない。\n満員電車の臭いも、上司の怒号も、締切のプレッシャーも——ない。\nあるのは、小鳥のさえずりと、畑の土の香りと、{{protagonist_name}}が手に入れた『{{cheat_ability}}』だけ。\n「よし、今日は何を作ろうかな」",
+      "variables": ["protagonist_name", "cheat_ability"],
+      "effect": "現実世界のストレス要素を否定形で列挙し、即座にスローライフの対比を見せる。主人公の余裕・主体性で安堵感誘導。"
+    },
+    {
+      "name": "base_acquisition",
+      "template": "『{{base_location}}』——誰も寄り付かない、廃墟同然の土地。\nだが、{{protagonist_name}}の目には、『最高の拠点』にしか映らなかった。\n{{cheat_ability}}一つで、水は湧き、土は肥え、家は建つ。\n「ここを、楽園にしよう」",
+      "variables": ["base_location", "protagonist_name", "cheat_ability"],
+      "effect": "荒地を『楽園』と見抜く主人公のビジョン。チートで即環境構築の爽快感。読者の『自分もやりたい』共感誘導。"
+    }
+  ],
+  "closing_patterns": [
+    {
+      "name": "daily_joy_cliffhanger",
+      "template": "焼きたてのパンを、皆で囲む。\n「美味しい……」「おかわり」「{{protagonist_name}}さん、天才だね」\n笑い声が、夕暮れの空に溶けていく。\n\n——明日も、良い一日になりそうだ。\n\n——次話、『{{next_ep_title}}』",
+      "variables": ["protagonist_name", "next_ep_title"],
+      "effect": "日常の小さな幸福を丁寧に描写。読者に『明日も読みたい』と思わせる安らぎの余韻。"
+    },
+    {
+      "name": "protection_cliffhanger",
+      "template": "「{{protagonist_name}}さん……ありがとう」\n守られた住人が、涙目で頭を下げる。\n{{protagonist_name}}は、血のついた剣を鞘に納め、いつもの穏やかな顔に戻る。\n「うん、美味しいスープ、作ろうか」\n\n——次話、『{{next_ep_title}}』",
+      "variables": ["protagonist_name", "next_ep_title"],
+      "effect": "『守るための無双』と『日常への即復帰』のギャップで萌え・安心感・カタルシス同時提供。"
+    }
+  ],
+  "cliffhanger_templates": [
+    "——畑の奥で、{{protagonist_name}}は『光る種』を見つけた。",
+    "——『{{rare_visitor}}』が、拠点を訪ねてきた。",
+    "——季節外れの『雪』が、楽園を白く染め始める。"
+  ],
+  "hook_intensity": 0.70,
+  "cliffhanger_frequency": 0.8,
+  "opening_hook_length_lines": 3,
+  "closing_hook_length_lines": 5
+}

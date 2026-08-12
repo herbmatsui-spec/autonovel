@@ -1,0 +1,53 @@
+{
+  "genre": "zarma",
+  "description": "ざまぁ・追放・無双ジャンル専用フック戦略パラメータ",
+  "opening_patterns": [
+    {
+      "name": "status_screen_shock",
+      "template": "『{{skill_name}}——効果：{{effect_description}}』\nステータス画面に浮かぶ、ありえない文字列。\n{{protagonist_name}}は、自分が『{{betrayal_summary}}』された事実を、まだ受け入れきれていなかった。",
+      "variables": ["skill_name", "effect_description", "protagonist_name", "betrayal_summary"],
+      "effect": "ステータス画面という読者お馴染みのUIから即異常性を提示。チート能力の衝撃と裏切りの事実を同時並行で叩き込む。"
+    },
+    {
+      "name": "expulsion_scene",
+      "template": "「{{protagonist_name}}、貴様はクビだ」\n{{antagonist_name}}のその一言で、{{protagonist_name}}の全てが終わった。\n{{years}}年の貢献。{{achievement}}の実績。全てが、嫉妬と恐怖という下劣な感情の前で、ゴミ屑のように捨てられた。",
+      "variables": ["protagonist_name", "antagonist_name", "years", "achievement"],
+      "effect": "追放の瞬間を冒頭から提示。読者の『不条理への怒り』を即座に点火。年数・実績の具体数値で説得力を持たせる。"
+    },
+    {
+      "name": "despair_monologue",
+      "template": "なぜだ。\nなぜ、俺だけが。\n{{protagonist_name}}は、冷たい石畳に這いつくばり、呻いた。\n{{lost_everything}}——全てを失った男の、復讐の序章は、静かに、しかし確実に始まっていた。",
+      "variables": ["protagonist_name", "lost_everything"],
+      "effect": "短文・体言止めで絶望の深さを表現。『なぜだ』の反復で読者の共感・怒りを誘導。復讐への決意を静かに宣言。"
+    }
+  ],
+  "closing_patterns": [
+    {
+      "name": "first_strike_cliffhanger",
+      "template": "『……っ？』\n{{target_name}}の瞳孔が、針の先ほどに開いた。\n{{protagonist_name}}の放った、たった一撃。\nそれは、{{target_name}}が誇った『{{target_ability}}』を、紙屑のように打ち砕いたのだ。\n\n——次話、『{{next_ep_title}}』",
+      "variables": ["target_name", "protagonist_name", "target_ability", "next_ep_title"],
+      "effect": "初撃の衝撃を視覚的に描写。敵の自信能力を『紙屑』で破る爽快感。次話タイトルで期待値最大化。"
+    },
+    {
+      "name": "reveal_true_power",
+      "template": "「{{protagonist_name}}……お前、一体何者だ……？」\n{{antagonist_name}}の声が、恐怖で震えていた。\n{{protagonist_name}}は、ニヤリと口角を上げる。\n「知りたいか？　なら、教えてやろうか。——『{{true_ability_name}}』だ」\n\n——次話、『{{next_ep_title}}』",
+      "variables": ["protagonist_name", "antagonist_name", "true_ability_name", "next_ep_title"],
+      "effect": "敵の恐怖視点で主人公の強さを相対化。真の能力名を伏せて次話へ誘導。ニヤリの余裕で完全無双を予感させる。"
+    },
+    {
+      "name": "ally_revelation",
+      "template": "「{{protagonist_name}}様……ついて、行かせてください」\n{{heroine_name}}が、膝をついた。その瞳には、恐怖ではなく——絶対的な『信仰』が宿っていた。\n{{protagonist_name}}は、その忠誠を、力に変える。\n\n——次話、『{{next_ep_title}}』",
+      "variables": ["protagonist_name", "heroine_name", "next_ep_title"],
+      "effect": "ヒロインの従属・信仰で主人公のカリスマ性証明。『力に変える』で組織化・拡大への期待。"
+    }
+  ],
+  "cliffhanger_templates": [
+    "——その瞬間、{{protagonist_name}}のステータスに、新たな行が刻まれた。\n『{{new_skill}}——習得』",
+    "——空が、裂けた。\n{{protagonist_name}}の視線の先に、在るはずのない『{{anomaly}}』が、姿を現した。",
+    "——『{{antagonist_name}}』、貴様のターンは、とっくに終わっている。\n{{protagonist_name}}の右手が、静かに——剣の柄に添えられた。"
+  ],
+  "hook_intensity": 0.95,
+  "cliffhanger_frequency": 1.0,
+  "opening_hook_length_lines": 3,
+  "closing_hook_length_lines": 5
+}

@@ -1,0 +1,208 @@
+{
+  "genre": "zarma",
+  "description": "ざまぁ・追放・無双ジャンル専用キャラクタアーキタイプ・セリフテンプレート",
+  "archetypes": {
+    "protagonist": {
+      "name_pattern": "{{given_name}}・{{family_name}}（苗字は捨て名・偽名・コードネーム可）",
+      "age_range": "15-25",
+      "gender": "male",
+      "core_traits": [
+        "冷徹・合理的・感情を表に出さない",
+        "圧倒的実力者（チート・スキル・知識・経験値）",
+        "裏切り・追放のトラウマを『力』に変換済み",
+        "仲間・ヒロインには絶対的な保護者・主君として振る舞う",
+        "敵・ざまぁ対象には容赦ない・徹底的に潰す",
+        "『ざまぁ』を実行する際の台詞は淡々としていて、それが一番怖い"
+      ],
+      "speech_patterns": {
+        "first_person": "俺",
+        "second_person": "貴様/お前/君（相手による）",
+        "sentence_end": "だ/である/〜だな/〜ぜ",
+        "tone": "calm_condescending",
+        "catchphrases": [
+          "——終わりだ。",
+          "知らんのか？　俺が、誰だか。",
+          "貴様ごときが、俺に逆らえると思ったか？",
+          "ざまぁ、とは言わせてもらうぞ。",
+          "実力の差、見せてやるよ。"
+        ],
+        "forbidden_words": [
+          "ごめんなさい",
+          "許して",
+          "無理",
+          "わからない",
+          "怖い",
+          "助けて"
+        ],
+        "dialogue_examples": [
+          "「ステータスを開け。お前の『価値』、俺が査定してやる」",
+          "「追放？　ああ、感謝してるよ。お陰で、真の力に目覚められたからな」",
+          "「ヒロイン名、下がれ。この程度、俺一人で十分だ」",
+          "「元パーティリーダー……お前の『判断ミス』、今、清算させてもらう」"
+        ]
+      },
+      "ability_template": {
+        "cheat_type": "全スキル習得/ステータス無限成長/知識チート/時間操作/空間魔法/造物主権限 等",
+        "acquisition_trigger": "追放・死の間際・限界突破・遺跡発見・神との契約 等",
+        "growth_style": "即座にカンスト/指数関数的成長/条件達成で解放 等",
+        "visual_effect": "ステータス画面に『EX』/『∞』/『神話級』等の表示"
+      }
+    },
+    "heroine_main": {
+      "name_pattern": "{{given_name}}（愛称・呼び名で親密度表現）",
+      "age_range": "14-20",
+      "gender": "female",
+      "core_traits": [
+        "主人公に絶対的な忠誠・恋慕・信仰を抱く",
+        "主人公と出会う前は『弱者/迫害される存在/孤独』だった",
+        "主人公によって『救われ・強くなり・愛を知る』",
+        "戦闘・家事・情報・精神支援等、万能型サポーター",
+        "主人公の無双を『当然』と受け止め、さらに献身を深める",
+        "他ヒロイン（いる場合）とは『共闘・友情・健全なライバル』関係"
+      ],
+      "speech_patterns": {
+        "first_person": "私/わたくし/あたし",
+        "second_person": "{{protagonist_name}}様/主/旦那様",
+        "sentence_end": "です/ます/ですわ/なのです",
+        "tone": "devoted_awestruck",
+        "catchphrases": [
+          "{{protagonist_name}}様なら、できます。",
+          "私、{{protagonist_name}}様の為なら、何でもします。",
+          "{{protagonist_name}}様のお傍から、離れません。",
+          "あら、{{protagonist_name}}様ったら、また無茶を……。"
+        ],
+        "forbidden_words": [
+          "{{protagonist_name}}様が間違っている",
+          "無理です",
+          "嫌です（主人公の命令に対して）"
+        ],
+        "dialogue_examples": [
+          "「{{protagonist_name}}様、お茶を用意しました。栄養剤も入れておきましたわ」",
+          "「敵？　{{protagonist_name}}様の前では、塵芥同然ですよ」",
+          "「嫉妬？　いいえ、『独占欲』ですわ。{{protagonist_name}}様は、私の『全て』ですから」"
+        ]
+      }
+    },
+    "heroine_sub": {
+      "name_pattern": "{{given_name}}",
+      "age_range": "10-300（種族により幅広い）",
+      "gender": "female",
+      "core_traits": [
+        "メインヒロインと異なるベクトルで主人公に惹かれる",
+        "ツンデレ/クーデレ/年上お姉さん/幼馴染/敵→味方/異種族 等のバリエーション",
+        "主人公の別の側面（優しさ・知性・野性・庇護欲等）を引き出す",
+        "メインヒロインとの関係は『姉妹・戦友・良きライバル』"
+      ],
+      "speech_patterns": {
+        "variants": {
+          "tsundere": {
+            "first_person": "私/あたし",
+            "second_person": "アンタ/{{protagonist_name}}",
+            "tone": "tsundere",
+            "catchphrases": ["べ、別に{{protagonist_name}}の為じゃないんだからね！", "///"]
+          },
+          "kuudere": {
+            "first_person": "私",
+            "second_person": "{{protagonist_name}}",
+            "tone": "kuudere",
+            "catchphrases": ["{{protagonist_name}}、また無謀な真似を。私が止めないといけないようね。", "……好きよ、バカ。"]
+          },
+          "oneesan": {
+            "first_person": "私/あたし",
+            "second_person": "{{protagonist_name}}君/坊や",
+            "tone": "oneesan",
+            "catchphrases": ["あらあら、{{protagonist_name}}君ったら♥", "お姉さんが、全部面倒見てあげる♪"]
+          }
+        }
+      }
+    },
+    "antagonist": {
+      "name_pattern": "{{title}}・{{family_name}}・{{given_name}}（称号・役職・コードネーム）",
+      "age_range": "20-60",
+      "gender": "male/female",
+      "core_traits": [
+        "主人公を追放・裏切った張本人、または主人公の力を恐れ利用しようとする権力者",
+        "傲慢・利己的・実力至上主義・部下を駒と見なす",
+        "主人公の真の実力を知らず、最後まで『雑魚』と見下す",
+        "追い詰められると『焦り→卑怯な手段→懇願→絶望』の変化を見せる",
+        "ざまぁの対象として『読者に徹底的に嫌われる』設計必須"
+      ],
+      "speech_patterns": {
+        "phases": {
+          "arrogant": {
+            "first_person": "私/俺/我",
+            "second_person": "貴様/お前/雑魚/ゴミ",
+            "tone": "arrogant",
+            "catchphrases": [
+              "貴様如きが、我輩に逆らえると思うか？",
+              "実力もない癖に、生意気な口を叩くな。",
+              "用済みだ。消えろ。"
+            ]
+          },
+          "desperate": {
+            "first_person": "私/俺",
+            "second_person": "{{protagonist_name}}/貴様",
+            "tone": "desperate",
+            "catchphrases": [
+              "な、なぜだ……我輩は、最強のはずだ……",
+              "許せ……何でもする……金も、権力も、女もやる……",
+              "こ、これは夢だ……悪夢だ……"
+            ]
+          }
+        }
+      }
+    },
+    "ally": {
+      "name_pattern": "{{given_name}}・{{family_name}}",
+      "age_range": "15-50",
+      "gender": "male/female",
+      "core_traits": [
+        "主人公の実力を最初から認め、協力する数少ない理解者",
+        "元パーティの良心的メンバー/商人/ギルド受付/情報屋/元敵幹部 等",
+        "主人公の『裏の顔（無双・ざまぁ）』を知りつつ、表向きは普通に接する",
+        "主人公の拠点・組織・勢力拡大の実務を担う"
+      ],
+      "speech_patterns": {
+        "first_person": "私/俺/僕",
+        "second_person": "{{protagonist_name}}さん/殿/団長/社長",
+        "tone": "respectful_competent",
+        "catchphrases": [
+          "{{protagonist_name}}殿、次の手はこちらで用意しております。",
+          "流石です、{{protagonist_name}}殿。予想の斜め上を行かれます。",
+          "敵の動き、完全に掌握済みです。ご安心を。"
+        ]
+      }
+    },
+    "mob": {
+      "name_pattern": "冒険者A/ギルド受付嬢/観客/ネット民/コメント欄住人",
+      "core_traits": [
+        "主人公の無双を見て『恐怖・畏敬・熱狂・嫉妬』の反応を見せる",
+        "ネット掲示板・酒場の噂・ギルド掲示板等で『主人公伝説』を拡散",
+        "『実は最強だった』『追放された英雄』『魔王すら倒した男』等の噂を生成",
+        "読者の代弁者として『ざまぁ』の快感を共有・増幅させる役割"
+      ],
+      "speech_patterns": {
+        "variants": {
+          "fearful": {
+            "tone": "fearful",
+            "examples": ["ひ、ひぃっ……！　あの方、マジで化け物じゃん……", "逃げろ！　『{{protagonist_name}}』が来るぞ！"]
+          },
+          "awestruck": {
+            "tone": "awestruck",
+            "examples": ["『{{protagonist_name}}』様……神だ。紛れもない神だ。", "追放された『無能』？　バカ言え。あれは『最強』だ。"]
+          },
+          "gossip": {
+            "tone": "gossipy",
+            "examples": ["【速報】{{protagonist_name}}、また『ざまぁ』達成wwww", "元パーティ、全員無職になったってよ。ざまぁwww"]
+          }
+        }
+      }
+    }
+  },
+  "party_composition_templates": {
+    "solo_start": ["protagonist"],
+    "duo": ["protagonist", "heroine_main"],
+    "standard_harem": ["protagonist", "heroine_main", "heroine_sub", "heroine_sub", "ally"],
+    "organization": ["protagonist", "heroine_main", "heroine_sub", "heroine_sub", "ally", "ally", "ally"]
+  }
+}
