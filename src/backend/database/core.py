@@ -109,8 +109,9 @@ class DatabaseConnectionWrapper:
     async def close(self) -> None:
         try:
             await self.dbapi_conn.rollback()
-        except Exception:
-            pass
+        except Exception as exc:
+            # close 時の rollback 失敗はクリティカルではないが、追跡用にログを出力する
+            logger.debug("DatabaseConnectionWrapper.close: rollback 失敗: %s", exc)
         await self.sql_conn.close()
 
 
@@ -171,8 +172,9 @@ class DatabaseManager:
             def reset_on_checkin(dbapi_connection, connection_record):
                 try:
                     dbapi_connection.rollback()
-                except Exception:
-                    pass
+                except Exception as exc:
+                    # checkin 時の rollback 失敗は次回の接続で再試行されるためデバッグログのみ
+                    logger.debug("reset_on_checkin rollback 失敗: %s", exc)
 
     def get_session(self) -> AsyncSession:
         """SQLAlchemyのAsyncSessionを取得する"""
@@ -306,7 +308,7 @@ def init_db(db_path: str):
         sync_url = sync_url.replace("postgresql+asyncpg://", "postgresql://")
 
     ini_path = BASE_DIR / "alembic.ini"
-    print(f"DEBUG: ini_path={ini_path}, exists={ini_path.exists()}")
+    logger.debug("init_db alembic ini_path=%s exists=%s", ini_path, ini_path.exists())
     alembic_cfg = Config(str(ini_path))
     alembic_cfg.set_main_option("sqlalchemy.url", sync_url)
     # テスト環境などの一時的なDBでは、マイグレーションではなくBase.metadata.create_allで
@@ -335,8 +337,10 @@ def get_db_manager() -> DatabaseManager:
     try:
         from src.core.container import AppContainer
         return AppContainer.db()
-    except Exception:
-        pass
+    except Exception as exc:
+        # AppContainer 解決失敗はフォールバックで DatabaseManager を直接生成する。
+        # 失敗要因を握り潰さずログに出力して追跡可能にする。
+        logger.warning("AppContainer.db() 取得失敗、フォールバックします: %s", exc, exc_info=True)
 
     manager = DatabaseManager(DATABASE_URL)
     _GLOBAL_DB_MANAGER = manager
@@ -370,5 +374,5 @@ def set_db_manager(manager: Optional[DatabaseManager]) -> None:
     try:
         from src.core.container import AppContainer
         AppContainer.db.override(manager)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("AppContainer.db.override に失敗: %s", exc, exc_info=True)

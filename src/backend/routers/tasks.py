@@ -1,4 +1,5 @@
 import json
+import logging
 import time
 
 from fastapi import APIRouter, Depends
@@ -12,6 +13,8 @@ from src.backend.sse import task_event_generator
 from src.core.container import AppContainer
 from src.core.exceptions import NotFoundError
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/api/tasks", tags=["tasks"])
 
 
@@ -23,8 +26,9 @@ async def get_task_status(task_id: str):
             val = redis_client.get(f"task_status:{task_id}")
             if val:
                 return json.loads(val)
-        except Exception:
-            pass
+        except Exception as exc:
+            # Redis 取得失敗は DB フォールバックへ進む想定だが、原因を追跡できるようログは残す
+            logger.warning("Redis task_status 取得失敗、DB にフォールバックします: %s", exc, exc_info=True)
 
     db = AppContainer.db()
     async with db.get_session() as session:
@@ -59,8 +63,8 @@ async def stop_task(task_id: str, api_key: str = Depends(require_api_key)):
             val = redis_client.get(f"task_status:{task_id}")
             if val:
                 state_dict = json.loads(val)
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning("Redis task_status 取得失敗、DB にフォールバックします: %s", exc, exc_info=True)
 
     db = AppContainer.db()
     if not state_dict:
@@ -83,8 +87,8 @@ async def stop_task(task_id: str, api_key: str = Depends(require_api_key)):
         try:
             redis_client.set(f"task_status:{task_id}", state_json, ex=86400)
             return {"message": "Stop request registered via Redis"}
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning("Redis task_status 保存失敗、DB にフォールバックします: %s", exc, exc_info=True)
 
     await db.save_internal_state(
         f"task_status:{task_id}", state_json, time.strftime("%Y-%m-%d %H:%M:%S")

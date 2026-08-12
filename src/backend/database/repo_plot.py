@@ -1,16 +1,20 @@
 # mypy: disable-error-code="attr-defined"
 from __future__ import annotations
 
+import logging
 from contextlib import asynccontextmanager
 from typing import Any, AsyncGenerator, Dict, List, Optional
 
 from sqlalchemy import delete, select, update
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.backend.database.core import retry_with_logging
 from src.backend.database.models import Book, Branch, EntertainmentCheckLog, Plot
 from src.backend.database.repositories.base import BaseRepository
 from src.models import PlotDbModel
+
+logger = logging.getLogger(__name__)
 
 
 class PlotRepositoryMixin(BaseRepository):
@@ -177,8 +181,15 @@ class PlotRepositoryMixin(BaseRepository):
                 return False
             await self._save_plot_impl(branch_id, ep_num, plot)
             return True
-        except Exception:
-            return False
+        except SQLAlchemyError as exc:
+            logger.error(
+                "save_plot failed: branch_id=%s ep_num=%s exc=%s",
+                branch_id,
+                ep_num,
+                exc,
+                exc_info=True,
+            )
+            raise
 
     @retry_with_logging()
     async def _save_plot_impl(self, branch_id: int, ep_num: int, plot: Any) -> None:
@@ -297,19 +308,26 @@ class PlotRepositoryMixin(BaseRepository):
                 )
             )
 
-    async def update_plot_blueprint(self, book_id: str, blueprint: Any) -> bool:
-        """IRepository interface implementation for update_plot_blueprint."""
+    async def update_plot_blueprint(
+        self, branch_id: int, ep_num: int, detailed_blueprint: str
+    ) -> bool:
+        """IRepository interface implementation for update_plot_blueprint.
+
+        IRepository.update_plot_blueprint(branch_id, ep_num, blueprint) シグネチャに準拠。
+        エラーは握り潰さず、呼び出し側でハンドリングされるよう例外を再送出する。
+        """
         try:
-            # blueprint is expected to be a dict containing branch_id, ep_num, and detailed_blueprint
-            branch_id = blueprint.get("branch_id")
-            ep_num = blueprint.get("ep_num")
-            detailed_blueprint = blueprint.get("detailed_blueprint")
-            if branch_id is None or ep_num is None or detailed_blueprint is None:
-                return False
             await self._update_plot_blueprint_impl(branch_id, ep_num, detailed_blueprint)
             return True
-        except Exception:
-            return False
+        except SQLAlchemyError as exc:
+            logger.error(
+                "update_plot_blueprint failed: branch_id=%s ep_num=%s exc=%s",
+                branch_id,
+                ep_num,
+                exc,
+                exc_info=True,
+            )
+            raise
 
     @retry_with_logging()
     async def _update_plot_blueprint_impl(

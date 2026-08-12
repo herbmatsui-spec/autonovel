@@ -2,6 +2,7 @@
 kernels/memory.py - メモリ管理
 """
 
+import time
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, Optional

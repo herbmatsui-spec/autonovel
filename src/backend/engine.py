@@ -41,7 +41,8 @@ class UltimateHegemonyEngine:
             self.plot_service = plot_service
         elif repo is not None:
             from src.services.plot_service import PlotService
-            self.plot_service = PlotService(repo=repo, llm=llm)
+            # PlotService is repo-only by design; llm is held by the engine itself.
+            self.plot_service = PlotService(repo=repo)
         else:
             self.plot_service = None
 

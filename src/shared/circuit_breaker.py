@@ -1,8 +1,11 @@
+import logging
 import threading
 import time
 from enum import Enum
 
 from pydantic import BaseModel
+
+logger = logging.getLogger(__name__)
 
 
 class CircuitState(Enum):
@@ -38,7 +41,10 @@ class CircuitBreaker:
                 return True
             if self.state == CircuitState.OPEN:
                 if time.time() - self.last_failure_time >= self.config.recovery_timeout:
-                    print(f"[CircuitBreaker:{self.name}] Transitioning from OPEN to HALF_OPEN")
+                    logger.warning(
+                        "[CircuitBreaker:%s] Transitioning from OPEN to HALF_OPEN",
+                        self.name,
+                    )
                     self.state = CircuitState.HALF_OPEN
                     return True
                 return False
@@ -51,7 +57,10 @@ class CircuitBreaker:
             if self.state == CircuitState.HALF_OPEN:
                 self.success_count += 1
                 if self.success_count >= self.config.half_open_max_success:
-                    print(f"[CircuitBreaker:{self.name}] Transitioning from HALF_OPEN to CLOSED")
+                    logger.info(
+                        "[CircuitBreaker:%s] Transitioning from HALF_OPEN to CLOSED",
+                        self.name,
+                    )
                     self._reset()
             elif self.state == CircuitState.CLOSED:
                 self.failure_count = 0
@@ -62,13 +71,16 @@ class CircuitBreaker:
             self.last_failure_time = time.time()
             if self.state == CircuitState.CLOSED:
                 if self.failure_count >= self.config.failure_threshold:
-                    print(
-                        f"[CircuitBreaker:{self.name}] Transitioning from CLOSED to OPEN (failures: {self.failure_count})"
+                    logger.warning(
+                        "[CircuitBreaker:%s] Transitioning from CLOSED to OPEN (failures: %d)",
+                        self.name,
+                        self.failure_count,
                     )
                     self.state = CircuitState.OPEN
             elif self.state == CircuitState.HALF_OPEN:
-                print(
-                    f"[CircuitBreaker:{self.name}] Transitioning from HALF_OPEN to OPEN (probe failed)"
+                logger.warning(
+                    "[CircuitBreaker:%s] Transitioning from HALF_OPEN to OPEN (probe failed)",
+                    self.name,
                 )
                 self.state = CircuitState.OPEN
                 self.success_count = 0

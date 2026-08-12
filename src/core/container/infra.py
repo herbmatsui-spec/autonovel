@@ -47,3 +47,12 @@ class InfraContainer(containers.DeclarativeContainer):
         min_sec=0.5,
         max_sec=10.0,
     )
+
+
+# 後方互換エイリアス。
+# ref: tests/unit/test_infra_container.py および一部レガシーコードは
+#      infra 層のコンテナを `AppContainer` として参照する。
+#      アプリ層 (agents/engine) の DI は src.core.container.app.AppContainer2 を
+#      使うべきだが、infra 層だけを検証するテストのために infra.py にも
+#      同名を公開する。InfraContainer のプロバイダ群をそのまま解決する。
+AppContainer = InfraContainer

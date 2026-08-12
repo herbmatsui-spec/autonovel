@@ -3,7 +3,7 @@ kernels/interaction_config.py - インタラクション設定
 """
 
 from dataclasses import dataclass
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 
 @dataclass

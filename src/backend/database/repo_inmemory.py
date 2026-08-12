@@ -19,10 +19,15 @@ class InMemoryRepository(IRepository):
         self.bible: Dict[str, Any] = {}
         self.misc: Dict[str, Any] = {}
 
-    async def update_plot_blueprint(self, book_id: str, blueprint: Any) -> bool:
-        if book_id not in self.plots:
-            self.plots[book_id] = {}
-        self.plots[book_id]["blueprint"] = blueprint
+    async def update_plot_blueprint(
+        self, branch_id: int, ep_num: int, blueprint: Any
+    ) -> bool:
+        key = f"{branch_id}:{ep_num}"
+        if key not in self.plots:
+            self.plots[key] = {}
+        self.plots[key]["blueprint"] = blueprint
+        self.plots[key]["branch_id"] = branch_id
+        self.plots[key]["ep_num"] = ep_num
         return True
 
     async def create_book(self, book_data: Any) -> str:

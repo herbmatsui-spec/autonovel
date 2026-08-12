@@ -149,8 +149,12 @@ class ProgressState:
                         if not state_dict.get("is_running", True):
                             self._stop_event.set()
                             return True
-                except Exception:
-                    pass
+                except Exception as exc:
+                    # Redis の停止フラグ取得に失敗しても、ローカルの stop 状態は維持する。
+                    # ただし原因を追跡できるようログを出力する。
+                    logger.warning(
+                        "should_stop: Redis 停止フラグ取得失敗: %s", exc, exc_info=True
+                    )
         return self._stop_event.is_set()
 
     def _save_to_db(self) -> None:
@@ -280,7 +284,9 @@ class StatusReporter:
 
     def report(self, message: str, level: str = "info") -> None:
         """メッセージを出力する（サブクラスで上書き想定）。"""
-        print(f"[{level.upper()}] {message}")
+        # print ではなく logger 経由で構造化ログに出力する。
+        log_fn = getattr(logger, level.lower(), logger.info)
+        log_fn("[BackgroundReporter] %s", message)
 
     def update_progress(self, current: int, total: int, text: str, sub_text: str = "") -> None:
         """進捗を更新する（サブクラスで上書き想定）。"""

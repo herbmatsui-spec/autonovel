@@ -1,9 +1,12 @@
 import json
+import logging
 from typing import Any, Dict
 
 from src.shared.utils import StatusReporter
 
 from .base_workflow import BaseWorkflow
+
+logger = logging.getLogger(__name__)
 
 
 class PlotExpansionWorkflow(BaseWorkflow):
@@ -16,7 +19,11 @@ class PlotExpansionWorkflow(BaseWorkflow):
         mode = kwargs.get("mode", "final")
 
         bible = await self.repo.get_latest_bible(book_id)
-        print(f"DEBUG bible={bible!r}, settings={getattr(bible, 'settings', None)!r}")
+        logger.debug(
+            "plot_expansion bible=%r settings=%r",
+            bible,
+            getattr(bible, "settings", None) if bible else None,
+        )
         settings = (
             bible.settings
             if isinstance(bible.settings, dict)

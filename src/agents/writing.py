@@ -543,8 +543,10 @@ class WritingAgent(BaseAgent):
                 for task in scheduler.tasks.values():
                     if not task.done():
                         task.cancel()
-            except Exception:
-                pass
+            except Exception as exc:
+                # スケジューラタスクのキャンセルに失敗しても、処理は継続させる。
+                # ただし、追跡できるようログは出力する。
+                logger.warning("スケジューラタスクのキャンセルに失敗: %s", exc, exc_info=True)
 
         return total_chars, failed_episodes
 
