@@ -41,8 +41,7 @@ def _wrap_easy_mode():
     state = UIStateStore.get_runtime_state()
     engine = _get_engine()
     progress_fragment("easy_job", engine=engine)
-    # render_easy_mode is now in ui_tabs_planning.py, but this is a wrapper for a page.
-    from streamlit_app.ui_tabs_planning import render_easy_mode
+    from streamlit_app.ui_tabs_easy_mode import render_easy_mode
 
     render_easy_mode(state, engine)
 
