@@ -6,6 +6,7 @@ import {
   PromotionRequest,
   PromotionResponse,
 } from "../types/easyMode";
+import { getErrorMessage } from "../lib/utils";
 
 const API_BASE_URL = "/api/easy-mode";
 
@@ -23,9 +24,9 @@ export const fetchGachaPlans = async (
         throw new Error(data.detail || "ガチャの生成に失敗しました。");
     }
     return data;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("fetchGachaPlans error:", error);
-    throw new Error(error.message || "ガチャの生成に失敗しました。");
+    throw new Error(getErrorMessage(error) || "ガチャの生成に失敗しました。");
   }
 };
 
@@ -43,9 +44,9 @@ export const fetchDigest = async (
         throw new Error(data.detail || "ダイジェストの生成に失敗しました。");
     }
     return data;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("fetchDigest error:", error);
-    throw new Error(error.message || "ダイジェストの生成に失敗しました。");
+    throw new Error(getErrorMessage(error) || "ダイジェストの生成に失敗しました。");
   }
 };
 
@@ -63,8 +64,8 @@ export const promoteToAdvanced = async (
         throw new Error(data.detail || "上級者モードへの引継ぎに失敗しました。");
     }
     return data;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("promoteToAdvanced error:", error);
-    throw new Error(error.message || "上級者モードへの引継ぎに失敗しました。");
+    throw new Error(getErrorMessage(error) || "上級者モードへの引継ぎに失敗しました。");
   }
 };

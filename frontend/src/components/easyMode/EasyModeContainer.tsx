@@ -9,6 +9,7 @@ import {
   fetchDigest,
   promoteToAdvanced,
 } from "../../api/easyModeApi";
+import { getErrorMessage } from "../../lib/utils";
 import { GachaForm } from "./GachaForm";
 import { GachaResultView } from "./GachaResultView";
 import { DigestView } from "./DigestView";
@@ -34,8 +35,8 @@ export const EasyModeContainer: React.FC = () => {
       const res = await fetchGachaPlans(request);
       setGachaResponse(res);
       setViewState("gacha_result");
-    } catch (err: any) {
-      setErrorMessage(err.message || "ガチャの実行中にエラーが発生しました");
+    } catch (err: unknown) {
+      setErrorMessage(getErrorMessage(err) || "ガチャの実行中にエラーが発生しました");
     } finally {
       setIsLoadingGacha(false);
     }
@@ -54,8 +55,8 @@ export const EasyModeContainer: React.FC = () => {
       });
       setDigestResponse(res);
       setViewState("digest_result");
-    } catch (err: any) {
-      setErrorMessage(err.message || "ダイジェスト生成中にエラーが発生しました");
+    } catch (err: unknown) {
+      setErrorMessage(getErrorMessage(err) || "ダイジェスト生成中にエラーが発生しました");
     } finally {
       setIsLoadingDigest(false);
     }
@@ -77,8 +78,8 @@ export const EasyModeContainer: React.FC = () => {
       if (res.success) {
         window.location.href = res.redirect_url;
       }
-    } catch (err: any) {
-      setErrorMessage(err.message || "昇格処理中にエラーが発生しました");
+    } catch (err: unknown) {
+      setErrorMessage(getErrorMessage(err) || "昇格処理中にエラーが発生しました");
     } finally {
       setIsPromoting(false);
     }

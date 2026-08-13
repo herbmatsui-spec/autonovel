@@ -22,8 +22,7 @@ describe('Frontend State Store Integration Tests', () => {
   describe('UIStore State Transitions', () => {
     it('should toggle create modal visibility', () => {
       useUIStore.getState().setCreateModalOpen(true);
-      expect(useUIStore.getState().isCreateModalOpen).toBe(true); // Note: wait, is it isCreateModalOpen or isModalOpen?
-      // Checking based on the useUIStore.ts I read earlier
+      expect(useUIStore.getState().isCreateModalOpen).toBe(true);
     });
 
     it('should set and clear global error', () => {

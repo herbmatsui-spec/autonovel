@@ -17,35 +17,20 @@ export function StatusMessage({ type, message, onClose }: StatusMessageProps) {
   return (
     <div
       role="alert"
+      className="flex items-center gap-[0.75rem] px-[1rem] py-[0.75rem] mx-[1rem] rounded-[6px] text-[0.8rem] text-[#e5e7eb]"
       style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.75rem',
-        padding: '0.75rem 1rem',
-        margin: '0 1rem',
         backgroundColor: styles.bg,
         border: `1px solid ${styles.border}`,
         borderLeft: `3px solid ${styles.color}`,
-        borderRadius: '6px',
-        color: '#e5e7eb',
-        fontSize: '0.8rem',
       }}
     >
-      <span style={{ color: styles.color, fontWeight: 'bold' }}>{styles.icon}</span>
-      <span style={{ flex: 1, lineHeight: 1.4, wordBreak: 'break-word' }}>{message}</span>
+      <span className="font-bold" style={{ color: styles.color }}>{styles.icon}</span>
+      <span className="flex-1 leading-[1.4] break-words">{message}</span>
       {onClose && (
         <button
           onClick={onClose}
           aria-label="閉じる"
-          style={{
-            background: 'transparent',
-            border: 'none',
-            color: 'var(--text-muted)',
-            cursor: 'pointer',
-            fontSize: '1rem',
-            padding: '0 0.25rem',
-            lineHeight: 1,
-          }}
+          className="bg-transparent border-none text-[var(--text-muted)] cursor-pointer text-[1rem] px-[0.25rem] leading-none"
         >
           ×
         </button>

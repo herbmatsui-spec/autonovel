@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { PromptVersion, rollbackPromptVersion } from '@/api';
+import { getErrorMessage } from '@/lib/utils';
 
 interface PromptVersionTimelineProps {
   bookId: number;
@@ -22,9 +23,9 @@ const handleRollback = async (versionId: number) => {
            setRollingBackId(null);
            setRollbackReason('');
            onRefresh();
-         } catch (e: any) {
-           setErrorMsg(`ロールバックに失敗しました: ${e.message}`);
-         } finally {
+          } catch (e: unknown) {
+            setErrorMsg(`ロールバックに失敗しました: ${getErrorMessage(e)}`);
+          } finally {
            setLoading(false);
          }
        };

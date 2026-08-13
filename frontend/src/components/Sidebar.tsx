@@ -45,12 +45,10 @@ export function Sidebar() {
 
   const tabs = allTabs.filter(t => isExpertMode || !t.expertOnly);
 
-  return (
+   return (
     <aside
-      role="complementary"
-      aria-label="メインナビゲーション"
-      className="w-64 md:w-72 flex flex-col overflow-y-auto"
-      style={{ background: 'var(--bg-sidebar)', borderRight: '1px solid var(--border)', height: '100vh' }}
+       aria-label="メインナビゲーション"
+       className="w-64 md:w-72 flex flex-col overflow-y-auto bg-[var(--bg-sidebar)] border-r border-[var(--border)] h-[100vh]"
     >
       {/* Header */}
       <div className="px-4 pt-5 pb-2">

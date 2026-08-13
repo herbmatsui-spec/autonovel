@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { PendingPatch, approvePatch, rejectPatch, editPatch } from '../api';
+import { getErrorMessage } from '../lib/utils';
 
 interface PatchReviewPanelProps {
   patches: PendingPatch[];
@@ -19,8 +20,8 @@ export const PatchReviewPanel: React.FC<PatchReviewPanelProps> = ({ patches, onR
       await approvePatch(patchId);
       setStatusMsg({ type: 'success', text: 'パッチが承認され、適用されました！' });
       onRefresh();
-    } catch (e: any) {
-      setStatusMsg({ type: 'error', text: `承認失敗: ${e.message}` });
+    } catch (e: unknown) {
+      setStatusMsg({ type: 'error', text: `承認失敗: ${getErrorMessage(e)}` });
     } finally {
       setLoading(false);
     }
@@ -33,8 +34,8 @@ export const PatchReviewPanel: React.FC<PatchReviewPanelProps> = ({ patches, onR
       await rejectPatch(patchId);
       setStatusMsg({ type: 'success', text: 'パッチを却下しました。' });
       onRefresh();
-    } catch (e: any) {
-      setStatusMsg({ type: 'error', text: `却下失敗: ${e.message}` });
+    } catch (e: unknown) {
+      setStatusMsg({ type: 'error', text: `却下失敗: ${getErrorMessage(e)}` });
     } finally {
       setLoading(false);
     }
@@ -53,8 +54,8 @@ export const PatchReviewPanel: React.FC<PatchReviewPanelProps> = ({ patches, onR
       setStatusMsg({ type: 'success', text: '修正内容を保存しました。' });
       setEditingPatchId(null);
       onRefresh();
-    } catch (e: any) {
-      setStatusMsg({ type: 'error', text: `保存失敗: ${e.message}` });
+    } catch (e: unknown) {
+      setStatusMsg({ type: 'error', text: `保存失敗: ${getErrorMessage(e)}` });
     } finally {
       setLoading(false);
     }

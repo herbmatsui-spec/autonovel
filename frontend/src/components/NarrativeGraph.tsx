@@ -9,6 +9,10 @@ import {
   Title,
   Tooltip,
   Legend,
+  type ChartDataset,
+  type ChartEvent,
+  type ActiveElement,
+  type TooltipItem,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import { NarrativeMetricTrend } from '../api';
@@ -32,6 +36,21 @@ export const NarrativeGraph: React.FC<NarrativeGraphProps> = ({ data, onSceneCli
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>(['Tension', 'Emotional Satisfaction', 'Mystery Density']);
   const [periodFilter, setPeriodFilter] = useState<{ startEp: number; endEp: number }>({ startEp: 1, endEp: 999 });
 
+  // Determine min and max episode numbers from data
+  const epNumbers = data.map(d => d.ep_num);
+  const minEp = data.length > 0 ? Math.min(...epNumbers) : 1;
+  const maxEp = data.length > 0 ? Math.max(...epNumbers) : 999;
+
+  // Initialize period filter on first load
+  useEffect(() => {
+    setPeriodFilter({ startEp: minEp, endEp: maxEp });
+  }, [minEp, maxEp]);
+
+  // Filter data based on period filter
+  const filteredData = useMemo(() => {
+    return data.filter(d => d.ep_num >= periodFilter.startEp && d.ep_num <= periodFilter.endEp);
+  }, [data, periodFilter]);
+
   if (!data || data.length === 0) {
     return (
       <div style={{
@@ -49,28 +68,13 @@ export const NarrativeGraph: React.FC<NarrativeGraphProps> = ({ data, onSceneCli
     );
   }
 
-  // Determine min and max episode numbers from data
-  const epNumbers = data.map(d => d.ep_num);
-  const minEp = Math.min(...epNumbers);
-  const maxEp = Math.max(...epNumbers);
-
-  // Initialize period filter on first load
-  useEffect(() => {
-    setPeriodFilter({ startEp: minEp, endEp: maxEp });
-  }, [minEp, maxEp]);
-
-  // Filter data based on period filter
-  const filteredData = useMemo(() => {
-    return data.filter(d => d.ep_num >= periodFilter.startEp && d.ep_num <= periodFilter.endEp);
-  }, [data, periodFilter]);
-
   // 全データから利用可能な指標の一覧を抽出 (filtered data)
   const allMetricNames = Array.from(new Set(filteredData.flatMap(d => Object.keys(d.scores))));
 
   const labels = filteredData.map(d => `Ep${d.ep_num}-S${d.scene_num}`);
    
   // Target curves (ideal lines) - example: ideal tension arc (rise then fall)
-  const targetDatasets: any[] = [];
+  const targetDatasets: ChartDataset<'line'>[] = [];
   // Example ideal tension: start at 30, peak at 70 at middle, end at 50
   if (allMetricNames.includes('Tension')) {
     const tensionIdeal = filteredData.map((_d, idx) => {
@@ -160,21 +164,22 @@ export const NarrativeGraph: React.FC<NarrativeGraphProps> = ({ data, onSceneCli
       legend: {
         labels: { color: '#fff' }
       },
-tooltip: {
-         mode: 'index' as const,
-         intersect: false,
-         callbacks: {
-           label: (context: any) => `${context.dataset.label}: ${context.parsed.y}`,
-         }
-       }
-    },
-    onClick: (_event: any, elements: any[]) => {
-      if (elements.length > 0) {
-        const index = elements[0].index;
-        const scene = filteredData[index];
-        onSceneClick(scene.ep_num, scene.scene_num);
+        tooltip: {
+          mode: 'index' as const,
+          intersect: false,
+          callbacks: {
+            label: (context: TooltipItem<'line'>) =>
+              `${context.dataset.label ?? ''}: ${context.parsed.y ?? 0}`,
+          }
+        }
+      },
+      onClick: (_event: ChartEvent, elements: ActiveElement[]) => {
+        if (elements.length > 0) {
+          const index = elements[0].index;
+          const scene = filteredData[index];
+          onSceneClick(scene.ep_num, scene.scene_num);
+        }
       }
-    }
   };
 
   return (

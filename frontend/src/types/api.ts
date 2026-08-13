@@ -207,8 +207,46 @@ export interface HealthStatus {
 }
 
 export interface PlanningOptions {
-  easy_genres: Record<string, any>;
+  easy_genres: Record<string, { genre: string; archetype: string; desc: string }>;
   story_archetypes: string[];
   style_definitions: Record<string, { name: string; description: string }>;
-  planning_presets: Record<string, any>;
+  planning_presets: Record<string, { name: string; description: string }>;
+}
+
+export interface StyleDnaResult {
+  // Placeholder for style DNA analysis results
+  // Actual structure would be defined based on backend API
+  analysis: Record<string, unknown>;
+  contradictions: string[];
+  suggestions: string[];
+}
+
+export interface ExportPackageResult {
+  // Placeholder for export package result
+  // Actual structure would be defined based on backend API
+  package_id: string;
+  download_url: string;
+  expires_at: string;
+}
+
+export interface AuditPlanResult {
+  // Placeholder for audit plan results
+  // Actual structure would be defined based on backend API
+  score: number;
+  recommendations: string[];
+  issues_found: string[];
+}
+
+export interface Issue {
+  id: number;
+  category: string;
+  severity: 'high' | 'medium' | 'low';
+  ep_num: number;
+  created_at: string;
+  contradiction_content: string;
+  evidence_past?: string;
+  evidence_current?: string;
+  constraint_for_next_ep?: string;
+  status: string;
+  resolved_note?: string;
 }

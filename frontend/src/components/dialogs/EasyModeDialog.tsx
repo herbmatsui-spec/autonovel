@@ -190,6 +190,10 @@ export function EasyModeDialog({ isOpen, onClose, onSubmit }: Props) {
       aria-modal="true"
       aria-labelledby="modal-title"
       className="modal-overlay animate-fade-in"
+      /* オーバーレイ（背景）へのクリックでダイアログを閉じる意図的な実装。
+         handleOverlayClick 内で e.target === e.currentTarget のみ発火するため、
+         ダイアログ本体への誤クリックは無視される。 */
+      // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
       onClick={handleOverlayClick}
       onKeyDown={handleKeyDown}
       tabIndex={-1}
@@ -399,7 +403,7 @@ export function EasyModeDialog({ isOpen, onClose, onSubmit }: Props) {
                   <select
                     id="illustration-type"
                     value={illustrationType}
-                    onChange={(e) => setIllustrationType(e.target.value as any)}
+                    onChange={(e) => setIllustrationType(e.target.value as 'cover' | 'episode' | 'both')}
                     className="w-full text-xs"
                   >
                     <option value="cover">表紙のみ</option>
@@ -412,7 +416,7 @@ export function EasyModeDialog({ isOpen, onClose, onSubmit }: Props) {
                   <select
                     id="illustration-model"
                     value={illustrationModel}
-                    onChange={(e) => setIllustrationModel(e.target.value as any)}
+                    onChange={(e) => setIllustrationModel(e.target.value as 'fast' | 'quality')}
                     className="w-full text-xs"
                   >
                     <option value="fast">高速 (Fast)</option>

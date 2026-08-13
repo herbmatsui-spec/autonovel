@@ -51,7 +51,7 @@ llm_api_calls_total = Counter(
 llm_api_tokens_total = Counter(
     "llm_api_tokens_total",
     "Total LLM tokens used",
-    ["model", "type"]  # type: prompt, completion
+    ["model", "token_type"]  # token_type: prompt, completion
 )
 
 db_pool_connections_active = Gauge(

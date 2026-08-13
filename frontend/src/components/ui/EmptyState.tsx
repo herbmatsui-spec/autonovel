@@ -13,26 +13,17 @@ interface EmptyStateProps {
 export function EmptyState({ icon, title, description, action }: EmptyStateProps) {
   return (
     <div
-      className="glass-panel"
-      style={{
-        textAlign: 'center',
-        padding: '5rem 2rem',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: '1rem',
-        color: 'var(--text-muted)',
-      }}
+      className="glass-panel text-center py-[5rem] px-[2rem] flex flex-col items-center gap-[1rem] text-[var(--text-muted)]"
     >
-      <span style={{ fontSize: '3rem' }}>{icon}</span>
-      <h4 style={{ fontSize: '1.1rem', color: '#fff', margin: 0 }}>{title}</h4>
+      <span className="text-[3rem]">{icon}</span>
+      <h4 className="text-[1.1rem] text-white m-0">{title}</h4>
       {description && (
-        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0, maxWidth: '460px' }}>
+        <p className="text-[0.85rem] text-[var(--text-secondary)] m-0 max-w-[460px]">
           {description}
         </p>
       )}
       {action && (
-        <Button onClick={action.onClick} style={{ marginTop: '0.5rem' }}>
+        <Button onClick={action.onClick} className="mt-[0.5rem]">
           {action.label}
         </Button>
       )}

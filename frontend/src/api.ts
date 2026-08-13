@@ -14,12 +14,16 @@ import type {
   PlotRebuildParams,
   CritiqueOptimizeParams,
   AuditPlanParams,
+  AuditPlanResult,
   ChapterImportParams,
   MarketingGenerateParams,
   PendingPatch,
   PromptVersion,
   NarrativeMetricTrend,
   PlanningOptions,
+  StyleDnaResult,
+  ExportPackageResult,
+  Issue,
 } from './types/api';
 
 export type {
@@ -44,9 +48,14 @@ export type {
   PromptVersion,
   NarrativeMetricTrend,
   PlanningOptions,
+  StyleDnaResult,
+  ExportPackageResult,
+  AuditPlanResult,
+  Issue,
 };
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+const API_BASE_URL_NO_API = API_BASE_URL.replace('/api', '');
 
 async function apiRequest<T>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(url, {
@@ -111,7 +120,7 @@ export function connectTaskStream(
   taskId: string,
   onUpdate: (status: TaskStatus) => void,
   onComplete: (status: TaskStatus) => void,
-  onError: (error: any) => void
+  onError: (error: unknown) => void
 ): () => void {
   const sseUrl = `${API_BASE_URL}/tasks/${taskId}/stream`;
   const eventSource = new EventSource(sseUrl);
@@ -187,36 +196,30 @@ export async function critiqueOptimize(params: CritiqueOptimizeParams): Promise<
 }
 
 // Synchronous operations (Direct Response)
-export async function auditPlan(params: AuditPlanParams): Promise<any> {
+export async function auditPlan(params: AuditPlanParams): Promise<AuditPlanResult> {
   return apiRequest(`${API_BASE_URL}/plots/audit`, {
     method: 'POST',
     body: JSON.stringify(params),
   });
 }
 
-export async function importChapter(params: ChapterImportParams): Promise<any> {
-  return apiRequest(`${API_BASE_URL}/episodes/chapters/import`, {
-    method: 'POST',
-    body: JSON.stringify(params),
-  });
+export async function importChapter(params: ChapterImportParams): Promise<string> {
+  return triggerTask('/episodes/chapters/import', params);
 }
 
-export async function generateMarketing(params: MarketingGenerateParams): Promise<any> {
-  return apiRequest(`${API_BASE_URL}/marketing/generate`, {
-    method: 'POST',
-    body: JSON.stringify(params),
-  });
+export async function generateMarketing(params: MarketingGenerateParams): Promise<string> {
+  return triggerTask('/marketing/generate', params);
 }
 
 export type CommercialPipelineParams = {
   book_id: number;
-  config?: Record<string, any>;
-  samples?: any[];
+  config?: Record<string, unknown>;
+  samples?: unknown[];
   platforms?: string[];
 };
 
 export async function runCommercialPipeline(params: CommercialPipelineParams): Promise<any> {
-  return apiRequest(`${API_BASE_URL.replace('/api', '')}/commercial/run`, {
+  return apiRequest(`${API_BASE_URL_NO_API}/commercial/run`, {
     method: 'POST',
     body: JSON.stringify(params),
   });
@@ -231,19 +234,19 @@ export async function getPendingPatches(bookId: number): Promise<PendingPatch[]>
   return apiRequest(`${API_BASE_URL}/patches/${bookId}/pending`);
 }
 
-export async function approvePatch(patchId: number): Promise<any> {
+export async function approvePatch(patchId: number): Promise<void> {
   return apiRequest(`${API_BASE_URL}/patches/${patchId}/approve`, {
     method: 'POST',
   });
 }
 
-export async function rejectPatch(patchId: number): Promise<any> {
+export async function rejectPatch(patchId: number): Promise<void> {
   return apiRequest(`${API_BASE_URL}/patches/${patchId}/reject`, {
     method: 'POST',
   });
 }
 
-export async function editPatch(patchId: number, content: string): Promise<any> {
+export async function editPatch(patchId: number, content: string): Promise<void> {
   return apiRequest(`${API_BASE_URL}/patches/${patchId}/edit`, {
     method: 'POST',
     body: JSON.stringify({ content }),
@@ -255,7 +258,7 @@ export async function getPromptVersions(bookId: number): Promise<PromptVersion[]
   return apiRequest(`${API_BASE_URL}/prompt_versions/${bookId}`);
 }
 
-export async function rollbackPromptVersion(bookId: number, versionId: number, reason: string): Promise<any> {
+export async function rollbackPromptVersion(bookId: number, versionId: number, reason: string): Promise<void> {
   return apiRequest(`${API_BASE_URL}/prompt_versions/${bookId}/rollback`, {
     method: 'POST',
     body: JSON.stringify({ version_id: versionId, reason }),
@@ -274,30 +277,29 @@ export async function checkBackendHealth(): Promise<{
   huey_backend: string;
   queue_depth: number;
 }> {
-  const baseUrl = API_BASE_URL.replace('/api', '');
-  return apiRequest(`${baseUrl}/health`);
+  return apiRequest(`${API_BASE_URL_NO_API}/health`);
 }
 
-export async function analyzeStyleDna(sample: string): Promise<any> {
+export async function analyzeStyleDna(sample: string): Promise<StyleDnaResult> {
   return apiRequest(`${API_BASE_URL}/marketing/analyze_style_dna`, {
     method: 'POST',
     body: JSON.stringify({ sample }),
   });
 }
 
-export async function getIssues(bookId: number): Promise<any[]> {
-  const data = await apiRequest<{ issues?: any[] }>(`${API_BASE_URL}/issues/books/${bookId}`);
+export async function getIssues(bookId: number): Promise<Issue[]> {
+  const data = await apiRequest<{ issues?: Issue[] }>(`${API_BASE_URL}/issues/books/${bookId}`);
   return data?.issues ?? [];
 }
 
-export async function resolveIssue(issueId: number, action: string, apiKey: string): Promise<any> {
+export async function resolveIssue(issueId: number, action: string, apiKey: string): Promise<void> {
   return apiRequest(`${API_BASE_URL}/issues/${issueId}/resolve`, {
     method: 'POST',
     body: JSON.stringify({ action, api_key: apiKey }),
   });
 }
 
-export async function exportPackage(bookId: number, apiKey: string): Promise<any> {
+export async function exportPackage(bookId: number, apiKey: string): Promise<ExportPackageResult> {
   return apiRequest(`${API_BASE_URL}/marketing/export_package/${bookId}`, {
     method: 'POST',
     body: JSON.stringify({ api_key: apiKey }),
@@ -310,9 +312,6 @@ export type RefineEroticParams = {
   platform_preset: string;
 };
 
-export async function refineErotic(params: RefineEroticParams): Promise<any> {
-  return apiRequest(`${API_BASE_URL}/refine_erotic`, {
-    method: 'POST',
-    body: JSON.stringify(params),
-  });
+export async function refineErotic(params: RefineEroticParams): Promise<string> {
+  return triggerTask('/refine_erotic', params);
 }

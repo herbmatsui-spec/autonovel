@@ -1,21 +1,7 @@
 import { useState, useEffect } from 'react';
-import type { Book } from '@/types';
+import type { Book, Issue } from '@/types';
 import { getIssues, resolveIssue } from '@/api';
 import { toast } from 'sonner';
-
-interface Issue {
-  id: number;
-  category: string;
-  severity: 'high' | 'medium' | 'low';
-  ep_num: number;
-  created_at: string;
-  contradiction_content: string;
-  evidence_past?: string;
-  evidence_current?: string;
-  constraint_for_next_ep?: string;
-  status: string;
-  resolved_note?: string;
-}
 
 interface AuditTabProps {
   selectedBook: Book;

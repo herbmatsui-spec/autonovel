@@ -5,9 +5,9 @@ import { useTaskStore } from '@/store/useTaskStore';
 import { useBookStore } from '@/store/useBookStore';
 import { useUIStore } from '@/store/useUIStore';
 import { useWritingStore } from '@/store/useWritingStore';
-import { useEasyModeStore } from '@/store/useEasyModeStore';
 import { getExportPackageUrl } from '@/api';
 import { toast } from 'sonner';
+import type { TaskStatus } from '@/types';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
 import { useBooks } from '@/hooks/useBooks';
 import { useTaskStream } from '@/hooks/useTaskStream';
@@ -26,6 +26,7 @@ import { HealthGate } from '@/components/HealthGate';
 import { EasyModeDialog } from '@/components/dialogs/EasyModeDialog';
 import { TaskMonitor } from '@/components/panels/TaskMonitor';
 import { useAppActions } from '@/hooks/useAppActions';
+import { PageHeader } from '@/components/layout/PageHeader';
 
 
 export default function App() {
@@ -73,13 +74,13 @@ export default function App() {
        platform,
        setPlatform,
        showPreview,
-       setShowPreview,
-     } = useWritingStore();
-  const { easyWordCount: _easyWordCount } = useEasyModeStore();
+setShowPreview,
+    } = useWritingStore();
 
-  // ----- Local UI/cached (analytics-specific) state kept in App -----
+   // ----- Local UI/cached (analytics-specific) state kept in App -----
 
-   const [_loading, _setLoading] = React.useState<boolean>(false);
+   const [, setLoading] = React.useState<boolean>(false);
+
 
    // Book details loading delegated to useBookDetails hook (Step 12)
    const { loadBookDetails } = useBookDetails(selectedBook?.id ?? null, activeTab);
@@ -106,25 +107,25 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedBook, activeTab]);
 
-   // Task SSE Stream Connection Control (Step 13)
-   const handleTaskStatus = useCallback((status: any) => {
-     setTaskStatus(status);
-   }, [setTaskStatus]);
+    // Task SSE Stream Connection Control (Step 13)
+    const handleTaskStatus = useCallback((status: TaskStatus) => {
+      setTaskStatus(status);
+    }, [setTaskStatus]);
 
-   const handleTaskComplete = useCallback((status: any) => {
-     setActiveTaskId(null);
-     const book = selectedBookRef.current;
-     if (book) loadBookDetails(book.id);
-     if (status.error) {
-       toast.error(`タスクエラーが発生しました: ${status.error}`);
-     } else {
-       toast.success('バックグラウンドタスクが正常に完了しました！');
-     }
-   }, [setActiveTaskId, loadBookDetails]);
+    const handleTaskComplete = useCallback((status: TaskStatus) => {
+      setActiveTaskId(null);
+      const book = selectedBookRef.current;
+      if (book) loadBookDetails(book.id);
+      if (status.error) {
+        toast.error(`タスクエラーが発生しました: ${status.error}`);
+      } else {
+        toast.success('バックグラウンドタスクが正常に完了しました！');
+      }
+    }, [setActiveTaskId, loadBookDetails]);
 
-   const handleTaskError = useCallback((error: any) => {
-     console.error('Task stream connection error:', error);
-   }, []);
+    const handleTaskError = useCallback((error: unknown) => {
+      console.error('Task stream connection error:', error);
+    }, []);
 
    useTaskStream(activeTaskId, {
      onStatus: handleTaskStatus,
@@ -142,7 +143,7 @@ export default function App() {
     handleImportChapter,
     handleGenerateMarketing,
     handleRefineErotic,
-  } = useAppActions(_setLoading);
+  } = useAppActions(setLoading);
 
   return (
     <HealthGate>
@@ -151,29 +152,9 @@ export default function App() {
       <Sidebar />
 
       {/* MAIN MAIN CONTENT CONTAINER */}
-      <main style={{ flex: 1, padding: '2.5rem', display: 'flex', flexDirection: 'column', height: '100vh', overflowY: 'auto' }}>
+      <main className="flex flex-col h-[100vh] p-[2.5rem] overflow-auto">
 
-        {/* API STATUS BAR */}
-        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem', borderBottom: '1px solid var(--border)', paddingBottom: '1.25rem' }}>
-          <div>
-            <h1 style={{ fontSize: '2rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              {activeTab === 'landing' && '🚀 ホーム・ダッシュボード'}
-              {activeTab === 'books' && '📚 作品管理・イージーモード'}
-              {activeTab === 'plots' && '🗺️ ストーリープロット設計'}
-              {activeTab === 'write' && '✍️ 自律的エピソード自動執筆'}
-              {activeTab === 'analytics' && '📈 AI品質分析・マーケティング'}
-              {activeTab === 'planning' && '📋 企画立案'}
-              {activeTab === 'style-lab' && '🧬 文体ラボ'}
-              {activeTab === 'audit' && '⚖️ 品質監査'}
-            </h1>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', background: 'rgba(255, 255, 255, 0.05)', padding: '0.4rem 0.8rem', borderRadius: '20px', border: '1px solid var(--border)' }}>
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: globalError ? 'var(--accent-rose)' : 'var(--accent-emerald)', display: 'inline-block' }} />
-              <span style={{ color: 'var(--text-secondary)' }}>API Status: {globalError ? 'Offline' : 'Connected'}</span>
-            </div>
-          </div>
-        </header>
+         <PageHeader activeTab={activeTab} globalError={globalError} />
 
         {globalError && (
           <ErrorBanner
@@ -210,10 +191,10 @@ export default function App() {
          )}
 
         {/* -------------------- TAB 3: WRITE & STREAMING LOGS -------------------- */}
-        {activeTab === 'write' && selectedBook && (
-          <div className="animate-fade-in" style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '2rem' }}>
+          {activeTab === 'write' && selectedBook && (
+            <div className="animate-fade-in grid grid-cols-[1fr_350px] gap-[2rem]">
             {/* Left Column: Chapters browse & controls */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                <div className="flex flex-col gap-[2rem]">
                 <WriteTab
                   selectedBook={selectedBook}
                   handleTriggerWriting={handleTriggerWriting}

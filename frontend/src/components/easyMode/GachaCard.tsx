@@ -22,7 +22,15 @@ export const GachaCard: React.FC<GachaCardProps> = ({
 
   return (
     <div
+      role="button"
+      tabIndex={0}
       onClick={() => onSelect(plan.plan_id)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelect(plan.plan_id);
+        }
+      }}
       className={`cursor-pointer rounded-xl border-2 p-5 transition-all duration-200 flex flex-col justify-between ${
         isSelected
           ? "bg-slate-800 border-purple-500 shadow-xl shadow-purple-500/20 scale-[1.02]"

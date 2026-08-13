@@ -15,7 +15,7 @@ export function HealthGate({ children }: HealthGateProps) {
     try {
       const status = await checkBackendHealth();
       setHealth(status);
-    } catch (e) {
+    } catch {
       setHealth(null);
     } finally {
       setLoading(false);

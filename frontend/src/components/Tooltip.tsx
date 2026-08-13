@@ -19,7 +19,15 @@ export const Tooltip: React.FC<TooltipProps> = ({ termKey, children }) => {
   return (
     <span 
       className="tooltip-container"
+      role="button"
+      tabIndex={0}
       onClick={() => setShow(!show)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          setShow(!show);
+        }
+      }}
       onMouseEnter={() => setShow(true)}
       onMouseLeave={() => setShow(false)}
     >
