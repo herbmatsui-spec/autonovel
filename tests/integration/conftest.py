@@ -7,6 +7,7 @@ import tempfile
 from pathlib import Path
 
 import pytest
+import pytest_asyncio
 from sqlalchemy import create_engine
 
 from src.backend.database.core import DatabaseManager
@@ -14,7 +15,7 @@ from src.backend.database.models import Base
 from src.backend.database.uow import UnitOfWork
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def real_uow():
     """
     実際の SQLite データベースを用いた UnitOfWork を提供する。

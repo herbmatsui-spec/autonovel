@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 from src.agents.context_builder import ContextBuilder
 from src.agents.prompt_composer import PromptComposer
 from src.agents.erotic_enhancer import EroticEnhancer
+from src.agents.episode_pipeline import EpisodePipeline
 class WritingAgent(BaseAgent):
     """執筆を担当するエージェント。
     プロンプトマネージャと LLM サービスを使用して、エピソード本文を生成する。
@@ -315,6 +316,7 @@ class WritingAgent(BaseAgent):
                 return 0
         return total_chars
 
+
     async def generate_episodes_pipeline(
         self,
         book_id,
@@ -328,106 +330,10 @@ class WritingAgent(BaseAgent):
         style_tag=None,
     ):
         """エピソード生成パイプライン。成功時は (total_chars, []) 、失敗時は (0, [failed_eps]) を返す。"""
-        total_chars = 0
-        failed_episodes: List[Dict[str, Any]] = []
-
-        scheduler = None
-        arcs: List[Any] = []
-        try:
-            bible = await self._get_bible(book_id)
-            if bible:
-                settings = {}
-                if hasattr(bible, "world_settings") and bible.world_settings:
-                    settings = bible.world_settings
-                elif hasattr(bible, "settings") and bible.settings:
-                    if isinstance(bible.settings, str):
-                        try:
-                            settings = json.loads(bible.settings)
-                        except Exception:
-                            settings = {}
-                    elif isinstance(bible.settings, dict):
-                        settings = bible.settings
-                arcs = settings.get("arcs", []) if isinstance(settings, dict) else []
-        except Exception as e:
-            logger.debug(f"Failed to get arcs for book_id={book_id}: {e}")
-
-        if self.plot_expander is not None and arcs:
-            try:
-                scheduler = StreamingPlotScheduler(
-                    repo=self.repo,
-                    llm=self.llm,
-                    pm=self.prompt_manager,
-                    planner=self.plot_expander,
-                    book_id=book_id,
-                    branch_id=branch_id,
-                    arcs=arcs,
-                    end_ep=end_ep,
-                    reporter=reporter,
-                )
-                if reporter:
-                    reporter.report(f"🗺️ プロット先行スケジューラを起動 (arcs={len(arcs)})", "info")
-            except Exception as e:
-                logger.warning(f"Failed to initialize StreamingPlotScheduler: {e}")
-                scheduler = None
-
-            # StreamingPlotScheduler を WritingGraphManager に注入（存在する場合）
-            try:
-                self._attach_scheduler_to_graph_manager(scheduler)
-            except Exception as e:
-                logger.debug(f"Skipping graph manager scheduler attach: {e}")
-
-        for ep in range(start_ep, end_ep + 1):
-            try:
-                if scheduler is not None:
-                    try:
-                        await scheduler.await_plot_ready(ep)
-                    except Exception as e:
-                        logger.warning(f"Scheduler await failed for Ep.{ep}: {e}")
-
-                    if ep + 1 <= end_ep:
-                        scheduler.schedule_plot_generation(ep + 1, None, {})
-                    if ep + 2 <= end_ep:
-                        scheduler.schedule_plot_generation(ep + 2, None, {})
-
-                chars = await self.generate_episodes(
-                    book_id=book_id,
-                    start_ep=ep,
-                    end_ep=ep,
-                    passion=passion,
-                    target_word_count=target_word_count,
-                    is_easy_mode=is_easy_mode,
-                    reporter=reporter,
-                    branch_id=branch_id,
-                    style_tag=style_tag,
-                )
-                if chars > 0:
-                    total_chars += chars
-                else:
-                    failed_episodes.append({"ep_num": ep, "error_message": "0文字生成"})
-            except Exception as e:
-                logger.error(f"generate_episodes_pipeline failed at ep {ep}: {e}")
-                failed_episodes.append({"ep_num": ep, "error_message": str(e)})
-
-        if scheduler is not None:
-            try:
-                for task in scheduler.tasks.values():
-                    if not task.done():
-                        task.cancel()
-            except Exception as exc:
-                # スケジューラタスクのキャンセルに失敗しても、処理は継続させる。
-                # ただし、追跡できるようログは出力する。
-                logger.warning("スケジューラタスクのキャンセルに失敗: %s", exc, exc_info=True)
-
-        return total_chars, failed_episodes
-
-    def _attach_scheduler_to_graph_manager(self, scheduler) -> None:
-        """StreamingPlotScheduler を WritingGraphManager に注入する（存在する場合のみ）"""
-        if scheduler is None:
-            return
-        graph_manager = getattr(self, "_writing_graph_manager", None)
-        if graph_manager is not None and hasattr(graph_manager, "set_scheduler"):
-            graph_manager.set_scheduler(scheduler)
-
+        pipeline = EpisodePipeline(self)
+        return await pipeline.run(
+            book_id, start_ep, end_ep, passion, target_word_count, is_easy_mode, reporter, branch_id, style_tag
+        )
     async def trigger_bible_extraction(self, book_id, content, reporter):
         """Bible抽出トリガー（現在はスタブ）"""
         return None

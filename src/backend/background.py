@@ -12,7 +12,7 @@ import logging
 import threading
 import time
 from abc import ABC, abstractmethod
-from typing import Any, Optional
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -108,14 +108,15 @@ class ProgressState:
         self.message = "準備中..."
         self.sub_message = ""
         self.streaming_text = ""
-        self.logs = []
-        self.error = None
-        self.result_data = None
+        self.logs: List[str] = []
+        self.error: Optional[str] = None
+        self.result_data: Optional[Dict[str, Any]] = None
         self.start_time = time.time()
         self.last_updated = time.time()
         self._stop_event = threading.Event()
+        self._last_stop_check: float = 0.0
         # スレッド間でのトークン受け渡し用
-        self.token_usage = {"prompt": 0, "completion": 0, "calls": 0}
+        self.token_usage: Dict[str, int] = {"prompt": 0, "completion": 0, "calls": 0}
         self._save_strategy = _select_strategy(self)
 
         if not skip_initial_save:

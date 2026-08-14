@@ -19,11 +19,13 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from config.cors_config import get_allowed_origins
 from config.logging_config import setup_logging
 from src.backend.auth import validate_api_key_or_raise
+from src.backend.background import BackgroundReporter, ProgressState
 from src.backend.database import init_db
 from src.backend.error_handlers import register_error_handlers
+from src.backend.observability.metrics import MetricsMiddleware
 from src.core.container import AppContainer
 from src.core.observability import TraceContext
-from src.backend.observability.metrics import MetricsMiddleware
+from src.easy_mode.pipeline import EasyModePipeline, PipelineConfig
 from src.models.api_schemas import (
     CritiqueOptimizeRequest,
     EasyModeRequest,
@@ -33,6 +35,17 @@ from src.models.api_schemas import (
 logger = logging.getLogger(__name__)
 
 setup_logging()
+
+
+def create_pipeline_config_from_request(req: EasyModeRequest) -> PipelineConfig:
+    """EasyModeRequest から PipelineConfig を作成"""
+    return PipelineConfig(
+        genre=req.genre,
+        target_episodes=req.target_eps,
+        max_rewrite_iterations=3,
+        target_audit_score=95.0,
+        enable_spice_guard=True,
+    )
 
 
 # Startup DB migration using lifespan context manager
@@ -231,32 +244,85 @@ async def refine_erotic(req: RefineEroticRequest):
 @app.post("/api/easy_mode/generate")
 async def generate_easy(req: EasyModeRequest):
     from src.backend.task_helpers import create_task as _create_task
-    from src.backend.tasks import execute_service_workflow
+    from src.core.container import AppContainer
 
     validate_api_key_or_raise(req.api_key)
     task_id = generate_task_id("easy")
-    await _create_task(task_id, "タスクを開始中...", total_steps=3)
-    execute_service_workflow(
+
+    # 進��管理用の状態を作成
+    progress_state = ProgressState(
+        is_running=True,
         task_id=task_id,
-        api_key=req.api_key,
-        config_dict=req.config,
-        method_name="full_auto_workflow",
-        kwargs={
-            "genre": req.genre,
-            "keywords": req.keywords,
-            "archetype_key": req.archetype_key,
-            "target_eps": req.target_eps,
-            "initial_limit": req.initial_limit,
-            "word_count": req.word_count,
-            "concept": req.concept,
-            "tone_vibe": req.tone_vibe,
-            "style_key": req.style_key,
-            "enable_erotic": req.enable_erotic,
-            "erotic_intensity": req.erotic_intensity,
-        },
-        trace_id=TraceContext.get_trace_id(),
+        repo=AppContainer.db(),
     )
-    return {"task_id": task_id}
+    reporter = BackgroundReporter(progress_state)
+
+    # 初期タスク作成（DBに保存）
+    await _create_task(task_id, "かんたんモード生成を開始中...", total_steps=4)
+
+    # PipelineConfigを作成
+    config = create_pipeline_config_from_request(req)
+
+    # 進��コールバックを定義
+    def progress_callback(stage: str, current: int, total: int):
+        stage_messages = {
+            "bible": ("���� Bible生成中", f"ジャンル設定反映中... ({current}/{total})"),
+            "plot": ("���� プロット生成中", f"全{total}話の構成作成中... ({current}/{total})"),
+            "writing": ("������ 本文����中", f"第{current}話を����中... ({current}/{total})"),
+            "episode_complete": ("��� 話完了", f"第{current}話が完了 ({current}/{total})"),
+            "finalizing": ("���� 完結��理中", f"メタデータ生成中... ({current}/{total})"),
+        }
+        msg, sub_msg = stage_messages.get(stage, (stage, ""))
+        reporter.update_progress(current, total, msg, sub_msg)
+
+    config.progress_callback = progress_callback
+
+    try:
+        # エンジンを取得してパイプラインを実行
+        container = AppContainer(api_key=req.api_key, db=AppContainer.db())
+        engine = container.engine()
+
+        pipeline = EasyModePipeline(engine, config)
+        result = await pipeline.run()
+
+        # 完了��理
+        progress_state.is_running = False
+        progress_state.message = "生成完了"
+        progress_state.result_data = {
+            "title": result.title,
+            "concept": result.concept,
+            "total_episodes": result.total_episodes,
+            "total_words": sum(ep.word_count for ep in result.episodes),
+            "average_audit_score": round(sum(ep.audit_score for ep in result.episodes) / len(result.episodes), 1) if result.episodes else 0,
+            "genre": result.genre,
+            "episodes": [
+                {
+                    "episode_num": ep.episode_num,
+                    "title": ep.title,
+                    "word_count": ep.word_count,
+                    "audit_score": ep.audit_score,
+                    "audit_passed": ep.audit_passed,
+                    "rewrite_count": ep.rewrite_count,
+                    "needs_human_review": ep.needs_human_review,
+                }
+                for ep in result.episodes
+            ],
+        }
+        progress_state._save_to_db()
+
+        logger.info(f"Easy mode pipeline completed: {task_id}")
+        return {"task_id": task_id, "result": progress_state.result_data}
+
+    except Exception as e:
+        logger.error(f"Easy mode pipeline failed: {e}", exc_info=True)
+        progress_state.is_running = False
+        progress_state.error = str(e)
+        progress_state._save_to_db()
+        from fastapi import HTTPException
+        raise HTTPException(
+            status_code=500,
+            detail=f"かんたんモード生成に失敗しました: {str(e)}"
+        )
 
 
 @app.post("/api/critique/optimize")

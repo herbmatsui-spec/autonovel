@@ -45,7 +45,7 @@ class BaseWorkflow(ABC):
         self.writing: WritingPort = (
             writing
             if writing is not None
-            else (getattr(engine, "writer", None) if engine else None)
+            else (getattr(engine, "writer", None) if engine else None)  # type: ignore[assignment]
         )
         # PlanningService: 注入されなければ engine.planner で代用
         self.planner: Optional[PlanningService] = (
@@ -101,7 +101,7 @@ class BaseWorkflow(ABC):
         self.llm_client: Optional[Any] = (
             llm_client
             if llm_client is not None
-            else (getattr(engine, "llm_client", None) or getattr(engine, "client", None))
+            else (getattr(engine, "llm", None) or getattr(engine, "client", None))
         )
         # TensionService: 注入されなければ engine の tension_agent で代用、
         # なければ engine のメソッドで代用（engine が TensionPort 相当のメソッドを持つため）

@@ -1,11 +1,11 @@
 """
-SpiceGuard - 面白さの核（尖り）を自動保護するリライト支援
+SpiceGuard - 面白さの��（��り）を自動保護するリライト支援
 """
 
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict, List, Set
 
 from src.presets.loader import load_preset
@@ -13,16 +13,12 @@ from src.presets.loader import load_preset
 
 @dataclass
 class SpiceElement:
-    """尖り要素"""
+    """��り要素"""
     type: str           # "unique_metaphor", "character_voice", "plot_twist_marker", "emotional_raw", "rule_break_for_effect"
     text: str           # 元のテキスト
     position: int       # 文字位置
     priority: str       # "critical", "high", "medium", "low"
-    metadata: Dict = None
-
-    def __post_init__(self):
-        if self.metadata is None:
-            self.metadata = {}
+    metadata: Dict = field(default_factory=dict)
 
 
 class SpiceGuard:
@@ -177,7 +173,7 @@ class SpiceGuard:
 
         # 1. 普遍パターンによる抽出
         for pattern_type, config in self.UNIVERSAL_PATTERNS.items():
-            priority = config["priority"]
+            priority = config["priority"]  # type: ignore[assignment]
 
             if "patterns" in config:
                 for pattern in self._compiled_patterns.get(pattern_type, []):
@@ -186,7 +182,7 @@ class SpiceGuard:
                             type=pattern_type,
                             text=match.group(0),
                             position=match.start(),
-                            priority=priority,
+                            priority=priority,  # type: ignore[arg-type]
                             metadata={"matched_group": match.group(0)}
                         ))
 
@@ -197,14 +193,14 @@ class SpiceGuard:
                             type=pattern_type,
                             text=keyword,
                             position=match.start(),
-                            priority=priority,
+                            priority=priority,  # type: ignore[arg-type]
                             metadata={"keyword": keyword}
                         ))
 
         # 2. ジャンル別パターンによる抽出
         genre_patterns = self.GENRE_PATTERNS.get(self.genre, {})
         for pattern_type, config in genre_patterns.items():
-            priority = config["priority"]
+            priority = config["priority"]  # type: ignore[assignment]
             full_type = f"{self.genre}_{pattern_type}"
 
             if "keywords" in config:
@@ -214,7 +210,7 @@ class SpiceGuard:
                             type=full_type,
                             text=keyword,
                             position=match.start(),
-                            priority=priority,
+                            priority=priority,  # type: ignore[arg-type]
                             metadata={"keyword": keyword}
                         ))
 
@@ -225,7 +221,7 @@ class SpiceGuard:
                             type=full_type,
                             text=match.group(0),
                             position=match.start(),
-                            priority=priority,
+                            priority=priority,  # type: ignore[arg-type]
                             metadata={"matched_group": match.group(0)}
                         ))
 
