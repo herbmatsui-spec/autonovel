@@ -64,7 +64,6 @@ class AppContainer2(InfraContainer):
     plot_service = providers.Factory["PlotService"](
         "src.services.plot_service.PlotService",
         repo=repo,
-        llm=llm,
     )
 
     pm = providers.Singleton["PromptManager"](

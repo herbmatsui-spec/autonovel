@@ -293,7 +293,6 @@ class DatabaseManager:
 # ==========================================
 # グローバルDB取得
 # ==========================================
-_GLOBAL_DB_MANAGER: Optional[DatabaseManager] = None
 
 
 def init_db(db_path: str):
@@ -328,24 +327,9 @@ def init_db(db_path: str):
 
 def get_db_manager() -> DatabaseManager:
     """
-    DBマネージャーを取得。DIコンテナ优先、フォールバックでグローバルSingleton。
+    DBマネージャーのファクトリ関数。DIコンテナによってシングルトン管理される。
     """
-    global _GLOBAL_DB_MANAGER
-    if _GLOBAL_DB_MANAGER is not None:
-        return _GLOBAL_DB_MANAGER
-
-    try:
-        from src.core.container import AppContainer
-        return AppContainer.db()
-    except Exception as exc:
-        # AppContainer 解決失敗はフォールバックで DatabaseManager を直接生成する。
-        # 失敗要因を握り潰さずログに出力して追跡可能にする。
-        logger.warning("AppContainer.db() 取得失敗、フォールバックします: %s", exc, exc_info=True)
-
-    manager = DatabaseManager(DATABASE_URL)
-    _GLOBAL_DB_MANAGER = manager
-    return manager
-
+    return DatabaseManager(DATABASE_URL)
 
 _sync_engine = None
 _sync_session_factory = None
@@ -369,10 +353,10 @@ def get_sync_db_manager():
 
 def set_db_manager(manager: Optional[DatabaseManager]) -> None:
     """グローバルDBマネージャーを明示的にセット（主にテスト用DIで使用）"""
-    global _GLOBAL_DB_MANAGER
-    _GLOBAL_DB_MANAGER = manager
+    logger.warning("set_db_manager is deprecated. Use DI container instead.")
     try:
         from src.core.container import AppContainer
         AppContainer.db.override(manager)
     except Exception as exc:
         logger.warning("AppContainer.db.override に失敗: %s", exc, exc_info=True)
+

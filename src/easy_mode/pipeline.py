@@ -74,7 +74,7 @@ class EasyModePipeline:
 
     async def _generate_with_retry(self, prompt: str, variables: Dict, operation: str = "generate") -> str:
         """LLM生成をリトライ付きで実行"""
-        last_error = None
+        last_error: Exception = Exception("Unknown error")
         for attempt in range(self.MAX_LLM_RETRIES):
             try:
                 if self._cancelled:
@@ -106,7 +106,7 @@ class EasyModePipeline:
             plot_outline = await self._generate_plot_outline(bible)
 
             # Step 3: 各話生成ループ
-            episodes = []
+            episodes: List[EpisodeResult] = []
             for ep_num in range(1, self.config.target_episodes + 1):
                 if self._cancelled:
                     break
@@ -410,19 +410,19 @@ class EasyModePipeline:
         # 既存の final_writing_prompt.j2 相当を構築
         return f"""
         【第{ep_num}話 執筆指示】
-        
+
         Bible: {bible}
         プロット: {plot}
         前話文脈: {prev_context}
-        
+
         Style DNA: {style_dna}
         フック戦略: {hooks}
         官能ルール: {erotic_rules}
-        
+
         目標文字数: 3000-5000字
         テンション目標: {plot.get('target_tension', 0.5)}
         カタルシス話: {plot.get('is_catharsis', False)}
-        
+
         以下の制約を厳守せよ：
         1. POV漏れ禁止
         2. ショー・ドン・テル
@@ -504,7 +504,7 @@ class EasyModePipeline:
 
         【原文】
         {protected_content}
-        
+
         改善後の本文のみを出力せよ。SPICEマーカーはそのまま残せ。
         """
 

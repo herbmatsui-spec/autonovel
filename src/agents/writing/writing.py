@@ -8,12 +8,23 @@ from src.agents.writing_scheduler import StreamingPlotScheduler
 from src.core.interfaces import IPromptManager
 from src.services.llm_service import LLMService
 
+from src.agents.context_builder import ContextBuilder
+from src.agents.prompt_composer import PromptComposer
+from src.agents.erotic_enhancer import EroticEnhancer
+from src.agents.episode_pipeline import EpisodePipeline
+
+# 新しいコンポーネントクラスをインポート（同じパッケージ内）
+from .episode_writer import EpisodeWriter
+from .rewrite_orchestrator import RewriteOrchestrator
+from .bible_extractor import BibleExtractor
+
 logger = logging.getLogger(__name__)
 
 
 class WritingAgent(BaseAgent):
     """執筆を担当するエージェント。
     プロンプトマネージャと LLM サービスを使用して、エピソード本文を生成する。
+    これは分割後のファサードクラスであり、内部的には専門クラスに委譲する。
     """
 
     def __init__(
@@ -28,7 +39,20 @@ class WritingAgent(BaseAgent):
         super().__init__(repo=repo, llm=llm, style_rag=style_rag, rag_prefetch=rag_prefetch)
         self.prompt_manager = prompt_manager
         self._plot_expander = plot_expander
+        
+        # 分割後のコンポーネントを初期化
+        context_builder = ContextBuilder(self)
+        self._episode_writer = EpisodeWriter(llm, context_builder)
+        # TODO: 適切な auditor と spice_guard を注入する必要があります
+        # 現在はプレースホルダーとして None を設定
+        self._rewrite_orchestrator = RewriteOrchestrator(
+            writer=self._episode_writer,
+            auditor=None,  # TODO: 適切なauditorを注入
+            spice_guard=None  # TODO: 適切なspice_guardを注入
+        )
+        self._bible_extractor = BibleExtractor(llm)
 
+    # 元のメソッドをオーバーライドして、新しいコンポーネントに委譲する（後方互換性のため）
     async def _get_plot(self, book_id: int, branch_id: int, ep_num: int) -> Optional[Any]:
         """プロットをDBから取得する。"""
         if self.repo is None:
@@ -220,6 +244,7 @@ class WritingAgent(BaseAgent):
             logger.debug(f"Bible not found for book_id={book_id}: {e}")
             return None
 
+    # 分割後のメソッドを公開（後方互換性のため）
     async def build_full_writing_context(
         self,
         book_id: int,
@@ -228,68 +253,10 @@ class WritingAgent(BaseAgent):
         target_word_count: int,
         style_tag: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """執筆に必要な完全なコンテキストを構築する。"""
-        plot = await self._get_plot(book_id, branch_id, ep_num)
-        if plot is None:
-            plot = await self._ensure_plot_exists(book_id, branch_id, ep_num)
-
-        book = await self._get_book(book_id)
-        chars = await self._get_chars(book_id)
-        prev_chapter = await self._get_prev_chapter(book_id, branch_id, ep_num)
-
-        active_chars = await self._get_active_chars(chars, plot)
-        char_static_ctx = self._build_char_static_ctx(active_chars)
-        char_dynamic_ctx = self._build_char_dynamic_ctx(active_chars, prev_chapter)
-        prev_ctx = self._build_prev_ctx(prev_chapter, book_id, branch_id, ep_num)
-        dialogue_profiles = self._build_dialogue_profiles(active_chars)
-
-        plot_dict = {}
-        if plot is not None:
-            if hasattr(plot, "model_dump"):
-                plot_dict = plot.model_dump()
-            elif isinstance(plot, dict):
-                plot_dict = plot
-            else:
-                plot_dict = {
-                    "ep_num": ep_num,
-                    "detailed_blueprint": getattr(plot, "detailed_blueprint", "") or "",
-                    "scenes": getattr(plot, "scenes", []) or [],
-                    "summary": getattr(plot, "summary", "") or "",
-                    "current_chain_phase": getattr(plot, "current_chain_phase", "Friction")
-                    or "Friction",
-                    "title": getattr(plot, "title", "") or "",
-                    "tension": getattr(plot, "tension", 50) or 50,
-                }
-        else:
-            plot_dict = {
-                "ep_num": ep_num,
-                "detailed_blueprint": "",
-                "scenes": [],
-                "summary": "",
-                "current_chain_phase": "Friction",
-            }
-
-        pov_name = ""
-        if active_chars:
-            pov_name = getattr(active_chars[0], "name", "") or ""
-
-        density_level = "Standard"
-        if plot_dict.get("tension", 50) >= 80 or getattr(plot, "is_catharsis", False):
-            density_level = "Extreme"
-        elif plot_dict.get("tension", 50) >= 60:
-            density_level = "High"
-
-        return {
-            "plot": plot_dict,
-            "target_word_count": target_word_count,
-            "style_tag": style_tag,
-            "char_static_ctx": char_static_ctx,
-            "char_dynamic_ctx": char_dynamic_ctx,
-            "prev_ctx": prev_ctx,
-            "pov_character_name": pov_name,
-            "dialogue_profiles": dialogue_profiles,
-            "density_level": density_level,
-        }
+        """執筆に必要な完全なコンテキストを構築する。（後方互換性のため公開）"""
+        return await self._episode_writer.build_context(
+            book_id, branch_id, ep_num, target_word_count, style_tag
+        )
 
     async def write_episode(self, book_id: int, ep_num: int, context: Dict[str, Any]) -> str:
         """
@@ -299,121 +266,7 @@ class WritingAgent(BaseAgent):
         :param context: プロット情報、キャラ設定、世界設定などを含む辞書
         :return: 生成された本文（文字列）
         """
-        if self.prompt_manager is None:
-            raise ValueError("PromptManager is not injected into WritingAgent")
-
-        plot_data = context.get("plot", {})
-        if not plot_data.get("detailed_blueprint"):
-            logger.warning(f"Ep.{ep_num}: detailed_blueprint is empty. Writing may be low quality.")
-
-        script_text = context.get("script", "")
-        prompt = await self.prompt_manager.build_final_writing_prompt(
-            ep_num=ep_num,
-            plot_data=plot_data,
-            script_text=script_text,
-            target_word_count=context.get("target_word_count", 2000),
-            book_id=book_id,
-            char_static_ctx=context.get("char_static_ctx", ""),
-            char_dynamic_ctx=context.get("char_dynamic_ctx", ""),
-            prev_ctx=context.get("prev_ctx", ""),
-            pov_character_name=context.get("pov_character_name", ""),
-            dialogue_profiles=context.get("dialogue_profiles", {}),
-            density_level=context.get("density_level", "Standard"),
-            style_tag=context.get("style_tag"),
-        )
-
-        erotic_intensity = context.get("erotic_intensity", 0)
-        nsfw_enabled = context.get("nsfw_enabled", False)
-        specialist = None
-        params = None
-
-        if erotic_intensity > 0 and nsfw_enabled:
-            try:
-                from config.erotic_pacing import EroticCurve
-                from config.erotic_parameters import EroticParameters
-                from src.engine.prompts.erotic_specialist import EroticSpecialist
-
-                sensory_weights = context.get("erotic_sensory_weights")
-                pace_ratios = context.get("erotic_pace_ratios")
-                metaphor_density = context.get("erotic_metaphor_density", 50)
-                psychology_depth = context.get("erotic_psychology_depth", 50)
-                use_video_patterns = context.get("erotic_use_video_patterns", True)
-
-                params = EroticParameters(
-                    enabled=True,
-                    base_intensity=erotic_intensity,
-                    sensory_weights=sensory_weights if sensory_weights else None,
-                    pace_ratios=pace_ratios if pace_ratios else None,
-                    metaphor_density=metaphor_density,
-                    psychology_depth=psychology_depth,
-                    use_video_patterns=use_video_patterns,
-                )
-
-                specialist = EroticSpecialist()
-                curve = EroticCurve.create_from_parameters(params)
-                peak_beat = curve.get_peak_beat()
-                context["consent_state"] = peak_beat.consent_state if peak_beat else "implicit"
-                erotic_prompt = specialist.build_scene_prompt(curve, context, params)
-                prompt = prompt + "\n\n" + erotic_prompt
-            except Exception as e:
-                logger.warning(f"EroticSpecialist delegation failed, falling back: {e}")
-                params = None
-
-        result = await self.llm.generate_text(
-            purpose="writing",
-            prompt=prompt,
-            system_instruction=None,
-            temperature=0.7,
-        )
-        if hasattr(result, "story_content"):
-            result = result.story_content
-
-        if specialist and erotic_intensity > 0 and nsfw_enabled:
-            try:
-                result = specialist.metaphor_filter(result, erotic_intensity)
-            except Exception as e:
-                logger.warning(f"metaphor_filter failed: {e}")
-
-            try:
-                from src.services.erotic_afterglow_evaluator import AfterglowEvaluator
-
-                evaluator = AfterglowEvaluator()
-                afterglow_candidate = result[len(result) * 3 // 4 :]
-                afterglow_ok, afterglow_issues = evaluator.evaluate(afterglow_candidate)
-                if not afterglow_ok:
-                    logger.warning(
-                        f"Episode {ep_num} afterglow quality issues: {afterglow_issues}. "
-                        "Consider regeneration or supplementation."
-                    )
-            except Exception as e:
-                logger.warning(f"Afterglow evaluation failed: {e}")
-
-        logger.info(
-            f"Generated episode {ep_num} for book {book_id}, "
-            f"length {len(result)} chars, "
-            f"erotic_intensity={erotic_intensity}, nsfw={nsfw_enabled}"
-        )
-        return result
-
-    @property
-    def pm(self):
-        return self.prompt_manager
-
-    @property
-    def planner(self):
-        return getattr(self, "_planner", None)
-
-    @planner.setter
-    def planner(self, value):
-        self._planner = value
-
-    @property
-    def plot_expander(self):
-        return getattr(self, "_plot_expander", None)
-
-    @plot_expander.setter
-    def plot_expander(self, value):
-        self._plot_expander = value
+        return await self._episode_writer.write(book_id, ep_num, context)
 
     async def generate_episodes(
         self,
@@ -428,6 +281,7 @@ class WritingAgent(BaseAgent):
         style_tag=None,
     ):
         """簡易エピソード生成。成功時は生成文字数（>0）を返す。失敗時は 0。"""
+        # TODO: 新しいコンポーネントを使うように実装を更新
         total_chars = 0
         for ep in range(start_ep, end_ep + 1):
             try:
@@ -458,109 +312,16 @@ class WritingAgent(BaseAgent):
         style_tag=None,
     ):
         """エピソード生成パイプライン。成功時は (total_chars, []) 、失敗時は (0, [failed_eps]) を返す。"""
-        total_chars = 0
-        failed_episodes: List[Dict[str, Any]] = []
-
-        scheduler = None
-        arcs: List[Any] = []
-        try:
-            bible = await self._get_bible(book_id)
-            if bible:
-                settings = {}
-                if hasattr(bible, "world_settings") and bible.world_settings:
-                    settings = bible.world_settings
-                elif hasattr(bible, "settings") and bible.settings:
-                    if isinstance(bible.settings, str):
-                        try:
-                            settings = json.loads(bible.settings)
-                        except Exception:
-                            settings = {}
-                    elif isinstance(bible.settings, dict):
-                        settings = bible.settings
-                arcs = settings.get("arcs", []) if isinstance(settings, dict) else []
-        except Exception as e:
-            logger.debug(f"Failed to get arcs for book_id={book_id}: {e}")
-
-        if self.plot_expander is not None and arcs:
-            try:
-                scheduler = StreamingPlotScheduler(
-                    repo=self.repo,
-                    llm=self.llm,
-                    pm=self.prompt_manager,
-                    planner=self.plot_expander,
-                    book_id=book_id,
-                    branch_id=branch_id,
-                    arcs=arcs,
-                    end_ep=end_ep,
-                    reporter=reporter,
-                )
-                if reporter:
-                    reporter.report(f"🗺️ プロット先行スケジューラを起動 (arcs={len(arcs)})", "info")
-            except Exception as e:
-                logger.warning(f"Failed to initialize StreamingPlotScheduler: {e}")
-                scheduler = None
-
-            # StreamingPlotScheduler を WritingGraphManager に注入（存在する場合）
-            try:
-                self._attach_scheduler_to_graph_manager(scheduler)
-            except Exception as e:
-                logger.debug(f"Skipping graph manager scheduler attach: {e}")
-
-        for ep in range(start_ep, end_ep + 1):
-            try:
-                if scheduler is not None:
-                    try:
-                        await scheduler.await_plot_ready(ep)
-                    except Exception as e:
-                        logger.warning(f"Scheduler await failed for Ep.{ep}: {e}")
-
-                    if ep + 1 <= end_ep:
-                        scheduler.schedule_plot_generation(ep + 1, None, {})
-                    if ep + 2 <= end_ep:
-                        scheduler.schedule_plot_generation(ep + 2, None, {})
-
-                chars = await self.generate_episodes(
-                    book_id=book_id,
-                    start_ep=ep,
-                    end_ep=ep,
-                    passion=passion,
-                    target_word_count=target_word_count,
-                    is_easy_mode=is_easy_mode,
-                    reporter=reporter,
-                    branch_id=branch_id,
-                    style_tag=style_tag,
-                )
-                if chars > 0:
-                    total_chars += chars
-                else:
-                    failed_episodes.append({"ep_num": ep, "error_message": "0文字生成"})
-            except Exception as e:
-                logger.error(f"generate_episodes_pipeline failed at ep {ep}: {e}")
-                failed_episodes.append({"ep_num": ep, "error_message": str(e)})
-
-        if scheduler is not None:
-            try:
-                for task in scheduler.tasks.values():
-                    if not task.done():
-                        task.cancel()
-            except Exception as exc:
-                # スケジューラタスクのキャンセルに失敗しても、処理は継続させる。
-                # ただし、追跡できるようログは出力する。
-                logger.warning("スケジューラタスクのキャンセルに失敗: %s", exc, exc_info=True)
-
-        return total_chars, failed_episodes
-
-    def _attach_scheduler_to_graph_manager(self, scheduler) -> None:
-        """StreamingPlotScheduler を WritingGraphManager に注入する（存在する場合のみ）"""
-        if scheduler is None:
-            return
-        graph_manager = getattr(self, "_writing_graph_manager", None)
-        if graph_manager is not None and hasattr(graph_manager, "set_scheduler"):
-            graph_manager.set_scheduler(scheduler)
+        # TODO: 新しいコンポーネントを使うように実装を更新
+        pipeline = EpisodePipeline(self)
+        return await pipeline.run(
+            book_id, start_ep, end_ep, passion, target_word_count, is_easy_mode, reporter, branch_id, style_tag
+        )
 
     async def trigger_bible_extraction(self, book_id, content, reporter):
         """Bible抽出トリガー（現在はスタブ）"""
-        return None
+        # TODO: 新しいコンポーネントを使うように実装を更新
+        return await self._bible_extractor.extract(book_id, content, reporter)
 
     async def run(self, *args, **kwargs):
         """エージェントのメインループ（簡易版）。

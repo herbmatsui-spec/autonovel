@@ -116,7 +116,7 @@ class UltimateHegemonyEngine:
 
         warnings.warn(
             "ai_api is deprecated, use llm instead",
-            DeprecationWarning,
+            FutureWarning,
             stacklevel=2,
         )
         return self.llm
@@ -127,7 +127,7 @@ class UltimateHegemonyEngine:
 
         warnings.warn(
             "llm_client is deprecated, use llm instead",
-            DeprecationWarning,
+            FutureWarning,
             stacklevel=2,
         )
         return self.llm

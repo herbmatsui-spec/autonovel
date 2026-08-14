@@ -1,4 +1,4 @@
-# ⚔️ 覇権小説エンジン v3.0
+# ⚔️ 覇権小説エンジン v3.2
 
 **覇権小説エンジン**は、AI を使って小説を「かんたんに」「高品質に」書くためのツールです。
 
@@ -6,7 +6,7 @@
 
 ---
 
-## ✨ 最近のアップデート (v3.1 - 2026-08-12)
+## ✨ 最近のアップデート (v3.2 - 2026-08-13)
 
 ### 🎯 かんたんモード Phase 1-3 実装完了
 
@@ -117,6 +117,19 @@ NSFW モードを ON にすれば、官能的な描写を含む小説も書け�
 | **Task Queue** | Huey + Redis | バックグラウンドジョブ管理、スケジューリング |
 | **Persistence** | SQLite (dev) / PostgreSQL (prod) + Alembic | データ永続化、マイグレーション管理 |
 | **Vector Store** | ChromaDB | RAG 用ベクトル検索、文脈記憶 |
+ 
+ ### API クライアント (`src/infrastructure/api/api_client.py`)
+ 
+ フロントエンド／バックエンド間の HTTP 通信を担うクライアント層。
+ 
+ - **HTTP セマンティクス準拠**: `GET`/`DELETE`/`HEAD` は `params` を、`POST`/`PUT`/`PATCH` は `json` を使って引数を振り分け（同期エントリ `_request`）。
+ - **同期／非同期の両対応**: テストやモック差し替えのため `client.request` がコルーチンを返す場合でも同期的に解決する（`_resolve_if_coroutine`）。
+ - **接続の再利用**: 非同期 API は共有の `httpx.AsyncClient` を遅延生成・再利用し、終了時に `close_async_client()` でクローズ。
+ - **リソース管理**: 同期クライアントは `get_client()` で共有・遅延生成され、アプリ終了時に `close_client()` で解放。
+ - **堅牢なエラーハンドリング**: 接続エラー／HTTP エラー／予期せぬエラーを `APIException` に統一し、監査ログ (DI コンテナ経由) に記録。
+ - **全メソッドに docstring と定数管理** (`DEFAULT_API_BASE_URL` / `SYNC_REQUEST_TIMEOUT` / `ASYNC_REQUEST_TIMEOUT`) を整備。
+ 
+ ---
 
 ### API クライアント (`src/infrastructure/api/api_client.py`)
 

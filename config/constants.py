@@ -1,130 +1,60 @@
-import logging
-import os
+"""プロジェクト全体で使用する定数値"""
 from pathlib import Path
+from typing import Final, Optional
 
-"""
-config/constants.py — アプリケーション定数・不変設定の単一真理源 (SSOT)
+# プロジェクトルートディレクトリ
+BASE_DIR: Final[Path] = Path(__file__).parent.parent
 
-このモジュールは実行時には変更しない設定値を集約します。
-モデル名、ファイルパス、叙事性パラメータ、コスト係数、プランニングプリセット等を定義。
+# EasyMode
+DEFAULT_TARGET_EPISODES: Final[int] = 8
+DEFAULT_MAX_REWRITE_ITERATIONS: Final[int] = 3
+DEFAULT_TARGET_AUDIT_SCORE: Final[float] = 95.0
 
-参照:
-    - 環境変数ベースの設定は config/settings.py を使用
-    - ランタイム変更可能な設定は ProjectContext.get_setting() 経由でアクセス
-"""
+# LLM Retry
+MAX_LLM_RETRIES: Final[int] = 3
+LLM_RETRY_DELAY_SEC: Final[float] = 1.0
 
-# ==========================================
-# ロガー
-# ==========================================
-logger = logging.getLogger(__name__)
+# Pipeline 話数マッピング
+EP_HUMILIATION: Final[int] = 2
+EP_TRIGGER: Final[int] = 3
+EP_MUSOU_START: Final[int] = 4
+EP_FINAL: Final[int] = 8
+TENSION_THRESHOLD: Final[int] = 75
 
-# ==========================================
-# モデル設定
-# ==========================================
-MODEL_PLANNING = "gemini-3.5-flash-lite"
-MODEL_PLOT_EXPANSION = "gemma-4-31b-it"
-MODEL_EMBEDDING = "gemini-embedding-2"
-MODEL_WRITING = "gemma-4-31b-it"  # Keep this as is, only change MODEL_PLOT_EXPANSION
-MODEL_CLIMAX = "gemma-4-31b-it"
-MODEL_STABLE_FALLBACK = "gemma-4-31b-it"  # 503エラー時の緊急回避用モデルエラー時の緊急回避用モデル
-MODEL_ULTRA_STABLE = "gemma-4-31b-it"
-
-# ==========================================
-# ファイルパス
-# ==========================================
-BASE_DIR = Path(__file__).parent.parent.absolute()
-DB_FILE = "storage/db/kaku_hegemony_v2.db"
-DATABASE_URL = os.environ.get("DATABASE_URL", f"sqlite+aiosqlite:///{BASE_DIR}/{DB_FILE}")
-
-
-# ==========================================
-# API制御定数
-# ==========================================
-MAX_PROMPT_CHARS = 1_000_000
-CONTENT_SEPARATOR = "### NOVEL CONTENT ###"
-DEFAULT_GOLDEN_PEAKS = [5, 10, 15, 25, 50]
-
-# Draft & Polish 二段階エージェント設定
-DRAFT_POLISH_ENABLED = True
-POLISHING_MIN_CONTENT_RATIO = 0.5
-
-# Actor-Critic 自律推敲ループ設定
-ACTOR_CRITIC_ENABLED = True  # Actor-Criticループ全体のON/OFF
-ACTOR_CRITIC_MAX_ITERATIONS = 2  # 最大反復回数（コスト注意: 1回のループで2回LLM呼び出し増）
-ACTOR_CRITIC_SEVERITY_THRESHOLD = "Major"  # "Major" or "Critical"のみトリガー (Minorはスキップ)
-
-# Specialized Amplifier 設定
-SPECIALIZED_AMPLIFIER_ENABLED = True  # 種別特化Amplifier全体のON/OFF
-
-
-# カクヨム1位獲得のための「極限ヘイト・爆速カタルシス」調整
-STRESS_CATHARSIS_THRESHOLD = 85  # 爆発力を高めるため、極限までヘイトを溜める
-STRESS_FILLER_THRESHOLD = 35  # 読者が飽きる前にヘイト（溜め）を補充
-STRESS_CLIMAX_BONUS = 50  # カタルシス回でのストレス解放量
-STRESS_HATE_GAIN_BASE = 2  # Hate フェーズでの標準ストレス積算量
-
-# カタルシス・タイミング自動最適化エンジン設定
-CATHARSIS_THRESHOLD = 65  # カタルシス発動ストレス閾値
-CATHARSIS_RESET_VALUE = 0  # 解放後の累積リセット値
-WAVE_PATTERN_RATIO = {"small": 0.7, "medium": 0.15, "large": 0.15}
-CATHARSIS_DENSITY_PRESETS = {
-    0: {"label": "なし", "interval_min": 999, "interval_max": 999},
-    1: {"label": "稀疏", "interval_min": 10, "interval_max": 15},
-    2: {"label": "標準", "interval_min": 7, "interval_max": 10},
-    3: {"label": "多め", "interval_min": 5, "interval_max": 7},
-    4: {"label": "過激", "interval_min": 3, "interval_max": 5},
-    5: {"label": "狂気", "interval_min": 2, "interval_max": 4},
-}
-MIN_IMMERSION_SCORE = 0.0
-
-# 語彙ランダマイズ・強制置換設定
-COST_INPUT_FLASH = 0.00000025  # $0.25  / 1M tokens
-COST_OUTPUT_FLASH = 0.0000015  # $1.50  / 1M tokens (思考トークン含む)
-COST_INPUT_PRO = 0.00000125  # $1.25  / 1M tokens (<128k)
-COST_OUTPUT_PRO = 0.00000375  # $3.75  / 1M tokens (<128k)
-
-COOLDOWN_BASE_DEFAULT = 0.0
-COOLDOWN_MIN_DEFAULT = 0.0
-COOLDOWN_MAX_DEFAULT = 90.0
-SAFE_APPEND_MODE_OPTIONS = ["auto", "warn_only", "error_on_overflow"]
-SAFE_APPEND_MODE_DEFAULT = "auto"
-MAX_CONCURRENCY_DEFAULT = 0  # 0 for auto
-
-# ==========================================
-# 官能/NSFW設定
-# ==========================================
-GENRE_EROTIC = "官能/ロマンス"
-EROTIC_INTENSITY_SCALE = {0: "ほのぼの", 1: "微熱", 2: "情熱", 3: "背徳", 4: "濃厚", 5: "過激"}
-DEFAULT_EROTIC_INTENSITY = 2
-NSFW_DEFAULT_ENABLED = False
-
-# ==========================================
-# チートスケール・代償定義（物語の軸）
-# ==========================================
-
-PLANNING_PRESETS = {
-    "🔥 王道ざまぁ": {
-        "cheat_scale": 5,
-        "cost_severity": 1,
-        "system_assist": 80,
-        "desc": "圧倒的快感。最強の能力で敵を完封する構成",
-    },
-    "🌑 ダークファンタジー": {
-        "cheat_scale": 3,
-        "cost_severity": 5,
-        "system_assist": 40,
-        "desc": "重厚な絶望と代償。泥臭く這い上がる構成",
-    },
-    "🕊️ スローライフ": {
-        "cheat_scale": 2,
-        "cost_severity": 1,
-        "system_assist": 60,
-        "desc": "心地よい日常とゆるいチート。癒やし重視の構成",
-    },
-    "⚡ ハイブリッド": {
-        "cheat_scale": 4,
-        "cost_severity": 3,
-        "system_assist": 60,
-        "desc": "適度な緊張感と爽快感の両立。バランス型構成",
-    },
-}
+# 設定デフォルト値 (schemas/config.py から)
+ACTOR_CRITIC_ENABLED: Final[bool] = True
+ACTOR_CRITIC_MAX_ITERATIONS: Final[int] = 2
+ACTOR_CRITIC_SEVERITY_THRESHOLD: Final[str] = "Major"
+CONTENT_SEPARATOR: Final[str] = "\n---\n"
+COOLDOWN_BASE_DEFAULT: Final[float] = 0.0
+COOLDOWN_MAX_DEFAULT: Final[float] = 90.0
+COOLDOWN_MIN_DEFAULT: Final[float] = 0.0
+COST_INPUT_FLASH: Final[float] = 0.0000375
+COST_INPUT_PRO: Final[float] = 0.0035
+COST_OUTPUT_FLASH: Final[float] = 0.00015
+COST_OUTPUT_PRO: Final[float] = 0.0105
+DATABASE_URL: Final[Optional[str]] = None
+DB_FILE: Final[str] = "autonovel.db"
+DEFAULT_EROTIC_INTENSITY: Final[int] = 2
+DEFAULT_GOLDEN_PEAKS: Final[int] = 1
+DRAFT_POLISH_ENABLED: Final[bool] = True
+EROTIC_INTENSITY_SCALE: Final[int] = 3
+GENRE_EROTIC: Final[str] = "ero"
+MAX_CONCURRENCY_DEFAULT: Final[int] = 0
+MAX_PROMPT_CHARS: Final[int] = 8000
+MODEL_CLIMAX: Final[str] = "gemma-4-31b-it"
+MODEL_EMBEDDING: Final[str] = "text-embedding-004"
+MODEL_PLANNING: Final[str] = "gemini-3.5-flash-lite"
+MODEL_PLOT_EXPANSION: Final[str] = "gemma-4-31b-it"
+MODEL_STABLE_FALLBACK: Final[str] = "gemma-4-31b-it"
+MODEL_ULTRA_STABLE: Final[str] = "gemma-4-31b-it"
+MODEL_WRITING: Final[str] = "gemma-4-31b-it"
+NSFW_DEFAULT_ENABLED: Final[bool] = False
+POLISHING_MIN_CONTENT_RATIO: Final[float] = 0.5
+SAFE_APPEND_MODE_DEFAULT: Final[str] = "auto"
+SAFE_APPEND_MODE_OPTIONS: Final[list[str]] = ["auto", "warn_only", "error_on_overflow"]
+SPECIALIZED_AMPLIFIER_ENABLED: Final[bool] = True
+STRESS_CATHARSIS_THRESHOLD: Final[int] = 85
+STRESS_CLIMAX_BONUS: Final[int] = 50
+STRESS_FILLER_THRESHOLD: Final[int] = 35
+STRESS_HATE_GAIN_BASE: Final[int] = 2
