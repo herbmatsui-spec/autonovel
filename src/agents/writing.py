@@ -11,6 +11,7 @@ from src.services.llm_service import LLMService
 logger = logging.getLogger(__name__)
 
 
+from src.agents.context_builder import ContextBuilder
 class WritingAgent(BaseAgent):
     """執筆を担当するエージェント。
     プロンプトマネージャと LLM サービスを使用して、エピソード本文を生成する。
@@ -228,68 +229,11 @@ class WritingAgent(BaseAgent):
         target_word_count: int,
         style_tag: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """執筆に必要な完全なコンテキストを構築する。"""
-        plot = await self._get_plot(book_id, branch_id, ep_num)
-        if plot is None:
-            plot = await self._ensure_plot_exists(book_id, branch_id, ep_num)
-
-        book = await self._get_book(book_id)
-        chars = await self._get_chars(book_id)
-        prev_chapter = await self._get_prev_chapter(book_id, branch_id, ep_num)
-
-        active_chars = await self._get_active_chars(chars, plot)
-        char_static_ctx = self._build_char_static_ctx(active_chars)
-        char_dynamic_ctx = self._build_char_dynamic_ctx(active_chars, prev_chapter)
-        prev_ctx = self._build_prev_ctx(prev_chapter, book_id, branch_id, ep_num)
-        dialogue_profiles = self._build_dialogue_profiles(active_chars)
-
-        plot_dict = {}
-        if plot is not None:
-            if hasattr(plot, "model_dump"):
-                plot_dict = plot.model_dump()
-            elif isinstance(plot, dict):
-                plot_dict = plot
-            else:
-                plot_dict = {
-                    "ep_num": ep_num,
-                    "detailed_blueprint": getattr(plot, "detailed_blueprint", "") or "",
-                    "scenes": getattr(plot, "scenes", []) or [],
-                    "summary": getattr(plot, "summary", "") or "",
-                    "current_chain_phase": getattr(plot, "current_chain_phase", "Friction")
-                    or "Friction",
-                    "title": getattr(plot, "title", "") or "",
-                    "tension": getattr(plot, "tension", 50) or 50,
-                }
-        else:
-            plot_dict = {
-                "ep_num": ep_num,
-                "detailed_blueprint": "",
-                "scenes": [],
-                "summary": "",
-                "current_chain_phase": "Friction",
-            }
-
-        pov_name = ""
-        if active_chars:
-            pov_name = getattr(active_chars[0], "name", "") or ""
-
-        density_level = "Standard"
-        if plot_dict.get("tension", 50) >= 80 or getattr(plot, "is_catharsis", False):
-            density_level = "Extreme"
-        elif plot_dict.get("tension", 50) >= 60:
-            density_level = "High"
-
-        return {
-            "plot": plot_dict,
-            "target_word_count": target_word_count,
-            "style_tag": style_tag,
-            "char_static_ctx": char_static_ctx,
-            "char_dynamic_ctx": char_dynamic_ctx,
-            "prev_ctx": prev_ctx,
-            "pov_character_name": pov_name,
-            "dialogue_profiles": dialogue_profiles,
-            "density_level": density_level,
-        }
+        """�執�筆に必要な完全なコンテキストを構�築する。"""
+        context_builder = ContextBuilder(self)
+        return await context_builder.build_full_writing_context(
+            book_id, branch_id, ep_num, target_word_count, style_tag
+        )
 
     async def write_episode(self, book_id: int, ep_num: int, context: Dict[str, Any]) -> str:
         """
