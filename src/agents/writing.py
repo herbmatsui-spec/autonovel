@@ -12,6 +12,8 @@ logger = logging.getLogger(__name__)
 
 
 from src.agents.context_builder import ContextBuilder
+from src.agents.prompt_composer import PromptComposer
+from src.agents.erotic_enhancer import EroticEnhancer
 class WritingAgent(BaseAgent):
     """執筆を担当するエージェント。
     プロンプトマネージャと LLM サービスを使用して、エピソード本文を生成する。
@@ -235,74 +237,20 @@ class WritingAgent(BaseAgent):
             book_id, branch_id, ep_num, target_word_count, style_tag
         )
 
+
     async def write_episode(self, book_id: int, ep_num: int, context: Dict[str, Any]) -> str:
         """
         エピソード本文を生成し、文字列で返す。
         :param book_id: 書籍ID
         :param ep_num: エピソード番号
-        :param context: プロット情報、キャラ設定、世界設定などを含む辞書
+        :param context: プロット情報、キャラ設定、世界設定などを含む�辞書
         :return: 生成された本文（文字列）
         """
-        if self.prompt_manager is None:
-            raise ValueError("PromptManager is not injected into WritingAgent")
-
-        plot_data = context.get("plot", {})
-        if not plot_data.get("detailed_blueprint"):
-            logger.warning(f"Ep.{ep_num}: detailed_blueprint is empty. Writing may be low quality.")
-
-        script_text = context.get("script", "")
-        prompt = await self.prompt_manager.build_final_writing_prompt(
-            ep_num=ep_num,
-            plot_data=plot_data,
-            script_text=script_text,
-            target_word_count=context.get("target_word_count", 2000),
-            book_id=book_id,
-            char_static_ctx=context.get("char_static_ctx", ""),
-            char_dynamic_ctx=context.get("char_dynamic_ctx", ""),
-            prev_ctx=context.get("prev_ctx", ""),
-            pov_character_name=context.get("pov_character_name", ""),
-            dialogue_profiles=context.get("dialogue_profiles", {}),
-            density_level=context.get("density_level", "Standard"),
-            style_tag=context.get("style_tag"),
-        )
-
-        erotic_intensity = context.get("erotic_intensity", 0)
-        nsfw_enabled = context.get("nsfw_enabled", False)
-        specialist = None
-        params = None
-
-        if erotic_intensity > 0 and nsfw_enabled:
-            try:
-                from config.erotic_pacing import EroticCurve
-                from config.erotic_parameters import EroticParameters
-                from src.engine.prompts.erotic_specialist import EroticSpecialist
-
-                sensory_weights = context.get("erotic_sensory_weights")
-                pace_ratios = context.get("erotic_pace_ratios")
-                metaphor_density = context.get("erotic_metaphor_density", 50)
-                psychology_depth = context.get("erotic_psychology_depth", 50)
-                use_video_patterns = context.get("erotic_use_video_patterns", True)
-
-                params = EroticParameters(
-                    enabled=True,
-                    base_intensity=erotic_intensity,
-                    sensory_weights=sensory_weights if sensory_weights else None,
-                    pace_ratios=pace_ratios if pace_ratios else None,
-                    metaphor_density=metaphor_density,
-                    psychology_depth=psychology_depth,
-                    use_video_patterns=use_video_patterns,
-                )
-
-                specialist = EroticSpecialist()
-                curve = EroticCurve.create_from_parameters(params)
-                peak_beat = curve.get_peak_beat()
-                context["consent_state"] = peak_beat.consent_state if peak_beat else "implicit"
-                erotic_prompt = specialist.build_scene_prompt(curve, context, params)
-                prompt = prompt + "\n\n" + erotic_prompt
-            except Exception as e:
-                logger.warning(f"EroticSpecialist delegation failed, falling back: {e}")
-                params = None
-
+        # プロンプトを構�築
+        prompt_composer = PromptComposer(self)
+        prompt = await prompt_composer.compose_writing_prompt(book_id, ep_num, context)
+        
+        # 初期結果を生成
         result = await self.llm.generate_text(
             purpose="writing",
             prompt=prompt,
@@ -312,33 +260,11 @@ class WritingAgent(BaseAgent):
         if hasattr(result, "story_content"):
             result = result.story_content
 
-        if specialist and erotic_intensity > 0 and nsfw_enabled:
-            try:
-                result = specialist.metaphor_filter(result, erotic_intensity)
-            except Exception as e:
-                logger.warning(f"metaphor_filter failed: {e}")
-
-            try:
-                from src.services.erotic_afterglow_evaluator import AfterglowEvaluator
-
-                evaluator = AfterglowEvaluator()
-                afterglow_candidate = result[len(result) * 3 // 4 :]
-                afterglow_ok, afterglow_issues = evaluator.evaluate(afterglow_candidate)
-                if not afterglow_ok:
-                    logger.warning(
-                        f"Episode {ep_num} afterglow quality issues: {afterglow_issues}. "
-                        "Consider regeneration or supplementation."
-                    )
-            except Exception as e:
-                logger.warning(f"Afterglow evaluation failed: {e}")
-
-        logger.info(
-            f"Generated episode {ep_num} for book {book_id}, "
-            f"length {len(result)} chars, "
-            f"erotic_intensity={erotic_intensity}, nsfw={nsfw_enabled}"
-        )
+        # エロティックコンテンツを強化
+        erotic_enhancer = EroticEnhancer(self)
+        result = await erotic_enhancer.enhance_erotic_content(prompt, result, context)
+        
         return result
-
     @property
     def pm(self):
         return self.prompt_manager
