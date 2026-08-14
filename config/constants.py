@@ -1,5 +1,9 @@
 """プロジェクト全体で使用する定数値"""
+from pathlib import Path
 from typing import Final, Optional
+
+# プロジェクトルートディレクトリ
+BASE_DIR: Final[Path] = Path(__file__).parent.parent
 
 # EasyMode
 DEFAULT_TARGET_EPISODES: Final[int] = 8
@@ -21,7 +25,6 @@ TENSION_THRESHOLD: Final[int] = 75
 ACTOR_CRITIC_ENABLED: Final[bool] = True
 ACTOR_CRITIC_MAX_ITERATIONS: Final[int] = 2
 ACTOR_CRITIC_SEVERITY_THRESHOLD: Final[str] = "Major"
-BASE_DIR: Final[str] = ""  # 実際の値は実行時に決定される
 CONTENT_SEPARATOR: Final[str] = "\n---\n"
 COOLDOWN_BASE_DEFAULT: Final[float] = 0.0
 COOLDOWN_MAX_DEFAULT: Final[float] = 90.0
