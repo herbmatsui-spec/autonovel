@@ -1,4 +1,4 @@
-# ⚔️ 覇権小説エンジン v3.3
+# 覇権小説エンジン v3.3
 
 ![Tests](https://img.shields.io/badge/tests-passing-brightgreen)
 ![Coverage](https://img.shields.io/badge/coverage-75%25-yellow)
@@ -10,9 +10,9 @@
 
 ---
 
-## ✨ 最近のアップデート (v3.3 - 2026-08-15)
+## 最近のアップデート (v3.3 - 2026-08-15)
 
-### 🔧 バグ修正・安定性向上
+### バグ修正・安定性向上
 
 | 修正項目 | 詳細 |
 |----------|------|
@@ -21,7 +21,7 @@
 | **OpenTelemetry 1.43+ 互換化** | `src/core/otel_setup.py` を最新版 API に対応：`logs`→`_logs`、ログエクスポータをオプショナル化、`AlwaysOnSampler`→`ALWAYS_ON`、環境変数名修正、リソース属性削減 |
 | **非同期テスト修正** | `tests/test_zamaa_generation.py`、`tests/test_zamaa_injection.py` に `@pytest.mark.asyncio` デコレータを追加 |
 
-### 🛡️ 36ステップ実装計画完了 (v3.3)
+### 36ステップ実装計画完了
 
 **コードレビュー指摘事項を全フェーズで解決**
 
@@ -38,7 +38,7 @@
 
 ---
 
-### 🎯 かんたんモード Phase 1-3 実装完了 (v3.2)
+### かんたんモード Phase 1-3 実装完了
 
 **ジャンル選択のみで、企画から完結・商業展開まで全自動生成**が可能になりました。
 
@@ -46,17 +46,16 @@
 |------|------|
 | **9ジャンルプリセット** | ざまぁ・悪役令嬢・チート転生・スローライフ・ダンジョン運営・現代チート・TS転生・VRMMO・ループ |
 | **SpiceGuard（尖り保護）** | 自動リライト時に「この話の命」となる尖り要素（独自比喩・キャラ声・伏線・感情描写・ジャンル専用語彙）をマーカーで保護・除去 |
-| **LLMリトライ** | 失敗時自動リトライ（3回・指数バックオフ）で安定生成 |
+| **LLMリトライ** | 失敗時自動リトライ（3回・線形バックオフ）で安定生成 |
 | **人間レビューゲート** | 監査基準未達エピソードを自動検出・フラグ表示 |
-| **ログ永続化** | JSONL形式でタスク単位ログ保存（`logs/easy_mode/`） |
 | **IFルート生成** | ジャンル別の分岐グラフ（ざまぁカタルシス分岐・隠しルート・バッドエンド・真エンド等）を自動構築。不足ノードは自動補完 |
-| **メディアミックス台本** | 漫画・音声ドラマ・動画用の展開台本をワンクリック生成 |
+| **メディアミックス台本** | 漫画・音声ドラマ・動画用の展開台本を生成 |
 | **電子書籍書き出し** | EPUB / PDF / MOBI への変換（オプション依存ライブラリは未導入時も安全にスキップ） |
 | **資産化パック** | 原本・IFルート・メディアミックス・電子書籍・プロモ素材・メタデータ・チェックサムを1つの ZIP に統合 |
 
 ---
 
-## 📋 実装計画書
+## 実装計画書
 
 - **36ステップ実装計画書**: [docs/IMPLEMENTATION_PLAN_36_STEPS.md](docs/IMPLEMENTATION_PLAN_36_STEPS.md)
   - Phase 1: 文字化け・データロス修正
@@ -66,7 +65,7 @@
   - Phase 5: コードクオリティとリント
   - Phase 6: ドキュメント・CI 改善
 
-## 🛡️ 文字化け防止策
+## 文字化け防止策
 
 本プロジェクトでは、日本語文字列の文字化け（Mojibake / U+FFFD 置換文字）を防止するため、以下の対策を実施しています。
 
@@ -74,7 +73,7 @@
 2. **UTF-8 エンコーディングの徹底**: 全ソースファイルは UTF-8 で保存
 3. **エディタ設定の統一**: `.vscode/settings.json` で `files.encoding: "utf8"` を推奨
 
-## 🔧 DI コンテナ整理
+## DI コンテナ整理
 
 - `src/core/container.py`（壊れた実装）を削除し、`src/core/container/app.py`（`AppContainer2`）を正規実装として採用
 - `src/core/container/__init__.py` で `AppContainer2` を `AppContainer` としてエクスポート
@@ -84,7 +83,7 @@
 
 ## なにができる？
 
-### ✍️ 小説を自動で書いてくれる
+### 小説を自動で書いてくれる
 
 たとえば...
 
@@ -92,118 +91,276 @@
 
 → ジャンルを選んで「生成」ボタンを押すだけ。数十秒〜数分で、企画からプロット（話の骨組み）、本文まですべて自動で作ります。
 
-### 🎮 2 つのモード
+### 2 つのモード
 
 | モード | こんな人に | 何ができるか |
 |---|---|---|
 | **かんたんモード** | とにかく今すぐ小説が欲しい人 | **ジャンル選んでボタンを押すだけ**。何も考えなくて OK。9ジャンルプリセット + SpiceGuard で「尖り」を守りながら全自動生成 |
-| **⚙ 上級者モード** | こだわりたい人 | 各話のプロットを編集したり、文章の濃さを変えたり、納得いくまで修正できる |
+| **上級者モード** | こだわりたい人 | 各話のプロットを編集したり、文章の濃さを変えたり、納得いくまで修正できる |
 
-### 📚 かんたんモード 対応ジャンル (9種)
+### かんたんモード 対応ジャンル (9種)
 
 | ジャンル | アイコン | キーワード | 尖り保護の要所 |
 |---|---|---|---|
-| ざまぁ・追放・無双 | 🗡️ | `ざまぁ` `無双` `圧倒的` `顔面蒼白` | カタルシス完結・悪党の絶望・戦力差 |
-| 悪役令嬢・断罪回避 | 👑 | `フラグ回避` `隠しルート` `百合` `尊い` | フラグ折り・百合テンション・契約 |
-| チート転生・即最強 | ⚡ | `スキル習得∞` `秒殺` `最適解` `デバッグ` | システム風味・効率自慢 |
-| スローライフ・ほのぼの | 🌿 | `ふわふわ` `とろける` `ほっこり` `香り` | 五感豊かさ・日常儀式 |
-| ダンジョン運営・経営 | 🏰 | `罠` `ギミック` `忠誠` `進化` `個性` | 罠クリエイティブ・モンスター個性 |
-| 現代チート・都市伝説 | 📱 | `ルート権限` `パッチ` `実体化` `同期` | テックメタファー・現実干渉 |
-| TS転生・百合・性別反転 | 🎀 | `可愛い` `美少女` `百合キス` `尊い` `永遠` | 性別ユーフォリア・百合親密 |
-| VRMMO・ゲーム世界 | 🎮 | `フルダイブ` `同期` `実体化` `現実侵食` | 同期用語・現実滲み出し |
-| ループ・時間逆行・真エンド | 🔄 | `周目` `真エンド` `全フラグ` `確率1` `必然` | ループカウント・収束・完全攻略 |
+| ざまぁ・追放・無双 |  | `ざまぁ` `無双` `圧倒的` `顔面蒼白` | カタルシス完結・悪党の絶望・戦力差 |
+| 悪役令嬢・断罪回避 |  | `フラグ回避` `隠しルート` `百合` `尊い` | フラグ折り・百合テンション・契約 |
+| チート転生・即最強 |  | `スキル習得∞` `秒殺` `最適解` `デバッグ` | システム風味・効率自慢 |
+| スローライフ・ほのぼの |  | `ふわふわ` `とろける` `ほっこり` `香り` | 五感豊かさ・日常儀式 |
+| ダンジョン運営・経営 |  | `罠` `ギミック` `忠誠` `進化` `個性` | 罠クリエイティブ・モンスター個性 |
+| 現代チート・都市伝説 |  | `ルート権限` `パッチ` `実体化` `同期` | テックメタファー・現実干渉 |
+| TS転生・百合・性別反転 |  | `可愛い` `美少女` `百合キス` `尊い` `永遠` | 性別ユーフォリア・百合親密 |
+| VRMMO・ゲーム世界 |  | `フルダイブ` `同期` `実体化` `現実侵食` | 同期用語・現実滲み出し |
+| ループ・時間逆行・真エンド |  | `周目` `真エンド` `全フラグ` `確率1` `必然` | ループカウント・収束・完全攻略 |
 
 ---
 
-### 😤「ざまぁ」展開を自動で仕組む
+### 「ざまぁ」展開を自動で仕組む
 
 面白い小説には「ストレス」と「解放」の波が大切です。
 
+このツールは物語中の**読者のストレスを自動計算**して、「そろそろ気持ちよくなれる場面を入れよう」と判断。適切なタイミングで「ざまぁ」展開（無双・逆転）をねじ込んでくれます。
+
+### 官能描写にも対応（オプトイン）
+
+NSFW モードを ON にすれば、官能的な描写を含む小説も書けます。
+オプトイン方式で、ON にしない限り生成されません。
+
 ---
 
-## 🚀 クイックスタート
+## 動かし方
 
-### 1. 依存関係のインストール
-
-```bash
-pip install -r requirements.txt
-```
-
-### 2. 環境変数の設定
+### 方法 A: Docker でさくっと（おすすめ）
 
 ```bash
+# 1. Google AI Studio で API キーを取得（無料）
+# https://aistudio.google.com/app/apikey
+
+# 2. 設定ファイルをコピーしてキーを書く
 cp .env.example .env
-# .env を編集して API キー等を設定
+# → .env ファイルを開いて GEMINI_API_KEY=取得したキー を追記
+
+# 3. Docker を起動（開発用: フロントエンドは Vite dev server）
+docker compose up --build
+
+# または本番用ビルド（Nginx で静的配信）
+docker compose --profile prod up --build
 ```
 
-### 3. サーバー起動
+立ち上がったらブラウザで以下を開いてください：
+- **開発モード**: http://localhost:5173 (Vite HMR 付き)
+- **本番モード**: http://localhost:3000 (Nginx 静的配信)
+- **バックエンド API**: http://localhost:8200/docs (Swagger UI)
+
+### 方法 B: 手動で起動する（開発者向け）
 
 ```bash
-# バックエンド
-uvicorn src.backend.server:app --host 0.0.0.0 --port 8200
+# 1. 依存ライブラリを入れる
+pip install -r requirements.txt
 
-# フロントエンド (Streamlit)
-streamlit run streamlit_app/app.py
+# 2. フロントエンド依存関係
+cd frontend && npm install && cd ..
+
+# 3. 環境変数を設定
+cp .env.example .env
+# → .env を編集して GEMINI_API_KEY と ALLOWED_API_KEYS を設定
+
+# 4. バックエンド起動
+uvicorn src.backend.server:app --host 127.0.0.1 --port 8200 --reload
+
+# 5. （別のターミナルで）フロントエンド起動
+cd frontend && npm run dev
 ```
 
-### 4. Docker で一括起動
+これで以下にアクセスできます：
+- フロントエンド: **http://localhost:5173**
+- バックエンド API: **http://localhost:8200/docs**
+
+### 必要なもの
+
+| 必須/任意 | 何に使うか |
+|---|---|
+| **必須** Python 3.12 以上 | バックエンド実行に必要 |
+| **必須** Node.js 22 以上 | フロントエンドビルドに必要 |
+| **必須** Gemini API キー | AI に小説を書かせるのに必要（Google AI Studio で無料取得可） |
+| **任意** Docker / Docker Compose | 面倒な環境構築をスキップしたい人向け |
+| **任意** Redis | 裏でジョブを管理する（Docker なら自動起動、ローカルなら別途必要） |
+
+---
+
+## 使い方の流れ
+
+1. 起動するとブラウザにツールが表示されます
+2. 左のサイドバーからタブを切り替えるか、**かんたんモード**ダイアログを開きます
+3. かんたんモードなら↓
+    - 「お好みのジャンル」を選択
+    - 「小説を生成」ボタンをクリック
+    - しばらく待つと → 企画 → プロット → 本文 → 納品 まで自動で完了
+4. 上級者モードなら↓
+    - タブを切り替えながら各工程を細かく編集・調整できます
+
+---
+
+## アーキテクチャ概要
+
+```
+Frontend (React 18 + TypeScript + Vite + TailwindCSS)
+  ├── Landing / Books / Plots / Write
+  ├── Analytics / Planning / StyleLab / Audit
+  └── EasyModeDialog (モーダル)
+        │
+        ▼ HTTP/REST + SSE
+Backend (FastAPI + Uvicorn)
+  ├── routers/: books, episodes, plots, easy_mode, commercial
+  │         export, illustrations, marketing, audit, health, metrics
+  ├── workflows/: LangGraph ベースの執筆パイプライン
+  ├── services/: ビジネスロジック層
+  ├── easy_mode/: かんたんモードパイプライン + Phase3 資産化
+  ├── core/
+  │   ├── container/: DI コンテナ (AppContainer2 / InfraContainer)
+  │   ├── llm_clients/: LLM抽象層 (BaseLLMClient / GeminiClient / OpenAIClient)
+  │   ├── llm_gateway.py: プロバイダファクトリ・キャッシュ・プロキシ
+  │   └── state/: 状態管理
+  ├── backend/: タスクキュー・DB・認証・ヘルスチェック
+  └── agents/: エージェント群 (writing, erotic, audit 等)
+        │
+        ▼
+Data Stores
+  ├── SQLite (dev) / PostgreSQL (prod) + Alembic
+  ├── ChromaDB (RAG ベクトル検索)
+  └── Redis (Huey タスクキュー・キャッシュ)
+```
+
+### コアコンポーネント
+
+| レイヤー | 技術スタック | 役割 |
+|---|---|---|
+| **Frontend** | React 18 + TypeScript + Vite + TailwindCSS + Zustand | モダンな SPA UI |
+| **Backend** | FastAPI + Uvicorn | REST API、SSE、非同期処理 |
+| **AI Orchestration** | LangGraph + Google Gemini | グラフベースの執筆パイプライン |
+| **EasyMode Pipeline** | Python asyncio + SpiceGuard | ジャンル選択のみで全自動生成 |
+| **Task Queue** | Huey + Redis | バックグラウンドジョブ管理 |
+| **Persistence** | SQLite (dev) / PostgreSQL (prod) + Alembic | データ永続化 |
+| **Vector Store** | ChromaDB | RAG 用ベクトル検索 |
+| **Observability** | OpenTelemetry + Prometheus | トレース・メトリクス |
+| **Auth** | API Key + Rate Limiting | フェイルクローズ認証 |
+
+### LLM クライアント階層
+
+| コンポーネント | 役割 |
+|---|---|
+| **BaseLLMClient** | Gemini/OpenAI 互換クライアントの共通抽象 |
+| **GeminiClient** | Google Generative AI との直接通信 |
+| **OpenAIClient** | OpenAI 互換 API との通信 |
+| **LLMProviderFactory** | モデル名に応じたクライアント選択 |
+| **SemanticCacheManager** | 意味的キャッシュによるコスト削減 |
+| **SemanticEdgePreserver** | 尖り要素の意味的類似度判定 |
+| **LLMGenerateResultProxy** | アプリケーション層向け統一インターフェース |
+
+---
+
+## かんたんモード パイプライン詳細
+
+```
+ユーザー操作          バックグラウンド処理
+─────────            ────────────────
+ジャンル選択 ──▶  1. Bible生成（世界観・キャラ・チート設定）
+    │                2. プロット生成（テンション曲線×テンプレ展開）
+    ▼                3. 各話ループ:
+                       ├─ 執筆（Style DNA・フック・官能ルール注入）
+                       ├─ 監査（95点未満なら）
+                       ├─ SpiceGuard抽出（尖り要素検出）
+                       ├─ マーカー注入（<<<SPICE:...>>>）
+                       ├─ リライト（マーカー保護付き）
+                       ├─ マーカー除去
+                       └─ 最大3回繰り返し
+                       4. シリーズ完結処理（タイトル・あらすじ・メタデータ）
+                          ↓
+    完了 ◀──────── 結果取得・人間レビュー表示（必要時）
+```
+
+### SpiceGuard（尖り保護システム）
+
+自動リライトで面白さが平準化されないよう、**「この話の命」**となる要素を保護：
+
+| 保護カテゴリ | 例 |
+|---|---|
+| **独自比喩** | 「まるで絶望の底から這い上がったかのように」 |
+| **キャラ声** | 禁句・キャッチフレーズ（プリセット定義から） |
+| **伏線・回収** | 「実は」「真真」「正体」「覚醒」 |
+| **生々しい感情** | 「胸が締め付けられ」「背筋が凍る」 |
+| **ジャンル専用語彙** | ざまぁ/無双/フラグ/百合/スキル∞/真エンド 等 |
+
+**仕組み**: 抽出 → `<<<SPICE:type_pos>>>テキスト<<</SPICE>>>` マーカー注入 → LLMリライト（マーカー変更禁止指示） → マーカー除去
+
+---
+
+## 認証・セキュリティ
+
+### API キー認証
+
+本プロジェクトは API キーによる認証をサポートしています。
+
+| 環境変数 | 説明 | デフォルト |
+|---|---|---|
+| `ALLOWED_API_KEYS` | カンマ区切りの許可 API キー一覧 | `dev-key-1,dev-key-2` |
+| `AUTH_DISABLED` | 認証をバイパスするか（非本番環境のみ推奨） | `false` |
+
+### セキュリティ設計原則
+
+- **フェイルクローズ**: 許可リストが空の場合は常に拒否
+- **本番環境保護**: `ENVIRONMENT=production` では `AUTH_DISABLED` を無視
+- **レート制限**: IP/API キー単位でのリクエスト制限
+- **CORS 制御**: 設定ファイルで許可オリジンを一元管理
+
+詳細は [docs/SECURITY.md](docs/SECURITY.md) および [docs/CORS_CONFIG.md](docs/CORS_CONFIG.md) を参照してください。
+
+---
+
+## テスト
 
 ```bash
-docker compose up -d
+# 全テスト実行
+pytest
+
+# かんたんモード Phase 1-3 統合テストのみ
+pytest tests/test_phase1_preset_integration.py tests/test_phase2_pipeline_integration.py tests/test_phase3_asset_pack.py -v
+
+# 詳細出力
+pytest -xvs tests/
 ```
 
----
+### テストカバレッジ (Phase 1-3)
 
-## 📁 プロジェクト構造
-
-```
-.
-├── src/
-│   ├── backend/          # FastAPI バックエンド
-│   ├── core/             # コア機能 (DI, LLM Gateway, 状態管理)
-│   ├── agents/           # エージェント (企画、執筆、監査等)
-│   ├── easy_mode/        # かんたんモード パイプライン
-│   ├── models/           # Pydantic モデル
-│   └── ...
-├── prompts/              # プロンプトテンプレート (Jinja2)
-├── config/               # 設定・定数
-├── streamlit_app/        # Streamlit フロントエンド
-├── tests/                # テストコード
-├── docs/                 # ドキュメント・設計書
-└── ...
-```
+| テスト種別 | 件数 | 内容 |
+|---|---|---|
+| **Phase 1: プリセット** | 17 | 全ジャンル存在確認・ローダー検証・UIインポート |
+| **Phase 2: パイプライン** | 20 | SpiceGuard・設定・統合・E2E（フルラン・低スコア・尖り保護・キャンセル） |
+| **Phase 3: 資産化** | 25 | IFルート・メディアミックス・電子書籍・資産化パック・統合 |
+| **合計** | **62** | 全件通過 |
 
 ---
 
-## 🧪 テスト実行
+## 環境変数
 
-```bash
-# ユニットテスト
-pytest tests/unit -q
-
-# ヘルスチェック・認証テスト
-pytest tests/test_health.py tests/test_auth.py -q
-
-# 全テスト (統合テスト含む)
-pytest -n auto
-```
-
----
-
-## 📄 ライセンス
-
-MIT License
+| 変数名 | 説明 | デフォルト |
+|---|---|---|
+| `GEMINI_API_KEY` | **必須** Google Gemini API キー | - |
+| `ALLOWED_API_KEYS` | カンマ区切りの許可 API キー | `dev-key-1,dev-key-2` |
+| `AUTH_DISABLED` | 認証を無効化（非本番のみ） | `false` |
+| `PYTHONPATH` | Python モジュール検索パス | `/app` (Docker) |
+| `DATABASE_URL` | DB 接続文字列 | `sqlite+aiosqlite:///./autonovel.db` |
+| `REDIS_URL` | Redis 接続文字列 | `redis://localhost:6379/0` |
+| `LOG_LEVEL` | ログレベル | `INFO` |
+| `CORS_ALLOWED_ORIGINS` | CORS 許可オリジン | `http://localhost:5173,http://localhost:3000` |
+| `KAKU_HEALTH_CHECK_LLM` | LLM ヘルスチェックを無効化 | `true` |
+| `ENVIRONMENT` | 実行環境 (`development` / `production`) | `development` |
 
 ---
 
-## 🤝 コントリビューション
+## ライセンス
 
-1. このリポジトリをフォーク
-2. フィーチャーブランチを作成 (`git checkout -b feature/amazing-feature`)
-3. 変更をコミット (`git commit -m 'Add amazing feature'`)
-4. ブランチにプッシュ (`git push origin feature/amazing-feature`)
-5. プルリクエストを作成
+このプロジェクトは個人利用・研究目的で提供されています。商用利用の際は Google Gemini API の利用規約をご確認ください。
 
 ---
 
-**覇権小説エンジン**で、あなたの小説執筆を加速させましょう！ ⚔️
+**Enjoy Writing!**
