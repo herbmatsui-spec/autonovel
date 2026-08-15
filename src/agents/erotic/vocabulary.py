@@ -236,99 +236,181 @@ MUTUAL_CONSENT_KEYWORDS = [
 
 # 簡易双方向同意: 両者共通の同意表現（方向ではなく存在チェック用）
 SIMPLE_MUTUAL_CONSENT_KEYWORDS = [
-    "一��に",
+    "一緒に",
     "共に",
     "二人で",
     "互いに",
 ]
 
-# 官能品質スコアリング用キー��ード
+# 同意確認キーワード（明示的） - from erotic_integrity.py
+CONSENT_EXPLICIT_KEYWORDS = ["同意", "了承", "承諾", "OK", "いいよ", "求めて", "欲しい", "させて"]
+# 同意確認キーワード（暗黙的） - from erotic_integrity.py
+CONSENT_IMPLICIT_KEYWORDS = [
+    "促す",
+    "引き寄せる",
+    "唇が触れる",
+    "近づく",
+    "体が触れる",
+    "手を伸ばす",
+]
+# 拒否・不同意キーワード - from erotic_integrity.py
+CONSENT_REFUSAL_KEYWORDS = ["嫌", "やだ", "断る", "拒否", "抗拒", "逃げる", "拒む"]
+
+# 簡易双方向同意: 両者共通の同意表現（方向ではなく存在チェック用） - from erotic_integrity.py
+CONSENT_ALL_CHARACTERS_KEYWORDS = [
+    "いいよ",
+    "いいわ",
+    "いいな",
+    "求めて",
+    "欲しい",
+    "させて",
+    "OK",
+    "同意",
+    "了承",
+    "承諾",
+    "構わない",
+    "受け入れる",
+    "応じる",
+    "任せて",
+    "どうぞ",
+    "お願い",
+]
+CONSENT_CONTINUATION_KEYWORDS = ["そのまま", "ながらも", "それでも", "しかし", "しかしながら"]
+CONSENT_DISTANCE_THRESHOLD = 500
+
+# 官能品質スコアリング用キーワード
 EROTIC_QUALITY_KEYWORDS = {
     "sensory": [
         "熱",
         "温もり",
         "冷たさ",
-        "��らか",
-        "��さ",
-        "��らか",
+        "柔らか",
+        "硬さ",
+        "柔らか",
         "ざらつき",
-        "��り",
-        "��き",
-        "��い",
+        "滑り",
+        "滑らか",
+        "鋭い",
         "香り",
         "味",
-        "��",
-        "��",
-        "��",
+        "唇",
+        "舌",
+        "歯",
         "指先",
-        "��",
-        "��",
+        "爪",
         "息",
-        "��息",
-        "��動",
-        "��",
+        "吐息",
+        "鼓動",
         "震え",
-        "��れ",
+        "震え",
         "電流",
         "火照り",
-        "��",
-        "��",
-        "����",
-        "体��",
+        "痺れ",
+        "濡れ",
+        "疼き",
+        "身体",
     ],
     "emotional": [
         "愛おしい",
         "愛しい",
         "切ない",
-        "��しい",
-        "��しい",
+        "甘い",
+        "激しい",
         "幸せ",
         "恐ろしい",
         "不安",
         "安心",
         "信頼",
         "裏切り",
-        "����",
+        "悲しみ",
         "独占欲",
-        "��着",
-        "��身",
-        "����",
+        "執着",
+        "献身",
         "許し",
         "受容",
         "共感",
         "同情",
-        "��れ",
-        "��敬",
-        "����",
+        "憧れ",
+        "尊敬",
+        "永遠",
     ],
-    "psychological": [
+"psychological": [
         "支配",
         "服従",
-        "従��",
+        "従順",
         "反抗",
-        "��服",
+        "屈服",
         "解放",
-        "束��",
+        "束縛",
         "自由",
         "罪悪感",
         "背徳",
-        "禁��",
-        "����",
-        "��れ",
+        "禁忌",
+        "狂気",
+        "涙",
         "清らか",
-        "��ら",
-        "恥��",
-        "��り",
+        "聖ら",
+        "恥じ",
+        "悔い",
         "プライド",
-        "自��心",
+        "自尊心",
         "自我",
-        "自我����",
-        "自我��失",
+        "自我崩壊",
+        "自我消失",
         "自我統合",
     ],
 }
 
-# 比��密度スコア自動調整用: シーン長����
+# ===== Continuity Tracker 用定数 =====
+STAMINA_LEVELS = ["exhausted", "tired", "normal", "energetic"]
+STAMINA_EXHAUSTED_KW = ["疲弊", "倒れ", "限界", "動けない", "気力が尽き", "ぐったり", "意識が遠"]
+STAMINA_TIRED_KW = ["疲れ", "だるい", "重い体", "息が荒い", "汗", "消耗"]
+STAMINA_ENERGETIC_KW = ["元気", "活力", "力が漲", "意気揚々", "弾む", "軽やか"]
+
+PSYCH_STATES = ["distressed", "anxious", "neutral", "content", "euphoric"]
+PSYCH_DISTRESSED_KW = ["絶望", "崩壊", "慟哭", "恐怖", "パニック", "錯乱"]
+PSYCH_ANXIOUS_KW = ["不安", "怯え", "緊張", "動揺那些", "迷い", "警戒"]
+PSYCH_CONTENT_KW = ["安心", "充足", "満足", "穏やか", "幸せ", "落ち着"]
+PSYCH_EUPHORIC_KW = ["恍惚", "歓喜", "至福", "有頂天", "陶酔", "昂揚"]
+
+INTIMACY_LEVELS = ["stranger", "acquaintance", "close", "intimate", "bonded"]
+INTIMACY_STRANGER_KW = ["初対面", "見知らぬ", "他人", "知らない人"]
+INTIMACY_CLOSE_KW = ["信頼", "心を開", "打ち解け", "絆", "友人"]
+INTIMACY_INTIMATE_KW = ["肌を重ね", "身を委ね", "一つに", "深い関係", "恋人"]
+INTIMACY_BONDED_KW = ["運命", "離れられ", "魂", "永远", "誓い"]
+
+LOCATION_INDOOR_KW = ["部屋", "室内", "寝室", "浴室", "宿", "屋敷", "館", "家"]
+LOCATION_OUTDOOR_KW = ["外", "森", "庭", "野原", "河", "海", "空の下", "屋外"]
+LOCATION_TRANSITION_KW = ["移動", "向かう", "戻る", "出る", "入る", "到着"]
+
+STAMINA_ALLOWED_TRANSITIONS = {
+    "exhausted": ["exhausted", "tired"],
+    "tired": ["exhausted", "tired", "normal"],
+    "normal": ["exhausted", "tired", "normal", "energetic"],
+    "energetic": ["tired", "normal", "energetic"],
+}
+
+PSYCH_ALLOWED_TRANSITIONS = {
+    "distressed": ["distressed", "anxious"],
+    "anxious": ["distressed", "anxious", "neutral"],
+    "neutral": ["anxious", "neutral", "content"],
+    "content": ["neutral", "content", "euphoric"],
+    "euphoric": ["content", "euphoric", "neutral"],
+}
+
+# 官能品質の評価次元
+EROTIC_QUALITY_DIMENSIONS = {
+    "sensory_depth": "五感の深さ（触覚/嗅覚/聴覚/視覚/味覚のカバレッジ）",
+    "metaphor_density": "文学的比喩の密度",
+    "tension_arc": "テンション曲線（文長変動と緊張の上昇→下降パターン）",
+    "emotion_layering": "感情→身体→心理の3層構造",
+    "afterglow_depth": "余韻の深さ（意味のあるアフターグロー）",
+    "consent_eroticized": "同意表現の官能化",
+    "vocabulary_diversity": "語彙の多様性（繰り返し回避）",
+    "mechanical_avoidance": "機械的/マニュアル的描写の回避",
+}
+
+# 比較密度スコア自動調整用: シーン長閾値
 SCENE_LENGTH_THRESHOLDS = {
     "short": 500,
     "medium": 1500,
