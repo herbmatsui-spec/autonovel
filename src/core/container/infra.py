@@ -55,4 +55,4 @@ class InfraContainer(containers.DeclarativeContainer):
 #      アプリ層 (agents/engine) の DI は src.core.container.app.AppContainer2 を
 #      使うべきだが、infra 層だけを検証するテストのために infra.py にも
 #      同名を公開する。InfraContainer のプロバイダ群をそのまま解決する。
-AppContainer = InfraContainer  # 後方互�換エイリアス。非推�奨: InfraContainer を直接使用してください。
+AppContainer = InfraContainer  # 後方互換エイリアス。非推奨: InfraContainer を直接使用してください。

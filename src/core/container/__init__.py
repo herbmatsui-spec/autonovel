@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 def make_container(api_key: str, db=None) -> AppContainer:
-    """APIキーから AppContainer を生成する（非推�奨）。
+    """APIキーから AppContainer を生成する（非推奨）。
     代わりに AppContainer() を直接使用してください。
     """
     warnings.warn("use AppContainer instead", DeprecationWarning, stacklevel=2)

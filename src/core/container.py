@@ -13,7 +13,7 @@ from src.backend.database.core import get_db_manager
 from src.backend.engine_config import EngineConfig
 from src.backend.engine_context import ContextManager
 from src.core.llm_gateway import (
-    LLMGenerateResultProxy,  # noqa: F401  (テスト互�換のため再エクスポート)
+    LLMGenerateResultProxy,  # noqa: F401  (テスト互換のため再エクスポート)
 )
 
 logger = logging.getLogger(__name__)
@@ -27,7 +27,7 @@ class AppContainer(containers.DeclarativeContainer):
 
     # インフラ
     db = providers.Singleton(get_db_manager)
-    vector_store = providers.Singleton(lambda: None)  # ChromaVectorStore �� 必要に応じて差し替え
+    vector_store = providers.Singleton(lambda: None)  # ChromaVectorStore 必要に応じて差し替え
     audit_logger = providers.Singleton(lambda: None)
     cooldown = providers.Singleton(
         "src.backend.engine_utils.AdaptiveCooldown", base_sec=2.0, min_sec=0.5, max_sec=10.0
@@ -72,7 +72,6 @@ class AppContainer(containers.DeclarativeContainer):
         "src.backend.engine_critique.CritiqueAgent",
         repo=repo,
         pm=pm,
-        pm=pm,
         generate_json=llm.provided.generate_json,
     )
     style_rag = providers.Singleton(
@@ -96,7 +95,7 @@ class AppContainer(containers.DeclarativeContainer):
         ctx_mgr=ctx_mgr,
         reporter_factory=reporter_factory,
     )
-    # WritingService: 本文�執�筆・研�磨を担当 (ADR-0004)
+    # WritingService: 本文執筆・研磨を担当 (ADR-0004)
     writing_service = providers.Factory(
         "src.backend.writing_service.WritingService",
         writer=writer,

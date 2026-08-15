@@ -1,6 +1,6 @@
 """プロジェクト全体で使用する定数値"""
 from pathlib import Path
-from typing import Final, Optional
+from typing import Final
 
 # プロジェクトルートディレクトリ
 BASE_DIR: Final[Path] = Path(__file__).parent.parent
@@ -33,7 +33,7 @@ COST_INPUT_FLASH: Final[float] = 0.0000375
 COST_INPUT_PRO: Final[float] = 0.0035
 COST_OUTPUT_FLASH: Final[float] = 0.00015
 COST_OUTPUT_PRO: Final[float] = 0.0105
-DATABASE_URL: Final[Optional[str]] = None
+DATABASE_URL: Final[str] = "sqlite+aiosqlite:///./autonovel.db"
 DB_FILE: Final[str] = "autonovel.db"
 DEFAULT_EROTIC_INTENSITY: Final[int] = 2
 DEFAULT_GOLDEN_PEAKS: Final[int] = 1

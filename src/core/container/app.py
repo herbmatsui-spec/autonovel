@@ -76,7 +76,7 @@ class AppContainer2(InfraContainer):
     )
 
     auditor = providers.Singleton["LogicalAuditor"](
-        "src.agents.LogicalAuditor",
+        "src.agents.audit.LogicalAuditor",
         repo=repo,
         pm=pm,
         llm=llm,
@@ -116,7 +116,7 @@ class AppContainer2(InfraContainer):
         prompt_manager=pm,
     )
     validator = providers.Singleton["LogicalAuditor"](
-        "src.agents.LogicalAuditor",
+        "src.agents.audit.LogicalAuditor",
         repo=repo,
         pm=pm,
         llm=llm,

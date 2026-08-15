@@ -29,7 +29,7 @@ class APIKeyService:
         if self.disabled:
             return True
         if not self.allowed_keys:
-            return True
+            return False
         return api_key in self.allowed_keys
 
 

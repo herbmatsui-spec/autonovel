@@ -5,7 +5,7 @@ src/models/report.py — 制作レポート用データモデル
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 
 class TokenUsageReport(BaseModel):
@@ -65,8 +65,8 @@ class ProductionReport(BaseModel):
     total_generation_time: float = Field(default=0.0, description="総生成時間（秒）")
     created_at: datetime = Field(default_factory=datetime.now, description="作成日時")
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "title": "覇者の帰還",
                 "genre": "fantasy",
@@ -91,3 +91,4 @@ class ProductionReport(BaseModel):
                 "created_at": "2026-07-13T00:00:00",
             }
         }
+    )

@@ -117,6 +117,7 @@ async def add_security_headers_middleware(request: Request, call_next):
 _rate_limit_store: dict[str, list[float]] = defaultdict(list)
 _RATE_LIMIT_MAX_REQUESTS = 100
 _RATE_LIMIT_WINDOW_SECONDS = 60
+_rate_limit_lock = asyncio.Lock()
 
 
 async def rate_limit_middleware(request: Request, call_next):
@@ -124,15 +125,16 @@ async def rate_limit_middleware(request: Request, call_next):
     now = time.time()
     window_start = now - _RATE_LIMIT_WINDOW_SECONDS
 
-    _rate_limit_store[client_ip] = [t for t in _rate_limit_store[client_ip] if t > window_start]
+    async with _rate_limit_lock:
+        _rate_limit_store[client_ip] = [t for t in _rate_limit_store[client_ip] if t > window_start]
 
-    if len(_rate_limit_store[client_ip]) >= _RATE_LIMIT_MAX_REQUESTS:
-        return JSONResponse(
-            status_code=429,
-            content={"error": "Too Many Requests", "detail": "リクエスト数が制限を超えました。"},
-        )
+        if len(_rate_limit_store[client_ip]) >= _RATE_LIMIT_MAX_REQUESTS:
+            return JSONResponse(
+                status_code=429,
+                content={"error": "Too Many Requests", "detail": "リクエスト数が制限を超えました。"},
+            )
 
-    _rate_limit_store[client_ip].append(now)
+        _rate_limit_store[client_ip].append(now)
     return await call_next(request)
 
 
@@ -150,14 +152,24 @@ def configure_cors(app: FastAPI):
 
 class TimeoutMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
+        # LLM生成系エンドポイントは長時間実行されるため、タイムアウトを延長
+        long_running_paths = [
+            "/api/easy_mode/generate",
+            "/api/refine_erotic",
+            "/api/critique/optimize",
+            "/api/episodes/generate",
+            "/api/plots/generate",
+        ]
+        timeout = 300.0 if any(request.url.path.startswith(p) for p in long_running_paths) else 30.0
+
         try:
-            return await asyncio.wait_for(call_next(request), timeout=30.0)
+            return await asyncio.wait_for(call_next(request), timeout=timeout)
         except asyncio.TimeoutError:
             return JSONResponse(
                 status_code=504,
                 content={
                     "error": "Gateway Timeout",
-                    "detail": "リクエストがタイムアウトしました。",
+                    "detail": f"リクエストがタイムアウトしました（{timeout}秒）。",
                 },
             )
 
@@ -249,7 +261,7 @@ async def generate_easy(req: EasyModeRequest):
     validate_api_key_or_raise(req.api_key)
     task_id = generate_task_id("easy")
 
-    # 進��管理用の状態を作成
+    # 進捗管理用の状態を作成
     progress_state = ProgressState(
         is_running=True,
         task_id=task_id,
@@ -263,14 +275,14 @@ async def generate_easy(req: EasyModeRequest):
     # PipelineConfigを作成
     config = create_pipeline_config_from_request(req)
 
-    # 進��コールバックを定義
+    # 進捗コールバックを定義
     def progress_callback(stage: str, current: int, total: int):
         stage_messages = {
-            "bible": ("���� Bible生成中", f"ジャンル設定反映中... ({current}/{total})"),
-            "plot": ("���� プロット生成中", f"全{total}話の構成作成中... ({current}/{total})"),
-            "writing": ("������ 本文����中", f"第{current}話を����中... ({current}/{total})"),
-            "episode_complete": ("��� 話完了", f"第{current}話が完了 ({current}/{total})"),
-            "finalizing": ("���� 完結��理中", f"メタデータ生成中... ({current}/{total})"),
+            "bible": ("Bible生成中", f"ジャンル設定反映中... ({current}/{total})"),
+            "plot": ("プロット生成中", f"全{total}話の構成作成中... ({current}/{total})"),
+            "writing": ("本文執筆中", f"第{current}話を執筆中... ({current}/{total})"),
+            "episode_complete": ("話完了", f"第{current}話が完了 ({current}/{total})"),
+            "finalizing": ("完結処理中", f"メタデータ生成中... ({current}/{total})"),
         }
         msg, sub_msg = stage_messages.get(stage, (stage, ""))
         reporter.update_progress(current, total, msg, sub_msg)
@@ -285,7 +297,7 @@ async def generate_easy(req: EasyModeRequest):
         pipeline = EasyModePipeline(engine, config)
         result = await pipeline.run()
 
-        # 完了��理
+        # 完了処理
         progress_state.is_running = False
         progress_state.message = "生成完了"
         progress_state.result_data = {

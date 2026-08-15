@@ -4,9 +4,7 @@ import functools
 
 def run_async(coro):
     """同期コンテキストから非同期関数を実行するためのラッパー"""
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    return loop.run_until_complete(coro)
+    return asyncio.run(coro)
 
 
 def async_task(func):
