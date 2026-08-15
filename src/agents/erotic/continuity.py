@@ -7,31 +7,32 @@ erotic/continuity.py - シーン・キャラクター連続性追跡
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, model_validator
+
 from src.agents.erotic.vocabulary import (
     FORESHADOW_KEYWORDS,
-    ITEM_KEYWORDS,
-    LOCATION_TRANSITION_KW,
-    PSYCH_ALLOWED_TRANSITIONS,
-    PSYCH_STATES,
-    STAMINA_ALLOWED_TRANSITIONS,
-    STAMINA_LEVELS,
-    TIME_KEYWORDS,
-    INTIMACY_STRANGER_KW,
+    INTIMACY_BONDED_KW,
     INTIMACY_CLOSE_KW,
     INTIMACY_INTIMATE_KW,
-    INTIMACY_BONDED_KW,
-    STAMINA_EXHAUSTED_KW,
-    STAMINA_TIRED_KW,
-    STAMINA_ENERGETIC_KW,
-    PSYCH_DISTRESSED_KW,
-    PSYCH_ANXIOUS_KW,
-    PSYCH_CONTENT_KW,
-    PSYCH_EUPHORIC_KW,
+    INTIMACY_STRANGER_KW,
+    ITEM_KEYWORDS,
     LOCATION_INDOOR_KW,
     LOCATION_OUTDOOR_KW,
+    LOCATION_TRANSITION_KW,
+    PSYCH_ALLOWED_TRANSITIONS,
+    PSYCH_ANXIOUS_KW,
+    PSYCH_CONTENT_KW,
+    PSYCH_DISTRESSED_KW,
+    PSYCH_EUPHORIC_KW,
+    PSYCH_STATES,
+    STAMINA_ALLOWED_TRANSITIONS,
+    STAMINA_ENERGETIC_KW,
+    STAMINA_EXHAUSTED_KW,
+    STAMINA_LEVELS,
+    STAMINA_TIRED_KW,
+    TIME_KEYWORDS,
 )
 
 logger = logging.getLogger(__name__)

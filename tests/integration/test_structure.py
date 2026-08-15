@@ -4,7 +4,6 @@ tests/integration/test_structure.py
 機能5（物語構造テンプレート検証）のテスト。
 構造検証ロジックと、DB上のプロットを用いたルーター経由の検証を確認する。
 """
-import pytest
 
 from src.services.structure_validator import (
     assign_phases,

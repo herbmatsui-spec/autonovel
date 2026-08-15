@@ -1,13 +1,13 @@
 """認証機能のテスト"""
 import os
+
 import pytest
-from fastapi.testclient import TestClient
 
 # 環境変数を設定してからアプリをインポート
 os.environ["ALLOWED_API_KEYS"] = "test-key-1,test-key-2"
 os.environ["AUTH_DISABLED"] = "false"
 
-from src.backend.auth import APIKeyService, get_api_key_service, validate_api_key_or_raise
+from src.backend.auth import APIKeyService, validate_api_key_or_raise
 from src.core.exceptions import AppError
 
 
@@ -43,7 +43,7 @@ def test_validate_api_key_or_raise_valid():
     # キャッシュをクリア
     import src.backend.auth as auth_module
     auth_module._api_key_service = None
-    
+
     result = validate_api_key_or_raise("test-key-1")
     assert result == "test-key-1"
 
@@ -54,7 +54,7 @@ def test_validate_api_key_or_raise_invalid():
     os.environ["AUTH_DISABLED"] = "false"
     import src.backend.auth as auth_module
     auth_module._api_key_service = None
-    
+
     with pytest.raises(AppError) as exc_info:
         validate_api_key_or_raise("invalid-key")
     assert exc_info.value.error_code == "FORBIDDEN"
@@ -67,7 +67,7 @@ def test_validate_api_key_or_raise_empty_allowed():
     os.environ["AUTH_DISABLED"] = "false"
     import src.backend.auth as auth_module
     auth_module._api_key_service = None
-    
+
     with pytest.raises(AppError) as exc_info:
         validate_api_key_or_raise("any-key")
     assert exc_info.value.error_code == "FORBIDDEN"

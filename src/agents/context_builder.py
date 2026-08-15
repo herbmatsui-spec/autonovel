@@ -12,14 +12,14 @@ from src.agents.base import BaseAgent
 
 class ContextBuilder:
     """�������執�������筆に必要な完全なコンテキストを構�������築するユーティリティクラス"""
-    
+
     def __init__(self, agent: BaseAgent):
         """
         Args:
             agent: 親エージェント（DBアクセス等のために必要）
         """
         self.agent = agent
-    
+
     async def build_full_writing_context(
         self,
         book_id: int,

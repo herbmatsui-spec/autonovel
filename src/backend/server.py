@@ -16,6 +16,18 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from config.constants import (
+    LONG_RUNNING_TIMEOUT_SEC as _LONG_RUNNING_TIMEOUT_SEC,
+)
+from config.constants import (
+    RATE_LIMIT_MAX_REQUESTS as _RATE_LIMIT_MAX_REQUESTS,
+)
+from config.constants import (
+    RATE_LIMIT_STORE_MAX_ENTRIES as _RATE_LIMIT_STORE_MAX_ENTRIES,
+)
+from config.constants import (
+    RATE_LIMIT_WINDOW_SECONDS as _RATE_LIMIT_WINDOW_SECONDS,
+)
 from config.cors_config import get_allowed_origins
 from config.logging_config import setup_logging
 from src.backend.auth import validate_api_key_or_raise
@@ -115,9 +127,19 @@ async def add_security_headers_middleware(request: Request, call_next):
 
 
 _rate_limit_store: dict[str, list[float]] = defaultdict(list)
-_RATE_LIMIT_MAX_REQUESTS = 100
-_RATE_LIMIT_WINDOW_SECONDS = 60
+_DEFAULT_TIMEOUT_SEC = 30.0
 _rate_limit_lock = asyncio.Lock()
+
+# 長時間実行されるLLM生成系エンドポイント（タイムアウトを延長）
+LONG_RUNNING_PATHS = frozenset(
+    {
+        "/api/easy_mode/generate",
+        "/api/refine_erotic",
+        "/api/critique/optimize",
+        "/api/episodes/generate",
+        "/api/plots/generate",
+    }
+)
 
 
 async def rate_limit_middleware(request: Request, call_next):
@@ -126,6 +148,12 @@ async def rate_limit_middleware(request: Request, call_next):
     window_start = now - _RATE_LIMIT_WINDOW_SECONDS
 
     async with _rate_limit_lock:
+        # メモリリーク防止: エントリ数が上限を超えたら古いエントリから削除
+        if len(_rate_limit_store) > _RATE_LIMIT_STORE_MAX_ENTRIES:
+            # 古いエントリから削除（タイムスタンプが古い順）
+            sorted_ips = sorted(_rate_limit_store.keys(), key=lambda ip: _rate_limit_store[ip][0] if _rate_limit_store[ip] else float("inf"))
+            for ip in sorted_ips[:len(_rate_limit_store) - _RATE_LIMIT_STORE_MAX_ENTRIES]:
+                del _rate_limit_store[ip]
         _rate_limit_store[client_ip] = [t for t in _rate_limit_store[client_ip] if t > window_start]
 
         if len(_rate_limit_store[client_ip]) >= _RATE_LIMIT_MAX_REQUESTS:
@@ -153,14 +181,11 @@ def configure_cors(app: FastAPI):
 class TimeoutMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         # LLM生成系エンドポイントは長時間実行されるため、タイムアウトを延長
-        long_running_paths = [
-            "/api/easy_mode/generate",
-            "/api/refine_erotic",
-            "/api/critique/optimize",
-            "/api/episodes/generate",
-            "/api/plots/generate",
-        ]
-        timeout = 300.0 if any(request.url.path.startswith(p) for p in long_running_paths) else 30.0
+        timeout = (
+            _LONG_RUNNING_TIMEOUT_SEC
+            if any(request.url.path.startswith(p) for p in LONG_RUNNING_PATHS)
+            else _DEFAULT_TIMEOUT_SEC
+        )
 
         try:
             return await asyncio.wait_for(call_next(request), timeout=timeout)

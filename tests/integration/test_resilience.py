@@ -4,12 +4,10 @@ tests/integration/test_resilience.py
 機能9（オフライン／低帯域耐障害モード）のテスト。
 resilience サービスの状態判定と system ルーターのエンドポイントを確認する。
 """
-import os
 
-import pytest
 
-from src.services import resilience
 from src.backend.routers import system as system_router
+from src.services import resilience
 
 
 def test_offline_mode_flag_default_false(monkeypatch):

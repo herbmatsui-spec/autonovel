@@ -6,7 +6,7 @@ from typing import Any, Callable
 
 import streamlit as st
 
-from schemas.app_state import AppStateModel, AppRuntimeState
+from schemas.app_state import AppRuntimeState, AppStateModel
 from src.core.state.state_manager import SessionManager, get_session
 
 

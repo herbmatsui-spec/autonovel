@@ -1,7 +1,6 @@
-from typing import Any, Dict, List, Optional
-from src.shared.result import Result
+from src.easy_mode.spice_guard import SpiceGuard
 from src.shared.errors import GenerationError
-from src.easy_mode.spice_guard import SpiceGuard, SpiceElement
+from src.shared.result import Result
 
 
 class RewriteOrchestrator:
@@ -33,7 +32,7 @@ class RewriteOrchestrator:
             if audit.get("score", 0) >= target_score:
                 return Result.ok({"content": current, "iterations": i})
             spice = self.spice_guard.extract_spice(current)
-            current = await self.writer.rewrite(current, 
+            current = await self.writer.rewrite(current,
                                                   audit.get("improvements", []),
                                                   spice)
         return Result.ok({"content": current, "iterations": max_iter,

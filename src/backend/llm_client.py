@@ -6,7 +6,7 @@ from src.core.observability import get_structured_logger
 logger = get_structured_logger("llm_client")
 from typing import Any, Callable, Optional
 
-from src.core.llm_gateway import GeminiApiClient
+from src.core.llm_clients.gemini import GeminiApiClient
 from src.models import GenerateResult
 
 

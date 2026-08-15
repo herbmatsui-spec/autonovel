@@ -10,6 +10,7 @@ try:
 except ImportError:
     PydanticUserError = Exception
 
+from src.core.exceptions import LLMValidationError
 from src.core.observability import StructuredLogger
 from src.core.rate_limiter import TokenBucket
 
@@ -83,12 +84,12 @@ def safe_model_validate(model_cls: Any, data: Any) -> Any:
     """
     try:
         return model_cls.model_validate(data)
-    except (PydanticUserError, Exception) as e:
+    except PydanticUserError as e:
         if "not fully defined" in str(e) or "class_not_fully_defined" in str(e):
             logger.info(f"🔄 自動修復: モデル {model_cls.__name__} を再構築してリトライします。")
             model_cls.model_rebuild()
             return model_cls.model_validate(data)
-        raise
+        raise LLMValidationError(f"Model validation failed: {e}") from e
 
 
 def verify_character_tone(original_text: str, corrected_text: str) -> List[str]:
@@ -129,6 +130,7 @@ def verify_character_tone(original_text: str, corrected_text: str) -> List[str]:
                         f"口調警告: 第{i + 1}番目の台詞文末が変化: 「{orig_end.surface()}」→「{corr_end.surface()}」"
                     )
     except ImportError:
+        logger.info("sudachipy not available, using regex fallback for tone verification")
         for i, (orig, corr) in enumerate(zip(dialogues_orig, dialogues_corr)):
             if orig == corr:
                 continue
@@ -142,7 +144,11 @@ def verify_character_tone(original_text: str, corrected_text: str) -> List[str]:
 
 
 def safe_run_async(coro):
-    """Streamlitのイベントループ内で非同期処理を安全に実行する"""
+    """同期コンテキストから非同期コルーチンを実行する。
+
+    既にイベントループが動作中の場合（Streamlit/FastAPI）、
+    別スレッドで新ループを作成して実行する。
+    """
     try:
         loop = asyncio.get_running_loop()
         if loop.is_running():

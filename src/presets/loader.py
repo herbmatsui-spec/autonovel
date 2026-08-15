@@ -4,11 +4,11 @@
 """
 
 import json
-import yaml
-import os
-from pathlib import Path
-from typing import Dict, Any, Optional
 import logging
+from pathlib import Path
+from typing import Any, Dict
+
+import yaml
 
 logger = logging.getLogger(__name__)
 
@@ -100,18 +100,18 @@ def load_preset(genre: str) -> Dict[str, Any]:
     """
     if genre not in SUPPORTED_GENRES:
         raise ValueError(f"Unsupported genre: {genre}. Supported: {SUPPORTED_GENRES}")
-    
+
     preset = {}
     genre_dir = PRESETS_BASE_DIR / genre
-    
+
     if not genre_dir.exists():
         logger.warning(f"Genre directory not found: {genre_dir}. Using defaults.")
         return {k: v for k, v in DEFAULT_VALUES.items()}
-    
+
     # 各プリセットファイルを読み込み
     for key, rel_path in PRESET_FILES.items():
         filepath = genre_dir / rel_path.format(genre=genre)
-        
+
         if rel_path.endswith(".j2"):
             preset[key] = load_j2_template(filepath)
         elif rel_path.endswith(".yaml"):
@@ -121,14 +121,14 @@ def load_preset(genre: str) -> Dict[str, Any]:
         else:
             logger.warning(f"Unknown file type: {rel_path}")
             preset[key] = DEFAULT_VALUES.get(key, {})
-    
+
     # メタデータ追加
     preset["_meta"] = {
         "genre": genre,
         "loaded_at": str(Path(__file__).stat().st_mtime),
         "files_loaded": list(preset.keys())
     }
-    
+
     logger.info(f"Loaded preset for genre: {genre} (keys: {list(preset.keys())})")
     return preset
 
@@ -153,17 +153,17 @@ def validate_preset(preset: Dict[str, Any]) -> Dict[str, Any]:
     required_keys = set(PRESET_FILES.keys())
     loaded_keys = set(k for k in preset.keys() if not k.startswith("_"))
     missing_keys = required_keys - loaded_keys
-    
+
     warnings = []
     for key in missing_keys:
         warnings.append(f"Missing preset key: {key}")
-    
+
     # 重要ファイルの存在チェック
     critical_keys = ["bible", "tension", "style", "hooks"]
     for key in critical_keys:
         if key in preset and not preset[key]:
             warnings.append(f"Critical preset '{key}' is empty")
-    
+
     return {
         "valid": len(missing_keys) == 0,
         "missing_keys": list(missing_keys),
@@ -175,7 +175,7 @@ if __name__ == "__main__":
     # 簡易テスト
     import sys
     logging.basicConfig(level=logging.INFO)
-    
+
     for genre in SUPPORTED_GENRES:
         try:
             preset = load_preset(genre)
@@ -184,5 +184,5 @@ if __name__ == "__main__":
             print(f"[{status}] {genre}: keys={list(preset.keys())}, warnings={validation['warnings']}")
         except Exception as e:
             print(f"[ERROR] {genre}: {e}")
-    
+
     sys.exit(0)

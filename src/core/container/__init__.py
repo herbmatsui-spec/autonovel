@@ -3,6 +3,7 @@ import warnings
 
 from dependency_injector import providers
 
+# AppContainer は AppContainer2 のエイリアス（後方互換性のため）
 from src.core.container.app import AppContainer2 as AppContainer
 from src.core.container.infra import InfraContainer
 from src.core.llm_gateway import LLMGenerateResultProxy

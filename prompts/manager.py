@@ -1197,3 +1197,5 @@ class PromptManager:
             target_word_count=target_word_count,
         )
 
+
+prompt_manager = PromptManager()

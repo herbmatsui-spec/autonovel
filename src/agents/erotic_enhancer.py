@@ -4,21 +4,21 @@ erotic_enhancer.py - 官能強化ユーティリティ
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 from src.agents.base import BaseAgent
 
 
 class EroticEnhancer:
     """官能コンテンツを強化するユーティリティクラス"""
-    
+
     def __init__(self, agent: BaseAgent):
         """
         Args:
             agent: 親エージェント（エロティック機能へのアクセスのために必要）
         """
         self.agent = agent
-    
+
     async def enhance_erotic_content(
         self,
         prompt: str,
@@ -37,10 +37,10 @@ class EroticEnhancer:
         """
         erotic_intensity = context.get("erotic_intensity", 0)
         nsfw_enabled = context.get("nsfw_enabled", False)
-        
+
         if not (erotic_intensity > 0 and nsfw_enabled):
             return result
-            
+
         specialist = None
         params = None
 

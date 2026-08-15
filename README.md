@@ -1,5 +1,9 @@
 # ⚔️ 覇権小説エンジン v3.3
 
+![Tests](https://img.shields.io/badge/tests-passing-brightgreen)
+![Coverage](https://img.shields.io/badge/coverage-75%25-yellow)
+![Python](https://img.shields.io/badge/python-3.12-blue)
+
 **覇権小説エンジン**は、AI を使って小説を「かんたんに」「高品質に」書くためのツールです。
 
 カクヨムなどの Web 小説サイトでランキング上位を狙える作品を、**ボタンひとつ**で自動生成します。

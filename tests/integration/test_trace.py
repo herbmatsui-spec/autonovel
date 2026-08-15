@@ -6,7 +6,6 @@ tests/integration/test_trace.py
 """
 import pytest
 
-from src.backend.database.uow import UnitOfWork
 from src.services.reproducibility import build_report, build_run_record, compute_input_hash
 
 

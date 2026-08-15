@@ -2,11 +2,12 @@
 src/backend/observability/metrics.py - Prometheus メトリクス定義・公開
 """
 
-from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
-from fastapi import Response
 import time
 from functools import wraps
-from typing import Callable, Any, Optional
+from typing import Any, Callable
+
+from fastapi import Response
+from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
 
 # ===================== 標準 HTTP メトリクス =====================
 http_requests_total = Counter(
@@ -144,7 +145,7 @@ def track_llm_metrics(model: str):
                 duration = time.perf_counter() - start
                 record_llm_call(model, "success")
                 return result
-            except Exception as e:
+            except Exception:
                 record_llm_call(model, "error")
                 raise
         return wrapper
@@ -154,15 +155,14 @@ def track_llm_metrics(model: str):
 # ===================== ミドルウェア用ヘルパー =====================
 class MetricsMiddleware:
     """HTTP メトリクス収集ミドルウェア"""
-    
+
     def __init__(self):
         self._path_normalizer = PathNormalizer()
-    
+
     async def __call__(self, request, call_next):
-        from fastapi import Request
         method = request.method
         path = self._path_normalizer.normalize(request.url.path)
-        
+
         http_requests_in_progress.labels(method=method, path=path).inc()
         start = time.perf_counter()
         try:
@@ -170,7 +170,7 @@ class MetricsMiddleware:
             duration = time.perf_counter() - start
             record_http_metrics(method, path, response.status_code, duration)
             return response
-        except Exception as e:
+        except Exception:
             duration = time.perf_counter() - start
             record_http_metrics(method, path, 500, duration)
             raise
@@ -180,7 +180,7 @@ class MetricsMiddleware:
 
 class PathNormalizer:
     """パスパラメータを正規化してカーディナリティを制御"""
-    
+
     def __init__(self):
         import re
         self._patterns = [
@@ -191,7 +191,7 @@ class PathNormalizer:
             (re.compile(r"/api/chapters/\d+"), "/api/chapters/{id}"),
             (re.compile(r"/api/prompt-versions/\d+"), "/api/prompt-versions/{id}"),
         ]
-    
+
     def normalize(self, path: str) -> str:
         for pattern, replacement in self._patterns:
             path = pattern.sub(replacement, path)

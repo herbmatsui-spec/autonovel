@@ -2,8 +2,9 @@
 src/core/state/desires.py — Desire to emotional hook mapping
 """
 
+from typing import List, Optional
+
 from src.models.emotional_hook import EmotionalHookSpec
-from typing import Optional, List
 
 DESIRE_TO_HOOK_MAP = {
     "カタルシス": "catharsis",

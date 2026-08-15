@@ -5,6 +5,7 @@ kernels/interaction_manager.py - インタラクションマネージャー
 from typing import Any, Dict, List, Optional
 
 from src.shared.event_bus import UIEventType
+
 from .interaction_config import InteractionConfig
 from .interaction_formatter import InteractionFormatterFactory
 

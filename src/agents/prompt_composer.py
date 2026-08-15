@@ -4,21 +4,21 @@ prompt_composer.py - プロンプト構�築ユーティリティ
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from src.agents.base import BaseAgent
 
 
 class PromptComposer:
     """プロンプトを構���築するユーティリティクラス"""
-    
+
     def __init__(self, agent: BaseAgent):
         """
         Args:
             agent: 親エージェント（プロンプトマネージャへのアクセスのために必要）
         """
         self.agent = agent
-    
+
     async def compose_writing_prompt(
         self,
         book_id: int,
@@ -58,5 +58,5 @@ class PromptComposer:
             density_level=context.get("density_level", "Standard"),
             style_tag=context.get("style_tag"),
         )
-        
+
         return prompt

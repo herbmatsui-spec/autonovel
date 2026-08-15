@@ -1,6 +1,9 @@
 import asyncio
+import logging
 from contextlib import asynccontextmanager
 from typing import Any, Coroutine, Iterable, Sequence, TypeVar
+
+logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
@@ -57,7 +60,7 @@ async def safe_timeout(seconds: float):
         raise
 
 
-async def fire_and_forget(coro: Coroutine[Any, Any, Any], name: str = "bg_task"):
+def fire_and_forget(coro: Coroutine[Any, Any, Any], name: str = "bg_task"):
     """
     構造化並行性の外でバックグラウンドタスクを安全に起動するためのヘルパー。
     エラーハンドリングを強制し、放置されたタスクによるサイレントフェイルを防ぎます。
@@ -76,12 +79,29 @@ async def fire_and_forget(coro: Coroutine[Any, Any, Any], name: str = "bg_task")
     return task
 
 
-_concurrency_semaphore = asyncio.Semaphore(5)
+# グローバルセマフォの最大同時実行数。DIコンテナから注入可能にするため定数化。
+MAX_CONCURRENT_API_CALLS: int = 5
+
+_concurrency_semaphore: asyncio.Semaphore | None = None
+
+
+def get_concurrency_semaphore() -> asyncio.Semaphore:
+    """DIコンテナから設定可能なセマフォを取得する（Step 37 準備）。
+
+    現在は定数 ``MAX_CONCURRENT_API_CALLS`` を元に生成・キャッシュする。
+    将来的に ``src.core.container.AppContainer`` 経由で最大同時数を注入できるよう、
+    モジュール変数を直接参照せず関数経由で取得する。
+    """
+    global _concurrency_semaphore
+    if _concurrency_semaphore is None:
+        # TODO(DI): AppContainer から MAX_CONCURRENT_API_CALLS を注入するよう拡張
+        _concurrency_semaphore = asyncio.Semaphore(MAX_CONCURRENT_API_CALLS)
+    return _concurrency_semaphore
 
 
 async def limit_concurrency(coro: Coroutine[Any, Any, T]) -> T:
     """
     グローバルセマフォを使用して同時に実行されるAPIリクエスト等の数を制限します。
     """
-    async with _concurrency_semaphore:
+    async with get_concurrency_semaphore():
         return await coro

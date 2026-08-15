@@ -3,11 +3,11 @@ src/backend/health/checks.py - ヘルスチェック共通ロジック
 各依存サービスの疎通確認を実装し、統一された結果形式で返す。
 """
 
+import logging
+import time
 from dataclasses import dataclass
 from enum import Enum
-import time
-import logging
-from typing import Optional, Dict, Any
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -97,7 +97,7 @@ async def check_llm_gateway(api_key: Optional[str]) -> HealthCheckResult:
     # ヘルスチェックでの LLM 呼び出しを無効化する環境変数
     if os.getenv("KAKU_HEALTH_CHECK_LLM", "true").lower() == "false":
         return HealthCheckResult(status=HealthStatus.NOT_CONFIGURED, details="LLM check disabled via env")
-    
+
     if not api_key or api_key == "DUMMY":
         return HealthCheckResult(status=HealthStatus.NOT_CONFIGURED, error="API key not configured")
     start = time.perf_counter()

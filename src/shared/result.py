@@ -1,7 +1,8 @@
 """Result型: 成否を表現する代数的データ型"""
 from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import Generic, TypeVar, Optional, Callable
+from typing import Callable, Generic, Optional, TypeVar
 
 T = TypeVar("T")
 E = TypeVar("E", bound=Exception)
@@ -12,23 +13,23 @@ U = TypeVar("U")
 class Result(Generic[T, E]):
     value: Optional[T] = None
     error: Optional[E] = None
-    
+
     @property
     def is_ok(self) -> bool:
         return self.error is None
-    
+
     @property
     def is_err(self) -> bool:
         return self.error is not None
-    
+
     @staticmethod
     def ok(value: T) -> "Result[T, E]":
         return Result(value=value)
-    
+
     @staticmethod
     def err(error: E) -> "Result[T, E]":
         return Result(error=error)
-    
+
     def unwrap(self) -> T:
         if self.is_err:
             raise self.error  # type: ignore[misc]

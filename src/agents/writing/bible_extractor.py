@@ -1,11 +1,12 @@
-from typing import Any, Dict, Optional
+from typing import Optional
+
 from src.services.llm_service import LLMService
 
 
 class BibleExtractor:
     def __init__(self, llm: LLMService):
         self.llm = llm
-    
+
     async def extract(self, book_id: int, content: str, reporter=None) -> Optional[dict]:
         """
         Bible抽出トリガー。

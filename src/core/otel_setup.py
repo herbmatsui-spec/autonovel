@@ -9,7 +9,7 @@ import os
 from typing import Optional
 
 from opentelemetry import metrics, trace
-from opentelemetry._logs import set_logger_provider, get_logger_provider
+from opentelemetry._logs import set_logger_provider
 
 # Optional imports for OTLP log exporters (may not be available in all versions)
 try:
@@ -33,17 +33,20 @@ from opentelemetry.exporter.otlp.proto.http.metric_exporter import (
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
     OTLPSpanExporter as OTLPSpanExporterHTTP,
 )
+from opentelemetry.sdk._logs import LoggerProvider
+from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
 from opentelemetry.sdk.environment_variables import (
     OTEL_EXPORTER_OTLP_ENDPOINT,
     OTEL_SERVICE_NAME,
 )
-from opentelemetry.sdk._logs import LoggerProvider
-from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.resources import DEPLOYMENT_ENVIRONMENT, SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.sdk.trace.sampling import ALWAYS_ON, DEFAULT_ON, ParentBased, ParentBasedTraceIdRatio, TraceIdRatioBased
+from opentelemetry.sdk.trace.sampling import (
+    ALWAYS_ON,
+    ParentBased,
+)
 
 logger = logging.getLogger(__name__)
 

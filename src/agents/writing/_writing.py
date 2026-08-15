@@ -4,7 +4,6 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from src.agents.base import BaseAgent
-from src.agents.writing_scheduler import StreamingPlotScheduler
 from src.core.interfaces import IPromptManager
 from src.services.llm_service import LLMService
 
@@ -12,9 +11,11 @@ logger = logging.getLogger(__name__)
 
 
 from src.agents.context_builder import ContextBuilder
-from src.agents.prompt_composer import PromptComposer
-from src.agents.erotic_enhancer import EroticEnhancer
 from src.agents.episode_pipeline import EpisodePipeline
+from src.agents.erotic_enhancer import EroticEnhancer
+from src.agents.prompt_composer import PromptComposer
+
+
 class WritingAgent(BaseAgent):
     """執筆を担当するエージェント。
     プロンプトマネージャと LLM サービスを使用して、エピソード本文を生成する。
@@ -250,7 +251,7 @@ class WritingAgent(BaseAgent):
         # プロンプトを構�築
         prompt_composer = PromptComposer(self)
         prompt = await prompt_composer.compose_writing_prompt(book_id, ep_num, context)
-        
+
         # 初期結果を生成
         result = await self.llm.generate_text(
             purpose="writing",
@@ -264,7 +265,7 @@ class WritingAgent(BaseAgent):
         # エロティックコンテンツを強化
         erotic_enhancer = EroticEnhancer(self)
         result = await erotic_enhancer.enhance_erotic_content(prompt, result, context)
-        
+
         return result
     @property
     def pm(self):

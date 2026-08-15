@@ -4,7 +4,7 @@ erotic/curve.py - 官能カーブ生成モジュール
 
 from __future__ import annotations
 
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 from pydantic import BaseModel
 
@@ -17,7 +17,7 @@ class EroticPoint(BaseModel):
 
 class EroticCurve:
     """官能の時間経過による変化を表すカーブ"""
-    
+
     def __init__(self, points: List[EroticPoint]):
         """
         Args:
@@ -25,17 +25,17 @@ class EroticCurve:
         """
         if not points:
             raise ValueError("At least one point is required")
-        
+
         # positionでソート
         self.points = sorted(points, key=lambda p: p.position)
-        
+
         # 位置の�範�囲チェック
         for point in self.points:
             if not 0.0 <= point.position <= 1.0:
                 raise ValueError(f"Point position must be between 0.0 and 1.0, got {point.position}")
             if not 0.0 <= point.intensity <= 100.0:
                 raise ValueError(f"Point intensity must be between 0.0 and 100.0, got {point.intensity}")
-    
+
     @classmethod
     def create_from_parameters(cls, params: 'EroticParameters') -> 'EroticCurve':
         """
@@ -56,7 +56,7 @@ class EroticCurve:
             EroticPoint(position=1.0, intensity=params.base_intensity * 0.5),
         ]
         return cls(points)
-    
+
     def get_intensity_at(self, position: float) -> float:
         """
         � 指定された位置での官能強度を線形補間で取得する
@@ -69,12 +69,12 @@ class EroticCurve:
         """
         if not self.points:
             return 0.0
-            
+
         if position <= self.points[0].position:
             return self.points[0].intensity
         if position >= self.points[-1].position:
             return self.points[-1].intensity
-            
+
         # 線形補間
         for i in range(len(self.points) - 1):
             p1 = self.points[i]
@@ -83,9 +83,9 @@ class EroticCurve:
                 # 線形補間
                 ratio = (position - p1.position) / (p2.position - p1.position)
                 return p1.intensity + ratio * (p2.intensity - p1.intensity)
-        
+
         return self.points[-1].intensity  # フォールバック
-    
+
     def get_peak_beat(self) -> Optional[EroticPoint]:
         """
         カーブのピーク（最高官能強度）点を取得する
@@ -96,7 +96,7 @@ class EroticCurve:
         if not self.points:
             return None
         return max(self.points, key=lambda p: p.intensity)
-    
+
     def get_average_intensity(self) -> float:
         """
         カーブの平均官能強度を取得する

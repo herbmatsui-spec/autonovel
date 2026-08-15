@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional
 
+from config.constants import EP_CLIMAX, EP_FINAL
 from src.easy_mode.spice_guard import SpiceElement, create_spice_guard
 from src.presets.loader import load_preset
 
@@ -84,6 +85,8 @@ class EasyModePipeline:
                     return result
                 last_error = Exception("Empty response from LLM")
             except Exception as e:
+                if self._cancelled:
+                    raise
                 last_error = e
                 logger.warning(f"{operation} attempt {attempt + 1}/{self.MAX_LLM_RETRIES} failed: {e}")
                 if attempt < self.MAX_LLM_RETRIES - 1:
@@ -96,48 +99,39 @@ class EasyModePipeline:
         """パイプライン全体を実行"""
         logger.info(f"Starting easy mode pipeline for genre: {self.config.genre}")
 
+        # グローバルセマフォを通じて並行実行数を制御
+        from src.core.async_utils import limit_concurrency
+
         try:
             # Step 1: Bible生成
             await self._report_progress("bible", 0, self.config.target_episodes)
-            bible = await self._generate_bible()
+            bible = await limit_concurrency(self._generate_bible())
 
             # Step 2: プロット生成
             await self._report_progress("plot", 0, self.config.target_episodes)
-            plot_outline = await self._generate_plot_outline(bible)
+            plot_outline = await limit_concurrency(self._generate_plot_outline(bible))
 
             # Step 3: 各話生成ループ
             episodes: List[EpisodeResult] = []
             for ep_num in range(1, self.config.target_episodes + 1):
                 if self._cancelled:
+                    logger.info(f"Pipeline cancelled at episode {ep_num}")
                     break
 
-                await self._report_progress("writing", ep_num, self.config.target_episodes)
-                episode = await self._generate_episode(ep_num, bible, plot_outline, episodes)
-                episodes.append(episode)
+                await self._report_progress("writing", ep_num - 1, self.config.target_episodes)
+                episode_result = await limit_concurrency(self._generate_episode(ep_num, plot_outline, bible))
+                episodes.append(episode_result)
 
-                # 進捗コールバック
-                await self._report_progress("episode_complete", ep_num, self.config.target_episodes)
-
-            # Step 4: シリーズ完結処理
             await self._report_progress("finalizing", len(episodes), self.config.target_episodes)
-            metadata = await self._finalize_series(bible, plot_outline, episodes)
+            result = self._finalize_result(episodes)
 
-            self.series_result = SeriesResult(
-                genre=self.config.genre,
-                title=metadata.get("title", ""),
-                concept=metadata.get("concept", ""),
-                total_episodes=len(episodes),
-                episodes=episodes,
-                bible=bible,
-                plot_outline=plot_outline,
-                metadata=metadata
-            )
-
-            logger.info(f"Pipeline completed: {len(episodes)} episodes generated")
-            return self.series_result
+            # 完了処理
+            self._cancelled = False
+            return result
 
         except Exception as e:
-            logger.error(f"Pipeline failed: {e}")
+            logger.error(f"Pipeline failed: {e}", exc_info=True)
+            self._cancelled = False
             raise
 
     async def _generate_bible(self) -> Dict[str, Any]:
@@ -171,6 +165,8 @@ class EasyModePipeline:
             # パースして辞書化
             bible = self._parse_bible(bible_text)
         except Exception as e:
+            if self._cancelled:
+                raise
             logger.warning(f"Bible generation failed, using fallback: {e}")
             bible = self._fallback_bible(variables)
 
@@ -365,9 +361,9 @@ class EasyModePipeline:
 
         if ep_num == 1:
             return patterns["opening"]
-        elif ep_num == 8:
+        elif ep_num == EP_FINAL:
             return patterns["resolution"]
-        elif ep_num == 7:
+        elif ep_num == EP_CLIMAX:
             return patterns["climax"]
         elif is_catharsis:
             return patterns["catharsis"]
@@ -455,6 +451,8 @@ class EasyModePipeline:
                 "details": audit_result
             }
         except Exception as e:
+            if self._cancelled:
+                raise
             logger.warning(f"Audit failed for ep {ep_num}: {e}")
             return {
                 "score": 85,  # デフォルトスコア

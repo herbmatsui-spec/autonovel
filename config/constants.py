@@ -58,3 +58,16 @@ STRESS_CATHARSIS_THRESHOLD: Final[int] = 85
 STRESS_CLIMAX_BONUS: Final[int] = 50
 STRESS_FILLER_THRESHOLD: Final[int] = 35
 STRESS_HATE_GAIN_BASE: Final[int] = 2
+
+# タイムアウト値 (秒)
+DEFAULT_API_TIMEOUT_SEC: Final[float] = 120.0
+LONG_RUNNING_TIMEOUT_SEC: Final[float] = 300.0
+STREAM_TIMEOUT_SEC: Final[float] = 180.0
+
+# レート制限値
+RATE_LIMIT_MAX_REQUESTS: Final[int] = 100
+RATE_LIMIT_WINDOW_SECONDS: Final[int] = 60
+RATE_LIMIT_STORE_MAX_ENTRIES: Final[int] = 10000
+
+# Pipeline 話数マッピング（追加）
+EP_CLIMAX: Final[int] = 7

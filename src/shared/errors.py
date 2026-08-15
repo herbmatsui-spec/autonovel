@@ -1,5 +1,7 @@
 from __future__ import annotations
+
 from typing import Optional
+
 
 class GenerationError(Exception):
     """生成系エラーの基底クラス"""

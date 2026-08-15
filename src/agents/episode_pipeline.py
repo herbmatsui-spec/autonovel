@@ -7,7 +7,6 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional, Tuple
 
 from src.agents.scheduler_coordinator import SchedulerCoordinator
-from src.agents.base import BaseAgent
 
 
 class EpisodePipeline:

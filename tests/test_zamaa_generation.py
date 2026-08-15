@@ -3,7 +3,7 @@ import logging
 from unittest.mock import MagicMock
 
 import pytest
-from src.core.container import AppContainer, make_container
+
 from src.models.planning_config import PlanningConfig
 from src.services.plot_service import PlotService
 
