@@ -12,6 +12,7 @@ from .base import KernelBase
 @dataclass
 class NovelMetadata:
     """小説メタデータ"""
+
     title: str
     author: str
     genre: str
@@ -23,6 +24,7 @@ class NovelMetadata:
 @dataclass
 class Character:
     """キャラクター"""
+
     name: str
     role: str
     traits: List[str] = field(default_factory=list)
@@ -33,6 +35,7 @@ class Character:
 @dataclass
 class PlotPoint:
     """プロットポイント"""
+
     id: str
     description: str
     chapter: int
@@ -60,7 +63,7 @@ class HegemonyGenerator(KernelBase):
             "end_time": 0.0,
             "chapters_completed": 0,
             "total_characters": 0,
-            "quality_score": 0.0
+            "quality_score": 0.0,
         }
 
     async def initialize(self) -> bool:
@@ -79,7 +82,7 @@ class HegemonyGenerator(KernelBase):
         title: str,
         characters: List[Dict[str, Any]],
         plot_outline: List[Dict[str, Any]],
-        style_preferences: Optional[Dict[str, Any]] = None
+        style_preferences: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """小説を生成"""
         if self.state != KernelState.ACTIVE:
@@ -91,7 +94,7 @@ class HegemonyGenerator(KernelBase):
             author="AI",
             genre=self.genre,
             target_audience="general",
-            word_count_target=self.target_words
+            word_count_target=self.target_words,
         )
 
         # キャラクター作成
@@ -107,15 +110,17 @@ class HegemonyGenerator(KernelBase):
                 chapter_number=i,
                 plot_point=plot_point,
                 characters=characters,
-                style_preferences=style_preferences or {}
+                style_preferences=style_preferences or {},
             )
-            chapters.append({
-                "chapter_number": i,
-                "title": f"第{i}章",
-                "content": chapter_content,
-                "word_count": len(chapter_content.split()),
-                "plot_point": plot_point.__dict__
-            })
+            chapters.append(
+                {
+                    "chapter_number": i,
+                    "title": f"第{i}章",
+                    "content": chapter_content,
+                    "word_count": len(chapter_content.split()),
+                    "plot_point": plot_point.__dict__,
+                }
+            )
             self.current_chapter = i
             self.total_words_generated += len(chapter_content.split())
 
@@ -125,7 +130,7 @@ class HegemonyGenerator(KernelBase):
             "characters": {name: char.__dict__ for name, char in self.character_db.items()},
             "chapters": chapters,
             "total_words": self.total_words_generated,
-            "plot_outline": [p.__dict__ for p in self.plot_points]
+            "plot_outline": [p.__dict__ for p in self.plot_points],
         }
         return result
 
@@ -138,7 +143,7 @@ class HegemonyGenerator(KernelBase):
                 role=char_data.get("role", "Unknown"),
                 traits=char_data.get("traits", []),
                 background=char_data.get("background", ""),
-                relationships=char_data.get("relationships", {})
+                relationships=char_data.get("relationships", {}),
             )
             self.character_db[char.name] = char
 
@@ -152,7 +157,7 @@ class HegemonyGenerator(KernelBase):
                 chapter=i,
                 characters_involved=plot_data.get("characters", []),
                 emotional_intensity=plot_data.get("emotional_intensity", 0.5),
-                importance=plot_data.get("importance", 0.5)
+                importance=plot_data.get("importance", 0.5),
             )
             self.plot_points.append(plot_point)
 
@@ -161,15 +166,12 @@ class HegemonyGenerator(KernelBase):
         chapter_number: int,
         plot_point: PlotPoint,
         characters: List[Dict[str, Any]],
-        style_preferences: Dict[str, Any]
+        style_preferences: Dict[str, Any],
     ) -> str:
         """章を生成"""
         # プロンプト作成
         prompt = self._build_chapter_prompt(
-            chapter_number,
-            plot_point,
-            characters,
-            style_preferences
+            chapter_number, plot_point, characters, style_preferences
         )
         # 実際の生成（ダミー実装）
         content = f"""
@@ -177,7 +179,7 @@ class HegemonyGenerator(KernelBase):
 
 {plot_point.description}を中心に物語が展開する。
 
-登場人物: {", ".join([c.get('name', 'Unknown') for c in characters[:3]])}
+登場人物: {", ".join([c.get("name", "Unknown") for c in characters[:3]])}
 
 【スタイル指針】
 - 目安文字数: 2000-2500文字
@@ -197,17 +199,19 @@ class HegemonyGenerator(KernelBase):
         chapter_number: int,
         plot_point: PlotPoint,
         characters: List[Dict[str, Any]],
-        style_preferences: Dict[str, Any]
+        style_preferences: Dict[str, Any],
     ) -> str:
         """章生成プロンプトを構築"""
         char_descs = []
         for char in characters[:3]:  # 最大3人まで
-            char_descs.append(f"- {char.get('name', 'Unknown')}: {char.get('role', 'Unknown')} ({', '.join(char.get('traits', []))})")
+            char_descs.append(
+                f"- {char.get('name', 'Unknown')}: {char.get('role', 'Unknown')} ({', '.join(char.get('traits', []))})"
+            )
 
         prompt = f"""
 以下の条件で{self.genre}ジャンルの小説の第{chapter_number}章を書いてください。
 
-【タイトル】: {self.metadata.title if hasattr(self, 'metadata') else 'Unknown'}
+【タイトル】: {self.metadata.title if hasattr(self, "metadata") else "Unknown"}
 【ジャンル】: {self.genre}
 【対象読者】: 一般
 【目標文字数】: {self.target_words}文字
@@ -233,18 +237,25 @@ class HegemonyGenerator(KernelBase):
 
     async def get_progress(self) -> Dict[str, Any]:
         """現在の進捗を取得"""
-        elapsed = time.time() - self.generation_metrics["start_time"] if self.generation_metrics["start_time"] > 0 else 0
+        elapsed = (
+            time.time() - self.generation_metrics["start_time"]
+            if self.generation_metrics["start_time"] > 0
+            else 0
+        )
         return {
             "current_chapter": self.current_chapter,
             "total_chapters": len(self.plot_points),
             "total_words": self.total_words_generated,
             "target_words": self.target_words,
-            "completion_percentage": (self.total_words_generated / self.target_words * 100) if self.target_words > 0 else 0,
+            "completion_percentage": (self.total_words_generated / self.target_words * 100)
+            if self.target_words > 0
+            else 0,
             "elapsed_time": elapsed,
             "estimated_completion": (
                 (elapsed / self.current_chapter * len(self.plot_points)) - elapsed
-                if self.current_chapter > 0 and len(self.plot_points) > 0 else 0
-            )
+                if self.current_chapter > 0 and len(self.plot_points) > 0
+                else 0
+            ),
         }
 
     async def execute(self, *args, **kwargs) -> Any:
@@ -255,6 +266,6 @@ class HegemonyGenerator(KernelBase):
                 title=kwargs.get("title", "Untitled"),
                 characters=kwargs.get("characters", []),
                 plot_outline=kwargs.get("plot_outline", []),
-                style_preferences=kwargs.get("style_preferences", {})
+                style_preferences=kwargs.get("style_preferences", {}),
             )
         return {"error": "Unknown action"}

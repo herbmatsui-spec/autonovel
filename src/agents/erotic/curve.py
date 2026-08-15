@@ -11,6 +11,7 @@ from pydantic import BaseModel
 
 class EroticPoint(BaseModel):
     """官能カーブの1点を表すモデル"""
+
     position: float  # 0.0-1.0 (シーン内の相対位置)
     intensity: float  # 0.0-100.0 (官能強度)
 
@@ -32,18 +33,22 @@ class EroticCurve:
         # 位置の�範�囲チェック
         for point in self.points:
             if not 0.0 <= point.position <= 1.0:
-                raise ValueError(f"Point position must be between 0.0 and 1.0, got {point.position}")
+                raise ValueError(
+                    f"Point position must be between 0.0 and 1.0, got {point.position}"
+                )
             if not 0.0 <= point.intensity <= 100.0:
-                raise ValueError(f"Point intensity must be between 0.0 and 100.0, got {point.intensity}")
+                raise ValueError(
+                    f"Point intensity must be between 0.0 and 100.0, got {point.intensity}"
+                )
 
     @classmethod
-    def create_from_parameters(cls, params: 'EroticParameters') -> 'EroticCurve':
+    def create_from_parameters(cls, params: "EroticParameters") -> "EroticCurve":
         """
         EroticParametersから官能カーブを生成するファクトリメソッド
-        
+
         Args:
             params: パラメータオブジェクト
-            
+
         Returns:
             生成されたEroticCurveインスタンス
         """
@@ -60,10 +65,10 @@ class EroticCurve:
     def get_intensity_at(self, position: float) -> float:
         """
         � 指定された位置での官能強度を線形補間で取得する
-        
+
         Args:
             position: 0.0-1.0の相対位置
-            
+
         Returns:
             その位置での官能強度 (0.0-100.0)
         """
@@ -89,7 +94,7 @@ class EroticCurve:
     def get_peak_beat(self) -> Optional[EroticPoint]:
         """
         カーブのピーク（最高官能強度）点を取得する
-        
+
         Returns:
             ピーク点、点が存在しない場合はNone
         """
@@ -100,7 +105,7 @@ class EroticCurve:
     def get_average_intensity(self) -> float:
         """
         カーブの平均官能強度を取得する
-        
+
         Returns:
             平均官能強度 (0.0-100.0)
         """

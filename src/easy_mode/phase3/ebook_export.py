@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 import logging
 import re
 import uuid
@@ -19,30 +20,19 @@ logger = logging.getLogger(__name__)
 
 
 # オプショナル依存チェック
-try:
-    import ebooklib
-    from ebooklib import epub
-    EPUB_AVAILABLE = True
-except ImportError:
-    EPUB_AVAILABLE = False
+EPUB_AVAILABLE = importlib.util.find_spec("ebooklib") is not None
+if not EPUB_AVAILABLE:
     logger.warning("ebooklib not available. EPUB export will be limited.")
 
-try:
-    from reportlab.lib.pagesizes import A4
-    from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
-    from reportlab.lib.units import mm
-    from reportlab.pdfbase import pdfmetrics
-    from reportlab.pdfbase.ttfonts import TTFont
-    from reportlab.platypus import PageBreak, Paragraph, SimpleDocTemplate, Spacer, TableOfContents
-    PDF_AVAILABLE = True
-except ImportError:
-    PDF_AVAILABLE = False
+PDF_AVAILABLE = importlib.util.find_spec("reportlab") is not None
+if not PDF_AVAILABLE:
     logger.warning("reportlab not available. PDF export will be limited.")
 
 
 @dataclass
 class EbookMetadata:
     """電子書籍メタデータ"""
+
     title: str
     author: str = "AI Novel Engine"
     language: str = "ja"
@@ -69,13 +59,14 @@ class EbookMetadata:
             "subject": self.subject,
             "rights": self.rights,
             "genre": self.genre,
-            "tags": self.tags
+            "tags": self.tags,
         }
 
 
 @dataclass
 class Chapter:
     """チャプター（電子書籍用）"""
+
     title: str
     content: str
     episode_num: int
@@ -99,39 +90,40 @@ class EbookContentProcessor:
 
         # プロローグ
         if series.metadata.get("prologue"):
-            chapters.append(Chapter(
-                title="プロローグ",
-                content=self._format_content(series.metadata["prologue"]),
-                episode_num=0,
-                level=1
-            ))
+            chapters.append(
+                Chapter(
+                    title="プロローグ",
+                    content=self._format_content(series.metadata["prologue"]),
+                    episode_num=0,
+                    level=1,
+                )
+            )
 
         # 各話
         for episode in series.episodes:
             title = episode.title
             content = self._format_content(episode.content)
-            chapters.append(Chapter(
-                title=title,
-                content=content,
-                episode_num=episode.episode_num,
-                level=1
-            ))
+            chapters.append(
+                Chapter(title=title, content=content, episode_num=episode.episode_num, level=1)
+            )
 
         # エピローグ
         if series.metadata.get("epilogue"):
-            chapters.append(Chapter(
-                title="エピローグ",
-                content=self._format_content(series.metadata["epilogue"]),
-                episode_num=len(series.episodes) + 1,
-                level=1
-            ))
+            chapters.append(
+                Chapter(
+                    title="エピローグ",
+                    content=self._format_content(series.metadata["epilogue"]),
+                    episode_num=len(series.episodes) + 1,
+                    level=1,
+                )
+            )
 
         return chapters
 
     def _format_content(self, text: str) -> str:
         """HTML用に整形"""
         # 段落分割
-        paragraphs = re.split(r'\n\s*\n', text)
+        paragraphs = re.split(r"\n\s*\n", text)
 
         formatted = []
         for p in paragraphs:
@@ -149,18 +141,19 @@ class EbookContentProcessor:
             elif "！" in p or "？" in p:
                 formatted.append(f'<p class="emphasis">{self._escape_html(p)}</p>')
             else:
-                formatted.append(f'<p>{self._escape_html(p)}</p>')
+                formatted.append(f"<p>{self._escape_html(p)}</p>")
 
         return "\n".join(formatted)
 
     def _escape_html(self, text: str) -> str:
         """HTMLエスケープ"""
-        return (text
-            .replace("&", "&amp;")
+        return (
+            text.replace("&", "&amp;")
             .replace("<", "&lt;")
             .replace(">", "&gt;")
             .replace('"', "&quot;")
-            .replace("'", "&#39;"))
+            .replace("'", "&#39;")
+        )
 
     def generate_css(self) -> str:
         """共通CSS生成"""
@@ -252,7 +245,9 @@ class EpubGenerator:
         self.processor = processor
 
         if not EPUB_AVAILABLE:
-            raise RuntimeError("ebooklib is required for EPUB generation. Install with: pip install ebooklib")
+            raise RuntimeError(
+                "ebooklib is required for EPUB generation. Install with: pip install ebooklib"
+            )
 
     def generate(self, series: SeriesResult, output_path: Path) -> Path:
         """EPUB生成"""
@@ -263,13 +258,13 @@ class EpubGenerator:
         book.set_title(self.metadata.title)
         book.set_language(self.metadata.language)
         book.add_author(self.metadata.author)
-        book.add_metadata('DC', 'publisher', self.metadata.publisher)
-        book.add_metadata('DC', 'date', self.metadata.publication_date)
-        book.add_metadata('DC', 'description', self.metadata.description)
-        book.add_metadata('DC', 'rights', self.metadata.rights)
+        book.add_metadata("DC", "publisher", self.metadata.publisher)
+        book.add_metadata("DC", "date", self.metadata.publication_date)
+        book.add_metadata("DC", "description", self.metadata.description)
+        book.add_metadata("DC", "rights", self.metadata.rights)
 
         for subject in self.metadata.subject:
-            book.add_metadata('DC', 'subject', subject)
+            book.add_metadata("DC", "subject", subject)
 
         # カバー画像
         if self.metadata.cover_image:
@@ -285,7 +280,7 @@ class EpubGenerator:
             uid="style_nav",
             file_name="style/nav.css",
             media_type="text/css",
-            content=style.encode("utf-8")
+            content=style.encode("utf-8"),
         )
         book.add_item(nav_css)
 
@@ -298,9 +293,7 @@ class EpubGenerator:
             html_content = self._create_chapter_html(chapter, i)
 
             epub_chapter = epub.EpubHtml(
-                title=chapter.title,
-                file_name=f"chap_{i+1:03d}.xhtml",
-                lang="ja"
+                title=chapter.title, file_name=f"chap_{i + 1:03d}.xhtml", lang="ja"
             )
             epub_chapter.content = html_content.encode("utf-8")
             epub_chapter.add_item(nav_css)
@@ -316,7 +309,7 @@ class EpubGenerator:
         book.add_item(epub.EpubNav())
 
         # スパイン（読み順）
-        book.spine = ['nav'] + epub_chapters
+        book.spine = ["nav"] + epub_chapters
 
         # 保存
         output_path = Path(output_path)
@@ -345,12 +338,13 @@ class EpubGenerator:
 </html>"""
 
     def _escape_html(self, text: str) -> str:
-        return (text
-            .replace("&", "&amp;")
+        return (
+            text.replace("&", "&amp;")
             .replace("<", "&lt;")
             .replace(">", "&gt;")
             .replace('"', "&quot;")
-            .replace("'", "&#39;"))
+            .replace("'", "&#39;")
+        )
 
 
 class PdfGenerator:
@@ -361,7 +355,9 @@ class PdfGenerator:
         self.processor = processor
 
         if not PDF_AVAILABLE:
-            raise RuntimeError("reportlab is required for PDF generation. Install with: pip install reportlab")
+            raise RuntimeError(
+                "reportlab is required for PDF generation. Install with: pip install reportlab"
+            )
 
     def generate(self, series: SeriesResult, output_path: Path) -> Path:
         """PDF生成"""
@@ -374,10 +370,10 @@ class PdfGenerator:
         doc = SimpleDocTemplate(
             str(output_path),
             pagesize=A4,
-            rightMargin=20*mm,
-            leftMargin=20*mm,
-            topMargin=25*mm,
-            bottomMargin=25*mm
+            rightMargin=20 * mm,
+            leftMargin=20 * mm,
+            topMargin=25 * mm,
+            bottomMargin=25 * mm,
         )
 
         # スタイル定義
@@ -415,13 +411,18 @@ class PdfGenerator:
         try:
             # システムフォントを試す
             import subprocess
+
             result = subprocess.run(["fc-list", ":lang=ja"], capture_output=True, text=True)
             if result.returncode == 0:
-                for line in result.stdout.split('\n'):
-                    if 'noto' in line.lower() or 'hiragino' in line.lower() or 'ipafont' in line.lower():
-                        font_path = line.split(':')[0].strip()
+                for line in result.stdout.split("\n"):
+                    if (
+                        "noto" in line.lower()
+                        or "hiragino" in line.lower()
+                        or "ipafont" in line.lower()
+                    ):
+                        font_path = line.split(":")[0].strip()
                         if font_path:
-                            pdfmetrics.registerFont(TTFont('Japanese', font_path))
+                            pdfmetrics.registerFont(TTFont("Japanese", font_path))
                             return
         except Exception:
             pass
@@ -434,75 +435,87 @@ class PdfGenerator:
         from reportlab.lib.colors import HexColor
         from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY, TA_LEFT
 
-        styles.add(ParagraphStyle(
-            'JapaneseTitle',
-            parent=styles['Title'],
-            fontName='Japanese',
-            fontSize=24,
-            leading=36,
-            alignment=TA_CENTER,
-            spaceAfter=12,
-            textColor=HexColor('#1a1a1a')
-        ))
+        styles.add(
+            ParagraphStyle(
+                "JapaneseTitle",
+                parent=styles["Title"],
+                fontName="Japanese",
+                fontSize=24,
+                leading=36,
+                alignment=TA_CENTER,
+                spaceAfter=12,
+                textColor=HexColor("#1a1a1a"),
+            )
+        )
 
-        styles.add(ParagraphStyle(
-            'JapaneseHeading1',
-            parent=styles['Heading1'],
-            fontName='Japanese',
-            fontSize=18,
-            leading=27,
-            spaceBefore=24,
-            spaceAfter=12,
-            textColor=HexColor('#1a1a1a')
-        ))
+        styles.add(
+            ParagraphStyle(
+                "JapaneseHeading1",
+                parent=styles["Heading1"],
+                fontName="Japanese",
+                fontSize=18,
+                leading=27,
+                spaceBefore=24,
+                spaceAfter=12,
+                textColor=HexColor("#1a1a1a"),
+            )
+        )
 
-        styles.add(ParagraphStyle(
-            'JapaneseHeading2',
-            parent=styles['Heading2'],
-            fontName='Japanese',
-            fontSize=15,
-            leading=22,
-            spaceBefore=18,
-            spaceAfter=10,
-            textColor=HexColor('#333333')
-        ))
+        styles.add(
+            ParagraphStyle(
+                "JapaneseHeading2",
+                parent=styles["Heading2"],
+                fontName="Japanese",
+                fontSize=15,
+                leading=22,
+                spaceBefore=18,
+                spaceAfter=10,
+                textColor=HexColor("#333333"),
+            )
+        )
 
-        styles.add(ParagraphStyle(
-            'JapaneseBody',
-            parent=styles['Normal'],
-            fontName='Japanese',
-            fontSize=11,
-            leading=19,
-            alignment=TA_JUSTIFY,
-            firstLineIndent=12,
-            spaceBefore=6,
-            spaceAfter=6
-        ))
+        styles.add(
+            ParagraphStyle(
+                "JapaneseBody",
+                parent=styles["Normal"],
+                fontName="Japanese",
+                fontSize=11,
+                leading=19,
+                alignment=TA_JUSTIFY,
+                firstLineIndent=12,
+                spaceBefore=6,
+                spaceAfter=6,
+            )
+        )
 
-        styles.add(ParagraphStyle(
-            'JapaneseDialogue',
-            parent=styles['Normal'],
-            fontName='Japanese',
-            fontSize=11,
-            leading=19,
-            alignment=TA_LEFT,
-            leftIndent=18,
-            spaceBefore=6,
-            spaceAfter=6
-        ))
+        styles.add(
+            ParagraphStyle(
+                "JapaneseDialogue",
+                parent=styles["Normal"],
+                fontName="Japanese",
+                fontSize=11,
+                leading=19,
+                alignment=TA_LEFT,
+                leftIndent=18,
+                spaceBefore=6,
+                spaceAfter=6,
+            )
+        )
 
-        styles.add(ParagraphStyle(
-            'JapaneseMonologue',
-            parent=styles['Normal'],
-            fontName='Japanese',
-            fontSize=11,
-            leading=19,
-            alignment=TA_LEFT,
-            leftIndent=24,
-            spaceBefore=6,
-            spaceAfter=6,
-            fontStyle='italic'
-        ))
+        styles.add(
+            ParagraphStyle(
+                "JapaneseMonologue",
+                parent=styles["Normal"],
+                fontName="Japanese",
+                fontSize=11,
+                leading=19,
+                alignment=TA_LEFT,
+                leftIndent=24,
+                spaceBefore=6,
+                spaceAfter=6,
+                fontStyle="italic",
+            )
+        )
 
     def _build_cover(self, series: SeriesResult) -> List:
         """表紙ページ構築"""
@@ -510,30 +523,32 @@ class PdfGenerator:
         from reportlab.platypus import Paragraph, Spacer
 
         story = []
-        story.append(Spacer(1, 5*cm))
+        story.append(Spacer(1, 5 * cm))
 
         # タイトル
-        story.append(Paragraph(series.title, styles['JapaneseTitle']))
-        story.append(Spacer(1, 1*cm))
+        story.append(Paragraph(series.title, styles["JapaneseTitle"]))
+        story.append(Spacer(1, 1 * cm))
 
         # 著者
-        story.append(Paragraph(f"著者: {self.metadata.author}", styles['Normal']))
-        story.append(Spacer(1, 0.5*cm))
+        story.append(Paragraph(f"著者: {self.metadata.author}", styles["Normal"]))
+        story.append(Spacer(1, 0.5 * cm))
 
         # ジャンルタグ
         genre_text = f"ジャンル: {self.metadata.genre}" if self.metadata.genre else ""
         if genre_text:
-            story.append(Paragraph(genre_text, styles['Normal']))
+            story.append(Paragraph(genre_text, styles["Normal"]))
 
-        story.append(Spacer(1, 3*cm))
+        story.append(Spacer(1, 3 * cm))
 
         # 発行情報
-        story.append(Paragraph(
-            f"発行: {self.metadata.publisher}<br/>"
-            f"発行日: {self.metadata.publication_date}<br/>"
-            f"{self.metadata.rights}",
-            styles['Normal']
-        ))
+        story.append(
+            Paragraph(
+                f"発行: {self.metadata.publisher}<br/>"
+                f"発行日: {self.metadata.publication_date}<br/>"
+                f"{self.metadata.rights}",
+                styles["Normal"],
+            )
+        )
 
         return story
 
@@ -542,23 +557,19 @@ class PdfGenerator:
         from reportlab.platypus import Paragraph, Spacer, TableOfContents
 
         story = []
-        story.append(Paragraph("目次", styles['JapaneseHeading1']))
-        story.append(Spacer(1, 1*cm))
+        story.append(Paragraph("目次", styles["JapaneseHeading1"]))
+        story.append(Spacer(1, 1 * cm))
 
         chapters = self.processor.create_chapters(series)
         toc = TableOfContents()
-        toc.levelStyles = [
-            styles['JapaneseHeading2'],
-            styles['JapaneseBody']
-        ]
+        toc.levelStyles = [styles["JapaneseHeading2"], styles["JapaneseBody"]]
 
         # TOCエントリ手動追加
         for i, ch in enumerate(chapters):
             if ch.toc_entry:
-                story.append(Paragraph(
-                    f'<a href="#chap_{i}">{ch.title}</a>',
-                    styles['JapaneseBody']
-                ))
+                story.append(
+                    Paragraph(f'<a href="#chap_{i}">{ch.title}</a>', styles["JapaneseBody"])
+                )
 
         return story
 
@@ -569,34 +580,34 @@ class PdfGenerator:
         story = []
 
         # アンカー
-        story.append(Paragraph(f'<a name="chap_{chapter.episode_num}"/>', styles['Normal']))
+        story.append(Paragraph(f'<a name="chap_{chapter.episode_num}"/>', styles["Normal"]))
 
         # タイトル
-        story.append(Paragraph(chapter.title, styles['JapaneseHeading1']))
-        story.append(Spacer(1, 0.5*cm))
+        story.append(Paragraph(chapter.title, styles["JapaneseHeading1"]))
+        story.append(Spacer(1, 0.5 * cm))
 
         # 本文
         # HTMLからParagraphへ変換
-        paragraphs = chapter.content.split('\n')
+        paragraphs = chapter.content.split("\n")
         for p_html in paragraphs:
             if not p_html.strip():
                 continue
 
             # タグ除去してテキスト抽出
-            p_text = re.sub(r'<[^>]+>', '', p_html)
+            p_text = re.sub(r"<[^>]+>", "", p_html)
             p_text = p_text.strip()
             if not p_text:
                 continue
 
             # スタイル判定
             if 'class="dialogue"' in p_html:
-                story.append(Paragraph(p_text, styles['JapaneseDialogue']))
+                story.append(Paragraph(p_text, styles["JapaneseDialogue"]))
             elif 'class="monologue"' in p_html:
-                story.append(Paragraph(p_text, styles['JapaneseMonologue']))
+                story.append(Paragraph(p_text, styles["JapaneseMonologue"]))
             elif 'class="emphasis"' in p_html:
-                story.append(Paragraph(p_text, styles['JapaneseBody']))  # 太字は別途
+                story.append(Paragraph(p_text, styles["JapaneseBody"]))  # 太字は別途
             else:
-                story.append(Paragraph(p_text, styles['JapaneseBody']))
+                story.append(Paragraph(p_text, styles["JapaneseBody"]))
 
         return story
 
@@ -605,9 +616,9 @@ class PdfGenerator:
         from reportlab.platypus import Paragraph, Spacer
 
         story = []
-        story.append(Spacer(1, 2*cm))
-        story.append(Paragraph("奥付", styles['JapaneseHeading2']))
-        story.append(Spacer(1, 1*cm))
+        story.append(Spacer(1, 2 * cm))
+        story.append(Paragraph("奥付", styles["JapaneseHeading2"]))
+        story.append(Spacer(1, 1 * cm))
 
         colophon_text = f"""
         書名: {series.title}<br/>
@@ -620,7 +631,7 @@ class PdfGenerator:
         {self.metadata.rights}
         """
 
-        story.append(Paragraph(colophon_text, styles['JapaneseBody']))
+        story.append(Paragraph(colophon_text, styles["JapaneseBody"]))
         return story
 
 
@@ -634,7 +645,7 @@ class MobiGenerator:
     def generate(self, series: SeriesResult, output_path: Path) -> Path:
         """MOBI生成（EPUB→MOBI変換）"""
         # まずEPUB生成
-        epub_path = output_path.with_suffix('.epub')
+        epub_path = output_path.with_suffix(".epub")
         epub_gen = EpubGenerator(self.metadata, self.processor)
         epub_gen.generate(series, epub_path)
 
@@ -643,28 +654,30 @@ class MobiGenerator:
         import subprocess
 
         # kindlegenを試す
-        kindlegen = shutil.which('kindlegen')
-        ebook_convert = shutil.which('ebook-convert')
+        kindlegen = shutil.which("kindlegen")
+        ebook_convert = shutil.which("ebook-convert")
 
         if kindlegen:
             result = subprocess.run([kindlegen, str(epub_path)], capture_output=True, text=True)
             if result.returncode == 0:
-                mobi_path = epub_path.with_suffix('.mobi')
+                mobi_path = epub_path.with_suffix(".mobi")
                 if mobi_path != output_path:
                     mobi_path.rename(output_path)
                 logger.info(f"MOBI generated via kindlegen: {output_path}")
                 return output_path
 
         elif ebook_convert:
-            result = subprocess.run([ebook_convert, str(epub_path), str(output_path)], capture_output=True, text=True)
+            result = subprocess.run(
+                [ebook_convert, str(epub_path), str(output_path)], capture_output=True, text=True
+            )
             if result.returncode == 0:
                 logger.info(f"MOBI generated via calibre: {output_path}")
                 return output_path
 
         # 変換ツールがない場合はEPUBをコピー
         logger.warning("No MOBI conversion tool found. Saving as EPUB instead.")
-        epub_path.rename(output_path.with_suffix('.epub'))
-        return output_path.with_suffix('.epub')
+        epub_path.rename(output_path.with_suffix(".epub"))
+        return output_path.with_suffix(".epub")
 
 
 class EbookExporter:
@@ -677,21 +690,21 @@ class EbookExporter:
 
     def create_metadata(self, series: SeriesResult, **kwargs) -> EbookMetadata:
         """メタデータ作成"""
-        author = kwargs.pop('author', 'AI Novel Engine')
-        tags = kwargs.pop('tags', [])
-        cover_image = kwargs.pop('cover_image', None)
-        cover_image_path = kwargs.pop('cover_image_path', None)
+        author = kwargs.pop("author", "AI Novel Engine")
+        tags = kwargs.pop("tags", [])
+        cover_image = kwargs.pop("cover_image", None)
+        cover_image_path = kwargs.pop("cover_image_path", None)
 
         return EbookMetadata(
             title=series.title,
             author=author,
-            description=series.metadata.get('concept', ''),
-            subject=[self.genre, 'Web小説', 'AI生成'],
+            description=series.metadata.get("concept", ""),
+            subject=[self.genre, "Web小説", "AI生成"],
             genre=self.genre,
             tags=tags + [self.genre],
             cover_image=cover_image,
             cover_image_path=cover_image_path,
-            **kwargs
+            **kwargs,
         )
 
     def export_epub(self, series: SeriesResult, output_path: Path, **kwargs) -> Path:
@@ -713,15 +726,11 @@ class EbookExporter:
         return generator.generate(series, output_path)
 
     def export_all(
-        self,
-        series: SeriesResult,
-        output_dir: Path,
-        formats: List[str] = None,
-        **kwargs
+        self, series: SeriesResult, output_dir: Path, formats: List[str] = None, **kwargs
     ) -> Dict[str, Path]:
         """全フォーマット出力"""
         if formats is None:
-            formats = ['epub', 'pdf']
+            formats = ["epub", "pdf"]
 
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -732,11 +741,11 @@ class EbookExporter:
         for fmt in formats:
             output_path = output_dir / f"{base_name}.{fmt}"
             try:
-                if fmt == 'epub':
+                if fmt == "epub":
                     results[fmt] = self.export_epub(series, output_path, **kwargs)
-                elif fmt == 'pdf':
+                elif fmt == "pdf":
                     results[fmt] = self.export_pdf(series, output_path, **kwargs)
-                elif fmt == 'mobi':
+                elif fmt == "mobi":
                     results[fmt] = self.export_mobi(series, output_path, **kwargs)
                 else:
                     logger.warning(f"Unknown format: {fmt}")

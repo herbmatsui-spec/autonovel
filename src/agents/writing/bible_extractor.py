@@ -11,12 +11,12 @@ class BibleExtractor:
         """
         Bible抽出トリガー。
         現在はスタブ実装だが、将来的には内容からBible情報を抽出する。
-        
+
         Args:
             book_id: 書籍ID
             content: 抽出対象の本文
             reporter: オプションのレポーター
-            
+
         Returns:
             抽出されたBible情報の辞書、またはNone
         """

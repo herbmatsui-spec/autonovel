@@ -26,7 +26,7 @@ class PresetTriggers(KernelBase):
 
     async def _setup_default_presets(self) -> None:
         """デフォルトプリセットを設定"""
-# エンゲージメントブーストトリガー
+        # エンゲージメントブーストトリガー
         self.presets["engagement_boost"] = self._engagement_boost_handler
         # コンバージョン最適化
         self.presets["conversion_optimize"] = self._conversion_handler
@@ -36,7 +36,7 @@ class PresetTriggers(KernelBase):
         return {
             "action": "recommend_related_content",
             "priority": "high",
-            "message": "読者に関連コンテンツをおすすめします"
+            "message": "読者に関連コンテンツをおすすめします",
         }
 
     async def _conversion_handler(self, context: Dict[str, Any]) -> Dict[str, Any]:
@@ -44,7 +44,7 @@ class PresetTriggers(KernelBase):
         return {
             "action": "offer_premium_content",
             "priority": "medium",
-            "message": "プレミアムコンテンツの試読を提供します"
+            "message": "プレミアムコンテンツの試読を提供します",
         }
 
     async def trigger_preset(self, name: str, context: Dict[str, Any]) -> Any:
@@ -60,10 +60,10 @@ class PresetTriggers(KernelBase):
 PRESET_DEFINITIONS = {
     "novel_launch": {
         "trigger": "content_published",
-        "actions": ["social_share", "email_notification", "analytics_track"]
+        "actions": ["social_share", "email_notification", "analytics_track"],
     },
     "chapter_complete": {
         "trigger": "chapter_finished",
-        "actions": ["progress_update", "next_chapter_hint", "reader_engagement"]
-    }
+        "actions": ["progress_update", "next_chapter_hint", "reader_engagement"],
+    },
 }

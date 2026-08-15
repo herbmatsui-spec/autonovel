@@ -30,7 +30,9 @@ class APIKeyService:
             # 本番環境では AUTH_DISABLED を無視して認証を要求
             env = os.environ.get("ENVIRONMENT", "development")
             if env == "production":
-                logger.error("AUTH_DISABLED is set but ENVIRONMENT=production - authentication is required")
+                logger.error(
+                    "AUTH_DISABLED is set but ENVIRONMENT=production - authentication is required"
+                )
                 return False
             logger.warning("AUTH_DISABLED is set - authentication is bypassed (non-production)")
             return True

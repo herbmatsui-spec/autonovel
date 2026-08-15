@@ -26,12 +26,12 @@ class EroticEnhancer:
         context: Dict[str, Any],
     ) -> str:
         """官能コンテンツを強化する。
-        
+
         Args:
             prompt: 元のプロンプト
             result: LLMによって生成された結果
             context: コンテキスト情報
-            
+
         Returns:
             � 強化された結果文字列
         """
@@ -72,7 +72,7 @@ class EroticEnhancer:
             erotic_prompt = specialist.build_scene_prompt(curve, context, params)
             prompt = prompt + "\n\n" + erotic_prompt
         except Exception as e:
-            if hasattr(self.agent, 'logger') and self.agent.logger is not None:
+            if hasattr(self.agent, "logger") and self.agent.logger is not None:
                 self.agent.logger.warning(f"EroticSpecialist delegation failed, falling back: {e}")
             params = None
 
@@ -88,7 +88,7 @@ class EroticEnhancer:
                 if hasattr(result, "story_content"):
                     result = result.story_content
             except Exception as e:
-                if hasattr(self.agent, 'logger') and self.agent.logger is not None:
+                if hasattr(self.agent, "logger") and self.agent.logger is not None:
                     self.agent.logger.warning(f"LLM regeneration failed: {e}")
 
         # メタファーフィルタ適用
@@ -96,7 +96,7 @@ class EroticEnhancer:
             try:
                 result = specialist.metaphor_filter(result, erotic_intensity)
             except Exception as e:
-                if hasattr(self.agent, 'logger') and self.agent.logger is not None:
+                if hasattr(self.agent, "logger") and self.agent.logger is not None:
                     self.agent.logger.warning(f"metaphor_filter failed: {e}")
 
         # アフターグロウ評価
@@ -108,13 +108,13 @@ class EroticEnhancer:
                 afterglow_candidate = result[len(result) * 3 // 4 :]
                 afterglow_ok, afterglow_issues = evaluator.evaluate(afterglow_candidate)
                 if not afterglow_ok:
-                    if hasattr(self.agent, 'logger') and self.agent.logger is not None:
+                    if hasattr(self.agent, "logger") and self.agent.logger is not None:
                         self.agent.logger.warning(
                             f"Episode {context.get('ep_num', '?')} afterglow quality issues: {afterglow_issues}. "
                             "Consider regeneration or supplementation."
                         )
             except Exception as e:
-                if hasattr(self.agent, 'logger') and self.agent.logger is not None:
+                if hasattr(self.agent, "logger") and self.agent.logger is not None:
                     self.agent.logger.warning(f"Afterglow evaluation failed: {e}")
 
         return result

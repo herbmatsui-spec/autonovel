@@ -4,6 +4,7 @@ services/exporters/base.py - 出版フォーマット自動整形エクスポー
 各プラットフォーム（なろう/カクヨム/Nocturne）の投稿用テキスト整形を提供する。
 自動投稿ではなく、人間がコピペ・貼り付けする用の整形済みテキストを出力する。
 """
+
 from __future__ import annotations
 
 import re
@@ -38,7 +39,7 @@ class NarouExporter(BaseExporter):
         out = [self._header(novel)]
         for ch in chapters:
             out.append(self._format_chapter(ch))
-            out.append("\n" + "="*20 + "\n")
+            out.append("\n" + "=" * 20 + "\n")
         return "\n".join(out)
 
 

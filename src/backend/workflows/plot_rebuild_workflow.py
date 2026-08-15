@@ -78,7 +78,9 @@ class PlotRebuildWorkflow(BaseWorkflow):
             )
             new_arcs = await self._step1_generate_new_arcs(context, params, active_reporter)
             self._step2_audit_arcs(new_arcs, active_reporter)
-            expanded = await self._step3_expand_affected_eps(context, new_arcs, params, active_reporter)
+            expanded = await self._step3_expand_affected_eps(
+                context, new_arcs, params, active_reporter
+            )
             self._step4_audit_expanded(new_arcs, expanded, context, params, active_reporter)
             active_reporter.report("🎉 プロット再構築パイプライン完了", "success")
             return self._step5_assemble_result(new_arcs, expanded, context, params)
@@ -125,10 +127,10 @@ class PlotRebuildWorkflow(BaseWorkflow):
         self, context: Dict[str, Any], params: Dict[str, Any], reporter: IReporter
     ) -> ArcList:
         try:
-            reporter.report(
-                f"📐 第{context['start_ep']}話以降の新規アークを生成中...", "info"
+            reporter.report(f"📐 第{context['start_ep']}話以降の新規アークを生成中...", "info")
+            synopsis = (
+                f"{params.get('trend_memo', '')}\nキーワード: {params.get('new_keywords', '')}"
             )
-            synopsis = f"{params.get('trend_memo', '')}\nキーワード: {params.get('new_keywords', '')}"
             planner = cast(Any, self.planner)
             result = await planner.generate_arcs(
                 title=context["book_title"],
@@ -137,9 +139,7 @@ class PlotRebuildWorkflow(BaseWorkflow):
                 start_ep=context["start_ep"],
             )
             new_arcs = result if isinstance(result, ArcList) else ArcList.model_validate(result)
-            reporter.report(
-                f"✅ アーク生成完了: {len(new_arcs.arcs)} 件", "success"
-            )
+            reporter.report(f"✅ アーク生成完了: {len(new_arcs.arcs)} 件", "success")
             return new_arcs
         except Exception as e:  # noqa: BLE001
             logger.error("ステップ1 アーク生成失敗: %s", e)
@@ -159,9 +159,7 @@ class PlotRebuildWorkflow(BaseWorkflow):
             is_consistent = plan_auditor.audit_bible_completeness(bible_like, reporter=reporter)
             if not is_consistent:
                 issues: List[str] = []
-                reporter.report(
-                    "⚠️ ステップ2監査課題: " + "; ".join(issues), "warning"
-                )
+                reporter.report("⚠️ ステップ2監査課題: " + "; ".join(issues), "warning")
         except Exception as e:  # noqa: BLE001
             logger.warning("ステップ2 監査スキップ: %s", e)
 
@@ -221,9 +219,7 @@ class PlotRebuildWorkflow(BaseWorkflow):
                     summary=arc.summary,
                 )
                 if hasattr(issues, "is_consistent") and not issues.is_consistent:
-                    reporter.report(
-                        f"⚠️ 第{arc.arc_num}アーク監査課題: {issues}", "warning"
-                    )
+                    reporter.report(f"⚠️ 第{arc.arc_num}アーク監査課題: {issues}", "warning")
         except Exception as e:  # noqa: BLE001
             logger.warning("ステップ4 監査スキップ: %s", e)
 

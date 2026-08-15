@@ -29,6 +29,7 @@ class PromptService(PromptServiceInterface):
             self._templates_dir = templates_dir
         else:
             import os
+
             current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             self._templates_dir = os.path.join(current_dir, "..", "..", "prompts")
 
@@ -47,7 +48,7 @@ class PromptService(PromptServiceInterface):
         context: Dict[str, Any],
         book_id: Optional[int] = None,
         user_id: Optional[str] = None,
-        request_id: Optional[str] = None
+        request_id: Optional[str] = None,
     ) -> str:
         """Render a prompt template, preferring DB version if available."""
         source = await self._get_source(template_name, book_id, user_id, request_id)
@@ -60,7 +61,7 @@ class PromptService(PromptServiceInterface):
         context: Dict[str, Any],
         book_id: Optional[int] = None,
         user_id: Optional[str] = None,
-        request_id: Optional[str] = None
+        request_id: Optional[str] = None,
     ) -> str:
         """Async render - delegates to render for now (templates are stateless)."""
         return await self.render(template_name, context, book_id, user_id, request_id)
@@ -70,7 +71,7 @@ class PromptService(PromptServiceInterface):
         template_name: str,
         book_id: Optional[int],
         user_id: Optional[str],
-        request_id: Optional[str]
+        request_id: Optional[str],
     ) -> str:
         """Get template source, preferring DB version for book_id."""
         # Normalize template name (add .j2 if needed)
@@ -90,7 +91,7 @@ class PromptService(PromptServiceInterface):
         try:
             # Try to get from Jinja2 environment
             template = self._env.get_template(template_name)
-            source = template.source if hasattr(template, 'source') else str(template)
+            source = template.source if hasattr(template, "source") else str(template)
             self._source_cache[template_name] = source
             return source
         except Exception:
@@ -98,9 +99,7 @@ class PromptService(PromptServiceInterface):
             raise FileNotFoundError(f"Prompt template '{template_name}' not found")
 
     async def get_active_version(
-        self,
-        book_id: int,
-        prompt_key: str
+        self, book_id: int, prompt_key: str
     ) -> Optional[PromptVersionDbModel]:
         """Get the currently active prompt version."""
         return await self._repository.get_active_prompt_version(book_id, prompt_key)
@@ -125,44 +124,23 @@ class PromptService(PromptServiceInterface):
             is_active=False,
         )
 
-    async def activate_version(
-        self,
-        book_id: int,
-        prompt_key: str,
-        version_id: int
-    ) -> None:
+    async def activate_version(self, book_id: int, prompt_key: str, version_id: int) -> None:
         """Activate a specific prompt version."""
         await self._repository.set_active_prompt_version(book_id, prompt_key, version_id)
 
-    async def list_versions(
-        self,
-        book_id: int,
-        limit: int = 20
-    ) -> List[PromptVersionDbModel]:
+    async def list_versions(self, book_id: int, limit: int = 20) -> List[PromptVersionDbModel]:
         """List prompt versions for a book."""
         return await self._repository.get_prompt_versions(book_id, limit)
 
-    async def update_score_after(
-        self,
-        version_id: int,
-        score: float
-    ) -> None:
+    async def update_score_after(self, version_id: int, score: float) -> None:
         """Update the post-A/B test score."""
         await self._repository.update_score_after(version_id, score)
 
-    async def update_ab_test_metrics(
-        self,
-        version_id: int,
-        metrics: Dict[str, Any]
-    ) -> None:
+    async def update_ab_test_metrics(self, version_id: int, metrics: Dict[str, Any]) -> None:
         """Update A/B test metrics."""
         await self._repository.update_ab_test_metrics(version_id, metrics)
 
-    async def record_rollback(
-        self,
-        version_id: int,
-        reason: str
-    ) -> None:
+    async def record_rollback(self, version_id: int, reason: str) -> None:
         """Record a rollback and deactivate version."""
         await self._repository.record_rollback(version_id, reason)
 
@@ -186,6 +164,7 @@ class PromptRegistry:
             self._templates_dir = templates_dir
         else:
             import os
+
             current_dir = os.path.dirname(os.path.abspath(__file__))
             self._templates_dir = os.path.join(current_dir, "..", "prompts")
 
@@ -202,7 +181,7 @@ class PromptRegistry:
 
         try:
             template = env.get_template(template_name)
-            source = template.source if hasattr(template, 'source') else str(template)
+            source = template.source if hasattr(template, "source") else str(template)
             self._cache[cache_key] = source
             return source
         except Exception:
@@ -224,7 +203,9 @@ class PromptRegistry:
             )
 
         # AB test variant selection from file system
-        source = await self._get_ab_variant(template_name, book_id, user_id, request_id, version_tags)
+        source = await self._get_ab_variant(
+            template_name, book_id, user_id, request_id, version_tags
+        )
 
         env = Environment(
             loader=FileSystemLoader(self._templates_dir),

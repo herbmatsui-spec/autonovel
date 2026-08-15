@@ -4,6 +4,7 @@ routers/export.py - 出版フォーマット自動整形エクスポーター AP
 指定プラットフォーム（なろう/カクヨム/Nocturne）向けに小説本文を整形して出力する。
 自動投稿ではなく、人間がコピペする用の整形済みテキストを提供する。
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List

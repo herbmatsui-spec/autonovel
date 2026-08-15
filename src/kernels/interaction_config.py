@@ -9,6 +9,7 @@ from typing import Dict, List, Optional
 @dataclass
 class InteractionSetting:
     """インタラクション設定"""
+
     category: str = "default"
     parameter: str = "value"
     is_active: bool = True

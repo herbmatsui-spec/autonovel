@@ -65,7 +65,7 @@ class EpisodePipeline:
                 else:
                     failed_episodes.append({"ep_num": ep, "error_message": "0文字生成"})
             except Exception as e:
-                if hasattr(self.agent, 'logger'):
+                if hasattr(self.agent, "logger"):
                     self.agent.logger.error(f"generate_episodes_pipeline failed at ep {ep}: {e}")
                 failed_episodes.append({"ep_num": ep, "error_message": str(e)})
 

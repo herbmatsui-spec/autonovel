@@ -5,6 +5,7 @@ services/resilience.py - オフライン／低帯域耐障害モードの状態�
 オフライン時はセマンティックキャッシュ優先で動作するよう状態を報告する。
 ネットワーク遮断時も例外を投げず、安全に offline 状態を返す。
 """
+
 from __future__ import annotations
 
 import logging
@@ -73,6 +74,7 @@ def get_system_status() -> Dict[str, Any]:
         "cache_first": offline,
         "recommendation": (
             "オフライン: セマンティックキャッシュからの再開を推奨"
-            if offline else "オンライン: 通常通り生成可能"
+            if offline
+            else "オンライン: 通常通り生成可能"
         ),
     }

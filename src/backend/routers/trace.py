@@ -3,6 +3,7 @@ routers/trace.py - 生成ログ・Trace ID 再現性レポート API
 
 GenerationRun の記録・取得・再現性レポート(Markdown)生成を提供する。
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
@@ -56,7 +57,9 @@ async def list_runs(book_id: int, chapter_ep: Optional[int] = Query(None)) -> Li
 
 
 @router.get("/books/{book_id}/report")
-async def reproducibility_report(book_id: int, chapter_ep: Optional[int] = Query(None)) -> Dict[str, Any]:
+async def reproducibility_report(
+    book_id: int, chapter_ep: Optional[int] = Query(None)
+) -> Dict[str, Any]:
     """再現性レポート（Markdown）を生成する。"""
     async with UnitOfWork(AppContainer.db()) as uow:
         runs = await uow.trace.list_by_book(book_id, chapter_ep)

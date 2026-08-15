@@ -4,6 +4,7 @@ services/cost_analytics.py - 執筆コスト集計・予算アラート
 トークン数からモデル別単価で推定USDコストを算出し、
 予算超過を検知する。価格表は設定で上書き可能。
 """
+
 from __future__ import annotations
 
 import logging

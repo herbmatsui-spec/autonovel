@@ -107,45 +107,47 @@ class ContextBuilder:
     # デлегаートメソッド群（親エージェントのメソッドを呼び出す）
     async def _get_plot(self, book_id: int, branch_id: int, ep_num: int) -> Optional[Any]:
         """プロットをDBから取得する。"""
-        if getattr(self.agent, 'repo', None) is None:
+        if getattr(self.agent, "repo", None) is None:
             return None
         try:
             return await self.agent.repo.get_plot(book_id, ep_num, branch_id=branch_id)
         except Exception as e:
-            if hasattr(self.agent, 'logger'):
-                self.agent.logger.debug(f"Plot not found for book={book_id}, branch={branch_id}, ep={ep_num}: {e}")
+            if hasattr(self.agent, "logger"):
+                self.agent.logger.debug(
+                    f"Plot not found for book={book_id}, branch={branch_id}, ep={ep_num}: {e}"
+                )
             return None
 
     async def _get_book(self, book_id: int) -> Optional[Any]:
         """作品情報をDBから取得する。"""
-        if getattr(self.agent, 'repo', None) is None:
+        if getattr(self.agent, "repo", None) is None:
             return None
         try:
             return await self.agent.repo.get_book(book_id)
         except Exception as e:
-            if hasattr(self.agent, 'logger'):
+            if hasattr(self.agent, "logger"):
                 self.agent.logger.debug(f"Book not found for book_id={book_id}: {e}")
             return None
 
     async def _get_chars(self, book_id: int) -> List[Any]:
         """作品に所属する全キャラクターを取得する。"""
-        if getattr(self.agent, 'repo', None) is None:
+        if getattr(self.agent, "repo", None) is None:
             return []
         try:
             return await self.agent.repo.get_all_characters(book_id)
         except Exception as e:
-            if hasattr(self.agent, 'logger'):
+            if hasattr(self.agent, "logger"):
                 self.agent.logger.debug(f"Characters not found for book_id={book_id}: {e}")
             return []
 
     async def _get_prev_chapter(self, book_id: int, branch_id: int, ep_num: int) -> Optional[Any]:
         """前話の章データを取得する。"""
-        if getattr(self.agent, 'repo', None) is None or ep_num <= 1:
+        if getattr(self.agent, "repo", None) is None or ep_num <= 1:
             return None
         try:
             return await self.agent.repo.get_chapter(branch_id, ep_num - 1)
         except Exception as e:
-            if hasattr(self.agent, 'logger'):
+            if hasattr(self.agent, "logger"):
                 self.agent.logger.debug(
                     f"Previous chapter not found for book={book_id}, branch={branch_id}, ep={ep_num}: {e}"
                 )
@@ -172,7 +174,7 @@ class ContextBuilder:
                 return [c for c in chars if getattr(c, "name", None) in active_names]
             return chars
         except Exception as e:
-            if hasattr(self.agent, 'logger'):
+            if hasattr(self.agent, "logger"):
                 self.agent.logger.debug(f"Active char extraction failed: {e}")
             return chars
 
@@ -267,10 +269,16 @@ class ContextBuilder:
     async def _ensure_plot_exists(self, book_id: int, branch_id: int, ep_num: int) -> Optional[Any]:
         """プロットが存在しない場合、生成を試みる。"""
         plot = await self._get_plot(book_id, branch_id, ep_num)
-        if plot is None and hasattr(self.agent, '_plot_expander') and getattr(self.agent, '_plot_expander') is not None:
+        if (
+            plot is None
+            and hasattr(self.agent, "_plot_expander")
+            and getattr(self.agent, "_plot_expander") is not None
+        ):
             try:
-                if hasattr(self.agent, 'logger'):
-                    self.agent.logger.info(f"Plot missing for Ep.{ep_num}, attempting on-demand generation...")
+                if hasattr(self.agent, "logger"):
+                    self.agent.logger.info(
+                        f"Plot missing for Ep.{ep_num}, attempting on-demand generation..."
+                    )
                 arcs: List[Any] = []
                 bible = await self._get_bible(book_id)
                 if bible and hasattr(bible, "arcs"):
@@ -287,20 +295,22 @@ class ContextBuilder:
                 )
                 if results:
                     plot = results[0]
-                    if hasattr(self.agent, 'logger'):
+                    if hasattr(self.agent, "logger"):
                         self.agent.logger.info(f"On-demand plot generated for Ep.{ep_num}")
             except Exception as e:
-                if hasattr(self.agent, 'logger'):
-                    self.agent.logger.warning(f"On-demand plot generation failed for Ep.{ep_num}: {e}")
+                if hasattr(self.agent, "logger"):
+                    self.agent.logger.warning(
+                        f"On-demand plot generation failed for Ep.{ep_num}: {e}"
+                    )
         return plot
 
     async def _get_bible(self, book_id: int) -> Optional[Any]:
         """最新のバイブルを取得する。"""
-        if getattr(self.agent, 'repo', None) is None:
+        if getattr(self.agent, "repo", None) is None:
             return None
         try:
             return await self.agent.repo.get_latest_bible(book_id)
         except Exception as e:
-            if hasattr(self.agent, 'logger'):
+            if hasattr(self.agent, "logger"):
                 self.agent.logger.debug(f"Bible not found for book_id={book_id}: {e}")
             return None

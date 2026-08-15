@@ -239,7 +239,6 @@ class WritingAgent(BaseAgent):
             book_id, branch_id, ep_num, target_word_count, style_tag
         )
 
-
     async def write_episode(self, book_id: int, ep_num: int, context: Dict[str, Any]) -> str:
         """
         エピソード本文を生成し、文字列で返す。
@@ -267,6 +266,7 @@ class WritingAgent(BaseAgent):
         result = await erotic_enhancer.enhance_erotic_content(prompt, result, context)
 
         return result
+
     @property
     def pm(self):
         return self.prompt_manager
@@ -317,7 +317,6 @@ class WritingAgent(BaseAgent):
                 return 0
         return total_chars
 
-
     async def generate_episodes_pipeline(
         self,
         book_id,
@@ -333,8 +332,17 @@ class WritingAgent(BaseAgent):
         """エピソード生成パイプライン。成功時は (total_chars, []) 、失敗時は (0, [failed_eps]) を返す。"""
         pipeline = EpisodePipeline(self)
         return await pipeline.run(
-            book_id, start_ep, end_ep, passion, target_word_count, is_easy_mode, reporter, branch_id, style_tag
+            book_id,
+            start_ep,
+            end_ep,
+            passion,
+            target_word_count,
+            is_easy_mode,
+            reporter,
+            branch_id,
+            style_tag,
         )
+
     async def trigger_bible_extraction(self, book_id, content, reporter):
         """Bible抽出トリガー（現在はスタブ）"""
         return None

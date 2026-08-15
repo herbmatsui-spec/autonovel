@@ -5,7 +5,6 @@ AUTO の場合はコンテキスト（種別・安全レベル）から自動選
 モデルIDは src 内に持たず、必ず config.imagen_models を経由する。
 """
 
-
 from config.imagen_models import get_imagen_model_id, select_imagen_model
 from src.models.illustration import IllustrationModel, IllustrationRequest
 

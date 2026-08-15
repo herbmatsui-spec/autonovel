@@ -43,8 +43,46 @@ from src.models.api_schemas import (
     EasyModeRequest,
     RefineEroticRequest,
 )
-
 logger = logging.getLogger(__name__)
+
+# Rate limiter cleanup task
+_rate_limit_cleanup_task: asyncio.Task | None = None
+
+
+def cleanup_rate_limit_store():
+    """Remove expired entries from rate limit store based on TTL."""
+    now = time.time()
+    window_start = now - _RATE_LIMIT_WINDOW_SECONDS
+    
+    # Clean up old entries for each IP
+    ips_to_delete = []
+    for ip, timestamps in _rate_limit_store.items():
+        # Filter out timestamps older than the window
+        recent_timestamps = [t for t in timestamps if t > window_start]
+        if recent_timestamps:
+            _rate_limit_store[ip] = recent_timestamps
+        else:
+            # No recent timestamps, mark IP for deletion
+            ips_to_delete.append(ip)
+    
+    # Delete IPs with no recent activity
+    for ip in ips_to_delete:
+        del _rate_limit_store[ip]
+
+
+async def rate_limit_cleanup_background():
+    """Background task to periodically clean up rate limit store."""
+    while True:
+        try:
+            await asyncio.sleep(60)  # Run every minute
+            cleanup_rate_limit_store()
+            logger.debug("Rate limit store cleanup completed")
+        except asyncio.CancelledError:
+            logger.info("Rate limit cleanup task cancelled")
+            break
+        except Exception as e:
+            logger.error(f"Error in rate limit cleanup task: {e}")
+
 
 setup_logging()
 
@@ -67,6 +105,12 @@ async def lifespan(app: FastAPI):
         db_manager = AppContainer.db()
         init_db(db_manager.db_path)
         logger.info("Database initialization complete.")
+        
+        # Start rate limit cleanup background task
+        global _rate_limit_cleanup_task
+        _rate_limit_cleanup_task = asyncio.create_task(rate_limit_cleanup_background())
+        logger.info("Rate limit cleanup background task started")
+        
         yield
     except Exception:
         import traceback
@@ -78,6 +122,17 @@ async def lifespan(app: FastAPI):
         raise
     finally:
         logger.info("シャットダウン処理を開始します...")
+        
+        # Stop rate limit cleanup background task
+
+        if _rate_limit_cleanup_task and not _rate_limit_cleanup_task.done():
+            _rate_limit_cleanup_task.cancel()
+            try:
+                await _rate_limit_cleanup_task
+            except asyncio.CancelledError:
+                pass
+            logger.info("Rate limit cleanup background task stopped")
+        
         try:
             # SQLite 接続のクローズ
             db_manager = AppContainer.db()

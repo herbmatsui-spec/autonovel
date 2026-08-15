@@ -106,7 +106,9 @@ def build_character_prompt(character_data: Dict[str, str]) -> str:
     return " ".join(parts)
 
 
-def apply_safety_modifier(prompt: str, safety_level: SafetyLevel, illo_type: IllustrationType) -> str:
+def apply_safety_modifier(
+    prompt: str, safety_level: SafetyLevel, illo_type: IllustrationType
+) -> str:
     """R15等の安全レベルに応じたプロンプト修飾を付与する。
 
     safety_level は src / autonovel.src いずれの経路で作られた enum でも
@@ -121,8 +123,7 @@ def apply_safety_modifier(prompt: str, safety_level: SafetyLevel, illo_type: Ill
 
     if illo_type == IllustrationType.CHARACTER:
         return (
-            prompt
-            + " Tasteful R15 artistic representation, romantic atmosphere, "
+            prompt + " Tasteful R15 artistic representation, romantic atmosphere, "
             "elegant and non-explicit."
         )
     return (

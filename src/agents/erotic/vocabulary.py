@@ -334,7 +334,7 @@ EROTIC_QUALITY_KEYWORDS = {
         "尊敬",
         "永遠",
     ],
-"psychological": [
+    "psychological": [
         "支配",
         "服従",
         "従順",

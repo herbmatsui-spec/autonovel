@@ -106,6 +106,13 @@ class DatabaseConnectionWrapper:
         else:
             setattr(self.dbapi_conn, name, value)
 
+    def fetchone(self):
+        """単一行を取得"""
+        return self.dbapi_conn.fetchone()
+
+    def fetchall(self):
+        """全行を取得"""
+        return self.dbapi_conn.fetchall()
     async def close(self) -> None:
         try:
             await self.dbapi_conn.rollback()
@@ -299,7 +306,6 @@ def init_db(db_path: str):
     """データベースのマイグレーションを同期的に実行"""
     from alembic.config import Config
 
-
     sync_url = DATABASE_URL
     if "sqlite+aiosqlite" in sync_url:
         sync_url = sync_url.replace("sqlite+aiosqlite://", "sqlite://")
@@ -331,6 +337,7 @@ def get_db_manager() -> DatabaseManager:
     """
     return DatabaseManager(DATABASE_URL)
 
+
 _sync_engine = None
 _sync_session_factory = None
 
@@ -356,7 +363,7 @@ def set_db_manager(manager: Optional[DatabaseManager]) -> None:
     logger.warning("set_db_manager is deprecated. Use DI container instead.")
     try:
         from src.core.container import AppContainer
+
         AppContainer.db.override(manager)
     except Exception as exc:
         logger.warning("AppContainer.db.override に失敗: %s", exc, exc_info=True)
-

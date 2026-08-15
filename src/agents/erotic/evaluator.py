@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 
 class EroticQualityReport(BaseModel):
     """官能品質評価レポート"""
+
     overall_score: float = Field(..., ge=0.0, le=100.0, description="総合スコア")
     sensuality_score: float = Field(..., ge=0.0, le=100.0, description="感覚的要素スコア")
     emotional_score: float = Field(..., ge=0.0, le=100.0, description="感情的要素スコア")
@@ -26,29 +27,96 @@ class EroticQualityScorer:
         # キー�ーワードベースのスコアリング用�辞書（実際には外部ファイルから読み込むか、より複�雑なロジックを使用）
         self.quality_keywords = {
             "sensory": [
-                "熱", "温もり", "冷たさ", "����らか", "����さ", "����らか", "ざらつき", "����り", "����き", "����い",
-                "香り", "味", "����", "����", "����", "指先", "����", "����", "息", "����息", "����動", "����", "震え", "����れ",
-                "電流", "火照り", "����", "����", "��������", "体����"
+                "熱",
+                "温もり",
+                "冷たさ",
+                "����らか",
+                "����さ",
+                "����らか",
+                "ざらつき",
+                "����り",
+                "����き",
+                "����い",
+                "香り",
+                "味",
+                "����",
+                "����",
+                "����",
+                "指先",
+                "����",
+                "����",
+                "息",
+                "����息",
+                "����動",
+                "����",
+                "震え",
+                "����れ",
+                "電流",
+                "火照り",
+                "����",
+                "����",
+                "��������",
+                "体����",
             ],
             "emotional": [
-                "愛おしい", "愛しい", "切ない", "����しい", "����しい", "幸せ", "恐ろしい", "不安", "安心",
-                "信頼", "裏切り", "��������", "独占欲", "����着", "����身", "��������", "許し", "受容", "共感", "同情",
-                "����れ", "����敬", "��������"
+                "愛おしい",
+                "愛しい",
+                "切ない",
+                "����しい",
+                "����しい",
+                "幸せ",
+                "恐ろしい",
+                "不安",
+                "安心",
+                "信頼",
+                "裏切り",
+                "��������",
+                "独占欲",
+                "����着",
+                "����身",
+                "��������",
+                "許し",
+                "受容",
+                "共感",
+                "同情",
+                "����れ",
+                "����敬",
+                "��������",
             ],
             "psychological": [
-                "支配", "服従", "従����", "反抗", "����服", "解放", "束����", "自由", "罪悪感", "背徳", "禁����",
-                "��������", "����れ", "清らか", "����ら", "恥����", "����り", "プライド", "自����心", "自我", "自我��������",
-                "自我����失", "自我統合"
-            ]
+                "支配",
+                "服従",
+                "従����",
+                "反抗",
+                "����服",
+                "解放",
+                "束����",
+                "自由",
+                "罪悪感",
+                "背徳",
+                "禁����",
+                "��������",
+                "����れ",
+                "清らか",
+                "����ら",
+                "恥����",
+                "����り",
+                "プライド",
+                "自����心",
+                "自我",
+                "自我��������",
+                "自我����失",
+                "自我統合",
+            ],
         }
 
     def score_quality(self, text: str) -> EroticQualityReport:
         """
         テキストの官能品質を評価する
-        
+
         Args:
             text: 評価対象のテキスト
-            
+
         Returns:
             評価レポート
         """
@@ -58,26 +126,32 @@ class EroticQualityScorer:
                 sensuality_score=0.0,
                 emotional_score=0.0,
                 psychological_score=0.0,
-                technical_score=0.0
+                technical_score=0.0,
             )
 
         text_lower = text.lower()
         total_chars = len(text)
 
         # 各カテゴリのスコアを計算（簡易実装）
-        sensuality_score = self._score_category(text_lower, self.quality_keywords.get("sensory", []), total_chars)
-        emotional_score = self._score_category(text_lower, self.quality_keywords.get("emotional", []), total_chars)
-        psychological_score = self._score_category(text_lower, self.quality_keywords.get("psychological", []), total_chars)
+        sensuality_score = self._score_category(
+            text_lower, self.quality_keywords.get("sensory", []), total_chars
+        )
+        emotional_score = self._score_category(
+            text_lower, self.quality_keywords.get("emotional", []), total_chars
+        )
+        psychological_score = self._score_category(
+            text_lower, self.quality_keywords.get("psychological", []), total_chars
+        )
 
         # � 技術的スコアは文章構造などから評価（簡易実装）
         technical_score = self._score_technical(text, total_chars)
 
         # 総合スコアは重み付き平均
         overall_score = (
-            sensuality_score * 0.3 +
-            emotional_score * 0.3 +
-            psychological_score * 0.2 +
-            technical_score * 0.2
+            sensuality_score * 0.3
+            + emotional_score * 0.3
+            + psychological_score * 0.2
+            + technical_score * 0.2
         )
 
         return EroticQualityReport(
@@ -88,10 +162,16 @@ class EroticQualityScorer:
             technical_score=min(100.0, max(0.0, technical_score)),
             details={
                 "text_length": total_chars,
-                "sensuality_matches": self._count_matches(text_lower, self.quality_keywords.get("sensory", [])),
-                "emotional_matches": self._count_matches(text_lower, self.quality_keywords.get("emotional", [])),
-                "psychological_matches": self._count_matches(text_lower, self.quality_keywords.get("psychological", []))
-            }
+                "sensuality_matches": self._count_matches(
+                    text_lower, self.quality_keywords.get("sensory", [])
+                ),
+                "emotional_matches": self._count_matches(
+                    text_lower, self.quality_keywords.get("emotional", [])
+                ),
+                "psychological_matches": self._count_matches(
+                    text_lower, self.quality_keywords.get("psychological", [])
+                ),
+            },
         )
 
     def _score_category(self, text: str, keywords: List[str], total_chars: int) -> float:
@@ -110,7 +190,7 @@ class EroticQualityScorer:
             return 0.0
 
         # 簡易的な技術的スコア計算
-        sentences = text.split('。')
+        sentences = text.split("。")
         avg_sentence_length = sum(len(s) for s in sentences) / max(len(sentences), 1)
 
         # 適切な文の長さ（20-50文字）を基準にスコアリング
@@ -122,7 +202,7 @@ class EroticQualityScorer:
             length_score = max(50.0, 100.0 - (avg_sentence_length - 50) * 0.5)
 
         # �� 段落構造の評価
-        paragraphs = text.split('\n\n')
+        paragraphs = text.split("\n\n")
         para_score = 100.0 if len(paragraphs) >= 1 else 50.0
 
         return (length_score + para_score) / 2

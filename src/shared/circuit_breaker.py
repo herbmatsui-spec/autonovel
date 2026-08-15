@@ -17,11 +17,12 @@ class CircuitState(Enum):
 class CircuitBreakerConfig(BaseModel):
     failure_threshold: int = 5
     recovery_timeout: float = 30.0
-    half_open_max_success: int = 2
+    half_open_max_success: int = 1
 
 
 class CircuitBreakerOpenException(Exception):
     """Exception raised when the circuit breaker is in OPEN state."""
+
     pass
 
 

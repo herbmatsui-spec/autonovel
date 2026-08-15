@@ -11,9 +11,14 @@ class EpisodeWriter:
         self.llm = llm
         self.context_builder = context_builder
 
-    async def build_context(self, book_id: int, branch_id: int,
-                            ep_num: int, target_word_count: int,
-                            style_tag: Optional[str] = None) -> Dict[str, Any]:
+    async def build_context(
+        self,
+        book_id: int,
+        branch_id: int,
+        ep_num: int,
+        target_word_count: int,
+        style_tag: Optional[str] = None,
+    ) -> Dict[str, Any]:
         """執筆に必要な完全なコンテキストを構築する。"""
         return await self.context_builder.build_full_writing_context(
             book_id, branch_id, ep_num, target_word_count, style_tag

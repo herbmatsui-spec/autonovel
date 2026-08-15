@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class EpisodeResult:
     """1話分の生成結果"""
+
     episode_num: int
     title: str
     content: str
@@ -36,6 +37,7 @@ class EpisodeResult:
 @dataclass
 class SeriesResult:
     """シリーズ全体の生成結果"""
+
     genre: str
     title: str
     concept: str
@@ -51,6 +53,7 @@ class SeriesResult:
 @dataclass
 class PipelineConfig:
     """パイプライン設定"""
+
     genre: str
     target_episodes: int = 8
     max_rewrite_iterations: int = 3
@@ -73,7 +76,9 @@ class EasyModePipeline:
         self.series_result: Optional[SeriesResult] = None
         self._cancelled = False
 
-    async def _generate_with_retry(self, prompt: str, variables: Dict, operation: str = "generate") -> str:
+    async def _generate_with_retry(
+        self, prompt: str, variables: Dict, operation: str = "generate"
+    ) -> str:
         """LLM生成をリトライ付きで実行"""
         last_error: Exception = Exception("Unknown error")
         for attempt in range(self.MAX_LLM_RETRIES):
@@ -88,7 +93,9 @@ class EasyModePipeline:
                 if self._cancelled:
                     raise
                 last_error = e
-                logger.warning(f"{operation} attempt {attempt + 1}/{self.MAX_LLM_RETRIES} failed: {e}")
+                logger.warning(
+                    f"{operation} attempt {attempt + 1}/{self.MAX_LLM_RETRIES} failed: {e}"
+                )
                 if attempt < self.MAX_LLM_RETRIES - 1:
                     await asyncio.sleep(self.LLM_RETRY_DELAY * (attempt + 1))
 
@@ -119,7 +126,9 @@ class EasyModePipeline:
                     break
 
                 await self._report_progress("writing", ep_num - 1, self.config.target_episodes)
-                episode_result = await limit_concurrency(self._generate_episode(ep_num, plot_outline, bible))
+                episode_result = await limit_concurrency(
+                    self._generate_episode(ep_num, plot_outline, bible)
+                )
                 episodes.append(episode_result)
 
             await self._report_progress("finalizing", len(episodes), self.config.target_episodes)
@@ -161,7 +170,9 @@ class EasyModePipeline:
 
         # LLMで生成（リトライ付き）
         try:
-            bible_text = await self._generate_with_retry(bible_template, variables, "bible_generation")
+            bible_text = await self._generate_with_retry(
+                bible_template, variables, "bible_generation"
+            )
             # パースして辞書化
             bible = self._parse_bible(bible_text)
         except Exception as e:
@@ -211,7 +222,7 @@ class EasyModePipeline:
         ep_num: int,
         bible: Dict[str, Any],
         plot_outline: List[Dict[str, Any]],
-        previous_episodes: List[EpisodeResult]
+        previous_episodes: List[EpisodeResult],
     ) -> EpisodeResult:
         """1話生成（執筆→監査→リライト）"""
         plot = plot_outline[ep_num - 1]
@@ -244,9 +255,7 @@ class EasyModePipeline:
 
             # 改善指示でリライト
             improvements = audit_result.get("improvements", [])
-            final_content = await self._rewrite_episode(
-                final_content, improvements, spice_elements
-            )
+            final_content = await self._rewrite_episode(final_content, improvements, spice_elements)
 
             # 再監査
             audit_result = await self._audit_episode(final_content, bible, plot, ep_num)
@@ -262,7 +271,7 @@ class EasyModePipeline:
             rewrite_count=rewrite_count,
             spice_elements=spice_elements,
             metadata={"plot": plot, "audit_details": audit_result},
-            needs_human_review=audit_result.get("needs_human_review", False)
+            needs_human_review=audit_result.get("needs_human_review", False),
         )
 
     # === ヘルパーメソッド ===
@@ -293,6 +302,7 @@ class EasyModePipeline:
         # 簡易パース：JSON部分を抽出、または構造化
         try:
             import json
+
             return json.loads(text)
         except Exception:
             # フォールバック：テキストをそのまま格納
@@ -306,7 +316,7 @@ class EasyModePipeline:
             "protagonist": variables.get("protagonist_name", "主人公"),
             "cheat_ability": variables.get("cheat_ability", ""),
             "catharsis_target": variables.get("catharsis_target", ""),
-            "fallback": True
+            "fallback": True,
         }
 
     def _interpolate_tension(self, progress: float, curve_points: List[List[float]]) -> float:
@@ -330,33 +340,33 @@ class EasyModePipeline:
                 "name": "opening",
                 "title_suffix": "〜始まりの刻印〜",
                 "beats": ["日常の提示", "異変の兆候", "決定的な事件", "新世界への扉"],
-                "hook": "冒頭3行で読者の欠落を刺激"
+                "hook": "冒頭3行で読者の欠落を刺激",
             },
             "catharsis": {
                 "name": "catharsis",
                 "title_suffix": "〜逆転の咆哮〜",
                 "beats": ["絶体絶命", "覚醒のトリガー", "圧倒的無双", "ざまぁの完成"],
                 "hook": "カタルシス直後の余韻で次話へ",
-                "catharsis_type": "major"
+                "catharsis_type": "major",
             },
             "development": {
                 "name": "development",
                 "title_suffix": "〜試練の連鎖〜",
                 "beats": ["新たな敵・課題", "仲間との出会い", "スキル・戦力の拡張", "伏線の提示"],
-                "hook": "次なる脅威の予兆"
+                "hook": "次なる脅威の予兆",
             },
             "climax": {
                 "name": "climax",
                 "title_suffix": "〜最終決戦の序曲〜",
                 "beats": ["最大の危機", "真相の暴露", "全戦力の結集", "決戦への覚悟"],
-                "hook": "最終話への最大級クリフハンガー"
+                "hook": "最終話への最大級クリフハンガー",
             },
             "resolution": {
                 "name": "resolution",
                 "title_suffix": "〜新たな世界の幕開け〜",
                 "beats": ["完全勝利", "因果の清算", "新秩序の構築", "平穏な日常へ"],
-                "hook": "エピローグへの静かな誘い"
-            }
+                "hook": "エピローグへの静かな誘い",
+            },
         }
 
         if ep_num == 1:
@@ -392,7 +402,9 @@ class EasyModePipeline:
             erotic_rules = self.preset.get("erotic", {})
 
             # 執筆プロンプト構築・実行
-            prompt = self._build_writing_prompt(ep_num, bible, plot, prev_context, style_dna, hooks, erotic_rules)
+            prompt = self._build_writing_prompt(
+                ep_num, bible, plot, prev_context, style_dna, hooks, erotic_rules
+            )
 
             content = await self._generate_with_retry(prompt, {}, f"write_episode_{ep_num}")
             return content
@@ -400,8 +412,16 @@ class EasyModePipeline:
             logger.error(f"Writing failed for ep {ep_num}: {e}")
             return f"[執筆エラー: 第{ep_num}話の生成に失敗しました]"
 
-    def _build_writing_prompt(self, ep_num: int, bible: Dict, plot: Dict, prev_context: str,
-                              style_dna: Dict, hooks: Dict, erotic_rules: Dict) -> str:
+    def _build_writing_prompt(
+        self,
+        ep_num: int,
+        bible: Dict,
+        plot: Dict,
+        prev_context: str,
+        style_dna: Dict,
+        hooks: Dict,
+        erotic_rules: Dict,
+    ) -> str:
         """執筆プロンプト構築"""
         # 既存の final_writing_prompt.j2 相当を構築
         return f"""
@@ -416,27 +436,27 @@ class EasyModePipeline:
         官能ルール: {erotic_rules}
 
         目標文字数: 3000-5000字
-        テンション目標: {plot.get('target_tension', 0.5)}
-        カタルシス話: {plot.get('is_catharsis', False)}
+        テンション目標: {plot.get("target_tension", 0.5)}
+        カタルシス話: {plot.get("is_catharsis", False)}
 
         以下の制約を厳守せよ：
         1. POV漏れ禁止
         2. ショー・ドン・テル
         3. 各シーン末尾にフック
-        4. 官能Lv.{erotic_rules.get('max_intensity_level', 3)}以下
+        4. 官能Lv.{erotic_rules.get("max_intensity_level", 3)}以下
         5. 独自比喩・キャラ声・伏線回収キーワードを保護
         """
 
-    async def _audit_episode(self, content: str, bible: Dict, plot: Dict, ep_num: int) -> Dict[str, Any]:
+    async def _audit_episode(
+        self, content: str, bible: Dict, plot: Dict, ep_num: int
+    ) -> Dict[str, Any]:
         """監査エージェント統合呼び出し"""
         # 既存の監査機能を使用
         try:
-            audit_result = await self.engine.auditor.audit(content, {
-                "bible": bible,
-                "plot": plot,
-                "episode": ep_num,
-                "genre": self.config.genre
-            })
+            audit_result = await self.engine.auditor.audit(
+                content,
+                {"bible": bible, "plot": plot, "episode": ep_num, "genre": self.config.genre},
+            )
 
             # スコア正規化（0-100）
             score = audit_result.get("overall_score", 0)
@@ -448,7 +468,7 @@ class EasyModePipeline:
                 "passed": score >= self.config.target_audit_score,
                 "issues": audit_result.get("issues", []),
                 "improvements": audit_result.get("improvements", []),
-                "details": audit_result
+                "details": audit_result,
             }
         except Exception as e:
             if self._cancelled:
@@ -459,12 +479,12 @@ class EasyModePipeline:
                 "passed": False,
                 "issues": ["監査エラー"],
                 "improvements": ["監査システムを確認してください"],
-                "details": {}
+                "details": {},
             }
 
     def _extract_spice(self, text: str) -> List[SpiceElement]:
         """尖り要素の自動抽出（SpiceGuard使用）"""
-        if not hasattr(self, '_spice_guard'):
+        if not hasattr(self, "_spice_guard"):
             self._spice_guard = create_spice_guard(self.config.genre)
         return self._spice_guard.extract_spice(text)
 
@@ -480,13 +500,15 @@ class EasyModePipeline:
             if pos >= 0 and length > 0:
                 marker_id = f"{elem.type}_{pos}"
                 before = result[:pos]
-                target = result[pos:pos+length]
-                after = result[pos+length:]
+                target = result[pos : pos + length]
+                after = result[pos + length :]
                 result = before + f"<<<SPICE:{marker_id}>>> {target} <<</SPICE>>>" + after
 
         return result
 
-    async def _rewrite_episode(self, content: str, improvements: List[str], spice_elements: List[SpiceElement]) -> str:
+    async def _rewrite_episode(
+        self, content: str, improvements: List[str], spice_elements: List[SpiceElement]
+    ) -> str:
         """SpiceGuard付きリライト"""
         if not improvements:
             return content
@@ -510,19 +532,24 @@ class EasyModePipeline:
             rewritten = await self._generate_with_retry(prompt, {}, "rewrite_episode")
             # SPICEマーカーを除去
             import re
-            cleaned = re.sub(r'<<<SPICE:[^>]+>>>|<<</SPICE>>>', '', rewritten)
+
+            cleaned = re.sub(r"<<<SPICE:[^>]+>>>|<<</SPICE>>>", "", rewritten)
             return cleaned
         except Exception as e:
             logger.error(f"Rewrite failed: {e}")
             return content
 
-    def _build_rewrite_prompt(self, content: str, improvements: List[str], spice_elements: List[SpiceElement]) -> str:
+    def _build_rewrite_prompt(
+        self, content: str, improvements: List[str], spice_elements: List[SpiceElement]
+    ) -> str:
         """SpiceGuard付きリライトプロンプト構築（テスト用公開メソッド）"""
-        if not hasattr(self, '_spice_guard'):
+        if not hasattr(self, "_spice_guard"):
             self._spice_guard = create_spice_guard(self.config.genre)
         return self._spice_guard.build_rewrite_prompt(content, improvements, spice_elements)
 
-    async def _finalize_series(self, bible: Dict, plot_outline: List, episodes: List[EpisodeResult]) -> Dict:
+    async def _finalize_series(
+        self, bible: Dict, plot_outline: List, episodes: List[EpisodeResult]
+    ) -> Dict:
         """シリーズ完結処理・メタデータ生成"""
         total_words = sum(ep.word_count for ep in episodes)
         avg_score = sum(ep.audit_score for ep in episodes) / len(episodes) if episodes else 0
@@ -556,12 +583,11 @@ class EasyModePipeline:
         self._cancelled = True
 
 
-def create_series(engine, genre: str, target_episodes: int = 8,
-                  progress_callback: Optional[Callable] = None) -> EasyModePipeline:
+def create_series(
+    engine, genre: str, target_episodes: int = 8, progress_callback: Optional[Callable] = None
+) -> EasyModePipeline:
     """シリーズ作成エントリーポイント"""
     config = PipelineConfig(
-        genre=genre,
-        target_episodes=target_episodes,
-        progress_callback=progress_callback
+        genre=genre, target_episodes=target_episodes, progress_callback=progress_callback
     )
     return EasyModePipeline(engine, config)

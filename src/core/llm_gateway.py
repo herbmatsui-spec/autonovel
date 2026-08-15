@@ -154,9 +154,7 @@ class LLMGenerateResultProxy:
             metadata=response.metadata,
             story_content=response.content,
             token_usage={
-                "prompt": LLMGenerateResultProxy._usage_metric(
-                    response.usage, "prompt_tokens", 0
-                ),
+                "prompt": LLMGenerateResultProxy._usage_metric(response.usage, "prompt_tokens", 0),
                 "completion": LLMGenerateResultProxy._usage_metric(
                     response.usage, "completion_tokens", 0
                 ),
@@ -201,9 +199,7 @@ class LLMGenerateResultProxy:
             metadata=getattr(response, "metadata", None) or {},
             story_content=response.content,
             token_usage={
-                "prompt": LLMGenerateResultProxy._usage_metric(
-                    response.usage, "prompt_tokens", 0
-                ),
+                "prompt": LLMGenerateResultProxy._usage_metric(response.usage, "prompt_tokens", 0),
                 "completion": LLMGenerateResultProxy._usage_metric(
                     response.usage, "completion_tokens", 0
                 ),

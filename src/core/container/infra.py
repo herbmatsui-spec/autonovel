@@ -3,6 +3,7 @@ InfraContainer - インフラストラクチャ層のDIコンテナ
 config.container.Container の責務を引き継ぎ、DB・設定・ベクトルストア等を提供する。
 """
 
+import asyncio
 import logging
 
 from dependency_injector import containers, providers
@@ -16,9 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 class InfraContainer(containers.DeclarativeContainer):
-    wiring_config = containers.WiringConfiguration(
-        packages=["src", "src.kernels", "prompts"]
-    )
+    wiring_config = containers.WiringConfiguration(packages=["src", "src.kernels", "prompts"])
 
     config = providers.Singleton(GlobalConfigModel.load)
 
@@ -48,6 +47,15 @@ class InfraContainer(containers.DeclarativeContainer):
         max_sec=10.0,
     )
 
+    max_concurrent_api_calls = providers.Singleton(
+        lambda c: c.max_concurrent_api_calls,
+        config,
+    )
+
+    concurrency_semaphore = providers.Singleton(
+        asyncio.Semaphore,
+        max_concurrent_api_calls,
+    )
 
 # 後方互換エイリアス。
 # ref: tests/unit/test_infra_container.py および一部レガシーコードは

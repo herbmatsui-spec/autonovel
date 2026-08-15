@@ -15,5 +15,5 @@ __all__ = [
     "get_preset_value",
     "list_available_genres",
     "validate_preset",
-    "SUPPORTED_GENRES"
+    "SUPPORTED_GENRES",
 ]

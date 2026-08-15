@@ -24,7 +24,7 @@ SUPPORTED_GENRES = [
     "modern_cheat",
     "ts_tensei",
     "vrmmo",
-    "loop"
+    "loop",
 ]
 
 # プリセットファイルマッピング
@@ -36,7 +36,7 @@ PRESET_FILES = {
     "erotic": "erotic/erotic_rules_{genre}_kakuyomu.yaml",
     "characters": "characters/char_archetypes_{genre}.json",
     "titles": "titles/title_vars_{genre}.json",
-    "marketing": "marketing/marketing_vars_{genre}.json"
+    "marketing": "marketing/marketing_vars_{genre}.json",
 }
 
 # デフォルト値（ファイル不足時のフォールバック）
@@ -48,7 +48,7 @@ DEFAULT_VALUES = {
     "erotic": {},
     "characters": {},
     "titles": {},
-    "marketing": {}
+    "marketing": {},
 }
 
 
@@ -88,13 +88,13 @@ def load_json(filepath: Path) -> Dict[str, Any]:
 def load_preset(genre: str) -> Dict[str, Any]:
     """
     指定ジャンルの全プリセットを読み込み、統合辞書として返却。
-    
+
     Args:
         genre: ジャンル名（"zarma", "aku_reijo" 等）
-        
+
     Returns:
         プリセット統合辞書。キー: bible, tension, style, hooks, erotic, characters, titles, marketing
-        
+
     Raises:
         ValueError: 未対応ジャンルの場合
     """
@@ -126,7 +126,7 @@ def load_preset(genre: str) -> Dict[str, Any]:
     preset["_meta"] = {
         "genre": genre,
         "loaded_at": str(Path(__file__).stat().st_mtime),
-        "files_loaded": list(preset.keys())
+        "files_loaded": list(preset.keys()),
     }
 
     logger.info(f"Loaded preset for genre: {genre} (keys: {list(preset.keys())})")
@@ -146,7 +146,7 @@ def list_available_genres() -> list:
 def validate_preset(preset: Dict[str, Any]) -> Dict[str, Any]:
     """
     プリセットの完全性を検証し、不足キーを報告。
-    
+
     Returns:
         {"valid": bool, "missing_keys": list, "warnings": list}
     """
@@ -167,13 +167,14 @@ def validate_preset(preset: Dict[str, Any]) -> Dict[str, Any]:
     return {
         "valid": len(missing_keys) == 0,
         "missing_keys": list(missing_keys),
-        "warnings": warnings
+        "warnings": warnings,
     }
 
 
 if __name__ == "__main__":
     # 簡易テスト
     import sys
+
     logging.basicConfig(level=logging.INFO)
 
     for genre in SUPPORTED_GENRES:
@@ -181,7 +182,9 @@ if __name__ == "__main__":
             preset = load_preset(genre)
             validation = validate_preset(preset)
             status = "OK" if validation["valid"] else "INCOMPLETE"
-            print(f"[{status}] {genre}: keys={list(preset.keys())}, warnings={validation['warnings']}")
+            print(
+                f"[{status}] {genre}: keys={list(preset.keys())}, warnings={validation['warnings']}"
+            )
         except Exception as e:
             print(f"[ERROR] {genre}: {e}")
 

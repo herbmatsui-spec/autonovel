@@ -11,6 +11,21 @@ from .plot_rebuild_workflow import PlotRebuildWorkflow
 from .refine_erotic_workflow import RefineEroticWorkflow
 from .retry_failed_episodes_workflow import RetryFailedEpisodesWorkflow
 
+__all__ = [
+    "BaseWorkflow",
+    "ChapterImportWorkflow",
+    "CritiqueOptimizationWorkflow",
+    "EpisodeWritingWorkflow",
+    "FullAutoWorkflow",
+    "LogicalAuditWorkflow",
+    "MarketingGenerationWorkflow",
+    "PlanGenerationWorkflow",
+    "PlotExpansionWorkflow",
+    "PlotRebuildWorkflow",
+    "RefineEroticWorkflow",
+    "RetryFailedEpisodesWorkflow",
+]
+
 WORKFLOW_REGISTRY = {
     "full_auto_workflow": FullAutoWorkflow,
     "plan_generation_workflow": PlanGenerationWorkflow,
@@ -23,4 +38,5 @@ WORKFLOW_REGISTRY = {
     "run_logical_audit_workflow": LogicalAuditWorkflow,
     "marketing_generation_workflow": MarketingGenerationWorkflow,
     "refine_erotic_workflow": RefineEroticWorkflow,
+    "retry_failed_episodes_workflow": RetryFailedEpisodesWorkflow,
 }

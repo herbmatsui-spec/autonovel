@@ -4,6 +4,7 @@ services/reproducibility.py - 生成ログ・Trace ID 再現性レポート
 各生成処理のメタデータ（プロンプトバージョン/モデル/パラメータ/入力ハッシュ/
 Trace ID）を記録し、同一条件での再現性を証明するレポートを生成する。
 """
+
 from __future__ import annotations
 
 import hashlib

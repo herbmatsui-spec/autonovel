@@ -79,24 +79,14 @@ def fire_and_forget(coro: Coroutine[Any, Any, Any], name: str = "bg_task"):
     return task
 
 
-# グローバルセマフォの最大同時実行数。DIコンテナから注入可能にするため定数化。
-MAX_CONCURRENT_API_CALLS: int = 5
-
-_concurrency_semaphore: asyncio.Semaphore | None = None
-
-
 def get_concurrency_semaphore() -> asyncio.Semaphore:
-    """DIコンテナから設定可能なセマフォを取得する（Step 37 準備）。
+    """DIコンテナから設定可能なセマフォを取得する。
 
-    現在は定数 ``MAX_CONCURRENT_API_CALLS`` を元に生成・キャッシュする。
-    将来的に ``src.core.container.AppContainer`` 経由で最大同時数を注入できるよう、
-    モジュール変数を直接参照せず関数経由で取得する。
+    AppContainer.concurrency_semaphore プロバイダから
+    asyncio.Semaphore インスタンスを取得して返す。
     """
-    global _concurrency_semaphore
-    if _concurrency_semaphore is None:
-        # TODO(DI): AppContainer から MAX_CONCURRENT_API_CALLS を注入するよう拡張
-        _concurrency_semaphore = asyncio.Semaphore(MAX_CONCURRENT_API_CALLS)
-    return _concurrency_semaphore
+    from src.core.container import AppContainer
+    return AppContainer.concurrency_semaphore()
 
 
 async def limit_concurrency(coro: Coroutine[Any, Any, T]) -> T:

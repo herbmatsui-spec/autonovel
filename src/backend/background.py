@@ -153,9 +153,7 @@ class ProgressState:
                 except Exception as exc:
                     # Redis の停止フラグ取得に失敗しても、ローカルの stop 状態は維持する。
                     # ただし原因を追跡できるようログを出力する。
-                    logger.warning(
-                        "should_stop: Redis 停止フラグ取得失敗: %s", exc, exc_info=True
-                    )
+                    logger.warning("should_stop: Redis 停止フラグ取得失敗: %s", exc, exc_info=True)
         return self._stop_event.is_set()
 
     def _save_to_db(self) -> None:

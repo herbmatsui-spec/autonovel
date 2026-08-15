@@ -1,4 +1,5 @@
 """Result型: 成否を表現する代数的データ型"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

@@ -68,6 +68,7 @@ STREAM_TIMEOUT_SEC: Final[float] = 180.0
 RATE_LIMIT_MAX_REQUESTS: Final[int] = 100
 RATE_LIMIT_WINDOW_SECONDS: Final[int] = 60
 RATE_LIMIT_STORE_MAX_ENTRIES: Final[int] = 10000
+MAX_CONCURRENT_API_CALLS: Final[int] = 5
 
 # Pipeline 話数マッピング（追加）
 EP_CLIMAX: Final[int] = 7

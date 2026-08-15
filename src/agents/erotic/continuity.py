@@ -142,7 +142,16 @@ class SceneContinuityTracker:
 
         # 判定用キーワード
         kw_map = {
-            "severe": ["致命的", "瀕死", "意識不明", "血の海", "絶望的", "崩れ落ち", "深い傷", "絶望"],
+            "severe": [
+                "致命的",
+                "瀕死",
+                "意識不明",
+                "血の海",
+                "絶望的",
+                "崩れ落ち",
+                "深い傷",
+                "絶望",
+            ],
             "moderate": ["深手", "激痛", "出血", "骨折", "動けない", "呻き"],
             "light": ["かすり傷", "打撲", "軽い", "痛み", "切り傷", "違和感"],
         }
@@ -815,6 +824,7 @@ class ContinuityTracker:
 
     def _detect_clothing_state(self, text: str) -> str:
         from src.agents.erotic.filter import EroticIntegrityChecker
+
         """テキスト末尾から衣服状態を推定する。"""
         end_text = text[max(0, len(text) - 500) :]
         undress_count = sum(end_text.count(v) for v in EroticIntegrityChecker.UNDRESS_VERBS)
@@ -1010,6 +1020,7 @@ class ContinuityTracker:
         self, current_ep: int, character_name: str, current_text: str
     ) -> List[str]:
         from src.agents.erotic.filter import EroticIntegrityChecker
+
         """前話末の衣服状態が今話冒頭で矛盾していないか検証する。"""
         issues: List[str] = []
         prev = self.get_previous_snapshot(current_ep, character_name)
@@ -1130,5 +1141,3 @@ class ContinuityTracker:
                         f"[環境矛盾] 前話末に'{w1}'描写 → 今話冒頭に'{w2}'描写。時間経過の描写がありません"
                     )
         return issues
-
-

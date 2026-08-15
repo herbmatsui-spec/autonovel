@@ -4,6 +4,7 @@ routers/collab.py - 共同執筆・レビューコメント API
 メンバー管理・章へのコメント投稿・解決マークを提供する。
 コメント更新は SSE でリアルタイム配信する（簡易実装：ポーリング代替）。
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
@@ -54,7 +55,9 @@ async def remove_member(book_id: int, member_id: int) -> Dict[str, Any]:
     if n == 0:
         from src.core.exceptions import NotFoundError
 
-        raise NotFoundError("Member not found", resource_type="ProjectMember", resource_id=str(member_id))
+        raise NotFoundError(
+            "Member not found", resource_type="ProjectMember", resource_id=str(member_id)
+        )
     return {"status": "success", "id": member_id}
 
 
@@ -74,7 +77,9 @@ async def add_comment(book_id: int, chapter_ep: int, req: CommentRequest) -> Dic
 
 
 @router.get("/books/{book_id}/comments")
-async def list_comments(book_id: int, chapter_ep: Optional[int] = Query(None)) -> List[Dict[str, Any]]:
+async def list_comments(
+    book_id: int, chapter_ep: Optional[int] = Query(None)
+) -> List[Dict[str, Any]]:
     async with UnitOfWork(AppContainer.db()) as uow:
         comments = await uow.collab.list_comments(book_id, chapter_ep)
     return [
@@ -100,7 +105,9 @@ async def resolve_comment(comment_id: int, payload: Dict[str, Any] = {}) -> Dict
     if n == 0:
         from src.core.exceptions import NotFoundError
 
-        raise NotFoundError("Comment not found", resource_type="Comment", resource_id=str(comment_id))
+        raise NotFoundError(
+            "Comment not found", resource_type="Comment", resource_id=str(comment_id)
+        )
     return {"status": "success", "id": comment_id, "resolved": resolved}
 
 
@@ -111,5 +118,7 @@ async def delete_comment(comment_id: int) -> Dict[str, Any]:
     if n == 0:
         from src.core.exceptions import NotFoundError
 
-        raise NotFoundError("Comment not found", resource_type="Comment", resource_id=str(comment_id))
+        raise NotFoundError(
+            "Comment not found", resource_type="Comment", resource_id=str(comment_id)
+        )
     return {"status": "success", "id": comment_id}

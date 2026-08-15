@@ -82,13 +82,14 @@ def list_templates_command(args):
 def version_command(args):
     """Show PromptOps version."""
     from src.promptops.registry import __version__
+
     print(f"PromptOps {__version__}")
 
 
 def main():
     parser = argparse.ArgumentParser(
         prog="kilo promptops",
-        description="PromptOps - Prompt template management with versioning and A/B testing"
+        description="PromptOps - Prompt template management with versioning and A/B testing",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 

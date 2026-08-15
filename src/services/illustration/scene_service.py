@@ -23,17 +23,35 @@ class SceneExtractor:
 
     # 視覚的要素を含むとみなす手がかり表現
     _VISUAL_CUES = [
-        "見", "光", "空", "海", "山", "部屋", "目", "顔", "手", "風", "雪", "夜",
-        "朝", "夕", "城", "街", "剣", "血", "花", "森", "川", "影", "炎", "窓",
+        "見",
+        "光",
+        "空",
+        "海",
+        "山",
+        "部屋",
+        "目",
+        "顔",
+        "手",
+        "風",
+        "雪",
+        "夜",
+        "朝",
+        "夕",
+        "城",
+        "街",
+        "剣",
+        "血",
+        "花",
+        "森",
+        "川",
+        "影",
+        "炎",
+        "窓",
     ]
 
     def extract_scenes(self, text: str, max_scenes: int = 3) -> List[str]:
         """ヒューリスティックでシーンを抽出する（LLM不要）。"""
-        paragraphs = [
-            p.strip()
-            for p in re.split(r"\n{2,}|[。！？]\s*", text)
-            if p.strip()
-        ]
+        paragraphs = [p.strip() for p in re.split(r"\n{2,}|[。！？]\s*", text) if p.strip()]
         scored = []
         for p in paragraphs:
             if len(p) < 15:
@@ -44,9 +62,7 @@ class SceneExtractor:
         scored.sort(key=lambda x: x[0], reverse=True)
         return [p for _, p in scored[:max_scenes]]
 
-    async def extract_scenes_with_llm(
-        self, text: str, llm, max_scenes: int = 3
-    ) -> List[str]:
+    async def extract_scenes_with_llm(self, text: str, llm, max_scenes: int = 3) -> List[str]:
         """LLM を使ってシーンを抽出する。失敗時はヒューリスティックにフォールバック。"""
         prompt = (
             "以下の小説本文から、挿絵として視覚化するのにふさわしい"

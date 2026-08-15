@@ -3,6 +3,7 @@ routers/hooks.py - 章末フック診断 API
 
 既存の episodes ルーターから章文本を取得し、HookDiagnoser で診断・修正案を提供する。
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict
@@ -29,7 +30,8 @@ async def diagnose_hooks(book_id: int) -> Dict[str, Any]:
 
     async with UnitOfWork(AppContainer.db()) as uow:
         result = await uow.session.execute(
-            __import__("sqlalchemy").select(Chapter)
+            __import__("sqlalchemy")
+            .select(Chapter)
             .where(Chapter.book_id == book_id)
             .order_by(Chapter.ep_num)
         )

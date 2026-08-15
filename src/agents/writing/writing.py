@@ -45,7 +45,7 @@ class WritingAgent(BaseAgent):
         self._rewrite_orchestrator = RewriteOrchestrator(
             writer=self._episode_writer,
             auditor=None,  # TODO: 適切なauditorを注入
-            spice_guard=None  # TODO: 適切なspice_guardを注入
+            spice_guard=None,  # TODO: 適切なspice_guardを注入
         )
         self._bible_extractor = BibleExtractor(llm)
 
@@ -312,7 +312,15 @@ class WritingAgent(BaseAgent):
         # TODO: 新しいコンポーネントを使うように実装を更新
         pipeline = EpisodePipeline(self)
         return await pipeline.run(
-            book_id, start_ep, end_ep, passion, target_word_count, is_easy_mode, reporter, branch_id, style_tag
+            book_id,
+            start_ep,
+            end_ep,
+            passion,
+            target_word_count,
+            is_easy_mode,
+            reporter,
+            branch_id,
+            style_tag,
         )
 
     async def trigger_bible_extraction(self, book_id, content, reporter):
