@@ -1,9 +1,9 @@
-# 覇権小説エンジン v3.3
+# 覇権小説エンジン v3.3.1
 
 ![Tests](https://img.shields.io/badge/tests-passing-brightgreen)
 ![Coverage](https://img.shields.io/badge/coverage-80%25-yellow)
 ![Python](https://img.shields.io/badge/python-3.12-blue)
-![Code Review](https://img.shields.io/badge/code%20review-48%20steps%20done-blue)
+![Code Review](https://img.shields.io/badge/code%20review-60%20steps%20done-blue)
 
 **覇権小説エンジン**は、AI を使って小説を「かんたんに」「高品質に」書くためのツールです。
 
@@ -11,11 +11,24 @@
 
 ---
 
-## 最近のアップデート (v3.3 - 2026-08-16)
+## 最近のアップデート (v3.3.1 - 2026-08-16)
 
-### コードレビュー改善実装完了（48ステップ・4フェーズ）
+### Phase 5: フロントエンド品質・残タスク対応（12ステップ・完了）
 
-`CODE_REVIEW_DETAILED.md` の指摘事項を **48 の小さなステップ**に分割し、保守性・拡張性・型安全性・テスタビリティを総合的に向上させました。
+フロントエンドの型安全性・アクセシビリティ・テスト基盤を強化しました。
+
+| 項目 | 詳細 |
+|------|------|
+| **ESLint エラー修正** | `@typescript-eslint/no-explicit-any` 68 件解消、`jsx-a11y` アクセシビリティ違反修正、未使用変数削除 |
+| **型安全性向上** | `any` → 具象型/`unknown` 置換、React Hooks 依存配列修正、コンポーネント型定義追加 |
+| **テスト再編成** | `tests/unit/` (114ファイル), `tests/phase1-4/`, `tests/integration/`, `tests/e2e/` へ整理 |
+| **Dockerfile 改善** | マルチステージビルド・非 root ユーザー化・レイヤーキャッシュ最適化 |
+| **開発用依存分離** | `requirements-dev.txt` 新規作成、`pyproject.toml` に `optional-dependencies.dev` 追加 |
+| **新規スクリプト** | `scripts/no_print_check.py`, `scripts/validate_env_map.py` |
+
+### コードレビュー改善実装完了（60ステップ・5フェーズ）
+
+`CODE_REVIEW_DETAILED.md` の指摘事項を **60 の小さなステップ**に分割し、保守性・拡張性・型安全性・テスタビリティを総合的に向上させました。
 
 | Phase | ステップ | 重点 | 主な成果 |
 |-------|---------|------|----------|
@@ -23,15 +36,17 @@
 | **Phase 2 (High)** | 13‑24 | モジュール分割・型安全化 | かんたんモードパイプラインを 7 コンポーネントに分割（`pipeline.py` 633行→257行）、SpiceGuard を 4 モジュールに分割、LLM ゲートウェイ型安全性向上（`@overload`） |
 | **Phase 3 (Medium)** | 25‑36 | 設定一元化・観測性・性能 | 統一設定クラス `config.settings.Settings` (SSOT)、OpenTelemetry 自動計装、Prometheus メトリクス命名規約統一（`kaku_{subsystem}_{name}_{unit}`）、専用例外クラス追加、SpiceGuard 抽出を逆インデックスで高速化 |
 | **Phase 4 (Low)** | 37‑48 | ドキュメント・テスト戦略・品質ゲート | C4 アーキテクチャ図・シーケンス図、`DEVELOPER_GUIDE.md`、E2E/ミューテーションテスト戦略、Testcontainers 統合基盤、Pre-commit（ruff/mypy/bandit/gitleaks/pip-audit）、CI 改善 |
+| **Phase 5 (Frontend)** | 49‑60 | フロントエンド品質・残タスク | ESLint 全エラー修正、型安全性向上、テスト再編成、Dockerfile 改善、開発用依存分離 |
 
 **主な変更**:
 - **設定の一元化**: `config/settings.py` の `Settings` が SSOT。`constants.py` は段階的移行用後方互換エイリアスとして維持、環境変数プレフィックスは `KAKU_` に統一
 - **明示的 DI**: `UltimateHegemonyEngine` / `InfraContainer` / `AppContainer2` ですべての依存を明示注入
 - **セキュリティ**: `bandit`・`gitleaks`・`pip-audit` を CI/pre-commit に追加、シークレットマスキングログ
+- **フロントエンド**: ESLint 68 エラー全解消、アクセシビリティ準拠、型安全性強化
 
-**検証結果**: Ruff 重大エラー 0 件維持、カバレッジ 80% 以上目標、mypy strict エラー 50% 削減目標
+**検証結果**: Ruff 重大エラー 0 件維持、カバレッジ 80% 以上目標、mypy strict エラー 50% 削減目標、フロントエンド ESLint 0 エラー
 
-詳細は [IMPLEMENTATION_PLAN_CODE_REVIEW_48_STEPS.md](IMPLEMENTATION_PLAN_CODE_REVIEW_48_STEPS.md) および [CHANGELOG.md](CHANGELOG.md) を参照。
+詳細は [IMPLEMENTATION_PLAN_CODE_REVIEW_48_STEPS.md](IMPLEMENTATION_PLAN_CODE_REVIEW_48_STEPS.md)、[IMPLEMENTATION_PLAN_PHASE5.md](IMPLEMENTATION_PLAN_PHASE5.md) および [CHANGELOG.md](CHANGELOG.md) を参照。
 
 ### バグ修正・安定性向上
 
@@ -80,11 +95,12 @@
 
 ## 実装計画書
 
-- **コードレビュー改善 48ステップ実装計画書**: [IMPLEMENTATION_PLAN_CODE_REVIEW_48_STEPS.md](IMPLEMENTATION_PLAN_CODE_REVIEW_48_STEPS.md)
+- **コードレビュー改善 60ステップ実装計画書**: [IMPLEMENTATION_PLAN_CODE_REVIEW_48_STEPS.md](IMPLEMENTATION_PLAN_CODE_REVIEW_48_STEPS.md)
   - Phase 1 (Critical): 循環依存解消・テスト修正・マジック値外部化（ステップ 1-12）
   - Phase 2 (High): モジュール分割・型安全化（ステップ 13-24）
   - Phase 3 (Medium): 設定一元化・観測性・パフォーマンス（ステップ 25-36）
   - Phase 4 (Low): ドキュメント・テスト戦略・品質ゲート（ステップ 37-48）
+  - Phase 5 (Frontend): フロントエンド品質・残タスク対応（ステップ 49-60） — [IMPLEMENTATION_PLAN_PHASE5.md](IMPLEMENTATION_PLAN_PHASE5.md)
 - 過去の計画書: `archive/plans/` に保管（36ステップ版等）
 
 ### アーキテクチャドキュメント

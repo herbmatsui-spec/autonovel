@@ -46,7 +46,7 @@ export function useAppActions(setLoading: (b: boolean) => void) {
   });
 
   // ---------- Handlers ----------
-  const handleCreateEasyMode = async (_params: EasyModeParams) => {
+  const handleCreateEasyMode = async (): Promise<void> => {
     const easy = useEasyModeStore.getState();
     if (!apiKey || apiKey.length < 10) {
       toast.error('有効なAPIキーを入力してください。');
@@ -71,8 +71,8 @@ export function useAppActions(setLoading: (b: boolean) => void) {
       });
       setActiveTaskId(taskId);
       setCreateModalOpen(false);
-    } catch (err: any) {
-      toast.error('自動生成タスクの起動に失敗しました: ' + err.message);
+    } catch (err: unknown) {
+      toast.error('自動生成タスクの起動に失敗しました: ' + (err instanceof Error ? err.message : String(err)));
     } finally {
       setLoading(false);
     }

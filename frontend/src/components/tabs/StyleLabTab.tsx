@@ -1,17 +1,19 @@
 import { useState } from 'react';
+import React from 'react';
 import type { Book } from '@/types';
 import { analyzeStyleDna } from '@/api';
 import { toast } from 'sonner';
 import { useUserSettingsStore } from '@/store/useUserSettingsStore';
 
 interface StyleLabTabProps {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   selectedBook?: Book | null;
 }
 
-export function StyleLabTab({ selectedBook: _selectedBook }: StyleLabTabProps) {
+export function StyleLabTab(): React.ReactElement {
   const apiKey = useUserSettingsStore((s) => s.apiKey);
   const [sample, setSample] = useState('');
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleAnalyze = async () => {
@@ -28,8 +30,8 @@ export function StyleLabTab({ selectedBook: _selectedBook }: StyleLabTabProps) {
       const dna = await analyzeStyleDna(sample);
       setResult(dna);
       toast.success('文体分析が完了しました。');
-    } catch (err: any) {
-      toast.error('分析に失敗しました: ' + err.message);
+    } catch (err: unknown) {
+      toast.error('分析に失敗しました: ' + (err instanceof Error ? err.message : String(err)));
     } finally {
       setLoading(false);
     }
