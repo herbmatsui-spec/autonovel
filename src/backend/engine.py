@@ -31,6 +31,8 @@ if TYPE_CHECKING:
     from src.agents.plot import PlotAgent
     from src.backend.engine_style_rag import StyleRagManager
 
+from src.backend.engine_deps import EngineDeps
+
 
 # ==========================================
 # UltimateHegemonyEngine（メインエンジン）
@@ -46,20 +48,7 @@ class UltimateHegemonyEngine:
         llm: Optional["LLMGenerateResultProxy"] = None,
         cooldown: Optional["AdaptiveCooldown"] = None,
         plot_service: Optional["PlotService"] = None,
-        # 以下を明示的に注入（後方互換のため Optional、None なら _legacy から取得）
-        planner: Optional["PlanningAgent"] = None,
-        writer: Optional["WritingAgent"] = None,
-        pm: Optional["PromptManager"] = None,
-        ctx_mgr: Optional["ContextManager"] = None,
-        formatter: Optional["TextFormatter"] = None,
-        validator: Optional["LogicalAuditor"] = None,
-        auditor: Optional["LogicalAuditor"] = None,
-        narrative: Optional["NarrativeController"] = None,
-        critique: Optional["CritiqueAgent"] = None,
-        marketing: Optional["MarketingAgent"] = None,
-        bible_agent: Optional["WorldBibleGenerator"] = None,
-        plot_agent: Optional["PlotAgent"] = None,
-        style_rag: Optional["StyleRagManager"] = None,
+        deps: Optional[EngineDeps] = None,
         **legacy: Any,
     ):
         self.api_key = api_key
@@ -69,20 +58,36 @@ class UltimateHegemonyEngine:
         self.cooldown = cooldown
         self._legacy = legacy
 
-        # 明示的依存を属性として保存
-        self._planner = planner
-        self._writer = writer
-        self._pm = pm
-        self._ctx_mgr = ctx_mgr
-        self._formatter = formatter
-        self._validator = validator
-        self._auditor = auditor
-        self._narrative = narrative
-        self._critique = critique
-        self._marketing = marketing
-        self._bible_agent = bible_agent
-        self._plot_agent = plot_agent
-        self._style_rag = style_rag
+        # EngineDeps から依存を設定（優先）、なければ個別引数互換は legacy 経由
+        if deps is not None:
+            self._planner = deps.planner
+            self._writer = deps.writer
+            self._pm = deps.pm
+            self._ctx_mgr = deps.ctx_mgr
+            self._formatter = deps.formatter
+            self._validator = deps.validator
+            self._auditor = deps.auditor
+            self._narrative = deps.narrative
+            self._critique = deps.critique
+            self._marketing = deps.marketing
+            self._bible_agent = deps.bible_agent
+            self._plot_agent = deps.plot_agent
+            self._style_rag = deps.style_rag
+        else:
+            # 後方互換: 明示的引数は legacy 経由で設定される想定（従来通り _legacy_dep で取得）
+            self._planner = None
+            self._writer = None
+            self._pm = None
+            self._ctx_mgr = None
+            self._formatter = None
+            self._validator = None
+            self._auditor = None
+            self._narrative = None
+            self._critique = None
+            self._marketing = None
+            self._bible_agent = None
+            self._plot_agent = None
+            self._style_rag = None
 
         self.client = None
         self.current_ep_num = 0
@@ -96,6 +101,25 @@ class UltimateHegemonyEngine:
             self.plot_service = PlotService(repo=repo)
         else:
             self.plot_service = None
+
+        self.validate_dependencies()
+
+    def validate_dependencies(self) -> None:
+        """必須依存が揃っているか起動時に検証"""
+        required = [
+            "planner", "writer", "pm", "ctx_mgr", "formatter",
+            "validator", "auditor", "narrative", "critique",
+            "marketing", "bible_agent", "plot_agent", "style_rag",
+        ]
+        missing = [
+            name for name in required
+            if getattr(self, f"_{name}") is None and name not in self._legacy
+        ]
+        if missing:
+            raise RuntimeError(
+                f"Missing required dependencies: {missing}. "
+                "Pass them via EngineDeps or legacy dict."
+            )
 
     def _legacy_dep(self, name: str) -> Any:
         """後方互換: _legacy 辞書から依存を取得（非推奨）"""

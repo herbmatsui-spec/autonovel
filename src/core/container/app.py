@@ -12,6 +12,7 @@ from dependency_injector import providers
 from src.backend.database import DataRepository, UnitOfWork
 from src.backend.engine_config import EngineConfig
 from src.backend.engine_context import ContextManager
+from src.backend.engine_deps import EngineDeps
 from src.core.container.infra import InfraContainer
 
 if TYPE_CHECKING:
@@ -153,14 +154,8 @@ class AppContainer2(InfraContainer):
     formatter = providers.Singleton["TextFormatter"](
         "src.backend.sanitizer.TextFormatter",
     )
-    engine = providers.Factory["UltimateHegemonyEngine"](
-        "src.backend.engine.UltimateHegemonyEngine",
-        api_key=api_key,
-        repo=repo,
-        db=InfraContainer.db,
-        llm=llm,
-        cooldown=InfraContainer.cooldown,
-        plot_service=plot_service,
+    engine_deps = providers.Factory(
+        EngineDeps,
         planner=planner,
         writer=writer,
         pm=pm,
@@ -174,6 +169,16 @@ class AppContainer2(InfraContainer):
         bible_agent=bible_generator,
         plot_agent=plot_expander,
         style_rag=style_rag,
+    )
+    engine = providers.Factory["UltimateHegemonyEngine"](
+        "src.backend.engine.UltimateHegemonyEngine",
+        api_key=api_key,
+        repo=repo,
+        db=InfraContainer.db,
+        llm=llm,
+        cooldown=InfraContainer.cooldown,
+        plot_service=plot_service,
+        deps=engine_deps,
     )
     engine_facade = providers.Factory["EngineFacade"](
         "src.backend.engine_facade.EngineFacade",
