@@ -13,23 +13,23 @@ from typing import TYPE_CHECKING, Any, Optional, Tuple
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
+    from prompts.manager import PromptManager
+    from src.agents.audit import LogicalAuditor
+    from src.agents.MarketingAgent import MarketingAgent
+    from src.agents.PlanningAgent import PlanningAgent
+    from src.agents.plot import PlotAgent
+    from src.agents.WritingAgent import WritingAgent
     from src.backend.database import DataRepository
     from src.backend.database.core import DatabaseManager
-    from src.core.llm_gateway import LLMGenerateResultProxy
-    from src.backend.engine_utils import AdaptiveCooldown
-    from src.services.plot_service import PlotService
-    from src.agents.PlanningAgent import PlanningAgent
-    from src.agents.WritingAgent import WritingAgent
-    from prompts.manager import PromptManager
     from src.backend.engine_context import ContextManager
-    from src.backend.sanitizer import TextFormatter
-    from src.agents.audit import LogicalAuditor
-    from src.backend.engine_narrative import NarrativeController
     from src.backend.engine_critique import CritiqueAgent
-    from src.agents.MarketingAgent import MarketingAgent
-    from src.services.bible_service import WorldBibleGenerator
-    from src.agents.plot import PlotAgent
+    from src.backend.engine_narrative import NarrativeController
     from src.backend.engine_style_rag import StyleRagManager
+    from src.backend.engine_utils import AdaptiveCooldown
+    from src.backend.sanitizer import TextFormatter
+    from src.core.llm_gateway import LLMGenerateResultProxy
+    from src.services.bible_service import WorldBibleGenerator
+    from src.services.plot_service import PlotService
 
 from src.backend.engine_deps import EngineDeps
 

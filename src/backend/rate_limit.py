@@ -1,7 +1,6 @@
 """Redis-backed sliding window rate limiter."""
 
 import time
-from typing import Optional
 
 from src.services.redis_cache import RedisCacheService
 

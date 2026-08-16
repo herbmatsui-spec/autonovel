@@ -29,43 +29,43 @@ def setup_opentelemetry(
 ) -> TracerProvider:
     """
     OpenTelemetry を初期化し、自動計装を有効化する。
-    
+
     Args:
         service_name: サービス名（未指定時は設定から取得）
         otlp_endpoint: OTLP エンドポイント（未指定時は環境変数 OTEL_EXPORTER_OTLP_ENDPOINT）
         enable_console_exporter: コンソールエクスポーターを有効化（デバッグ用）
         sample_rate: トレースサンプリングレート (0.0-1.0)
-    
+
     Returns:
         TracerProvider インスタンス
     """
     settings = get_settings()
-    
+
     # サービス名決定
     if service_name is None:
         service_name = os.getenv("OTEL_SERVICE_NAME", "kaku-hegemony-engine")
-    
+
     # OTLP エンドポイント決定
     if otlp_endpoint is None:
         otlp_endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317")
-    
+
     # リソース作成
     resource = Resource.create({
         SERVICE_NAME: service_name,
         "deployment.environment": os.getenv("ENVIRONMENT", "development"),
     })
-    
+
     # TracerProvider 作成
     provider = TracerProvider(
         resource=resource,
         sampler=TraceIdRatioBased(sample_rate),
     )
-    
+
     # エクスポーター設定
     if enable_console_exporter:
         console_exporter = ConsoleSpanExporter()
         provider.add_span_processor(BatchSpanProcessor(console_exporter))
-    
+
     # OTLP エクスポーター（本番環境用）
     if otlp_endpoint and not enable_console_exporter:
         try:
@@ -75,26 +75,26 @@ def setup_opentelemetry(
             # OTLP エクスポーターの初期化に失敗しても続行（コンソールのみ等）
             import logging
             logging.getLogger(__name__).warning(f"OTLP exporter initialization failed: {e}")
-    
+
     # グローバルプロバイダとして設定
     trace.set_tracer_provider(provider)
-    
+
     # FastAPI 自動計装
     FastAPIInstrumentor().instrument(
         tracer_provider=provider,
         excluded_urls="health,metrics,/healthz,/ready,/live",
     )
-    
+
     # SQLAlchemy 自動計装
     SQLAlchemyInstrumentor().instrument(
         tracer_provider=provider,
         enable_commenter=True,
         commenter_options={},
     )
-    
+
     # Redis 自動計装
     RedisInstrumentor().instrument(tracer_provider=provider)
-    
+
     return provider
 
 

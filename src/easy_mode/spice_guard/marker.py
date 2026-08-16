@@ -5,7 +5,7 @@ SpiceGuard マーカー操作・プロンプト構築
 from __future__ import annotations
 
 import re
-from typing import Any, Dict, List
+from typing import List
 
 from src.easy_mode.models import SpiceElement
 

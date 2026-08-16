@@ -3,7 +3,6 @@ Testcontainers integration test configuration.
 Provides PostgreSQL, Redis, and ChromaDB containers for integration tests.
 """
 
-import os
 import pytest
 from testcontainers.community.postgres import PostgresContainer
 from testcontainers.community.redis import RedisContainer
@@ -60,28 +59,28 @@ def override_settings(postgres_container, redis_container, chromadb_container, m
     pg_url = pg_url.replace("postgresql://", "postgresql+asyncpg://")
     monkeypatch.setenv("KAKU_DATABASE_URL", pg_url)
     monkeypatch.setenv("DATABASE_URL", pg_url)
-    
+
     # Redis
     redis_host = redis_container.get_container_host_ip()
     redis_port = redis_container.get_exposed_port(6379)
     redis_url = f"redis://{redis_host}:{redis_port}/0"
     monkeypatch.setenv("KAKU_REDIS_URL", redis_url)
     monkeypatch.setenv("REDIS_URL", redis_url)
-    
+
     # ChromaDB
     chroma_host = chromadb_container.get_container_host_ip()
     chroma_port = chromadb_container.get_exposed_port(8000)
     chroma_url = f"http://{chroma_host}:{chroma_port}"
     monkeypatch.setenv("KAKU_CHROMA_URL", chroma_url)
-    
+
     # テスト用設定
     monkeypatch.setenv("KAKU_LOG_LEVEL", "DEBUG")
     monkeypatch.setenv("KAKU_FAIL_FAST_MODE", "true")
     monkeypatch.setenv("KAKU_MAX_CONCURRENT_API_CALLS", "2")
     monkeypatch.setenv("KAKU_GEMINI_API_KEY", "test-key")  # モック用
-    
+
     yield
-    
+
     # クリーンアップ (必要に応じて)
 
 
@@ -90,19 +89,19 @@ def override_settings(postgres_container, redis_container, chromadb_container, m
 @pytest.fixture
 async def db_manager(postgres_container):
     """初期化済み DatabaseManager インスタンス"""
-    from src.backend.database.core import DatabaseManager
     from sqlalchemy.ext.asyncio import create_async_engine
-    from sqlalchemy import text
-    
+
+    from src.backend.database.core import DatabaseManager
+
     pg_url = postgres_container.get_connection_url().replace("postgresql://", "postgresql+asyncpg://")
     engine = create_async_engine(pg_url, echo=False)
-    
+
     # テーブル作成
     async with engine.begin() as conn:
         # 基本テーブル作成 (models からメタデータ取得)
         from src.models.base import Base
         await conn.run_sync(Base.metadata.create_all)
-    
+
     manager = DatabaseManager(engine=engine)
     yield manager
     await engine.dispose()
@@ -142,8 +141,9 @@ def redis_client(redis_container):
 def mock_llm_client():
     """モック LLM クライアント (テスト用)"""
     from unittest.mock import AsyncMock, MagicMock
+
     from src.core.llm_clients.base import BaseLLMClient
-    
+
     mock = MagicMock(spec=BaseLLMClient)
     mock.generate_json = AsyncMock(return_value=(
         {"success": True, "content": "test bible"},
@@ -163,19 +163,18 @@ def mock_llm_client():
 async def test_engine(db_manager, mock_llm_client, monkeypatch):
     """テスト用エンジンインスタンス"""
     from src.core.container import AppContainer
-    from src.core.llm_gateway import LLMGenerateResultProxy
-    
+
     container = AppContainer()
     container.config.override({"database_url": db_manager.engine.url})
-    
+
     # LLM ゲートウェイをモックで置き換え
     mock_proxy = MagicMock()
     mock_proxy.generate_json = mock_llm_client.generate_json
     mock_proxy.generate_text = mock_llm_client.generate_text
     mock_proxy.get_client = mock_llm_client
-    
+
     container.llm.override(mock_proxy)
-    
+
     engine = container.engine()
     yield engine
     engine.dispose()

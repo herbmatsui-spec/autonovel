@@ -159,15 +159,15 @@ class EbookContentProcessor:
         """共通CSS生成"""
         return """
 /* 共通スタイル */
-body { 
-    font-family: "Noto Serif JP", "Hiragino Mincho ProN", serif; 
-    line-height: 1.8; 
-    margin: 0; 
+body {
+    font-family: "Noto Serif JP", "Hiragino Mincho ProN", serif;
+    line-height: 1.8;
+    margin: 0;
     padding: 1em;
     color: #333;
 }
 
-h1, h2, h3 { 
+h1, h2, h3 {
     font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", sans-serif;
     font-weight: bold;
     margin-top: 2em;
@@ -179,8 +179,8 @@ h1 { font-size: 1.8em; border-bottom: 2px solid #333; padding-bottom: 0.3em; }
 h2 { font-size: 1.5em; }
 h3 { font-size: 1.3em; }
 
-p { 
-    text-indent: 1em; 
+p {
+    text-indent: 1em;
     margin: 0.5em 0;
     text-align: justify;
 }
@@ -188,23 +188,23 @@ p {
 p:first-of-type { text-indent: 0; }
 
 /* セリフ */
-p.dialogue { 
-    text-indent: 0; 
+p.dialogue {
+    text-indent: 0;
     margin: 0.5em 1em;
     font-style: normal;
 }
 
 /* 独白 */
-p.monologue { 
-    text-indent: 0; 
+p.monologue {
+    text-indent: 0;
     margin: 0.5em 1.5em;
     font-style: italic;
     color: #555;
 }
 
 /* 強調 */
-p.emphasis { 
-    font-weight: bold; 
+p.emphasis {
+    font-weight: bold;
 }
 
 /* ルビ */
@@ -226,12 +226,12 @@ rt { font-size: 0.6em; }
 .cover-author { font-size: 1.2em; margin-top: 0.5em; color: #666; }
 
 /* コルフォン */
-.colophon { 
-    margin-top: 4em; 
-    padding-top: 1em; 
-    border-top: 1px solid #ccc; 
-    font-size: 0.8em; 
-    color: #666; 
+.colophon {
+    margin-top: 4em;
+    padding-top: 1em;
+    border-top: 1px solid #ccc;
+    font-size: 0.8em;
+    color: #666;
     text-align: center;
 }
 """

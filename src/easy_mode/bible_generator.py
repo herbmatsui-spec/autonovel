@@ -8,7 +8,6 @@ import json
 import logging
 from typing import Any, Dict, Optional
 
-from src.core.exceptions import BibleGenerationError
 from src.easy_mode.models import RetryConfig
 
 logger = logging.getLogger(__name__)

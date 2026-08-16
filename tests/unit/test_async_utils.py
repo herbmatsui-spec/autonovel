@@ -48,7 +48,7 @@ async def test_fire_and_forget_completes():
     # fire_and_forget returns a task that runs in the background
     # We should not await it directly - just let it run
     task = fire_and_forget(bg())
-    
+
     # Wait for the task to complete
     await asyncio.wait_for(task, timeout=1.0)
     assert done == [True]

@@ -8,7 +8,7 @@ import logging
 
 from dependency_injector import containers, providers
 
-from config.settings import Settings, get_settings
+from config.settings import get_settings
 from src.backend.database.core import DatabaseManager
 
 logger = logging.getLogger(__name__)

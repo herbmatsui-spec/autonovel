@@ -8,9 +8,6 @@ from __future__ import annotations
 import re
 from typing import Any, Dict, List
 
-from src.presets.loader import load_preset
-
-
 # ==========================================
 # 普遍的保護パターン（全ジャンル共通）
 # ==========================================

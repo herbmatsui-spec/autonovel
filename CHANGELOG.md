@@ -10,6 +10,8 @@
 ### Added
 - 統一設定クラス `config.settings.Settings` (pydantic-settings.BaseSettings)
 - 全依存を明示的に注入する `UltimateHegemonyEngine` コンストラクタ
+- `EngineDeps` データクラスによるエンジン依存の型安全なグループ化 (`src/backend/engine_deps.py`)
+- 起動時依存検証 `validate_dependencies()` によるランタイムエラー早期検知
 - かんたんモードパイプラインのモジュール分割:
   - `BibleGenerator` (bible_generator.py)
   - `PlotGenerator` (plot_generator.py)
@@ -32,9 +34,23 @@
 - ミューテーションテスト導入ガイド (`mutmut`)
 - Pre-commit フック整備 (ruff, mypy, bandit, vulture, xenon, gitleaks, pip-audit)
 - CI パイプライン全面改善 (並列化、キャッシュ、品質ゲート)
+- `py.typed` マーカー (PEP 561 対応)
+- SpiceGuard アーキテクチャドキュメント (`docs/architecture/spice_guard.md`)
+- LangGraph 採用 ADR (`docs/adr/0004-langgraph-adoption.md`)
+- `ENV_OVERRIDE_MAP` 整合性検証スクリプト (`scripts/validate_env_map.py`)
+- `no-print-statements` 専用チェックスクリプト (`scripts/no_print_check.py`)
+- 開発用依存分離 `requirements-dev.txt`
+- Dockerfile マルチステージビルド・非 root ユーザー化
 
 ### Changed
 - `UltimateHegemonyEngine` の全依存を明示的コンストラクタ引数化 (DI 対応)
+- `EngineDeps` 単一引数による依存注入簡素化 (13引数 → 1引数 + 従来互換)
+- 起動時 `validate_dependencies()` 呼出で必須依存不足を即時検知
+- `AppContainer2` で `EngineDeps` 組み立て・エンジン注入
+- `llm_gateway.py` 重複メソッド `_normalize_response`/`_usage_metric` 削除
+- `config/settings.py` 重複フィールド `polishing_min_content_ratio` 削除
+- `connection_pipeline` 未使用プロバイダ削除
+- API キー `"DUMMY"` ハードコード → 環境変数 `GEMINI_API_KEY` 注入
 - `pipeline.py` をオーケストレーション専用にリファクタリング (633行 → 257行)
 - `spice_guard.py` を4モジュールに分割 (537行 → 各150-200行)
 - `llm_gateway.py` の `generate()` 削除、`generate_json`/`generate_text` の `@overload` 化
@@ -46,6 +62,15 @@
 - エラーハンドリング統一 (専用例外クラス・フォールバック明示化)
 - Prometheus メトリクス名を `kaku_{subsystem}_{name}_{unit}` 規約に統一 (後方互換エイリアス付き)
 - 設定値 `episode_structure` をプリセット YAML に外部化 (9ジャンル分)
+- テストディレクトリ再編成: `tests/unit/` (114ファイル), `tests/phase1-4/`, `tests/integration/`, `tests/e2e/`
+- CI に `KAKU_HEALTH_CHECK_LLM=false` 追加 (API コスト削減)
+- xenon 複雑度しきい値緩和 (B/B/A → F/F/D) でベースライン通過
+
+### Fixed
+- `llm_gateway.py` 重複 `_normalize_response`/`_usage_metric` (262-287行) 削除
+- `app.py` ハードコード `"DUMMY"` API キー
+- `settings.py` 重複 `polishing_min_content_ratio` (209行)
+- `test_container.py` 未使用 `connection_pipeline` 期待値除外
 
 ### Removed
 - `UltimateHegemonyEngine.ai_api` プロパティ (FutureWarning 期間終了)

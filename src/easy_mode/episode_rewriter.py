@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Any, Dict, List
+from typing import Dict, List
 
 from src.easy_mode.models import RetryConfig
 from src.easy_mode.spice_guard import SpiceElement, create_spice_guard

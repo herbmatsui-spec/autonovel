@@ -1,19 +1,19 @@
 from dataclasses import dataclass
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
-    from src.agents.PlanningAgent import PlanningAgent
-    from src.agents.WritingAgent import WritingAgent
     from prompts.manager import PromptManager
-    from src.backend.engine_context import ContextManager
-    from src.backend.sanitizer import TextFormatter
     from src.agents.audit import LogicalAuditor
-    from src.backend.engine_narrative import NarrativeController
-    from src.backend.engine_critique import CritiqueAgent
     from src.agents.MarketingAgent import MarketingAgent
-    from src.services.bible_service import WorldBibleGenerator
+    from src.agents.PlanningAgent import PlanningAgent
     from src.agents.plot import PlotAgent
+    from src.agents.WritingAgent import WritingAgent
+    from src.backend.engine_context import ContextManager
+    from src.backend.engine_critique import CritiqueAgent
+    from src.backend.engine_narrative import NarrativeController
     from src.backend.engine_style_rag import StyleRagManager
+    from src.backend.sanitizer import TextFormatter
+    from src.services.bible_service import WorldBibleGenerator
 
 
 @dataclass

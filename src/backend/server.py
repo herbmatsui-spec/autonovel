@@ -6,7 +6,6 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../.
 import asyncio
 import importlib
 import logging
-import time
 import uuid
 from collections import defaultdict
 from contextlib import asynccontextmanager
@@ -24,9 +23,6 @@ from config.constants import (
     RATE_LIMIT_MAX_REQUESTS as _RATE_LIMIT_MAX_REQUESTS,
 )
 from config.constants import (
-    RATE_LIMIT_STORE_MAX_ENTRIES as _RATE_LIMIT_STORE_MAX_ENTRIES,
-)
-from config.constants import (
     RATE_LIMIT_WINDOW_SECONDS as _RATE_LIMIT_WINDOW_SECONDS,
 )
 from config.cors_config import get_allowed_origins
@@ -35,18 +31,18 @@ from src.backend.auth import validate_api_key_or_raise
 from src.backend.background import BackgroundReporter, ProgressState
 from src.backend.database import init_db
 from src.backend.error_handlers import register_error_handlers
-from src.backend.rate_limit import RedisRateLimiter
-from src.services.redis_cache import RedisCacheService
 from src.backend.observability.metrics import MetricsMiddleware
+from src.backend.rate_limit import RedisRateLimiter
 from src.core.container import AppContainer
 from src.core.observability import TraceContext
-from src.core.opentelemetry import setup_opentelemetry
 from src.easy_mode.pipeline import EasyModePipeline, PipelineConfig
 from src.models.api_schemas import (
     CritiqueOptimizeRequest,
     EasyModeRequest,
     RefineEroticRequest,
 )
+from src.services.redis_cache import RedisCacheService
+
 logger = logging.getLogger(__name__)
 
 # Redis rate limiter (initialized in lifespan)
@@ -96,7 +92,7 @@ async def lifespan(app: FastAPI):
         raise
     finally:
         logger.info("シャットダウン処理を開始...")
-        
+
         try:
             # SQLite 接続のクローズ
             db_manager = AppContainer.db()
