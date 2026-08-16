@@ -46,8 +46,16 @@ export function BooksTab({ selectedBook, setSelectedBook, setShowCreateModal }: 
             return (
               <div
                 key={book.id}
+                role="button"
+                tabIndex={0}
                 className="glass-panel cursor-pointer transition-all"
                 onClick={() => setSelectedBook(book)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setSelectedBook(book);
+                  }
+                }}
                 style={{
                   padding: '1.75rem',
                   borderColor: isActive ? 'var(--accent-indigo)' : 'var(--border)',

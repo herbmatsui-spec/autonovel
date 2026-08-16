@@ -24,8 +24,8 @@ export function AuditTab({ selectedBook, apiKey }: AuditTabProps) {
     try {
       const data = await getIssues(selectedBook.id);
       setIssues(data);
-    } catch (err: any) {
-      toast.error('issue読み込みに失敗: ' + err.message);
+    } catch (err: unknown) {
+      toast.error('issue読み込みに失敗: ' + (err instanceof Error ? err.message : String(err)));
     } finally {
       setLoading(false);
     }
@@ -40,8 +40,8 @@ export function AuditTab({ selectedBook, apiKey }: AuditTabProps) {
       await resolveIssue(issueId, action, apiKey);
       toast.success(`Issue #${issueId} を「${action}」で解決しました。`);
       loadIssues();
-    } catch (err: any) {
-      toast.error('解決に失敗: ' + err.message);
+    } catch (err: unknown) {
+      toast.error('解決に失敗: ' + (err instanceof Error ? err.message : String(err)));
     }
   };
 

@@ -18,7 +18,6 @@ import {
   stopTask,
   refineErotic,
 } from '@/api';
-import type { EasyModeParams } from '@/types';
 
 export function useAppActions(setLoading: (b: boolean) => void) {
   const { apiKey, temperature, modelType } = useUserSettingsStore();
@@ -99,8 +98,8 @@ export function useAppActions(setLoading: (b: boolean) => void) {
       });
       setActiveTaskId(taskId);
       setWritingError(null);
-    } catch (err: any) {
-      const msg = '執筆タスクの起動に失敗しました: ' + err.message;
+    } catch (err: unknown) {
+      const msg = '執筆タスクの起動に失敗しました: ' + (err instanceof Error ? err.message : String(err));
       toast.error(msg);
       setWritingError(msg);
     }
@@ -121,8 +120,8 @@ export function useAppActions(setLoading: (b: boolean) => void) {
         gen_to: selectedBook.target_eps,
       });
       setActiveTaskId(taskId);
-    } catch (err: any) {
-      toast.error('プロット拡張タスクの起動に失敗しました: ' + err.message);
+    } catch (err: unknown) {
+      toast.error('プロット拡張タスクの起動に失敗しました: ' + (err instanceof Error ? err.message : String(err)));
     }
   };
 
@@ -139,8 +138,8 @@ export function useAppActions(setLoading: (b: boolean) => void) {
         book_id: selectedBook.id,
       });
       setActiveTaskId(taskId);
-    } catch (err: any) {
-      setGlobalError('品質分析タスクの起動に失敗しました: ' + err.message);
+    } catch (err: unknown) {
+      setGlobalError('品質分析タスクの起動に失敗しました: ' + (err instanceof Error ? err.message : String(err)));
     }
   };
 
@@ -164,8 +163,8 @@ export function useAppActions(setLoading: (b: boolean) => void) {
       resetImport();
       setWritingError(null);
       await loadBookDetails(selectedBook.id);
-    } catch (err: any) {
-      const msg = 'インポートに失敗しました: ' + err.message;
+    } catch (err: unknown) {
+      const msg = 'インポートに失敗しました: ' + (err instanceof Error ? err.message : String(err));
       setGlobalError(msg);
       setWritingError(msg);
     } finally {
@@ -188,8 +187,8 @@ export function useAppActions(setLoading: (b: boolean) => void) {
       });
       toast.success('マーケティングパッケージの生成が完了しました！');
       await loadBookDetails(selectedBook.id);
-    } catch (err: any) {
-      setGlobalError('マーケティング生成に失敗しました: ' + err.message);
+    } catch (err: unknown) {
+      setGlobalError('マーケティング生成に失敗しました: ' + (err instanceof Error ? err.message : String(err)));
     } finally {
       setLoading(false);
     }
@@ -202,8 +201,8 @@ export function useAppActions(setLoading: (b: boolean) => void) {
       setActiveTaskId(null);
       setTaskStatus(null);
       toast.success('タスクの停止要求を送信しました。');
-    } catch (err: any) {
-      toast.error('タスクの停止に失敗しました: ' + err.message);
+    } catch (err: unknown) {
+      toast.error('タスクの停止に失敗しました: ' + (err instanceof Error ? err.message : String(err)));
     }
   };
 
@@ -221,8 +220,8 @@ export function useAppActions(setLoading: (b: boolean) => void) {
       });
       toast.success('官能表現の洗練が完了しました。');
       await loadBookDetails(selectedBook.id);
-    } catch (err: any) {
-      toast.error('官能表現の洗練に失敗しました: ' + err.message);
+    } catch (err: unknown) {
+      toast.error('官能表現の洗練に失敗しました: ' + (err instanceof Error ? err.message : String(err)));
     } finally {
       setLoading(false);
     }

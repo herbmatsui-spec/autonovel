@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { Book } from '../../types';
+import type { Book, Chapter, Plot } from '../../types';
 import { getChapters, getPlots } from '../../api';
 
 interface MonitorTabProps {
@@ -17,8 +17,8 @@ function MetricCard({ label, value, sub }: { label: string; value: string | numb
 }
 
 export function MonitorTab({ selectedBook }: MonitorTabProps) {
-  const [chapters, setChapters] = useState<any[]>([]);
-  const [plots, setPlots] = useState<any[]>([]);
+  const [chapters, setChapters] = useState<Chapter[]>([]);
+  const [plots, setPlots] = useState<Plot[]>([]);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
   const loadData = useCallback(async () => {
@@ -41,7 +41,7 @@ export function MonitorTab({ selectedBook }: MonitorTabProps) {
     return () => clearInterval(interval);
   }, [loadData]);
 
-  const totalChars = chapters.reduce((sum: number, ch: any) => sum + (ch.content?.length ?? 0), 0);
+  const totalChars = chapters.reduce((sum: number, ch: Chapter) => sum + (ch.content?.length ?? 0), 0);
   const estimatedCost = ((totalChars / 4) * 0.00002).toFixed(4); // rough estimate
   const progressPercent = selectedBook.target_eps > 0
     ? Math.min(Math.round((chapters.length / selectedBook.target_eps) * 100), 100)

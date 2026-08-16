@@ -40,14 +40,14 @@ export interface Chapter {
 export interface Bible {
   id?: number;
   book_id?: number;
-  settings?: any;
-  revealed?: any;
+  settings?: Record<string, unknown>;
+  revealed?: Record<string, unknown>;
   version?: number;
 }
 
 export interface OptimizationHistory {
   id: number;
-  report_json: any;
+  report_json: Record<string, unknown>;
   created_at: string;
 }
 
@@ -60,12 +60,12 @@ export interface TaskStatus {
   streaming_text: string;
   logs: string[];
   error?: string;
-  result_data?: any;
+  result_data?: Record<string, unknown>;
 }
 
 export interface EasyModeParams {
   api_key: string;
-  config: any;
+  config: Record<string, unknown>;
   genre: string;
   keywords: string;
   archetype_key: string;
@@ -88,7 +88,7 @@ export interface EasyModeParams {
 
 export interface EpisodeGenerateParams {
   api_key: string;
-  config: any;
+  config: Record<string, unknown>;
   book_id: number;
   write_from: number;
   write_to: number;
@@ -106,13 +106,13 @@ export interface EpisodeGenerateCandidatesParams extends EpisodeGenerateParams {
 
 export interface PlanGenerationParams {
   api_key: string;
-  config: any;
-  params: Record<string, any>;
+  config: Record<string, unknown>;
+  params: Record<string, unknown>;
 }
 
 export interface RetryFailedParams {
   api_key: string;
-  config: any;
+  config: Record<string, unknown>;
   book_id: number;
   passion: number;
   word_count: number;
@@ -120,7 +120,7 @@ export interface RetryFailedParams {
 
 export interface PlotExpandParams {
   api_key: string;
-  config: any;
+  config: Record<string, unknown>;
   book_id: number;
   gen_from: number;
   gen_to: number;
@@ -129,13 +129,13 @@ export interface PlotExpandParams {
 
 export interface PlotRebuildParams {
   api_key: string;
-  config: any;
-  params: Record<string, any>;
+  config: Record<string, unknown>;
+  params: Record<string, unknown>;
 }
 
 export interface CritiqueOptimizeParams {
   api_key: string;
-  config: any;
+  config: Record<string, unknown>;
   book_id: number;
 }
 

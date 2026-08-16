@@ -5,7 +5,7 @@ import type { TaskStatus } from '../types';
 interface UseTaskStreamCallbacks {
   onStatus: (status: TaskStatus) => void;
   onComplete: (status: TaskStatus) => void;
-  onError: (error: any) => void;
+  onError: (error: unknown) => void;
 }
 
 const MAX_RETRIES = 3;

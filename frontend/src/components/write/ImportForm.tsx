@@ -47,7 +47,7 @@ export function ImportForm({
       </div>
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>
+          <label htmlFor="import-text" className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>
             本文テキスト
           </label>
           <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
@@ -55,6 +55,7 @@ export function ImportForm({
           </span>
         </div>
         <textarea
+          id="import-text"
           value={importText}
           onChange={(e) => setImportText(e.target.value)}
           placeholder="インポートするエピソード本文を入力..."

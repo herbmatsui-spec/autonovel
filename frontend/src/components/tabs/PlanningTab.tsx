@@ -61,8 +61,8 @@ export function PlanningTab({ selectedBook, handlePlanGeneration }: PlanningTabP
       await planGeneration(params);
       toast.success('企画生成を開始しました。');
       handlePlanGeneration();
-    } catch (err: any) {
-      toast.error('企画生成に失敗しました: ' + err.message);
+    } catch (err: unknown) {
+      toast.error('企画生成に失敗しました: ' + (err instanceof Error ? err.message : String(err)));
     } finally {
       setIsSubmitting(false);
     }
@@ -80,8 +80,8 @@ export function PlanningTab({ selectedBook, handlePlanGeneration }: PlanningTabP
       <form onSubmit={handleSubmit} className="glass-panel p-6 flex flex-col gap-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs mb-1 text-secondary">ジャンル</label>
-            <select value={genre} onChange={(e) => setGenre(e.target.value)} className="w-full">
+            <label htmlFor="planning-genre" className="block text-xs mb-1 text-secondary">ジャンル</label>
+            <select id="planning-genre" value={genre} onChange={(e) => setGenre(e.target.value)} className="w-full">
               <option value="ファンタジー">ファンタジー</option>
               <option value="ロマンス">ロマンス</option>
               <option value="ミステリー">ミステリー</option>
@@ -94,8 +94,8 @@ export function PlanningTab({ selectedBook, handlePlanGeneration }: PlanningTabP
             </select>
           </div>
           <div>
-            <label className="block text-xs mb-1 text-secondary">アーキタイプ (物語の型)</label>
-            <select value={archetype} onChange={(e) => setArchetype(e.target.value)} className="w-full">
+            <label htmlFor="planning-archetype" className="block text-xs mb-1 text-secondary">アーキタイプ (物語の型)</label>
+            <select id="planning-archetype" value={archetype} onChange={(e) => setArchetype(e.target.value)} className="w-full">
               {options?.story_archetypes.map(arch => (
                 <option key={arch} value={arch}>{arch}</option>
               ))}
@@ -104,9 +104,9 @@ export function PlanningTab({ selectedBook, handlePlanGeneration }: PlanningTabP
           </div>
         </div>
 
-        <div>
-          <label className="block text-xs mb-1 text-secondary">文体スタイル</label>
-          <select value={styleKey} onChange={(e) => setStyleKey(e.target.value)} className="w-full">
+<div>
+           <label htmlFor="planning-style" className="block text-xs mb-1 text-secondary">文体スタイル</label>
+           <select id="planning-style" value={styleKey} onChange={(e) => setStyleKey(e.target.value)} className="w-full">
             {options ? (
               Object.entries(options.style_definitions).map(([key, val]) => (
                 <option key={key} value={key}>{val.name}</option>
@@ -122,45 +122,46 @@ export function PlanningTab({ selectedBook, handlePlanGeneration }: PlanningTabP
           )}
         </div>
 
-        <div>
-          <label className="block text-xs mb-1 text-secondary">キーワード（カンマ区切り）</label>
-          <input
-            type="text"
-            value={keywords}
-            onChange={(e) => setKeywords(e.target.value)}
-            className="w-full"
-            placeholder="例: 追放, チート, ざまぁ"
-          />
+<div>
+           <label htmlFor="planning-keywords" className="block text-xs mb-1 text-secondary">キーワード（カンマ区切り）</label>
+           <input
+             id="planning-keywords"
+             type="text"
+             value={keywords}
+             onChange={(e) => setKeywords(e.target.value)}
+             className="w-full"
+             placeholder="例: 追放, チート, ざまぁ"
+           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-xs mb-1 text-secondary">目標文字数/話</label>
-            <input type="number" value={wordCount} onChange={(e) => setWordCount(Number(e.target.value))} min={1000} max={5000} step={100} className="w-full" />
-          </div>
-          <div>
-            <label className="block text-xs mb-1 text-secondary">目標話数</label>
-            <input type="number" value={targetEps} onChange={(e) => setTargetEps(Number(e.target.value))} min={10} max={200} className="w-full" />
-          </div>
-          <div>
-            <label className="block text-xs mb-1 text-secondary">初期プロット数</label>
-            <input type="number" value={initialLimit} onChange={(e) => setInitialLimit(Number(e.target.value))} min={1} max={50} className="w-full" />
-          </div>
+<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+           <div>
+             <label htmlFor="planning-wordcount" className="block text-xs mb-1 text-secondary">目標文字数/話</label>
+             <input id="planning-wordcount" type="number" value={wordCount} onChange={(e) => setWordCount(Number(e.target.value))} min={1000} max={5000} step={100} className="w-full" />
+           </div>
+           <div>
+             <label htmlFor="planning-targeteps" className="block text-xs mb-1 text-secondary">目標話数</label>
+             <input id="planning-targeteps" type="number" value={targetEps} onChange={(e) => setTargetEps(Number(e.target.value))} min={10} max={200} className="w-full" />
+           </div>
+           <div>
+             <label htmlFor="planning-initiallimit" className="block text-xs mb-1 text-secondary">初期プロット数</label>
+             <input id="planning-initiallimit" type="number" value={initialLimit} onChange={(e) => setInitialLimit(Number(e.target.value))} min={1} max={50} className="w-full" />
+           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-xs mb-1 text-secondary">チート強度</label>
-            <input type="number" value={cheatScale} onChange={(e) => setCheatScale(Number(e.target.value))} min={0} max={5} className="w-full" />
-          </div>
-          <div>
-            <label className="block text-xs mb-1 text-secondary">システム支援率 (%)</label>
-            <input type="number" value={systemAssist} onChange={(e) => setSystemAssist(Number(e.target.value))} min={0} max={100} className="w-full" />
-          </div>
-          <div>
-            <label className="block text-xs mb-1 text-secondary">コスト厳格度</label>
-            <input type="number" value={costSeverity} onChange={(e) => setCostSeverity(Number(e.target.value))} min={1} max={5} className="w-full" />
-          </div>
+<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+           <div>
+             <label htmlFor="planning-cheatscale" className="block text-xs mb-1 text-secondary">チート強度</label>
+             <input id="planning-cheatscale" type="number" value={cheatScale} onChange={(e) => setCheatScale(Number(e.target.value))} min={0} max={5} className="w-full" />
+           </div>
+           <div>
+             <label htmlFor="planning-systemassist" className="block text-xs mb-1 text-secondary">システム支援率 (%)</label>
+             <input id="planning-systemassist" type="number" value={systemAssist} onChange={(e) => setSystemAssist(Number(e.target.value))} min={0} max={100} className="w-full" />
+           </div>
+           <div>
+             <label htmlFor="planning-costseverity" className="block text-xs mb-1 text-secondary">コスト厳格度</label>
+             <input id="planning-costseverity" type="number" value={costSeverity} onChange={(e) => setCostSeverity(Number(e.target.value))} min={1} max={5} className="w-full" />
+           </div>
         </div>
 
         <button type="submit" className="btn btn-primary" disabled={isSubmitting || !selectedBook}>

@@ -44,8 +44,9 @@ export function WritingForm({
       <h3 className="text-xl mb-4">✍️ エピソード自動執筆の実行</h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
         <div>
-          <label className="block text-xs mb-1">タイトル</label>
+          <label htmlFor="writing-title" className="block text-xs mb-1">タイトル</label>
           <input
+            id="writing-title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             className="w-full"
@@ -53,8 +54,9 @@ export function WritingForm({
           />
         </div>
         <div>
-          <label className="block text-xs mb-1">ジャンル</label>
+          <label htmlFor="writing-genre" className="block text-xs mb-1">ジャンル</label>
           <select
+            id="writing-genre"
             value={genre}
             onChange={(e) => setGenre(e.target.value)}
             className="w-full"
@@ -68,7 +70,6 @@ export function WritingForm({
           </select>
         </div>
         <div>
-          <label className="block text-xs mb-1">1話あたり文字数</label>
           <NumberInput
             label="1話あたり文字数"
             value={wordCount}
@@ -80,8 +81,9 @@ export function WritingForm({
           />
         </div>
         <div>
-          <label className="block text-xs mb-1">プラットフォーム</label>
+          <label htmlFor="writing-platform" className="block text-xs mb-1">プラットフォーム</label>
           <select
+            id="writing-platform"
             value={platform}
             onChange={(e) => setPlatform(e.target.value)}
             className="w-full"

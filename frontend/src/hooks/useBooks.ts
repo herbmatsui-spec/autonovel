@@ -30,9 +30,9 @@ export function useBooks() {
     try {
       await deleteBook(id);
       toast.success('作品を削除しました');
-    } catch (err: any) {
+    } catch (err: unknown) {
       setBooks(previousBooks);
-      toast.error('作品の削除に失敗しました: ' + err.message);
+      toast.error('作品の削除に失敗しました: ' + (err instanceof Error ? err.message : String(err)));
     }
   };
 

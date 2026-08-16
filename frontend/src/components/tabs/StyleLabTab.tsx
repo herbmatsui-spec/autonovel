@@ -1,14 +1,8 @@
 import { useState } from 'react';
 import React from 'react';
-import type { Book } from '@/types';
 import { analyzeStyleDna } from '@/api';
 import { toast } from 'sonner';
 import { useUserSettingsStore } from '@/store/useUserSettingsStore';
-
-interface StyleLabTabProps {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  selectedBook?: Book | null;
-}
 
 export function StyleLabTab(): React.ReactElement {
   const apiKey = useUserSettingsStore((s) => s.apiKey);
@@ -47,8 +41,9 @@ export function StyleLabTab(): React.ReactElement {
       </div>
 
       <div className="glass-panel p-6">
-        <label className="block text-sm font-semibold mb-2">分析用サンプル</label>
+        <label htmlFor="stylelab-sample" className="block text-sm font-semibold mb-2">分析用サンプル</label>
         <textarea
+          id="stylelab-sample"
           rows={8}
           value={sample}
           onChange={(e) => setSample(e.target.value)}

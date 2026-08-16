@@ -40,7 +40,7 @@ const loadBookDetails = useCallback(async (bookId: number) => {
           console.error('Error loading narrative metrics:', e);
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error loading book details:', err);
     }
   }, [activeTab, setPlots, setChapters, setBible, setOptHistory, setPendingPatches, setPromptVersions, setMetricTrend]);

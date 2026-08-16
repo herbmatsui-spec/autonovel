@@ -52,10 +52,11 @@ export const GachaForm: React.FC<GachaFormProps> = ({ onSubmit, isLoading }) => 
 
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-1">
+          <label htmlFor="gacha-genre" className="block text-sm font-medium text-slate-300 mb-1">
             ジャンル
           </label>
           <select
+            id="gacha-genre"
             value={genre}
             onChange={(e) => setGenre(e.target.value)}
             className="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-purple-500 focus:outline-none"
@@ -69,10 +70,11 @@ export const GachaForm: React.FC<GachaFormProps> = ({ onSubmit, isLoading }) => 
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-1">
+          <label htmlFor="gacha-keywords" className="block text-sm font-medium text-slate-300 mb-1">
             キーワード（カンマ区切り）
           </label>
           <input
+            id="gacha-keywords"
             type="text"
             placeholder="例: 無双, 追放, 魔法学園"
             value={keywordInput}

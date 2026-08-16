@@ -13,7 +13,7 @@ export async function apiClient<T>(
 
   try {
     data = await apiCall();
-  } catch (e: any) {
+  } catch (e: unknown) {
     error = e instanceof Error ? e.message : "An unexpected error occurred";
   } finally {
     isLoading = false;
@@ -23,9 +23,9 @@ export async function apiClient<T>(
 }
 
 // Helper for useAsync hook to maintain state
-export function createAsyncState() {
+export function createAsyncState<T>() {
   return {
-    data: null as any,
+    data: null as T | null,
     error: null as string | null,
     isLoading: false,
   };

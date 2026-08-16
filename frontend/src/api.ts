@@ -222,7 +222,7 @@ export type CommercialPipelineParams = {
   platforms?: string[];
 };
 
-export async function runCommercialPipeline(params: CommercialPipelineParams): Promise<any> {
+export async function runCommercialPipeline(params: CommercialPipelineParams): Promise<Record<string, unknown>> {
   return apiRequest(`${API_BASE_URL_NO_API}/commercial/run`, {
     method: 'POST',
     body: JSON.stringify(params),
