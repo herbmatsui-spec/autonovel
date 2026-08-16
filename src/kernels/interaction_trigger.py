@@ -13,7 +13,7 @@ kernels/interaction_trigger.py - インタラクショントリガー
 import time
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List
 
 from pydantic import BaseModel, Field
 
@@ -22,6 +22,7 @@ from .base import KernelState
 
 class TriggerType(str, Enum):
     """トリガータイプ"""
+
     IMPRESSION = "impression"
     CLICK = "click"
     SCROLL = "scroll"
@@ -32,6 +33,7 @@ class TriggerType(str, Enum):
 @dataclass
 class TriggerConfig:
     """トリガー設定"""
+
     trigger_type: TriggerType
     conditions: Dict[str, Any]
     cooldown_seconds: float = 30.0
@@ -87,6 +89,7 @@ class TriggerRegistry:
             except Exception:
                 # 条件関数の例外は握り潰さず、ログ化して継続
                 import logging
+
                 logging.getLogger(__name__).warning(
                     "InteractionTrigger '%s' condition raised; skipping",
                     trigger.trigger_id,
@@ -167,6 +170,7 @@ class InteractionTriggerManager:
         # 注意: handler() でインスタンス化する元実装は、handler がクラスの
         # 場合に意図せずコンストラクタを起動してしまうバグがあった。
         import inspect
+
         if inspect.iscoroutinefunction(handler):
             return await handler(context)
         return handler(context)
@@ -175,5 +179,3 @@ class InteractionTriggerManager:
         """リセット"""
         self._last_trigger_time.clear()
         self._activation_counts.clear()
-
-

@@ -14,7 +14,7 @@ class ABTestConfig:
 
 class ABTestRouter:
     """Deterministic A/B test router using consistent hashing.
-    
+
     Assigns users/requests to buckets based on hash of identifiers,
     ensuring consistent assignment across sessions.
     """
@@ -24,11 +24,11 @@ class ABTestRouter:
 
     def get_bucket(self, user_id: str, request_id: str = None) -> int:
         """Get bucket number for a user/request combination.
-        
+
         Args:
             user_id: Unique user identifier
             request_id: Optional request identifier for session-level bucketing
-            
+
         Returns:
             Bucket number (0 to bucket_count-1)
         """
@@ -45,12 +45,12 @@ class ABTestRouter:
 
     def get_version_tag(self, user_id: str, version_tags: list[str], request_id: str = None) -> str:
         """Select a version tag based on user's bucket.
-        
+
         Args:
             user_id: User identifier
             version_tags: List of available version tags (ordered by priority)
             request_id: Optional request identifier
-            
+
         Returns:
             Selected version tag
         """

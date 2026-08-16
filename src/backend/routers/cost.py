@@ -4,6 +4,7 @@ routers/cost.py - 執筆コスト・トークン最適化ダッシュボード A
 CostRepository に記録されたトークン使用量を集計し、
 推定コスト・タスク別内訳・時系列・予算アラートを提供する。
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, Optional
@@ -65,7 +66,9 @@ async def set_budget(book_id: int, req: BudgetRequest) -> Dict[str, Any]:
 
 
 @router.get("/books/{book_id}/budget-status")
-async def budget_status(book_id: int, branch_id: int = 1, budget_usd: Optional[float] = None) -> Dict[str, Any]:
+async def budget_status(
+    book_id: int, branch_id: int = 1, budget_usd: Optional[float] = None
+) -> Dict[str, Any]:
     """予算ステータス（超過判定）を取得する。"""
     async with UnitOfWork(AppContainer.db()) as uow:
         agg = await uow.cost.aggregate(book_id, branch_id)

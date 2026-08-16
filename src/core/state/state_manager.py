@@ -6,8 +6,7 @@ from __future__ import annotations
 
 import logging
 import pathlib
-from typing import Any, Optional
-from typing import cast
+from typing import Any, Optional, cast
 
 import streamlit as st
 from pydantic import BaseModel, Field

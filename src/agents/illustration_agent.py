@@ -77,9 +77,7 @@ class IllustrationAgent(BaseAgent):
     async def _generate_episode(self, request: IllustrationRequest) -> IllustrationResult:
         """話数ごとの挿絵（単一）。scene_text があればそのシーンを描画。"""
         if getattr(request, "scene_text", None):
-            return await self.scene_illustrator.generate_for_scene(
-                request.scene_text, request
-            )
+            return await self.scene_illustrator.generate_for_scene(request.scene_text, request)
 
         # scene_text がない場合は book_context から汎用エピソードプロンプトを構築
         ctx = request.book_context or {}
@@ -95,7 +93,9 @@ class IllustrationAgent(BaseAgent):
             parts.append(f"Genre: {genre}.")
         if concept:
             parts.append(f"Atmosphere: {concept}.")
-        parts.append("Detailed background, cinematic lighting, rich detail, no text or letters in image.")
+        parts.append(
+            "Detailed background, cinematic lighting, rich detail, no text or letters in image."
+        )
         prompt = " ".join(parts)
         if is_r15(request.safety_level):
             prompt += " Tasteful R15 artistic representation, intimate but not explicit."

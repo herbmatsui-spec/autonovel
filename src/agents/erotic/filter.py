@@ -8,28 +8,25 @@ SceneTypeDetector と EroticIntegrityChecker を提供する。
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
-from pydantic import BaseModel
-
+from src.agents.erotic.continuity import (
+    CharacterStateSnapshot,
+    ContinuityReport,
+    ContinuityTracker,
+    SceneContinuityTracker,
+)
+from src.agents.erotic.evaluator import EroticQualityReport, EroticQualityScorer
 from src.agents.erotic.vocabulary import (
-    FORESHADOW_KEYWORDS,
-    TIME_KEYWORDS,
-    ITEM_KEYWORDS,
-
     CONSENT_ALL_CHARACTERS_KEYWORDS,
     CONSENT_CONTINUATION_KEYWORDS,
     CONSENT_EXPLICIT_KEYWORDS,
     CONSENT_IMPLICIT_KEYWORDS,
     CONSENT_REFUSAL_KEYWORDS,
+    FORESHADOW_KEYWORDS,
+    ITEM_KEYWORDS,
+    TIME_KEYWORDS,
 )
-from src.agents.erotic.continuity import (
-    ContinuityTracker,
-    SceneContinuityTracker,
-    ContinuityReport,
-    CharacterStateSnapshot,
-)
-from src.agents.erotic.evaluator import EroticQualityScorer, EroticQualityReport
 
 logger = logging.getLogger(__name__)
 

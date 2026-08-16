@@ -3,7 +3,6 @@ from typing import Any, Dict
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from src.core.container import make_container
 from src.models.illustration import (
     IllustrationModel,
     IllustrationRequest,

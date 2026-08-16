@@ -11,6 +11,7 @@ from typing import Any, Dict, Optional
 
 class KernelState(Enum):
     """カーネルの状態を表す列挙型"""
+
     INITIALIZED = "initialized"
     ACTIVE = "active"
     ERROR = "error"
@@ -21,6 +22,7 @@ class KernelState(Enum):
 @dataclass
 class KernelContext:
     """カーネルのコンテキスト情報"""
+
     session_id: str
     user_id: str
     metadata: Dict[str, Any] = field(default_factory=dict)
@@ -34,9 +36,7 @@ class KernelBase(ABC):
 
     def __init__(self, context: Optional[KernelContext] = None):
         self.context = context or KernelContext(
-            session_id="default",
-            user_id="anonymous",
-            metadata={}
+            session_id="default", user_id="anonymous", metadata={}
         )
         self._state = KernelState.INITIALIZED
         self._lock = asyncio.Lock()
@@ -65,7 +65,4 @@ class KernelBase(ABC):
 
     def validate_context(self) -> bool:
         """コンテキストの妥当性を検証"""
-        return (
-            self.context.session_id is not None
-            and len(self.context.session_id) > 0
-        )
+        return self.context.session_id is not None and len(self.context.session_id) > 0

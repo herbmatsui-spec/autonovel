@@ -273,7 +273,9 @@ def close_client() -> None:
             asyncio.run(close_async_client())
         except RuntimeError:
             # 実行中ループがある環境では非同期クローズを呼び出し側で行う。
-            logger.warning("close_client: 実行中のイベントループがあるため非同期クライアントをここではクローズしませんでした。")
+            logger.warning(
+                "close_client: 実行中のイベントループがあるため非同期クライアントをここではクローズしませんでした。"
+            )
 
 
 # -----------------------------------------------------------------------------

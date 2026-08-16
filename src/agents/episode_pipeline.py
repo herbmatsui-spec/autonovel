@@ -7,7 +7,6 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional, Tuple
 
 from src.agents.scheduler_coordinator import SchedulerCoordinator
-from src.agents.base import BaseAgent
 
 
 class EpisodePipeline:
@@ -66,7 +65,7 @@ class EpisodePipeline:
                 else:
                     failed_episodes.append({"ep_num": ep, "error_message": "0文字生成"})
             except Exception as e:
-                if hasattr(self.agent, 'logger'):
+                if hasattr(self.agent, "logger"):
                     self.agent.logger.error(f"generate_episodes_pipeline failed at ep {ep}: {e}")
                 failed_episodes.append({"ep_num": ep, "error_message": str(e)})
 

@@ -6,7 +6,6 @@ tests/integration/test_prompt_compare.py
 """
 import pytest
 
-from src.backend.database.uow import UnitOfWork
 from src.services.prompt_comparison import (
     build_comparison,
     decide_winner,

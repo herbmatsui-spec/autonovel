@@ -10,17 +10,19 @@ from typing import Any, Dict, List, Optional
 
 class NarrativeState(str, Enum):
     """物語の状態"""
-    SETUP = "setup"              # 冒頭・導入
-    INCITING = "inciting"        # 発端事件
-    RISING = "rising"            # 展開
-    CLIMAX = "climax"            # クライマックス
-    FALLING = "falling"          # 降下
-    RESOLUTION = "resolution"    # 解決・結末
+
+    SETUP = "setup"  # 冒頭・導入
+    INCITING = "inciting"  # 発端事件
+    RISING = "rising"  # 展開
+    CLIMAX = "climax"  # クライマックス
+    FALLING = "falling"  # 降下
+    RESOLUTION = "resolution"  # 解決・結末
 
 
 @dataclass
 class NarrativeNode:
     """物語グラフのノード"""
+
     node_id: str
     state: NarrativeState
     title: str
@@ -37,6 +39,7 @@ class NarrativeNode:
 @dataclass
 class NarrativeEdge:
     """物語グラフのエッジ"""
+
     from_node: str
     to_node: str
     edge_type: str = "sequential"  # sequential, parallel, flashback, flashforward
@@ -80,6 +83,7 @@ class NarrativeStateGraph:
     def get_path(self, from_node: str, to_node: str) -> List[str]:
         """2ノード間のパスを取得（BFS）"""
         from collections import deque
+
         visited = set()
         queue = deque([(from_node, [from_node])])
 
@@ -107,7 +111,7 @@ class NarrativeStateGraph:
             NarrativeState.RISING,
             NarrativeState.CLIMAX,
             NarrativeState.FALLING,
-            NarrativeState.RESOLUTION
+            NarrativeState.RESOLUTION,
         ]
 
         try:
@@ -139,23 +143,21 @@ class NarrativeStateManager:
         """物語のアウトラインから初期化"""
         for i, chapter_data in enumerate(outline):
             node = NarrativeNode(
-                node_id=f"ch{i+1}",
+                node_id=f"ch{i + 1}",
                 state=chapter_data.get("state", NarrativeState.RISING),
-                title=chapter_data.get("title", f"Chapter {i+1}"),
+                title=chapter_data.get("title", f"Chapter {i + 1}"),
                 description=chapter_data.get("description", ""),
                 chapter_number=i + 1,
                 dependencies=chapter_data.get("dependencies", []),
-                metadata=chapter_data.get("metadata", {})
+                metadata=chapter_data.get("metadata", {}),
             )
             self.graph.add_node(node)
 
             # 連続する章を接続
             if i > 0:
-                self.graph.add_edge(NarrativeEdge(
-                    from_node=f"ch{i}",
-                    to_node=f"ch{i+1}",
-                    edge_type="sequential"
-                ))
+                self.graph.add_edge(
+                    NarrativeEdge(from_node=f"ch{i}", to_node=f"ch{i + 1}", edge_type="sequential")
+                )
 
     def get_chapter_state(self, chapter: int) -> Optional[NarrativeState]:
         """章の状態を取得"""

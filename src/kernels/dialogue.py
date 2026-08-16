@@ -10,6 +10,7 @@ from typing import Any, Dict, List
 
 class DialoguePhase(str, Enum):
     """対話の段階"""
+
     OPENING = "opening"
     DEVELOPMENT = "development"
     CLIMAX = "climax"
@@ -20,6 +21,7 @@ class DialoguePhase(str, Enum):
 @dataclass
 class DialogueTurn:
     """対話の1ターン"""
+
     turn_id: str
     speaker: str
     content: str
@@ -31,6 +33,7 @@ class DialogueTurn:
 @dataclass
 class DialogueSession:
     """対話セッション"""
+
     session_id: str
     participant: str
     turns: List[DialogueTurn] = field(default_factory=list)

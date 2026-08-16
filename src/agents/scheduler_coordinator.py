@@ -8,7 +8,7 @@ EpisodePipeline からスケジューラのライフサイクル管理（初期�
 from __future__ import annotations
 
 import json
-from typing import Any, List, Optional
+from typing import Any, List
 
 
 class SchedulerCoordinator:
@@ -36,7 +36,7 @@ class SchedulerCoordinator:
                         settings = bible.settings
                 arcs = settings.get("arcs", []) if isinstance(settings, dict) else []
         except Exception as e:
-            if hasattr(self.agent, 'logger'):
+            if hasattr(self.agent, "logger"):
                 self.agent.logger.debug(f"Failed to get arcs for book_id={book_id}: {e}")
         return arcs
 
@@ -49,18 +49,18 @@ class SchedulerCoordinator:
         branch_id: int = 1,
     ) -> bool:
         """StreamingPlotScheduler を初期化する。成功時 True。"""
-        if getattr(self.agent, 'plot_expander', None) is None or not arcs:
+        if getattr(self.agent, "plot_expander", None) is None or not arcs:
             return False
         try:
             from src.agents.writing_scheduler import StreamingPlotScheduler
 
             self.scheduler = StreamingPlotScheduler(
-                repo=getattr(self.agent, 'repo', None),
-                llm=getattr(self.agent, 'llm', None),
-                pm=getattr(self.agent, 'prompt_manager', None),
-                planner=getattr(self.agent, 'plot_expander', None),
+                repo=getattr(self.agent, "repo", None),
+                llm=getattr(self.agent, "llm", None),
+                pm=getattr(self.agent, "prompt_manager", None),
+                planner=getattr(self.agent, "plot_expander", None),
                 book_id=book_id,
-                branch_id=getattr(self.agent, 'branch_id', branch_id),
+                branch_id=getattr(self.agent, "branch_id", branch_id),
                 arcs=arcs,
                 end_ep=end_ep,
                 reporter=reporter,
@@ -68,7 +68,7 @@ class SchedulerCoordinator:
             if reporter:
                 reporter.report(f"プロット先行スケジューラを起動 (arcs={len(arcs)})", "info")
         except Exception as e:
-            if hasattr(self.agent, 'logger'):
+            if hasattr(self.agent, "logger"):
                 self.agent.logger.warning(f"Failed to initialize StreamingPlotScheduler: {e}")
             self.scheduler = None
             return False
@@ -76,7 +76,7 @@ class SchedulerCoordinator:
         try:
             self._attach_to_graph_manager()
         except Exception as e:
-            if hasattr(self.agent, 'logger'):
+            if hasattr(self.agent, "logger"):
                 self.agent.logger.debug(f"Skipping graph manager scheduler attach: {e}")
         return True
 
@@ -93,7 +93,7 @@ class SchedulerCoordinator:
         try:
             await self.scheduler.await_plot_ready(ep)
         except Exception as e:
-            if hasattr(self.agent, 'logger'):
+            if hasattr(self.agent, "logger"):
                 self.agent.logger.warning(f"Scheduler await failed for Ep.{ep}: {e}")
 
     def schedule_ahead(self, ep: int, end_ep: int) -> None:
@@ -105,7 +105,7 @@ class SchedulerCoordinator:
             if ep + 2 <= end_ep:
                 self.scheduler.schedule_plot_generation(ep + 2, None, {})
         except Exception as e:
-            if hasattr(self.agent, 'logger'):
+            if hasattr(self.agent, "logger"):
                 self.agent.logger.warning(f"Scheduler schedule failed for Ep.{ep}: {e}")
 
     def cancel_all(self) -> None:
@@ -116,5 +116,7 @@ class SchedulerCoordinator:
                 if not task.done():
                     task.cancel()
         except Exception as exc:
-            if hasattr(self.agent, 'logger'):
-                self.agent.logger.warning("スケジューラタスクのキャンセルに失敗: %s", exc, exc_info=True)
+            if hasattr(self.agent, "logger"):
+                self.agent.logger.warning(
+                    "スケジューラタスクのキャンセルに失敗: %s", exc, exc_info=True
+                )

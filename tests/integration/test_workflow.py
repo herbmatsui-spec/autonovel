@@ -2,7 +2,7 @@ import pytest
 
 from src.backend.background import ProgressState, StatusReporter
 from src.backend.workflows.full_auto_workflow import FullAutoWorkflow
-from src.core.container import AppContainer, make_container
+from src.core.container import AppContainer
 from tests.mocks.mock_llm import LLMGenerateResultMockProxy
 
 

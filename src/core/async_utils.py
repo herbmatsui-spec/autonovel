@@ -1,6 +1,9 @@
 import asyncio
+import logging
 from contextlib import asynccontextmanager
 from typing import Any, Coroutine, Iterable, Sequence, TypeVar
+
+logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
@@ -57,7 +60,7 @@ async def safe_timeout(seconds: float):
         raise
 
 
-async def fire_and_forget(coro: Coroutine[Any, Any, Any], name: str = "bg_task"):
+def fire_and_forget(coro: Coroutine[Any, Any, Any], name: str = "bg_task"):
     """
     構造化並行性の外でバックグラウンドタスクを安全に起動するためのヘルパー。
     エラーハンドリングを強制し、放置されたタスクによるサイレントフェイルを防ぎます。
@@ -76,12 +79,19 @@ async def fire_and_forget(coro: Coroutine[Any, Any, Any], name: str = "bg_task")
     return task
 
 
-_concurrency_semaphore = asyncio.Semaphore(5)
+def get_concurrency_semaphore() -> asyncio.Semaphore:
+    """DIコンテナから設定可能なセマフォを取得する。
+
+    AppContainer.concurrency_semaphore プロバイダから
+    asyncio.Semaphore インスタンスを取得して返す。
+    """
+    from src.core.container import AppContainer
+    return AppContainer.concurrency_semaphore()
 
 
 async def limit_concurrency(coro: Coroutine[Any, Any, T]) -> T:
     """
     グローバルセマフォを使用して同時に実行されるAPIリクエスト等の数を制限します。
     """
-    async with _concurrency_semaphore:
+    async with get_concurrency_semaphore():
         return await coro

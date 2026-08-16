@@ -3,6 +3,7 @@ routers/system.py - システム状態・耐障害モード API
 
 DB/Gemini の到達性とオフラインモード状態を報告する。
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict

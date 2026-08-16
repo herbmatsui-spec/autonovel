@@ -5,6 +5,7 @@ logger = logging.getLogger(__name__)
 
 # Core classes with complete implementations
 
+
 class CharacterStatusChange:
     def __init__(self, character_id: str, attribute: str, old_value: Any, new_value: Any):
         self.character_id = character_id
@@ -12,18 +13,22 @@ class CharacterStatusChange:
         self.old_value = old_value
         self.new_value = new_value
 
+
 class EpisodeStatusChanges:
     def __init__(self, character_status_changes: list[CharacterStatusChange]):
         self.character_status_changes = character_status_changes
 
+
 class StateContradictionError(Exception):
     pass
+
 
 class StateValidator:
     @staticmethod
     def validate_transitions(prev_ws: Dict[str, Any], changes_obj: list):
         # Implement actual validation logic here
         pass
+
 
 # StateValidatorAgent (Required for existing usage)
 class StateValidatorAgent:

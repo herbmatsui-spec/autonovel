@@ -11,6 +11,7 @@ from .base import KernelBase
 @dataclass
 class ResonancePoint:
     """共鳴ポイント"""
+
     location: int
     intensity: float
     type: str
@@ -39,7 +40,7 @@ class ResonanceEngine(KernelBase):
             "shared_suffering": ["苦しみ", "悲しみ", "苦しむ", "哀しむ"],
             "sacrifice": ["犠牲", "奉仕", "捧げる", "献上"],
             "transcendence": ["超越", "究極", "究ilder", "至福"],
-            "connection": ["結びつく", "繋がる", "結び", "絆"]
+            "connection": ["結びつく", "繋がる", "結び", "絆"],
         }
 
         results = {}
@@ -55,27 +56,26 @@ class ResonanceEngine(KernelBase):
 
         return results
 
-    def suggest_resonance_enhancement(self, current_text: str, target_points: List[str]) -> Dict[str, Any]:
+    def suggest_resonance_enhancement(
+        self, current_text: str, target_points: List[str]
+    ) -> Dict[str, Any]:
         """共鳴強化の提案"""
         enhancement_map = {
             "shared_suffering": "もっと深い苦しみや悲しみの描写を加えると効果的です",
             "sacrifice": "犠牲の意味やその結果をより詳細に描写すると共鳴します",
             "transcendence": "究極的な解放や感動的なクライマックスを配置すると効果的です",
-            "connection": "人とのつながりや絆をテーマにすると共鳴しやすくなります"
+            "connection": "人とのつながりや絆をテーマにすると共鳴しやすくなります",
         }
 
         suggestions = []
         for point in target_points:
             if point in enhancement_map:
-                suggestions.append({
-                    "point": point,
-                    "suggestion": enhancement_map[point]
-                })
+                suggestions.append({"point": point, "suggestion": enhancement_map[point]})
 
         return {
             "suggestions": suggestions,
             "priority": len(suggestions),
-            "recommended_to_apply": len(suggestions) > 0
+            "recommended_to_apply": len(suggestions) > 0,
         }
 
     async def execute(self, *args, **kwargs) -> Any:

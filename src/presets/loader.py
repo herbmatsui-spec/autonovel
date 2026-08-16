@@ -4,11 +4,11 @@
 """
 
 import json
-import yaml
-import os
-from pathlib import Path
-from typing import Dict, Any, Optional
 import logging
+from pathlib import Path
+from typing import Any, Dict
+
+import yaml
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ SUPPORTED_GENRES = [
     "modern_cheat",
     "ts_tensei",
     "vrmmo",
-    "loop"
+    "loop",
 ]
 
 # プリセットファイルマッピング
@@ -36,7 +36,7 @@ PRESET_FILES = {
     "erotic": "erotic/erotic_rules_{genre}_kakuyomu.yaml",
     "characters": "characters/char_archetypes_{genre}.json",
     "titles": "titles/title_vars_{genre}.json",
-    "marketing": "marketing/marketing_vars_{genre}.json"
+    "marketing": "marketing/marketing_vars_{genre}.json",
 }
 
 # デフォルト値（ファイル不足時のフォールバック）
@@ -48,7 +48,7 @@ DEFAULT_VALUES = {
     "erotic": {},
     "characters": {},
     "titles": {},
-    "marketing": {}
+    "marketing": {},
 }
 
 
@@ -88,30 +88,30 @@ def load_json(filepath: Path) -> Dict[str, Any]:
 def load_preset(genre: str) -> Dict[str, Any]:
     """
     指定ジャンルの全プリセットを読み込み、統合辞書として返却。
-    
+
     Args:
         genre: ジャンル名（"zarma", "aku_reijo" 等）
-        
+
     Returns:
         プリセット統合辞書。キー: bible, tension, style, hooks, erotic, characters, titles, marketing
-        
+
     Raises:
         ValueError: 未対応ジャンルの場合
     """
     if genre not in SUPPORTED_GENRES:
         raise ValueError(f"Unsupported genre: {genre}. Supported: {SUPPORTED_GENRES}")
-    
+
     preset = {}
     genre_dir = PRESETS_BASE_DIR / genre
-    
+
     if not genre_dir.exists():
         logger.warning(f"Genre directory not found: {genre_dir}. Using defaults.")
         return {k: v for k, v in DEFAULT_VALUES.items()}
-    
+
     # 各プリセットファイルを読み込み
     for key, rel_path in PRESET_FILES.items():
         filepath = genre_dir / rel_path.format(genre=genre)
-        
+
         if rel_path.endswith(".j2"):
             preset[key] = load_j2_template(filepath)
         elif rel_path.endswith(".yaml"):
@@ -121,14 +121,14 @@ def load_preset(genre: str) -> Dict[str, Any]:
         else:
             logger.warning(f"Unknown file type: {rel_path}")
             preset[key] = DEFAULT_VALUES.get(key, {})
-    
+
     # メタデータ追加
     preset["_meta"] = {
         "genre": genre,
         "loaded_at": str(Path(__file__).stat().st_mtime),
-        "files_loaded": list(preset.keys())
+        "files_loaded": list(preset.keys()),
     }
-    
+
     logger.info(f"Loaded preset for genre: {genre} (keys: {list(preset.keys())})")
     return preset
 
@@ -146,43 +146,46 @@ def list_available_genres() -> list:
 def validate_preset(preset: Dict[str, Any]) -> Dict[str, Any]:
     """
     プリセットの完全性を検証し、不足キーを報告。
-    
+
     Returns:
         {"valid": bool, "missing_keys": list, "warnings": list}
     """
     required_keys = set(PRESET_FILES.keys())
     loaded_keys = set(k for k in preset.keys() if not k.startswith("_"))
     missing_keys = required_keys - loaded_keys
-    
+
     warnings = []
     for key in missing_keys:
         warnings.append(f"Missing preset key: {key}")
-    
+
     # 重要ファイルの存在チェック
     critical_keys = ["bible", "tension", "style", "hooks"]
     for key in critical_keys:
         if key in preset and not preset[key]:
             warnings.append(f"Critical preset '{key}' is empty")
-    
+
     return {
         "valid": len(missing_keys) == 0,
         "missing_keys": list(missing_keys),
-        "warnings": warnings
+        "warnings": warnings,
     }
 
 
 if __name__ == "__main__":
     # 簡易テスト
     import sys
+
     logging.basicConfig(level=logging.INFO)
-    
+
     for genre in SUPPORTED_GENRES:
         try:
             preset = load_preset(genre)
             validation = validate_preset(preset)
             status = "OK" if validation["valid"] else "INCOMPLETE"
-            print(f"[{status}] {genre}: keys={list(preset.keys())}, warnings={validation['warnings']}")
+            print(
+                f"[{status}] {genre}: keys={list(preset.keys())}, warnings={validation['warnings']}"
+            )
         except Exception as e:
             print(f"[ERROR] {genre}: {e}")
-    
+
     sys.exit(0)

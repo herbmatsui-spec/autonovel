@@ -11,6 +11,7 @@ from .base import KernelBase, KernelState
 
 class TransitionType(str, Enum):
     """遷移タイプ"""
+
     SMOOTH = "smooth"
     ABRUPT = "abrupt"
     GRADUAL = "gradual"
@@ -21,6 +22,7 @@ class TransitionType(str, Enum):
 @dataclass
 class TransitionConfig:
     """遷移設定"""
+
     transition_type: TransitionType = TransitionType.SMOOTH
     duration_seconds: float = 2.0
     fade_in: bool = True
@@ -44,10 +46,7 @@ class SerenityManager(KernelBase):
         return True
 
     def create_transition(
-        self,
-        from_scene: str,
-        to_scene: str,
-        config: Optional[TransitionConfig] = None
+        self, from_scene: str, to_scene: str, config: Optional[TransitionConfig] = None
     ) -> Dict[str, Any]:
         """遷移を作成"""
         config = config or self.default_config
@@ -59,7 +58,7 @@ class SerenityManager(KernelBase):
             "duration": config.duration_seconds,
             "fade_in": config.fade_in,
             "fade_out": config.fade_out,
-            "status": "prepared"
+            "status": "prepared",
         }
 
         self.transition_history.append(transition)

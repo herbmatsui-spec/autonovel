@@ -1,6 +1,6 @@
 import pytest
+
 from src.shared.result import Result
-from src.shared.errors import GenerationError
 
 
 def test_ok_value():

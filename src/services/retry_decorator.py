@@ -285,10 +285,16 @@ def with_llm_retry():
                         lock = getattr(self, "_lock", None)
                         if lock is not None:
                             with lock:
-                                setattr(self, "_consecutive_5xx", getattr(self, "_consecutive_5xx", 0) + 1)
+                                setattr(
+                                    self,
+                                    "_consecutive_5xx",
+                                    getattr(self, "_consecutive_5xx", 0) + 1,
+                                )
                                 fail_count = getattr(self, "_consecutive_5xx", 0)
                         else:
-                            setattr(self, "_consecutive_5xx", getattr(self, "_consecutive_5xx", 0) + 1)
+                            setattr(
+                                self, "_consecutive_5xx", getattr(self, "_consecutive_5xx", 0) + 1
+                            )
                             fail_count = getattr(self, "_consecutive_5xx", 0)
 
                         if fail_count >= 2:

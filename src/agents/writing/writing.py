@@ -4,19 +4,16 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from src.agents.base import BaseAgent
-from src.agents.writing_scheduler import StreamingPlotScheduler
+from src.agents.context_builder import ContextBuilder
+from src.agents.episode_pipeline import EpisodePipeline
 from src.core.interfaces import IPromptManager
 from src.services.llm_service import LLMService
 
-from src.agents.context_builder import ContextBuilder
-from src.agents.prompt_composer import PromptComposer
-from src.agents.erotic_enhancer import EroticEnhancer
-from src.agents.episode_pipeline import EpisodePipeline
+from .bible_extractor import BibleExtractor
 
 # 新しいコンポーネントクラスをインポート（同じパッケージ内）
 from .episode_writer import EpisodeWriter
 from .rewrite_orchestrator import RewriteOrchestrator
-from .bible_extractor import BibleExtractor
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +36,7 @@ class WritingAgent(BaseAgent):
         super().__init__(repo=repo, llm=llm, style_rag=style_rag, rag_prefetch=rag_prefetch)
         self.prompt_manager = prompt_manager
         self._plot_expander = plot_expander
-        
+
         # 分割後のコンポーネントを初期化
         context_builder = ContextBuilder(self)
         self._episode_writer = EpisodeWriter(llm, context_builder)
@@ -48,7 +45,7 @@ class WritingAgent(BaseAgent):
         self._rewrite_orchestrator = RewriteOrchestrator(
             writer=self._episode_writer,
             auditor=None,  # TODO: 適切なauditorを注入
-            spice_guard=None  # TODO: 適切なspice_guardを注入
+            spice_guard=None,  # TODO: 適切なspice_guardを注入
         )
         self._bible_extractor = BibleExtractor(llm)
 
@@ -315,7 +312,15 @@ class WritingAgent(BaseAgent):
         # TODO: 新しいコンポーネントを使うように実装を更新
         pipeline = EpisodePipeline(self)
         return await pipeline.run(
-            book_id, start_ep, end_ep, passion, target_word_count, is_easy_mode, reporter, branch_id, style_tag
+            book_id,
+            start_ep,
+            end_ep,
+            passion,
+            target_word_count,
+            is_easy_mode,
+            reporter,
+            branch_id,
+            style_tag,
         )
 
     async def trigger_bible_extraction(self, book_id, content, reporter):

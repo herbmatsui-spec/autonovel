@@ -5,6 +5,7 @@ services/structure_validator.py - 物語構造テンプレート検証
 必須ビートの欠落・クライマックス位置のずれ・ペーシング偏りを検出する。
 公開知識のみを使用し、外部API・スクレイピングに依存しない。
 """
+
 from __future__ import annotations
 
 import logging
@@ -57,13 +58,12 @@ def assign_phases(chapters: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     n = len(chapters)
     if n == 0:
         return []
-    return [
-        {**ch, "_phase": round(i / max(n - 1, 1), 3)}
-        for i, ch in enumerate(chapters)
-    ]
+    return [{**ch, "_phase": round(i / max(n - 1, 1), 3)} for i, ch in enumerate(chapters)]
 
 
-def check_required_beats(assigned: List[Dict[str, Any]], structure: Dict[str, Any]) -> List[Dict[str, Any]]:
+def check_required_beats(
+    assigned: List[Dict[str, Any]], structure: Dict[str, Any]
+) -> List[Dict[str, Any]]:
     """各必須ビートが「そのフェーズ付近に章が存在するか」を判定する。"""
     if not assigned:
         return [
@@ -75,12 +75,19 @@ def check_required_beats(assigned: List[Dict[str, Any]], structure: Dict[str, An
     for beat in structure["required_beats"]:
         present = any(abs(c["_phase"] - beat["phase"]) <= tol for c in assigned)
         results.append(
-            {"key": beat["key"], "label": beat["label"], "present": present, "expected_phase": beat["phase"]}
+            {
+                "key": beat["key"],
+                "label": beat["label"],
+                "present": present,
+                "expected_phase": beat["phase"],
+            }
         )
     return results
 
 
-def check_climax_placement(assigned: List[Dict[str, Any]], structure: Dict[str, Any]) -> Dict[str, Any]:
+def check_climax_placement(
+    assigned: List[Dict[str, Any]], structure: Dict[str, Any]
+) -> Dict[str, Any]:
     """後半1/3等にクライマックス相当の章（tension が最大の章）があるかを検証する。"""
     min_phase = structure.get("climax_min_phase", 0.66)
     if not assigned:

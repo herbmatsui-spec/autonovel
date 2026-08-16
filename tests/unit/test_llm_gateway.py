@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from src.core.llm_gateway import GeminiApiClient
+from src.core.llm_clients.gemini import GeminiApiClient
 from src.models import LLMRequestOptions
 
 

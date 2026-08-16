@@ -4,21 +4,21 @@ erotic_enhancer.py - 官能強化ユーティリティ
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 from src.agents.base import BaseAgent
 
 
 class EroticEnhancer:
     """官能コンテンツを強化するユーティリティクラス"""
-    
+
     def __init__(self, agent: BaseAgent):
         """
         Args:
             agent: 親エージェント（エロティック機能へのアクセスのために必要）
         """
         self.agent = agent
-    
+
     async def enhance_erotic_content(
         self,
         prompt: str,
@@ -26,21 +26,21 @@ class EroticEnhancer:
         context: Dict[str, Any],
     ) -> str:
         """官能コンテンツを強化する。
-        
+
         Args:
             prompt: 元のプロンプト
             result: LLMによって生成された結果
             context: コンテキスト情報
-            
+
         Returns:
             � 強化された結果文字列
         """
         erotic_intensity = context.get("erotic_intensity", 0)
         nsfw_enabled = context.get("nsfw_enabled", False)
-        
+
         if not (erotic_intensity > 0 and nsfw_enabled):
             return result
-            
+
         specialist = None
         params = None
 
@@ -72,7 +72,7 @@ class EroticEnhancer:
             erotic_prompt = specialist.build_scene_prompt(curve, context, params)
             prompt = prompt + "\n\n" + erotic_prompt
         except Exception as e:
-            if hasattr(self.agent, 'logger') and self.agent.logger is not None:
+            if hasattr(self.agent, "logger") and self.agent.logger is not None:
                 self.agent.logger.warning(f"EroticSpecialist delegation failed, falling back: {e}")
             params = None
 
@@ -88,7 +88,7 @@ class EroticEnhancer:
                 if hasattr(result, "story_content"):
                     result = result.story_content
             except Exception as e:
-                if hasattr(self.agent, 'logger') and self.agent.logger is not None:
+                if hasattr(self.agent, "logger") and self.agent.logger is not None:
                     self.agent.logger.warning(f"LLM regeneration failed: {e}")
 
         # メタファーフィルタ適用
@@ -96,7 +96,7 @@ class EroticEnhancer:
             try:
                 result = specialist.metaphor_filter(result, erotic_intensity)
             except Exception as e:
-                if hasattr(self.agent, 'logger') and self.agent.logger is not None:
+                if hasattr(self.agent, "logger") and self.agent.logger is not None:
                     self.agent.logger.warning(f"metaphor_filter failed: {e}")
 
         # アフターグロウ評価
@@ -108,13 +108,13 @@ class EroticEnhancer:
                 afterglow_candidate = result[len(result) * 3 // 4 :]
                 afterglow_ok, afterglow_issues = evaluator.evaluate(afterglow_candidate)
                 if not afterglow_ok:
-                    if hasattr(self.agent, 'logger') and self.agent.logger is not None:
+                    if hasattr(self.agent, "logger") and self.agent.logger is not None:
                         self.agent.logger.warning(
                             f"Episode {context.get('ep_num', '?')} afterglow quality issues: {afterglow_issues}. "
                             "Consider regeneration or supplementation."
                         )
             except Exception as e:
-                if hasattr(self.agent, 'logger') and self.agent.logger is not None:
+                if hasattr(self.agent, "logger") and self.agent.logger is not None:
                     self.agent.logger.warning(f"Afterglow evaluation failed: {e}")
 
         return result

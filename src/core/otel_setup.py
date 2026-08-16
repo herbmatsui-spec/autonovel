@@ -8,31 +8,45 @@ import logging
 import os
 from typing import Optional
 
-from opentelemetry import logs, metrics, trace
-from opentelemetry.exporter.otlp.proto.grpc.log_exporter import OTLPLogExporter
+from opentelemetry import metrics, trace
+from opentelemetry._logs import set_logger_provider
+
+# Optional imports for OTLP log exporters (may not be available in all versions)
+try:
+    from opentelemetry.exporter.otlp.proto.grpc.log_exporter import OTLPLogExporter
+except ImportError:
+    OTLPLogExporter = None
+
 from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-from opentelemetry.exporter.otlp.proto.http.log_exporter import (
-    OTLPLogExporter as OTLPLogExporterHTTP,
-)
+
+try:
+    from opentelemetry.exporter.otlp.proto.http.log_exporter import (
+        OTLPLogExporter as OTLPLogExporterHTTP,
+    )
+except ImportError:
+    OTLPLogExporterHTTP = None
+
 from opentelemetry.exporter.otlp.proto.http.metric_exporter import (
     OTLPMetricExporter as OTLPMetricExporterHTTP,
 )
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
     OTLPSpanExporter as OTLPSpanExporterHTTP,
 )
+from opentelemetry.sdk._logs import LoggerProvider
+from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
 from opentelemetry.sdk.environment_variables import (
-    OTEL_DEPLOYMENT_ENVIRONMENT,
     OTEL_EXPORTER_OTLP_ENDPOINT,
     OTEL_SERVICE_NAME,
 )
-from opentelemetry.sdk.logs import LoggerProvider
-from opentelemetry.sdk.logs.export import BatchLogRecordProcessor
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.resources import DEPLOYMENT_ENVIRONMENT, SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.sdk.trace.sampling import AlwaysOnSampler, ParentBased
+from opentelemetry.sdk.trace.sampling import (
+    ALWAYS_ON,
+    ParentBased,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -52,8 +66,10 @@ class TelemetryConfig:
         max_export_batch_size: int = 512,
     ):
         self.service_name = service_name or os.getenv(OTEL_SERVICE_NAME, "kaku-hegemony")
-        self.deployment_env = deployment_env or os.getenv(OTEL_DEPLOYMENT_ENVIRONMENT, os.getenv("ENVIRONMENT", "development"))
-        self.otlp_endpoint = otlp_endpoint or os.getenv(OTEL_EXPORTER_OTLP_ENDPOINT, "http://localhost:4317")
+        self.deployment_env = deployment_env or os.getenv("ENVIRONMENT", "development")
+        self.otlp_endpoint = otlp_endpoint or os.getenv(
+            OTEL_EXPORTER_OTLP_ENDPOINT, "http://localhost:4317"
+        )
         self.use_http = use_http or os.getenv("OTEL_EXPORTER_OTLP_TRACES_HTTP_ENDPOINT") is not None
         self.sampling_ratio = sampling_ratio
         self.batch_timeout_ms = batch_timeout_ms
@@ -63,29 +79,24 @@ class TelemetryConfig:
 
 def init_tracing(config: TelemetryConfig) -> trace.TracerProvider:
     """Initialize OpenTelemetry tracing with OTLP exporter."""
-    resource = Resource.create({
-        SERVICE_NAME: config.service_name,
-        DEPLOYMENT_ENVIRONMENT: config.deployment_env,
-    })
+    resource = Resource.create(
+        {
+            SERVICE_NAME: config.service_name,
+        }
+    )
 
     if config.use_http:
-        exporter = OTLPSpanExporterHTTP(
-            endpoint=f"{config.otlp_endpoint}/v1/traces"
-        )
+        exporter = OTLPSpanExporterHTTP(endpoint=f"{config.otlp_endpoint}/v1/traces")
     else:
-        exporter = OTLPSpanExporter(
-            endpoint=config.otlp_endpoint
-        )
+        exporter = OTLPSpanExporter(endpoint=config.otlp_endpoint)
 
-    sampler = ParentBased(AlwaysOnSampler() if config.sampling_ratio >= 1.0 else
-                           ParentBased(root=AlwaysOnSampler(),
-                                        remote=AlwaysOnSampler(),
-                                        local=AlwaysOnSampler()))
-
-    provider = TracerProvider(
-        resource=resource,
-        sampler=sampler
+    sampler = ParentBased(
+        ALWAYS_ON
+        if config.sampling_ratio >= 1.0
+        else ParentBased(root=ALWAYS_ON, remote=ALWAYS_ON, local=ALWAYS_ON)
     )
+
+    provider = TracerProvider(resource=resource, sampler=sampler)
 
     span_processor = BatchSpanProcessor(
         exporter=exporter,
@@ -102,52 +113,47 @@ def init_tracing(config: TelemetryConfig) -> trace.TracerProvider:
 
 def init_metrics(config: TelemetryConfig) -> metrics.MeterProvider:
     """Initialize OpenTelemetry metrics with OTLP exporter."""
-    resource = Resource.create({
-        SERVICE_NAME: config.service_name,
-        DEPLOYMENT_ENVIRONMENT: config.deployment_env,
-    })
+    resource = Resource.create(
+        {
+            SERVICE_NAME: config.service_name,
+        }
+    )
 
     if config.use_http:
-        exporter = OTLPMetricExporterHTTP(
-            endpoint=f"{config.otlp_endpoint}/v1/metrics"
-        )
+        exporter = OTLPMetricExporterHTTP(endpoint=f"{config.otlp_endpoint}/v1/metrics")
     else:
-        exporter = OTLPMetricExporter(
-            endpoint=config.otlp_endpoint
-        )
+        exporter = OTLPMetricExporter(endpoint=config.otlp_endpoint)
 
-    provider = MeterProvider(
-        resource=resource,
-        metric_readers=[exporter]
-    )
+    provider = MeterProvider(resource=resource, metric_readers=[exporter])
 
     metrics.set_meter_provider(provider)
 
     return provider
 
 
-def init_logs(config: TelemetryConfig) -> logs.LoggerProvider:
+def init_logs(config: TelemetryConfig):
     """Initialize OpenTelemetry logs with OTLP exporter."""
-    resource = Resource.create({
-        SERVICE_NAME: config.service_name,
-        DEPLOYMENT_ENVIRONMENT: config.deployment_env,
-    })
+    resource = Resource.create(
+        {
+            SERVICE_NAME: config.service_name,
+            DEPLOYMENT_ENVIRONMENT: config.deployment_env,
+        }
+    )
 
-    if config.use_http:
-        exporter = OTLPLogExporterHTTP(
-            endpoint=f"{config.otlp_endpoint}/v1/logs"
-        )
+    # Check if log exporters are available
+    if config.use_http and OTLPLogExporterHTTP is not None:
+        exporter = OTLPLogExporterHTTP(endpoint=f"{config.otlp_endpoint}/v1/logs")
+    elif OTLPLogExporter is not None:
+        exporter = OTLPLogExporter(endpoint=config.otlp_endpoint)
     else:
-        exporter = OTLPLogExporter(
-            endpoint=config.otlp_endpoint
-        )
-
-    log_handler = logs.OtelLogHandler()
+        # Log exporters not available, skip log initialization
+        logger.warning("OTLP log exporters not available, skipping log initialization")
+        return None
 
     provider = LoggerProvider(resource=resource)
     provider.add_log_record_processor(BatchLogRecordProcessor(exporter))
 
-    logs.set_logger_provider(provider)
+    set_logger_provider(provider)
 
     return provider
 
@@ -195,33 +201,25 @@ class CostMetrics:
         self._meter = metrics.get_meter("kaku-hegemony.cost")
 
         self._tokens_input = self._meter.create_counter(
-            "llm.tokens.input",
-            description="Number of input tokens processed by LLM",
-            unit="tokens"
+            "llm.tokens.input", description="Number of input tokens processed by LLM", unit="tokens"
         )
 
         self._tokens_output = self._meter.create_counter(
             "llm.tokens.output",
             description="Number of output tokens generated by LLM",
-            unit="tokens"
+            unit="tokens",
         )
 
         self._cost_usd = self._meter.create_counter(
-            "llm.cost.usd",
-            description="LLM cost in US dollars",
-            unit="USD"
+            "llm.cost.usd", description="LLM cost in US dollars", unit="USD"
         )
 
         self._request_count = self._meter.create_counter(
-            "llm.requests.total",
-            description="Total number of LLM requests",
-            unit="requests"
+            "llm.requests.total", description="Total number of LLM requests", unit="requests"
         )
 
         self._latency_histogram = self._meter.create_histogram(
-            "llm.latency.ms",
-            description="LLM request latency in milliseconds",
-            unit="ms"
+            "llm.latency.ms", description="LLM request latency in milliseconds", unit="ms"
         )
 
     def record_llm_call(
@@ -231,7 +229,7 @@ class CostMetrics:
         output_tokens: int,
         cost_usd: float,
         latency_ms: float,
-        success: bool = True
+        success: bool = True,
     ) -> None:
         """Record metrics for an LLM call."""
         self._request_count.add(1, {"model": model, "success": str(success)})

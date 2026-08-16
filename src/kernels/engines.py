@@ -11,6 +11,7 @@ from .base import KernelBase, KernelState
 
 class EngineConfig(BaseModel):
     """エンジン設定"""
+
     model: str = Field(default="gpt-4o")
     temperature: float = Field(default=0.7, ge=0.0, le=2.0)
     max_tokens: int = Field(default=4096, gt=0)
@@ -22,6 +23,7 @@ class EngineConfig(BaseModel):
 
 class GenerationResult(BaseModel):
     """生成結果"""
+
     text: str
     tokens_used: int = 0
     finish_reason: str = "stop"
@@ -46,10 +48,7 @@ class GenerationEngine(KernelBase):
         return True
 
     async def generate(
-        self,
-        prompt: str,
-        config: Optional[EngineConfig] = None,
-        **kwargs
+        self, prompt: str, config: Optional[EngineConfig] = None, **kwargs
     ) -> GenerationResult:
         """テキストを生成"""
         if not self._initialized:
@@ -64,7 +63,7 @@ class GenerationEngine(KernelBase):
             text=result_text,
             tokens_used=100,
             finish_reason="stop",
-            metadata={"model": current_config.model}
+            metadata={"model": current_config.model},
         )
 
     async def execute(self, *args, **kwargs) -> Any:

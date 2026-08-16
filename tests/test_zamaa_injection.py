@@ -1,6 +1,8 @@
 import asyncio
 import logging
 
+import pytest
+
 from prompts.manager import prompt_manager
 from src.models.planning_config import PlanningConfig
 
@@ -8,6 +10,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+@pytest.mark.asyncio
 async def test_zamaa_prompt_injection():
     logger.info("Starting Step 10: Zamaa Prompt Variable Injection Test...")
 

@@ -1,6 +1,7 @@
 """
 database/repositories/trace.py - 生成実行記録(GenerationRun)用リポジトリ
 """
+
 from __future__ import annotations
 
 from typing import List, Optional
@@ -33,7 +34,9 @@ class TraceRepository:
         return run.id
 
     @retry_on_lock()
-    async def list_by_book(self, book_id: int, chapter_ep: Optional[int] = None) -> List[GenerationRun]:
+    async def list_by_book(
+        self, book_id: int, chapter_ep: Optional[int] = None
+    ) -> List[GenerationRun]:
         stmt = select(GenerationRun).where(GenerationRun.book_id == book_id)
         if chapter_ep is not None:
             stmt = stmt.where(GenerationRun.chapter_ep == chapter_ep)

@@ -3,11 +3,11 @@
 """
 
 from .loader import (
-    load_preset,
+    SUPPORTED_GENRES,
     get_preset_value,
     list_available_genres,
+    load_preset,
     validate_preset,
-    SUPPORTED_GENRES
 )
 
 __all__ = [
@@ -15,5 +15,5 @@ __all__ = [
     "get_preset_value",
     "list_available_genres",
     "validate_preset",
-    "SUPPORTED_GENRES"
+    "SUPPORTED_GENRES",
 ]

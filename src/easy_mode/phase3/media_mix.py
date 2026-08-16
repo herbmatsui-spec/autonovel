@@ -21,25 +21,27 @@ logger = logging.getLogger(__name__)
 
 class MediaFormat(str, Enum):
     """メディアフォーマット"""
-    MANGA = "manga"              # 漫画用台本（コマ割り・セリフ・ト書き）
+
+    MANGA = "manga"  # 漫画用台本（コマ割り・セリフ・ト書き）
     AUDIO_DRAMA = "audio_drama"  # 音声ドラマ台本（効果音・BGM・セリフ・ナレーション）
-    VIDEO = "video"              # 動画台本（カット・アングル・演出指示・字幕）
+    VIDEO = "video"  # 動画台本（カット・アングル・演出指示・字幕）
     LIGHT_NOVEL = "light_novel"  # ラノベ形式（挿絵指示込み）
-    WEBTOON = "webtoon"          # 縦スクロール漫画
+    WEBTOON = "webtoon"  # 縦スクロール漫画
 
 
 @dataclass
 class Panel:
     """漫画コマ"""
+
     number: int
-    description: str                          # コマの内容説明
+    description: str  # コマの内容説明
     dialogue: List[str] = field(default_factory=list)  # セリフ
-    narration: str = ""                       # ナレーション/ト書き
-    sfx: List[str] = field(default_factory=list)       # 効果音
-    camera_angle: str = "medium"              # カメラアングル
+    narration: str = ""  # ナレーション/ト書き
+    sfx: List[str] = field(default_factory=list)  # 効果音
+    camera_angle: str = "medium"  # カメラアングル
     characters: List[str] = field(default_factory=list)  # 登場キャラ
-    background: str = ""                      # 背景指定
-    mood: str = "neutral"                     # 雰囲気
+    background: str = ""  # 背景指定
+    mood: str = "neutral"  # 雰囲気
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -51,13 +53,14 @@ class Panel:
             "camera_angle": self.camera_angle,
             "characters": self.characters,
             "background": self.background,
-            "mood": self.mood
+            "mood": self.mood,
         }
 
 
 @dataclass
 class AudioCue:
     """音声キュー"""
+
     type: str  # "bgm", "sfx", "voice", "silence"
     name: str
     description: str
@@ -74,13 +77,14 @@ class AudioCue:
             "duration": self.duration,
             "volume": self.volume,
             "fade_in": self.fade_in,
-            "fade_out": self.fade_out
+            "fade_out": self.fade_out,
         }
 
 
 @dataclass
 class VoiceLine:
     """セリフ行（音声ドラマ用）"""
+
     character: str
     text: str
     emotion: str = "neutral"
@@ -95,13 +99,14 @@ class VoiceLine:
             "emotion": self.emotion,
             "direction": self.direction,
             "audio_cues_before": [c.to_dict() for c in self.audio_cues_before],
-            "audio_cues_after": [c.to_dict() for c in self.audio_cues_after]
+            "audio_cues_after": [c.to_dict() for c in self.audio_cues_after],
         }
 
 
 @dataclass
 class VideoShot:
     """動画ショット"""
+
     number: int
     duration: float  # 秒
     visual_description: str
@@ -128,20 +133,21 @@ class VideoShot:
             "bgm": self.bgm,
             "sfx": self.sfx,
             "transition": self.transition,
-            "subtitle": self.subtitle
+            "subtitle": self.subtitle,
         }
 
 
 @dataclass
 class MediaScript:
     """メディア台本"""
+
     format: MediaFormat
     title: str
     episode_num: int
     source_content: str
-    panels: List[Panel] = field(default_factory=list)      # 漫画
+    panels: List[Panel] = field(default_factory=list)  # 漫画
     voice_lines: List[VoiceLine] = field(default_factory=list)  # 音声ドラマ
-    shots: List[VideoShot] = field(default_factory=list)   # 動画
+    shots: List[VideoShot] = field(default_factory=list)  # 動画
     metadata: Dict[str, Any] = field(default_factory=dict)
     created_at: str = field(default_factory=lambda: datetime.now().isoformat())
 
@@ -155,7 +161,7 @@ class MediaScript:
             "voice_lines": [v.to_dict() for v in self.voice_lines],
             "shots": [s.to_dict() for s in self.shots],
             "metadata": self.metadata,
-            "created_at": self.created_at
+            "created_at": self.created_at,
         }
 
     def to_json(self) -> str:
@@ -185,8 +191,8 @@ class MangaScriptGenerator:
                 "genre": self.genre,
                 "total_panels": len(panels),
                 "estimated_pages": max(1, len(panels) // 4),
-                "style_notes": self.style_guide.get("manga_notes", "")
-            }
+                "style_notes": self.style_guide.get("manga_notes", ""),
+            },
         )
 
     def _split_into_panels(self, content: str, episode: EpisodeResult) -> List[Panel]:
@@ -209,7 +215,7 @@ class MangaScriptGenerator:
         scenes = []
 
         # 改行2つ以上でシーン区切り
-        raw_scenes = re.split(r'\n\s*\n', content)
+        raw_scenes = re.split(r"\n\s*\n", content)
 
         for i, scene_text in enumerate(raw_scenes):
             scene_text = scene_text.strip()
@@ -220,13 +226,15 @@ class MangaScriptGenerator:
             scene_type = self._classify_scene(scene_text)
             characters = self._extract_characters(scene_text)
 
-            scenes.append({
-                "index": i,
-                "text": scene_text,
-                "type": scene_type,
-                "characters": characters,
-                "word_count": len(scene_text)
-            })
+            scenes.append(
+                {
+                    "index": i,
+                    "text": scene_text,
+                    "type": scene_type,
+                    "characters": characters,
+                    "word_count": len(scene_text),
+                }
+            )
 
         return scenes
 
@@ -235,7 +243,9 @@ class MangaScriptGenerator:
         text_lower = text.lower()
 
         # 会話重視
-        dialogue_ratio = len(re.findall(r'「[^」]*」|『[^』]*』|"[^"]*"', text)) / max(1, len(text) / 100)
+        dialogue_ratio = len(re.findall(r'「[^」]*」|『[^』]*』|"[^"]*"', text)) / max(
+            1, len(text) / 100
+        )
         if dialogue_ratio > 0.3:
             return "dialogue"
 
@@ -264,16 +274,18 @@ class MangaScriptGenerator:
             name_pattern = archetype_data.get("name_pattern", "")
             if name_pattern:
                 # パターンから名前を抽出
-                names = re.findall(rf'{re.escape(name_pattern.split("（")[0])}[^」」\s]*', text)
+                names = re.findall(rf"{re.escape(name_pattern.split('（')[0])}[^」」\s]*", text)
                 characters.extend(names)
 
         # セリフから話者推定
-        speakers = re.findall(r'([^「\n]{1,10})「', text)
+        speakers = re.findall(r"([^「\n]{1,10})「", text)
         characters.extend([s.strip() for s in speakers if len(s.strip()) <= 10])
 
         return list(set(characters))
 
-    def _scene_to_panels(self, scene: Dict[str, Any], start_num: int, episode: EpisodeResult) -> List[Panel]:
+    def _scene_to_panels(
+        self, scene: Dict[str, Any], start_num: int, episode: EpisodeResult
+    ) -> List[Panel]:
         """シーンをコマに変換"""
         panels = []
         text = scene["text"]
@@ -306,7 +318,7 @@ class MangaScriptGenerator:
                 camera_angle=self._determine_camera_angle(scene_type, i, panel_count),
                 characters=characters,
                 background=self._determine_background(scene_type, chunk),
-                mood=self._determine_mood(scene_type, chunk)
+                mood=self._determine_mood(scene_type, chunk),
             )
             panels.append(panel)
 
@@ -318,7 +330,7 @@ class MangaScriptGenerator:
             return [text]
 
         # 文単位で分割
-        sentences = re.split(r'(?<=。|！|？)\s*', text)
+        sentences = re.split(r"(?<=。|！|？)\s*", text)
         sentences = [s for s in sentences if s]
 
         if len(sentences) <= count:
@@ -348,7 +360,7 @@ class MangaScriptGenerator:
             desc_parts.append("説明/展開: 物語の進行")
 
         # 重要キーワード抽出
-        keywords = re.findall(r'[一-龯]{2,}', text)[:3]
+        keywords = re.findall(r"[一-龯]{2,}", text)[:3]
         if keywords:
             desc_parts.append(f"キーワード: {', '.join(keywords)}")
 
@@ -361,8 +373,8 @@ class MangaScriptGenerator:
     def _extract_narration(self, text: str) -> str:
         """ナレーション/ト書き抽出"""
         # セリフを除いた部分
-        narration = re.sub(r'「[^」]*」|『[^』]*』|"[^"]*"', '', text)
-        narration = re.sub(r'\s+', ' ', narration).strip()
+        narration = re.sub(r'「[^」]*」|『[^』]*』|"[^"]*"', "", text)
+        narration = re.sub(r"\s+", " ", narration).strip()
         return narration[:200]  # 最大200文字
 
     def _generate_sfx(self, scene_type: str, text: str) -> List[str]:
@@ -416,7 +428,7 @@ class MangaScriptGenerator:
             "部屋": ["部屋", "寝室", "書斎", "リビング"],
             "ダンジョン": ["ダンジョン", "洞窟", "地下", "迷宮"],
             "学校": ["学校", "教室", "校庭", "体育館"],
-            "現代": ["ビル", "オフィス", "電車", "コンビニ", "マンション"]
+            "現代": ["ビル", "オフィス", "電車", "コンビニ", "マンション"],
         }
 
         for bg, keywords in locations.items():
@@ -471,8 +483,8 @@ class AudioDramaScriptGenerator:
                 "estimated_duration_min": len(voice_lines) * 15 / 60,  # 1行15秒換算
                 "bgm_plan": bgm_plan,
                 "sfx_plan": sfx_plan,
-                "cast_requirements": self._get_cast_requirements(voice_lines)
-            }
+                "cast_requirements": self._get_cast_requirements(voice_lines),
+            },
         )
 
     def _convert_to_voice_lines(self, content: str, episode: EpisodeResult) -> List[VoiceLine]:
@@ -480,7 +492,7 @@ class AudioDramaScriptGenerator:
         lines = []
 
         # シーン分割
-        scenes = re.split(r'\n\s*\n', content)
+        scenes = re.split(r"\n\s*\n", content)
 
         for scene in scenes:
             scene = scene.strip()
@@ -491,18 +503,22 @@ class AudioDramaScriptGenerator:
             lines.extend(scene_lines)
 
             # シーン間の無音/転換
-            lines.append(VoiceLine(
-                character="ナレーション",
-                text="",  # 無音キュー用
-                emotion="neutral",
-                direction="[シーン転換・無音2秒]",
-                audio_cues_after=[AudioCue(
-                    type="silence",
-                    name="scene_transition",
-                    description="シーン転換の無音",
-                    duration=2.0
-                )]
-            ))
+            lines.append(
+                VoiceLine(
+                    character="ナレーション",
+                    text="",  # 無音キュー用
+                    emotion="neutral",
+                    direction="[シーン転換・無音2秒]",
+                    audio_cues_after=[
+                        AudioCue(
+                            type="silence",
+                            name="scene_transition",
+                            description="シーン転換の無音",
+                            duration=2.0,
+                        )
+                    ],
+                )
+            )
 
         return lines
 
@@ -524,12 +540,14 @@ class AudioDramaScriptGenerator:
             if part.startswith(("「", "『", '"')):
                 # 前のナレーションがあれば先に処理
                 if current_narration.strip():
-                    lines.append(VoiceLine(
-                        character="ナレーション",
-                        text=current_narration.strip(),
-                        emotion="neutral",
-                        direction="[落ち着いた語り口で]"
-                    ))
+                    lines.append(
+                        VoiceLine(
+                            character="ナレーション",
+                            text=current_narration.strip(),
+                            emotion="neutral",
+                            direction="[落ち着いた語り口で]",
+                        )
+                    )
                     current_narration = ""
 
                 # セリフ処理
@@ -538,26 +556,30 @@ class AudioDramaScriptGenerator:
                 emotion = self._guess_emotion(dialogue)
                 direction = self._generate_direction(dialogue, emotion)
 
-                lines.append(VoiceLine(
-                    character=speaker,
-                    text=dialogue,
-                    emotion=emotion,
-                    direction=direction,
-                    audio_cues_before=self._get_pre_audio_cues(dialogue),
-                    audio_cues_after=self._get_post_audio_cues(dialogue)
-                ))
+                lines.append(
+                    VoiceLine(
+                        character=speaker,
+                        text=dialogue,
+                        emotion=emotion,
+                        direction=direction,
+                        audio_cues_before=self._get_pre_audio_cues(dialogue),
+                        audio_cues_after=self._get_post_audio_cues(dialogue),
+                    )
+                )
             else:
                 # ナレーション蓄積
                 current_narration += part
 
         # 残りのナレーション
         if current_narration.strip():
-            lines.append(VoiceLine(
-                character="ナレーション",
-                text=current_narration.strip(),
-                emotion="neutral",
-                direction="[落ち着いた語り口で]"
-            ))
+            lines.append(
+                VoiceLine(
+                    character="ナレーション",
+                    text=current_narration.strip(),
+                    emotion="neutral",
+                    direction="[落ち着いた語り口で]",
+                )
+            )
 
         return lines
 
@@ -609,7 +631,7 @@ class AudioDramaScriptGenerator:
             "questioning": "[疑問・やや上ずり]",
             "sad": "[静か・低め・間を置く]",
             "amused": "[余裕・楽しげ・ゆったり]",
-            "neutral": "[自然体・標準]"
+            "neutral": "[自然体・標準]",
         }
         return directions.get(emotion, "[自然体]")
 
@@ -617,34 +639,32 @@ class AudioDramaScriptGenerator:
         """セリフ前の音声キュー"""
         cues = []
         if "…" in dialogue:
-            cues.append(AudioCue(
-                type="sfx",
-                name="pause",
-                description="間・ためらい",
-                duration=0.5
-            ))
+            cues.append(
+                AudioCue(type="sfx", name="pause", description="間・ためらい", duration=0.5)
+            )
         return cues
 
     def _get_post_audio_cues(self, dialogue: str) -> List[AudioCue]:
         """セリフ後の音声キュー"""
         cues = []
         if "！" in dialogue or "ッ" in dialogue:
-            cues.append(AudioCue(
-                type="sfx",
-                name="impact",
-                description="セリフの余韻・インパクト",
-                duration=0.3
-            ))
+            cues.append(
+                AudioCue(
+                    type="sfx", name="impact", description="セリフの余韻・インパクト", duration=0.3
+                )
+            )
         return cues
 
-    def _generate_bgm_plan(self, episode: EpisodeResult, series: SeriesResult) -> List[Dict[str, Any]]:
+    def _generate_bgm_plan(
+        self, episode: EpisodeResult, series: SeriesResult
+    ) -> List[Dict[str, Any]]:
         """BGMプラン生成"""
         return [
             {"scene": "opening", "track": "main_theme", "mood": "epic"},
             {"scene": "daily", "track": "peaceful_daily", "mood": "calm"},
             {"scene": "tension", "track": "tension_rising", "mood": "tense"},
             {"scene": "climax", "track": "battle_climax", "mood": "intense"},
-            {"scene": "resolution", "track": "ending_theme", "mood": "peaceful"}
+            {"scene": "resolution", "track": "ending_theme", "mood": "peaceful"},
         ]
 
     def _generate_sfx_plan(self, episode: EpisodeResult) -> List[Dict[str, Any]]:
@@ -654,7 +674,7 @@ class AudioDramaScriptGenerator:
             {"trigger": "magic", "sound": "magic_charge", "timing": "on_cast"},
             {"trigger": "combat_hit", "sound": "sword_clash", "timing": "on_impact"},
             {"trigger": "emotional", "sound": "heartbeat", "timing": "on_reveal"},
-            {"trigger": "comedy", "sound": "boing", "timing": "on_punchline"}
+            {"trigger": "comedy", "sound": "boing", "timing": "on_punchline"},
         ]
 
     def _get_cast_requirements(self, lines: List[VoiceLine]) -> Dict[str, Any]:
@@ -671,7 +691,8 @@ class AudioDramaScriptGenerator:
             "characters": list(characters),
             "required_emotions": list(emotions),
             "narrator_needed": any(l.character == "ナレーション" for l in lines),
-            "total_voice_actors": len(characters) + (1 if any(l.character == "ナレーション" for l in lines) else 0)
+            "total_voice_actors": len(characters)
+            + (1 if any(l.character == "ナレーション" for l in lines) else 0),
         }
 
 
@@ -698,8 +719,8 @@ class VideoScriptGenerator:
                 "estimated_duration_min": sum(s.duration for s in shots) / 60,
                 "aspect_ratio": "16:9",
                 "resolution": "1920x1080",
-                "style_notes": self._get_style_notes()
-            }
+                "style_notes": self._get_style_notes(),
+            },
         )
 
     def _convert_to_shots(self, content: str, episode: EpisodeResult) -> List[VideoShot]:
@@ -707,7 +728,7 @@ class VideoScriptGenerator:
         shots = []
 
         # シーン分割
-        scenes = re.split(r'\n\s*\n', content)
+        scenes = re.split(r"\n\s*\n", content)
 
         shot_num = 1
         for scene in scenes:
@@ -721,12 +742,14 @@ class VideoScriptGenerator:
 
         return shots
 
-    def _scene_to_shots(self, scene: str, start_num: int, episode: EpisodeResult) -> List[VideoShot]:
+    def _scene_to_shots(
+        self, scene: str, start_num: int, episode: EpisodeResult
+    ) -> List[VideoShot]:
         """シーンをショットに分解"""
         shots = []
 
         # 文単位で分割
-        sentences = re.split(r'(?<=。|！|？)\s*', scene)
+        sentences = re.split(r"(?<=。|！|？)\s*", scene)
         sentences = [s for s in sentences if s.strip()]
 
         # 動画は1ショット3-5秒目安
@@ -749,7 +772,7 @@ class VideoScriptGenerator:
                 bgm=self._get_bgm_for_shot(shot_type),
                 sfx=self._get_sfx_for_shot(shot_type, sentence),
                 transition=self._get_transition(i, len(sentences)),
-                subtitle=self._generate_subtitle(sentence)
+                subtitle=self._generate_subtitle(sentence),
             )
             shots.append(shot)
 
@@ -778,12 +801,12 @@ class VideoScriptGenerator:
         desc = f"[{shot_type.upper()}] "
 
         # キャラ・動作抽出
-        chars = re.findall(r'([一-龯]{1,5})[はがをにへとで]', text)[:2]
+        chars = re.findall(r"([一-龯]{1,5})[はがをにへとで]", text)[:2]
         if chars:
             desc += f"{', '.join(chars)}が"
 
         # 動作
-        actions = re.findall(r'(走|斬|撃|跳|飛|見|聞|考|思い|感じ|叫|笑|泣)', text)
+        actions = re.findall(r"(走|斬|撃|跳|飛|見|聞|考|思い|感じ|叫|笑|泣)", text)
         if actions:
             desc += f"{', '.join(actions[:3])}する"
 
@@ -797,10 +820,12 @@ class VideoScriptGenerator:
         return desc.strip()
 
     def _extract_dialogue_for_shot(self, text: str) -> List[str]:
-        return [m[0] or m[1] or m[2] for m in re.findall(r'「([^」]*)」|『([^』]*)』|"([^"]*)"', text)]
+        return [
+            m[0] or m[1] or m[2] for m in re.findall(r'「([^」]*)」|『([^』]*)』|"([^"]*)"', text)
+        ]
 
     def _extract_narration_for_shot(self, text: str) -> str:
-        narration = re.sub(r'「[^」]*」|『[^』]*』|"[^"]*"', '', text)
+        narration = re.sub(r'「[^」]*」|『[^』]*』|"[^"]*"', "", text)
         return narration.strip()[:100]
 
     def _get_camera_movement(self, shot_type: str, index: int, total: int) -> str:
@@ -809,7 +834,7 @@ class VideoScriptGenerator:
             "action": "tracking" if index < total - 1 else "static",
             "emotion": "slow_zoom_in",
             "exposition": "pan",
-            "normal": "static"
+            "normal": "static",
         }
         return movements.get(shot_type, "static")
 
@@ -819,7 +844,7 @@ class VideoScriptGenerator:
             "action": "low_angle",
             "emotion": "close_up",
             "exposition": "wide",
-            "normal": "eye_level"
+            "normal": "eye_level",
         }
         return angles.get(shot_type, "eye_level")
 
@@ -838,7 +863,7 @@ class VideoScriptGenerator:
             "action": "bgm_battle",
             "emotion": "bgm_emotional",
             "exposition": "bgm_exposition",
-            "normal": "bgm_ambient"
+            "normal": "bgm_ambient",
         }
         return bgm.get(shot_type, "bgm_ambient")
 
@@ -859,7 +884,7 @@ class VideoScriptGenerator:
 
     def _generate_subtitle(self, text: str) -> str:
         # 字幕用に短縮
-        clean = re.sub(r'「[^」]*」|『[^』]*』|"[^"]*"', '', text)
+        clean = re.sub(r'「[^」]*」|『[^』]*』|"[^"]*"', "", text)
         return clean[:50] + ("..." if len(clean) > 50 else "")
 
     def _get_style_notes(self) -> str:
@@ -877,10 +902,7 @@ class MediaMixExporter:
         self.video_gen = VideoScriptGenerator(genre, preset)
 
     def export_all(
-        self,
-        episode: EpisodeResult,
-        series: SeriesResult,
-        formats: List[MediaFormat] = None
+        self, episode: EpisodeResult, series: SeriesResult, formats: List[MediaFormat] = None
     ) -> Dict[MediaFormat, MediaScript]:
         """全フォーマット出力"""
         if formats is None:
@@ -900,9 +922,7 @@ class MediaMixExporter:
         return results
 
     def save_all(
-        self,
-        scripts: Dict[MediaFormat, MediaScript],
-        output_dir: Path
+        self, scripts: Dict[MediaFormat, MediaScript], output_dir: Path
     ) -> Dict[MediaFormat, Path]:
         """全台本保存"""
         output_dir.mkdir(parents=True, exist_ok=True)

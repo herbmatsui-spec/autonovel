@@ -16,6 +16,18 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from config.constants import (
+    LONG_RUNNING_TIMEOUT_SEC as _LONG_RUNNING_TIMEOUT_SEC,
+)
+from config.constants import (
+    RATE_LIMIT_MAX_REQUESTS as _RATE_LIMIT_MAX_REQUESTS,
+)
+from config.constants import (
+    RATE_LIMIT_STORE_MAX_ENTRIES as _RATE_LIMIT_STORE_MAX_ENTRIES,
+)
+from config.constants import (
+    RATE_LIMIT_WINDOW_SECONDS as _RATE_LIMIT_WINDOW_SECONDS,
+)
 from config.cors_config import get_allowed_origins
 from config.logging_config import setup_logging
 from src.backend.auth import validate_api_key_or_raise
@@ -31,8 +43,46 @@ from src.models.api_schemas import (
     EasyModeRequest,
     RefineEroticRequest,
 )
-
 logger = logging.getLogger(__name__)
+
+# Rate limiter cleanup task
+_rate_limit_cleanup_task: asyncio.Task | None = None
+
+
+def cleanup_rate_limit_store():
+    """Remove expired entries from rate limit store based on TTL."""
+    now = time.time()
+    window_start = now - _RATE_LIMIT_WINDOW_SECONDS
+    
+    # Clean up old entries for each IP
+    ips_to_delete = []
+    for ip, timestamps in _rate_limit_store.items():
+        # Filter out timestamps older than the window
+        recent_timestamps = [t for t in timestamps if t > window_start]
+        if recent_timestamps:
+            _rate_limit_store[ip] = recent_timestamps
+        else:
+            # No recent timestamps, mark IP for deletion
+            ips_to_delete.append(ip)
+    
+    # Delete IPs with no recent activity
+    for ip in ips_to_delete:
+        del _rate_limit_store[ip]
+
+
+async def rate_limit_cleanup_background():
+    """Background task to periodically clean up rate limit store."""
+    while True:
+        try:
+            await asyncio.sleep(60)  # Run every minute
+            cleanup_rate_limit_store()
+            logger.debug("Rate limit store cleanup completed")
+        except asyncio.CancelledError:
+            logger.info("Rate limit cleanup task cancelled")
+            break
+        except Exception as e:
+            logger.error(f"Error in rate limit cleanup task: {e}")
+
 
 setup_logging()
 
@@ -55,6 +105,12 @@ async def lifespan(app: FastAPI):
         db_manager = AppContainer.db()
         init_db(db_manager.db_path)
         logger.info("Database initialization complete.")
+        
+        # Start rate limit cleanup background task
+        global _rate_limit_cleanup_task
+        _rate_limit_cleanup_task = asyncio.create_task(rate_limit_cleanup_background())
+        logger.info("Rate limit cleanup background task started")
+        
         yield
     except Exception:
         import traceback
@@ -66,6 +122,17 @@ async def lifespan(app: FastAPI):
         raise
     finally:
         logger.info("シャットダウン処理を開始します...")
+        
+        # Stop rate limit cleanup background task
+
+        if _rate_limit_cleanup_task and not _rate_limit_cleanup_task.done():
+            _rate_limit_cleanup_task.cancel()
+            try:
+                await _rate_limit_cleanup_task
+            except asyncio.CancelledError:
+                pass
+            logger.info("Rate limit cleanup background task stopped")
+        
         try:
             # SQLite 接続のクローズ
             db_manager = AppContainer.db()
@@ -115,8 +182,19 @@ async def add_security_headers_middleware(request: Request, call_next):
 
 
 _rate_limit_store: dict[str, list[float]] = defaultdict(list)
-_RATE_LIMIT_MAX_REQUESTS = 100
-_RATE_LIMIT_WINDOW_SECONDS = 60
+_DEFAULT_TIMEOUT_SEC = 30.0
+_rate_limit_lock = asyncio.Lock()
+
+# 長時間実行されるLLM生成系エンドポイント（タイムアウトを延長）
+LONG_RUNNING_PATHS = frozenset(
+    {
+        "/api/easy_mode/generate",
+        "/api/refine_erotic",
+        "/api/critique/optimize",
+        "/api/episodes/generate",
+        "/api/plots/generate",
+    }
+)
 
 
 async def rate_limit_middleware(request: Request, call_next):
@@ -124,15 +202,22 @@ async def rate_limit_middleware(request: Request, call_next):
     now = time.time()
     window_start = now - _RATE_LIMIT_WINDOW_SECONDS
 
-    _rate_limit_store[client_ip] = [t for t in _rate_limit_store[client_ip] if t > window_start]
+    async with _rate_limit_lock:
+        # メモリリーク防止: エントリ数が上限を超えたら古いエントリから削除
+        if len(_rate_limit_store) > _RATE_LIMIT_STORE_MAX_ENTRIES:
+            # 古いエントリから削除（タイムスタンプが古い順）
+            sorted_ips = sorted(_rate_limit_store.keys(), key=lambda ip: _rate_limit_store[ip][0] if _rate_limit_store[ip] else float("inf"))
+            for ip in sorted_ips[:len(_rate_limit_store) - _RATE_LIMIT_STORE_MAX_ENTRIES]:
+                del _rate_limit_store[ip]
+        _rate_limit_store[client_ip] = [t for t in _rate_limit_store[client_ip] if t > window_start]
 
-    if len(_rate_limit_store[client_ip]) >= _RATE_LIMIT_MAX_REQUESTS:
-        return JSONResponse(
-            status_code=429,
-            content={"error": "Too Many Requests", "detail": "リクエスト数が制限を超えました。"},
-        )
+        if len(_rate_limit_store[client_ip]) >= _RATE_LIMIT_MAX_REQUESTS:
+            return JSONResponse(
+                status_code=429,
+                content={"error": "Too Many Requests", "detail": "リクエスト数が制限を超えました。"},
+            )
 
-    _rate_limit_store[client_ip].append(now)
+        _rate_limit_store[client_ip].append(now)
     return await call_next(request)
 
 
@@ -150,14 +235,21 @@ def configure_cors(app: FastAPI):
 
 class TimeoutMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
+        # LLM生成系エンドポイントは長時間実行されるため、タイムアウトを延長
+        timeout = (
+            _LONG_RUNNING_TIMEOUT_SEC
+            if any(request.url.path.startswith(p) for p in LONG_RUNNING_PATHS)
+            else _DEFAULT_TIMEOUT_SEC
+        )
+
         try:
-            return await asyncio.wait_for(call_next(request), timeout=30.0)
+            return await asyncio.wait_for(call_next(request), timeout=timeout)
         except asyncio.TimeoutError:
             return JSONResponse(
                 status_code=504,
                 content={
                     "error": "Gateway Timeout",
-                    "detail": "リクエストがタイムアウトしました。",
+                    "detail": f"リクエストがタイムアウトしました（{timeout}秒）。",
                 },
             )
 
@@ -249,7 +341,7 @@ async def generate_easy(req: EasyModeRequest):
     validate_api_key_or_raise(req.api_key)
     task_id = generate_task_id("easy")
 
-    # 進��管理用の状態を作成
+    # 進捗管理用の状態を作成
     progress_state = ProgressState(
         is_running=True,
         task_id=task_id,
@@ -263,14 +355,14 @@ async def generate_easy(req: EasyModeRequest):
     # PipelineConfigを作成
     config = create_pipeline_config_from_request(req)
 
-    # 進��コールバックを定義
+    # 進捗コールバックを定義
     def progress_callback(stage: str, current: int, total: int):
         stage_messages = {
-            "bible": ("���� Bible生成中", f"ジャンル設定反映中... ({current}/{total})"),
-            "plot": ("���� プロット生成中", f"全{total}話の構成作成中... ({current}/{total})"),
-            "writing": ("������ 本文����中", f"第{current}話を����中... ({current}/{total})"),
-            "episode_complete": ("��� 話完了", f"第{current}話が完了 ({current}/{total})"),
-            "finalizing": ("���� 完結��理中", f"メタデータ生成中... ({current}/{total})"),
+            "bible": ("Bible生成中", f"ジャンル設定反映中... ({current}/{total})"),
+            "plot": ("プロット生成中", f"全{total}話の構成作成中... ({current}/{total})"),
+            "writing": ("本文執筆中", f"第{current}話を執筆中... ({current}/{total})"),
+            "episode_complete": ("話完了", f"第{current}話が完了 ({current}/{total})"),
+            "finalizing": ("完結処理中", f"メタデータ生成中... ({current}/{total})"),
         }
         msg, sub_msg = stage_messages.get(stage, (stage, ""))
         reporter.update_progress(current, total, msg, sub_msg)
@@ -285,7 +377,7 @@ async def generate_easy(req: EasyModeRequest):
         pipeline = EasyModePipeline(engine, config)
         result = await pipeline.run()
 
-        # 完了��理
+        # 完了処理
         progress_state.is_running = False
         progress_state.message = "生成完了"
         progress_state.result_data = {

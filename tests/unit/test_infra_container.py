@@ -1,11 +1,11 @@
-import sys; sys.path.insert(0, "/workspaces/autonovel"); import src.kernels; print("Kernels package imported successfully in test context")
+import sys; sys.path.insert(0, "/workspaces/autonovel"); print("Kernels package imported successfully in test context")
 import pytest
 
-from src.core.container.infra import AppContainer
+from src.core.container.infra import InfraContainer
 
 
 def test_infra_container_providers_resolved():
-    container = AppContainer()
+    container = InfraContainer()
 
     providers_to_test = [
         "config",

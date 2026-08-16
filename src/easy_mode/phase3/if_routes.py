@@ -19,15 +19,17 @@ logger = logging.getLogger(__name__)
 
 class BranchType(str, Enum):
     """分岐タイプ"""
-    CHOICE = "choice"           # 読者の選択肢
+
+    CHOICE = "choice"  # 読者の選択肢
     CONDITIONAL = "conditional"  # 条件分岐（フラグ・数値判定）
-    RANDOM = "random"            # 確率分岐
-    LOOP = "loop"                # ループ分岐（周回プレイ）
-    MERGE = "merge"              # ルート合流
+    RANDOM = "random"  # 確率分岐
+    LOOP = "loop"  # ループ分岐（周回プレイ）
+    MERGE = "merge"  # ルート合流
 
 
 class ConditionOperator(str, Enum):
     """条件演算子"""
+
     EQUALS = "eq"
     NOT_EQUALS = "ne"
     GREATER_THAN = "gt"
@@ -41,6 +43,7 @@ class ConditionOperator(str, Enum):
 @dataclass
 class BranchCondition:
     """分岐条件"""
+
     variable: str
     operator: ConditionOperator
     value: Any
@@ -50,7 +53,7 @@ class BranchCondition:
         """条件判定（ネストしたキー対応）"""
         # ネストしたキーを取得（ドット区切り対応）
         var_value = context
-        for key in self.variable.split('.'):
+        for key in self.variable.split("."):
             if isinstance(var_value, dict) and key in var_value:
                 var_value = var_value[key]
             else:
@@ -83,7 +86,7 @@ class BranchCondition:
             "variable": self.variable,
             "operator": self.operator.value,
             "value": self.value,
-            "description": self.description
+            "description": self.description,
         }
 
     @classmethod
@@ -92,13 +95,14 @@ class BranchCondition:
             variable=data["variable"],
             operator=ConditionOperator(data["operator"]),
             value=data["value"],
-            description=data.get("description", "")
+            description=data.get("description", ""),
         )
 
 
 @dataclass
 class RouteChoice:
     """選択肢"""
+
     id: str
     text: str
     conditions: List[BranchCondition] = field(default_factory=list)
@@ -117,7 +121,7 @@ class RouteChoice:
         new_context = json.loads(json.dumps(context))  # 深いコピー
 
         for key, value in self.effects.items():
-            keys = key.split('.')
+            keys = key.split(".")
             target = new_context
             for k in keys[:-1]:
                 if k not in target:
@@ -131,6 +135,7 @@ class RouteChoice:
 @dataclass
 class RouteNode:
     """ルートノード"""
+
     id: str
     episode_num: int
     content: str
@@ -157,19 +162,20 @@ class RouteNode:
                     "conditions": [cond.to_dict() for cond in c.conditions],
                     "target_node_id": c.target_node_id,
                     "effects": c.effects,
-                    "priority": c.priority
+                    "priority": c.priority,
                 }
                 for c in self.choices
             ],
             "merge_target": self.merge_target,
             "metadata": self.metadata,
-            "parent_ids": self.parent_ids
+            "parent_ids": self.parent_ids,
         }
 
 
 @dataclass
 class IFRouteGraph:
     """IFルートグラフ（分岐構造全体）"""
+
     nodes: Dict[str, RouteNode] = field(default_factory=dict)
     entry_node_id: str = ""
     metadata: Dict[str, Any] = field(default_factory=dict)
@@ -209,6 +215,7 @@ class IFRouteGraph:
 
         # 孤立ノードチェック
         reachable = set()
+
         def traverse(node_id: str, visited: Set[str] = None):
             if visited is None:
                 visited = set()
@@ -234,7 +241,9 @@ class IFRouteGraph:
         for node in self.nodes.values():
             for choice in node.choices:
                 if choice.target_node_id and choice.target_node_id not in self.nodes:
-                    errors.append(f"Node {node.id}: choice {choice.id} targets missing node {choice.target_node_id}")
+                    errors.append(
+                        f"Node {node.id}: choice {choice.id} targets missing node {choice.target_node_id}"
+                    )
 
         return errors
 
@@ -291,44 +300,45 @@ class IFRouteGenerator:
         # 最初の選択肢：物語の始まり方を選ぶ
         choices = [
             RouteChoice(
-                id="prologue_normal",
-                text="普通に始める",
-                target_node_id="ep1_main",
-                priority=10
+                id="prologue_normal", text="普通に始める", target_node_id="ep1_main", priority=10
             ),
             RouteChoice(
                 id="prologue_flashback",
                 text="過去の回想から始める",
                 target_node_id="ep1_flashback",
                 effects={"start_type": "flashback"},
-                priority=5
+                priority=5,
             ),
             RouteChoice(
                 id="prologue_action",
                 text="アクションシーンから始める",
                 target_node_id="ep1_action",
                 effects={"start_type": "action"},
-                priority=5
-            )
+                priority=5,
+            ),
         ]
 
         # ジャンル別の追加選択肢
         if self.genre == "loop":
-            choices.append(RouteChoice(
-                id="prologue_true_route",
-                text="最初のループから始める（真エンドルート）",
-                target_node_id="ep1_true_route",
-                effects={"route_type": "true_end", "loop_count": 1},
-                priority=1
-            ))
+            choices.append(
+                RouteChoice(
+                    id="prologue_true_route",
+                    text="最初のループから始める（真エンドルート）",
+                    target_node_id="ep1_true_route",
+                    effects={"route_type": "true_end", "loop_count": 1},
+                    priority=1,
+                )
+            )
         elif self.genre == "aku_reijo":
-            choices.append(RouteChoice(
-                id="prologue_flag_avoid",
-                text="断罪フラグを最初から回避する",
-                target_node_id="ep1_flag_avoid",
-                effects={"route_type": "flag_avoid"},
-                priority=1
-            ))
+            choices.append(
+                RouteChoice(
+                    id="prologue_flag_avoid",
+                    text="断罪フラグを最初から回避する",
+                    target_node_id="ep1_flag_avoid",
+                    effects={"route_type": "flag_avoid"},
+                    priority=1,
+                )
+            )
 
         return RouteNode(
             id="prologue",
@@ -336,15 +346,11 @@ class IFRouteGenerator:
             content=content,
             branch_type=BranchType.CHOICE,
             choices=choices,
-            metadata={"type": "prologue", "genre": self.genre}
+            metadata={"type": "prologue", "genre": self.genre},
         )
 
     def _create_episode_nodes(
-        self,
-        episode: EpisodeResult,
-        ep_num: int,
-        prev_node_id: str,
-        series: SeriesResult
+        self, episode: EpisodeResult, ep_num: int, prev_node_id: str, series: SeriesResult
     ) -> List[RouteNode]:
         """エピソードのノード群を作成"""
         nodes = []
@@ -356,7 +362,7 @@ class IFRouteGenerator:
             content=episode.content,
             branch_type=BranchType.CHOICE,
             parent_ids=[prev_node_id],
-            metadata={"route": "main", "original_episode": ep_num}
+            metadata={"route": "main", "original_episode": ep_num},
         )
 
         # カタルシス話の場合、分岐を追加
@@ -386,71 +392,77 @@ class IFRouteGenerator:
 
         # ザマァ系のカタルシス選択肢
         if self.genre == "zarma":
-            choices.extend([
-                RouteChoice(
-                    id=f"ep{ep_num}_catharsis_complete",
-                    text="完全なザマァで終わらせる",
-                    target_node_id=f"ep{ep_num}_catharsis_complete",
-                    effects={"catharsis_level": "complete", "satisfaction": "max"},
-                    priority=10
-                ),
-                RouteChoice(
-                    id=f"ep{ep_num}_catharsis_merciful",
-                    text="情けをかけて終わらせる",
-                    target_node_id=f"ep{ep_num}_catharsis_merciful",
-                    effects={"catharsis_level": "merciful", "flag_mercy": True},
-                    priority=5
-                ),
-                RouteChoice(
-                    id=f"ep{ep_num}_catharsis_twist",
-                    text="さらなる裏切りを暴く",
-                    target_node_id=f"ep{ep_num}_catharsis_twist",
-                    effects={"catharsis_level": "twist", "hidden_truth": True},
-                    priority=3
-                )
-            ])
+            choices.extend(
+                [
+                    RouteChoice(
+                        id=f"ep{ep_num}_catharsis_complete",
+                        text="完全なザマァで終わらせる",
+                        target_node_id=f"ep{ep_num}_catharsis_complete",
+                        effects={"catharsis_level": "complete", "satisfaction": "max"},
+                        priority=10,
+                    ),
+                    RouteChoice(
+                        id=f"ep{ep_num}_catharsis_merciful",
+                        text="情けをかけて終わらせる",
+                        target_node_id=f"ep{ep_num}_catharsis_merciful",
+                        effects={"catharsis_level": "merciful", "flag_mercy": True},
+                        priority=5,
+                    ),
+                    RouteChoice(
+                        id=f"ep{ep_num}_catharsis_twist",
+                        text="さらなる裏切りを暴く",
+                        target_node_id=f"ep{ep_num}_catharsis_twist",
+                        effects={"catharsis_level": "twist", "hidden_truth": True},
+                        priority=3,
+                    ),
+                ]
+            )
         elif self.genre == "aku_reijo":
-            choices.extend([
-                RouteChoice(
-                    id=f"ep{ep_num}_happy_end",
-                    text="ハッピーエンド（溺愛ルート）",
-                    target_node_id=f"ep{ep_num}_happy_end",
-                    effects={"ending": "happy", "yuri_flag": True},
-                    priority=10
-                ),
-                RouteChoice(
-                    id=f"ep{ep_num}_bittersweet",
-                    text="ビターエンド（犠牲の愛）",
-                    target_node_id=f"ep{ep_num}_bittersweet",
-                    effects={"ending": "bittersweet", "sacrifice": True},
-                    priority=5
-                ),
-                RouteChoice(
-                    id=f"ep{ep_num}_open_end",
-                    text="オープンエンド（続編へ）",
-                    target_node_id=f"ep{ep_num}_open_end",
-                    effects={"ending": "open", "sequel_hook": True},
-                    priority=3
-                )
-            ])
+            choices.extend(
+                [
+                    RouteChoice(
+                        id=f"ep{ep_num}_happy_end",
+                        text="ハッピーエンド（溺愛ルート）",
+                        target_node_id=f"ep{ep_num}_happy_end",
+                        effects={"ending": "happy", "yuri_flag": True},
+                        priority=10,
+                    ),
+                    RouteChoice(
+                        id=f"ep{ep_num}_bittersweet",
+                        text="ビターエンド（犠牲の愛）",
+                        target_node_id=f"ep{ep_num}_bittersweet",
+                        effects={"ending": "bittersweet", "sacrifice": True},
+                        priority=5,
+                    ),
+                    RouteChoice(
+                        id=f"ep{ep_num}_open_end",
+                        text="オープンエンド（続編へ）",
+                        target_node_id=f"ep{ep_num}_open_end",
+                        effects={"ending": "open", "sequel_hook": True},
+                        priority=3,
+                    ),
+                ]
+            )
         else:
             # 汎用カタルシス選択肢
-            choices.extend([
-                RouteChoice(
-                    id=f"ep{ep_num}_catharsis_standard",
-                    text="王道のカタルシス",
-                    target_node_id=f"ep{ep_num}_catharsis_standard",
-                    effects={"catharsis": "standard"},
-                    priority=10
-                ),
-                RouteChoice(
-                    id=f"ep{ep_num}_catharsis_subvert",
-                    text="あえてカタルシスを裏切る",
-                    target_node_id=f"ep{ep_num}_catharsis_subvert",
-                    effects={"catharsis": "subverted", "dark_turn": True},
-                    priority=3
-                )
-            ])
+            choices.extend(
+                [
+                    RouteChoice(
+                        id=f"ep{ep_num}_catharsis_standard",
+                        text="王道のカタルシス",
+                        target_node_id=f"ep{ep_num}_catharsis_standard",
+                        effects={"catharsis": "standard"},
+                        priority=10,
+                    ),
+                    RouteChoice(
+                        id=f"ep{ep_num}_catharsis_subvert",
+                        text="あえてカタルシスを裏切る",
+                        target_node_id=f"ep{ep_num}_catharsis_subvert",
+                        effects={"catharsis": "subverted", "dark_turn": True},
+                        priority=3,
+                    ),
+                ]
+            )
 
         return choices
 
@@ -460,43 +472,49 @@ class IFRouteGenerator:
             RouteChoice(
                 id=f"ep{ep_num}_continue_main",
                 text="メインストーリーを進める",
-                target_node_id=f"ep{ep_num+1}_main" if ep_num < 8 else "ending_main",
-                priority=10
+                target_node_id=f"ep{ep_num + 1}_main" if ep_num < 8 else "ending_main",
+                priority=10,
             ),
             RouteChoice(
                 id=f"ep{ep_num}_side_event",
                 text="サイドイベントを見る",
                 target_node_id=f"ep{ep_num}_side",
                 effects={"side_event": True, "bonus_content": True},
-                priority=5
-            )
+                priority=5,
+            ),
         ]
 
         # ジャンル別の特別選択肢
         if self.genre == "loop":
-            choices.append(RouteChoice(
-                id=f"ep{ep_num}_loop_optimize",
-                text="ループ知識を使って最適化する",
-                target_node_id=f"ep{ep_num}_optimized",
-                effects={"optimization_level": ep_num, "knowledge_retention": True},
-                priority=8
-            ))
+            choices.append(
+                RouteChoice(
+                    id=f"ep{ep_num}_loop_optimize",
+                    text="ループ知識を使って最適化する",
+                    target_node_id=f"ep{ep_num}_optimized",
+                    effects={"optimization_level": ep_num, "knowledge_retention": True},
+                    priority=8,
+                )
+            )
         elif self.genre == "cheat_tensei":
-            choices.append(RouteChoice(
-                id=f"ep{ep_num}_skill_experiment",
-                text="新しいスキル組み合わせを試す",
-                target_node_id=f"ep{ep_num}_skill_combo",
-                effects={"skill_experiment": True, "new_combo": True},
-                priority=5
-            ))
+            choices.append(
+                RouteChoice(
+                    id=f"ep{ep_num}_skill_experiment",
+                    text="新しいスキル組み合わせを試す",
+                    target_node_id=f"ep{ep_num}_skill_combo",
+                    effects={"skill_experiment": True, "new_combo": True},
+                    priority=5,
+                )
+            )
         elif self.genre == "ts_tensei":
-            choices.append(RouteChoice(
-                id=f"ep{ep_num}_yuri_deepen",
-                text="百合関係を深める",
-                target_node_id=f"ep{ep_num}_yuri_scene",
-                effects={"yuri_progress": True, "intimacy_up": True},
-                priority=8
-            ))
+            choices.append(
+                RouteChoice(
+                    id=f"ep{ep_num}_yuri_deepen",
+                    text="百合関係を深める",
+                    target_node_id=f"ep{ep_num}_yuri_scene",
+                    effects={"yuri_progress": True, "intimacy_up": True},
+                    priority=8,
+                )
+            )
 
         return choices
 
@@ -512,7 +530,9 @@ class IFRouteGenerator:
             return True
         return False
 
-    def _create_subroute_nodes(self, ep_num: int, parent_id: str, series: SeriesResult) -> List[RouteNode]:
+    def _create_subroute_nodes(
+        self, ep_num: int, parent_id: str, series: SeriesResult
+    ) -> List[RouteNode]:
         """サブルートノード作成"""
         nodes = []
 
@@ -520,10 +540,10 @@ class IFRouteGenerator:
         hidden_node = RouteNode(
             id=f"ep{ep_num}_hidden",
             episode_num=ep_num,
-            content=f"[隠しルート] {series.episodes[ep_num-1].content[:200]}...（展開が変わる）",
+            content=f"[隠しルート] {series.episodes[ep_num - 1].content[:200]}...（展開が変わる）",
             branch_type=BranchType.CONDITIONAL,
             parent_ids=[parent_id],
-            metadata={"route": "hidden", "unlock_condition": "special_flag"}
+            metadata={"route": "hidden", "unlock_condition": "special_flag"},
         )
 
         # 条件分岐
@@ -531,24 +551,24 @@ class IFRouteGenerator:
             RouteChoice(
                 id=f"ep{ep_num}_hidden_continue",
                 text="隠しルートを進む",
-                target_node_id=f"ep{ep_num+1}_hidden",
+                target_node_id=f"ep{ep_num + 1}_hidden",
                 effects={"hidden_route": True},
                 conditions=[
                     BranchCondition(
                         variable="flags.hidden_unlocked",
                         operator=ConditionOperator.EQUALS,
                         value=True,
-                        description="隠しフラグが立っている"
+                        description="隠しフラグが立っている",
                     )
                 ],
-                priority=1
+                priority=1,
             ),
             RouteChoice(
                 id=f"ep{ep_num}_return_main",
                 text="メインルートに戻る",
-                target_node_id=f"ep{ep_num+1}_main",
-                priority=5
-            )
+                target_node_id=f"ep{ep_num + 1}_main",
+                priority=5,
+            ),
         ]
 
         nodes.append(hidden_node)
@@ -561,7 +581,7 @@ class IFRouteGenerator:
                 content="[バッドエンド分岐] 選択を誤った場合の結末...",
                 branch_type=BranchType.CHOICE,
                 parent_ids=[parent_id],
-                metadata={"route": "bad_end", "ending_type": "bad"}
+                metadata={"route": "bad_end", "ending_type": "bad"},
             )
 
             bad_node.choices = [
@@ -570,15 +590,15 @@ class IFRouteGenerator:
                     text="この結末を受け入れる",
                     target_node_id=f"ending_bad_{ep_num}",
                     effects={"ending": "bad", "ep_num": ep_num},
-                    priority=3
+                    priority=3,
                 ),
                 RouteChoice(
                     id=f"ep{ep_num}_bad_retry",
                     text="やり直す（ループ/ロード）",
                     target_node_id=f"ep{ep_num}_main",
                     effects={"retry": True, "knowledge": True},
-                    priority=7
-                )
+                    priority=7,
+                ),
             ]
 
             nodes.append(bad_node)
@@ -618,7 +638,9 @@ class IFRouteGenerator:
             return self._create_catharsis_variant_node(node_id, series)
 
         # エンディング分岐（ハッピー、ビター、オープン等）
-        if node_id.endswith(("_happy_end", "_bittersweet", "_open_end", "_true_route", "_flag_avoid")):
+        if node_id.endswith(
+            ("_happy_end", "_bittersweet", "_open_end", "_true_route", "_flag_avoid")
+        ):
             return self._create_ending_variant_node(node_id, series)
 
         # プロローグ分岐（フラッシュバック、アクション開始等）
@@ -694,7 +716,7 @@ class IFRouteGenerator:
             content=f"{title}\n\n{desc}\n\n――終わり――",
             branch_type=BranchType.MERGE,
             choices=[],
-            metadata={"type": "ending", "ending_type": ending_type, "final": True}
+            metadata={"type": "ending", "ending_type": ending_type, "final": True},
         )
 
     def _create_catharsis_variant_node(self, node_id: str, series: SeriesResult) -> RouteNode:
@@ -721,10 +743,10 @@ class IFRouteGenerator:
                     id=f"{node_id}_continue",
                     text="次へ進む",
                     target_node_id="ending_main",
-                    priority=10
+                    priority=10,
                 )
             ],
-            metadata={"type": "catharsis_variant", "variant": variant}
+            metadata={"type": "catharsis_variant", "variant": variant},
         )
 
     def _create_ending_variant_node(self, node_id: str, series: SeriesResult) -> RouteNode:
@@ -736,7 +758,7 @@ class IFRouteGenerator:
                 content="ハッピーエンド\n\n全てが報われ、愛する者たちと永遠の幸せを掴む。\n\n――完――",
                 branch_type=BranchType.MERGE,
                 choices=[],
-                metadata={"type": "ending", "variant": "happy", "final": True}
+                metadata={"type": "ending", "variant": "happy", "final": True},
             )
         elif "bittersweet" in node_id:
             return RouteNode(
@@ -745,7 +767,7 @@ class IFRouteGenerator:
                 content="ビターエンド\n\n大切なものを守るため、自らを犠牲にする。\nその愛は永遠に語り継がれる。\n\n――完――",
                 branch_type=BranchType.MERGE,
                 choices=[],
-                metadata={"type": "ending", "variant": "bittersweet", "final": True}
+                metadata={"type": "ending", "variant": "bittersweet", "final": True},
             )
         elif "open_end" in node_id:
             return RouteNode(
@@ -754,7 +776,7 @@ class IFRouteGenerator:
                 content="オープンエンド\n\n物語はここで一区切り。だが、彼らの冒険はまだ続く。\n\n――続く――",
                 branch_type=BranchType.MERGE,
                 choices=[],
-                metadata={"type": "ending", "variant": "open", "final": True}
+                metadata={"type": "ending", "variant": "open", "final": True},
             )
         elif "true_route" in node_id:
             return RouteNode(
@@ -763,7 +785,7 @@ class IFRouteGenerator:
                 content="真ルート\n\n全てのフラグを回収し、真実のエンディングへ到達。\n全ての謎が解け、真の救済を得る。\n\n――真・完――",
                 branch_type=BranchType.MERGE,
                 choices=[],
-                metadata={"type": "ending", "variant": "true", "final": True}
+                metadata={"type": "ending", "variant": "true", "final": True},
             )
         elif "flag_avoid" in node_id:
             return RouteNode(
@@ -772,7 +794,7 @@ class IFRouteGenerator:
                 content="フラグ回避ルート\n\n断罪フラグを完全回避し、隠しキャラとの溺愛ルートへ。\n\n――甘い完――",
                 branch_type=BranchType.MERGE,
                 choices=[],
-                metadata={"type": "ending", "variant": "flag_avoid", "final": True}
+                metadata={"type": "ending", "variant": "flag_avoid", "final": True},
             )
 
         return RouteNode(
@@ -781,7 +803,7 @@ class IFRouteGenerator:
             content="特別なエンディング",
             branch_type=BranchType.MERGE,
             choices=[],
-            metadata={"type": "ending", "variant": "special"}
+            metadata={"type": "ending", "variant": "special"},
         )
 
     def _create_side_event_node(self, node_id: str) -> RouteNode:
@@ -798,10 +820,10 @@ class IFRouteGenerator:
                     id=f"{node_id}_back",
                     text="メインに戻る",
                     target_node_id=f"ep{ep_num}_main" if ep_num.isdigit() else "ending_main",
-                    priority=10
+                    priority=10,
                 )
             ],
-            metadata={"type": "side_event"}
+            metadata={"type": "side_event"},
         )
 
     def _create_optimized_node(self, node_id: str) -> RouteNode:
@@ -815,10 +837,10 @@ class IFRouteGenerator:
                     id=f"{node_id}_continue",
                     text="次の最適化へ",
                     target_node_id=node_id.replace("_optimized", "_main"),
-                    priority=10
+                    priority=10,
                 )
             ],
-            metadata={"route": "optimized"}
+            metadata={"route": "optimized"},
         )
 
     def _create_skill_combo_node(self, node_id: str) -> RouteNode:
@@ -832,10 +854,10 @@ class IFRouteGenerator:
                     id=f"{node_id}_continue",
                     text="実戦投入",
                     target_node_id=node_id.replace("_skill_combo", "_main"),
-                    priority=10
+                    priority=10,
                 )
             ],
-            metadata={"route": "skill_experiment"}
+            metadata={"route": "skill_experiment"},
         )
 
     def _create_yuri_scene_node(self, node_id: str) -> RouteNode:
@@ -849,21 +871,35 @@ class IFRouteGenerator:
                     id=f"{node_id}_continue",
                     text="余韻に浸る",
                     target_node_id=node_id.replace("_yuri_scene", "_main"),
-                    priority=10
+                    priority=10,
                 )
             ],
-            metadata={"route": "yuri", "mood": "sweet"}
+            metadata={"route": "yuri", "mood": "sweet"},
         )
 
     def _create_prologue_variant_node(self, node_id: str) -> RouteNode:
         """プロローグバリエーションノード作成（フラッシュバック、アクション開始等）"""
         variant_map = {
-            "ep1_flashback": ("回想から始める", "過去の記憶が蘇る——かつての平穏な日々が、今、甦る。", "flashback"),
-            "ep1_action": ("アクションから始める", "剣閃、魔法炸裂——いきなり戦場の只中へ放り込まれる。", "action"),
-            "ep1_true_route": ("真ルートから始める", "全てを知った状態で、最初の選択をやり直す。", "true_route"),
+            "ep1_flashback": (
+                "回想から始める",
+                "過去の記憶が蘇る——かつての平穏な日々が、今、甦る。",
+                "flashback",
+            ),
+            "ep1_action": (
+                "アクションから始める",
+                "剣閃、魔法炸裂——いきなり戦場の只中へ放り込まれる。",
+                "action",
+            ),
+            "ep1_true_route": (
+                "真ルートから始める",
+                "全てを知った状態で、最初の選択をやり直す。",
+                "true_route",
+            ),
         }
 
-        title, desc, variant = variant_map.get(node_id, ("特別な始まり", "特別な幕開け——", "special"))
+        title, desc, variant = variant_map.get(
+            node_id, ("特別な始まり", "特別な幕開け——", "special")
+        )
 
         return RouteNode(
             id=node_id,
@@ -875,10 +911,10 @@ class IFRouteGenerator:
                     id=f"{node_id}_continue",
                     text="第1話へ進む",
                     target_node_id="ep1_main",
-                    priority=10
+                    priority=10,
                 )
             ],
-            metadata={"type": "prologue_variant", "variant": variant}
+            metadata={"type": "prologue_variant", "variant": variant},
         )
 
     def _create_hidden_continuation_node(self, node_id: str) -> RouteNode:
@@ -897,16 +933,16 @@ class IFRouteGenerator:
                     conditions=[
                         BranchCondition("flags.hidden_unlocked", ConditionOperator.EQUALS, True)
                     ],
-                    priority=1
+                    priority=1,
                 ),
                 RouteChoice(
                     id=f"{node_id}_return",
                     text="メインに戻る",
                     target_node_id=f"{ep_part}_main",
-                    priority=5
-                )
+                    priority=5,
+                ),
             ],
-            metadata={"route": "hidden_continuation"}
+            metadata={"route": "hidden_continuation"},
         )
 
     def _create_bad_ending_node(self, node_id: str) -> RouteNode:
@@ -923,16 +959,16 @@ class IFRouteGenerator:
                     text="やり直す（ロード/ループ）",
                     target_node_id=f"ep{ep_num}_main" if ep_num.isdigit() else "prologue",
                     effects={"retry": True},
-                    priority=7
+                    priority=7,
                 ),
                 RouteChoice(
                     id=f"{node_id}_accept",
                     text="この結末を受け入れる",
                     target_node_id="ending_bad_final",
-                    priority=1
-                )
+                    priority=1,
+                ),
             ],
-            metadata={"type": "ending", "variant": "bad", "ep_num": ep_num}
+            metadata={"type": "ending", "variant": "bad", "ep_num": ep_num},
         )
 
     def _create_final_ending_node(self, node_id: str, series: SeriesResult) -> RouteNode:
@@ -943,7 +979,7 @@ class IFRouteGenerator:
                 content="真のエンディング\n\n全ての因果が収束し、真の救済を得る。\n全フラグ回収、確率1の必然——\n\n――真・完――",
                 branch_type=BranchType.MERGE,
                 choices=[],
-                metadata={"type": "ending", "variant": "true", "final": True}
+                metadata={"type": "ending", "variant": "true", "final": True},
             )
         elif node_id == "ending_normal":
             return RouteNode(
@@ -952,7 +988,7 @@ class IFRouteGenerator:
                 content="ノーマルエンディング\n\n物語はひとまずの決着を見る。\n日常が戻り、新たな朝が来る——\n\n――完――",
                 branch_type=BranchType.MERGE,
                 choices=[],
-                metadata={"type": "ending", "variant": "normal", "final": True}
+                metadata={"type": "ending", "variant": "normal", "final": True},
             )
         else:  # ending_main
             return RouteNode(
@@ -961,7 +997,7 @@ class IFRouteGenerator:
                 content="メインエンディング\n\n主要な因果は解決したが、余韻は残る。\n彼らの物語はまだ続いていく——\n\n――一区切り――",
                 branch_type=BranchType.MERGE,
                 choices=[],
-                metadata={"type": "ending", "variant": "main", "final": True}
+                metadata={"type": "ending", "variant": "main", "final": True},
             )
 
     def _create_main_continuation_node(self, node_id: str) -> RouteNode:
@@ -979,10 +1015,10 @@ class IFRouteGenerator:
                     id=f"{node_id}_continue",
                     text="次へ",
                     target_node_id=f"ep{next_ep}_main" if next_ep <= 8 else "ending_main",
-                    priority=10
+                    priority=10,
                 )
             ],
-            metadata={"route": "main", "continuation": True}
+            metadata={"route": "main", "continuation": True},
         )
 
     def _create_side_node(self, node_id: str) -> RouteNode:
@@ -1013,16 +1049,16 @@ class IFRouteGenerator:
                     conditions=[
                         BranchCondition("flags.hidden_unlocked", ConditionOperator.EQUALS, True)
                     ],
-                    priority=1
+                    priority=1,
                 ),
                 RouteChoice(
                     id=f"{node_id}_return",
                     text="メインに戻る",
                     target_node_id=main_target,
-                    priority=5
-                )
+                    priority=5,
+                ),
             ],
-            metadata={"route": "hidden", "continuation": True}
+            metadata={"route": "hidden", "continuation": True},
         )
 
     def _create_merge_node(self, ep_num: int, nodes: List[RouteNode]) -> Optional[RouteNode]:
@@ -1034,7 +1070,7 @@ class IFRouteGenerator:
             content="様々な選択の果てに、物語は一つの地点へ収束する——",
             branch_type=BranchType.MERGE,
             parent_ids=[n.id for n in nodes if n.branch_type != BranchType.MERGE],
-            metadata={"type": "merge", "convergence": True}
+            metadata={"type": "merge", "convergence": True},
         )
 
         merge_node.choices = [
@@ -1043,15 +1079,15 @@ class IFRouteGenerator:
                 text="真のエンディングへ",
                 target_node_id="ending_true",
                 effects={"ending": "true", "all_flags_resolved": True},
-                priority=10
+                priority=10,
             ),
             RouteChoice(
                 id=f"ep{ep_num}_merge_normal",
                 text="ノーマルエンディングへ",
                 target_node_id="ending_normal",
                 effects={"ending": "normal"},
-                priority=5
-            )
+                priority=5,
+            ),
         ]
 
         return merge_node
@@ -1063,12 +1099,7 @@ class IFRoutePlayer:
     def __init__(self, graph: IFRouteGraph):
         self.graph = graph
         self.current_node_id = graph.entry_node_id
-        self.context: Dict[str, Any] = {
-            "flags": {},
-            "variables": {},
-            "history": [],
-            "stats": {}
-        }
+        self.context: Dict[str, Any] = {"flags": {}, "variables": {}, "history": [], "stats": {}}
         self.save_points: List[Dict[str, Any]] = []
 
     def get_current_node(self) -> Optional[RouteNode]:
@@ -1094,22 +1125,26 @@ class IFRoutePlayer:
             return False
 
         # セーブポイント作成
-        self.save_points.append({
-            "node_id": self.current_node_id,
-            "context": self.context.copy(),
-            "timestamp": datetime.now().isoformat()
-        })
+        self.save_points.append(
+            {
+                "node_id": self.current_node_id,
+                "context": self.context.copy(),
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
 
         # 副作用適用
         self.context = choice.apply_effects(self.context)
 
         # 履歴記録
-        self.context["history"].append({
-            "node_id": self.current_node_id,
-            "choice_id": choice_id,
-            "choice_text": choice.text,
-            "timestamp": datetime.now().isoformat()
-        })
+        self.context["history"].append(
+            {
+                "node_id": self.current_node_id,
+                "choice_id": choice_id,
+                "choice_text": choice.text,
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
 
         # 次のノードへ
         if choice.target_node_id:
@@ -1141,7 +1176,7 @@ class IFRoutePlayer:
                 for c in self.get_available_choices()
             ],
             "context": self.context,
-            "save_points_count": len(self.save_points)
+            "save_points_count": len(self.save_points),
         }
 
     def export_playthrough(self) -> Dict[str, Any]:
@@ -1153,21 +1188,18 @@ class IFRoutePlayer:
             "flags": self.context.get("flags", {}),
             "variables": self.context.get("variables", {}),
             "stats": self.context.get("stats", {}),
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
 
-def create_if_route_system(genre: str, series: SeriesResult, preset: Dict[str, Any]) -> IFRouteGraph:
+def create_if_route_system(
+    genre: str, series: SeriesResult, preset: Dict[str, Any]
+) -> IFRouteGraph:
     """IFルートシステム作成のエントリーポイント"""
     generator = IFRouteGenerator(genre, preset)
 
     # 初期コンテキスト設定
-    initial_context = {
-        "genre": genre,
-        "title": series.title,
-        "flags": {},
-        "variables": {}
-    }
+    initial_context = {"genre": genre, "title": series.title, "flags": {}, "variables": {}}
     generator.set_initial_context(initial_context)
 
     return generator.generate_from_series(series)

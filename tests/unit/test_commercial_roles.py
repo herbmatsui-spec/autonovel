@@ -5,6 +5,11 @@ Commercial Roles Test Suite
 フェーズ5（ステップ43-48）：テスト・統合
 """
 
+from archive.kernels.graph import (
+    PleasureGraph,
+    PleasureType,
+    build_default_pleasure_graph,
+)
 from config.archetypes import (
     COMMERCIAL_ROLE_DESCRIPTIONS,
     PLEASURE_TRIGGER_KEYWORDS,
@@ -22,11 +27,6 @@ from config.domain_profile_manager import (
     ABTestConfig,
     CommercialDataLoader,
     load_commercial_settings,
-)
-from archive.kernels.graph import (
-    PleasureGraph,
-    PleasureType,
-    build_default_pleasure_graph,
 )
 from prompts.commercial_prompts import (
     ab_test_prompt_registry,

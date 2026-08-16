@@ -3,7 +3,6 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from src.backend.engine import UltimateHegemonyEngine
-from src.core.container import make_container
 
 
 # -------------------------------------------------------------

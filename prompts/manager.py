@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from jinja2 import Environment
 
@@ -582,7 +582,7 @@ class PromptManager:
 
             try:
                 settings_ctx = json.loads(settings_ctx)
-            except:
+            except json.JSONDecodeError:
                 settings_ctx = {}
         if not isinstance(settings_ctx, dict):
             settings_ctx = {}
@@ -1197,103 +1197,5 @@ class PromptManager:
             target_word_count=target_word_count,
         )
 
-    async def build_ultra_fast_plot_batch_prompt(
-        self, bible_json_str: str, ep_range: List[int], book_id: Optional[int] = None
-    ) -> str:
-        bible_data = json.loads(bible_json_str) if bible_json_str else {}
-        title = bible_data.get("title", "無題")
-        genre = bible_data.get("genre", "ファンタジー")
-        concept = bible_data.get("concept", "")
-        style_key = bible_data.get("style_key", "style_web_standard")
-        engine_key = bible_data.get("engine_key", "conflict")
-        synopsis = bible_data.get("synopsis", "")
 
-        mc_profile = bible_data.get("mc_profile", {})
-        if hasattr(mc_profile, "model_dump"):
-            mc_profile = mc_profile.model_dump()
-        mc_name = mc_profile.get("name", "主人公") if isinstance(mc_profile, dict) else "主人公"
-        mc_surface = mc_profile.get("surface_persona", "") if isinstance(mc_profile, dict) else ""
-        mc_inner_conflict = (
-            mc_profile.get("inner_conflict", "") if isinstance(mc_profile, dict) else ""
-        )
-        mc_iron_constraint = (
-            mc_profile.get("iron_constraint", "") if isinstance(mc_profile, dict) else ""
-        )
-
-        sub_characters = bible_data.get("sub_characters", [])
-        sub_char_summaries = []
-        for sub in sub_characters:
-            if hasattr(sub, "model_dump"):
-                sub = sub.model_dump()
-            if isinstance(sub, dict):
-                name = sub.get("name", "")
-                role = sub.get("role", "")
-                profile = sub.get("profile", "")
-                sub_char_summaries.append(f"- {name} ({role}): {profile}")
-        sub_characters_summary = "\n".join(sub_char_summaries) if sub_char_summaries else "なし"
-
-        world_settings = bible_data.get("world_settings", {})
-        if hasattr(world_settings, "model_dump"):
-            world_settings = world_settings.model_dump()
-        if isinstance(world_settings, dict):
-            ws_parts = []
-            for k, v in world_settings.items():
-                if v:
-                    ws_parts.append(f"  - {k}: {v}")
-            world_settings_summary = "\n".join(ws_parts) if ws_parts else "  (デフォルト)"
-        else:
-            world_settings_summary = "  (デフォルト)"
-
-        roadmap_items = []
-        full_roadmap = bible_data.get("full_story_roadmap", [])
-        for item in full_roadmap:
-            if hasattr(item, "model_dump"):
-                item = item.model_dump()
-            if isinstance(item, dict):
-                ep_num = item.get("ep_num", 0)
-                if ep_num in ep_range:
-                    roadmap_items.append(
-                        {
-                            "ep_num": ep_num,
-                            "one_line_summary": item.get("one_line_summary", "未定義"),
-                            "resolution_style": item.get("resolution_style", "Cheat"),
-                            "burned_cost_or_loot": item.get("burned_cost_or_loot", "なし"),
-                            "thematic_milestone": item.get("thematic_milestone", "なし"),
-                            "antagonist_status": item.get("antagonist_status", "現状維持"),
-                        }
-                    )
-
-        if len(ep_range) == 1:
-            ep_range_str = f"第{ep_range[0]}話"
-        else:
-            ep_range_str = f"第{ep_range[0]}話〜第{ep_range[-1]}話"
-
-        from src.models.plot import UltraFastPlotBatch
-
-        schema_json = json.dumps(
-            UltraFastPlotBatch.model_json_schema(), ensure_ascii=False, indent=2
-        )
-
-        context = {
-            "book_title": title,
-            "book_genre": genre,
-            "concept": concept,
-            "style_key": style_key,
-            "engine_key": engine_key,
-            "synopsis": synopsis,
-            "mc_name": mc_name,
-            "mc_surface": mc_surface,
-            "mc_inner_conflict": mc_inner_conflict,
-            "mc_iron_constraint": mc_iron_constraint,
-            "world_settings_summary": world_settings_summary,
-            "sub_characters_summary": sub_characters_summary,
-            "ep_range_str": ep_range_str,
-            "roadmap_items": roadmap_items,
-            "schema_json": schema_json,
-        }
-
-        return await self.render_async("ultra_fast_plot_batch_prompt.j2", context, book_id=book_id)
-
-
-# シングルトンインスタンスを提供
 prompt_manager = PromptManager()

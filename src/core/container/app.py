@@ -76,7 +76,7 @@ class AppContainer2(InfraContainer):
     )
 
     auditor = providers.Singleton["LogicalAuditor"](
-        "src.agents.LogicalAuditor",
+        "src.agents.audit.LogicalAuditor",
         repo=repo,
         pm=pm,
         llm=llm,
@@ -116,7 +116,7 @@ class AppContainer2(InfraContainer):
         prompt_manager=pm,
     )
     validator = providers.Singleton["LogicalAuditor"](
-        "src.agents.LogicalAuditor",
+        "src.agents.audit.LogicalAuditor",
         repo=repo,
         pm=pm,
         llm=llm,
@@ -171,7 +171,9 @@ class AppContainer2(InfraContainer):
         ),
         engine=engine,
     )
-    redis_cache = providers.Factory["RedisCacheService"]("src.services.redis_cache.RedisCacheService")
+    redis_cache = providers.Factory["RedisCacheService"](
+        "src.services.redis_cache.RedisCacheService"
+    )
     prompt_cache = providers.Factory["PromptCacheService"](
         "src.services.redis_cache.PromptCacheService",
         redis_cache=redis_cache,

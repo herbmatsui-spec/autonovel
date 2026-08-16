@@ -470,8 +470,6 @@ class GenerationRun(Base):
     )
 
 
-
-
 class ProjectMember(Base):
     __tablename__ = "project_members"
 

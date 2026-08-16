@@ -1,7 +1,9 @@
 import asyncio
 import logging
+from unittest.mock import MagicMock
 
-from src.core.container import make_container
+import pytest
+
 from src.models.planning_config import PlanningConfig
 from src.services.plot_service import PlotService
 
@@ -9,6 +11,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+@pytest.mark.asyncio
 async def test_zamaa_plot_generation():
     logger.info("Starting Step 11: Zamaa Profile Plot Generation Test...")
 
@@ -25,8 +28,11 @@ async def test_zamaa_plot_generation():
     # 2. Initialize PlotService via Container
     # Note: In a real test we might mock the LLM, but here we verify the pipeline flow
     try:
-        container = AppContainer(api_key="test-api-key")
-        plot_service = PlotService(container.repo())
+        # Mock the container and repo to avoid database initialization issues in test environment
+        mock_container = MagicMock()
+        mock_repo = MagicMock()
+        mock_container.repo.return_value = mock_repo
+        plot_service = PlotService(mock_repo)
 
         logger.info("Executing plot generation with zamaa engine...")
         # We use a mock-like approach or a limited run to verify the call chain

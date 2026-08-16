@@ -19,6 +19,7 @@ class PipelineStatus(Enum):
 @dataclass
 class PipelineResult:
     """パイプライン結果"""
+
     status: PipelineStatus = PipelineStatus.PENDING
     data: Dict[str, Any] = None
     error: Optional[str] = None
@@ -27,6 +28,7 @@ class PipelineResult:
 
 class Stage:
     """パイプラインステージ"""
+
     def __init__(self, name: str, func: Callable, condition: Optional[Callable] = None):
         self.name = name
         self.func = func
@@ -81,7 +83,7 @@ class PipelineManager:
         return {
             "current_stage": self._current_index,
             "total_stages": len(self.stages),
-            "completion_rate": self._current_index / len(self.stages) if self.stages else 0
+            "completion_rate": self._current_index / len(self.stages) if self.stages else 0,
         }
 
     def clear(self) -> None:

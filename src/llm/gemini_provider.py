@@ -12,7 +12,7 @@ from src.core.exceptions import (
     LLMTimeoutError,
     LLMUnknownError,
 )
-from src.core.llm_gateway import GeminiApiClient
+from src.core.llm_clients.gemini import GeminiApiClient
 from src.core.observability import track_llm_call
 from src.llm.base import LLMProvider, LLMResponse
 

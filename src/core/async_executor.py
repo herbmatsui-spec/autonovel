@@ -1,4 +1,5 @@
 """Async execution core with unified retry, circuit breaker, timeout, and backpressure."""
+
 from __future__ import annotations
 
 import asyncio
@@ -33,6 +34,7 @@ U = TypeVar("U")
 @dataclass
 class AsyncExecutorConfig:
     """Configuration for AsyncExecutor."""
+
     max_retries: int = 3
     base_delay: float = 1.0
     max_delay: float = 30.0
@@ -57,6 +59,7 @@ class AsyncExecutorConfig:
 
 class AsyncExecutionError(Exception):
     """Unified exception for async execution failures."""
+
     original_exception: Optional[Exception]
 
     def __init__(self, message: str, original_exception: Optional[Exception] = None):
@@ -72,8 +75,7 @@ class AsyncExecutor(Generic[T]):
         self.name = name
         self.semaphore = asyncio.Semaphore(config.max_concurrency)
         self.circuit_breaker = CircuitBreaker(
-            name,
-            config.circuit_breaker_config or CircuitBreakerConfig()
+            name, config.circuit_breaker_config or CircuitBreakerConfig()
         )
         self.retry_policy = config.get_retry_policy()
         self.active_tasks: set[asyncio.Task] = set()
@@ -106,7 +108,10 @@ class AsyncExecutor(Generic[T]):
             return True
 
         # Retryable HTTP errors
-        if hasattr(exc, "status_code") and exc.status_code in self.retry_policy.retryable_status_codes:
+        if (
+            hasattr(exc, "status_code")
+            and exc.status_code in self.retry_policy.retryable_status_codes
+        ):
             return True
 
         # Recursively check wrapped exceptions
@@ -124,10 +129,14 @@ class AsyncExecutor(Generic[T]):
             try:
                 return await asyncio.wait_for(coro, timeout=self.config.timeout_seconds)
             except asyncio.TimeoutError as e:
-                raise AsyncExecutionError(f"Async execution timed out after {self.config.timeout_seconds}s", e) from None
+                raise AsyncExecutionError(
+                    f"Async execution timed out after {self.config.timeout_seconds}s", e
+                ) from None
         return await coro
 
-    async def run(self, coro_or_func: Union[Coroutine[Any, Any, T], Callable[[], Coroutine[Any, Any, T]]]) -> T:
+    async def run(
+        self, coro_or_func: Union[Coroutine[Any, Any, T], Callable[[], Coroutine[Any, Any, T]]]
+    ) -> T:
         """Execute async coroutine with unified resilience patterns.
 
         Args:
@@ -141,53 +150,63 @@ class AsyncExecutor(Generic[T]):
             AsyncExecutionError: When execution fails after all retries.
             CircuitBreakerOpenException: When circuit breaker is open.
         """
-        async with self.semaphore:
-            if not self.circuit_breaker.allow_request():
-                raise AsyncExecutionError(f"Circuit breaker '{self.circuit_breaker.name}' is OPEN")
+        current_task = asyncio.current_task()
+        if current_task is not None:
+            self.active_tasks.add(current_task)
+        try:
+            async with self.semaphore:
+                if not self.circuit_breaker.allow_request():
+                    raise AsyncExecutionError(f"Circuit breaker '{self.circuit_breaker.name}' is OPEN")
 
-            attempt = 0
-            while attempt < self.retry_policy.max_attempts:
-                try:
-                    # Always create a new coroutine if callable
-                    if callable(coro_or_func):
-                        coro = coro_or_func()
-                    else:
-                        coro = coro_or_func  # Use provided coroutine as-is
+                attempt = 0
+                while attempt < self.retry_policy.max_attempts:
+                    try:
+                        # Always create a new coroutine if callable
+                        if callable(coro_or_func):
+                            coro = coro_or_func()
+                        else:
+                            coro = coro_or_func  # Use provided coroutine as-is
 
-                    result = await self._execute_with_timeout(coro)
-                    self.original_result = result
-                    self.circuit_breaker.record_success()
-                    return result
+                        result = await self._execute_with_timeout(coro)
+                        self.original_result = result
+                        self.circuit_breaker.record_success()
+                        return result
 
-                except (AsyncExecutionError, CircuitBreakerOpenException) as e:
-                    # Handle circuit breaker errors
-                    if isinstance(e, CircuitBreakerOpenException):
+                    except (AsyncExecutionError, CircuitBreakerOpenException) as e:
+                        # Handle circuit breaker errors
+                        if isinstance(e, CircuitBreakerOpenException):
+                            self.circuit_breaker.record_failure()
+                            raise
+
+                    except Exception as e:
+                        is_retryable = self._is_retryable(e)
+                        attempt += 1
+                        self.errors.append(e)
+
+                        if not is_retryable:
+                            self.circuit_breaker.record_failure()
+                            raise AsyncExecutionError(
+                                "Execution failed with non-retryable error", e
+                            ) from e
+
+                        # Record failure for circuit breaker
                         self.circuit_breaker.record_failure()
-                        raise
 
-                except Exception as e:
-                    is_retryable = self._is_retryable(e)
-                    attempt += 1
+                        if attempt >= self.retry_policy.max_attempts:
+                            last_error = self.errors[-1] if self.errors else e
+                            raise AsyncExecutionError(
+                                "Execution failed after retries", last_error
+                            ) from last_error
 
-                    if not is_retryable:
-                        self.circuit_breaker.record_failure()
-                        raise AsyncExecutionError("Execution failed with non-retryable error", e) from e
+                        # Backoff and retry
+                        delay = self.retry_policy.calculate_delay(attempt)
+                        if delay > 0:
+                            await asyncio.sleep(delay)
 
-                    # Record failure for circuit breaker
-                    self.circuit_breaker.record_failure()
-
-                    self.errors.append(e)
-
-                    if attempt >= self.retry_policy.max_attempts:
-                        last_error = self.errors[-1] if self.errors else e
-                        raise AsyncExecutionError("Execution failed after retries", last_error) from last_error
-
-                    # Backoff and retry
-                    delay = self.retry_policy.calculate_delay(attempt)
-                    if delay > 0:
-                        await asyncio.sleep(delay)
-
-            raise AsyncExecutionError("Execution failed after retries")
+                raise AsyncExecutionError("Execution failed after retries")
+        finally:
+            if current_task is not None:
+                self.active_tasks.discard(current_task)
 
     async def run_stream(self, aiter: AsyncIterator[T]) -> AsyncGenerator[T, None]:
         """Stream results with backpressure control."""

@@ -7,7 +7,6 @@ tests/integration/test_collab.py
 import pytest
 
 from config.container import Container
-from src.backend.database.uow import UnitOfWork
 
 
 @pytest.fixture

@@ -1,7 +1,7 @@
 """
 src/backend/auth.py — API 認証ユーティリティ
 
-api_key の検証逻辑を提供する。現在はシンプルな許可リスト方式を採用し、
+api_key の検証ロジックを提供する。現在はシンプルな許可リスト方式を採用し、
 将来的に JWT/OAuth 等へ置き換え可能な抽象化レイヤーとする。
 """
 
@@ -27,10 +27,22 @@ class APIKeyService:
 
     def validate(self, api_key: str) -> bool:
         if self.disabled:
+            # 本番環境では AUTH_DISABLED を無視して認証を要求
+            env = os.environ.get("ENVIRONMENT", "development")
+            if env == "production":
+                logger.error(
+                    "AUTH_DISABLED is set but ENVIRONMENT=production - authentication is required"
+                )
+                return False
+            logger.warning("AUTH_DISABLED is set - authentication is bypassed (non-production)")
             return True
         if not self.allowed_keys:
-            return True
+            return False
         return api_key in self.allowed_keys
+
+    def get_rate_limit_key(self, api_key: str) -> str:
+        """API key ベースのレート制限キーを返す"""
+        return f"apikey:{api_key[:8]}"
 
 
 _api_key_service: Optional[APIKeyService] = None
@@ -59,7 +71,9 @@ async def require_api_key(request: Request) -> str:
     service = get_api_key_service()
     if not service.validate(api_key):
         logger.warning(
-            f"Invalid API key attempt from {request.client.host if request.client else 'unknown'}"
+            f"Invalid API key attempt from "
+            f"{request.client.host if request.client else 'unknown'} "
+            f"key_prefix={api_key[:4]}***"
         )
         raise HTTPException(
             status_code=403,

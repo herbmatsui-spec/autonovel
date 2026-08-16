@@ -1,6 +1,7 @@
 """
 database/repositories/cost.py - コスト記録(CostRecord)操作用リポジトリ
 """
+
 from __future__ import annotations
 
 from typing import List, Optional

@@ -10,7 +10,7 @@ from src.core.exceptions import (
     LLMTimeoutError,
     LLMUnknownError,
 )
-from src.core.llm_gateway import OpenAIApiClient
+from src.core.llm_clients.openai import OpenAIApiClient
 from src.core.observability import track_llm_call
 from src.llm.base import LLMProvider, LLMResponse
 

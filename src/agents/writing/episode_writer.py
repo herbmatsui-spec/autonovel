@@ -1,8 +1,9 @@
 from typing import Any, Dict, Optional
-from src.services.llm_service import LLMService
+
 from src.agents.context_builder import ContextBuilder
-from src.agents.prompt_composer import PromptComposer
 from src.agents.erotic_enhancer import EroticEnhancer
+from src.agents.prompt_composer import PromptComposer
+from src.services.llm_service import LLMService
 
 
 class EpisodeWriter:
@@ -10,9 +11,14 @@ class EpisodeWriter:
         self.llm = llm
         self.context_builder = context_builder
 
-    async def build_context(self, book_id: int, branch_id: int, 
-                            ep_num: int, target_word_count: int,
-                            style_tag: Optional[str] = None) -> Dict[str, Any]:
+    async def build_context(
+        self,
+        book_id: int,
+        branch_id: int,
+        ep_num: int,
+        target_word_count: int,
+        style_tag: Optional[str] = None,
+    ) -> Dict[str, Any]:
         """執筆に必要な完全なコンテキストを構築する。"""
         return await self.context_builder.build_full_writing_context(
             book_id, branch_id, ep_num, target_word_count, style_tag
@@ -29,7 +35,7 @@ class EpisodeWriter:
         # プロンプトを構築
         prompt_composer = PromptComposer(self)
         prompt = await prompt_composer.compose_writing_prompt(book_id, ep_num, context)
-        
+
         # 初期結果を生成
         result = await self.llm.generate_text(
             purpose="writing",
@@ -43,5 +49,5 @@ class EpisodeWriter:
         # エロティックコンテンツを強化
         erotic_enhancer = EroticEnhancer(self)
         result = await erotic_enhancer.enhance_erotic_content(prompt, result, context)
-        
+
         return str(result)

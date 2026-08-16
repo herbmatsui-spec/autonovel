@@ -1,15 +1,14 @@
 """Tests for AsyncExecutor core functionality."""
 import asyncio
-from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from src.core.async_executor import (
+    AsyncExecutionError,
     AsyncExecutor,
     AsyncExecutorConfig,
-    AsyncExecutionError,
 )
-from src.shared.circuit_breaker import CircuitBreaker, CircuitBreakerConfig, CircuitState
+from src.shared.circuit_breaker import CircuitBreakerConfig, CircuitState
 
 
 class TestAsyncExecutorSuccess:
@@ -142,7 +141,6 @@ class TestAsyncExecutorCircuitBreaker:
     @pytest.mark.asyncio
     async def test_circuit_breaker_open_blocks_execution(self):
         """Test that open circuit breaker blocks execution immediately."""
-        import time
         cb_config = CircuitBreakerConfig(failure_threshold=1, recovery_timeout=60.0)
         config = AsyncExecutorConfig(circuit_breaker_config=cb_config)
         executor = AsyncExecutor(config)

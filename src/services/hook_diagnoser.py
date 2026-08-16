@@ -4,6 +4,7 @@ services/hook_diagnoser.py - 章末フック強度診断・修正案生成サー
 既存の QualityScorer.score_hook_retention を利用して各章のフック保持率を
 算出し、閾値を下回る章の修正案を LLM で生成する。
 """
+
 from __future__ import annotations
 
 import logging

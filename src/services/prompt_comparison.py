@@ -4,6 +4,7 @@ services/prompt_comparison.py - ジャンル別プロンプト A/B 比較
 同一入力に対して複数のプロンプトバージョンで生成し、品質スコアで比較する。
 既存の QualityScorer（score_all）で自動評価し、重み付けで勝者を決定する。
 """
+
 from __future__ import annotations
 
 import logging
@@ -49,12 +50,18 @@ def weighted_total(scores: Dict[str, float], weights: Optional[Dict[str, float]]
     return round(total, 4)
 
 
-def decide_winner(results: List[Dict[str, Any]], weights: Optional[Dict[str, float]] = None) -> Dict[str, Any]:
+def decide_winner(
+    results: List[Dict[str, Any]], weights: Optional[Dict[str, float]] = None
+) -> Dict[str, Any]:
     """各バージョンの評価結果から勝者を決定する。"""
     if not results:
         return {"winner_id": None, "reason": "no results"}
     best = max(results, key=lambda r: r["weighted_total"])
-    return {"winner_id": best["version_id"], "winner_label": best["label"], "reason": "最高合計スコア"}
+    return {
+        "winner_id": best["version_id"],
+        "winner_label": best["label"],
+        "reason": "最高合計スコア",
+    }
 
 
 async def build_comparison(

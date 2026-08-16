@@ -17,6 +17,7 @@ class MemoryType(Enum):
 @dataclass
 class MemoryEntry:
     """メモリエントリ"""
+
     key: str
     value: Any
     memory_type: MemoryType = MemoryType.SHORT_TERM

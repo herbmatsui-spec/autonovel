@@ -34,6 +34,12 @@ jobs:
         run: ruff check src/ tests/
       - name: Lint statistics (debt tracker)
         run: ruff check src/ tests/ --statistics || true
+      - name: Check for mojibake (U+FFFD replacement characters)
+        run: |
+          if git grep -P "\xEF\xBF\xBD" -- '*.py' '*.md' '*.yaml' '*.yml' '*.toml' '*.json' '*.txt' 2>/dev/null; then
+            echo "::error::Mojibake (U+FFFD) detected in source files"
+            exit 1
+          fi
 
   typecheck:
     runs-on: ubuntu-latest
@@ -112,6 +118,14 @@ jobs:
             exit 0
           fi
           ruff check $FILES
+      - name: Lint statistics (changed files)
+        run: |
+          FILES="${{ needs.changed-files.outputs.files }}"
+          if [ -z "$FILES" ]; then
+            echo "No changed Python files; skipping lint statistics."
+            exit 0
+          fi
+          ruff check $FILES --statistics || true
 
   # --- Test execution (gated by the blocking format/lint gates) ---
   unit-test:

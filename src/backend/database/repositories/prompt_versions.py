@@ -50,7 +50,9 @@ class PromptVersionRepository(PromptVersionRepositoryInterface, BaseRepository):
             content=version.content,
             score_before=version.score_before,
             score_after=version.score_after,
-            ab_test_metrics=json.loads(version.ab_test_metrics) if version.ab_test_metrics else None,
+            ab_test_metrics=json.loads(version.ab_test_metrics)
+            if version.ab_test_metrics
+            else None,
             rollback_reason=version.rollback_reason,
             is_active=version.is_active,
             created_at=version.created_at.isoformat() if version.created_at else None,
@@ -66,7 +68,9 @@ class PromptVersionRepository(PromptVersionRepositoryInterface, BaseRepository):
             return self._to_domain_model(row)
         return None
 
-    async def get_prompt_version_by_tag(self, book_id: int, prompt_key: str, version_tag: str) -> Optional[PromptVersionDbModel]:
+    async def get_prompt_version_by_tag(
+        self, book_id: int, prompt_key: str, version_tag: str
+    ) -> Optional[PromptVersionDbModel]:
         """バージョンタグからプロンプトバージョンを取得"""
         result = await self.session.execute(
             select(PromptVersion)

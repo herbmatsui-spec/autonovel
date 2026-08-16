@@ -1,6 +1,7 @@
 """
 database/repositories/collab.py - 共同執筆・レビューコメント用リポジトリ
 """
+
 from __future__ import annotations
 
 from typing import List, Optional
@@ -34,7 +35,9 @@ class CollabRepository:
     async def remove_member(self, member_id: int) -> int:
         from sqlalchemy import delete
 
-        result = await self.session.execute(delete(ProjectMember).where(ProjectMember.id == member_id))
+        result = await self.session.execute(
+            delete(ProjectMember).where(ProjectMember.id == member_id)
+        )
         return result.rowcount
 
     # ---- Comments ----

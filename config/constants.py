@@ -1,6 +1,6 @@
 """プロジェクト全体で使用する定数値"""
 from pathlib import Path
-from typing import Final, Optional
+from typing import Final
 
 # プロジェクトルートディレクトリ
 BASE_DIR: Final[Path] = Path(__file__).parent.parent
@@ -33,7 +33,7 @@ COST_INPUT_FLASH: Final[float] = 0.0000375
 COST_INPUT_PRO: Final[float] = 0.0035
 COST_OUTPUT_FLASH: Final[float] = 0.00015
 COST_OUTPUT_PRO: Final[float] = 0.0105
-DATABASE_URL: Final[Optional[str]] = None
+DATABASE_URL: Final[str] = "sqlite+aiosqlite:///./autonovel.db"
 DB_FILE: Final[str] = "autonovel.db"
 DEFAULT_EROTIC_INTENSITY: Final[int] = 2
 DEFAULT_GOLDEN_PEAKS: Final[int] = 1
@@ -58,3 +58,17 @@ STRESS_CATHARSIS_THRESHOLD: Final[int] = 85
 STRESS_CLIMAX_BONUS: Final[int] = 50
 STRESS_FILLER_THRESHOLD: Final[int] = 35
 STRESS_HATE_GAIN_BASE: Final[int] = 2
+
+# タイムアウト値 (秒)
+DEFAULT_API_TIMEOUT_SEC: Final[float] = 120.0
+LONG_RUNNING_TIMEOUT_SEC: Final[float] = 300.0
+STREAM_TIMEOUT_SEC: Final[float] = 180.0
+
+# レート制限値
+RATE_LIMIT_MAX_REQUESTS: Final[int] = 100
+RATE_LIMIT_WINDOW_SECONDS: Final[int] = 60
+RATE_LIMIT_STORE_MAX_ENTRIES: Final[int] = 10000
+MAX_CONCURRENT_API_CALLS: Final[int] = 5
+
+# Pipeline 話数マッピング（追加）
+EP_CLIMAX: Final[int] = 7

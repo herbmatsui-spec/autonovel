@@ -62,7 +62,7 @@ class GlobalConfigModel(BaseModel):
 
     # ===================== システムパラメータ =====================
     stress_catharsis_threshold: int = 85
-    stress_filler_threshold: int = 35
+    stress_filer_threshold: int = 35
     stress_climax_bonus: int = 50
     stress_hate_gain_base: int = 2
     max_history_len: int = 30
@@ -72,6 +72,7 @@ class GlobalConfigModel(BaseModel):
     cooldown_min: float = 0.0
     cooldown_max: float = 90.0
     max_concurrency: int = 0
+    max_concurrent_api_calls: int = 5
     optimized_prompt_patch: str = ""  # AIによる自己最適化パッチ
 
     # ===================== 実行制御フラグ =====================
@@ -157,17 +158,18 @@ class GlobalConfigModel(BaseModel):
         "KAKU_COOLDOWN_MAX": "cooldown_max",
         "KAKU_MAX_CONCURRENCY": "max_concurrency",
         "KAKU_OPTIMIZED_PROMPT_PATCH": "optimized_prompt_patch",
-        "KAKU_FAIL_FAST_MODE": "fail_fast_mode",
-        "KAKU_ENABLE_DOGFEEDING": "enable_dogfeeding",
-        "KAKU_ENABLE_HEAVY_AUDIT": "enable_heavy_audit",
-        "KAKU_DRAFT_POLISH_ENABLED": "draft_polish_enabled",
-        "KAKU_POLISHING_MIN_CONTENT_RATIO": "polishing_min_content_ratio",
-        "KAKU_ACTOR_CRITIC_ENABLED": "actor_critic_enabled",
-        "KAKU_ACTOR_CRITIC_MAX_ITERATIONS": "actor_critic_max_iterations",
-        "KAKU_ACTOR_CRITIC_SEVERITY_THRESHOLD": "actor_critic_severity_threshold",
-        "KAKU_SPECIALIZED_AMPLIFIER_ENABLED": "specialized_amplifier_enabled",
-        "KAKU_ENABLE_NSFW": "enable_nsfw",
-        "KAKU_SAFETY_FILTER_LEVEL": "safety_filter_level",
+"KAKU_FAIL_FAST_MODE": "fail_fast_mode",
+         "KAKU_ENABLE_DOGFEEDING": "enable_dogfeeding",
+         "KAKU_ENABLE_HEAVY_AUDIT": "enable_heavy_audit",
+         "KAKU_DRAFT_POLISH_ENABLED": "draft_polish_enabled",
+         "KAKU_POLISHING_MIN_CONTENT_RATIO": "polishing_min_content_ratio",
+         "KAKU_ACTOR_CRITIC_ENABLED": "actor_critic_enabled",
+         "KAKU_ACTOR_CRITIC_MAX_ITERATIONS": "actor_critic_max_iterations",
+         "KAKU_ACTOR_CRITIC_SEVERITY_THRESHOLD": "actor_critic_severity_threshold",
+         "KAKU_SPECIALIZED_AMPLIFIER_ENABLED": "specialized_amplifier_enabled",
+         "KAKU_ENABLE_NSFW": "enable_nsfw",
+         "KAKU_SAFETY_FILTER_LEVEL": "safety_filter_level",
+         "KAKU_MAX_CONCURRENT_API_CALLS": "max_concurrent_api_calls",
     }
 
     # ===================== ファクトリメソッド =====================

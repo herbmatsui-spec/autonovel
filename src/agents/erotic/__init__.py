@@ -9,10 +9,27 @@ erotic package - 官能・シーン整合性チェックの分割モジュール
   - filter:     SceneTypeDetector / EroticIntegrityChecker
 """
 
+from src.agents.erotic.continuity import (
+    CharacterStateSnapshot,
+    ContinuityReport,
+    ContinuityTracker,
+    SceneContinuityTracker,
+    SceneStateSnapshot,
+)
+from src.agents.erotic.curve import EroticCurve, EroticPoint
+from src.agents.erotic.evaluator import EroticQualityReport, EroticQualityScorer
+from src.agents.erotic.filter import EroticIntegrityChecker, SceneTypeDetector
 from src.agents.erotic.vocabulary import (
     COMBAT_KEYWORDS,
+    CONSENT_ALL_CHARACTERS_KEYWORDS,
+    CONSENT_CONTINUATION_KEYWORDS,
+    CONSENT_EXPLICIT_KEYWORDS,
+    CONSENT_IMPLICIT_KEYWORDS,
+    CONSENT_REFUSAL_KEYWORDS,
     CONVERSATION_KEYWORDS,
+    EXPLICIT_CONSENT_KEYWORDS,
     EXPLORATION_KEYWORDS,
+    FORESHADOW_KEYWORDS,
     IMPLICIT_CONSENT_KEYWORDS,
     ITEM_KEYWORDS,
     MONOLOGUE_KEYWORDS,
@@ -23,24 +40,7 @@ from src.agents.erotic.vocabulary import (
     SIMPLE_MUTUAL_CONSENT_KEYWORDS,
     TIME_KEYWORDS,
     TRAVEL_KEYWORDS,
-    FORESHADOW_KEYWORDS,
-    EXPLICIT_CONSENT_KEYWORDS,
-    CONSENT_EXPLICIT_KEYWORDS,
-    CONSENT_IMPLICIT_KEYWORDS,
-    CONSENT_REFUSAL_KEYWORDS,
-    CONSENT_ALL_CHARACTERS_KEYWORDS,
-    CONSENT_CONTINUATION_KEYWORDS,
 )
-from src.agents.erotic.curve import EroticCurve, EroticPoint
-from src.agents.erotic.evaluator import EroticQualityReport, EroticQualityScorer
-from src.agents.erotic.continuity import (
-    CharacterStateSnapshot,
-    ContinuityReport,
-    ContinuityTracker,
-    SceneContinuityTracker,
-    SceneStateSnapshot,
-)
-from src.agents.erotic.filter import EroticIntegrityChecker, SceneTypeDetector
 
 __all__ = [
     "SCENE_TYPES",
