@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { Book, Issue } from '@/types';
 import { getIssues, resolveIssue } from '@/api';
 import { toast } from 'sonner';
@@ -19,7 +19,7 @@ export function AuditTab({ selectedBook, apiKey }: AuditTabProps) {
   const [loading, setLoading] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
-  const loadIssues = async () => {
+  const loadIssues = useCallback(async () => {
     setLoading(true);
     try {
       const data = await getIssues(selectedBook.id);
@@ -29,11 +29,11 @@ export function AuditTab({ selectedBook, apiKey }: AuditTabProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedBook.id]);
 
   useEffect(() => {
     loadIssues();
-  }, [selectedBook.id]);
+  }, [loadIssues]);
 
   const handleResolve = async (issueId: number, action: string) => {
     try {

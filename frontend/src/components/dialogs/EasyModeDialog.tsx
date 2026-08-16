@@ -131,7 +131,7 @@ export function EasyModeDialog({ isOpen, onClose, onSubmit }: Props) {
       .catch(err => {
         console.error('Failed to load easy genres, using default presets:', err);
       });
-  }, [isOpen]);
+  }, [isOpen, setEasyGenre, setEasyArchetype, setEasyGenres, setSelectedGenreKey, setStoryArchetypes, setStyleDefinitions]);
 
   const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) {
