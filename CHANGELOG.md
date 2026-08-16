@@ -28,6 +28,13 @@
 - 統一設定クラスによる設定管理の一元化 (`config.settings.Settings`)
 - OpenTelemetry 自動計装 (FastAPI, SQLAlchemy, Redis)
 - Prometheus メトリクス命名規約統一 (`kaku_{subsystem}_{name}_{unit}`)
+- 依存注入・設定改善: `EngineDeps`を使用したDI最適化、APIキーをSettings経由で取得、Redis設定をDI経由で明示化
+- Xenon複雑度しきい値調整: 平均複雑度の閾値をDからAに厳格化（`.pre-commit-config.yaml`）
+- SpiceGuardアーキテクチャドキュメント追加: `docs/architecture/spice_guard.md`
+- LangGraph採用理由ADR追加: `docs/adr/0004-langgraph-adoption.md`
+
+### Changed
+- README.md: 依存注入と設定改善に関する説明を追加
 - カスタム例外クラス追加 (`BibleGenerationError`, `EpisodeWritingError`, 等)
 - Testcontainers 統合テスト基盤
 - Playwright E2E テスト戦略ドキュメント

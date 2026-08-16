@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 
 from dependency_injector import providers
 
+from config.settings import get_settings
 from src.backend.database import DataRepository, UnitOfWork
 from src.backend.engine_config import EngineConfig
 from src.backend.engine_context import ContextManager
@@ -27,7 +28,12 @@ class AppContainer2(InfraContainer):
     #     packages=["src"]
     # )
 
-    api_key = providers.Callable(lambda: os.environ.get("GEMINI_API_KEY") or "DUMMY")
+    api_key = providers.Callable(
+        lambda: getattr(get_settings(), "gemini_api_key", None)
+        or os.environ.get("GEMINI_API_KEY")
+        or get_settings().openai_api_key
+        or "DUMMY"
+    )
 
     genai_client = providers.Singleton["genai.Client"](
         "src.core.llm_gateway.create_genai_client",
@@ -190,7 +196,8 @@ class AppContainer2(InfraContainer):
         engine=engine,
     )
     redis_cache = providers.Factory["RedisCacheService"](
-        "src.services.redis_cache.RedisCacheService"
+        "src.services.redis_cache.RedisCacheService",
+        redis_url=providers.Callable(lambda: get_settings().redis_url),
     )
     prompt_cache = providers.Factory["PromptCacheService"](
         "src.services.redis_cache.PromptCacheService",

@@ -103,7 +103,7 @@ repos:
         args: [
           "--max-absolute", "F",      # 絶対複雑度 F 以下 (現状ベースライン、将来的に引き上げ)
           "--max-modules", "F",       # モジュール複雑度 F 以下
-          "--max-average", "D",       # 平均複雑度 D 以下
+          "--max-average", "A",       # 平均複雑度 A 以下
           "--exclude", "tests/",      # テスト除外
         ]
 
