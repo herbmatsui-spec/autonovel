@@ -54,14 +54,18 @@ export type {
   Issue,
 };
 
+import { useUserSettingsStore } from './store/useUserSettingsStore';
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 const API_BASE_URL_NO_API = API_BASE_URL.replace('/api', '');
 
 async function apiRequest<T>(url: string, options?: RequestInit): Promise<T> {
+  const apiKey = useUserSettingsStore.getState().apiKey;
   const response = await fetch(url, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
+      ...(apiKey ? { 'Authorization': `Bearer ${apiKey}` } : {}),
       ...options?.headers,
     },
   });
@@ -225,8 +229,8 @@ export async function runCommercialPipeline(params: CommercialPipelineParams): P
   });
 }
 
-export function getExportPackageUrl(bookId: number, apiKey: string): string {
-  return `${API_BASE_URL}/marketing/export_package/${bookId}?api_key=${encodeURIComponent(apiKey)}`;
+export function getExportPackageUrl(bookId: number): string {
+  return `${API_BASE_URL}/marketing/export_package/${bookId}`;
 }
 
 // Pending patches API
@@ -292,17 +296,16 @@ export async function getIssues(bookId: number): Promise<Issue[]> {
   return data?.issues ?? [];
 }
 
-export async function resolveIssue(issueId: number, action: string, apiKey: string): Promise<void> {
+export async function resolveIssue(issueId: number, action: string): Promise<void> {
   return apiRequest(`${API_BASE_URL}/issues/${issueId}/resolve`, {
     method: 'POST',
-    body: JSON.stringify({ action, api_key: apiKey }),
+    body: JSON.stringify({ action }),
   });
 }
 
-export async function exportPackage(bookId: number, apiKey: string): Promise<ExportPackageResult> {
+export async function exportPackage(bookId: number): Promise<ExportPackageResult> {
   return apiRequest(`${API_BASE_URL}/marketing/export_package/${bookId}`, {
     method: 'POST',
-    body: JSON.stringify({ api_key: apiKey }),
   });
 }
 

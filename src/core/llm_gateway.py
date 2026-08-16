@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union, overload
+from typing import Any, Callable, List, Optional, Union, overload
 
 from src.core.llm_clients import BaseLLMClient
 from src.core.llm_clients.gemini import GeminiApiClient
@@ -257,34 +257,6 @@ class LLMGenerateResultProxy:
                 "calls": 1,
             },
         )
-
-    @staticmethod
-    def _normalize_response(response: Any) -> Any:
-        class _Response:
-            def __init__(
-                self, success: bool, content: Any = None, metadata: Any = None, usage: Any = None
-            ):
-                self.success = success
-                self.content = content
-                self.metadata = metadata
-                self.usage = usage
-
-        if isinstance(response, tuple):
-            if len(response) == 2:
-                content, usage = response
-                return _Response(success=True, content=content, usage=usage)
-            if len(response) == 3:
-                metadata, content, usage = response
-                return _Response(success=True, content=content, metadata=metadata, usage=usage)
-        return response
-
-    @staticmethod
-    def _usage_metric(usage: Any, key: str, default: int = 0) -> int:
-        if usage is None:
-            return default
-        if isinstance(usage, dict):
-            return usage.get(key, default)
-        return getattr(usage, key, default)
 
 
 LLMGateway = LLMGenerateResultProxy

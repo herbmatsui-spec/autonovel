@@ -4,6 +4,7 @@ InfraContainer を継承し、エージェント・サービス・エンジン�
 """
 
 import logging
+import os
 from typing import TYPE_CHECKING
 
 from dependency_injector import providers
@@ -25,7 +26,7 @@ class AppContainer2(InfraContainer):
     #     packages=["src"]
     # )
 
-    api_key = providers.Object("DUMMY")
+    api_key = providers.Callable(lambda: os.environ.get("GEMINI_API_KEY") or "DUMMY")
 
     genai_client = providers.Singleton["genai.Client"](
         "src.core.llm_gateway.create_genai_client",
@@ -50,7 +51,6 @@ class AppContainer2(InfraContainer):
         "src.core.llm_gateway.LLMGenerateResultProxy",
         llm_factory=llm_factory,
     )
-    connection_pipeline = providers.Singleton(lambda: None)
 
     repo = providers.Singleton(
         DataRepository,

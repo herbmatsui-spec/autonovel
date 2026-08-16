@@ -197,6 +197,40 @@ class RedisCacheService:
             logger.error(f"[REDIS CACHE TTL ERROR] key={key}: {e}")
             return -2
 
+    # Sorted set operations for rate limiting
+    async def zadd(self, key: str, mapping: Dict[str, float]) -> int:
+        """ソート済みセットにメンバーを追加."""
+        if not self._client:
+            return 0
+        try:
+            full_key = self._make_key(key)
+            return await self._client.zadd(full_key, mapping)
+        except Exception as e:
+            logger.error(f"[REDIS CACHE ZADD ERROR] key={key}: {e}")
+            return 0
+
+    async def zcard(self, key: str) -> int:
+        """ソート済みセットのメンバー数を取得."""
+        if not self._client:
+            return 0
+        try:
+            full_key = self._make_key(key)
+            return await self._client.zcard(full_key)
+        except Exception as e:
+            logger.error(f"[REDIS CACHE ZCARD ERROR] key={key}: {e}")
+            return 0
+
+    async def zremrangebyscore(self, key: str, min_score: float, max_score: float) -> int:
+        """スコア範囲内のメンバーを削除."""
+        if not self._client:
+            return 0
+        try:
+            full_key = self._make_key(key)
+            return await self._client.zremrangebyscore(full_key, min_score, max_score)
+        except Exception as e:
+            logger.error(f"[REDIS CACHE ZREMRANGEBYSCORE ERROR] key={key}: {e}")
+            return 0
+
     async def invalidate_pattern(self, pattern: str) -> int:
         """パターンに一致するキーを一括削除 (SCAN + DEL).
 

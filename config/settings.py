@@ -16,9 +16,9 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Any, ClassVar, Dict, List, Optional, Union
+from typing import Any, ClassVar, Dict, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # プロジェクトルート
@@ -206,7 +206,6 @@ class Settings(BaseSettings):
     # ==========================================
     content_separator: str = "\n---\n"
     max_prompt_chars: int = 8000
-    polishing_min_content_ratio: float = 0.5
     default_golden_peaks: int = 1
     nsfw_default_enabled: bool = False
 
@@ -407,7 +406,7 @@ MAX_CONCURRENT_API_CALLS = 5
 # ==========================================
 class ConfigManager:
     """旧 ConfigManager 互換ラッパー"""
-    
+
     _instance: Optional[Settings] = None
 
     @classmethod

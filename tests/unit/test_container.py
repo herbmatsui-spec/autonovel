@@ -38,7 +38,6 @@ def test_all_providers_resolved():
         "semantic_cache",
         "edge_preserver",
         "llm",
-        "connection_pipeline",
         "repo",
         "uow",
         "pm",

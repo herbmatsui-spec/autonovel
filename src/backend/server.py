@@ -10,6 +10,7 @@ import time
 import uuid
 from collections import defaultdict
 from contextlib import asynccontextmanager
+from typing import Optional
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -34,6 +35,8 @@ from src.backend.auth import validate_api_key_or_raise
 from src.backend.background import BackgroundReporter, ProgressState
 from src.backend.database import init_db
 from src.backend.error_handlers import register_error_handlers
+from src.backend.rate_limit import RedisRateLimiter
+from src.services.redis_cache import RedisCacheService
 from src.backend.observability.metrics import MetricsMiddleware
 from src.core.container import AppContainer
 from src.core.observability import TraceContext
@@ -46,44 +49,8 @@ from src.models.api_schemas import (
 )
 logger = logging.getLogger(__name__)
 
-# Rate limiter cleanup task
-_rate_limit_cleanup_task: asyncio.Task | None = None
-
-
-def cleanup_rate_limit_store():
-    """Remove expired entries from rate limit store based on TTL."""
-    now = time.time()
-    window_start = now - _RATE_LIMIT_WINDOW_SECONDS
-    
-    # Clean up old entries for each IP
-    ips_to_delete = []
-    for ip, timestamps in _rate_limit_store.items():
-        # Filter out timestamps older than the window
-        recent_timestamps = [t for t in timestamps if t > window_start]
-        if recent_timestamps:
-            _rate_limit_store[ip] = recent_timestamps
-        else:
-            # No recent timestamps, mark IP for deletion
-            ips_to_delete.append(ip)
-    
-    # Delete IPs with no recent activity
-    for ip in ips_to_delete:
-        del _rate_limit_store[ip]
-
-
-async def rate_limit_cleanup_background():
-    """Background task to periodically clean up rate limit store."""
-    while True:
-        try:
-            await asyncio.sleep(60)  # Run every minute
-            cleanup_rate_limit_store()
-            logger.debug("Rate limit store cleanup completed")
-        except asyncio.CancelledError:
-            logger.info("Rate limit cleanup task cancelled")
-            break
-        except Exception as e:
-            logger.error(f"Error in rate limit cleanup task: {e}")
-
+# Redis rate limiter (initialized in lifespan)
+_redis_rate_limiter: Optional[RedisRateLimiter] = None
 
 setup_logging()
 
@@ -118,12 +85,6 @@ async def lifespan(app: FastAPI):
         db_manager = AppContainer.db()
         init_db(db_manager.db_path)
         logger.info("Database initialization complete.")
-        
-        # Start rate limit cleanup background task
-        global _rate_limit_cleanup_task
-        _rate_limit_cleanup_task = asyncio.create_task(rate_limit_cleanup_background())
-        logger.info("Rate limit cleanup background task started")
-        
         yield
     except Exception:
         import traceback
@@ -134,17 +95,7 @@ async def lifespan(app: FastAPI):
         logger.critical(f"サーバーが強制終了しました: {type(e).__name__} - {e}")
         raise
     finally:
-        logger.info("シャットダウン処理を開始します...")
-        
-        # Stop rate limit cleanup background task
-
-        if _rate_limit_cleanup_task and not _rate_limit_cleanup_task.done():
-            _rate_limit_cleanup_task.cancel()
-            try:
-                await _rate_limit_cleanup_task
-            except asyncio.CancelledError:
-                pass
-            logger.info("Rate limit cleanup background task stopped")
+        logger.info("シャットダウン処理を開始...")
         
         try:
             # SQLite 接続のクローズ
@@ -211,26 +162,25 @@ LONG_RUNNING_PATHS = frozenset(
 
 
 async def rate_limit_middleware(request: Request, call_next):
+    global _redis_rate_limiter
+
     client_ip = request.client.host if request.client else "unknown"
-    now = time.time()
-    window_start = now - _RATE_LIMIT_WINDOW_SECONDS
 
-    async with _rate_limit_lock:
-        # メモリリーク防止: エントリ数が上限を超えたら古いエントリから削除
-        if len(_rate_limit_store) > _RATE_LIMIT_STORE_MAX_ENTRIES:
-            # 古いエントリから削除（タイムスタンプが古い順）
-            sorted_ips = sorted(_rate_limit_store.keys(), key=lambda ip: _rate_limit_store[ip][0] if _rate_limit_store[ip] else float("inf"))
-            for ip in sorted_ips[:len(_rate_limit_store) - _RATE_LIMIT_STORE_MAX_ENTRIES]:
-                del _rate_limit_store[ip]
-        _rate_limit_store[client_ip] = [t for t in _rate_limit_store[client_ip] if t > window_start]
+    # Lazy initialization (Redis not available at import time)
+    if _redis_rate_limiter is None:
+        redis = RedisCacheService()
+        _redis_rate_limiter = RedisRateLimiter(
+            redis=redis,
+            max_requests=_RATE_LIMIT_MAX_REQUESTS,
+            window_seconds=_RATE_LIMIT_WINDOW_SECONDS,
+        )
 
-        if len(_rate_limit_store[client_ip]) >= _RATE_LIMIT_MAX_REQUESTS:
-            return JSONResponse(
-                status_code=429,
-                content={"error": "Too Many Requests", "detail": "リクエスト数が制限を超えました。"},
-            )
-
-        _rate_limit_store[client_ip].append(now)
+    allowed = await _redis_rate_limiter.is_allowed(client_ip)
+    if not allowed:
+        return JSONResponse(
+            status_code=429,
+            content={"error": "Too Many Requests", "detail": "リクエスト数が制限を超えました。"},
+        )
     return await call_next(request)
 
 
@@ -348,14 +298,8 @@ async def refine_erotic(req: RefineEroticRequest):
 # Heavy operations enqueued via Huey
 @app.post("/api/easy_mode/generate")
 async def generate_easy(req: EasyModeRequest):
-    """
-    かんたんモードの小説生成をバックグラウンドタスクとしてキューに追加します。
-    リクエストを受け付けると即座にタスクIDを返却します。
-    実際の処理はバックグラウンドワーカーによって非同期に実行されます。
-    """
     from src.backend.task_helpers import create_task as _create_task
     from src.core.container import AppContainer
-    from src.backend.tasks import execute_service_workflow
 
     validate_api_key_or_raise(req.api_key)
     task_id = generate_task_id("easy")
@@ -363,25 +307,13 @@ async def generate_easy(req: EasyModeRequest):
     # 進捗管理用の状態を作成
     progress_state = ProgressState(
         is_running=True,
-    # 初期タスク作成（DBに保存）
-    await _create_task(task_id, "かんたんモード生成をキューに追加しました。", total_steps=4)
-
-    # 実際のパイプライン実行はバックグラウンドワーカーにオフロードします。
-    # これにより、APIサーバーは長時間リクエストをブロックされることなく、すぐにレスポンスを返すことができます。
-    execute_service_workflow(
         task_id=task_id,
         repo=AppContainer.db(),
-        api_key=req.api_key,
-        config_dict=req.model_dump(),
-        method_name="run_easy_mode_pipeline_workflow",  # バックグラウンドで実行される関数名
-        kwargs={"request_data": req.model_dump()},
-        trace_id=TraceContext.get_trace_id(),
     )
     reporter = BackgroundReporter(progress_state)
 
     # 初期タスク作成（DBに保存）
     await _create_task(task_id, "かんたんモード生成を開始中...", total_steps=4)
-    return {"task_id": task_id}
 
     # PipelineConfigを作成
     config = create_pipeline_config_from_request(req)

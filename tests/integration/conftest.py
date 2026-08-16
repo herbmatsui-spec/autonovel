@@ -5,9 +5,9 @@ Provides PostgreSQL, Redis, and ChromaDB containers for integration tests.
 
 import os
 import pytest
-from testcontainers.postgres import PostgresContainer
-from testcontainers.redis import RedisContainer
-from testcontainers.generic import GenericContainer
+from testcontainers.community.postgres import PostgresContainer
+from testcontainers.community.redis import RedisContainer
+from testcontainers.core.generic import DockerContainer
 
 # ===================== コンテナフィクスチャ =====================
 
@@ -38,7 +38,7 @@ def redis_container():
 @pytest.fixture(scope="session")
 def chromadb_container():
     """ChromaDB コンテナ (セッションスコープで共有)"""
-    container = GenericContainer(
+    container = DockerContainer(
         image="chromadb/chroma:0.4.22",
         port=8000,
         env={"CHROMA_SERVER_HOST": "0.0.0.0", "CHROMA_SERVER_HTTP_PORT": "8000"},
