@@ -1,5 +1,10 @@
 """
 src/backend/observability/metrics.py - Prometheus メトリクス定義・公開
+
+命名規約: kaku_{subsystem}_{name}_{unit}
+- subsystem: http, novel, llm, db, huey, chromadb, redis
+- name: 説明的な名前
+- unit: total, seconds, bytes, active, idle, depth, connected
 """
 
 import time
@@ -10,105 +15,124 @@ from fastapi import Response
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
 
 # ===================== 標準 HTTP メトリクス =====================
-http_requests_total = Counter(
-    "http_requests_total", "Total HTTP requests", ["method", "path", "status"]
+kaku_http_requests_total = Counter(
+    "kaku_http_requests_total", "Total HTTP requests", ["method", "path", "status"]
 )
 
-http_request_duration_seconds = Histogram(
-    "http_request_duration_seconds",
+kaku_http_request_duration_seconds = Histogram(
+    "kaku_http_request_duration_seconds",
     "HTTP request latency in seconds",
     ["method", "path"],
     buckets=[0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0],
 )
 
-http_requests_in_progress = Gauge(
-    "http_requests_in_progress", "HTTP requests currently in progress", ["method", "path"]
+kaku_http_requests_in_progress = Gauge(
+    "kaku_http_requests_in_progress", "HTTP requests currently in progress", ["method", "path"]
 )
 
 # ===================== アプリ固有メトリクス =====================
-novel_generation_tasks_total = Counter(
-    "novel_generation_tasks_total",
+kaku_novel_generation_tasks_total = Counter(
+    "kaku_novel_generation_tasks_total",
     "Total novel generation tasks",
     ["workflow_type", "status"],  # status: started, completed, failed
 )
 
-novel_generation_duration_seconds = Histogram(
-    "novel_generation_duration_seconds",
+kaku_novel_generation_duration_seconds = Histogram(
+    "kaku_novel_generation_duration_seconds",
     "Novel generation duration in seconds",
     ["workflow_type"],
     buckets=[10, 30, 60, 120, 300, 600, 1800, 3600],
 )
 
-llm_api_calls_total = Counter(
-    "llm_api_calls_total",
+kaku_llm_api_calls_total = Counter(
+    "kaku_llm_api_calls_total",
     "Total LLM API calls",
     ["model", "status"],  # status: success, error, timeout
 )
 
-llm_api_tokens_total = Counter(
-    "llm_api_tokens_total",
+kaku_llm_tokens_total = Counter(
+    "kaku_llm_tokens_total",
     "Total LLM tokens used",
     ["model", "token_type"],  # token_type: prompt, completion
 )
 
-db_pool_connections_active = Gauge(
-    "db_pool_connections_active", "Active database connections in pool"
+kaku_db_pool_connections_active = Gauge(
+    "kaku_db_pool_connections_active", "Active database connections in pool"
 )
 
-db_pool_connections_idle = Gauge("db_pool_connections_idle", "Idle database connections in pool")
+kaku_db_pool_connections_idle = Gauge(
+    "kaku_db_pool_connections_idle", "Idle database connections in pool"
+)
 
-huey_queue_depth = Gauge("huey_queue_depth", "Huey task queue depth")
+kaku_huey_queue_depth = Gauge("kaku_huey_queue_depth", "Huey task queue depth")
 
-huey_tasks_processed_total = Counter(
-    "huey_tasks_processed_total",
+kaku_huey_tasks_processed_total = Counter(
+    "kaku_huey_tasks_processed_total",
     "Total Huey tasks processed",
     ["status"],  # success, error, retry
 )
 
-chromadb_collections = Gauge("chromadb_collections", "Number of ChromaDB collections")
+kaku_chromadb_collections = Gauge("kaku_chromadb_collections", "Number of ChromaDB collections")
 
-redis_connected_clients = Gauge("redis_connected_clients", "Number of connected Redis clients")
+kaku_redis_clients_connected = Gauge("kaku_redis_clients_connected", "Number of connected Redis clients")
+
+
+# ===================== 後方互換エイリアス (段階的移行用) =====================
+# 旧メトリクス名への参照を維持（将来的に削除予定）
+http_requests_total = kaku_http_requests_total
+http_request_duration_seconds = kaku_http_request_duration_seconds
+http_requests_in_progress = kaku_http_requests_in_progress
+novel_generation_tasks_total = kaku_novel_generation_tasks_total
+novel_generation_duration_seconds = kaku_novel_generation_duration_seconds
+llm_api_calls_total = kaku_llm_api_calls_total
+llm_api_tokens_total = kaku_llm_tokens_total
+db_pool_connections_active = kaku_db_pool_connections_active
+db_pool_connections_idle = kaku_db_pool_connections_idle
+huey_queue_depth = kaku_huey_queue_depth
+huey_tasks_processed_total = kaku_huey_tasks_processed_total
+chromadb_collections = kaku_chromadb_collections
+redis_connected_clients = kaku_redis_clients_connected
 
 
 # ===================== ユーティリティ関数 =====================
 def record_http_metrics(method: str, path: str, status: int, duration: float):
-    http_requests_total.labels(method=method, path=path, status=str(status)).inc()
-    http_request_duration_seconds.labels(method=method, path=path).observe(duration)
+    kaku_http_requests_total.labels(method=method, path=path, status=str(status)).inc()
+    kaku_http_request_duration_seconds.labels(method=method, path=path).observe(duration)
 
 
 def record_generation_task(workflow_type: str, status: str, duration: float = None):
-    novel_generation_tasks_total.labels(workflow_type=workflow_type, status=status).inc()
+    kaku_novel_generation_tasks_total.labels(workflow_type=workflow_type, status=status).inc()
     if duration is not None:
-        novel_generation_duration_seconds.labels(workflow_type=workflow_type).observe(duration)
+        kaku_novel_generation_duration_seconds.labels(workflow_type=workflow_type).observe(duration)
 
 
 def record_llm_call(model: str, status: str, prompt_tokens: int = 0, completion_tokens: int = 0):
-    llm_api_calls_total.labels(model=model, status=status).inc()
+    kaku_llm_api_calls_total.labels(model=model, status=status).inc()
     if prompt_tokens:
-        llm_api_tokens_total.labels(model=model, type="prompt").inc(prompt_tokens)
+        kaku_llm_tokens_total.labels(model=model, token_type="prompt").inc(prompt_tokens)
     if completion_tokens:
-        llm_api_tokens_total.labels(model=model, type="completion").inc(completion_tokens)
+        kaku_llm_tokens_total.labels(model=model, token_type="completion").inc(completion_tokens)
 
 
 def update_db_pool_metrics(active: int, idle: int):
-    db_pool_connections_active.set(active)
-    db_pool_connections_idle.set(idle)
+    kaku_db_pool_connections_active.set(active)
+    kaku_db_pool_connections_idle.set(idle)
 
 
 def update_huey_queue_depth(depth: int):
-    huey_queue_depth.set(depth)
+    kaku_huey_queue_depth.set(depth)
 
 
 def record_huey_task(status: str):
-    huey_tasks_processed_total.labels(status=status).inc()
+    kaku_huey_tasks_processed_total.labels(status=status).inc()
 
 
 def update_chromadb_collections(count: int):
-    chromadb_collections.set(count)
+    kaku_chromadb_collections.set(count)
 
 
 def update_redis_clients(count: int):
-    redis_connected_clients.set(count)
+    kaku_redis_clients_connected.set(count)
 
 
 # ===================== /metrics エンドポイント用 =====================
@@ -150,7 +174,7 @@ class MetricsMiddleware:
         method = request.method
         path = self._path_normalizer.normalize(request.url.path)
 
-        http_requests_in_progress.labels(method=method, path=path).inc()
+        kaku_http_requests_in_progress.labels(method=method, path=path).inc()
         start = time.perf_counter()
         try:
             response = await call_next(request)
@@ -162,7 +186,7 @@ class MetricsMiddleware:
             record_http_metrics(method, path, 500, duration)
             raise
         finally:
-            http_requests_in_progress.labels(method=method, path=path).dec()
+            kaku_http_requests_in_progress.labels(method=method, path=path).dec()
 
 
 class PathNormalizer:

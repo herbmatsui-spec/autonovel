@@ -1,0 +1,42 @@
+# チート転生・即最強 ジャンル エピソード構造定義
+
+genre: "cheat_tensei"
+description: "スキル習得∞・効率厨・システム活用の爽快構造"
+
+episode_structure:
+  total_episodes: 8
+  humiliation_ep: 1      # 序盤からチート発動（屈辱なし）
+  trigger_ep: 2          # システム理解・最適解発見
+  musou_start_ep: 3      # 即無双開始
+  final_ep: 8            # 世界制覇・神となる
+  tension_threshold: 60
+
+phases:
+  setup:
+    episodes: [1]
+    description: "転生・スキル習得・初期チート発動"
+  humiliation:
+    episodes: []         # 屈辱フェーズなし
+    description: "（なし：最初から最強）"
+  awakening:
+    episodes: [2]
+    description: "システム解析・バグ発見・デバッグ開始"
+  musou:
+    episodes: [3, 4, 5, 6, 7]
+    description: "秒殺・効率化・スキップ・ワープ・無双"
+  resolution:
+    episodes: [8]
+    description: "世界最強・管理者権限取得・新世界創造"
+
+catharsis_spikes:
+  - 0.125
+  - 0.375
+  - 0.625
+  - 1.00
+
+density_by_phase:
+  setup: "High"
+  humiliation: "Standard"
+  awakening: "Extreme"
+  musou: "Extreme"
+  resolution: "Standard"

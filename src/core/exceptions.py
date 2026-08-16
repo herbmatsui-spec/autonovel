@@ -248,3 +248,119 @@ class PipelineError(HegemonyError):
             original=original,
             **kwargs,
         )
+
+
+class BibleGenerationError(PipelineError):
+    """Bible生成エラー"""
+
+    def __init__(
+        self,
+        message: str = "Bible generation failed",
+        original: Optional[Exception] = None,
+        fallback_used: bool = False,
+        **kwargs,
+    ):
+        super().__init__(
+            message=message,
+            original=original,
+            status_code=502,
+            error_code="BIBLE_GENERATION_ERROR",
+            **kwargs,
+        )
+        self.fallback_used = fallback_used
+
+
+class EpisodeWritingError(PipelineError):
+    """エピソード執筆エラー"""
+
+    def __init__(
+        self,
+        message: str = "Episode writing failed",
+        original: Optional[Exception] = None,
+        episode_num: Optional[int] = None,
+        **kwargs,
+    ):
+        super().__init__(
+            message=message,
+            original=original,
+            status_code=502,
+            error_code="EPISODE_WRITING_ERROR",
+            **kwargs,
+        )
+        self.episode_num = episode_num
+
+
+class EpisodeAuditError(PipelineError):
+    """エピソード監査エラー"""
+
+    def __init__(
+        self,
+        message: str = "Episode audit failed",
+        original: Optional[Exception] = None,
+        episode_num: Optional[int] = None,
+        **kwargs,
+    ):
+        super().__init__(
+            message=message,
+            original=original,
+            status_code=502,
+            error_code="EPISODE_AUDIT_ERROR",
+            **kwargs,
+        )
+        self.episode_num = episode_num
+
+
+class EpisodeRewriteError(PipelineError):
+    """エピソードリライトエラー"""
+
+    def __init__(
+        self,
+        message: str = "Episode rewrite failed",
+        original: Optional[Exception] = None,
+        episode_num: Optional[int] = None,
+        **kwargs,
+    ):
+        super().__init__(
+            message=message,
+            original=original,
+            status_code=502,
+            error_code="EPISODE_REWRITE_ERROR",
+            **kwargs,
+        )
+        self.episode_num = episode_num
+
+
+class PlotGenerationError(PipelineError):
+    """プロット生成エラー"""
+
+    def __init__(
+        self,
+        message: str = "Plot generation failed",
+        original: Optional[Exception] = None,
+        **kwargs,
+    ):
+        super().__init__(
+            message=message,
+            original=original,
+            status_code=502,
+            error_code="PLOT_GENERATION_ERROR",
+            **kwargs,
+        )
+
+
+class SeriesFinalizationError(PipelineError):
+    """シリーズ完結処理エラー"""
+
+    def __init__(
+        self,
+        message: str = "Series finalization failed",
+        original: Optional[Exception] = None,
+        **kwargs,
+    ):
+        super().__init__(
+            message=message,
+            original=original,
+            status_code=502,
+            error_code="SERIES_FINALIZATION_ERROR",
+            **kwargs,
+        )

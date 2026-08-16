@@ -1,0 +1,42 @@
+# スローライフ・ほのぼの ジャンル エピソード構造定義
+
+genre: "slow_life"
+description: "五感豊かな日常・料理・収穫・癒やしの連鎖"
+
+episode_structure:
+  total_episodes: 8
+  humiliation_ep: 0      # 屈辱なし
+  trigger_ep: 2          # 新しい趣味・出会い
+  musou_start_ep: 3      # 生活基盤完成・充実開始
+  final_ep: 8            # 理想のスローライフ完成
+  tension_threshold: 30
+
+phases:
+  setup:
+    episodes: [1]
+    description: "異世界到着・拠点確保・最初の朝食"
+  humiliation:
+    episodes: []
+    description: "（なし：ストレスフリー）"
+  awakening:
+    episodes: [2]
+    description: "土地開拓・作物栽培・近隣住人との交流"
+  musou:
+    episodes: [3, 4, 5, 6, 7]
+    description: "収穫祭・レシピ開発・動物飼育・癒やしの連鎖"
+  resolution:
+    episodes: [8]
+    description: "自給自足完成・コミュニティ形成・永遠のほのぼの"
+
+catharsis_spikes:
+  - 0.25
+  - 0.50
+  - 0.75
+  - 1.00
+
+density_by_phase:
+  setup: "Standard"
+  humiliation: "Standard"
+  awakening: "High"
+  musou: "High"
+  resolution: "Standard"

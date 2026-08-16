@@ -7,9 +7,29 @@ UltimateHegemonyEngine が全機能を統合する。
 from __future__ import annotations
 
 import logging
-from typing import Any, Tuple
+import warnings
+from typing import TYPE_CHECKING, Any, Optional, Tuple
 
 logger = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    from src.backend.database import DataRepository
+    from src.backend.database.core import DatabaseManager
+    from src.core.llm_gateway import LLMGenerateResultProxy
+    from src.backend.engine_utils import AdaptiveCooldown
+    from src.services.plot_service import PlotService
+    from src.agents.PlanningAgent import PlanningAgent
+    from src.agents.WritingAgent import WritingAgent
+    from prompts.manager import PromptManager
+    from src.backend.engine_context import ContextManager
+    from src.backend.sanitizer import TextFormatter
+    from src.agents.audit import LogicalAuditor
+    from src.backend.engine_narrative import NarrativeController
+    from src.backend.engine_critique import CritiqueAgent
+    from src.agents.MarketingAgent import MarketingAgent
+    from src.services.bible_service import WorldBibleGenerator
+    from src.agents.plot import PlotAgent
+    from src.backend.engine_style_rag import StyleRagManager
 
 
 # ==========================================
@@ -21,12 +41,26 @@ class UltimateHegemonyEngine:
     def __init__(
         self,
         api_key: str,
-        repo=None,
-        db=None,
-        llm=None,
-        cooldown=None,
-        plot_service=None,
-        **legacy,
+        repo: Optional["DataRepository"] = None,
+        db: Optional["DatabaseManager"] = None,
+        llm: Optional["LLMGenerateResultProxy"] = None,
+        cooldown: Optional["AdaptiveCooldown"] = None,
+        plot_service: Optional["PlotService"] = None,
+        # 以下を明示的に注入（後方互換のため Optional、None なら _legacy から取得）
+        planner: Optional["PlanningAgent"] = None,
+        writer: Optional["WritingAgent"] = None,
+        pm: Optional["PromptManager"] = None,
+        ctx_mgr: Optional["ContextManager"] = None,
+        formatter: Optional["TextFormatter"] = None,
+        validator: Optional["LogicalAuditor"] = None,
+        auditor: Optional["LogicalAuditor"] = None,
+        narrative: Optional["NarrativeController"] = None,
+        critique: Optional["CritiqueAgent"] = None,
+        marketing: Optional["MarketingAgent"] = None,
+        bible_agent: Optional["WorldBibleGenerator"] = None,
+        plot_agent: Optional["PlotAgent"] = None,
+        style_rag: Optional["StyleRagManager"] = None,
+        **legacy: Any,
     ):
         self.api_key = api_key
         self.repo = repo
@@ -34,6 +68,22 @@ class UltimateHegemonyEngine:
         self.llm = llm
         self.cooldown = cooldown
         self._legacy = legacy
+
+        # 明示的依存を属性として保存
+        self._planner = planner
+        self._writer = writer
+        self._pm = pm
+        self._ctx_mgr = ctx_mgr
+        self._formatter = formatter
+        self._validator = validator
+        self._auditor = auditor
+        self._narrative = narrative
+        self._critique = critique
+        self._marketing = marketing
+        self._bible_agent = bible_agent
+        self._plot_agent = plot_agent
+        self._style_rag = style_rag
+
         self.client = None
         self.current_ep_num = 0
 
@@ -48,93 +98,105 @@ class UltimateHegemonyEngine:
             self.plot_service = None
 
     def _legacy_dep(self, name: str) -> Any:
+        """後方互換: _legacy 辞書から依存を取得（非推奨）"""
+        warnings.warn(
+            f"_legacy_dep('{name}') is deprecated. Pass '{name}' explicitly to constructor.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         if name not in self._legacy:
             raise AttributeError(
-                f"'{self.__class__.__name__}' has no lazy dependency '{name}'. "
+                f"'{self.__class__.__name__}' has no legacy dependency '{name}'. "
                 "Inject it via constructor or upgrade the caller."
             )
         return self._legacy[name]
 
+    # ---- 明示的依存を返すプロパティ（未設定なら _legacy_dep にフォールバック） ----
+
     @property
-    def planner(self):
+    def planner(self) -> "PlanningAgent":
+        if self._planner is not None:
+            return self._planner
         return self._legacy_dep("planner")
 
     @property
-    def planning_agent(self):
-        return self._legacy_dep("planner")
+    def planning_agent(self) -> "PlanningAgent":
+        return self.planner
 
     @property
-    def writer(self):
+    def writer(self) -> "WritingAgent":
+        if self._writer is not None:
+            return self._writer
         return self._legacy_dep("writer")
 
     @property
-    def pm(self):
+    def pm(self) -> "PromptManager":
+        if self._pm is not None:
+            return self._pm
         return self._legacy_dep("pm")
 
     @property
-    def ctx_mgr(self):
+    def ctx_mgr(self) -> "ContextManager":
+        if self._ctx_mgr is not None:
+            return self._ctx_mgr
         return self._legacy_dep("ctx_mgr")
 
     @property
-    def formatter(self):
+    def formatter(self) -> "TextFormatter":
+        if self._formatter is not None:
+            return self._formatter
         return self._legacy_dep("formatter")
 
     @property
-    def validator(self):
+    def validator(self) -> "LogicalAuditor":
+        if self._validator is not None:
+            return self._validator
         return self._legacy_dep("validator")
 
     @property
-    def auditor(self):
+    def auditor(self) -> "LogicalAuditor":
+        if self._auditor is not None:
+            return self._auditor
         return self._legacy_dep("auditor")
 
     @property
-    def narrative(self):
+    def narrative(self) -> "NarrativeController":
+        if self._narrative is not None:
+            return self._narrative
         return self._legacy_dep("narrative")
 
     @property
-    def critique(self):
+    def critique(self) -> "CritiqueAgent":
+        if self._critique is not None:
+            return self._critique
         return self._legacy_dep("critique")
 
     @property
-    def marketing(self):
+    def marketing(self) -> "MarketingAgent":
+        if self._marketing is not None:
+            return self._marketing
         return self._legacy_dep("marketing")
 
     @property
-    def bible_agent(self):
+    def bible_agent(self) -> "WorldBibleGenerator":
+        if self._bible_agent is not None:
+            return self._bible_agent
         return self._legacy_dep("bible_agent")
 
     @property
-    def plot_agent(self):
+    def plot_agent(self) -> "PlotAgent":
+        if self._plot_agent is not None:
+            return self._plot_agent
         return self._legacy_dep("plot_agent")
 
     @property
-    def style_rag(self):
+    def style_rag(self) -> "StyleRagManager":
+        if self._style_rag is not None:
+            return self._style_rag
         return self._legacy_dep("style_rag")
 
     @property
-    def ai_api(self):
-        import warnings
-
-        warnings.warn(
-            "ai_api is deprecated, use llm instead",
-            FutureWarning,
-            stacklevel=2,
-        )
-        return self.llm
-
-    @property
-    def llm_client(self):
-        import warnings
-
-        warnings.warn(
-            "llm_client is deprecated, use llm instead",
-            FutureWarning,
-            stacklevel=2,
-        )
-        return self.llm
-
-    @property
-    def logic_validator(self):
+    def logic_validator(self) -> "LogicalAuditor":
         return self.validator
 
     @property

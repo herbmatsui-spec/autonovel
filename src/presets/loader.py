@@ -37,6 +37,7 @@ PRESET_FILES = {
     "characters": "characters/char_archetypes_{genre}.json",
     "titles": "titles/title_vars_{genre}.json",
     "marketing": "marketing/marketing_vars_{genre}.json",
+    "episode_structure": "episode_structure/episode_structure_{genre}.yaml",
 }
 
 # デフォルト値（ファイル不足時のフォールバック）
@@ -49,6 +50,7 @@ DEFAULT_VALUES = {
     "characters": {},
     "titles": {},
     "marketing": {},
+    "episode_structure": {},
 }
 
 

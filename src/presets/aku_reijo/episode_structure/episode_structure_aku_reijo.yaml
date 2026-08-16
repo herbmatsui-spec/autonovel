@@ -1,0 +1,42 @@
+# 悪役令嬢・断罪回避 ジャンル エピソード構造定義
+
+genre: "aku_reijo"
+description: "フラグ回避・隠しルート・百合展開の多段階構造"
+
+episode_structure:
+  total_episodes: 8
+  humiliation_ep: 2      # 断罪イベント（回避対象）
+  trigger_ep: 3          # 隠しルート発見・覚醒
+  musou_start_ep: 4      # 逆転開始・味方獲得
+  final_ep: 8            # 真エンド・ハッピーエンド
+  tension_threshold: 70
+
+phases:
+  setup:
+    episodes: [1]
+    description: "学園生活・フラグ提示・ヒロインとの出会い"
+  humiliation:
+    episodes: [2]
+    description: "断罪イベント・絶体絶命"
+  awakening:
+    episodes: [3]
+    description: "前世記憶・隠しルート発覚"
+  musou:
+    episodes: [4, 5, 6, 7]
+    description: "フラグ回避・百合展開・味方増加"
+  resolution:
+    episodes: [8]
+    description: "真エンド・全フラグ回避・永遠の契約"
+
+catharsis_spikes:
+  - 0.25
+  - 0.50
+  - 0.75
+  - 1.00
+
+density_by_phase:
+  setup: "High"
+  humiliation: "Extreme"
+  awakening: "Extreme"
+  musou: "High"
+  resolution: "Standard"

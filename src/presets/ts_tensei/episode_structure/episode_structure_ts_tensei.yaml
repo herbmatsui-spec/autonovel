@@ -1,0 +1,42 @@
+# TS転生・百合・性別反転 ジャンル エピソード構造定義
+
+genre: "ts_tensei"
+description: "性別ユーフォリア・百合親密・永遠の契約の感情構造"
+
+episode_structure:
+  total_episodes: 8
+  humiliation_ep: 2      # 性別違和・周囲の困惑
+  trigger_ep: 3          # 自己受容・最初のキス
+  musou_start_ep: 4      # 百合ルート確定・眷属契約
+  final_ep: 8            # 真エンド・永遠の愛・性別完全肯定
+  tension_threshold: 70
+
+phases:
+  setup:
+    episodes: [1]
+    description: "転生・TS・可愛い自分発見・初期戸惑い"
+  humiliation:
+    episodes: [2]
+    description: "元の性別への執着・周囲の視線・性別違和の底"
+  awakening:
+    episodes: [3]
+    description: "ヒロインとの出会い・性別ユーフォリア・初キス"
+  musou:
+    episodes: [4, 5, 6, 7]
+    description: "百合展開加速・契約・眷属・尊い・守護"
+  resolution:
+    episodes: [8]
+    description: "真エンド・性別完全肯定・永遠の契約・尊み"
+
+catharsis_spikes:
+  - 0.25
+  - 0.50
+  - 0.75
+  - 1.00
+
+density_by_phase:
+  setup: "High"
+  humiliation: "Extreme"
+  awakening: "Extreme"
+  musou: "High"
+  resolution: "Standard"

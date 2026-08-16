@@ -1,8 +1,8 @@
 """
-config/project_context.py — プロジェクト設定のシングルトンアクセサ
+config/project_context.py — プロジェクト設定のシングルトンアクセサ (新統一設定版)
 
 ProjectContext.get_setting(key, default) を用いて、
-config/base.py に定義された定数や動的設定値に一元アクセスする。
+統一設定クラス (config.settings.Settings) に定義された設定値に一元アクセスする。
 
 使用例:
     from config.project_context import ProjectContext
@@ -20,50 +20,39 @@ import logging
 import os
 from typing import Any, Dict, Optional
 
-from config.constants import (
-    BASE_DIR,
-)
-from config.models import GlobalConfigModel
+from config.settings import Settings, get_settings
 
 logger = logging.getLogger(__name__)
 
 # ==========================================
 # グローバル設定オブジェクトとアクセサ
 # ==========================================
-_global_config: Optional[GlobalConfigModel] = None
+_settings_instance: Optional[Settings] = None
 
 
-def get_config() -> GlobalConfigModel:
-    global _global_config
-    if _global_config is None:
-        # config/settings.py の ConfigManager を唯一のエントリポイントとして使用
-        # (SSOT: settings.toml → Pydantic 検証 → 明示的環境変数マージ)
-        try:
-            from config.settings import ConfigManager
-
-            _global_config = ConfigManager.get_config()
-        except Exception as e:
-            logger.critical(f"設定ファイルのバリデーションに失敗しました: {str(e)}")
-            raise SystemExit(
-                "設定ファイルのバリデーションに失敗しました。アプリケーションを終了します。"
-            )
-    return _global_config
+def get_config() -> Settings:
+    """統一設定インスタンスを取得"""
+    global _settings_instance
+    if _settings_instance is None:
+        _settings_instance = get_settings()
+    return _settings_instance
 
 
-def set_config(config: GlobalConfigModel) -> None:
-    global _global_config
-    _global_config = config
+def set_config(config: Settings) -> None:
+    global _settings_instance
+    _settings_instance = config
 
 
 class ProjectContext:
     """
     プロジェクト全体の設定に型安全にアクセスするためのシングルトン風ユーティリティ。
     静的メソッドのみで構成し、インスタンス化不要。
-    内部的には get_config() に委譲し、設定の一元管理を保証します。
+    内部的には統一設定クラス (Settings) に委譲し、設定の一元管理を保証します。
     """
 
     @staticmethod
     def get_setting(key: str, default: Any = None) -> Any:
+        """設定値を取得（型安全・デフォルト値対応）"""
         cfg = get_config()
         if hasattr(cfg, key):
             return getattr(cfg, key)
@@ -73,6 +62,7 @@ class ProjectContext:
 
     @staticmethod
     def set_setting(key: str, value: Any) -> None:
+        """設定値を上書き（ランタイムのみ、永続化はしない）"""
         cfg = get_config()
         if hasattr(cfg, key):
             setattr(cfg, key, value)
@@ -84,8 +74,14 @@ class ProjectContext:
     @staticmethod
     def reset_overrides() -> None:
         """テストや動的オーバーライドをリセットし、デフォルト値に戻す。"""
-        set_config(GlobalConfigModel.default())
+        from config.settings import reset_settings
+        reset_settings()
         logger.debug("[ProjectContext] 全ランタイム上書きをリセットしました。")
+
+    @staticmethod
+    def validate_consistency() -> list[str]:
+        """設定の整合性を検証"""
+        return get_config().validate_consistency()
 
 
 class GlobalConfig:
@@ -103,42 +99,43 @@ class GlobalConfig:
         return getattr(get_config(), key, default)
 
     def set(self, key: str, value) -> None:
-        """設定値を更新し、TOMLへ反映する"""
-        if key not in GlobalConfigModel.model_fields.keys():
+        """設定値を更新する（ランタイムのみ）"""
+        cfg = get_config()
+        if not hasattr(cfg, key):
             raise KeyError(f"Unknown config key: {key}")
-        self.update(**{key: value})
+        setattr(cfg, key, value)
+        logger.info(f"[GlobalConfig] 設定を更新: {key} = {value!r}")
 
     def update(self, **kwargs) -> None:
-        """複数の設定値を一括更新し、TOMLファイルへ永続化する"""
-        current_cfg_dict = get_config().model_dump()
-        validated = GlobalConfigModel(**{**current_cfg_dict, **kwargs})
-
-        # メモリ上のグローバル設定を更新
-        set_config(validated)
-
-        # TOMLファイルへ永続化 (SSOT)
-        self._persist_to_toml(validated)
-
-    def _persist_to_toml(self, config_model: GlobalConfigModel) -> None:
-        """設定モデルを TOML ファイルに書き出す"""
-        import tomli_w
-
-        settings_path = BASE_DIR / "config" / "settings.toml"
-        try:
-            # Pydanticモデルを辞書に変換し、セクション分けして保存
-            data = config_model.model_dump()
-
-            # 簡易的に [general] セクションに全てまとめる
-            toml_data = {"general": data}
-
-            with open(settings_path, "wb") as f:
-                tomli_w.dump(toml_data, f)
-            logger.info(f"[GlobalConfig] 設定を永続化しました: {settings_path}")
-        except Exception as e:
-            logger.error(f"[GlobalConfig] TOML永続化失敗: {e}")
+        """複数の設定値を一括更新する（ランタイムのみ、永続化は別途必要）"""
+        cfg = get_config()
+        for key, value in kwargs.items():
+            if not hasattr(cfg, key):
+                raise KeyError(f"Unknown config key: {key}")
+            setattr(cfg, key, value)
+        logger.info(f"[GlobalConfig] 設定を一括更新: {list(kwargs.keys())}")
 
     def get_auto_concurrency(self) -> int:
-        return min(8, (os.cpu_count() or 1) * 2)
+        return get_config().get_auto_concurrency()
+
+
+# ==========================================
+# 後方互換エイリアス
+# ==========================================
+
+# 旧 GlobalConfigModel のデフォルトインスタンス生成用
+def _get_default_global_config():
+    """後方互換: GlobalConfigModel.default() 相当"""
+    return get_config()
+
+
+# 旧 get_config() 関数の互換ラッパー（GlobalConfigModel 返却を期待するコード用）
+def _get_global_config_model():
+    """
+    後方互換ラッパー: 旧 GlobalConfigModel インターフェースを期待するコード用。
+    実際の Settings インスタンスを返すが、Pydantic モデルとして振る舞う。
+    """
+    return get_config()
 
 
 # ==========================================
@@ -155,7 +152,22 @@ PROMPT_TEMPLATES: Dict[str, str] = {
 
 
 def get_prompt_template(name: str) -> str:
+    from config.settings import BASE_DIR
     path = BASE_DIR / "prompts" / "templates" / name
     if not path.exists():
         raise FileNotFoundError(f"Template not found: {path}")
     return path.read_text(encoding="utf-8")
+
+
+# ==========================================
+# 後方互換用: 旧モジュールからのインポートを維持
+# ==========================================
+try:
+    from config.constants import BASE_DIR as _BASE_DIR
+except ImportError:
+    from config.settings import BASE_DIR as _BASE_DIR
+
+BASE_DIR = _BASE_DIR
+
+# 旧 GlobalConfigModel への参照を期待するコードのための型エイリアス
+from config.settings import Settings as GlobalConfigModel

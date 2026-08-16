@@ -1,0 +1,49 @@
+# ざまぁ・追放・無双 ジャンル エピソード構造定義
+# 8話構成を想定（target_episodes で変更可能）
+
+genre: "zarma"
+description: "ざまぁ特有の「追放→絶望→覚醒→無双→完全制圧」の4段階構造"
+
+# 話数設定（8話基準、target_episodes でスケール可能）
+episode_structure:
+  total_episodes: 8
+  # 主要イベント話数（1-indexed）
+  humiliation_ep: 2      # 追放・屈辱の話
+  trigger_ep: 3          # 覚醒トリガーの話
+  musou_start_ep: 4      # 無双開始の話
+  final_ep: 8            # 完結話
+  # カタルシス閾値
+  tension_threshold: 75  # このテンション値で強制カタルシス発動
+
+# 各フェーズの話数範囲（8話基準）
+phases:
+  setup:
+    episodes: [1]
+    description: "日常・伏線・世界観提示"
+  humiliation:
+    episodes: [2]
+    description: "追放・裏切り・絶望の底"
+  awakening:
+    episodes: [3]
+    description: "覚醒トリガー・力の兆し"
+  musou:
+    episodes: [4, 5, 6, 7]
+    description: "無双・カタルシス連鎖・仲間獲得"
+  resolution:
+    episodes: [8]
+    description: "完全勝利・因果の清算・新秩序"
+
+# カタルシススパイク位置（進行度 0.0-1.0）
+catharsis_spikes:
+  - 0.25   # 第1カタルシス: 2話
+  - 0.50   # 第2カタルシス: 4話
+  - 0.75   # 第3カタルシス: 6話
+  - 1.00   # 第4カタルシス: 8話
+
+# 描写密度レベル
+density_by_phase:
+  setup: "High"
+  humiliation: "Extreme"
+  awakening: "Extreme"
+  musou: "Extreme"
+  resolution: "Standard"

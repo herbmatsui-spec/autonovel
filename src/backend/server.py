@@ -37,6 +37,7 @@ from src.backend.error_handlers import register_error_handlers
 from src.backend.observability.metrics import MetricsMiddleware
 from src.core.container import AppContainer
 from src.core.observability import TraceContext
+from src.core.opentelemetry import setup_opentelemetry
 from src.easy_mode.pipeline import EasyModePipeline, PipelineConfig
 from src.models.api_schemas import (
     CritiqueOptimizeRequest,
@@ -101,6 +102,18 @@ def create_pipeline_config_from_request(req: EasyModeRequest) -> PipelineConfig:
 # Startup DB migration using lifespan context manager
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # OpenTelemetry 初期化
+    try:
+        from src.core.opentelemetry import setup_opentelemetry
+        setup_opentelemetry(
+            service_name="kaku-hegemony-engine",
+            sample_rate=0.1,  # 本番は 0.1 (10%)
+            enable_console_exporter=False,
+        )
+        logger.info("OpenTelemetry auto-instrumentation initialized")
+    except Exception as e:
+        logger.warning(f"OpenTelemetry initialization failed: {e}")
+
     try:
         db_manager = AppContainer.db()
         init_db(db_manager.db_path)
@@ -335,8 +348,14 @@ async def refine_erotic(req: RefineEroticRequest):
 # Heavy operations enqueued via Huey
 @app.post("/api/easy_mode/generate")
 async def generate_easy(req: EasyModeRequest):
+    """
+    かんたんモードの小説生成をバックグラウンドタスクとしてキューに追加します。
+    リクエストを受け付けると即座にタスクIDを返却します。
+    実際の処理はバックグラウンドワーカーによって非同期に実行されます。
+    """
     from src.backend.task_helpers import create_task as _create_task
     from src.core.container import AppContainer
+    from src.backend.tasks import execute_service_workflow
 
     validate_api_key_or_raise(req.api_key)
     task_id = generate_task_id("easy")
@@ -344,13 +363,25 @@ async def generate_easy(req: EasyModeRequest):
     # 進捗管理用の状態を作成
     progress_state = ProgressState(
         is_running=True,
+    # 初期タスク作成（DBに保存）
+    await _create_task(task_id, "かんたんモード生成をキューに追加しました。", total_steps=4)
+
+    # 実際のパイプライン実行はバックグラウンドワーカーにオフロードします。
+    # これにより、APIサーバーは長時間リクエストをブロックされることなく、すぐにレスポンスを返すことができます。
+    execute_service_workflow(
         task_id=task_id,
         repo=AppContainer.db(),
+        api_key=req.api_key,
+        config_dict=req.model_dump(),
+        method_name="run_easy_mode_pipeline_workflow",  # バックグラウンドで実行される関数名
+        kwargs={"request_data": req.model_dump()},
+        trace_id=TraceContext.get_trace_id(),
     )
     reporter = BackgroundReporter(progress_state)
 
     # 初期タスク作成（DBに保存）
     await _create_task(task_id, "かんたんモード生成を開始中...", total_steps=4)
+    return {"task_id": task_id}
 
     # PipelineConfigを作成
     config = create_pipeline_config_from_request(req)

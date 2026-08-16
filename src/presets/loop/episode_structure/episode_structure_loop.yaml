@@ -1,0 +1,42 @@
+# ループ・時間逆行・真エンド ジャンル エピソード構造定義
+
+genre: "loop"
+description: "周目カウント・収束・全フラグ回収・確率1の必然構造"
+
+episode_structure:
+  total_episodes: 8
+  humiliation_ep: 1      # 1周目での失敗・死
+  trigger_ep: 2          # ループ認識・データ蓄積開始
+  musou_start_ep: 4      # 最適解実行・全フラグ回収開始
+  final_ep: 8            # 真エンド・確率1の世界線到達
+  tension_threshold: 80
+
+phases:
+  setup:
+    episodes: [1]
+    description: "1周目・最悪の結末・死・ループ開始"
+  humiliation:
+    episodes: [1, 2]
+    description: "繰り返す絶望・試行錯誤・パターン認識"
+  awakening:
+    episodes: [3]
+    description: "全データ統合・最適解発見・確率1への道"
+  musou:
+    episodes: [4, 5, 6, 7]
+    description: "完全攻略・全フラグ回収・隠しルート・収束"
+  resolution:
+    episodes: [8]
+    description: "真エンド・選ばれた世界線・必然・完全攻略達成"
+
+catharsis_spikes:
+  - 0.125
+  - 0.375
+  - 0.625
+  - 1.00
+
+density_by_phase:
+  setup: "High"
+  humiliation: "Extreme"
+  awakening: "Extreme"
+  musou: "Extreme"
+  resolution: "Standard"

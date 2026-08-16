@@ -1,0 +1,42 @@
+# VRMMO・ゲーム世界 ジャンル エピソード構造定義
+
+genre: "vrmmo"
+description: "フルダイブ・同期・現実侵食・神経リンクのメタ構造"
+
+episode_structure:
+  total_episodes: 8
+  humiliation_ep: 2      # ゲーム内での敗北・現実への影響
+  trigger_ep: 3          # 同期率上昇・スキル実体化
+  musou_start_ep: 4      # 現実侵食開始・NPCとの同期
+  final_ep: 8            # ゲーム世界統合・量子シンクロ
+  tension_threshold: 75
+
+phases:
+  setup:
+    episodes: [1]
+    description: "フルダイブ開始・アバター作成・チュートリアル"
+  humiliation:
+    episodes: [2]
+    description: "レイド失敗・ハプティック痛覚・現実へのフィードバック"
+  awakening:
+    episodes: [3]
+    description: "神経リンク覚醒・スキル実体化・オーバーレイ展開"
+  musou:
+    episodes: [4, 5, 6, 7]
+    description: "現実侵食・NPC実体化・レイドソロクリア・ドロップ独占"
+  resolution:
+    episodes: [8]
+    description: "ゲーム世界統合・境界消失・量子シンクロ・新現実"
+
+catharsis_spikes:
+  - 0.25
+  - 0.50
+  - 0.75
+  - 1.00
+
+density_by_phase:
+  setup: "High"
+  humiliation: "Extreme"
+  awakening: "Extreme"
+  musou: "Extreme"
+  resolution: "Standard"

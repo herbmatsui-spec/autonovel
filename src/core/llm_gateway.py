@@ -1,10 +1,13 @@
 from __future__ import annotations
 
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union, overload
 
-from src.core.llm_clients import BaseLLMClient, GeminiApiClient, OpenAIApiClient
+from src.core.llm_clients import BaseLLMClient
+from src.core.llm_clients.gemini import GeminiApiClient
+from src.core.llm_clients.openai import OpenAIApiClient
 from src.core.observability import StructuredLogger
 from src.models import GenerateResult
+from src.models.base import LLMRequestOptions
 
 logger = StructuredLogger(__name__)
 
@@ -114,9 +117,35 @@ class LLMGenerateResultProxy:
             return usage.get(key, default)
         return getattr(usage, key, default)
 
+    @overload
     async def generate_json(
         self,
-        purpose_or_request: Any = "writing",
+        purpose_or_request: LLMRequestOptions,
+        prompt: str = "",
+        response_schema: Any = None,
+        system_instruction: Optional[str] = None,
+        temp: float = 0.7,
+        model_name: Optional[str] = None,
+        stream_callback: Optional[Callable[[str], None]] = None,
+        **kwargs: Any,
+    ) -> GenerateResult: ...
+
+    @overload
+    async def generate_json(
+        self,
+        purpose_or_request: str = "writing",
+        prompt: str = "",
+        response_schema: Any = None,
+        system_instruction: Optional[str] = None,
+        temp: float = 0.7,
+        model_name: Optional[str] = None,
+        stream_callback: Optional[Callable[[str], None]] = None,
+        **kwargs: Any,
+    ) -> GenerateResult: ...
+
+    async def generate_json(
+        self,
+        purpose_or_request: Union[str, LLMRequestOptions] = "writing",
         prompt: str = "",
         response_schema: Any = None,
         system_instruction: Optional[str] = None,
@@ -126,7 +155,6 @@ class LLMGenerateResultProxy:
         **kwargs: Any,
     ) -> GenerateResult:
         from src.llm.model_router import resolve_model
-        from src.models.base import LLMRequestOptions
 
         if isinstance(purpose_or_request, LLMRequestOptions):
             req = purpose_or_request
@@ -162,9 +190,33 @@ class LLMGenerateResultProxy:
             },
         )
 
+    @overload
     async def generate_text(
         self,
-        purpose_or_request: Any = "writing",
+        purpose_or_request: LLMRequestOptions,
+        prompt: str = "",
+        system_instruction: Optional[str] = None,
+        temp: float = 0.7,
+        model_name: Optional[str] = None,
+        stream_callback: Optional[Callable[[str], None]] = None,
+        **kwargs: Any,
+    ) -> GenerateResult: ...
+
+    @overload
+    async def generate_text(
+        self,
+        purpose_or_request: str = "writing",
+        prompt: str = "",
+        system_instruction: Optional[str] = None,
+        temp: float = 0.7,
+        model_name: Optional[str] = None,
+        stream_callback: Optional[Callable[[str], None]] = None,
+        **kwargs: Any,
+    ) -> GenerateResult: ...
+
+    async def generate_text(
+        self,
+        purpose_or_request: Union[str, LLMRequestOptions] = "writing",
         prompt: str = "",
         system_instruction: Optional[str] = None,
         temp: float = 0.7,
@@ -173,7 +225,6 @@ class LLMGenerateResultProxy:
         **kwargs: Any,
     ) -> GenerateResult:
         from src.llm.model_router import select_model
-        from src.models.base import LLMRequestOptions
 
         if isinstance(purpose_or_request, LLMRequestOptions):
             req = purpose_or_request
@@ -207,10 +258,33 @@ class LLMGenerateResultProxy:
             },
         )
 
-    def generate(self, *args, **kwargs):
-        raise NotImplementedError(
-            "generate() is deprecated. Use generate_text() or generate_json()."
-        )
+    @staticmethod
+    def _normalize_response(response: Any) -> Any:
+        class _Response:
+            def __init__(
+                self, success: bool, content: Any = None, metadata: Any = None, usage: Any = None
+            ):
+                self.success = success
+                self.content = content
+                self.metadata = metadata
+                self.usage = usage
+
+        if isinstance(response, tuple):
+            if len(response) == 2:
+                content, usage = response
+                return _Response(success=True, content=content, usage=usage)
+            if len(response) == 3:
+                metadata, content, usage = response
+                return _Response(success=True, content=content, metadata=metadata, usage=usage)
+        return response
+
+    @staticmethod
+    def _usage_metric(usage: Any, key: str, default: int = 0) -> int:
+        if usage is None:
+            return default
+        if isinstance(usage, dict):
+            return usage.get(key, default)
+        return getattr(usage, key, default)
 
 
 LLMGateway = LLMGenerateResultProxy

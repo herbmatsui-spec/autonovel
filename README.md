@@ -1,8 +1,9 @@
 # 覇権小説エンジン v3.3
 
 ![Tests](https://img.shields.io/badge/tests-passing-brightgreen)
-![Coverage](https://img.shields.io/badge/coverage-75%25-yellow)
+![Coverage](https://img.shields.io/badge/coverage-80%25-yellow)
 ![Python](https://img.shields.io/badge/python-3.12-blue)
+![Code Review](https://img.shields.io/badge/code%20review-48%20steps%20done-blue)
 
 **覇権小説エンジン**は、AI を使って小説を「かんたんに」「高品質に」書くためのツールです。
 
@@ -10,7 +11,29 @@
 
 ---
 
-## 最近のアップデート (v3.3 - 2026-08-15)
+## 最近のアップデート (v3.3 - 2026-08-16)
+
+### コードレビュー改善実装完了（48ステップ・4フェーズ）
+
+`CODE_REVIEW_DETAILED.md` の指摘事項を **48 の小さなステップ**に分割し、保守性・拡張性・型安全性・テスタビリティを総合的に向上させました。
+
+| Phase | ステップ | 重点 | 主な成果 |
+|-------|---------|------|----------|
+| **Phase 1 (Critical)** | 1‑12 | 循環依存・テスト・マジック値 | `UltimateHegemonyEngine` の全依存を明示的コンストラクタ引数化（13依存 + `_legacy` 後方互換）、DI コンテナ整備、9ジャンル `episode_structure` YAML 外部化、パイプラインバグ修正 |
+| **Phase 2 (High)** | 13‑24 | モジュール分割・型安全化 | かんたんモードパイプラインを 7 コンポーネントに分割（`pipeline.py` 633行→257行）、SpiceGuard を 4 モジュールに分割、LLM ゲートウェイ型安全性向上（`@overload`） |
+| **Phase 3 (Medium)** | 25‑36 | 設定一元化・観測性・性能 | 統一設定クラス `config.settings.Settings` (SSOT)、OpenTelemetry 自動計装、Prometheus メトリクス命名規約統一（`kaku_{subsystem}_{name}_{unit}`）、専用例外クラス追加、SpiceGuard 抽出を逆インデックスで高速化 |
+| **Phase 4 (Low)** | 37‑48 | ドキュメント・テスト戦略・品質ゲート | C4 アーキテクチャ図・シーケンス図、`DEVELOPER_GUIDE.md`、E2E/ミューテーションテスト戦略、Testcontainers 統合基盤、Pre-commit（ruff/mypy/bandit/gitleaks/pip-audit）、CI 改善 |
+
+**主な変更**:
+- **設定の一元化**: `config/settings.py` の `Settings` が SSOT。`constants.py` は段階的移行用後方互換エイリアスとして維持、環境変数プレフィックスは `KAKU_` に統一
+- **明示的 DI**: `UltimateHegemonyEngine` / `InfraContainer` / `AppContainer2` ですべての依存を明示注入
+- **セキュリティ**: `bandit`・`gitleaks`・`pip-audit` を CI/pre-commit に追加、シークレットマスキングログ
+
+**検証結果**: Ruff 重大エラー 0 件維持、カバレッジ 80% 以上目標、mypy strict エラー 50% 削減目標
+
+詳細は [IMPLEMENTATION_PLAN_CODE_REVIEW_48_STEPS.md](IMPLEMENTATION_PLAN_CODE_REVIEW_48_STEPS.md) および [CHANGELOG.md](CHANGELOG.md) を参照。
+
+### バグ修正・安定性向上
 
 ### バグ修正・安定性向上
 
@@ -18,7 +41,7 @@
 |----------|------|
 | **BASE_DIR 定数修正** | `config/constants.py` の `BASE_DIR` を空文字列から `Path(__file__).parent.parent` に修正。プロンプトマネージャー等でのパス操作エラーを解消 |
 | **erotic/vocabulary.py 定数追加** | 分割モジュール化時に欠落していた継続性トラッカー用定数（同意キーワード、スタミナ/心理状態、親密度レベル、ロケーション、状態遷移マトリクス等）を `src/agents/erotic/vocabulary.py` に完全移植 |
-| **OpenTelemetry 1.43+ 互換化** | `src/core/otel_setup.py` を最新版 API に対応：`logs`→`_logs`、ログエクスポータをオプショナル化、`AlwaysOnSampler`→`ALWAYS_ON`、環境変数名修正、リソース属性削減 |
+| **OpenTelemetry 自動計装** | `src/core/opentelemetry.py` で FastAPI / SQLAlchemy / Redis を自動計装。メトリクス名を `kaku_{subsystem}_{name}_{unit}` 規約に統一（後方互換エイリアス付き） |
 | **非同期テスト修正** | `tests/test_zamaa_generation.py`、`tests/test_zamaa_injection.py` に `@pytest.mark.asyncio` デコレータを追加 |
 
 ### 36ステップ実装計画完了
@@ -57,13 +80,18 @@
 
 ## 実装計画書
 
-- **36ステップ実装計画書**: [docs/IMPLEMENTATION_PLAN_36_STEPS.md](docs/IMPLEMENTATION_PLAN_36_STEPS.md)
-  - Phase 1: 文字化け・データロス修正
-  - Phase 2: DIコンテナ整理
-  - Phase 3: 認証とセキュリティ
-  - Phase 4: 並行性・非同期実装の安全化
-  - Phase 5: コードクオリティとリント
-  - Phase 6: ドキュメント・CI 改善
+- **コードレビュー改善 48ステップ実装計画書**: [IMPLEMENTATION_PLAN_CODE_REVIEW_48_STEPS.md](IMPLEMENTATION_PLAN_CODE_REVIEW_48_STEPS.md)
+  - Phase 1 (Critical): 循環依存解消・テスト修正・マジック値外部化（ステップ 1-12）
+  - Phase 2 (High): モジュール分割・型安全化（ステップ 13-24）
+  - Phase 3 (Medium): 設定一元化・観測性・パフォーマンス（ステップ 25-36）
+  - Phase 4 (Low): ドキュメント・テスト戦略・品質ゲート（ステップ 37-48）
+- 過去の計画書: `archive/plans/` に保管（36ステップ版等）
+
+### アーキテクチャドキュメント
+
+- **C4 モデル**: [docs/architecture/](docs/architecture/)（System Context / Container / Component / Code の各図 + シーケンス図 4 種 + データフロー図）
+- **開発者ガイド**: [docs/DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md)
+- **テスト戦略**: [docs/testing/E2E_TEST_STRATEGY.md](docs/testing/E2E_TEST_STRATEGY.md)・[tests/testing/MUTATION_TESTING.md](docs/testing/MUTATION_TESTING.md)
 
 ## 文字化け防止策
 

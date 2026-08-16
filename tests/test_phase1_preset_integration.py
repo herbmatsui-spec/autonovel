@@ -317,21 +317,23 @@ class TestPhase1Integration:
     def test_preset_directory_structure(self):
         """プリセットディレクトリ構造が正しいこと"""
         import os
-        base = "/workspaces/autonovel/src/presets"
+        base = os.path.join(os.path.dirname(__file__), "..", "src", "presets")
+        base = os.path.abspath(base)
 
         for genre in SUPPORTED_GENRES:
             genre_dir = os.path.join(base, genre)
-            assert os.path.isdir(genre_dir), f"Genre {genre} dir missing"
+            assert os.path.isdir(genre_dir), f"Genre {genre} dir missing: {genre_dir}"
 
-            subdirs = ["bible", "tension", "style", "hooks", "erotic", "characters", "titles", "marketing"]
+            subdirs = ["bible", "tension", "style", "hooks", "erotic", "characters", "titles", "marketing", "episode_structure"]
             for subdir in subdirs:
                 path = os.path.join(genre_dir, subdir)
-                assert os.path.isdir(path), f"Genre {genre} subdir {subdir} missing"
+                assert os.path.isdir(path), f"Genre {genre} subdir {subdir} missing: {path}"
 
     def test_all_preset_files_exist(self):
         """全プリセットファイルが存在すること"""
         import os
-        base = "/workspaces/autonovel/src/presets"
+        base = os.path.join(os.path.dirname(__file__), "..", "src", "presets")
+        base = os.path.abspath(base)
 
         file_mapping = {
             "bible": "{genre}/bible/bible_preset_{genre}.j2",
@@ -342,6 +344,7 @@ class TestPhase1Integration:
             "characters": "{genre}/characters/char_archetypes_{genre}.json",
             "titles": "{genre}/titles/title_vars_{genre}.json",
             "marketing": "{genre}/marketing/marketing_vars_{genre}.json",
+            "episode_structure": "{genre}/episode_structure/episode_structure_{genre}.yaml",
         }
 
         for genre in SUPPORTED_GENRES:

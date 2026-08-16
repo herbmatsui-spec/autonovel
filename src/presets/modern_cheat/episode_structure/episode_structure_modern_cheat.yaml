@@ -1,0 +1,42 @@
+# 現代チート・都市伝説 ジャンル エピソード構造定義
+
+genre: "modern_cheat"
+description: "ルート権限・現実干渉・システムハックのテック構造"
+
+episode_structure:
+  total_episodes: 8
+  humiliation_ep: 1      # 現代社会での不遇
+  trigger_ep: 2          # 権限取得・チートコード発見
+  musou_start_ep: 3      # 現実書き換え開始
+  final_ep: 8            # 世界システム管理者・神
+  tension_threshold: 65
+
+phases:
+  setup:
+    episodes: [1]
+    description: "平凡な日常・理不尽・システムエラー遭遇"
+  humiliation:
+    episodes: [1]
+    description: "社会的制裁・アカウント凍結・現実での追放"
+  awakening:
+    episodes: [2]
+    description: "管理者権限・バグ悪用・パッチ適用"
+  musou:
+    episodes: [3, 4, 5, 6, 7]
+    description: "現実書き換え・金銭生成・物理法則無視・同期"
+  resolution:
+    episodes: [8]
+    description: "世界システム掌握・新ルール確立・管理者として君臨"
+
+catharsis_spikes:
+  - 0.125
+  - 0.375
+  - 0.625
+  - 1.00
+
+density_by_phase:
+  setup: "High"
+  humiliation: "High"
+  awakening: "Extreme"
+  musou: "Extreme"
+  resolution: "Standard"
