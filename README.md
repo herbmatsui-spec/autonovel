@@ -25,6 +25,7 @@
 | **Dockerfile 改善** | マルチステージビルド・非 root ユーザー化・レイヤーキャッシュ最適化 |
 | **開発用依存分離** | `requirements-dev.txt` 新規作成、`pyproject.toml` に `optional-dependencies.dev` 追加 |
 | **新規スクリプト** | `scripts/no_print_check.py`, `scripts/validate_env_map.py` |
+| **依存注入・設定改善** | `EngineDeps`を使用したDI最適化、APIキーをSettings経由で取得、Redis設定をDI経由で明示化 |
 
 ### コードレビュー改善実装完了（60ステップ・5フェーズ）
 
