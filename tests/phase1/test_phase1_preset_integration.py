@@ -317,7 +317,7 @@ class TestPhase1Integration:
     def test_preset_directory_structure(self):
         """プリセットディレクトリ構造が正しいこと"""
         import os
-        base = os.path.join(os.path.dirname(__file__), "..", "src", "presets")
+        base = os.path.join(os.path.dirname(__file__), "..", "..", "src", "presets")
         base = os.path.abspath(base)
 
         for genre in SUPPORTED_GENRES:
@@ -332,7 +332,7 @@ class TestPhase1Integration:
     def test_all_preset_files_exist(self):
         """全プリセットファイルが存在すること"""
         import os
-        base = os.path.join(os.path.dirname(__file__), "..", "src", "presets")
+        base = os.path.join(os.path.dirname(__file__), "..", "..", "src", "presets")
         base = os.path.abspath(base)
 
         file_mapping = {
@@ -352,6 +352,7 @@ class TestPhase1Integration:
                 path = os.path.join(base, pattern.format(genre=genre))
                 assert os.path.isfile(path), f"Genre {genre} file {key} missing: {path}"
 
+    @pytest.mark.skip(reason="streamlit_app is archived/retired")
     def test_streamlit_easy_mode_imports(self):
         """StreamlitかんたんモードUIがインポート可能であること"""
         try:
@@ -360,6 +361,7 @@ class TestPhase1Integration:
         except ImportError as e:
             pytest.fail(f"ui_tabs_easy_mode import failed: {e}")
 
+    @pytest.mark.skip(reason="streamlit_app is archived/retired")
     def test_genre_labels_complete(self):
         """ジャンルラベルが全ジャンル分定義されていること"""
         from streamlit_app.ui_tabs_easy_mode import GENRE_LABELS
