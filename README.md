@@ -1,4 +1,5 @@
 # 覇権小説エンジン v3.3.1
+# 更新: マージコンフリクト解決および tiktoken ベースのコンテキスト切り捨て実装完了 (2026-08-17)
 
 ![Tests](https://img.shields.io/badge/tests-passing-brightgreen)
 ![Coverage](https://img.shields.io/badge/coverage-80%25-yellow)
