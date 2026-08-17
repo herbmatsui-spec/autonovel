@@ -32,9 +32,6 @@
 - Xenon複雑度しきい値調整: 平均複雑度の閾値をDからAに厳格化（`.pre-commit-config.yaml`）
 - SpiceGuardアーキテクチャドキュメント追加: `docs/architecture/spice_guard.md`
 - LangGraph採用理由ADR追加: `docs/adr/0004-langgraph-adoption.md`
-
-### Changed
-- README.md: 依存注入と設定改善に関する説明を追加
 - カスタム例外クラス追加 (`BibleGenerationError`, `EpisodeWritingError`, 等)
 - Testcontainers 統合テスト基盤
 - Playwright E2E テスト戦略ドキュメント
@@ -42,8 +39,6 @@
 - Pre-commit フック整備 (ruff, mypy, bandit, vulture, xenon, gitleaks, pip-audit)
 - CI パイプライン全面改善 (並列化、キャッシュ、品質ゲート)
 - `py.typed` マーカー (PEP 561 対応)
-- SpiceGuard アーキテクチャドキュメント (`docs/architecture/spice_guard.md`)
-- LangGraph 採用 ADR (`docs/adr/0004-langgraph-adoption.md`)
 - `ENV_OVERRIDE_MAP` 整合性検証スクリプト (`scripts/validate_env_map.py`)
 - `no-print-statements` 専用チェックスクリプト (`scripts/no_print_check.py`)
 - 開発用依存分離 `requirements-dev.txt`
@@ -58,6 +53,8 @@
 - `config/settings.py` 重複フィールド `polishing_min_content_ratio` 削除
 - `connection_pipeline` 未使用プロバイダ削除
 - API キー `"DUMMY"` ハードコード → 環境変数 `GEMINI_API_KEY` 注入
+- `README.md`: 依存注入と設定改善に関する説明を追加
+- `UltimateHegemonyEngine` の全依存を明示的コンストラクタ引数化 (DI 対応)
 - `pipeline.py` をオーケストレーション専用にリファクタリング (633行 → 257行)
 - `spice_guard.py` を4モジュールに分割 (537行 → 各150-200行)
 - `llm_gateway.py` の `generate()` 削除、`generate_json`/`generate_text` の `@overload` 化
@@ -78,13 +75,6 @@
 - `app.py` ハードコード `"DUMMY"` API キー
 - `settings.py` 重複 `polishing_min_content_ratio` (209行)
 - `test_container.py` 未使用 `connection_pipeline` 期待値除外
-
-### Removed
-- `UltimateHegemonyEngine.ai_api` プロパティ (FutureWarning 期間終了)
-- `UltimateHegemonyEngine.llm_client` プロパティ (FutureWarning 期間終了)
-- `llm_gateway.py` の `generate()` メソッド (NotImplementedError だったもの)
-
-### Fixed
 - パイプライン内の引数順バグ修正 (`_generate_episode` 引数順)
 - `_finalize_result` → `_finalize_series` メソッド名修正
 - `_finalize_series` 非同期呼び出し修正 (`await` 追加)
@@ -204,7 +194,7 @@ model = settings.model_writing
 
 ## 貢献者
 - メイン開発者
-- コードレビュワー
+- コードレビワー
 - テスト貢献者
 
 ---

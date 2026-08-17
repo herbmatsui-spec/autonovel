@@ -2,10 +2,19 @@
 Testcontainers を使用した統合テスト例
 """
 
+<<<<<<< ours
 
 import pytest
 
 from src.easy_mode import create_series
+=======
+import pytest
+from unittest.mock import AsyncMock, MagicMock
+from src.easy_mode import create_series
+from src.easy_mode.models import PipelineConfig
+from src.core.llm_gateway import LLMGenerateResultProxy
+from src.core.llm_clients.base import BaseLLMClient
+>>>>>>> theirs
 
 
 class TestPipelineIntegrationWithContainers:
@@ -25,11 +34,19 @@ class TestPipelineIntegrationWithContainers:
             "テスト生成コンテンツ。ざまぁ見ろ。実はチートだった。",
             {"prompt_tokens": 50, "completion_tokens": 150}
         )
+<<<<<<< ours
 
         # パイプライン作成・実行
         pipeline = create_series(test_engine, "zarma", target_episodes=2)
         result = await pipeline.run()
 
+=======
+        
+        # パイプライン作成・実行
+        pipeline = create_series(test_engine, "zarma", target_episodes=2)
+        result = await pipeline.run()
+        
+>>>>>>> theirs
         # 検証
         assert result is not None
         assert result.genre == "zarma"
@@ -37,7 +54,11 @@ class TestPipelineIntegrationWithContainers:
         assert len(result.episodes) == 2
         assert result.bible is not None
         assert result.plot_outline is not None
+<<<<<<< ours
 
+=======
+        
+>>>>>>> theirs
         # DB に保存されたか確認
         from src.backend.database import DataRepository
         repo = DataRepository(db_manager)
@@ -53,6 +74,7 @@ class TestPipelineIntegrationWithContainers:
             '{"world": "test", "protagonist": "テスト"}',
             {"prompt_tokens": 100, "completion_tokens": 200}
         )
+<<<<<<< ours
 
         from src.easy_mode.bible_generator import BibleGenerator
         from src.presets.loader import load_preset
@@ -61,6 +83,16 @@ class TestPipelineIntegrationWithContainers:
         bible_gen = BibleGenerator(preset, test_engine.llm)
         bible = await bible_gen.generate(target_episodes=8)
 
+=======
+        
+        from src.easy_mode.bible_generator import BibleGenerator
+        from src.presets.loader import load_preset
+        
+        preset = load_preset("zarma")
+        bible_gen = BibleGenerator(preset, test_engine.llm)
+        bible = await bible_gen.generate(target_episodes=8)
+        
+>>>>>>> theirs
         assert "world" in bible
         assert "protagonist" in bible
 
@@ -69,9 +101,15 @@ class TestPipelineIntegrationWithContainers:
     async def test_chromadb_vector_store(self, chroma_client):
         """ChromaDB ベクトルストアの動作確認"""
         from src.services.vector_store import ChromaVectorStore
+<<<<<<< ours
 
         vector_store = ChromaVectorStore(client=chroma_client)
 
+=======
+        
+        vector_store = ChromaVectorStore(client=chroma_client)
+        
+>>>>>>> theirs
         # テストデータ追加
         test_embeddings = [[0.1] * 384, [0.2] * 384]
         test_metadata = [
@@ -79,6 +117,7 @@ class TestPipelineIntegrationWithContainers:
             {"text": "テスト文書2", "genre": "zarma"}
         ]
         test_ids = ["doc1", "doc2"]
+<<<<<<< ours
 
         await vector_store.add(test_embeddings, test_metadata, test_ids)
 
@@ -86,6 +125,15 @@ class TestPipelineIntegrationWithContainers:
         query_embedding = [0.15] * 384
         results = await vector_store.search(query_embedding, k=2)
 
+=======
+        
+        await vector_store.add(test_embeddings, test_metadata, test_ids)
+        
+        # 検索テスト
+        query_embedding = [0.15] * 384
+        results = await vector_store.search(query_embedding, k=2)
+        
+>>>>>>> theirs
         assert len(results) == 2
         assert results[0]["metadata"]["genre"] == "zarma"
 
@@ -97,13 +145,21 @@ class TestRedisIntegration:
     @pytest.mark.asyncio
     async def test_redis_rate_limiting(self, redis_client):
         """Redis レート制限の動作確認"""
+<<<<<<< ours
 
         key = "test:rate_limit:ip:127.0.0.1"
 
+=======
+        import time
+        
+        key = "test:rate_limit:ip:127.0.0.1"
+        
+>>>>>>> theirs
         # 初回リクエスト
         count = await redis_client.incr(key)
         await redis_client.expire(key, 60)
         assert count == 1
+<<<<<<< ours
 
         # 2回目
         count = await redis_client.incr(key)
@@ -113,6 +169,17 @@ class TestRedisIntegration:
         ttl = await redis_client.ttl(key)
         assert 0 < ttl <= 60
 
+=======
+        
+        # 2回目
+        count = await redis_client.incr(key)
+        assert count == 2
+        
+        # TTL 確認
+        ttl = await redis_client.ttl(key)
+        assert 0 < ttl <= 60
+        
+>>>>>>> theirs
         # クリーンアップ
         await redis_client.delete(key)
 
@@ -126,9 +193,15 @@ class TestPostgreSQLIntegration:
         """データベース CRUD 操作確認"""
         from src.backend.database import DataRepository
         from src.models.api_schemas import BookCreate
+<<<<<<< ours
 
         repo = DataRepository(db_manager)
 
+=======
+        
+        repo = DataRepository(db_manager)
+        
+>>>>>>> theirs
         # 作成
         book_data = BookCreate(
             title="テスト小説",
@@ -138,16 +211,28 @@ class TestPostgreSQLIntegration:
         book = await repo.create_book(book_data)
         assert book.id is not None
         assert book.title == "テスト小説"
+<<<<<<< ours
 
         # 読み取り
         fetched = await repo.get_book(book.id)
         assert fetched.title == "テスト小説"
 
+=======
+        
+        # 読み取り
+        fetched = await repo.get_book(book.id)
+        assert fetched.title == "テスト小説"
+        
+>>>>>>> theirs
         # 更新
         from src.models.api_schemas import BookUpdate
         updated = await repo.update_book(book.id, BookUpdate(title="更新済み"))
         assert updated.title == "更新済み"
+<<<<<<< ours
 
+=======
+        
+>>>>>>> theirs
         # 削除
         await repo.delete_book(book.id)
         deleted = await repo.get_book(book.id)
@@ -163,10 +248,17 @@ class TestSettingsIntegration:
         monkeypatch.setenv("KAKU_DATABASE_URL", "postgresql+asyncpg://test:test@localhost/test")
         monkeypatch.setenv("KAKU_MODEL_WRITING", "custom-model")
         monkeypatch.setenv("KAKU_MAX_CONCURRENT_API_CALLS", "10")
+<<<<<<< ours
 
         from config.settings import get_settings, reset_settings
         reset_settings()
 
+=======
+        
+        from config.settings import get_settings, reset_settings
+        reset_settings()
+        
+>>>>>>> theirs
         settings = get_settings()
         assert settings.database_url == "postgresql+asyncpg://test:test@localhost/test"
         assert settings.model_writing == "custom-model"
@@ -180,6 +272,7 @@ class TestMetricsIntegration:
     def test_prometheus_metrics_format(self):
         """Prometheus メトリクス形式確認"""
         from src.backend.observability.metrics import (
+<<<<<<< ours
             generate_latest,
             kaku_http_requests_total,
             kaku_novel_generation_tasks_total,
@@ -189,6 +282,17 @@ class TestMetricsIntegration:
         kaku_http_requests_total.labels(method="GET", path="/api/test", status="200").inc()
         kaku_novel_generation_tasks_total.labels(workflow_type="easy", status="completed").inc()
 
+=======
+            kaku_http_requests_total,
+            kaku_novel_generation_tasks_total,
+            generate_latest,
+        )
+        
+        # メトリクス記録
+        kaku_http_requests_total.labels(method="GET", path="/api/test", status="200").inc()
+        kaku_novel_generation_tasks_total.labels(workflow_type="easy", status="completed").inc()
+        
+>>>>>>> theirs
         # 形式確認
         output = generate_latest().decode("utf-8")
         assert "kaku_http_requests_total" in output
@@ -200,4 +304,8 @@ class TestMetricsIntegration:
 # ===================== テスト実行用メイン =====================
 
 if __name__ == "__main__":
+<<<<<<< ours
     pytest.main([__file__, "-v", "-m", "integration"])
+=======
+    pytest.main([__file__, "-v", "-m", "integration"])
+>>>>>>> theirs

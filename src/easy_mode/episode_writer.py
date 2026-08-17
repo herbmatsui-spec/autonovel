@@ -114,4 +114,8 @@ class EpisodeWriter:
 
     def cancel(self):
         """キャンセル"""
+<<<<<<< ours
         self._cancelled = True
+=======
+        self._cancelled = True
+>>>>>>> theirs

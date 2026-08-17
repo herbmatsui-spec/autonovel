@@ -5,7 +5,11 @@ SpiceGuard マーカー操作・プロンプト構築
 from __future__ import annotations
 
 import re
+<<<<<<< ours
 from typing import List
+=======
+from typing import Any, Dict, List
+>>>>>>> theirs
 
 from src.easy_mode.models import SpiceElement
 
@@ -67,4 +71,8 @@ class RewritePromptBuilder:
 
 改善後の本文のみを出力せよ。SPICEマーカーはそのまま残せ。"""
 
+<<<<<<< ours
         return prompt
+=======
+        return prompt
+>>>>>>> theirs

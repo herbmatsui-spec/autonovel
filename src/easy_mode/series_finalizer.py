@@ -39,4 +39,8 @@ class SeriesFinalizer:
             "synopsis": synopsis,
             "tags": marketing.get("tags", [])[:10],
             "catchphrase": marketing.get("catchphrase_templates", [""])[0],
+<<<<<<< ours
         }
+=======
+        }
+>>>>>>> theirs

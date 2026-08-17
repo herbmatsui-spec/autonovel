@@ -96,12 +96,16 @@
 
 ## 実装計画書
 
+<<<<<<< ours
 - **コードレビュー改善 60ステップ実装計画書**: [IMPLEMENTATION_PLAN_CODE_REVIEW_48_STEPS.md](IMPLEMENTATION_PLAN_CODE_REVIEW_48_STEPS.md)
+=======
+- **コードレビュー改善 48ステップ実装計画書**: [IMPLEMENTATION_PLAN_CODE_REVIEW_48_STEPS.md](IMPLEMENTATION_PLAN_CODE_REVIEW_48_STEPS.md)
+>>>>>>> theirs
   - Phase 1 (Critical): 循環依存解消・テスト修正・マジック値外部化（ステップ 1-12）
   - Phase 2 (High): モジュール分割・型安全化（ステップ 13-24）
   - Phase 3 (Medium): 設定一元化・観測性・パフォーマンス（ステップ 25-36）
   - Phase 4 (Low): ドキュメント・テスト戦略・品質ゲート（ステップ 37-48）
-  - Phase 5 (Frontend): フロントエンド品質・残タスク対応（ステップ 49-60） — [IMPLEMENTATION_PLAN_PHASE5.md](IMPLEMENTATION_PLAN_PHASE5.md)
+- Phase 5 (Frontend): フロントエンド品質・残タスク対応（ステップ 49-60） — [IMPLEMENTATION_PLAN_PHASE5.md](IMPLEMENTATION_PLAN_PHASE5.md)
 - 過去の計画書: `archive/plans/` に保管（36ステップ版等）
 
 ### アーキテクチャドキュメント

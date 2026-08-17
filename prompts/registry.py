@@ -3,18 +3,25 @@ from __future__ import annotations
 import logging
 import os
 from collections import OrderedDict
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Optional, Tuple, Union
 
 import yaml
-from jinja2 import DictLoader, Environment, FileSystemLoader, select_autoescape
-
-from config import PROMPT_TEMPLATES
-from src.domain.types import BookId
-
-logger = logging.getLogger(__name__)
-
 from dataclasses import dataclass, field
 from time import time
+from jinja2 import DictLoader, Environment, FileSystemLoader, select_autoescape
+from jinja2.exceptions import TemplateError, UndefinedError
+
+from prompts.metrics import IMetricsCollector, InMemoryCollector
+from config import PROMPT_TEMPLATES
+from prompts.exceptions import (
+PromptDbError,
+PromptRenderingError,
+from config import PROMPT_TEMPLATES
+from prompts.schemas import PromptContext
+from src.domain.types import BookId
+from prompts.exceptions import (
+    PromptDbError,
+
 
 
 @dataclass
@@ -23,7 +30,7 @@ class CachedTemplate:
 
     source: str
     mtime: float
-    metadata: Dict[str, Any]
+    metadata: dict[str, Any]
     pure_template: str
     timestamp: float = field(default_factory=time)
 
@@ -35,7 +42,12 @@ class PromptRegistry:
     動的なバージョニングと A/B テストをサポートする。
     """
 
-    def __init__(self, templates_dir: Optional[str] = None, db_manager: Any = None):
+    def __init__(
+        self,
+        templates_dir: Optional[str] = None,
+        db_manager: Any = None,
+        metrics_collector: Optional[IMetricsCollector] = None,
+    ):
         if templates_dir is None:
             current_dir = os.path.dirname(os.path.abspath(__file__))
             self.templates_dir = current_dir
@@ -51,10 +63,9 @@ class PromptRegistry:
         # 設定ファイルから最大キャッシュサイズを取得
         self._cache_max_size = ConfigManager.get_config().prompt_cache_max_size
 
-        # メトリクス追跡用
-        self._metrics: Dict[str, Dict[str, Any]] = {}
+        # メトリクスコレクタ (DI)
+        self.metrics_collector: IMetricsCollector = metrics_collector or InMemoryCollector()
 
-        # templates/ 以下のサブディレクトリを自動的にロードする
         # templates/ 以下のサブディレクトリを自動的にロードする
         normalized_dir = os.path.abspath(self.templates_dir)
         search_paths = []
@@ -84,38 +95,17 @@ class PromptRegistry:
         if len(self._template_cache) > self._cache_max_size:
             self._template_cache.popitem(last=False)
 
-        # メトリクス追跡用
-        self._metrics: Dict[str, Dict[str, Any]] = {}
-
-    def _init_metric(self, template_name: str):
-        """Initialize metrics for a template if not already present."""
-        if template_name not in self._metrics:
-            self._metrics[template_name] = {
-                "hits": 0,
-                "total_time_ms": 0.0,
-                "avg_time_ms": 0.0,
-                "last_accessed": None,
-                "error_count": 0,
-            }
-
     def record_hit(self, template_name: str, duration_ms: float = 0.0, error: bool = False):
         """Record a template access hit with timing and error info."""
-        self._init_metric(template_name)
-        metric = self._metrics[template_name]
-        metric["hits"] += 1
-        metric["total_time_ms"] += duration_ms
-        metric["avg_time_ms"] = metric["total_time_ms"] / metric["hits"]
-        metric["last_accessed"] = time.time()
-        if error:
-            metric["error_count"] += 1
+        self.metrics_collector.record_hit(template_name, duration_ms, error)
 
-    def get_metrics(self) -> Dict[str, Dict[str, Any]]:
+    def get_metrics(self) -> dict[str, Any]:
         """Get current metrics snapshot."""
-        return dict(self._metrics)
+        return {k: v.__dict__ for k, v in self.metrics_collector.get_metrics().items()}
 
     def reset_metrics(self):
         """Reset all metrics."""
-        self._metrics.clear()
+        self.metrics_collector.reset_metrics()
 
     def clear_cache(self):
         """全キャッシュをクリアする。"""
@@ -184,7 +174,9 @@ class PromptRegistry:
                 pass
 
         if source is None:
-            raise FileNotFoundError(f"Prompt template '{template_name}' not found in any source.")
+            raise PromptTemplateNotFoundError(
+                f"Prompt template '{template_name}' not found in any source.", template_name
+            )
 
         # フロントマターを解析してキャッシュに保存
         metadata, pure_template = self.parse_frontmatter(source)
@@ -195,7 +187,7 @@ class PromptRegistry:
 
         return source
 
-    def parse_frontmatter(self, source: str) -> Tuple[Dict[str, Any], str]:
+    def parse_frontmatter(self, source: str) -> Tuple[dict[str, Any], str]:
         """YAML フロントマターを解析し、メタデータと本文を分離する。"""
         if source.startswith("---"):
             parts = source.split("---", 2)
@@ -207,8 +199,14 @@ class PromptRegistry:
                     pass
         return {}, source
 
+    def _prepare_context(self, context: Union[dict[str, Any], PromptContext]) -> dict[str, Any]:
+        """PydanticモデルまたはdictをJinja2用のdictに変換。"""
+        if isinstance(context, PromptContext):
+            return context.model_dump()
+        return context
+
     def render(
-        self, template_name: str, context: Dict[str, Any], book_id: Optional[BookId] = None
+        self, template_name: str, context: Union[dict[str, Any], PromptContext], book_id: Optional[BookId] = None
     ) -> str:
         """同期レンダリング (DB override は無視される)"""
         # 拡張子補正
@@ -219,6 +217,8 @@ class PromptRegistry:
         ):
             template_name = f"{template_name}.j2"
 
+        ctx = self._prepare_context(context)
+
         # キャッシュから pure_template を取得してコンパイルコストを削減
         if template_name in self._template_cache:
             cached = self._template_cache[template_name]
@@ -226,19 +226,40 @@ class PromptRegistry:
                 if cached.mtime > 0:
                     _, filename, _ = self.fs_loader.get_source(self.jinja_env, template_name)
                     if os.path.getmtime(filename) <= cached.mtime:
-                        return self.jinja_env.from_string(cached.pure_template).render(**context)
+                        return self.jinja_env.from_string(cached.pure_template).render(**ctx)
                 else:
-                    return self.jinja_env.from_string(cached.pure_template).render(**context)
+                    return self.jinja_env.from_string(cached.pure_template).render(**ctx)
+            except (TemplateError, UndefinedError) as e:
+                self.record_hit(template_name, error=True)
+                raise PromptRenderingError(
+                    f"Failed to render template '{template_name}': {e}",
+                    template_name,
+                    missing_keys=getattr(e, "missing_keys", None),
+                ) from e
             except Exception:
                 pass
 
         # キャッシュミスまたは更新が必要な場合は通常ルートへ
-        source = self._get_template_source_sync(template_name)
-        metadata, pure_template = self.parse_frontmatter(source)
-        return self.jinja_env.from_string(pure_template).render(**context)
+        start_time = time()
+        try:
+            source = self._get_template_source_sync(template_name)
+            metadata, pure_template = self.parse_frontmatter(source)
+            result = self.jinja_env.from_string(pure_template).render(**ctx)
+            self.record_hit(template_name, duration_ms=(time() - start_time) * 1000)
+            return result
+        except (TemplateError, UndefinedError) as e:
+            self.record_hit(template_name, duration_ms=(time() - start_time) * 1000, error=True)
+            raise PromptRenderingError(
+                f"Failed to render template '{template_name}': {e}",
+                template_name,
+                missing_keys=getattr(e, "missing_keys", None),
+            ) from e
+        except Exception:
+            self.record_hit(template_name, duration_ms=(time() - start_time) * 1000, error=True)
+            raise
 
     async def render_async(
-        self, template_name: str, context: Dict[str, Any], book_id: Optional[BookId] = None
+        self, template_name: str, context: Union[dict[str, Any], PromptContext], book_id: Optional[BookId] = None
     ) -> str:
         """
         非同期レンダリング。DB上の最新最適化プロンプトを優先的に適用する。
@@ -251,6 +272,8 @@ class PromptRegistry:
         ):
             template_name = f"{template_name}.j2"
 
+        ctx = self._prepare_context(context)
+
         source = None
         if book_id and self.db_manager:
             try:
@@ -262,9 +285,26 @@ class PromptRegistry:
                         source = ver["content"]
             except Exception as e:
                 logger.error(f"Error fetching prompt version from DB: {e}")
+                raise PromptDbError(
+                    f"Failed to fetch prompt version from DB: {e}", template_name, book_id=book_id
+                ) from e
 
-        if source is None:
-            source = self._get_template_source_sync(template_name)
+        start_time = time()
+        try:
+            if source is None:
+                source = self._get_template_source_sync(template_name)
 
-        metadata, pure_template = self.parse_frontmatter(source)
-        return self.jinja_env.from_string(pure_template).render(**context)
+            metadata, pure_template = self.parse_frontmatter(source)
+            result = self.jinja_env.from_string(pure_template).render(**ctx)
+            self.record_hit(template_name, duration_ms=(time() - start_time) * 1000)
+            return result
+        except (TemplateError, UndefinedError) as e:
+            self.record_hit(template_name, duration_ms=(time() - start_time) * 1000, error=True)
+            raise PromptRenderingError(
+                f"Failed to render template '{template_name}': {e}",
+                template_name,
+                missing_keys=getattr(e, "missing_keys", None),
+            ) from e
+        except Exception:
+            self.record_hit(template_name, duration_ms=(time() - start_time) * 1000, error=True)
+            raise

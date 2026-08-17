@@ -16,9 +16,8 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Any, ClassVar, Dict, List, Optional
-
-from pydantic import Field
+from typing import Any, ClassVar, Dict, List, Optional, Union
+from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # プロジェクトルート
@@ -206,6 +205,10 @@ class Settings(BaseSettings):
     # ==========================================
     content_separator: str = "\n---\n"
     max_prompt_chars: int = 8000
+<<<<<<< ours
+=======
+    polishing_min_content_ratio: float = 0.5
+>>>>>>> theirs
     default_golden_peaks: int = 1
     nsfw_default_enabled: bool = False
 
@@ -327,11 +330,20 @@ def reset_settings() -> None:
     """設定インスタンスをリセット（テスト用）"""
     global _settings_instance
     _settings_instance = None
+<<<<<<< ours
 
+=======
+>>>>>>> theirs
 
 # 後方互換性のためのモジュールレベルシングルトン
 settings = get_settings()
 
+<<<<<<< ours
+=======
+# 後方互換性のためのモジュールレベルシングルトン
+settings = get_settings()
+
+>>>>>>> theirs
 
 # ==========================================
 # 後方互換エイリアス (段階的移行用)
@@ -406,11 +418,19 @@ MAX_CONCURRENT_API_CALLS = 5
 # ==========================================
 class ConfigManager:
     """旧 ConfigManager 互換ラッパー"""
+<<<<<<< ours
 
+=======
+    
+>>>>>>> theirs
     _instance: Optional[Settings] = None
 
     @classmethod
     def get_config(cls) -> Settings:
         if cls._instance is None:
             cls._instance = get_settings()
+<<<<<<< ours
         return cls._instance
+=======
+        return cls._instance
+>>>>>>> theirs

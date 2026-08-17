@@ -9,6 +9,14 @@ import logging
 from typing import Any, Optional
 
 from src.core.async_utils import limit_concurrency
+from src.core.exceptions import (
+    BibleGenerationError,
+    EpisodeAuditError,
+    EpisodeRewriteError,
+    EpisodeWritingError,
+    PlotGenerationError,
+    SeriesFinalizationError,
+)
 from src.easy_mode.bible_generator import BibleGenerator
 from src.easy_mode.episode_auditor import EpisodeAuditor
 from src.easy_mode.episode_rewriter import EpisodeRewriter
@@ -18,6 +26,8 @@ from src.easy_mode.plot_generator import PlotGenerator
 from src.easy_mode.progress_reporter import ProgressReporter
 from src.easy_mode.series_finalizer import SeriesFinalizer
 from src.presets.loader import load_preset
+
+import tiktoken
 
 logger = logging.getLogger(__name__)
 
@@ -127,7 +137,7 @@ class EasyModePipeline:
                 genre=self.config.genre,
                 title=finalize_data["title"],
                 concept=finalize_data["concept"],
-                total_episodes=self.config.target_episodes,
+                total_episodes=config.target_episodes,
                 episodes=episodes,
                 bible=bible,
                 plot_outline=plot_outline,
@@ -203,13 +213,57 @@ class EasyModePipeline:
         )
 
     def _build_prev_context(self, episodes: list[EpisodeResult]) -> str:
-        """前話までの要約文脈構築"""
+        """前話までの要約文脈構築（トークンベース）"""
         if not episodes:
             return "（第1話のため前話なし）"
 
+        # トークンエンコーダーを初期化
+        encoding = tiktoken.get_encoding("cl100k_base")
+        
+        # 利用可能なトークン数を計算（コンテキストウィンドウから予約領域を差し引く）
+        max_tokens = self.config.context_window - self.config.context_window_min_reserve
+        
         summaries = []
-        for ep in episodes[-3:]:  # 直近3話のみ
-            summaries.append(f"第{ep.episode_num}話: {ep.title} - {ep.content[:200]}...")
+        tokens_used = 0
+        
+        # 直近3話から逆順で処理（新しい話から古い話へ）
+        for ep in reversed(episodes[-3:]):
+            # エピソードの要約テキストを作成
+            summary_text = f"第{ep.episode_num}話: {ep.title} - "
+            
+            # エンコードしてトークン数を計算
+            summary_tokens = len(encoding.encode(summary_text))
+            
+            # 残りトークンで利用可能なコンテンツ長を計算
+            remaining_tokens = max_tokens - tokens_used - summary_tokens
+            if remaining_tokens <= 0:
+                # トークンが足りない場合はこの話をスキップ
+                continue
+                
+            # コンテンツをトークンベースで切り捨て
+            content_tokens = encoding.encode(ep.content)
+            if len(content_tokens) > remaining_tokens:
+                # トークン制限内で切り捨て
+                truncated_tokens = content_tokens[:remaining_tokens]
+                truncated_content = encoding.decode(truncated_tokens)
+            else:
+                truncated_content = ep.content
+                
+            # 最終的な要約テキストを作成
+            final_summary = f"{summary_text}{truncated_content}..."
+            
+            # 実際のトークン数を再計算
+            final_tokens = len(encoding.encode(final_summary))
+            if tokens_used + final_tokens > max_tokens:
+                # トークンオーバーならこの話をスキップ
+                continue
+                
+            summaries.insert(0, final_summary)  # 順序を保持するため先頭に挿入
+            tokens_used += final_tokens
+            
+            # トークン制限に達したらループを抜ける
+            if tokens_used >= max_tokens * 0.9:  # 90%で余裕を持たせる
+                break
 
         return "\n\n".join(summaries)
 
@@ -236,7 +290,7 @@ class EasyModePipeline:
         return self.episode_rewriter.extract_spice(text)
 
     def _inject_spice_markers(self, text: str, spice_elements):
-        """マーカー注入（後方互換）"""
+        """マーカー注入（後方接続）"""
         return self.episode_rewriter.inject_markers(text, spice_elements)
 
     def _build_rewrite_prompt(self, content: str, improvements: list[str], spice_elements):

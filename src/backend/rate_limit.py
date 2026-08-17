@@ -1,6 +1,7 @@
 """Redis-backed sliding window rate limiter."""
 
 import time
+from typing import Optional
 
 from src.services.redis_cache import RedisCacheService
 
@@ -47,4 +48,5 @@ class RedisRateLimiter:
         await self.redis.zadd(key, {str(now): now})
         # Set expiry on the key to clean up abandoned clients
         await self.redis.expire(key, self.window_seconds + 1)
+
         return True

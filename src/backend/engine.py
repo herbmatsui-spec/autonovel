@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Any, Optional, Tuple
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
+<<<<<<< ours
     from prompts.manager import PromptManager
     from src.agents.audit import LogicalAuditor
     from src.agents.MarketingAgent import MarketingAgent
@@ -47,7 +48,7 @@ class UltimateHegemonyEngine:
         db: Optional["DatabaseManager"] = None,
         llm: Optional["LLMGenerateResultProxy"] = None,
         cooldown: Optional["AdaptiveCooldown"] = None,
-        plot_service: Optional["PlotService"] = None,
+plot_service: Optional["PlotService"] = None,
         deps: Optional[EngineDeps] = None,
         **legacy: Any,
     ):
@@ -58,6 +59,7 @@ class UltimateHegemonyEngine:
         self.cooldown = cooldown
         self._legacy = legacy
 
+<<<<<<< ours
         # EngineDeps から依存を設定（優先）、なければ個別引数互換は legacy 経由
         if deps is not None:
             self._planner = deps.planner
@@ -88,6 +90,22 @@ class UltimateHegemonyEngine:
             self._bible_agent = None
             self._plot_agent = None
             self._style_rag = None
+=======
+        # 明示的依存を属性として保存
+        self._planner = planner
+        self._writer = writer
+        self._pm = pm
+        self._ctx_mgr = ctx_mgr
+        self._formatter = formatter
+        self._validator = validator
+        self._auditor = auditor
+        self._narrative = narrative
+        self._critique = critique
+        self._marketing = marketing
+        self._bible_agent = bible_agent
+        self._plot_agent = plot_agent
+        self._style_rag = style_rag
+>>>>>>> theirs
 
         self.client = None
         self.current_ep_num = 0

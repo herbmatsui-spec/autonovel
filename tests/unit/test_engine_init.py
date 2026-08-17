@@ -1,5 +1,9 @@
 """
+<<<<<<< ours
 Unit tests for UltimateHegemonyEngine new constructor with EngineDeps.
+=======
+Unit tests for UltimateHegemonyEngine new constructor.
+>>>>>>> theirs
 """
 
 import warnings
@@ -8,7 +12,10 @@ from unittest.mock import MagicMock
 import pytest
 
 from src.backend.engine import UltimateHegemonyEngine
+<<<<<<< ours
 from src.backend.engine_deps import EngineDeps
+=======
+>>>>>>> theirs
 
 
 class TestEngineConstructor:
@@ -34,7 +41,17 @@ class TestEngineConstructor:
         mock_plot_agent = MagicMock()
         mock_style_rag = MagicMock()
 
+<<<<<<< ours
         deps = EngineDeps(
+=======
+        engine = UltimateHegemonyEngine(
+            api_key="test-key",
+            repo=mock_repo,
+            db=mock_db,
+            llm=mock_llm,
+            cooldown=mock_cooldown,
+            plot_service=mock_plot_service,
+>>>>>>> theirs
             planner=mock_planner,
             writer=mock_writer,
             pm=mock_pm,
@@ -50,6 +67,7 @@ class TestEngineConstructor:
             style_rag=mock_style_rag,
         )
 
+<<<<<<< ours
         engine = UltimateHegemonyEngine(
             api_key="test-key",
             repo=mock_repo,
@@ -60,6 +78,8 @@ class TestEngineConstructor:
             deps=deps,
         )
 
+=======
+>>>>>>> theirs
         assert engine.api_key == "test-key"
         assert engine.planner is mock_planner
         assert engine.writer is mock_writer
@@ -87,8 +107,19 @@ class TestEngineConstructor:
         mock_planner = MagicMock()
         mock_writer = MagicMock()
 
+<<<<<<< ours
         # Create engine with EngineDeps having some None values
         deps = EngineDeps(
+=======
+        # Create engine with explicit None for some params
+        engine = UltimateHegemonyEngine(
+            api_key="test-key",
+            repo=mock_repo,
+            db=mock_db,
+            llm=mock_llm,
+            cooldown=mock_cooldown,
+            plot_service=mock_plot_service,
+>>>>>>> theirs
             planner=mock_planner,
             writer=mock_writer,
             pm=None,
@@ -104,6 +135,7 @@ class TestEngineConstructor:
             style_rag=None,
         )
 
+<<<<<<< ours
         # Pass legacy deps via **legacy (simulating legacy caller)
         engine = UltimateHegemonyEngine(
             api_key="test-key",
@@ -125,6 +157,22 @@ class TestEngineConstructor:
             plot_agent="legacy-plot_agent",
             style_rag="legacy-style_rag",
         )
+=======
+        # Manually populate _legacy (simulating legacy caller)
+        engine._legacy = {
+            "pm": "legacy-pm",
+            "ctx_mgr": "legacy-ctx_mgr",
+            "formatter": "legacy-formatter",
+            "validator": "legacy-validator",
+            "auditor": "legacy-auditor",
+            "narrative": "legacy-narrative",
+            "critique": "legacy-critique",
+            "marketing": "legacy-marketing",
+            "bible_agent": "legacy-bible_agent",
+            "plot_agent": "legacy-plot_agent",
+            "style_rag": "legacy-style_rag",
+        }
+>>>>>>> theirs
 
         # Explicit ones should be returned directly
         assert engine.planner is mock_planner
@@ -152,6 +200,7 @@ class TestEngineConstructor:
                 assert "_legacy_dep" in str(warning.message)
 
     def test_legacy_dep_raises_for_missing_key(self):
+<<<<<<< ours
         """Test that _legacy_dep raises AttributeError for missing keys."""
         # Provide all required deps via EngineDeps to pass validation
         deps = EngineDeps(
@@ -173,6 +222,9 @@ class TestEngineConstructor:
             api_key="test-key",
             deps=deps,
         )
+=======
+        engine = UltimateHegemonyEngine(api_key="test-key")
+>>>>>>> theirs
 
         with pytest.raises(AttributeError) as exc_info:
             engine._legacy_dep("nonexistent")
@@ -180,6 +232,7 @@ class TestEngineConstructor:
         assert "nonexistent" in str(exc_info.value)
 
     def test_deprecation_warning_on_legacy_access(self):
+<<<<<<< ours
         engine = UltimateHegemonyEngine(
             api_key="test-key",
             planner=MagicMock(),
@@ -196,6 +249,10 @@ class TestEngineConstructor:
             style_rag=MagicMock(),
             **{"pm": "legacy-pm"},
         )
+=======
+        engine = UltimateHegemonyEngine(api_key="test-key", pm=None)
+        engine._legacy = {"pm": "legacy-pm"}
+>>>>>>> theirs
 
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
@@ -208,6 +265,7 @@ class TestEngineConstructor:
     def test_ai_api_and_llm_client_removed(self):
         """Test that deprecated ai_api and llm_client properties are removed."""
         mock_llm = MagicMock()
+<<<<<<< ours
 
         deps = EngineDeps(
             planner=MagicMock(),
@@ -230,17 +288,25 @@ class TestEngineConstructor:
             llm=mock_llm,
             deps=deps,
         )
+=======
+        engine = UltimateHegemonyEngine(api_key="test-key", llm=mock_llm)
+>>>>>>> theirs
 
         # These properties should no longer exist
         assert not hasattr(engine, 'ai_api')
         assert not hasattr(engine, 'llm_client')
+<<<<<<< ours
 
+=======
+        
+>>>>>>> theirs
         # llm should still be accessible
         assert engine.llm is mock_llm
 
     def test_generate_json_property(self):
         mock_llm = MagicMock()
         mock_llm.generate_json = "test-generate-json"
+<<<<<<< ours
 
         deps = EngineDeps(
             planner=MagicMock(),
@@ -263,12 +329,16 @@ class TestEngineConstructor:
             llm=mock_llm,
             deps=deps,
         )
+=======
+        engine = UltimateHegemonyEngine(api_key="test-key", llm=mock_llm)
+>>>>>>> theirs
 
         assert engine.generate_json == "test-generate-json"
 
     def test_dispose_method(self):
         mock_db = MagicMock()
         mock_db.engine = MagicMock()
+<<<<<<< ours
 
         deps = EngineDeps(
             planner=MagicMock(),
@@ -291,6 +361,9 @@ class TestEngineConstructor:
             db=mock_db,
             deps=deps,
         )
+=======
+        engine = UltimateHegemonyEngine(api_key="test-key", db=mock_db)
+>>>>>>> theirs
 
         engine.dispose()
 
@@ -299,6 +372,7 @@ class TestEngineConstructor:
     def test_dispose_method_no_engine_attribute(self):
         mock_db = MagicMock()
         del mock_db.engine  # Remove engine attribute
+<<<<<<< ours
 
         deps = EngineDeps(
             planner=MagicMock(),
@@ -321,10 +395,14 @@ class TestEngineConstructor:
             db=mock_db,
             deps=deps,
         )
+=======
+        engine = UltimateHegemonyEngine(api_key="test-key", db=mock_db)
+>>>>>>> theirs
 
         # Should not raise
         engine.dispose()
 
+<<<<<<< ours
     def test_validate_dependencies_passes_with_deps(self):
         """Test that validate_dependencies passes when all deps provided via EngineDeps."""
         mock_repo = MagicMock()
@@ -389,6 +467,8 @@ class TestEngineConstructor:
         assert "Missing required dependencies" in str(exc_info.value)
         assert "pm" in str(exc_info.value)
 
+=======
+>>>>>>> theirs
 
 class TestEngineContainerIntegration:
     """Test engine creation via DI container."""

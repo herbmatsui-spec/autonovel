@@ -112,4 +112,8 @@ class PlotGenerator:
         elif is_catharsis:
             return patterns["catharsis"]
         else:
+<<<<<<< ours
             return patterns["development"]
+=======
+            return patterns["development"]
+>>>>>>> theirs

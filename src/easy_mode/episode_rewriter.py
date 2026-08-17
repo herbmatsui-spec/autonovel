@@ -6,7 +6,11 @@ from __future__ import annotations
 
 import logging
 import re
+<<<<<<< ours
 from typing import Dict, List
+=======
+from typing import Any, Dict, List
+>>>>>>> theirs
 
 from src.easy_mode.models import RetryConfig
 from src.easy_mode.spice_guard import SpiceElement, create_spice_guard
@@ -121,4 +125,8 @@ class EpisodeRewriter:
 
     def cancel(self):
         """キャンセル"""
+<<<<<<< ours
         self._cancelled = True
+=======
+        self._cancelled = True
+>>>>>>> theirs

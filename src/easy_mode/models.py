@@ -85,4 +85,8 @@ class AuditResult:
     issues: List[str]
     improvements: List[str]
     needs_human_review: bool = False
+<<<<<<< ours
     details: Dict[str, Any] = field(default_factory=dict)
+=======
+    details: Dict[str, Any] = field(default_factory=dict)
+>>>>>>> theirs

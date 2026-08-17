@@ -8,6 +8,12 @@ from __future__ import annotations
 import re
 from typing import Any, Dict, List
 
+<<<<<<< ours
+=======
+from src.presets.loader import load_preset
+
+
+>>>>>>> theirs
 # ==========================================
 # 普遍的保護パターン（全ジャンル共通）
 # ==========================================
@@ -380,4 +386,8 @@ def get_universal_patterns() -> Dict[str, Dict[str, Any]]:
 
 def get_genre_patterns(genre: str) -> Dict[str, Dict[str, Any]]:
     """ジャンル別パターン定義を取得"""
+<<<<<<< ours
     return GENRE_PATTERNS.get(genre, {})
+=======
+    return GENRE_PATTERNS.get(genre, {})
+>>>>>>> theirs

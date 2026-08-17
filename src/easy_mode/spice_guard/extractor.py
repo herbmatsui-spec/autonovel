@@ -6,15 +6,26 @@ SpiceGuard 抽出ロジック (最適化版)
 
 from __future__ import annotations
 
+<<<<<<< ours
 from collections import defaultdict
 from typing import Dict, List, Set
 
 from src.easy_mode.models import SpiceElement
+=======
+import re
+from collections import defaultdict
+from typing import Any, Dict, List, Set
+
+>>>>>>> theirs
 from src.easy_mode.spice_guard.pattern_registry import (
     get_compiled_patterns,
     get_genre_patterns,
     get_universal_patterns,
 )
+<<<<<<< ours
+=======
+from src.easy_mode.models import SpiceElement
+>>>>>>> theirs
 from src.presets.loader import load_preset
 
 
@@ -127,7 +138,11 @@ class SpiceExtractor:
 
     def _extract_keywords_fast(self, text: str) -> List[SpiceElement]:
         """キーワード高速検索（単語境界を考慮した単純検索）
+<<<<<<< ours
 
+=======
+        
+>>>>>>> theirs
         より高度な Aho-Corasick 実装が必要な場合は
         `pyahocorasick` または `flashtext` ライブラリの導入を検討。
         ここでは標準ライブラリのみで実用的な高速化を行う。
@@ -169,7 +184,11 @@ class SpiceExtractor:
 
     def _is_word_boundary(self, text: str, pos: int, length: int) -> bool:
         """単語境界チェック（日本語混在テキスト向け緩い判定）
+<<<<<<< ours
 
+=======
+        
+>>>>>>> theirs
         日本語では単語境界が不明確なため、アルファベット/数字のみをチェック。
         日本語文字（ひらがな・カタカナ・漢字）は境界とみなさない。
         """
@@ -203,4 +222,8 @@ class SpiceExtractor:
         priority_order = {"critical": 0, "high": 1, "medium": 2, "low": 3}
         unique.sort(key=lambda x: (priority_order.get(x.priority, 4), x.position))
 
+<<<<<<< ours
         return unique
+=======
+        return unique
+>>>>>>> theirs

@@ -4,7 +4,11 @@
 
 from __future__ import annotations
 
+<<<<<<< ours
 from typing import Callable, Optional
+=======
+from typing import Any, Callable, Optional
+>>>>>>> theirs
 
 
 class ProgressReporter:
@@ -21,4 +25,8 @@ class ProgressReporter:
 
 def create_progress_reporter(callback: Optional[Callable[[str, int, int], None]] = None) -> ProgressReporter:
     """進捗報告ファクトリ"""
+<<<<<<< ours
     return ProgressReporter(callback)
+=======
+    return ProgressReporter(callback)
+>>>>>>> theirs

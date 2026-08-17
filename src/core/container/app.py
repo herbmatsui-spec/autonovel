@@ -184,7 +184,7 @@ class AppContainer2(InfraContainer):
         llm=llm,
         cooldown=InfraContainer.cooldown,
         plot_service=plot_service,
-        deps=engine_deps,
+deps=engine_deps,
     )
     engine_facade = providers.Factory["EngineFacade"](
         "src.backend.engine_facade.EngineFacade",
