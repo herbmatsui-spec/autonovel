@@ -5,7 +5,7 @@ from typing import Any, Optional, Union
 
 from jinja2 import Environment
 
-from config import BASE_DIR
+from config.settings import BASE_DIR
 from prompts.builders.audit import AuditPromptBuilder
 from prompts.builders.narrative import NarrativePromptBuilder
 from prompts.builders.utility import UtilityPromptBuilder
@@ -30,8 +30,8 @@ class PromptManager:
     ):
         # テストフィクスチャなどで jinja_env が第一引数に渡されるケースへの対応
         if isinstance(prompts_dir, Environment):
-            actual_prompts_dir = "prompts"
-            actual_jinja_env = prompts_dir
+            actual_prompts_dir: str = "prompts"
+            actual_jinja_env: Environment = prompts_dir
         else:
             actual_prompts_dir = prompts_dir
             actual_jinja_env = jinja_env

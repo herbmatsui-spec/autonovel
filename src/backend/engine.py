@@ -13,7 +13,6 @@ from typing import TYPE_CHECKING, Any, Optional, Tuple
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-<<<<<<< ours
     from prompts.manager import PromptManager
     from src.agents.audit import LogicalAuditor
     from src.agents.MarketingAgent import MarketingAgent
@@ -32,8 +31,6 @@ if TYPE_CHECKING:
     from src.services.bible_service import WorldBibleGenerator
     from src.services.plot_service import PlotService
 
-from src.backend.engine_deps import EngineDeps
-
 
 # ==========================================
 # UltimateHegemonyEngine（メインエンジン）
@@ -48,8 +45,21 @@ class UltimateHegemonyEngine:
         db: Optional["DatabaseManager"] = None,
         llm: Optional["LLMGenerateResultProxy"] = None,
         cooldown: Optional["AdaptiveCooldown"] = None,
-plot_service: Optional["PlotService"] = None,
-        deps: Optional[EngineDeps] = None,
+        plot_service: Optional["PlotService"] = None,
+        planner: Optional["PlanningAgent"] = None,
+        writer: Optional["WritingAgent"] = None,
+        pm: Optional["PromptManager"] = None,
+        ctx_mgr: Optional["ContextManager"] = None,
+        formatter: Optional["TextFormatter"] = None,
+        validator: Optional["TextFormatter"] = None,
+        auditor: Optional["LogicalAuditor"] = None,
+        narrative: Optional["NarrativeController"] = None,
+        critique: Optional["CritiqueAgent"] = None,
+        marketing: Optional["MarketingAgent"] = None,
+        bible_agent: Optional["WorldBibleGenerator"] = None,
+        plot_agent: Optional["PlotAgent"] = None,
+        style_rag: Optional["StyleRagManager"] = None,
+        deps: Optional["EngineDeps"] = None,
         **legacy: Any,
     ):
         self.api_key = api_key
@@ -59,8 +69,7 @@ plot_service: Optional["PlotService"] = None,
         self.cooldown = cooldown
         self._legacy = legacy
 
-<<<<<<< ours
-        # EngineDeps から依存を設定（優先）、なければ個別引数互換は legacy 経由
+        # EngineDeps から依存を設定（優先）、個別引数で上書き可能
         if deps is not None:
             self._planner = deps.planner
             self._writer = deps.writer
@@ -76,7 +85,6 @@ plot_service: Optional["PlotService"] = None,
             self._plot_agent = deps.plot_agent
             self._style_rag = deps.style_rag
         else:
-            # 後方互換: 明示的引数は legacy 経由で設定される想定（従来通り _legacy_dep で取得）
             self._planner = None
             self._writer = None
             self._pm = None
@@ -90,22 +98,34 @@ plot_service: Optional["PlotService"] = None,
             self._bible_agent = None
             self._plot_agent = None
             self._style_rag = None
-=======
-        # 明示的依存を属性として保存
-        self._planner = planner
-        self._writer = writer
-        self._pm = pm
-        self._ctx_mgr = ctx_mgr
-        self._formatter = formatter
-        self._validator = validator
-        self._auditor = auditor
-        self._narrative = narrative
-        self._critique = critique
-        self._marketing = marketing
-        self._bible_agent = bible_agent
-        self._plot_agent = plot_agent
-        self._style_rag = style_rag
->>>>>>> theirs
+
+        # 個別引数で上書き（明示的に渡された場合のみ）
+        if planner is not None:
+            self._planner = planner
+        if writer is not None:
+            self._writer = writer
+        if pm is not None:
+            self._pm = pm
+        if ctx_mgr is not None:
+            self._ctx_mgr = ctx_mgr
+        if formatter is not None:
+            self._formatter = formatter
+        if validator is not None:
+            self._validator = validator
+        if auditor is not None:
+            self._auditor = auditor
+        if narrative is not None:
+            self._narrative = narrative
+        if critique is not None:
+            self._critique = critique
+        if marketing is not None:
+            self._marketing = marketing
+        if bible_agent is not None:
+            self._bible_agent = bible_agent
+        if plot_agent is not None:
+            self._plot_agent = plot_agent
+        if style_rag is not None:
+            self._style_rag = style_rag
 
         self.client = None
         self.current_ep_num = 0

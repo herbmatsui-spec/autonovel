@@ -28,12 +28,22 @@ class AppContainer2(InfraContainer):
     #     packages=["src"]
     # )
 
-    api_key = providers.Callable(
-        lambda: getattr(get_settings(), "gemini_api_key", None)
-        or os.environ.get("GEMINI_API_KEY")
-        or get_settings().openai_api_key
-        or "DUMMY"
-    )
+    def _resolve_api_key() -> str:
+        """API キーを解決。未設定なら明示的エラー"""
+        settings = get_settings()
+        key = (
+            getattr(settings, "gemini_api_key", None)
+            or os.environ.get("GEMINI_API_KEY")
+            or settings.openai_api_key
+        )
+        if not key:
+            raise RuntimeError(
+                "API キーが設定されていません。環境変数 GEMINI_API_KEY または "
+                "設定ファイルの gemini_api_key / openai_api_key を指定してください。"
+            )
+        return key
+
+    api_key = providers.Callable(_resolve_api_key)
 
     genai_client = providers.Singleton["genai.Client"](
         "src.core.llm_gateway.create_genai_client",
@@ -184,7 +194,7 @@ class AppContainer2(InfraContainer):
         llm=llm,
         cooldown=InfraContainer.cooldown,
         plot_service=plot_service,
-deps=engine_deps,
+        deps=engine_deps,
     )
     engine_facade = providers.Factory["EngineFacade"](
         "src.backend.engine_facade.EngineFacade",

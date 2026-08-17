@@ -241,9 +241,11 @@ async def test_engine_validate_tension_deviation(
 @pytest.mark.parametrize("index", range(10))
 def test_app_container_resolves_engine(index):
     # AppContainer から正しくインスタンス解決できるか
+    import os
+    os.environ.setdefault("GEMINI_API_KEY", "test-key-for-dev")
     from src.core.container import AppContainer
 
     container = AppContainer()
     engine = container.engine()
     assert isinstance(engine, UltimateHegemonyEngine)
-    assert engine.api_key == "DUMMY"  # AppContainer uses DUMMY
+    assert engine.api_key == "test-key-for-dev"

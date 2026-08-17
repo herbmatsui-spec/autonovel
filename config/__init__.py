@@ -82,8 +82,35 @@ from .narrative import (
     TRAGEDY_VARIATIONS,
 )
 
-# 2. project_context から新しいシステム中枢クラスと定数を上書きエクスポート
-from .project_context import PROMPT_TEMPLATES, get_config, set_config
+# 2. settings から新しいシステム中枢クラスと定数をエクスポート
+from .settings import Settings, get_settings, reset_settings, Settings as GlobalConfigModel
+
+# PROMPT_TEMPLATES は settings で定義されていないため、後方互換用にここで定義
+from .settings import BASE_DIR, get_settings
+PROMPT_TEMPLATES: dict = {}
+
+def get_settings_alias() -> "Settings":
+    """後方互換: get_config() のエイリアス (非推奨)"""
+    import warnings
+    warnings.warn(
+        "config.get_config() は非推奨です。config.settings.get_settings() を使用してください。",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return get_settings()
+
+def set_config_alias(config) -> None:
+    """後方互換: set_config() のエイリアス (非推奨)"""
+    import warnings
+    warnings.warn(
+        "config.set_config() は非推奨です。設定の変更は環境変数または .env ファイルで行ってください。",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    # 設定の変更は環境変数で行うため、ここでは何もしない
+
+get_config = get_settings_alias
+set_config = set_config_alias
 from .styles import (
     DAILY_MICRO_HOOKS,
     FORBIDDEN_SUMMARY_PATTERNS,

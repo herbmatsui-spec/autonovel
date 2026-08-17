@@ -6,11 +6,7 @@ from __future__ import annotations
 
 import logging
 import re
-<<<<<<< ours
-from typing import Dict, List
-=======
-from typing import Any, Dict, List
->>>>>>> theirs
+from typing import Any, Dict, List, Optional
 
 from src.easy_mode.models import RetryConfig
 from src.easy_mode.spice_guard import SpiceElement, create_spice_guard
@@ -97,7 +93,7 @@ class EpisodeRewriter:
         return self._spice_guard.extract_spice(text)
 
     async def _generate_with_retry(
-        self, prompt: str, variables: Dict, operation: str = "generate"
+        self, prompt: str, variables: Dict[str, Any], operation: str = "generate"
     ) -> str:
         """LLM生成をリトライ付きで実行"""
         last_error: Exception = Exception("Unknown error")
@@ -123,10 +119,6 @@ class EpisodeRewriter:
         logger.error(f"{operation} failed after {self.retry_config.max_retries} attempts: {last_error}")
         raise last_error
 
-    def cancel(self):
+    def cancel(self) -> None:
         """キャンセル"""
-<<<<<<< ours
         self._cancelled = True
-=======
-        self._cancelled = True
->>>>>>> theirs

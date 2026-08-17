@@ -6,14 +6,11 @@ SpiceGuard パターンレジストリ
 from __future__ import annotations
 
 import re
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Pattern
 
-<<<<<<< ours
-=======
 from src.presets.loader import load_preset
 
 
->>>>>>> theirs
 # ==========================================
 # 普遍的保護パターン（全ジャンル共通）
 # ==========================================
@@ -340,16 +337,16 @@ GENRE_PATTERNS: Dict[str, Dict[str, Dict[str, Any]]] = {
 class CompiledPatternCache:
     """正規表現コンパイル結果のキャッシュ"""
 
-    def __init__(self):
-        self._cache: Dict[str, Dict[str, List[re.Pattern]]] = {}
+    def __init__(self) -> None:
+        self._cache: Dict[str, Dict[str, List[Pattern[str]]]] = {}
 
-    def get(self, genre: str) -> Dict[str, List[re.Pattern]]:
+    def get(self, genre: str) -> Dict[str, List[Pattern[str]]]:
         if genre not in self._cache:
             self._cache[genre] = self._compile_for_genre(genre)
         return self._cache[genre]
 
-    def _compile_for_genre(self, genre: str) -> Dict[str, List[re.Pattern]]:
-        compiled: Dict[str, List[re.Pattern]] = {}
+    def _compile_for_genre(self, genre: str) -> Dict[str, List[Pattern[str]]]:
+        compiled: Dict[str, List[Pattern[str]]] = {}
 
         # 普遍パターン
         for pattern_type, config in UNIVERSAL_PATTERNS.items():
@@ -365,7 +362,7 @@ class CompiledPatternCache:
 
         return compiled
 
-    def clear(self):
+    def clear(self) -> None:
         """キャッシュクリア（テスト用）"""
         self._cache.clear()
 
@@ -386,8 +383,4 @@ def get_universal_patterns() -> Dict[str, Dict[str, Any]]:
 
 def get_genre_patterns(genre: str) -> Dict[str, Dict[str, Any]]:
     """ジャンル別パターン定義を取得"""
-<<<<<<< ours
     return GENRE_PATTERNS.get(genre, {})
-=======
-    return GENRE_PATTERNS.get(genre, {})
->>>>>>> theirs

@@ -4,7 +4,7 @@ config/erotic_parameters.py
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List
+from typing import Dict, List, Any
 
 DEFAULT_SENSORY_WEIGHTS = {
     "touch": 80,
@@ -42,7 +42,7 @@ class EroticParameters:
     use_video_patterns: bool = True
     video_pattern_preference: List[str] = field(default_factory=list)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """パラメータの-validation"""
         if not 0 <= self.base_intensity <= 5:
             raise ValueError("base_intensity must be between 0 and 5")
@@ -119,7 +119,7 @@ class EroticParameters:
         return min(base + depth_factor + intensity_factor, 20)
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "EroticParameters":
+    def from_dict(cls, data: Dict[str, Any]) -> "EroticParameters":
         """辞書からパラメータを生成する。"""
         return cls(
             enabled=data.get("enabled", False),
@@ -132,7 +132,7 @@ class EroticParameters:
             video_pattern_preference=data.get("video_pattern_preference", []),
         )
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> Dict[str, Any]:
         """パラメータを辞書に変換する。"""
         return {
             "enabled": self.enabled,

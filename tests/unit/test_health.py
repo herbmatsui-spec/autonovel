@@ -165,9 +165,9 @@ class TestCheckLLMGateway:
         assert result.status == HealthStatus.NOT_CONFIGURED
 
     @pytest.mark.asyncio
-    async def test_check_llm_gateway_dummy_key(self):
-        """DUMMY キー時"""
-        result = await check_llm_gateway("DUMMY")
+    async def test_check_llm_gateway_invalid_key(self):
+        """無効なキー時 (空文字等)"""
+        result = await check_llm_gateway("")
         assert result.status == HealthStatus.NOT_CONFIGURED
 
     @pytest.mark.asyncio

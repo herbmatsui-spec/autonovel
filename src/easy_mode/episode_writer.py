@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from src.easy_mode.models import RetryConfig
 
@@ -86,7 +86,7 @@ class EpisodeWriter:
         """
 
     async def _generate_with_retry(
-        self, prompt: str, variables: Dict, operation: str = "generate"
+        self, prompt: str, variables: Dict[str, Any], operation: str = "generate"
     ) -> str:
         """LLM生成をリトライ付きで実行"""
         last_error: Exception = Exception("Unknown error")
@@ -112,10 +112,6 @@ class EpisodeWriter:
         logger.error(f"{operation} failed after {self.retry_config.max_retries} attempts: {last_error}")
         raise last_error
 
-    def cancel(self):
+    def cancel(self) -> None:
         """キャンセル"""
-<<<<<<< ours
         self._cancelled = True
-=======
-        self._cancelled = True
->>>>>>> theirs

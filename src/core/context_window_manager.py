@@ -10,7 +10,7 @@ v4.0: 商用化に向けたコンテキストウィンドウ最適化
 import logging
 from typing import Any, Dict, Optional
 
-from config import get_config
+from config.settings import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +41,7 @@ class ContextWindowManager:
     }
 
     def __init__(self, model_name: Optional[str] = None):
-        self.config = get_config()
+        self.config = get_settings()
         self.model_name = model_name or self.config.model_writing
         self.target_ratio = getattr(self.config, "context_window_target_ratio", 0.85)
         self.min_reserve = getattr(self.config, "context_window_min_reserve", 2000)

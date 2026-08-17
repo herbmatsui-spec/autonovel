@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
 
 from src.easy_mode.models import AuditResult
 
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class EpisodeAuditor:
     """監査エージェント統合呼び出し・スコア正規化"""
 
-    def __init__(self, engine_auditor, target_audit_score: float = 95.0):
+    def __init__(self, engine_auditor: Any, target_audit_score: float = 95.0):
         self.engine_auditor = engine_auditor
         self.target_audit_score = target_audit_score
         self._cancelled = False
@@ -56,10 +56,6 @@ class EpisodeAuditor:
                 details={},
             )
 
-    def cancel(self):
+    def cancel(self) -> None:
         """キャンセル"""
-<<<<<<< ours
         self._cancelled = True
-=======
-        self._cancelled = True
->>>>>>> theirs

@@ -16,7 +16,7 @@ class SeriesFinalizer:
         self.preset = preset
 
     async def finalize(
-        self, bible: Dict, plot_outline: List, episodes: List[EpisodeResult]
+        self, bible: Dict[str, Any], plot_outline: List[Dict[str, Any]], episodes: List[EpisodeResult]
     ) -> Dict[str, Any]:
         """シリーズ完結処理・メタデータ生成"""
         total_words = sum(ep.word_count for ep in episodes)
@@ -39,8 +39,4 @@ class SeriesFinalizer:
             "synopsis": synopsis,
             "tags": marketing.get("tags", [])[:10],
             "catchphrase": marketing.get("catchphrase_templates", [""])[0],
-<<<<<<< ours
         }
-=======
-        }
->>>>>>> theirs

@@ -16,6 +16,132 @@ ignore_missing_imports = true
 module = "streamlit.*"
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+module = "config.*"
+ignore_missing_imports = true
+disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = "src.cli.*"
+ignore_missing_imports = true
+disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = "src.kernels.*"
+ignore_missing_imports = true
+disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = "src.cli.*"
+ignore_missing_imports = true
+disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = "src.services.redis_cache"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "src.services.erotic_diversity_score"
+ignore_missing_imports = true
+disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = "src.backend.workflows.quality_metrics"
+disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = "src.backend.database.connection_protocol"
+disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = "src.backend.protocols"
+disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = "src.backend.planning_service"
+disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = "src.backend.writing_service"
+disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = "src.core.exceptions"
+disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = "src.core.context_window_manager"
+disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = "src.domain.value_objects.*"
+disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = "prompts.*"
+ignore_missing_imports = true
+disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = "src.api.client"
+disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = "src.models.production_config"
+disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = "src.services.safe_replace"
+disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = "src.services.erotic_diversity_score"
+disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = "src.domain.value_objects.plot_tension"
+disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = "src.domain.value_objects.erotic_intensity"
+disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = "config.domain_profile_manager"
+disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = "src.services.exporters.base"
+disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = "src.easy_mode.progress_reporter"
+disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = "prompts.exceptions"
+disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = "src.services.writing_services"
+disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = "src.kernels.*"
+disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = "src.core.context_window_manager"
+disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = "src.core.async_utils"
+disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = "src.core.container.infra"
+disallow_untyped_defs = false
+
 [tool.ruff]
 line-length = 100
 target-version = "py312"

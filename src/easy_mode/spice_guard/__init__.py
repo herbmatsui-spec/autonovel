@@ -4,10 +4,7 @@ SpiceGuard - 面白さの尖りを自動保護するリライト支援
 
 from __future__ import annotations
 
-<<<<<<< ours
-from typing import List
-
-from src.easy_mode.models import SpiceElement
+from typing import Any, Dict, List
 
 from .extractor import SpiceExtractor
 from .marker import RewritePromptBuilder, SpiceMarkerInjector
@@ -17,14 +14,7 @@ from .pattern_registry import (
     get_genre_patterns,
     get_universal_patterns,
 )
-=======
-from typing import Any, Dict, List
-
-from .extractor import SpiceExtractor
-from .marker import RewritePromptBuilder, SpiceMarkerInjector
-from .pattern_registry import CompiledPatternCache, get_compiled_patterns, get_genre_patterns, get_universal_patterns
 from src.easy_mode.models import SpiceElement
->>>>>>> theirs
 
 
 class SpiceGuard:
@@ -77,8 +67,4 @@ __all__ = [
     "get_compiled_patterns",
     "get_universal_patterns",
     "get_genre_patterns",
-<<<<<<< ours
 ]
-=======
-]
->>>>>>> theirs

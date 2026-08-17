@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union, overload
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union, overload, Protocol, cast
 
 from src.core.llm_clients import BaseLLMClient
 from src.core.llm_clients.gemini import GeminiApiClient
@@ -12,17 +12,23 @@ from src.models.base import LLMRequestOptions
 logger = StructuredLogger(__name__)
 
 
-def create_genai_client(api_key: str):
-    """Gemini API クライアントを作成する"""
-    from google import genai
+class UsageProtocol(Protocol):
+    """Protocol for usage objects that have token count attributes."""
+    prompt_token_count: int
+    candidates_token_count: int
 
-    return genai.Client(api_key=api_key)
+
+def create_genai_client(api_key: str) -> Client:
+    """Gemini API クライアントを作成する"""
+    from google.genai import Client
+
+    return Client(api_key=api_key)
 
 
 class LLMProviderFactory:
     """LLMプロバイダの抽象化"""
 
-    def __init__(self, genai_client, cooldown):
+    def __init__(self, genai_client: Client, cooldown: float):
         self.genai_client = genai_client
         self.cooldown = cooldown
 
@@ -60,10 +66,10 @@ class LLMProviderFactory:
 class SemanticCacheManager:
     """意味的キャッシュマネージャ"""
 
-    def __init__(self, vector_store=None):
+    def __init__(self, vector_store: object = None):
         self.vector_store = vector_store
 
-    def get(self, key: str):
+    def get(self, key: str) -> Optional[object]:
         try:
             if self.vector_store and hasattr(self.vector_store, "get"):
                 return self.vector_store.get(key)
@@ -72,7 +78,7 @@ class SemanticCacheManager:
             logger.warning(f"Cache get failed for key={key}: {e}")
             return None
 
-    def set(self, key: str, value: Any, ttl: int = 3600):
+    def set(self, key: str, value: object, ttl: int = 3600) -> None:
         try:
             if self.vector_store and hasattr(self.vector_store, "set"):
                 self.vector_store.set(key, value, ttl)
@@ -83,17 +89,21 @@ class SemanticCacheManager:
 class LLMGenerateResultProxy:
     """LLM生成結果のプロキシ"""
 
-    def __init__(self, llm_factory=None, factory=None):
-        self.llm_factory = llm_factory or factory
+    def __init__(self, llm_factory: Optional["LLMProviderFactory"] = None, factory: Optional["LLMProviderFactory"] = None):
+        self.llm_factory: Optional["LLMProviderFactory"] = llm_factory or factory
 
     def get_client(self, model_name: str = "gemini") -> BaseLLMClient:
-        return self.llm_factory.get_client(model_name)
+        factory = self.llm_factory
+        if factory is None:
+            raise ValueError("llm_factory is not set")
+        return factory.get_client(model_name)
 
     @staticmethod
-    def _normalize_response(response: Any) -> Any:
+    def _normalize_response(response: object) -> object:
+        """Normalize various response formats to a consistent _Response object."""
         class _Response:
             def __init__(
-                self, success: bool, content: Any = None, metadata: Any = None, usage: Any = None
+                self, success: bool, content: object = None, metadata: object = None, usage: object = None
             ):
                 self.success = success
                 self.content = content
@@ -110,11 +120,13 @@ class LLMGenerateResultProxy:
         return response
 
     @staticmethod
-    def _usage_metric(usage: Any, key: str, default: int = 0) -> int:
+    def _usage_metric(usage: object, key: str, default: int = 0) -> int:
+        """Extract a metric from usage object (dict or object with attributes)."""
         if usage is None:
             return default
         if isinstance(usage, dict):
-            return usage.get(key, default)
+            # Dict with str keys and int values for token counts
+            return cast(int, usage.get(key, default))
         return getattr(usage, key, default)
 
     @overload
@@ -127,7 +139,7 @@ class LLMGenerateResultProxy:
         temp: float = 0.7,
         model_name: Optional[str] = None,
         stream_callback: Optional[Callable[[str], None]] = None,
-        **kwargs: Any,
+        **kwargs: Dict[str, object],
     ) -> GenerateResult: ...
 
     @overload
@@ -140,7 +152,7 @@ class LLMGenerateResultProxy:
         temp: float = 0.7,
         model_name: Optional[str] = None,
         stream_callback: Optional[Callable[[str], None]] = None,
-        **kwargs: Any,
+        **kwargs: Dict[str, object],
     ) -> GenerateResult: ...
 
     async def generate_json(
@@ -191,7 +203,6 @@ class LLMGenerateResultProxy:
         )
 
     @overload
-<<<<<<< ours
     async def generate_text(
         self,
         purpose_or_request: LLMRequestOptions,
@@ -200,7 +211,7 @@ class LLMGenerateResultProxy:
         temp: float = 0.7,
         model_name: Optional[str] = None,
         stream_callback: Optional[Callable[[str], None]] = None,
-        **kwargs: Any,
+        **kwargs: Dict[str, object],
     ) -> GenerateResult: ...
 
     @overload
@@ -212,45 +223,18 @@ class LLMGenerateResultProxy:
         temp: float = 0.7,
         model_name: Optional[str] = None,
         stream_callback: Optional[Callable[[str], None]] = None,
-        **kwargs: Any,
+        **kwargs: Dict[str, object],
     ) -> GenerateResult: ...
 
     async def generate_text(
         self,
-=======
-    async def generate_text(
-        self,
-        purpose_or_request: LLMRequestOptions,
-        prompt: str = "",
-        system_instruction: Optional[str] = None,
-        temp: float = 0.7,
-        model_name: Optional[str] = None,
-        stream_callback: Optional[Callable[[str], None]] = None,
-        **kwargs: Any,
-    ) -> GenerateResult: ...
-
-    @overload
-    async def generate_text(
-        self,
-        purpose_or_request: str = "writing",
-        prompt: str = "",
-        system_instruction: Optional[str] = None,
-        temp: float = 0.7,
-        model_name: Optional[str] = None,
-        stream_callback: Optional[Callable[[str], None]] = None,
-        **kwargs: Any,
-    ) -> GenerateResult: ...
-
-    async def generate_text(
-        self,
->>>>>>> theirs
         purpose_or_request: Union[str, LLMRequestOptions] = "writing",
         prompt: str = "",
         system_instruction: Optional[str] = None,
         temp: float = 0.7,
         model_name: Optional[str] = None,
         stream_callback: Optional[Callable[[str], None]] = None,
-        **kwargs: Any,
+        **kwargs: Dict[str, object],
     ) -> GenerateResult:
         from src.llm.model_router import select_model
 
@@ -285,37 +269,5 @@ class LLMGenerateResultProxy:
                 "calls": 1,
             },
         )
-
-<<<<<<< ours
-=======
-    @staticmethod
-    def _normalize_response(response: Any) -> Any:
-        class _Response:
-            def __init__(
-                self, success: bool, content: Any = None, metadata: Any = None, usage: Any = None
-            ):
-                self.success = success
-                self.content = content
-                self.metadata = metadata
-                self.usage = usage
-
-        if isinstance(response, tuple):
-            if len(response) == 2:
-                content, usage = response
-                return _Response(success=True, content=content, usage=usage)
-            if len(response) == 3:
-                metadata, content, usage = response
-                return _Response(success=True, content=content, metadata=metadata, usage=usage)
-        return response
-
-    @staticmethod
-    def _usage_metric(usage: Any, key: str, default: int = 0) -> int:
-        if usage is None:
-            return default
-        if isinstance(usage, dict):
-            return usage.get(key, default)
-        return getattr(usage, key, default)
-
->>>>>>> theirs
 
 LLMGateway = LLMGenerateResultProxy

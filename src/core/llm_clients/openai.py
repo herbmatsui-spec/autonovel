@@ -154,3 +154,125 @@ class OpenAIApiClient(BaseLLMClient):
             f"✅ OpenAI Success: model={current_model}, len={len(prompt)}, dur={duration:.2f}s"
         )
         return metadata, story, usage
+
+    @with_llm_retry()
+    async def generate_text(
+        self,
+        model_name: str,
+        prompt: str,
+        system_instruction: Optional[str] = None,
+        temp: float = 0.7,
+        max_retries: int = 5,
+        stream_callback: Optional[Callable[[str], None]] = None,
+        retry_state: Optional[Any] = None,
+        nsfw_mode: bool = False,
+    ) -> Tuple[str, Any]:
+        """テキスト生成。戻り値は (text, usage)。"""
+        import openai
+
+        retry_state = retry_state or RetryState()
+        current_temp = retry_state.temp if retry_state else temp
+        current_model = retry_state.model_name if retry_state else model_name
+
+        from config.project_context import ProjectContext
+
+        base_url = ProjectContext.get_setting("openai_base_url") or "https://api.openai.com/v1"
+        api_key = ProjectContext.get_setting("openai_api_key") or "dummy"
+        client = openai.AsyncOpenAI(base_url=base_url, api_key=api_key)
+
+        current_temp = retry_state.temp if retry_state else temp
+        current_model = retry_state.model_name if retry_state else model_name
+        error_feedback = retry_state.error_feedback if retry_state else ""
+        top_p = ProjectContext.get_setting("inference_top_p", 0.95)
+        top_k = ProjectContext.get_setting("inference_top_k", 64)
+
+        system_sandbox = ProjectContext.get_setting("system_sandbox", "")
+
+        system_content = ""
+        if system_sandbox:
+            system_content += system_sandbox + "\n\n"
+        if system_instruction:
+            system_content += system_instruction
+
+        messages = []
+        if system_content:
+            messages.append({"role": "system", "content": system_content})
+        messages.append({"role": "user", "content": prompt})
+
+        if error_feedback:
+            messages[-1]["content"] = (
+                f"【🚨出力形式エラー報告🚨】\n前回の出力に以下の不備がありました: {error_feedback}\n\n{prompt}"
+            )
+
+        start_time = time.time()
+        try:
+            from src.core.async_utils import safe_timeout
+
+            async with safe_timeout(120.0):
+                response = await client.chat.completions.create(
+                    model=current_model,
+                    messages=messages,
+                    temperature=current_temp,
+                    top_p=top_p,
+                    extra_body={"top_k": top_k} if top_k else None,
+                    stream=stream_callback is not None,
+                )
+        except asyncio.TimeoutError as e:
+            raise TimeoutError(f"OpenAI API timed out after 120s: {e}")
+        except Exception as e:
+            err_msg = str(e).lower()
+            if any(
+                x in err_msg
+                for x in [
+                    "401",
+                    "403",
+                    "unauthorized",
+                    "invalid key",
+                    "api key",
+                    "404",
+                    "not found",
+                    "400",
+                    "bad request",
+                ]
+            ):
+                logger.error(f"❌ Unrecoverable OpenAI API error: {e}")
+                raise LLMUnrecoverableError(f"Unrecoverable OpenAI API error: {e}") from e
+            if any(x in err_msg for x in ["429", "quota", "too many requests"]):
+                from src.core.exceptions import LLMTemporaryError
+
+                raise LLMTemporaryError(f"OpenAI Rate Limit: {e}") from e
+            raise e
+
+        if stream_callback:
+            # Streaming response
+            full_text = ""
+            async for chunk in response:
+                if chunk.choices[0].delta.content:
+                    text = chunk.choices[0].delta.content
+                    full_text += text
+                    try:
+                        stream_callback(text)
+                    except Exception as e:
+                        logger.warning(f"Stream callback failed: {e}")
+            usage = None  # Streaming doesn't provide usage easily
+            return full_text, usage
+        else:
+            full_text = response.choices[0].message.content or ""
+            duration = time.time() - start_time
+
+            usage_metadata = response.choices[0].usage
+            prompt_tokens = usage_metadata.prompt_tokens if usage_metadata else 0
+            completion_tokens = usage_metadata.completion_tokens if usage_metadata else 0
+
+            class MockUsage:
+                def __init__(self, p, c):
+                    self.prompt_token_count = p
+                    self.candidates_token_count = c
+
+            usage = MockUsage(prompt_tokens, completion_tokens)
+
+            self.cooldown.on_success()
+            logger.info(
+                f"✅ OpenAI Text Success: model={current_model}, len={len(prompt)}, dur={duration:.2f}s"
+            )
+            return full_text, usage

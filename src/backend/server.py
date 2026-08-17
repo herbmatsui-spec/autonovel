@@ -79,6 +79,15 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"OpenTelemetry initialization failed: {e}")
 
+    # API キーバリデーション（起動時必須チェック）
+    try:
+        from config.settings import validate_api_keys
+        validate_api_keys()
+        logger.info("API キーバリデーション成功")
+    except RuntimeError as e:
+        logger.critical(f"API キー設定エラー: {e}")
+        raise
+
     try:
         db_manager = AppContainer.db()
         init_db(db_manager.db_path)

@@ -17,7 +17,7 @@ class SpiceElement:
     text: str  # 元のテキスト
     position: int  # 文字位置
     priority: str  # "critical", "high", "medium", "low"
-    metadata: Dict = field(default_factory=dict)
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -62,6 +62,8 @@ class PipelineConfig:
     target_audit_score: float = 95.0
     enable_spice_guard: bool = True
     progress_callback: Optional[Callable[[str, int, int], None]] = None
+    context_window: int = 128000
+    context_window_min_reserve: int = 2000
 
 
 @dataclass
@@ -85,8 +87,4 @@ class AuditResult:
     issues: List[str]
     improvements: List[str]
     needs_human_review: bool = False
-<<<<<<< ours
     details: Dict[str, Any] = field(default_factory=dict)
-=======
-    details: Dict[str, Any] = field(default_factory=dict)
->>>>>>> theirs

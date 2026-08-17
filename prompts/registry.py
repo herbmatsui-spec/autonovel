@@ -12,16 +12,13 @@ from jinja2 import DictLoader, Environment, FileSystemLoader, select_autoescape
 from jinja2.exceptions import TemplateError, UndefinedError
 
 from prompts.metrics import IMetricsCollector, InMemoryCollector
-from config import PROMPT_TEMPLATES
-from prompts.exceptions import (
-PromptDbError,
-PromptRenderingError,
-from config import PROMPT_TEMPLATES
+from config.project_context import PROMPT_TEMPLATES
+from config.settings import BASE_DIR
+from prompts.exceptions import PromptDbError, PromptRenderingError, PromptTemplateNotFoundError
 from prompts.schemas import PromptContext
 from src.domain.types import BookId
-from prompts.exceptions import (
-    PromptDbError,
 
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -87,7 +84,7 @@ class PromptRegistry:
 
         self.jinja_env = Environment(loader=self.fs_loader, autoescape=select_autoescape())
 
-    def _update_cache_lru(self, template_name: str, cached_template: CachedTemplate):
+    def _update_cache_lru(self, template_name: str, cached_template: CachedTemplate) -> None:
         """LRUキャッシュを更新し、最大サイズを超えた場合は最古のエントリを削除する。"""
         if template_name in self._template_cache:
             self._template_cache.move_to_end(template_name)
@@ -95,7 +92,7 @@ class PromptRegistry:
         if len(self._template_cache) > self._cache_max_size:
             self._template_cache.popitem(last=False)
 
-    def record_hit(self, template_name: str, duration_ms: float = 0.0, error: bool = False):
+    def record_hit(self, template_name: str, duration_ms: float = 0.0, error: bool = False) -> None:
         """Record a template access hit with timing and error info."""
         self.metrics_collector.record_hit(template_name, duration_ms, error)
 
@@ -103,11 +100,11 @@ class PromptRegistry:
         """Get current metrics snapshot."""
         return {k: v.__dict__ for k, v in self.metrics_collector.get_metrics().items()}
 
-    def reset_metrics(self):
+    def reset_metrics(self) -> None:
         """Reset all metrics."""
         self.metrics_collector.reset_metrics()
 
-    def clear_cache(self):
+    def clear_cache(self) -> None:
         """全キャッシュをクリアする。"""
         self._template_cache.clear()
         logger.info("PromptRegistry cache cleared.")
@@ -280,7 +277,7 @@ class PromptRegistry:
                 from src.backend.database.uow import UnitOfWork
 
                 async with UnitOfWork(self.db_manager) as uow:
-                    ver = await uow.prompt_versions.get_active_version(book_id, template_name)
+                    ver = await uow.prompt_versions.get_active_prompt_version(book_id, template_name)
                     if ver:
                         source = ver["content"]
             except Exception as e:

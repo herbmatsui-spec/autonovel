@@ -1,0 +1,235 @@
+from __future__ import annotations
+
+import json
+import logging
+from typing import Any, Optional
+
+from jinja2 import Environment
+
+from prompts.registry import PromptRegistry
+from prompts.schemas import AuditContext
+
+logger = logging.getLogger(__name__)
+
+
+class AuditPromptBuilder:
+    """監査系プロンプトを構築するビルダー。"""
+
+    def __init__(self, registry: PromptRegistry, jinja_env: Optional[Environment] = None):
+        self.registry = registry
+        self.jinja_env = jinja_env or registry.jinja_env
+
+
+            trend_memo=trend_memo,
+    async def build_producer_audit_prompt(
+        self, genre: str, keywords: str, trend_memo: str, book_id: Optional[int] = None
+    ) -> str:
+        available_tropes = [
+            "ざまぁ",
+            "断罪",
+            "成り上がり",
+            "無自覚無双",
+            "圧倒的報復",
+            "追放ざまぁ",
+            "ヤンデレヒロイン",
+            "実は有能な従者",
+            "狂信的な配下",
+            "不遇な天才",
+            "共依存",
+            "戦わない最強",
+            "復讐しない追放者",
+            "善人すぎる悪役",
+        # Note: available_tropes is not in AuditContext, so we need to handle it specially
+        # For now, we'll pass it as extra context - but the registry expects PromptContext
+        # Let me check how PromptManager handles this...
+        # Looking at PromptManager, it passes available_tropes in the context dict
+        # Since AuditContext doesn't have this field, we'll need to extend it or handle differently
+        # Actually, looking at the design, the context should be PromptContext and extra fields
+        # should be handled by the template system. Let me adjust the approach.
+
+        # For now, I'll follow the same pattern as PromptManager and pass extra fields
+        # But the registry now expects PromptContext, so I need to convert
+        base_context = AuditContext(
+            genre=genre,
+            keywords=keywords,
+            trend_memo=trend_memo,
+            book_id=book_id,
+        )
+        context_dict = base_context.model_dump()
+        context_dict["available_tropes"] = tropes_text
+
+        return await self.registry.render_async("ai_producer_audit.j2", context_dict, book_id=book_id)
+            book_id=book_id,
+        )
+        context_dict = base_context.model_dump()
+        context_dict["available_tropes"] = tropes_text
+
+        return await self.registry.render_async("ai_producer_audit.j2", context_dict, book_id=book_id)
+        # For now, I'll follow the same pattern as PromptManager and pass extra fields
+        # But the registry now expects PromptContext, so I need to convert
+        base_context = AuditContext(
+            genre=genre,
+            keywords=keywords,
+            trend_memo=trend_memo,
+            book_id=book_id,
+        )
+        context_dict = base_context.model_dump()
+        context_dict["available_tropes"] = tropes_text
+
+        return await self.registry.render_async("ai_producer_audit.j2", context_dict, book_id=book_id)
+
+    async def build_plot_integrity_audit_prompt(
+        self,
+        synopsis: str,
+        world_settings_json: str,
+        schema_json: Any,
+        book_id: Optional[int] = None,
+        **kwargs: Any,
+    ) -> str:
+        context = AuditContext(
+            synopsis=synopsis,
+            world_settings_json=world_settings_json,
+            schema_json=schema_json,
+            book_id=book_id,
+        )
+        context_dict = context.model_dump()
+        context_dict.update(kwargs)
+        return await self.registry.render_async(
+            "plot_integrity_audit_prompt.j2", context_dict, book_id=book_id
+        )
+
+    async def build_logical_audit_prompt(
+        self, past_facts: str, plot_bp: str, script: str, book_id: Optional[int] = None
+    ) -> str:
+        context = AuditContext(
+            past_facts=past_facts,
+            plot_bp=plot_bp,
+            script=script,
+            book_id=book_id,
+        )
+        return await self.registry.render_async("logical_audit.j2", context.model_dump(), book_id=book_id)
+
+    async def build_foreshadowing_audit_prompt(
+        self, f_map: list[dict[str, Any]], content: str, book_id: Optional[int] = None
+    ) -> str:
+        context = AuditContext(
+            f_map=f_map,
+            content=content,
+            book_id=book_id,
+        )
+        context_dict = context.model_dump()
+        # f_map needs to be JSON string for the template
+        context_dict["f_map_json"] = json.dumps(f_map, ensure_ascii=False)
+        # content is truncated to 4000 chars in the original
+        context_dict["content"] = content[:4000]
+        return await self.registry.render_async(
+            "foreshadowing_audit.j2", context_dict, book_id=book_id
+        )
+
+    async def build_narrative_scoring_prompt(
+        self,
+        scene_content: str,
+        context: str,
+        previous_metrics: Optional[str] = None,
+        book_id: Optional[int] = None,
+    ) -> str:
+        context_obj = AuditContext(
+            scene_content=scene_content,
+            context=context,
+            previous_metrics=previous_metrics,
+            book_id=book_id,
+        )
+        return await self.registry.render_async(
+            "narrative_scoring_prompt.j2", context_obj.model_dump(), book_id=book_id
+        )
+
+    async def build_tension_audit_prompt(
+        self, curve_str: str, book_id: Optional[int] = None
+    ) -> str:
+        context = AuditContext(
+            curve_str=curve_str,
+            book_id=book_id,
+        )
+        return await self.registry.render_async(
+            "tension_audit_prompt.j2", context.model_dump(), book_id=book_id
+        )
+
+    async def build_tension_adjustment_prompt(
+        self,
+        ep_num: int,
+        current_tension: int,
+        action: str,
+        reason: str,
+        book_id: Optional[int] = None,
+    ) -> str:
+        context = AuditContext(
+            ep_num=ep_num,
+            current_tension=current_tension,
+            action=action,
+            reason=reason,
+            book_id=book_id,
+        )
+        return await self.registry.render_async(
+            "tension_adjustment_prompt.j2", context.model_dump(), book_id=book_id
+        )
+
+    async def build_global_repair_prompt(
+        self,
+        conflict_report: str,
+        synopsis: str,
+        world_rules: str,
+        mc_profile: str,
+        book_id: Optional[int] = None,
+        **kwargs: Any,
+    ) -> str:
+        context = AuditContext(
+            conflict_report=conflict_report,
+            synopsis=synopsis,
+            world_rules=world_rules,
+            mc_profile=mc_profile,
+            book_id=book_id,
+        )
+        context_dict = context.model_dump()
+        context_dict.update(kwargs)
+        return await self.registry.render_async(
+            "global_repair_prompt.j2", context_dict, book_id=book_id
+        )
+
+    async def build_ability_audit_prompt(
+        self,
+        blueprint: str,
+        settings_json: str,
+        characters_json: str,
+        book_id: Optional[int] = None,
+    ) -> str:
+        context = AuditContext(
+            blueprint=blueprint,
+            settings_json=settings_json,
+            characters_json=characters_json,
+            book_id=book_id,
+        )
+        return await self.registry.render_async(
+            "ability_audit_prompt.j2", context.model_dump(), book_id=book_id
+        )
+
+    async def build_deai_audit_prompt(self, content: str, book_id: Optional[int] = None) -> str:
+        context = AuditContext(
+            content=content[:4000],  # Truncate to 4000 chars like in original
+            book_id=book_id,
+        )
+        return await self.registry.render_async(
+            "deai_audit_prompt.j2", context.model_dump(), book_id=book_id
+        )
+
+    async def build_deai_propose_rules_prompt(
+        self, content: str, domain: str, book_id: Optional[int] = None
+    ) -> str:
+        context = AuditContext(
+            content=content[:4000],  # Truncate to 4000 chars
+            book_id=book_id,
+        )
+        context_dict = context.model_dump()
+        context_dict["domain"] = domain
+        return await self.registry.render_async(
+            "deai_propose_rules_prompt.j2", context_dict, book_id=book_id
+        )

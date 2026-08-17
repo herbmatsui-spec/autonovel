@@ -7,7 +7,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
 from src.core.container import AppContainer
-from config import get_config
+from config.settings import get_settings
 from src.backend.health.checks import (
     check_database,
     check_redis,
@@ -51,7 +51,7 @@ def determine_overall_status(checks: Dict[str, HealthCheckResult]) -> HealthStat
 @router.get("/health", response_model=HealthResponse)
 async def health_check():
     """拡張ヘルスチェック: DB, Redis, ChromaDB, LLM Gateway, Worker を並列チェック"""
-    cfg = get_config()
+    cfg = get_settings()
     db_manager = AppContainer.db()
 
     # 並列実行でレイテンシ短縮

@@ -6,6 +6,7 @@ config/erotic_vocabulary.py
 ティア（mild, moderate, full, intense）ごとに利用可能な語�彙を提供します。
 """
 
+from typing import Dict, List
 # METAPHOR_BANK: 官能を比�喩で表現するための視覚的・�触覚的アナロジー
 # ONOMATOPOEIA_BANK: 五感で捕�捉できる音・�触感・�匂いのリスト
 # PSYCHOLOGY_TEMPLATES: �� 心理状態を�抽象化する上位概念のリスト
@@ -384,7 +385,7 @@ VOCABULARY_TIERS = {
 }
 
 
-def get_vocabulary_for_tier(tier: str) -> dict:
+def get_vocabulary_for_tier(tier: str) -> Dict[str, List[str]]:
     """指定ティアの語�彙を返す。存在しないティアはmildにフォールバックする。
 
     Args:

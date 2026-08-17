@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>覇権小説エンジン デモ v4</title>
+    <style>
+        :root {
+            --primary: #3498db;
+            --primary-dark: #2980b9;
+            --secondary: #2c3e50;
+            --accent: #e74c3c;
+            --success: #27ae60;
+            --warning: #f39c12;
+            --bg: #f5f5f5;
+            --card-bg: #ffffff;
+            --text: #2c3e50;
+            --text-muted: #7f8c8d;
+            --border: #ecf0f1;
+        }
+        /* 改善⑧: ダークテーマ */
+        [data-theme="dark"] {
+            --bg: #16191d;
+            --card-bg: #23272e;
+            --text: #e6e9ed;
+            --text-muted: #9aa1a9;
+            --border: #353b44;
+            --secondary: #d7dce2;
+        }
+        [data-theme="dark"] .container { box-shadow: 0 4px 6px rgba(0,0,0,0.4); }
+        [data-theme="dark"] .metric-card,
+        [data-theme="dark"] .step,
+        [data-theme="dark"] .novel-preview,
+        [data-theme="dark"] .plot-box { background-color: #1d2127; }
+        [data-theme="dark"] .mode-tab { background: #2c323b; color: var(--text); }
+        [data-theme="dark"] .mode-tab:hover { background: #363d47; }
+
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 15px;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+        .container {
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 25px;
+            margin-bottom: 20px;
+            transition: background-color 0.2s ease;
+        }
+        h1, h2, h3 { color: var(--secondary); }
+        h1 { font-size: 1.8rem; margin-bottom: 10px; }
+        h2 { font-size: 1.4rem; margin-top: 0; }
+        h4 { color: var(--secondary); margin: 12px 0 6px; }
+        .header-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+
+        /* モードタブ（v3①） */
+        .mode-tabs { display: flex; gap: 8px; margin: 15px 0; flex-wrap: wrap; }
+        .mode-tab {
+            background: var(--border); color: var(--text); border: 2px solid transparent;
+            padding: 10px 18px; border-radius: 8px; cursor: pointer; font-size: 0.95rem; font-weight: bold; transition: all 0.2s ease;
+        }
+        .mode-tab:hover { background: #dfe6e9; }
+        .mode-tab.active { background: var(--primary); color: white; border-color: var(--primary-dark); }
+        .adv-only { display: none; }
+        body.mode-adv .adv-only { display: block; }
+
+        .genre-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin: 20px 0; }
+        .genre-card {
+            border: 2px solid var(--border); border-radius: 8px; padding: 15px 10px; text-align: center; cursor: pointer;
+            transition: all 0.2s ease; min-height: 120px; display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+        .genre-card:hover, .genre-card:focus {
+            border-color: var(--primary); transform: translateY(-3px); box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            outline: 2px solid var(--primary); outline-offset: 2px;
+        }
+        .genre-card.selected { border-color: var(--primary); background-color: #ebf3fd; box-shadow: 0 0 0 3px rgba(52,152,219,0.3); }
+        [data-theme="dark"] .genre-card.selected { background-color: #1c2a38; }
+        .genre-icon { font-size: 2rem; margin-bottom: 8px; }
+        .genre-name { font-weight: bold; margin-bottom: 5px; font-size: 0.9rem; }
+        .keywords { font-size: 0.75rem; color: var(--text-muted); }
+
+        .progress-bar { width: 100%; height: 10px; background-color: var(--border); border-radius: 5px; overflow: hidden; margin: 15px 0; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--secondary)); width: 0%; transition: width 0.3s ease; }
+
+        .step { display: flex; align-items: flex-start; margin: 12px 0; padding: 12px; background-color: #f8f9fa; border-radius: 6px; }
+        [data-theme="dark"] .step { background-color: #1d2127; }
+        .step-number { background: var(--primary); color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; margin-right: 12px; flex-shrink: 0; }
+        .step.active .step-number { background: var(--warning); animation: pulse 1s infinite; }
+        .step.completed .step-number { background: var(--success); }
+        .step-content { flex: 1; }
+        .step-title { font-weight: bold; margin-bottom: 4px; }
+        .step-description { font-size: 0.85rem; color: var(--text-muted); }
+        @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.6;} }
+
+        button {
+            background-color: var(--primary); color: white; border: none; padding: 12px 24px; border-radius: 6px;
+            font-size: 1rem; cursor: pointer; transition: background-color 0.2s ease; min-height: 44px;
+        }
+        button:hover:not(:disabled) { background-color: var(--primary-dark); }
+        button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+        button.secondary { background-color: var(--text-muted); }
+        button.secondary:hover:not(:disabled) { background-color: #6c7a7d; }
+        button.ghost { background: white; color: var(--primary); border: 2px solid var(--primary); }
+        button.ghost:hover:not(:disabled) { background: #ebf3fd; }
+        [data-theme="dark"] button.ghost { background: transparent; color: var(--primary); }
+        .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+
+        .novel-preview { background-color: #f8f9fa; border-left: 4px solid var(--primary); padding: 20px; margin: 20px 0; border-radius: 0 8px 8px 0; }
+        [data-theme="dark"] .novel-preview { background-color: #1d2127; }
+        .novel-title { font-size: 1.5rem; color: var(--secondary); margin-bottom: 12px; font-weight: bold; }
+        .novel-content { line-height: 1.8; color: #34495e; white-space: pre-wrap; }
+        [data-theme="dark"] .novel-content { color: #c7ccd2; }
+        .novel-content .cursor { display: inline-block; width: 8px; background: var(--primary); animation: blink 1s step-end infinite; margin-left: 2px; }
+        @keyframes blink { 50% { opacity: 0; } }
+        .plot-box { background: #eef7ff; border: 1px dashed var(--primary); border-radius: 6px; padding: 12px; margin: 12px 0; font-size: 0.9rem; }
+        [data-theme="dark"] .plot-box { background: #14202c; }
+
+        .input-group { margin: 15px 0; }
+        .input-group label { display: block; font-weight: bold; margin-bottom: 5px; }
+        .input-group input[type="text"], .input-group textarea {
+            width: 100%; padding: 10px; border: 2px solid var(--border); border-radius: 6px; font-size: 1rem; font-family: inherit;
+            background: var(--card-bg); color: var(--text);
+        }
+        [data-theme="dark"] .input-group input[type="text"], [data-theme="dark"] .input-group textarea { background: #1a1e23; }
+        .input-group textarea { min-height: 90px; resize: vertical; }
+        .input-group input[type="text"]:focus, .input-group textarea:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(52,152,219,0.2); }
+        .slider-group { margin: 15px 0; }
+        .slider-group label { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 5px; }
+        .slider-group input[type="range"] { width: 100%; }
+        .checkbox-group { display: flex; align-items: center; gap: 8px; margin: 15px 0; font-weight: bold; }
+        .checkbox-group input { width: 18px; height: 18px; }
+
+        .tooltip { position: relative; display: inline-block; cursor: help; color: var(--primary); font-size: 0.85rem; border-bottom: 1px dotted var(--primary); }
+        .tooltip .tooltip-text {
+            visibility: hidden; width: 260px; background-color: var(--secondary); color: #fff; text-align: left; border-radius: 6px;
+            padding: 10px; position: absolute; z-index: 100; bottom: 125%; left: 50%; transform: translateX(-50%);
+            opacity: 0; transition: opacity 0.2s; font-size: 0.8rem; font-weight: normal; line-height: 1.4;
+        }
+        .tooltip:hover .tooltip-text, .tooltip:focus .tooltip-text, .tooltip:focus-within .tooltip-text { visibility: visible; opacity: 1; }
+
+        .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin: 15px 0; }
+        .metric-card { background: #f8f9fa; border-radius: 8px; padding: 12px; text-align: center; }
+        [data-theme="dark"] .metric-card { background: #1d2127; }
+        .metric-value { font-size: 1.3rem; font-weight: bold; color: var(--primary); }
+        .metric-label { font-size: 0.72rem; color: var(--text-muted); }
+
+        .error-box { background-color: #fde8e8; border: 2px solid var(--accent); border-radius: 8px; padding: 15px; margin: 15px 0; display: none; }
+        .error-box.visible { display: block; }
+        .error-title { font-weight: bold; color: var(--accent); margin-bottom: 5px; }
+        .error-detail { font-family: monospace; font-size: 0.85rem; color: #922; background: #fff; padding: 6px; border-radius: 4px; }
+        [data-theme="dark"] .error-detail { background: #2a1d1d; color: #ffb3b3; }
+
+        .spice-visual { background: #fff8e1; border: 2px solid var(--warning); border-radius: 8px; padding: 15px; margin: 15px 0; }
+        [data-theme="dark"] .spice-visual { background: #2a2415; }
+        .spice-item { display: flex; align-items: center; margin: 8px 0; padding: 8px; background: #fffde7; border-radius: 4px; flex-wrap: wrap; gap: 6px; }
+        [data-theme="dark"] .spice-item { background: #322c19; }
+        .spice-tag { background: var(--warning); color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; margin-right: 6px; flex-shrink: 0; }
+        .spice-marker { font-family: monospace; font-size: 0.8rem; color: #8a6d00; }
+        .spice-phases { margin-top: 10px; }
+        .spice-phase { border-left: 3px solid var(--border); padding: 8px 12px; margin: 8px 0; background: #fffdf5; font-size: 0.88rem; opacity: 0.4; transition: opacity 0.4s ease, border-color 0.4s ease; }
+        [data-theme="dark"] .spice-phase { background: #211d12; }
+        .spice-phase.active { opacity: 1; border-color: var(--warning); }
+        .spice-phase.done { opacity: 1; border-color: var(--success); }
+        mark.spice { background: #fff176; padding: 0 2px; border-radius: 2px; color: #222; }
+        code.marker { background: #fff3cd; padding: 1px 4px; border-radius: 3px; font-size: 0.85em; color: #8a6d00; }
+
+        .review-gate { background: #e8f5e9; border: 2px solid var(--success); border-radius: 8px; padding: 15px; margin: 15px 0; }
+        [data-theme="dark"] .review-gate { background: #16271a; }
+        .score-bar { width: 100%; height: 12px; background: var(--border); border-radius: 6px; overflow: hidden; margin: 8px 0; }
+        .score-fill { height: 100%; background: var(--success); width: 0%; transition: width 1s ease; }
+
+        .if-tree { margin: 10px 0; }
+        .if-tree ul { list-style: none; padding-left: 18px; margin: 4px 0; }
+        .if-tree li { position: relative; padding: 3px 0; }
+        .if-tree li::before { content: "└"; position: absolute; left: -16px; color: var(--text-muted); }
+        .if-route-name { font-weight: bold; color: var(--secondary); }
+        .if-route-kind { font-size: 0.78rem; color: var(--text-muted); }
+
+        .export-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+        .export-bar button { font-size: 0.9rem; padding: 10px 16px; }
+
+        /* 改善①: SSE風ログ */
+        .sse-log {
+            background: #0e1116; color: #b8e986; font-family: 'SFMono-Regular', Consolas, monospace; font-size: 0.78rem;
+            border-radius: 8px; padding: 12px; margin: 12px 0; max-height: 160px; overflow-y: auto; line-height: 1.5;
+        }
+        .sse-log .ts { color: #6b7280; }
+        .sse-log .job { color: #7dd3fc; }
+        .sse-log .err { color: #f87171; }
+        .sse-log .ok { color: #86efac; }
+
+        /* 改善⑨: アーキテクチャ図 */
+        .arch-flow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0; }
+        .arch-node { background: var(--primary); color: white; padding: 8px 12px; border-radius: 6px; font-size: 0.82rem; font-weight: bold; }
+        .arch-arrow { color: var(--text-muted); font-size: 1.1rem; }
+        .arch-note { font-size: 0.8rem; color: var(--text-muted); margin-top: 6px; }
+
+        .theme-btn {
+            background: var(--border); color: var(--text); border: 2px solid transparent; padding: 8px 14px;
+            border-radius: 8px; cursor: pointer; font-weight: bold; min-height: auto;
+        }
+        .theme-btn:hover { background: #dfe6e9; }
+
+        @media (max-width: 600px) {
+            body { padding: 10px; }
+            .container { padding: 15px; }
+            .genre-grid { grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); }
+            .genre-card { min-height: 100px; padding: 10px 5px; }
+            .genre-icon { font-size: 1.5rem; }
+            .step { flex-direction: column; }
+            .step-number { margin-bottom: 8px; }
+        }
+        .sr-only, .live-region { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation: none !important; transition: none !important; }
+            .novel-content .cursor { display: none; }
+        }
+    </style>
+</head>
+<body class="mode-easy">
+    <div class="container">
+        <div class="header-row">
+            <div>
+                <h1>覇権小説エンジン デモ v4</h1>
+                <p>かんたん/上級者モード、実バックエンド構成（SSE/ジョブキュー）に近い挙動、本物のEPUB出力を体験できます。</p>
+            </div>
+            <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" aria-label="テーマ切替">🌙 ダーク</button>
+        </div>
+        <div class="live-region" aria-live="polite" id="liveRegion"></div>
+    </div>
+
+    <div class="container">
+        <h2>ステップ 1: 設定 <span class="tooltip" tabindex="0">?<span class="tooltip-text">ジャンル選択とオプション設定により、生成される小説の方向性を決定します。</span></span></h2>
+
+        <div class="mode-tabs" role="tablist" aria-label="モード選択">
+            <button class="mode-tab active" id="easyTab" role="tab" aria-selected="true" onclick="setMode('easy')">かんたんモード</button>
+            <button class="mode-tab" id="advTab" role="tab" aria-selected="false" onclick="setMode('adv')">上級者モード</button>
+        </div>
+
+        <div class="input-group">
+            <label for="keywordInput">キーワード（任意）</label>
+            <input type="text" id="keywordInput" placeholder="例: 復讐、魔法学校、猫耳" aria-label="キーワード入力">
+        </div>
+
+        <div class="slider-group">
+            <label for="creativitySlider"><span>創造性レベル</span> <span id="creativityValue">50%</span></label>
+            <input type="range" id="creativitySlider" min="0" max="100" value="50" aria-label="創造性レベル">
+        </div>
+
+        <div class="slider-group">
+            <label for="lengthSlider"><span>目標文字数</span> <span id="lengthValue">1200文字</span></label>
+            <input type="range" id="lengthSlider" min="500" max="5000" step="250" value="1200" aria-label="目標文字数">
+        </div>
+
+        <div class="adv-only">
+            <h3>上級者向け詳細設定</h3>
+            <div class="slider-group">
+                <label for="densitySlider"><span>文章の濃さ</span> <span id="densityValue">3</span></label>
+                <input type="range" id="densitySlider" min="1" max="5" value="3" aria-label="文章の濃さ">
+            </div>
+            <div class="slider-group">
+                <label for="chapterSlider"><span>話数</span> <span id="chapterValue">1話</span></label>
+                <input type="range" id="chapterSlider" min="1" max="5" value="1" aria-label="話数">
+            </div>
+            <div class="input-group">
+                <label for="plotInput">プロット（あらすじ）編集 — これをもとに本文が生成されます</label>
+                <textarea id="plotInput" placeholder="例: 追放された主人公が、隠されたチート能力に気づき、敵対勢力を圧倒していく物語。"></textarea>
+            </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="nsfwCheck">
+                <label for="nsfwCheck" style="margin:0;">NSFW（官能描写）オプトイン — チェックで許可（デモでは注記のみ）</label>
+            </div>
+        </div>
+
+        <div class="checkbox-group adv-only" style="margin-top:0;">
+            <input type="checkbox" id="unstableCheck">
+            <label for="unstableCheck" style="margin:0; color: var(--accent);">不安定モード（エラーを発生させる — 再試行フローを体験）</label>
+        </div>
+
+        <h3>ジャンル選択</h3>
+        <div class="genre-grid" role="radiogroup" aria-label="ジャンル選択" id="genreGrid">
+            <div class="genre-card" role="radio" aria-checked="false" tabindex="-1" data-genre="ざまぁ・追放・無双" onclick="selectGenre(this)">
+                <div class="genre-icon">⚔️</div><div class="genre-name">ざまぁ・追放・無双</div><div class="keywords">ざまぁ 無双 圧倒的 顔面蒼白</div>
+            </div>
+            <div class="genre-card" role="radio" aria-checked="false" tabindex="-1" data-genre="悪役令嬢・断罪回避" onclick="selectGenre(this)">
+                <div class="genre-icon">👑</div><div class="genre-name">悪役令嬢・断罪回避</div><div class="keywords">フラグ回避 隠しルート 百合 尊い</div>
+            </div>
+            <div class="genre-card" role="radio" aria-checked="false" tabindex="-1" data-genre="チート転生・即最強" onclick="selectGenre(this)">
+                <div class="genre-icon">💫</div><div class="genre-name">チート転生・即最強</div><div class="keywords">スキル習得∞ 秒殺 最適解 デバッグ</div>
+            </div>
+            <div class="genre-card" role="radio" aria-checked="false" tabindex="-1" data-genre="スローライフ・ほのぼの" onclick="selectGenre(this)">
+                <div class="genre-icon">🏡</div><div class="genre-name">スローライフ・ほのぼの</div><div class="keywords">ふわふわ とろける ほっこり 香り</div>
+            </div>
+            <div class="genre-card" role="radio" aria-checked="false" tabindex="-1" data-genre="ダンジョン運営・経営" onclick="selectGenre(this)">
+                <div class="genre-icon">🏰</div><div class="genre-name">ダンジョン運営・経営</div><div class="keywords">罠 ギミック 忠誠 進化 個性</div>
+            </div>
+            <div class="genre-card" role="radio" aria-checked="false" tabindex="-1" data-genre="現代チート・都市伝説" onclick="selectGenre(this)">
+                <div class="genre-icon">🏙️</div><div class="genre-name">現代チート・都市伝説</div><div class="keywords">ルート権限 パッチ 実体化 同期</div>
+            </div>
+            <div class="genre-card" role="radio" aria-checked="false" tabindex="-1" data-genre="TS転生・百合・性別反転" onclick="selectGenre(this)">
+                <div class="genre-icon">💖</div><div class="genre-name">TS転生・百合・性別反転</div><div class="keywords">可愛い 美少女 百合キス 尊い 永遠</div>
+            </div>
+            <div class="genre-card" role="radio" aria-checked="false" tabindex="-1" data-genre="VRMMO・ゲーム世界" onclick="selectGenre(this)">
+                <div class="genre-icon">🎮</div><div class="genre-name">VRMMO・ゲーム世界</div><div class="keywords">フルダイブ 同期 実体化 現実侵食</div>
+            </div>
+            <div class="genre-card" role="radio" aria-checked="false" tabindex="-1" data-genre="ループ・時間逆行・真エンド" onclick="selectGenre(this)">
+                <div class="genre-icon">🔄</div><div class="genre-name">ループ・時間逆行・真エンド</div><div class="keywords">周目 真エンド 全フラグ 確率1 必然</div>
+            </div>
+        </div>
+
+        <button id="startBtn" disabled onclick="startGeneration()">小説を生成</button>
+    </div>
+
+    <div class="container" id="progressContainer" style="display: none;" aria-busy="true">
+        <h2>ステップ 2: 生成パイプライン実行中 <span id="jobBadge" style="font-size:0.9rem;color:var(--text-muted);"></span></h2>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+        <div id="progressText" aria-live="polite">準備中...</div>
+
+        <div class="metrics-grid">
+            <div class="metric-card"><div class="metric-value" id="tokenCount">0</div><div class="metric-label">トークン</div></div>
+            <div class="metric-card"><div class="metric-value" id="costEstimate">¥0</div><div class="metric-label">推定コスト</div></div>
+            <div class="metric-card"><div class="metric-value" id="elapsedTime">0.0s</div><div class="metric-label">経過時間</div></div>
+            <div class="metric-card"><div class="metric-value" id="retryCount">0</div><div class="metric-label">リトライ</div></div>
+        </div>
+
+        <div class="sse-log" id="sseLog" aria-hidden="true"></div>
+
+        <div class="step" id="step1">
+            <div class="step-number">1</div>
+            <div class="step-content">
+                <div class="step-title">Bible生成 <span class="tooltip" tabindex="0">?<span class="tooltip-text">世界観・キャラクター・チート能力等の設定資料を作成します。</span></span></div>
+                <div class="step-description" id="step1Desc">待機中...</div>
+            </div>
+        </div>
+        <div class="step" id="step2">
+            <div class="step-number">2</div>
+            <div class="step-content">
+                <div class="step-title">プロット生成 <span class="tooltip" tabindex="0">?<span class="tooltip-text">テンション曲線とジャンル別テンプレートを組み合わせ、物語の骨組みを作成します。</span></span></div>
+                <div class="step-description" id="step2Desc">待機中...</div>
+            </div>
+        </div>
+        <div class="step" id="step3">
+            <div class="step-number">3</div>
+            <div class="step-content">
+                <div class="step-title">各話ループ <span class="tooltip" tabindex="0">?<span class="tooltip-text">執筆→監査→SpiceGuard抽出→マーカー注入→リライト→マーカー除去を繰り返し、品質を向上させます。</span></span></div>
+                <div class="step-description" id="step3Desc">待機中...</div>
+            </div>
+        </div>
+        <div class="step" id="step4">
+            <div class="step-number">4</div>
+            <div class="step-content">
+                <div class="step-title">シリーズ完結処理 <span class="tooltip" tabindex="0">?<span class="tooltip-text">タイトル・あらすじ・メタデータを生成し、出力形式を整えます。</span></span></div>
+                <div class="step-description" id="step4Desc">待機中...</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="error-box" id="errorBox" role="alert">
+        <div class="error-title" id="errorTitle">エラーが発生しました</div>
+        <div class="error-detail" id="errorMessage"></div>
+        <button onclick="retryGeneration()" style="margin-top: 10px;">再試行</button>
+    </div>
+
+    <div class="container" id="resultContainer" style="display: none;">
+        <h2 id="resultHeading" tabindex="-1">ステップ 3: 生成完了! <span class="tooltip" tabindex="0">?<span class="tooltip-text">生成された小説のプレビューと、特徴的な機能の適用結果を表示します。</span></span></h2>
+
+        <div id="plotBoxWrap"></div>
+
+        <div class="novel-preview">
+            <div class="novel-title" id="novelTitle">小説タイトル</div>
+            <div class="novel-content" id="novelContent"></div>
+        </div>
+
+        <div class="spice-visual" id="spiceVisual" style="display: none;">
+            <h3>SpiceGuard（尖り保護）適用結果 <span id="spiceCount" class="spice-tag"></span></h3>
+            <div id="spiceItems"></div>
+            <button class="ghost" style="margin-top:8px;font-size:0.85rem;padding:8px 14px;" onclick="toggleHighlight()">本文をハイライト表示 / 元に戻す</button>
+            <details class="spice-phases">
+                <summary style="cursor:pointer; font-weight:bold; margin-top:8px;">尖り保護のしくみ（3フェーズ）</summary>
+                <div id="spicePhase1" class="spice-phase">① 抽出・注入: 本文から尖り要素を検出し <code class="marker">&lt;&lt;&lt;SPICE:type&gt;&gt;&gt;…&lt;&lt;/SPICE&gt;&gt;&gt;</code> マーカーで囲む</div>
+                <div id="spicePhase2" class="spice-phase">② リライト: 「マーカー内は変更禁止」の指示で自動リライトを実行</div>
+                <div id="spicePhase3" class="spice-phase">③ 除去: マーカーを取り除き、保護された尖りを黄色で強調表示</div>
+            </details>
+        </div>
+
+        <div class="review-gate" id="reviewGate" style="display: none;">
+            <h3>人間レビューゲート</h3>
+            <div>監査スコア: <span id="reviewScore">0</span>/100 <span id="scoreFormula" style="font-size:0.75rem;color:var(--text-muted);"></span></div>
+            <div class="score-bar"><div class="score-fill" id="scoreFill"></div></div>
+            <div id="reviewStatus"></div>
+        </div>
+
+        <div class="container" id="ifContainer" style="display:none; box-shadow:none; border:2px solid var(--border); padding:15px;">
+            <h3>IFルート（分岐ストーリー）</h3>
+            <div class="if-tree" id="ifTree"></div>
+        </div>
+
+        <div class="metrics-grid" style="margin-top: 20px;">
+            <div class="metric-card"><div class="metric-value" id="finalTokens">0</div><div class="metric-label">総トークン数</div></div>
+            <div class="metric-card"><div class="metric-value" id="finalCost">¥0</div><div class="metric-label">総コスト</div></div>
+            <div class="metric-card"><div class="metric-value" id="finalTime">0.0s</div><div class="metric-label">総時間</div></div>
+            <div class="metric-card"><div class="metric-value" id="cacheHit">0%</div><div class="metric-label">キャッシュヒット</div></div>
+        </div>
+
+        <div class="export-bar">
+            <button class="ghost" onclick="copyNovel()">クリップボードにコピー</button>
+            <button class="ghost" onclick="exportNovel('txt')">.txt 書き出し</button>
+            <button class="ghost" onclick="exportEpub()">本物の EPUB 書き出し</button>
+            <button class="ghost" onclick="exportPdf()">PDF（印刷用）</button>
+            <button class="ghost" onclick="exportNovel('mobi')">MOBI（非対応・デモ）</button>
+            <button class="ghost" onclick="exportAssetPack()">資産化パック</button>
+            <button class="ghost" onclick="exportMediaMix()">メディアミックス台本</button>
+        </div>
+
+        <div class="btn-row">
+            <button onclick="resetDemo()" class="secondary">もう一度試す</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>バックエンド構成（デモとの対応） <span class="tooltip" tabindex="0">?<span class="tooltip-text">実際のリポジトリのアーキテクチャと、このデモの各ステップの対応です。</span></span></h2>
+        <div class="arch-flow">
+            <span class="arch-node">Frontend</span><span class="arch-arrow">→</span>
+            <span class="arch-node">FastAPI/SSE</span><span class="arch-arrow">→</span>
+            <span class="arch-node">LangGraph パイプライン</span><span class="arch-arrow">→</span>
+            <span class="arch-node">Redis/Huey</span><span class="arch-arrow">→</span>
+            <span class="arch-node">ChromaDB</span>
+        </div>
+        <div class="arch-note">
+            デモの「ステップ1設定」＝Frontend、「ステップ2生成」＝FastAPI/SSE によるジョブ進行通知、「各話ループ」＝LangGraph の執筆→監査→SpiceGuard ノード、「資産化パック」＝Phase3 出力。ジョブID 付き SSE ログで実挙動を模しています。
+        </div>
+    </div>
+
+    <script>
+        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+        // 改善⑧: テーマ
+        function applyTheme(t) {
+            document.documentElement.setAttribute('data-theme', t);
+            const btn = document.getElementById('themeBtn');
+            btn.textContent = t === 'dark' ? '☀️ ライト' : '🌙 ダーク';
+            localStorage && localStorage.setItem('demo-theme', t);
+        }
+        function toggleTheme() {
+            const cur = document.documentElement.getAttribute('data-theme');
+            applyTheme(cur === 'dark' ? 'light' : 'dark');
+        }
+        (function initTheme() {
+            let saved = null;
+            try { saved = localStorage && localStorage.getItem('demo-theme'); } catch (e) {}
+            applyTheme(saved || (prefersDark ? 'dark' : 'light'));
+        })();
+
+        let selectedGenre = null;
+        let userKeyword = '', creativityLevel = 50, targetLength = 1200, densityLevel = 3, chapterCount = 1;
+        let userPlot = '', nsfw = false, unstable = false, mode = 'easy';
+        let startTime = null, retryAttempts = 0, currentNovel = null, jobId = '';
+
+        document.getElementById('creativitySlider').addEventListener('input', e => { creativityLevel = +e.target.value; document.getElementById('creativityValue').textContent = creativityLevel + '%'; });
+        document.getElementById('lengthSlider').addEventListener('input', e => { targetLength = +e.target.value; document.getElementById('lengthValue').textContent = targetLength + '文字'; });
+        document.getElementById('densitySlider').addEventListener('input', e => { densityLevel = +e.target.value; document.getElementById('densityValue').textContent = densityLevel; });
+        document.getElementById('chapterSlider').addEventListener('input', e => { chapterCount = +e.target.value; document.getElementById('chapterValue').textContent = chapterCount + '話'; });
+        document.getElementById('keywordInput').addEventListener('input', e => { userKeyword = e.target.value; });
+        document.getElementById('plotInput').addEventListener('input', e => { userPlot = e.target.value; });
+        document.getElementById('nsfwCheck').addEventListener('change', e => { nsfw = e.target.checked; });
+        document.getElementById('unstableCheck').addEventListener('change', e => { unstable = e.target.checked; });
+
+        function setMode(m) {
+            mode = m;
+            document.body.className = 'mode-' + m;
+            document.getElementById('easyTab').classList.toggle('active', m === 'easy');
+            document.getElementById('advTab').classList.toggle('active', m === 'adv');
+            document.getElementById('easyTab').setAttribute('aria-selected', m === 'easy');
+            document.getElementById('advTab').setAttribute('aria-selected', m === 'adv');
+            updateLiveRegion(m === 'easy' ? 'かんたんモードに切り替えました' : '上級者モードに切り替えました');
+        }
+
+        const cards = Array.from(document.querySelectorAll('.genre-card'));
+        cards.forEach((card, i) => {
+            card.addEventListener('keydown', e => {
+                let next = null;
+                if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = (i + 1) % cards.length;
+                else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') next = (i - 1 + cards.length) % cards.length;
+                else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectGenre(card); return; }
+                if (next !== null) { e.preventDefault(); cards.forEach(c => c.tabIndex = -1); cards[next].tabIndex = 0; cards[next].focus(); }
+            });
+        });
+        function selectGenre(element) {
+            cards.forEach(card => { card.classList.remove('selected'); card.setAttribute('aria-checked', 'false'); card.tabIndex = -1; });
+            element.classList.add('selected'); element.setAttribute('aria-checked', 'true'); element.tabIndex = 0;
+            selectedGenre = element.getAttribute('data-genre');
+            document.getElementById('startBtn').disabled = false;
+            updateLiveRegion(selectedGenre + ' を選択しました');
+        }
+
+        function genJobId() { return 'job#' + Math.random().toString(16).slice(2, 8); }
+        function logSse(cls, msg) {
+            const el = document.getElementById('sseLog');
+            if (!el) return;
+            const t = new Date().toLocaleTimeString('ja-JP', { hour12: false });
+            const div = document.createElement('div');
+            div.innerHTML = '<span class="ts">[' + t + ']</span> <span class="job">' + escapeHtml(jobId) + '</span> <span class="' + (cls || '') + '">' + escapeHtml(msg) + '</span>';
+            el.appendChild(div);
+            el.scrollTop = el.scrollHeight;
+        }
+
+        function startGeneration() {
+            if (!selectedGenre) return;
+            document.getElementById('progressContainer').style.display = 'block';
+            document.getElementById('progressContainer').setAttribute('aria-busy', 'true');
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('errorBox').classList.remove('visible');
+            document.getElementById('sseLog').innerHTML = '';
+            jobId = genJobId();
+            document.getElementById('jobBadge').textContent = '（' + jobId + '）';
+            startTime = Date.now();
+            currentNovel = generateContextualNovel(selectedGenre, userKeyword, creativityLevel, targetLength, densityLevel, chapterCount, userPlot, nsfw);
+            logSse('', 'ジョブ投入: モード=' + mode + ' ジャンル=' + selectedGenre);
+            simulatePipeline();
+        }
+
+        function simulatePipeline() {
+            // 改善③: 監査スコアに応じたリトライをステップ3に組み込み
+            const auditRetries = currentNovel.score < 95 ? Math.min(3, 95 - currentNovel.score) : 0;
+            const step3texts = ['第1話を執筆中...', '監査スコアをチェック中（' + currentNovel.score + '点）...'];
+            for (let r = 1; r <= auditRetries; r++) step3texts.push('スコア' + currentNovel.score + '→リライト(' + r + '/' + auditRetries + ')...');
+            step3texts.push('尖り要素を抽出中（' + currentNovel.detected.length + '件）...', 'マーカーを注入してリライト中...', 'マーカーを除去中...');
+
+            const queue = [
+                { stepId: 'step1', descId: 'step1Desc', texts: ['世界観設定を分析中...','キャラクター設計を生成中...','チート能力を定義中...','Bible（設定資料）を統合中...'] },
+                { stepId: 'step2', descId: 'step2Desc', texts: ['テンション曲線を設計中...','ジャンルテンプレートを適用中...','プロット構造を構築中...','伏線を配置中...'] },
+                { stepId: 'step3', descId: 'step3Desc', texts: step3texts },
+                { stepId: 'step4', descId: 'step4Desc', texts: ['タイトルを生成中...','あらすじを作成中...','メタデータを整備中...','出力形式を最適化中...'] }
+            ];
+            const allTexts = queue.flatMap(q => q.texts);
+            const total = allTexts.length;
+            let done = 0;
+
+            let errorAt = -1;
+            if (unstable) errorAt = Math.floor(Math.random() * (total - 1)) + 1;
+
+            queue.forEach(q => { document.getElementById(q.stepId).className = 'step'; document.getElementById(q.descId).textContent = '待機中...'; });
+
+            const finalMetrics = computeMetrics();
+
+            function setProgress(p) {
+                const pct = Math.min(100, Math.round(p));
+                document.getElementById('progressFill').style.width = pct + '%';
+                document.getElementById('progressFill').setAttribute('aria-valuenow', pct);
+                document.getElementById('progressText').textContent = pct + '% 完了';
+                const frac = p / 100;
+                document.getElementById('tokenCount').textContent = Math.round(finalMetrics.tokens * frac).toLocaleString();
+                document.getElementById('costEstimate').textContent = '¥' + (finalMetrics.cost * frac).toFixed(2);
+                document.getElementById('elapsedTime').textContent = (finalMetrics.time * frac).toFixed(1) + 's';
+                document.getElementById('retryCount').textContent = retryAttempts;
+            }
+
+            function runQueue(qi) {
+                if (qi >= queue.length) { setProgress(100); showResult(); return; }
+                const q = queue[qi];
+                const stepEl = document.getElementById(q.stepId);
+                stepEl.className = 'step active';
+                let ti = 0;
+                function nextText() {
+                    if (ti >= q.texts.length) { stepEl.className = 'step completed'; runQueue(qi + 1); return; }
+                    const txt = q.texts[ti];
+                    if (errorAt === done) { logSse('err', 'ERROR: ' + 'STEP' + (qi+1) + ' 失敗'); triggerError(); return; }
+                    document.getElementById(q.descId).textContent = txt;
+                    updateLiveRegion('ステップ' + (qi + 1) + ': ' + txt);
+                    logSse('', 'STEP' + (qi+1) + ': ' + txt);
+                    done++;
+                    setProgress(done / total * 100);
+                    ti++;
+                    setTimeout(nextText, reduceMotion ? 30 : Math.random() * 450 + 250);
+                }
+                nextText();
+            }
+            setProgress(0);
+            runQueue(0);
+        }
+
+        function triggerError() {
+            const errors = [
+                { title: 'レートリミットに達しました', detail: 'HTTP 429 Too Many Requests — 3秒後に再試行してください（リトライ ' + (retryAttempts+1) + '/3）' },
+                { title: 'バックエンドタイムアウト', detail: 'TimeoutError: LLM ゲートウェイが 30s で応答なし（線形バックオフで再試行）' },
+                { title: '一時的なネットワークエラー', detail: 'ConnectionResetError: ピアが接続をリセットしました' }
+            ];
+            const e = errors[Math.floor(Math.random() * errors.length)];
+            document.getElementById('errorTitle').textContent = e.title;
+            document.getElementById('errorMessage').textContent = e.detail;
+            document.getElementById('errorBox').classList.add('visible');
+            updateLiveRegion('エラー: ' + e.title + '（再試行してください）');
+        }
+
+        function retryGeneration() {
+            retryAttempts++;
+            document.getElementById('errorBox').classList.remove('visible');
+            updateLiveRegion('再試行します（' + retryAttempts + '回目）');
+            logSse('', '再試行 ' + retryAttempts + ' 回目');
+            simulatePipeline();
+        }
+
+        function computeMetrics() {
+            const tokens = Math.round(targetLength / 1.6) + creativityLevel * 5 + (chapterCount - 1) * 220 + (userPlot ? 80 : 0);
+            const cost = +(tokens * 0.000012).toFixed(2);
+            const time = +((targetLength / 900) + chapterCount * 1.2 + creativityLevel / 60 + 1.5).toFixed(1);
+            const cache = 50 + Math.floor(creativityLevel / 4);
+            return { tokens, cost, time, cache };
+        }
+
+        // 改善⑦: 決定論的スコア
+        function computeScore(creativity, spicesCount, length, chapters) {
+            let s = 78 + creativity * 0.15 + spicesCount * 1.5 + (length / 2000) * 3 + (chapters - 1) * 1;
+            return Math.max(80, Math.min(99, Math.round(s)));
+        }
+
+        // 改善②: 実抽出（本文から尖り語彙を検出）
+        function detectSpices(genre, content) {
+            const vocab = SPICE_VOCAB[genre] || [];
+            const found = [];
+            const seen = new Set();
+            for (const v of vocab) {
+                if (content.indexOf(v.word) !== -1 && !seen.has(v.word)) {
+                    seen.add(v.word);
+                    found.push(v);
+                }
+            }
+            return found;
+        }
+
+        function showResult() {
+            document.getElementById('progressContainer').setAttribute('aria-busy', 'false');
+            document.getElementById('progressContainer').style.display = 'none';
+            document.getElementById('resultContainer').style.display = 'block';
+
+            const m = computeMetrics();
+            document.getElementById('finalTokens').textContent = m.tokens.toLocaleString();
+            document.getElementById('finalCost').textContent = '¥' + m.cost;
+            document.getElementById('finalTime').textContent = m.time.toFixed(1) + 's';
+            document.getElementById('cacheHit').textContent = m.cache + '%';
+
+            document.getElementById('novelTitle').textContent = currentNovel.title;
+
+            const pb = document.getElementById('plotBoxWrap');
+            if (currentNovel.plot) pb.innerHTML = '<div class="plot-box"><strong>あらすじ（プロットから生成）</strong><br>' + escapeHtml(currentNovel.plot) + '</div>';
+            else pb.innerHTML = '';
+
+            streamText(document.getElementById('novelContent'), currentNovel.content);
+            showSpiceGuard(currentNovel.detected);
+            showReviewGate(currentNovel.score);
+            showIfRoutes(selectedGenre);
+
+            logSse('ok', 'JOB COMPLETED: ' + currentNovel.title);
+            updateLiveRegion('小説の生成が完了しました');
+            // 改善⑤: 結果見出しへフォーカス移動
+            const heading = document.getElementById('resultHeading');
+            heading.focus && heading.focus();
+        }
+
+        function streamText(el, text) {
+            if (reduceMotion) { el.textContent = text; return; }
+            el.textContent = '';
+            const tn = document.createTextNode('');
+            const cursor = document.createElement('span');
+            cursor.className = 'cursor'; cursor.textContent = ' ';
+            el.appendChild(tn); el.appendChild(cursor);
+            let i = 0;
+            const stepN = Math.max(1, Math.round(text.length / 220));
+            function tick() {
+                i = Math.min(text.length, i + stepN);
+                tn.textContent = text.slice(0, i);
+                if (i < text.length) setTimeout(tick, 18);
+                else el.textContent = text;
+            }
+            tick();
+        }
+
+        const SPICE_VOCAB = {
+            'ざまぁ・追放・無双': [{type:'カタルシス',word:'無双'},{type:'カタルシス',word:'圧倒的'},{type:'カタルシス',word:'顔面蒼白'},{type:'感情',word:'絶望'},{type:'感情',word:'余裕'}],
+            '悪役令嬢・断罪回避': [{type:'フラグ',word:'フラグ'},{type:'フラグ',word:'隠しルート'},{type:'百合',word:'百合'},{type:'百合',word:'尊い'},{type:'感情',word:'回避'}],
+            'チート転生・即最強': [{type:'システム',word:'スキル'},{type:'システム',word:'最適解'},{type:'システム',word:'デバッグ'},{type:'システム',word:'無敵'},{type:'感情',word:'悟った'}],
+            'スローライフ・ほのぼの': [{type:'五感',word:'香り'},{type:'五感',word:'ふわふわ'},{type:'五感',word:'温かい'},{type:'五感',word:'ほっこり'},{type:'感情',word:'優しい'}],
+            'ダンジョン運営・経営': [{type:'罠',word:'罠'},{type:'罠',word:'ギミック'},{type:'忠誠',word:'忠誠'},{type:'進化',word:'進化'},{type:'個性',word:'個性'}],
+            '現代チート・都市伝説': [{type:'テック',word:'ルート権限'},{type:'テック',word:'パッチ'},{type:'テック',word:'実体化'},{type:'テック',word:'同期'},{type:'テック',word:'ログ'}],
+            'TS転生・百合・性別反転': [{type:'百合',word:'百合'},{type:'百合',word:'美少女'},{type:'百合',word:'尊い'},{type:'百合',word:'永遠'},{type:'感情',word:'親密'}],
+            'VRMMO・ゲーム世界': [{type:'同期',word:'フルダイブ'},{type:'同期',word:'同期'},{type:'同期',word:'実体化'},{type:'同期',word:'現実'},{type:'同期',word:'没入'}],
+            'ループ・時間逆行・真エンド': [{type:'収束',word:'周目'},{type:'収束',word:'真エンド'},{type:'収束',word:'収束'},{type:'収束',word:'確率'},{type:'収束',word:'必然'}]
+        };
+
+        function generateContextualNovel(genre, keyword, creativity, length, density, chapters, plot, nsfwOn) {
+            const genres = {
+                'ざまぁ・追放・無双': {
+                    titles: ['異世界最強の無双皇帝', '追放された者が帰還する時', '圧倒的力で顔面蒼白にさせる'],
+                    base: '「これで最後だ…」剣を握る俺の手が震えていた。{kw}という絶望の果てに、ついに真の力が目覚める。',
+                    openings: ['その日、世界は彼の前に膝を屈した。','帰還した男の足取りは、もはや誰にも止められない。','かつての屈辱は、今や力の糧となる。'],
+                    body: ['敵の剣が粉砕され、地面に散った。','見上げた空には、もう恐れるものは何もない。','圧倒的な力の差を前に、彼らは膝をついた。','一度は奪われたものを、今の俺なら取り戻せる。','風が凛と吹き抜け、新しい時代の始まりを告げた。','誰もが見たことのない一閃が、夜を切り裂いた。','「この程度か」――余裕の笑みがこぼれた。','過去の屈辱を糧に、俺はさらに強くなった。','味方たちの瞳に、確かな希望の光が宿る。','そして舞台は、静かに次の戦いへと移っていく。']
+                },
+                '悪役令嬢・断罪回避': {
+                    titles: ['悪役令嬢の秘密の百合ルート', 'フラグ回避の天才令嬢', '宮廷陰謀を暴く姫'],
+                    base: '「私、本当は悪役令嬢なんかじゃないのに…」{kw}という運命から逃れるため、俺は策略を巡らせる。',
+                    openings: ['宮廷の廊下で、彼女はふと息を止めた。','偽りの微笑みの裏で、真実の糸を紡ぐ。','運命の書は、彼女の手で書き換えられる。'],
+                    body: ['彼女と交わす言葉のひとつひとつが、密やかな温もりを帯びていた。','誰にも見せない笑顔を、俺はそっと受け止めた。','宮廷の裏で蠢く陰謀を、俺は冷静に読み解いていく。','危うく踏みそうになった罠を、一歩先で回避した。','「あなたがいてくれてよかった」その一言が、胸に染みた。','偽りの令嬢を演じながら、本当の絆だけを守り抜く。','夕闇の廊下で、二人だけの秘密を分かち合った。','運命の糸は、思ったよりも優しく絡み合っていた。','尊い想いを抱いて、俺は明日への歩みを止めない。','そして宮廷の片隅で、小さな奇跡が芽生え始めた。']
+                },
+                'チート転生・即最強': {
+                    titles: ['チートスキル∞で無敵の人生', '即最強転生者の歩み', 'デバッグ権限で世界を書き換え'],
+                    base: '「スキル: 神レベル無限成長」――{kw}という文字が目の前に浮かんだ瞬間、俺は悟った。',
+                    openings: ['数値は、もはや常識の枠を超えていた。','世界の裏側には、誰も知らないコンソールがあった。','転生者の視界に、 hanya 仕様書が映る。'],
+                    body: ['ステータス画面を見るたび、数値が桁違いに跳ね上がっている。','最適解を弾き出せば、どんな困難も一瞬で片付いた。','周囲が困惑する中、俺だけが冷静に先を読んでいた。','デバッグ権限を握り、世界の不具合を書き換えていく。','効率を極めれば、道のりなど短縮できるものだ。','「これが本当の力か」思わず頬が緩んだ。','誰も辿り着けなかった領域へ、ひとりでに到達していた。','無駄を削ぎ落とした結果、残ったのは圧倒的な余裕だけ。','システムの限界を超え、新たな仕様が解放された。','そして俺の伝説は、静かな自信とともに続いていく。']
+                },
+                'スローライフ・ほのぼの': {
+                    titles: ['ほのぼのスローライフ異世界生活', 'ふわふわ日常の楽園', 'とろけるような幸せ時間'],
+                    base: '「今日もいいお天気ですね…」{kw}の香りが鼻腔をくすぐる。異世界での穏やかな日々。',
+                    openings: ['朝の光が、やさしく窓辺を照らす。','畑の土を両手で感じる喜び、それが新しい日常。','異世界の空気は、まるで優しい囁きのようだ。'],
+                    body: ['朝露に濡れたハーブを摘み、優しい香りに包まれる。','かまどの火を見つめながら、ゆっくりと呼吸を整えた。','庭の小動物たちが、遠慮がちに寄ってきた。','夕暮れの空を眺め、今日も無事に過ごせたことに感謝する。','手作りのパンが焼き上がり、ふわっと湯気が立つ。','風鈴の音に誘われ、縁側でうたた寝を楽しんだ。','少しずつ増える畑の恵みに、心がほぐれていく。','温かいスープをすすり、頬が思わず緩んだ。','何も急ぐ必要のない時間が、ここには溢れていた。','そして静かな夜が、優しく一日を包み込む。']
+                },
+                'ダンジョン運営・経営': {
+                    titles: ['ダンジョン経営で最強ギルドマスター', '罠だらけの楽園', 'モンスターたちの優しいパパ'],
+                    base: '「このダンジョン、俺が君たちのパパになるんだ」{kw}という決意とともに、運営が始まる。',
+                    openings: ['迷宮の奥底で、新たな仕掛けが稼働する。','帳簿の数字は、今日も愉快なほど黒を描く。','住人たちの笑い声が、石の廊下に響く。'],
+                    body: ['新しい罠を仕掛け、入侵者を愉快なほど手玉に取った。','モンスターたちが自慢げに、獲物の報告にやってくる。','収支を確認すれば、今月も黒字で順調だった。','個性豊かな住人たちの顔を思い浮かべ、思わず笑う。','迷宮の構造を改修し、さらに奥深い謎を隠した。','冒険者たちの驚く顔を想像し、準備に余念がない。','経営の知恵を絞り、みんなが暮らしやすい場を作る。','幼いゴブリンが駆け寄り、俺の袖をぎゅっと掴んだ。','戦略を練り直し、明日の繁栄の土台を固めた。','そしてダンジョンは、今日も静かに深呼吸をしていた。']
+                },
+                '現代チート・都市伝説': {
+                    titles: ['現代チート能力で都市伝説を解明', 'ルート権限で真実を視る', 'パッチ当てて現実を書き換え'],
+                    base: '「これが現代チートというやつか…」{kw}の情報がスマホ画面に映し出される。',
+                    openings: ['不可視の層が、ようやく可視になった。','都市の真実は、ログの奥に眠っていた。','画面の向こうで、世界が書き換わる。'],
+                    body: ['画面上の不可視データが、突如として可視化された。','都市の裏側で囁かれる噂が、論理的な真実へと変わる。','権限を昇格させ、隠されたログを一つずつ暴いた。','現実にパッチを当てるように、世界の矛盾を修正していく。','誰も信じない怪異を、俺だけが証明できる。','霓虹灯の下、デジタルと現実の境界が揺らいだ。','謎の発信元を辿り、意外な答えへとたどり着いた。','システムの隙を突き、常識をひっくり返した。','闇に葬られた真実が、ゆっくりと日の目を見始める。','そして街の片隅で、新たな伝説が生まれようとしていた。']
+                },
+                'TS転生・百合・性別反転': {
+                    titles: ['性別転生して百合 princess と出会う', '美少女になった俺と百合姫', '永遠の絆を誓う二人'],
+                    base: '「 príncipe… ごめん、私にはあなたが王子に見えないんだ」{kw}という身体で、新たな人生が始まる。',
+                    openings: ['鏡の中の自分は、もう見知った姿ではない。','宮廷の花々より、隣の彼女の笑顔が眩しい。','性別を越えた優しさが、静かに芽を出す。'],
+                    body: ['鏡の中の自分を見つめ、ふと新しい魅力に気づいた。','彼女の髪を梳かすたび、尊い時間がゆっくり流れた。','性別を越えた優しさが、二人の距離を縮めていく。','小さな手の温もりに、胸の奥がじんわりと温かい。','「君がいてくれるなら、何も恐くない」そう囁いた。','宮廷の花々よりも、彼女の笑顔が一番美しかった。','運命に翻弄されながらも、寄り添って歩み続けた。','永遠を誓ったあの日の記憶は、今も鮮やかだ。','互いを肯定し合う言葉が、静かな力になった。','そして二人の物語は、変わらぬ絆とともに紡がれる。']
+                },
+                'VRMMO・ゲーム世界': {
+                    titles: ['VRMMO世界で現実とゲームの境界が崩壊', 'フルダイブしたまま現実侵食', '同期して実体化する世界'],
+                    base: '「サーバー接続: 失敗。現実世界への干渉レベル: 危険」{kw}の声がヘッドセットから聞こえる。',
+                    openings: ['ログアウトの文字が、ひとつずつ消えていく。','フルダイブの深淵で、現実が滲み出した。','同期率100%――二つの世界が重なる。'],
+                    body: ['ログアウトボタンが消え、世界が俺を手放さない。','ゲーム内の風景が、現実の窓の外にも滲み出した。','同期率が上がるたび、二つの世界の線が曖昧になる。','仲間のアバターが、まるで隣にいるように感じられた。','クエストの報奨が、現実の手元にふっと現れた。','フルダイブの没入感に、時の経つのを忘れた。','システムの声が、俺の思考にそっと寄り添ってくる。','実体化した剣を握り、重みに思わず息をのんだ。','境界が崩れようとする夜、俺たちは手を取り合った。','そしてゲームと現実は、ゆっくりと一つの世界になった。']
+                },
+                'ループ・時間逆行・真エンド': {
+                    titles: ['ループを極めて真エンドを手に入れる者', '何周目でも君を救う', '確率1%の必然を掴む'],
+                    base: '「このループ、何回目だっけ…」{kw}という記憶が手帳に刻まれるたび、運命が変わる。',
+                    openings: ['周目を重ねるごとに、真実の一片が揃う。','手帳の数字は、もう何百回目を刻む。','収束への道は、確率の彼方にある。'],
+                    body: ['何度繰り返しても、俺だけがその記憶を抱えている。','わずかな選択の差が、未来を大きく分岐させた。','失敗した周目の痛みを糧に、次は確実に足場を固める。','収束へ向かう軌道の先に、真のエンディングが見えた。','確率1%の奇迹を、諦めずに引き寄せた。','周目を重ねるごとに、彼女の笑顔を取り戻す道が見えた。','運命のパズルが、少しずつ正しい形にはまっていく。','もう迷わない。この手で必ず最良の結末を掴む。','過去の自分に教えたい答えが、今の俺にはある。','そしてループの果てに、ようやく二人は解放された。']
+                }
+            };
+
+            const g = genres[genre] || genres['ざまぁ・追放・無双'];
+            const kw = keyword || '運命';
+            const title = g.titles[Math.floor(Math.random() * g.titles.length)];
+            let content = g.base.replace('{kw}', kw);
+
+            const intros = [' 風が吹き抜け、新しい時代の予感がした。',' その瞬間、世界のすべてが変わる気がした。',' そして、物語は本当に始まったばかりだった。'];
+            const introCount = Math.min(Math.floor(creativity / 34) + 1, intros.length);
+            for (let i = 0; i < introCount; i++) content += intros[i];
+
+            const perChapter = Math.max(4, density * 2);
+            const pool = g.body;
+            const openings = g.openings || [];
+            let idx = 0, guard = 0, chap = 1;
+            let written = content.replace(/\n/g, '').length;
+
+            while (written < length && guard < pool.length * 8) {
+                if (idx % 2 === 0) {
+                    if (chapters > 1 && idx > 0 && idx % (perChapter * 2) === 0 && chap < chapters) {
+                        chap++;
+                        const op = openings[(chap - 2) % openings.length] || '';
+                        content += '\n\n── 第' + chap + '話 ──\n\n' + (op ? op + ' ' : '');
+                    } else {
+                        content += '\n\n';
+                    }
+                }
+                content += pool[idx % pool.length];
+                idx++; guard++;
+                written = content.replace(/\n/g, '').length;
+            }
+            content = content.substring(0, length).replace(/\n+$/, '');
+
+            let plotOut = null;
+            if (plot && plot.trim()) {
+                plotOut = plot.trim();
+                if (density >= 3) content = '（プロットに基づく導入）' + plotOut.slice(0, 40) + '…\n\n' + content;
+            }
+            if (nsfwOn) content += '\n\n[NSFWオプトイン: 官能描写は含まれません（デモ注記）]';
+
+            const detected = detectSpices(genre, content);
+            const score = computeScore(creativity, detected.length, length, chapters);
+
+            return { title: title, content: content, plot: plotOut, detected: detected, score: score };
+        }
+
+        // 改善②: SpiceGuard 可視化（実抽出＋3フェーズ）
+        function showSpiceGuard(detected) {
+            document.getElementById('spiceVisual').style.display = 'block';
+            document.getElementById('spiceCount').textContent = '検出 ' + detected.length + ' 件';
+            const container = document.getElementById('spiceItems');
+            container.innerHTML = '';
+            if (!detected.length) {
+                container.innerHTML = '<div class="spice-item"><span class="spice-tag">なし</span> 本文から尖り要素は検出されませんでした</div>';
+            } else {
+                detected.forEach(d => {
+                    const div = document.createElement('div');
+                    div.className = 'spice-item';
+                    div.innerHTML = '<span class="spice-tag">' + escapeHtml(d.type) + '</span>' + escapeHtml(d.word) +
+                        ' <span class="spice-marker">&lt;&lt;&lt;SPICE:' + escapeHtml(d.type) + '&gt;&gt;&gt;' + escapeHtml(d.word) + '&lt;&lt;/SPICE&gt;&gt;&gt;</span>';
+                    container.appendChild(div);
+                });
+            }
+            ['spicePhase1', 'spicePhase2', 'spicePhase3'].forEach(id => document.getElementById(id).className = 'spice-phase');
+            if (reduceMotion) {
+                ['spicePhase1', 'spicePhase2', 'spicePhase3'].forEach(id => document.getElementById(id).className = 'spice-phase done');
+            } else {
+                ['spicePhase1', 'spicePhase2', 'spicePhase3'].forEach((id, i) => setTimeout(() => {
+                    document.getElementById(id).className = 'spice-phase active';
+                    setTimeout(() => document.getElementById(id).className = 'spice-phase done', 600);
+                }, 400 + i * 700));
+            }
+        }
+
+        // 改善②: 本文ハイライト切替
+        let highlightOn = false;
+        function toggleHighlight() {
+            const el = document.getElementById('novelContent');
+            if (!currentNovel) return;
+            highlightOn = !highlightOn;
+            if (highlightOn) {
+                let html = escapeHtml(currentNovel.content);
+                currentNovel.detected.forEach(d => {
+                    const re = new RegExp(escapeRegExp(d.word), 'g');
+                    html = html.replace(re, '<mark class="spice">' + escapeHtml(d.word) + '</mark>');
+                });
+                el.innerHTML = html;
+            } else {
+                el.textContent = currentNovel.content;
+            }
+        }
+
+        function showReviewGate(score) {
+            document.getElementById('reviewGate').style.display = 'block';
+            document.getElementById('reviewScore').textContent = score;
+            document.getElementById('scoreFormula').textContent = '（決定論的: 創造性・尖り数・文字数・話数から算出）';
+            const fill = document.getElementById('scoreFill');
+            setTimeout(() => { fill.style.width = score + '%'; }, 100);
+            const status = document.getElementById('reviewStatus');
+            if (score >= 95) { status.textContent = '✓ 監査基準をクリア（自動承認）'; status.style.color = 'var(--success)'; }
+            else if (score >= 80) { status.textContent = '△ 人間レビュー推奨（自動リライト ' + Math.min(3, 95 - score) + ' 回で回復）'; status.style.color = 'var(--warning)'; }
+            else { status.textContent = '✗ 要修正（自動リライト実行）'; status.style.color = 'var(--accent)'; }
+        }
+
+        const ifRoutes = {
+            'ざまぁ・追放・無双': [['カタルシス分岐','完全無双で敵を屈服させる'],['隠しルート','敵の更生・共闘'],['バッドエンド','力を失い再び追放'],['真エンド','覇権を確立']],
+            '悪役令嬢・断罪回避': [['フラグ回避ルート','断罪を完全に回避'],['隠しルート','百合の真展開'],['バッドエンド','処刑される IF'],['真エンド','真の姫君として認められる']],
+            'チート転生・即最強': [['即最強ルート','転生直後から無双'],['デバッグルート','世界の不具合を悪用'],['バッドエンド','システムにbanされる'],['真エンド','神に到達']],
+            'スローライフ・ほのぼの': [['ほのぼのルート','平穏な日常維持'],['事件ルート','村の謎を解く'],['バッドエンド','異世界の罠に遭う'],['真エンド','第二の故郷を得る']],
+            'ダンジョン運営・経営': [['経営ルート','黒字を極める'],['罠ルート','入侵者を翻弄'],['バッドエンド','ダンジョン崩壊'],['真エンド','最強迷宮となる']],
+            '現代チート・都市伝説': [['解明ルート','真実を公表'],['隠蔽ルート','裏側で操作'],['バッドエンド','消去される'],['真エンド','新時代の創始者']],
+            'TS転生・百合・性別反転': [['百合ルート','二人の絆'],['性別受容ルート','新たな自分を受け入れる'],['バッドエンド','元の性別に戻る'],['真エンド','永遠の誓い']],
+            'VRMMO・ゲーム世界': [['現実回帰ルート','ログアウト成功'],['侵食ルート','現実と融合'],['バッドエンド','オンライン永久'],['真エンド','二世界の調和']],
+            'ループ・時間逆行・真エンド': [['収束ルート','運命を解く'],['別周目ルート','別の結末を試す'],['バッドエンド','ループから抜け出せない'],['真エンド','確率1%を掴む']]
+        };
+        function showIfRoutes(genre) {
+            const c = document.getElementById('ifContainer');
+            const tree = document.getElementById('ifTree');
+            const routes = ifRoutes[genre] || [];
+            if (!routes.length) { c.style.display = 'none'; return; }
+            let html = '<ul>';
+            routes.forEach(r => { html += '<li><span class="if-route-name">' + escapeHtml(r[0]) + '</span> <span class="if-route-kind">— ' + escapeHtml(r[1]) + '</span></li>'; });
+            html += '</ul>';
+            tree.innerHTML = html;
+            c.style.display = 'block';
+        }
+
+        // 改善④: エクスポート
+        function downloadBlob(filename, blob) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = filename;
+            document.body.appendChild(a); a.click(); a.remove();
+            URL.revokeObjectURL(url);
+            updateLiveRegion(filename + ' を出力しました');
+        }
+        function novelText() {
+            return '# ' + currentNovel.title + '\n\n' + (currentNovel.plot ? '【あらすじ】\n' + currentNovel.plot + '\n\n' : '') + currentNovel.content;
+        }
+        function copyNovel() {
+            if (!currentNovel) return;
+            const text = novelText();
+            if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => updateLiveRegion('クリップボードにコピーしました'));
+            else updateLiveRegion('このブラウザではコピーできません');
+        }
+        function exportNovel(kind) {
+            if (!currentNovel) return;
+            if (kind === 'txt') downloadBlob(currentNovel.title + '.txt', new Blob([novelText()], { type: 'text/plain;charset=utf-8' }));
+            else if (kind === 'mobi') downloadBlob('[MOBI非対応・デモ] ' + currentNovel.title + '.md', new Blob([novelText() + '\n\n<!-- MOBI 形式は Amazon KPF が必要なため、デモでは Markdown で出力 -->'], { type: 'text/markdown;charset=utf-8' }));
+        }
+        function exportPdf() {
+            if (!currentNovel) return;
+            const w = window.open('', '_blank');
+            if (!w) { updateLiveRegion('ポップアップがブロックされました'); return; }
+            w.document.write('<html><head><meta charset="utf-8"><title>' + escapeHtml(currentNovel.title) + '</title>' +
+                '<style>body{font-family:serif;padding:40px;line-height:1.8;}h1{font-size:1.6rem;}p{margin:0 0 1em;}</style></head><body>' +
+                '<h1>' + escapeHtml(currentNovel.title) + '</h1>' +
+                (currentNovel.plot ? '<p><strong>あらすじ:</strong> ' + escapeHtml(currentNovel.plot) + '</p>' : '') +
+                '<p>' + escapeHtml(currentNovel.content).replace(/\n/g, '</p><p>') + '</p>' +
+                '<script>window.onload=function(){window.print();};<\/script></body></html>');
+            w.document.close();
+            updateLiveRegion('PDF印刷用ウィンドウを開きました');
+        }
+
+        // 改善④: 本物の EPUB（zip: store + CRC32）
+        function crc32(buf) {
+            let table = crc32.t;
+            if (!table) {
+                table = crc32.t = [];
+                for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1); table[n] = c >>> 0; }
+            }
+            let crc = 0xFFFFFFFF;
+            for (let i = 0; i < buf.length; i++) crc = table[(crc ^ buf[i]) & 0xFF] ^ (crc >>> 8);
+            return (crc ^ 0xFFFFFFFF) >>> 0;
+        }
+        function buildZip(files) {
+            const enc = new TextEncoder();
+            const parts = []; let central = []; let offset = 0;
+            for (const f of files) {
+                const data = typeof f.data === 'string' ? enc.encode(f.data) : f.data;
+                const nameBytes = enc.encode(f.name);
+                const crc = crc32(data);
+                const local = new Uint8Array(30 + nameBytes.length + data.length);
+                const dv = new DataView(local.buffer);
+                dv.setUint32(0, 0x04034b50, true);
+                dv.setUint16(4, 20, true); dv.setUint16(6, 0, true); dv.setUint16(8, 0, true);
+                dv.setUint16(10, 0, true); dv.setUint16(12, 0, true);
+                dv.setUint32(14, crc, true);
+                dv.setUint32(18, data.length, true);
+                dv.setUint32(22, data.length, true);
+                dv.setUint16(26, nameBytes.length, true);
+                dv.setUint16(28, 0, true);
+                local.set(nameBytes, 30); local.set(data, 30 + nameBytes.length);
+                parts.push(local);
+                const localOffset = offset;
+                const cd = new Uint8Array(46 + nameBytes.length);
+                const cdv = new DataView(cd.buffer);
+                cdv.setUint32(0, 0x02014b50, true);
+                cdv.setUint16(4, 20, true); cdv.setUint16(6, 20, true); cdv.setUint16(8, 0, true); cdv.setUint16(10, 0, true);
+                cdv.setUint16(12, 0, true); cdv.setUint16(14, 0, true);
+                cdv.setUint32(16, crc, true);
+                cdv.setUint32(20, data.length, true);
+                cdv.setUint32(24, data.length, true);
+                cdv.setUint16(28, nameBytes.length, true); cdv.setUint16(30, 0, true); cdv.setUint16(32, 0, true); cdv.setUint16(34, 0, true); cdv.setUint16(36, 0, true); cdv.setUint32(38, 0, true);
+                cdv.setUint32(42, localOffset, true);
+                cd.set(nameBytes, 46);
+                central.push(cd); offset += local.length;
+            }
+            let centralSize = 0; const centralStart = offset;
+            for (const cd of central) { parts.push(cd); centralSize += cd.length; offset += cd.length; }
+            const end = new Uint8Array(22);
+            const edv = new DataView(end.buffer);
+            edv.setUint32(0, 0x06054b50, true); edv.setUint16(4, 0, true); edv.setUint16(6, 0, true);
+            edv.setUint16(8, central.length, true); edv.setUint16(10, central.length, true);
+            edv.setUint32(12, centralSize, true); edv.setUint32(16, centralStart, true); edv.setUint16(20, 0, true);
+            parts.push(end);
+            let total = parts.reduce((s, p) => s + p.length, 0);
+            const out = new Uint8Array(total); let pos = 0;
+            for (const p of parts) { out.set(p, pos); pos += p.length; }
+            return new Blob([out], { type: 'application/epub+zip' });
+        }
+        function exportEpub() {
+            if (!currentNovel) return;
+            const enc = new TextEncoder();
+            const safe = (currentNovel.title || 'novel').replace(/[\\/:*?"<>|]/g, '_');
+            const xhtml = '<?xml version="1.0" encoding="utf-8"?>\n<!DOCTYPE html>' +
+                '<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ja" lang="ja"><head><meta charset="utf-8"/>' +
+                '<title>' + escapeXml(currentNovel.title) + '</title></head><body>' +
+                (currentNovel.plot ? '<h2>あらすじ</h2><p>' + escapeXml(currentNovel.plot) + '</p>' : '') +
+                '<h1>' + escapeXml(currentNovel.title) + '</h1><p>' + escapeXml(currentNovel.content).replace(/\n/g, '</p><p>') + '</p></body></html>';
+            const opf = '<?xml version="1.0"?>\n<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="bid">' +
+                '<metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title>' + escapeXml(currentNovel.title) + '</dc:title>' +
+                '<dc:language>ja</dc:language><meta property="dcterms:modified">2026-08-17T00:00:00Z</meta></metadata>' +
+                '<manifest><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>' +
+                '<item id="content" href="content.xhtml" media-type="application/xhtml+xml"/></manifest>' +
+                '<spine><itemref idref="content"/></spine></package>';
+            const nav = '<?xml version="1.0"?>\n<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>nav</title></head><body><nav epub:type="toc"><ol><li><a href="content.xhtml">' + escapeXml(currentNovel.title) + '</a></li></ol></nav></body></html>';
+            const files = [
+                { name: 'mimetype', data: 'application/epub+zip' },
+                { name: 'META-INF/container.xml', data: '<?xml version="1.0"?><container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/></rootfiles></container>' },
+                { name: 'OEBPS/content.opf', data: opf },
+                { name: 'OEBPS/nav.xhtml', data: nav },
+                { name: 'OEBPS/content.xhtml', data: xhtml }
+            ];
+            downloadBlob(safe + '.epub', buildZip(files));
+            // 検証ログ
+            logSse('ok', 'EPUB 出力: ' + files.length + ' ファイルを zip 化');
+        }
+        function exportAssetPack() {
+            if (!currentNovel) return;
+            const m = computeMetrics();
+            const pack = '# 資産化パック（デモ）\n\n## 原本\n' + currentNovel.content + '\n\n## IFルート\n' +
+                (ifRoutes[selectedGenre] || []).map(r => '- ' + r[0] + ': ' + r[1]).join('\n') + '\n\n## メタデータ\n' +
+                JSON.stringify({ title: currentNovel.title, genre: selectedGenre, tokens: m.tokens, cost: m.cost, score: currentNovel.score, spices: currentNovel.detected.map(d => d.word) }, null, 2) + '\n';
+            downloadBlob(currentNovel.title + '_asset_pack.md', new Blob([pack], { type: 'text/markdown;charset=utf-8' }));
+        }
+        function exportMediaMix() {
+            if (!currentNovel) return;
+            const script = '# メディアミックス台本（デモ）\n\n## 漫画版\nコマ1: ' + currentNovel.content.slice(0, 40) + '…\nコマ2: 尖り要素を視覚化\n\n' +
+                '## 音声ドラマ版\nナレーション: ' + currentNovel.title + '\nSE: 緊張感のあるBGM\n\n## 動画版\nショート動画: フック部分を15秒で抜粋\n';
+            downloadBlob(currentNovel.title + '_media_mix.md', new Blob([script], { type: 'text/markdown;charset=utf-8' }));
+        }
+
+        function updateLiveRegion(message) { document.getElementById('liveRegion').textContent = message; }
+        function escapeHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+        function escapeXml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+        function escapeRegExp(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+        function resetDemo() {
+            cards.forEach(card => { card.classList.remove('selected'); card.setAttribute('aria-checked', 'false'); card.tabIndex = -1; });
+            selectedGenre = null;
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('progressContainer').style.display = 'none';
+            document.getElementById('resultContainer').style.display = 'none';
+            document.getElementById('errorBox').classList.remove('visible');
+            document.getElementById('progressFill').style.width = '0%';
+            document.getElementById('progressFill').setAttribute('aria-valuenow', '0');
+            document.getElementById('progressText').textContent = '準備中...';
+            ['step1Desc','step2Desc','step3Desc','step4Desc'].forEach(id => document.getElementById(id).textContent = '待機中...');
+            ['step1','step2','step3','step4'].forEach(id => document.getElementById(id).className = 'step');
+            document.getElementById('novelTitle').textContent = '小説タイトル';
+            document.getElementById('novelContent').textContent = '';
+            document.getElementById('plotBoxWrap').innerHTML = '';
+            document.getElementById('spiceVisual').style.display = 'none';
+            document.getElementById('reviewGate').style.display = 'none';
+            document.getElementById('ifContainer').style.display = 'none';
+            document.getElementById('keywordInput').value = '';
+            userKeyword = '';
+            highlightOn = false;
+            retryAttempts = 0;
+            updateLiveRegion('デモをリセットしました。ジャンルを選択してください。');
+        }
+
+        updateLiveRegion('デモの準備ができました。ジャンルを選択してください。');
+    </script>
+</body>
+</html>

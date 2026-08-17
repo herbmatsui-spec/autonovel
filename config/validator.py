@@ -3,7 +3,9 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict, Callable
+
+import tomllib
 
 import yaml
 
@@ -44,10 +46,6 @@ class ConfigValidator:
             if not resolved_path.exists():
                 raise FileNotFoundError(f"設定ファイルが見つかりません: {resolved_path}")
             with open(resolved_path, "rb") as f:
-                try:
-                    import tomllib
-                except ModuleNotFoundError:
-                    import tomli as tomllib
                 data = tomllib.load(f)
             # [general] セクションを正しく抽出
             flat_data = data.get("general", {})
@@ -182,7 +180,9 @@ class ConfigValidator:
         logger.debug(f"[LOAD] Call stack: {''.join(traceback.format_stack()[:-1])}")
 
         # 安全ロードヘルパー: strict=False 時に例外をデフォルト値で代替
-        def _safe_load(loader_func, default_factory, label: str):
+        def _safe_load(
+            loader_func: Callable[[], Any], default_factory: Callable[[], Any], label: str
+        ) -> Any:
             try:
                 return loader_func()
             except Exception as e:

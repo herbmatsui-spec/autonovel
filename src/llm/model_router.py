@@ -63,12 +63,12 @@ def select_model(purpose: str = "writing") -> str:
     if purpose not in _PURPOSES:
         return purpose
 
-    # 設定から取得を試みる (SSOT: GlobalConfigModel / settings.toml)
+    # 設定から取得を試みる (SSOT: config.settings.Settings)
     key = f"model_{purpose}"
     try:
-        from config.project_context import get_config
+        from config.settings import get_settings
 
-        value = getattr(get_config(), key, None)
+        value = getattr(get_settings(), key, None)
         if value:
             return str(value)
     except Exception:

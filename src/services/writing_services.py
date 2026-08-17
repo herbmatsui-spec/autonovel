@@ -254,9 +254,9 @@ class GenerationLoopManager:
                 0.0,
             )
             if not is_easy_mode:
-                from config.project_context import ProjectContext
-
-                min_immersion = float(ProjectContext.get_setting("min_immersion_score", 0.0) or 0.0)
+                from config.settings import get_settings
+                cfg = get_settings()
+                min_immersion = float(cfg.min_immersion_score or 0.0)
                 if immersion_score < min_immersion and fail_fast:
                     raise RuntimeError(
                         f"Fail-Fast: 没入スコア {immersion_score:.1f} >= {min_immersion} を満たしません。"
@@ -433,16 +433,16 @@ class GenerationLoopManager:
         True = 次ループで再執筆すべき指摘あり
         False = スキップ（軽微な矛盾 or Critic無効）
         """
-        from config import get_config
+        from config.settings import get_settings
         from src.agents.audit import LogicalAuditor
         from src.models.audit import AuditIssue, LogicalAuditIssueList
 
-        cfg = get_config()
-        if not ProjectContext.get_setting("actor_critic_enabled", True):
+        cfg = get_settings()
+        if not cfg.actor_critic_enabled:
             return False
 
         # 警告レベルの「メタ階層化」によるフィルタリング: 閾値を設定から取得（デフォルト: Critical）
-        threshold = ProjectContext.get_setting("actor_critic_severity_threshold", "Critical")
+        threshold = cfg.actor_critic_severity_threshold
         severity_rank = {"Critical": 3, "Major": 2, "Minor": 1, "None": 0}
 
         # failures リストから LogicalAuditIssueList を構築

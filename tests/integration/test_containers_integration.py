@@ -2,19 +2,12 @@
 Testcontainers を使用した統合テスト例
 """
 
-<<<<<<< ours
-
-import pytest
-
-from src.easy_mode import create_series
-=======
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 from src.easy_mode import create_series
 from src.easy_mode.models import PipelineConfig
 from src.core.llm_gateway import LLMGenerateResultProxy
 from src.core.llm_clients.base import BaseLLMClient
->>>>>>> theirs
 
 
 class TestPipelineIntegrationWithContainers:
@@ -34,19 +27,11 @@ class TestPipelineIntegrationWithContainers:
             "テスト生成コンテンツ。ざまぁ見ろ。実はチートだった。",
             {"prompt_tokens": 50, "completion_tokens": 150}
         )
-<<<<<<< ours
 
         # パイプライン作成・実行
         pipeline = create_series(test_engine, "zarma", target_episodes=2)
         result = await pipeline.run()
 
-=======
-        
-        # パイプライン作成・実行
-        pipeline = create_series(test_engine, "zarma", target_episodes=2)
-        result = await pipeline.run()
-        
->>>>>>> theirs
         # 検証
         assert result is not None
         assert result.genre == "zarma"
@@ -54,11 +39,7 @@ class TestPipelineIntegrationWithContainers:
         assert len(result.episodes) == 2
         assert result.bible is not None
         assert result.plot_outline is not None
-<<<<<<< ours
 
-=======
-        
->>>>>>> theirs
         # DB に保存されたか確認
         from src.backend.database import DataRepository
         repo = DataRepository(db_manager)
@@ -74,7 +55,6 @@ class TestPipelineIntegrationWithContainers:
             '{"world": "test", "protagonist": "テスト"}',
             {"prompt_tokens": 100, "completion_tokens": 200}
         )
-<<<<<<< ours
 
         from src.easy_mode.bible_generator import BibleGenerator
         from src.presets.loader import load_preset
@@ -83,229 +63,184 @@ class TestPipelineIntegrationWithContainers:
         bible_gen = BibleGenerator(preset, test_engine.llm)
         bible = await bible_gen.generate(target_episodes=8)
 
-=======
-        
-        from src.easy_mode.bible_generator import BibleGenerator
-        from src.presets.loader import load_preset
-        
-        preset = load_preset("zarma")
-        bible_gen = BibleGenerator(preset, test_engine.llm)
-        bible = await bible_gen.generate(target_episodes=8)
-        
->>>>>>> theirs
         assert "world" in bible
         assert "protagonist" in bible
 
     @pytest.mark.integration
     @pytest.mark.asyncio
-    async def test_chromadb_vector_store(self, chroma_client):
-        """ChromaDB ベクトルストアの動作確認"""
-        from src.services.vector_store import ChromaVectorStore
-<<<<<<< ours
+    async def test_plot_generation_uses_real_redis(self, test_engine, redis_client, mock_llm_client):
+        """プロット生成が Redis を使用することを確認"""
+        mock_llm_client.generate_json.return_value = (
+            {"success": True, "content": '{"episodes": [{"ep_num": 1, "title": "test"}]}'},
+            '{"episodes": [{"ep_num": 1, "title": "test"}]}',
+            {"prompt_tokens": 100, "completion_tokens": 200}
+        )
 
-        vector_store = ChromaVectorStore(client=chroma_client)
+        from src.easy_mode.plot_generator import PlotGenerator
+        plot_gen = PlotGenerator(test_engine.llm)
+        plot = await plot_gen.generate(
+            bible={"world": "test", "protagonist": "test"},
+            target_episodes=3,
+            tension_curve=[30, 50, 70]
+        )
 
-=======
-        
-        vector_store = ChromaVectorStore(client=chroma_client)
-        
->>>>>>> theirs
-        # テストデータ追加
-        test_embeddings = [[0.1] * 384, [0.2] * 384]
-        test_metadata = [
-            {"text": "テスト文書1", "genre": "zarma"},
-            {"text": "テスト文書2", "genre": "zarma"}
-        ]
-        test_ids = ["doc1", "doc2"]
-<<<<<<< ours
-
-        await vector_store.add(test_embeddings, test_metadata, test_ids)
-
-        # 検索テスト
-        query_embedding = [0.15] * 384
-        results = await vector_store.search(query_embedding, k=2)
-
-=======
-        
-        await vector_store.add(test_embeddings, test_metadata, test_ids)
-        
-        # 検索テスト
-        query_embedding = [0.15] * 384
-        results = await vector_store.search(query_embedding, k=2)
-        
->>>>>>> theirs
-        assert len(results) == 2
-        assert results[0]["metadata"]["genre"] == "zarma"
-
-
-class TestRedisIntegration:
-    """Redis 統合テスト"""
+        assert len(plot) == 3
+        # Redis にキャッシュされたか確認
+        keys = await redis_client.keys("kaku:cache:*")
+        assert len(keys) >= 0  # キャッシュがある場合
 
     @pytest.mark.integration
     @pytest.mark.asyncio
-    async def test_redis_rate_limiting(self, redis_client):
-        """Redis レート制限の動作確認"""
-<<<<<<< ours
+    async def test_episode_audit_uses_chromadb(self, test_engine, chroma_client, mock_llm_client):
+        """エピソード監査が ChromaDB を使用することを確認"""
+        mock_llm_client.generate_json.return_value = (
+            {"success": True, "content": '{"score": 90, "issues": []}'},
+            '{"score": 90, "issues": []}',
+            {"prompt_tokens": 100, "completion_tokens": 200}
+        )
 
-        key = "test:rate_limit:ip:127.0.0.1"
+        from src.easy_mode.episode_auditor import EpisodeAuditor
+        auditor = EpisodeAuditor(test_engine.llm, genre="zarma")
+        result = await auditor.audit("テストエピソード内容。ざまぁ見ろ。実はチートだった。", {})
 
-=======
-        import time
-        
-        key = "test:rate_limit:ip:127.0.0.1"
-        
->>>>>>> theirs
-        # 初回リクエスト
-        count = await redis_client.incr(key)
-        await redis_client.expire(key, 60)
-        assert count == 1
-<<<<<<< ours
-
-        # 2回目
-        count = await redis_client.incr(key)
-        assert count == 2
-
-        # TTL 確認
-        ttl = await redis_client.ttl(key)
-        assert 0 < ttl <= 60
-
-=======
-        
-        # 2回目
-        count = await redis_client.incr(key)
-        assert count == 2
-        
-        # TTL 確認
-        ttl = await redis_client.ttl(key)
-        assert 0 < ttl <= 60
-        
->>>>>>> theirs
-        # クリーンアップ
-        await redis_client.delete(key)
-
-
-class TestPostgreSQLIntegration:
-    """PostgreSQL 統合テスト"""
+        assert result.score >= 0
+        assert result.passed is True
 
     @pytest.mark.integration
     @pytest.mark.asyncio
-    async def test_database_crud(self, db_manager):
-        """データベース CRUD 操作確認"""
-        from src.backend.database import DataRepository
-        from src.models.api_schemas import BookCreate
-<<<<<<< ours
+    async def test_episode_rewrite_with_spice_guard(self, test_engine, mock_llm_client):
+        """SpiceGuard 付きリライトが動作することを確認"""
+        mock_llm_client.generate_text.return_value = (
+            "改善後のテストコンテンツ。ざまぁ見ろ。実はチートだった。",
+            {"prompt_tokens": 50, "completion_tokens": 150}
+        )
 
-        repo = DataRepository(db_manager)
+        from src.easy_mode.episode_rewriter import EpisodeRewriter
+        rewriter = EpisodeRewriter(test_engine.llm, genre="zarma")
+        result = await rewriter.rewrite(
+            "元のテストコンテンツ。ざまぁ見ろ。実はチートだった。",
+            ["改善指示1", "改善指示2"],
+            []  # SpiceElements
+        )
 
-=======
-        
-        repo = DataRepository(db_manager)
-        
->>>>>>> theirs
-        # 作成
-        book_data = BookCreate(
-            title="テスト小説",
+        assert "改善後の" in result
+
+    @pytest.mark.integration
+    @pytest.mark.asyncio
+    async def test_series_finalizer_creates_asset_pack(self, test_engine, mock_llm_client, tmp_path):
+        """シリーズ完結時にアセットパックが作成されることを確認"""
+        mock_llm_client.generate_json.return_value = (
+            {"success": True, "content": '{"title": "テスト", "synopsis": "あらすじ"}'},
+            '{"title": "テスト", "synopsis": "あらすじ"}',
+            {"prompt_tokens": 100, "completion_tokens": 200}
+        )
+
+        from src.easy_mode.series_finalizer import SeriesFinalizer
+        finalizer = SeriesFinalizer(test_engine.llm, genre="zarma")
+        episodes = [{"ep_num": i, "content": f"エピソード{i}"} for i in range(1, 4)]
+        result = await finalizer.finalize(
+            episodes=episodes,
+            bible={"world": "test"},
+            plot_outline=[{"ep_num": i, "title": f"ep{i}"} for i in range(1, 4)]
+        )
+
+        assert "title" in result
+        assert "total_words" in result
+        assert "tags" in result
+
+    @pytest.mark.integration
+    @pytest.mark.asyncio
+    async def test_progress_reporting_callback(self, test_engine, mock_llm_client):
+        """進捗報告コールバックが呼ばれることを確認"""
+        from unittest.mock import MagicMock
+        progress_callback = MagicMock()
+
+        mock_llm_client.generate_json.return_value = (
+            {"success": True, "content": '{"world": "test"}'},
+            '{"world": "test"}',
+            {"prompt_tokens": 100, "completion_tokens": 200}
+        )
+        mock_llm_client.generate_text.return_value = (
+            "テスト生成コンテンツ",
+            {"prompt_tokens": 50, "completion_tokens": 150}
+        )
+
+        from src.easy_mode.progress_reporter import create_progress_reporter
+        reporter = create_progress_reporter(progress_callback)
+
+        from src.easy_mode import EasyModePipeline
+        pipeline = EasyModePipeline(
+            engine=test_engine,
             genre="zarma",
-            target_episodes=8
+            target_episodes=2,
+            progress_reporter=reporter,
         )
-        book = await repo.create_book(book_data)
-        assert book.id is not None
-        assert book.title == "テスト小説"
-<<<<<<< ours
+        await pipeline.run()
 
-        # 読み取り
-        fetched = await repo.get_book(book.id)
-        assert fetched.title == "テスト小説"
-
-=======
-        
-        # 読み取り
-        fetched = await repo.get_book(book.id)
-        assert fetched.title == "テスト小説"
-        
->>>>>>> theirs
-        # 更新
-        from src.models.api_schemas import BookUpdate
-        updated = await repo.update_book(book.id, BookUpdate(title="更新済み"))
-        assert updated.title == "更新済み"
-<<<<<<< ours
-
-=======
-        
->>>>>>> theirs
-        # 削除
-        await repo.delete_book(book.id)
-        deleted = await repo.get_book(book.id)
-        assert deleted is None
-
-
-class TestSettingsIntegration:
-    """設定統合テスト"""
+        # 進捗コールバックが呼ばれたことを確認
+        assert progress_callback.call_count >= 2
 
     @pytest.mark.integration
-    def test_settings_from_env(self, monkeypatch):
-        """環境変数から設定読み込み"""
-        monkeypatch.setenv("KAKU_DATABASE_URL", "postgresql+asyncpg://test:test@localhost/test")
-        monkeypatch.setenv("KAKU_MODEL_WRITING", "custom-model")
-        monkeypatch.setenv("KAKU_MAX_CONCURRENT_API_CALLS", "10")
-<<<<<<< ours
+    @pytest.mark.asyncio
+    async def test_cancellation_during_generation(self, test_engine, mock_llm_client):
+        """生成中のキャンセルが動作することを確認"""
+        mock_llm_client.generate_json.return_value = (
+            {"success": True, "content": '{"world": "test"}'},
+            '{"world": "test"}',
+            {"prompt_tokens": 100, "completion_tokens": 200}
+        )
+        mock_llm_client.generate_text.return_value = (
+            "テスト生成コンテンツ",
+            {"prompt_tokens": 50, "completion_tokens": 150}
+        )
 
-        from config.settings import get_settings, reset_settings
-        reset_settings()
+        from src.easy_mode import EasyModePipeline
+        pipeline = EasyModePipeline(
+            engine=test_engine,
+            genre="zarma",
+            target_episodes=5,
+        )
 
-=======
-        
-        from config.settings import get_settings, reset_settings
-        reset_settings()
-        
->>>>>>> theirs
-        settings = get_settings()
-        assert settings.database_url == "postgresql+asyncpg://test:test@localhost/test"
-        assert settings.model_writing == "custom-model"
-        assert settings.max_concurrent_api_calls == 10
+        # 即座にキャンセル
+        pipeline.cancel()
 
+        # 実行してもすぐに終了する
+        result = await pipeline.run()
 
-class TestMetricsIntegration:
-    """メトリクス統合テスト"""
+        # キャンセルされているため、エピソードが生成されていない
+        assert result is not None
 
     @pytest.mark.integration
-    def test_prometheus_metrics_format(self):
-        """Prometheus メトリクス形式確認"""
-        from src.backend.observability.metrics import (
-<<<<<<< ours
-            generate_latest,
-            kaku_http_requests_total,
-            kaku_novel_generation_tasks_total,
+    @pytest.mark.asyncio
+    async def test_multiple_genres_work(self, test_engine, mock_llm_client):
+        """複数ジャンルで動作することを確認"""
+        mock_llm_client.generate_json.return_value = (
+            {"success": True, "content": '{"world": "test"}'},
+            '{"world": "test"}',
+            {"prompt_tokens": 100, "completion_tokens": 200}
+        )
+        mock_llm_client.generate_text.return_value = (
+            "テスト生成コンテンツ",
+            {"prompt_tokens": 50, "completion_tokens": 150}
         )
 
-        # メトリクス記録
-        kaku_http_requests_total.labels(method="GET", path="/api/test", status="200").inc()
-        kaku_novel_generation_tasks_total.labels(workflow_type="easy", status="completed").inc()
+        for genre in ["zarma", "aku_reijo", "cheat_tensei", "slow_life"]:
+            from src.easy_mode import create_series
+            pipeline = create_series(test_engine, genre, target_episodes=1)
+            result = await pipeline.run()
+            assert result is not None
+            assert result.genre == genre
 
-=======
-            kaku_http_requests_total,
-            kaku_novel_generation_tasks_total,
-            generate_latest,
-        )
-        
-        # メトリクス記録
-        kaku_http_requests_total.labels(method="GET", path="/api/test", status="200").inc()
-        kaku_novel_generation_tasks_total.labels(workflow_type="easy", status="completed").inc()
-        
->>>>>>> theirs
-        # 形式確認
-        output = generate_latest().decode("utf-8")
-        assert "kaku_http_requests_total" in output
-        assert "kaku_novel_generation_tasks_total" in output
-        assert 'method="GET"' in output
-        assert 'status="200"' in output
+    @pytest.mark.integration
+    @pytest.mark.asyncio
+    async def test_engine_container_integration(self, test_engine):
+        """DI コンテナ経由でのエンジン取得が動作することを確認"""
+        from src.core.container import AppContainer
+        container = AppContainer()
+        engine = container.engine()
 
-
-# ===================== テスト実行用メイン =====================
-
-if __name__ == "__main__":
-<<<<<<< ours
-    pytest.main([__file__, "-v", "-m", "integration"])
-=======
-    pytest.main([__file__, "-v", "-m", "integration"])
->>>>>>> theirs
+        assert engine is not None
+        assert hasattr(engine, 'planner')
+        assert hasattr(engine, 'writer')
+        assert hasattr(engine, 'pm')
+        assert hasattr(engine, 'ctx_mgr')

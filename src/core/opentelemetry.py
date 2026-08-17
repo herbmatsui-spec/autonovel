@@ -1,3 +1,4 @@
+
 """
 OpenTelemetry 自動計装設定
 FastAPI, SQLAlchemy, Redis, ChromaDB 等の自動計装を提供
@@ -35,7 +36,6 @@ def setup_opentelemetry(
         otlp_endpoint: OTLP エンドポイント（未指定時は環境変数 OTEL_EXPORTER_OTLP_ENDPOINT）
         enable_console_exporter: コンソールエクスポーターを有効化（デバッグ用）
         sample_rate: トレースサンプリングレート (0.0-1.0)
-    """
     Returns:
         TracerProvider インスタンス
     """

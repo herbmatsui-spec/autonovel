@@ -200,15 +200,11 @@ class Settings(BaseSettings):
     cost_output_flash: float = 0.00015
     cost_output_pro: float = 0.0105
 
-    # ==========================================
+# ==========================================
     # その他定数 (旧 constants.py)
     # ==========================================
     content_separator: str = "\n---\n"
     max_prompt_chars: int = 8000
-<<<<<<< ours
-=======
-    polishing_min_content_ratio: float = 0.5
->>>>>>> theirs
     default_golden_peaks: int = 1
     nsfw_default_enabled: bool = False
 
@@ -330,20 +326,24 @@ def reset_settings() -> None:
     """設定インスタンスをリセット（テスト用）"""
     global _settings_instance
     _settings_instance = None
-<<<<<<< ours
 
-=======
->>>>>>> theirs
+
+def validate_api_keys() -> None:
+    """起動時 API キーバリデーション。未設定なら例外"""
+    settings = get_settings()
+    if not (
+        getattr(settings, "gemini_api_key", None)
+        or os.environ.get("GEMINI_API_KEY")
+        or settings.openai_api_key
+    ):
+        raise RuntimeError(
+            "API キーが設定されていません。環境変数 GEMINI_API_KEY または "
+            "設定ファイルの gemini_api_key / openai_api_key を指定してください。"
+        )
+
 
 # 後方互換性のためのモジュールレベルシングルトン
 settings = get_settings()
-
-<<<<<<< ours
-=======
-# 後方互換性のためのモジュールレベルシングルトン
-settings = get_settings()
-
->>>>>>> theirs
 
 # ==========================================
 # 後方互換エイリアス (段階的移行用)
@@ -418,19 +418,11 @@ MAX_CONCURRENT_API_CALLS = 5
 # ==========================================
 class ConfigManager:
     """旧 ConfigManager 互換ラッパー"""
-<<<<<<< ours
 
-=======
-    
->>>>>>> theirs
     _instance: Optional[Settings] = None
 
     @classmethod
     def get_config(cls) -> Settings:
         if cls._instance is None:
             cls._instance = get_settings()
-<<<<<<< ours
         return cls._instance
-=======
-        return cls._instance
->>>>>>> theirs
