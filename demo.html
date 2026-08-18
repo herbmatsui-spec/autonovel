@@ -44,7 +44,32 @@
             background-color: var(--bg);
             color: var(--text);
             line-height: 1.6;
-            transition: background-color 0.2s ease, color 0.2s ease;
+            transition: background-color 0.8s ease, color 0.8s ease;
+        }
+        /* 機能3: 動的シーンテーマ */
+        body.theme-erotic {
+            --bg: #25101a;
+            --card-bg: #361726;
+            --text: #fce4ec;
+            --primary: #e91e63;
+            --border: #54223a;
+            --secondary: #ff80ab;
+        }
+        body.theme-battle {
+            --bg: #1a0c0c;
+            --card-bg: #2a1414;
+            --text: #ffebee;
+            --primary: #f44336;
+            --border: #4d2020;
+            --secondary: #ffab91;
+        }
+        body.theme-warm {
+            --bg: #fbf7ee;
+            --card-bg: #fffdf9;
+            --text: #4a3b32;
+            --primary: #d35400;
+            --border: #f0e6d2;
+            --secondary: #e67e22;
         }
         .container {
             background: var(--card-bg);
@@ -52,7 +77,7 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             padding: 25px;
             margin-bottom: 20px;
-            transition: background-color 0.2s ease;
+            transition: background-color 0.8s ease, border-color 0.8s ease;
         }
         h1, h2, h3 { color: var(--secondary); }
         h1 { font-size: 1.8rem; margin-bottom: 10px; }
@@ -217,21 +242,124 @@
             .step { flex-direction: column; }
             .step-number { margin-bottom: 8px; }
         }
-        .sr-only, .live-region { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
-        @media (prefers-reduced-motion: reduce) {
-            *, *::before, *::after { animation: none !important; transition: none !important; }
-            .novel-content .cursor { display: none; }
+        .heatmap-section { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 15px; margin: 15px 0; }
+        .heatmap-bar-wrap { display: flex; height: 32px; border-radius: 6px; overflow: hidden; background: #e0e0e0; margin: 10px 0; box-shadow: inset 0 1px 3px rgba(0,0,0,0.2); }
+        .heatmap-segment { flex: 1; height: 100%; transition: all 0.3s ease; position: relative; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: #fff; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
+        .heatmap-segment:hover { transform: scaleY(1.15); z-index: 10; }
+        .heatmap-legend { display: flex; gap: 15px; font-size: 0.8rem; color: var(--text-muted); margin-top: 5px; }
+        .legend-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+
+        .affinity-section { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 15px; margin: 15px 0; }
+        .affinity-list { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
+        .affinity-item { display: flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.02); padding: 8px 12px; border-radius: 6px; }
+        [data-theme="dark"] .affinity-item { background: rgba(255,255,255,0.03); }
+        .affinity-name { font-weight: bold; width: 110px; font-size: 0.9rem; flex-shrink: 0; }
+        .affinity-bar-wrap { flex: 1; height: 16px; background: var(--border); border-radius: 10px; overflow: hidden; position: relative; }
+        .affinity-fill { height: 100%; background: linear-gradient(90deg, #ff758c, #ff7eb3); width: 50%; border-radius: 10px; transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .affinity-score { font-size: 0.85rem; font-weight: bold; width: 50px; text-align: right; color: #ff4757; }
+        .affinity-mood { font-size: 0.75rem; color: var(--text-muted); background: var(--border); padding: 2px 8px; border-radius: 12px; }
+        @keyframes heartBounce { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.3); } }
+        .heart-icon { display: inline-block; color: #ff4757; margin-right: 4px; animation: heartBounce 1.5s infinite ease-in-out; }
+
+        /* 機能4: What-If モーダル */
+        .whatif-modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0, 0, 0, 0.7); display: none; align-items: center; justify-content: center;
+            z-index: 1000; backdrop-filter: blur(4px);
         }
+        .whatif-modal-overlay.active { display: flex; animation: fadeIn 0.3s ease; }
+        .whatif-modal-card {
+            background: var(--card-bg); border-radius: 12px; max-width: 600px; width: 90%; padding: 25px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5); border: 2px solid var(--primary);
+            position: relative; animation: slideUp 0.3s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .whatif-btn { background: linear-gradient(135deg, #6c5ce7, #a29bfe); color: white; border: none; margin-top: 10px; font-weight: bold; border-radius: 6px; }
+        .whatif-btn:hover { background: linear-gradient(135deg, #5b4cc4, #8e84e6); }
+
+        /* 機能6: Afterglow 独白スタイル */
+        .monologue-card {
+            background: linear-gradient(135deg, rgba(255, 182, 193, 0.15), rgba(255, 105, 180, 0.05));
+            border-left: 3px solid #ff758c; padding: 15px 20px; border-radius: 0 8px 8px 0; margin-top: 15px;
+            font-style: italic; color: #d63384; font-size: 0.95rem; line-height: 1.8;
+            display: none; animation: fadeIn 0.6s ease-in-out;
+        }
+        [data-theme="dark"] .monologue-card {
+            background: rgba(255, 117, 140, 0.08); color: #ff9ebb; border-left-color: #ff4757;
+        }
+        .monologue-btn {
+            background: transparent; color: #ff4757; border: 1px dashed #ff4757; padding: 6px 14px;
+            border-radius: 20px; font-size: 0.85rem; cursor: pointer; margin-top: 10px; transition: all 0.2s ease;
+        }
+        .monologue-btn:hover { background: rgba(255, 71, 87, 0.1); }
+
+        /* 機能8: 会話文の感情アニメーション */
+        @keyframes textShake {
+            0%, 100% { transform: translate(0, 0); }
+            20%, 60% { transform: translate(-2px, 1px) rotate(-0.5deg); }
+            40%, 80% { transform: translate(2px, -1px) rotate(0.5deg); }
+        }
+        @keyframes textFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-3px); }
+        }
+        @keyframes textGlow {
+            0%, 100% { text-shadow: 0 0 3px rgba(255, 71, 87, 0.4); }
+            50% { text-shadow: 0 0 10px rgba(255, 71, 87, 0.9), 0 0 15px rgba(255, 107, 129, 0.7); }
+        }
+        .anim-anger { display: inline-block; animation: textShake 0.4s infinite ease-in-out; color: #e74c3c; font-weight: bold; }
+        .anim-sad { display: inline-block; animation: textFloat 2s infinite ease-in-out; color: #3498db; }
+        .anim-climax { display: inline-block; animation: textGlow 1.5s infinite ease-in-out; color: #e91e63; font-weight: bold; }
+        .anim-whisper { font-size: 0.9em; opacity: 0.85; color: #9b59b6; font-style: italic; }
+
+        /* 機能9: おやすみモード (Bedtime Supporter) */
+        .bedtime-btn {
+            background: linear-gradient(135deg, #1e3c72, #2a5298); color: #fff; border: 1px solid rgba(255,255,255,0.2);
+            padding: 8px 14px; border-radius: 8px; cursor: pointer; font-weight: bold; min-height: auto;
+            box-shadow: 0 2px 8px rgba(42, 82, 152, 0.4); transition: all 0.3s ease;
+        }
+        .bedtime-btn:hover { background: linear-gradient(135deg, #162b50, #1e3c72); box-shadow: 0 4px 12px rgba(42, 82, 152, 0.6); }
+
+        .bedtime-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
+            display: none; align-items: center; justify-content: center; z-index: 2000;
+            padding: 30px; box-sizing: border-box; text-align: center; color: #fff;
+            cursor: pointer; backdrop-filter: blur(8px);
+        }
+        .bedtime-overlay.active { display: flex; animation: fadeInSlow 1.2s ease; }
+        @keyframes fadeInSlow { from { opacity: 0; } to { opacity: 1; } }
+
+        .bedtime-content-box {
+            max-width: 700px; animation: floatGentle 4s infinite ease-in-out;
+        }
+        @keyframes floatGentle { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+        .bedtime-title { font-size: 1.8rem; margin-bottom: 20px; color: #ffd166; font-weight: 300; text-shadow: 0 0 15px rgba(255,209,102,0.6); }
+        .bedtime-message { font-size: 1.25rem; line-height: 2.2; color: #e0e6ed; white-space: pre-wrap; font-weight: 300; letter-spacing: 0.05em; }
+        .bedtime-hint { font-size: 0.85rem; color: #7f8c8d; margin-top: 30px; }
     </style>
 </head>
 <body class="mode-easy">
+    <!-- 機能9: おやすみモード フルスクリーンオーバーレイ -->
+    <div class="bedtime-overlay" id="bedtimeOverlay" onclick="closeBedtimeMode()">
+        <div class="bedtime-content-box" onclick="event.stopPropagation()">
+            <div class="bedtime-title">✨ 絶対的肯定シェルター ✨</div>
+            <div class="bedtime-message" id="bedtimeMessageText">読み込み中...</div>
+            <div class="bedtime-hint">画面のどこかをクリックすると戻ります</div>
+        </div>
+    </div>
+
     <div class="container">
         <div class="header-row">
             <div>
                 <h1>覇権小説エンジン デモ v4</h1>
                 <p>かんたん/上級者モード、実バックエンド構成（SSE/ジョブキュー）に近い挙動、本物のEPUB出力を体験できます。</p>
             </div>
-            <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" aria-label="テーマ切替">🌙 ダーク</button>
+            <div style="display:flex; gap:8px;">
+                <button class="bedtime-btn" onclick="openBedtimeMode()" aria-label="おやすみモード">🌙 おやすみモード</button>
+                <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" aria-label="テーマ切替">🌙 ダーク</button>
+            </div>
         </div>
         <div class="live-region" aria-live="polite" id="liveRegion"></div>
     </div>
@@ -268,6 +396,20 @@
             <div class="slider-group">
                 <label for="chapterSlider"><span>話数</span> <span id="chapterValue">1話</span></label>
                 <input type="range" id="chapterSlider" min="1" max="5" value="1" aria-label="話数">
+            </div>
+            <!-- 機能7: ギャップ萌えカスタマイズ -->
+            <div class="input-group">
+                <label for="gapMoeSelect">💖 ギャップ萌えカスタマイズ <span class="tooltip" tabindex="0">?<span class="tooltip-text">キャラクターの意外な一面や魅力の出方をカスタマイズします。</span></span></label>
+                <select id="gapMoeSelect" onchange="updateGapMoePref()" style="width:100%; padding:10px; border-radius:6px; border:2px solid var(--border); background:var(--card-bg); color:var(--text);">
+                    <option value="tsundere">ツンデレ（強気 × 実は照れ屋）</option>
+                    <option value="kuudere_passionate">クーデレ（無口・冷静 × 激しい独占欲）</option>
+                    <option value="clumsy_genius">ポンコツ天才（戦闘最強 × 日常ドジっ子）</option>
+                    <option value="villainess_innocent">高飛車令嬢（悪役ムーブ × 守られたい小動物）</option>
+                </select>
+            </div>
+            <div class="slider-group">
+                <label for="gapMoeSlider"><span>ギャップ強度</span> <span id="gapMoeValue">60%</span></label>
+                <input type="range" id="gapMoeSlider" min="0" max="100" value="60" oninput="document.getElementById('gapMoeValue').textContent=this.value+'%'; updateGapMoePref();">
             </div>
             <div class="input-group">
                 <label for="plotInput">プロット（あらすじ）編集 — これをもとに本文が生成されます</label>
@@ -373,11 +515,51 @@
     <div class="container" id="resultContainer" style="display: none;">
         <h2 id="resultHeading" tabindex="-1">ステップ 3: 生成完了! <span class="tooltip" tabindex="0">?<span class="tooltip-text">生成された小説のプレビューと、特徴的な機能の適用結果を表示します。</span></span></h2>
 
+        <!-- 機能1: 感情ヒートマップ -->
+        <div class="heatmap-section" id="heatmapSection">
+            <h3 style="margin-top:0;">🔥 感情ヒートマップ・ナビゲーション <span class="tooltip" tabindex="0">?<span class="tooltip-text">物語の感情起伏（緊張感・官能度・ヘイト度）の推移を可視化します。</span></span></h3>
+            <div id="heatmap-container" class="heatmap-bar-wrap"></div>
+            <div class="heatmap-legend">
+                <span><span class="legend-dot" style="background:#e74c3c;"></span> 緊張度</span>
+                <span><span class="legend-dot" style="background:#e91e63;"></span> 官能度</span>
+                <span><span class="legend-dot" style="background:#9c27b0;"></span> ヘイト/対立</span>
+            </div>
+        </div>
+
+        <!-- 機能2: キャラ好感度メーター -->
+        <div class="affinity-section" id="affinitySection">
+            <h3 style="margin-top:0;"><span class="heart-icon">💖</span> キャラクター好感度・依存度メーター <span class="tooltip" tabindex="0">?<span class="tooltip-text">物語の進行や選択によって変化するヒロインたちの好感度と心理状態です。</span></span></h3>
+            <div class="affinity-list" id="affinityList"></div>
+        </div>
+
         <div id="plotBoxWrap"></div>
 
         <div class="novel-preview">
             <div class="novel-title" id="novelTitle">小説タイトル</div>
             <div class="novel-content" id="novelContent"></div>
+            <!-- 機能4: What-If ボタン -->
+            <button class="whatif-btn" onclick="openWhatIfModal()">🔀 もしも別の選択をしていたら？（IFルート生成）</button>
+
+            <!-- 機能6: Afterglow 独白 -->
+            <div style="margin-top: 15px;">
+                <button class="monologue-btn" id="monologueToggleBtn" onclick="toggleMonologue()">👁️ ヒロインの内心独白を覗く（余韻・Afterglow）</button>
+                <div class="monologue-card" id="monologueCard">
+                    <div style="font-weight:bold; font-size:0.8rem; margin-bottom:5px;" id="monologueCharName">メインヒロインの心の声</div>
+                    <div id="monologueText"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 機能4: What-If モーダルダイアログ -->
+        <div class="whatif-modal-overlay" id="whatifModal" onclick="closeWhatIfModal(event)">
+            <div class="whatif-modal-card" onclick="event.stopPropagation()">
+                <h3 id="whatifTitle" style="margin-top:0;">🔀 運命分岐（What-If IFルート）</h3>
+                <div id="whatifContent" style="white-space: pre-wrap; line-height: 1.8; margin: 15px 0; color: var(--text);"></div>
+                <div id="whatifSummary" style="font-size:0.85rem; color:var(--text-muted); background:var(--border); padding:8px; border-radius:6px;"></div>
+                <div style="text-align: right; margin-top: 15px;">
+                    <button class="secondary" onclick="closeWhatIfModal()">閉じる</button>
+                </div>
+            </div>
         </div>
 
         <div class="spice-visual" id="spiceVisual" style="display: none;">
@@ -659,6 +841,9 @@
             showSpiceGuard(currentNovel.detected);
             showReviewGate(currentNovel.score);
             showIfRoutes(selectedGenre);
+            fetchHeatmap(currentNovel.content);
+            fetchAffinity(currentNovel.content);
+            applyDynamicSceneTheme(selectedGenre, currentNovel.content);
 
             logSse('ok', 'JOB COMPLETED: ' + currentNovel.title);
             updateLiveRegion('小説の生成が完了しました');
@@ -667,8 +852,317 @@
             heading.focus && heading.focus();
         }
 
+        async function fetchHeatmap(content) {
+            const container = document.getElementById('heatmap-container');
+            if (!container) return;
+            container.innerHTML = '<div style="padding:5px;font-size:0.8rem;color:var(--text-muted);">ヒートマップ計算中...</div>';
+            try {
+                const res = await fetch(`/api/ux/heatmap?title=${encodeURIComponent(currentNovel.title || '')}&text_sample=${encodeURIComponent(content || '')}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    renderHeatmap(data);
+                    return;
+                }
+            } catch (e) {
+                console.warn('Backend API unavailable, using simulated heatmap fallback:', e);
+            }
+            renderSimulatedHeatmap();
+        }
+
+        function renderHeatmap(data) {
+            const container = document.getElementById('heatmap-container');
+            if (!container || !data || !data.points) return;
+            container.innerHTML = '';
+            data.points.forEach((p, idx) => {
+                const seg = document.createElement('div');
+                seg.className = 'heatmap-segment';
+                const r = Math.round(231 * p.tension + 233 * p.erotic);
+                const g = Math.round(76 * (1 - p.tension));
+                const b = Math.round(60 + 150 * p.hate);
+                seg.style.background = `rgb(${Math.min(255, r)}, ${Math.min(255, g)}, ${Math.min(255, b)})`;
+                seg.title = `${p.label || ('区間 ' + (idx+1))}: 緊張度 ${(p.tension*100).toFixed(0)}%, 官能度 ${(p.erotic*100).toFixed(0)}%, ヘイト度 ${(p.hate*100).toFixed(0)}%`;
+                seg.textContent = p.label ? p.label.slice(0, 4) : `${(p.tension*100).toFixed(0)}%`;
+                container.appendChild(seg);
+            });
+        }
+
+        function renderSimulatedHeatmap() {
+            renderHeatmap({
+                points: [
+                    { position_pct: 0, tension: 0.2, erotic: 0.0, hate: 0.1, label: '導入' },
+                    { position_pct: 20, tension: 0.4, erotic: 0.1, hate: 0.6, label: '葛藤' },
+                    { position_pct: 40, tension: 0.65, erotic: 0.2, hate: 0.8, label: '危機' },
+                    { position_pct: 60, tension: 0.85, erotic: 0.4, hate: 0.4, label: '反転' },
+                    { position_pct: 80, tension: 0.98, erotic: 0.7, hate: 0.1, label: '絶頂' },
+                    { position_pct: 100, tension: 0.35, erotic: 0.85, hate: 0.0, label: '余韻' }
+                ]
+            });
+        }
+
+        async function fetchAffinity(content) {
+            const list = document.getElementById('affinityList');
+            if (!list) return;
+            try {
+                const res = await fetch(`/api/ux/affinity?text_sample=${encodeURIComponent(content || '')}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    renderAffinity(data);
+                    return;
+                }
+            } catch (e) {
+                console.warn('Backend Affinity API unavailable, using simulated fallback:', e);
+            }
+            renderSimulatedAffinity();
+        }
+
+        function renderAffinity(data) {
+            const list = document.getElementById('affinityList');
+            if (!list || !Array.isArray(data)) return;
+            list.innerHTML = '';
+            data.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'affinity-item';
+                div.innerHTML = `
+                    <div class="affinity-name">${escapeHtml(item.character_name)}</div>
+                    <div class="affinity-bar-wrap">
+                        <div class="affinity-fill" style="width: ${Math.min(100, Math.max(0, item.affinity_score))}%;"></div>
+                    </div>
+                    <div class="affinity-score">${item.affinity_score}%</div>
+                    <div class="affinity-mood">${escapeHtml(item.current_mood)}</div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function renderSimulatedAffinity() {
+            renderAffinity([
+                { character_name: 'メインヒロイン', affinity_score: 75.0, dependency_score: 35.0, current_mood: 'affectionate (好意的)' },
+                { character_name: 'ライバル令嬢', affinity_score: 42.0, dependency_score: 18.0, current_mood: 'tsun (ツン)' }
+            ]);
+        }
+
+        async function applyDynamicSceneTheme(genre, content) {
+            let sceneType = 'default';
+            const nsfwChecked = document.getElementById('nsfwCheck') && document.getElementById('nsfwCheck').checked;
+            if (genre && (genre.includes('TS転生') || genre.includes('百合') || nsfwChecked)) {
+                sceneType = 'erotic';
+            } else if (genre && (genre.includes('無双') || genre.includes('ざまぁ') || genre.includes('ダンジョン'))) {
+                sceneType = 'battle';
+            } else if (genre && (genre.includes('スローライフ') || genre.includes('ほのぼの'))) {
+                sceneType = 'warm';
+            }
+
+            try {
+                const res = await fetch(`/api/ux/theme?scene_type=${encodeURIComponent(sceneType)}`);
+                if (res.ok) {
+                    const themeData = await res.json();
+                    setBodyThemeClass(themeData.theme_type);
+                    return;
+                }
+            } catch (e) {
+                console.warn('Backend Theme API unavailable, using local theme fallback:', e);
+            }
+            setBodyThemeClass(sceneType);
+        }
+
+        function setBodyThemeClass(themeType) {
+            document.body.classList.remove('theme-erotic', 'theme-battle', 'theme-warm');
+            if (themeType && themeType !== 'default') {
+                document.body.classList.add(`theme-${themeType}`);
+            }
+        }
+
+        async function openWhatIfModal() {
+            const modal = document.getElementById('whatifModal');
+            const content = document.getElementById('whatifContent');
+            const summary = document.getElementById('whatifSummary');
+            if (!modal) return;
+
+            modal.classList.add('active');
+            content.textContent = '運命の分岐点を計算し、IFシナリオを生成中...';
+            summary.textContent = '生成処理実行中';
+
+            const choicePoint = selectedGenre ? `${selectedGenre}のクライマックス対決` : '運命の分岐';
+
+            try {
+                const res = await fetch('/api/ux/what-if', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        choice_point: choicePoint,
+                        novel_context: (currentNovel && currentNovel.content) ? currentNovel.content.slice(0, 300) : ''
+                    })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    content.textContent = data.alternative_snippet;
+                    summary.textContent = '【運命の差異】: ' + data.outcome_summary;
+                    return;
+                }
+            } catch (e) {
+                console.warn('What-If API failed, using fallback:', e);
+            }
+
+            content.textContent = `【IF展開】もし『${choicePoint}』で別の選択をしていたなら――\n主人公はあえて一歩退き、影から相手の出方を伺った。\nその結果、隠されていた敵の策謀が露わになり、状況は一変する。`;
+            summary.textContent = '【運命の差異】: 危険を回避し新たな手がかりを発見したが、ヒロインの信頼獲得チャンスを一時的に逃した。';
+        }
+
+        function closeWhatIfModal() {
+            const modal = document.getElementById('whatifModal');
+            if (modal) modal.classList.remove('active');
+        }
+
+        // 機能6: Afterglow 独白トグル
+        let monologueLoaded = false;
+        async function toggleMonologue() {
+            const card = document.getElementById('monologueCard');
+            const textEl = document.getElementById('monologueText');
+            const charEl = document.getElementById('monologueCharName');
+            if (!card) return;
+
+            if (card.style.display === 'block') {
+                card.style.display = 'none';
+                return;
+            }
+
+            card.style.display = 'block';
+            if (!monologueLoaded) {
+                textEl.textContent = 'キャラクターの深層心理を読み解き中...';
+                try {
+                    const res = await fetch('/api/ux/afterglow-monologue?character_name=メインヒロイン&scene_type=climax');
+                    if (res.ok) {
+                        const data = await res.json();
+                        charEl.textContent = `${data.character_name} の心の声`;
+                        textEl.textContent = data.inner_monologue;
+                        monologueLoaded = true;
+                        return;
+                    }
+                } catch (e) {
+                    console.warn('Afterglow API unavailable, using fallback:', e);
+                }
+
+                charEl.textContent = 'メインヒロイン の心の声';
+                textEl.textContent = '（……あんな真剣な目で見つめられたら、断れるわけないじゃない。『大丈夫だ』って言われた瞬間、ずっと張り詰めてた胸がぎゅって苦しくなって……。ほんと、ずるい人。私の全部、見透かされてるみたい……）';
+                monologueLoaded = true;
+            }
+        }
+
+        // 機能7: ギャップ萌え設定保存
+        async function updateGapMoePref() {
+            const sel = document.getElementById('gapMoeSelect');
+            const slider = document.getElementById('gapMoeSlider');
+            if (!sel || !slider) return;
+            try {
+                await fetch('/api/ux/preference', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        gap_type: sel.value,
+                        intensity: parseInt(slider.value, 10)
+                    })
+                });
+            } catch (e) {
+                // silent
+            }
+        }
+
+        // 機能9: おやすみモード (Bedtime Supporter)
+        async function openBedtimeMode() {
+            const overlay = document.getElementById('bedtimeOverlay');
+            const msgEl = document.getElementById('bedtimeMessageText');
+            if (!overlay) return;
+
+            overlay.classList.add('active');
+            msgEl.textContent = '読者への労いの言葉を紡いでいます……';
+
+            try {
+                const res = await fetch('/api/ux/bedtime');
+                if (res.ok) {
+                    const data = await res.json();
+                    msgEl.textContent = data.message;
+                    return;
+                }
+            } catch (e) {
+                console.warn('Bedtime API unavailable, using fallback:', e);
+            }
+
+            msgEl.textContent = "今日もお疲れ様でした。\nあなたがどれだけ頑張っていたか、私はちゃんと知っていますよ。\n嫌なことや悔しいことは、全部夜の星空に預けてしまってくださいね。\nあなたはあなたのままで、十分に素晴らしいのですから。\nどうぞ、暖かくして安心しておやすみなさい――良い夢を。";
+        }
+
+        function closeBedtimeMode() {
+            const overlay = document.getElementById('bedtimeOverlay');
+            if (overlay) overlay.classList.remove('active');
+        }
+
+        // 機能5: 読書ペース追跡と動的ペーシング
+        let lastScrollTop = 0;
+        let lastScrollTime = Date.now();
+        let readingStartTime = Date.now();
+
+        function initReadingPacingTracker() {
+            window.addEventListener('scroll', throttle(async () => {
+                const now = Date.now();
+                const currentScrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                const timeDiff = (now - lastScrollTime) / 1000;
+                if (timeDiff > 1.5) {
+                    const scrollDiff = Math.abs(currentScrollTop - lastScrollTop);
+                    const speed = Math.round(scrollDiff / timeDiff);
+                    lastScrollTop = currentScrollTop;
+                    lastScrollTime = now;
+
+                    if (speed > 10 && currentNovel) {
+                        try {
+                            await fetch('/api/ux/pacing', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    chars_read: (currentNovel.content || '').length,
+                                    duration_ms: now - readingStartTime,
+                                    scroll_speed_px_per_sec: speed
+                                })
+                            });
+                        } catch (e) {
+                            // silent
+                        }
+                    }
+                }
+            }, 1000));
+        }
+
+        function throttle(func, limit) {
+            let inThrottle;
+            return function() {
+                const args = arguments;
+                const context = this;
+                if (!inThrottle) {
+                    func.apply(context, args);
+                    inThrottle = true;
+                    setTimeout(() => inThrottle = false, limit);
+                }
+            }
+        }
+        // 機能8: 会話文の感情アニメーション適用パーサー
+        function formatEmotionDialogue(text) {
+            if (!text) return '';
+            return text.split('\n').map(line => {
+                const trimmed = line.trim();
+                if (trimmed.startsWith('「') && trimmed.endsWith('」')) {
+                    if (trimmed.includes('！') || trimmed.includes('怒') || trimmed.includes('許さ') || trimmed.includes('何だと')) {
+                        return `<span class="anim-anger">${escapeHtml(line)}</span>`;
+                    } else if (trimmed.includes('……') || trimmed.includes('泣') || trimmed.includes('ごめん') || trimmed.includes('嘘でしょ')) {
+                        return `<span class="anim-sad">${escapeHtml(line)}</span>`;
+                    } else if (trimmed.includes('好き') || trimmed.includes('熱い') || trimmed.includes('愛して') || trimmed.includes('お願い') || trimmed.includes('尊い')) {
+                        return `<span class="anim-climax">${escapeHtml(line)}</span>`;
+                    } else if (trimmed.length < 15 && (trimmed.includes('っ') || trimmed.includes('あ…'))) {
+                        return `<span class="anim-whisper">${escapeHtml(line)}</span>`;
+                    }
+                }
+                return escapeHtml(line);
+            }).join('\n');
+        }
+
         function streamText(el, text) {
-            if (reduceMotion) { el.textContent = text; return; }
+            if (reduceMotion) { el.innerHTML = formatEmotionDialogue(text); return; }
             el.textContent = '';
             const tn = document.createTextNode('');
             const cursor = document.createElement('span');
@@ -679,8 +1173,11 @@
             function tick() {
                 i = Math.min(text.length, i + stepN);
                 tn.textContent = text.slice(0, i);
-                if (i < text.length) setTimeout(tick, 18);
-                else el.textContent = text;
+                if (i < text.length) {
+                    setTimeout(tick, 18);
+                } else {
+                    el.innerHTML = formatEmotionDialogue(text);
+                }
             }
             tick();
         }
@@ -1039,6 +1536,9 @@
             document.getElementById('spiceVisual').style.display = 'none';
             document.getElementById('reviewGate').style.display = 'none';
             document.getElementById('ifContainer').style.display = 'none';
+            document.getElementById('heatmap-container').innerHTML = '';
+            document.getElementById('affinityList').innerHTML = '';
+            setBodyThemeClass('default');
             document.getElementById('keywordInput').value = '';
             userKeyword = '';
             highlightOn = false;

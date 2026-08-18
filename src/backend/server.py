@@ -7,7 +7,6 @@ import asyncio
 import importlib
 import logging
 import uuid
-from collections import defaultdict
 from contextlib import asynccontextmanager
 from typing import Optional
 
@@ -31,8 +30,6 @@ from src.backend.auth import validate_api_key_or_raise
 from src.backend.background import BackgroundReporter, ProgressState
 from src.backend.database import init_db
 from src.backend.error_handlers import register_error_handlers
-from src.backend.rate_limit import RedisRateLimiter
-from src.services.redis_cache import RedisCacheService
 from src.backend.observability.metrics import MetricsMiddleware
 from src.backend.rate_limit import RedisRateLimiter
 from src.core.container import AppContainer
@@ -151,9 +148,7 @@ async def add_security_headers_middleware(request: Request, call_next):
     return response
 
 
-_rate_limit_store: dict[str, list[float]] = defaultdict(list)
 _DEFAULT_TIMEOUT_SEC = 30.0
-_rate_limit_lock = asyncio.Lock()
 
 # 長時間実行されるLLM生成系エンドポイント（タイムアウトを延長）
 LONG_RUNNING_PATHS = frozenset(
@@ -172,21 +167,25 @@ async def rate_limit_middleware(request: Request, call_next):
 
     client_ip = request.client.host if request.client else "unknown"
 
-    # Lazy initialization (Redis not available at import time)
-    if _redis_rate_limiter is None:
-        redis = RedisCacheService()
-        _redis_rate_limiter = RedisRateLimiter(
-            redis=redis,
-            max_requests=_RATE_LIMIT_MAX_REQUESTS,
-            window_seconds=_RATE_LIMIT_WINDOW_SECONDS,
-        )
+    try:
+        # Lazy initialization (Redis not available at import time)
+        if _redis_rate_limiter is None:
+            redis = RedisCacheService()
+            _redis_rate_limiter = RedisRateLimiter(
+                redis=redis,
+                max_requests=_RATE_LIMIT_MAX_REQUESTS,
+                window_seconds=_RATE_LIMIT_WINDOW_SECONDS,
+            )
 
-    allowed = await _redis_rate_limiter.is_allowed(client_ip)
-    if not allowed:
-        return JSONResponse(
-            status_code=429,
-            content={"error": "Too Many Requests", "detail": "リクエスト数が制限を超えました。"},
-        )
+        allowed = await _redis_rate_limiter.is_allowed(client_ip)
+        if not allowed:
+            return JSONResponse(
+                status_code=429,
+                content={"error": "Too Many Requests", "detail": "リクエスト数が制限を超えました。"},
+            )
+    except Exception as e:
+        logger.warning(f"Rate limiting error (failing open): {e}")
+
     return await call_next(request)
 
 
@@ -263,6 +262,7 @@ def create_app() -> FastAPI:
         "src.backend.routers.commercial",
         "src.backend.routers.easy_mode",
         "src.backend.routers.illustrations",
+        "src.api.routes.ux_routes",
     ]
     for module_path in router_modules:
         try:

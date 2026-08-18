@@ -1,8 +1,8 @@
 from unittest import mock
 
 import pytest
-from autonovel.src.agents.illustration_agent import IllustrationAgent
-from autonovel.src.models.illustration import (
+from src.agents.illustration_agent import IllustrationAgent
+from src.models.illustration import (
     IllustrationModel,
     IllustrationRequest,
     IllustrationType,

@@ -128,13 +128,8 @@ def with_llm_retry():
                     await cooldown.wait()
 
                 # 並行リクエスト数のインクリメント
-                lock = getattr(self, "_lock", None)
                 active_requests = getattr(self, "_active_requests", 0)
-                if lock is not None:
-                    with lock:
-                        setattr(self, "_active_requests", active_requests + 1)
-                else:
-                    setattr(self, "_active_requests", active_requests + 1)
+                setattr(self, "_active_requests", active_requests + 1)
 
                 try:
                     # メソッド実行
@@ -143,12 +138,7 @@ def with_llm_retry():
                     # 成功時の後処理
                     if cooldown is not None:
                         cooldown.on_success()
-                    consecutive_5xx = getattr(self, "_consecutive_5xx", 0)
-                    if lock is not None:
-                        with lock:
-                            setattr(self, "_consecutive_5xx", 0)
-                    else:
-                        setattr(self, "_consecutive_5xx", 0)
+                    setattr(self, "_consecutive_5xx", 0)
 
                     return result
 
@@ -260,14 +250,10 @@ def with_llm_retry():
                             cooldown.on_error()
 
                     # 待機時間の計算とスリープ (指数バックオフ)
-                    # 適応的バックオフ戦略
-                    # 429 (Too Many Requests) の場合はより強力な指数バックオフを適用
                     if "429" in err_msg or "quota" in err_msg:
                         wait_time = min(2.0 * (2**state.attempt), 60.0)
-                    # 5xx系サーバーエラーの場合は中程度のバックオフ
                     elif any(x in err_msg for x in ["503", "500", "unavailable"]):
                         wait_time = min(3.0 * (2**state.attempt), 20.0)
-                    # その他の一時的エラー
                     else:
                         wait_time = min(1.0 * (2**state.attempt), 10.0)
 
@@ -282,49 +268,32 @@ def with_llm_retry():
                     if is_timeout or any(
                         x in err_msg for x in ["503", "500", "deadline", "exhausted"]
                     ):
-                        lock = getattr(self, "_lock", None)
-                        if lock is not None:
-                            with lock:
-                                setattr(
-                                    self,
-                                    "_consecutive_5xx",
-                                    getattr(self, "_consecutive_5xx", 0) + 1,
-                                )
-                                fail_count = getattr(self, "_consecutive_5xx", 0)
-                        else:
-                            setattr(
-                                self, "_consecutive_5xx", getattr(self, "_consecutive_5xx", 0) + 1
-                            )
-                            fail_count = getattr(self, "_consecutive_5xx", 0)
+                        fail_count = getattr(self, "_consecutive_5xx", 0) + 1
+                        setattr(self, "_consecutive_5xx", fail_count)
 
                         if fail_count >= 2:
-                            from config import MODEL_STABLE_FALLBACK
+                            from config.settings import get_settings
 
-                            try:
-                                from config import MODEL_ULTRA_STABLE
-                            except ImportError:
-                                MODEL_ULTRA_STABLE = MODEL_STABLE_FALLBACK
+                            settings = get_settings()
+                            model_stable_fallback = getattr(
+                                settings, "model_stable_fallback", "gemma-4-31b-it"
+                            )
+                            model_ultra_stable = getattr(
+                                settings, "model_ultra_stable", model_stable_fallback
+                            )
 
-                            if state.model_name != MODEL_ULTRA_STABLE and (
-                                state.attempt >= 2 or state.model_name == MODEL_STABLE_FALLBACK
+                            if state.model_name != model_ultra_stable and (
+                                state.attempt >= 2 or state.model_name == model_stable_fallback
                             ):
-                                state.model_name = (
-                                    MODEL_ULTRA_STABLE
-                                    if MODEL_ULTRA_STABLE
-                                    else "gemini-3.1-flash-lite"
-                                )
+                                state.model_name = model_ultra_stable
                                 logger.warning(
                                     f"[Gemini FALLBACK] Persistent 5xx. Switching to ULTRA_STABLE: {state.model_name}"
                                 )
                             elif (
-                                state.model_name != MODEL_STABLE_FALLBACK
-                                and MODEL_STABLE_FALLBACK != state.original_model_name
+                                state.model_name != model_stable_fallback
+                                and model_stable_fallback != state.original_model_name
                             ):
-                                state.model_name = (
-                                    MODEL_STABLE_FALLBACK
-                                    if MODEL_STABLE_FALLBACK
-                                    else "gemini-3.1-flash-lite"
-                                )
+                                state.model_name = model_stable_fallback
                                 logger.warning(
                                     f"[Gemini FALLBACK] 5xx detected. Switching to STABLE_FALLBACK: {state.model_name}"
                                 )

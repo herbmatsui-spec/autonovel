@@ -6,20 +6,19 @@ FastAPI, SQLAlchemy, Redis, ChromaDB 等の自動計装を提供
 
 from __future__ import annotations
 
+import logging
 import os
 from typing import Optional
 
 from opentelemetry import trace
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-from opentelemetry.instrumentation.redis import RedisInstrumentor
-from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
 from opentelemetry.sdk.trace.sampling import TraceIdRatioBased
 
 from config.settings import get_settings
+
+logger = logging.getLogger(__name__)
 
 
 def setup_opentelemetry(
@@ -69,31 +68,46 @@ def setup_opentelemetry(
     # OTLP エクスポーター（本番環境用）
     if otlp_endpoint and not enable_console_exporter:
         try:
+            from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+
             otlp_exporter = OTLPSpanExporter(endpoint=otlp_endpoint, insecure=True)
             provider.add_span_processor(BatchSpanProcessor(otlp_exporter))
         except Exception as e:
-            # OTLP エクスポーターの初期化に失敗しても続行（コンソールのみ等）
-            import logging
-            logging.getLogger(__name__).warning(f"OTLP exporter initialization failed: {e}")
+            logger.warning(f"OTLP exporter initialization failed: {e}")
 
     # グローバルプロバイダとして設定
     trace.set_tracer_provider(provider)
 
     # FastAPI 自動計装
-    FastAPIInstrumentor().instrument(
-        tracer_provider=provider,
-        excluded_urls="health,metrics,/healthz,/ready,/live",
-    )
+    try:
+        from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+
+        FastAPIInstrumentor().instrument(
+            tracer_provider=provider,
+            excluded_urls="health,metrics,/healthz,/ready,/live",
+        )
+    except Exception as e:
+        logger.debug(f"FastAPI instrumentation skipped: {e}")
 
     # SQLAlchemy 自動計装
-    SQLAlchemyInstrumentor().instrument(
-        tracer_provider=provider,
-        enable_commenter=True,
-        commenter_options={},
-    )
+    try:
+        from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
+
+        SQLAlchemyInstrumentor().instrument(
+            tracer_provider=provider,
+            enable_commenter=True,
+            commenter_options={},
+        )
+    except Exception as e:
+        logger.debug(f"SQLAlchemy instrumentation skipped: {e}")
 
     # Redis 自動計装
-    RedisInstrumentor().instrument(tracer_provider=provider)
+    try:
+        from opentelemetry.instrumentation.redis import RedisInstrumentor
+
+        RedisInstrumentor().instrument(tracer_provider=provider)
+    except Exception as e:
+        logger.debug(f"Redis instrumentation skipped: {e}")
 
     return provider
 

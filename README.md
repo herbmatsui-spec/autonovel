@@ -1,10 +1,10 @@
-# 覇権小説エンジン v3.3.2
-# 更新: バグ修正・安定性向上・デモ改善、タイポグラフリファレクタリング改善 (2026-08-18)
+# 覇権小説エンジン v3.4.0
+# 更新: 小説の面白さ・UX向上 72段階マイクロステップ実装完了 (2026-08-18)
 
 ![Tests](https://img.shields.io/badge/tests-passing-brightgreen)
 ![Coverage](https://img.shields.io/badge/coverage-80%25-yellow)
 ![Python](https://img.shields.io/badge/python-3.12-blue)
-![Code Review](https://img.shields.io/badge/code%20review-60%20steps%20done-blue)
+![Code Review](https://img.shields.io/badge/UX%20Enhancements-72%20steps%20done-brightgreen)
 
 **覇権小説エンジン**は、AI を使って小説を「かんたんに」「高品質に」書くためのツールです。
 
@@ -12,96 +12,30 @@
 
 ---
 
-## 最近のアップデート (v3.3.1 - 2026-08-16)
+## 最新アップデート (v3.4.0 - 2026-08-18)
 
-### Phase 5: フロントエンド品質・残タスク対応（12ステップ・完了）
+### 小説の面白さ・ユーザー体験（UX）向上 72段階マイクロステップ実装完了
 
-フロントエンドの型安全性・アクセシビリティ・テスト基盤を強化しました。
-
-| 項目 | 詳細 |
-|------|------|
-| **ESLint エラー修正** | `@typescript-eslint/no-explicit-any` 68 件解消、`jsx-a11y` アクセシビリティ違反修正、未使用変数削除 |
-| **型安全性向上** | `any` → 具象型/`unknown` 置換、React Hooks 依存配列修正、コンポーネント型定義追加 |
-| **テスト再編成** | `tests/unit/` (114ファイル), `tests/phase1-4/`, `tests/integration/`, `tests/e2e/` へ整理 |
-| **Dockerfile 改善** | マルチステージビルド・非 root ユーザー化・レイヤーキャッシュ最適化 |
-| **開発用依存分離** | `requirements-dev.txt` 新規作成、`pyproject.toml` に `optional-dependencies.dev` 追加 |
-| **新規スクリプト** | `scripts/no_print_check.py`, `scripts/validate_env_map.py` |
-| **依存注入・設定改善** | `EngineDeps`を使用したDI最適化、APIキーをSettings経由で取得、Redis設定をDI経由で明示化 |
-
-### コードレビュー改善実装完了（60ステップ・5フェーズ）
-
-`CODE_REVIEW_DETAILED.md` の指摘事項を **60 の小さなステップ**に分割し、保守性・拡張性・型安全性・テスタビリティを総合的に向上させました。
-
-| Phase | ステップ | 重点 | 主な成果 |
-|-------|---------|------|----------|
-| **Phase 1 (Critical)** | 1‑12 | 循環依存・テスト・マジック値 | `UltimateHegemonyEngine` の全依存を明示的コンストラクタ引数化（13依存 + `_legacy` 後方互換）、DI コンテナ整備、9ジャンル `episode_structure` YAML 外部化、パイプラインバグ修正 |
-| **Phase 2 (High)** | 13‑24 | モジュール分割・型安全化 | かんたんモードパイプラインを 7 コンポーネントに分割（`pipeline.py` 633行→257行）、SpiceGuard を 4 モジュールに分割、LLM ゲートウェイ型安全性向上（`@overload`） |
-| **Phase 3 (Medium)** | 25‑36 | 設定一元化・観測性・性能 | 統一設定クラス `config.settings.Settings` (SSOT)、OpenTelemetry 自動計装、Prometheus メトリクス命名規約統一（`kaku_{subsystem}_{name}_{unit}`）、専用例外クラス追加、SpiceGuard 抽出を逆インデックスで高速化 |
-| **Phase 4 (Low)** | 37‑48 | ドキュメント・テスト戦略・品質ゲート | C4 アーキテクチャ図・シーケンス図、`DEVELOPER_GUIDE.md`、E2E/ミューテーションテスト戦略、Testcontainers 統合基盤、Pre-commit（ruff/mypy/bandit/gitleaks/pip-audit）、CI 改善 |
-| **Phase 5 (Frontend)** | 49‑60 | フロントエンド品質・残タスク | ESLint 全エラー修正、型安全性向上、テスト再編成、Dockerfile 改善、開発用依存分離 |
-
-**主な変更**:
-- **設定の一元化**: `config/settings.py` の `Settings` が SSOT。`constants.py` は段階的移行用後方互換エイリアスとして維持、環境変数プレフィックスは `KAKU_` に統一
-- **明示的 DI**: `UltimateHegemonyEngine` / `InfraContainer` / `AppContainer2` ですべての依存を明示注入
-- **セキュリティ**: `bandit`・`gitleaks`・`pip-audit` を CI/pre-commit に追加、シークレットマスキングログ
-- **フロントエンド**: ESLint 68 エラー全解消、アクセシビリティ準拠、型安全性強化
-
-**検証結果**: Ruff 重大エラー 0 件維持、カバレッジ 80% 以上目標、mypy strict エラー 50% 削減目標、フロントエンド ESLint 0 エラー
-
-詳細は [IMPLEMENTATION_PLAN_CODE_REVIEW_48_STEPS.md](IMPLEMENTATION_PLAN_CODE_REVIEW_48_STEPS.md)、[IMPLEMENTATION_PLAN_PHASE5.md](IMPLEMENTATION_PLAN_PHASE5.md) および [CHANGELOG.md](CHANGELOG.md) を参照。
-
-### バグ修正・安定性向上
-
-### バグ修正・安定性向上
-
-| 修正項目 | 詳細 |
-|----------|------|
-| **BASE_DIR 定数修正** | `config/constants.py` の `BASE_DIR` を空文字列から `Path(__file__).parent.parent` に修正。プロンプトマネージャー等でのパス操作エラーを解消 |
-| **erotic/vocabulary.py 定数追加** | 分割モジュール化時に欠落していた継続性トラッカー用定数（同意キーワード、スタミナ/心理状態、親密度レベル、ロケーション、状態遷移マトリクス等）を `src/agents/erotic/vocabulary.py` に完全移植 |
-| **OpenTelemetry 自動計装** | `src/core/opentelemetry.py` で FastAPI / SQLAlchemy / Redis を自動計装。メトリクス名を `kaku_{subsystem}_{name}_{unit}` 規約に統一（後方互換エイリアス付き） |
-| **非同期テスト修正** | `tests/test_zamaa_generation.py`、`tests/test_zamaa_injection.py` に `@pytest.mark.asyncio` デコレータを追加 |
-
-### 36ステップ実装計画完了
-
-**コードレビュー指摘事項を全フェーズで解決**
-
-| Phase | ステップ | 内容 | 主な成果 |
-|-------|---------|------|----------|
-| **Phase 1** | 1‑6 | 文字化け・データロス修正 | U+FFFD 文字完全除去、CI に文字化けチェック追加 |
-| **Phase 2** | 7‑12 | DI コンテナ整理 | 壊れた `container.py` 無効化、`AppContainer2` 正規化、プロバイダパス修正 |
-| **Phase 3** | 13‑18 | 認証とセキュリティ | フェイルクローズ化、`.env.example` 追加、単体テスト 7 件作成 |
-| **Phase 4** | 19‑24 | 並行性・非同期安全化 | `asyncio.run()` 刷新、レートリミッター Lock 化、タイムアウト分離 |
-| **Phase 5** | 25‑30 | コードクオリティ・リント | 未 import 修正、ベア except 修正、重複メソッド削除、Pydantic v2 移行 |
-| **Phase 6** | 31‑36 | ドキュメント・CI 改善 | README 更新、CI 統計出力、文字化け防止策・DI 整理ドキュメント化 |
-
-**検証結果**: 全テスト PASS (21 passed, 7 skipped)、文字化け 0 件、Ruff 重大エラー 0 件
-
----
-
-### かんたんモード Phase 1-3 実装完了
-
-**ジャンル選択のみで、企画から完結・商業展開まで全自動生成**が可能になりました。
+読者の没入感とエンゲージメントを極限まで高めるため、9つの新機能（合計72のマイクロステップ）を実装・検証しました。
 
 | 機能 | 詳細 |
 |------|------|
-| **9ジャンルプリセット** | ざまぁ・悪役令嬢・チート転生・スローライフ・ダンジョン運営・現代チート・TS転生・VRMMO・ループ |
-| **SpiceGuard（尖り保護）** | 自動リライト時に「この話の命」となる尖り要素（独自比喩・キャラ声・伏線・感情描写・ジャンル専用語彙）をマーカーで保護・除去 |
-| **LLMリトライ** | 失敗時自動リトライ（3回・線形バックオフ）で安定生成 |
-| **人間レビューゲート** | 監査基準未達エピソードを自動検出・フラグ表示 |
-| **IFルート生成** | ジャンル別の分岐グラフ（ざまぁカタルシス分岐・隠しルート・バッドエンド・真エンド等）を自動構築。不足ノードは自動補完 |
-| **メディアミックス台本** | 漫画・音声ドラマ・動画用の展開台本を生成 |
-| **電子書籍書き出し** | EPUB / PDF / MOBI への変換（オプション依存ライブラリは未導入時も安全にスキップ） |
-| **資産化パック** | 原本・IFルート・メディアミックス・電子書籍・プロモ素材・メタデータ・チェックサムを1つの ZIP に統合 |
+| **🔥 感情ヒートマップ・ナビゲーション** | 物語の緊張感・官能度・ヘイト度の推移をリアルタイムにカラーバーで可視化 |
+| **💖 キャラクター好感度・依存度メーター** | 本文中の言動・セリフを解析し、ヒロインの好感度・心理状態を動的更新 |
+| **🎨 シーンに応じた動的UI・環境演出** | 官能・戦闘・ほのぼの等のシーン種別に応じて、UI全体のテーマカラーがなめらかに変色 |
+| **🔀 「もしも（What-If）」分岐ジェネレーター** | クライマックスでの運命分岐（IFルート短編シナリオ）をモーダルで即時生成・閲覧 |
+| **⚡ 読者ペースに合わせた動的ペーシング調整** | 読者のスクロール速度・滞在時間から、描写密度（テンポ重視 ⇔ 心理描写重視）を自動最適化 |
+| **👁️ 「余韻（Afterglow）」の個別視点独白機能** | エピソード読了後、ヒロインが秘めていた内心の声をアコーディオン形式でフェードイン展開 |
+| **⚙️ 「ギャップ萌え」カスタマイズUI** | ツンデレ・クーデレ・ポンコツ天才などの属性と強度をスライダーで設定しプロンプトに注入 |
+| **💬 会話文の感情アニメーション表示** | 怒り（震え）、悲しみ（浮遊）、クライマックス（発光）などセリフごとに躍動するタイポグラフィ演出 |
+| **🌙 絶対的肯定シェルターの「おやすみモード」** | 一日を終えた読者を夜空のフルスクリーン演出と優しい言葉で無条件に肯定・癒やす専用モード |
 
 ---
 
 ## 実装計画書
 
-<<<<<<< ours
+- **小説の面白さ・UX向上 72段階マイクロステップ計画書**: [IMPLEMENTATION_PLAN_72_STEPS.md](IMPLEMENTATION_PLAN_72_STEPS.md)
 - **コードレビュー改善 60ステップ実装計画書**: [IMPLEMENTATION_PLAN_CODE_REVIEW_48_STEPS.md](IMPLEMENTATION_PLAN_CODE_REVIEW_48_STEPS.md)
-=======
-- **コードレビュー改善 48ステップ実装計画書**: [IMPLEMENTATION_PLAN_CODE_REVIEW_48_STEPS.md](IMPLEMENTATION_PLAN_CODE_REVIEW_48_STEPS.md)
->>>>>>> theirs
   - Phase 1 (Critical): 循環依存解消・テスト修正・マジック値外部化（ステップ 1-12）
   - Phase 2 (High): モジュール分割・型安全化（ステップ 13-24）
   - Phase 3 (Medium): 設定一元化・観測性・パフォーマンス（ステップ 25-36）

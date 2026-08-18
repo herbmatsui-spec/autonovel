@@ -12,7 +12,35 @@ from functools import wraps
 from typing import Any, Callable
 
 from fastapi import Response
-from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
+
+try:
+    from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
+except ImportError:
+    CONTENT_TYPE_LATEST = "text/plain; version=0.0.4; charset=utf-8"
+
+    def generate_latest() -> bytes:
+        return b""
+
+    class _DummyMetric:
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
+            pass
+
+        def labels(self, *args: Any, **kwargs: Any) -> "_DummyMetric":
+            return self
+
+        def inc(self, amount: float = 1) -> None:
+            pass
+
+        def dec(self, amount: float = 1) -> None:
+            pass
+
+        def set(self, value: float) -> None:
+            pass
+
+        def observe(self, amount: float) -> None:
+            pass
+
+    Counter = Gauge = Histogram = _DummyMetric  # type: ignore
 
 # ===================== 標準 HTTP メトリクス =====================
 kaku_http_requests_total = Counter(

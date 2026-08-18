@@ -83,9 +83,11 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 
 class DatabaseConnectionWrapper:
+    __slots__ = ("sql_conn", "dbapi_conn")
+
     def __init__(self, sql_conn, dbapi_conn):
-        super().__setattr__("sql_conn", sql_conn)
-        super().__setattr__("dbapi_conn", dbapi_conn)
+        self.sql_conn = sql_conn
+        self.dbapi_conn = dbapi_conn
 
     @property
     def cursor(self):
@@ -100,12 +102,6 @@ class DatabaseConnectionWrapper:
     def execute(self, sql, params=()):
         return self.dbapi_conn.execute(sql, params)
 
-    def __setattr__(self, name, value):
-        if name in ("sql_conn", "dbapi_conn"):
-            super().__setattr__(name, value)
-        else:
-            setattr(self.dbapi_conn, name, value)
-
     def fetchone(self):
         """単一行を取得"""
         return self.dbapi_conn.fetchone()
@@ -113,6 +109,7 @@ class DatabaseConnectionWrapper:
     def fetchall(self):
         """全行を取得"""
         return self.dbapi_conn.fetchall()
+
     async def close(self) -> None:
         try:
             await self.dbapi_conn.rollback()
@@ -222,7 +219,7 @@ class DatabaseManager:
             )
             sql = text(sql)
 
-        logger.warning(f"DatabaseManager.execute called: {sql}")
+        logger.debug(f"DatabaseManager.execute called: {sql}")
         async with self.engine.begin() as conn:
             await conn.execute(sql, params)
 
@@ -238,7 +235,7 @@ class DatabaseManager:
             )
             sql = text(sql)
 
-        logger.warning(f"DatabaseManager.fetch_one called: {sql}")
+        logger.debug(f"DatabaseManager.fetch_one called: {sql}")
         async with self.engine.connect() as conn:
             result = await conn.execute(sql, params)
             return result.mappings().fetchone()
@@ -255,7 +252,7 @@ class DatabaseManager:
             )
             sql = text(sql)
 
-        logger.warning(f"DatabaseManager.fetch_all called: {sql}")
+        logger.debug(f"DatabaseManager.fetch_all called: {sql}")
         async with self.engine.connect() as conn:
             result = await conn.execute(sql, params)
             return list(result.mappings().fetchall())
@@ -302,8 +299,9 @@ class DatabaseManager:
 # ==========================================
 
 
-def init_db(db_path: str):
-    """データベースのマイグレーションを同期的に実行"""
+def init_db(db_path: str, force_create_all: bool = False):
+    """データベースのマイグレーションを実行。テスト時等は force_create_all=True で直接作成可能。"""
+    from alembic import command
     from alembic.config import Config
 
     sync_url = DATABASE_URL
@@ -312,23 +310,35 @@ def init_db(db_path: str):
     elif "postgresql+asyncpg" in sync_url:
         sync_url = sync_url.replace("postgresql+asyncpg://", "postgresql://")
 
+    is_test_env = (
+        os.environ.get("ENVIRONMENT", "").lower() in ("test", "testing")
+        or os.environ.get("PYTEST_CURRENT_TEST") is not None
+    )
+
+    if force_create_all or is_test_env:
+        from sqlalchemy import create_engine
+        from src.backend.database.models import Base
+
+        engine = create_engine(sync_url)
+        Base.metadata.create_all(engine)
+        logger.info("init_db: Base.metadata.create_all executed (test/force mode)")
+        return
+
     ini_path = BASE_DIR / "alembic.ini"
     logger.debug("init_db alembic ini_path=%s exists=%s", ini_path, ini_path.exists())
     alembic_cfg = Config(str(ini_path))
     alembic_cfg.set_main_option("sqlalchemy.url", sync_url)
-    # テスト環境などの一時的なDBでは、マイグレーションではなくBase.metadata.create_allで
-    # 最新のスキーマを強制的に作成することで、不整合を防ぐ
-    from sqlalchemy import create_engine
 
-    from src.backend.database.models import Base
+    try:
+        command.upgrade(alembic_cfg, "head")
+        logger.info("init_db: alembic command.upgrade('head') executed successfully")
+    except Exception as e:
+        logger.warning(f"Alembic upgrade failed, falling back to create_all: {e}")
+        from sqlalchemy import create_engine
+        from src.backend.database.models import Base
 
-    # sync_url を使用して同期的なエンジンを作成し、テーブルを作成
-    engine = create_engine(sync_url)
-    Base.metadata.create_all(engine)
-
-    # 本来のマイグレーションも実行したい場合は以下を有効にするが、
-    # create_all の後は不整合が起きる可能性があるため、ここでは create_all を優先する
-    # command.upgrade(alembic_cfg, "head")
+        engine = create_engine(sync_url)
+        Base.metadata.create_all(engine)
 
 
 def get_db_manager() -> DatabaseManager:

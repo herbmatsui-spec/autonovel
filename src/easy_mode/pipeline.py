@@ -27,10 +27,6 @@ from src.easy_mode.progress_reporter import ProgressReporter
 from src.easy_mode.series_finalizer import SeriesFinalizer
 from src.easy_mode.context_helper import build_prev_context
 from src.easy_mode.episode_generator import EpisodeGenerator
-from src.presets.loader import load_preset
-
-import tiktoken
-
 logger = logging.getLogger(__name__)
 
 
