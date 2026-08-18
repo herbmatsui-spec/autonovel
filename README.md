@@ -1,10 +1,10 @@
-# 覇権小説エンジン v3.4.0
-# 更新: 小説の面白さ・UX向上 72段階マイクロステップ実装完了 (2026-08-18)
+# 覇権小説エンジン v3.5.0
+# 更新: アーキテクチャリファクタリング & プロジェクト構造整理 36ステップ完了 (2026-08-18)
 
 ![Tests](https://img.shields.io/badge/tests-passing-brightgreen)
 ![Coverage](https://img.shields.io/badge/coverage-80%25-yellow)
 ![Python](https://img.shields.io/badge/python-3.12-blue)
-![Code Review](https://img.shields.io/badge/UX%20Enhancements-72%20steps%20done-brightgreen)
+![Refactoring](https://img.shields.io/badge/Architecture%20Refactoring-36%20steps%20done-brightgreen)
 
 **覇権小説エンジン**は、AI を使って小説を「かんたんに」「高品質に」書くためのツールです。
 
@@ -12,9 +12,22 @@
 
 ---
 
-## 最新アップデート (v3.4.0 - 2026-08-18)
+## 最新アップデート (v3.5.0 - 2026-08-18)
 
-### 小説の面白さ・ユーザー体験（UX）向上 72段階マイクロステップ実装完了
+### 🏗️ アーキテクチャリファクタリング & ファイル整理 (全4フェーズ・36ステップ完了)
+
+コードベースの保守性と拡張性を最大化するため、過渡期のアーキテクチャ残債を完全排除し、プロジェクト構造を体系化しました。
+
+| フェーズ | 実施内容 |
+|---|---|
+| **Phase 1: ドキュメント整理** | ルートの計画書・ログ・レポートを `archive/plans/`, `archive/logs/`, `docs/reports/`, `docs/specs/` に集約（ルートファイル数を大幅削減） |
+| **Phase 2: DIコンテナ一本化** | 旧実装を廃止し、`src/core/container/`（`AppContainer2` / `InfraContainer`）へ完全統一 |
+| **Phase 3: LLMゲートウェイ集約** | `src/core/llm_gateway.py`（Facade）に統合し、孤立していた旧 `llm_client.py` を削除 |
+| **Phase 4: 重複排除 & DB層統一** | 同名モジュール（`erotic_integrity.py`, `spice_guard.py`）を各パッケージへ統合。旧Mixinリポジトリ（`repo_*.py`）を全廃し `repositories/` & `UnitOfWork` に一本化 |
+
+---
+
+### 小説の面白さ・ユーザー体験（UX）向上 72段階マイクロステップ実装完了 (v3.4.0)
 
 読者の没入感とエンゲージメントを極限まで高めるため、9つの新機能（合計72のマイクロステップ）を実装・検証しました。
 
@@ -32,36 +45,15 @@
 
 ---
 
-## 実装計画書
+## プロジェクト構造 & アーキテクチャ
 
-- **小説の面白さ・UX向上 72段階マイクロステップ計画書**: [IMPLEMENTATION_PLAN_72_STEPS.md](IMPLEMENTATION_PLAN_72_STEPS.md)
-- **コードレビュー改善 60ステップ実装計画書**: [IMPLEMENTATION_PLAN_CODE_REVIEW_48_STEPS.md](IMPLEMENTATION_PLAN_CODE_REVIEW_48_STEPS.md)
-  - Phase 1 (Critical): 循環依存解消・テスト修正・マジック値外部化（ステップ 1-12）
-  - Phase 2 (High): モジュール分割・型安全化（ステップ 13-24）
-  - Phase 3 (Medium): 設定一元化・観測性・パフォーマンス（ステップ 25-36）
-  - Phase 4 (Low): ドキュメント・テスト戦略・品質ゲート（ステップ 37-48）
-- Phase 5 (Frontend): フロントエンド品質・残タスク対応（ステップ 49-60） — [IMPLEMENTATION_PLAN_PHASE5.md](IMPLEMENTATION_PLAN_PHASE5.md)
-- 過去の計画書: `archive/plans/` に保管（36ステップ版等）
-
-### アーキテクチャドキュメント
-
-- **C4 モデル**: [docs/architecture/](docs/architecture/)（System Context / Container / Component / Code の各図 + シーケンス図 4 種 + データフロー図）
+- **DI コンテナ**: `src/core/container/`（`AppContainer2` / `InfraContainer`）
+- **DB アクセス層**: `src/backend/database/repositories/` + `UnitOfWork` パターン
+- **エージェント群**: `src/agents/`（`erotic/`, `audit/`, `plot/` 等）
+- **C4 モデル**: [docs/architecture/](docs/architecture/)
 - **開発者ガイド**: [docs/DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md)
-- **テスト戦略**: [docs/testing/E2E_TEST_STRATEGY.md](docs/testing/E2E_TEST_STRATEGY.md)・[tests/testing/MUTATION_TESTING.md](docs/testing/MUTATION_TESTING.md)
+- **過去の計画書・ログ**: `archive/plans/`, `archive/logs/`
 
-## 文字化け防止策
-
-本プロジェクトでは、日本語文字列の文字化け（Mojibake / U+FFFD 置換文字）を防止するため、以下の対策を実施しています。
-
-1. **CI での自動チェック**: `.github/workflows/ci.yml` に `git grep -P "\xEF\xBF\xBD"` を組み込み、コミット時に文字化けを検出
-2. **UTF-8 エンコーディングの徹底**: 全ソースファイルは UTF-8 で保存
-3. **エディタ設定の統一**: `.vscode/settings.json` で `files.encoding: "utf8"` を推奨
-
-## DI コンテナ整理
-
-- `src/core/container.py`（壊れた実装）を削除し、`src/core/container/app.py`（`AppContainer2`）を正規実装として採用
-- `src/core/container/__init__.py` で `AppContainer2` を `AppContainer` としてエクスポート
-- 依存解決エラーを防ぐため、プロバイダ文字列パスを正しいモジュール（例: `src.agents.audit.LogicalAuditor`）に修正
 
 ---
 

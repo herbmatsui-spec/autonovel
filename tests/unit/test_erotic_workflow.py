@@ -7,7 +7,7 @@ from config.erotic_pacing import EroticCurve
 from config.erotic_platform_presets import get_preset, get_preset_names
 from config.erotic_vocabulary import get_vocabulary_for_tier
 from formatters.erotic_censor import apply_censorship
-from src.agents.erotic_integrity import EroticIntegrityChecker
+from src.agents.erotic import EroticIntegrityChecker
 from src.engine.prompts.erotic_specialist import EroticSpecialist
 from src.services.erotic_density_controller import EroticDensityController
 from src.services.erotic_diversity_score import check_diversity, classify_diversity

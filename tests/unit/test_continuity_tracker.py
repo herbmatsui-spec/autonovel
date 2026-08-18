@@ -1,6 +1,6 @@
 import pytest
 
-from src.agents.erotic_integrity import (
+from src.agents.erotic import (
     CharacterStateSnapshot,
     ContinuityTracker,
     EroticIntegrityChecker,

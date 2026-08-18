@@ -11,7 +11,7 @@ from config.erotic_pacing import EroticCurve
 from config.erotic_platform_presets import get_preset, get_preset_names
 from config.erotic_vocabulary import get_vocabulary_for_tier
 from formatters.erotic_censor import apply_censorship
-from src.agents.erotic_integrity import EroticIntegrityChecker
+from src.agents.erotic import EroticIntegrityChecker
 from src.backend.workflows.refine_erotic_workflow import RefineEroticWorkflow
 from src.services.erotic_density_controller import EroticDensityController
 from src.services.erotic_diversity_score import classify_diversity, compute_diversity_score
@@ -127,7 +127,7 @@ async def test_refine_erotic_workflow_mock():
 
     # EroticIntegrityChecker を成功させるモック
     try:
-        from src.agents.erotic_integrity import EroticIntegrityChecker
+        from src.agents.erotic import EroticIntegrityChecker
 
         EroticIntegrityChecker.check_all = lambda self, text, consent_state=None, **kw: (
             True,

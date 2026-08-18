@@ -43,7 +43,7 @@ async def test_refine_erotic_workflow_success():
     # EroticIntegrityCheckerのモック化
     original_check_all = None
     try:
-        from src.agents.erotic_integrity import EroticIntegrityChecker
+        from src.agents.erotic import EroticIntegrityChecker
 
         original_check_all = EroticIntegrityChecker.check_all
         EroticIntegrityChecker.check_all = lambda self, text, consent_state=None: (
@@ -91,7 +91,7 @@ async def test_refine_erotic_workflow_success():
 
             EroticSpecialist.metaphor_filter = original_metaphor_filter
         if original_check_all:
-            from src.agents.erotic_integrity import EroticIntegrityChecker
+            from src.agents.erotic import EroticIntegrityChecker
 
             EroticIntegrityChecker.check_all = original_check_all
         if original_evaluate:
@@ -123,7 +123,7 @@ async def test_refine_erotic_workflow_failure():
     # EroticIntegrityCheckerを失敗させるモック
     original_check_all = None
     try:
-        from src.agents.erotic_integrity import EroticIntegrityChecker
+        from src.agents.erotic import EroticIntegrityChecker
 
         original_check_all = EroticIntegrityChecker.check_all
         EroticIntegrityChecker.check_all = lambda self, text, consent_state=None: (
@@ -152,6 +152,6 @@ async def test_refine_erotic_workflow_failure():
     finally:
         # モックを元に戻す
         if original_check_all:
-            from src.agents.erotic_integrity import EroticIntegrityChecker
+            from src.agents.erotic import EroticIntegrityChecker
 
             EroticIntegrityChecker.check_all = original_check_all

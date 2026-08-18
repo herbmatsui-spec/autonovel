@@ -38,8 +38,8 @@ class RefineEroticWorkflow(BaseWorkflow):
             specialist = EroticSpecialist()
             refined_content = specialist.metaphor_filter(original_content, intensity)
 
-            # 3. 謨ｴ蜷域ｧ繝√ぉ繝・け (EroticIntegrityChecker)
-            from src.agents.erotic_integrity import EroticIntegrityChecker
+            # 3. 整合性チェック (EroticIntegrityChecker)
+            from src.agents.erotic import EroticIntegrityChecker
 
             checker = EroticIntegrityChecker()
             # 情報から同意状態を取得
