@@ -159,7 +159,11 @@ class UnitOfWork:
         self.session = self.db.get_session()
         if self.session is None:
             raise RuntimeError("Session not initialized")
-        await self.session.begin()
+        # Check if session is already in a transaction to prevent nested begin()
+        if self.session.in_transaction():
+            logger.debug("Session already in transaction, reusing existing transaction")
+        else:
+            await self.session.begin()
         self._token = current_uow.set(self)  # type: ignore
         return self
 

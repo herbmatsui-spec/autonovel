@@ -46,6 +46,12 @@ class Settings(BaseSettings):
     storage_dir: Path = Field(default=BASE_DIR / "storage", description="ストレージディレクトリ")
     chroma_db_path: Path = Field(default=BASE_DIR / "chroma_db", description="ChromaDBパス")
 
+    # 環境識別 (production, test, development)
+    environment: str = Field(default="production", description="実行環境 (production/test/development)")
+
+    # アプリケーションバージョン (SSOT for version)
+    app_version: str = Field(default="3.6.0", description="アプリケーションバージョン")
+
     # ==========================================
     # モデル設定
     # ==========================================

@@ -11,6 +11,7 @@ import sqlite3
 import time
 import traceback
 from pathlib import Path
+import os
 from typing import Any, List, Optional
 
 import aiosqlite
@@ -300,7 +301,7 @@ class DatabaseManager:
 
 
 def init_db(db_path: str, force_create_all: bool = False):
-    """データベースのマイグレーションを実行。テスト時等は force_create_all=True で直接作成可能。"""
+    """データベースのマイグレーションを実行。テスト時のみ force_create_all=True で直接作成可能。"""
     from alembic import command
     from alembic.config import Config
 
@@ -310,11 +311,24 @@ def init_db(db_path: str, force_create_all: bool = False):
     elif "postgresql+asyncpg" in sync_url:
         sync_url = sync_url.replace("postgresql+asyncpg://", "postgresql://")
 
-    is_test_env = (
-        os.environ.get("ENVIRONMENT", "").lower() in ("test", "testing")
-        or os.environ.get("PYTEST_CURRENT_TEST") is not None
-    )
+    # Check environment via settings (SSOT)
+    is_test_env = False
+    try:
+        from config.settings import get_settings
+        settings = get_settings()
+        is_test_env = settings.environment.lower() in ("test", "testing")
+    except Exception:
+        pass
+    
+    # Fallback to env vars
+    if not is_test_env:
+        is_test_env = (
+            os.environ.get("ENVIRONMENT", "").lower() in ("test", "testing")
+            or os.environ.get("PYTEST_CURRENT_TEST") is not None
+            or os.environ.get("KAKU_ENV") == "test"
+        )
 
+    # In test mode with explicit flag, allow create_all
     if force_create_all or is_test_env:
         from sqlalchemy import create_engine
         from src.backend.database.models import Base
@@ -324,6 +338,7 @@ def init_db(db_path: str, force_create_all: bool = False):
         logger.info("init_db: Base.metadata.create_all executed (test/force mode)")
         return
 
+    # Production: ONLY run alembic migrations
     ini_path = BASE_DIR / "alembic.ini"
     logger.debug("init_db alembic ini_path=%s exists=%s", ini_path, ini_path.exists())
     alembic_cfg = Config(str(ini_path))
@@ -333,12 +348,8 @@ def init_db(db_path: str, force_create_all: bool = False):
         command.upgrade(alembic_cfg, "head")
         logger.info("init_db: alembic command.upgrade('head') executed successfully")
     except Exception as e:
-        logger.warning(f"Alembic upgrade failed, falling back to create_all: {e}")
-        from sqlalchemy import create_engine
-        from src.backend.database.models import Base
-
-        engine = create_engine(sync_url)
-        Base.metadata.create_all(engine)
+        logger.error(f"Alembic upgrade failed: {e}")
+        raise RuntimeError(f"Database migration failed: {e}") from e
 
 
 def get_db_manager() -> DatabaseManager:

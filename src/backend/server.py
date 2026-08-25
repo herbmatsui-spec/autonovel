@@ -164,6 +164,7 @@ async def rate_limit_middleware(request: Request, call_next):
     global _redis_rate_limiter
 
     client_ip = request.client.host if request.client else "unknown"
+    trace_id = getattr(request.state, "trace_id", None)
 
     try:
         # Lazy initialization (Redis not available at import time)
@@ -177,16 +178,22 @@ async def rate_limit_middleware(request: Request, call_next):
 
         allowed = await _redis_rate_limiter.is_allowed(client_ip)
         if not allowed:
+            from src.core.error_handler import create_error_response
             return JSONResponse(
                 status_code=429,
-                content={"error": "Too Many Requests", "detail": "リクエスト数が制限を超えました。"},
+                content=create_error_response(
+                    Exception("Too Many Requests"),
+                    trace_id=trace_id
+                ) | {"detail": "リクエスト数が制限を超えました。"},
             )
     except Exception as e:
-        logger.warning(f"Rate limiting error: {e}")
-        return JSONResponse(
-            status_code=503,
-            content={"error": "Service Unavailable", "detail": "レート制限サービスが利用できません"},
+        # Fail open: if rate limiter is unavailable, allow the request through
+        # but log the error for monitoring
+        logger.warning(
+            f"Rate limiter unavailable, failing open: {e}",
+            extra={"trace_id": trace_id}
         )
+        # Don't block the request - continue without rate limiting
 
     return await call_next(request)
 
@@ -226,11 +233,13 @@ class TimeoutMiddleware(BaseHTTPMiddleware):
 
 def create_app() -> FastAPI:
     """FastAPIアプリケーションを構築して返すファクトリ関数。"""
+    from config.settings import get_settings
     setup_logging()
 
+    settings = get_settings()
     application = FastAPI(
         title="覇権小説エンジン API",
-        version="3.0",
+        version=settings.app_version if hasattr(settings, 'app_version') else "3.6.0",
         lifespan=lifespan,
     )
 
@@ -299,7 +308,7 @@ async def refine_erotic(req: RefineEroticRequest, api_key: str = Depends(require
         },
         trace_id=TraceContext.get_trace_id(),
     )
-return {"task_id": task_id}
+    return {"task_id": task_id}
 
 
 @app.get("/api/tasks/{task_id}/status")
