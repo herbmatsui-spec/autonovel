@@ -2,9 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { HealthGate } from '@/components/HealthGate';
 
-vi.mock('@/api', () => ({
-  checkBackendHealth: vi.fn(),
-}));
 
 import { checkBackendHealth } from '@/api';
 

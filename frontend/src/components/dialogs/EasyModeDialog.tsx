@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useEasyModeStore } from '@/store/useEasyModeStore';
+import { useUserSettingsStore } from '@/store/useUserSettingsStore';
 import { getPlanningOptions } from '@/api';
 import type { EasyModeParams, PlanningOptions } from '@/types';
 
@@ -102,6 +103,15 @@ export function EasyModeDialog({ isOpen, onClose, onSubmit }: Props) {
     setEpisodeInterval,
   } = useEasyModeStore();
 
+  const { apiKey, setApiKey } = useUserSettingsStore();
+  const [apiKeyLocal, setApiKeyLocal] = useState(apiKey);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
+  useEffect(() => {
+    setApiKeyLocal(apiKey);
+  }, [apiKey]);
+
+  const hasApiKey = apiKeyLocal.trim().length >= 10;
   const [easyGenres, setEasyGenres] = useState<PlanningOptions['easy_genres']>(DEFAULT_EASY_GENRES);
   const [storyArchetypes, setStoryArchetypes] = useState<string[]>(DEFAULT_STORY_ARCHETYPES);
   const [styleDefinitions, setStyleDefinitions] = useState<Record<string, { name: string; description: string }>>(DEFAULT_STYLE_DEFINITIONS);
@@ -160,6 +170,11 @@ export function EasyModeDialog({ isOpen, onClose, onSubmit }: Props) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!hasApiKey) {
+      document.getElementById('easy-api-key')?.focus();
+      return;
+    }
+    setApiKey(apiKeyLocal.trim());
     onSubmit({
       api_key: '',
       config: {},
@@ -186,8 +201,8 @@ export function EasyModeDialog({ isOpen, onClose, onSubmit }: Props) {
 
   return (
     /* オーバーレイ（背景）へのクリックでダイアログを閉じる意図的な実装。
-       handleOverlayClick 内で e.target === e.currentTarget のみ発火するため、
-       ダイアログ本体への誤クリックは無視される。 */
+        handleOverlayClick 内で e.target === e.currentTarget のみ発火するため、
+        ダイアログ本体への誤クリックは無視される。 */
     // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
     <div
       role="dialog"
@@ -199,20 +214,60 @@ export function EasyModeDialog({ isOpen, onClose, onSubmit }: Props) {
       tabIndex={-1}
     >
       <form
-        className="glass-panel animate-slide-up w-[540px] p-8 flex flex-col gap-5 max-h-[90vh] overflow-y-auto"
+        className="glass-panel animate-slide-up w-[560px] p-7 flex flex-col gap-4 max-h-[92vh] overflow-y-auto"
         onSubmit={handleSubmit}
         style={{ backgroundColor: 'var(--bg-sidebar)' }}
       >
-        <h3 id="modal-title" className="border-b border-border pb-3 text-lg font-bold text-white">
-          ⚔️ 小説を自動生成 (かんたんモード)
-        </h3>
-        
-        <div>
-          <div className="tooltip-container mb-1">
-            <label htmlFor="easy-genre" className="block text-sm font-medium text-slate-200">プリセット・ジャンル</label>
-            <span className="tooltip-icon">?</span>
-            <span className="tooltip-text">プロットやキャラクター設定があらかじめテンプレート化されたジャンルです。初心者におすすめです。</span>
+        <div className="border-b border-border pb-3">
+          <h3 id="modal-title" className="text-lg font-bold text-white">
+            ⚡ かんたんモードで小説を作る
+          </h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            ジャンルを選んでボタンを押すだけ。あとは AI が企画・プロット・本文まで自動で書きます。
+          </p>
+        </div>
+
+        {/* ステップ表示 */}
+        <ol className="flex items-center gap-2 text-[0.7rem] font-bold">
+          <li className="flex items-center gap-1 px-2 py-1 rounded-full bg-indigo-500/20 text-indigo-200">
+            <span className="w-4 h-4 rounded-full bg-indigo-500 text-white text-center leading-4">1</span> ジャンル
+          </li>
+          <li className="flex items-center gap-1 px-2 py-1 rounded-full bg-indigo-500/20 text-indigo-200">
+            <span className="w-4 h-4 rounded-full bg-indigo-500 text-white text-center leading-4">2</span> キーワード（任意）
+          </li>
+          <li className="flex items-center gap-1 px-2 py-1 rounded-full bg-indigo-500/20 text-indigo-200">
+            <span className="w-4 h-4 rounded-full bg-indigo-500 text-white text-center leading-4">3</span> 生成！
+          </li>
+        </ol>
+
+        {/* 🔑 APIキー（ここで直接入力できるので迷わない） */}
+        <div className={`rounded-lg border p-3.5 ${hasApiKey ? 'border-emerald-700/50 bg-emerald-950/20' : 'border-amber-600/60 bg-amber-950/20'}`}>
+          <div className="flex items-center gap-2 mb-1">
+            <span className={`text-sm font-bold ${hasApiKey ? 'text-emerald-200' : 'text-amber-200'}`}>
+              {hasApiKey ? '✅ Gemini APIキー（設定済み）' : '⚠️ Gemini APIキーが必要です'}
+            </span>
           </div>
+          <input
+            id="easy-api-key"
+            type="password"
+            value={apiKeyLocal}
+            onChange={(e) => setApiKeyLocal(e.target.value)}
+            placeholder="AIza...  （Google AI Studio で無料取得）"
+            className="w-full text-xs px-2.5 py-1.5 rounded bg-slate-950 text-white font-medium border border-slate-600 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            aria-label="Gemini APIキーを入力"
+          />
+          {!hasApiKey && (
+            <p className="text-[0.7rem] text-amber-300/90 mt-1.5">
+              取得は無料です → <span className="font-mono">aistudio.google.com/app/apikey</span>
+            </p>
+          )}
+        </div>
+
+        {/* 1. ジャンル */}
+        <div>
+          <label htmlFor="easy-genre" className="block text-sm font-medium text-slate-200 mb-1">
+            ① プリセット・ジャンル
+          </label>
           <select
             id="easy-genre"
             value={selectedGenreKey}
@@ -230,268 +285,289 @@ export function EasyModeDialog({ isOpen, onClose, onSubmit }: Props) {
             </p>
           )}
         </div>
-        
+
+        {/* 2. キーワード（任意） */}
         <div>
-          <div className="tooltip-container mb-1">
-            <label htmlFor="easy-keywords" className="block text-sm font-medium text-slate-200">キーワード (カンマ区切り)</label>
-            <span className="tooltip-icon">?</span>
-            <span className="tooltip-text">物語の核となる要素です。カンマで区切って複数入力できます（例: 追放, 魔法, 逆転）。</span>
-          </div>
+          <label htmlFor="easy-keywords" className="block text-sm font-medium text-slate-200 mb-1">
+            ② キーワード <span className="text-[0.7rem] font-normal text-muted-foreground">（空欄でもOK）</span>
+          </label>
           <input
             id="easy-keywords"
             type="text"
             value={easyKeywords}
             onChange={(e) => setEasyKeywords(e.target.value)}
             placeholder="例: 追放, 復讐, チート"
-            required
             className="w-full"
           />
-        </div>
-        
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <div className="tooltip-container mb-1">
-              <label htmlFor="easy-archetype" className="block text-sm font-medium text-slate-200">物語の型 (アーキタイプ)</label>
-              <span className="tooltip-icon">?</span>
-              <span className="tooltip-text">物語全体の展開パターン（プロットの骨組み）です。</span>
-            </div>
-            <select
-              id="easy-archetype"
-              value={easyArchetype}
-              onChange={(e) => setEasyArchetype(e.target.value)}
-              className="w-full text-sm"
-            >
-              {storyArchetypes.map(arch => {
-                const label = ARCHETYPE_LABEL_MAP[arch] || arch;
-                return (
-                  <option key={arch} value={arch}>{label}</option>
-                );
-              })}
-            </select>
-          </div>
-          <div>
-            <div className="tooltip-container mb-1">
-              <label htmlFor="easy-style-key" className="block text-sm font-medium text-slate-200">文体スタイル</label>
-              <span className="tooltip-icon">?</span>
-              <span className="tooltip-text">文の雰囲気やキャラクターの会話のテンポ、地の文の硬さを調整します。</span>
-            </div>
-            <select
-              id="easy-style-key"
-              value={easyStyleKey}
-              onChange={(e) => setEasyStyleKey(e.target.value)}
-              className="w-full text-sm"
-            >
-              {Object.entries(styleDefinitions).map(([key, item]) => (
-                <option key={key} value={key}>{item.name}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-        
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <div className="tooltip-container mb-1">
-              <label htmlFor="easy-target-eps" className="block text-sm font-medium text-slate-200">全体目標話数</label>
-              <span className="tooltip-icon">?</span>
-              <span className="tooltip-text">生成するエピソードの合計数です。3話〜100話の間で指定できます。</span>
-            </div>
-            <input
-              id="easy-target-eps"
-              type="number"
-              value={easyTargetEps}
-              onChange={(e) => setEasyTargetEps(parseInt(e.target.value) || 10)}
-              min={3}
-              max={100}
-              className="w-full"
-            />
-          </div>
-          <div>
-            <div className="tooltip-container mb-1">
-              <label htmlFor="easy-word-count" className="block text-sm font-medium text-slate-200">一話あたりの想定文字数</label>
-              <span className="tooltip-icon">?</span>
-              <span className="tooltip-text">各話ごとの本文のボリューム目安です（1000〜10000字）。</span>
-            </div>
-            <input
-              id="easy-word-count"
-              type="number"
-              value={easyWordCount}
-              onChange={(e) => setEasyWordCount(parseInt(e.target.value) || 3000)}
-              step={500}
-              min={1000}
-              max={10000}
-              className="w-full"
-            />
-          </div>
-        </div>
-        
-        {/* 🔞 官能表現 (NSFW) オプトイン設定 */}
-        <div className="bg-rose-950/20 border border-rose-900/40 rounded-lg p-3.5 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="tooltip-container">
-              <label htmlFor="enable-erotic" className="flex items-center gap-2 cursor-pointer text-sm font-semibold text-rose-200">
-                <input
-                  id="enable-erotic"
-                  type="checkbox"
-                  checked={enableErotic}
-                  onChange={(e) => setEnableErotic(e.target.checked)}
-                  className="w-4 h-4 accent-rose-500 rounded cursor-pointer"
-                />
-                🔞 官能表現（R18/NSFW要素）を含める
-              </label>
-              <span className="tooltip-icon">?</span>
-              <span className="tooltip-text">チェックすると官能描写や濃厚な恋愛シーンを追加します。</span>
-            </div>
-            <span className="text-[0.7rem] text-rose-300 font-mono">
-              {enableErotic ? 'ON' : 'OFF'}
-            </span>
-          </div>
-
-          {enableErotic && (
-            <div className="space-y-2 pt-1 border-t border-rose-900/30 animate-fade-in">
-              <div className="flex justify-between items-center text-xs text-rose-200">
-                <div className="tooltip-container">
-                  <label htmlFor="erotic-intensity" className="font-medium">官能の過激度 (Intensity)</label>
-                  <span className="tooltip-icon">?</span>
-                  <span className="tooltip-text">過激度が低いほどフェティシズムや焦らし・心理的葛藤に焦点が当たり、高くなるほど肉体的な直接描写が増えます。</span>
-                </div>
-                <span className="font-bold font-mono text-rose-400 bg-rose-950/60 px-2 py-0.5 rounded border border-rose-800/50">
-                  {eroticIntensity}: {['ほのぼの', '微熱', '情熱(標準)', '背徳', '濃厚', '過激(極限)'][eroticIntensity] || ''}
-                </span>
-              </div>
-              <input
-                id="erotic-intensity"
-                type="range"
-                min={0}
-                max={5}
-                step={1}
-                value={eroticIntensity}
-                onChange={(e) => setEroticIntensity(Number(e.target.value))}
-                className="w-full accent-rose-500 cursor-pointer"
-              />
-              <div className="flex justify-between text-[0.65rem] text-slate-400 font-mono px-0.5">
-                <span>0: ほのぼの</span>
-                <span>2: 標準</span>
-                <span>5: 極限</span>
-              </div>
-            </div>
-          )}
+          <p className="text-[0.7rem] text-muted-foreground mt-1">
+            物語の核となる要素をカンマで区切って入力します。未入力の場合はジャンルから自動で決めます。
+          </p>
         </div>
 
-        {/* 🎨 挿絵生成 オプトイン設定 */}
-        <div className="bg-indigo-950/20 border border-indigo-900/40 rounded-lg p-3.5 space-y-3 animate-fade-in">
-          <div className="flex items-center justify-between">
-            <label htmlFor="enable-illustration" className="flex items-center gap-2 cursor-pointer text-sm font-semibold text-indigo-200">
-              <input
-                id="enable-illustration"
-                type="checkbox"
-                checked={enableIllustration}
-                onChange={(e) => setEnableIllustration(e.target.checked)}
-                className="w-4 h-4 accent-indigo-500 rounded cursor-pointer"
-              />
-              🎨 挿絵を自動生成する
-            </label>
-            <span className="text-[0.7rem] text-indigo-300 font-mono">
-              {enableIllustration ? 'ON' : 'OFF'}
-            </span>
-          </div>
+        {/* 詳細設定（折りたたみ） */}
+        <div className="rounded-lg border border-slate-700/60 bg-slate-900/40">
+          <button
+            type="button"
+            onClick={() => setShowAdvanced(v => !v)}
+            aria-expanded={showAdvanced}
+            className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-semibold text-slate-200 hover:bg-slate-800/40 rounded-lg"
+          >
+            <span>🔧 もっとこだわる（詳細設定・上級者向け）</span>
+            <span className={`transition-transform ${showAdvanced ? 'rotate-180' : ''}`}>▾</span>
+          </button>
 
-          {enableIllustration && (
-            <div className="space-y-3 pt-2 border-t border-indigo-900/30">
-              <div className="grid grid-cols-2 gap-3">
+          {showAdvanced && (
+            <div className="px-4 pb-4 pt-1 flex flex-col gap-4 border-t border-slate-700/60 animate-fade-in">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="illustration-type" className="block text-xs font-medium text-indigo-200 mb-1">生成範囲</label>
+                  <div className="tooltip-container mb-1">
+                    <label htmlFor="easy-archetype" className="block text-sm font-medium text-slate-200">物語の型</label>
+                    <span className="tooltip-icon">?</span>
+                    <span className="tooltip-text">物語全体の展開パターン（プロットの骨組み）です。</span>
+                  </div>
                   <select
-                    id="illustration-type"
-                    value={illustrationType}
-                    onChange={(e) => setIllustrationType(e.target.value as 'cover' | 'episode' | 'both')}
-                    className="w-full text-xs"
+                    id="easy-archetype"
+                    value={easyArchetype}
+                    onChange={(e) => setEasyArchetype(e.target.value)}
+                    className="w-full text-sm"
                   >
-                    <option value="cover">表紙のみ</option>
-                    <option value="episode">話数ごと</option>
-                    <option value="both">両方</option>
+                    {storyArchetypes.map(arch => {
+                      const label = ARCHETYPE_LABEL_MAP[arch] || arch;
+                      return (
+                        <option key={arch} value={arch}>{label}</option>
+                      );
+                    })}
                   </select>
                 </div>
                 <div>
-                  <label htmlFor="illustration-model" className="block text-xs font-medium text-indigo-200 mb-1">モデル品質</label>
+                  <div className="tooltip-container mb-1">
+                    <label htmlFor="easy-style-key" className="block text-sm font-medium text-slate-200">文体スタイル</label>
+                    <span className="tooltip-icon">?</span>
+                    <span className="tooltip-text">文の雰囲気やキャラクターの会話のテンポ、地の文の硬さを調整します。</span>
+                  </div>
                   <select
-                    id="illustration-model"
-                    value={illustrationModel}
-                    onChange={(e) => setIllustrationModel(e.target.value as 'fast' | 'quality')}
-                    className="w-full text-xs"
+                    id="easy-style-key"
+                    value={easyStyleKey}
+                    onChange={(e) => setEasyStyleKey(e.target.value)}
+                    className="w-full text-sm"
                   >
-                    <option value="fast">高速 (Fast)</option>
-                    <option value="quality">高品質 (Quality)</option>
+                    {Object.entries(styleDefinitions).map(([key, item]) => (
+                      <option key={key} value={key}>{item.name}</option>
+                    ))}
                   </select>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="flex items-center gap-2 cursor-pointer text-xs text-indigo-200">
-                    <input
-                      type="checkbox"
-                      checked={generateCover}
-                      onChange={(e) => setGenerateCover(e.target.checked)}
-                      className="w-3 h-3 accent-indigo-500"
-                    />
-                    表紙を生成する
-                  </label>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <div className="tooltip-container mb-1">
+                    <label htmlFor="easy-target-eps" className="block text-sm font-medium text-slate-200">全体目標話数</label>
+                    <span className="tooltip-icon">?</span>
+                    <span className="tooltip-text">生成するエピソードの合計数です。3話〜100話の間で指定できます。</span>
+                  </div>
+                  <input
+                    id="easy-target-eps"
+                    type="number"
+                    value={easyTargetEps}
+                    onChange={(e) => setEasyTargetEps(parseInt(e.target.value) || 10)}
+                    min={3}
+                    max={100}
+                    className="w-full"
+                  />
                 </div>
-                <div className="flex items-center justify-between">
-                  <label className="flex items-center gap-2 cursor-pointer text-xs text-indigo-200">
-                    <input
-                      type="checkbox"
-                      checked={generateEpisodeIllustrations}
-                      onChange={(e) => setGenerateEpisodeIllustrations(e.target.checked)}
-                      className="w-3 h-3 accent-indigo-500"
-                    />
-                    話数ごとに挿絵を生成する
-                  </label>
+                <div>
+                  <div className="tooltip-container mb-1">
+                    <label htmlFor="easy-word-count" className="block text-sm font-medium text-slate-200">一話あたりの文字数</label>
+                    <span className="tooltip-icon">?</span>
+                    <span className="tooltip-text">各話ごとの本文のボリューム目安です（1000〜10000字）。</span>
+                  </div>
+                  <input
+                    id="easy-word-count"
+                    type="number"
+                    value={easyWordCount}
+                    onChange={(e) => setEasyWordCount(parseInt(e.target.value) || 3000)}
+                    step={500}
+                    min={1000}
+                    max={10000}
+                    className="w-full"
+                  />
                 </div>
-                {generateEpisodeIllustrations && (
-                  <div className="flex items-center gap-3 pt-1">
-                    <label htmlFor="episode-interval" className="text-xs text-indigo-300">生成間隔 (話数ごと):</label>
+              </div>
+
+              {/* 🔞 官能表現 (NSFW) オプトイン設定 */}
+              <div className="bg-rose-950/20 border border-rose-900/40 rounded-lg p-3.5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="tooltip-container">
+                    <label htmlFor="enable-erotic" className="flex items-center gap-2 cursor-pointer text-sm font-semibold text-rose-200">
+                      <input
+                        id="enable-erotic"
+                        type="checkbox"
+                        checked={enableErotic}
+                        onChange={(e) => setEnableErotic(e.target.checked)}
+                        className="w-4 h-4 accent-rose-500 rounded cursor-pointer"
+                      />
+                      🔞 官能表現（R18/NSFW要素）を含める
+                    </label>
+                    <span className="tooltip-icon">?</span>
+                    <span className="tooltip-text">チェックすると官能描写や濃厚な恋愛シーンを追加します。</span>
+                  </div>
+                  <span className="text-[0.7rem] text-rose-300 font-mono">
+                    {enableErotic ? 'ON' : 'OFF'}
+                  </span>
+                </div>
+
+                {enableErotic && (
+                  <div className="space-y-2 pt-1 border-t border-rose-900/30 animate-fade-in">
+                    <div className="flex justify-between items-center text-xs text-rose-200">
+                      <div className="tooltip-container">
+                        <label htmlFor="erotic-intensity" className="font-medium">官能の過激度 (Intensity)</label>
+                        <span className="tooltip-icon">?</span>
+                        <span className="tooltip-text">過激度が低いほどフェティシズムや焦らし・心理的葛藤に焦点が当たり、高くなるほど肉体的な直接描写が増えます。</span>
+                      </div>
+                      <span className="font-bold font-mono text-rose-400 bg-rose-950/60 px-2 py-0.5 rounded border border-rose-800/50">
+                        {eroticIntensity}: {['ほのぼの', '微熱', '情熱(標準)', '背徳', '濃厚', '過激(極限)'][eroticIntensity] || ''}
+                      </span>
+                    </div>
                     <input
-                      id="episode-interval"
-                      type="number"
-                      value={episodeInterval}
-                      onChange={(e) => setEpisodeInterval(parseInt(e.target.value) || 1)}
-                      min={1}
-                      max={20}
-                      className="w-16 text-xs px-1"
+                      id="erotic-intensity"
+                      type="range"
+                      min={0}
+                      max={5}
+                      step={1}
+                      value={eroticIntensity}
+                      onChange={(e) => setEroticIntensity(Number(e.target.value))}
+                      className="w-full accent-rose-500 cursor-pointer"
                     />
+                    <div className="flex justify-between text-[0.65rem] text-slate-400 font-mono px-0.5">
+                      <span>0: ほのぼの</span>
+                      <span>2: 標準</span>
+                      <span>5: 極限</span>
+                    </div>
                   </div>
                 )}
               </div>
+
+              {/* 🎨 挿絵生成 オプトイン設定 */}
+              <div className="bg-indigo-950/20 border border-indigo-900/40 rounded-lg p-3.5 space-y-3 animate-fade-in">
+                <div className="flex items-center justify-between">
+                  <label htmlFor="enable-illustration" className="flex items-center gap-2 cursor-pointer text-sm font-semibold text-indigo-200">
+                    <input
+                      id="enable-illustration"
+                      type="checkbox"
+                      checked={enableIllustration}
+                      onChange={(e) => setEnableIllustration(e.target.checked)}
+                      className="w-4 h-4 accent-indigo-500 rounded cursor-pointer"
+                    />
+                    🎨 挿絵を自動生成する
+                  </label>
+                  <span className="text-[0.7rem] text-indigo-300 font-mono">
+                    {enableIllustration ? 'ON' : 'OFF'}
+                  </span>
+                </div>
+
+                {enableIllustration && (
+                  <div className="space-y-3 pt-2 border-t border-indigo-900/30">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label htmlFor="illustration-type" className="block text-xs font-medium text-indigo-200 mb-1">生成範囲</label>
+                        <select
+                          id="illustration-type"
+                          value={illustrationType}
+                          onChange={(e) => setIllustrationType(e.target.value as 'cover' | 'episode' | 'both')}
+                          className="w-full text-xs"
+                        >
+                          <option value="cover">表紙のみ</option>
+                          <option value="episode">話数ごと</option>
+                          <option value="both">両方</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label htmlFor="illustration-model" className="block text-xs font-medium text-indigo-200 mb-1">モデル品質</label>
+                        <select
+                          id="illustration-model"
+                          value={illustrationModel}
+                          onChange={(e) => setIllustrationModel(e.target.value as 'fast' | 'quality')}
+                          className="w-full text-xs"
+                        >
+                          <option value="fast">高速 (Fast)</option>
+                          <option value="quality">高品質 (Quality)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="flex items-center gap-2 cursor-pointer text-xs text-indigo-200">
+                          <input
+                            type="checkbox"
+                            checked={generateCover}
+                            onChange={(e) => setGenerateCover(e.target.checked)}
+                            className="w-3 h-3 accent-indigo-500"
+                          />
+                          表紙を生成する
+                        </label>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <label className="flex items-center gap-2 cursor-pointer text-xs text-indigo-200">
+                          <input
+                            type="checkbox"
+                            checked={generateEpisodeIllustrations}
+                            onChange={(e) => setGenerateEpisodeIllustrations(e.target.checked)}
+                            className="w-3 h-3 accent-indigo-500"
+                          />
+                          話数ごとに挿絵を生成する
+                        </label>
+                      </div>
+                      {generateEpisodeIllustrations && (
+                        <div className="flex items-center gap-3 pt-1">
+                          <label htmlFor="episode-interval" className="text-xs text-indigo-300">生成間隔 (話数ごと):</label>
+                          <input
+                            id="episode-interval"
+                            type="number"
+                            value={episodeInterval}
+                            onChange={(e) => setEpisodeInterval(parseInt(e.target.value) || 1)}
+                            min={1}
+                            max={20}
+                            className="w-16 text-xs px-1"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <div className="tooltip-container mb-1">
+                  <label htmlFor="easy-concept" className="block text-sm font-medium text-slate-200">コンセプト詳細 (チート内容や世界観など)</label>
+                  <span className="tooltip-icon">?</span>
+                  <span className="tooltip-text">「実は最強の魔法ハッカー」「魔王の娘と契約する」などの設定を自由に記述できます。</span>
+                </div>
+                <textarea
+                  id="easy-concept"
+                  value={easyConcept}
+                  onChange={(e) => setEasyConcept(e.target.value)}
+                  placeholder="例: 主人公は最強のハッカーだが異世界で魔法回路をハックする..."
+                  rows={3}
+                  className="w-full"
+                  aria-label="コンセプト詳細"
+                />
+              </div>
             </div>
           )}
         </div>
 
-        <div>
-          <div className="tooltip-container mb-1">
-            <label htmlFor="easy-concept" className="block text-sm font-medium text-slate-200">コンセプト詳細 (チート内容や世界観など)</label>
-            <span className="tooltip-icon">?</span>
-            <span className="tooltip-text">「実は最強の魔法ハッカー」「魔王の娘と契約する」などの設定を自由に記述できます。</span>
-          </div>
-          <textarea
-            id="easy-concept"
-            value={easyConcept}
-            onChange={(e) => setEasyConcept(e.target.value)}
-            placeholder="例: 主人公は最強のハッカーだが異世界で魔法回路をハックする..."
-            rows={3}
-            className="w-full"
-            aria-label="コンセプト詳細"
-          />
-        </div>
-        
-        <div className="flex gap-4 mt-2 justify-end">
-          <button type="button" className="btn btn-secondary transition-colors duration-200" onClick={onClose}>
+        <div className="flex gap-3 mt-1">
+          <button type="button" className="btn btn-secondary transition-colors duration-200 flex-1" onClick={onClose}>
             キャンセル
           </button>
-          <button type="submit" className="btn btn-primary transition-colors duration-200">
-            🚀 生成開始
+          <button type="submit" className="btn btn-primary transition-colors duration-200 flex-[2]" disabled={!hasApiKey}>
+            {hasApiKey ? '🚀 生成開始' : '⚠️ APIキーを入力してください'}
           </button>
         </div>
+        <p className="text-[0.7rem] text-muted-foreground text-center">
+          生成には数十秒〜数分かかることがあります。進捗は画面右下のモニターで確認でき、完成した小説は「作品一覧」に表示されます。
+        </p>
       </form>
     </div>
   );

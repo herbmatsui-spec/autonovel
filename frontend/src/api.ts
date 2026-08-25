@@ -54,30 +54,34 @@ export type {
   Issue,
 };
 
-import { useUserSettingsStore } from './store/useUserSettingsStore';
+// useUserSettingsStore import removed, no config usage needed
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
-const API_BASE_URL_NO_API = API_BASE_URL.replace('/api', '');
-
-async function apiRequest<T>(url: string, options?: RequestInit): Promise<T> {
-  const apiKey = useUserSettingsStore.getState().apiKey;
-  const response = await fetch(url, {
-    ...options,
+// generic API request helper
+async function apiRequest<T>(url: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(url, {
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
-      ...(apiKey ? { 'Authorization': `Bearer ${apiKey}` } : {}),
-      ...options?.headers,
+      ...(init?.headers || {}),
     },
+    method: init?.method ?? 'GET',
+    body: init?.body,
   });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(errorText || `HTTP ${response.status}`);
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`API Error: ${res.status} ${errorText}`);
   }
 
-  if (response.status === 204) return undefined as T;
-  return response.json();
+  const data: T = await res.json();
+  return data;
 }
+
+// safely access import.meta.env for Vite environment variables
+const VITE_API_URL = import.meta?.env?.VITE_API_URL;
+const API_BASE_URL = VITE_API_URL || '/api';
+const API_BASE_URL_NO_API = API_BASE_URL.replace('/api', '');
+
 
 // REST GET/DELETE helper functions
 export async function getBooks(): Promise<Book[]> {

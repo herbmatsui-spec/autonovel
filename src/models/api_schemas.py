@@ -122,7 +122,6 @@ class TaskStatusSchema(BaseModel):
 class AuthenticatedRequest(BaseModel):
     """API認証付きリクエストの共通ベース"""
 
-    api_key: str
     config: Dict[str, Any] = Field(default_factory=dict)
 
 
@@ -209,7 +208,6 @@ class CritiqueOptimizeRequest(AuthenticatedRequest):
 class AuditPlanRequest(BaseModel):
     """プラン監査リクエスト（configなし）"""
 
-    api_key: str
     genre: str
     keywords: str
     trend_memo: str
@@ -221,7 +219,6 @@ class AuditPlanRequest(BaseModel):
 class ChapterImportRequest(BaseModel):
     """章インポートリクエスト"""
 
-    api_key: str
     book_id: int
     ep_num: int
     import_text: str
@@ -231,7 +228,6 @@ class ChapterImportRequest(BaseModel):
 class MarketingGenerateRequest(BaseModel):
     """マーケティング生成リクエスト"""
 
-    api_key: str
     book_id: int
     latest_ep: int
 
@@ -321,7 +317,6 @@ class ResolveIssueRequest(BaseModel):
     """課題解決リクエスト"""
 
     action: str  # 'Auto-Fix', 'Foreshadowing', 'Ignore'
-    api_key: str
 
 
 class ErrorResponse(BaseResponse):

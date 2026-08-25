@@ -32,11 +32,6 @@ ignore_missing_imports = true
 disallow_untyped_defs = false
 
 [[tool.mypy.overrides]]
-module = "src.cli.*"
-ignore_missing_imports = true
-disallow_untyped_defs = false
-
-[[tool.mypy.overrides]]
 module = "src.services.redis_cache"
 ignore_missing_imports = true
 
@@ -131,10 +126,6 @@ module = "src.kernels.*"
 disallow_untyped_defs = false
 
 [[tool.mypy.overrides]]
-module = "src.core.context_window_manager"
-disallow_untyped_defs = false
-
-[[tool.mypy.overrides]]
 module = "src.core.async_utils"
 disallow_untyped_defs = false
 
@@ -161,23 +152,24 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "kaku-hegemony"
-version = "3.0.0"
+version = "3.5.0"
 description = "覇権小説エンジン"
 requires-python = ">=3.12"
 dependencies = [
     "nest-asyncio>=1.5.0",
     "google-genai>=0.8.0",
     "aiosqlite>=0.19.0",
-    "pydantic>=2.7.0",
+    "pydantic>=2.7.0,<3.0.0",
+    "pydantic-settings>=2.0.0",
     "jinja2>=3.1.4",
     "pandas>=2.0.0",
-    "fastapi>=0.111.0",
+    "fastapi>=0.111.0,<1.0.0",
     "uvicorn>=0.30.0",
     "requests>=2.32.0",
-    "sqlalchemy>=2.0.0",
+    "sqlalchemy>=2.0.0,<3.0.0",
     "alembic>=1.13.0",
     "dependency-injector>=4.41.0",
-    "chromadb>=0.5.0",
+    "chromadb>=0.5.0,<1.0.0",
     "redis>=5.0.0",
     "huey>=1.1.0",
     "python-json-logger>=2.0.0",
@@ -188,6 +180,7 @@ dependencies = [
     "opentelemetry-instrumentation-fastapi>=0.47b0",
     "opentelemetry-instrumentation-logging>=0.47b0",
     "prometheus-client>=0.19.0",
+    "tiktoken>=0.8.0",
 ]
 
 [project.optional-dependencies]

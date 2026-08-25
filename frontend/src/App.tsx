@@ -278,13 +278,16 @@ setShowPreview,
       )}
 
       {/* -------------------- NEW NOVEL (EASY MODE) MODAL DIALOG -------------------- */}
-      {isCreateModalOpen && (
-         <EasyModeDialog
-           isOpen={isCreateModalOpen}
-           onClose={() => setCreateModalOpen(false)}
-           onSubmit={handleCreateEasyMode}
-         />
-      )}
+          {isCreateModalOpen && (
+             <EasyModeDialog
+               isOpen={isCreateModalOpen}
+               onClose={() => setCreateModalOpen(false)}
+               onSubmit={() => {
+                 handleCreateEasyMode();
+                 setActiveTab('books');
+               }}
+             />
+          )}
       </div>
     </HealthGate>
   );

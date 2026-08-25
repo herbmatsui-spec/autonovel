@@ -10,22 +10,24 @@ interface UserSettingsState {
   setTemperature: (temp: number) => void;
   setModelType: (model: string) => void;
   setIsExpertMode: (val: boolean) => void;
+  // added config placeholder
+  config: Record<string, unknown>;
 }
 
-export const useUserSettingsStore = create<UserSettingsState>()(
+export const useUserSettingsStore = create<UserSettingsState>(
   persist(
     (set) => ({
       apiKey: '',
       temperature: 0.7,
-      modelType: 'gemini-2.5-pro',
+      modelType: 'gpt-4',
       isExpertMode: false,
       setApiKey: (key) => set({ apiKey: key }),
       setTemperature: (temp) => set({ temperature: temp }),
       setModelType: (model) => set({ modelType: model }),
       setIsExpertMode: (val) => set({ isExpertMode: val }),
+      // initialize empty config to avoid undefined
+      config: {},
     }),
-    {
-      name: 'user-settings',
-    }
+    { name: 'user-settings' }
   )
 );

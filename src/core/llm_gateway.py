@@ -69,20 +69,20 @@ class SemanticCacheManager:
     def __init__(self, vector_store: object = None):
         self.vector_store = vector_store
 
-    def get(self, key: str) -> Optional[object]:
+def get(self, key: str) -> Optional[object]:
         try:
             if self.vector_store and hasattr(self.vector_store, "get"):
                 return self.vector_store.get(key)
             return None
-        except Exception as e:
+        except (AttributeError, TypeError, RuntimeError) as e:
             logger.warning(f"Cache get failed for key={key}: {e}")
             return None
 
-    def set(self, key: str, value: object, ttl: int = 3600) -> None:
+def set(self, key: str, value: object, ttl: int = 3600) -> None:
         try:
             if self.vector_store and hasattr(self.vector_store, "set"):
                 self.vector_store.set(key, value, ttl)
-        except Exception as e:
+        except (AttributeError, TypeError, RuntimeError) as e:
             logger.warning(f"Cache set failed for key={key}: {e}")
 
 

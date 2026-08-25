@@ -8,9 +8,10 @@ from __future__ import annotations
 
 from typing import Any, Dict
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
+from src.backend.auth import require_api_key
 from src.backend.database.uow import UnitOfWork
 from src.core.container import AppContainer
 from src.services.hook_diagnoser import HOOK_THRESHOLD, HookDiagnoser
@@ -19,7 +20,6 @@ router = APIRouter(prefix="/api/hooks", tags=["hooks"])
 
 
 class FixRequest(BaseModel):
-    api_key: str
     ep_num: int
 
 
@@ -52,7 +52,7 @@ async def diagnose_hooks(book_id: int) -> Dict[str, Any]:
 
 
 @router.post("/books/{book_id}/suggest")
-async def suggest_hook_fix(book_id: int, req: FixRequest) -> Dict[str, Any]:
+async def suggest_hook_fix(book_id: int, req: FixRequest, api_key: str = Depends(require_api_key)) -> Dict[str, Any]:
     """指定章のフック改善案を生成する。"""
     from sqlalchemy import select
 
@@ -70,7 +70,7 @@ async def suggest_hook_fix(book_id: int, req: FixRequest) -> Dict[str, Any]:
     diagnoser = HookDiagnoser()
     suggestion = await diagnoser.generate_hook_fix(
         {"ep_num": chapter.ep_num, "title": chapter.title, "content": chapter.content or ""},
-        api_key=req.api_key,
+        api_key=api_key,
     )
     return {"ep_num": chapter.ep_num, "suggestion": suggestion}
 

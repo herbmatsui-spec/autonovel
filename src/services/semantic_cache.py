@@ -66,7 +66,7 @@ class SemanticCacheManager:
             # L2-B キャッシュに保存
             self._l2_embedding_cache[text_hash] = vec
             return vec
-        except Exception as e:
+        except (OSError, RuntimeError) as e:
             logger.error(f"[SEMANTIC CACHE] Embedding generation failed: {e}")
             return []
 
@@ -163,7 +163,7 @@ class SemanticCacheManager:
             if meta.get("is_json"):
                 try:
                     return json.loads(content_str)
-                except Exception:
+                except (json.JSONDecodeError, ValueError):
                     return content_str
             return content_str
 
@@ -267,7 +267,7 @@ class SemanticCacheManager:
                     f"[SEMANTIC CACHE EVICTION] Evicted {len(delete_ids)} old cache entries."
                 )
 
-        except Exception as e:
+        except (ValueError, RuntimeError) as e:
             logger.error(f"[SEMANTIC CACHE EVICTION] Failed: {e}")
 
     async def prefetch_next(
@@ -308,7 +308,7 @@ class SemanticCacheManager:
                         book_id=book_id,
                     )
                     prefetch_prompts.append((task_type, prompt))
-                except Exception as e:
+                except (OSError, RuntimeError) as e:
                     logger.debug(
                         f"[PREFETCH] Could not prefetch drafting prompt for ep{next_ep}: {e}"
                     )
@@ -324,7 +324,7 @@ class SemanticCacheManager:
                         book_id=book_id,
                     )
                     prefetch_prompts.append((task_type, prompt))
-                except Exception as e:
+                except (OSError, RuntimeError) as e:
                     logger.debug(
                         f"[PREFETCH] Could not prefetch polishing prompt for ep{next_ep}: {e}"
                     )
@@ -338,8 +338,8 @@ class SemanticCacheManager:
             asyncio.create_task(self._prefetch_embedding(prompt, task_type, genre, temperature))
             logger.info(
                 f"[PREFETCH] Queued prefetch for ep{next_ep} task={task_type}, key={l1_key[:16]}..."
-            )
-
+)
+        
     async def _prefetch_embedding(
         self, prompt: str, task_type: str, genre: str, temperature: float
     ) -> None:
@@ -348,9 +348,8 @@ class SemanticCacheManager:
             vec = await self._get_embedding(prompt)
             if vec:
                 logger.debug(f"[PREFETCH] Embedding computed for {task_type}, warming cache...")
-                # L2-Bキャッシュには既に登録されているが、
-                # 次のsearchでChromaDBへアクセスする前にL1でWarm状態にする
-        except Exception as e:
+                # L2-Bキャッシュには既に登録済みだが、次検索時にL1ウォーム状態にする
+        except (OSError, RuntimeError) as e:
             logger.debug(f"[PREFETCH] Embedding computation failed: {e}")
 
     async def prefetch_by_pattern(
@@ -382,7 +381,7 @@ class SemanticCacheManager:
             try:
                 await self.prefetch_next(book_id, ep_num, task_types, genre)
                 results["succeeded"] += 1
-            except Exception as e:
+            except (OSError, RuntimeError) as e:
                 logger.warning(f"[PREFETCH] Failed to prefetch ep{ep_num}: {e}")
                 results["failed"] += 1
 

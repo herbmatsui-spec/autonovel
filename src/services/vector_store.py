@@ -10,7 +10,7 @@ try:
     import chromadb
 
     HAS_CHROMA = True
-except Exception as e:
+except ImportError as e:
     logger.warning(
         f"[VECTOR STORE] Failed to import/initialize chromadb: {e}. "
         "Vector features (RAG) will be disabled, falling back to legacy SQLite style fragments."
@@ -21,7 +21,7 @@ try:
     from rank_bm25 import BM25Okapi
 
     HAS_BM25 = True
-except Exception as e:
+except ImportError as e:
     logger.warning(
         f"[VECTOR STORE] Failed to import rank_bm25: {e}. BM25 hybrid search will be disabled."
     )
@@ -213,7 +213,7 @@ class ChromaClientProvider:
                 )
                 self._client = chromadb.PersistentClient(path=self.db_path)
                 return self._client
-            except Exception as e:
+            except (ValueError, RuntimeError) as e:
                 delay = base_delay * (2**attempt)
                 logger.error(
                     f"[CHROMA PROVIDER] Failed to initialize ChromaDB: {e}. Retrying in {delay}s..."
@@ -235,7 +235,7 @@ class ChromaClientProvider:
                 # 将来的な実装やカスタムクリーンアップのために定義
                 logger.info("[CHROMA PROVIDER] Closing ChromaDB client connections")
                 self._client = None
-            except Exception as e:
+            except (ValueError, RuntimeError) as e:
                 logger.error(f"[CHROMA PROVIDER] Error during close: {e}")
 
 
@@ -298,7 +298,7 @@ class ChromaVectorStore(BaseVectorStore):
                     logger.warning(
                         f"[VECTOR STORE] Collection '{config.name}' has different space: {existing_meta.get('hnsw:space')} vs {config.space}"
                     )
-            except Exception:
+            except (ValueError, RuntimeError):
                 # 存在しない場合は作成
                 pass
 
@@ -312,7 +312,7 @@ class ChromaVectorStore(BaseVectorStore):
                 f"[VECTOR STORE] Initialized collection '{config.name}' with space={config.space}"
             )
             return True
-        except Exception as e:
+        except (ValueError, RuntimeError) as e:
             logger.error(f"[VECTOR STORE] Failed to initialize collection '{config.name}': {e}")
             return False
 
@@ -325,7 +325,7 @@ class ChromaVectorStore(BaseVectorStore):
                 self._collections[name] = self.client.get_or_create_collection(
                     name=name, metadata=metadata
                 )
-            except Exception as e:
+            except (ValueError, RuntimeError) as e:
                 logger.error(f"[VECTOR STORE] Failed to get/create collection {name}: {e}")
                 return None
         return self._collections[name]
@@ -423,7 +423,7 @@ class ChromaVectorStore(BaseVectorStore):
             return
         try:
             self.client.delete_collection(name=collection_name)
-        except Exception as e:
+        except (ValueError, RuntimeError) as e:
             logger.debug(f"[VECTOR STORE] Safe delete collection failed or was not found: {e}")
         if collection_name in self._collections:
             del self._collections[collection_name]
@@ -440,7 +440,7 @@ class ChromaVectorStore(BaseVectorStore):
         try:
             count = collection.count()
             return {"count": count, "name": collection_name}
-        except Exception as e:
+        except (ValueError, RuntimeError) as e:
             logger.error(f"[VECTOR STORE] Failed to get stats for '{collection_name}': {e}")
             return {"count": 0, "error": str(e)}
 
@@ -649,7 +649,7 @@ class ChromaVectorStore(BaseVectorStore):
             logger.info(
                 f"[VECTOR STORE] Rebuilt BM25 index for '{collection_name}' with {len(documents)} documents"
             )
-        except Exception as e:
+        except (ValueError, RuntimeError) as e:
             logger.error(
                 f"[VECTOR STORE] Failed to rebuild BM25 index for '{collection_name}': {e}"
             )

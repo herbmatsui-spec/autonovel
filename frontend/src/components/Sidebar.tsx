@@ -19,6 +19,7 @@ export function Sidebar() {
   const { apiKey, setApiKey, modelType, setModelType, isExpertMode, setIsExpertMode } = useUserSettingsStore();
   const { activeTab, setActiveTab } = useProjectStore();
   const { selectedBook } = useBookStore();
+  const setCreateModalOpen = useUIStore((s) => s.setCreateModalOpen);
   const [tokenUsage] = useState({ calls: 0, cost: 0 });
 
   const navAction = (tab: TabId, needsBook = true) => () => {
@@ -54,6 +55,22 @@ export function Sidebar() {
       <div className="px-4 pt-5 pb-2">
         <h2 className="text-lg font-extrabold gradient-text tracking-tight">⚔️ HEGEMONY v3.0</h2>
         <p className="text-[0.7rem] text-muted-foreground font-mono mt-0.5">Novel Autogen Platform</p>
+      </div>
+
+      {/* 初心者向けメインCTA */}
+      <div className="px-4 pb-2">
+        <Button
+          variant="default"
+          onClick={() => setCreateModalOpen(true)}
+          className="w-full text-sm h-10 font-bold shadow-glow"
+        >
+          ⚡ かんたんモードで小説を作る
+        </Button>
+        {!apiKey && (
+          <p className="text-[0.65rem] text-amber-300/90 mt-1.5 px-1">
+            ※ 最初に下の「Gemini API Key」を設定してください
+          </p>
+        )}
       </div>
 
       <div className="px-4 space-y-4 flex-1 overflow-y-auto">

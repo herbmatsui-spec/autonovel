@@ -70,6 +70,7 @@ export function useAppActions(setLoading: (b: boolean) => void) {
       });
       setActiveTaskId(taskId);
       setCreateModalOpen(false);
+      toast.success('生成を開始しました！右下のモニターで進捗を確認でき、完成した小説は「作品一覧」に表示されます。');
     } catch (err: unknown) {
       toast.error('自動生成タスクの起動に失敗しました: ' + (err instanceof Error ? err.message : String(err)));
     } finally {

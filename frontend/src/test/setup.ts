@@ -1,15 +1,17 @@
-import '@testing-library/jest-dom/vitest';
 import { vi } from 'vitest';
 
-beforeEach(() => {
-  vi.clearAllMocks();
-  vi.useFakeTimers({
-    shouldAdvanceTime: true,
-    advanceTimeDelta: 0,
-  });
+// mock import.meta.env for Vite
+Object.defineProperty(globalThis, 'import', {
+  value: {
+    meta: {
+      env: {
+        VITE_API_URL: '/api',
+      },
+    },
+  },
 });
 
-afterEach(() => {
-  vi.useRealTimers();
-  vi.restoreAllMocks();
-});
+vi.stubGlobal('import', globalThis.import);
+
+// mock global config object to avoid undefined errors
+globalThis.config = {};

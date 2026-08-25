@@ -12,11 +12,13 @@ from typing import Any, Dict, List, Optional
 
 try:
     import redis.asyncio as redis
+    from redis.exceptions import ConnectionError as RedisConnectionError, TimeoutError as RedisTimeoutError, RedisError
 
     REDIS_AVAILABLE = True
 except ImportError:
     REDIS_AVAILABLE = False
     redis: Any = None
+    RedisConnectionError = RedisTimeoutError = RedisError = Exception
 from config.settings import get_settings
 
 logger = logging.getLogger(__name__)
@@ -113,7 +115,7 @@ class RedisCacheService:
                 return self._deserialize(data)
             logger.debug(f"[REDIS CACHE MISS] key={key}")
             return None
-        except Exception as e:
+        except (RedisConnectionError, RedisTimeoutError, RedisError) as e:
             logger.error(f"[REDIS CACHE GET ERROR] key={key}: {e}")
             return None
 
@@ -144,7 +146,7 @@ class RedisCacheService:
             if result:
                 logger.debug(f"[REDIS CACHE SET] key={key}, ttl={ttl}")
             return bool(result)
-        except Exception as e:
+        except (RedisConnectionError, RedisTimeoutError, RedisError) as e:
             logger.error(f"[REDIS CACHE SET ERROR] key={key}: {e}")
             return False
 
@@ -157,7 +159,7 @@ class RedisCacheService:
             full_key = self._make_key(key)
             result = await self._client.delete(full_key)
             return result > 0
-        except Exception as e:
+        except (RedisConnectionError, RedisTimeoutError, RedisError) as e:
             logger.error(f"[REDIS CACHE DELETE ERROR] key={key}: {e}")
             return False
 
@@ -169,7 +171,7 @@ class RedisCacheService:
         try:
             full_key = self._make_key(key)
             return await self._client.exists(full_key) > 0
-        except Exception as e:
+        except (RedisConnectionError, RedisTimeoutError, RedisError) as e:
             logger.error(f"[REDIS CACHE EXISTS ERROR] key={key}: {e}")
             return False
 
@@ -181,7 +183,7 @@ class RedisCacheService:
         try:
             full_key = self._make_key(key)
             return await self._client.expire(full_key, ttl)
-        except Exception as e:
+        except (RedisConnectionError, RedisTimeoutError, RedisError) as e:
             logger.error(f"[REDIS CACHE EXPIRE ERROR] key={key}: {e}")
             return False
 
@@ -193,7 +195,7 @@ class RedisCacheService:
         try:
             full_key = self._make_key(key)
             return await self._client.ttl(full_key)
-        except Exception as e:
+        except (RedisConnectionError, RedisTimeoutError, RedisError) as e:
             logger.error(f"[REDIS CACHE TTL ERROR] key={key}: {e}")
             return -2
 
@@ -205,7 +207,7 @@ class RedisCacheService:
         try:
             full_key = self._make_key(key)
             return await self._client.zadd(full_key, mapping)
-        except Exception as e:
+        except (RedisConnectionError, RedisTimeoutError, RedisError) as e:
             logger.error(f"[REDIS CACHE ZADD ERROR] key={key}: {e}")
             return 0
 
@@ -216,7 +218,7 @@ class RedisCacheService:
         try:
             full_key = self._make_key(key)
             return await self._client.zcard(full_key)
-        except Exception as e:
+        except (RedisConnectionError, RedisTimeoutError, RedisError) as e:
             logger.error(f"[REDIS CACHE ZCARD ERROR] key={key}: {e}")
             return 0
 
@@ -227,7 +229,7 @@ class RedisCacheService:
         try:
             full_key = self._make_key(key)
             return await self._client.zremrangebyscore(full_key, min_score, max_score)
-        except Exception as e:
+        except (RedisConnectionError, RedisTimeoutError, RedisError) as e:
             logger.error(f"[REDIS CACHE ZREMRANGEBYSCORE ERROR] key={key}: {e}")
             return 0
 
@@ -248,7 +250,7 @@ class RedisCacheService:
                 deleted_count += 1
             logger.info(f"[REDIS CACHE INVALIDATE] pattern={pattern}, deleted={deleted_count}")
             return deleted_count
-        except Exception as e:
+        except (RedisConnectionError, RedisTimeoutError, RedisError) as e:
             logger.error(f"[REDIS CACHE INVALIDATE ERROR] pattern={pattern}: {e}")
             return 0
 
@@ -269,7 +271,7 @@ class RedisCacheService:
                 if value is not None:
                     result[key] = self._deserialize(value)
             return result
-        except Exception as e:
+        except (RedisConnectionError, RedisTimeoutError, RedisError) as e:
             logger.error(f"[REDIS CACHE MGET ERROR]: {e}")
             return {}
 
@@ -287,7 +289,7 @@ class RedisCacheService:
                 pipe.set(full_key, serialized, ex=ttl)
             await pipe.execute()
             return True
-        except Exception as e:
+        except (RedisConnectionError, RedisTimeoutError, RedisError) as e:
             logger.error(f"[REDIS CACHE MSET ERROR]: {e}")
             return False
 
@@ -297,7 +299,7 @@ class RedisCacheService:
             return False
         try:
             return await self._client.ping()
-        except Exception:
+        except (RedisConnectionError, RedisTimeoutError, RedisError):
             return False
 
     async def close(self):
@@ -469,7 +471,7 @@ class PromptCacheService:
                     if self.l1:
                         self.l1[l1_key] = cached
                     return cached
-            except Exception as e:
+            except (RedisConnectionError, RedisTimeoutError, RedisError) as e:
                 logger.warning(f"[PROMPT CACHE] L2 read error: {e}")
                 await self._record_error()
 
@@ -492,12 +494,12 @@ class PromptCacheService:
                     if self.redis:
                         try:
                             await self.redis.set(cache_key, similar, ttl=self._get_ttl(task_type))
-                        except Exception as e:
+                        except (RedisConnectionError, RedisTimeoutError, RedisError) as e:
                             logger.warning(f"[PROMPT CACHE] L2 write-back error: {e}")
                     if self.l1:
                         self.l1[l1_key] = similar
                     return similar
-            except Exception as e:
+            except (ValueError, RuntimeError) as e:
                 logger.warning(f"[PROMPT CACHE] L3 search error: {e}")
                 await self._record_error()
 
@@ -532,7 +534,7 @@ class PromptCacheService:
         if self.redis:
             try:
                 await self.redis.set(cache_key, response, ttl=effective_ttl)
-            except Exception as e:
+            except (RedisConnectionError, RedisTimeoutError, RedisError) as e:
                 logger.warning(f"[PROMPT CACHE] L2 write error: {e}")
                 await self._record_error()
 
@@ -546,7 +548,7 @@ class PromptCacheService:
                     genre=genre,
                     temperature=temperature,
                 )
-            except Exception as e:
+            except (ValueError, RuntimeError) as e:
                 logger.warning(f"[PROMPT CACHE] L3 write error: {e}")
                 await self._record_error()
 
@@ -673,7 +675,7 @@ class PromptCacheService:
                     **entry.get("params", {}),
                 )
                 success_count += 1
-            except Exception as e:
+            except (ValueError, RuntimeError, OSError) as e:
                 logger.warning(f"[PROMPT CACHE] Warm cache entry failed: {e}")
                 await self._record_error()
 
@@ -764,7 +766,7 @@ class PromptCacheService:
                         "similarity_score": 1.0,  # 実際の類似度は実装時に取得
                     }
                 ]
-        except Exception as e:
+        except (ValueError, RuntimeError, OSError) as e:
             logger.warning(f"[PROMPT CACHE] Warm by similarity failed: {e}")
             await self._record_error()
 

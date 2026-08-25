@@ -10,7 +10,7 @@ import uuid
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -26,7 +26,7 @@ from config.constants import (
 )
 from config.cors_config import get_allowed_origins
 from config.logging_config import setup_logging
-from src.backend.auth import validate_api_key_or_raise
+from src.backend.auth import require_api_key
 from src.backend.background import BackgroundReporter, ProgressState
 from src.backend.database import init_db
 from src.backend.error_handlers import register_error_handlers
@@ -35,6 +35,7 @@ from src.backend.rate_limit import RedisRateLimiter
 from src.core.container import AppContainer
 from src.core.observability import TraceContext
 from src.core.opentelemetry import setup_opentelemetry
+from src.core.exceptions import PipelineError
 from src.easy_mode.pipeline import EasyModePipeline, PipelineConfig
 from src.models.api_schemas import (
     CritiqueOptimizeRequest,
@@ -42,6 +43,8 @@ from src.models.api_schemas import (
     RefineEroticRequest,
 )
 from src.services.redis_cache import RedisCacheService
+from src.backend.worker_config import huey
+from src.backend.tasks import execute_easy_mode_generation
 
 logger = logging.getLogger(__name__)
 # Redis rate limiter (initialized in lifespan)
@@ -90,13 +93,8 @@ async def lifespan(app: FastAPI):
         init_db(db_manager.db_path)
         logger.info("Database initialization complete.")
         yield
-    except Exception:
-        import traceback
-
-        logger.error(traceback.format_exc())
-        raise
-    except BaseException as e:
-        logger.critical(f"サーバーが強制終了しました: {type(e).__name__} - {e}")
+    except Exception as e:
+        logger.error(f"サーバー起動に失敗しました: {type(e).__name__} - {e}", exc_info=True)
         raise
     finally:
         logger.info("シャットダウン処理を開始...")
@@ -184,7 +182,11 @@ async def rate_limit_middleware(request: Request, call_next):
                 content={"error": "Too Many Requests", "detail": "リクエスト数が制限を超えました。"},
             )
     except Exception as e:
-        logger.warning(f"Rate limiting error (failing open): {e}")
+        logger.warning(f"Rate limiting error: {e}")
+        return JSONResponse(
+            status_code=503,
+            content={"error": "Service Unavailable", "detail": "レート制限サービスが利用できません"},
+        )
 
     return await call_next(request)
 
@@ -196,8 +198,8 @@ def configure_cors(app: FastAPI):
         CORSMiddleware,
         allow_origins=allowed_origins,
         allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=["Content-Type", "X-API-Key", "X-Trace-ID", "Authorization"],
     )
 
 
@@ -278,16 +280,15 @@ app = create_app()
 
 
 @app.post("/api/refine_erotic")
-async def refine_erotic(req: RefineEroticRequest):
+async def refine_erotic(req: RefineEroticRequest, api_key: str = Depends(require_api_key)):
     from src.backend.task_helpers import create_task as _create_task
     from src.backend.tasks import execute_service_workflow
 
-    validate_api_key_or_raise(req.api_key)
     task_id = generate_task_id("refine_erotic")
     await _create_task(task_id, "官能研磨タスクを開始中...", total_steps=1)
     execute_service_workflow(
         task_id=task_id,
-        api_key=req.api_key,
+        api_key=api_key,
         config_dict=req.config,
         method_name="refine_erotic_workflow",
         kwargs={
@@ -298,16 +299,22 @@ async def refine_erotic(req: RefineEroticRequest):
         },
         trace_id=TraceContext.get_trace_id(),
     )
-    return {"task_id": task_id}
+return {"task_id": task_id}
+
+
+@app.get("/api/tasks/{task_id}/status")
+async def get_task_status_endpoint(task_id: str):
+    from src.backend.task_helpers import get_task_status
+    status = await get_task_status(task_id)
+    return status
 
 
 # Heavy operations enqueued via Huey
 @app.post("/api/easy_mode/generate")
-async def generate_easy(req: EasyModeRequest):
+async def generate_easy(req: EasyModeRequest, api_key: str = Depends(require_api_key)):
     from src.backend.task_helpers import create_task as _create_task
     from src.core.container import AppContainer
 
-    validate_api_key_or_raise(req.api_key)
     task_id = generate_task_id("easy")
 
     # 進捗管理用の状態を作成
@@ -319,84 +326,49 @@ async def generate_easy(req: EasyModeRequest):
     reporter = BackgroundReporter(progress_state)
 
     # 初期タスク作成（DBに保存）
-    await _create_task(task_id, "かんたんモード生成を開始中...", total_steps=4)
+    await _create_task(task_id, "かんたんモード生成を開始中...", total_steps=1)
 
-    # PipelineConfigを作成
-    config = create_pipeline_config_from_request(req)
-
-    # 進捗コールバックを定義
-    def progress_callback(stage: str, current: int, total: int):
-        stage_messages = {
-            "bible": ("Bible生成中", f"ジャンル設定反映中... ({current}/{total})"),
-            "plot": ("プロット生成中", f"全{total}話の構成作成中... ({current}/{total})"),
-            "writing": ("本文執筆中", f"第{current}話を執筆中... ({current}/{total})"),
-            "episode_complete": ("話完了", f"第{current}話が完了 ({current}/{total})"),
-            "finalizing": ("完結処理中", f"メタデータ生成中... ({current}/{total})"),
-        }
-        msg, sub_msg = stage_messages.get(stage, (stage, ""))
-        reporter.update_progress(current, total, msg, sub_msg)
-
-    config.progress_callback = progress_callback
-
+    # タスクをHueyにエンqueue
     try:
-        # エンジンを取得してパイプラインを実行
-        container = AppContainer(api_key=req.api_key, db=AppContainer.db())
-        engine = container.engine()
-
-        pipeline = EasyModePipeline(engine, config)
-        result = await pipeline.run()
-
-        # 完了処理
-        progress_state.is_running = False
-        progress_state.message = "生成完了"
-        progress_state.result_data = {
-            "title": result.title,
-            "concept": result.concept,
-            "total_episodes": result.total_episodes,
-            "total_words": sum(ep.word_count for ep in result.episodes),
-            "average_audit_score": round(sum(ep.audit_score for ep in result.episodes) / len(result.episodes), 1) if result.episodes else 0,
-            "genre": result.genre,
-            "episodes": [
-                {
-                    "episode_num": ep.episode_num,
-                    "title": ep.title,
-                    "word_count": ep.word_count,
-                    "audit_score": ep.audit_score,
-                    "audit_passed": ep.audit_passed,
-                    "rewrite_count": ep.rewrite_count,
-                    "needs_human_review": ep.needs_human_review,
-                }
-                for ep in result.episodes
-            ],
-        }
-        progress_state._save_to_db()
-
-        logger.info(f"Easy mode pipeline completed: {task_id}")
-        return {"task_id": task_id, "result": progress_state.result_data}
-
+        huey.enqueue(
+            execute_easy_mode_generation,
+            task_id=task_id,
+            api_key=api_key,
+            genre=req.genre,
+            keywords=req.keywords,
+            archetype_key=req.archetype_key,
+            target_eps=req.target_eps,
+            initial_limit=req.initial_limit,
+            word_count=req.word_count,
+            concept=req.concept,
+            tone_vibe=req.tone_vibe,
+            style_key=req.style_key,
+            enable_erotic=req.enable_erotic,
+            erotic_intensity=req.erotic_intensity,
+            trace_id=str(uuid.uuid4()),  # generate a trace ID
+        )
     except Exception as e:
-        logger.error(f"Easy mode pipeline failed: {e}", exc_info=True)
+        logger.error(f"Failed to enqueue easy mode task: {e}", exc_info=True)
         progress_state.is_running = False
         progress_state.error = str(e)
         progress_state._save_to_db()
         from fastapi import HTTPException
-        raise HTTPException(
-            status_code=500,
-            detail=f"かんたんモード生成に失敗しました: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"タスクのエンqueueに失敗しました: {str(e)}")
+
+    logger.info(f"Easy mode task enqueued: {task_id}")
+    return {"task_id": task_id}
 
 
 @app.post("/api/critique/optimize")
-async def critique_optimize(req: CritiqueOptimizeRequest):
+async def critique_optimize(req: CritiqueOptimizeRequest, api_key: str = Depends(require_api_key)):
     from src.backend.task_helpers import create_task as _create_task
     from src.backend.tasks import execute_service_workflow
 
-    validate_api_key_or_raise(req.api_key)
     task_id = generate_task_id("critique")
     await _create_task(task_id, "品質分析を開始中...", total_steps=1)
     execute_service_workflow(
         task_id=task_id,
-        api_key=req.api_key,
+        api_key=api_key,
         config_dict=req.config,
         method_name="run_critique_optimization_workflow",
         kwargs={"book_id": req.book_id},

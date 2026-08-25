@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { TaskStatus } from '../types';
 
 interface TaskState {
@@ -9,10 +10,21 @@ interface TaskState {
   clearTask: () => void;
 }
 
-export const useTaskStore = create<TaskState>((set) => ({
-  activeTaskId: null,
-  taskStatus: null,
-  setActiveTaskId: (id) => set({ activeTaskId: id }),
-  setTaskStatus: (status) => set({ taskStatus: status }),
-  clearTask: () => set({ activeTaskId: null, taskStatus: null }),
-}));
+export const useTaskStore = create<TaskState>()(
+  persist(
+    (set) => ({
+      activeTaskId: null,
+      taskStatus: null,
+      setActiveTaskId: (id) => set({ activeTaskId: id }),
+      setTaskStatus: (status) => set({ taskStatus: status }),
+      clearTask: () => set({ activeTaskId: null, taskStatus: null }),
+    }),
+    {
+      name: 'task-storage',
+      partialize: (state) => ({
+        activeTaskId: state.activeTaskId,
+      }),
+      version: 1,
+    }
+  )
+);

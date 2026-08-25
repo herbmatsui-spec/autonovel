@@ -9,6 +9,7 @@ from prompts.manager import prompt_manager
 from src.backend.database.uow import UnitOfWork
 from src.core.observability import with_trace_context
 from src.backend.worker_config import huey
+from src.backend.redis_util import get_redis_client
 
 logger = logging.getLogger('huey')
 
@@ -35,30 +36,6 @@ def _apply_config_overrides(config_dict: Optional[dict]) -> None:
                 ProjectContext.set_setting(key, config_dict[key])
     except Exception as e:
         logger.warning(f"Failed to apply config overrides: {e}")
-
-
-@huey.task(retries=3, retry_delay=5)
-@with_trace_context
-def process_vector_event(event_type: str, payload: dict, trace_id: Optional[str] = None):
-    """非同期でChromaDBへの操作を実行するタスク"""
-    logger.info(f"Processing vector event: {event_type}")
-    from src.services.vector_store import DefaultVectorStore
-    store = DefaultVectorStore()
-
-    if event_type == "chroma_add":
-        return store.add_documents(
-            collection_name=payload["collection"],
-            ids=[payload["id"]],
-            documents=[payload["content"]],
-            embeddings=[payload["embedding"]],
-            metadatas=[payload["metadata"]] if payload["metadata"] else None
-        )
-    elif event_type == "chroma_delete":
-        return store.delete_by_id(
-            collection_name=payload["collection"],
-            ids=payload["ids"]
-        )
-    return None
 
 
 @huey.periodic_task(crontab(minute='*'))
@@ -163,7 +140,6 @@ def execute_service_workflow(task_id: str, api_key: str, config_dict: dict, meth
         logger.error(f"Task execution failed: {e}", exc_info=True)
 
 
-
 @huey.task(retries=3, retry_delay=5)
 @with_trace_context
 def run_test_coro(task_id: str, message: str, trace_id: Optional[str] = None):
@@ -240,3 +216,66 @@ def enqueue_audit_after_write(book_id: int, write_from: int, write_to: int, trac
             logger.exception(f"Error in enqueue_audit_after_write for book_id={book_id}: {e}")
 
     return asyncio.run(_run())
+
+
+@huey.task(retries=3, retry_delay=5)
+@with_trace_context
+def execute_easy_mode_generation(task_id: str, api_key: str, genre: str, keywords: str, archetype_key: str, target_eps: int, initial_limit: int, word_count: int, concept: str, tone_vibe: float, style_key: Optional[str], enable_erotic: bool, erotic_intensity: int, trace_id: Optional[str] = None):
+    """かんたんモード全自動生成をバックグラウンドで実行するタスク"""
+    import asyncio
+    from src.backend.background import BackgroundReporter, ProgressState
+    from src.backend.task_helpers import create_easy_mode_pipeline, run_pipeline_with_progress, get_engine_for_task, create_pipeline_config_from_params
+    from config.settings import get_settings
+
+    state = ProgressState(is_running=True, task_id=task_id, repo=None)
+    reporter = BackgroundReporter(state)
+
+    async def _run():
+        try:
+            # エンジンを取得
+            engine = get_engine_for_task(api_key)
+
+            # 設定を作成（ヘルパー関数を使用）
+            config = create_pipeline_config_from_params(genre, target_eps)
+
+            # ヘルパー関数を使ってパイプラインを作成・実行
+            pipeline = create_easy_mode_pipeline(engine, config)
+            result = await run_pipeline_with_progress(pipeline, state)
+
+            # 完了処理
+            state.is_running = False
+            state.message = "生成完了"
+            state.result_data = {
+                "title": result.title,
+                "concept": result.concept,
+                "total_episodes": result.total_episodes,
+                "total_words": sum(ep.word_count for ep in result.episodes),
+                "average_audit_score": round(sum(ep.audit_score for ep in result.episodes) / len(result.episodes), 1) if result.episodes else 0,
+                "genre": result.genre,
+                "episodes": [
+                    {
+                        "episode_num": ep.episode_num,
+                        "title": ep.title,
+                        "word_count": ep.word_count,
+                        "audit_score": ep.audit_score,
+                        "audit_passed": ep.audit_passed,
+                        "rewrite_count": ep.rewrite_count,
+                        "needs_human_review": ep.needs_human_review,
+                    }
+                    for ep in result.episodes
+                ],
+            }
+            state._save_to_db()
+
+            logger.info(f"Easy mode pipeline completed: {task_id}")
+
+        except Exception as e:
+            logger.error(f"Easy mode pipeline failed: {e}", exc_info=True)
+            state.is_running = False
+            state.error = str(e)
+            state._save_to_db()
+
+    try:
+        asyncio.run(_run())
+    except Exception as e:
+        logger.error(f"Task execution failed: {e}", exc_info=True)

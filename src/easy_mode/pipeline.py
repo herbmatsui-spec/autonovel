@@ -16,6 +16,7 @@ from src.core.exceptions import (
     EpisodeWritingError,
     PlotGenerationError,
     SeriesFinalizationError,
+    PipelineError,
 )
 from src.easy_mode.bible_generator import BibleGenerator
 from src.easy_mode.episode_auditor import EpisodeAuditor
@@ -146,10 +147,14 @@ class EasyModePipeline:
                 metadata=finalize_data,
             )
 
-        except Exception as e:
-            logger.error(f"Pipeline failed: {e}", exc_info=True)
+        except (BibleGenerationError, PlotGenerationError, EpisodeWritingError, EpisodeAuditError, EpisodeRewriteError, SeriesFinalizationError) as e:
+            logger.error(f"Pipeline failed at stage: {e}", exc_info=True)
             self._cancelled = False
             raise
+        except Exception as e:
+            logger.error(f"Unexpected pipeline error: {e}", exc_info=True)
+            self._cancelled = False
+            raise PipelineError(f"Unexpected error: {e}", original=e) from e
 
     def cancel(self):
         """キャンセル"""

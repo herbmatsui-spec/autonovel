@@ -1,9 +1,9 @@
 from typing import Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from fastapi.responses import Response
 
-from src.backend.auth import validate_api_key_or_raise
+from src.backend.auth import require_api_key
 from src.backend.engine_helpers import get_engine
 from src.backend.task_helpers import create_task
 from src.backend.tasks import execute_service_workflow
@@ -14,8 +14,7 @@ router = APIRouter(tags=["marketing"])
 
 
 @router.post("/api/marketing/generate")
-async def generate_marketing(req: MarketingGenerateRequest):
-    validate_api_key_or_raise(req.api_key)
+async def generate_marketing(req: MarketingGenerateRequest, api_key: str = Depends(require_api_key)):
     import time
 
     task_id = f"marketing_{int(time.time())}"
@@ -23,7 +22,7 @@ async def generate_marketing(req: MarketingGenerateRequest):
 
     execute_service_workflow(
         task_id=task_id,
-        api_key=req.api_key,
+        api_key=api_key,
         config_dict={},
         method_name="marketing_generation_workflow",
         kwargs={"book_id": req.book_id, "latest_ep": req.latest_ep},
@@ -40,7 +39,7 @@ async def export_package_post(book_id: int, api_key_req: Any):
 
 
 @router.get("/api/marketing/export_package/{book_id}")
-async def export_package_get(book_id: int, api_key: str):
+async def export_package_get(book_id: int, api_key: str = Depends(require_api_key)):
     engine = get_engine(api_key)
     zip_data, zip_filename = await engine.marketing.create_export_package(book_id)
     return Response(

@@ -13,6 +13,7 @@
     "test:run": "vitest run"
   },
   "dependencies": {
+    "@babel/runtime": "^8.0.0",
     "@radix-ui/react-slot": "^1.1.2",
     "chart.js": "^4.5.1",
     "class-variance-authority": "^0.7.1",
@@ -23,9 +24,11 @@
     "react-dom": "^18.3.1",
     "sonner": "^1.7.1",
     "tailwind-merge": "^3.0.1",
+    "type-check": "^0.4.0",
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@babel/plugin-transform-runtime": "^8.0.1",
     "@eslint/js": "^9.0.0",
     "@playwright/test": "^1.45.0",
     "@testing-library/dom": "^10.0.0",
@@ -51,7 +54,7 @@
     "vitest": "^4.1.10"
   },
   "description": "現在のメイン UI です。`streamlit_app/` は廃止予定で、このフロントエンドへ移行済みです。詳細は [docs/adr/0003-streamlit-coexistence-strategy.md](../../docs/adr/0003-streamlit-coexistence-strategy.md) を参照してください。",
-  "main": "eslint.config.js",
+  "main": "eslint.config.cjs",
   "directories": {
     "doc": "docs"
   },

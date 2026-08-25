@@ -1,6 +1,6 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
-from src.backend.auth import validate_api_key_or_raise
+from src.backend.auth import require_api_key
 from src.backend.database.uow import UnitOfWork
 from src.backend.task_helpers import create_task as _create_task
 from src.core.container import AppContainer
@@ -38,8 +38,7 @@ def generate_task_id(prefix: str) -> str:
 
 
 @router.post("/generate")
-async def generate_episodes(req: EpisodeGenerateRequest):
-    validate_api_key_or_raise(req.api_key)
+async def generate_episodes(req: EpisodeGenerateRequest, api_key: str = Depends(require_api_key)):
     from src.backend.tasks import execute_service_workflow
 
     task_id = generate_task_id("write")
@@ -48,7 +47,7 @@ async def generate_episodes(req: EpisodeGenerateRequest):
     )
     execute_service_workflow(
         task_id=task_id,
-        api_key=req.api_key,
+        api_key=api_key,
         config_dict=req.config,
         method_name="episode_writing_workflow",
         kwargs={
@@ -68,8 +67,7 @@ async def generate_episodes(req: EpisodeGenerateRequest):
 
 
 @router.post("/generate_candidates")
-async def generate_episodes_candidates(req: EpisodeGenerateCandidatesRequest):
-    validate_api_key_or_raise(req.api_key)
+async def generate_episodes_candidates(req: EpisodeGenerateCandidatesRequest, api_key: str = Depends(require_api_key)):
     from src.backend.tasks import execute_service_workflow
 
     task_id = generate_task_id("write_candidates")
@@ -78,7 +76,7 @@ async def generate_episodes_candidates(req: EpisodeGenerateCandidatesRequest):
     )
     execute_service_workflow(
         task_id=task_id,
-        api_key=req.api_key,
+        api_key=api_key,
         config_dict=req.config,
         method_name="episode_writing_workflow",
         kwargs={
@@ -98,15 +96,14 @@ async def generate_episodes_candidates(req: EpisodeGenerateCandidatesRequest):
 
 
 @router.post("/retry_failed")
-async def retry_failed_episodes(req: RetryFailedRequest):
-    validate_api_key_or_raise(req.api_key)
+async def retry_failed_episodes(req: RetryFailedRequest, api_key: str = Depends(require_api_key)):
     from src.backend.tasks import execute_service_workflow
 
     task_id = generate_task_id("retry_failed")
     await _create_task(task_id, "失敗エピソードの修復を開始中...", total_steps=1)
     execute_service_workflow(
         task_id=task_id,
-        api_key=req.api_key,
+        api_key=api_key,
         config_dict=req.config,
         method_name="retry_failed_episodes_workflow",
         kwargs={"book_id": req.book_id, "passion": req.passion, "word_count": req.word_count},
@@ -116,15 +113,14 @@ async def retry_failed_episodes(req: RetryFailedRequest):
 
 
 @router.post("/chapters/import")
-async def import_chapter(req: ChapterImportRequest):
-    validate_api_key_or_raise(req.api_key)
+async def import_chapter(req: ChapterImportRequest, api_key: str = Depends(require_api_key)):
     from src.backend.tasks import execute_service_workflow
 
     task_id = generate_task_id("import")
     await _create_task(task_id, "手書き原稿のインポートと研磨を開始中...", total_steps=1)
     execute_service_workflow(
         task_id=task_id,
-        api_key=req.api_key,
+        api_key=api_key,
         config_dict={},
         method_name="chapter_import_workflow",
         kwargs={

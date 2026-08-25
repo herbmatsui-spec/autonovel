@@ -26,3 +26,16 @@ async def create_task(task_id: str, message: str, total_steps: int = 1) -> None:
     await db.save_internal_state(
         f"task_status:{task_id}", json.dumps(initial_state), time.strftime("%Y-%m-%d %H:%M:%S")
     )
+
+
+async def get_task_status(task_id: str) -> dict:
+    """タスクの状態をDBから取得する。"""
+    db = AppContainer.db()
+    raw = await db.get_internal_state(f"task_status:{task_id}")
+    if raw is None:
+        return {"is_running": False, "error": "タスクが見つかりません", "result_data": None}
+    try:
+        state = json.loads(raw)
+    except json.JSONDecodeError:
+        state = {"is_running": False, "error": "状態のデコードに失敗", "result_data": None}
+    return state

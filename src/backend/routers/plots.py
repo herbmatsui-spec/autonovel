@@ -1,6 +1,6 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
-from src.backend.auth import validate_api_key_or_raise
+from src.backend.auth import require_api_key
 from src.backend.database.uow import UnitOfWork
 from src.backend.engine_helpers import get_engine as resolve_engine
 from src.backend.task_helpers import create_task as _create_task
@@ -43,15 +43,14 @@ def generate_task_id(prefix: str) -> str:
 
 
 @router.post("/plan_generation")
-async def plan_generation(req: PlanGenerationRequest):
-    validate_api_key_or_raise(req.api_key)
+async def plan_generation(req: PlanGenerationRequest, api_key: str = Depends(require_api_key)):
     from src.backend.tasks import execute_service_workflow
 
     task_id = generate_task_id("plan_gen")
     await _create_task(task_id, "企画作成を開始中...", total_steps=1)
     execute_service_workflow(
         task_id=task_id,
-        api_key=req.api_key,
+        api_key=api_key,
         config_dict=req.config,
         method_name="plan_generation_workflow",
         kwargs={"params": req.params},
@@ -61,8 +60,7 @@ async def plan_generation(req: PlanGenerationRequest):
 
 
 @router.post("/expand")
-async def expand_plots(req: PlotExpandRequest):
-    validate_api_key_or_raise(req.api_key)
+async def expand_plots(req: PlotExpandRequest, api_key: str = Depends(require_api_key)):
     from src.backend.tasks import execute_service_workflow
 
     task_id = generate_task_id("plot_expand")
@@ -71,7 +69,7 @@ async def expand_plots(req: PlotExpandRequest):
     )
     execute_service_workflow(
         task_id=task_id,
-        api_key=req.api_key,
+        api_key=api_key,
         config_dict=req.config,
         method_name="plot_expansion_workflow",
         kwargs={
@@ -86,8 +84,7 @@ async def expand_plots(req: PlotExpandRequest):
 
 
 @router.post("/expand_candidates")
-async def expand_plots_candidates(req: PlotExpandCandidatesRequest):
-    validate_api_key_or_raise(req.api_key)
+async def expand_plots_candidates(req: PlotExpandCandidatesRequest, api_key: str = Depends(require_api_key)):
     from src.backend.tasks import execute_service_workflow
 
     task_id = generate_task_id("plot_candidates")
@@ -96,7 +93,7 @@ async def expand_plots_candidates(req: PlotExpandCandidatesRequest):
     )
     execute_service_workflow(
         task_id=task_id,
-        api_key=req.api_key,
+        api_key=api_key,
         config_dict=req.config,
         method_name="plot_expansion_workflow",
         kwargs={
@@ -111,8 +108,7 @@ async def expand_plots_candidates(req: PlotExpandCandidatesRequest):
 
 
 @router.post("/rebuild")
-async def rebuild_plots(req: PlotRebuildRequest):
-    validate_api_key_or_raise(req.api_key)
+async def rebuild_plots(req: PlotRebuildRequest, api_key: str = Depends(require_api_key)):
     import json
     import time
 
@@ -139,7 +135,7 @@ async def rebuild_plots(req: PlotRebuildRequest):
     )
     execute_service_workflow(
         task_id=task_id,
-        api_key=req.api_key,
+        api_key=api_key,
         config_dict=req.config,
         method_name="plot_rebuild_workflow",
         kwargs={"params": req.params},
@@ -149,9 +145,8 @@ async def rebuild_plots(req: PlotRebuildRequest):
 
 
 @router.post("/audit")
-async def audit_plan(req: AuditPlanRequest):
-    validate_api_key_or_raise(req.api_key)
-    engine = resolve_engine(req.api_key)
+async def audit_plan(req: AuditPlanRequest, api_key: str = Depends(require_api_key)):
+    engine = resolve_engine(api_key)
     res = await engine.planner.audit_producer_plan(
         req.genre,
         req.keywords,
