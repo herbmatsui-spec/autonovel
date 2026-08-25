@@ -1,7 +1,8 @@
 import logging
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 
+from src.backend.auth import require_api_key
 from src.models.easy_mode_schemas import (
     DigestRequest,
     DigestResponse,
@@ -24,7 +25,9 @@ promotion_service = PromotionService()
 
 
 @router.post("/gacha", response_model=GachaResponse)
-async def create_gacha_plans(request: GachaRequest):
+async def create_gacha_plans(
+    request: GachaRequest, api_key: str = Depends(require_api_key)
+):
     """3案ガチャ（王道・変化球・ダーク）を生成する"""
     try:
         return await gacha_service.generate_plans(request)
@@ -47,7 +50,9 @@ async def create_gacha_plans(request: GachaRequest):
 
 
 @router.post("/digest", response_model=DigestResponse)
-async def create_digest(request: DigestRequest):
+async def create_digest(
+    request: DigestRequest, api_key: str = Depends(require_api_key)
+):
     """選択された企画のプロット・第1話・クライマックスダイジェストを生成する"""
     try:
         return await digest_service.generate_digest(request)
@@ -60,7 +65,9 @@ async def create_digest(request: DigestRequest):
 
 
 @router.post("/promote", response_model=PromotionResponse)
-async def promote_to_advanced(request: PromotionRequest):
+async def promote_to_advanced(
+    request: PromotionRequest, api_key: str = Depends(require_api_key)
+):
     """かんたんモードで生成した作品を上級者モードへ引き継ぐ"""
     try:
         return promotion_service.promote(request)

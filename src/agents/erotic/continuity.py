@@ -7,6 +7,7 @@ erotic/continuity.py - シーン・キャラクター連続性追跡
 from __future__ import annotations
 
 import logging
+import os
 from typing import Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, model_validator
@@ -70,6 +71,9 @@ class SceneContinuityTracker:
 
     def __init__(self, db_path: str = "storage/db/kaku_hegemony_v2.db"):
         self.db_path = db_path
+        parent = os.path.dirname(self.db_path)
+        if parent:
+            os.makedirs(parent, exist_ok=True)
         self._init_db()
 
     def save_snapshot(self, snapshot: SceneStateSnapshot) -> None:
@@ -642,6 +646,9 @@ class ContinuityTracker:
 
     def __init__(self, db_path: str = "storage/db/kaku_hegemony_v2.db"):
         self.db_path = db_path
+        parent = os.path.dirname(self.db_path)
+        if parent:
+            os.makedirs(parent, exist_ok=True)
         self._snapshots: Dict[int, Dict[str, CharacterStateSnapshot]] = {}
         self._init_db()
 

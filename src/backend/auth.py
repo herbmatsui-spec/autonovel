@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 import os
+import hmac
 from typing import List, Optional
 
 from fastapi import HTTPException, Request
@@ -38,7 +39,12 @@ class APIKeyService:
             return True
         if not self.allowed_keys:
             return False
-        return api_key in self.allowed_keys
+        # 非定数時間比較でタイミング攻撃を防止
+        match = False
+        for allowed in self.allowed_keys:
+            if hmac.compare_digest(api_key, allowed):
+                match = True
+        return match
 
     def get_rate_limit_key(self, api_key: str) -> str:
         """API key ベースのレート制限キーを返す"""

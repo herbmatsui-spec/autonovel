@@ -1,5 +1,7 @@
 import logging
+import ipaddress
 from typing import Optional
+from urllib.parse import urlparse
 
 from huey import crontab
 
@@ -12,6 +14,30 @@ from src.backend.worker_config import huey
 from src.backend.redis_util import get_redis_client
 
 logger = logging.getLogger('huey')
+
+# openai_base_url はリクエスト越しに指定可能だが、SSRF 回避のため
+# プライベート/ループバック/予約アドレス宛は拒否する。
+def _is_safe_base_url(value: str) -> bool:
+    try:
+        parsed = urlparse(value)
+    except (ValueError, TypeError):
+        return False
+    if parsed.scheme not in ("http", "https"):
+        return False
+    host = (parsed.hostname or "").strip().lower()
+    if not host:
+        return False
+    if host in ("localhost", "0.0.0.0", "::1"):
+        return False
+    try:
+        addr = ipaddress.ip_address(host)
+        if addr.is_private or addr.is_loopback or addr.is_link_local or addr.is_reserved:
+            return False
+    except ValueError:
+        # ホスト名の場合は解決せず許可（DNS リバインディングは運用側で対処）
+        pass
+    return True
+
 
 _CONFIG_OVERRIDE_KEYS = {
     "model_planning",
@@ -33,6 +59,11 @@ def _apply_config_overrides(config_dict: Optional[dict]) -> None:
         from config.project_context import ProjectContext
         for key in _CONFIG_OVERRIDE_KEYS:
             if key in config_dict and config_dict[key] not in (None, ""):
+                if key == "openai_base_url" and not _is_safe_base_url(str(config_dict[key])):
+                    logger.warning(
+                        f"Rejected unsafe openai_base_url override: {config_dict[key]}"
+                    )
+                    continue
                 ProjectContext.set_setting(key, config_dict[key])
     except Exception as e:
         logger.warning(f"Failed to apply config overrides: {e}")

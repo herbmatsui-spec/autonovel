@@ -75,11 +75,11 @@ class WritingGraphManager:
 
     def __init__(self, manager):
         self.manager = manager  # GenerationLoopManager instance
-        self.workflow = self._build_graph()
         # チェックポインター設定（長時間運用対応）
         self.checkpointer = None
         if HAS_LANGGRAPH and MemorySaver is not None:
             self.checkpointer = MemorySaver()
+        self.workflow = self._build_graph()
         # メタデータ保持用
         self._checkpoint_metadata: Dict[str, Any] = {}
         # 品質メトリクス収集（ジャンル別トレンド分析用）

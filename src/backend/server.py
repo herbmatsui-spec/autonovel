@@ -312,7 +312,9 @@ async def refine_erotic(req: RefineEroticRequest, api_key: str = Depends(require
 
 
 @app.get("/api/tasks/{task_id}/status")
-async def get_task_status_endpoint(task_id: str):
+async def get_task_status_endpoint(
+    task_id: str, api_key: str = Depends(require_api_key)
+):
     from src.backend.task_helpers import get_task_status
     status = await get_task_status(task_id)
     return status
