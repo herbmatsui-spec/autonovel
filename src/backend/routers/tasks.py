@@ -2,7 +2,7 @@ import json
 import logging
 import time
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Header
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 
@@ -43,9 +43,9 @@ async def get_task_status(task_id: str):
 
 
 @router.get("/{task_id}/stream")
-async def stream_task_status(task_id: str):
+async def stream_task_status(task_id: str, last_event_id: str | None = Header(None, alias="Last-Event-ID")):
     return StreamingResponse(
-        task_event_generator(task_id),
+        task_event_generator(task_id, last_event_id=last_event_id),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",

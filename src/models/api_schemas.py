@@ -94,6 +94,16 @@ class OptimizationReportSchema(BaseModel):
 # ==========================================
 
 
+class TaskErrorDetail(BaseModel):
+    """構造化エラー情報（フロントエンドのエラーユーザ体験用）"""
+    code: str  # エラーコード例: NETWORK_ERROR, API_LIMIT, VALIDATION_ERROR, LLM_ERROR, UNKNOWN
+    message: str  # ユーザー向けメッセージ
+    detail: Optional[str] = None  # 技術的詳細（スタックトレースや内部情報）
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    retry_after_ms: Optional[int] = None  # レートリミットなどで再試行まで待つ必要がある場合
+    recoverable: bool = True  # 再試行・再開が可能か
+    context: Dict[str, Any] = Field(default_factory=dict)  # 任意の追加情報
+
 class TaskStatusSchema(BaseModel):
     """タスク進捗スキーマ"""
 
@@ -107,6 +117,7 @@ class TaskStatusSchema(BaseModel):
     streaming_text: str = ""
     logs: List[str] = Field(default_factory=list)
     error: Optional[str] = None
+    task_error: Optional[TaskErrorDetail] = None
     result_data: Optional[Any] = None
     token_usage: Dict[str, int] = Field(
         default_factory=lambda: {"prompt": 0, "completion": 0, "calls": 0}

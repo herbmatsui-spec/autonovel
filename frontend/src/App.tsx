@@ -10,9 +10,10 @@ import { toast } from 'sonner';
 import type { TaskStatus } from '@/types';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
 import { useBooks } from '@/hooks/useBooks';
-import { useTaskStream } from '@/hooks/useTaskStream';
+import { useTaskStream, type StreamError } from '@/hooks/useTaskStream';
 import { useBookDetails } from '@/hooks/useBookDetails';
 import { useTaskMonitor } from '@/hooks/useTaskMonitor';
+import { useTaskRestore } from '@/hooks/useTaskRestore';
 import { Sidebar } from '@/components/Sidebar';
 import { LandingTab } from '@/components/tabs/LandingTab';
 import { BooksTab } from '@/components/tabs/BooksTab';
@@ -89,10 +90,13 @@ setShowPreview,
    const selectedBookRef = useRef(selectedBook);
    selectedBookRef.current = selectedBook;
 
-   // Task monitoring (log scroll + stop) delegated to useTaskMonitor hook (Step 14)
-   const { logEndRef, handleStopTask } = useTaskMonitor();
+// Task monitoring (log scroll + stop) delegated to useTaskMonitor hook (Step 14)
+    const { logEndRef, handleStopTask } = useTaskMonitor();
 
-  // Auto-select the first book into the store once the list is loaded.
+    // Task persistence restoration (restore active task on page reload)
+    useTaskRestore();
+
+    // Auto-select the first book into the store once the list is loaded.
   useEffect(() => {
     if (books.length > 0 && !selectedBook) {
       setSelectedBook(books[0]);
@@ -107,31 +111,37 @@ setShowPreview,
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedBook, activeTab]);
 
-    // Task SSE Stream Connection Control (Step 13)
+// Task SSE Stream Connection Control (Step 13)
     const handleTaskStatus = useCallback((status: TaskStatus) => {
       setTaskStatus(status);
     }, [setTaskStatus]);
 
     const handleTaskComplete = useCallback((status: TaskStatus) => {
-      setActiveTaskId(null);
       const book = selectedBookRef.current;
       if (book) loadBookDetails(book.id);
-      if (status.error) {
-        toast.error(`タスクエラーが発生しました: ${status.error}`);
-      } else {
+      
+      // Only clear task on success - keep it for error display
+      const hasError = status.error || status.task_error;
+      if (!hasError) {
+        setActiveTaskId(null);
         toast.success('バックグラウンドタスクが正常に完了しました！');
+      } else {
+        toast.error(`タスクエラーが発生しました: ${status.task_error?.message ?? status.error ?? '不明なエラー'}`);
       }
     }, [setActiveTaskId, loadBookDetails]);
 
-    const handleTaskError = useCallback((error: unknown) => {
+    const handleTaskError = useCallback((error: StreamError) => {
       console.error('Task stream connection error:', error);
+      if (!error.recoverable) {
+        toast.error(`接続エラー: ${error.message}`);
+      }
     }, []);
 
-   useTaskStream(activeTaskId, {
-     onStatus: handleTaskStatus,
-     onComplete: handleTaskComplete,
-     onError: handleTaskError,
-   });
+    const { connectionState } = useTaskStream(activeTaskId, {
+      onStatus: handleTaskStatus,
+      onComplete: handleTaskComplete,
+      onError: handleTaskError,
+    });
 
 
   // Triggering actions consolidated in a custom hook
@@ -274,6 +284,7 @@ setShowPreview,
         <TaskMonitor
           logEndRef={logEndRef}
           onStop={handleStopTask}
+          connectionState={connectionState}
         />
       )}
 

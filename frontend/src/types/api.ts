@@ -51,6 +51,14 @@ export interface OptimizationHistory {
   created_at: string;
 }
 
+export interface TaskError {
+  code: string;
+  message: string;
+  detail?: string;
+  timestamp: string;
+  retry_after_ms?: number;
+}
+
 export interface TaskStatus {
   is_running: boolean;
   current_step: number;
@@ -60,6 +68,10 @@ export interface TaskStatus {
   streaming_text: string;
   logs: string[];
   error?: string;
+  task_error?: TaskError;
+  recoverable?: boolean;
+  resume_from_step?: number;
+  partial_result?: Record<string, unknown>;
   result_data?: Record<string, unknown>;
 }
 

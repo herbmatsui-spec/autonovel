@@ -124,36 +124,169 @@ export async function getPlanningOptions(): Promise<PlanningOptions> {
   return apiRequest(`${API_BASE_URL}/config/planning_options`);
 }
 
+export type StreamConnectionState = 'connecting' | 'connected' | 'reconnecting' | 'closed' | 'failed';
+
+export interface StreamError {
+  type: 'network' | 'server' | 'parse' | 'aborted';
+  message: string;
+  recoverable: boolean;
+  originalError: unknown;
+}
+
+export interface ConnectTaskStreamOptions {
+  taskId: string;
+  onUpdate: (status: TaskStatus) => void;
+  onComplete: (status: TaskStatus) => void;
+  onError: (error: StreamError) => void;
+  onStateChange?: (state: StreamConnectionState) => void;
+  onReconnecting?: (attempt: number) => void;
+  lastEventId?: string;
+}
+
+function classifyError(error: unknown, readyState: number): StreamError {
+  if (readyState === EventSource.CLOSED) {
+    return {
+      type: 'network',
+      message: '接続が切断されました。再接続を試みます...',
+      recoverable: true,
+      originalError: error,
+    };
+  }
+  if (error instanceof SyntaxError || error instanceof TypeError) {
+    return {
+      type: 'parse',
+      message: 'サーバーからのデータ形式が不正です。',
+      recoverable: true,
+      originalError: error,
+    };
+  }
+  return {
+    type: 'server',
+    message: 'サーバーエラーが発生しました。',
+    recoverable: true,
+    originalError: error,
+  };
+}
+
 export function connectTaskStream(
-  taskId: string,
-  onUpdate: (status: TaskStatus) => void,
-  onComplete: (status: TaskStatus) => void,
-  onError: (error: unknown) => void
+  options: ConnectTaskStreamOptions
 ): () => void {
-  const sseUrl = `${API_BASE_URL}/tasks/${taskId}/stream`;
-  const eventSource = new EventSource(sseUrl);
+  const {
+    taskId,
+    onUpdate,
+    onComplete,
+    onError,
+    onStateChange,
+    onReconnecting,
+    lastEventId,
+  } = options;
 
-  eventSource.onmessage = (event) => {
-    try {
-      const status: TaskStatus = JSON.parse(event.data);
-      onUpdate(status);
-      if (!status.is_running) {
-        onComplete(status);
-        eventSource.close();
+  let eventSource: EventSource | null = null;
+  let manuallyClosed = false;
+  let reconnectAttempt = 0;
+  const MAX_RECONNECT_ATTEMPTS = 10;
+  const BASE_RECONNECT_DELAY_MS = 1000;
+  const MAX_RECONNECT_DELAY_MS = 30000;
+
+  const updateState = (state: StreamConnectionState) => {
+    onStateChange?.(state);
+  };
+
+  const attemptConnect = (customLastEventId?: string) => {
+    if (manuallyClosed) return;
+
+    updateState('connecting');
+
+    const sseUrl = `${API_BASE_URL}/tasks/${taskId}/stream`;
+    const url = customLastEventId ? `${sseUrl}?last_event_id=${encodeURIComponent(customLastEventId)}` : sseUrl;
+
+    eventSource = new EventSource(url);
+
+    eventSource.onopen = () => {
+      reconnectAttempt = 0;
+      updateState('connected');
+    };
+
+    eventSource.onmessage = (event) => {
+      try {
+        const status: TaskStatus = JSON.parse(event.data);
+        onUpdate(status);
+        if (!status.is_running) {
+          manuallyClosed = true;
+          updateState('closed');
+          onComplete(status);
+          eventSource?.close();
+          eventSource = null;
+        }
+      } catch (e) {
+        const streamError = classifyError(e, eventSource?.readyState ?? EventSource.CLOSED);
+        streamError.type = 'parse';
+        onError(streamError);
+        eventSource?.close();
+        eventSource = null;
+        scheduleReconnect(event.lastEventId || customLastEventId);
       }
-    } catch (e) {
-      onError(e);
-      eventSource.close();
-    }
+    };
+
+    eventSource.onerror = (error) => {
+      if (manuallyClosed) return;
+
+      const readyState = eventSource?.readyState ?? EventSource.CLOSED;
+      const streamError = classifyError(error, readyState);
+
+      if (readyState === EventSource.CLOSED && !manuallyClosed) {
+        // Unexpected closure - attempt reconnect
+        updateState('reconnecting');
+        scheduleReconnect(eventSource?.url ? extractLastEventId(eventSource.url) : customLastEventId);
+      } else {
+        // Other errors (CONNECTING -> failed)
+        updateState('failed');
+        onError(streamError);
+        eventSource?.close();
+        eventSource = null;
+      }
+    };
   };
 
-  eventSource.onerror = (error) => {
-    onError(error);
-    eventSource.close();
+  const extractLastEventId = (url: string): string | undefined => {
+    const match = url.match(/[?&]last_event_id=([^&]+)/);
+    return match ? decodeURIComponent(match[1]) : undefined;
   };
+
+  const scheduleReconnect = (lastEventId?: string) => {
+    if (manuallyClosed) return;
+    if (reconnectAttempt >= MAX_RECONNECT_ATTEMPTS) {
+      updateState('failed');
+      onError({
+        type: 'network',
+        message: '最大再接続回数に達しました。手動で再試行してください。',
+        recoverable: false,
+        originalError: new Error('Max reconnect attempts reached'),
+      });
+      return;
+    }
+
+    const delay = Math.min(
+      BASE_RECONNECT_DELAY_MS * Math.pow(2, reconnectAttempt) + Math.random() * 1000,
+      MAX_RECONNECT_DELAY_MS
+    );
+    reconnectAttempt += 1;
+    onReconnecting?.(reconnectAttempt);
+
+    setTimeout(() => {
+      if (!manuallyClosed) {
+        attemptConnect(lastEventId);
+      }
+    }, delay);
+  };
+
+  // Initial connection
+  attemptConnect(lastEventId);
 
   return () => {
-    eventSource.close();
+    manuallyClosed = true;
+    eventSource?.close();
+    eventSource = null;
   };
 }
 

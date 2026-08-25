@@ -8,7 +8,7 @@ from src.backend.redis_util import get_redis_client
 logger = logging.getLogger(__name__)
 
 
-async def task_event_generator(task_id: str) -> AsyncGenerator[str, None]:
+async def task_event_generator(task_id: str, last_event_id: str | None = None) -> AsyncGenerator[str, None]:
     """
     Server-Sent Events (SSE) 用のタスク進捗イベントジェネレータ。
     1. Redisが利用可能な場合: Redis Pub/Sub を使ってプッシュ配信。
@@ -40,10 +40,16 @@ async def task_event_generator(task_id: str) -> AsyncGenerator[str, None]:
                     logger.error(f"[SSE] DB check failed for task {task_id}: {db_err}")
 
             if initial_state:
-                yield f"data: {initial_state.decode('utf-8') if isinstance(initial_state, bytes) else initial_state}\n\n"
-                state_data = json.loads(initial_state)
+                # Decode and parse initial state JSON
+                state_json = initial_state.decode('utf-8') if isinstance(initial_state, bytes) else initial_state
+                state_data = json.loads(state_json)
+                # Determine event ID (defaults to 0 if missing)
+                event_id = state_data.get("event_id", 0)
+                # Send only if client does not have this or newer event
+                if last_event_id is None or int(event_id) > int(last_event_id):
+                    yield f"id: {event_id}\n" + f"data: {state_json}\n\n"
                 if not state_data.get("is_running", True):
-                    # 既に実行中でないなら終了
+                    # タスクが完了している場合はストリーム終了
                     return
             else:
                 err_state = {"is_running": False, "message": "タスクが見つかりません", "logs": []}
@@ -61,10 +67,12 @@ async def task_event_generator(task_id: str) -> AsyncGenerator[str, None]:
                     if message and message["type"] == "message":
                         data = message["data"]
                         decoded_data = data.decode("utf-8") if isinstance(data, bytes) else data
-                        yield f"data: {decoded_data}\n\n"
+                        # Decode JSON to extract event_id
+                        state = json.loads(decoded_data)
+                        event_id = state.get("event_id", 0)
+                        yield f"id: {event_id}\n" + f"data: {decoded_data}\n\n"
 
                         # 進捗イベントの終了判定
-                        state = json.loads(decoded_data)
                         if not state.get("is_running", True):
                             logger.info(f"[SSE] Task {task_id} completed. Closing Redis stream.")
                             break
@@ -77,11 +85,11 @@ async def task_event_generator(task_id: str) -> AsyncGenerator[str, None]:
             logger.error(f"[SSE] Redis subscription failed ({e}). Falling back to SQLite polling.")
 
     # SQLiteポーリングフォールバック
-    async for event in _sqlite_polling_fallback(task_id):
+    async for event in _sqlite_polling_fallback(task_id, last_event_id=last_event_id):
         yield event
 
 
-async def _sqlite_polling_fallback(task_id: str) -> AsyncGenerator[str, None]:
+async def _sqlite_polling_fallback(task_id: str, last_event_id: str | None = None) -> AsyncGenerator[str, None]:
     """
     Redis未接続時のデータベース（SQLite/PostgreSQL）1秒ポーリングによるフォールバック。
     """
@@ -100,8 +108,8 @@ async def _sqlite_polling_fallback(task_id: str) -> AsyncGenerator[str, None]:
             result = await session.execute(stmt)
             row = result.scalar_one_or_none()
             if not row:
-                err_state = {"is_running": False, "message": "タスクが見つかりません", "logs": []}
-                yield f"data: {json.dumps(err_state, ensure_ascii=False)}\n\n"
+                err_state = {"is_running": False, "message": "タスクが見つかりません", "logs": [], "event_id": 0}
+                yield f"id: 0\n" + f"data: {json.dumps(err_state, ensure_ascii=False)}\n\n"
                 return
     except Exception as e:
         logger.error(f"[SSE] Database initial task check error: {e}")
@@ -118,10 +126,13 @@ async def _sqlite_polling_fallback(task_id: str) -> AsyncGenerator[str, None]:
                     val = row.value
                     # 重複したイベントの送信を抑制
                     if val != last_val:
-                        yield f"data: {val}\n\n"
+                        state = json.loads(val)
+                        event_id = state.get("event_id", 0)
+                        # Filter based on last_event_id
+                        if last_event_id is None or int(event_id) > int(last_event_id):
+                            yield f"id: {event_id}\n" + f"data: {val}\n\n"
                         last_val = val
 
-                        state = json.loads(val)
                         if not state.get("is_running", True):
                             logger.info(
                                 f"[SSE] Task {task_id} completed. Closing database polling."

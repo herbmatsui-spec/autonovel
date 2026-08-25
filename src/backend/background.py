@@ -14,6 +14,8 @@ import time
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 
+from src.backend.error_utils import classify_exception
+
 logger = logging.getLogger(__name__)
 
 
@@ -110,9 +112,13 @@ class ProgressState:
         self.streaming_text = ""
         self.logs: List[str] = []
         self.error: Optional[str] = None
+        self.task_error: Optional[dict] = None
+        self.resume_from_step: Optional[int] = None
+        self.partial_result: Optional[dict] = None
         self.result_data: Optional[Dict[str, Any]] = None
         self.start_time = time.time()
         self.last_updated = time.time()
+        self.event_id: int = 0
         self._stop_event = threading.Event()
         self._last_stop_check: float = 0.0
         # スレッド間でのトークン受け渡し用
@@ -160,6 +166,9 @@ class ProgressState:
         if not self.task_id:
             return
 
+        # Increment event ID for each persisted state so the client can
+        # request a specific last-event-id for SSE reconnection.
+        self.event_id += 1
         state_dict = {
             "is_running": self.is_running,
             "current_step": self.current_step,
@@ -169,10 +178,14 @@ class ProgressState:
             "streaming_text": self.streaming_text,
             "logs": self.logs,
             "error": self.error,
+            "task_error": self.task_error,
+            "resume_from_step": self.resume_from_step,
+            "partial_result": self.partial_result,
             "result_data": self.result_data,
             "token_usage": self.token_usage,
             "start_time": self.start_time,
             "last_updated": self.last_updated,
+            "event_id": self.event_id,
         }
 
         class StateEncoder(json.JSONEncoder):
@@ -195,6 +208,9 @@ class ProgressState:
         step: Optional[int] = None,
         total: Optional[int] = None,
         error: Optional[str] = None,
+        task_error: Optional[dict] = None,
+        resume_from_step: Optional[int] = None,
+        partial_result: Optional[dict] = None,
     ) -> None:
         display_msg = message
         full_msg = f"{display_msg}: {sub_message}" if sub_message else display_msg
@@ -211,6 +227,12 @@ class ProgressState:
         self.last_updated = time.time()
         if error is not None:
             self.error = error
+        if task_error is not None:
+            self.task_error = task_error
+        if resume_from_step is not None:
+            self.resume_from_step = resume_from_step
+        if partial_result is not None:
+            self.partial_result = partial_result
         self._save_to_db()
 
 
@@ -254,13 +276,11 @@ class BackgroundReporter:
 
     def report_exception(self, e: Exception, context: str = "") -> None:
         """例外をキャッチしてエラーとして報告する"""
-        error_msg = (
-            f"{context} - {type(e).__name__}: {str(e)}"
-            if context
-            else f"{type(e).__name__}: {str(e)}"
+        error_detail = classify_exception(e)
+        self.state.update(
+            message="🚨 エラーが発生しました",
+            task_error=error_detail.dict(),
         )
-        self.logger.exception(f"Unhandled exception in background task: {error_msg}")
-        self.state.update(message="🚨 エラーが発生しました", error=error_msg)
 
 
 # Definitions moved to shared/utils.py
