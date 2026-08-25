@@ -1,10 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { Book, Chapter, Plot } from '../../types';
 import { getChapters, getPlots } from '../../api';
-
-interface MonitorTabProps {
-  selectedBook: Book;
-}
+import { useBookStore } from '@/store/useBookStore';
+import { Button } from '@/components/ui/button';
 
 function MetricCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
   return (
@@ -16,12 +14,14 @@ function MetricCard({ label, value, sub }: { label: string; value: string | numb
   );
 }
 
-export function MonitorTab({ selectedBook }: MonitorTabProps) {
+export default function MonitorTab() {
+  const { selectedBook } = useBookStore();
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [plots, setPlots] = useState<Plot[]>([]);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
   const loadData = useCallback(async () => {
+    if (!selectedBook?.id) return;
     try {
       const [ch, pl] = await Promise.all([
         getChapters(selectedBook.id),
@@ -30,104 +30,78 @@ export function MonitorTab({ selectedBook }: MonitorTabProps) {
       setChapters(ch);
       setPlots(pl);
       setLastUpdated(new Date());
-    } catch (e) {
-      console.error('Monitor: failed to load data', e);
+    } catch (err) {
+      console.error('Failed to load monitoring data:', err);
     }
-  }, [selectedBook.id]);
+  }, [selectedBook?.id]);
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 30_000); // 30s auto-refresh
+    // Set up an interval to refresh every 30 seconds
+    const interval = setInterval(loadData, 30000);
     return () => clearInterval(interval);
   }, [loadData]);
 
-  const totalChars = chapters.reduce((sum: number, ch: Chapter) => sum + (ch.content?.length ?? 0), 0);
-  const estimatedCost = ((totalChars / 4) * 0.00002).toFixed(4); // rough estimate
-  const progressPercent = selectedBook.target_eps > 0
-    ? Math.min(Math.round((chapters.length / selectedBook.target_eps) * 100), 100)
-    : 0;
+  if (!selectedBook) {
+    return <div className="text-center py-8">作品を選択してください。</div>;
+  }
 
-  const narrativeStates = ['日常', '事件発生', '葛藤', '前クライマックス', 'クライマックス', '解決'];
-  const currentStateIndex = Math.min(
-    Math.floor((progressPercent / 100) * (narrativeStates.length - 1)),
-    narrativeStates.length - 1
-  );
+  const completedChapters = chapters.filter(ch => ch.status === 'completed').length;
+  const totalChapters = chapters.length;
+  const completionRate = totalChapters > 0 ? (completedChapters / totalChapters) * 100 : 0;
 
   return (
-    <div className="flex flex-col gap-4">
-      <h2 className="text-base font-bold">📡 パイプライン進捗モニター</h2>
-
-      {/* Metric Cards */}
-      <div className="grid grid-cols-3 gap-4">
-        <MetricCard label="プロット進捗" value={`${plots.length}/${selectedBook.target_eps}`} sub={`${progressPercent}%`} />
-        <MetricCard label="執筆量" value={`${totalChars.toLocaleString()}字`} />
-        <MetricCard label="APIコスト概算" value={`$${estimatedCost}`} />
+    <div className="animate-fade-in flex flex-col gap-6">
+      <h2 className="text-xl font-bold">進捗モニター - {selectedBook.title}</h2>
+      <div className="grid gap-4 sm:grid-cols-3">
+        <MetricCard
+          label="全エピソード数"
+          value={totalChapters}
+          sub="目標: {selectedBook.target_eps}話"
+        />
+        <MetricCard
+          label="完了エピソード数"
+          value={completedChapters}
+        />
+        <MetricCard
+          label="進捗率"
+          value={completionRate.toFixed(1) + '%'}
+        />
+        <MetricCard
+          label="プロット数"
+          value={plots.length}
+        />
+        <MetricCard
+          label="最終更新"
+          value={lastUpdated.toLocaleTimeString()}
+          sub={lastUpdated.toLocaleDateString()}
+        />
       </div>
-
-      {/* 執筆進捗 bar */}
-      <div className="glass-sm p-4 rounded-lg">
-        <h4 className="text-xs font-bold mb-2">本文執筆進捗</h4>
-        <div className="w-full bg-muted rounded-full h-3 overflow-hidden">
-          <div
-            className="bg-emerald-500 h-3 rounded-full transition-all duration-500"
-            style={{ width: `${progressPercent}%` }}
-          />
-        </div>
-        <p className="text-xs text-muted-foreground mt-1">
-          {chapters.length} / {selectedBook.target_eps} 話 ({progressPercent}%)
-        </p>
+      <div className="border rounded-lg p-4">
+        <h3 className="font-semibold mb-2">エピソードステータス</h3>
+        {chapters.length === 0 ? (
+          <p className="text-sm text-muted-foreground">エピソードデータはまだありません。</p>
+        ) : (
+          <div className="space-y-2">
+            {chapters.map((ch) => (
+              <div key={ch.id} className="flex justify-between items-center px-3 py-2 bg-[var(--muted)] rounded">
+                <span className="text-sm">エピソード {ch.episode_no}: {ch.title}</span>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${ch.status === 'completed' ? 'bg-accent-emerald/20 text-accent-emerald' : ch.status === 'in_progress' ? 'bg-accent-amber/20 text-accent-amber' : 'bg-accent-rose/20 text-accent-rose'}`}>
+                  {ch.status === 'completed' ? '完了' : ch.status === 'in_progress' ? '進行中' : '未開始'}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
-
-      {/* Narrative State Stepper */}
-      <div className="glass-sm p-4 rounded-lg">
-        <h4 className="text-xs font-bold mb-3">物語状態遷移</h4>
-        <div className="flex justify-between items-center">
-          {narrativeStates.map((state, i) => (
-            <div key={state} className="flex flex-col items-center flex-1">
-              <div
-                className={`w-4 h-4 rounded-full transition-colors ${
-                  i <= currentStateIndex ? 'bg-primary' : 'bg-muted-foreground/30'
-                }`}
-              />
-              <span className={`text-2xs mt-1 text-center ${i <= currentStateIndex ? 'text-primary font-semibold' : 'text-muted-foreground'}`}>
-                {state}
-              </span>
-            </div>
-          ))}
-        </div>
+      <div className="flex justify-end mt-4">
+        <Button
+          variant="outline"
+          onClick={loadData}
+        >
+          今すぐ更新
+        </Button>
       </div>
-
-      {/* Recent Writing Log */}
-      <div className="glass-sm p-4 rounded-lg">
-        <h4 className="text-xs font-bold mb-2">最近の執筆ログ（最新5話）</h4>
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="text-left text-muted-foreground">
-                <th className="p-1">EP</th>
-                <th className="p-1">話名</th>
-                <th className="p-1">文字数</th>
-                <th className="p-1">作成日</th>
-              </tr>
-            </thead>
-            <tbody>
-              {chapters.slice(-5).reverse().map((ch) => (
-                <tr key={ch.ep_num} className="border-t border-border">
-                  <td className="p-1 font-mono">{ch.ep_num}</td>
-                  <td className="p-1">{ch.title}</td>
-                  <td className="p-1 font-mono">{ch.content?.length?.toLocaleString() ?? '—'}字</td>
-                  <td className="p-1 text-muted-foreground">{new Date(ch.created_at).toLocaleDateString()}</td>
-                </tr>
-              ))}
-              {chapters.length === 0 && <tr><td align="center" colSpan={4} className="text-muted-foreground p-2">データなし</td></tr>}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <p className="text-2xs text-muted-foreground text-right">
-        最終更新: {lastUpdated.toLocaleTimeString()}
-      </p>
     </div>
   );
 }

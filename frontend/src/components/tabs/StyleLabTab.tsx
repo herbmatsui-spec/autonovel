@@ -1,10 +1,9 @@
 import { useState } from 'react';
-import React from 'react';
 import { analyzeStyleDna } from '@/api';
 import { toast } from 'sonner';
 import { useUserSettingsStore } from '@/store/useUserSettingsStore';
 
-export function StyleLabTab(): React.ReactElement {
+export default function StyleLabTab() {
   const apiKey = useUserSettingsStore((s) => s.apiKey);
   const [sample, setSample] = useState('');
   const [result, setResult] = useState<Record<string, unknown> | null>(null);
@@ -32,37 +31,33 @@ export function StyleLabTab(): React.ReactElement {
   };
 
   return (
-    <div className="animate-fade-in flex flex-col gap-8">
-      <div>
-        <h3 className="text-xl text-white font-bold">🧬 文体ラボ</h3>
-        <p className="text-secondary text-sm">
-          文章のスタイルDNAを解析し、文体の特徴を可視化します。
-        </p>
+    <div className="animate-fade-in flex flex-col gap-6">
+      <h2 className="text-xl font-bold">文体ラボ</h2>
+      <div className="space-y-4">
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium">分析したいテキストを入力</label>
+          <textarea
+            value={sample}
+            onChange={(e) => setSample(e.target.value)}
+            rows={8}
+            className="block w-full px-3 py-2 border rounded"
+            placeholder="ここで文体を分析したいテキストを貼り付けてください..."
+          />
+        </div>
+        <div className="flex justify-end">
+          <Button
+            variant="default"
+            onClick={handleAnalyze}
+            disabled={loading}
+          >
+            {loading ? '分析中...' : '文体を分析'}
+          </Button>
+        </div>
       </div>
-
-      <div className="glass-panel p-6">
-        <label htmlFor="stylelab-sample" className="block text-sm font-semibold mb-2">分析用サンプル</label>
-        <textarea
-          id="stylelab-sample"
-          rows={8}
-          value={sample}
-          onChange={(e) => setSample(e.target.value)}
-          className="w-full p-3 text-sm rounded bg-background border border-border resize-y"
-          placeholder="分析したい文章をここに貼り付け..."
-        />
-        <button
-          onClick={handleAnalyze}
-          disabled={loading}
-          className="btn btn-primary mt-4"
-        >
-          {loading ? '分析中...' : '🔬 分析開始'}
-        </button>
-      </div>
-
       {result && (
-        <div className="glass-panel p-6">
-          <h4 className="text-sm font-bold mb-3">📊 分析結果</h4>
-          <pre className="text-xs whitespace-pre-wrap bg-background p-4 rounded border border-border">
+        <div className="border rounded-lg p-4 mt-6">
+          <h3 className="font-semibold mb-2">分析結果</h3>
+          <pre className="text-xs bg-[var(--muted)] p-3 rounded overflow-auto">
             {JSON.stringify(result, null, 2)}
           </pre>
         </div>

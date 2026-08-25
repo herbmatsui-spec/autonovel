@@ -4,14 +4,14 @@ export type TabId = 'books' | 'plots' | 'write' | 'analytics' | 'planning' | 'st
 
 interface ProjectContextState {
   selectedBookId: number | null;
-  activeTab: TabId;
+  // activeTab removed; use URL via react-router-dom
   setSelectedBookId: (id: number | null) => void;
-  setActiveTab: (tab: TabId) => void;
+  // setActiveTab removed;
 }
 
 export const useProjectStore = create<ProjectContextState>((set) => ({
   selectedBookId: null,
-  activeTab: 'landing',
+  // activeTab: 'landing',
   setSelectedBookId: (id) => set({ selectedBookId: id }),
-  setActiveTab: (tab) => set({ activeTab: tab }),
+  // setActiveTab: (tab) => set({ activeTab: tab }),
 }));

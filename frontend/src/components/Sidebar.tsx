@@ -4,8 +4,10 @@ import { Input } from "@/components/ui/input";
 import { useUserSettingsStore } from "../store/useUserSettingsStore";
 import { useProjectStore, TabId } from "../store/useProjectStore";
 import { useBookStore } from "../store/useBookStore";
+import { useNavigate, useLocation } from 'react-router-dom';
 
 import { toast } from 'sonner';
+import { useUIStore } from "../store/useUIStore";
 
 function requireBook(selectedBook: unknown, action: () => void) {
   if (!selectedBook) {
@@ -17,16 +19,22 @@ function requireBook(selectedBook: unknown, action: () => void) {
 
 export function Sidebar() {
   const { apiKey, setApiKey, modelType, setModelType, isExpertMode, setIsExpertMode } = useUserSettingsStore();
-  const { activeTab, setActiveTab } = useProjectStore();
   const { selectedBook } = useBookStore();
   const setCreateModalOpen = useUIStore((s) => s.setCreateModalOpen);
   const [tokenUsage] = useState({ calls: 0, cost: 0 });
+  const navigate = useNavigate();
+  const location = useLocation();
+  const pathname = location.pathname; // e.g., "/books"
+  // Remove leading slash and any trailing slash
+  const activeTabId = pathname.replace(/^\/|\/$/g, '') as TabId | '';
+  // If empty, default to landing
+  const currentTab = activeTabId || 'landing';
 
   const navAction = (tab: TabId, needsBook = true) => () => {
     if (needsBook) {
-      requireBook(selectedBook, () => setActiveTab(tab));
+      requireBook(selectedBook, () => navigate(`/${tab}`));
     } else {
-      setActiveTab(tab);
+      navigate(`/${tab}`);
     }
   };
 
@@ -46,127 +54,72 @@ export function Sidebar() {
 
   const tabs = allTabs.filter(t => isExpertMode || !t.expertOnly);
 
-   return (
-    <aside
-       aria-label="メインナビゲーション"
-       className="w-64 md:w-72 flex flex-col overflow-y-auto bg-[var(--bg-sidebar)] border-r border-[var(--border)] h-[100vh]"
-    >
-      {/* Header */}
-      <div className="px-4 pt-5 pb-2">
-        <h2 className="text-lg font-extrabold gradient-text tracking-tight">⚔️ HEGEMONY v3.0</h2>
-        <p className="text-[0.7rem] text-muted-foreground font-mono mt-0.5">Novel Autogen Platform</p>
-      </div>
-
-      {/* 初心者向けメインCTA */}
-      <div className="px-4 pb-2">
-        <Button
-          variant="default"
-          onClick={() => setCreateModalOpen(true)}
-          className="w-full text-sm h-10 font-bold shadow-glow"
-        >
-          ⚡ かんたんモードで小説を作る
-        </Button>
-        {!apiKey && (
-          <p className="text-[0.65rem] text-amber-300/90 mt-1.5 px-1">
-            ※ 最初に下の「Gemini API Key」を設定してください
-          </p>
-        )}
-      </div>
-
-      <div className="px-4 space-y-4 flex-1 overflow-y-auto">
-
-        {/* ⚙️ API Key & Model */}
-        <section>
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">⚙️ システム設定</h3>
-          <div className="bg-slate-900/90 border border-slate-700/80 rounded-lg p-3 text-xs space-y-3 shadow-sm">
-            <div>
-              <label htmlFor="api-key" className="block text-slate-100 font-bold text-xs mb-1">Gemini API Key</label>
-              <Input
-                id="api-key"
-                type="password"
-                placeholder="AI_KEY_..."
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                className="w-full text-xs px-2.5 py-1.5 rounded bg-slate-950 text-white font-medium border border-slate-600 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                aria-label="Gemini APIキーを入力"
-              />
-            </div>
-            <div>
-              <label htmlFor="model-select" className="block text-slate-100 font-bold text-xs mb-1">モデル</label>
-              <select
-                id="model-select"
-                value={modelType}
-                onChange={(e) => setModelType(e.target.value)}
-                className="w-full text-xs px-2.5 py-1.5 rounded bg-slate-950 text-white font-medium border border-slate-600 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                aria-label="使用するAIモデルを選択"
-              >
-                <option value="gemini-3.5-flash-lite" className="bg-slate-950 text-white">gemini-3.5-flash-lite</option>
-                <option value="gemini-3.5-flash" className="bg-slate-950 text-white">gemini-3.5-flash</option>
-                <option value="gemma4-31b-it" className="bg-slate-950 text-white">gemma4-31b-it</option>
-                <option value="gemini-2.5-pro" className="bg-slate-950 text-white">Gemini 2.5 Pro</option>
-                <option value="gemini-2.5-flash" className="bg-slate-950 text-white">Gemini 2.5 Flash</option>
-                <option value="gemini-1.5-pro" className="bg-slate-950 text-white">Gemini 1.5 Pro</option>
-              </select>
-            </div>
-          </div>
-        </section>
-
-        <hr className="border-slate-800" />
-
-        {/* 💰 リソース状況 */}
-        <section>
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">💰 リソース状況</h3>
-          <div className="bg-slate-900/90 border border-slate-700/80 rounded-lg p-2.5 text-xs space-y-1.5">
-            <div className="flex justify-between items-center">
-              <span className="text-slate-200 font-medium">API呼び出し</span>
-              <span className="font-mono font-bold text-white bg-slate-800 px-1.5 py-0.5 rounded text-2xs">{tokenUsage.calls}回</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-slate-200 font-medium">推定コスト</span>
-              <span className="font-mono font-bold text-emerald-400 bg-slate-800 px-1.5 py-0.5 rounded text-2xs">${tokenUsage.cost.toFixed(4)}</span>
-            </div>
-          </div>
-        </section>
-
-        <hr className="border-border" />
-
-        {/* Navigation */}
-        <nav className="space-y-0.5" aria-label="アプリケーションメニュー">
-          {tabs.map(({ id, icon, label, needsBook }) => (
-            <Button
-              key={id}
-              variant={activeTab === id ? 'default' : 'secondary'}
-              onClick={navAction(id, needsBook)}
-              className="justify-start w-full text-xs h-9"
-              aria-current={activeTab === id ? 'page' : undefined}
-            >
-              {icon} {label}
-            </Button>
-          ))}
-        </nav>
-      </div>
-
-      {/* Mode Toggle */}
-      <div className="px-4 py-3 border-t border-slate-800 mt-auto">
-        <label className="flex items-center justify-between cursor-pointer">
-          <span className="text-xs font-bold text-slate-300">🎓 上級者モード</span>
-          <input
-            type="checkbox"
-            checked={isExpertMode}
-            onChange={(e) => setIsExpertMode(e.target.checked)}
-            className="w-4 h-4 accent-indigo-500 rounded cursor-pointer"
-          />
-        </label>
-      </div>
-
-      {/* Active Selected Book Summary in Sidebar */}
-      {selectedBook && (
-        <div className="glass-sm animate-fade-in p-4 m-4 text-xs">
-          <p className="text-muted-foreground text-2xs uppercase tracking-widest">選択中の作品</p>
-          <h4 className="text-white font-bold my-0.5 truncate">{selectedBook.title}</h4>
-          <span className="badge badge-purple">{selectedBook.genre}</span>
+    return (
+    <aside className="flex-shrink-0 w-[250px] bg-[var(--bg-sidebar)] text-[var(--text-sidebar)] border-r border-[var(--border)] p-4">
+      <div className="flex items-center space-x-3 mb-6">
+        <div className="h-8 w-8 bg-[var(--accent)] rounded-full flex items-center justify-center">
+          <span className="text-white font-bold">🎌</span>
         </div>
-      )}
+        <h1 className="text-xl font-bold">AutoNovel</h1>
+      </div>
+      <nav className="space-y-2">
+        {tabs.map(({ id, icon, label, expertOnly }) => (
+          <Button
+            key={id}
+            variant={currentTab === id ? 'destructive' : 'secondary'}
+            className="w-full text-left justify-start"
+            onClick={navAction(id, /* needsBook */ ['plots','write','analytics','audit','monitor','strategy','import'].includes(id))
+          >
+            <div className="flex items-center space-x-3">
+              <span>{icon}</span>
+              <span className="hidden md:inline">{label}</span>
+            </div>
+          </Button>
+        ))}
+      </nav>
+      <div className="mt-6 pt-4 border-t border-[var(--border)]">
+        <h2 className="font-semibold mb-2">設定</h2>
+        <Button
+          variant="ghost"
+          className="w-full text-left justify-start mb-2"
+          onClick={() => setIsExpertMode(!isExpertMode)}
+        >
+          <div className="flex items-center space-x-3">
+            <span>⚙️</span>
+            <span className="hidden md:inline">エキスパートモード: {isExpertMode ? 'ON' : 'OFF'}</span>
+          </div>
+        </Button>
+        <Button
+          variant="ghost"
+          className="w-full text-left justify-start mb-2"
+          onClick={() => setCreateModalOpen(true)}
+        >
+          <div className="flex items-center space-x-3">
+            <span>📝</span>
+            <span className="hidden md:inline">新規作成</span>
+          </div>
+        </Button>
+        <div className="space-y-1">
+          <label className="text-xs block mb-1">APIキー</label>
+          <Input
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+            placeholder="sk-..."
+            className="w-full"
+          />
+        </div>
+        <div className="space-y-1 mt-2">
+          <label className="text-xs block mb-1">モデルタイプ</label>
+          <Button
+            variant="ghost"
+            className="w-full text-left justify-start"
+            onClick={() => setModelType(modelType === 'openai' ? 'gemini' : 'openai')}
+          >
+            <span className="hidden md:inline">現在のモデル: {modelType === 'openai' ? 'OpenAI' : 'Gemini'}</span>
+            <span className="ml-2">{modelType === 'openai' ? '🔄' : '🔄'}</span>
+          </Button>
+        </div>
+      </div>
     </aside>
   );
 }

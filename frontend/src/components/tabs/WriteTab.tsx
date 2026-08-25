@@ -7,156 +7,130 @@ import { BiblePanel } from '../write/BiblePanel';
 import { ChapterCard } from '../write/ChapterCard';
 import { usePagination } from '@/hooks/usePagination';
 import { useWritingStore } from '@/store/useWritingStore';
+import { useBookStore } from '@/store/useBookStore';
+import { useAppActions } from '@/hooks/useAppActions';
+import { useTaskStore } from '@/store/useTaskStore';
 
-interface WriteTabProps {
-  selectedBook: Book;
-  chapters: Chapter[];
-  bible: Bible | null;
-  writeFrom: number;
-  setWriteFrom: (val: number) => void;
-  writeTo: number;
-  setWriteTo: (val: number) => void;
-  writePassion: number;
-  setWritePassion: (val: number) => void;
-  handleTriggerWriting: () => void;
-  handleRefineErotic: (params: { intensity: number; platform_preset: string }) => void;
-  importEpNum: number;
-  setImportEpNum: (val: number) => void;
-  importText: string;
-  setImportText: (val: string) => void;
-  importDoRefine: boolean;
-  setImportDoRefine: (val: boolean) => void;
-  handleImportChapter: (e: React.FormEvent) => void;
-  activeTaskId: string | null;
-  genre: string;
-  setGenre: (val: string) => void;
-  title: string;
-  setTitle: (val: string) => void;
-  wordCount: number;
-  setWordCount: (val: number) => void;
-  platform: string;
-  setPlatform: (val: string) => void;
-  showPreview: boolean;
-  setShowPreview: (val: boolean) => void;
-}
+export default function WriteTab() {
+  const { selectedBook, chapters, bible } = useBookStore();
+  const {
+    writeFrom,
+    setWriteFrom,
+    writeTo,
+    setWriteTo,
+    writePassion,
+    setWritePassion,
+    importEpNum,
+    setImportEpNum,
+    importText,
+    setImportText,
+    importDoRefine,
+    setImportDoRefine,
+  } = useWritingStore();
+  const { handleTriggerWriting, handleRefineErotic, handleImportChapter } = useAppActions((_) => {});
+  const { activeTaskId } = useTaskStore();
 
-export function WriteTab({
-  chapters,
-  bible,
-  writeFrom,
-  setWriteFrom,
-  writeTo,
-  setWriteTo,
-  writePassion,
-  setWritePassion,
-  handleTriggerWriting,
-  handleRefineErotic,
-  importEpNum,
-  setImportEpNum,
-  importText,
-  setImportText,
-  importDoRefine,
-  setImportDoRefine,
-  handleImportChapter,
-  activeTaskId,
-  genre,
-  setGenre,
-  title,
-  setTitle,
-  wordCount,
-  setWordCount,
-  platform,
-  setPlatform,
-  showPreview,
-  setShowPreview,
-}: WriteTabProps) {
-  const { error, clearError } = useWritingStore();
-  const { page, setPage, totalPages, paginatedItems } = usePagination(chapters.length, 5);
+  if (!selectedBook) {
+    return <div className="text-center py-8">作品を選択してください。</div>;
+  }
 
   return (
-    <div className="animate-fade-in grid grid-cols-1 lg:grid-cols-3 gap-6">
-      {error && (
-        <div className="glass-panel p-4" style={{ borderColor: 'var(--accent-red)' }}>
-          <StatusMessage type="error" message={error} onClose={clearError} />
-        </div>
-      )}
-      <div className="flex flex-col gap-8 lg:col-span-2">
-        <WritingForm
-          writeFrom={writeFrom}
-          setWriteFrom={setWriteFrom}
-          writeTo={writeTo}
-          setWriteTo={setWriteTo}
-          writePassion={writePassion}
-          setWritePassion={setWritePassion}
-          onSubmit={handleTriggerWriting}
-          onRefineErotic={handleRefineErotic}
-          disabled={!!activeTaskId}
-          genre={genre}
-          setGenre={setGenre}
-          title={title}
-          setTitle={setTitle}
-          wordCount={wordCount}
-          setWordCount={setWordCount}
-          platform={platform}
-          setPlatform={setPlatform}
-        />
-
-        <div>
-          <h3 style={{ fontSize: '1.2rem', marginBottom: '1rem', color: '#fff' }}>
-            📖 執筆完了エピソード
-          </h3>
+    <div className="animate-fade-in grid grid-cols-[1fr_350px] gap-[2rem]">
+      {/* Left Column: Chapters browse & controls */}
+      <div className="flex flex-col gap-[2rem]">
+        <div className="flex flex-col gap-4">
+          <h2 className="text-xl font-bold">章一覧</h2>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setWriteFrom(1)}
+              disabled={writeFrom <= 1}
+            >
+              第一話から
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setWriteTo(chapters.length)}
+              disabled={writeTo >= chapters.length || chapters.length === 0}
+            >
+              最終話まで
+            </Button>
+          </div>
           {chapters.length === 0 ? (
-            <EmptyState
-              icon="📖"
-              title="まだ執筆されたチャプターがありません"
-              description="上のフォームから自動執筆を開始してください。"
-            />
+            <EmptyState>
+              <h3 className="font-semibold">まだ章がありません</h3>
+              <p className="text-sm text-muted-foreground">
+                「執筆を開始」ボタンから最初の章を執筆してください。
+              </p>
+            </EmptyState>
           ) : (
             <>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                {paginatedItems(chapters).map((ch) => (
-                  <ChapterCard key={ch.ep_num} chapter={ch} qualityScore={ch.quality_score} killerPhrase={ch.killer_phrase} />
-                ))}
+              {/** Pagination */ }
+              <div className="flex flex-wrap items-center gap-2 mb-4">
+                <label className="text-sm">表示範囲:</label>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setWriteFrom(Math.max(1, writeFrom - 5))}
+                  disabled={writeFrom <= 1}
+                >
+                  ‹‹
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setWriteFrom(Math.max(1, writeFrom - 1))}
+                  disabled={writeFrom <= 1}
+                >
+                  ‹
+                </Button>
+                <span className="text-xs nx">
+                  {writeFrom} ～ {Math.min(writeTo, chapters.length)} / {chapters.length} 話
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setWriteTo(Math.min(chapters.length, writeTo + 1))}
+                  disabled={writeTo >= chapters.length}
+                >
+                  ›
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setWriteTo(Math.min(chapters.length, writeTo + 5))}
+                  disabled={writeTo >= chapters.length}
+                >
+                  ››
+                </Button>
               </div>
-              {totalPages > 1 && (
-                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', marginTop: '1rem', alignItems: 'center' }}>
-                  <button
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    disabled={page === 1}
-                    className="btn btn-secondary"
-                  >
-                    ← 前
-                  </button>
-                  <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                    ページ {page} / {totalPages} （{chapters.length}話中）
-                  </span>
-                  <button
-                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={page === totalPages}
-                    className="btn btn-secondary"
-                  >
-                    次 →
-                  </button>
-                </div>
-              )}
+              {/* Chapter list */ }
+              <div className="space-y-2">
+                {chapters
+                  .slice(writeFrom - 1, writeTo)
+                  .map((chapter) => (
+                    <ChapterCard key={chapter.id} chapter={chapter} />
+                  ))}
+              </div>
             </>
           )}
         </div>
+
+        <div className="pt-4 border-t border-[var(--border)]">
+          <h2 className="text-xl font-bold mb-4">執筆コントロール</div>
+          <WritingForm
+            book={selectedBook}
+            activeTaskId={activeTaskId}
+          />
+        </div>
       </div>
 
-      <div className="flex flex-col gap-6">
+      {/* Right Column: Bible & Import */}
+      <div className="flex flex-col gap-[2rem]">
         <BiblePanel bible={bible} />
         <ImportForm
-          importEpNum={importEpNum}
-          setImportEpNum={setImportEpNum}
-          importText={importText}
-          setImportText={setImportText}
-          importDoRefine={importDoRefine}
-          setImportDoRefine={setImportDoRefine}
-          onSubmit={handleImportChapter}
-          disabled={!!activeTaskId}
-          showPreview={showPreview}
-          setShowPreview={setShowPreview}
+          activeTaskId={activeTaskId}
+          onImportChapter={handleImportChapter}
         />
       </div>
     </div>
