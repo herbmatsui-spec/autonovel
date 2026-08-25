@@ -6,6 +6,26 @@
 ![Python](https://img.shields.io/badge/python-3.12-blue)
 ![Refactoring](https://img.shields.io/badge/Architecture%20Refactoring-36%20steps%20done-brightgreen)
 
+## 最新の修正 (2026-08-25) — セキュリティ・安定性
+
+コードレビューで検出された CRITICAL 級の不具合を修正しました（コミット `276aeb6`）。
+
+### セキュリティ
+- 未認証で全文が取得できた `GET /api/export/books/{book_id}` に API キー認証を追加。
+- 認証の無かった `POST /api/easy-mode/{gacha,digest,promote}` と `GET /api/tasks/{task_id}/status` に認証を追加（無断の LLM コスト発生・ジョブ情報漏洩を防止）。
+- API キー検証を `hmac.compare_digest` による定数時間比較に変更（タイミング攻撃対策）。
+- リクエスト越しに指定できる `openai_base_url` に SSRF 検証を追加（プライベート/ループバック/予約アドレス宛を拒否）。
+- 資産化パック生成時のタイトル由来ファイルパスをサニタイズ（パストラバーサル防止）。
+- フロントエンドで `apiKey` を `localStorage` に永続化しないよう変更（XSS での盗難防止）。
+
+### クラッシュ・デッドコード修正
+- かんたんモード起動時に `NameError` になっていた `load_preset` の import 欠落を修正。
+- `run_parallel` の戻り値欠落（常に `None`）を修正。
+- `PlotEpisode` の実行時 import 化、`writing_langgraph` の `checkpointer` 初期化順の修正。
+- `continuity.py` で `storage/db` ディレクトリを自動作成（存在しないと例外だった）。
+
+> **運用注意**: 上記エンドポイントは既存の `generate_easy` 等と同様に `X-API-Key` ヘッダでの認証を期待します。本番（`ENVIRONMENT=production`）ではリクエストにヘッダを付与してください（フロントエンドは現状リクエスト body で `api_key` を送るため、ゲートウェイ等でのヘッダ注入かフロントエンド側の送信対応が必要です）。
+
 **覇権小説エンジン**は、AI を使って小説を「かんたんに」「高品質に」書くためのツールです。
 
 カクヨムなどの Web 小説サイトでランキング上位を狙える作品を、**ボタンひとつ**で自動生成します。
