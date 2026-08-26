@@ -93,24 +93,53 @@ class DatabaseConnectionWrapper:
 
     @property
     def cursor(self):
+        # Returns a synchronous cursor; note that this wrapper is primarily used for
+        # connection lifecycle management (close). Cursor usage is external to this
+        # wrapper and thus not affected by making the wrapper non-blocking.
         return self.dbapi_conn.cursor()
 
-    def commit(self):
-        return self.dbapi_conn.commit()
+    async def commit(self):
+        # Offload synchronous commit to a thread to avoid blocking the event loop.
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, self.dbapi_conn.commit)
 
-    def rollback(self):
-        return self.dbapi_conn.rollback()
+    async def rollback(self):
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, self.dbapi_conn.rollback)
 
-    def execute(self, sql, params=()):
-        return self.dbapi_conn.execute(sql, params)
+    async def execute(self, sql, params=()):
+        """
+        Execute a SQL statement asynchronously using the underlying SQLAlchemy
+        AsyncConnection. Returns a cursor-like object that provides async
+        fetchone/fetchall methods.
+        """
+        from sqlalchemy import text
+        if isinstance(sql, str):
+            sql = text(sql)
+        result = await self.sql_conn.execute(sql, params)
+        return _AsyncResultProxy(result)
 
-    def fetchone(self):
-        """単一行を取得"""
-        return self.dbapi_conn.fetchone()
+    async def fetchone(self):
+        """
+        Fetch one row from the most recent execute result.
+        This wrapper does not retain state; callers should use the result
+        returned by execute().
+        """
+        raise RuntimeError(
+            "fetchone() on DatabaseConnectionWrapper is not supported. "
+            "Use the result object returned by execute()."
+        )
 
-    def fetchall(self):
-        """全行を取得"""
-        return self.dbapi_conn.fetchall()
+    async def fetchall(self):
+        """
+        Fetch all rows from the most recent execute result.
+        This wrapper does not retain state; callers should use the result
+        returned by execute().
+        """
+        raise RuntimeError(
+            "fetchall() on DatabaseConnectionWrapper is not supported. "
+            "Use the result object returned by execute()."
+        )
 
     async def close(self) -> None:
         try:
@@ -119,6 +148,25 @@ class DatabaseConnectionWrapper:
             # close 時の rollback 失敗はクリティカルではないが、追跡用にログを出力する
             logger.debug("DatabaseConnectionWrapper.close: rollback 失敗: %s", exc)
         await self.sql_conn.close()
+
+
+class _AsyncResultProxy:
+    """Wraps a SQLAlchemy AsyncConnection execute result to provide async
+    fetchone/fetchall methods compatible with the expected wrapper interface.
+    """
+    __slots__ = ("result",)
+
+    def __init__(self, result):
+        self.result = result
+
+    async def fetchone(self):
+        # SQLAlchemy 2.0 Result.fetchone() is synchronous; offload to thread.
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, self.result.fetchone)
+
+    async def fetchall(self):
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, self.result.fetchall)
 
 
 class DatabaseManager:

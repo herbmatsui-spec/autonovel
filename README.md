@@ -5,6 +5,7 @@
 ![Coverage](https://img.shields.io/badge/coverage-80%25-yellow)
 ![Python](https://img.shields.io/badge/python-3.12-blue)
 ![Refactoring](https://img.shields.io/badge/Architecture%20Refactoring-36%20steps%20done-brightgreen)
+![Demo](https://img.shields.io/badge/demo-try_now-brightgreen)
 
 ## 最新の修正 (2026-08-25) — セキュリティ・安定性
 
@@ -29,6 +30,25 @@
 **覇権小説エンジン**は、AI を使って小説を「かんたんに」「高品質に」書くためのツールです。
 
 カクヨムなどの Web 小説サイトでランキング上位を狙える作品を、**ボタンひとつ**で自動生成します。
+
+---
+
+## 🚀 インタラクティブデモ
+
+デモをすぐに体験したい方は、以下の方法でお試しください。
+
+- **ローカルで実行**: リポジトリをクローンして `demo.html` をブラウザで開く  
+  → [./demo.html](./demo.html)
+- **GitHub Pages で公開（推奨）**: リポジトリを GitHub に push し、Settings → Pages から `main` ブランチの `/ (root)` を公開すると、  
+  `https://<あなたのユーザー名>.github.io/autonovel/demo.html` でフル機能デモが利用可能です。  
+  （※GitHub 上の `./demo.html` リンクはソース表示になるため、インタラクティブに動かすには上記 URL をご利用ください）
+
+デモでは以下の機能を体験できます：
+- かんたんモード / 上級者モードの切替
+- ジャンル選択とキーワード・オプション設定
+- 生成パイプラインのステップ別進捗表示（SSE 風ログ）
+- 感情ヒートマップ、キャラクター好感度メーター、What-If 分岐、余韻独白、ギャップ萌えカスタマイズ、おやすみモードなど
+- 生成結果のプレビューと EPUB/TXT/PDF 出力、資産化パック作成
 
 ---
 
@@ -73,7 +93,6 @@
 - **C4 モデル**: [docs/architecture/](docs/architecture/)
 - **開発者ガイド**: [docs/DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md)
 - **過去の計画書・ログ**: `archive/plans/`, `archive/logs/`
-
 
 ---
 
@@ -216,11 +235,11 @@ cd frontend && npm run dev
 1. 起動するとブラウザにツールが表示されます
 2. 左のサイドバーからタブを切り替えるか、**かんたんモード**ダイアログを開きます
 3. かんたんモードなら↓
-    - 「お好みのジャンル」を選択
-    - 「小説を生成」ボタンをクリック
-    - しばらく待つと → 企画 → プロット → 本文 → 納品 まで自動で完了
+   - 「お好みのジャンル」を選択
+   - 「小説を生成」ボタンをクリック
+   - しばらく待つと → 企画 → プロット → 本文 → 納品 まで自動で完了
 4. 上級者モードなら↓
-    - タブを切り替えながら各工程を細かく編集・調整できます
+   - タブを切り替えながら各工程を細かく編集・調整できます
 
 ---
 
@@ -228,30 +247,30 @@ cd frontend && npm run dev
 
 ```
 Frontend (React 18 + TypeScript + Vite + TailwindCSS)
-  ├── Landing / Books / Plots / Write
-  ├── Analytics / Planning / StyleLab / Audit
-  └── EasyModeDialog (モーダル)
-        │
-        ▼ HTTP/REST + SSE
+   ├── Landing / Books / Plots / Write
+   ├── Analytics / Planning / StyleLab / Audit
+   └── EasyModeDialog (モーダル)
+         │
+         ▼ HTTP/REST + SSE
 Backend (FastAPI + Uvicorn)
-  ├── routers/: books, episodes, plots, easy_mode, commercial
-  │         export, illustrations, marketing, audit, health, metrics
-  ├── workflows/: LangGraph ベースの執筆パイプライン
-  ├── services/: ビジネスロジック層
-  ├── easy_mode/: かんたんモードパイプライン + Phase3 資産化
-  ├── core/
-  │   ├── container/: DI コンテナ (AppContainer2 / InfraContainer)
-  │   ├── llm_clients/: LLM抽象層 (BaseLLMClient / GeminiClient / OpenAIClient)
-  │   ├── llm_gateway.py: プロバイダファクトリ・キャッシュ・プロキシ
-  │   └── state/: 状態管理
-  ├── backend/: タスクキュー・DB・認証・ヘルスチェック
-  └── agents/: エージェント群 (writing, erotic, audit 等)
-        │
-        ▼
+   ├── routers/: books, episodes, plots, easy_mode, commercial
+   │         export, illustrations, marketing, audit, health, metrics
+   ├── workflows/: LangGraph ベースの執筆パイプライン
+   ├── services/: ビジネスロジック層
+   ├── easy_mode/: かんたんモードパイプライン + Phase3 資産化
+   ├── core/
+   │   ├── container/: DI コンテナ (AppContainer2 / InfraContainer)
+   │   ├── llm_clients/: LLM抽象層 (BaseLLMClient / GeminiClient / OpenAIClient)
+   │   ├── llm_gateway.py: プロバイダファクトリ・キャッシュ・プロキシ
+   │   └── state/: 状態管理
+   ├── backend/: タスクキュー・DB・認証・ヘルスチェック
+   └── agents/: エージェント群 (writing, erotic, audit 等)
+         │
+         ▼
 Data Stores
-  ├── SQLite (dev) / PostgreSQL (prod) + Alembic
-  ├── ChromaDB (RAG ベクトル検索)
-  └── Redis (Huey タスクキュー・キャッシュ)
+   ├── SQLite (dev) / PostgreSQL (prod) + Alembic
+   ├── ChromaDB (RAG ベクトル検索)
+   └── Redis (Huey タスクキュー・キャッシュ)
 ```
 
 ### コアコンポーネント
@@ -288,18 +307,18 @@ Data Stores
 ユーザー操作          バックグラウンド処理
 ─────────            ────────────────
 ジャンル選択 ──▶  1. Bible生成（世界観・キャラ・チート設定）
-    │                2. プロット生成（テンション曲線×テンプレ展開）
-    ▼                3. 各話ループ:
-                       ├─ 執筆（Style DNA・フック・官能ルール注入）
-                       ├─ 監査（95点未満なら）
-                       ├─ SpiceGuard抽出（尖り要素検出）
-                       ├─ マーカー注入（<<<SPICE:...>>>）
-                       ├─ リライト（マーカー保護付き）
-                       ├─ マーカー除去
-                       └─ 最大3回繰り返し
-                       4. シリーズ完結処理（タイトル・あらすじ・メタデータ）
-                          ↓
-    完了 ◀──────── 結果取得・人間レビュー表示（必要時）
+     │                2. プロット生成（テンション曲線×テンプレ展開）
+     ▼                3. 各話ループ:
+                        ├─ 執筆（Style DNA・フック・官能ルール注入）
+                        ├─ 監査（95点未満なら）
+                        ├─ SpiceGuard抽出（尖り要素検出）
+                        ├─ マーカー注入（<<<SPICE:...>>>）
+                        ├─ リライト（マーカー保護付き）
+                        ├─ マーカー除去
+                        └─ 最大3回繰り返し
+                        4. シリーズ完結処理（タイトル・あらすじ・メタデータ）
+                           ↓
+     完了 ◀──────── 結果取得・人間レビュー表示（必要時）
 ```
 
 ### SpiceGuard（尖り保護システム）

@@ -9,7 +9,7 @@ import {
   fetchDigest,
   promoteToAdvanced,
 } from "../../api/easyModeApi";
-import { getErrorMessage } from "../../lib/utils";
+import { getErrorMessage, isSafeRedirect } from "../../lib/utils";
 import { GachaForm } from "./GachaForm";
 import { GachaResultView } from "./GachaResultView";
 import { DigestView } from "./DigestView";
@@ -76,7 +76,11 @@ export const EasyModeContainer: React.FC = () => {
     try {
       const res = await promoteToAdvanced({ book_id: digestResponse.book_id });
       if (res.success) {
-        window.location.href = res.redirect_url;
+        if (isSafeRedirect(res.redirect_url)) {
+          window.location.href = res.redirect_url;
+        } else {
+          setErrorMessage('無効なリダイレクトURLです。');
+        }
       }
     } catch (err: unknown) {
       setErrorMessage(getErrorMessage(err) || "昇格処理中にエラーが発生しました");

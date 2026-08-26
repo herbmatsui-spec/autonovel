@@ -28,6 +28,7 @@ from config.constants import (
     SAFE_APPEND_MODE_DEFAULT,
     SAFE_APPEND_MODE_OPTIONS,
 )
+import httpx
 from config.models import GlobalConfigModel
 from config.project_context import (
     GlobalConfig,
@@ -132,6 +133,27 @@ class StreamlitConfig(GlobalConfig):
             """用途別モデル選択（プリセット + 自由入力）。"""
             current = self.get(config_key) or ""
             options = list(PRESET_MODELS)
+            # 動的に OpenRouter から取得したモデルを追加
+            api_key = self.get("openai_api_key") or ""
+            base_url = self.get("openai_base_url") or "https://openrouter.ai/api/v1"
+            if api_key:
+                cache_key = "openrouter_models"
+                if cache_key not in st.session_state:
+                    try:
+                        client = httpx.Client(timeout=5.0)
+                        resp = client.get(f"{base_url.rstrip('/')}/models", headers={"Authorization": f"Bearer {api_key}"})
+                        resp.raise_for_status()
+                        data = resp.json()
+                        models = [m.get("id") for m in data.get("data", []) if m.get("id")]
+                    except Exception as e:
+                        models = []
+                        st.warning(f"OpenRouterモデル取得失敗: {e}")
+                    st.session_state[cache_key] = models
+                else:
+                    models = st.session_state[cache_key]
+                for m in models:
+                    if m and m not in options:
+                        options.append(m)
             if current and current not in options:
                 options.append(current)
             options.append(CUSTOM_MODEL)
@@ -257,6 +279,27 @@ class StreamlitConfig(GlobalConfig):
             """用途別モデル選択（プリセット + 自由入力）。"""
             current = self.get(config_key) or ""
             options = list(PRESET_MODELS)
+            # 動的に OpenRouter から取得したモデルを追加
+            api_key = self.get("openai_api_key") or ""
+            base_url = self.get("openai_base_url") or "https://openrouter.ai/api/v1"
+            if api_key:
+                cache_key = "openrouter_models"
+                if cache_key not in st.session_state:
+                    try:
+                        client = httpx.Client(timeout=5.0)
+                        resp = client.get(f"{base_url.rstrip('/')}/models", headers={"Authorization": f"Bearer {api_key}"})
+                        resp.raise_for_status()
+                        data = resp.json()
+                        models = [m.get("id") for m in data.get("data", []) if m.get("id")]
+                    except Exception as e:
+                        models = []
+                        st.warning(f"OpenRouterモデル取得失敗: {e}")
+                    st.session_state[cache_key] = models
+                else:
+                    models = st.session_state[cache_key]
+                for m in models:
+                    if m and m not in options:
+                        options.append(m)
             if current and current not in options:
                 options.append(current)
             options.append(CUSTOM_MODEL)

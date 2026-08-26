@@ -537,8 +537,8 @@ export function EasyModeDialog({ isOpen, onClose, onSubmit }: Props) {
                         )}
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
 
               <div>

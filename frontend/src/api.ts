@@ -57,13 +57,17 @@ export type {
 // useUserSettingsStore import removed, no config usage needed
 
 // generic API request helper
-async function apiRequest<T>(url: string, init?: RequestInit): Promise<T> {
+async function apiRequest<T>(url: string, init?: RequestInit, apiKey?: string): Promise<T> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(init?.headers as Record<string, string> || {}),
+  };
+  if (apiKey) {
+    headers['X-API-Key'] = apiKey;
+  }
   const res = await fetch(url, {
     credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(init?.headers || {}),
-    },
+    headers,
     method: init?.method ?? 'GET',
     body: init?.body,
   });
@@ -75,6 +79,19 @@ async function apiRequest<T>(url: string, init?: RequestInit): Promise<T> {
 
   const data: T = await res.json();
   return data;
+}
+
+// helper to add X-API-Key header
+export function withAuth(init: RequestInit, apiKey: string): RequestInit {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(init?.headers as Record<string, string> || {}),
+    'X-API-Key': apiKey,
+  };
+  return {
+    ...init,
+    headers,
+  };
 }
 
 // safely access import.meta.env for Vite environment variables
@@ -292,64 +309,64 @@ export function connectTaskStream(
 
 
 // Background task triggering endpoints (POST)
-async function triggerTask(endpoint: string, body: unknown): Promise<string> {
-  const data = await apiRequest<{ task_id: string }>(`${API_BASE_URL}${endpoint}`, {
+async function triggerTask(endpoint: string, body: unknown, apiKey?: string): Promise<string> {
+  const data = await apiRequest<{ task_id: string }>(`${API_BASE_URL}${endpoint}`, withAuth({
     method: 'POST',
     body: JSON.stringify(body),
-  });
+  }, apiKey ?? ''));
   return data.task_id;
 }
 
-export async function generateEasy(params: EasyModeParams): Promise<string> {
-  return triggerTask('/easy_mode/generate', params);
+export async function generateEasy(params: EasyModeParams, apiKey?: string): Promise<string> {
+  return triggerTask('/easy_mode/generate', params, apiKey);
 }
 
-export async function planGeneration(params: PlanGenerationParams): Promise<string> {
-  return triggerTask('/plots/plan_generation', params);
+export async function planGeneration(params: PlanGenerationParams, apiKey?: string): Promise<string> {
+  return triggerTask('/plots/plan_generation', params, apiKey);
 }
 
-export async function generateEpisodes(params: EpisodeGenerateParams): Promise<string> {
-  return triggerTask('/episodes/generate', params);
+export async function generateEpisodes(params: EpisodeGenerateParams, apiKey?: string): Promise<string> {
+  return triggerTask('/episodes/generate', params, apiKey);
 }
 
-export async function generateEpisodesCandidates(params: EpisodeGenerateCandidatesParams): Promise<string> {
-  return triggerTask('/episodes/generate', { ...params, mode: 'candidates' });
+export async function generateEpisodesCandidates(params: EpisodeGenerateCandidatesParams, apiKey?: string): Promise<string> {
+  return triggerTask('/episodes/generate', { ...params, mode: 'candidates' }, apiKey);
 }
 
-export async function retryFailedEpisodes(params: RetryFailedParams): Promise<string> {
-  return triggerTask('/episodes/retry_failed', params);
+export async function retryFailedEpisodes(params: RetryFailedParams, apiKey?: string): Promise<string> {
+  return triggerTask('/episodes/retry_failed', params, apiKey);
 }
 
-export async function expandPlots(params: PlotExpandParams): Promise<string> {
-  return triggerTask('/plots/expand', params);
+export async function expandPlots(params: PlotExpandParams, apiKey?: string): Promise<string> {
+  return triggerTask('/plots/expand', params, apiKey);
 }
 
-export async function expandPlotsCandidates(params: PlotExpandParams): Promise<string> {
-  return triggerTask('/plots/expand', { ...params, mode: 'candidates' });
+export async function expandPlotsCandidates(params: PlotExpandParams, apiKey?: string): Promise<string> {
+  return triggerTask('/plots/expand', { ...params, mode: 'candidates' }, apiKey);
 }
 
-export async function rebuildPlots(params: PlotRebuildParams): Promise<string> {
-  return triggerTask('/plots/rebuild', params);
+export async function rebuildPlots(params: PlotRebuildParams, apiKey?: string): Promise<string> {
+  return triggerTask('/plots/rebuild', params, apiKey);
 }
 
-export async function critiqueOptimize(params: CritiqueOptimizeParams): Promise<string> {
-  return triggerTask('/critique/optimize', params);
+export async function critiqueOptimize(params: CritiqueOptimizeParams, apiKey?: string): Promise<string> {
+  return triggerTask('/critique/optimize', params, apiKey);
 }
 
 // Synchronous operations (Direct Response)
-export async function auditPlan(params: AuditPlanParams): Promise<AuditPlanResult> {
-  return apiRequest(`${API_BASE_URL}/plots/audit`, {
+export async function auditPlan(params: AuditPlanParams, apiKey?: string): Promise<AuditPlanResult> {
+  return apiRequest(`${API_BASE_URL}/plots/audit`, withAuth({
     method: 'POST',
     body: JSON.stringify(params),
-  });
+  }, apiKey ?? ''));
 }
 
-export async function importChapter(params: ChapterImportParams): Promise<string> {
-  return triggerTask('/episodes/chapters/import', params);
+export async function importChapter(params: ChapterImportParams, apiKey?: string): Promise<string> {
+  return triggerTask('/episodes/chapters/import', params, apiKey);
 }
 
-export async function generateMarketing(params: MarketingGenerateParams): Promise<string> {
-  return triggerTask('/marketing/generate', params);
+export async function generateMarketing(params: MarketingGenerateParams, apiKey?: string): Promise<string> {
+  return triggerTask('/marketing/generate', params, apiKey);
 }
 
 export type CommercialPipelineParams = {
@@ -359,11 +376,11 @@ export type CommercialPipelineParams = {
   platforms?: string[];
 };
 
-export async function runCommercialPipeline(params: CommercialPipelineParams): Promise<Record<string, unknown>> {
-  return apiRequest(`${API_BASE_URL_NO_API}/commercial/run`, {
+export async function runCommercialPipeline(params: CommercialPipelineParams, apiKey?: string): Promise<Record<string, unknown>> {
+  return apiRequest(`${API_BASE_URL_NO_API}/commercial/run`, withAuth({
     method: 'POST',
     body: JSON.stringify(params),
-  });
+  }, apiKey ?? ''));
 }
 
 export function getExportPackageUrl(bookId: number): string {
@@ -479,6 +496,6 @@ export type RefineEroticParams = {
   platform_preset: string;
 };
 
-export async function refineErotic(params: RefineEroticParams): Promise<string> {
-  return triggerTask('/refine_erotic', params);
+export async function refineErotic(params: RefineEroticParams, apiKey?: string): Promise<string> {
+  return triggerTask('/refine_erotic', params, apiKey);
 }

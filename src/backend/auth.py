@@ -51,8 +51,14 @@ class APIKeyService:
             allowed = [k.strip() for k in keys_env.split(",") if k.strip()]
             if not allowed:
                 return False
-            return api_key in allowed
-        return api_key in self.allowed_keys
+            for k in allowed:
+                if hmac.compare_digest(api_key, k):
+                    return True
+            return False
+        for k in self.allowed_keys:
+            if hmac.compare_digest(api_key, k):
+                return True
+        return False
 
     def get_rate_limit_key(self, api_key: str) -> str:
         """API key ベースのレート制限キーを返す"""

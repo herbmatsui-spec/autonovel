@@ -26,7 +26,7 @@ from config.constants import (
 )
 from config.cors_config import get_allowed_origins
 from config.logging_config import setup_logging
-from src.backend.auth import require_api_key
+from src.backend.auth import require_api_key, get_api_key_service
 from src.backend.background import BackgroundReporter, ProgressState
 from src.backend.database import init_db
 from src.backend.error_handlers import register_error_handlers
@@ -43,6 +43,7 @@ from src.models.api_schemas import (
     RefineEroticRequest,
 )
 from src.services.redis_cache import RedisCacheService
+import redis.exceptions
 from src.backend.worker_config import huey
 from src.backend.tasks import execute_easy_mode_generation
 
@@ -110,6 +111,12 @@ async def lifespan(app: FastAPI):
             if chroma_provider:
                 chroma_provider.close()
                 logger.info("ChromaDB のコネクションを正常にクローズしました。")
+
+            # LLM クライアントのクローズ
+            llm_client = AppContainer.llm()
+            if llm_client and hasattr(llm_client, 'aclose'):
+                await llm_client.aclose()
+                logger.info("LLM クライアントを正常にクローズしました。")
         except (ConnectionError, TimeoutError, OSError) as e:
             logger.error(f"リソース解放中にエラーが発生しました: {e}")
         logger.info("全てのリソースを解放しました。サーバーを終了します。")
@@ -162,7 +169,13 @@ LONG_RUNNING_PATHS = frozenset(
 async def rate_limit_middleware(request: Request, call_next):
     global _redis_rate_limiter
 
-    client_ip = request.client.host if request.client else "unknown"
+    # Determine rate limit key: API key prefixed if present, otherwise IP
+    api_key = request.headers.get("X-API-Key")
+    if api_key:
+        service = get_api_key_service()
+        client_identifier = service.get_rate_limit_key(api_key)
+    else:
+        client_identifier = f"ip:{request.client.host if request.client else 'unknown'}"
     trace_id = getattr(request.state, "trace_id", None)
 
     try:
@@ -175,7 +188,7 @@ async def rate_limit_middleware(request: Request, call_next):
                 window_seconds=_RATE_LIMIT_WINDOW_SECONDS,
             )
 
-        allowed = await _redis_rate_limiter.is_allowed(client_ip)
+        allowed = await _redis_rate_limiter.is_allowed(client_identifier)
         if not allowed:
             from src.core.error_handler import create_error_response
             return JSONResponse(
@@ -185,13 +198,12 @@ async def rate_limit_middleware(request: Request, call_next):
                     trace_id=trace_id
                 ) | {"detail": "リクエスト数が制限を超えました。"},
             )
-    except (ConnectionError, TimeoutError, OSError) as e:
+    except (ConnectionError, TimeoutError, OSError, redis.exceptions.RedisError) as e:
         logger.warning(f"Rate limiting error: {e}")
         return JSONResponse(
             status_code=503,
             content={"error": "Service Unavailable", "detail": "レート制限サービスが利用できません"},
         )
-        # Don't block the request - continue without rate limiting
 
     return await call_next(request)
 
@@ -293,7 +305,7 @@ async def refine_erotic(req: RefineEroticRequest, api_key: str = Depends(require
 
     task_id = generate_task_id("refine_erotic")
     await _create_task(task_id, "官能研磨タスクを開始中...", total_steps=1)
-    execute_service_workflow(
+    execute_service_workflow.delay(
         task_id=task_id,
         api_key=api_key,
         config_dict=req.config,
@@ -339,7 +351,7 @@ async def generate_easy(req: EasyModeRequest, api_key: str = Depends(require_api
 
     # タスクをHueyにエンqueue
     try:
-        execute_easy_mode_generation(
+        execute_easy_mode_generation.delay(
             task_id=task_id,
             api_key=api_key,
             genre=req.genre,
@@ -374,7 +386,7 @@ async def critique_optimize(req: CritiqueOptimizeRequest, api_key: str = Depends
 
     task_id = generate_task_id("critique")
     await _create_task(task_id, "品質分析を開始中...", total_steps=1)
-    execute_service_workflow(
+    execute_service_workflow.delay(
         task_id=task_id,
         api_key=api_key,
         config_dict=req.config,

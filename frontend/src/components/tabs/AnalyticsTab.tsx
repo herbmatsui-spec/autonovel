@@ -14,7 +14,7 @@ import { useNavigate } from 'react-router-dom';
 export default function AnalyticsTab() {
   const { selectedBook, optHistory, pendingPatches, promptVersions, metricTrend } = useBookStore();
   const { handleCritiqueOptimize, handleGenerateMarketing } = useAppActions((_) => {});
-  const { apiKey } = useUserSettingsStore();
+  const { apiKey, isExpertMode } = useUserSettingsStore();
   const navigate = useNavigate();
   const { loadBookDetails } = useBookDetails(selectedBook?.id ?? null);
 
@@ -67,7 +67,7 @@ export default function AnalyticsTab() {
         </div>
       </div>
 
-      {/* Optimization History */}
+      {/* Optimization History (always visible) */}
       <div className="border rounded-lg p-4">
         <h3 className="font-semibold mb-2">最適化履歴</h3>
         {optHistory.length === 0 ? (
@@ -75,7 +75,7 @@ export default function AnalyticsTab() {
         ) : (
           <div className="space-y-2">
             {optHistory.map((entry, index) => (
-              <div key={index} className="flex justify-between items-center p-2 bg-[var(--accent)]/10 rounded">
+              <div key={entry.version} className="flex justify-between items-center p-2 bg-[var(--accent)]/10 rounded">
                 <span className="text-xs">バージョン {entry.version}</span>
                 <span className="text-xs">{new Date(entry.timestamp).toLocaleString()}</span>
               </div>
@@ -84,39 +84,43 @@ export default function AnalyticsTab() {
         )}
       </div>
 
-      {/* Pending Patches */}
-      <div className="border rounded-lg p-4">
-        <h3 className="font-semibold mb-2">保留中のパッチ</h3>
-        {pendingPatches.length === 0 ? (
-          <p className="text-sm text-muted-foreground">保留中のパッチはありません。</p>
-        ) : (
-          <PatchReviewPanel
-            patches={pendingPatches}
-            // We don't have the onApprove and onReject functions here; we would need to implement them.
-            // For now, we'll just display.
-          />
-        )}
-      </div>
+      {isExpertMode && (
+        <>
+          {/* Pending Patches */}
+          <div className="border rounded-lg p-4">
+            <h3 className="font-semibold mb-2">保留中のパッチ</h3>
+            {pendingPatches.length === 0 ? (
+              <p className="text-sm text-muted-foreground">保留中のパッチはありません。</p>
+            ) : (
+              <PatchReviewPanel
+                patches={pendingPatches}
+                // We don't have the onApprove and onReject functions here; we would need to implement them.
+                // For now, we'll just display.
+              />
+            )}
+          </div>
 
-      {/* Prompt Versions */}
-      <div className="border rounded-lg p-4">
-        <h3 className="font-semibold mb-2">プロンプトバージョン</h3>
-        {promptVersions.length === 0 ? (
-          <p className="text-sm text-muted-foreground">プロンプトバージョンはまだありません。</p>
-        ) : (
-          <PromptVersionTimeline versions={promptVersions} />
-        )}
-      </div>
+          {/* Prompt Versions */}
+          <div className="border rounded-lg p-4">
+            <h3 className="font-semibold mb-2">プロンプトバージョン</h3>
+            {promptVersions.length === 0 ? (
+              <p className="text-sm text-muted-foreground">プロンプトバージョンはまだありません。</p>
+            ) : (
+              <PromptVersionTimeline versions={promptVersions} />
+            )}
+          </div>
 
-      {/* Narrative Graph */}
-      <div className="border rounded-lg p-4">
-        <h3 className="font-semibold mb-2">ナラティブグラフ</h3>
-        {metricTrend.length === 0 ? (
-          <p className="text-sm text-muted-foreground">ナラティブメトリクスのトレンドデータはまだありません。</p>
-        ) : (
-          <NarrativeGraph trendData={metricTrend} />
-        )}
-      </div>
+          {/* Narrative Graph */}
+          <div className="border rounded-lg p-4">
+            <h3 className="font-semibold mb-2">ナラティブグラフ</h3>
+            {metricTrend.length === 0 ? (
+              <p className="text-sm text-muted-foreground">ナラティブメトリクスのトレンドデータはまだありません。</p>
+            ) : (
+              <NarrativeGraph trendData={metricTrend} />
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -192,7 +192,7 @@ export function TaskMonitor({ logEndRef, onStop, connectionState }: TaskMonitorP
         {/* Scrolling log container */}
         <div className="flex-1 p-4 overflow-y-auto max-h-[200px] flex flex-col gap-1 task-monitor-log">
           {taskStatus.logs.map((log, index) => (
-            <div key={index} className="text-[0.72rem] font-mono whitespace-pre-wrap leading-snug text-log-line">
+            <div key={log} className="text-[0.72rem] font-mono whitespace-pre-wrap leading-snug text-log-line">
               {log}
             </div>
           ))}

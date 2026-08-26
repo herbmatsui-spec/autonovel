@@ -5,9 +5,9 @@ import { useUserSettingsStore } from "../store/useUserSettingsStore";
 import { useProjectStore, TabId } from "../store/useProjectStore";
 import { useBookStore } from "../store/useBookStore";
 import { useUIStore } from "../store/useUIStore";
+import { useNavigate, useLocation } from 'react-router-dom';
 
 import { toast } from 'sonner';
-import { useUIStore } from "../store/useUIStore";
 
 function requireBook(selectedBook: unknown, action: () => void) {
   if (!selectedBook) {
@@ -54,7 +54,7 @@ export function Sidebar() {
 
   const tabs = allTabs.filter(t => isExpertMode || !t.expertOnly);
 
-    return (
+  return (
     <aside className="flex-shrink-0 w-[250px] bg-[var(--bg-sidebar)] text-[var(--text-sidebar)] border-r border-[var(--border)] p-4">
       <div className="flex items-center space-x-3 mb-6">
         <div className="h-8 w-8 bg-[var(--accent)] rounded-full flex items-center justify-center">
@@ -68,7 +68,7 @@ export function Sidebar() {
             key={id}
             variant={currentTab === id ? 'destructive' : 'secondary'}
             className="w-full text-left justify-start"
-            onClick={navAction(id, /* needsBook */ ['plots','write','analytics','audit','monitor','strategy','import'].includes(id))
+            onClick={navAction(id, /* needsBook */ ['plots','write','analytics','audit','monitor','strategy','import'].includes(id))}
           >
             <div className="flex items-center space-x-3">
               <span>{icon}</span>

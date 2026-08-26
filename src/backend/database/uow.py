@@ -59,6 +59,7 @@ class UnitOfWork:
         self.outbox_service = ChromaOutboxService()
         self._chroma_additions: List[Dict[str, Any]] = []
         self._chroma_deletions: List[Dict[str, Any]] = []
+        self._subtransaction: Optional[Any] = None
 
     def stage_chroma_add(
         self,
@@ -159,11 +160,15 @@ class UnitOfWork:
         self.session = self.db.get_session()
         if self.session is None:
             raise RuntimeError("Session not initialized")
-        # Check if session is already in a transaction to prevent nested begin()
         if self.session.in_transaction():
-            logger.debug("Session already in transaction, reusing existing transaction")
+            # Nested UoW: create a SAVEPOINT
+            self._subtransaction = await self.session.begin_nested()
+            logger.debug("Created SAVEPOINT for nested UnitOfWork")
         else:
+            # Top-level UoW: start a new transaction
             await self.session.begin()
+            self._subtransaction = None
+            logger.debug("Started new transaction for UnitOfWork")
         self._token = current_uow.set(self)  # type: ignore
         return self
 
@@ -192,31 +197,33 @@ class UnitOfWork:
             .values(status="done", processed_at=datetime.datetime.now())
         )
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+async def __aexit__(self, exc_type, exc_val, exc_tb):
         try:
             if exc_type is not None:
-                logger.warning(f"[UOW] Rolling back SQLite transaction due to exception: {exc_val}")
-                if self.session:
+                # Rollback: if we have a subtransaction, rollback it; else rollback session
+                if self._subtransaction is not None:
+                    await self._subtransaction.rollback()
+                else:
                     await self.session.rollback()
             else:
-                # コミット前に、ステージングされたChromaDB操作をoutboxに記録
-                if self.session is None:
-                    raise RuntimeError("Session not initialized")
-
-                async def _commit_with_retry():
-                    if self.session:
-                        await self.outbox_service.flush(
-                            self.session, self._chroma_additions, self._chroma_deletions
-                        )
-                        await self.session.commit()
-                    else:
-                        raise RuntimeError("Session is None during commit")
-
-                # retry_on_lock(retries=...)(func) returns the wrapper. We then call the wrapper.
-                await retry_on_lock()(_commit_with_retry)()
-                logger.info(
-                    f"[UOW] SQLite transaction committed with retry. Staged {len(self._chroma_additions)} Chroma adds, {len(self._chroma_deletions)} Chroma deletes to outbox."
-                )
+                # Commit/release
+                if self._subtransaction is not None:
+                    # Release the SAVEPOINT
+                    await self._subtransaction.commit()
+                else:
+                    # Top-level commit with outbox flush
+                    async def _commit_with_retry():
+                        if self.session:
+                            await self.outbox_service.flush(
+                                self.session, self._chroma_additions, self._chroma_deletions
+                            )
+                            await self.session.commit()
+                        else:
+                            raise RuntimeError("Session is None during commit")
+                    await retry_on_lock()(_commit_with_retry)()
+                    logger.info(
+                        f"[UOW] SQLite transaction committed with retry. Staged {len(self._chroma_additions)} Chroma adds, {len(self._chroma_deletions)} Chroma deletes to outbox."
+                    )
         except Exception as e:
             logger.error(f"[UOW] Error finalizing transaction: {e}")
             raise
@@ -240,3 +247,5 @@ class UnitOfWork:
             self._prompt_metrics = None
             self._chroma_additions.clear()
             self._chroma_deletions.clear()
+            # Clear subtransaction reference
+            self._subtransaction = None

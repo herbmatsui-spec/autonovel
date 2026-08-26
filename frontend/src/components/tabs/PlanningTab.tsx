@@ -8,12 +8,14 @@ import { useNavigate } from 'react-router-dom';
 import { useBookDetails } from '@/hooks/useBookDetails';
 import { Button } from '@/components/ui/button';
 import { LoadingState } from '@/components/ui/LoadingState';
+import { useUserSettingsStore } from '@/store/useUserSettingsStore';
 
 export default function PlanningTab() {
   const { selectedBook } = useBookStore();
   const { wordCount, setWordCount } = useWritingStore();
   const navigate = useNavigate();
   const { loadBookDetails } = useBookDetails(selectedBook?.id ?? null);
+  const { isExpertMode } = useUserSettingsStore();
 
   const [options, setOptions] = useState<PlanningOptions | null>(null);
   const [genre, setGenre] = useState('ファンタジー');
@@ -87,7 +89,7 @@ export default function PlanningTab() {
       <h2 className="text-xl font-bold">企画立案 - {selectedBook.title}</h2>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-4">
-          <h3 className="font-semibold">基本情報</div>
+          <h3 className="font-semibold">基本情報</h3>
           <div className="space-y-2">
             <label className="text-sm font-medium">ジャンル</label>
             <select
@@ -134,68 +136,70 @@ export default function PlanningTab() {
             />
           </div>
         </div>
-        <div className="space-y-4">
-          <h3 className="font-semibold">詳細設定</div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">目標エピソード数</label>
-            <input
-              type="number"
-              value={targetEps}
-              onChange={(e) => setTargetEps(parseInt(e.target.value) || 0)}
-              className="block w-full px-3 py-2 border rounded"
-            />
+        {isExpertMode && (
+          <div className="space-y-4">
+            <h3 className="font-semibold">詳細設定</h3>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">目標エピソード数</label>
+              <input
+                type="number"
+                value={targetEps}
+                onChange={(e) => setTargetEps(parseInt(e.target.value) || 0)}
+                className="block w-full px-3 py-2 border rounded"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">初期制限数</label>
+              <input
+                type="number"
+                value={initialLimit}
+                onChange={(e) => setInitialLimit(parseInt(e.target.value) || 0)}
+                className="block w-full px-3 py-2 border rounded"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">スタイルキー</label>
+              <select
+                value={styleKey}
+                onChange={(e) => setStyleKey(e.target.value)}
+                className="block w-full px-3 py-2 border rounded"
+              >
+                {options?.style_keys.map((k: string) => (
+                  <option key={k} value={k}>
+                    {k}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">チートスケール</label>
+              <input
+                type="number"
+                value={cheatScale}
+                onChange={(e) => setCheatScale(parseInt(e.target.value) || 0)}
+                className="block w-full px-3 py-2 border rounded"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">システムアシスト (%)</label>
+              <input
+                type="number"
+                value={systemAssist}
+                onChange={(e) => setSystemAssist(parseInt(e.target.value) || 0)}
+                className="block w-full px-3 py-2 border rounded"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">コスト重症度</label>
+              <input
+                type="number"
+                value={costSeverity}
+                onChange={(e) => setCostSeverity(parseInt(e.target.value) || 0)}
+                className="block w-full px-3 py-2 border rounded"
+              />
+            </div>
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">初期制限数</label>
-            <input
-              type="number"
-              value={initialLimit}
-              onChange={(e) => setInitialLimit(parseInt(e.target.value) || 0)}
-              className="block w-full px-3 py-2 border rounded"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">スタイルキー</label>
-            <select
-              value={styleKey}
-              onChange={(e) => setStyleKey(e.target.value)}
-              className="block w-full px-3 py-2 border rounded"
-            >
-              {options?.style_keys.map((k: string) => (
-                <option key={k} value={k}>
-                  {k}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">チートスケール</label>
-            <input
-              type="number"
-              value={cheatScale}
-              onChange={(e) => setCheatScale(parseInt(e.target.value) || 0)}
-              className="block w-full px-3 py-2 border rounded"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">システムアシスト (%)</label>
-            <input
-              type="number"
-              value={systemAssist}
-              onChange={(e) => setSystemAssist(parseInt(e.target.value) || 0)}
-              className="block w-full px-3 py-2 border rounded"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">コスト重症度</label>
-            <input
-              type="number"
-              value={costSeverity}
-              onChange={(e) => setCostSeverity(parseInt(e.target.value) || 0)}
-              className="block w-full px-3 py-2 border rounded"
-            />
-          </div>
-        </div>
+        )}
       </div>
       <div className="flex justify-end mt-6">
         <Button

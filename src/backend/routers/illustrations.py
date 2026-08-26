@@ -2,6 +2,7 @@ import os
 from typing import Any, Dict
 
 from fastapi import APIRouter, Depends, HTTPException
+from src.backend.auth import require_api_key
 
 from src.models.illustration import (
     IllustrationModel,
@@ -21,7 +22,8 @@ def get_illustration_workflow():
 
 @router.post("/generate")
 async def generate_illustration(
-    request: Dict[str, Any], workflow=Depends(get_illustration_workflow)
+    # TODO: Replace Dict[str, Any] with Pydantic model for validation
+    request: Dict[str, Any], workflow=Depends(get_illustration_workflow), api_key: str = Depends(require_api_key)
 ):
     """単一の挿絵を生成する"""
     try:
@@ -52,7 +54,8 @@ async def generate_illustration(
 
 @router.post("/batch")
 async def batch_generate_illustrations(
-    params: Dict[str, Any], workflow=Depends(get_illustration_workflow)
+    # TODO: Replace Dict[str, Any] with Pydantic model for validation
+    params: Dict[str, Any], workflow=Depends(get_illustration_workflow), api_key: str = Depends(require_api_key)
 ):
     """バッチで挿絵を生成する"""
     try:

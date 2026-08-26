@@ -27,6 +27,8 @@ except ImportError:
     StateGraph = None  # type: ignore
     HAS_LANGGRAPH = False
 
+from src.core.exceptions import PipelineError
+
 logger = logging.getLogger(__name__)
 
 # ============================================================================
@@ -69,9 +71,7 @@ class WritingGraphState(Dict[str, Any]):
 class WritingGraphManager:
     """商用化対応LangGraphマネージャー - パフォーマンス最適化版"""
 
-    # クラスレベルでgen_ctxをキャッシュして再利用
-    _gen_ctx_cache: Dict[str, Any] = {}
-    _cache_ttl = 300  # キャッシュTTL（秒）
+    # gen_ctx cache moved to instance variable (see __init__)
 
     def __init__(self, manager):
         self.manager = manager  # GenerationLoopManager instance
@@ -88,6 +88,8 @@ class WritingGraphManager:
         self.metrics_collector = QualityMetricsCollector()
         # StreamingPlotScheduler 統合（依存関係管理用、None=未注入）
         self._scheduler: Optional[Any] = None
+        self._gen_ctx_cache: Dict[str, Any] = {}
+        self._cache_ttl = 300  # キャッシュTTL（秒）
 
     def _build_graph(self):
         if not HAS_LANGGRAPH or StateGraph is None:
@@ -130,33 +132,31 @@ class WritingGraphManager:
             return workflow.compile(checkpointer=self.checkpointer)
         return workflow.compile()
 
-    @classmethod
-    def _get_cached_gen_ctx(cls, cache_key: str) -> Optional[Any]:
+def _get_cached_gen_ctx(self, cache_key: str) -> Optional[Any]:
         """gen_ctxをキャッシュから取得"""
-        if cache_key in cls._gen_ctx_cache:
-            entry = cls._gen_ctx_cache[cache_key]
-            if time.time() - entry["timestamp"] < cls._cache_ttl:
+        if cache_key in self._gen_ctx_cache:
+            entry = self._gen_ctx_cache[cache_key]
+            if time.time() - entry["timestamp"] < self._cache_ttl:
                 logger.debug(f"gen_ctx cache HIT: {cache_key}")
                 return entry["gen_ctx"]
             else:
-                del cls._gen_ctx_cache[cache_key]
+                del self._gen_ctx_cache[cache_key]
         return None
 
-    @classmethod
-    def _set_cached_gen_ctx(cls, cache_key: str, gen_ctx: Any) -> None:
+    def _set_cached_gen_ctx(self, cache_key: str, gen_ctx: Any) -> None:
         """gen_ctxをキャッシュに保持"""
-        cls._gen_ctx_cache[cache_key] = {"gen_ctx": gen_ctx, "timestamp": time.time()}
+        self._gen_ctx_cache[cache_key] = {"gen_ctx": gen_ctx, "timestamp": time.time()}
         # キャッシュサイズ制限
-        if len(cls._gen_ctx_cache) > 100:
-            oldest = min(cls._gen_ctx_cache.items(), key=lambda x: x[1]["timestamp"])
-            del cls._gen_ctx_cache[oldest[0]]
+        if len(self._gen_ctx_cache) > 100:
+            oldest = min(self._gen_ctx_cache.items(), key=lambda x: x[1]["timestamp"])
+            del self._gen_ctx_cache[oldest[0]]
 
-    @classmethod
-    def clear_gen_ctx_cache(cls) -> int:
+    def clear_gen_ctx_cache(self) -> int:
         """gen_ctxキャッシュをクリア"""
-        count = len(cls._gen_ctx_cache)
-        cls._gen_ctx_cache.clear()
+        count = len(self._gen_ctx_cache)
+        self._gen_ctx_cache.clear()
         logger.info(f"gen_ctx cache cleared: {count} entries removed")
+        return count
         return count
 
     async def node_prepare(self, state: Dict[str, Any]):
@@ -168,8 +168,14 @@ class WritingGraphManager:
             if isinstance(state.get("context"), dict)
             else "unknown"
         )
+        book_id = ""
+        ctx = state.get("context")
+        if isinstance(ctx, dict):
+            book_id = ctx.get("book_id", "")
+        else:
+            book_id = state.get("book_id", "")
         cache_key = (
-            f"ep{state.get('ep_num', 'unknown')}_{genre_str}_{state.get('is_easy_mode', False)}"
+            f"ep{state.get('ep_num', 'unknown')}_{genre_str}_{state.get('is_easy_mode', False)}_{book_id}"
         )
 
         # キャッシュからgen_ctxを取得 시도
@@ -273,7 +279,7 @@ class WritingGraphManager:
 
         # 全リトライ失敗時
         logger.error(f"Drafting failed after 3 attempts for Ep.{state['ep_num']}: {last_error}")
-        return {"draft_content": "", "final_meta": {}}
+        raise PipelineError(f"Drafting failed after retries for episode {state['ep_num']}: {last_error}")
 
     async def node_audit(self, state: Dict[str, Any]):
         """監査ノード - リトライロジックと早期終了対応"""
@@ -356,16 +362,7 @@ class WritingGraphManager:
                     retry_delay = min(retry_delay * RETRY_BACKOFF_FACTOR, MAX_RETRY_DELAY)
 
         logger.error(f"Audit failed after 3 attempts for Ep.{state['ep_num']}: {last_error}")
-        return {
-            "is_integrity_ok": False,
-            "is_causal_ok": False,
-            "causal_reason": str(last_error),
-            "failures": [{"type": "audit_error", "message": str(last_error)}],
-            "ac_iter": state["ac_iter"] + 1,
-            "monitor": monitor,
-            "threshold": threshold,
-            "rate": 0.0,
-        }
+        raise PipelineError(f"Audit failed after retries for episode {state['ep_num']}: {last_error}")
 
     def route_after_audit(self, state: Dict[str, Any]) -> str:
         """監査後のルート分岐 - 早期終了条件を積極的に適用"""
@@ -647,41 +644,56 @@ class WritingGraphManager:
 
         if self.workflow is None:
             # LangGraph 非依存のフォールバック: ノードを順次実行
-            state: Dict[str, Any] = dict(initial_state)
-            state.update(await self.node_prepare(state))
-            state.update(await self.node_drafting(state))
-            state.update(await self.node_audit(state))
-            route = self.route_after_audit(state)
-            while route in ("critic", "heal"):
-                if route == "critic":
-                    state.update(await self.node_critic(state))
-                    route = self.route_after_critic(state)
-                    if route == "retry":
-                        state.update(await self.node_drafting(state))
+            try:
+                state: Dict[str, Any] = dict(initial_state)
+                state.update(await self.node_prepare(state))
+                state.update(await self.node_drafting(state))
+                state.update(await self.node_audit(state))
+                route = self.route_after_audit(state)
+                while route in ("critic", "heal"):
+                    if route == "critic":
+                        state.update(await self.node_critic(state))
+                        route = self.route_after_critic(state)
+                        if route == "retry":
+                            state.update(await self.node_drafting(state))
+                            state.update(await self.node_audit(state))
+                            route = self.route_after_audit(state)
+                        else:
+                            break
+                    else:  # heal
+                        state.update(await self.node_healing(state))
                         state.update(await self.node_audit(state))
                         route = self.route_after_audit(state)
-                    else:
-                        break
-                else:  # heal
+                if not state.get("is_integrity_ok") or not state.get("is_causal_ok"):
                     state.update(await self.node_healing(state))
-                    state.update(await self.node_audit(state))
-                    route = self.route_after_audit(state)
-            if not state.get("is_integrity_ok") or not state.get("is_causal_ok"):
-                state.update(await self.node_healing(state))
-            state.update(await self.node_dogfeed(state))
-            state.update(await self.node_finalize(state))
-            return (
-                state.get("draft_content", ""),
-                state.get("final_meta", {}),
-                state.get("is_integrity_ok", False),
-            )
-
+                state.update(await self.node_dogfeed(state))
+                state.update(await self.node_finalize(state))
+                return (
+                    state.get("draft_content", ""),
+                    state.get("final_meta", {}),
+                    state.get("is_integrity_ok", False),
+                )
+            except PipelineError as e:
+                logger.error(f"Pipeline error in fallback run: {e}")
+                state['failed'] = True
+                # Ensure we still finalize to record metrics etc.
+                state.update(await self.node_dogfeed(state))
+                state.update(await self.node_finalize(state))
+                return (
+                    state.get("draft_content", ""),
+                    state.get("final_meta", {}),
+                    state.get("is_integrity_ok", False),
+                )
         try:
             res = await self.workflow.ainvoke(initial_state)
             logger.info(
                 f"LangGraph completed for Ep.{ep_num}: integrity={res.get('is_integrity_ok')}, causal={res.get('is_causal_ok')}"
             )
             return res["draft_content"], res["final_meta"], res["is_integrity_ok"]
+        except PipelineError as e:
+            logger.error(f"LangGraph execution failed for Ep.{ep_num}: {e}")
+            # Return failure result
+            return "", {}, False
         except Exception as e:
             logger.error(f"LangGraph execution failed for Ep.{ep_num}: {e}")
             raise

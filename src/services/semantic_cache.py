@@ -12,7 +12,20 @@ logger = logging.getLogger(__name__)
 
 import hashlib
 
-from cachetools import LRUCache
+try:
+    from cachetools import LRUCache
+except ImportError:
+    # Simple fallback LRUCache using dict (no eviction guarantee beyond size limit)
+    class LRUCache(dict):
+        def __init__(self, maxsize=1000, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.maxsize = maxsize
+        def __setitem__(self, key, value):
+            if len(self) >= self.maxsize:
+                # remove oldest inserted key
+                oldest = next(iter(self))
+                del self[oldest]
+            super().__setitem__(key, value)
 
 
 class SemanticCacheManager:

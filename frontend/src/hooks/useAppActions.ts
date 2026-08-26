@@ -57,7 +57,6 @@ export function useAppActions(setLoading: (b: boolean) => void) {
     try {
       setLoading(true);
       const taskId = await generateEasy({
-        api_key: apiKey,
         config: getConfig(),
         genre: easy.easyGenre,
         keywords: easy.easyKeywords,
@@ -70,7 +69,7 @@ export function useAppActions(setLoading: (b: boolean) => void) {
         tone_vibe: 0.65,
         enable_erotic: easy.enableErotic,
         erotic_intensity: easy.eroticIntensity,
-      });
+      }, apiKey);
       setActiveTaskId(taskId);
       setCreateModalOpen(false);
       toast.success('生成を開始しました！右下のモニターで進捗を確認でき、完成した小説は「作品一覧」に表示されます。');
@@ -89,7 +88,6 @@ export function useAppActions(setLoading: (b: boolean) => void) {
     }
     try {
       const taskId = await generateEpisodes({
-        api_key: apiKey,
         config: getConfig(),
         book_id: selectedBook.id,
         write_from: writeFrom,
@@ -99,7 +97,7 @@ export function useAppActions(setLoading: (b: boolean) => void) {
         do_refine: true,
         env_state: {},
         pipeline_mode: true,
-      });
+      }, apiKey);
       setActiveTaskId(taskId);
       setWritingError(null);
     } catch (err: unknown) {
@@ -117,19 +115,18 @@ export function useAppActions(setLoading: (b: boolean) => void) {
     }
     try {
       const taskId = await expandPlots({
-        api_key: apiKey,
         config: getConfig(),
         book_id: selectedBook.id,
         gen_from: 1,
         gen_to: selectedBook.target_eps,
-      });
+      }, apiKey);
       setActiveTaskId(taskId);
     } catch (err: unknown) {
       toast.error('プロット拡張タスクの起動に失敗しました: ' + (err instanceof Error ? err.message : String(err)));
     }
   };
 
-  const handleCritiqueOptimize = async () => {
+const handleCritiqueOptimize = async () => {
     if (!selectedBook) return;
     if (!apiKey) {
       toast.warning('APIキーを入力してください。');
@@ -137,10 +134,9 @@ export function useAppActions(setLoading: (b: boolean) => void) {
     }
     try {
       const taskId = await critiqueOptimize({
-        api_key: apiKey,
         config: getConfig(),
         book_id: selectedBook.id,
-      });
+      }, apiKey);
       setActiveTaskId(taskId);
     } catch (err: unknown) {
       const msg = '品質分析タスクの起動に失敗しました: ' + (err instanceof Error ? err.message : String(err));
@@ -158,12 +154,11 @@ export function useAppActions(setLoading: (b: boolean) => void) {
     try {
       setLoading(true);
       await importChapter({
-        api_key: apiKey,
         book_id: selectedBook.id,
         ep_num: importEpNum,
         import_text: importText,
         do_refine: importDoRefine,
-      });
+      }, apiKey);
       toast.success('エピソードのインポートに成功しました。');
       resetImport();
       setWritingError(null);
@@ -177,7 +172,7 @@ export function useAppActions(setLoading: (b: boolean) => void) {
     }
   };
 
-  const handleGenerateMarketing = async () => {
+const handleGenerateMarketing = async () => {
     if (!selectedBook) return;
     if (!apiKey) {
       toast.warning('APIキーを入力してください。');
@@ -186,10 +181,9 @@ export function useAppActions(setLoading: (b: boolean) => void) {
     try {
       setLoading(true);
       await generateMarketing({
-        api_key: apiKey,
         book_id: selectedBook.id,
         latest_ep: (useBookStore.getState().chapters.length) || selectedBook.target_eps,
-      });
+      }, apiKey);
       toast.success('マーケティングパッケージの生成が完了しました！');
       await loadBookDetails(selectedBook.id);
     } catch (err: unknown) {
@@ -211,7 +205,7 @@ export function useAppActions(setLoading: (b: boolean) => void) {
     }
   };
 
-  const handleRefineErotic = async (params: { intensity: number; platform_preset: string }) => {
+const handleRefineErotic = async (params: { intensity: number; platform_preset: string }) => {
     if (!selectedBook) return;
     if (!apiKey) {
       toast.warning('APIキーを入力してください。');
@@ -222,7 +216,7 @@ export function useAppActions(setLoading: (b: boolean) => void) {
       await refineErotic({
         book_id: selectedBook.id,
         ...params,
-      });
+      }, apiKey);
       toast.success('官能表現の洗練が完了しました。');
     } catch (err: unknown) {
       toast.error('官能表現の洗練に失敗しました: ' + (err instanceof Error ? err.message : String(err)));

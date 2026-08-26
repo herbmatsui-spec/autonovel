@@ -10,6 +10,7 @@ import { useWritingStore } from '@/store/useWritingStore';
 import { useBookStore } from '@/store/useBookStore';
 import { useAppActions } from '@/hooks/useAppActions';
 import { useTaskStore } from '@/store/useTaskStore';
+import { Button } from '@/components/ui/button';
 
 export default function WriteTab() {
   const { selectedBook, chapters, bible } = useBookStore();
@@ -29,37 +30,6 @@ export default function WriteTab() {
   } = useWritingStore();
   const { handleTriggerWriting, handleRefineErotic, handleImportChapter } = useAppActions((_) => {});
   const { activeTaskId } = useTaskStore();
-
-export function WriteTab({
-  chapters,
-  bible,
-  writeFrom,
-  setWriteFrom,
-  writeTo,
-  setWriteTo,
-  writePassion,
-  setWritePassion,
-  handleTriggerWriting,
-  handleRefineErotic,
-  importEpNum,
-  setImportEpNum,
-  importText,
-  setImportText,
-  importDoRefine,
-  setImportDoRefine,
-  handleImportChapter,
-  activeTaskId,
-  genre,
-  setGenre,
-  title,
-  setTitle,
-  wordCount,
-  setWordCount,
-  platform,
-  setPlatform,
-  showPreview,
-  setShowPreview,
-}: WriteTabProps) {
   const { error, clearError } = useWritingStore();
   const { page, setPage, totalPages, paginatedItems } = usePagination<Chapter>(chapters.length, 5);
 
@@ -146,7 +116,7 @@ export function WriteTab({
         </div>
 
         <div className="pt-4 border-t border-[var(--border)]">
-          <h2 className="text-xl font-bold mb-4">執筆コントロール</div>
+          <h2 className="text-xl font-bold mb-4">執筆コントロール</h2>
           <WritingForm
             book={selectedBook}
             activeTaskId={activeTaskId}

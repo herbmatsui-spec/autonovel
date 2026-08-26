@@ -263,10 +263,10 @@ class AssetPackGenerator:
 
         # 各話別テキスト
         for ep in series.episodes:
-            ep_path = output_dir / f"ep{ep.episode_num:03d}_{ep.title}.txt"
+            ep_path = output_dir / f"ep{ep.episode_num:03d}_{sanitize_filename(ep.title)}.txt"
             ep_content = f"{ep.title}\n\n{ep.content}\n\n--- \n文字数: {ep.word_count}\n監査スコア: {ep.audit_score}\n"
             ep_path.write_text(ep_content, encoding="utf-8")
-            files[f"ep{ep.episode_num:03d}_{ep.title}.txt"] = f"第{ep.episode_num}話テキスト"
+            files[f"ep{ep.episode_num:03d}_{sanitize_filename(ep.title)}.txt"] = f"第{ep.episode_num}話テキスト"
 
         # プロットアウトライン
         plot_path = output_dir / "plot_outline.json"

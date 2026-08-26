@@ -1,7 +1,11 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 
-// Lazy load tabs
+// Lazy load new components
+const LandingWizard = lazy(() => import('./components/LandingWizard'));
+const Setup = lazy(() => import('./components/Setup'));
+const BookWorkspace = lazy(() => import('./components/BookWorkspace'));
+// Lazy load existing tabs (to be redirected later)
 const LandingTab = lazy(() => import('./components/tabs/LandingTab'));
 const BooksTab = lazy(() => import('./components/tabs/BooksTab'));
 const PlotsTab = lazy(() => import('./components/tabs/PlotsTab'));
@@ -10,6 +14,9 @@ const AnalyticsTab = lazy(() => import('./components/tabs/AnalyticsTab'));
 const PlanningTab = lazy(() => import('./components/tabs/PlanningTab'));
 const StyleLabTab = lazy(() => import('./components/tabs/StyleLabTab'));
 const AuditTab = lazy(() => import('./components/tabs/AuditTab'));
+const MonitorTab = lazy(() => import('./components/tabs/MonitorTab'));
+const StrategyTab = lazy(() => import('./components/tabs/StrategyTab'));
+const ImportTab = lazy(() => import('./components/tabs/ImportTab'));
 
 const LoadingSpinner = () => (
   <div className="flex items-center justify-center py-8">
@@ -19,22 +26,30 @@ const LoadingSpinner = () => (
 
 function AppRouter() {
   return (
-    <BrowserRouter>
-      <Suspense fallback={<LoadingSpinner />}>
-        <Routes>
-          <Route path="/" element={<Navigate to="/landing" replace />} />
-          <Route path="/landing" element={<LandingTab />} />
-          <Route path="/books" element={<BooksTab />} />
-          <Route path="/plots" element={<PlotsTab />} />
-          <Route path="/write" element={<WriteTab />} />
-          <Route path="/analytics" element={<AnalyticsTab />} />
-          <Route path="/planning" element={<PlanningTab />} />
-          <Route path="/style-lab" element={<StyleLabTab />} />
-          <Route path="/audit" element={<AuditTab />} />
-          <Route path="*" element={<Navigate to="/landing" replace />} />
-        </Routes>
-      </Suspense>
-    </BrowserRouter>
+    <Suspense fallback={<LoadingSpinner />}>
+      <Routes>
+        {/* New routes */}
+        <Route path="/" element={<Navigate to="/landing" replace />} />
+        <Route path="/setup" element={<Setup />} />
+        <Route path="/landing" element={<LandingWizard />} />
+        <Route path="/books" element={<BooksTab />} />
+        <Route path="/book/:id" element={<BookWorkspace />} />
+        <Route path="/book/:id/:step" element={<BookWorkspace />} />
+        {/* Existing routes - redirect to appropriate new locations */}
+        <Route path="/landing/*" element={<Navigate to="/landing" replace />} />
+        <Route path="/books/*" element={<Navigate to="/books" replace />} />
+        <Route path="/plots" element={<Navigate to="/books" replace />} />
+        <Route path="/write" element={<Navigate to="/books" replace />} />
+        <Route path="/analytics" element={<Navigate to="/books" replace />} />
+        <Route path="/planning" element={<Navigate to="/books" replace />} />
+        <Route path="/style-lab" element={<Navigate to="/books" replace />} />
+        <Route path="/audit" element={<Navigate to="/books" replace />} />
+        <Route path="/monitor" element={<Navigate to="/books" replace />} />
+        <Route path="/strategy" element={<Navigate to="/books" replace />} />
+        <Route path="/import" element={<Navigate to="/books" replace />} />
+        <Route path="*" element={<Navigate to="/landing" replace />} />
+      </Routes>
+    </Suspense>
   );
 }
 

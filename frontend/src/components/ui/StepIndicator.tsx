@@ -11,7 +11,7 @@ export function StepIndicator({ steps, currentStep }: StepIndicatorProps) {
         const isCompleted = index < currentStep;
 
         return (
-          <div key={index} className="flex flex-col items-center flex-1">
+          <div key={step.label} className="flex flex-col items-center flex-1">
             <div className="flex items-center w-full">
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${

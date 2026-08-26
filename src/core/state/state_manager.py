@@ -8,7 +8,18 @@ import logging
 import pathlib
 from typing import Any, Optional, cast
 
-import streamlit as st
+try:
+    import streamlit as st
+except ImportError:
+    # Minimal stub for non‑Streamlit environments
+    class _Stub:
+        session_state: dict = {}
+        def __getattr__(self, name):
+            # Provide dummy attributes used in code (e.g., empty functions)
+            def _dummy(*args, **kwargs):
+                return None
+            return _dummy
+    st = _Stub()
 from pydantic import BaseModel, Field
 
 # 外部スキーマ定義からインポート

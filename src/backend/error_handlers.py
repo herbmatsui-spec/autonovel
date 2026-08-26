@@ -53,7 +53,7 @@ async def generic_error_handler(request: Request, exc: Exception) -> JSONRespons
     return JSONResponse(
         status_code=500,
         content=ErrorResponse(
-            error_code="INTERNAL_ERROR", error_message="内部エラーが発生しました", detail=str(exc)
+            error_code="INTERNAL_ERROR", error_message="内部エラーが発生しました", detail="内部エラーが発生しました。詳細はログを参照してください。"
         ).model_dump(),
     )
 

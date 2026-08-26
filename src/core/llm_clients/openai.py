@@ -23,6 +23,16 @@ class OpenAIApiClient(BaseLLMClient):
     def __init__(self, cooldown: AdaptiveCooldown):
         self.cooldown = cooldown
         self._active_requests = 0
+        self._client = None
+
+    def _get_client(self, base_url: str, api_key: str) -> openai.AsyncOpenAI:
+        if self._client is None:
+            self._client = openai.AsyncOpenAI(base_url=base_url, api_key=api_key)
+        return self._client
+
+    async def aclose(self) -> None:
+        if self._client is not None:
+            await self._client.aclose()
 
     @with_llm_retry()
     async def generate_json(
@@ -47,7 +57,7 @@ class OpenAIApiClient(BaseLLMClient):
 
         base_url = ProjectContext.get_setting("openai_base_url") or "https://api.openai.com/v1"
         api_key = ProjectContext.get_setting("openai_api_key") or "dummy"
-        client = openai.AsyncOpenAI(base_url=base_url, api_key=api_key)
+        client = self._get_client(base_url, api_key)
 
         current_temp = retry_state.temp if retry_state else temp
         current_model = retry_state.model_name if retry_state else model_name
@@ -178,7 +188,7 @@ class OpenAIApiClient(BaseLLMClient):
 
         base_url = ProjectContext.get_setting("openai_base_url") or "https://api.openai.com/v1"
         api_key = ProjectContext.get_setting("openai_api_key") or "dummy"
-        client = openai.AsyncOpenAI(base_url=base_url, api_key=api_key)
+        client = self._get_client(base_url, api_key)
 
         current_temp = retry_state.temp if retry_state else temp
         current_model = retry_state.model_name if retry_state else model_name

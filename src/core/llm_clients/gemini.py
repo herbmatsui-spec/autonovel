@@ -262,13 +262,6 @@ class GeminiApiClient(BaseLLMClient):
             return story, usage
 
         except Exception as e:
-            if not await self._handle_error(
-                e,
-                current_model,
-                retry_state.attempt if retry_state else 0,
-                retry_state.max_retries if retry_state else 5,
-            ):
-                raise e
             raise e
 
     def build_config(

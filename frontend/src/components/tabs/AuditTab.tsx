@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import type { Book, Issue } from '@/types';
 import { getIssues, resolveIssue } from '@/api';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 
 interface AuditTabProps {
   selectedBook: Book;
@@ -36,7 +37,7 @@ export function AuditTab({ selectedBook }: AuditTabProps) {
     loadIssues();
   }, [loadIssues]);
 
-  const handleResolve = async (issueId: number) => {
+  const handleResolve = async (issueId: number, action: string = 'resolve') => {
     try {
       await resolveIssue(issueId, action);
       toast.success(`Issue #${issueId} を「${action}」で解決しました。`);
@@ -76,7 +77,7 @@ export function AuditTab({ selectedBook }: AuditTabProps) {
               {expandedId === issue.id && (
                 <div className="mt-4 p-3 bg-[var(--muted)] rounded">
                   <h4 className="font-medium mb-2">詳細情報</h4>
-                  <pre className="text-xs overflow-auto">{JSON.stringifyissue.detail || {}, null, 2)}</pre>
+                  <pre className="text-xs overflow-auto">{JSON.stringify(issue.detail || {}, null, 2)}</pre>
                 </div>
               )}
               <div className="flex justify-end mt-2">
@@ -90,7 +91,7 @@ export function AuditTab({ selectedBook }: AuditTabProps) {
                 <Button
                   variant="destructive"
                   size="sm"
-                  onClick={() => handleResolve(issue.id)}
+                  onClick={() => handleResolve(issue.id, 'resolve')}
                   className="ml-2"
                 >
                   解決

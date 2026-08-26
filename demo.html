@@ -278,6 +278,18 @@
         .whatif-btn { background: linear-gradient(135deg, #6c5ce7, #a29bfe); color: white; border: none; margin-top: 10px; font-weight: bold; border-radius: 6px; }
         .whatif-btn:hover { background: linear-gradient(135deg, #5b4cc4, #8e84e6); }
 
+        /* デバッグモーダル */
+.debug-modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(0, 0, 0, 0.7); display: none; align-items: center; justify-content: center;
+    z-index: 1000; backdrop-filter: blur(4px);
+}
+.debug-modal-overlay.active { display: flex; animation: fadeIn 0.3s ease; }
+.debug-modal-card {
+    background: var(--card-bg); border-radius: 12px; max-width: 800px; width: 90%; padding: 25px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5); border: 2px solid var(--primary);
+    position: relative; animation: slideUp 0.3s ease;
+}
         /* 機能6: Afterglow 独白スタイル */
         .monologue-card {
             background: linear-gradient(135deg, rgba(255, 182, 193, 0.15), rgba(255, 105, 180, 0.05));
@@ -356,10 +368,11 @@
                 <h1>覇権小説エンジン デモ v4</h1>
                 <p>かんたん/上級者モード、実バックエンド構成（SSE/ジョブキュー）に近い挙動、本物のEPUB出力を体験できます。</p>
             </div>
-            <div style="display:flex; gap:8px;">
-                <button class="bedtime-btn" onclick="openBedtimeMode()" aria-label="おやすみモード">🌙 おやすみモード</button>
-                <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" aria-label="テーマ切替">🌙 ダーク</button>
-            </div>
+<div style="display:flex; gap:8px;">
+                 <button class="bedtime-btn" onclick="openBedtimeMode()" aria-label="おやすみモード">🌙 おやすみモード</button>
+                 <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" aria-label="テーマ切替">🌙 ダーク</button>
+                 <button class="debug-btn" id="debugBtn" onclick="toggleDebugModal()" aria-label="デバッグ情報表示">🐞 デバッグ</button>
+             </div>
         </div>
         <div class="live-region" aria-live="polite" id="liveRegion"></div>
     </div>
@@ -1544,9 +1557,55 @@
             highlightOn = false;
             retryAttempts = 0;
             updateLiveRegion('デモをリセットしました。ジャンルを選択してください。');
+}
+        
+        // デバッグモーダル
+        function toggleDebugModal() {
+            const overlay = document.getElementById('debugModalOverlay');
+            if (!overlay) return;
+            overlay.classList.toggle('active');
+            if (overlay.classList.contains('active')) {
+                // Populate content
+                const contentEl = document.getElementById('debugModalContent');
+                if (contentEl && currentNovel) {
+                    const debugInfo = {
+                        title: currentNovel.title,
+                        contentLength: currentNovel.content?.length || 0,
+                        plot: currentNovel.plot,
+                        detectedSpices: currentNovel.detected.map(d => ({type: d.type, word: d.word})),
+                        score: currentNovel.score,
+                        chapters: chapterCount,
+                        creativity: creativityLevel,
+                        targetLength: targetLength,
+                        keyword: userKeyword,
+                        nsfw: nsfw,
+                        unstable: unstable,
+                        mode: mode,
+                        genre: selectedGenre
+                    };
+                    contentEl.textContent = JSON.stringify(debugInfo, null, 2);
+                }
+            }
         }
-
+        function closeDebugModal() {
+            const overlay = document.getElementById('debugModalOverlay');
+            if (overlay) overlay.classList.remove('active');
+        }
+        
         updateLiveRegion('デモの準備ができました。ジャンルを選択してください。');
     </script>
+
+<!-- デバッグモーダル -->
+<div class="debug-modal-overlay" id="debugModalOverlay" onclick="closeDebugModal(event)">
+    <div class="debug-modal-card" onclick="event.stopPropagation()">
+        <h3>デバッグ情報</h3>
+        <div id="debugModalContent" style="white-space: pre-wrap; background: var(--border); padding: 10px; border-radius: 6px; margin: 10px 0; height: 300px; overflow-y: auto;">
+            デバッグ情報がここに表示されます
+        </div>
+        <div style="text-align: right;">
+            <button class="secondary" onclick="closeDebugModal()">閉じる</button>
+        </div>
+    </div>
+</div>
 </body>
 </html>

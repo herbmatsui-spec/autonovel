@@ -2,13 +2,14 @@ import asyncio
 import json
 import logging
 from typing import AsyncGenerator
+from fastapi import Request
 
 from src.backend.redis_util import get_redis_client
 
 logger = logging.getLogger(__name__)
 
 
-async def task_event_generator(task_id: str, last_event_id: str | None = None) -> AsyncGenerator[str, None]:
+async def task_event_generator(task_id: str, request: Request, last_event_id: str | None = None) -> AsyncGenerator[str, None]:
     """
     Server-Sent Events (SSE) 用のタスク進捗イベントジェネレータ。
     1. Redisが利用可能な場合: Redis Pub/Sub を使ってプッシュ配信。
@@ -62,6 +63,8 @@ async def task_event_generator(task_id: str, last_event_id: str | None = None) -
 
             try:
                 while True:
+                    if await request.is_disconnected():
+                        break
                     # Redisの非ブロッキング取得
                     message = pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
                     if message and message["type"] == "message":
@@ -85,11 +88,11 @@ async def task_event_generator(task_id: str, last_event_id: str | None = None) -
             logger.error(f"[SSE] Redis subscription failed ({e}). Falling back to SQLite polling.")
 
     # SQLiteポーリングフォールバック
-    async for event in _sqlite_polling_fallback(task_id, last_event_id=last_event_id):
+    async for event in _sqlite_polling_fallback(task_id, last_event_id=last_event_id, request=request):
         yield event
 
 
-async def _sqlite_polling_fallback(task_id: str, last_event_id: str | None = None) -> AsyncGenerator[str, None]:
+async def _sqlite_polling_fallback(task_id: str, request: Request, last_event_id: str | None = None) -> AsyncGenerator[str, None]:
     """
     Redis未接続時のデータベース（SQLite/PostgreSQL）1秒ポーリングによるフォールバック。
     """
@@ -117,6 +120,8 @@ async def _sqlite_polling_fallback(task_id: str, last_event_id: str | None = Non
 
     last_val = None
     while True:
+        if await request.is_disconnected():
+            break
         try:
             async with db.get_session() as session:
                 stmt = select(InternalState).where(InternalState.key == f"task_status:{task_id}")

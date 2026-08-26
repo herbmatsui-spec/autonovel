@@ -64,7 +64,11 @@ export class ErrorBoundary extends Component<Props, State> {
               </button>
               <button
                 onClick={() => {
-                  localStorage.clear();
+                  Object.keys(localStorage).forEach(key => {
+  if (key.startsWith('autonovel_') || key.startsWith('kaku_')) {
+    localStorage.removeItem(key);
+  }
+});
                   window.location.reload();
                 }}
                 className="btn btn-secondary"
