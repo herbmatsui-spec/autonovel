@@ -25,6 +25,24 @@ from src.easy_mode.pipeline import SeriesResult
 logger = logging.getLogger(__name__)
 
 
+def sanitize_filename(value: str) -> str:
+    """ファイル名として安全な文字列に正規化する（パストラバーサル防止）。
+
+    LLM/DB 由来のタイトルをファイルパスに利用する際、ディレクトリ区切り文字や
+    上位階層への遡り (../) を除去し、長さも制限する。
+    """
+    if not value:
+        return "untitled"
+    cleaned = "".join(c for c in str(value) if c not in '/\\\x00').strip()
+    cleaned = cleaned.replace("..", "").strip()
+    for ch in '<>:"|?*':
+        cleaned = cleaned.replace(ch, "_")
+    cleaned = cleaned.strip().strip(".")
+    if not cleaned:
+        return "untitled"
+    return cleaned[:100]
+
+
 @dataclass
 class AssetPackMetadata:
     """資産化パックメタデータ"""
@@ -101,7 +119,7 @@ class AssetPackGenerator:
         """資産化パック生成"""
         self._init_components(series)
 
-        pack_id = pack_id or f"pack_{series.title}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        pack_id = pack_id or f"pack_{sanitize_filename(series.title)}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         pack_id = pack_id.replace(" ", "_").replace("/", "_")
 
         # 作業ディレクトリ
@@ -452,7 +470,7 @@ class AssetPackGenerator:
             logger.warning("Cover image not found, generating without cover")
 
         for fmt in ebook_formats:
-            output_path = output_dir / f"{series.title}.{fmt}"
+            output_path = output_dir / f"{sanitize_filename(series.title)}.{fmt}"
             try:
                 if fmt == "epub":
                     result = self.ebook_exporter.export_epub(

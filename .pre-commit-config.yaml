@@ -14,8 +14,6 @@ repos:
       - id: check-toml
       - id: check-json
       - id: check-merge-conflict
-      - id: debug-logger
-        args: ['--maxkb=500']
       - id: check-case-conflict
       - id: check-docstring-first
       - id: check-executables-have-shebangs
@@ -34,7 +32,7 @@ repos:
     rev: v1.10.0
     hooks:
       - id: mypy
-      - additional_dependencies: [
+        additional_dependencies: [
           "pydantic",
           "pydantic-settings",
           "fastapi",
@@ -48,7 +46,7 @@ repos:
           "pydantic-settings",
           "prometheus-client",
         ]
-      - args: [
+        args: [
           "--strict",
           "--ignore-missing-imports",
           "--namespace-packages",
@@ -56,8 +54,8 @@ repos:
           "--show-error-codes",
           "--pretty",
         ]
-      # 型チェックが遅い場合はキャッシュ活用
-      # cache_dir: .mypy_cache
+        # 型チェックが遅い場合はキャッシュ活用
+        # cache_dir: .mypy_cache
 
   # ===================== セキュリティ =====================
   - repo: https://github.com/PyCQA/bandit
@@ -136,25 +134,17 @@ repos:
     hooks:
       - id: no-print-statements
         name: "No print statements in production code"
-        entry: python -c "
-import sys, re
-patterns = [
-    r'api[_-]?key\s*[=:]\s*[\"'][^\"']+[\"']',
-    r'secret[_-]key\s*[=:]\s*[\"'][^\"']+[\"']',
-    r'password\s*[=:]\s*[\"'][^\"']+[\"']',
-    r'token\s*[=:]\s*[\"'][^\"']+[\"']',
-]
-for f in sys.argv[1:]:
-    content = open(f).read()
-    for i, line in enumerate(content.splitlines(), 1):
-        for p in patterns:
-            if re.search(p, line, re.IGNORECASE):
-                print(f'{f}:{i}: Potential secret found: {line.strip()[:80]}')
-                sys.exit(1)
-"
+        entry: python scripts/no_secret_check.py
         language: python
-        types: [python, toml, yaml, env]
+        types: [python, toml, yaml]
         exclude: ^tests/|^\.env\.example$
+
+      - id: no-print-in-src
+        name: "No print statements in src/"
+        entry: python scripts/no_print_check.py
+        language: python
+        types: [python]
+        exclude: ^tests/|^scripts/|^docs/|^alembic/
 
 # ===================== 設定オプション =====================
 default_language_version:
@@ -163,5 +153,3 @@ default_language_version:
 default_stages: [commit, push]
 
 fail_fast: true  # 最初のエラーで停止
-
-verbose: true

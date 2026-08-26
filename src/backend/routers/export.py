@@ -9,8 +9,9 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
+from src.backend.auth import require_api_key
 from src.backend.database.models import Book, Chapter
 from src.backend.database.uow import UnitOfWork
 from src.core.container import AppContainer
@@ -29,6 +30,7 @@ async def get_platforms() -> List[Dict[str, str]]:
 async def export_book(
     book_id: int,
     platform: str = Query("narou", description="narou | kakuyomu | nocturn"),
+    api_key: str = Depends(require_api_key),
 ) -> Dict[str, Any]:
     """作品を指定プラットフォーム用に整形して出力する。"""
     from sqlalchemy import select

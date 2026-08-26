@@ -18,10 +18,10 @@ import {
   stopTask,
   refineErotic,
 } from '@/api';
+import { useLocation } from 'react-router-dom';
 
 export function useAppActions(setLoading: (b: boolean) => void) {
   const { apiKey, temperature, modelType } = useUserSettingsStore();
-  const { activeTab } = useProjectStore();
   const { selectedBook } = useBookStore();
   const { setCreateModalOpen, setGlobalError } = useUIStore();
   const { easyWordCount } = useEasyModeStore();
@@ -37,7 +37,10 @@ export function useAppActions(setLoading: (b: boolean) => void) {
   } = useWritingStore();
   const { setError: setWritingError } = useWritingStore();
   const { setActiveTaskId, activeTaskId, setTaskStatus } = useTaskStore();
-  const { loadBookDetails } = useBookDetails(selectedBook?.id ?? null, activeTab);
+  const location = useLocation();
+  const pathname = location.pathname; // e.g., "/books"
+  const activeTab = pathname.replace(/^\/|\/$/g, '') || 'landing';
+  const { loadBookDetails } = useBookDetails(selectedBook?.id ?? null);
 
   const getConfig = () => ({
     temperature,
@@ -140,7 +143,8 @@ export function useAppActions(setLoading: (b: boolean) => void) {
       });
       setActiveTaskId(taskId);
     } catch (err: unknown) {
-      setGlobalError('品質分析タスクの起動に失敗しました: ' + (err instanceof Error ? err.message : String(err)));
+      const msg = '品質分析タスクの起動に失敗しました: ' + (err instanceof Error ? err.message : String(err));
+      setGlobalError(msg);
     }
   };
 
@@ -220,7 +224,6 @@ export function useAppActions(setLoading: (b: boolean) => void) {
         ...params,
       });
       toast.success('官能表現の洗練が完了しました。');
-      await loadBookDetails(selectedBook.id);
     } catch (err: unknown) {
       toast.error('官能表現の洗練に失敗しました: ' + (err instanceof Error ? err.message : String(err)));
     } finally {

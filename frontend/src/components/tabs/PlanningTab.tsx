@@ -3,16 +3,19 @@ import { planGeneration, getPlanningOptions } from '@/api';
 import type { PlanGenerationParams, PlanningOptions } from '@/types/api';
 import { useWritingStore } from '@/store/useWritingStore';
 import { toast } from 'sonner';
+import { useBookStore } from '@/store/useBookStore';
+import { useNavigate } from 'react-router-dom';
+import { useBookDetails } from '@/hooks/useBookDetails';
+import { Button } from '@/components/ui/button';
+import { LoadingState } from '@/components/ui/LoadingState';
 
-interface PlanningTabProps {
-  selectedBook: { id: number; title: string } | null;
-  handlePlanGeneration: () => void;
-}
-
-export function PlanningTab({ selectedBook, handlePlanGeneration }: PlanningTabProps) {
-  const [options, setOptions] = useState<PlanningOptions | null>(null);
+export default function PlanningTab() {
+  const { selectedBook } = useBookStore();
   const { wordCount, setWordCount } = useWritingStore();
+  const navigate = useNavigate();
+  const { loadBookDetails } = useBookDetails(selectedBook?.id ?? null);
 
+  const [options, setOptions] = useState<PlanningOptions | null>(null);
   const [genre, setGenre] = useState('ファンタジー');
   const [archetype, setArchetype] = useState('王道ざまぁ（爽快感最大）');
   const [keywords, setKeywords] = useState('追放, チート, ざまぁ');
@@ -25,150 +28,184 @@ export function PlanningTab({ selectedBook, handlePlanGeneration }: PlanningTabP
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    getPlanningOptions().then(data => {
-      setOptions(data);
-      if (data.story_archetypes.length > 0) setArchetype(data.story_archetypes[0]);
-    }).catch(err => {
-      console.error('Failed to load planning options:', err);
-      toast.error('オプションの読み込みに失敗しました');
-    });
-  }, []);
+    if (selectedBook?.id) {
+      getPlanningOptions().then(data => {
+        setOptions(data);
+        if (data.story_archetypes.length > 0) setArchetype(data.story_archetypes[0]);
+        if (data.style_keys.length > 0) setStyleKey(data.style_keys[0]);
+      });
+    }
+  }, [selectedBook?.id]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedBook) {
-      toast.warning('最初に作品を選択してください。');
+  const handleGeneratePlan = async () => {
+    if (!selectedBook?.id) return;
+    if (!options) {
+      toast.error('プラニングオプションの読み込みに失敗しました。');
       return;
     }
+    setIsSubmitting(true);
     try {
-      setIsSubmitting(true);
       const params: PlanGenerationParams = {
-        api_key: '',
-        config: {},
-        params: {
-          genre,
-          archetype,
-          keywords,
-          style_key: styleKey,
-          target_eps: targetEps,
-          initial_limit: initialLimit,
-          cheat_scale: cheatScale,
-          system_assist: systemAssist,
-          cost_severity: costSeverity,
-          word_count: wordCount,
-        },
+        book_id: selectedBook.id,
+        target_word_count: wordCount,
+        genre,
+        archetype,
+        keywords,
+        target_eps: targetEps,
+        initial_limit,
+        style_key: styleKey,
+        cheat_scale: cheatScale,
+        system_assist: systemAssist,
+        cost_severity: costSeverity,
       };
       await planGeneration(params);
-      toast.success('企画生成を開始しました。');
-      handlePlanGeneration();
-    } catch (err: unknown) {
-      toast.error('企画生成に失敗しました: ' + (err instanceof Error ? err.message : String(err)));
+      // After generation, refetch book details to update plots, etc.
+      if (selectedBook.id) {
+        await loadBookDetails(selectedBook.id);
+      }
+      // Navigate to plots tab to see the generated plot
+      navigate('/plots');
+      toast.success('プランが生成され、プロットタブに遷移しました。');
+    } catch (err) {
+      console.error(err);
+      toast.error('プラン生成に失敗しました。');
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  if (!selectedBook) {
+    return <div className="text-center py-8">作品を選択してください。</div>;
+  }
+
+  if (!options) {
+    return <div className="text-center py-8">プラニングオプションを読み込み中...</div>;
+  }
+
   return (
-    <div className="animate-fade-in flex flex-col gap-8">
-      <div>
-        <h3 className="text-[1.2rem] text-white font-bold">📋 企画立案</h3>
-        <p className="text-[0.85rem] text-secondary">
-          小説の基本設定を入力して、AIによる企画案を生成します。
-        </p>
-      </div>
-
-      <form onSubmit={handleSubmit} className="glass-panel p-6 flex flex-col gap-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="planning-genre" className="block text-xs mb-1 text-secondary">ジャンル</label>
-            <select id="planning-genre" value={genre} onChange={(e) => setGenre(e.target.value)} className="w-full">
-              <option value="ファンタジー">ファンタジー</option>
-              <option value="ロマンス">ロマンス</option>
-              <option value="ミステリー">ミステリー</option>
-              <option value="ホラー">ホラー</option>
-              <option value="SF">SF</option>
-              <option value="官能/ロマンス">官能/ロマンス</option>
-              <option value="現代">現代</option>
-              <option value="歴史">歴史</option>
-              <option value="その他">その他</option>
-            </select>
-          </div>
-          <div>
-            <label htmlFor="planning-archetype" className="block text-xs mb-1 text-secondary">アーキタイプ (物語の型)</label>
-            <select id="planning-archetype" value={archetype} onChange={(e) => setArchetype(e.target.value)} className="w-full">
-              {options?.story_archetypes.map(arch => (
-                <option key={arch} value={arch}>{arch}</option>
+    <div className="animate-fade-in flex flex-col gap-6">
+      <h2 className="text-xl font-bold">企画立案 - {selectedBook.title}</h2>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-4">
+          <h3 className="font-semibold">基本情報</div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">ジャンル</label>
+            <select
+              value={genre}
+              onChange={(e) => setGenre(e.target.value)}
+              className="block w-full px-3 py-2 border rounded"
+            >
+              {options?.story_genres.map((g: string) => (
+                <option key={g} value={g}>
+                  {g}
+                </option>
               ))}
-              {!options && <option value={archetype}>{archetype}</option>}
             </select>
           </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">ストーリーキャラアーキタイプ</label>
+            <select
+              value={archetype}
+              onChange={(e) => setArchetype(e.target.value)}
+              className="block w-full px-3 py-2 border rounded"
+            >
+              {options?.story_archetypes.map((a: string) => (
+                <option key={a} value={a}>
+                  {a}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">キーワード（カンマ区切り）</label>
+            <input
+              value={keywords}
+              onChange={(e) => setKeywords(e.target.value)}
+              className="block w-full px-3 py-2 border rounded"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">目標文字数</label>
+            <input
+              type="number"
+              value={wordCount}
+              onChange={(e) => setWordCount(parseInt(e.target.value) || 0)}
+              className="block w-full px-3 py-2 border rounded"
+            />
+          </div>
         </div>
-
-<div>
-           <label htmlFor="planning-style" className="block text-xs mb-1 text-secondary">文体スタイル</label>
-           <select id="planning-style" value={styleKey} onChange={(e) => setStyleKey(e.target.value)} className="w-full">
-            {options ? (
-              Object.entries(options.style_definitions).map(([key, val]) => (
-                <option key={key} value={key}>{val.name}</option>
-              ))
-            ) : (
-              <option value="style_web_standard">Web標準</option>
-            )}
-          </select>
-          {options && options.style_definitions[styleKey] && (
-            <p className="text-[0.7rem] text-muted-foreground mt-1">
-              {options.style_definitions[styleKey].description}
-            </p>
-          )}
+        <div className="space-y-4">
+          <h3 className="font-semibold">詳細設定</div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">目標エピソード数</label>
+            <input
+              type="number"
+              value={targetEps}
+              onChange={(e) => setTargetEps(parseInt(e.target.value) || 0)}
+              className="block w-full px-3 py-2 border rounded"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">初期制限数</label>
+            <input
+              type="number"
+              value={initialLimit}
+              onChange={(e) => setInitialLimit(parseInt(e.target.value) || 0)}
+              className="block w-full px-3 py-2 border rounded"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">スタイルキー</label>
+            <select
+              value={styleKey}
+              onChange={(e) => setStyleKey(e.target.value)}
+              className="block w-full px-3 py-2 border rounded"
+            >
+              {options?.style_keys.map((k: string) => (
+                <option key={k} value={k}>
+                  {k}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">チートスケール</label>
+            <input
+              type="number"
+              value={cheatScale}
+              onChange={(e) => setCheatScale(parseInt(e.target.value) || 0)}
+              className="block w-full px-3 py-2 border rounded"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">システムアシスト (%)</label>
+            <input
+              type="number"
+              value={systemAssist}
+              onChange={(e) => setSystemAssist(parseInt(e.target.value) || 0)}
+              className="block w-full px-3 py-2 border rounded"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">コスト重症度</label>
+            <input
+              type="number"
+              value={costSeverity}
+              onChange={(e) => setCostSeverity(parseInt(e.target.value) || 0)}
+              className="block w-full px-3 py-2 border rounded"
+            />
+          </div>
         </div>
-
-<div>
-           <label htmlFor="planning-keywords" className="block text-xs mb-1 text-secondary">キーワード（カンマ区切り）</label>
-           <input
-             id="planning-keywords"
-             type="text"
-             value={keywords}
-             onChange={(e) => setKeywords(e.target.value)}
-             className="w-full"
-             placeholder="例: 追放, チート, ざまぁ"
-           />
-        </div>
-
-<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-           <div>
-             <label htmlFor="planning-wordcount" className="block text-xs mb-1 text-secondary">目標文字数/話</label>
-             <input id="planning-wordcount" type="number" value={wordCount} onChange={(e) => setWordCount(Number(e.target.value))} min={1000} max={5000} step={100} className="w-full" />
-           </div>
-           <div>
-             <label htmlFor="planning-targeteps" className="block text-xs mb-1 text-secondary">目標話数</label>
-             <input id="planning-targeteps" type="number" value={targetEps} onChange={(e) => setTargetEps(Number(e.target.value))} min={10} max={200} className="w-full" />
-           </div>
-           <div>
-             <label htmlFor="planning-initiallimit" className="block text-xs mb-1 text-secondary">初期プロット数</label>
-             <input id="planning-initiallimit" type="number" value={initialLimit} onChange={(e) => setInitialLimit(Number(e.target.value))} min={1} max={50} className="w-full" />
-           </div>
-        </div>
-
-<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-           <div>
-             <label htmlFor="planning-cheatscale" className="block text-xs mb-1 text-secondary">チート強度</label>
-             <input id="planning-cheatscale" type="number" value={cheatScale} onChange={(e) => setCheatScale(Number(e.target.value))} min={0} max={5} className="w-full" />
-           </div>
-           <div>
-             <label htmlFor="planning-systemassist" className="block text-xs mb-1 text-secondary">システム支援率 (%)</label>
-             <input id="planning-systemassist" type="number" value={systemAssist} onChange={(e) => setSystemAssist(Number(e.target.value))} min={0} max={100} className="w-full" />
-           </div>
-           <div>
-             <label htmlFor="planning-costseverity" className="block text-xs mb-1 text-secondary">コスト厳格度</label>
-             <input id="planning-costseverity" type="number" value={costSeverity} onChange={(e) => setCostSeverity(Number(e.target.value))} min={1} max={5} className="w-full" />
-           </div>
-        </div>
-
-        <button type="submit" className="btn btn-primary" disabled={isSubmitting || !selectedBook}>
-          🚀 企画生成開始
-        </button>
-      </form>
+      </div>
+      <div className="flex justify-end mt-6">
+        <Button
+          variant="destructive"
+          onClick={handleGeneratePlan}
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? '生成中...' : 'プランを生成'}
+        </Button>
+      </div>
     </div>
   );
 }
-

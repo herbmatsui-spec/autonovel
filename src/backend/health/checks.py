@@ -132,19 +132,23 @@ async def check_llm_gateway(api_key: Optional[str]) -> HealthCheckResult:
         return HealthCheckResult(status=HealthStatus.NOT_CONFIGURED, error="API key not configured")
     start = time.perf_counter()
     try:
-        from src.core.llm_gateway import LLMProviderFactory, create_genai_client
+        from src.core.llm_gateway import create_genai_client
+        from src.core.llm.providers.factory import LLMProviderFactory
+        from src.backend.engine_utils import AdaptiveCooldown
 
         genai_client = create_genai_client(api_key=api_key)
-        factory = LLMProviderFactory(genai_client=genai_client)
+        cooldown = AdaptiveCooldown(base_sec=2.0, min_sec=0.5, max_sec=10.0)
+        factory = LLMProviderFactory(genai_client=genai_client, cooldown=cooldown)
         # ごく短いテスト生成（1 token 程度）
-        result = await factory.generate_text(
-            model="gemini-3.5-flash-lite", prompt="ping", max_tokens=1, temperature=0.0
+        provider = factory.get_provider("gemini-3.5-flash-lite")
+        response = await provider.generate_text(
+            model_name="gemini-3.5-flash-lite", prompt="ping", temperature=0.0
         )
         latency = (time.perf_counter() - start) * 1000
         return HealthCheckResult(
-            status=HealthStatus.OK if result else HealthStatus.ERROR,
+            status=HealthStatus.OK if response.success else HealthStatus.ERROR,
             latency_ms=latency,
-            details=f"model=gemini-3.5-flash-lite, response_len={len(result) if result else 0}",
+            details=f"model=gemini-3.5-flash-lite, response_len={len(response.content) if response.content else 0}",
         )
     except Exception as e:
         logger.warning(f"LLM Gateway health check failed: {e}")

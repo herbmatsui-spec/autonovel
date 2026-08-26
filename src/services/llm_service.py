@@ -1,7 +1,9 @@
 import logging
 from typing import Any, Dict, Optional
 
-from src.llm.model_router import resolve_model, select_model
+from src.core.llm.providers.factory import LLMProviderFactory
+from src.core.llm.router import resolve_model, select_model
+from src.core.llm_gateway import create_genai_client
 
 logger = logging.getLogger(__name__)
 
@@ -30,17 +32,16 @@ class LLMService:
         self.api_key = api_key or ""
         if not self.api_key:
             logger.warning("LLMService initialized without API key – calls will fail")
-        self._factory: Any = None
+        self._factory: Optional[LLMProviderFactory] = None
 
     def _resolve_model(self, purpose: str) -> str:
         if purpose in _PURPOSES:
             return select_model(purpose)
         return resolve_model(purpose)
 
-    def _ensure_factory(self) -> Any:
+    def _ensure_factory(self) -> LLMProviderFactory:
         if self._factory is None:
             from src.backend.engine_utils import AdaptiveCooldown
-            from src.core.llm_gateway import LLMProviderFactory, create_genai_client
 
             genai_client = create_genai_client(self.api_key)
             cooldown = AdaptiveCooldown(base_sec=2.0, min_sec=0.5, max_sec=10.0)
@@ -56,15 +57,19 @@ class LLMService:
         **kwargs: Any,
     ) -> Dict[str, Any]:
         model_name = self._resolve_model(purpose)
-        client = self._ensure_factory().get_client(model_name)
-        metadata, story, _usage = await client.generate_json(
+        provider = self._ensure_factory().get_provider(model_name)
+        response = await provider.generate_json(
             model_name=model_name,
             prompt=prompt,
             response_schema=response_schema,
             system_instruction=system_instruction,
-            temp=kwargs.get("temp", kwargs.get("temperature", 0.7)),
+            temperature=kwargs.get("temp", kwargs.get("temperature", 0.7)),
         )
-        return {"success": True, "metadata": metadata, "story_content": story}
+        return {
+            "success": response.success,
+            "metadata": response.metadata,
+            "story_content": response.content,
+        }
 
     async def generate_text(
         self,
@@ -74,11 +79,11 @@ class LLMService:
         **kwargs: Any,
     ) -> str:
         model_name = self._resolve_model(purpose)
-        client = self._ensure_factory().get_client(model_name)
-        story, _usage = await client.generate_text(
+        provider = self._ensure_factory().get_provider(model_name)
+        response = await provider.generate_text(
             model_name=model_name,
             prompt=prompt,
             system_instruction=system_instruction,
-            temp=kwargs.get("temp", kwargs.get("temperature", 0.7)),
+            temperature=kwargs.get("temp", kwargs.get("temperature", 0.7)),
         )
-        return str(story)
+        return response.content

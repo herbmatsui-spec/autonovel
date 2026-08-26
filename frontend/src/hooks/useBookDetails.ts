@@ -11,39 +11,34 @@ import {
 import { useBookStore } from '../store/useBookStore';
 import { useUIStore } from '../store/useUIStore';
 
-export function useBookDetails(_bookId: number | null, activeTab: string) {
+export function useBookDetails(_bookId: number | null) {
   const { setPlots, setChapters, setBible } = useBookStore();
   const { setOptHistory, setPendingPatches, setPromptVersions, setMetricTrend } = useUIStore();
 
-const loadBookDetails = useCallback(async (bookId: number) => {
+  const loadBookDetails = useCallback(async (bookId: number) => {
     try {
-      if (activeTab === 'plots') {
-        const data = await getPlots(bookId);
-        setPlots(data);
-      } else if (activeTab === 'write') {
-        const chData = await getChapters(bookId);
-        setChapters(chData);
-        const bibleData = await getBible(bookId);
-        setBible(bibleData);
-      } else if (activeTab === 'analytics') {
-        const histData = await getOptHistory(bookId);
-        setOptHistory(histData);
-        const patchesData = await getPendingPatches(bookId);
-        setPendingPatches(patchesData);
-        const versionsData = await getPromptVersions(bookId);
-        setPromptVersions(versionsData);
-
-        try {
-          const trendData = await getNarrativeMetricsTrend(bookId, 1);
-          setMetricTrend(trendData);
-        } catch (e) {
-          console.error('Error loading narrative metrics:', e);
-        }
-      }
-    } catch (err: unknown) {
-      console.error('Error loading book details:', err);
+      // Fetch all relevant data in parallel
+      const [plotsData, chData, bibleData, histData, patchData, promptData, trendData] = await Promise.all([
+        getPlots(bookId),
+        getChapters(bookId),
+        getBible(bookId),
+        getOptHistory(bookId),
+        getPendingPatches(bookId),
+        getPromptVersions(bookId),
+        getNarrativeMetricsTrend(bookId),
+      ]);
+      setPlots(plotsData);
+      setChapters(chData);
+      setBible(bibleData);
+      setOptHistory(histData);
+      setPendingPatches(patchData);
+      setPromptVersions(promptData);
+      setMetricTrend(trendData);
+    } catch (error) {
+      console.error('Failed to load book details:', error);
+      // Optionally, we could set an error state in the store
     }
-  }, [activeTab, setPlots, setChapters, setBible, setOptHistory, setPendingPatches, setPromptVersions, setMetricTrend]);
+  }, [setPlots, setChapters, setBible, setOptHistory, setPendingPatches, setPromptVersions, setMetricTrend]);
 
   return { loadBookDetails };
 }

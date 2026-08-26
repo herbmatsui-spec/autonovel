@@ -2,10 +2,11 @@ import logging
 from typing import TYPE_CHECKING, Any, Awaitable, Callable, Dict, List, Optional
 
 from src.agents.base import BaseAgent
+from src.models import PlotEpisode
 
 if TYPE_CHECKING:
     from src.core.interfaces import IPlotExpander, IPromptManager, IReporter, IRepository
-    from src.models import Arc, PlotDetail, PlotEpisode
+    from src.models import Arc, PlotDetail
 
 logger = logging.getLogger(__name__)
 

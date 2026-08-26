@@ -4,91 +4,79 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { StatusMessage } from '@/components/ui/StatusMessage';
 import type { Book } from '@/types';
 import { useBooks } from '@/hooks/useBooks';
+import { useBookStore } from '@/store/useBookStore';
+import { useUIStore } from '@/store/useUIStore';
 
-interface BooksTabProps {
-  selectedBook: Book | null;
-  setSelectedBook: (book: Book | null) => void;
-  setShowCreateModal: (show: boolean) => void;
-}
-
-export function BooksTab({ selectedBook, setSelectedBook, setShowCreateModal }: BooksTabProps) {
+export default function BooksTab() {
   const { books, loading: booksLoading, error: booksError, handleDeleteBook } = useBooks();
+  const { selectedBook, setSelectedBook } = useBookStore();
+  const { setCreateModalOpen } = useUIStore();
 
   return (
     <div className="animate-fade-in flex flex-col gap-8">
       <div className="flex justify-between items-center">
-        <div>
-          <h3 className="text-[1.2rem] text-white font-bold">作成済みの小説一覧</h3>
-          <p className="text-[0.85rem] text-[var(--text-secondary)]">現在データベースに保存されている小説の企画及び執筆データです。</p>
-        </div>
-        <Button onClick={() => setShowCreateModal(true)}>
-          ➕ 新規自動生成 (かんたんモード)
+        <h2 className="text-xl font-bold">作品一覧</h2>
+        <Button
+          variant="default"
+          onClick={() => setCreateModalOpen(true)}
+        >
+          新規作成
         </Button>
       </div>
 
-      {booksError && (
-        <StatusMessage type="error" message={`小説一覧の読み込みに失敗しました: ${booksError}`} />
+      {booksLoading && <LoadingState message="作品を読み込み中..." />}
+      {booksError && <StatusMessage variant="destructive">作品の読み込みに失敗しました。</StatusMessage>}
+      {books.length === 0 && (
+        <EmptyState>
+          <h3 className="font-semibold">まだ作品がありません</h3>
+          <p className="text-sm text-muted-foreground">
+            「新規作成」ボタンから最初の作品を作成してください。
+          </p>
+        </EmptyState>
       )}
-
-      {booksLoading && books.length === 0 ? (
-        <LoadingState message="小説一覧を読み込み中..." icon="📚" />
-      ) : books.length === 0 ? (
-        <EmptyState
-          icon="🏰"
-          title="登録されている小説企画がありません"
-          description="「新規自動生成」から最初の小説を作成してください。"
-          action={{ label: '➕ 新規自動生成', onClick: () => setShowCreateModal(true) }}
-        />
-      ) : (
-        <div className="grid gap-6" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
-          {books.map((book) => {
-            const isActive = selectedBook?.id === book.id;
-            return (
-              <div
-                key={book.id}
-                role="button"
-                tabIndex={0}
-                className="glass-panel cursor-pointer transition-all"
-                onClick={() => setSelectedBook(book)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    setSelectedBook(book);
-                  }
-                }}
-                style={{
-                  padding: '1.75rem',
-                  borderColor: isActive ? 'var(--accent-indigo)' : 'var(--border)',
-                  boxShadow: isActive ? 'var(--shadow-glow)' : 'none',
-                }}
-              >
-                <h4 className="text-[1.15rem] text-white font-semibold mb-2">{book.title}</h4>
-                <div className="flex gap-2 mb-4">
-                  <span className="badge badge-purple">{book.genre}</span>
-                  <span className="badge badge-emerald">
-                    目標: {book.target_eps}話
-                  </span>
+      {!booksLoading && books.length > 0 && (
+        <div className="flex flex-col gap-4">
+          {books.map((book) => (
+            <div
+              key={book.id}
+              className={`flex items-center justify-between p-4 rounded-lg border border-[var(--border)] ${selectedBook?.id === book.id ? 'bg-[var(--accent)]/20' : 'bg-transparent'}`}
+              onClick={() => setSelectedBook(book)}
+            >
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 bg-[var(--accent)] rounded-flex flex items-center justify-center">
+                  <span className="text-white font-bold">#{book.id}</span>
                 </div>
-                <p className="text-sm text-secondary mb-6 line-clamp-3">
-                  {book.synopsis || 'あらすじはまだ生成されていません。'}
-                </p>
-
-                <div className="flex justify-between items-center text-sm text-muted">
-                  <span>作成: {new Date(book.created_at).toLocaleDateString()}</span>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteBook(book.id);
-                    }}
-                  >
-                    削除
-                  </Button>
+                <div>
+                  <h3 className="font-semibold">{book.title}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {book.genre} • {book.target_eps}話予定 • 作成日: {new Date(book.created_at).toLocaleDateString()}
+                  </p>
                 </div>
               </div>
-            );
-          })}
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedBook(book);
+                  }}
+                >
+                  選択
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteBook(book.id);
+                  }}
+                >
+                  削除
+                </Button>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

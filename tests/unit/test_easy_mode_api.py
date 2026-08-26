@@ -1,13 +1,22 @@
+import os
+
+os.environ.setdefault("ALLOWED_API_KEYS", "test-api-key")
+
 from fastapi.testclient import TestClient
 
 from src.backend.server import app
 
 client = TestClient(app)
+AUTH_HEADERS = {"X-API-Key": "test-api-key"}
 
 
 def test_gacha_api_validation_error():
     """キーワードが空の場合に422バリデーションエラーを返すことを検証"""
-    response = client.post("/api/easy-mode/gacha", json={"genre": "", "keywords": []})
+    response = client.post(
+        "/api/easy-mode/gacha",
+        json={"genre": "", "keywords": []},
+        headers=AUTH_HEADERS,
+    )
     assert response.status_code == 422
 
 
@@ -16,6 +25,7 @@ def test_gacha_api_success():
     response = client.post(
         "/api/easy-mode/gacha",
         json={"genre": "ファンタジー", "keywords": ["無双", "魔法"], "temperature": 0.7},
+        headers=AUTH_HEADERS,
     )
     assert response.status_code == 200
     data = response.json()
@@ -32,6 +42,7 @@ def test_digest_api_success():
     response = client.post(
         "/api/easy-mode/digest",
         json={"request_id": "test_req", "selected_plan_id": "test_plan"},
+        headers=AUTH_HEADERS,
     )
     assert response.status_code == 200
     data = response.json()
@@ -47,6 +58,7 @@ def test_promote_api_success():
     response = client.post(
         "/api/easy-mode/promote",
         json={"book_id": "test_book_123"},
+        headers=AUTH_HEADERS,
     )
     assert response.status_code == 200
     data = response.json()

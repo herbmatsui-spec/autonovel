@@ -28,6 +28,15 @@ export const useUserSettingsStore = create<UserSettingsState>()(
       // initialize empty config to avoid undefined
       config: {},
     }),
-    { name: 'user-settings' }
+    {
+      name: 'user-settings',
+      // apiKey は XSS での盗難を防ぐため localStorage に永続化しない
+      partialize: (state) => ({
+        temperature: state.temperature,
+        modelType: state.modelType,
+        isExpertMode: state.isExpertMode,
+        config: state.config,
+      }),
+    }
   )
 );

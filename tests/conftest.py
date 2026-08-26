@@ -1,8 +1,13 @@
+import os
 import sys
 import tempfile
 from pathlib import Path
 
 import pytest
+
+# Set test environment for database init
+os.environ.setdefault("KAKU_ENV", "test")
+os.environ.setdefault("ENVIRONMENT", "test")
 
 # 動的パス解決: プロジェクトルートおよびサブパッケージを sys.path に追加
 CURRENT_DIR = Path(__file__).resolve().parent

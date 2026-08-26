@@ -1,11 +1,15 @@
-import { TabId } from '@/store/useProjectStore';
+import { useLocation } from 'react-router-dom';
 
 interface PageHeaderProps {
-  activeTab: TabId;
   globalError: string | null;
 }
 
-export function PageHeader({ activeTab, globalError }: PageHeaderProps) {
+export function PageHeader({ globalError }: PageHeaderProps) {
+  const location = useLocation();
+  const pathname = location.pathname; // e.g., "/books"
+  // Remove leading slash and any trailing slash
+  const activeTab = pathname.replace(/^\/|\/$/g, '') || 'landing';
+
   return (
     <>
       {/* API STATUS BAR */}
@@ -29,6 +33,29 @@ export function PageHeader({ activeTab, globalError }: PageHeaderProps) {
           </div>
         </div>
       </header>
+      {/* PAGE TITLE */}
+      <div className="mb-4">
+        <h2 className="text-xl font-bold mb-2">
+          {activeTab === 'landing' && 'ホーム'}
+          {activeTab === 'books' && '作品一覧'}
+          {activeTab === 'plots' && 'プロット設計'}
+          {activeTab === 'write' && '執筆画面'}
+          {activeTab === 'analytics' && '品質・販促分析'}
+          {activeTab === 'planning' && '企画立案'}
+          {activeTab === 'style-lab' && '文体ラボ'}
+          {activeTab === 'audit' && '品質監査'}
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          {activeTab === 'landing' && 'AIがあなたのストーリーを紡ぎ出す'}
+          {activeTab === 'books' && '作品の作成・編集・管理を行います'}
+          {activeTab === 'plots' && 'プロットを生成・編集・分析します'}
+          {activeTab === 'write' && 'エピソードを執筆・推敲・完成させます'}
+          {activeTab === 'analytics' && '品質を評価し、販促素材を生成します'}
+          {activeTab === 'planning' && 'ストーリーの企画・構造を設計します'}
+          {activeTab === 'style-lab' && '文体を分析・調整・統一します'}
+          {activeTab === 'audit' && '品質を監査・改善点を提案します'}
+        </p>
+      </div>
     </>
   );
 }

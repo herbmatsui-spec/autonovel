@@ -8,6 +8,26 @@
 ## [Unreleased]
 
 ### Added
+- LLM アクセス層の単一化: `src.core.llm.providers` に統一プロバイダインターフェース (`LLMProvider`, `LLMResponse`, `GeminiProvider`, `OpenAIProvider`, `LLMProviderFactory`) を新設、`src.llm` を非推奨化
+- `src/core/llm_gateway.py` を新プロバイダ層を使用するようリファクタリング (`generate_json`/`generate_text` が `LLMResponse` オブジェクトを返すよう変更)
+- `src/services/llm_service.py` を新プロバイダファクトリ使用に更新
+- データベースマイグレーション整合性の保証: `init_db` の本番環境での `create_all` フォールバックを削除、Alembic のみを使用
+- `src/backend/database/schema_check.py` によるスキーマドリフト検出機能追加、CI 用スクリプト `scripts/check_schema_drift.py` を追加
+- `src/backend/database/uow.py` にネストトランザクション防止チェックを追加
+- エラーハンドリング基盤の整備: `src/core/error_handler.py` に統一エラーハンドリングユーティリティ追加
+- `rate_limit_middleware` をフェイルオープン（Redis 不可時はリクエスト許可）に変更
+- FastAPI アプリバージョンを `settings.app_version` (SSOT) から動的取得に変更、`config/settings.py` に `app_version` フィールド追加
+- `scripts/no_print_check.py` と `scripts/no_secret_check.py` による本番コードの `print()`/シークレット検出、pre-commit フック追加
+- バージョン同期確認テスト `tests/integration/test_version.py` 追加
+
+### Changed
+- `init_db`: 本番環境では `create_all` フォールバックを行わず、Alembic 失敗時は即座にエラー終了
+- `LLMGenerateResultProxy` コンストラクタ: `factory` キーワード引数も受け付けるよう後方互換性を維持
+- ヘルスチェック `check_llm_gateway`: 新 `LLMProviderFactory` 使用に更新
+- `DatabaseManager.execute/fetch_*` の非推奨警告を維持しつつ、リポジトリ経由アクセスへの移行を推奨
+
+### Fixed
+- `src/backend/task_helpers.py` の構文エラー修正（誤って適用された diff マーカー `+` を除去）
 - 統一設定クラス `config.settings.Settings` (pydantic-settings.BaseSettings)
 - 全依存を明示的に注入する `UltimateHegemonyEngine` コンストラクタ
 - `EngineDeps` データクラスによるエンジン依存の型安全なグループ化 (`src/backend/engine_deps.py`)
@@ -43,6 +63,10 @@
 - `no-print-statements` 専用チェックスクリプト (`scripts/no_print_check.py`)
 - 開発用依存分離 `requirements-dev.txt`
 - Dockerfile マルチステージビルド・非 root ユーザー化
+- フロントエンドのタブ構造をモジュール化し、React Router v6 と遅延ロードを導入し、初期ロードパフォーマンスを向上
+- デザインシステムを統一し、Atomic Design 原則に基づくコンポーネントライブラリを構築
+- アクセシビリティを向上し、ARIAラベル、キーボードナビゲーション、カラーコントラストを改善
+- 状態管理をZustandスライスとReact Queryに統合し、データフェッチとキャッシュを最適化
 
 ### Changed
 - `UltimateHegemonyEngine` の全依存を明示的コンストラクタ引数化 (DI 対応)
