@@ -14,7 +14,7 @@ interface UserSettingsState {
   config: Record<string, unknown>;
 }
 
-export const useUserSettingsStore = create<UserSettingsState>(
+export const useUserSettingsStore = create<UserSettingsState>()(
   persist(
     (set) => ({
       apiKey: '',

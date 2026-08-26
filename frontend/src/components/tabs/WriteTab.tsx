@@ -30,9 +30,38 @@ export default function WriteTab() {
   const { handleTriggerWriting, handleRefineErotic, handleImportChapter } = useAppActions((_) => {});
   const { activeTaskId } = useTaskStore();
 
-  if (!selectedBook) {
-    return <div className="text-center py-8">作品を選択してください。</div>;
-  }
+export function WriteTab({
+  chapters,
+  bible,
+  writeFrom,
+  setWriteFrom,
+  writeTo,
+  setWriteTo,
+  writePassion,
+  setWritePassion,
+  handleTriggerWriting,
+  handleRefineErotic,
+  importEpNum,
+  setImportEpNum,
+  importText,
+  setImportText,
+  importDoRefine,
+  setImportDoRefine,
+  handleImportChapter,
+  activeTaskId,
+  genre,
+  setGenre,
+  title,
+  setTitle,
+  wordCount,
+  setWordCount,
+  platform,
+  setPlatform,
+  showPreview,
+  setShowPreview,
+}: WriteTabProps) {
+  const { error, clearError } = useWritingStore();
+  const { page, setPage, totalPages, paginatedItems } = usePagination<Chapter>(chapters.length, 5);
 
   return (
     <div className="animate-fade-in grid grid-cols-[1fr_350px] gap-[2rem]">

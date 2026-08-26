@@ -15,15 +15,15 @@ export function PageHeader({ globalError }: PageHeaderProps) {
       {/* API STATUS BAR */}
       <header className="flex justify-between items-center mb-[2.5rem] border-b pb-[1.25rem] border-[var(--border)]">
         <div>
-          <h1 className="text-[2rem] flex items-center gap-[0.75rem]">
-            {activeTab === 'landing' && '���🚀 ホーム・ダッシュボード'}
-            {activeTab === 'books' && '���📚 作品管理・イージー�ーモード'}
-            {activeTab === 'plots' && '���🗺��️ ストーリープロット設計'}
-            {activeTab === 'write' && '��✍��️ 自律的エピソード自動�執�筆'}
-            {activeTab === 'analytics' && '���📈 AI品質分�析・マーケティング'}
-            {activeTab === 'planning' && '���📋 企画立案'}
-            {activeTab === 'style-lab' && '���🧬 文体ラボ'}
-            {activeTab === 'audit' && '��⚖��️ � 品質監�査'}
+          <h1 className="text-[2rem] flex items-center gap-[0.75rem] font-bold">
+            {activeTab === 'landing' && '🚀 ホーム・ダッシュボード'}
+            {activeTab === 'books' && '📚 作品管理'}
+            {activeTab === 'plots' && '🗺️ ストーリープロット設計'}
+            {activeTab === 'write' && '✍️ 自律的エピソード自動執筆'}
+            {activeTab === 'analytics' && '📈 AI品質分析・マーケティング'}
+            {activeTab === 'planning' && '📋 企画立案'}
+            {activeTab === 'style-lab' && '🧬 文体ラボ'}
+            {activeTab === 'audit' && '⚖️ 品質監査'}
           </h1>
         </div>
         <div className="flex items-center gap-[1rem]">

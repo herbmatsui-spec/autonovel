@@ -78,7 +78,7 @@ async function apiRequest<T>(url: string, init?: RequestInit): Promise<T> {
 }
 
 // safely access import.meta.env for Vite environment variables
-const VITE_API_URL = import.meta?.env?.VITE_API_URL;
+const VITE_API_URL = (import.meta as unknown as { env?: { VITE_API_URL?: string } })?.env?.VITE_API_URL;
 const API_BASE_URL = VITE_API_URL || '/api';
 const API_BASE_URL_NO_API = API_BASE_URL.replace('/api', '');
 
@@ -410,6 +410,19 @@ export async function getNarrativeMetricsTrend(book_id: number, branch_id: numbe
   return apiRequest(`${API_BASE_URL}/narrative_metrics/${book_id}/${branch_id}`);
 }
 
+interface HealthCheckResponse {
+  status?: string;
+  database?: string;
+  worker?: string;
+  huey_backend?: string;
+  queue_depth?: number;
+  checks?: {
+    database?: { status?: string };
+    worker?: { status?: string };
+    [key: string]: unknown;
+  };
+}
+
 // Health check
 export async function checkBackendHealth(): Promise<{
   status: string;
@@ -418,7 +431,21 @@ export async function checkBackendHealth(): Promise<{
   huey_backend: string;
   queue_depth: number;
 }> {
-  return apiRequest(`${API_BASE_URL_NO_API}/health`);
+  const data = await apiRequest<HealthCheckResponse>(`${API_BASE_URL_NO_API}/health`);
+  const checks = data?.checks || {};
+  const dbStatus = checks?.database?.status || data?.database || 'offline';
+  const workerStatus = checks?.worker?.status || data?.worker || 'offline';
+  
+  // If database is ok, consider API server healthy enough for the UI to proceed
+  const isHealthy = data?.status === 'ok' || dbStatus === 'ok';
+
+  return {
+    status: isHealthy ? 'ok' : (data?.status || 'error'),
+    database: dbStatus,
+    worker: workerStatus,
+    huey_backend: data?.huey_backend || 'unknown',
+    queue_depth: data?.queue_depth ?? 0,
+  };
 }
 
 export async function analyzeStyleDna(sample: string): Promise<StyleDnaResult> {

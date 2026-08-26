@@ -4,9 +4,12 @@ import { useBookStore } from '@/store/useBookStore';
 import { useAppActions } from '@/hooks/useAppActions';
 import { Button } from '@/components/ui/button';
 
-export default function ImportTab() {
-  const { selectedBook } = useBookStore();
-  const { handleImportChapter } = useAppActions((_) => {});
+interface ImportTabProps {
+  selectedBook?: Book;
+  handleImportChapter: (e: React.FormEvent) => Promise<void>;
+}
+
+export function ImportTab({ handleImportChapter }: ImportTabProps) {
   const [epNum, setEpNum] = useState<number>(1);
   const [importText, setImportText] = useState('');
   const [doRefine, setDoRefine] = useState(true);

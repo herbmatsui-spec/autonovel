@@ -50,7 +50,7 @@ class DefaultPlotExpander:
 
         try:
             bible = await self.repo.get_latest_bible(book_id)
-        except Exception as e:
+        except (ConnectionError, TimeoutError, OSError, ValueError) as e:
             logger.error(f"Failed to fetch bible for book_id={book_id}: {e}")
             return []
 
@@ -114,7 +114,7 @@ class DefaultPlotExpander:
                     if reporter:
                         reporter.report(f"Ep.{ep_num}: プロット生成完了", "info")
                     return plot
-                except Exception as e:
+                except (ConnectionError, TimeoutError, OSError, ValueError) as e:
                     logger.error(f"Plot generation error for Ep.{ep_num}: {e}")
                     return None
 

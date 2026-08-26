@@ -6,6 +6,7 @@ database/core.py - データベース接続および低レベルインフラ管�
 import asyncio
 import functools
 import logging
+import os
 import shutil
 import sqlite3
 import time
@@ -349,7 +350,7 @@ def init_db(db_path: str, force_create_all: bool = False):
         logger.info("init_db: alembic command.upgrade('head') executed successfully")
     except Exception as e:
         logger.error(f"Alembic upgrade failed: {e}")
-        raise RuntimeError(f"Database migration failed: {e}") from e
+        raise
 
 
 def get_db_manager() -> DatabaseManager:

@@ -11,6 +11,9 @@ import logging
 import os
 import hmac
 from typing import List, Optional
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from fastapi import HTTPException, Request
 
@@ -22,9 +25,15 @@ logger = logging.getLogger(__name__)
 class APIKeyService:
     """API キーの検証を司るサービス。"""
 
-    def __init__(self, allowed_keys: Optional[List[str]] = None, disabled: bool = False):
+    def __init__(self, allowed_keys: Optional[List[str]] = None, disabled: Optional[bool] = None):
         self.allowed_keys = allowed_keys or []
-        self.disabled = disabled
+        self._disabled = disabled
+
+    @property
+    def disabled(self) -> bool:
+        if self._disabled is not None:
+            return self._disabled
+        return os.environ.get("AUTH_DISABLED", "false").lower() in ("1", "true", "yes")
 
     def validate(self, api_key: str) -> bool:
         if self.disabled:
@@ -38,13 +47,12 @@ class APIKeyService:
             logger.warning("AUTH_DISABLED is set - authentication is bypassed (non-production)")
             return True
         if not self.allowed_keys:
-            return False
-        # 非定数時間比較でタイミング攻撃を防止
-        match = False
-        for allowed in self.allowed_keys:
-            if hmac.compare_digest(api_key, allowed):
-                match = True
-        return match
+            keys_env = os.environ.get("ALLOWED_API_KEYS", "")
+            allowed = [k.strip() for k in keys_env.split(",") if k.strip()]
+            if not allowed:
+                return False
+            return api_key in allowed
+        return api_key in self.allowed_keys
 
     def get_rate_limit_key(self, api_key: str) -> str:
         """API key ベースのレート制限キーを返す"""
@@ -57,15 +65,18 @@ _api_key_service: Optional[APIKeyService] = None
 def get_api_key_service() -> APIKeyService:
     global _api_key_service
     if _api_key_service is None:
-        disabled = os.environ.get("AUTH_DISABLED", "false").lower() in ("1", "true", "yes")
+        disabled_env = os.environ.get("AUTH_DISABLED", "false").lower() in ("1", "true", "yes")
         keys_env = os.environ.get("ALLOWED_API_KEYS", "")
         allowed_keys = [k.strip() for k in keys_env.split(",") if k.strip()]
-        _api_key_service = APIKeyService(allowed_keys=allowed_keys, disabled=disabled)
+        _api_key_service = APIKeyService(allowed_keys=allowed_keys, disabled=disabled_env if "AUTH_DISABLED" in os.environ else None)
     return _api_key_service
 
 
 async def require_api_key(request: Request) -> str:
+    service = get_api_key_service()
     api_key = request.headers.get("X-API-Key")
+    if service.disabled:
+        return api_key or "dev-disabled-key"
     if not api_key:
         raise HTTPException(
             status_code=401,
@@ -74,7 +85,6 @@ async def require_api_key(request: Request) -> str:
                 "error_message": "API キーが指定されていません。X-API-Key ヘッダーを設定してください。",
             },
         )
-    service = get_api_key_service()
     if not service.validate(api_key):
         logger.warning(
             f"Invalid API key attempt from "
@@ -90,6 +100,8 @@ async def require_api_key(request: Request) -> str:
 
 def validate_api_key_or_raise(api_key: str) -> str:
     service = get_api_key_service()
+    if service.disabled:
+        return api_key or "dev-disabled-key"
     if not service.validate(api_key):
         raise AppError("API キーが無効です。", status_code=403, error_code="FORBIDDEN")
     return api_key

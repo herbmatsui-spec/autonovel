@@ -20,20 +20,33 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    with op.batch_alter_table("plots", schema=None) as batch_op:
-        batch_op.add_column(sa.Column("target_tension", sa.Float(), nullable=True))
-        batch_op.add_column(
-            sa.Column("is_simulation", sa.Boolean(), server_default=sa.text("0"), nullable=True)
-        )
-        batch_op.add_column(
-            sa.Column("simulation_id", sa.String(), server_default="", nullable=True)
-        )
-        batch_op.add_column(sa.Column("pov_character_id", sa.Integer(), nullable=True))
+    conn = op.get_bind()
+    insp = sa.inspect(conn)
+    table_name = "plot" if insp.has_table("plot") else ("plots" if insp.has_table("plots") else None)
+    if table_name:
+        columns = [c["name"] for c in insp.get_columns(table_name)]
+        with op.batch_alter_table(table_name, schema=None) as batch_op:
+            if "target_tension" not in columns:
+                batch_op.add_column(sa.Column("target_tension", sa.Float(), nullable=True))
+            if "is_simulation" not in columns:
+                batch_op.add_column(
+                    sa.Column("is_simulation", sa.Boolean(), server_default=sa.text("0"), nullable=True)
+                )
+            if "simulation_id" not in columns:
+                batch_op.add_column(
+                    sa.Column("simulation_id", sa.String(), server_default="", nullable=True)
+                )
+            if "pov_character_id" not in columns:
+                batch_op.add_column(sa.Column("pov_character_id", sa.Integer(), nullable=True))
 
 
 def downgrade() -> None:
-    with op.batch_alter_table("plots", schema=None) as batch_op:
-        batch_op.drop_column("pov_character_id")
-        batch_op.drop_column("simulation_id")
-        batch_op.drop_column("is_simulation")
-        batch_op.drop_column("target_tension")
+    conn = op.get_bind()
+    insp = sa.inspect(conn)
+    table_name = "plot" if insp.has_table("plot") else ("plots" if insp.has_table("plots") else None)
+    if table_name:
+        with op.batch_alter_table(table_name, schema=None) as batch_op:
+            batch_op.drop_column("pov_character_id")
+            batch_op.drop_column("simulation_id")
+            batch_op.drop_column("is_simulation")
+            batch_op.drop_column("target_tension")

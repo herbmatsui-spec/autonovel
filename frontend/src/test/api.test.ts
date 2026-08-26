@@ -226,6 +226,6 @@ describe('API client', () => {
 
   it('should throw on HTTP error without message body', async () => {
     (globalThis as any).fetch = mockFetch(null, false, 404, '');
-    await expect(getBooks()).rejects.toThrow('HTTP 404');
+    await expect(getBooks()).rejects.toThrow('API Error: 404');
   });
 });

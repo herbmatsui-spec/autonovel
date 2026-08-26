@@ -41,7 +41,7 @@ async def create_gacha_plans(
             status_code=status.HTTP_504_GATEWAY_TIMEOUT,
             detail=str(te),
         )
-    except Exception as e:
+    except (ConnectionError, TimeoutError, OSError) as e:
         logger.error(f"Gacha API Error: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -56,7 +56,7 @@ async def create_digest(
     """選択された企画のプロット・第1話・クライマックスダイジェストを生成する"""
     try:
         return await digest_service.generate_digest(request)
-    except Exception as e:
+    except (ConnectionError, TimeoutError, OSError) as e:
         logger.error(f"Digest API Error: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -76,7 +76,7 @@ async def promote_to_advanced(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="指定された作品データが見つかりません。",
         )
-    except Exception as e:
+    except (ConnectionError, TimeoutError, OSError) as e:
         logger.error(f"Promotion API Error: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

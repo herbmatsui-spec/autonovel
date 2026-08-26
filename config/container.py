@@ -10,7 +10,7 @@ from src.core.container.infra import InfraContainer as _InfraContainer
 
 
 class Container(_AppContainer):
-    wiring_config = containers.WiringConfiguration(packages=["src", "kernels", "prompts"])
+    wiring_config = containers.WiringConfiguration(packages=["src", "src.kernels", "prompts"])
 
 
 _container_singleton = None

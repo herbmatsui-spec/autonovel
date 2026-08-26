@@ -21,9 +21,9 @@ export function TaskErrorDialog({
   recoverable,
   resumeAvailable,
 }: TaskErrorDialogProps) {
-  if (!isOpen || !error) return null;
-
   const [showDetail, setShowDetail] = useState(false);
+
+  if (!isOpen || !error) return null;
 
   const copyErrorDetails = () => {
     const details = JSON.stringify(error, null, 2);
@@ -48,10 +48,25 @@ export function TaskErrorDialog({
   };
 
   const content = (
-    <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in" onClick={onClose}>
-      <div className="glass-panel w-full max-w-md rounded-xl overflow-hidden animate-slide-up" onClick={(e) => e.stopPropagation()}>
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="task-error-title"
+      className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') onClose();
+      }}
+      tabIndex={-1}
+    >
+      <div className="glass-panel w-full max-w-md rounded-xl overflow-hidden animate-slide-up">
         <div className="p-4 border-b border-border flex justify-between items-center">
-          <h3 className="text-lg font-bold text-red-400 flex items-center gap-2">
+          <h3 id="task-error-title" className="text-lg font-bold text-red-400 flex items-center gap-2">
             <span className="text-xl">⚠</span>
             タスクエラー
           </h3>

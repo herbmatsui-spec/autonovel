@@ -76,24 +76,23 @@ async def lifespan(app: FastAPI):
             enable_console_exporter=False,
         )
         logger.info("OpenTelemetry auto-instrumentation initialized")
-    except Exception as e:
+    except (ConnectionError, TimeoutError, OSError) as e:
         logger.warning(f"OpenTelemetry initialization failed: {e}")
 
-    # API キーバリデーション（起動時必須チェック）
+    # API キーバリデーション（起動時チェック）
     try:
         from config.settings import validate_api_keys
         validate_api_keys()
         logger.info("API キーバリデーション成功")
     except RuntimeError as e:
-        logger.critical(f"API キー設定エラー: {e}")
-        raise
+        logger.warning(f"API キー未設定 (UIまたはリクエスト時に指定可能): {e}")
 
     try:
         db_manager = AppContainer.db()
         init_db(db_manager.db_path)
         logger.info("Database initialization complete.")
         yield
-    except Exception as e:
+    except (ConnectionError, TimeoutError, OSError) as e:
         logger.error(f"サーバー起動に失敗しました: {type(e).__name__} - {e}", exc_info=True)
         raise
     finally:
@@ -111,7 +110,7 @@ async def lifespan(app: FastAPI):
             if chroma_provider:
                 chroma_provider.close()
                 logger.info("ChromaDB のコネクションを正常にクローズしました。")
-        except Exception as e:
+        except (ConnectionError, TimeoutError, OSError) as e:
             logger.error(f"リソース解放中にエラーが発生しました: {e}")
         logger.info("全てのリソースを解放しました。サーバーを終了します。")
 
@@ -186,12 +185,11 @@ async def rate_limit_middleware(request: Request, call_next):
                     trace_id=trace_id
                 ) | {"detail": "リクエスト数が制限を超えました。"},
             )
-    except Exception as e:
-        # Fail open: if rate limiter is unavailable, allow the request through
-        # but log the error for monitoring
-        logger.warning(
-            f"Rate limiter unavailable, failing open: {e}",
-            extra={"trace_id": trace_id}
+    except (ConnectionError, TimeoutError, OSError) as e:
+        logger.warning(f"Rate limiting error: {e}")
+        return JSONResponse(
+            status_code=503,
+            content={"error": "Service Unavailable", "detail": "レート制限サービスが利用できません"},
         )
         # Don't block the request - continue without rate limiting
 
@@ -341,8 +339,7 @@ async def generate_easy(req: EasyModeRequest, api_key: str = Depends(require_api
 
     # タスクをHueyにエンqueue
     try:
-        huey.enqueue(
-            execute_easy_mode_generation,
+        execute_easy_mode_generation(
             task_id=task_id,
             api_key=api_key,
             genre=req.genre,
@@ -358,7 +355,7 @@ async def generate_easy(req: EasyModeRequest, api_key: str = Depends(require_api
             erotic_intensity=req.erotic_intensity,
             trace_id=str(uuid.uuid4()),  # generate a trace ID
         )
-    except Exception as e:
+    except (ConnectionError, TimeoutError, OSError, Exception) as e:
         logger.error(f"Failed to enqueue easy mode task: {e}", exc_info=True)
         progress_state.is_running = False
         progress_state.error = str(e)

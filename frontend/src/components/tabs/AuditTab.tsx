@@ -2,8 +2,11 @@ import { useState, useEffect, useCallback } from 'react';
 import type { Book, Issue } from '@/types';
 import { getIssues, resolveIssue } from '@/api';
 import { toast } from 'sonner';
-import { useBookStore } from '@/store/useBookStore';
-import { useUserSettingsStore } from '@/store/useUserSettingsStore';
+
+interface AuditTabProps {
+  selectedBook: Book;
+  apiKey?: string;
+}
 
 const severityConfig = {
   high: { label: 'High', color: 'text-accent-rose', border: 'border-accent-rose/30', bg: 'bg-accent-rose/10' },
@@ -11,9 +14,7 @@ const severityConfig = {
   low: { label: 'Low', color: 'text-accent-cyan', border: 'border-accent-cyan/30', bg: 'bg-accent-cyan/10' },
 };
 
-export default function AuditTab() {
-  const { selectedBook } = useBookStore();
-  const { apiKey } = useUserSettingsStore();
+export function AuditTab({ selectedBook }: AuditTabProps) {
   const [issues, setIssues] = useState<Issue[]>([]);
   const [loading, setLoading] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
@@ -37,10 +38,9 @@ export default function AuditTab() {
 
   const handleResolve = async (issueId: number) => {
     try {
-      await resolveIssue(issueId);
-      // Refresh the list
-      await loadIssues();
-      toast.success('issueが解決されました。');
+      await resolveIssue(issueId, action);
+      toast.success(`Issue #${issueId} を「${action}」で解決しました。`);
+      loadIssues();
     } catch (err: unknown) {
       toast.error('issueの解決に失敗しました: ' + (err instanceof Error ? err.message : String(err)));
     }

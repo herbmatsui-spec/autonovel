@@ -166,7 +166,7 @@ def with_llm_retry():
                     # すでに定義済みの致命的エラーはリトライせず即座に伝播
                     logger.error(f"❌ Fatal LLM error detected. Fail-Fast. Error: {e}")
                     raise e
-                except Exception as e:
+                except (ConnectionError, TimeoutError, OSError, ValueError) as e:
                     # コードのバグやプログラム論理エラーはFail-Fastで即座に投げる
                     if isinstance(e, (TypeError, NameError, AttributeError, KeyError)):
                         raise e

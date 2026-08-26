@@ -152,7 +152,7 @@ class EasyModePipeline:
             logger.error(f"Pipeline failed at stage: {e}", exc_info=True)
             self._cancelled = False
             raise
-        except Exception as e:
+        except (KeyError, ValueError, TypeError, RuntimeError, AttributeError) as e:
             logger.error(f"Unexpected pipeline error: {e}", exc_info=True)
             self._cancelled = False
             raise PipelineError(f"Unexpected error: {e}", original=e) from e

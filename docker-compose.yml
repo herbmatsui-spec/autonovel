@@ -13,6 +13,7 @@ services:
       - redis_data:/data
 
   backend:
+    image: kaku_backend:latest
     build:
       context: .
       dockerfile: Dockerfile
@@ -22,6 +23,7 @@ services:
       - "8200:8200"
     environment:
       - PYTHONPATH=/app
+      - REDIS_URL=redis://redis:6379/0
     env_file:
       - .env
     volumes:
@@ -36,13 +38,12 @@ services:
         condition: service_healthy
 
   worker:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: kaku_backend:latest
     container_name: kaku_worker
     command: python -m huey.bin.huey_consumer src.backend.tasks.huey
     environment:
       - PYTHONPATH=/app
+      - REDIS_URL=redis://redis:6379/0
     env_file:
       - .env
     volumes:

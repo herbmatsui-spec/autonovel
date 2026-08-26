@@ -14,6 +14,7 @@ if redis_client is not None:
     logger.info("Huey connected to Redis (backend=redis)")
 else:
     DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'storage', 'db', 'kaku_hegemony_v2_huey.db')
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     huey = SqliteHuey(filename=DB_PATH)
     
     # Apply SQLite pragmas

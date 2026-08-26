@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { analyzeStyleDna } from '@/api';
 import { toast } from 'sonner';
 import { useUserSettingsStore } from '@/store/useUserSettingsStore';
+import { StyleDnaResult } from '@/types';
 
 export default function StyleLabTab() {
   const apiKey = useUserSettingsStore((s) => s.apiKey);
   const [sample, setSample] = useState('');
-  const [result, setResult] = useState<Record<string, unknown> | null>(null);
+  const [result, setResult] = useState<StyleDnaResult | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleAnalyze = async () => {
