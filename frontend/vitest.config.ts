@@ -9,8 +9,8 @@ export default defineConfig({
   },
   test: {
     globals: true,
-    setupFilesAfterEnv: ['./src/test/setup.ts'],
     environment: 'jsdom',
+    setupFiles: ['./src/test/setup.ts'],
     exclude: ['e2e/**/*.spec.ts', '**/node_modules/**'],
   },
 });

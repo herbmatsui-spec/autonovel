@@ -1,13 +1,14 @@
-# Base Stage
-FROM node:22-alpine AS base
-WORKDIR /app
-COPY package*.json ./
-RUN npm cache clean --force && npm install --legacy-peer-deps --no-audit --no-fund
+FROM node:22-alpine AS dev
 
-# Dev Stage (開発用 Vite サーバー)
-FROM base AS dev
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install --legacy-peer-deps --no-audit --no-fund
+
 COPY . .
+
 EXPOSE 5173
+
 CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
 
 # Build Stage (コンパイル確認 & 成果物生成)

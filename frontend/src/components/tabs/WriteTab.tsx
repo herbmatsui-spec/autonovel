@@ -71,7 +71,7 @@ export function WriteTab({
   setShowPreview,
 }: WriteTabProps) {
   const { error, clearError } = useWritingStore();
-  const { page, setPage, totalPages, paginatedItems } = usePagination(chapters.length, 5);
+  const { page, setPage, totalPages, paginatedItems } = usePagination<Chapter>(chapters.length, 5);
 
   return (
     <div className="animate-fade-in grid grid-cols-1 lg:grid-cols-3 gap-6">

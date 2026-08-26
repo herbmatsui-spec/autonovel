@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 
 interface AuditTabProps {
   selectedBook: Book;
-  apiKey: string;
+  apiKey?: string;
 }
 
 const severityConfig = {
@@ -14,7 +14,7 @@ const severityConfig = {
   low: { label: 'Low', color: 'text-accent-cyan', border: 'border-accent-cyan/30', bg: 'bg-accent-cyan/10' },
 };
 
-export function AuditTab({ selectedBook, apiKey }: AuditTabProps) {
+export function AuditTab({ selectedBook }: AuditTabProps) {
   const [issues, setIssues] = useState<Issue[]>([]);
   const [loading, setLoading] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
@@ -37,7 +37,7 @@ export function AuditTab({ selectedBook, apiKey }: AuditTabProps) {
 
   const handleResolve = async (issueId: number, action: string) => {
     try {
-      await resolveIssue(issueId, action, apiKey);
+      await resolveIssue(issueId, action);
       toast.success(`Issue #${issueId} を「${action}」で解決しました。`);
       loadIssues();
     } catch (err: unknown) {

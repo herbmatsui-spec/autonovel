@@ -2,13 +2,11 @@ import { useState } from 'react';
 import type { Book } from '../../types';
 
 interface ImportTabProps {
-  selectedBook: Book;
+  selectedBook?: Book;
   handleImportChapter: (e: React.FormEvent) => Promise<void>;
 }
 
-export function ImportTab({ selectedBook, handleImportChapter }: ImportTabProps) {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _selectedBook = selectedBook;
+export function ImportTab({ handleImportChapter }: ImportTabProps) {
   const [epNum, setEpNum] = useState<number>(1);
   const [importText, setImportText] = useState('');
   const [doRefine, setDoRefine] = useState(true);

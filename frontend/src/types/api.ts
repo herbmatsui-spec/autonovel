@@ -35,6 +35,8 @@ export interface Chapter {
   content: string;
   summary: string;
   created_at: string;
+  quality_score?: number;
+  killer_phrase?: string;
 }
 
 export interface Bible {

@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { useUserSettingsStore } from "../store/useUserSettingsStore";
 import { useProjectStore, TabId } from "../store/useProjectStore";
 import { useBookStore } from "../store/useBookStore";
+import { useUIStore } from "../store/useUIStore";
 
 import { toast } from 'sonner';
 

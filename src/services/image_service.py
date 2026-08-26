@@ -72,7 +72,7 @@ class ImageService:
             logger.info(f"Image generated in {elapsed}ms -> {image_url}")
             return image_url
 
-        except Exception as e:
+        except (ConnectionError, TimeoutError, OSError, ValueError) as e:
             logger.error(f"Image generation failed: {str(e)}")
             raise e
 

@@ -6,6 +6,7 @@ database/core.py - データベース接続および低レベルインフラ管�
 import asyncio
 import functools
 import logging
+import os
 import shutil
 import sqlite3
 import time
@@ -333,12 +334,8 @@ def init_db(db_path: str, force_create_all: bool = False):
         command.upgrade(alembic_cfg, "head")
         logger.info("init_db: alembic command.upgrade('head') executed successfully")
     except Exception as e:
-        logger.warning(f"Alembic upgrade failed, falling back to create_all: {e}")
-        from sqlalchemy import create_engine
-        from src.backend.database.models import Base
-
-        engine = create_engine(sync_url)
-        Base.metadata.create_all(engine)
+        logger.error(f"Alembic upgrade failed: {e}")
+        raise
 
 
 def get_db_manager() -> DatabaseManager:

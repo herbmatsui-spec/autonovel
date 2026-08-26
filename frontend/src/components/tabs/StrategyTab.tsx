@@ -104,7 +104,9 @@ export function StrategyTab({ selectedBook }: StrategyTabProps) {
             <div className="glass-sm p-4 rounded-lg">
               <h5 className="text-xs font-bold mb-2">📝 ピッチ内容</h5>
               <div className="text-xs font-mono bg-background p-3 rounded whitespace-pre-wrap">
-                {bible?.settings?.pitch ?? 'ピッチデータがありません。自己最適化を実行すると生成されます。'}
+                {typeof bible?.settings?.pitch === 'string'
+                  ? bible.settings.pitch
+                  : (bible?.settings?.pitch ? JSON.stringify(bible.settings.pitch, null, 2) : 'ピッチデータがありません。自己最適化を実行すると生成されます。')}
               </div>
             </div>
           </div>

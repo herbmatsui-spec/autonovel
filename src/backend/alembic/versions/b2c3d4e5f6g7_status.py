@@ -20,10 +20,14 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    with op.batch_alter_table("books", schema=None) as batch_op:
-        batch_op.add_column(
-            sa.Column("status", sa.String(50), nullable=True, server_default="draft")
-        )
+    conn = op.get_bind()
+    insp = sa.inspect(conn)
+    columns = [c["name"] for c in insp.get_columns("books")]
+    if "status" not in columns:
+        with op.batch_alter_table("books", schema=None) as batch_op:
+            batch_op.add_column(
+                sa.Column("status", sa.String(50), nullable=True, server_default="draft")
+            )
 
 
 def downgrade() -> None:

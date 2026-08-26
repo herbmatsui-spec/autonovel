@@ -5,6 +5,10 @@ import { HealthGate } from '@/components/HealthGate';
 
 import { checkBackendHealth } from '@/api';
 
+vi.mock('@/api', () => ({
+  checkBackendHealth: vi.fn(),
+}));
+
 describe('HealthGate', () => {
   beforeEach(() => {
     vi.clearAllMocks();
