@@ -329,8 +329,7 @@ async def generate_easy(req: EasyModeRequest, api_key: str = Depends(require_api
 
     # タスクをHueyにエンqueue
     try:
-        huey.enqueue(
-            execute_easy_mode_generation,
+        execute_easy_mode_generation(
             task_id=task_id,
             api_key=api_key,
             genre=req.genre,
@@ -346,7 +345,7 @@ async def generate_easy(req: EasyModeRequest, api_key: str = Depends(require_api
             erotic_intensity=req.erotic_intensity,
             trace_id=str(uuid.uuid4()),  # generate a trace ID
         )
-    except (ConnectionError, TimeoutError, OSError) as e:
+    except (ConnectionError, TimeoutError, OSError, Exception) as e:
         logger.error(f"Failed to enqueue easy mode task: {e}", exc_info=True)
         progress_state.is_running = False
         progress_state.error = str(e)
