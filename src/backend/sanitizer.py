@@ -131,7 +131,7 @@ class NormalizationFlow:
                             else int(re.search(r"\d+", str(val)).group())
                         )
                         break
-                    except Exception:
+                    except (ValueError, TypeError, AttributeError):
                         pass
 
         if "scene_number" not in data:
@@ -145,8 +145,9 @@ class NormalizationFlow:
                             else int(re.search(r"-?\d+", str(val)).group())
                         )
                         break
-                    except Exception:
+                    except (ValueError, TypeError, AttributeError):
                         pass
+
 
         if "severity" in data:
             sev = str(data["severity"]).lower()

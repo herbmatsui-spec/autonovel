@@ -352,23 +352,20 @@ class TestPhase1Integration:
                 path = os.path.join(base, pattern.format(genre=genre))
                 assert os.path.isfile(path), f"Genre {genre} file {key} missing: {path}"
 
-    @pytest.mark.skip(reason="streamlit_app is archived/retired")
-    def test_streamlit_easy_mode_imports(self):
-        """StreamlitかんたんモードUIがインポート可能であること"""
-        try:
-            from streamlit_app.ui_tabs_easy_mode import render_easy_mode
-            assert callable(render_easy_mode)
-        except ImportError as e:
-            pytest.fail(f"ui_tabs_easy_mode import failed: {e}")
+    def test_fastapi_easy_mode_router(self):
+        """FastAPIかんたんモードルーターが正常にロードできること"""
+        from src.backend.routers.easy_mode import router
+        assert router is not None
+        assert router.prefix == "/api/easy-mode"
 
-    @pytest.mark.skip(reason="streamlit_app is archived/retired")
     def test_genre_labels_complete(self):
-        """ジャンルラベルが全ジャンル分定義されていること"""
-        from streamlit_app.ui_tabs_easy_mode import GENRE_LABELS
+        """プリセット定義に全ジャンルが含まれていること"""
+        from src.presets.loader import load_preset
 
         for genre in SUPPORTED_GENRES:
-            assert genre in GENRE_LABELS, f"Genre {genre} missing from GENRE_LABELS"
-            assert GENRE_LABELS[genre], f"Genre {genre} empty label"
+            preset = load_preset(genre)
+            assert preset is not None, f"Genre {genre} preset load failed"
+
 
 
 if __name__ == "__main__":

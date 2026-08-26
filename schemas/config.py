@@ -1,13 +1,9 @@
 """
-schemas/config.py — SSOT: グローバル設定モデル
+schemas/config.py — グローバル設定スキーマモデル
 
-このファイルが設定モデルの単一真実源（SSOT）です。
-以下のファイルに重複定義されていた GlobalConfigModel をここに統合しました：
-  - config/settings.py (削除済み)
-  - config/project_context.py (削除済み)
-
-デフォルト値は本番運用値（旧 project_context.py 由来）を採用しています。
+config.settings.Settings と相互運用可能な Pydantic 設定スキーマです。
 """
+
 
 from __future__ import annotations
 

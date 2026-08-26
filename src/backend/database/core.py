@@ -15,13 +15,18 @@ from pathlib import Path
 import os
 from typing import Any, List, Optional
 
-import aiosqlite
+try:
+    import aiosqlite
+except ImportError:
+    aiosqlite = None  # type: ignore
+
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
 from config import BASE_DIR, DATABASE_URL
 
 logger = logging.getLogger(__name__)
+
 
 
 # ==========================================

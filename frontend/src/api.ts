@@ -56,30 +56,16 @@ export type {
 
 // useUserSettingsStore import removed, no config usage needed
 
+import { request, API_BASE_URL } from './lib/apiClient';
+
 // generic API request helper
 async function apiRequest<T>(url: string, init?: RequestInit, apiKey?: string): Promise<T> {
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(init?.headers as Record<string, string> || {}),
-  };
-  if (apiKey) {
-    headers['X-API-Key'] = apiKey;
-  }
-  const res = await fetch(url, {
-    credentials: 'include',
-    headers,
-    method: init?.method ?? 'GET',
-    body: init?.body,
+  return request<T>(url, {
+    ...init,
+    apiKey,
   });
-
-  if (!res.ok) {
-    const errorText = await res.text();
-    throw new Error(`API Error: ${res.status} ${errorText}`);
-  }
-
-  const data: T = await res.json();
-  return data;
 }
+
 
 // helper to add X-API-Key header
 export function withAuth(init: RequestInit, apiKey: string): RequestInit {
@@ -94,10 +80,8 @@ export function withAuth(init: RequestInit, apiKey: string): RequestInit {
   };
 }
 
-// safely access import.meta.env for Vite environment variables
-const VITE_API_URL = (import.meta as unknown as { env?: { VITE_API_URL?: string } })?.env?.VITE_API_URL;
-const API_BASE_URL = VITE_API_URL || '/api';
 const API_BASE_URL_NO_API = API_BASE_URL.replace('/api', '');
+
 
 
 // REST GET/DELETE helper functions

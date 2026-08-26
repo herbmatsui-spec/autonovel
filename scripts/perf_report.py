@@ -4,9 +4,9 @@ from datetime import datetime
 from typing import List, Dict
 
 def analyze_llm_latency(log_file: str) -> Dict:
-    \"\"\"
+    """
     observability.py のログを解析して TTFT (Time to First Token) と Total Duration を抽出する
-    \"\"\"
+    """
     ttfts = []
     durations = []
     
@@ -28,9 +28,9 @@ def analyze_llm_latency(log_file: str) -> Dict:
     }
 
 def analyze_rerun_metrics(log_file: str) -> Dict:
-    \"\"\"
+    """
     UIStateStore のリランカウント等のログを解析する
-    \"\"\"
+    """
     # 実際の実装に合わせてログパターンを調整
     reruns = []
     if not os.path.exists(log_file):
@@ -75,6 +75,7 @@ def main():
         print(f"  - Final Rerun Count: {rerun_metrics['total_reruns']}")
         print(f"  - Growth during session: {rerun_metrics['rerun_growth']}")
 
-if __name__ == \"__main__\":
+if __name__ == "__main__":
     main()
+
 

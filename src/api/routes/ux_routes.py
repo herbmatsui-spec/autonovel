@@ -32,10 +32,6 @@ afterglow_generator = AfterglowGenerator()
 preference_store = PreferenceStore()
 bedtime_supporter = BedtimeSupporter()
 
-_preference_store = {
-    "gap_moe": GapMoePreference(gap_type="tsundere", intensity=60)
-}
-
 _current_theme = SceneTheme(
     theme_type="default",
     primary_color="#3498db",
@@ -68,7 +64,8 @@ async def get_affinity(text_sample: Optional[str] = Query(None)):
 @router.post("/affinity/update", response_model=list[AffinityData])
 async def update_affinity(data: AffinityData):
     """好感度を手動更新する"""
-    return affinity_tracker.get_all_affinities()
+    return affinity_tracker.set_affinity(data)
+
 
 
 # Feature 3: Scene Theme

@@ -69,14 +69,24 @@ class SceneStateSnapshot(BaseModel):
 class SceneContinuityTracker:
     """一般シーンの一貫性を追跡する。SQLiteでの永続化に対応。"""
 
-    def __init__(self, db_path: str = "storage/db/kaku_hegemony_v2.db"):
-        self.db_path = db_path
+    def __init__(self, db_path: Optional[str] = None):
+        if db_path is None:
+            db_url = os.environ.get("DATABASE_URL", "")
+            if db_url.startswith("sqlite:///") or db_url.startswith("sqlite+aiosqlite:///"):
+                clean_path = db_url.split(":///")[-1]
+                self.db_path = clean_path if clean_path else "storage/db/kaku_hegemony_v2.db"
+            else:
+                self.db_path = "storage/db/kaku_hegemony_v2.db"
+        else:
+            self.db_path = db_path
+
         parent = os.path.dirname(self.db_path)
         if parent:
             os.makedirs(parent, exist_ok=True)
         self._init_db()
 
     def save_snapshot(self, snapshot: SceneStateSnapshot) -> None:
+
         """シーン状態スナップショットを保存する。"""
         import json
         import sqlite3
@@ -742,9 +752,10 @@ class ContinuityTracker:
                 flags = {}
                 try:
                     flags = json.loads(row[5]) if row[5] else {}
-                except Exception:
+                except (json.JSONDecodeError, TypeError):
                     pass
                 snap = CharacterStateSnapshot(
+
                     character_name=character_name,
                     episode_num=episode_num,
                     stamina_level=row[0],

@@ -32,6 +32,8 @@ class WritingAgent(BaseAgent):
         style_rag: Any = None,
         rag_prefetch: Any = None,
         plot_expander: Any = None,
+        auditor: Any = None,
+        spice_guard: Any = None,
     ):
         super().__init__(repo=repo, llm=llm, style_rag=style_rag, rag_prefetch=rag_prefetch)
         self.prompt_manager = prompt_manager
@@ -40,14 +42,13 @@ class WritingAgent(BaseAgent):
         # 分割後のコンポーネントを初期化
         context_builder = ContextBuilder(self)
         self._episode_writer = EpisodeWriter(llm, context_builder)
-        # TODO: 適切な auditor と spice_guard を注入する必要があります
-        # 現在はプレースホルダーとして None を設定
         self._rewrite_orchestrator = RewriteOrchestrator(
             writer=self._episode_writer,
-            auditor=None,  # TODO: 適切なauditorを注入
-            spice_guard=None,  # TODO: 適切なspice_guardを注入
+            auditor=auditor,
+            spice_guard=spice_guard,
         )
         self._bible_extractor = BibleExtractor(llm)
+
 
     # 元のメソッドをオーバーライドして、新しいコンポーネントに委譲する（後方互換性のため）
     async def _get_plot(self, book_id: int, branch_id: int, ep_num: int) -> Optional[Any]:

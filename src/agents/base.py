@@ -57,3 +57,15 @@ class BaseAgent(ABC):
     async def run(self, *args, **kwargs):
         """エージェント固有のメインロジック。サブクラスで実装する。"""
         pass
+
+    async def execute_node(self, state: Dict[str, Any], **kwargs) -> Dict[str, Any]:
+        """LangGraph ノードから呼び出された際に State を受け取り、差分辞書を返す標準アダプタ"""
+        try:
+            result = await self.run(**{**state, **kwargs})
+            if isinstance(result, dict):
+                return result
+            return {"result": result}
+        except Exception as e:
+            logger.error(f"[{self.__class__.__name__}] Node execution failed: {e}")
+            return {"status": "error", "error_message": str(e)}
+

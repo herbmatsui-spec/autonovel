@@ -45,16 +45,18 @@ class AsyncDbSaveStrategy(SaveStrategy):
             return
         try:
             loop = asyncio.get_running_loop()
-            task = loop.create_task(
-                state.repo.db.save_internal_state(f"task_status:{state.task_id}", state_json, now)
-            )
-            task.add_done_callback(
-                lambda t: (
-                    logger.error(f"[ProgressState] DB Save error: {t.exception()}")
-                    if not t.cancelled() and t.exception()
-                    else None
+            target_db = getattr(state.repo, "db", state.repo)
+            if hasattr(target_db, "save_internal_state"):
+                task = loop.create_task(
+                    target_db.save_internal_state(f"task_status:{state.task_id}", state_json, now)
                 )
-            )
+                task.add_done_callback(
+                    lambda t: (
+                        logger.error(f"[ProgressState] DB Save error: {t.exception()}")
+                        if not t.cancelled() and t.exception()
+                        else None
+                    )
+                )
         except RuntimeError:
             raise RuntimeError("No running event loop for async DB save")
 
@@ -64,9 +66,15 @@ class SyncDbSaveStrategy(SaveStrategy):
         if state.repo is None:
             return
         try:
-            state.repo.save_internal_state_sync(f"task_status:{state.task_id}", state_json)
+            if hasattr(state.repo, "save_internal_state_sync"):
+                state.repo.save_internal_state_sync(f"task_status:{state.task_id}", state_json)
+            elif hasattr(state.repo, "save_internal_state"):
+                import asyncio
+                target_db = getattr(state.repo, "db", state.repo)
+                asyncio.run(target_db.save_internal_state(f"task_status:{state.task_id}", state_json, now))
         except Exception as e:
             logger.error(f"[ProgressState] Sync DB save failed: {e}")
+
 
 
 class NoOpSaveStrategy(SaveStrategy):

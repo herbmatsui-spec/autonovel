@@ -489,16 +489,24 @@ class PlotRepository(BaseRepository):
         )
         return result.scalars().all()
 
-    async def get_latest_character_arc(
-        self, branch_id: int, character_id: int, ep_num: int
-    ) -> Optional[CharacterArc]:
-        """指定エピソード以前の最新のキャラクター状態を取得する"""
-        result = await self.session.execute(
-            select(CharacterArc)
-            .where(CharacterArc.branch_id == branch_id)
-            .where(CharacterArc.character_id == character_id)
-            .where(CharacterArc.ep_num < ep_num)
-            .order_by(CharacterArc.ep_num.desc())
-            .limit(1)
-        )
-        return result.scalar_one_or_none()
+    async def bulk_save_plots(
+        self, branch_id: int, plots_data: List[Dict[str, Any]]
+    ) -> None:
+        """複数のプロットデータを一括で保存または更新する（LangGraph PlotGraph連携用）"""
+        for data in plots_data:
+            ep_num = data.get("ep_num")
+            if ep_num is None:
+                continue
+            await self.save_plot(
+                branch_id=branch_id,
+                ep_num=ep_num,
+                title=data.get("title", ""),
+                summary=data.get("summary", ""),
+                scenes=data.get("scenes", []),
+                next_hook=data.get("next_hook", ""),
+                physical_tension_delta=data.get("physical_tension_delta", 0),
+                psychological_tension_delta=data.get("psychological_tension_delta", 0),
+                social_tension_delta=data.get("social_tension_delta", 0),
+                healed_fields=data.get("healed_fields"),
+            )
+

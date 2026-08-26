@@ -37,19 +37,20 @@ class GeminiProvider(LLMProvider):
             return LLMResponse(content=content, usage=self._parse_usage(usage), success=True)
         except Exception as e:
             err_msg = str(e).lower()
-            if "429" in err_msg or "rate limit" in err_msg:
+            if "429" in err_msg or "rate limit" in err_msg or "resource_exhausted" in err_msg:
                 raise LLMTemporaryError(f"Gemini API Rate Limit: {e}", original=e) from e
-            if "401" in err_msg or "auth" in err_msg:
+            if "401" in err_msg or "auth" in err_msg or "permission" in err_msg:
                 raise LLMUnrecoverableError(f"Gemini API Auth Error: {e}", original=e) from e
             if "400" in err_msg or "invalid" in err_msg:
                 raise LLMUnrecoverableError(f"Gemini API Invalid Request: {e}", original=e) from e
             if "safety" in err_msg or "blocked" in err_msg:
                 raise LLMUnrecoverableError(f"Gemini Content Filter: {e}", original=e) from e
-            if "500" in err_msg or "internal" in err_msg:
-                raise LLMUnrecoverableError(f"Gemini Server Error: {e}", original=e) from e
-            if "timeout" in err_msg:
+            if any(k in err_msg for k in ["500", "502", "503", "504", "internal", "unavailable", "overloaded"]):
+                raise LLMTemporaryError(f"Gemini Server Error (Temporary): {e}", original=e) from e
+            if "timeout" in err_msg or "deadline" in err_msg:
                 raise LLMTemporaryError(f"Gemini Timeout: {e}", original=e) from e
             raise LLMUnrecoverableError(f"Unknown Gemini Error: {e}", original=e) from e
+
 
     @track_llm_call
     async def generate_json(
@@ -75,21 +76,22 @@ class GeminiProvider(LLMProvider):
             )
         except Exception as e:
             err_msg = str(e).lower()
-            if "429" in err_msg or "rate limit" in err_msg:
+            if "429" in err_msg or "rate limit" in err_msg or "resource_exhausted" in err_msg:
                 raise LLMTemporaryError(f"Gemini API Rate Limit: {e}", original=e) from e
-            if "401" in err_msg or "auth" in err_msg:
+            if "401" in err_msg or "auth" in err_msg or "permission" in err_msg:
                 raise LLMUnrecoverableError(f"Gemini API Auth Error: {e}", original=e) from e
             if "400" in err_msg or "invalid" in err_msg:
                 raise LLMUnrecoverableError(f"Gemini API Invalid Request: {e}", original=e) from e
             if "safety" in err_msg or "blocked" in err_msg:
                 raise LLMUnrecoverableError(f"Gemini Content Filter: {e}", original=e) from e
-            if "500" in err_msg or "internal" in err_msg:
-                raise LLMUnrecoverableError(f"Gemini Server Error: {e}", original=e) from e
-            if "timeout" in err_msg:
+            if any(k in err_msg for k in ["500", "502", "503", "504", "internal", "unavailable", "overloaded"]):
+                raise LLMTemporaryError(f"Gemini Server Error (Temporary): {e}", original=e) from e
+            if "timeout" in err_msg or "deadline" in err_msg:
                 raise LLMTemporaryError(f"Gemini Timeout: {e}", original=e) from e
             raise LLMUnrecoverableError(f"Unknown Gemini Error: {e}", original=e) from e
 
     def _parse_usage(self, usage_metadata: Any) -> Dict[str, int]:
+
         if not usage_metadata:
             return {}
         return {

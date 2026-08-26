@@ -75,3 +75,10 @@ class AffinityTracker:
             )
 
         return list(self._store.values())
+
+    def set_affinity(self, data: AffinityData) -> List[AffinityData]:
+        """好感度データを直接設定・更新する"""
+        if data.character_name:
+            self._store[data.character_name] = data
+        return list(self._store.values())
+

@@ -132,7 +132,7 @@ class WritingGraphManager:
             return workflow.compile(checkpointer=self.checkpointer)
         return workflow.compile()
 
-def _get_cached_gen_ctx(self, cache_key: str) -> Optional[Any]:
+    def _get_cached_gen_ctx(self, cache_key: str) -> Optional[Any]:
         """gen_ctxをキャッシュから取得"""
         if cache_key in self._gen_ctx_cache:
             entry = self._gen_ctx_cache[cache_key]
@@ -157,7 +157,7 @@ def _get_cached_gen_ctx(self, cache_key: str) -> Optional[Any]:
         self._gen_ctx_cache.clear()
         logger.info(f"gen_ctx cache cleared: {count} entries removed")
         return count
-        return count
+
 
     async def node_prepare(self, state: Dict[str, Any]):
         logger.info(f"LangGraph: Preparing context for Ep.{state.get('ep_num', 'unknown')}")

@@ -138,8 +138,8 @@ class PromptRegistry:
                         self._update_cache_lru(template_name, cached)
                         return cached.source
                     logger.debug(f"Cache expired for template: {template_name} (mtime changed)")
-                except Exception:
-                    pass
+                except (OSError, TemplateNotFound) as e:
+                    logger.debug(f"Template mtime check skipped for {template_name}: {e}")
             else:
                 # DictLoader 由来のものは不変とみなし、そのまま返す
                 logger.debug(f"Cache hit (DictLoader) for template: {template_name}")
@@ -154,21 +154,18 @@ class PromptRegistry:
         try:
             source, filename, _ = self.fs_loader.get_source(self.jinja_env, template_name)
             mtime = os.path.getmtime(filename)
-        except Exception:
-            pass
+        except (TemplateNotFound, OSError) as e:
+            logger.debug(f"Template '{template_name}' not found on filesystem: {e}")
 
         # 2. DictLoader Fallback
         if source is None:
-            try:
-                for name in [template_name, template_name.replace(".j2", "")]:
-                    try:
-                        source, _, _ = self.dict_loader.get_source(self.jinja_env, name)
-                        mtime = 0.0  # メモリ上のテンプレートはmtimeなし
-                        break
-                    except Exception:
-                        continue
-            except Exception:
-                pass
+            for name in [template_name, template_name.replace(".j2", "")]:
+                try:
+                    source, _, _ = self.dict_loader.get_source(self.jinja_env, name)
+                    mtime = 0.0  # メモリ上のテンプレートはmtimeなし
+                    break
+                except (TemplateNotFound, KeyError):
+                    continue
 
         if source is None:
             raise PromptTemplateNotFoundError(
@@ -192,9 +189,10 @@ class PromptRegistry:
                 try:
                     metadata = yaml.safe_load(parts[1]) or {}
                     return metadata, parts[2].strip()
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.warning(f"Failed to parse YAML frontmatter: {e}")
         return {}, source
+
 
     def _prepare_context(self, context: Union[dict[str, Any], PromptContext]) -> dict[str, Any]:
         """PydanticモデルまたはdictをJinja2用のdictに変換。"""

@@ -18,7 +18,15 @@ import os
 from pathlib import Path
 from typing import Any, ClassVar, Dict, List, Optional, Union
 from pydantic import BaseModel, Field
-from pydantic_settings import BaseSettings, SettingsConfigDict
+
+try:
+    from pydantic_settings import BaseSettings, SettingsConfigDict
+except ImportError:
+    BaseSettings = BaseModel
+
+    def SettingsConfigDict(**kwargs):
+        return kwargs
+
 
 # プロジェクトルート
 BASE_DIR = Path(__file__).parent.parent
@@ -38,6 +46,7 @@ class Settings(BaseSettings):
         extra="ignore",  # 未定義の環境変数は無視
         protected_namespaces=(),
     )
+
 
     # ==========================================
     # 基本パス・ディレクトリ

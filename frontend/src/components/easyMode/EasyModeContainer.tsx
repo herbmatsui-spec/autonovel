@@ -9,6 +9,7 @@ import {
   fetchDigest,
   promoteToAdvanced,
 } from "../../api/easyModeApi";
+import { useUserSettingsStore } from "../../store/useUserSettingsStore";
 import { getErrorMessage, isSafeRedirect } from "../../lib/utils";
 import { GachaForm } from "./GachaForm";
 import { GachaResultView } from "./GachaResultView";
@@ -17,6 +18,7 @@ import { DigestView } from "./DigestView";
 type ViewState = "form" | "gacha_result" | "digest_result";
 
 export const EasyModeContainer: React.FC = () => {
+  const apiKey = useUserSettingsStore((state) => state.apiKey);
   const [viewState, setViewState] = useState<ViewState>("form");
   const [isLoadingGacha, setIsLoadingGacha] = useState(false);
   const [isLoadingDigest, setIsLoadingDigest] = useState(false);
@@ -32,7 +34,7 @@ export const EasyModeContainer: React.FC = () => {
     setIsLoadingGacha(true);
     setErrorMessage(null);
     try {
-      const res = await fetchGachaPlans(request);
+      const res = await fetchGachaPlans(request, apiKey);
       setGachaResponse(res);
       setViewState("gacha_result");
     } catch (err: unknown) {
@@ -41,6 +43,7 @@ export const EasyModeContainer: React.FC = () => {
       setIsLoadingGacha(false);
     }
   };
+
 
   // 2. ダイジェスト生成
   const handleGenerateDigest = async () => {
@@ -52,7 +55,7 @@ export const EasyModeContainer: React.FC = () => {
       const res = await fetchDigest({
         request_id: gachaResponse.request_id,
         selected_plan_id: selectedPlanId,
-      });
+      }, apiKey);
       setDigestResponse(res);
       setViewState("digest_result");
     } catch (err: unknown) {
@@ -74,7 +77,7 @@ export const EasyModeContainer: React.FC = () => {
     setIsPromoting(true);
     setErrorMessage(null);
     try {
-      const res = await promoteToAdvanced({ book_id: digestResponse.book_id });
+      const res = await promoteToAdvanced({ book_id: digestResponse.book_id }, apiKey);
       if (res.success) {
         if (isSafeRedirect(res.redirect_url)) {
           window.location.href = res.redirect_url;
@@ -88,6 +91,7 @@ export const EasyModeContainer: React.FC = () => {
       setIsPromoting(false);
     }
   };
+
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 p-6 space-y-8">

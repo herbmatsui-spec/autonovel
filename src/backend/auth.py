@@ -68,6 +68,12 @@ class APIKeyService:
 _api_key_service: Optional[APIKeyService] = None
 
 
+def reset_api_key_service() -> None:
+    """テスト時や環境変数変更時に APIKeyService シングルトンをリセットする"""
+    global _api_key_service
+    _api_key_service = None
+
+
 def get_api_key_service() -> APIKeyService:
     global _api_key_service
     if _api_key_service is None:
@@ -79,6 +85,7 @@ def get_api_key_service() -> APIKeyService:
 
 
 async def require_api_key(request: Request) -> str:
+
     service = get_api_key_service()
     api_key = request.headers.get("X-API-Key")
     if service.disabled:

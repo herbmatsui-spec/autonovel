@@ -189,3 +189,18 @@ class ChapterRepository(BaseRepository):
         for c in chaps:
             res += f"- 第{c.ep_num}話: {c.summary} (重要事項: {c.ai_insight})\n"
         return res
+
+    @retry_on_lock()
+    async def save_draft(
+        self, branch_id: int, ep_num: int, draft_content: str, book_id: Optional[int] = None
+    ) -> None:
+        """執筆中のドラフト本文を保存・更新する（LangGraph WritingGraph連携用）"""
+        result = await self.session.execute(
+            select(Chapter).where(Chapter.branch_id == branch_id).where(Chapter.ep_num == ep_num)
+        )
+        ch = result.scalar_one_or_none()
+        if not ch:
+            ch = Chapter(branch_id=branch_id, ep_num=ep_num, book_id=book_id or 1)
+            self.session.add(ch)
+        ch.content = draft_content
+

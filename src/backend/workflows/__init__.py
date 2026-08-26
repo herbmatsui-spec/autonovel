@@ -1,15 +1,6 @@
-from .base_workflow import BaseWorkflow
-from .chapter_import_workflow import ChapterImportWorkflow
-from .critique_optimization_workflow import CritiqueOptimizationWorkflow
-from .episode_writing_workflow import EpisodeWritingWorkflow
-from .full_auto_workflow import FullAutoWorkflow
-from .logical_audit_workflow import LogicalAuditWorkflow
-from .marketing_generation_workflow import MarketingGenerationWorkflow
-from .plan_generation_workflow import PlanGenerationWorkflow
-from .plot_expansion_workflow import PlotExpansionWorkflow
-from .plot_rebuild_workflow import PlotRebuildWorkflow
-from .refine_erotic_workflow import RefineEroticWorkflow
-from .retry_failed_episodes_workflow import RetryFailedEpisodesWorkflow
+"""
+src/backend/workflows - ワークフローパッケージ
+"""
 
 __all__ = [
     "BaseWorkflow",
@@ -26,17 +17,26 @@ __all__ = [
     "RetryFailedEpisodesWorkflow",
 ]
 
-WORKFLOW_REGISTRY = {
-    "full_auto_workflow": FullAutoWorkflow,
-    "plan_generation_workflow": PlanGenerationWorkflow,
-    "plot_expansion_workflow": PlotExpansionWorkflow,
-    "retry_failed_episodes_workflow": RetryFailedEpisodesWorkflow,
-    "episode_writing_workflow": EpisodeWritingWorkflow,
-    "plot_rebuild_workflow": PlotRebuildWorkflow,
-    "chapter_import_workflow": ChapterImportWorkflow,
-    "run_critique_optimization_workflow": CritiqueOptimizationWorkflow,
-    "run_logical_audit_workflow": LogicalAuditWorkflow,
-    "marketing_generation_workflow": MarketingGenerationWorkflow,
-    "refine_erotic_workflow": RefineEroticWorkflow,
-    "retry_failed_episodes_workflow": RetryFailedEpisodesWorkflow,
+_WORKFLOW_MAP = {
+    "BaseWorkflow": ".base_workflow",
+    "ChapterImportWorkflow": ".chapter_import_workflow",
+    "CritiqueOptimizationWorkflow": ".critique_optimization_workflow",
+    "EpisodeWritingWorkflow": ".episode_writing_workflow",
+    "FullAutoWorkflow": ".full_auto_workflow",
+    "LogicalAuditWorkflow": ".logical_audit_workflow",
+    "MarketingGenerationWorkflow": ".marketing_generation_workflow",
+    "PlanGenerationWorkflow": ".plan_generation_workflow",
+    "PlotExpansionWorkflow": ".plot_expansion_workflow",
+    "PlotRebuildWorkflow": ".plot_rebuild_workflow",
+    "RefineEroticWorkflow": ".refine_erotic_workflow",
+    "RetryFailedEpisodesWorkflow": ".retry_failed_episodes_workflow",
 }
+
+
+def __getattr__(name: str):
+    if name in _WORKFLOW_MAP:
+        import importlib
+        module = importlib.import_module(_WORKFLOW_MAP[name], __package__)
+        return getattr(module, name)
+    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
+

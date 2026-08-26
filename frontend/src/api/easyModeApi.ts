@@ -6,24 +6,19 @@ import {
   PromotionRequest,
   PromotionResponse,
 } from "../types/easyMode";
+import { request } from "../lib/apiClient";
 import { getErrorMessage } from "../lib/utils";
 
-const API_BASE_URL = "/api/easy-mode";
-
 export const fetchGachaPlans = async (
-  request: GachaRequest
+  req: GachaRequest,
+  apiKey?: string
 ): Promise<GachaResponse> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/gacha`, {
+    return await request<GachaResponse>("/easy-mode/gacha", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(request)
+      body: JSON.stringify(req),
+      apiKey,
     });
-    const data = await response.json();
-    if (!response.ok) {
-        throw new Error(data.detail || "ガチャの生成に失敗しました。");
-    }
-    return data;
   } catch (error: unknown) {
     console.error("fetchGachaPlans error:", error);
     throw new Error(getErrorMessage(error) || "ガチャの生成に失敗しました。");
@@ -31,19 +26,15 @@ export const fetchGachaPlans = async (
 };
 
 export const fetchDigest = async (
-  request: DigestRequest
+  req: DigestRequest,
+  apiKey?: string
 ): Promise<DigestResponse> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/digest`, {
+    return await request<DigestResponse>("/easy-mode/digest", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(request)
+      body: JSON.stringify(req),
+      apiKey,
     });
-    const data = await response.json();
-    if (!response.ok) {
-        throw new Error(data.detail || "ダイジェストの生成に失敗しました。");
-    }
-    return data;
   } catch (error: unknown) {
     console.error("fetchDigest error:", error);
     throw new Error(getErrorMessage(error) || "ダイジェストの生成に失敗しました。");
@@ -51,19 +42,15 @@ export const fetchDigest = async (
 };
 
 export const promoteToAdvanced = async (
-  request: PromotionRequest
+  req: PromotionRequest,
+  apiKey?: string
 ): Promise<PromotionResponse> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/promote`, {
+    return await request<PromotionResponse>("/easy-mode/promote", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(request)
+      body: JSON.stringify(req),
+      apiKey,
     });
-    const data = await response.json();
-    if (!response.ok) {
-        throw new Error(data.detail || "上級者モードへの引継ぎに失敗しました。");
-    }
-    return data;
   } catch (error: unknown) {
     console.error("promoteToAdvanced error:", error);
     throw new Error(getErrorMessage(error) || "上級者モードへの引継ぎに失敗しました。");
