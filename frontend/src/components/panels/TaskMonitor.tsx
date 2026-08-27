@@ -143,8 +143,15 @@ export function TaskMonitor({ logEndRef, onStop, connectionState }: TaskMonitorP
         {/* Progress Indicator */}
         {!hasTaskError && (
           <div className="p-4 border-b border-border">
-            <div className="flex justify-between text-[0.8rem] mb-1">
-              <span>{taskStatus.message || '処理を実行中'}</span>
+            <div className="flex justify-between items-center text-[0.8rem] mb-1">
+              <span className="flex items-center gap-1.5 font-medium">
+                {taskStatus.message || '処理を実行中'}
+                {(taskStatus.message?.includes('再執筆') || taskStatus.message?.includes('差し戻し') || taskStatus.sub_message?.includes('再執筆')) && (
+                  <span className="px-1.5 py-0.5 rounded text-[10px] bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40 animate-pulse">
+                    🔄 差し戻し修正中
+                  </span>
+                )}
+              </span>
               <span>{taskStatus.current_step} / {taskStatus.total_steps || 1}話</span>
             </div>
             <div className="progress-track h-1.5 bg-white/10 rounded-sm">
@@ -192,7 +199,7 @@ export function TaskMonitor({ logEndRef, onStop, connectionState }: TaskMonitorP
         {/* Scrolling log container */}
         <div className="flex-1 p-4 overflow-y-auto max-h-[200px] flex flex-col gap-1 task-monitor-log">
           {taskStatus.logs.map((log, index) => (
-            <div key={log} className="text-[0.72rem] font-mono whitespace-pre-wrap leading-snug text-log-line">
+            <div key={`${index}-${log.slice(0, 20)}`} className="text-[0.72rem] font-mono whitespace-pre-wrap leading-snug text-log-line">
               {log}
             </div>
           ))}

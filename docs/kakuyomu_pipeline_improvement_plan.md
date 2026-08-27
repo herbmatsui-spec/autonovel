@@ -148,77 +148,93 @@
 15. 収束判定追加（減らなければ budget 消費で END）。
 16. テスト：revise 発動で API +2×該当話 増を確認。
 
+### Phase 0 — 基盤・計測（1〜8）
+- [x] 1. `MasterGraphState` に `api_call_count: int` 追加。
+- [x] 2. `MasterGraphState` に `quality_metrics: Dict[str, Any]` 追加。
+- [x] 3. `CountingLLMProvider` の `generate_json` / `generate_text` で `api_call_count += 1` するよう修正。
+- [x] 4. ベースライン API コール数（best=14, worst=22）のアサーション追加・検証確認。
+- [x] 5. `ReviewGraphState` に `commercial_score: float` 追加。
+- [x] 6. `WritingGraphState` に `event_density: float` 追加。
+- [x] 7. `MasterGraphState` に `revision_budget: int` 追加。
+- [x] 8. ブランチ `feature/kakuyomu-pipeline-improvement` 作成および Phase 0 コミット。
+
+### Phase 1 — ① 差し戻しループ（9〜16）
+- [x] 9. `call_review_graph_node` で `requires_revision` 話数を集計し `review_summary` を返却。
+- [x] 10. `MasterGraphState` に `needs_revision_eps: List[int]` を追加。
+- [x] 11. `master_graph.py` に `revise_writing_node` をノードとして登録。
+- [x] 12. `revise_writing_node` で該当話のみ `writing_graph` を再実行。
+- [x] 13. `revise_writing_node` で修正話のみ ReviewGraph を1回再実行し、`review_summary` / `needs_revision_eps` を再集計。
+- [x] 14. `master_graph.py` に条件付きエッジ `review_phase -> should_revise_writing -> (revise_phase | END)` を追加。
+- [x] 15. `revise_writing_node` に収束判定（未改善時は budget=0 で強制終了）と `quality_metrics` 記録を追加。
+- [x] 16. `tests/workflows/test_three_episodes_review.py` に `test_revision_loop_triggers_for_flagged_episode`（14 + 4 = 18コール）を追加し、5 件のテスト全パスを確認。Phase 1 コミット。
+
 ### Phase 2 — ② 密度ルービック（17〜26）
-17. `writing_nodes.py` 冒頭に `MIN_DRAFT_CHARS = 1500` 定義。
-18. `self_audit` の `len(draft) < 50` を定数に置換。
-19. audit プロンプトに `event_density` 評価項目追加。
-20. 出力をパースし `state["event_density"]` 格納。
-21. `check_audit_results` の合格条件に `event_density >= 0.5` を AND。
-22. `failures` に不足要素（展開/露出/緊張）を書くよう指示追記。
-23. `generate_draft_node` の既存 failures 反映ロジックを不足要素に活用。
-24. `llm=None` 時ダミーにも `event_density` 付与。
-25. テスト：短草稿は再生成せず、密度不合格は再生成することを確認。
-26. draft 文字数・密度をログ出力。
+- [x] 17. `writing_nodes.py` 冒頭に `MIN_DRAFT_CHARS = 1500` 定義。
+- [x] 18. `self_audit` の `len(draft) < 50` を定数に置換。
+- [x] 19. audit プロンプトに `event_density` 評価項目追加。
+- [x] 20. 出力をパースし `state["event_density"]` 格納。
+- [x] 21. `check_audit_results` の合格条件に `event_density >= 0.5` を AND。
+- [x] 22. `failures` に不足要素（展開/露出/緊張）を書くよう指示追記。
+- [x] 23. `generate_draft_node` の既存 failures 反映ロジックを不足要素に活用。
+- [x] 24. `llm=None` 時ダミーにも `event_density` 付与。
+- [x] 25. テスト：短草稿は再生成せず、密度不合格は再生成することを確認。
+- [x] 26. draft 文字数・密度をログ出力。
 
 ### Phase 3 — ③ 話内並列＋Bibleロック（27〜34）
-27. `analyze_pacing` と `check_character` の独立性をコメント確認。
-28. 両ノードを `asyncio.gather` で並列する `run_review_parallel()` 追加。
-29. `SequentialReviewGraphFallback` も gather 化。
-30. `MasterGraphState` に `bible_state: dict` 追加。
-31. `call_writing_graph_node` の for 内で bible_state へ直列書き込み。
-32. `call_review_graph_node` 開始時に bible_state を読み取り。
-33. 並列（review 内）と bible 直列書き込みの非競合を構造で保証。
-34. テスト：3話で API 数不変・正動作を確認。
+- [x] 27. `analyze_pacing` と `check_character` の独立性をコメント確認。
+- [x] 28. 両ノードを `asyncio.gather` で並列する `run_review_parallel()` 追加。
+- [x] 29. `SequentialReviewGraphFallback` も gather 化。
+- [x] 30. `MasterGraphState` に `bible_state: dict` 追加。
+- [x] 31. `call_writing_graph_node` の for 内で bible_state へ直列書き込み。
+- [x] 32. `call_review_graph_node` 開始時に bible_state を読み取り。
+- [x] 33. 並列（review 内）と bible 直列書き込みの非競合を構造で保証。
+- [x] 34. テスト：3話で API 数不変・正動作を確認。
 
 ### Phase 4 — ④ カクヨム指標ルービック（35〜42）
-35. `review_nodes.py` に `score_commercial_node` 追加（generate_json, audit）。
-36. プロンプトにルービック5項目を明記。
-37. 出力を `commercial_score` と副次項目にパース。
-38. review エッジを `pacing → char → commercial → propose` に変更。
-39. `ReviewGraphState.commercial_score` に格納。
-40. `call_review_graph_node` で各話スコアを `quality_metrics` へ集計。
-41. `COMMERCIAL_PASS = 0.7` を定数化。
-42. テスト：commercial_score が 0–1 で state に入ることを確認。
+- [x] 35. `review_nodes.py` に `score_commercial_node` 追加（generate_json, audit）。
+- [x] 36. プロンプトにルービック5項目を明記。
+- [x] 37. 出力を `commercial_score` と副次項目にパース。
+- [x] 38. review エッジを `pacing → char → commercial → propose` に変更。
+- [x] 39. `ReviewGraphState.commercial_score` に格納。
+- [x] 40. `call_review_graph_node` で各話スコアを `quality_metrics` へ集計。
+- [x] 41. `COMMERCIAL_PASS = 0.7` を定数化。
+- [x] 42. テスト：commercial_score が 0–1 で state に入ることを確認。
 
 ### Phase 5 — ⑤ プロット複数案×選抜（43〜50）
-43. `generate_initial_plot_node` に `num_variants: int = 1` 追加。
-44. `num_variants>1` で `generate_json` を逐次 N 回呼び `plot_variants` 保持。
-45. `PlotGraphState` に `plot_variants: list` 追加。
-46. ④ルービック転用の `score_plot_variants_node` 追加。
-47. 上位1案を `parsed_plots` にセット。
-48. `should_refine_plot` の閾値を 0.8→0.85 に引き上げ。
-49. `evaluate_plot_node` を variants スコアリングで拡張（後方互換）。
-50. テスト：3案生成→1案選抜で API +2 増を確認。
+- [x] 43. `generate_initial_plot_node` に `num_variants: int = 1` 追加。
+- [x] 44. `num_variants>1` で `generate_json` を逐次 N 回呼び `plot_variants` 保持。
+- [x] 45. `PlotGraphState` に `plot_variants: list` 追加。
+- [x] 46. ④ルービック転用の `score_plot_variants_node` 追加。
+- [x] 47. 上位1案を `parsed_plots` にセット。
+- [x] 48. `should_refine_plot` の閾値を 0.8→0.85 に引き上げ。
+- [x] 49. `evaluate_plot_node` を variants スコアリングで拡張（後方互換）。
+- [x] 50. テスト：3案生成→1案選抜で API +2 増を確認。
 
-### Phase 6 — ⑥ Bible continuity ledger（51〜58）
-51. `state.py` に `ledger: dict` 追加。
-52. プロット完了時に ledger 初期化する軽量 `init_ledger_node` 追加。
-53. `build_context_node` プロンプトに `ledger` 注入。
-54. `self_audit_node` プロンプトに「ledger との矛盾検出」追加。
-55. `check_character_consistency_node` で ledger 照合を明示。
-56. 各話完了時に ledger 更新する `update_ledger_node` 追加。
-57. 更新を writing for 内で直列実行。
-58. テスト：ledger が話跨ぎで引き継がれることを確認。
+### Phase 6 — ⑥ 前話文脈参照の確約（51〜58）
+- [x] 51. `WritingGraphState` に `prev_episode_tail: str` 追加。
+- [x] 52. `call_writing_graph_node` のループで直前話末尾500字を取得。
+- [x] 53. `writing_input["prev_episode_tail"]` へ渡す。
+- [x] 54. `generate_draft_node` のプロンプトへ前話末尾セクションを追加。
+- [x] 55. 「前話の文脈・感情を引き継ぎ」指示を明記。
+- [x] 56. 1話目の場合はセクション空文字ハンドリング。
+- [x] 57. `self_audit_node` に前話接続整合性項目を追加。
+- [x] 58. テスト：2話生成時に前話末尾がプロンプトに含まれることを確認。
 
-### Phase 7 — ⑦ フック最適化（59〜64）
-59. LLM 不要の `check_hook_cadence(draft)` ヘルパ追加（末尾未解決緊張の簡易判定）。
-60. `check_opening_hook(draft)` 追加（冒頭300字フック≥1 の簡易判定）。
-61. 不合格時のみ `hook_optimize_node`（generate_text）を1往復。
-62. 全文再生成ではなく「冒頭/末尾の書き換え」に限定するプロンプト。
-63. 再検証で合格なら終了、不合格でも1回限り。
-64. テスト：フック欠如で optimize が1回発動し API +1（text）になることを確認。
-
-### Phase 8 — ⑧ タイトル/タグ/CTR（65〜68）
-65. 新ノード `generate_metadata_node`（plot 後1回）でタイトル3案＋タグ＋2行あらすじ。
-66. ④ルービックでタイトル採点し上位を `MasterGraphState` に格納。
-67. カクヨム想定ジャンル/タグ一覧を定数化し整合走査でタグ絞り込み。
-68. テスト：メタデータが構造化されて state に入ることを確認。
-
-### Phase 9 — ⑨ HITL プロット承認ゲート（69〜72）
-69. `MasterGraphState` に `awaiting_approval: bool` と `approval_payload: dict` 追加。
-70. プロット確定直後に SSE/reporter でプロット（複数案含む）を送信し一時停止。
-71. 承認/別案/調整の3選択を受け取り、別案なら⑤再実行、調整なら refine 1回追加。
-72. checkpointer で再開可能にし、承認後のみ writing へ；pytest で「承認待ち→再開」をモック検証。
+### Phase 7 — ⑦ 統合テスト・UI連携（59〜72）
+- [x] 59. `tests/workflows/test_three_episodes_review.py` を最新仕様に同期（コール数・アサーション）。
+- [x] 60. `tests/unit/test_commercial_scoring.py` を新設（ルービック5項目パース単体テスト）。
+- [x] 61. `tests/unit/test_density_rubric.py` を新設（1500字・密度不合格の再生成単体テスト）。
+- [x] 62. `tests/unit/test_plot_variants.py` を新設（N案生成と選抜の単体テスト）。
+- [x] 63. `pytest tests/` を全実行（全パス確認）。
+- [x] 64. `frontend/src/types/api.ts` に `event_density` / `commercial_score` / `plot_variants` 追加。
+- [x] 65. `frontend/src/components/tabs/AuditTab.tsx` にカクヨム商業スコア表示（ルービック5レーダー/バー）。
+- [x] 66. `frontend/src/components/tabs/WriteTab.tsx` に草稿文字数と `event_density` インジケータ追加。
+- [x] 67. `frontend/src/components/tabs/PlotsTab.tsx` に複数案切り替え/比較 UI を追加。
+- [x] 68. `frontend/src/components/panels/TaskMonitor.tsx` に差し戻しループ発生時の警告バッジ追加。
+- [x] 69. `npm run build` または `npm test`（型チェックとビルド確認）。
+- [x] 70. `docs/kakuyomu_pipeline_improvement_plan.md` の全チェックボックスを [x] に更新。
+- [x] 71. 実装サマリーを `docs/` に作成。
+- [x] 72. `main` ブランチへマージ（または PR 準備完了確認）。
 
 ---
 

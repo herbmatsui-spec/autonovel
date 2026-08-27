@@ -23,10 +23,12 @@ export interface Plot {
   ep_num: number;
   title: string;
   summary: string;
-  detailed_blueprint: string;
-  tension: number;
-  is_catharsis: boolean;
-  status: string;
+  detailed_blueprint?: string;
+  tension?: number;
+  is_catharsis?: boolean;
+  status?: string;
+  next_hook?: string;
+  plot_variants?: any[];
 }
 
 export interface Chapter {
@@ -36,7 +38,17 @@ export interface Chapter {
   summary: string;
   created_at: string;
   quality_score?: number;
+  event_density?: number;
+  commercial_score?: number;
+  commercial_breakdown?: {
+    opening_hook?: number;
+    cadence_pull?: number;
+    emotional_amplitude?: number;
+    mystery_foreshadowing?: number;
+    cliffhanger_tension?: number;
+  };
   killer_phrase?: string;
+  requires_revision?: boolean;
 }
 
 export interface Bible {
@@ -78,7 +90,7 @@ export interface TaskStatus {
 }
 
 export interface EasyModeParams {
-  api_key: string;
+  api_key?: string;
   config: Record<string, unknown>;
   genre: string;
   keywords: string;
@@ -101,7 +113,7 @@ export interface EasyModeParams {
 }
 
 export interface EpisodeGenerateParams {
-  api_key: string;
+  api_key?: string;
   config: Record<string, unknown>;
   book_id: number;
   write_from: number;
@@ -119,13 +131,13 @@ export interface EpisodeGenerateCandidatesParams extends EpisodeGenerateParams {
 }
 
 export interface PlanGenerationParams {
-  api_key: string;
+  api_key?: string;
   config: Record<string, unknown>;
   params: Record<string, unknown>;
 }
 
 export interface RetryFailedParams {
-  api_key: string;
+  api_key?: string;
   config: Record<string, unknown>;
   book_id: number;
   passion: number;
@@ -133,7 +145,7 @@ export interface RetryFailedParams {
 }
 
 export interface PlotExpandParams {
-  api_key: string;
+  api_key?: string;
   config: Record<string, unknown>;
   book_id: number;
   gen_from: number;
@@ -142,26 +154,26 @@ export interface PlotExpandParams {
 }
 
 export interface PlotRebuildParams {
-  api_key: string;
+  api_key?: string;
   config: Record<string, unknown>;
   params: Record<string, unknown>;
 }
 
 export interface CritiqueOptimizeParams {
-  api_key: string;
+  api_key?: string;
   config: Record<string, unknown>;
   book_id: number;
 }
 
 export interface AuditPlanParams {
-  api_key: string;
+  api_key?: string;
   genre: string;
   keywords: string;
   trend_memo: string;
 }
 
 export interface ChapterImportParams {
-  api_key: string;
+  api_key?: string;
   book_id: number;
   ep_num: number;
   import_text: string;
@@ -169,7 +181,7 @@ export interface ChapterImportParams {
 }
 
 export interface MarketingGenerateParams {
-  api_key: string;
+  api_key?: string;
   book_id: number;
   latest_ep: number;
 }
