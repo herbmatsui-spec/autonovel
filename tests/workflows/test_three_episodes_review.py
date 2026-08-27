@@ -30,7 +30,8 @@ import unittest
 from unittest.mock import AsyncMock, MagicMock
 
 from src.backend.workflows.graphs.master_graph import compile_master_graph
-from src.backend.workflows.state import MasterGraphState
+from src.backend.workflows.graphs.plot_graph import compile_plot_graph
+from src.backend.workflows.state import MasterGraphState, PlotGraphState
 from src.core.llm.providers.base import LLMResponse
 
 
@@ -304,6 +305,46 @@ class TestThreeEpisodesReview(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result["status"], "completed")
         self.assertEqual(result["review_summary"]["requires_revision_count"], 0)
         self.assertTrue(result["quality_metrics"].get("revision_converged", False))
+
+    async def test_plot_variants_selection(self):
+        """num_variants=3 で3案生成→3案評価選抜を行い、最高スコア案が選ばれること"""
+        variant_1 = '[{"ep_num": 1, "title": "案1", "summary": "案1あらすじ", "next_hook": "引き1"}]'
+        variant_2 = '[{"ep_num": 1, "title": "案2(最良)", "summary": "案2あらすじ", "next_hook": "引き2"}]'
+        variant_3 = '[{"ep_num": 1, "title": "案3", "summary": "案3あらすじ", "next_hook": "引き3"}]'
+
+        provider = CountingLLMProvider(
+            json_queue=[
+                # 初期生成: 3案
+                _json(variant_1),
+                _json(variant_2),
+                _json(variant_3),
+                # 評価選抜: 3案評価（案2に最高スコア0.95を付与）
+                _json('{"is_approved": true, "score": 0.70, "issues": [], "suggestions": []}'),
+                _json('{"is_approved": true, "score": 0.95, "issues": [], "suggestions": []}'),
+                _json('{"is_approved": true, "score": 0.80, "issues": [], "suggestions": []}'),
+            ],
+            text_queue=[],
+        )
+
+        app = compile_plot_graph(llm_provider=provider)
+        initial_state: PlotGraphState = {
+            "genre": "ファンタジー",
+            "theme": "冒険",
+            "target_episodes": 1,
+            "num_variants": 3,
+        }
+
+        result = await app.ainvoke(initial_state)
+
+        # 3案生成 + 3案評価 = 6 calls
+        self.assertEqual(provider.json_calls, 6)
+        self.assertEqual(provider.api_call_count, 6)
+        provider.assert_exhausted()
+
+        # 最良案（案2）が選ばれていることの確認
+        self.assertEqual(result["parsed_plots"][0]["title"], "案2(最良)")
+        self.assertEqual(result["quality_score"], 0.95)
+        self.assertTrue(result["is_approved"])
 
 
 if __name__ == "__main__":

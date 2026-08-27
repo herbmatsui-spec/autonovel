@@ -31,6 +31,8 @@ class PlotGraphState(BaseGraphState, total=False):
     # プロット生成と推敲のループ状態
     current_iteration: int
     max_iterations: int
+    num_variants: int
+    plot_variants: List[Any]
     raw_plot_draft: str
     parsed_plots: List[Dict[str, Any]]
     critique_feedback: Optional[str]
