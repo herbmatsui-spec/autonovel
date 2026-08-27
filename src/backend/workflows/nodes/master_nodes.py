@@ -198,10 +198,17 @@ async def call_review_graph_node(
         "needs_revision_eps": [ep for ep, r in review_results.items() if r.get("requires_revision", False)],
     }
 
+    metrics = dict(state.get("quality_metrics", {}))
+    scores = [r.get("commercial_score", 0.0) for r in review_results.values() if "commercial_score" in r]
+    if scores:
+        metrics["commercial_scores"] = {ep: r.get("commercial_score", 0.0) for ep, r in review_results.items()}
+        metrics["avg_commercial_score"] = sum(scores) / len(scores)
+
     return {
         "review_results": review_results,
         "review_summary": review_summary,
         "needs_revision_eps": review_summary["needs_revision_eps"],
+        "quality_metrics": metrics,
         "current_phase": "all_completed",
         "status": "completed",
         "overall_progress": 1.0,

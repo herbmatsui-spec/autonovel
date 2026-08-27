@@ -98,6 +98,7 @@ WRITING_AUDIT_NG = _json('{"is_integrity_ok": false, "is_causal_ok": true, "caus
 REVIEW_PACING_OK = _json('{"pacing_score": 0.88, "is_pacing_ok": true, "issues": [], "recommendations": []}')
 REVIEW_PACING_NG = _json('{"pacing_score": 0.40, "is_pacing_ok": false, "issues": ["テンポが遅い"], "recommendations": ["テンポ改善"]}')
 REVIEW_CHAR_OK = _json('{"character_score": 0.92, "is_character_ok": true, "inconsistencies": []}')
+REVIEW_COMMERCIAL_OK = _json('{"commercial_score": 0.88, "is_commercial_ok": true, "breakdown": {"opening_hook": 0.9, "cadence_pull": 0.85, "emotional_amplitude": 0.88, "mystery_foreshadowing": 0.8, "cliffhanger_tension": 0.9}, "advice": []}')
 
 
 def _phase_of(prompt: str) -> str:
@@ -114,6 +115,8 @@ def _phase_of(prompt: str) -> str:
         return "review_pacing"
     if "character_score" in prompt:
         return "review_char"
+    if "commercial_score" in prompt or "商業ヒット" in prompt:
+        return "review_commercial"
     if "執筆してください" in prompt or "前回の推敲指摘" in prompt:
         return "writing_draft"
     return "unknown"
@@ -142,20 +145,23 @@ class TestThreeEpisodesReview(unittest.IsolatedAsyncioTestCase):
         return await app.ainvoke(initial_state)
 
     async def test_best_case_api_call_count_and_order(self):
-        """全承認（ループなし）の場合: 3話で API コールは 14 回。"""
+        """全承認（ループなし）の場合: 3話で API コールは 17(json) + 3(text) = 20 回。"""
         provider = CountingLLMProvider(
             json_queue=[
-                PLOT_INITIAL_OK,   # plot_initial
-                PLOT_EVAL_OK,      # plot_eval
-                WRITING_AUDIT_OK,  # writing ep1 audit
-                WRITING_AUDIT_OK,  # writing ep2 audit
-                WRITING_AUDIT_OK,  # writing ep3 audit
-                REVIEW_PACING_OK,  # review ep1 pacing
-                REVIEW_CHAR_OK,    # review ep1 char
-                REVIEW_PACING_OK,  # review ep2 pacing
-                REVIEW_CHAR_OK,    # review ep2 char
-                REVIEW_PACING_OK,  # review ep3 pacing
-                REVIEW_CHAR_OK,    # review ep3 char
+                PLOT_INITIAL_OK,       # plot_initial
+                PLOT_EVAL_OK,          # plot_eval
+                WRITING_AUDIT_OK,      # writing ep1 audit
+                WRITING_AUDIT_OK,      # writing ep2 audit
+                WRITING_AUDIT_OK,      # writing ep3 audit
+                REVIEW_PACING_OK,      # review ep1 pacing
+                REVIEW_CHAR_OK,        # review ep1 char
+                REVIEW_COMMERCIAL_OK,  # review ep1 commercial
+                REVIEW_PACING_OK,      # review ep2 pacing
+                REVIEW_CHAR_OK,        # review ep2 char
+                REVIEW_COMMERCIAL_OK,  # review ep2 commercial
+                REVIEW_PACING_OK,      # review ep3 pacing
+                REVIEW_CHAR_OK,        # review ep3 char
+                REVIEW_COMMERCIAL_OK,  # review ep3 commercial
             ],
             text_queue=[
                 _json(LONG_DRAFT),  # writing ep1 draft
@@ -167,10 +173,10 @@ class TestThreeEpisodesReview(unittest.IsolatedAsyncioTestCase):
         result = await self._run(provider)
 
         # --- API コール数の検証 ---
-        self.assertEqual(provider.json_calls, 11)
+        self.assertEqual(provider.json_calls, 14)
         self.assertEqual(provider.text_calls, 3)
-        self.assertEqual(provider.api_call_count, 14)
-        self.assertEqual(provider.json_calls + provider.text_calls, 14)
+        self.assertEqual(provider.api_call_count, 17)
+        self.assertEqual(provider.json_calls + provider.text_calls, 17)
         provider.assert_exhausted()
 
         # --- 結果構造の検証 ---
@@ -182,6 +188,14 @@ class TestThreeEpisodesReview(unittest.IsolatedAsyncioTestCase):
         self.assertIn("ep_1", result["bible_state"])
         self.assertIn("ep_2", result["bible_state"])
         self.assertIn("ep_3", result["bible_state"])
+
+        # --- 商業スコアの検証 (Step 42) ---
+        for ep, r in result["review_results"].items():
+            self.assertIn("commercial_score", r)
+            self.assertGreaterEqual(r["commercial_score"], 0.0)
+            self.assertLessEqual(r["commercial_score"], 1.0)
+        self.assertIn("avg_commercial_score", result["quality_metrics"])
+        self.assertGreaterEqual(result["quality_metrics"]["avg_commercial_score"], 0.7)
 
         # --- 動き（フェーズの順序）の検証 ---
         labels = [(_phase_of(s["prompt"]), _ep_of(s["prompt"])) for s in provider.sequence]
@@ -208,7 +222,7 @@ class TestThreeEpisodesReview(unittest.IsolatedAsyncioTestCase):
         )
 
     async def test_worst_case_api_call_count(self):
-        """全ループ最大化（plot 1回リファイン + writing 各話1回再生成）の場合: 3話で API コールは 22 回。"""
+        """全ループ最大化（plot 1回リファイン + writing 各話1回再生成）の場合: 3話で API コールは 25 回。"""
         provider = CountingLLMProvider(
             json_queue=[
                 PLOT_INITIAL_OK,   # plot_initial
@@ -221,10 +235,10 @@ class TestThreeEpisodesReview(unittest.IsolatedAsyncioTestCase):
                 WRITING_AUDIT_NG, WRITING_AUDIT_OK,
                 # writing ep3
                 WRITING_AUDIT_NG, WRITING_AUDIT_OK,
-                # review x3
-                REVIEW_PACING_OK, REVIEW_CHAR_OK,
-                REVIEW_PACING_OK, REVIEW_CHAR_OK,
-                REVIEW_PACING_OK, REVIEW_CHAR_OK,
+                # review x3 (pacing, char, commercial)
+                REVIEW_PACING_OK, REVIEW_CHAR_OK, REVIEW_COMMERCIAL_OK,
+                REVIEW_PACING_OK, REVIEW_CHAR_OK, REVIEW_COMMERCIAL_OK,
+                REVIEW_PACING_OK, REVIEW_CHAR_OK, REVIEW_COMMERCIAL_OK,
             ],
             text_queue=[
                 _json(LONG_DRAFT), _json(LONG_DRAFT),
@@ -235,35 +249,39 @@ class TestThreeEpisodesReview(unittest.IsolatedAsyncioTestCase):
 
         result = await self._run(provider)
 
-        # plot: 4, writing: 3話 × 4 (=12), review: 3話 × 2 (=6) → 22
-        self.assertEqual(provider.json_calls, 4 + 3 * 2 + 3 * 2)   # 16
+        # plot: 4, writing: 3話 × 4 (=12), review: 3話 × 3 (=9) → json 19 + text 6 = 25
+        self.assertEqual(provider.json_calls, 4 + 3 * 2 + 3 * 3)   # 19
         self.assertEqual(provider.text_calls, 3 * 2)                # 6
-        self.assertEqual(provider.api_call_count, 22)
-        self.assertEqual(provider.json_calls + provider.text_calls, 22)
+        self.assertEqual(provider.api_call_count, 25)
+        self.assertEqual(provider.json_calls + provider.text_calls, 25)
         provider.assert_exhausted()
         self.assertEqual(result["status"], "completed")
 
     async def test_revision_loop_triggers_for_flagged_episode(self):
         """第2話のみ Review で要修正と判定された場合:
-        基本14コール + 第2話再執筆(draft:1, audit:1) + 第2話再レビュー(pacing:1, char:1) = 18コール。
+        基本17(json)+3(text)=20コール + 第2話再執筆(draft:1, audit:1) + 第2話再レビュー(pacing:1, char:1, commercial:1) = 25コール。
         """
         provider = CountingLLMProvider(
             json_queue=[
-                PLOT_INITIAL_OK,   # plot_initial
-                PLOT_EVAL_OK,      # plot_eval
-                WRITING_AUDIT_OK,  # writing ep1 audit
-                WRITING_AUDIT_OK,  # writing ep2 audit
-                WRITING_AUDIT_OK,  # writing ep3 audit
-                REVIEW_PACING_OK,  # review ep1 pacing
-                REVIEW_CHAR_OK,    # review ep1 char
-                REVIEW_PACING_NG,  # review ep2 pacing (要修正フラグ発生)
-                REVIEW_CHAR_OK,    # review ep2 char
-                REVIEW_PACING_OK,  # review ep3 pacing
-                REVIEW_CHAR_OK,    # review ep3 char
+                PLOT_INITIAL_OK,       # plot_initial
+                PLOT_EVAL_OK,          # plot_eval
+                WRITING_AUDIT_OK,      # writing ep1 audit
+                WRITING_AUDIT_OK,      # writing ep2 audit
+                WRITING_AUDIT_OK,      # writing ep3 audit
+                REVIEW_PACING_OK,      # review ep1 pacing
+                REVIEW_CHAR_OK,        # review ep1 char
+                REVIEW_COMMERCIAL_OK,  # review ep1 commercial
+                REVIEW_PACING_NG,      # review ep2 pacing (要修正フラグ発生)
+                REVIEW_CHAR_OK,        # review ep2 char
+                REVIEW_COMMERCIAL_OK,  # review ep2 commercial
+                REVIEW_PACING_OK,      # review ep3 pacing
+                REVIEW_CHAR_OK,        # review ep3 char
+                REVIEW_COMMERCIAL_OK,  # review ep3 commercial
                 # --- リバイスフェーズ（第2話のみ） ---
-                WRITING_AUDIT_OK,  # writing ep2 re-audit
-                REVIEW_PACING_OK,  # review ep2 re-pacing (合格)
-                REVIEW_CHAR_OK,    # review ep2 re-char (合格)
+                WRITING_AUDIT_OK,      # writing ep2 re-audit
+                REVIEW_PACING_OK,      # review ep2 re-pacing (合格)
+                REVIEW_CHAR_OK,        # review ep2 re-char (合格)
+                REVIEW_COMMERCIAL_OK,  # review ep2 re-commercial (合格)
             ],
             text_queue=[
                 _json(LONG_DRAFT),  # writing ep1 draft
@@ -276,10 +294,10 @@ class TestThreeEpisodesReview(unittest.IsolatedAsyncioTestCase):
 
         result = await self._run(provider)
 
-        # 14 + 4 = 18 calls
-        self.assertEqual(provider.json_calls, 14)
+        # 18 + 4 = 22 calls
+        self.assertEqual(provider.json_calls, 18)
         self.assertEqual(provider.text_calls, 4)
-        self.assertEqual(provider.api_call_count, 18)
+        self.assertEqual(provider.api_call_count, 22)
         provider.assert_exhausted()
 
         # 結果構造の検証

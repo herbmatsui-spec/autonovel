@@ -22,6 +22,7 @@ from src.backend.workflows.nodes.review_nodes import (
     check_character_consistency_node,
     propose_edits_node,
     run_review_parallel,
+    score_commercial_node,
 )
 from src.backend.workflows.state import ReviewGraphState
 
@@ -39,17 +40,20 @@ def create_review_graph(llm_provider: Any = None) -> Any:
     # 依存性注入
     bound_pacing_node = functools.partial(analyze_pacing_node, llm_provider=llm_provider)
     bound_char_node = functools.partial(check_character_consistency_node, llm_provider=llm_provider)
+    bound_commercial_node = functools.partial(score_commercial_node, llm_provider=llm_provider)
     bound_propose_node = functools.partial(propose_edits_node, llm_provider=llm_provider)
 
     # ノード追加
     graph.add_node("analyze_pacing", bound_pacing_node)
     graph.add_node("check_character_consistency", bound_char_node)
+    graph.add_node("score_commercial", bound_commercial_node)
     graph.add_node("propose_edits", bound_propose_node)
 
-    # エッジ接続 (Pacing -> Character -> Synthesis)
+    # エッジ接続 (Pacing -> Character -> Commercial -> Synthesis)
     graph.add_edge(START, "analyze_pacing")
     graph.add_edge("analyze_pacing", "check_character_consistency")
-    graph.add_edge("check_character_consistency", "propose_edits")
+    graph.add_edge("check_character_consistency", "score_commercial")
+    graph.add_edge("score_commercial", "propose_edits")
     graph.add_edge("propose_edits", END)
 
     return graph
@@ -70,11 +74,14 @@ class SequentialReviewGraphFallback:
         self.llm_provider = llm_provider
 
     async def ainvoke(self, state: ReviewGraphState) -> ReviewGraphState:
-        """非同期で pacing/character を並列実行し、propose_edits を実行して推敲監査を完了"""
+        """非同期で pacing/character を並列実行し、商業スコア採点と総合提案を実行"""
         current_state = dict(state)
         # 話内並列実行 (pacing + character)
         parallel_res = await run_review_parallel(current_state, llm_provider=self.llm_provider)
         current_state.update(parallel_res)
+
+        comm_res = await score_commercial_node(current_state, llm_provider=self.llm_provider)
+        current_state.update(comm_res)
 
         propose_res = await propose_edits_node(current_state, llm_provider=self.llm_provider)
         current_state.update(propose_res)
