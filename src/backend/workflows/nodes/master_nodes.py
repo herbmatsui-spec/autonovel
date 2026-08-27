@@ -188,6 +188,7 @@ async def call_review_graph_node(
     return {
         "review_results": review_results,
         "review_summary": review_summary,
+        "needs_revision_eps": review_summary["needs_revision_eps"],
         "current_phase": "all_completed",
         "status": "completed",
         "overall_progress": 1.0,
@@ -203,7 +204,7 @@ async def revise_writing_node(
 ) -> Dict[str, Any]:
     """
     【Master Node: Revise Writing Subgraph Node】
-    要修正と判定されたエピソードのみを対象に WritingGraph を再実行する。
+    要修正と判定されたエピソードのみを対象に WritingGraph を再実行し、差分再評価を行う。
     """
     review_results = state.get("review_results", {})
     needs_revision_eps = state.get(
