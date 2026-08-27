@@ -62,6 +62,7 @@ class WritingGraphState(BaseGraphState, total=False):
     causal_reason: str
     failures: List[Dict[str, Any]]
     quality_score: float
+    event_density: float
 
 
 class ReviewGraphState(BaseGraphState, total=False):
@@ -78,6 +79,7 @@ class ReviewGraphState(BaseGraphState, total=False):
     requires_revision: bool
     revision_instructions: List[str]
     revised_content: Optional[str]
+    commercial_score: float
 
 
 class MasterGraphState(BaseGraphState, total=False):
@@ -88,11 +90,14 @@ class MasterGraphState(BaseGraphState, total=False):
     target_end_ep: int
     api_call_count: int
     quality_metrics: Dict[str, Any]
+    revision_budget: int
+    needs_revision_eps: List[int]
     
     # 各サブグラフの実行結果
     plot_result: Optional[PlotGraphState]
     writing_results: Dict[int, WritingGraphState]
     review_results: Dict[int, ReviewGraphState]
+    review_summary: Dict[str, Any]
     
     overall_progress: float
     current_phase: str

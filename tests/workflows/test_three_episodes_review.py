@@ -96,6 +96,7 @@ PLOT_REFINE = _json(
 WRITING_AUDIT_OK = _json('{"is_integrity_ok": true, "is_causal_ok": true, "causal_reason": "ok", "score": 0.90, "failures": []}')
 WRITING_AUDIT_NG = _json('{"is_integrity_ok": false, "is_causal_ok": true, "causal_reason": "口調ブレ", "score": 0.60, "failures": [{"category":"Character","description":"口調が崩れている"}]}')
 REVIEW_PACING_OK = _json('{"pacing_score": 0.88, "is_pacing_ok": true, "issues": [], "recommendations": []}')
+REVIEW_PACING_NG = _json('{"pacing_score": 0.40, "is_pacing_ok": false, "issues": ["テンポが遅い"], "recommendations": ["テンポ改善"]}')
 REVIEW_CHAR_OK = _json('{"character_score": 0.92, "is_character_ok": true, "inconsistencies": []}')
 
 
@@ -237,6 +238,50 @@ class TestThreeEpisodesReview(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(provider.json_calls + provider.text_calls, 22)
         provider.assert_exhausted()
         self.assertEqual(result["status"], "completed")
+
+    async def test_revision_loop_triggers_for_flagged_episode(self):
+        """第2話のみ Review で要修正と判定された場合:
+        基本14コール + 第2話再執筆(draft:1, audit:1) + 第2話再レビュー(pacing:1, char:1) = 18コール。
+        """
+        provider = CountingLLMProvider(
+            json_queue=[
+                PLOT_INITIAL_OK,   # plot_initial
+                PLOT_EVAL_OK,      # plot_eval
+                WRITING_AUDIT_OK,  # writing ep1 audit
+                WRITING_AUDIT_OK,  # writing ep2 audit
+                WRITING_AUDIT_OK,  # writing ep3 audit
+                REVIEW_PACING_OK,  # review ep1 pacing
+                REVIEW_CHAR_OK,    # review ep1 char
+                REVIEW_PACING_NG,  # review ep2 pacing (要修正フラグ発生)
+                REVIEW_CHAR_OK,    # review ep2 char
+                REVIEW_PACING_OK,  # review ep3 pacing
+                REVIEW_CHAR_OK,    # review ep3 char
+                # --- リバイスフェーズ（第2話のみ） ---
+                WRITING_AUDIT_OK,  # writing ep2 re-audit
+                REVIEW_PACING_OK,  # review ep2 re-pacing (合格)
+                REVIEW_CHAR_OK,    # review ep2 re-char (合格)
+            ],
+            text_queue=[
+                _json(LONG_DRAFT),  # writing ep1 draft
+                _json(LONG_DRAFT),  # writing ep2 draft
+                _json(LONG_DRAFT),  # writing ep3 draft
+                # --- リバイスフェーズ（第2話のみ） ---
+                _json(LONG_DRAFT),  # writing ep2 re-draft
+            ],
+        )
+
+        result = await self._run(provider)
+
+        # 14 + 4 = 18 calls
+        self.assertEqual(provider.json_calls, 14)
+        self.assertEqual(provider.text_calls, 4)
+        self.assertEqual(provider.api_call_count, 18)
+        provider.assert_exhausted()
+
+        # 結果構造の検証
+        self.assertEqual(result["status"], "completed")
+        self.assertEqual(result["review_summary"]["requires_revision_count"], 0)
+        self.assertTrue(result["quality_metrics"].get("revision_converged", False))
 
 
 if __name__ == "__main__":

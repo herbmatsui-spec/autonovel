@@ -179,12 +179,122 @@ async def call_review_graph_node(
         },
     )
 
-    if reporter and hasattr(reporter, "report"):
-        await reporter.report(1.0, "全パイプライン実行完了")
+    review_summary = {
+        "total_reviewed": len(review_results),
+        "requires_revision_count": sum(1 for r in review_results.values() if r.get("requires_revision", False)),
+        "needs_revision_eps": [ep for ep, r in review_results.items() if r.get("requires_revision", False)],
+    }
 
     return {
         "review_results": review_results,
+        "review_summary": review_summary,
         "current_phase": "all_completed",
         "status": "completed",
         "overall_progress": 1.0,
+    }
+
+
+async def revise_writing_node(
+    state: MasterGraphState,
+    *,
+    llm_provider: Any = None,
+    writing_agent: Any = None,
+    reporter: Any = None,
+) -> Dict[str, Any]:
+    """
+    【Master Node: Revise Writing Subgraph Node】
+    要修正と判定されたエピソードのみを対象に WritingGraph を再実行する。
+    """
+    review_results = state.get("review_results", {})
+    needs_revision_eps = state.get(
+        "needs_revision_eps",
+        [ep for ep, r in review_results.items() if r.get("requires_revision", False)],
+    )
+
+    if not needs_revision_eps:
+        return {"current_phase": "revise_skipped"}
+
+    logger.info(f"[MasterGraph] Revising Writing Subgraph for Episodes {needs_revision_eps}...")
+    sse = get_sse_manager()
+    writing_app = compile_writing_graph(llm_provider=llm_provider, writing_agent=writing_agent)
+    writing_results: Dict[int, WritingGraphState] = dict(state.get("writing_results", {}))
+
+    for ep in needs_revision_eps:
+        rev_info = review_results.get(ep, {})
+        instructions = rev_info.get("revision_instructions", [])
+        formatted_instructions = [
+            inst.get("description", str(inst)) if isinstance(inst, dict) else str(inst)
+            for inst in instructions
+        ]
+        inst_str = "\n- ".join(formatted_instructions) if formatted_instructions else "品質基準を満たすよう推敲してください。"
+
+        await sse.broadcast(
+            "pipeline_progress",
+            {
+                "phase": "revising",
+                "current_ep": ep,
+                "progress": 0.85,
+                "message": f"第{ep}話 指摘に基づき再執筆・推敲中...",
+            },
+        )
+
+        if reporter and hasattr(reporter, "report"):
+            await reporter.report(0.85, f"第{ep}話 指摘に基づき再執筆・推敲中...")
+
+        writing_input: WritingGraphState = {
+            "book_id": state.get("book_id", 1),
+            "branch_id": state.get("branch_id", 1),
+            "ep_num": ep,
+            "passion": 0.8,
+            "max_ac_iter": 2,
+            "sys_inst": "あなたは商業ライトノベルのベストセラー作家です。",
+            "fw_prompt": f"前回の推敲指摘:\n- {inst_str}\n第{ep}話の本文を再執筆してください。",
+        }
+
+        res = await writing_app.ainvoke(writing_input)
+        writing_results[ep] = res
+
+    # 該当話のみ ReviewGraph を1回再実行し再集計
+    review_app = compile_review_graph(llm_provider=llm_provider)
+    updated_review_results: Dict[int, ReviewGraphState] = dict(review_results)
+
+    for ep in needs_revision_eps:
+        review_input: ReviewGraphState = {
+            "book_id": state.get("book_id", 1),
+            "branch_id": state.get("branch_id", 1),
+            "ep_num": ep,
+            "source_content": writing_results[ep].get("draft_content", ""),
+        }
+        r_res = await review_app.ainvoke(review_input)
+        updated_review_results[ep] = r_res
+
+    new_needs_eps = [
+        ep for ep, r in updated_review_results.items() if r.get("requires_revision", False)
+    ]
+    is_converged = len(new_needs_eps) < len(needs_revision_eps)
+
+    new_review_summary = {
+        "total_reviewed": len(updated_review_results),
+        "requires_revision_count": len(new_needs_eps),
+        "needs_revision_eps": new_needs_eps,
+        "is_converged": is_converged,
+    }
+
+    # 予算消費と収束判定（減らなければ残予算を0にリセットして終了）
+    current_budget = state.get("revision_budget", 1)
+    new_budget = max(0, current_budget - 1) if is_converged else 0
+
+    metrics = dict(state.get("quality_metrics", {}))
+    metrics["revision_converged"] = is_converged
+    metrics["initial_revision_needed_eps"] = needs_revision_eps
+    metrics["remaining_revision_needed_eps"] = new_needs_eps
+
+    return {
+        "writing_results": writing_results,
+        "review_results": updated_review_results,
+        "review_summary": new_review_summary,
+        "needs_revision_eps": new_needs_eps,
+        "revision_budget": new_budget,
+        "quality_metrics": metrics,
+        "current_phase": "revise_completed",
     }
