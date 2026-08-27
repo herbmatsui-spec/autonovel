@@ -1,24 +1,22 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { useUserSettingsStore } from '@/store/useUserSettingsStore';
 import { useProjectStore } from '@/store/useProjectStore';
 import { useTaskStore } from '@/store/useTaskStore';
 import { useBookStore } from '@/store/useBookStore';
 import { useUIStore } from '@/store/useUIStore';
-import { useWritingStore } from '@/store/useWritingStore';
-import { getExportPackageUrl, getBooks } from '@/api';
+import { getBooks } from '@/api';
 import { toast } from 'sonner';
-import type { TaskStatus, Book } from '@/types';
+import type { TaskStatus } from '@/types';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
 import { useBooks } from '@/hooks/useBooks';
 import { useTaskStream, type StreamError } from '@/hooks/useTaskStream';
 import { useBookDetails } from '@/hooks/useBookDetails';
 import { useTaskRestore } from '@/hooks/useTaskRestore';
 import { useAppActions } from '@/hooks/useAppActions';
-import { Outlet } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
+import { Outlet, useNavigate } from 'react-router-dom';
 import { useWorkspaceStore } from '@/store/useWorkspaceStore';
 import { Header } from '@/components/layout/Header';
-import { EasyModeDialog } from '@/components/dialogs/EasyModeDialog';
+import { HealthGate } from '@/components/HealthGate';
 
 export default function App() {
   // Global Settings
@@ -31,62 +29,27 @@ export default function App() {
     setIsExpertMode,
   } = useUserSettingsStore();
 
-  // Project context (keep selectedBookId for compatibility, but we'll use useBookStore.selectedBook as source)
-  const {
-    selectedBookId,
-    setSelectedBookId,
-  } = useProjectStore();
+  const { setSelectedBookId } = useProjectStore();
 
   // Books list state
-  const { books, loading: booksLoading, error: booksError, handleDeleteBook } = useBooks();
+  const { books, handleDeleteBook } = useBooks();
 
-  // Book Store (selectedBook object, chapters, plots, bible)
-  const { selectedBook, setSelectedBook, chapters, bible, plots } = useBookStore();
+  // Book Store
+  const { selectedBook, setSelectedBook } = useBookStore();
 
   // UI Store
-  const { setCreateModalOpen, optHistory, pendingPatches, promptVersions, metricTrend, globalError, setGlobalError, setOptHistory, setPendingPatches, setPromptVersions, setMetricTrend } = useUIStore();
-  const isCreateModalOpen = useUIStore((s) => s.isCreateModalOpen);
+  const { globalError, setGlobalError } = useUIStore();
 
   // Task Store
-  const { activeTaskId, setActiveTaskId, taskStatus, setTaskStatus } = useTaskStore();
-
-  // Writing Store
-  const {
-    writeFrom,
-    setWriteFrom,
-    writeTo,
-    setWriteTo,
-    writePassion,
-    setWritePassion,
-    importEpNum,
-    setImportEpNum,
-    importText,
-    setImportText,
-    importDoRefine,
-    setImportDoRefine,
-    genre,
-    setGenre,
-    title,
-    setTitle,
-    wordCount,
-    setWordCount,
-    platform,
-    setPlatform,
-    showPreview,
-    setShowPreview,
-    resetImport,
-    error: writeError,
-    clearError: clearWriteError,
-  } = useWritingStore();
+  const { activeTaskId, setActiveTaskId, setTaskStatus } = useTaskStore();
 
   // Workspace Store
-  const { currentStep, setCurrentStep, isFirstRun, setIsFirstRun, pendingEasyMode, setPendingEasyMode } = useWorkspaceStore();
+  const { isFirstRun, setIsFirstRun, pendingEasyMode, setPendingEasyMode } = useWorkspaceStore();
 
   // Navigation
   const navigate = useNavigate();
 
-  // Task monitoring and restore
-  const { logEndRef, handleStopTask } = useTaskMonitor();
+  // Task restore on mount
   useTaskRestore();
 
   // Book details loading (based on selectedBook.id)
@@ -113,18 +76,15 @@ export default function App() {
   }, [setTaskStatus]);
 
   const handleTaskComplete = useCallback(async (status: TaskStatus) => {
-    // If this completion is from an easy mode task, select the newest book and navigate to its workspace
     if (pendingEasyMode) {
       try {
         const allBooks = await getBooks();
         if (allBooks.length > 0) {
-          // Sort by created_at descending to get the newest
           const newest = allBooks.slice().sort((a, b) => 
             new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
           )[0];
           setSelectedBook(newest);
           setSelectedBookId(newest.id);
-          // Navigate to the workspace of this book, starting at theme step
           navigate(`/book/${newest.id}/theme`, { replace: true });
         }
       } catch (err) {
@@ -144,7 +104,7 @@ export default function App() {
     } else {
       toast.error(`タスクエラーが発生しました: ${status.task_error?.message ?? status.error ?? '不明なエラー'}`);
     }
-  }, [loadBookDetails, pendingEasyMode, setPendingEasyMode, navigate]);
+  }, [loadBookDetails, pendingEasyMode, setPendingEasyMode, navigate, setSelectedBook, setSelectedBookId, setActiveTaskId]);
 
   const handleTaskError = useCallback((error: StreamError) => {
     console.error('Task stream connection error:', error);
@@ -153,22 +113,14 @@ export default function App() {
     }
   }, []);
 
-  const { connectionState } = useTaskStream(activeTaskId, {
+  useTaskStream(activeTaskId, {
     onStatus: handleTaskStatus,
     onComplete: handleTaskComplete,
     onError: handleTaskError,
   });
 
   // Triggering actions
-  const {
-    handleCreateEasyMode,
-    handleTriggerWriting,
-    handleExpandPlots,
-    handleCritiqueOptimize,
-    handleImportChapter,
-    handleGenerateMarketing,
-    handleRefineErotic,
-  } = useAppActions(setLoading);
+  const { handleCreateEasyMode } = useAppActions((_) => {});
 
   // Initialize isFirstRun based on whether apiKey is set (do once)
   useEffect(() => {
@@ -176,8 +128,6 @@ export default function App() {
     setIsFirstRun(isFirst);
   }, [apiKey, setIsFirstRun]);
 
-  // When we start an easy mode task, set pendingEasyMode to true
-  // We'll wrap handleCreateEasyMode to set the flag before calling the original.
   const handleCreateEasyModeWithFlag = useCallback(async () => {
     setPendingEasyMode(true);
     await handleCreateEasyMode();
@@ -188,37 +138,33 @@ export default function App() {
   selectedBookRef.current = selectedBook;
 
   return (
-    <>
-      <HealthGate>
-        <div className="flex w-full min-h-screen bg-[var(--bg-main)]">
-          {/* Always visible header */}
-          <Header
-            books={books}
-            selectedBook={selectedBook}
-            onSelectBook={setSelectedBook}
-            onDeleteBook={handleDeleteBook}
-            apiKey={apiKey}
-            setApiKey={setApiKey}
-            modelType={modelType}
-            setModelType={setModelType}
-            isExpertMode={isExpertMode}
-            setIsExpertMode={setIsExpertMode}
-            isFirstRun={isFirstRun}
-            onCreateEasyMode={handleCreateEasyModeWithFlag}
-          />
-          <main className="flex flex-col h-[100vh] p-[2.5rem] overflow-auto">
-            {globalError && (
-              <ErrorBanner
-                message={globalError}
-                onClose={() => setGlobalError(null)}
-              />
-            )}
-            <Outlet />
-          </main>
-          {/* TaskMonitor removed; we'll put its functionality in Header or BookWorkspace later */}
-        </div>
-      </HealthGate>
-      {/* EasyModeDialog removed; we'll integrate its functionality into LandingWizard and BookWorkspace */}
-    </>
+    <HealthGate>
+      <div className="flex w-full min-h-screen bg-[var(--bg-main)]">
+        {/* Always visible header */}
+        <Header
+          books={books}
+          selectedBook={selectedBook}
+          onSelectBook={setSelectedBook}
+          onDeleteBook={handleDeleteBook}
+          apiKey={apiKey}
+          setApiKey={setApiKey}
+          modelType={modelType}
+          setModelType={setModelType}
+          isExpertMode={isExpertMode}
+          setIsExpertMode={setIsExpertMode}
+          isFirstRun={isFirstRun}
+          onCreateEasyMode={handleCreateEasyModeWithFlag}
+        />
+        <main className="flex flex-col h-[100vh] p-[2.5rem] overflow-auto">
+          {globalError && (
+            <ErrorBanner
+              message={globalError}
+              onClose={() => setGlobalError(null)}
+            />
+          )}
+          <Outlet />
+        </main>
+      </div>
+    </HealthGate>
   );
 }

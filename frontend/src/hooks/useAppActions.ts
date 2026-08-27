@@ -1,8 +1,6 @@
-import React from 'react';
 import { toast } from 'sonner';
 import { useUserSettingsStore } from '@/store/useUserSettingsStore';
 import { useEasyModeStore } from '@/store/useEasyModeStore';
-import { useProjectStore } from '@/store/useProjectStore';
 import { useBookStore } from '@/store/useBookStore';
 import { useUIStore } from '@/store/useUIStore';
 import { useWritingStore } from '@/store/useWritingStore';
@@ -18,7 +16,6 @@ import {
   stopTask,
   refineErotic,
 } from '@/api';
-import { useLocation } from 'react-router-dom';
 
 export function useAppActions(setLoading: (b: boolean) => void) {
   const { apiKey, temperature, modelType } = useUserSettingsStore();
@@ -34,12 +31,9 @@ export function useAppActions(setLoading: (b: boolean) => void) {
     importDoRefine,
     resetImport,
     wordCount,
+    setError: setWritingError,
   } = useWritingStore();
-  const { setError: setWritingError } = useWritingStore();
   const { setActiveTaskId, activeTaskId, setTaskStatus } = useTaskStore();
-  const location = useLocation();
-  const pathname = location.pathname; // e.g., "/books"
-  const activeTab = pathname.replace(/^\/|\/$/g, '') || 'landing';
   const { loadBookDetails } = useBookDetails(selectedBook?.id ?? null);
 
   const getConfig = () => ({

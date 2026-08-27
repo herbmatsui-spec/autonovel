@@ -7,15 +7,14 @@ import { useBookStore } from '@/store/useBookStore';
 import { useNavigate } from 'react-router-dom';
 import { useBookDetails } from '@/hooks/useBookDetails';
 import { Button } from '@/components/ui/button';
-import { LoadingState } from '@/components/ui/LoadingState';
 import { useUserSettingsStore } from '@/store/useUserSettingsStore';
 
-export default function PlanningTab() {
+export function PlanningTab() {
   const { selectedBook } = useBookStore();
   const { wordCount, setWordCount } = useWritingStore();
   const navigate = useNavigate();
   const { loadBookDetails } = useBookDetails(selectedBook?.id ?? null);
-  const { isExpertMode } = useUserSettingsStore();
+  const { isExpertMode, apiKey, temperature, modelType } = useUserSettingsStore();
 
   const [options, setOptions] = useState<PlanningOptions | null>(null);
   const [genre, setGenre] = useState('ファンタジー');
@@ -33,8 +32,11 @@ export default function PlanningTab() {
     if (selectedBook?.id) {
       getPlanningOptions().then(data => {
         setOptions(data);
-        if (data.story_archetypes.length > 0) setArchetype(data.story_archetypes[0]);
-        if (data.style_keys.length > 0) setStyleKey(data.style_keys[0]);
+        if (data.story_archetypes?.length > 0) setArchetype(data.story_archetypes[0]);
+        const styleKeys = Object.keys(data.style_definitions || {});
+        if (styleKeys.length > 0) setStyleKey(styleKeys[0]);
+      }).catch(err => {
+        console.error('Failed to load planning options:', err);
       });
     }
   }, [selectedBook?.id]);
@@ -48,29 +50,33 @@ export default function PlanningTab() {
     setIsSubmitting(true);
     try {
       const params: PlanGenerationParams = {
-        book_id: selectedBook.id,
-        target_word_count: wordCount,
-        genre,
-        archetype,
-        keywords,
-        target_eps: targetEps,
-        initial_limit,
-        style_key: styleKey,
-        cheat_scale: cheatScale,
-        system_assist: systemAssist,
-        cost_severity: costSeverity,
+        config: {
+          temperature,
+          model_type: modelType,
+        },
+        params: {
+          book_id: selectedBook.id,
+          target_word_count: wordCount,
+          genre,
+          archetype,
+          keywords,
+          target_eps: targetEps,
+          initial_limit: initialLimit,
+          style_key: styleKey,
+          cheat_scale: cheatScale,
+          system_assist: systemAssist,
+          cost_severity: costSeverity,
+        },
       };
-      await planGeneration(params);
-      // After generation, refetch book details to update plots, etc.
+      await planGeneration(params, apiKey);
       if (selectedBook.id) {
         await loadBookDetails(selectedBook.id);
       }
-      // Navigate to plots tab to see the generated plot
       navigate('/plots');
       toast.success('プランが生成され、プロットタブに遷移しました。');
     } catch (err) {
       console.error(err);
-      toast.error('プラン生成に失敗しました。');
+      toast.error('プラン生成に失敗しました: ' + (err instanceof Error ? err.message : String(err)));
     } finally {
       setIsSubmitting(false);
     }
@@ -83,6 +89,9 @@ export default function PlanningTab() {
   if (!options) {
     return <div className="text-center py-8">プラニングオプションを読み込み中...</div>;
   }
+
+  const genreList = Object.values(options.easy_genres || {}).map((g) => g.genre);
+  const styleKeys = Object.keys(options.style_definitions || {});
 
   return (
     <div className="animate-fade-in flex flex-col gap-6">
@@ -97,7 +106,7 @@ export default function PlanningTab() {
               onChange={(e) => setGenre(e.target.value)}
               className="block w-full px-3 py-2 border rounded"
             >
-              {options?.story_genres.map((g: string) => (
+              {(genreList.length > 0 ? genreList : ['ファンタジー', '異世界転生', '現代ドラマ', 'SF', 'ホラー']).map((g: string) => (
                 <option key={g} value={g}>
                   {g}
                 </option>
@@ -111,7 +120,7 @@ export default function PlanningTab() {
               onChange={(e) => setArchetype(e.target.value)}
               className="block w-full px-3 py-2 border rounded"
             >
-              {options?.story_archetypes.map((a: string) => (
+              {options.story_archetypes?.map((a: string) => (
                 <option key={a} value={a}>
                   {a}
                 </option>
@@ -164,9 +173,9 @@ export default function PlanningTab() {
                 onChange={(e) => setStyleKey(e.target.value)}
                 className="block w-full px-3 py-2 border rounded"
               >
-                {options?.style_keys.map((k: string) => (
+                {styleKeys.map((k: string) => (
                   <option key={k} value={k}>
-                    {k}
+                    {options.style_definitions[k]?.name || k}
                   </option>
                 ))}
               </select>
@@ -213,3 +222,5 @@ export default function PlanningTab() {
     </div>
   );
 }
+
+export default PlanningTab;

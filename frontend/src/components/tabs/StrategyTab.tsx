@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
-import type { Book, Plot, Bible } from '../../types';
+import type { Plot, Bible } from '../../types';
 import { getPlots, getBible } from '../../api';
 import { useBookStore } from '@/store/useBookStore';
-import { Button } from '@/components/ui/button';
 import { useUserSettingsStore } from '@/store/useUserSettingsStore';
 
 function SubTabButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
@@ -18,7 +17,7 @@ function SubTabButton({ active, onClick, children }: { active: boolean; onClick:
   );
 }
 
-export default function StrategyTab() {
+export function StrategyTab() {
   const { selectedBook } = useBookStore();
   const { isExpertMode } = useUserSettingsStore();
   const [activeSubTab, setActiveSubTab] = useState(0);
@@ -26,6 +25,7 @@ export default function StrategyTab() {
   const [bible, setBible] = useState<Bible | null>(null);
 
   useEffect(() => {
+    if (!selectedBook?.id) return;
     Promise.all([
       getPlots(selectedBook.id),
       getBible(selectedBook.id),
@@ -33,7 +33,7 @@ export default function StrategyTab() {
       setPlots(p);
       setBible(b);
     }).catch(console.error);
-  }, [selectedBook.id]);
+  }, [selectedBook?.id]);
 
   const subTabs = [
     { title: '📉 感情曲線' },
@@ -92,12 +92,12 @@ export default function StrategyTab() {
           <div className="space-y-4">
             <h4 className="text-sm font-bold">ストレスログ</h4>
             <div className="glass-sm p-4 rounded-lg text-center">
-              <p className="text-3xl font-bold font-mono text-rose-400">{selectedBook.cumulative_stress ?? 0}</p>
+              <p className="text-3xl font-bold font-mono text-rose-400">{selectedBook?.cumulative_stress ?? 0}</p>
               <p className="text-xs text-muted-foreground mt-1">累積ストレス値</p>
               <div className="w-full bg-muted rounded-full h-2 mt-3 overflow-hidden">
                 <div
                   className="bg-rose-500 h-2 rounded-full transition-all"
-                  style={{ width: `${Math.min((selectedBook.cumulative_stress ?? 0) / 65 * 100, 100)}%` }}
+                  style={{ width: `${Math.min((selectedBook?.cumulative_stress ?? 0) / 65 * 100, 100)}%` }}
                 />
               </div>
               <p className="text-xs text-muted-foreground mt-1">しきい値: 65</p>
@@ -162,3 +162,5 @@ export default function StrategyTab() {
     </div>
   );
 }
+
+export default StrategyTab;

@@ -1,8 +1,7 @@
-import React from 'react';
 import { AuditTab } from '@/components/tabs/AuditTab';
 import { AnalyticsTab } from '@/components/tabs/AnalyticsTab';
 
-export default function FinishStep() {
+export function FinishStep({ bookId: _bookId }: { bookId?: number } = {}) {
   return (
     <div>
       <p className="text-sm text-muted-foreground mb-2">
@@ -15,3 +14,5 @@ export default function FinishStep() {
     </div>
   );
 }
+
+export default FinishStep;

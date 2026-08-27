@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { Book, Chapter, Plot } from '../../types';
+import type { Chapter, Plot } from '../../types';
 import { getChapters, getPlots } from '../../api';
 import { useBookStore } from '@/store/useBookStore';
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,7 @@ function MetricCard({ label, value, sub }: { label: string; value: string | numb
   );
 }
 
-export default function MonitorTab() {
+export function MonitorTab() {
   const { selectedBook } = useBookStore();
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [plots, setPlots] = useState<Plot[]>([]);
@@ -27,8 +27,8 @@ export default function MonitorTab() {
         getChapters(selectedBook.id),
         getPlots(selectedBook.id),
       ]);
-      setChapters(ch);
-      setPlots(pl);
+      setChapters(ch || []);
+      setPlots(pl || []);
       setLastUpdated(new Date());
     } catch (err) {
       console.error('Failed to load monitoring data:', err);
@@ -37,7 +37,6 @@ export default function MonitorTab() {
 
   useEffect(() => {
     loadData();
-    // Set up an interval to refresh every 30 seconds
     const interval = setInterval(loadData, 30000);
     return () => clearInterval(interval);
   }, [loadData]);
@@ -46,21 +45,21 @@ export default function MonitorTab() {
     return <div className="text-center py-8">作品を選択してください。</div>;
   }
 
-  const completedChapters = chapters.filter(ch => ch.status === 'completed').length;
-  const totalChapters = chapters.length;
-  const completionRate = totalChapters > 0 ? (completedChapters / totalChapters) * 100 : 0;
+  const completedChapters = chapters.length;
+  const targetEps = selectedBook.target_eps || Math.max(plots.length, chapters.length, 1);
+  const completionRate = targetEps > 0 ? Math.min((completedChapters / targetEps) * 100, 100) : 0;
 
   return (
     <div className="animate-fade-in flex flex-col gap-6">
       <h2 className="text-xl font-bold">進捗モニター - {selectedBook.title}</h2>
       <div className="grid gap-4 sm:grid-cols-3">
         <MetricCard
-          label="全エピソード数"
-          value={totalChapters}
-          sub="目標: {selectedBook.target_eps}話"
+          label="目標エピソード数"
+          value={targetEps}
+          sub={`目標: ${targetEps}話`}
         />
         <MetricCard
-          label="完了エピソード数"
+          label="執筆済みエピソード数"
           value={completedChapters}
         />
         <MetricCard
@@ -78,16 +77,16 @@ export default function MonitorTab() {
         />
       </div>
       <div className="border rounded-lg p-4">
-        <h3 className="font-semibold mb-2">エピソードステータス</h3>
+        <h3 className="font-semibold mb-2">エピソード一覧</h3>
         {chapters.length === 0 ? (
           <p className="text-sm text-muted-foreground">エピソードデータはまだありません。</p>
         ) : (
           <div className="space-y-2">
             {chapters.map((ch) => (
-              <div key={ch.id} className="flex justify-between items-center px-3 py-2 bg-[var(--muted)] rounded">
-                <span className="text-sm">エピソード {ch.episode_no}: {ch.title}</span>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${ch.status === 'completed' ? 'bg-accent-emerald/20 text-accent-emerald' : ch.status === 'in_progress' ? 'bg-accent-amber/20 text-accent-amber' : 'bg-accent-rose/20 text-accent-rose'}`}>
-                  {ch.status === 'completed' ? '完了' : ch.status === 'in_progress' ? '進行中' : '未開始'}
+              <div key={ch.ep_num} className="flex justify-between items-center px-3 py-2 bg-[var(--muted)] rounded">
+                <span className="text-sm">第{ch.ep_num}話: {ch.title}</span>
+                <span className="px-2 py-1 rounded-full text-xs font-medium bg-accent-emerald/20 text-accent-emerald">
+                  執筆完了 ({ch.content.length.toLocaleString()}文字)
                 </span>
               </div>
             ))}
@@ -105,3 +104,5 @@ export default function MonitorTab() {
     </div>
   );
 }
+
+export default MonitorTab;

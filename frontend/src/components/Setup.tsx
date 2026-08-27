@@ -8,7 +8,7 @@ export default function Setup() {
   const navigate = useNavigate();
   const [apiKey, setApiKeyLocal] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!apiKey || apiKey.length < 10) {
       toast.error('有効なAPIキーを入力してください。');

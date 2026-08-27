@@ -1,19 +1,17 @@
-import { Book, Chapter, Bible } from '@/types';
+import { Chapter } from '@/types';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { StatusMessage } from '@/components/ui/StatusMessage';
 import { WritingForm } from '../write/WritingForm';
 import { ImportForm } from '../write/ImportForm';
 import { BiblePanel } from '../write/BiblePanel';
 import { ChapterCard } from '../write/ChapterCard';
-import { usePagination } from '@/hooks/usePagination';
 import { useWritingStore } from '@/store/useWritingStore';
 import { useBookStore } from '@/store/useBookStore';
 import { useAppActions } from '@/hooks/useAppActions';
 import { useTaskStore } from '@/store/useTaskStore';
 import { Button } from '@/components/ui/button';
 
-export default function WriteTab() {
-  const { selectedBook, chapters, bible } = useBookStore();
+export function WriteTab() {
+  const { chapters, bible } = useBookStore();
   const {
     writeFrom,
     setWriteFrom,
@@ -27,11 +25,19 @@ export default function WriteTab() {
     setImportText,
     importDoRefine,
     setImportDoRefine,
+    genre,
+    setGenre,
+    title,
+    setTitle,
+    wordCount,
+    setWordCount,
+    platform,
+    setPlatform,
+    showPreview,
+    setShowPreview,
   } = useWritingStore();
   const { handleTriggerWriting, handleRefineErotic, handleImportChapter } = useAppActions((_) => {});
   const { activeTaskId } = useTaskStore();
-  const { error, clearError } = useWritingStore();
-  const { page, setPage, totalPages, paginatedItems } = usePagination<Chapter>(chapters.length, 5);
 
   return (
     <div className="animate-fade-in grid grid-cols-[1fr_350px] gap-[2rem]">
@@ -56,12 +62,11 @@ export default function WriteTab() {
             </Button>
           </div>
           {chapters.length === 0 ? (
-            <EmptyState>
-              <h3 className="font-semibold">まだ章がありません</h3>
-              <p className="text-sm text-muted-foreground">
-                「執筆を開始」ボタンから最初の章を執筆してください。
-              </p>
-            </EmptyState>
+            <EmptyState
+              icon="📖"
+              title="まだ章がありません"
+              description="「執筆を開始」ボタンから最初の章を執筆してください。"
+            />
           ) : (
             <>
               {/** Pagination */ }
@@ -107,8 +112,8 @@ export default function WriteTab() {
               <div className="space-y-2">
                 {chapters
                   .slice(writeFrom - 1, writeTo)
-                  .map((chapter) => (
-                    <ChapterCard key={chapter.id} chapter={chapter} />
+                  .map((chapter: Chapter) => (
+                    <ChapterCard key={chapter.ep_num} chapter={chapter} />
                   ))}
               </div>
             </>
@@ -118,8 +123,23 @@ export default function WriteTab() {
         <div className="pt-4 border-t border-[var(--border)]">
           <h2 className="text-xl font-bold mb-4">執筆コントロール</h2>
           <WritingForm
-            book={selectedBook}
-            activeTaskId={activeTaskId}
+            writeFrom={writeFrom}
+            setWriteFrom={setWriteFrom}
+            writeTo={writeTo}
+            setWriteTo={setWriteTo}
+            writePassion={writePassion}
+            setWritePassion={setWritePassion}
+            onSubmit={handleTriggerWriting}
+            onRefineErotic={handleRefineErotic}
+            disabled={!!activeTaskId}
+            genre={genre}
+            setGenre={setGenre}
+            title={title}
+            setTitle={setTitle}
+            wordCount={wordCount}
+            setWordCount={setWordCount}
+            platform={platform}
+            setPlatform={setPlatform}
           />
         </div>
       </div>
@@ -128,10 +148,20 @@ export default function WriteTab() {
       <div className="flex flex-col gap-[2rem]">
         <BiblePanel bible={bible} />
         <ImportForm
-          activeTaskId={activeTaskId}
-          onImportChapter={handleImportChapter}
+          importEpNum={importEpNum}
+          setImportEpNum={setImportEpNum}
+          importText={importText}
+          setImportText={setImportText}
+          importDoRefine={importDoRefine}
+          setImportDoRefine={setImportDoRefine}
+          onSubmit={handleImportChapter}
+          disabled={!!activeTaskId}
+          showPreview={showPreview}
+          setShowPreview={setShowPreview}
         />
       </div>
     </div>
   );
 }
+
+export default WriteTab;

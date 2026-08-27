@@ -1,54 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useEasyModeStore } from '@/store/useEasyModeStore';
 import { useUserSettingsStore } from '@/store/useUserSettingsStore';
 import { useAppActions } from '@/hooks/useAppActions';
 import { getPlanningOptions } from '@/api';
+import type { PlanningOptions } from '@/types/api';
 import { toast } from 'sonner';
 import { useWorkspaceStore } from '@/store/useWorkspaceStore';
 
 export default function LandingWizard() {
   const {
-    easyGenre,
     setEasyGenre,
     easyKeywords,
     setEasyKeywords,
-    easyArchetype,
     setEasyArchetype,
-    easyStyleKey,
-    setEasyStyleKey,
-    easyTargetEps,
-    setEasyTargetEps,
-    easyWordCount,
-    setEasyWordCount,
-    easyConcept,
-    setEasyConcept,
-    enableErotic,
-    setEnableErotic,
-    eroticIntensity,
-    setEroticIntensity,
-    enableIllustration,
-    setEnableIllustration,
-    illustrationType,
-    setIllustrationType,
-    illustrationModel,
-    setIllustrationModel,
-    generateCover,
-    setGenerateCover,
-    generateEpisodeIllustrations,
-    setGenerateEpisodeIllustrations,
-    episodeInterval,
-    setEpisodeInterval,
   } = useEasyModeStore();
 
-  const { apiKey, setApiKey } = useUserSettingsStore();
-  const navigate = useNavigate();
+  const { apiKey } = useUserSettingsStore();
   const { setPendingEasyMode } = useWorkspaceStore();
   const { handleCreateEasyMode } = useAppActions((_) => {});
-  const [options, setOptions] = useState(null);
-  const [selectedGenreKey, setSelectedGenreKey] = useState(null);
+  const [options, setOptions] = useState<PlanningOptions | null>(null);
+  const [selectedGenreKey, setSelectedGenreKey] = useState<string | null>(null);
   const [apiKeyLocal, setApiKeyLocal] = useState(apiKey);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -71,34 +44,26 @@ export default function LandingWizard() {
               setEasyArchetype(rawArch);
             }
           }
-          if (data.story_archetypes && data.story_archetypes.length > 0) {
-            // we might need this for archetype selection dropdown; but we are using cards for genre only.
-            // We'll ignore for now.
-          }
-          if (data.style_definitions && Object.keys(data.style_definitions).length > 0) {
-            // we might need this for style selection; but we are using cards for genre only.
-            // We'll ignore for now.
-          }
         })
         .catch((err) => {
           console.error('Failed to load planning options:', err);
           toast.error('ジャンル情報の読み込みに失敗しました。');
         });
     }
-  }, [options]);
+  }, [options, setEasyGenre, setEasyArchetype]);
 
   const hasApiKey = apiKeyLocal.trim().length >= 10;
 
-  const handleGenreCardClick = (key) => {
+  const handleGenreCardClick = (key: string) => {
     setSelectedGenreKey(key);
     const genreData = options?.easy_genres?.[key];
     if (genreData) {
       setEasyGenre(genreData.genre);
-      setEasyArchetype(genreData.archetype); // assuming archetype is already label
+      setEasyArchetype(genreData.archetype);
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!hasApiKey) {
       toast.error('有効なAPIキーを入力してください。');
@@ -109,10 +74,9 @@ export default function LandingWizard() {
       return;
     }
     setIsSubmitting(true);
-    setPendingEasyMode(true); // flag for navigation after completion
+    setPendingEasyMode(true);
     handleCreateEasyMode()
       .then(() => {
-        // navigation will happen via handleTaskComplete in App
         toast.success('生成を開始しました！進捗は画面下で確認できます。');
       })
       .catch((err) => {
@@ -126,7 +90,6 @@ export default function LandingWizard() {
   };
 
   const genreOptions = options ? Object.keys(options.easy_genres) : [];
-  const currentDesc = options?.easy_genres?.[selectedGenreKey]?.desc || '';
 
   return (
     <div className="min-h-[100vh] bg-[var(--bg-main)] flex flex-col">

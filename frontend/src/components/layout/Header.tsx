@@ -1,12 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useUserSettingsStore } from '@/store/useUserSettingsStore';
-import { useBookStore } from '@/store/useBookStore';
-import { useWorkspaceStore } from '@/store/useWorkspaceStore';
-import { useUIStore } from '@/store/useUIStore';
-import { toast } from 'sonner';
 import { EasyModeDialog } from '@/components/dialogs/EasyModeDialog';
 import type { Book } from '@/types';
 
@@ -25,7 +20,7 @@ interface HeaderProps {
   onCreateEasyMode: () => void;
 }
 
-export default function Header({
+export function Header({
   books,
   selectedBook,
   onSelectBook,
@@ -43,7 +38,6 @@ export default function Header({
   const [isEasyModeOpen, setIsEasyModeOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
-  const { setCreateModalOpen } = useUIStore();
 
   // Redirect to setup if first run and not already on setup
   useEffect(() => {
@@ -67,10 +61,6 @@ export default function Header({
 
   const handleCreate = () => {
     setIsEasyModeOpen(true);
-    setAnchorEl(null);
-  };
-
-  const handleMenuClose = () => {
     setAnchorEl(null);
   };
 
@@ -193,3 +183,5 @@ export default function Header({
     </header>
   );
 }
+
+export default Header;

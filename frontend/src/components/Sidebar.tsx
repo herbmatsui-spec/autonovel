@@ -1,8 +1,7 @@
-import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useUserSettingsStore } from "../store/useUserSettingsStore";
-import { useProjectStore, TabId } from "../store/useProjectStore";
+import type { TabId } from "../store/useProjectStore";
 import { useBookStore } from "../store/useBookStore";
 import { useUIStore } from "../store/useUIStore";
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -21,7 +20,6 @@ export function Sidebar() {
   const { apiKey, setApiKey, modelType, setModelType, isExpertMode, setIsExpertMode } = useUserSettingsStore();
   const { selectedBook } = useBookStore();
   const setCreateModalOpen = useUIStore((s) => s.setCreateModalOpen);
-  const [tokenUsage] = useState({ calls: 0, cost: 0 });
   const navigate = useNavigate();
   const location = useLocation();
   const pathname = location.pathname; // e.g., "/books"
@@ -63,7 +61,7 @@ export function Sidebar() {
         <h1 className="text-xl font-bold">AutoNovel</h1>
       </div>
       <nav className="space-y-2">
-        {tabs.map(({ id, icon, label, expertOnly }) => (
+        {tabs.map(({ id, icon, label }) => (
           <Button
             key={id}
             variant={currentTab === id ? 'destructive' : 'secondary'}

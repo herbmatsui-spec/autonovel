@@ -88,7 +88,6 @@ export function EasyModeDialog({ isOpen, onClose, onSubmit }: Props) {
     enableErotic,
     setEnableErotic,
     eroticIntensity,
-    setEroticIntensity,
     enableIllustration,
     setEnableIllustration,
     illustrationType,

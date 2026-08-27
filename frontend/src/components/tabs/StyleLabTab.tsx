@@ -3,6 +3,7 @@ import { analyzeStyleDna } from '@/api';
 import { toast } from 'sonner';
 import { useUserSettingsStore } from '@/store/useUserSettingsStore';
 import { StyleDnaResult } from '@/types';
+import { Button } from '@/components/ui/button';
 
 export default function StyleLabTab() {
   const apiKey = useUserSettingsStore((s) => s.apiKey);

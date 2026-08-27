@@ -1,7 +1,6 @@
-import React from 'react';
 import { WriteTab } from '@/components/tabs/WriteTab';
 
-export default function WriteStep() {
+export function WriteStep({ bookId: _bookId }: { bookId?: number } = {}) {
   return (
     <div>
       <p className="text-sm text-muted-foreground mb-2">
@@ -11,3 +10,5 @@ export default function WriteStep() {
     </div>
   );
 }
+
+export default WriteStep;

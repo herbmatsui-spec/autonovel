@@ -1,8 +1,7 @@
-import React from 'react';
 import { AnalyticsTab } from '@/components/tabs/AnalyticsTab';
 import { StrategyTab } from '@/components/tabs/StrategyTab';
 
-export default function PublishStep() {
+export function PublishStep({ bookId: _bookId }: { bookId?: number } = {}) {
   return (
     <div>
       <p className="text-sm text-muted-foreground mb-2">
@@ -15,3 +14,5 @@ export default function PublishStep() {
     </div>
   );
 }
+
+export default PublishStep;

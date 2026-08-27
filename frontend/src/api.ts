@@ -407,7 +407,7 @@ export async function rollbackPromptVersion(bookId: number, versionId: number, r
   });
 }
 
-export async function getNarrativeMetricsTrend(book_id: number, branch_id: number): Promise<NarrativeMetricTrend[]> {
+export async function getNarrativeMetricsTrend(book_id: number, branch_id: number = 1): Promise<NarrativeMetricTrend[]> {
   return apiRequest(`${API_BASE_URL}/narrative_metrics/${book_id}/${branch_id}`);
 }
 

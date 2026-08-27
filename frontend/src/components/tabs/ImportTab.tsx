@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import type { Book } from '../../types';
 import { useBookStore } from '@/store/useBookStore';
-import { useAppActions } from '@/hooks/useAppActions';
 import { Button } from '@/components/ui/button';
 
 interface ImportTabProps {
@@ -9,7 +8,9 @@ interface ImportTabProps {
   handleImportChapter: (e: React.FormEvent) => Promise<void>;
 }
 
-export function ImportTab({ handleImportChapter }: ImportTabProps) {
+export function ImportTab({ selectedBook: propBook, handleImportChapter }: ImportTabProps) {
+  const storeBook = useBookStore((s) => s.selectedBook);
+  const selectedBook = propBook ?? storeBook;
   const [epNum, setEpNum] = useState<number>(1);
   const [importText, setImportText] = useState('');
   const [doRefine, setDoRefine] = useState(true);
@@ -77,3 +78,5 @@ export function ImportTab({ handleImportChapter }: ImportTabProps) {
     </div>
   );
 }
+
+export default ImportTab;
