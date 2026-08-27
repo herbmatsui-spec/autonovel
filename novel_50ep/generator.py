@@ -35,6 +35,8 @@ try:
     )
     from novel_50ep.count_chars import count_chars, validate_episode, ValidationResult
     from novel_50ep.foreshadow_manager import ForeshadowManager
+    from novel_50ep.scene_model import SceneBase, make_scene, DialogueScene, CombatScene, ExplorationScene
+    from novel_50ep.continuity_tracker import ContinuityTracker
 except ImportError:
     from config import (
         CLIFFS_FILE,
@@ -60,6 +62,8 @@ except ImportError:
     )
     from count_chars import count_chars, validate_episode, ValidationResult
     from foreshadow_manager import ForeshadowManager
+    from scene_model import SceneBase, make_scene, DialogueScene, CombatScene, ExplorationScene
+    from continuity_tracker import ContinuityTracker
 
 import novel_50ep.config as _cfg
 
@@ -539,6 +543,87 @@ class NovelGenerator:
             return p_path.read_text(encoding="utf-8")
         return f"パート{part}を執筆してください。"
 
+    # ステップ 39: 会話シーン生成フック
+    def generate_dialogue_scene(
+        self,
+        id: str,
+        start: int = 0,
+        end: int = 0,
+        speakers: Optional[List[str]] = None,
+        utterances: Optional[List[str]] = None,
+        topics: Optional[List[str]] = None,
+    ) -> DialogueScene:
+        if speakers is None:
+            prot = self.world_data.get("protagonist", {}).get("name", "凛")
+            subchars = self.world_data.get("subcharacters", [])
+            sub1 = subchars[0].get("name", "セリア") if subchars else "セリア"
+            speakers = [prot, sub1]
+        if topics is None:
+            topics = ["任務計画"]
+        scene = make_scene(
+            "dialogue",
+            id=id,
+            start=start,
+            end=end,
+            speakers=speakers,
+            utterances=utterances or [],
+            topics=topics,
+        )
+        return scene
+
+    # ステップ 47: 戦闘シーン生成フック
+    def generate_combat_scene(
+        self,
+        id: str,
+        start: int = 0,
+        end: int = 0,
+        hp: int = 100,
+        mp: int = 50,
+        equipment: Optional[List[str]] = None,
+        enemies: Optional[List[str]] = None,
+    ) -> CombatScene:
+        if equipment is None:
+            equipment = ["光刃", "光の盾"]
+        if enemies is None:
+            ant = self.world_data.get("antagonist", {}).get("name", "闇結社尖兵")
+            enemies = [ant]
+        scene = make_scene(
+            "combat",
+            id=id,
+            start=start,
+            end=end,
+            hp=hp,
+            mp=mp,
+            equipment=equipment,
+            enemies=enemies,
+        )
+        return scene
+
+    # ステップ 54: 探索シーン生成フック
+    def generate_exploration_scene(
+        self,
+        id: str,
+        start: int = 0,
+        end: int = 0,
+        location: Optional[str] = None,
+        items: Optional[List[str]] = None,
+        map_flags: Optional[Dict[str, Any]] = None,
+    ) -> ExplorationScene:
+        if location is None:
+            location = self.world_data.get("world_setting", "多層都市ルクス")
+        if items is None:
+            items = ["光導器"]
+        scene = make_scene(
+            "exploration",
+            id=id,
+            start=start,
+            end=end,
+            location=location,
+            items=items,
+            map_flags=map_flags or {},
+        )
+        return scene
+
     # ステップ49: 4コマ専用プロンプトテンプレート読み込み
     def load_manga_template(self) -> str:
         tpl_path = PROMPTS_DIR / "manga_panel.txt"
@@ -752,6 +837,10 @@ class NovelGenerator:
         prev_summary: str = "",
         save_intermediates: bool = True,
     ) -> Tuple[str, ValidationResult, Dict[int, str]]:
+        # ステップ 60: 生成時に foreshadow_manager.get_expects() を tracker に渡す
+        rules_dir = str(Path(__file__).parent / "continuity_rules")
+        tracker = ContinuityTracker(rules_dir=rules_dir, expects=self.foreshadow_mgr.get_expects())
+
         ctx = self.build_ctx(ep, prev_summary)
         chosen_cliff = self.foreshadow_mgr.next_cliff()
 
@@ -798,10 +887,15 @@ class NovelGenerator:
                 part_texts[longest_p] = "。".join(s_list[:-1]) + "。"
                 val_result = validate_episode(part_texts, part7_text_override=part_texts[7])
 
-        # ステップ36: 完成版 epNN.md 保存
+        # ステップ36: 完成版 epNN.md 保存 (ステップ 63: polish 呼び出し)
         clean_novel_text = "\n\n".join([part_texts[p] for p in range(1, 8)])
+        try:
+            from novel_50ep.polish_tool import polish
+        except ImportError:
+            from polish_tool import polish
+        polished_novel_text = polish(clean_novel_text, tracker=tracker)
         final_ep_file = OUTPUT_DIR / f"ep{ep:02d}.md"
-        final_ep_file.write_text(clean_novel_text, encoding="utf-8")
+        final_ep_file.write_text(polished_novel_text, encoding="utf-8")
 
         # ステップ52: クリフを伏線台帳に登録
         self.foreshadow_mgr.add_foreshadow(

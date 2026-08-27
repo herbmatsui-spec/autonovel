@@ -20,14 +20,7 @@ import { HealthGate } from '@/components/HealthGate';
 
 export default function App() {
   // Global Settings
-  const {
-    apiKey,
-    setApiKey,
-    modelType,
-    setModelType,
-    isExpertMode,
-    setIsExpertMode,
-  } = useUserSettingsStore();
+  const { apiKey } = useUserSettingsStore();
 
   const { setSelectedBookId } = useProjectStore();
 
@@ -44,7 +37,7 @@ export default function App() {
   const { activeTaskId, setActiveTaskId, setTaskStatus } = useTaskStore();
 
   // Workspace Store
-  const { isFirstRun, setIsFirstRun, pendingEasyMode, setPendingEasyMode } = useWorkspaceStore();
+  const { setIsFirstRun, pendingEasyMode, setPendingEasyMode } = useWorkspaceStore();
 
   // Navigation
   const navigate = useNavigate();
@@ -139,7 +132,7 @@ export default function App() {
 
   return (
     <HealthGate>
-      <div className="flex w-full min-h-screen bg-[var(--bg-main)]">
+      <div className="flex flex-col w-full min-h-screen bg-[var(--bg-main)] text-[var(--text-primary)]">
         {/* Always visible header */}
         <Header
           books={books}
@@ -147,15 +140,9 @@ export default function App() {
           onSelectBook={setSelectedBook}
           onDeleteBook={handleDeleteBook}
           apiKey={apiKey}
-          setApiKey={setApiKey}
-          modelType={modelType}
-          setModelType={setModelType}
-          isExpertMode={isExpertMode}
-          setIsExpertMode={setIsExpertMode}
-          isFirstRun={isFirstRun}
           onCreateEasyMode={handleCreateEasyModeWithFlag}
         />
-        <main className="flex flex-col h-[100vh] p-[2.5rem] overflow-auto">
+        <main className="flex-1 flex flex-col p-4 sm:p-6 lg:p-8 overflow-y-auto max-w-7xl w-full mx-auto">
           {globalError && (
             <ErrorBanner
               message={globalError}
@@ -167,4 +154,4 @@ export default function App() {
       </div>
     </HealthGate>
   );
-}
+}

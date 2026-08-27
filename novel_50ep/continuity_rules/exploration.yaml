@@ -1,0 +1,10 @@
+version: 1
+rules:
+  - type: exploration
+    op: subset
+    field: items
+    msg: "アイテムが消失"
+  - type: exploration
+    op: equals
+    field: location
+    msg: "場所が説明なしで変化"

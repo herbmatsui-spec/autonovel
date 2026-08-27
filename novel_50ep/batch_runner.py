@@ -32,6 +32,8 @@ try:
     )
     from novel_50ep.count_chars import count_chars, require_words, validate_episode, ValidationResult
     from novel_50ep.generator import NovelGenerator
+    from novel_50ep.continuity_tracker import ContinuityTracker
+    from novel_50ep.scene_model import SceneBase
 except ImportError:
     from config import (
         FINAL_DIR,
@@ -44,6 +46,8 @@ except ImportError:
     )
     from count_chars import count_chars, require_words, validate_episode, ValidationResult
     from generator import NovelGenerator
+    from continuity_tracker import ContinuityTracker
+    from scene_model import SceneBase
 
 
 # ステップ48: 同名キャラ表記ゆれ正規化
@@ -155,9 +159,24 @@ class BatchRunner:
         return {"avg_chars": avg_chars, "avg_emotions": avg_emotions}
 
     # ステップ41: run_batch(start, end)
-    def run_batch(self, start: int = 1, end: int = TOTAL_EPISODES, resume: bool = True) -> List[int]:
+    def run_batch(
+        self,
+        start: int = 1,
+        end: int = TOTAL_EPISODES,
+        resume: bool = True,
+        fix_continuity: bool = False,
+    ) -> List[int]:
         completed = self.load_progress() if resume else set()
         successful: List[int] = []
+
+        # ステップ 69: ContinuityTracker の初期化
+        rules_dir = str(Path(__file__).parent / "continuity_rules")
+        tracker = ContinuityTracker(
+            rules_dir=rules_dir,
+            expects=self.generator.foreshadow_mgr.get_expects(),
+        )
+        batch_report_file = LOG_DIR / "batch_report.txt"
+        batch_report_file.parent.mkdir(parents=True, exist_ok=True)
 
         print(f"=== バッチ生成開始 (第{start}話〜第{end}話 / 全{end - start + 1}話) ===")
 
@@ -181,6 +200,21 @@ class BatchRunner:
                 cleaned_chars = count_chars(cleaned_text)
                 if cleaned_chars < MIN_CHARS:
                     print(f"[WARN] 第{ep:02d}話: 重複除去後文字数 {cleaned_chars}字 < {MIN_CHARS}字 (動的フィラーで補填推奨)")
+
+                # ステップ 69: tracker による継続性チェック & batch_report.txt 追記
+                ep_scene = SceneBase(id=f"ep{ep:02d}", type="base", start=0, end=cleaned_chars)
+                violations = tracker.feed(ep_scene)
+                if violations:
+                    with open(batch_report_file, "a", encoding="utf-8") as rf:
+                        rf.write(f"第{ep:02d}話 継続性警告: {tracker.report()}\n")
+
+                # ステップ 70: --fix-continuity による自動修正
+                if fix_continuity and violations:
+                    try:
+                        from novel_50ep.polish_tool import polish
+                        cleaned_text = polish(cleaned_text, tracker=tracker)
+                    except Exception as pe:
+                        print(f"[WARN] 第{ep:02d}話 自動修正失敗: {pe}")
 
                 ep_file = OUTPUT_DIR / f"ep{ep:02d}.md"
                 ep_file.write_text(cleaned_text, encoding="utf-8")
@@ -272,6 +306,7 @@ def main():
     parser.add_argument("--check-only", action="store_true", help="全話の生成状況チェックのみ実行")
     parser.add_argument("--manga", action="store_true", help="オプトイン: 4コマ漫画プロンプトも生成する")
     parser.add_argument("--manga-dry-run", action="store_true", help="オプトイン+サンプル1話だけ4コマ生成して動作確認")
+    parser.add_argument("--fix-continuity", action="store_true", help="ステップ 70: 継続性違反の自動修正を実行")
     args = parser.parse_args()
 
     # ステップ12: --manga フラグでオプトイン有効化
@@ -294,7 +329,7 @@ def main():
         print(f"・総合判定: {'[PASS] 全話完全クリア' if all_ok else '[WARN] 未達話数あり'}")
         sys.exit(0 if all_ok else 1)
 
-    runner.run_batch(start=start, end=end, resume=not args.no_resume)
+    runner.run_batch(start=start, end=end, resume=not args.no_resume, fix_continuity=args.fix_continuity)
     all_ok, missing, invalid = runner.check_all(end)
     print(f"\n=== 最終バッチサマリー ===")
     print(f"・完了: {TOTAL_EPISODES - len(missing)}/{TOTAL_EPISODES}話")

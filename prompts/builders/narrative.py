@@ -189,7 +189,13 @@ class NarrativePromptBuilder:
         return prompt
 
     async def build_ultra_fast_plot_batch_prompt(
-        self, bible_json_str: str, ep_range: list[int], book_id: Optional[int] = None
+        self,
+        bible_json_str: str,
+        ep_range: list[int],
+        book_id: Optional[int] = None,
+        enable_erotic: bool = False,
+        erotic_intensity: int = 0,
+        **kwargs: Any,
     ) -> str:
         bible_data = json.loads(bible_json_str) if bible_json_str else {}
 
@@ -300,9 +306,76 @@ class NarrativePromptBuilder:
             }
         )
 
-        return await self.registry.render_async(
+        prompt = await self.registry.render_async(
             "ultra_fast_plot_batch_prompt.j2", context_dict, book_id=book_id
         )
+
+        is_erotic = enable_erotic or kwargs.get("enable_erotic", False)
+        intensity = erotic_intensity or kwargs.get("erotic_intensity", 2)
+        if is_erotic and intensity > 0:
+            prompt += (
+                f"\n\n【官能・情愛プロット配置指針（強度: {intensity}）】\n"
+                f"各話のプロット構築において、キャラクター間の距離感の変化、心理的葛藤、"
+                f"官能的緊張（Build）や親密な触れ合い・感情のピーク（Peak）、およびその後の余韻（Afterglow）の配置を意識してストーリーラインを構成してください。"
+            )
+
+        return prompt
+
+    async def build_bible_creation_prompt(
+        self,
+        bible_core_schema: Any = None,
+        world_rules_json: str = "{}",
+        genre: str = "ファンタジー",
+        keywords: str = "",
+        concept: str = "",
+        target_eps: int = 10,
+        book_id: Optional[int] = None,
+        title: str = "",
+        style_key: str = "style_web_standard",
+        engine_key: str = "conflict",
+        enable_erotic: bool = False,
+        erotic_intensity: int = 0,
+        **kwargs: Any,
+    ) -> str:
+        """覇権企画書（WorldBible）作成用プロンプトを構築する。"""
+        schema_json = ""
+        if bible_core_schema is not None:
+            if hasattr(bible_core_schema, "model_json_schema"):
+                schema_json = json.dumps(
+                    bible_core_schema.model_json_schema(), ensure_ascii=False, indent=2
+                )
+            elif isinstance(bible_core_schema, dict):
+                schema_json = json.dumps(bible_core_schema, ensure_ascii=False, indent=2)
+            else:
+                schema_json = str(bible_core_schema)
+
+        context_dict = {
+            "target_eps": target_eps,
+            "world_rules_json": world_rules_json,
+            "concept": concept or keywords or genre,
+            "genre": genre,
+            "keywords": keywords,
+            "title": title,
+            "style_key": style_key,
+            "engine_key": engine_key,
+            "schema_json": schema_json,
+            "book_id": book_id,
+        }
+        context_dict.update(kwargs)
+
+        template_name = "bible_zamaa_template.j2" if engine_key == "zamaa" else "bible_creation_prompt.j2"
+        prompt = await self.registry.render_async(template_name, context_dict, book_id=book_id)
+
+        if enable_erotic or kwargs.get("enable_erotic", False):
+            intensity = erotic_intensity or kwargs.get("erotic_intensity", 2)
+            prompt += (
+                f"\n\n【官能・成人向け企画指針（過激度: {intensity}）】\n"
+                f"本作は大人向けの情愛・官能要素（NSFW）を含む作品です。"
+                f"企画書および登場人物設定・ロードマップにおいて、キャラクター間の感情の機微、"
+                f"身体的・精神的な惹かれ合い、関係性の深まりと葛藤を核となるテーマの一つとして組み込んでください。"
+            )
+
+        return prompt
 
     async def build_sharp_edge_proposal_prompt(
         self, plot_summary: str, book_id: Optional[int] = None

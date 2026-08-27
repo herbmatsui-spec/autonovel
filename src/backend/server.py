@@ -276,6 +276,7 @@ def create_app() -> FastAPI:
         "src.backend.routers.prompt_versions",
         "src.backend.routers.metrics",
         "src.backend.routers.misc",
+        "src.backend.routers.styles",
         "src.backend.routers.novel",
         "src.backend.routers.commercial",
         "src.backend.routers.easy_mode",

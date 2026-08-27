@@ -3,6 +3,7 @@ tests/test_erotic_workflow.py
 官能ワークフローのユニットテスト。
 """
 
+from unittest.mock import patch
 from config.erotic_pacing import EroticCurve
 from config.erotic_platform_presets import get_preset, get_preset_names
 from config.erotic_vocabulary import get_vocabulary_for_tier
@@ -167,3 +168,28 @@ def test_intense_tier_accessible():
 
     intense = get_vocabulary_for_tier_ext("intense")
     assert len(intense["metaphors"]) >= len(get_vocabulary_for_tier("full")["metaphors"])
+
+
+def test_image_service_safety_settings():
+    from google.genai import types
+    from src.models.illustration import SafetyLevel
+    from src.services.image_service import ImageService
+    from unittest.mock import MagicMock
+
+    with patch("google.genai.Client", return_value=MagicMock()):
+        service = ImageService(api_key="fake-key")
+        settings_r15 = service._build_safety_settings(SafetyLevel.R15_CONTENT)
+        assert len(settings_r15) == 1
+        assert settings_r15[0].threshold == types.HarmBlockThreshold.BLOCK_LOW_AND_ABOVE
+
+        settings_few = service._build_safety_settings(SafetyLevel.BLOCK_FEW)
+        assert len(settings_few) == 1
+        assert settings_few[0].threshold == types.HarmBlockThreshold.BLOCK_ONLY_HIGH
+
+
+def test_censorship_empty_and_special_chars():
+    assert apply_censorship("", "kakuyomu_romance") == ""
+    assert apply_censorship("特に関係のない日常会話", "kakuyomu_romance") == "特に関係のない日常会話"
+    # 自サイト（制限なし）では置換されない
+    assert apply_censorship("セックスと裸", "adult_selfhost") == "セックスと裸"
+

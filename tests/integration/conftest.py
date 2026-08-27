@@ -5,8 +5,16 @@ Provides PostgreSQL, Redis, and ChromaDB containers for integration tests.
 
 import os
 import pytest
-from testcontainers.community.postgres import PostgresContainer
-from testcontainers.community.redis import RedisContainer
+try:
+    from testcontainers.postgres import PostgresContainer
+    from testcontainers.redis import RedisContainer
+except ImportError:
+    try:
+        from testcontainers.community.postgres import PostgresContainer
+        from testcontainers.community.redis import RedisContainer
+    except ImportError:
+        PostgresContainer = None
+        RedisContainer = None
 from testcontainers.core.generic import DockerContainer
 
 # ===================== コンテナフィクスチャ =====================
@@ -14,38 +22,60 @@ from testcontainers.core.generic import DockerContainer
 @pytest.fixture(scope="session")
 def postgres_container():
     """PostgreSQL コンテナ (セッションスコープで共有)"""
-    container = PostgresContainer(
-        image="postgres:16-alpine",
-        username="test",
-        password="test",
-        dbname="test_autonovel",
-        port=5432,
-    )
-    container.start()
+    if PostgresContainer is None:
+        pytest.skip("PostgresContainer is not available")
+    try:
+        container = PostgresContainer(
+            image="postgres:16-alpine",
+            username="test",
+            password="test",
+            dbname="test_autonovel",
+            port=5432,
+        )
+        container.start()
+    except Exception as e:
+        pytest.skip(f"Docker/PostgresContainer unavailable: {e}")
     yield container
-    container.stop()
+    try:
+        container.stop()
+    except Exception:
+        pass
 
 
 @pytest.fixture(scope="session")
 def redis_container():
     """Redis コンテナ (セッションスコープで共有)"""
-    container = RedisContainer(image="redis:7-alpine", port=6379)
-    container.start()
+    if RedisContainer is None:
+        pytest.skip("RedisContainer is not available")
+    try:
+        container = RedisContainer(image="redis:7-alpine", port=6379)
+        container.start()
+    except Exception as e:
+        pytest.skip(f"Docker/RedisContainer unavailable: {e}")
     yield container
-    container.stop()
+    try:
+        container.stop()
+    except Exception:
+        pass
 
 
 @pytest.fixture(scope="session")
 def chromadb_container():
     """ChromaDB コンテナ (セッションスコープで共有)"""
-    container = DockerContainer(
-        image="chromadb/chroma:0.4.22",
-        env={"CHROMA_SERVER_HOST": "0.0.0.0", "CHROMA_SERVER_HTTP_PORT": "8000"},
-    )
-    container.with_exposed_ports(8000)
-    container.start()
+    try:
+        container = DockerContainer(
+            image="chromadb/chroma:0.4.22",
+            env={"CHROMA_SERVER_HOST": "0.0.0.0", "CHROMA_SERVER_HTTP_PORT": "8000"},
+        )
+        container.with_exposed_ports(8000)
+        container.start()
+    except Exception as e:
+        pytest.skip(f"Docker/ChromaDB unavailable: {e}")
     yield container
-    container.stop()
+    try:
+        container.stop()
+    except Exception:
+        pass
 
 
 # ===================== 環境変数オーバーライド =====================

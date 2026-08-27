@@ -36,7 +36,14 @@ export async function request<T>(
   const { apiKey, params, headers: customHeaders, ...restOptions } = options;
 
   // URL 構築
-  let url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
+  let url: string;
+  if (endpoint.startsWith('http')) {
+    url = endpoint;
+  } else if (endpoint.startsWith(API_BASE_URL)) {
+    url = endpoint;
+  } else {
+    url = `${API_BASE_URL}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
+  }
 
   if (params) {
     const searchParams = new URLSearchParams();

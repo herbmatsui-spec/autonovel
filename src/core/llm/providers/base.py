@@ -27,6 +27,7 @@ class LLMProvider(ABC):
         prompt: str,
         system_instruction: Optional[str] = None,
         temperature: float = 0.7,
+        nsfw_mode: bool = False,
         **kwargs,
     ) -> LLMResponse:
         """テキスト生成"""
@@ -40,6 +41,7 @@ class LLMProvider(ABC):
         response_schema: Optional[Any] = None,
         system_instruction: Optional[str] = None,
         temperature: float = 0.7,
+        nsfw_mode: bool = False,
         **kwargs,
     ) -> LLMResponse:
         """構造化データ(JSON)生成"""

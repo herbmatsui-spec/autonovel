@@ -358,3 +358,63 @@ def test_phase_e_security():
         p = MANGA_PROMPTS_DIR / f if f.startswith("ep98_manga") or f.startswith("ep01_manga") else OUTPUT_DIR / f
         if p.exists():
             p.unlink()
+
+
+# ==============================================================================
+# Phase 9: Continuity 統合テスト (ステップ 71)
+# ==============================================================================
+def test_continuity_full():
+    """全ルールファイルを読み、戦闘・会話・探索の複数シーンを通した一貫性検証"""
+    import os
+    from novel_50ep.continuity_tracker import ContinuityTracker
+    from novel_50ep.scene_model import (
+        DialogueScene,
+        CombatScene,
+        ExplorationScene,
+    )
+
+    rules_dir = str(Path(__file__).parent.parent / "continuity_rules")
+    tracker = ContinuityTracker(rules_dir=rules_dir)
+
+    # 1. 会話シーン 1
+    d1 = DialogueScene(id="d1", start=0, end=100, speakers=["凛", "セリア"], topics=["遺跡調査"])
+    v_d1 = tracker.feed(d1)
+    assert len(v_d1) == 0
+
+    # 2. 会話シーン 2 (話者・トピック継続: OK)
+    d2 = DialogueScene(id="d2", start=100, end=200, speakers=["凛"], topics=["遺跡調査"])
+    v_d2 = tracker.feed(d2)
+    assert len(v_d2) == 0
+
+    # 3. 戦闘シーン 1 (初期状態: HP 100, MP 50, 装備 [光刃, 光の盾])
+    c1 = CombatScene(id="c1", start=200, end=300, hp=100, mp=50, equipment=["光刃", "光の盾"])
+    v_c1 = tracker.feed(c1)
+    assert len(v_c1) == 0
+
+    # 4. 戦闘シーン 2 (HP減少・MP減少・装備維持: OK)
+    c2 = CombatScene(id="c2", start=300, end=400, hp=80, mp=30, equipment=["光刃", "光の盾"])
+    v_c2 = tracker.feed(c2)
+    assert len(v_c2) == 0
+
+    # 5. 戦闘シーン 3 (HPが不正に増加: 違反1件検出)
+    c3 = CombatScene(id="c3", start=400, end=500, hp=95, mp=20, equipment=["光刃", "光の盾"])
+    v_c3 = tracker.feed(c3)
+    assert len(v_c3) == 1
+    assert v_c3[0]["field"] == "hp"
+
+    # 6. 探索シーン 1
+    x1 = ExplorationScene(id="x1", start=500, end=600, location="蒼穹の回廊", items=["光導器"])
+    v_x1 = tracker.feed(x1)
+    assert len(v_x1) == 0
+
+    # 7. 探索シーン 2 (場所が説明なく変化: 違反1件検出)
+    x2 = ExplorationScene(id="x2", start=600, end=700, location="未知の最深部", items=["光導器"])
+    v_x2 = tracker.feed(x2)
+    assert len(v_x2) == 1
+    assert v_x2[0]["field"] == "location"
+
+    # 累積違反数が2件であることを確認
+    assert len(tracker.violations) == 2
+    report = tracker.report()
+    assert "hp:" in report
+    assert "location:" in report

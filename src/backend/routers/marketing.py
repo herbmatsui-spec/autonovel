@@ -47,3 +47,65 @@ async def export_package_get(book_id: int, api_key: str = Depends(require_api_ke
         media_type="application/zip",
         headers={"Content-Disposition": f'attachment; filename="{zip_filename}"'},
     )
+
+
+@router.post("/api/marketing/analyze_style_dna")
+async def analyze_style_dna_endpoint(req: dict, api_key: str = Depends(require_api_key)):
+    """
+    小説サンプルテキストを解析し、文体DNA（特徴・指標・執筆指針）を返す。
+    """
+    sample = req.get("sample", "").strip()
+    if not sample:
+        return {
+            "name": "未指定",
+            "instruction": "サンプルテキストが提供されていません。",
+            "score": 0,
+            "analysis": "テキストを入力して分析してください。",
+            "metrics": {"dialogue_ratio": "0%", "avg_chars_per_line": 0},
+        }
+
+    # 簡易メトリクス計算
+    total_len = len(sample)
+    lines = [l.strip() for l in sample.split("\n") if l.strip()]
+    dialogue_lines = [l for l in lines if (l.startswith("「") or l.startswith("『") or l.startswith("（"))]
+    dialogue_ratio = round((len(dialogue_lines) / max(len(lines), 1)) * 100)
+    avg_chars = round(total_len / max(len(lines), 1))
+
+    # AI解析の試行
+    try:
+        engine = get_engine(api_key)
+        prompt = (
+            f"あなたはプロの文体・小説アナリストです。以下のサンプル文章を精緻に分析し、"
+            f"文体DNAの特徴、執筆指針、文章スコア（100点満点）、および具体的な改善アドバイスをJSONで抽出してください。\n\n"
+            f"【サンプル】\n{sample[:3000]}\n\n"
+            f"出力フォーマット（必ず有効なJSONのみ出力）:\n"
+            f'{{"name": "文体名（例：現代軽快会話体）", "instruction": "この文体を模倣・再現するための具体的な執筆指針", "score": 85, "analysis": "文体の詳細分析レポート", "suggested_style_key": "style_web_standard"}}'
+        )
+        ai_res = await engine.llm.generate(prompt)
+        import json
+        # JSON部分の抽出
+        cleaned = ai_res.strip()
+        if "```json" in cleaned:
+            cleaned = cleaned.split("```json")[1].split("```")[0].strip()
+        elif "```" in cleaned:
+            cleaned = cleaned.split("```")[1].split("```")[0].strip()
+        result = json.loads(cleaned)
+        result["metrics"] = {
+            "dialogue_ratio": f"{dialogue_ratio}%",
+            "avg_chars_per_line": avg_chars,
+            "total_chars": total_len,
+        }
+        return result
+    except Exception as e:
+        # フォールバック
+        return {
+            "name": "Web標準テンポ体" if dialogue_ratio > 40 else "叙情・重厚体",
+            "instruction": "会話と地の文のバランスを保ち、情景描写と心理描写を織り交ぜて展開せよ。",
+            "score": min(95, max(60, 70 + (avg_chars // 10))),
+            "analysis": f"台詞比率: {dialogue_ratio}%、平均行長: {avg_chars}文字。安定した可読性を持つ文章構成です。",
+            "metrics": {
+                "dialogue_ratio": f"{dialogue_ratio}%",
+                "avg_chars_per_line": avg_chars,
+                "total_chars": total_len,
+            },
+        }

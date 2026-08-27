@@ -22,6 +22,9 @@ import type {
   NarrativeMetricTrend,
   PlanningOptions,
   StyleDnaResult,
+  CustomStyle,
+  StyleFragment,
+  StylePresetsResponse,
   ExportPackageResult,
   Issue,
 } from './types/api';
@@ -482,4 +485,54 @@ export type RefineEroticParams = {
 
 export async function refineErotic(params: RefineEroticParams, apiKey?: string): Promise<string> {
   return triggerTask('/refine_erotic', params, apiKey);
+}
+
+// ---------- Style Management APIs ----------
+
+export async function getCustomStyles(): Promise<CustomStyle[]> {
+  return apiRequest(`${API_BASE_URL}/styles/custom`);
+}
+
+export async function saveCustomStyle(data: {
+  name: string;
+  instruction: string;
+  score?: number;
+  analysis?: string;
+}): Promise<{ status: string; message: string }> {
+  return apiRequest(`${API_BASE_URL}/styles/custom`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteCustomStyle(id: number): Promise<{ status: string; message: string }> {
+  return apiRequest(`${API_BASE_URL}/styles/custom/${id}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function getStyleFragments(tag?: string): Promise<StyleFragment[]> {
+  const url = tag ? `${API_BASE_URL}/styles/fragments?tag=${encodeURIComponent(tag)}` : `${API_BASE_URL}/styles/fragments`;
+  return apiRequest(url);
+}
+
+export async function addStyleFragment(
+  data: { tag: string; content: string; origin?: string },
+  apiKey?: string
+): Promise<{ status: string; message: string }> {
+  return apiRequest(`${API_BASE_URL}/styles/fragments`, {
+    method: 'POST',
+    headers: apiKey ? { 'X-API-Key': apiKey } : undefined,
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteStyleFragment(id: number): Promise<{ status: string; message: string }> {
+  return apiRequest(`${API_BASE_URL}/styles/fragments/${id}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function getStylePresets(): Promise<StylePresetsResponse> {
+  return apiRequest(`${API_BASE_URL}/styles/presets`);
 }

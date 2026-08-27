@@ -1,0 +1,14 @@
+version: 1
+rules:
+  - type: combat
+    op: subset
+    field: equipment
+    msg: "装備が消失"
+  - type: combat
+    op: no_increase
+    field: hp
+    msg: "HPが回復行為なしで増加"
+  - type: combat
+    op: no_increase
+    field: mp
+    msg: "MPが回復行為なしで増加"

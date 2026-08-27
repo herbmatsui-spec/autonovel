@@ -26,7 +26,29 @@ class ForeshadowManager:
     def __init__(self, csv_path: Path = FORESHADOW_FILE, cliffs_path: Path = CLIFFS_FILE):
         self.csv_path = csv_path
         self.cliffs_path = cliffs_path
+        self.foreshadows: List[Dict[str, Any]] = []
         self.init_csv()
+
+    # ステップ 56: 伏線を expect リストとしてエクスポート
+    def get_expects(self) -> List[Dict[str, Any]]:
+        if self.foreshadows:
+            return [
+                {
+                    "id": str(f.get("id", "")),
+                    "type": f.get("scene_type", f.get("type", "dialogue")),
+                    "field": f.get("field", "topics"),
+                }
+                for f in self.foreshadows
+            ]
+        items = self.load_all()
+        return [
+            {
+                "id": str(f.ep),
+                "type": getattr(f, "scene_type", "dialogue"),
+                "field": getattr(f, "field", "topics"),
+            }
+            for f in items
+        ]
 
     # ステップ51: foreshadow.csv 作成
     def init_csv(self) -> None:

@@ -323,3 +323,18 @@ class CommercialPipeline:
                 "exports": {},
                 "schedule_csv": None,
             }
+
+    @staticmethod
+    def run_continuity_check() -> Dict[str, Any]:
+        """CI / パイプライン用継続性テストの実行 (ステップ 72)"""
+        import subprocess
+        try:
+            cmd = ["pytest", "novel_50ep/tests/test_novel_50ep.py", "-k", "test_continuity_full", "-q"]
+            res = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            return {"status": "success", "output": res.stdout}
+        except subprocess.CalledProcessError as cpe:
+            logger.error(f"Continuity check failed: {cpe.stderr or cpe.stdout}")
+            raise PipelineError(
+                f"Merge Blocked: Continuity check failed: {cpe.stderr or cpe.stdout}"
+            ) from cpe
+

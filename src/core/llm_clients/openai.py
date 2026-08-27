@@ -45,6 +45,7 @@ class OpenAIApiClient(BaseLLMClient):
         max_retries: int = 5,
         stream_callback: Optional[Callable[[str], None]] = None,
         retry_state: Optional[RetryState] = None,
+        nsfw_mode: bool = False,
     ) -> Tuple[Dict[str, Any], str, Any]:
         try:
             import openai

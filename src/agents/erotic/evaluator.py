@@ -110,6 +110,10 @@ class EroticQualityScorer:
             ],
         }
 
+    def score(self, text: str) -> EroticQualityReport:
+        """score_quality のエイリアス。"""
+        return self.score_quality(text)
+
     def score_quality(self, text: str) -> EroticQualityReport:
         """
         テキストの官能品質を評価する

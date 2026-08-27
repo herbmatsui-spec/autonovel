@@ -132,7 +132,13 @@ class ScoreReviewer:
         return round(score, 3), detail
 
     # ステップ63: score_total (上記4つの加重統合スコア 0〜1)
-    def score_episode(self, ep: int, text: str, part_counts: Optional[Dict[int, int]] = None) -> EpisodeScore:
+    def score_episode(
+        self,
+        ep: int,
+        text: str,
+        part_counts: Optional[Dict[int, int]] = None,
+        tracker: Optional[Any] = None,
+    ) -> EpisodeScore:
         if part_counts is None:
             part_counts = extract_parts(text)
 
@@ -142,8 +148,23 @@ class ScoreReviewer:
         c_score, c_desc = self.score_cliff(text)
 
         # 加重平均: テンポ(30%), 感情(25%), 世界観(20%), クリフ(25%)
+        # CONTINUITY_HOOK
         total = (p_score * 0.30) + (e_score * 0.25) + (w_score * 0.20) + (c_score * 0.25)
+        # ステップ 65: 継続性ペナルティの反映
+        if tracker is not None and hasattr(tracker, "violations") and tracker.violations:
+            total -= len(tracker.violations) * 0.5
+
         total = round(min(1.0, max(0.0, total)), 3)
+
+        details = {
+            "pacing": p_desc,
+            "emotion": e_desc,
+            "world": w_desc,
+            "cliff": c_desc,
+        }
+        # ステップ 66: レポートにセクション追加
+        if tracker is not None and hasattr(tracker, "report"):
+            details["continuity_issues"] = tracker.report()
 
         return EpisodeScore(
             ep=ep,
@@ -152,12 +173,7 @@ class ScoreReviewer:
             world_score=w_score,
             cliff_score=c_score,
             total_score=total,
-            details={
-                "pacing": p_desc,
-                "emotion": e_desc,
-                "world": w_desc,
-                "cliff": c_desc,
-            },
+            details=details,
         )
 
     # ステップ64: 全話スコア集計 (scores.csv) と目標平均0.9確認

@@ -244,26 +244,34 @@ class WritingAgent(BaseAgent):
         エピソード本文を生成し、文字列で返す。
         :param book_id: 書籍ID
         :param ep_num: エピソード番号
-        :param context: プロット情報、キャラ設定、世界設定などを含む�辞書
+        :param context: プロット情報、キャラ設定、世界設定などを含む辞書
         :return: 生成された本文（文字列）
         """
-        # プロンプトを構�築
+        # 官能モード判定
+        erotic_intensity = context.get("erotic_intensity", 0)
+        is_nsfw = bool(
+            erotic_intensity > 0
+            and (context.get("nsfw_enabled", False) or context.get("enable_erotic", False))
+        )
+
+        # プロンプトを構築（官能プロンプトも事前結合）
         prompt_composer = PromptComposer(self)
         prompt = await prompt_composer.compose_writing_prompt(book_id, ep_num, context)
 
-        # 初期結果を生成
+        # テキスト生成（シングルパス）
         result = await self.llm.generate_text(
             purpose="writing",
             prompt=prompt,
             system_instruction=None,
             temperature=0.7,
+            nsfw_mode=is_nsfw,
         )
         if hasattr(result, "story_content"):
             result = result.story_content
 
-        # エロティックコンテンツを強化
+        # 官能後処理（メタファーフィルタ・アフターグロウ評価）
         erotic_enhancer = EroticEnhancer(self)
-        result = await erotic_enhancer.enhance_erotic_content(prompt, result, context)
+        result = erotic_enhancer.post_process_erotic_content(str(result), context)
 
         return result
 

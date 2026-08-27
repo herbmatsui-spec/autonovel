@@ -20,11 +20,31 @@ try:
     from novel_50ep.config import FINAL_DIR, OUTPUT_DIR, SCORES_FILE, TOTAL_EPISODES
     from novel_50ep.count_chars import validate_episode
     from novel_50ep.score_reviewer import ScoreReviewer
+    from novel_50ep.continuity_tracker import ContinuityTracker
 except ImportError:
     from batch_runner import clean_novel_text
     from config import FINAL_DIR, OUTPUT_DIR, SCORES_FILE, TOTAL_EPISODES
     from count_chars import validate_episode
     from score_reviewer import ScoreReviewer
+    from continuity_tracker import ContinuityTracker
+
+
+# ステップ 61, 62: 校正関数 (trackerフック & 自動修正プロンプト付与)
+def polish(
+    text: str,
+    scene: Optional[Any] = None,
+    tracker: Optional[ContinuityTracker] = None,
+) -> str:
+    """校正処理および継続性違反時の修正プロンプト生成 (ステップ 61, 62)"""
+    if tracker is not None and scene is not None:
+        tracker.feed(scene)
+
+    if tracker is not None and tracker.violations:
+        report_text = tracker.report()
+        return f"以下の矛盾を修正してください: {report_text}\n\n{text}"
+
+    polished, _ = proofread_text(text)
+    return polished
 
 
 # ステップ67: 表記ゆれ・文法ミスの一括校正フィルター

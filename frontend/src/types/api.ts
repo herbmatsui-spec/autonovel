@@ -235,17 +235,60 @@ export interface HealthStatus {
 export interface PlanningOptions {
   easy_genres: Record<string, { genre: string; archetype: string; desc: string }>;
   story_archetypes: string[];
-  style_definitions: Record<string, { name: string; description: string }>;
+  style_definitions: Record<string, { name: string; description: string; is_custom?: boolean; id?: number }>;
   planning_presets: Record<string, { name: string; description: string }>;
 }
 
-export interface StyleDnaResult {
-  // Placeholder for style DNA analysis results
-  // Actual structure would be defined based on backend API
-  analysis: Record<string, unknown>;
-  contradictions: string[];
-  suggestions: string[];
+export interface CustomStyle {
+  id: number;
+  name: string;
+  instruction: string;
+  score: number;
+  analysis: string;
+  created_at: string;
 }
+
+export interface StyleFragment {
+  id: number;
+  tag: string;
+  content: string;
+  origin: string;
+  created_at: string;
+}
+
+export interface StylePresetDetail {
+  name: string;
+  instruction: string;
+  dialogue_ratio?: string;
+  syntax_rhythm?: string;
+  metaphor_dna?: string;
+  noise_dna?: string;
+  golden_rules?: string;
+  negative_prompt?: string;
+  is_light?: boolean;
+}
+
+export interface StylePresetsResponse {
+  styles: Record<string, StylePresetDetail>;
+  forbidden_word_replacements: Record<string, string>;
+  forbidden_summary_patterns: Record<string, string>;
+}
+
+export interface StyleDnaResult {
+  name?: string;
+  instruction?: string;
+  score?: number;
+  analysis?: string;
+  suggested_style_key?: string;
+  metrics?: {
+    dialogue_ratio?: string;
+    avg_chars_per_line?: number;
+    total_chars?: number;
+  };
+  contradictions?: string[];
+  suggestions?: string[];
+}
+
 
 export interface ExportPackageResult {
   // Placeholder for export package result

@@ -79,12 +79,12 @@ class ImageService:
     def _build_safety_settings(self, level: SafetyLevel):
         """SafetyLevel を GenAI SDK の SafetySetting リストに変換する。"""
         threshold_map = {
-            SafetyLevel.BLOCK_MOST.value: "BLOCK_MOST",
-            SafetyLevel.BLOCK_SOME.value: "BLOCK_SOME",
-            SafetyLevel.BLOCK_FEW.value: "BLOCK_FEW",
-            SafetyLevel.R15_CONTENT.value: "BLOCK_MOST",  # R15は露骨な表現を強く遮断
+            SafetyLevel.BLOCK_MOST.value: types.HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
+            SafetyLevel.BLOCK_SOME.value: types.HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+            SafetyLevel.BLOCK_FEW.value: types.HarmBlockThreshold.BLOCK_ONLY_HIGH,
+            SafetyLevel.R15_CONTENT.value: types.HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,  # R15は露骨な表現を最も強く遮断
         }
-        threshold = threshold_map.get(getattr(level, "value", level), "BLOCK_SOME")
+        threshold = threshold_map.get(getattr(level, "value", level), types.HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE)
         return [
             types.SafetySetting(
                 category="HARM_CATEGORY_SEXUALLY_EXPLICIT",
