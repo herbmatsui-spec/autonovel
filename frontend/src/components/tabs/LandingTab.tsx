@@ -1,21 +1,14 @@
-import type { TabId } from '../../store/useProjectStore';
 import { useEffect, useState } from 'react';
 import { checkBackendHealth } from '../../api';
 import { useUserSettingsStore } from '../../store/useUserSettingsStore';
 import { useNavigate } from 'react-router-dom';
 import { useUIStore } from '../../store/useUIStore';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
-interface LandingTabProps {
-  // Props are no longer needed; kept for compatibility but unused.
-  // We'll remove them in future refactor.
-  // setActiveTab: (tab: TabId) => void;
-  // setCreateModalOpen: (open: boolean) => void;
-  // setIsExpertMode: (val: boolean) => void;
-}
-
-export default function LandingTab(_props: LandingTabProps) {
+export function LandingTab() {
   const { apiKey } = useUserSettingsStore();
-  const { setCreateModalOpen, setIsExpertMode } = useUIStore();
+  const { setCreateModalOpen } = useUIStore();
   const navigate = useNavigate();
   const [health, setHealth] = useState<{ status: string; database: string; worker: string } | null>(null);
 
@@ -140,3 +133,5 @@ function FeatureTile({ icon, title, description }: FeatureTileProps) {
     </div>
   );
 }
+
+export default LandingTab;

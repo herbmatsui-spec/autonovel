@@ -199,11 +199,8 @@ async def rate_limit_middleware(request: Request, call_next):
                 ) | {"detail": "リクエスト数が制限を超えました。"},
             )
     except (ConnectionError, TimeoutError, OSError, redis.exceptions.RedisError) as e:
-        logger.warning(f"Rate limiting error: {e}")
-        return JSONResponse(
-            status_code=503,
-            content={"error": "Service Unavailable", "detail": "レート制限サービスが利用できません"},
-        )
+        logger.warning(f"Rate limiting error (failing open): {e}")
+        return await call_next(request)
 
     return await call_next(request)
 
@@ -279,6 +276,7 @@ def create_app() -> FastAPI:
         "src.backend.routers.prompt_versions",
         "src.backend.routers.metrics",
         "src.backend.routers.misc",
+        "src.backend.routers.styles",
         "src.backend.routers.novel",
         "src.backend.routers.commercial",
         "src.backend.routers.easy_mode",

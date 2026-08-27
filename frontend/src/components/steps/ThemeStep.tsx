@@ -1,7 +1,6 @@
-import React from 'react';
 import { PlanningTab } from '@/components/tabs/PlanningTab';
 
-export default function ThemeStep() {
+export function ThemeStep(_props: { bookId?: number } = {}) {
   return (
     <div>
       <p className="text-sm text-muted-foreground mb-2">
@@ -11,3 +10,5 @@ export default function ThemeStep() {
     </div>
   );
 }
+
+export default ThemeStep;

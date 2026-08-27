@@ -49,6 +49,7 @@ def determine_overall_status(checks: Dict[str, HealthCheckResult]) -> HealthStat
 
 
 @router.get("/health", response_model=HealthResponse)
+@router.get("/api/health", response_model=HealthResponse)
 async def health_check():
     """拡張ヘルスチェック: DB, Redis, ChromaDB, LLM Gateway, Worker を並列チェック"""
     cfg = get_settings()
@@ -91,3 +92,50 @@ async def health_check():
         timestamp=datetime.now(timezone.utc).isoformat(),
         checks=check_responses
     )
+
+
+# ステップ 68: Continuity Check エンドポイント
+class ContinuityCheckRequest(BaseModel):
+    enabled: bool = True
+    scene: Dict[str, Any]
+    prev_scene: Optional[Dict[str, Any]] = None
+
+
+class ContinuityCheckResponse(BaseModel):
+    valid: bool
+    violations: List[Dict[str, Any]] = Field(default_factory=list)
+    report: str = ""
+
+
+@router.post("/api/continuity/check", response_model=ContinuityCheckResponse)
+async def check_continuity_endpoint(req: ContinuityCheckRequest):
+    """シーン連続性チェック用 API (ステップ 68)"""
+    if not req.enabled:
+        return ContinuityCheckResponse(valid=True, violations=[], report="")
+
+    try:
+        import os
+        from novel_50ep.scene_model import SceneBase
+        from novel_50ep.continuity_tracker import ContinuityTracker
+
+        rules_dir = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "../../../novel_50ep/continuity_rules")
+        )
+        tracker = ContinuityTracker(rules_dir=rules_dir)
+        if req.prev_scene:
+            prev_s = SceneBase.from_dict(req.prev_scene)
+            tracker.feed(prev_s)
+        cur_s = SceneBase.from_dict(req.scene)
+        violations = tracker.feed(cur_s)
+        return ContinuityCheckResponse(
+            valid=len(violations) == 0,
+            violations=violations,
+            report=tracker.report(),
+        )
+    except Exception as e:
+        logger.warning(f"Continuity check error: {e}")
+        return ContinuityCheckResponse(
+            valid=False,
+            violations=[{"field": "system", "msg": str(e)}],
+            report=str(e),
+        )

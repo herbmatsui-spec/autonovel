@@ -27,10 +27,32 @@ export function ChapterCard({ chapter, qualityScore, killerPhrase }: ChapterCard
         <h4 style={{ fontSize: '1.15rem' }}>
           第{ch.ep_num}話: {ch.title}
         </h4>
-        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-          {new Date(ch.created_at).toLocaleDateString()}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem', background: 'rgba(99, 102, 241, 0.15)', color: 'var(--accent-indigo)', borderRadius: '4px', fontWeight: 600 }}>
+            {ch.content ? `${ch.content.length.toLocaleString()} 字` : '0 字'}
+          </span>
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+            {new Date(ch.created_at).toLocaleDateString()}
+          </span>
+        </div>
       </div>
+      {ch.event_density !== undefined && (
+        <div style={{ marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+            事件密度: <strong>{(ch.event_density * 100).toFixed(0)}%</strong> ({ch.event_density >= 0.5 ? '合格' : '要改善'})
+          </span>
+          <div style={{ flex: 1, height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px' }}>
+            <div
+              style={{
+                width: `${Math.min(100, ch.event_density * 100)}%`,
+                height: '100%',
+                borderRadius: '2px',
+                background: ch.event_density >= 0.5 ? '#22c55e' : '#ef4444',
+              }}
+            />
+          </div>
+        </div>
+      )}
       {killerPhrase && (
         <div
           style={{

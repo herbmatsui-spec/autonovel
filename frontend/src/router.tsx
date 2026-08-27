@@ -5,18 +5,8 @@ import { lazy, Suspense } from 'react';
 const LandingWizard = lazy(() => import('./components/LandingWizard'));
 const Setup = lazy(() => import('./components/Setup'));
 const BookWorkspace = lazy(() => import('./components/BookWorkspace'));
-// Lazy load existing tabs (to be redirected later)
-const LandingTab = lazy(() => import('./components/tabs/LandingTab'));
 const BooksTab = lazy(() => import('./components/tabs/BooksTab'));
-const PlotsTab = lazy(() => import('./components/tabs/PlotsTab'));
-const WriteTab = lazy(() => import('./components/tabs/WriteTab'));
-const AnalyticsTab = lazy(() => import('./components/tabs/AnalyticsTab'));
-const PlanningTab = lazy(() => import('./components/tabs/PlanningTab'));
 const StyleLabTab = lazy(() => import('./components/tabs/StyleLabTab'));
-const AuditTab = lazy(() => import('./components/tabs/AuditTab'));
-const MonitorTab = lazy(() => import('./components/tabs/MonitorTab'));
-const StrategyTab = lazy(() => import('./components/tabs/StrategyTab'));
-const ImportTab = lazy(() => import('./components/tabs/ImportTab'));
 
 const LoadingSpinner = () => (
   <div className="flex items-center justify-center py-8">
@@ -33,6 +23,7 @@ function AppRouter() {
         <Route path="/setup" element={<Setup />} />
         <Route path="/landing" element={<LandingWizard />} />
         <Route path="/books" element={<BooksTab />} />
+        <Route path="/style-lab" element={<StyleLabTab />} />
         <Route path="/book/:id" element={<BookWorkspace />} />
         <Route path="/book/:id/:step" element={<BookWorkspace />} />
         {/* Existing routes - redirect to appropriate new locations */}
@@ -42,7 +33,7 @@ function AppRouter() {
         <Route path="/write" element={<Navigate to="/books" replace />} />
         <Route path="/analytics" element={<Navigate to="/books" replace />} />
         <Route path="/planning" element={<Navigate to="/books" replace />} />
-        <Route path="/style-lab" element={<Navigate to="/books" replace />} />
+
         <Route path="/audit" element={<Navigate to="/books" replace />} />
         <Route path="/monitor" element={<Navigate to="/books" replace />} />
         <Route path="/strategy" element={<Navigate to="/books" replace />} />

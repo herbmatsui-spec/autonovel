@@ -15,6 +15,8 @@ from src.core.llm.router import resolve_model
 
 logger = logging.getLogger(__name__)
 
+MIN_DRAFT_CHARS = 1500
+
 
 async def build_context_node(state: WritingGraphState, *, writing_agent: Any = None) -> Dict[str, Any]:
     """
@@ -89,10 +91,18 @@ async def generate_draft_node(state: WritingGraphState, *, llm_provider: Any = N
         },
     )
 
+    prev_tail = state.get("prev_episode_tail", "")
     prompt = fw_prompt
+    if prev_tail:
+        prompt += (
+            f"\n\n【直前話の末尾（文脈接続用）】\n"
+            f"...\n{prev_tail}\n...\n"
+            f"※前話のラストシーン・キャラクターの感情や緊迫感を自然に引き継ぎ、物語を滑らかに接続して執筆してください。"
+        )
+
     if failures:
         critique = format_critique_feedback(failures)
-        prompt += f"\n\n【前回の推敲指摘と改善指示】\n{critique}\n上記の指摘事項を反映して本文を書き直してください。"
+        prompt += f"\n\n【前回の推敲指摘と改善指示】\n{critique}\n上記の指摘事項（特に事件密度・展開・キャラクター描写・論理整合性）を反映して本文を書き直してください。"
 
     model = resolve_model("writing")
     logger.info(f"[WritingGraph] Generating draft (Iteration {ac_iter}) using model '{model}'...")
@@ -107,16 +117,20 @@ async def generate_draft_node(state: WritingGraphState, *, llm_provider: Any = N
             )
             draft = response.content
         else:
-            draft = f"第{ep_num}話の本文ドラフト（生成サンプル）。主人公は静かに歩き始めた。風が草木を揺らし、遠くの街並みが夕暮れに染まっていく。新たな冒険の予感が胸を満たしていた。"
+            draft = (
+                f"第{ep_num}話の本文ドラフト（生成サンプル）。主人公は静かに歩き始めた。"
+                "風が草木を揺らし、遠くの街並みが夕暮れに染まっていく。新たな冒険の予感が胸を満たしていた。"
+                "胸に秘めた決意を新たに、彼らは前進を続ける。"
+            ) * 20
 
         await sse.broadcast(
             "agent_status",
             {
                 "agent": "WriterActor",
                 "phase": "draft_generated",
-                "message": f"第{ep_num}話 ドラフト出力完了 ({len(draft)}文字)",
+                "message": f"第{ep_num}話 本文ドラフトを生成しました ({len(draft)}文字)。",
                 "ep_num": ep_num,
-                "char_length": len(draft),
+                "draft_length": len(draft),
             },
         )
 
@@ -128,7 +142,6 @@ async def generate_draft_node(state: WritingGraphState, *, llm_provider: Any = N
     except Exception as e:
         logger.error(f"[WritingGraph] Draft generation failed: {e}")
         return {
-            "ac_iter": ac_iter,
             "error_message": str(e),
             "status": "draft_error",
         }
@@ -153,7 +166,7 @@ async def self_audit_node(state: WritingGraphState, *, llm_provider: Any = None)
         },
     )
 
-    if not draft or len(draft.strip()) < 50:
+    if not draft or len(draft.strip()) < MIN_DRAFT_CHARS:
         return {
             "is_integrity_ok": False,
             "is_causal_ok": False,
@@ -172,16 +185,19 @@ async def self_audit_node(state: WritingGraphState, *, llm_provider: Any = None)
 【監査項目】
 1. キャラクターの言動に大きな不整合やブレはないか
 2. 前後の因果関係や状況描写に論理的破綻はないか
+3. 事件密度（展開/性格露出/緊張上昇の充足度）が十分にあるか（不足時は failures に不足要素［展開・性格露出・緊張感］を具体的に記載）
+4. （前話がある場合）前話からの接続・引き継ぎに違和感や断絶がないか
 
 【出力形式】
 JSON形式:
 {{
   "is_integrity_ok": true/false,
   "is_causal_ok": true/false,
+  "event_density": 0.0〜1.0 (0.5以上で合格),
   "causal_reason": "判定理由",
   "score": 0.0〜1.0 (0.8以上で合格),
   "failures": [
-    {{"category": "Logic/Character/Pacing", "description": "修正すべき点"}}
+    {{"category": "Logic/Character/Pacing/Density", "description": "修正すべき点（不足している展開・性格描写・緊張感など）"}}
   ]
 }}
 """
@@ -198,21 +214,33 @@ JSON形式:
             )
             data = json.loads(response.content) if isinstance(response.content, str) else response.content
         else:
-            data = {"is_integrity_ok": True, "is_causal_ok": True, "score": 0.9, "failures": []}
+            data = {
+                "is_integrity_ok": True,
+                "is_causal_ok": True,
+                "event_density": 0.9,
+                "score": 0.9,
+                "failures": [],
+            }
 
         integrity_ok = bool(data.get("is_integrity_ok", True))
         causal_ok = bool(data.get("is_causal_ok", True))
+        event_density = float(data.get("event_density", 0.8))
         failures = data.get("failures", [])
         score = float(data.get("score", calculate_quality_score(integrity_ok, causal_ok, len(failures))))
+
+        logger.info(
+            f"[WritingGraph] Ep {ep_num} Audit Complete: chars={len(draft)}, density={event_density:.2f}, score={score:.2f}, integrity={integrity_ok}, causal={causal_ok}"
+        )
 
         await sse.broadcast(
             "agent_status",
             {
                 "agent": "WriterCritic",
                 "phase": "audited",
-                "message": f"第{ep_num}話 自己監査完了: スコア {score:.2f} ({'合格' if integrity_ok and causal_ok else '再修正指示'})",
+                "message": f"第{ep_num}話 自己監査完了: スコア {score:.2f}, 密度 {event_density:.2f} ({'合格' if integrity_ok and causal_ok else '再修正指示'})",
                 "ep_num": ep_num,
                 "score": score,
+                "event_density": event_density,
                 "failures_count": len(failures),
             },
         )
@@ -220,6 +248,7 @@ JSON形式:
         return {
             "is_integrity_ok": integrity_ok,
             "is_causal_ok": causal_ok,
+            "event_density": event_density,
             "causal_reason": data.get("causal_reason", "監査完了"),
             "failures": failures,
             "quality_score": score,
@@ -230,7 +259,9 @@ JSON形式:
         return {
             "is_integrity_ok": True,
             "is_causal_ok": True,
-            "quality_score": 0.8,
+            "event_density": 0.8,
+            "causal_reason": "監査フォールバック",
             "failures": [],
-            "status": "audited_fallback",
+            "quality_score": 0.8,
+            "status": "audit_error",
         }

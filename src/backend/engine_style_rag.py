@@ -1,3 +1,4 @@
+from collections import OrderedDict
 import json
 import logging
 import random
@@ -10,6 +11,8 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+_MAX_EMBEDDING_CACHE_SIZE = 1000
+
 
 class StyleRagManager:
     """
@@ -21,12 +24,13 @@ class StyleRagManager:
         self.client = client
         self.repo = repo
         self.embedding_model = "gemini-embedding-2"  # 業界標準の高性能モデルに固定
-        # キャッシュ用辞書（Embeddingの再計算を避ける）
-        self._embedding_cache: Dict[str, List[float]] = {}
+        # LRU キャッシュ（Embeddingの再計算を避けつつメモリ肥大化を防止）
+        self._embedding_cache: OrderedDict[str, List[float]] = OrderedDict()
 
     async def _get_embedding(self, text: str) -> List[float]:
-        """Gemini APIを使用してテキストのベクトルを生成 (メモリキャッシュ付き)"""
+        """Gemini APIを使用してテキストのベクトルを生成 (LRUキャッシュ付き)"""
         if text in self._embedding_cache:
+            self._embedding_cache.move_to_end(text)
             return self._embedding_cache[text]
 
         try:
@@ -39,8 +43,12 @@ class StyleRagManager:
             res = await executor_manager.run_cpu(_call)
             vec = res.embeddings[0].values
 
-            # キャッシュに保存
+            # LRU キャッシュに保存（上限超過時は最古のエントリを破棄）
+            if text in self._embedding_cache:
+                self._embedding_cache.move_to_end(text)
             self._embedding_cache[text] = vec
+            if len(self._embedding_cache) > _MAX_EMBEDDING_CACHE_SIZE:
+                self._embedding_cache.popitem(last=False)
             return vec
         except Exception as e:
             logger.error(f"Embedding generation failed: {e}")

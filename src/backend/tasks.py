@@ -255,47 +255,40 @@ def execute_easy_mode_generation(task_id: str, api_key: str, genre: str, keyword
     """かんたんモード全自動生成をバックグラウンドで実行するタスク"""
     import asyncio
     from src.backend.background import BackgroundReporter, ProgressState
-    from src.backend.task_helpers import create_easy_mode_pipeline, run_pipeline_with_progress, get_engine_for_task, create_pipeline_config_from_params
-    from config.settings import get_settings
+    from src.core.container import AppContainer
+    from src.backend.workflows.full_auto_workflow import FullAutoWorkflow
 
     state = ProgressState(is_running=True, task_id=task_id, repo=None)
     reporter = BackgroundReporter(state)
 
     async def _run():
         try:
-            # エンジンを取得
-            engine = get_engine_for_task(api_key)
+            container = AppContainer(
+                api_key=api_key,
+                db=AppContainer.db(),
+            )
+            services = _build_service_dict(container)
+            state.repo = services["repo"]
 
-            # 設定を作成（ヘルパー関数を使用）
-            config = create_pipeline_config_from_params(genre, target_eps)
+            workflow = FullAutoWorkflow(**services)
+            result = await workflow.execute(
+                reporter,
+                genre=genre,
+                keywords=keywords,
+                archetype_key=archetype_key,
+                target_eps=target_eps,
+                initial_limit=initial_limit,
+                word_count=word_count,
+                concept=concept,
+                tone_vibe=tone_vibe,
+                style_key=style_key,
+                enable_erotic=enable_erotic,
+                erotic_intensity=erotic_intensity,
+            )
 
-            # ヘルパー関数を使ってパイプラインを作成・実行
-            pipeline = create_easy_mode_pipeline(engine, config)
-            result = await run_pipeline_with_progress(pipeline, state)
-
-            # 完了処理
             state.is_running = False
             state.message = "生成完了"
-            state.result_data = {
-                "title": result.title,
-                "concept": result.concept,
-                "total_episodes": result.total_episodes,
-                "total_words": sum(ep.word_count for ep in result.episodes),
-                "average_audit_score": round(sum(ep.audit_score for ep in result.episodes) / len(result.episodes), 1) if result.episodes else 0,
-                "genre": result.genre,
-                "episodes": [
-                    {
-                        "episode_num": ep.episode_num,
-                        "title": ep.title,
-                        "word_count": ep.word_count,
-                        "audit_score": ep.audit_score,
-                        "audit_passed": ep.audit_passed,
-                        "rewrite_count": ep.rewrite_count,
-                        "needs_human_review": ep.needs_human_review,
-                    }
-                    for ep in result.episodes
-                ],
-            }
+            state.result_data = result
             state._save_to_db()
 
             logger.info(f"Easy mode pipeline completed: {task_id}")

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useEasyModeStore } from '@/store/useEasyModeStore';
 import { useUserSettingsStore } from '@/store/useUserSettingsStore';
+import { NsfwDisclaimerModal } from '@/components/dialogs/NsfwDisclaimerModal';
 import { getPlanningOptions } from '@/api';
 import type { EasyModeParams, PlanningOptions } from '@/types';
 
@@ -88,7 +89,6 @@ export function EasyModeDialog({ isOpen, onClose, onSubmit }: Props) {
     enableErotic,
     setEnableErotic,
     eroticIntensity,
-    setEroticIntensity,
     enableIllustration,
     setEnableIllustration,
     illustrationType,
@@ -103,9 +103,10 @@ export function EasyModeDialog({ isOpen, onClose, onSubmit }: Props) {
     setEpisodeInterval,
   } = useEasyModeStore();
 
-  const { apiKey, setApiKey } = useUserSettingsStore();
+  const { apiKey, setApiKey, nsfwConsented, setNsfwConsented } = useUserSettingsStore();
   const [apiKeyLocal, setApiKeyLocal] = useState(apiKey);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showNsfwModal, setShowNsfwModal] = useState(false);
 
   useEffect(() => {
     setApiKeyLocal(apiKey);
@@ -417,7 +418,14 @@ export function EasyModeDialog({ isOpen, onClose, onSubmit }: Props) {
                         id="enable-erotic"
                         type="checkbox"
                         checked={enableErotic}
-                        onChange={(e) => setEnableErotic(e.target.checked)}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          if (checked && !nsfwConsented) {
+                            setShowNsfwModal(true);
+                          } else {
+                            setEnableErotic(checked);
+                          }
+                        }}
                         className="w-4 h-4 accent-rose-500 rounded cursor-pointer"
                       />
                       🔞 官能表現（R18/NSFW要素）を含める
@@ -573,6 +581,18 @@ export function EasyModeDialog({ isOpen, onClose, onSubmit }: Props) {
           生成には数十秒〜数分かかることがあります。進捗は画面右下のモニターで確認でき、完成した小説は「作品一覧」に表示されます。
         </p>
       </form>
+      <NsfwDisclaimerModal
+        isOpen={showNsfwModal}
+        onAccept={() => {
+          setEnableErotic(true);
+          setNsfwConsented(true);
+          setShowNsfwModal(false);
+        }}
+        onCancel={() => {
+          setEnableErotic(false);
+          setShowNsfwModal(false);
+        }}
+      />
     </div>
   );
 }

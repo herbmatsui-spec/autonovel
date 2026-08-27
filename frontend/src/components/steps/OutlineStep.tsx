@@ -1,7 +1,6 @@
-import React from 'react';
 import { PlotsTab } from '@/components/tabs/PlotsTab';
 
-export default function OutlineStep() {
+export function OutlineStep(_props: { bookId?: number } = {}) {
   return (
     <div>
       <p className="text-sm text-muted-foreground mb-2">
@@ -11,3 +10,5 @@ export default function OutlineStep() {
     </div>
   );
 }
+
+export default OutlineStep;

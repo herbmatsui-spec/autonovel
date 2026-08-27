@@ -36,11 +36,12 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({ apiKey, classNam
 
     const unsubscribe = sseClient.subscribe((eventType, data) => {
       if (eventType === 'connection_status') {
-        setConnected(data.status === 'connected');
+        const connData = data as { status?: string };
+        setConnected(connData.status === 'connected');
       } else if (eventType === 'agent_status') {
-        handleAgentStatus(data);
+        handleAgentStatus(data as Parameters<typeof handleAgentStatus>[0]);
       } else if (eventType === 'pipeline_progress') {
-        handlePipelineProgress(data);
+        handlePipelineProgress(data as Parameters<typeof handlePipelineProgress>[0]);
       }
     });
 

@@ -183,3 +183,17 @@ jobs:
       - run: pip install -r requirements.txt pytest pytest-asyncio pytest-xdist langgraph
       - name: Run integration tests
         run: pytest -n auto tests/integration tests/test_vector_store_lifecycle.py -q --junitxml=integration.xml
+
+  continuity-check:
+    runs-on: ubuntu-latest
+    needs: [format-check, lint-new]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - run: pip install -r requirements.txt pytest pyyaml
+      - name: Run Continuity Tests (Blocking Gate)
+        run: pytest novel_50ep/tests/test_novel_50ep.py -k test_continuity_full -q --junitxml=continuity.xml
+

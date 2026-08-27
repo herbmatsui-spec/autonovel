@@ -58,12 +58,16 @@ class LLMService:
     ) -> Dict[str, Any]:
         model_name = self._resolve_model(purpose)
         provider = self._ensure_factory().get_provider(model_name)
+        nsfw_mode = kwargs.pop("nsfw_mode", False)
+        temp = kwargs.pop("temp", kwargs.pop("temperature", 0.7))
         response = await provider.generate_json(
             model_name=model_name,
             prompt=prompt,
             response_schema=response_schema,
             system_instruction=system_instruction,
-            temperature=kwargs.get("temp", kwargs.get("temperature", 0.7)),
+            temperature=temp,
+            nsfw_mode=nsfw_mode,
+            **kwargs,
         )
         return {
             "success": response.success,
@@ -80,10 +84,14 @@ class LLMService:
     ) -> str:
         model_name = self._resolve_model(purpose)
         provider = self._ensure_factory().get_provider(model_name)
+        nsfw_mode = kwargs.pop("nsfw_mode", False)
+        temp = kwargs.pop("temp", kwargs.pop("temperature", 0.7))
         response = await provider.generate_text(
             model_name=model_name,
             prompt=prompt,
             system_instruction=system_instruction,
-            temperature=kwargs.get("temp", kwargs.get("temperature", 0.7)),
+            temperature=temp,
+            nsfw_mode=nsfw_mode,
+            **kwargs,
         )
         return response.content

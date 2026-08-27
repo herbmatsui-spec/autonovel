@@ -82,7 +82,14 @@ class PromptRegistry:
         self.fs_loader = FileSystemLoader(search_paths)
         self.dict_loader = DictLoader(PROMPT_TEMPLATES)
 
-        self.jinja_env = Environment(loader=self.fs_loader, autoescape=select_autoescape())
+        self.jinja_env = Environment(
+            loader=self.fs_loader,
+            autoescape=select_autoescape(
+                enabled_extensions=('html', 'xml'),
+                default_for_string=False,
+                default=False,
+            ),
+        )
 
     def _update_cache_lru(self, template_name: str, cached_template: CachedTemplate) -> None:
         """LRUキャッシュを更新し、最大サイズを超えた場合は最古のエントリを削除する。"""

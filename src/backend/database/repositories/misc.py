@@ -84,6 +84,10 @@ class MiscRepository(BaseRepository):
         rows = result.scalars().all()
         return [self._to_dict(r) for r in rows]
 
+    @retry_on_lock()
+    async def delete_style_fragment(self, fragment_id: int) -> None:
+        await self.session.execute(delete(StyleFragment).where(StyleFragment.id == fragment_id))
+
     # ---------- Custom Styles ----------
     @retry_on_lock()
     async def save_custom_style(

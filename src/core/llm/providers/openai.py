@@ -22,6 +22,7 @@ class OpenAIProvider(LLMProvider):
         prompt: str,
         system_instruction: Optional[str] = None,
         temperature: float = 0.7,
+        nsfw_mode: bool = False,
         **kwargs,
     ) -> LLMResponse:
         try:
@@ -30,6 +31,7 @@ class OpenAIProvider(LLMProvider):
                 prompt=prompt,
                 system_instruction=system_instruction,
                 temp=temperature,
+                nsfw_mode=nsfw_mode,
                 **kwargs,
             )
             return LLMResponse(content=content, usage=self._parse_usage(usage), success=True)
@@ -57,6 +59,7 @@ class OpenAIProvider(LLMProvider):
         response_schema: Optional[Any] = None,
         system_instruction: Optional[str] = None,
         temperature: float = 0.7,
+        nsfw_mode: bool = False,
         **kwargs,
     ) -> LLMResponse:
         try:
@@ -66,6 +69,7 @@ class OpenAIProvider(LLMProvider):
                 response_schema=response_schema,
                 system_instruction=system_instruction,
                 temp=temperature,
+                nsfw_mode=nsfw_mode,
                 **kwargs,
             )
             return LLMResponse(

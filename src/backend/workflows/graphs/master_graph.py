@@ -21,10 +21,24 @@ from src.backend.workflows.nodes.master_nodes import (
     call_plot_graph_node,
     call_review_graph_node,
     call_writing_graph_node,
+    revise_writing_node,
 )
 from src.backend.workflows.state import MasterGraphState
 
 logger = logging.getLogger(__name__)
+
+
+def should_revise_writing(state: MasterGraphState) -> str:
+    """レビュー結果と予算に基づいてリバイスを実行するか判定"""
+    budget = state.get("revision_budget", 1)
+    needs_eps = state.get("needs_revision_eps", [])
+    if not needs_eps:
+        rev_results = state.get("review_results", {})
+        needs_eps = [ep for ep, r in rev_results.items() if r.get("requires_revision", False)]
+
+    if needs_eps and budget > 0:
+        return "revise_phase"
+    return END
 
 
 def create_master_graph(
@@ -52,17 +66,32 @@ def create_master_graph(
         reporter=reporter,
     )
     bound_review = functools.partial(call_review_graph_node, llm_provider=llm_provider, reporter=reporter)
+    bound_revise = functools.partial(
+        revise_writing_node,
+        llm_provider=llm_provider,
+        writing_agent=writing_agent,
+        reporter=reporter,
+    )
 
     # ノード追加
     graph.add_node("plot_phase", bound_plot)
     graph.add_node("writing_phase", bound_writing)
     graph.add_node("review_phase", bound_review)
+    graph.add_node("revise_phase", bound_revise)
 
-    # エッジ接続 (フルオートシーケンス: Plot -> Writing -> Review -> END)
+    # エッジ接続 (Plot -> Writing -> Review -> [要修正 & budget>0 ? Revise : END] -> END)
     graph.add_edge(START, "plot_phase")
     graph.add_edge("plot_phase", "writing_phase")
     graph.add_edge("writing_phase", "review_phase")
-    graph.add_edge("review_phase", END)
+    graph.add_conditional_edges(
+        "review_phase",
+        should_revise_writing,
+        {
+            "revise_phase": "revise_phase",
+            END: END,
+        },
+    )
+    graph.add_edge("revise_phase", END)
 
     return graph
 
@@ -126,5 +155,14 @@ class SequentialMasterGraphFallback:
                 reporter=self.reporter,
             )
             current_state.update(review_res)
+
+            if should_revise_writing(current_state) == "revise_phase":
+                revise_res = await revise_writing_node(
+                    current_state,
+                    llm_provider=self.llm_provider,
+                    writing_agent=self.writing_agent,
+                    reporter=self.reporter,
+                )
+                current_state.update(revise_res)
 
         return current_state

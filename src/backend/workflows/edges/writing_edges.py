@@ -18,17 +18,19 @@ def check_audit_results(state: WritingGraphState) -> Literal["generate_draft", "
     """
     integrity_ok = state.get("is_integrity_ok", True)
     causal_ok = state.get("is_causal_ok", True)
+    density = state.get("event_density", 1.0)
+    density_ok = density >= 0.5
     score = state.get("quality_score", 0.0)
     ac_iter = state.get("ac_iter", 1)
     max_ac_iter = state.get("max_ac_iter", 3)
 
     logger.info(
-        f"[WritingEdge] Check audit: integrity={integrity_ok}, causal={causal_ok}, score={score:.2f}, iter={ac_iter}/{max_ac_iter}"
+        f"[WritingEdge] Check audit: integrity={integrity_ok}, causal={causal_ok}, density={density:.2f}, score={score:.2f}, iter={ac_iter}/{max_ac_iter}"
     )
 
     # 監査合格、または最大反復回数到達で終了
-    if (integrity_ok and causal_ok and score >= 0.75) or ac_iter >= max_ac_iter:
-        if ac_iter >= max_ac_iter and not (integrity_ok and causal_ok):
+    if (integrity_ok and causal_ok and density_ok and score >= 0.75) or ac_iter >= max_ac_iter:
+        if ac_iter >= max_ac_iter and not (integrity_ok and causal_ok and density_ok):
             logger.warning(f"[WritingEdge] Max iterations reached ({ac_iter}). Proceeding to END with current draft.")
         else:
             logger.info("[WritingEdge] Audit passed successfully. Moving to END.")

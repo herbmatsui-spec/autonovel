@@ -1,5 +1,5 @@
-import { Tooltip } from '@/components/Tooltip';
-import type { Book, OptimizationHistory, PendingPatch, PromptVersion, NarrativeMetricTrend } from '@/types';
+import { toast } from 'sonner';
+import type { OptimizationHistory } from '@/types';
 import { PatchReviewPanel } from '../PatchReviewPanel';
 import { PromptVersionTimeline } from '../PromptVersionTimeline';
 import { NarrativeGraph } from '../NarrativeGraph';
@@ -9,13 +9,12 @@ import { useUIStore } from '@/store/useUIStore';
 import { useUserSettingsStore } from '@/store/useUserSettingsStore';
 import { useAppActions } from '@/hooks/useAppActions';
 import { useBookDetails } from '@/hooks/useBookDetails';
-import { useNavigate } from 'react-router-dom';
 
-export default function AnalyticsTab() {
-  const { selectedBook, optHistory, pendingPatches, promptVersions, metricTrend } = useBookStore();
-  const { handleCritiqueOptimize, handleGenerateMarketing } = useAppActions((_) => {});
-  const { apiKey, isExpertMode } = useUserSettingsStore();
-  const navigate = useNavigate();
+export function AnalyticsTab() {
+  const { selectedBook } = useBookStore();
+  const { optHistory, pendingPatches, promptVersions, metricTrend } = useUIStore();
+  const { handleCritiqueOptimize, handleGenerateMarketing } = useAppActions(() => {});
+  const { isExpertMode } = useUserSettingsStore();
   const { loadBookDetails } = useBookDetails(selectedBook?.id ?? null);
 
   const handleRefresh = () => {
@@ -26,8 +25,6 @@ export default function AnalyticsTab() {
 
   const handleExport = () => {
     if (!selectedBook?.id) return;
-    // We can use the getExportPackageUrl function from the api, but we don't have it here.
-    // We'll just show a toast for now, or we can navigate to a export page.
     toast.info('エクスポート機能は実装中です。');
   };
 
@@ -74,10 +71,10 @@ export default function AnalyticsTab() {
           <p className="text-sm text-muted-foreground">最適化履歴はまだありません。</p>
         ) : (
           <div className="space-y-2">
-            {optHistory.map((entry, index) => (
-              <div key={entry.version} className="flex justify-between items-center p-2 bg-[var(--accent)]/10 rounded">
-                <span className="text-xs">バージョン {entry.version}</span>
-                <span className="text-xs">{new Date(entry.timestamp).toLocaleString()}</span>
+            {optHistory.map((entry: OptimizationHistory) => (
+              <div key={entry.id} className="flex justify-between items-center p-2 bg-[var(--accent)]/10 rounded">
+                <span className="text-xs">レポート #{entry.id}</span>
+                <span className="text-xs">{new Date(entry.created_at).toLocaleString()}</span>
               </div>
             ))}
           </div>
@@ -94,8 +91,7 @@ export default function AnalyticsTab() {
             ) : (
               <PatchReviewPanel
                 patches={pendingPatches}
-                // We don't have the onApprove and onReject functions here; we would need to implement them.
-                // For now, we'll just display.
+                onRefresh={handleRefresh}
               />
             )}
           </div>
@@ -106,7 +102,11 @@ export default function AnalyticsTab() {
             {promptVersions.length === 0 ? (
               <p className="text-sm text-muted-foreground">プロンプトバージョンはまだありません。</p>
             ) : (
-              <PromptVersionTimeline versions={promptVersions} />
+              <PromptVersionTimeline
+                bookId={selectedBook.id}
+                versions={promptVersions}
+                onRefresh={handleRefresh}
+              />
             )}
           </div>
 
@@ -116,7 +116,12 @@ export default function AnalyticsTab() {
             {metricTrend.length === 0 ? (
               <p className="text-sm text-muted-foreground">ナラティブメトリクスのトレンドデータはまだありません。</p>
             ) : (
-              <NarrativeGraph trendData={metricTrend} />
+              <NarrativeGraph
+                data={metricTrend}
+                onSceneClick={(ep, scene) => {
+                  toast.info(`EP ${ep} Scene ${scene} を選択しました`);
+                }}
+              />
             )}
           </div>
         </>
@@ -124,3 +129,5 @@ export default function AnalyticsTab() {
     </div>
   );
 }
+
+export default AnalyticsTab;

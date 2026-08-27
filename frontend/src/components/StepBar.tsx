@@ -1,8 +1,12 @@
-import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Term } from '@/components/Term';
 
-export default function StepBar({ bookId, currentStep }) {
+interface StepBarProps {
+  bookId: number;
+  currentStep?: string;
+}
+
+export default function StepBar({ bookId, currentStep }: StepBarProps) {
   const navigate = useNavigate();
   const steps = [
     { id: 'theme', label: 'テーマ', icon: '🎯' },

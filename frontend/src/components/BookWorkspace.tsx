@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from 'react';
+import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useBookStore } from '@/store/useBookStore';
 import { useBookDetails } from '@/hooks/useBookDetails';
@@ -19,7 +19,7 @@ export default function BookWorkspace() {
   const bookId = Number(bookIdParam);
   const navigate = useNavigate();
   const { selectedBook, setSelectedBook } = useBookStore();
-  const { loadBookDetails } = useBookDetails(bookId?.toString() ?? null);
+  const { loadBookDetails } = useBookDetails(bookId || null);
   const { currentStep, setCurrentStep } = useWorkspaceStore();
 
   // If no book selected, redirect to landing

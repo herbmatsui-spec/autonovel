@@ -1,0 +1,10 @@
+version: 1
+rules:
+  - type: dialogue
+    op: subset
+    field: speakers
+    msg: "前シーンにいない話者が登場"
+  - type: dialogue
+    op: equals
+    field: topics
+    msg: "トピックがリセットされている"

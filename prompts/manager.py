@@ -228,10 +228,42 @@ class PromptManager:
         )
 
     async def build_ultra_fast_plot_batch_prompt(
-        self, bible_json_str: str, ep_range: list[int], book_id: Optional[int] = None
+        self, bible_json_str: str, ep_range: list[int], book_id: Optional[int] = None, **kwargs: Any
     ) -> str:
         return await self.narrative_builder.build_ultra_fast_plot_batch_prompt(
-            bible_json_str, ep_range, book_id
+            bible_json_str, ep_range, book_id, **kwargs
+        )
+
+    async def build_bible_creation_prompt(
+        self,
+        bible_core_schema: Any = None,
+        world_rules_json: str = "{}",
+        genre: str = "ファンタジー",
+        keywords: str = "",
+        concept: str = "",
+        target_eps: int = 10,
+        book_id: Optional[int] = None,
+        title: str = "",
+        style_key: str = "style_web_standard",
+        engine_key: str = "conflict",
+        enable_erotic: bool = False,
+        erotic_intensity: int = 0,
+        **kwargs: Any,
+    ) -> str:
+        return await self.narrative_builder.build_bible_creation_prompt(
+            bible_core_schema=bible_core_schema,
+            world_rules_json=world_rules_json,
+            genre=genre,
+            keywords=keywords,
+            concept=concept,
+            target_eps=target_eps,
+            book_id=book_id,
+            title=title,
+            style_key=style_key,
+            engine_key=engine_key,
+            enable_erotic=enable_erotic,
+            erotic_intensity=erotic_intensity,
+            **kwargs,
         )
 
     async def build_sharp_edge_proposal_prompt(

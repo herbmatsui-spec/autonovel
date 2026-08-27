@@ -446,8 +446,47 @@ class WritingPromptBuilder:
         )
 
     async def build_style_instruction(self, style_key: str, book_id: Optional[int] = None) -> str:
+        from config.styles import STYLE_DEFINITIONS
+
+        style_name = "標準文体"
+        instruction = "標準的なWeb小説の文体を維持せよ。"
+        dialogue_ratio = "50%"
+        dna_data = None
+
+        if style_key and style_key.startswith("custom_"):
+            try:
+                from src.backend.database import UnitOfWork
+                from src.core.container import AppContainer
+
+                c_id = int(style_key.replace("custom_", ""))
+                async with UnitOfWork(AppContainer.db()) as uow:
+                    custom_styles = await uow.misc.get_all_custom_styles()
+                    for cs in custom_styles:
+                        if (cs.id if hasattr(cs, "id") else cs.get("id")) == c_id:
+                            style_name = cs.name if hasattr(cs, "name") else cs.get("name")
+                            instruction = cs.instruction if hasattr(cs, "instruction") else cs.get("instruction")
+                            break
+            except Exception as e:
+                logger.warning(f"Failed to fetch custom style {style_key}: {e}")
+        elif style_key in STYLE_DEFINITIONS:
+            style_def = STYLE_DEFINITIONS[style_key]
+            style_name = style_def.get("name", style_key)
+            instruction = style_def.get("instruction", "")
+            dialogue_ratio = style_def.get("dialogue_ratio", "50%")
+            dna_data = {
+                "syntax_rhythm": style_def.get("syntax_rhythm", ""),
+                "metaphor_dna": style_def.get("metaphor_dna", ""),
+                "noise_dna": style_def.get("noise_dna", ""),
+            }
+
         return await self.registry.render_async(
-            "style_instruction.j2", book_id=book_id, style_key=style_key
+            "style_instruction.j2",
+            book_id=book_id,
+            style_key=style_key,
+            style_name=style_name,
+            instruction=instruction,
+            dialogue_ratio=dialogue_ratio,
+            dna_data=dna_data,
         )
 
     async def build_bible_extraction_prompt(self, content: str, book_id: Optional[int] = None) -> str:

@@ -31,6 +31,9 @@ class PlotGraphState(BaseGraphState, total=False):
     # プロット生成と推敲のループ状態
     current_iteration: int
     max_iterations: int
+    num_variants: int
+    plot_variants: List[Any]
+    alternative_ideas: List[Dict[str, Any]]
     raw_plot_draft: str
     parsed_plots: List[Dict[str, Any]]
     critique_feedback: Optional[str]
@@ -45,6 +48,7 @@ class WritingGraphState(BaseGraphState, total=False):
     passion: float
     is_easy_mode: bool
     context: Any  # WritingContext
+    prev_episode_tail: str
     sys_inst: str
     fw_prompt: str
     style_tag: Optional[str]
@@ -62,6 +66,7 @@ class WritingGraphState(BaseGraphState, total=False):
     causal_reason: str
     failures: List[Dict[str, Any]]
     quality_score: float
+    event_density: float
 
 
 class ReviewGraphState(BaseGraphState, total=False):
@@ -78,6 +83,7 @@ class ReviewGraphState(BaseGraphState, total=False):
     requires_revision: bool
     revision_instructions: List[str]
     revised_content: Optional[str]
+    commercial_score: float
 
 
 class MasterGraphState(BaseGraphState, total=False):
@@ -86,11 +92,17 @@ class MasterGraphState(BaseGraphState, total=False):
     mode: str  # "full_pipeline", "plot_only", "writing_batch", "review_only"
     target_start_ep: int
     target_end_ep: int
+    api_call_count: int
+    quality_metrics: Dict[str, Any]
+    revision_budget: int
+    needs_revision_eps: List[int]
     
     # 各サブグラフの実行結果
     plot_result: Optional[PlotGraphState]
     writing_results: Dict[int, WritingGraphState]
     review_results: Dict[int, ReviewGraphState]
+    review_summary: Dict[str, Any]
+    bible_state: Dict[str, Any]
     
     overall_progress: float
     current_phase: str

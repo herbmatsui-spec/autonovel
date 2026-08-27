@@ -2,7 +2,6 @@ import { Button } from '@/components/ui/button';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { StatusMessage } from '@/components/ui/StatusMessage';
-import type { Book } from '@/types';
 import { useBooks } from '@/hooks/useBooks';
 import { useBookStore } from '@/store/useBookStore';
 import { useUIStore } from '@/store/useUIStore';
@@ -25,21 +24,28 @@ export default function BooksTab() {
       </div>
 
       {booksLoading && <LoadingState message="作品を読み込み中..." />}
-      {booksError && <StatusMessage variant="destructive">作品の読み込みに失敗しました。</StatusMessage>}
+      {booksError && <StatusMessage type="error" message="作品の読み込みに失敗しました。" />}
       {books.length === 0 && (
-        <EmptyState>
-          <h3 className="font-semibold">まだ作品がありません</h3>
-          <p className="text-sm text-muted-foreground">
-            「新規作成」ボタンから最初の作品を作成してください。
-          </p>
-        </EmptyState>
+        <EmptyState
+          icon="📚"
+          title="まだ作品がありません"
+          description="「新規作成」ボタンから最初の作品を作成してください。"
+        />
       )}
       {!booksLoading && books.length > 0 && (
         <div className="flex flex-col gap-4">
           {books.map((book) => (
             <div
               key={book.id}
-              className={`flex items-center justify-between p-4 rounded-lg border border-[var(--border)] ${selectedBook?.id === book.id ? 'bg-[var(--accent)]/20' : 'bg-transparent'}`}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setSelectedBook(book);
+                }
+              }}
+              className={`flex items-center justify-between p-4 rounded-lg border border-[var(--border)] cursor-pointer ${selectedBook?.id === book.id ? 'bg-[var(--accent)]/20' : 'bg-transparent'}`}
               onClick={() => setSelectedBook(book)}
             >
               <div className="flex items-center gap-3">

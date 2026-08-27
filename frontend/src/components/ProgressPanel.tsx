@@ -1,28 +1,18 @@
-import React, { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useBookStore } from '@/store/useBookStore';
 import { useAppActions } from '@/hooks/useAppActions';
 import { getChapters, getPlots } from '@/api';
-import { toast } from 'sonner';
+import type { Chapter, Plot } from '@/types';
 import { AgentDashboard } from './AgentDashboard';
 
 export function ProgressPanel() {
   const { selectedBook } = useBookStore();
-  const { handleStopTask } = useAppActions((_) => {});
-  const [chapters, setChapters] = useState<any[]>([]);
-  const [plots, setPlots] = useState<any[]>([]);
-  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
-  const [isFetching, setIsFetching] = useState(false);
+  const { handleStopTask } = useAppActions(() => {});
+  const [chapters, setChapters] = useState<Chapter[]>([]);
+  const [plots, setPlots] = useState<Plot[]>([]);
 
-  // Fetch data when selectedBook changes
-  useEffect(() => {
-    if (selectedBook?.id) {
-      fetchData();
-    }
-  }, [selectedBook?.id]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!selectedBook?.id) return;
-    setIsFetching(true);
     try {
       const [ch, pl] = await Promise.all([
         getChapters(selectedBook.id),
@@ -30,22 +20,19 @@ export function ProgressPanel() {
       ]);
       setChapters(ch || []);
       setPlots(pl || []);
-      setLastUpdated(new Date());
     } catch (err) {
       console.error('Failed to load monitoring data:', err);
-    } finally {
-      setIsFetching(false);
     }
-  };
+  }, [selectedBook?.id]);
 
-  // Set up interval to refresh every 30 seconds
+  // Fetch initial data and set up interval to refresh every 30 seconds
   useEffect(() => {
     if (selectedBook?.id) {
       fetchData();
       const interval = setInterval(fetchData, 30000);
       return () => clearInterval(interval);
     }
-  }, [selectedBook?.id]);
+  }, [selectedBook?.id, fetchData]);
 
   if (!selectedBook) {
     return (
@@ -55,9 +42,9 @@ export function ProgressPanel() {
     );
   }
 
-  const completedChapters = chapters.filter((ch) => ch.status === 'completed').length;
-  const totalChapters = chapters.length;
-  const completionRate = totalChapters > 0 ? (completedChapters / totalChapters) * 100 : 0;
+  const completedChapters = chapters.length;
+  const targetEps = selectedBook.target_eps || Math.max(plots.length, chapters.length, 1);
+  const completionRate = targetEps > 0 ? Math.min((completedChapters / targetEps) * 100, 100) : 0;
 
   return (
     <div className="w-96 border-l border-slate-800 bg-slate-950/80 flex flex-col h-full overflow-y-auto p-4 space-y-4">
@@ -73,7 +60,7 @@ export function ProgressPanel() {
         <div>
           <p className="text-[10px] text-slate-400">完了話数</p>
           <p className="text-base font-bold font-mono text-emerald-400">
-            {completedChapters}/{totalChapters}
+            {completedChapters}/{targetEps}
           </p>
         </div>
         <div>

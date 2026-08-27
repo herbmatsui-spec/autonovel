@@ -12,6 +12,9 @@ interface UserSettingsState {
   setIsExpertMode: (val: boolean) => void;
   // added config placeholder
   config: Record<string, unknown>;
+  // NSFW consent flag
+  nsfwConsented: boolean;
+  setNsfwConsented: (val: boolean) => void;
 }
 
 export const useUserSettingsStore = create<UserSettingsState>()(
@@ -27,6 +30,8 @@ export const useUserSettingsStore = create<UserSettingsState>()(
       setIsExpertMode: (val) => set({ isExpertMode: val }),
       // initialize empty config to avoid undefined
       config: {},
+      nsfwConsented: false,
+      setNsfwConsented: (val) => set({ nsfwConsented: val }),
     }),
     {
       name: 'user-settings',
@@ -36,6 +41,7 @@ export const useUserSettingsStore = create<UserSettingsState>()(
         modelType: state.modelType,
         isExpertMode: state.isExpertMode,
         config: state.config,
+        nsfwConsented: state.nsfwConsented,
       }),
     }
   )

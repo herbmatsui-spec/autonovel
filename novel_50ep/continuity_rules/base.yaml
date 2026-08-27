@@ -1,0 +1,6 @@
+version: 1
+rules:
+  - type: "erotic"
+    op: "equals"
+    field: "characters"
+    msg: "キャラ不一致"

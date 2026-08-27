@@ -26,7 +26,7 @@ def should_refine_plot(state: PlotGraphState) -> Literal["refine_plot", "__end__
     )
 
     # 合格基準を満たしている、または最大試行回数に到達した場合は終了
-    if is_approved or score >= 0.8:
+    if is_approved or score >= 0.85:
         logger.info("[PlotEdge] Plot approved. Moving to END.")
         return "__end__"
 

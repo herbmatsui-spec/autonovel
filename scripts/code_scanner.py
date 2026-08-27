@@ -13,13 +13,25 @@ def scan_python_codebase(root_dir):
     line_count = 0
 
     py_files = []
+    skip_dirs = {
+        ".git", ".venv", "venv", "__pycache__", "archive",
+        "node_modules", "temp", "storage", "chroma_db", "test_chroma_db",
+        "dist", ".pytest_cache", "novel_50ep", "build", ".kilo"
+    }
     for root, dirs, files in os.walk(root_dir):
-        # Skip certain directories
-        if any(p in root for p in [".git", ".venv", "venv", "__pycache__", "archive"]):
+        # Skip certain directories in-place to avoid descending into them
+        dirs[:] = [d for d in dirs if d not in skip_dirs and not d.startswith(".")]
+        if any(p in root.replace("\\", "/").split("/") for p in skip_dirs):
             continue
         for file in files:
             if file.endswith(".py"):
-                py_files.append(os.path.join(root, file))
+                full_path = os.path.join(root, file)
+                try:
+                    # 1MB 以上の巨大ファイルはスキップ
+                    if os.path.getsize(full_path) < 1024 * 1024:
+                        py_files.append(full_path)
+                except OSError:
+                    continue
 
     print(f"Found {len(py_files)} Python files to analyze.")
 

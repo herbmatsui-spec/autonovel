@@ -1,13 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { useUserSettingsStore } from '@/store/useUserSettingsStore';
-import { useBookStore } from '@/store/useBookStore';
-import { useWorkspaceStore } from '@/store/useWorkspaceStore';
-import { useUIStore } from '@/store/useUIStore';
-import { toast } from 'sonner';
 import { EasyModeDialog } from '@/components/dialogs/EasyModeDialog';
+import { SettingsModal } from '@/components/dialogs/SettingsModal';
 import type { Book } from '@/types';
 
 interface HeaderProps {
@@ -16,45 +11,31 @@ interface HeaderProps {
   onSelectBook: (book: Book | null) => void;
   onDeleteBook: (id: number) => void;
   apiKey: string;
-  setApiKey: (key: string) => void;
-  modelType: string;
-  setModelType: (type: string) => void;
-  isExpertMode: boolean;
-  setIsExpertMode: (bool: boolean) => void;
-  isFirstRun: boolean;
   onCreateEasyMode: () => void;
 }
 
-export default function Header({
+export function Header({
   books,
   selectedBook,
   onSelectBook,
   onDeleteBook,
   apiKey,
-  setApiKey,
-  modelType,
-  setModelType,
-  isExpertMode,
-  setIsExpertMode,
-  isFirstRun,
   onCreateEasyMode,
 }: HeaderProps) {
   const navigate = useNavigate();
   const [isEasyModeOpen, setIsEasyModeOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
-  const { setCreateModalOpen } = useUIStore();
 
-  // Redirect to setup if first run and not already on setup
-  useEffect(() => {
-    if (isFirstRun && window.location.pathname !== '/setup') {
-      navigate('/setup', { replace: true });
-    }
-  }, [isFirstRun, navigate, window.location.pathname]);
+  const hasApiKey = Boolean(apiKey && apiKey.trim().length >= 10);
 
   const handleSelectBook = (book: Book | null) => {
     onSelectBook(book);
     setAnchorEl(null);
+    if (book) {
+      navigate(`/book/${book.id}`);
+    }
   };
 
   const handleDelete = (id: number) => {
@@ -70,116 +51,156 @@ export default function Header({
     setAnchorEl(null);
   };
 
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
-
   return (
-    <header className="flex h-[4rem] items-center justify-between px-4 bg-[var(--bg-sidebar)] border-b border-[var(--border)]">
-      <div className="flex items-center space-x-3">
-        <div className="h-8 w-8 bg-[var(--accent)] rounded-full flex items-center justify-center">
-          <span className="text-white font-bold">🎌</span>
+    <header className="flex h-[4rem] items-center justify-between px-5 bg-[#0f1117] border-b border-slate-800/80 sticky top-0 z-40">
+      {/* Left: Logo & Navigation */}
+      <div className="flex items-center space-x-6">
+        <button
+          onClick={() => navigate('/landing')}
+          className="flex items-center space-x-3 text-left group focus:outline-none"
+        >
+          <div className="h-9 w-9 bg-gradient-to-tr from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20 group-hover:scale-105 transition-transform">
+            <span className="text-white font-bold text-lg">🎌</span>
+          </div>
+          <div>
+            <h1 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
+              AutoNovel
+              <span className="text-[0.65rem] font-mono px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-normal">
+                v3.6
+              </span>
+            </h1>
+          </div>
+        </button>
+
+        {/* Navigation links */}
+        <div className="hidden sm:flex items-center space-x-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/landing')}
+            className="text-xs text-slate-300 hover:text-white"
+          >
+            🚀 ホーム
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/books')}
+            className="text-xs text-slate-300 hover:text-white"
+          >
+            📚 作品一覧
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/style-lab')}
+            className="text-xs text-indigo-300 hover:text-white hover:bg-indigo-950/40"
+          >
+            🧪 文体ラボ
+          </Button>
         </div>
-        <h1 className="text-xl font-bold">AutoNovel</h1>
       </div>
 
-      <div className="flex items-center space-x-4">
-        {/* 本を選ぶ dropdown */}
+      {/* Right: Actions & Settings */}
+      <div className="flex items-center space-x-3">
+        {/* Book Selector Dropdown */}
         <div className="relative">
           <Button
             variant="outline"
+            size="sm"
             aria-label="本を選択"
-            onClick={(e) => setAnchorEl(e.currentTarget)}
+            onClick={(e) => setAnchorEl(open ? null : e.currentTarget)}
+            className="bg-[#161922] border-slate-700 text-xs text-slate-200 hover:bg-slate-800"
           >
             {selectedBook ? (
-              <>
-                <span className="mr-2">#{selectedBook.id}</span>
-                <span className="truncate max-w-[120px]">{selectedBook.title}</span>
-              </>
-            ) : (
-              <span className="text-muted-foreground">本を選択</span>
-            )}
-            <span className="ml-2 text-xs">▾</span>
-          </Button>
-          {/* Dropdown menu */}
-          {open && (
-            <div className="absolute right-0 mt-2 w-56 bg-white rounded border shadow-lg z-20 py-1">
-              {books?.map((book) => (
-                <button
-                  key={book.id}
-                  onClick={() => handleSelectBook(book)}
-                  className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100`}
-                >
-                  #{book.id} {book.title}
-                </button>
-              ))}
-              {!books || books.length === 0 ? (
-                <p className="px-4 py-2 text-sm text-muted-foreground">
-                  本がありません
-                </p>
-              ) : null}
-              <div className="border-t px-4 py-2">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    if (selectedBook) {
-                      handleDelete(selectedBook.id);
-                    }
-                  }}
-                  className="w-full text-left text-sm text-destructive"
-                >
-                  選択中の本を削除
-                </Button>
+              <div className="flex items-center gap-1.5 max-w-[150px]">
+                <span className="text-indigo-400 font-mono">#{selectedBook.id}</span>
+                <span className="truncate">{selectedBook.title}</span>
               </div>
+            ) : (
+              <span className="text-slate-400">📖 作品を選択</span>
+            )}
+            <span className="ml-1.5 text-[0.7rem] text-slate-400">▾</span>
+          </Button>
+
+          {open && (
+            <div className="absolute right-0 mt-2 w-64 bg-[#161922] rounded-xl border border-slate-700 shadow-2xl z-50 py-1.5 animate-slide-up text-xs">
+              <div className="px-3 py-1.5 text-[0.7rem] text-slate-400 font-semibold uppercase tracking-wider border-b border-slate-800">
+                最近の作品
+              </div>
+              <div className="max-h-60 overflow-y-auto">
+                {books && books.length > 0 ? (
+                  books.map((book) => (
+                    <button
+                      key={book.id}
+                      onClick={() => handleSelectBook(book)}
+                      className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-slate-800/80 transition-colors ${
+                        selectedBook?.id === book.id ? 'text-indigo-400 font-bold bg-indigo-950/30' : 'text-slate-200'
+                      }`}
+                    >
+                      <span className="truncate flex-1 pr-2">
+                        <span className="font-mono text-slate-400 mr-1.5">#{book.id}</span>
+                        {book.title}
+                      </span>
+                      <span className="text-[0.65rem] text-slate-500">{book.genre}</span>
+                    </button>
+                  ))
+                ) : (
+                  <p className="px-3 py-3 text-xs text-slate-500 text-center">
+                    作成された作品はありません
+                  </p>
+                )}
+              </div>
+              {selectedBook && (
+                <div className="border-t border-slate-800 p-1.5">
+                  <button
+                    onClick={() => handleDelete(selectedBook.id)}
+                    className="w-full text-left px-2 py-1.5 text-[0.75rem] text-rose-400 hover:bg-rose-950/40 rounded transition-colors"
+                  >
+                    🗑️ 選択中の本（#{selectedBook.id}）を削除
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
 
-        {/* API Key */}
-        <div className="flex items-center space-x-2">
-          <label className="text-xs text-muted-foreground">API Key:</label>
-          <Input
-            type="password"
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            placeholder="sk-..."
-            className="w-[200px]"
-          />
-        </div>
-
-        {/* Model Type */}
-        <div className="flex items-center space-x-2">
-          <label className="text-xs text-muted-foreground">Model:</label>
-          <Button
-            variant="ghost"
-            onClick={() => setModelType(modelType === 'openai' ? 'gemini' : 'openai')}
-          >
-            <span className="hidden md:inline">{modelType === 'openai' ? 'OpenAI' : 'Gemini'}</span>
-          </Button>
-        </div>
-
-        {/* Expert Mode */}
-        <div className="flex items-center space-x-2">
-          <label className="text-xs text-muted-foreground">Expert:</label>
-          <Button
-            variant="ghost"
-            onClick={() => setIsExpertMode(!isExpertMode)}
-          >
-            <span>{isExpertMode ? 'ON' : 'OFF'}</span>
-          </Button>
-        </div>
-
-        {/* 新規作成 (かんたんモード) */}
+        {/* Quick New Novel Button */}
         <Button
           variant="default"
+          size="sm"
           onClick={handleCreate}
-          disabled={!apiKey || apiKey.length < 10}
+          disabled={!hasApiKey}
+          className={`text-xs font-semibold ${
+            hasApiKey
+              ? 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-md shadow-indigo-500/20'
+              : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+          }`}
         >
-          {apiKey && apiKey.length >= 10 ? '⚡ かんたんモード' : 'APIキーが必要'}
+          ⚡ かんたん作成
+        </Button>
+
+        {/* Central Settings Button */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setIsSettingsOpen(true)}
+          className="bg-[#161922] border-slate-700 hover:bg-slate-800 text-slate-200 text-xs flex items-center gap-1.5 px-3"
+          title="APIキー・モデル等の全体設定"
+        >
+          <span className="text-sm">⚙️</span>
+          <span className="hidden md:inline font-medium">設定</span>
+          {/* Status badge */}
+          <span
+            className={`w-2 h-2 rounded-full ml-0.5 ${
+              hasApiKey ? 'bg-emerald-500 shadow-sm shadow-emerald-500' : 'bg-amber-500 animate-pulse'
+            }`}
+            title={hasApiKey ? 'API設定完了' : 'APIキー未設定'}
+          />
         </Button>
       </div>
 
-      {/* EasyModeDialog as modal */}
+      {/* Modals */}
       {isEasyModeOpen && (
         <EasyModeDialog
           isOpen={isEasyModeOpen}
@@ -190,6 +211,15 @@ export default function Header({
           }}
         />
       )}
+
+      {isSettingsOpen && (
+        <SettingsModal
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
+        />
+      )}
     </header>
   );
 }
+
+export default Header;

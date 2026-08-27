@@ -76,6 +76,7 @@ async def get_narrative_metrics_trend(book_id: int, branch_id: int):
 async def get_planning_options():
     """
     フロントエンド向けの企画立案用オプション（ジャンル、アーキタイプ、文体など）を返す。
+    組み込みの文体に加え、ユーザーが保存したカスタム文体も自動マージして返す。
     """
     from config.archetypes_new import EASY_GENRES, STORY_ARCHETYPES
     from config.constants import PLANNING_PRESETS
@@ -87,9 +88,29 @@ async def get_planning_options():
         for k, v in STYLE_DEFINITIONS.items()
     }
 
+    # DB内のカスタム文体をマージ
+    try:
+        async with UnitOfWork(AppContainer.db()) as uow:
+            custom_styles = await uow.misc.get_all_custom_styles()
+            for cs in custom_styles:
+                c_id = cs.id if hasattr(cs, "id") else cs.get("id")
+                c_name = cs.name if hasattr(cs, "name") else cs.get("name")
+                c_inst = cs.instruction if hasattr(cs, "instruction") else cs.get("instruction", "")
+                key = f"custom_{c_id}"
+                styles[key] = {
+                    "name": f"⭐ [マイ文体] {c_name}",
+                    "description": c_inst,
+                    "is_custom": True,
+                    "id": c_id,
+                }
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f"Failed to load custom styles: {e}")
+
     return {
         "easy_genres": EASY_GENRES,
         "story_archetypes": list(STORY_ARCHETYPES.keys()),
         "style_definitions": styles,
         "planning_presets": PLANNING_PRESETS,
     }
+

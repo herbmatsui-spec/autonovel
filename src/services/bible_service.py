@@ -134,9 +134,15 @@ class WorldBibleGenerator:
             title=config.title,
             style_key=config.style_key,
             engine_key=config.engine_key,
+            enable_erotic=config.enable_erotic,
+            erotic_intensity=config.erotic_intensity,
         )
         res = await self.llm.generate_json(
-            "gemini-3.1-flash-lite", prompt, response_schema=UltraFastWorldBible, reporter=reporter
+            "gemini-3.1-flash-lite",
+            prompt,
+            response_schema=UltraFastWorldBible,
+            reporter=reporter,
+            nsfw_mode=config.enable_erotic,
         )
         if not res.success:
             raise RuntimeError(f"超高速設定生成に失敗しました: {res.error_message}")
@@ -190,13 +196,18 @@ class WorldBibleGenerator:
             async def _process_batch_item(ep_range):
                 async with sem:
                     plot_prompt = await self.pm.build_ultra_fast_plot_batch_prompt(
-                        bible_json_str, ep_range, book_id=None
+                        bible_json_str,
+                        ep_range,
+                        book_id=None,
+                        enable_erotic=config.enable_erotic,
+                        erotic_intensity=config.erotic_intensity,
                     )
                     plot_res = await self.llm.generate_json(
                         MODEL_PLOT_EXPANSION,
                         plot_prompt,
                         response_schema=UltraFastPlotBatch,
                         reporter=reporter,
+                        nsfw_mode=config.enable_erotic,
                     )
                     if not plot_res.success:
                         raise RuntimeError(
@@ -204,6 +215,8 @@ class WorldBibleGenerator:
                         )
                     plots = UltraFastPlotBatch.model_validate(plot_res.metadata).plots
                     for p in plots:
+                        if config.enable_erotic and not getattr(p, "erotic_intensity", None):
+                            p.erotic_intensity = config.erotic_intensity
                         await self.repo.save_plot(book_id, p.ep_num, p)
 
             async with asyncio.TaskGroup() as tg:
