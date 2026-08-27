@@ -76,8 +76,10 @@ def test_router_registrations():
         "src.backend.routers.commercial",
         "src.backend.routers.easy_mode",
         "src.backend.routers.illustrations",
+        "src.backend.routers.events",
         "src.api.routes.ux_routes",
     ]
+
     
     for r in required_routers:
         if r not in content:

@@ -8,6 +8,7 @@ import json
 import logging
 from typing import Any, Dict
 
+from src.backend.sse_manager import get_sse_manager
 from src.backend.workflows.state import ReviewGraphState
 from src.backend.workflows.utils import calculate_quality_score, format_critique_feedback
 from src.core.llm.router import resolve_model
@@ -22,6 +23,17 @@ async def analyze_pacing_node(state: ReviewGraphState, *, llm_provider: Any = No
     """
     content = state.get("source_content", "")
     ep_num = state.get("ep_num", 1)
+
+    sse = get_sse_manager()
+    await sse.broadcast(
+        "agent_status",
+        {
+            "agent": "PacingReviewer",
+            "phase": "pacing_analyzing",
+            "message": f"第{ep_num}話 本文のテンポ・起伏・引きの強さを分析中...",
+            "ep_num": ep_num,
+        },
+    )
 
     prompt = f"""あなたは小説のペース配分・構成の専門編集者です。
 第{ep_num}話の本文を読み、テンポ・感情起伏・引きの強さを分析してください。
@@ -69,6 +81,17 @@ async def check_character_consistency_node(state: ReviewGraphState, *, llm_provi
     content = state.get("source_content", "")
     ep_num = state.get("ep_num", 1)
 
+    sse = get_sse_manager()
+    await sse.broadcast(
+        "agent_status",
+        {
+            "agent": "CharacterSupervisor",
+            "phase": "character_checking",
+            "message": f"第{ep_num}話 登場人物の口調・性格の一貫性を監修中...",
+            "ep_num": ep_num,
+        },
+    )
+
     prompt = f"""あなたは小説のキャラクター監修エディターです。
 第{ep_num}話本文における登場人物の口調や性格のブレ、行動の不自然さをチェックしてください。
 
@@ -113,6 +136,7 @@ async def propose_edits_node(state: ReviewGraphState, *, llm_provider: Any = Non
     """
     pacing = state.get("pacing_analysis", {})
     char = state.get("character_consistency", {})
+    ep_num = state.get("ep_num", 1)
 
     is_pacing_ok = pacing.get("is_pacing_ok", True)
     is_char_ok = char.get("is_character_ok", True)
@@ -125,6 +149,19 @@ async def propose_edits_node(state: ReviewGraphState, *, llm_provider: Any = Non
 
     requires_revision = not (is_pacing_ok and is_char_ok)
     instructions = [iss["description"] for iss in issues]
+
+    sse = get_sse_manager()
+    await sse.broadcast(
+        "agent_status",
+        {
+            "agent": "ReviewSynthesizer",
+            "phase": "review_completed",
+            "message": f"第{ep_num}話 総合推敲完了: {'修正提案あり' if requires_revision else '品質基準クリア'}",
+            "ep_num": ep_num,
+            "requires_revision": requires_revision,
+            "total_issues": len(issues),
+        },
+    )
 
     logger.info(
         f"[ReviewGraph] Synthesis: requires_revision={requires_revision}, total_issues={len(issues)}"

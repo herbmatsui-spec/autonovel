@@ -228,3 +228,7 @@ class AppContainer2(InfraContainer):
         "src.backend.workflows.illustration_workflow.IllustrationWorkflow",
         illustration_agent=illustration_agent,
     )
+    sse_manager = providers.Singleton["SSEManager"](
+        "src.backend.sse_manager.get_sse_manager",
+    )
+

@@ -283,8 +283,10 @@ def create_app() -> FastAPI:
         "src.backend.routers.commercial",
         "src.backend.routers.easy_mode",
         "src.backend.routers.illustrations",
+        "src.backend.routers.events",
         "src.api.routes.ux_routes",
     ]
+
     for module_path in router_modules:
         try:
             module = importlib.import_module(module_path)

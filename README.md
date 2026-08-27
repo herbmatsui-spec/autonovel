@@ -1,10 +1,10 @@
-# 覇権小説エンジン v3.5.0
-# 更新: アーキテクチャリファクタリング & プロジェクト構造整理 36ステップ完了 (2026-08-18)
+# 覇権小説エンジン v3.6.0
+# 更新: リアルタイムSSEエージェント監視 & LangGraphワークフロー再構成 (2026-08-27)
 
 ![Tests](https://img.shields.io/badge/tests-passing-brightgreen)
 ![Coverage](https://img.shields.io/badge/coverage-80%25-yellow)
 ![Python](https://img.shields.io/badge/python-3.12-blue)
-![Refactoring](https://img.shields.io/badge/Architecture%20Refactoring-36%20steps%20done-brightgreen)
+![SSE](https://img.shields.io/badge/real--time%20SSE-agent%20monitoring-brightgreen)
 ![Demo](https://img.shields.io/badge/demo-try_now-brightgreen)
 
 ## 最新の修正 (2026-08-25) — セキュリティ・安定性
@@ -26,6 +26,26 @@
 - `continuity.py` で `storage/db` ディレクトリを自動作成（存在しないと例外だった）。
 
 > **運用注意**: 上記エンドポイントは既存の `generate_easy` 等と同様に `X-API-Key` ヘッダでの認証を期待します。本番（`ENVIRONMENT=production`）ではリクエストにヘッダを付与してください（フロントエンドは現状リクエスト body で `api_key` を送るため、ゲートウェイ等でのヘッダ注入かフロントエンド側の送信対応が必要です）。
+
+---
+
+## 最新の修正 (2026-08-27) — リアルタイム監視 & ワークフロー再構成
+
+### リアルタイム SSE エージェント監視
+生成パイプラインの内部動作をブラウザでリアルタイムに可視化する仕組みを追加しました。
+
+- バックエンドに `SSEManager`（`src/backend/sse_manager.py`）シングルトンを追加。ワークフロー各ノードからエージェント思考・推敲ログ・進捗率をブロードキャストします。
+- 新規エンドポイント `GET /api/v1/events/stream`（`src/backend/routers/events.py`）で SSE ストリームを配信（接続確認 `connected` イベント＋15秒ごとの `ping` ハートビート）。
+- フロントエンドに `sseClient`（`frontend/src/lib/sseClient.ts`）・`useAgentLiveStore`（`frontend/src/store/useAgentLiveStore.ts`）を追加。`agent_status` / `pipeline_progress` イベントを購読し、切断時は3秒後に自動再接続します。
+- `AgentDashboard` コンポーネントと `ProgressPanel`（`frontend/src/components/`）に統合。エージェント別の思考ログ・スコア・承認状態・全体進捗率をライブ表示します。
+
+### LangGraph ワークフローの再構成
+執筆パイプラインをグラフ指向に整理し、全体を `MasterGraph` で統括する構成に変更しました。
+
+- `src/backend/workflows/graphs/`：`master_graph`（Plot→Writing→Review を統括）、`writing_graph`、`review_graph`、`plot_graph` の StateGraph 定義を集約。
+- `src/backend/workflows/nodes/`：各フェーズの処理ノード（`master_nodes` / `writing_nodes` / `review_nodes` / `plot_nodes`）を配置。実行のたび `SSEManager` へ進捗をブロードキャストします。
+- `src/backend/workflows/edges/`：グラフ間遷移ロジック（`writing_edges` / `review_edges` / `plot_edges`）を分離。
+- LangGraph 非導入環境向けに `SequentialMasterGraphFallback` による逐次実行フォールバックを実装。
 
 **覇権小説エンジン**は、AI を使って小説を「かんたんに」「高品質に」書くためのツールです。
 
@@ -52,7 +72,7 @@
 
 ---
 
-## 最新アップデート (v3.5.0 - 2026-08-18)
+## 最新アップデート (v3.6.0 - 2026-08-27)
 
 ### 🏗️ アーキテクチャリファクタリング & ファイル整理 (全4フェーズ・36ステップ完了)
 
@@ -90,6 +110,8 @@
 - **DI コンテナ**: `src/core/container/`（`AppContainer2` / `InfraContainer`）
 - **DB アクセス層**: `src/backend/database/repositories/` + `UnitOfWork` パターン
 - **エージェント群**: `src/agents/`（`erotic/`, `audit/`, `plot/` 等）
+- **リアルタイム監視**: `src/backend/sse_manager.py` + `src/backend/routers/events.py`（SSE ストリーム）、`frontend/src/lib/sseClient.ts` + `frontend/src/store/useAgentLiveStore.ts`
+- **ワークフロー**: `src/backend/workflows/`（graph: `graphs/` / `nodes/` / `edges/` に分割、`master_graph` で統括）
 - **C4 モデル**: [docs/architecture/](docs/architecture/)
 - **開発者ガイド**: [docs/DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md)
 - **過去の計画書・ログ**: `archive/plans/`, `archive/logs/`
@@ -253,9 +275,14 @@ Frontend (React 18 + TypeScript + Vite + TailwindCSS)
          │
          ▼ HTTP/REST + SSE
 Backend (FastAPI + Uvicorn)
-   ├── routers/: books, episodes, plots, easy_mode, commercial
-   │         export, illustrations, marketing, audit, health, metrics
-   ├── workflows/: LangGraph ベースの執筆パイプライン
+    ├── routers/: health, books, plots, episodes, tasks, patches
+    │         issues, marketing, prompt_versions, metrics, misc
+    │         novel, commercial, easy_mode, illustrations, events (SSE)
+    ├── sse_manager.py: SSE 接続・イベントブロードキャスト管理
+    ├── workflows/: LangGraph ベースの執筆パイプライン
+    │   ├── graphs/: master / writing / review / plot の StateGraph
+    │   ├── nodes/: 各フェーズ処理ノード（SSE 進捗配信付き）
+    │   └── edges/: グラフ間遷移ロジック
    ├── services/: ビジネスロジック層
    ├── easy_mode/: かんたんモードパイプライン + Phase3 資産化
    ├── core/
@@ -366,11 +393,16 @@ Data Stores
 pytest
 
 # かんたんモード Phase 1-3 統合テストのみ
-pytest tests/test_phase1_preset_integration.py tests/test_phase2_pipeline_integration.py tests/test_phase3_asset_pack.py -v
+pytest tests/phase1/test_phase1_preset_integration.py tests/phase2/test_phase2_pipeline_integration.py tests/phase3/test_phase3_asset_pack.py -v
+
+# LangGraph ワークフロー（master / writing / review / plot）のグラフテスト
+pytest tests/workflows/ -v
 
 # 詳細出力
 pytest -xvs tests/
 ```
+
+テストは `tests/` 配下をロール別に整理しています：`unit/`（単体）、`integration/`（API・DB・パイプライン統合）、`e2e/`（エンドツーエンド）、`phase1`〜`phase4`（かんたんモード各フェーズ）、`workflows/`（LangGraph グラフ）。
 
 ### テストカバレッジ (Phase 1-3)
 

@@ -8,6 +8,7 @@ import json
 import logging
 from typing import Any, Dict
 
+from src.backend.sse_manager import get_sse_manager
 from src.backend.workflows.state import WritingGraphState
 from src.backend.workflows.utils import calculate_quality_score, format_critique_feedback
 from src.core.llm.router import resolve_model
@@ -25,12 +26,22 @@ async def build_context_node(state: WritingGraphState, *, writing_agent: Any = N
     ep_num = state.get("ep_num", 1)
     style_tag = state.get("style_tag")
 
+    sse = get_sse_manager()
+    await sse.broadcast(
+        "agent_status",
+        {
+            "agent": "ContextBuilder",
+            "phase": "context_building",
+            "message": f"第{ep_num}話の設定資料（Bible）・過去ログRAGを抽出中...",
+            "ep_num": ep_num,
+        },
+    )
+
     logger.info(f"[WritingGraph] Building context for Book {book_id}, Ep {ep_num}...")
 
     sys_inst = state.get("sys_inst", "あなたは商業ライトノベルのベストセラー作家です。")
     fw_prompt = state.get("fw_prompt", f"第{ep_num}話の本文を魅力的に執筆してください。")
 
-    # writing_agent が与えられている場合はリッチなコンテキスト構築を委譲
     if writing_agent and hasattr(writing_agent, "build_full_writing_context"):
         try:
             ctx = await writing_agent.build_full_writing_context(
@@ -64,6 +75,19 @@ async def generate_draft_node(state: WritingGraphState, *, llm_provider: Any = N
     fw_prompt = state.get("fw_prompt", "")
     failures = state.get("failures", [])
     ac_iter = state.get("ac_iter", 0) + 1
+    ep_num = state.get("ep_num", 1)
+
+    sse = get_sse_manager()
+    await sse.broadcast(
+        "agent_status",
+        {
+            "agent": "WriterActor",
+            "phase": "draft_generating",
+            "message": f"第{ep_num}話 本文を執筆中 (推敲ループ {ac_iter})...",
+            "ep_num": ep_num,
+            "ac_iter": ac_iter,
+        },
+    )
 
     prompt = fw_prompt
     if failures:
@@ -83,7 +107,18 @@ async def generate_draft_node(state: WritingGraphState, *, llm_provider: Any = N
             )
             draft = response.content
         else:
-            draft = f"第{state.get('ep_num', 1)}話の本文ドラフト（生成サンプル）。"
+            draft = f"第{ep_num}話の本文ドラフト（生成サンプル）。主人公は静かに歩き始めた。風が草木を揺らし、遠くの街並みが夕暮れに染まっていく。新たな冒険の予感が胸を満たしていた。"
+
+        await sse.broadcast(
+            "agent_status",
+            {
+                "agent": "WriterActor",
+                "phase": "draft_generated",
+                "message": f"第{ep_num}話 ドラフト出力完了 ({len(draft)}文字)",
+                "ep_num": ep_num,
+                "char_length": len(draft),
+            },
+        )
 
         return {
             "draft_content": draft,
@@ -106,6 +141,17 @@ async def self_audit_node(state: WritingGraphState, *, llm_provider: Any = None)
     """
     draft = state.get("draft_content", "")
     ep_num = state.get("ep_num", 1)
+
+    sse = get_sse_manager()
+    await sse.broadcast(
+        "agent_status",
+        {
+            "agent": "WriterCritic",
+            "phase": "auditing",
+            "message": f"第{ep_num}話 本文のキャラクター整合性・論理破綻を自己監査中...",
+            "ep_num": ep_num,
+        },
+    )
 
     if not draft or len(draft.strip()) < 50:
         return {
@@ -158,6 +204,18 @@ JSON形式:
         causal_ok = bool(data.get("is_causal_ok", True))
         failures = data.get("failures", [])
         score = float(data.get("score", calculate_quality_score(integrity_ok, causal_ok, len(failures))))
+
+        await sse.broadcast(
+            "agent_status",
+            {
+                "agent": "WriterCritic",
+                "phase": "audited",
+                "message": f"第{ep_num}話 自己監査完了: スコア {score:.2f} ({'合格' if integrity_ok and causal_ok else '再修正指示'})",
+                "ep_num": ep_num,
+                "score": score,
+                "failures_count": len(failures),
+            },
+        )
 
         return {
             "is_integrity_ok": integrity_ok,

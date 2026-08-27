@@ -8,6 +8,7 @@ import json
 import logging
 from typing import Any, Dict
 
+from src.backend.sse_manager import get_sse_manager
 from src.backend.workflows.state import PlotGraphState
 from src.backend.workflows.utils import calculate_quality_score, format_critique_feedback
 from src.core.llm.router import resolve_model
@@ -25,6 +26,17 @@ async def generate_initial_plot_node(state: PlotGraphState, *, llm_provider: Any
     target_episodes = state.get("target_episodes", 10)
     user_instructions = state.get("user_instructions", "")
     bible_context = state.get("bible_context", {})
+
+    sse = get_sse_manager()
+    await sse.broadcast(
+        "agent_status",
+        {
+            "agent": "PlotPlanner",
+            "phase": "initial_generation",
+            "message": f"全{target_episodes}話の初期プロット構成を策定中...",
+            "iteration": 1,
+        },
+    )
 
     prompt = f"""あなたは商業ライトノベルの熟練プロットプランナーです。
 以下の前提条件に基づき、全{target_episodes}話の構成プロット案（JSON配列形式）を策定してください。
@@ -72,6 +84,16 @@ async def generate_initial_plot_node(state: PlotGraphState, *, llm_provider: Any
         except Exception:
             parsed = []
 
+        await sse.broadcast(
+            "agent_status",
+            {
+                "agent": "PlotPlanner",
+                "phase": "initial_generated",
+                "message": f"全{len(parsed)}話の初期プロットドラフトを出力しました。",
+                "plots_count": len(parsed),
+            },
+        )
+
         return {
             "raw_plot_draft": str(raw_text),
             "parsed_plots": parsed,
@@ -94,6 +116,17 @@ async def evaluate_plot_node(state: PlotGraphState, *, llm_provider: Any = None)
     """
     parsed_plots = state.get("parsed_plots", [])
     genre = state.get("genre", "")
+
+    sse = get_sse_manager()
+    await sse.broadcast(
+        "agent_status",
+        {
+            "agent": "PlotCritic",
+            "phase": "evaluation",
+            "message": "シニア編集者エージェントがプロットの因果関係・テンポを監査中...",
+            "iteration": state.get("current_iteration", 1),
+        },
+    )
 
     if not parsed_plots:
         return {
@@ -147,6 +180,18 @@ JSONオブジェクト形式で出力してください:
         suggestions = data.get("suggestions", [])
         critique = format_critique_feedback(issues, suggestions)
 
+        await sse.broadcast(
+            "agent_status",
+            {
+                "agent": "PlotCritic",
+                "phase": "evaluated",
+                "message": f"プロット監査完了: スコア {score:.2f} ({'合格' if is_approved else '再修正指示'})",
+                "score": score,
+                "is_approved": is_approved,
+                "issues_count": len(issues),
+            },
+        )
+
         return {
             "quality_score": score,
             "is_approved": is_approved,
@@ -156,7 +201,6 @@ JSONオブジェクト形式で出力してください:
         }
     except Exception as e:
         logger.error(f"[PlotGraph] Evaluation failed: {e}")
-        # フォールバック: パース済みプロットがあれば一旦承認
         return {
             "quality_score": 0.75,
             "is_approved": True,
@@ -174,6 +218,17 @@ async def refine_plot_node(state: PlotGraphState, *, llm_provider: Any = None) -
     parsed_plots = state.get("parsed_plots", [])
     critique_feedback = state.get("critique_feedback", "")
     current_iter = state.get("current_iteration", 1)
+
+    sse = get_sse_manager()
+    await sse.broadcast(
+        "agent_status",
+        {
+            "agent": "PlotPlanner",
+            "phase": "refinement",
+            "message": f"編集部のフィードバックに基づきプロットを修正中 (イテレーション {current_iter})...",
+            "iteration": current_iter,
+        },
+    )
 
     prompt = f"""あなたは商業ライトノベルのプロットプランナーです。
 前回のプロット案に対し、編集部から以下の改善フィードバックが届きました。
