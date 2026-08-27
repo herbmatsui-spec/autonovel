@@ -91,7 +91,15 @@ async def generate_draft_node(state: WritingGraphState, *, llm_provider: Any = N
         },
     )
 
+    prev_tail = state.get("prev_episode_tail", "")
     prompt = fw_prompt
+    if prev_tail:
+        prompt += (
+            f"\n\n【直前話の末尾（文脈接続用）】\n"
+            f"...\n{prev_tail}\n...\n"
+            f"※前話のラストシーン・キャラクターの感情や緊迫感を自然に引き継ぎ、物語を滑らかに接続して執筆してください。"
+        )
+
     if failures:
         critique = format_critique_feedback(failures)
         prompt += f"\n\n【前回の推敲指摘と改善指示】\n{critique}\n上記の指摘事項（特に事件密度・展開・キャラクター描写・論理整合性）を反映して本文を書き直してください。"
@@ -120,9 +128,9 @@ async def generate_draft_node(state: WritingGraphState, *, llm_provider: Any = N
             {
                 "agent": "WriterActor",
                 "phase": "draft_generated",
-                "message": f"第{ep_num}話 ドラフト出力完了 ({len(draft)}文字)",
+                "message": f"第{ep_num}話 本文ドラフトを生成しました ({len(draft)}文字)。",
                 "ep_num": ep_num,
-                "char_length": len(draft),
+                "draft_length": len(draft),
             },
         )
 
@@ -134,7 +142,6 @@ async def generate_draft_node(state: WritingGraphState, *, llm_provider: Any = N
     except Exception as e:
         logger.error(f"[WritingGraph] Draft generation failed: {e}")
         return {
-            "ac_iter": ac_iter,
             "error_message": str(e),
             "status": "draft_error",
         }
@@ -179,6 +186,7 @@ async def self_audit_node(state: WritingGraphState, *, llm_provider: Any = None)
 1. キャラクターの言動に大きな不整合やブレはないか
 2. 前後の因果関係や状況描写に論理的破綻はないか
 3. 事件密度（展開/性格露出/緊張上昇の充足度）が十分にあるか（不足時は failures に不足要素［展開・性格露出・緊張感］を具体的に記載）
+4. （前話がある場合）前話からの接続・引き継ぎに違和感や断絶がないか
 
 【出力形式】
 JSON形式:

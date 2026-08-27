@@ -112,12 +112,18 @@ async def call_writing_graph_node(
         if reporter and hasattr(reporter, "report"):
             await reporter.report(progress, f"第{ep}話 執筆・自己推敲グラフを実行中...")
 
+        prev_tail = ""
+        if ep > 1 and (ep - 1) in writing_results:
+            prev_draft = writing_results[ep - 1].get("draft_content", "")
+            prev_tail = prev_draft[-500:] if len(prev_draft) > 500 else prev_draft
+
         writing_input: WritingGraphState = {
             "book_id": state.get("book_id", 1),
             "branch_id": state.get("branch_id", 1),
             "ep_num": ep,
             "passion": 0.8,
             "max_ac_iter": 2,
+            "prev_episode_tail": prev_tail,
             "sys_inst": "あなたは商業ライトノベルのベストセラー作家です。",
             "fw_prompt": f"第{ep}話の本文を執筆してください。",
         }
@@ -262,12 +268,18 @@ async def revise_writing_node(
         if reporter and hasattr(reporter, "report"):
             await reporter.report(0.85, f"第{ep}話 指摘に基づき再執筆・推敲中...")
 
+        prev_tail = ""
+        if ep > 1 and (ep - 1) in writing_results:
+            prev_draft = writing_results[ep - 1].get("draft_content", "")
+            prev_tail = prev_draft[-500:] if len(prev_draft) > 500 else prev_draft
+
         writing_input: WritingGraphState = {
             "book_id": state.get("book_id", 1),
             "branch_id": state.get("branch_id", 1),
             "ep_num": ep,
             "passion": 0.8,
             "max_ac_iter": 2,
+            "prev_episode_tail": prev_tail,
             "sys_inst": "あなたは商業ライトノベルのベストセラー作家です。",
             "fw_prompt": f"前回の推敲指摘:\n- {inst_str}\n第{ep}話の本文を再執筆してください。",
         }

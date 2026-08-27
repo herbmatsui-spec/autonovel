@@ -47,6 +47,7 @@ class WritingGraphState(BaseGraphState, total=False):
     passion: float
     is_easy_mode: bool
     context: Any  # WritingContext
+    prev_episode_tail: str
     sys_inst: str
     fw_prompt: str
     style_tag: Optional[str]

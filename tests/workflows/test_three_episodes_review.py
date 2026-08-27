@@ -222,6 +222,13 @@ class TestThreeEpisodesReview(unittest.IsolatedAsyncioTestCase):
              ("review_pacing", 3), ("review_char", 3)],
         )
 
+        # --- 前話末尾引き継ぎの検証 (Step 58) ---
+        draft_prompts = [s["prompt"] for s in provider.sequence if _phase_of(s["prompt"]) == "writing_draft"]
+        self.assertEqual(len(draft_prompts), 3)
+        self.assertNotIn("直前話の末尾", draft_prompts[0])  # 第1話は前話なし
+        self.assertIn("直前話の末尾（文脈接続用）", draft_prompts[1])  # 第2話は第1話末尾あり
+        self.assertIn("直前話の末尾（文脈接続用）", draft_prompts[2])  # 第3話は第2話末尾あり
+
     async def test_worst_case_api_call_count(self):
         """全ループ最大化（plot 1回リファイン + writing 各話1回再生成）の場合: 3話で API コールは 25 回。"""
         provider = CountingLLMProvider(
