@@ -86,6 +86,8 @@ class MasterGraphState(BaseGraphState, total=False):
     mode: str  # "full_pipeline", "plot_only", "writing_batch", "review_only"
     target_start_ep: int
     target_end_ep: int
+    api_call_count: int
+    quality_metrics: Dict[str, Any]
     
     # 各サブグラフの実行結果
     plot_result: Optional[PlotGraphState]
