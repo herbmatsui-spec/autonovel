@@ -59,7 +59,7 @@ class Settings(BaseSettings):
     environment: str = Field(default="production", description="実行環境 (production/test/development)")
 
     # アプリケーションバージョン (SSOT for version)
-    app_version: str = Field(default="3.6.0", description="アプリケーションバージョン")
+    app_version: str = Field(default="3.72", description="アプリケーションバージョン")
 
     # ==========================================
     # モデル設定

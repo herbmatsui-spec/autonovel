@@ -249,7 +249,7 @@ def create_app() -> FastAPI:
     settings = get_settings()
     application = FastAPI(
         title="覇権小説エンジン API",
-        version=settings.app_version if hasattr(settings, 'app_version') else "3.6.0",
+        version=settings.app_version if hasattr(settings, 'app_version') else "3.72",
         lifespan=lifespan,
     )
 
