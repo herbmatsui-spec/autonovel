@@ -120,7 +120,7 @@ export default function App() {
   });
 
   // Triggering actions
-  const { handleCreateEasyMode } = useAppActions((_) => {});
+  const { handleCreateEasyMode } = useAppActions(() => {});
 
   // Initialize isFirstRun based on whether apiKey is set (do once)
   useEffect(() => {

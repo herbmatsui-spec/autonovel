@@ -5,7 +5,9 @@ src/backend/workflows/commercial_pipeline.py — 商用化統合パイプライ�
 
 import asyncio
 import logging
+import os
 import random
+import tempfile
 from typing import Any, Dict, List, Optional
 
 from src.core.exceptions import PipelineError  # 新規カスタム例外
@@ -53,9 +55,9 @@ class CommercialPipeline:
         Initialize pipeline with optional CSV output path.
 
         Args:
-            csv_path: CSV出力先パス。未指定の場合はデフォルト値を使用
+            csv_path: CSV出力先パス。未指定の場合はOSの一時ディレクトリを使用
         """
-        self.csv_path = csv_path or "/tmp/commercial_schedule.csv"
+        self.csv_path = csv_path or os.path.join(tempfile.gettempdir(), "commercial_schedule.csv")
 
     @async_retry(max_attempts=3, base_delay=1.0)
     async def _step_plan_async(self, series_config: dict) -> Dict[str, Any]:
@@ -74,8 +76,15 @@ class CommercialPipeline:
             dict: Bibleデータ（詳細情報を含む）
         """
         try:
-            # キーワードリスト取得・正規化
-            keywords = [kw.strip() for kw in series_config.get("keywords", "") if kw.strip()]
+            # キーワードリスト取得・正規化（文字列/リストの両方に対応）
+            raw_keywords = series_config.get("keywords", "")
+            if isinstance(raw_keywords, str):
+                keywords = [kw.strip() for kw in raw_keywords.replace("、", ",").split(",") if kw.strip()]
+            elif isinstance(raw_keywords, (list, tuple)):
+                keywords = [str(kw).strip() for kw in raw_keywords if str(kw).strip()]
+            else:
+                keywords = []
+
             if not keywords:
                 raise ValueError("Missing required keywords")
 
@@ -184,7 +193,6 @@ class CommercialPipeline:
                         "ep_num": ep_num,
                     },
                     "script": "",  # 将来的に脚本データを投入
-                    "target_word_count": bible.get("target_word_count_per_episode", 3000),
                     "continuation": True,  # 続き執筆フラグ
                     "build_platform": "streamlit_demo",
                 }

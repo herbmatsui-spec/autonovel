@@ -1,4 +1,5 @@
 import logging
+import time
 from typing import Any, Dict, List, Optional
 
 from src.agents.base import BaseAgent
@@ -99,8 +100,6 @@ class IllustrationAgent(BaseAgent):
         prompt = " ".join(parts)
         if is_r15(request.safety_level):
             prompt += " Tasteful R15 artistic representation, intimate but not explicit."
-
-        import time
 
         start = time.time()
         image_url = await self.image_service.generate(

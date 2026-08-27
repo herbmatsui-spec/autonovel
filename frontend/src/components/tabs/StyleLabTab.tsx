@@ -37,8 +37,9 @@ export default function StyleLabTab() {
       <h2 className="text-xl font-bold">文体ラボ</h2>
       <div className="space-y-4">
         <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium">分析したいテキストを入力</label>
+          <label htmlFor="style-sample-text" className="text-sm font-medium">分析したいテキストを入力</label>
           <textarea
+            id="style-sample-text"
             value={sample}
             onChange={(e) => setSample(e.target.value)}
             rows={8}

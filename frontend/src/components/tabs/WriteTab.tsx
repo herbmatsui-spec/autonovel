@@ -36,7 +36,7 @@ export function WriteTab() {
     showPreview,
     setShowPreview,
   } = useWritingStore();
-  const { handleTriggerWriting, handleRefineErotic, handleImportChapter } = useAppActions((_) => {});
+  const { handleTriggerWriting, handleRefineErotic, handleImportChapter } = useAppActions(() => {});
   const { activeTaskId } = useTaskStore();
 
   return (
@@ -71,7 +71,7 @@ export function WriteTab() {
             <>
               {/** Pagination */ }
               <div className="flex flex-wrap items-center gap-2 mb-4">
-                <label className="text-sm">表示範囲:</label>
+                <span className="text-sm">表示範囲:</span>
                 <Button
                   variant="ghost"
                   size="sm"

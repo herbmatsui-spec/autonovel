@@ -1,7 +1,7 @@
 import { AuditTab } from '@/components/tabs/AuditTab';
 import { AnalyticsTab } from '@/components/tabs/AnalyticsTab';
 
-export function FinishStep({ bookId: _bookId }: { bookId?: number } = {}) {
+export function FinishStep(_props: { bookId?: number } = {}) {
   return (
     <div>
       <p className="text-sm text-muted-foreground mb-2">

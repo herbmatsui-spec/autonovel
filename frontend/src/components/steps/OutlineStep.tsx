@@ -1,6 +1,6 @@
 import { PlotsTab } from '@/components/tabs/PlotsTab';
 
-export function OutlineStep({ bookId: _bookId }: { bookId?: number } = {}) {
+export function OutlineStep(_props: { bookId?: number } = {}) {
   return (
     <div>
       <p className="text-sm text-muted-foreground mb-2">

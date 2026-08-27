@@ -100,8 +100,9 @@ export function PlanningTab() {
         <div className="space-y-4">
           <h3 className="font-semibold">基本情報</h3>
           <div className="space-y-2">
-            <label className="text-sm font-medium">ジャンル</label>
+            <label htmlFor="planning-genre" className="text-sm font-medium">ジャンル</label>
             <select
+              id="planning-genre"
               value={genre}
               onChange={(e) => setGenre(e.target.value)}
               className="block w-full px-3 py-2 border rounded"
@@ -114,8 +115,9 @@ export function PlanningTab() {
             </select>
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">ストーリーキャラアーキタイプ</label>
+            <label htmlFor="planning-archetype" className="text-sm font-medium">ストーリーキャラアーキタイプ</label>
             <select
+              id="planning-archetype"
               value={archetype}
               onChange={(e) => setArchetype(e.target.value)}
               className="block w-full px-3 py-2 border rounded"
@@ -128,16 +130,18 @@ export function PlanningTab() {
             </select>
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">キーワード（カンマ区切り）</label>
+            <label htmlFor="planning-keywords" className="text-sm font-medium">キーワード（カンマ区切り）</label>
             <input
+              id="planning-keywords"
               value={keywords}
               onChange={(e) => setKeywords(e.target.value)}
               className="block w-full px-3 py-2 border rounded"
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">目標文字数</label>
+            <label htmlFor="planning-word-count" className="text-sm font-medium">目標文字数</label>
             <input
+              id="planning-word-count"
               type="number"
               value={wordCount}
               onChange={(e) => setWordCount(parseInt(e.target.value) || 0)}
@@ -149,8 +153,9 @@ export function PlanningTab() {
           <div className="space-y-4">
             <h3 className="font-semibold">詳細設定</h3>
             <div className="space-y-2">
-              <label className="text-sm font-medium">目標エピソード数</label>
+              <label htmlFor="planning-target-eps" className="text-sm font-medium">目標エピソード数</label>
               <input
+                id="planning-target-eps"
                 type="number"
                 value={targetEps}
                 onChange={(e) => setTargetEps(parseInt(e.target.value) || 0)}
@@ -158,8 +163,9 @@ export function PlanningTab() {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">初期制限数</label>
+              <label htmlFor="planning-initial-limit" className="text-sm font-medium">初期制限数</label>
               <input
+                id="planning-initial-limit"
                 type="number"
                 value={initialLimit}
                 onChange={(e) => setInitialLimit(parseInt(e.target.value) || 0)}
@@ -167,8 +173,9 @@ export function PlanningTab() {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">スタイルキー</label>
+              <label htmlFor="planning-style-key" className="text-sm font-medium">スタイルキー</label>
               <select
+                id="planning-style-key"
                 value={styleKey}
                 onChange={(e) => setStyleKey(e.target.value)}
                 className="block w-full px-3 py-2 border rounded"
@@ -181,8 +188,9 @@ export function PlanningTab() {
               </select>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">チートスケール</label>
+              <label htmlFor="planning-cheat-scale" className="text-sm font-medium">チートスケール</label>
               <input
+                id="planning-cheat-scale"
                 type="number"
                 value={cheatScale}
                 onChange={(e) => setCheatScale(parseInt(e.target.value) || 0)}
@@ -190,8 +198,9 @@ export function PlanningTab() {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">システムアシスト (%)</label>
+              <label htmlFor="planning-system-assist" className="text-sm font-medium">システムアシスト (%)</label>
               <input
+                id="planning-system-assist"
                 type="number"
                 value={systemAssist}
                 onChange={(e) => setSystemAssist(parseInt(e.target.value) || 0)}
@@ -199,8 +208,9 @@ export function PlanningTab() {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">コスト重症度</label>
+              <label htmlFor="planning-cost-severity" className="text-sm font-medium">コスト重症度</label>
               <input
+                id="planning-cost-severity"
                 type="number"
                 value={costSeverity}
                 onChange={(e) => setCostSeverity(parseInt(e.target.value) || 0)}

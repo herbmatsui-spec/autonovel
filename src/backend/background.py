@@ -69,9 +69,21 @@ class SyncDbSaveStrategy(SaveStrategy):
             if hasattr(state.repo, "save_internal_state_sync"):
                 state.repo.save_internal_state_sync(f"task_status:{state.task_id}", state_json)
             elif hasattr(state.repo, "save_internal_state"):
-                import asyncio
                 target_db = getattr(state.repo, "db", state.repo)
-                asyncio.run(target_db.save_internal_state(f"task_status:{state.task_id}", state_json, now))
+                try:
+                    loop = asyncio.get_running_loop()
+                    task = loop.create_task(
+                        target_db.save_internal_state(f"task_status:{state.task_id}", state_json, now)
+                    )
+                    task.add_done_callback(
+                        lambda t: (
+                            logger.error(f"[ProgressState] DB Save error: {t.exception()}")
+                            if not t.cancelled() and t.exception()
+                            else None
+                        )
+                    )
+                except RuntimeError:
+                    asyncio.run(target_db.save_internal_state(f"task_status:{state.task_id}", state_json, now))
         except Exception as e:
             logger.error(f"[ProgressState] Sync DB save failed: {e}")
 

@@ -37,7 +37,15 @@ export default function BooksTab() {
           {books.map((book) => (
             <div
               key={book.id}
-              className={`flex items-center justify-between p-4 rounded-lg border border-[var(--border)] ${selectedBook?.id === book.id ? 'bg-[var(--accent)]/20' : 'bg-transparent'}`}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setSelectedBook(book);
+                }
+              }}
+              className={`flex items-center justify-between p-4 rounded-lg border border-[var(--border)] cursor-pointer ${selectedBook?.id === book.id ? 'bg-[var(--accent)]/20' : 'bg-transparent'}`}
               onClick={() => setSelectedBook(book)}
             >
               <div className="flex items-center gap-3">

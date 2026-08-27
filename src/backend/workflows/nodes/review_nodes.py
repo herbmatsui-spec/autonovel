@@ -8,10 +8,12 @@ import asyncio
 import json
 import logging
 from typing import Any, Dict
+import os
 
 from src.backend.sse_manager import get_sse_manager
 from src.backend.workflows.state import ReviewGraphState
 from src.backend.workflows.utils import calculate_quality_score, format_critique_feedback
+from config.settings import get_settings
 from src.core.llm.router import resolve_model
 
 logger = logging.getLogger(__name__)
@@ -153,7 +155,7 @@ async def run_review_parallel(state: ReviewGraphState, *, llm_provider: Any = No
 async def propose_edits_node(state: ReviewGraphState, *, llm_provider: Any = None) -> Dict[str, Any]:
     """
     【Node 3: Edit Proposal / Polishing】
-    各監査結果（テンポ、キャラ一貫性）を集約し、総合判断と修正指示文を作成する。
+    各監査結果（テンポ、キャラ一貫性、商業性）を集約し、総合判断と修正指示文を作成する。
     """
     pacing = state.get("pacing_analysis", {})
     char = state.get("character_consistency", {})
@@ -168,7 +170,17 @@ async def propose_edits_node(state: ReviewGraphState, *, llm_provider: Any = Non
     for inc in char.get("inconsistencies", []):
         issues.append({"category": "Character", "description": inc})
 
-    requires_revision = not (is_pacing_ok and is_char_ok)
+    commercial_score = state.get("commercial_score")
+    is_commercial_ok = True
+    if commercial_score is not None and commercial_score > 0.0:
+        if commercial_score < COMMERCIAL_PASS:
+            is_commercial_ok = False
+            issues.append({
+                "category": "Commercial",
+                "description": f"商業スコア基準未達 ({commercial_score:.2f} < {COMMERCIAL_PASS})。冒頭フックまたは次話へのクリフハンガーを強化してください。",
+            })
+
+    requires_revision = not (is_pacing_ok and is_char_ok and is_commercial_ok)
     instructions = [iss["description"] for iss in issues]
 
     sse = get_sse_manager()
@@ -199,6 +211,18 @@ async def score_commercial_node(state: ReviewGraphState, *, llm_provider: Any = 
     content = state.get("source_content", "")
     ep_num = state.get("ep_num", 1)
 
+    settings = get_settings()
+    is_opted_in = getattr(settings, "enable_commercial_scoring", False)
+
+    # llm_provider が与えられておらず、かつ設定でも無効な場合は安全なデフォルト値を返却
+    if not is_opted_in and llm_provider is None:
+        logger.info(f"[ReviewGraph] Commercial scoring disabled and fallback mode active (episode {ep_num}). Using safe default.")
+        return {
+            "commercial_score": 0.85,
+            "commercial_breakdown": {},
+            "status": "commercial_scored",
+        }
+
     sse = get_sse_manager()
     await sse.broadcast(
         "agent_status",
@@ -210,11 +234,17 @@ async def score_commercial_node(state: ReviewGraphState, *, llm_provider: Any = 
         },
     )
 
+    # 冒頭フックと末尾クリフハンガーを両方評価できるよう、長文時は冒頭+末尾を抽出
+    if len(content) > 3000:
+        excerpt = content[:1500] + "\n\n...（中略）...\n\n" + content[-1500:]
+    else:
+        excerpt = content
+
     prompt = f"""あなたは小説投稿サイト（カクヨム）上位作品および商業ラノベのヒット構造を評価する専門アナリストです。
 以下の第{ep_num}話本文を、商業ヒットルービック5項目に基づき客観的に採点してください。
 
 【本文】
-{content[:3000]}
+{excerpt}
 
 【評価ルービック（各0.0〜1.0点）】
 1. 冒頭フック密度（冒頭300字以内の興味惹起）

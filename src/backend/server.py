@@ -199,11 +199,8 @@ async def rate_limit_middleware(request: Request, call_next):
                 ) | {"detail": "リクエスト数が制限を超えました。"},
             )
     except (ConnectionError, TimeoutError, OSError, redis.exceptions.RedisError) as e:
-        logger.warning(f"Rate limiting error: {e}")
-        return JSONResponse(
-            status_code=503,
-            content={"error": "Service Unavailable", "detail": "レート制限サービスが利用できません"},
-        )
+        logger.warning(f"Rate limiting error (failing open): {e}")
+        return await call_next(request)
 
     return await call_next(request)
 

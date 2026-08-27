@@ -1,7 +1,7 @@
 import { AnalyticsTab } from '@/components/tabs/AnalyticsTab';
 import { StrategyTab } from '@/components/tabs/StrategyTab';
 
-export function PublishStep({ bookId: _bookId }: { bookId?: number } = {}) {
+export function PublishStep(_props: { bookId?: number } = {}) {
   return (
     <div>
       <p className="text-sm text-muted-foreground mb-2">

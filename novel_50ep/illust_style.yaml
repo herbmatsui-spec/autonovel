@@ -1,0 +1,9 @@
+# 4コマ漫画プロンプト用 画風・トーン設定 (illust_style.yaml)
+# world.yaml と同様に読み込み、作品ごとに一貫したビジュアルを保つ。
+
+style_hint: "セルルックアニメ風"
+color_tone: "淡い青白い光脈を基調に、温かみのあるアクセントカラーを差す"
+aspect_ratio: "vertical_strip"   # vertical_strip(縦4段) または 2x2 / 1:1
+font: "丸みのある可読な日本語フォント（吹き出し用）"
+line_art: "clean"                # clean / sketchy
+lighting: "柔和な背光と光の石からの発光"

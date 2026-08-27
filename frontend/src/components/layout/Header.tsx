@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { EasyModeDialog } from '@/components/dialogs/EasyModeDialog';
@@ -12,8 +12,8 @@ interface HeaderProps {
   onDeleteBook: (id: number) => void;
   apiKey: string;
   setApiKey: (key: string) => void;
-  modelType: string;
-  setModelType: (type: string) => void;
+  modelType: 'openai' | 'gemini';
+  setModelType: (type: 'openai' | 'gemini') => void;
   isExpertMode: boolean;
   setIsExpertMode: (bool: boolean) => void;
   isFirstRun: boolean;
@@ -35,16 +35,17 @@ export function Header({
   onCreateEasyMode,
 }: HeaderProps) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isEasyModeOpen, setIsEasyModeOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
 
   // Redirect to setup if first run and not already on setup
   useEffect(() => {
-    if (isFirstRun && window.location.pathname !== '/setup') {
+    if (isFirstRun && location.pathname !== '/setup') {
       navigate('/setup', { replace: true });
     }
-  }, [isFirstRun, navigate, window.location.pathname]);
+  }, [isFirstRun, navigate, location.pathname]);
 
   const handleSelectBook = (book: Book | null) => {
     onSelectBook(book);
@@ -127,8 +128,9 @@ export function Header({
 
         {/* API Key */}
         <div className="flex items-center space-x-2">
-          <label className="text-xs text-muted-foreground">API Key:</label>
+          <label htmlFor="header-api-key" className="text-xs text-muted-foreground">API Key:</label>
           <Input
+            id="header-api-key"
             type="password"
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
@@ -139,7 +141,7 @@ export function Header({
 
         {/* Model Type */}
         <div className="flex items-center space-x-2">
-          <label className="text-xs text-muted-foreground">Model:</label>
+          <span className="text-xs text-muted-foreground">Model:</span>
           <Button
             variant="ghost"
             onClick={() => setModelType(modelType === 'openai' ? 'gemini' : 'openai')}
@@ -150,7 +152,7 @@ export function Header({
 
         {/* Expert Mode */}
         <div className="flex items-center space-x-2">
-          <label className="text-xs text-muted-foreground">Expert:</label>
+          <span className="text-xs text-muted-foreground">Expert:</span>
           <Button
             variant="ghost"
             onClick={() => setIsExpertMode(!isExpertMode)}

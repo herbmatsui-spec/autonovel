@@ -105,11 +105,17 @@ class DatabaseConnectionWrapper:
 
     async def commit(self):
         # Offload synchronous commit to a thread to avoid blocking the event loop.
-        loop = asyncio.get_event_loop()
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = asyncio.get_event_loop()
         await loop.run_in_executor(None, self.dbapi_conn.commit)
 
     async def rollback(self):
-        loop = asyncio.get_event_loop()
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = asyncio.get_event_loop()
         await loop.run_in_executor(None, self.dbapi_conn.rollback)
 
     async def execute(self, sql, params=()):
@@ -166,11 +172,17 @@ class _AsyncResultProxy:
 
     async def fetchone(self):
         # SQLAlchemy 2.0 Result.fetchone() is synchronous; offload to thread.
-        loop = asyncio.get_event_loop()
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self.result.fetchone)
 
     async def fetchall(self):
-        loop = asyncio.get_event_loop()
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self.result.fetchall)
 
 
@@ -371,8 +383,8 @@ def init_db(db_path: str, force_create_all: bool = False):
         from config.settings import get_settings
         settings = get_settings()
         is_test_env = settings.environment.lower() in ("test", "testing")
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug(f"Could not check test environment via settings: {exc}")
     
     # Fallback to env vars
     if not is_test_env:

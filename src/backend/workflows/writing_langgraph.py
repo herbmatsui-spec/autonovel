@@ -41,31 +41,7 @@ RETRY_BACKOFF_FACTOR = 2.0  # 指数バックオフ係数
 QUALITY_THRESHOLD_EARLY_EXIT = 0.95  # 早期終了の品質閾値
 
 
-class WritingGraphState(Dict[str, Any]):
-    """LangGraph State for the Writing Actor-Critic Loop"""
-
-    ep_num: int
-    passion: float
-    is_easy_mode: bool
-    context: Any  # WritingContext
-    sys_inst: str
-    fw_prompt: str
-
-    # Internal state
-    ac_iter: int
-    max_ac_iter: int
-    gen_ctx: Any  # WritingGenerationContext
-    draft_content: str
-    final_meta: Dict[str, Any]
-
-    # Audit results
-    is_integrity_ok: bool
-    is_causal_ok: bool
-    causal_reason: str
-    failures: List[Dict[str, Any]]
-
-    # Status
-    status: str
+from src.backend.workflows.state import WritingGraphState
 
 
 class WritingGraphManager:

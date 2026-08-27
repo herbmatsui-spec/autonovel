@@ -28,7 +28,7 @@ export interface Plot {
   is_catharsis?: boolean;
   status?: string;
   next_hook?: string;
-  plot_variants?: any[];
+  plot_variants?: Array<Record<string, unknown>>;
 }
 
 export interface Chapter {

@@ -1,0 +1,52 @@
+以下は4コマ漫画生成用プロンプトです。画像生成AI（Gemini / Nano Banana 等）にそのまま入力して、1枚の4コマ漫画を生成してください。
+
+【作品情報】
+・タイトル: {title}
+・話数: 第{episode_num}話
+・レイアウト: {layout}（縦4段、または2×2）
+・画風: {style_hint}
+・色調: {color_tone}
+・比率: {aspect_ratio}
+・フォント: {font}
+
+【全体指示】
+1. 指定レイアウトで4つのコマからなる1枚の漫画画像を生成してください。
+2. 各コマの下（または吹き出し内）に、対応するセリフ／ナレーションを配置してください。
+3. キャラクターの外見・服装は、各コマの「キャラ参照」に従って一貫させてください。
+4. 挨拶、解説、前置き・後書きは一切禁止。画像とコマ別テキストのみ出力してください。
+
+=== PANEL 1 ===
+[シーン(scene)]: {panel1_scene}
+[登場キャラ]: {panel1_characters}
+[キャラ参照(外見統一用)]: {panel1_character_ref}
+[視点(camera_angle)]: {panel1_camera_angle}
+[感情(emotion)]: {panel1_emotion}
+[セリフ/ナレーション(dialogue)]: {panel1_dialogue}
+[構図補足(caption)]: {panel1_caption}
+
+=== PANEL 2 ===
+[シーン(scene)]: {panel2_scene}
+[登場キャラ]: {panel2_characters}
+[キャラ参照(外見統一用)]: {panel2_character_ref}
+[視点(camera_angle)]: {panel2_camera_angle}
+[感情(emotion)]: {panel2_emotion}
+[セリフ/ナレーション(dialogue)]: {panel2_dialogue}
+[構図補足(caption)]: {panel2_caption}
+
+=== PANEL 3 ===
+[シーン(scene)]: {panel3_scene}
+[登場キャラ]: {panel3_characters}
+[キャラ参照(外見統一用)]: {panel3_character_ref}
+[視点(camera_angle)]: {panel3_camera_angle}
+[感情(emotion)]: {panel3_emotion}
+[セリフ/ナレーション(dialogue)]: {panel3_dialogue}
+[構図補足(caption)]: {panel3_caption}
+
+=== PANEL 4 ===
+[シーン(scene)]: {panel4_scene}
+[登場キャラ]: {panel4_characters}
+[キャラ参照(外見統一用)]: {panel4_character_ref}
+[視点(camera_angle)]: {panel4_camera_angle}
+[感情(emotion)]: {panel4_emotion}
+[セリフ/ナレーション(dialogue)]: {panel4_dialogue}
+[構図補足(caption)]: {panel4_caption}

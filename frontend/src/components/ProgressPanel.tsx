@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useBookStore } from '@/store/useBookStore';
 import { useAppActions } from '@/hooks/useAppActions';
 import { getChapters, getPlots } from '@/api';
@@ -7,18 +7,11 @@ import { AgentDashboard } from './AgentDashboard';
 
 export function ProgressPanel() {
   const { selectedBook } = useBookStore();
-  const { handleStopTask } = useAppActions((_) => {});
+  const { handleStopTask } = useAppActions(() => {});
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [plots, setPlots] = useState<Plot[]>([]);
 
-  // Fetch data when selectedBook changes
-  useEffect(() => {
-    if (selectedBook?.id) {
-      fetchData();
-    }
-  }, [selectedBook?.id]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!selectedBook?.id) return;
     try {
       const [ch, pl] = await Promise.all([
@@ -30,16 +23,16 @@ export function ProgressPanel() {
     } catch (err) {
       console.error('Failed to load monitoring data:', err);
     }
-  };
+  }, [selectedBook?.id]);
 
-  // Set up interval to refresh every 30 seconds
+  // Fetch initial data and set up interval to refresh every 30 seconds
   useEffect(() => {
     if (selectedBook?.id) {
       fetchData();
       const interval = setInterval(fetchData, 30000);
       return () => clearInterval(interval);
     }
-  }, [selectedBook?.id]);
+  }, [selectedBook?.id, fetchData]);
 
   if (!selectedBook) {
     return (

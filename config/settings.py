@@ -155,6 +155,8 @@ class Settings(BaseSettings):
 
     # ==========================================
     # 実行制御フラグ
+    # 商業スコアリング機能のオプトインフラグ
+    enable_commercial_scoring: bool = Field(default=False, description="商業スコアリングを有効にするフラグ（デフォルトはオフ）")
     # ==========================================
     fail_fast_mode: bool = False
     enable_dogfeeding: bool = True

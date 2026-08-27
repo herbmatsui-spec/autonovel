@@ -13,7 +13,7 @@ import { useBookDetails } from '@/hooks/useBookDetails';
 export function AnalyticsTab() {
   const { selectedBook } = useBookStore();
   const { optHistory, pendingPatches, promptVersions, metricTrend } = useUIStore();
-  const { handleCritiqueOptimize, handleGenerateMarketing } = useAppActions((_) => {});
+  const { handleCritiqueOptimize, handleGenerateMarketing } = useAppActions(() => {});
   const { isExpertMode } = useUserSettingsStore();
   const { loadBookDetails } = useBookDetails(selectedBook?.id ?? null);
 

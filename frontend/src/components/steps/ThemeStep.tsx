@@ -1,6 +1,6 @@
 import { PlanningTab } from '@/components/tabs/PlanningTab';
 
-export function ThemeStep({ bookId: _bookId }: { bookId?: number } = {}) {
+export function ThemeStep(_props: { bookId?: number } = {}) {
   return (
     <div>
       <p className="text-sm text-muted-foreground mb-2">

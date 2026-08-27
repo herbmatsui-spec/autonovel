@@ -23,7 +23,7 @@ export interface PipelineProgressEvent {
   current_ep?: number;
 }
 
-export type SSEEventCallback = (eventType: string, data: any) => void;
+export type SSEEventCallback = (eventType: string, data: unknown) => void;
 
 class SSEClient {
   private eventSource: EventSource | null = null;
@@ -106,7 +106,7 @@ class SSEClient {
     };
   }
 
-  private notify(eventType: string, data: any): void {
+  private notify(eventType: string, data: unknown): void {
     this.listeners.forEach((listener) => {
       try {
         listener(eventType, data);

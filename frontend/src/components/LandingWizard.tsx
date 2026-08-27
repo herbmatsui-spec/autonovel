@@ -19,7 +19,7 @@ export default function LandingWizard() {
 
   const { apiKey } = useUserSettingsStore();
   const { setPendingEasyMode } = useWorkspaceStore();
-  const { handleCreateEasyMode } = useAppActions((_) => {});
+  const { handleCreateEasyMode } = useAppActions(() => {});
   const [options, setOptions] = useState<PlanningOptions | null>(null);
   const [selectedGenreKey, setSelectedGenreKey] = useState<string | null>(null);
   const [apiKeyLocal, setApiKeyLocal] = useState(apiKey);

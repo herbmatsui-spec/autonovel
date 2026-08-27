@@ -9,7 +9,7 @@ import { useAppActions } from '@/hooks/useAppActions';
 
 export function PlotsTab() {
   const { selectedBook, plots } = useBookStore();
-  const { handleExpandPlots } = useAppActions((_) => {});
+  const { handleExpandPlots } = useAppActions(() => {});
   const [selectedVariant, setSelectedVariant] = useState<number>(0);
 
   const plotsLoading = false;

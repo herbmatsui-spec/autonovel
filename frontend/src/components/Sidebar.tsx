@@ -98,8 +98,9 @@ export function Sidebar() {
           </div>
         </Button>
         <div className="space-y-1">
-          <label className="text-xs block mb-1">APIキー</label>
+          <label htmlFor="sidebar-api-key" className="text-xs block mb-1">APIキー</label>
           <Input
+            id="sidebar-api-key"
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
             placeholder="sk-..."
@@ -107,7 +108,7 @@ export function Sidebar() {
           />
         </div>
         <div className="space-y-1 mt-2">
-          <label className="text-xs block mb-1">モデルタイプ</label>
+          <span className="text-xs block mb-1">モデルタイプ</span>
           <Button
             variant="ghost"
             className="w-full text-left justify-start"

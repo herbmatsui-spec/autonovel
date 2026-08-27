@@ -24,15 +24,24 @@ class ErrorResponse(BaseModel):
     detail: Optional[str] = None
 
 
+def _to_dict(model: BaseModel) -> dict:
+    """Pydantic v1 / v2 両対応のシリアライズヘルパー"""
+    if hasattr(model, "model_dump"):
+        return model.model_dump()
+    return model.dict()
+
+
 async def hegemony_error_handler(request: Request, exc: HegemonyError) -> JSONResponse:
     logger.warning(f"Hegemony Error [{exc.error_code}]: {exc.message}")
     return JSONResponse(
         status_code=getattr(exc, "status_code", 500),
-        content=ErrorResponse(
-            error_code=getattr(exc, "error_code", "INTERNAL_ERROR"),
-            error_message=getattr(exc, "message", str(exc)),
-            detail=str(getattr(exc, "original", None)) if getattr(exc, "original", None) else None,
-        ).model_dump(),
+        content=_to_dict(
+            ErrorResponse(
+                error_code=getattr(exc, "error_code", "INTERNAL_ERROR"),
+                error_message=getattr(exc, "message", str(exc)),
+                detail=str(getattr(exc, "original", None)) if getattr(exc, "original", None) else None,
+            )
+        ),
     )
 
 
@@ -40,11 +49,13 @@ async def validation_error_handler(request: Request, exc: RequestValidationError
     logger.warning(f"Validation Error: {exc.errors()}")
     return JSONResponse(
         status_code=422,
-        content=ErrorResponse(
-            error_code="VALIDATION_ERROR",
-            error_message="リクエストのバリデーションに失敗しました",
-            detail=str(exc.errors()),
-        ).model_dump(),
+        content=_to_dict(
+            ErrorResponse(
+                error_code="VALIDATION_ERROR",
+                error_message="リクエストのバリデーションに失敗しました",
+                detail=str(exc.errors()),
+            )
+        ),
     )
 
 
@@ -52,9 +63,13 @@ async def generic_error_handler(request: Request, exc: Exception) -> JSONRespons
     logger.error(f"Unhandled error: {exc}", exc_info=True)
     return JSONResponse(
         status_code=500,
-        content=ErrorResponse(
-            error_code="INTERNAL_ERROR", error_message="内部エラーが発生しました", detail="内部エラーが発生しました。詳細はログを参照してください。"
-        ).model_dump(),
+        content=_to_dict(
+            ErrorResponse(
+                error_code="INTERNAL_ERROR",
+                error_message="内部エラーが発生しました",
+                detail="内部エラーが発生しました。詳細はログを参照してください。",
+            )
+        ),
     )
 
 

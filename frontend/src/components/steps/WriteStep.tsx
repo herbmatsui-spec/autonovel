@@ -1,6 +1,6 @@
 import { WriteTab } from '@/components/tabs/WriteTab';
 
-export function WriteStep({ bookId: _bookId }: { bookId?: number } = {}) {
+export function WriteStep(_props: { bookId?: number } = {}) {
   return (
     <div>
       <p className="text-sm text-muted-foreground mb-2">
