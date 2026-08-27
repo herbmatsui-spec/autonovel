@@ -5,7 +5,11 @@ tests/unit/test_plot_variants.py - プロット複数案生成と選抜単体テ
 import unittest
 from unittest.mock import AsyncMock, MagicMock
 
-from src.backend.workflows.nodes.plot_nodes import evaluate_plot_node, generate_initial_plot_node
+from src.backend.workflows.nodes.plot_nodes import (
+    evaluate_plot_node,
+    generate_initial_plot_node,
+    refine_plot_node,
+)
 from src.backend.workflows.state import PlotGraphState
 from src.core.llm.providers.base import LLMResponse
 
@@ -51,8 +55,8 @@ class TestPlotVariants(unittest.IsolatedAsyncioTestCase):
         state: PlotGraphState = {
             "parsed_plots": [{"ep_num": 1, "title": "案A"}],
             "plot_variants": [
-                [{"ep_num": 1, "title": "案A"}],
-                [{"ep_num": 1, "title": "案B(最高)"}],
+                [{"ep_num": 1, "title": "案A", "next_hook": "引きA"}],
+                [{"ep_num": 1, "title": "案B(最高)", "next_hook": "引きB"}],
             ],
             "genre": "SF",
         }
@@ -63,6 +67,37 @@ class TestPlotVariants(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(res["parsed_plots"][0]["title"], "案B(最高)")
         self.assertEqual(res["quality_score"], 0.92)
         self.assertTrue(res["is_approved"])
+        self.assertIn("alternative_ideas", res)
+        self.assertEqual(len(res["alternative_ideas"]), 1)
+        self.assertEqual(res["alternative_ideas"][0]["variant_num"], 1)
+
+    async def test_refine_plot_incorporates_alternative_ideas(self):
+        """他案のアイデアが refine_plot_node のプロンプトに統合されること"""
+        mock_llm = MagicMock()
+        mock_llm.generate_json = AsyncMock(
+            return_value=LLMResponse(
+                content='[{"ep_num": 1, "title": "案B(改良版)", "summary": "他案の引きを融合"}]',
+                success=True,
+            )
+        )
+
+        state: PlotGraphState = {
+            "parsed_plots": [{"ep_num": 1, "title": "案B(最高)"}],
+            "critique_feedback": "- テンポを改善してください。",
+            "alternative_ideas": [
+                {"variant_num": 1, "highlights": [{"ep": 1, "title": "案A", "hook": "強力な引きA"}]}
+            ],
+            "current_iteration": 1,
+        }
+
+        res = await refine_plot_node(state, llm_provider=mock_llm)
+
+        mock_llm.generate_json.assert_called_once()
+        call_prompt = mock_llm.generate_json.call_args[1]["prompt"]
+        self.assertIn("他の生成案のアイデア", call_prompt)
+        self.assertIn("強力な引きA", call_prompt)
+        self.assertEqual(res["status"], "refined")
+        self.assertEqual(res["parsed_plots"][0]["title"], "案B(改良版)")
 
 
 if __name__ == "__main__":

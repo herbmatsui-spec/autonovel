@@ -33,6 +33,7 @@ class PlotGraphState(BaseGraphState, total=False):
     max_iterations: int
     num_variants: int
     plot_variants: List[Any]
+    alternative_ideas: List[Dict[str, Any]]
     raw_plot_draft: str
     parsed_plots: List[Dict[str, Any]]
     critique_feedback: Optional[str]
