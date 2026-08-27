@@ -4,6 +4,7 @@ src/backend/workflows/nodes/review_nodes.py - 推敲・レビューグラフ（R
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from typing import Any, Dict
@@ -14,6 +15,10 @@ from src.backend.workflows.utils import calculate_quality_score, format_critique
 from src.core.llm.router import resolve_model
 
 logger = logging.getLogger(__name__)
+
+# [設計原則 P3] analyze_pacing_node と check_character_consistency_node は
+# いずれも同一の source_content のみを読み取り、相互に独立しているため
+# asyncio.gather による安全な並列実行が可能。
 
 
 async def analyze_pacing_node(state: ReviewGraphState, *, llm_provider: Any = None) -> Dict[str, Any]:
@@ -127,6 +132,20 @@ JSON形式:
             "character_consistency": {"character_score": 0.8, "is_character_ok": True, "inconsistencies": []},
             "status": "character_error",
         }
+
+
+async def run_review_parallel(state: ReviewGraphState, *, llm_provider: Any = None) -> Dict[str, Any]:
+    """
+    【Parallel Helper】
+    analyze_pacing_node と check_character_consistency_node を
+    asyncio.gather で並列実行して結果をマージする。
+    """
+    pacing_task = analyze_pacing_node(state, llm_provider=llm_provider)
+    char_task = check_character_consistency_node(state, llm_provider=llm_provider)
+    pacing_res, char_res = await asyncio.gather(pacing_task, char_task)
+    merged = dict(pacing_res)
+    merged.update(char_res)
+    return merged
 
 
 async def propose_edits_node(state: ReviewGraphState, *, llm_provider: Any = None) -> Dict[str, Any]:

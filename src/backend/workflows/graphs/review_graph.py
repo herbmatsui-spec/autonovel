@@ -21,6 +21,7 @@ from src.backend.workflows.nodes.review_nodes import (
     analyze_pacing_node,
     check_character_consistency_node,
     propose_edits_node,
+    run_review_parallel,
 )
 from src.backend.workflows.state import ReviewGraphState
 
@@ -63,19 +64,17 @@ def compile_review_graph(llm_provider: Any = None, checkpointer: Any = None) -> 
 
 
 class SequentialReviewGraphFallback:
-    """LangGraph 非導入環境用のフォールバックシーケンシャル実行クラス"""
+    """LangGraph 非導入環境用のフォールバック並列/シーケンシャル実行クラス"""
 
     def __init__(self, llm_provider: Any = None):
         self.llm_provider = llm_provider
 
     async def ainvoke(self, state: ReviewGraphState) -> ReviewGraphState:
-        """非同期でノードを実行して推敲監査パイプラインをエミュレート"""
+        """非同期で pacing/character を並列実行し、propose_edits を実行して推敲監査を完了"""
         current_state = dict(state)
-        pacing_res = await analyze_pacing_node(current_state, llm_provider=self.llm_provider)
-        current_state.update(pacing_res)
-
-        char_res = await check_character_consistency_node(current_state, llm_provider=self.llm_provider)
-        current_state.update(char_res)
+        # 話内並列実行 (pacing + character)
+        parallel_res = await run_review_parallel(current_state, llm_provider=self.llm_provider)
+        current_state.update(parallel_res)
 
         propose_res = await propose_edits_node(current_state, llm_provider=self.llm_provider)
         current_state.update(propose_res)

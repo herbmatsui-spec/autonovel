@@ -178,6 +178,10 @@ class TestThreeEpisodesReview(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result["overall_progress"], 1.0)
         self.assertEqual(len(result["writing_results"]), 3)
         self.assertEqual(len(result["review_results"]), 3)
+        self.assertIn("bible_state", result)
+        self.assertIn("ep_1", result["bible_state"])
+        self.assertIn("ep_2", result["bible_state"])
+        self.assertIn("ep_3", result["bible_state"])
 
         # --- 動き（フェーズの順序）の検証 ---
         labels = [(_phase_of(s["prompt"]), _ep_of(s["prompt"])) for s in provider.sequence]

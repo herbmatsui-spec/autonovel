@@ -94,6 +94,8 @@ async def call_writing_graph_node(
     writing_app = compile_writing_graph(llm_provider=llm_provider, writing_agent=writing_agent)
     writing_results: Dict[int, WritingGraphState] = dict(state.get("writing_results", {}))
 
+    bible_state: Dict[str, Any] = dict(state.get("bible_state", {}))
+
     for ep in range(start_ep, end_ep + 1):
         progress = 0.35 + (0.45 * ((ep - start_ep + 1) / max(1, (end_ep - start_ep + 1))))
         
@@ -123,8 +125,16 @@ async def call_writing_graph_node(
         res = await writing_app.ainvoke(writing_input)
         writing_results[ep] = res
 
+        # [設計原則 P3] 各話完了時に bible_state へ直列に状態を書き込み（連続性の維持）
+        bible_state[f"ep_{ep}"] = {
+            "ep_num": ep,
+            "char_count": len(res.get("draft_content", "")),
+            "status": res.get("status", "draft_generated"),
+        }
+
     return {
         "writing_results": writing_results,
+        "bible_state": bible_state,
         "current_phase": "writing_completed",
         "overall_progress": 0.80,
     }
@@ -141,6 +151,8 @@ async def call_review_graph_node(
     ReviewGraph サブグラフを実行し、生成された全エピソードの最終監査を行う。
     """
     writing_results = state.get("writing_results", {})
+    bible_state = state.get("bible_state", {})
+    logger.info(f"[MasterGraph] Starting Review Phase with bible_state containing {len(bible_state)} entries...")
     review_app = compile_review_graph(llm_provider=llm_provider)
     review_results: Dict[int, ReviewGraphState] = dict(state.get("review_results", {}))
 
@@ -165,6 +177,7 @@ async def call_review_graph_node(
             "branch_id": state.get("branch_id", 1),
             "ep_num": ep_num,
             "source_content": w_res.get("draft_content", ""),
+            "metadata": {"bible_state": bible_state},
         }
 
         res = await review_app.ainvoke(review_input)

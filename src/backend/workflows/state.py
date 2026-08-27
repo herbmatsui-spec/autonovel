@@ -98,6 +98,7 @@ class MasterGraphState(BaseGraphState, total=False):
     writing_results: Dict[int, WritingGraphState]
     review_results: Dict[int, ReviewGraphState]
     review_summary: Dict[str, Any]
+    bible_state: Dict[str, Any]
     
     overall_progress: float
     current_phase: str
