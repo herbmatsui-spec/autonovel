@@ -4,8 +4,11 @@ from src.backend.auth import require_api_key
 from src.backend.database.uow import UnitOfWork
 from src.backend.engine_helpers import get_engine as resolve_engine
 from src.backend.task_helpers import create_task as _create_task
+from src.backend.router_helpers import workflow_endpoint
+from src.backend.utils.id_generator import generate_prefixed_id as generate_task_id
 from src.core.container import AppContainer
 from src.core.exceptions import AppError
+from src.backend.response_helpers import api_success
 from src.core.observability import TraceContext
 from src.models.api_schemas import (
     AuditPlanRequest,
@@ -36,12 +39,9 @@ async def get_plots(book_id: int):
     ]
 
 
-def generate_task_id(prefix: str) -> str:
-    import uuid
-
-    return f"{prefix}_{uuid.uuid4().hex[:12]}"
 
 
+@workflow_endpoint("plot_plan_generation")
 @router.post("/plan_generation")
 async def plan_generation(req: PlanGenerationRequest, api_key: str = Depends(require_api_key)):
     from src.backend.tasks import execute_service_workflow
@@ -56,9 +56,10 @@ async def plan_generation(req: PlanGenerationRequest, api_key: str = Depends(req
         kwargs={"params": req.params},
         trace_id=TraceContext.get_trace_id(),
     )
-    return {"task_id": task_id}
+    return api_success({"task_id": task_id}, "企画生成を開始しました")
 
 
+@workflow_endpoint("plot_expand")
 @router.post("/expand")
 async def expand_plots(req: PlotExpandRequest, api_key: str = Depends(require_api_key)):
     from src.backend.tasks import execute_service_workflow
@@ -80,9 +81,10 @@ async def expand_plots(req: PlotExpandRequest, api_key: str = Depends(require_ap
         },
         trace_id=TraceContext.get_trace_id(),
     )
-    return {"task_id": task_id}
+    return api_success({"task_id": task_id}, "プロット展開を開始しました")
 
 
+@workflow_endpoint("plot_expand_candidates")
 @router.post("/expand_candidates")
 async def expand_plots_candidates(req: PlotExpandCandidatesRequest, api_key: str = Depends(require_api_key)):
     from src.backend.tasks import execute_service_workflow
@@ -104,9 +106,10 @@ async def expand_plots_candidates(req: PlotExpandCandidatesRequest, api_key: str
         },
         trace_id=TraceContext.get_trace_id(),
     )
-    return {"task_id": task_id}
+    return api_success({"task_id": task_id}, "プロット候補生成を開始しました")
 
 
+@workflow_endpoint("plot_rebuild")
 @router.post("/rebuild")
 async def rebuild_plots(req: PlotRebuildRequest, api_key: str = Depends(require_api_key)):
     import json
@@ -141,7 +144,7 @@ async def rebuild_plots(req: PlotRebuildRequest, api_key: str = Depends(require_
         kwargs={"params": req.params},
         trace_id=TraceContext.get_trace_id(),
     )
-    return {"task_id": task_id}
+    return api_success({"task_id": task_id}, "プロット再構築を開始しました")
 
 
 @router.post("/audit")
@@ -157,10 +160,13 @@ async def audit_plan(req: AuditPlanRequest, api_key: str = Depends(require_api_k
     )
     if not res:
         raise AppError("Audit failed")
-    return {
-        "refined_keywords": res.refined_keywords,
-        "refined_concept": res.refined_concept,
-        "refined_mc_suggestion": res.refined_mc_suggestion,
-        "recommended_tropes": res.recommended_tropes,
-        "candidates": [c.model_dump() for c in res.candidates],
-    }
+    return api_success(
+        {
+            "refined_keywords": res.refined_keywords,
+            "refined_concept": res.refined_concept,
+            "refined_mc_suggestion": res.refined_mc_suggestion,
+            "recommended_tropes": res.recommended_tropes,
+            "candidates": [c.model_dump() for c in res.candidates],
+        },
+        "企画監査を実行しました",
+    )

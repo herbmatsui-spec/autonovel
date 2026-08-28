@@ -22,22 +22,46 @@ except ImportError:
         return b""
 
     class _DummyMetric:
+        """Simple stand‑in for Prometheus metric objects used in tests.
+
+        It provides a ``labels`` method that returns ``self`` and a private ``_value``
+        attribute mimicking the internal Counter value. The ``_value`` attribute is
+        an object with a ``get`` method returning the current count.
+        """
+
+        class _Value:
+            def __init__(self):
+                self._count = 0
+
+            def inc(self, amount: float = 1) -> None:
+                self._count += amount
+
+            def dec(self, amount: float = 1) -> None:
+                self._count -= amount
+
+            def set(self, value: float) -> None:
+                self._count = value
+
+            def get(self) -> float:
+                return self._count
+
         def __init__(self, *args: Any, **kwargs: Any) -> None:
-            pass
+            self._value = self._Value()
 
         def labels(self, *args: Any, **kwargs: Any) -> "_DummyMetric":
             return self
 
         def inc(self, amount: float = 1) -> None:
-            pass
+            self._value.inc(amount)
 
         def dec(self, amount: float = 1) -> None:
-            pass
+            self._value.dec(amount)
 
         def set(self, value: float) -> None:
-            pass
+            self._value.set(value)
 
         def observe(self, amount: float) -> None:
+            # Observation is a no‑op for the dummy metric.
             pass
 
     Counter = Gauge = Histogram = _DummyMetric  # type: ignore

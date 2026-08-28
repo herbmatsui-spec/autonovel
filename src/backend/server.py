@@ -17,7 +17,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from config.constants import (
     LONG_RUNNING_TIMEOUT_SEC as _LONG_RUNNING_TIMEOUT_SEC,
-)
+    )
+from src.backend.constants import constants as const
 from config.constants import (
     RATE_LIMIT_MAX_REQUESTS as _RATE_LIMIT_MAX_REQUESTS,
 )
@@ -30,6 +31,7 @@ from src.backend.auth import require_api_key, get_api_key_service
 from src.backend.background import BackgroundReporter, ProgressState
 from src.backend.database import init_db
 from src.backend.error_handlers import register_error_handlers
+from src.backend.response_helpers import api_success
 from src.backend.observability.metrics import MetricsMiddleware
 from src.backend.rate_limit import RedisRateLimiter
 from src.core.container import AppContainer
@@ -59,7 +61,7 @@ def create_pipeline_config_from_request(req: EasyModeRequest) -> PipelineConfig:
     return PipelineConfig(
         genre=req.genre,
         target_episodes=req.target_eps,
-        max_rewrite_iterations=3,
+        max_rewrite_iterations=const.MAX_REWRITE_ITERATIONS,
         target_audit_score=95.0,
         enable_spice_guard=True,
     )
@@ -181,11 +183,11 @@ async def rate_limit_middleware(request: Request, call_next):
     try:
         # Lazy initialization (Redis not available at import time)
         if _redis_rate_limiter is None:
-            redis = RedisCacheService()
+            redis_service = RedisCacheService()
             _redis_rate_limiter = RedisRateLimiter(
-                redis=redis,
-                max_requests=_RATE_LIMIT_MAX_REQUESTS,
-                window_seconds=_RATE_LIMIT_WINDOW_SECONDS,
+                redis=redis_service,
+                max_requests=const.RATE_LIMIT_MAX_REQUESTS,
+                window_seconds=const.RATE_LIMIT_WINDOW_SECONDS,
             )
 
         allowed = await _redis_rate_limiter.is_allowed(client_identifier)
@@ -198,7 +200,7 @@ async def rate_limit_middleware(request: Request, call_next):
                     trace_id=trace_id
                 ) | {"detail": "リクエスト数が制限を超えました。"},
             )
-    except (ConnectionError, TimeoutError, OSError, redis.exceptions.RedisError) as e:
+    except Exception as e:
         logger.warning(f"Rate limiting error (failing open): {e}")
         return await call_next(request)
 
@@ -223,7 +225,7 @@ class TimeoutMiddleware(BaseHTTPMiddleware):
         timeout = (
             _LONG_RUNNING_TIMEOUT_SEC
             if any(request.url.path.startswith(p) for p in LONG_RUNNING_PATHS)
-            else _DEFAULT_TIMEOUT_SEC
+            else const.DEFAULT_TIMEOUT_SEC
         )
 
         try:
@@ -318,16 +320,7 @@ async def refine_erotic(req: RefineEroticRequest, api_key: str = Depends(require
         },
         trace_id=TraceContext.get_trace_id(),
     )
-    return {"task_id": task_id}
-
-
-@app.get("/api/tasks/{task_id}/status")
-async def get_task_status_endpoint(
-    task_id: str, api_key: str = Depends(require_api_key)
-):
-    from src.backend.task_helpers import get_task_status
-    status = await get_task_status(task_id)
-    return status
+    return api_success({"task_id": task_id}, "官能表現の洗練を開始しました")
 
 
 # Heavy operations enqueued via Huey
@@ -376,7 +369,7 @@ async def generate_easy(req: EasyModeRequest, api_key: str = Depends(require_api
         raise HTTPException(status_code=500, detail=f"タスクのエンqueueに失敗しました: {str(e)}")
 
     logger.info(f"Easy mode task enqueued: {task_id}")
-    return {"task_id": task_id}
+    return api_success({"task_id": task_id}, "かんたんモード生成を開始しました")
 
 
 @app.post("/api/critique/optimize")
@@ -394,4 +387,4 @@ async def critique_optimize(req: CritiqueOptimizeRequest, api_key: str = Depends
         kwargs={"book_id": req.book_id},
         trace_id=TraceContext.get_trace_id(),
     )
-    return {"task_id": task_id}
+    return api_success({"task_id": task_id}, "品質分析を開始しました")

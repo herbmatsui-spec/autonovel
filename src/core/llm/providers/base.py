@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union
 
 from pydantic import BaseModel
 
@@ -7,9 +7,9 @@ from pydantic import BaseModel
 class LLMResponse(BaseModel):
     """LLMからの共通レスポンス形式"""
 
-    content: str
+    content: Union[str, Dict[str, Any], Any]
     metadata: Dict[str, Any] = {}
-    usage: Dict[str, int] = {}
+    usage: Optional[Dict[str, int]] = None
     success: bool = True
     error: Optional[str] = None
 

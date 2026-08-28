@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from typing import Any, Callable, Dict, Optional, Tuple, Union, overload, cast
 
 from src.core.llm.providers import LLMProviderFactory, LLMResponse
@@ -96,6 +97,9 @@ class LLMGenerateResultProxy:
         if self.llm_factory is None:
             raise ValueError("llm_factory is not set")
 
+        if "purpose" in kwargs and purpose_or_request == "writing":
+            purpose_or_request = cast(Union[str, LLMRequestOptions], kwargs.pop("purpose"))
+
         if isinstance(purpose_or_request, LLMRequestOptions):
             req = purpose_or_request
             model = req.model_name
@@ -117,9 +121,13 @@ class LLMGenerateResultProxy:
             stream_callback=stream_callback,
         )
 
+        meta = response.metadata or {}
+        if isinstance(response.content, dict) and not meta:
+            meta = response.content
+
         return GenerateResult(
             success=response.success,
-            metadata=response.metadata,
+            metadata=meta,
             story_content=response.content,
             token_usage={
                 "prompt": self._usage_metric(response.usage, "prompt_tokens", 0),
@@ -164,6 +172,9 @@ class LLMGenerateResultProxy:
     ) -> GenerateResult:
         if self.llm_factory is None:
             raise ValueError("llm_factory is not set")
+
+        if "purpose" in kwargs and purpose_or_request == "writing":
+            purpose_or_request = cast(Union[str, LLMRequestOptions], kwargs.pop("purpose"))
 
         if isinstance(purpose_or_request, LLMRequestOptions):
             req = purpose_or_request

@@ -39,7 +39,7 @@ class MiscRepository(BaseRepository):
         )
         self.session.add(opt)
 
-    async def get_optimization_history(self, book_id: int) -> List[OptimizationHistoryDbModel]:
+    async def get_optimization_history(self, book_id: int) -> List[Dict[str, Any]]:
         result = await self.session.execute(
             select(OptimizationHistory)
             .where(OptimizationHistory.book_id == book_id)
@@ -64,7 +64,7 @@ class MiscRepository(BaseRepository):
 
     async def get_all_style_fragments(
         self, tag: Optional[str] = None
-    ) -> List[StyleFragmentDbModel]:
+    ) -> List[Dict[str, Any]]:
         stmt = select(StyleFragment)
         if tag:
             stmt = stmt.where(StyleFragment.tag == tag)
@@ -74,7 +74,7 @@ class MiscRepository(BaseRepository):
 
     async def search_style_fragments_by_tag(
         self, tag: str, limit: int = 5
-    ) -> List[StyleFragmentDbModel]:
+    ) -> List[Dict[str, Any]]:
         result = await self.session.execute(
             select(StyleFragment)
             .where(StyleFragment.tag == tag)
@@ -103,7 +103,7 @@ class MiscRepository(BaseRepository):
         style.analysis = analysis
         style.created_at = datetime.now()
 
-    async def get_all_custom_styles(self) -> List[CustomStyleDbModel]:
+    async def get_all_custom_styles(self) -> List[Dict[str, Any]]:
         result = await self.session.execute(select(CustomStyle).order_by(CustomStyle.score.desc()))
         rows = result.scalars().all()
         return [self._to_dict(r) for r in rows]
@@ -140,6 +140,22 @@ class MiscRepository(BaseRepository):
                 return row_val
         return None
 
+    # ---------- Narrative Hub State ----------
+    @retry_on_lock()
+    async def save_narrative(
+        self, book_id: int, branch_id: int, hub_dict: Dict[str, Any]
+    ) -> None:
+        """NarrativeState ハブを永続化する"""
+        key = f"narrative:{book_id}:{branch_id}"
+        await self.save_internal_state(key, hub_dict)
+
+    async def load_narrative(
+        self, book_id: int, branch_id: int
+    ) -> Optional[Dict[str, Any]]:
+        """永続化された NarrativeState ハブを復元する"""
+        key = f"narrative:{book_id}:{branch_id}"
+        return await self.get_internal_state(key)
+
     # ---------- Pending Patches (Human-in-the-Loop) ----------
     @retry_on_lock()
     async def save_pending_patch(
@@ -160,7 +176,7 @@ class MiscRepository(BaseRepository):
         await self.session.flush()
         return patch.id
 
-    async def get_pending_patches(self, book_id: int) -> List[PendingPatchDbModel]:
+    async def get_pending_patches(self, book_id: int) -> List[Dict[str, Any]]:
         """承認待ちパッチ一覧を取得"""
         result = await self.session.execute(
             select(PendingPatch)
@@ -180,7 +196,7 @@ class MiscRepository(BaseRepository):
             .values(status=status, reviewed_at=datetime.now())
         )
 
-    async def get_rejected_patches(self, book_id: int, limit: int = 5) -> List[PendingPatchDbModel]:
+    async def get_rejected_patches(self, book_id: int, limit: int = 5) -> List[Dict[str, Any]]:
         """却下されたパッチの履歴を取得"""
         result = await self.session.execute(
             select(PendingPatch)
@@ -226,7 +242,7 @@ class MiscRepository(BaseRepository):
         )
         # updated_at will be set automatically on update or manually here if needed
 
-    async def get_background_task(self, task_id: str) -> Optional[BackgroundTaskDbModel]:
+    async def get_background_task(self, task_id: str) -> Optional[Dict[str, Any]]:
         """バックグラウンドタスクの状態をDBから取得する"""
         result = await self.session.execute(
             select(BackgroundTask).where(BackgroundTask.id == task_id)
@@ -235,3 +251,33 @@ class MiscRepository(BaseRepository):
         if task:
             return self._parse_row(self._to_dict(task), ["logs", "result_data"])
         return None
+
+
+async def save_narrative(
+    book_id: int, branch_id: int, hub_dict: Dict[str, Any], session: Optional[Any] = None
+) -> None:
+    """NarrativeState ハブを永続化する関数"""
+    if session is not None:
+        repo = MiscRepository(session)
+        await repo.save_narrative(book_id, branch_id, hub_dict)
+    else:
+        from src.backend.database.uow import UnitOfWork
+        from src.core.container import AppContainer
+
+        async with UnitOfWork(AppContainer.db()) as uow:
+            await uow.misc.save_narrative(book_id, branch_id, hub_dict)
+
+
+async def load_narrative(
+    book_id: int, branch_id: int, session: Optional[Any] = None
+) -> Optional[Dict[str, Any]]:
+    """永続化された NarrativeState ハブを復元する関数"""
+    if session is not None:
+        repo = MiscRepository(session)
+        return await repo.load_narrative(book_id, branch_id)
+    else:
+        from src.backend.database.uow import UnitOfWork
+        from src.core.container import AppContainer
+
+        async with UnitOfWork(AppContainer.db()) as uow:
+            return await uow.misc.load_narrative(book_id, branch_id)

@@ -2,6 +2,8 @@ import json
 from typing import Any, Dict
 
 from config import MODEL_PLANNING
+from config.project_context import ProjectContext
+from src.backend.constants import constants as const
 from src.backend.sharp_edge_preserver import SemanticEdgePreserver, check_edges_preserved
 from src.models import GenerateResult
 
@@ -56,7 +58,7 @@ class CritiqueAgent:
             )
 
         # 分析対象を最大10エピソードに制限
-        target_chapters = chapters[:max_iterations]
+        target_chapters = chapters[:const.MAX_PROMPT_VERSIONS_SMALL]
 
         # 一括分析用のバッチコンテキストを構築
         batch_data = []
@@ -107,7 +109,7 @@ class CritiqueAgent:
         logger = logging.getLogger(__name__)
 
         attempt = 0
-        max_attempts = 3
+        max_attempts = const.DEFAULT_MAX_RETRIES
         current_prompt = batch_analysis_prompt
         error_feedback = ""
 

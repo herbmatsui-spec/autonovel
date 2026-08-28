@@ -27,6 +27,31 @@ export class ApiError extends Error {
 }
 
 /**
+ * 統一成功レスポンス（api_success）のエンベロープを検出する。
+ * 成功時は { success: true, message, data, timestamp } の形状。
+ */
+function isApiEnvelope(value: unknown): value is { success: boolean; data?: unknown } {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'success' in value &&
+    typeof (value as Record<string, unknown>).success === 'boolean' &&
+    'data' in value
+  );
+}
+
+/**
+ * エンベロープなら実データ（data）を取り出し、それ以外はそのまま返す。
+ * これによりバックエンドの統一フォーマット変更を呼び出し側で吸収できる。
+ */
+function unwrapEnvelope<T>(body: unknown): T {
+  if (isApiEnvelope(body)) {
+    return (body.data ?? {}) as T;
+  }
+  return body as T;
+}
+
+/**
  * 汎用 API リクエスト関数
  */
 export async function request<T>(
@@ -104,7 +129,8 @@ export async function request<T>(
     return {} as T;
   }
 
-  return response.json();
+  const body = await response.json();
+  return unwrapEnvelope<T>(body);
 }
 
 /**

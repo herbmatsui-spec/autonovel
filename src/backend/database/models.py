@@ -68,6 +68,7 @@ class Branch(Base):
     name = Column(String(100), nullable=False)
     parent_id = Column(Integer, nullable=True)
     fork_ep_num = Column(Integer, default=0)
+    divergence_reason = Column(Text, default="")
     created_at = Column(DateTime, server_default=func.now())
 
 

@@ -5,6 +5,8 @@
 ・舞台シンボル: {symbol}
 ・舞台設定: {world_setting}
 ・主人公: {protagonist_name}
+・視点指定: {viewpoint_token}
+・文体制約: {style_constraint}
 ・第{episode_num}話 コンテキスト: {context}
 
 【執筆指示】

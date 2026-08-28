@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime, timezone
-from typing import Dict, Optional
+from typing import Any, Dict, List, Optional
 import asyncio
 
 from fastapi import APIRouter
@@ -8,6 +8,8 @@ from pydantic import BaseModel, Field
 
 from src.core.container import AppContainer
 from config.settings import get_settings
+from src.backend.router_helpers import workflow_endpoint
+from src.backend.response_helpers import api_success
 from src.backend.health.checks import (
     check_database,
     check_redis,
@@ -48,6 +50,7 @@ def determine_overall_status(checks: Dict[str, HealthCheckResult]) -> HealthStat
     return HealthStatus.OK
 
 
+@workflow_endpoint("health_check")
 @router.get("/health", response_model=HealthResponse)
 @router.get("/api/health", response_model=HealthResponse)
 async def health_check():
@@ -107,11 +110,11 @@ class ContinuityCheckResponse(BaseModel):
     report: str = ""
 
 
-@router.post("/api/continuity/check", response_model=ContinuityCheckResponse)
+@router.post("/api/continuity/check")
 async def check_continuity_endpoint(req: ContinuityCheckRequest):
     """シーン連続性チェック用 API (ステップ 68)"""
     if not req.enabled:
-        return ContinuityCheckResponse(valid=True, violations=[], report="")
+        return api_success(ContinuityCheckResponse(valid=True, violations=[], report=""), "連続性チェックを実行しました")
 
     try:
         import os
@@ -127,15 +130,21 @@ async def check_continuity_endpoint(req: ContinuityCheckRequest):
             tracker.feed(prev_s)
         cur_s = SceneBase.from_dict(req.scene)
         violations = tracker.feed(cur_s)
-        return ContinuityCheckResponse(
-            valid=len(violations) == 0,
-            violations=violations,
-            report=tracker.report(),
+        return api_success(
+            ContinuityCheckResponse(
+                valid=len(violations) == 0,
+                violations=violations,
+                report=tracker.report(),
+            ),
+            "連続性チェックを実行しました",
         )
     except Exception as e:
         logger.warning(f"Continuity check error: {e}")
-        return ContinuityCheckResponse(
-            valid=False,
-            violations=[{"field": "system", "msg": str(e)}],
-            report=str(e),
+        return api_success(
+            ContinuityCheckResponse(
+                valid=False,
+                violations=[{"field": "system", "msg": str(e)}],
+                report=str(e),
+            ),
+            "連続性チェックを実行しました",
         )

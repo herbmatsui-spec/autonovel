@@ -30,15 +30,16 @@ except ImportError:
 from src.core.exceptions import PipelineError
 
 logger = logging.getLogger(__name__)
+from src.backend.constants import constants as const
 
 # ============================================================================
 # Constants
 # ============================================================================
-MAX_PARALLEL_AUDITS = 3  # 並列監査の最大数
-DEFAULT_RETRY_DELAY = 1.0  # 初期リトライ遅延（秒）
-MAX_RETRY_DELAY = 30.0  # 最大リトライ遅延（秒）
-RETRY_BACKOFF_FACTOR = 2.0  # 指数バックオフ係数
-QUALITY_THRESHOLD_EARLY_EXIT = 0.95  # 早期終了の品質閾値
+# MAX_PARALLEL_AUDITS = 3  # Use const.MAX_PARALLEL_AUDITS
+# DEFAULT_RETRY_DELAY = 1.0  # Use const.DEFAULT_RETRY_DELAY_SEC
+# MAX_RETRY_DELAY = 30.0  # Use const.MAX_RETRY_DELAY_SEC
+# RETRY_BACKOFF_FACTOR = 2.0  # Use const.RETRY_BACKOFF_FACTOR
+# QUALITY_THRESHOLD_EARLY_EXIT = 0.95  # Use const.QUALITY_THRESHOLD_EARLY_EXIT
 
 
 from src.backend.workflows.state import WritingGraphState
@@ -65,7 +66,7 @@ class WritingGraphManager:
         # StreamingPlotScheduler 統合（依存関係管理用、None=未注入）
         self._scheduler: Optional[Any] = None
         self._gen_ctx_cache: Dict[str, Any] = {}
-        self._cache_ttl = 300  # キャッシュTTL（秒）
+        self._cache_ttl = const.DEFAULT_CACHE_TTL_SEC  # キャッシュTTL（秒）
 
     def _build_graph(self):
         if not HAS_LANGGRAPH or StateGraph is None:
@@ -123,7 +124,7 @@ class WritingGraphManager:
         """gen_ctxをキャッシュに保持"""
         self._gen_ctx_cache[cache_key] = {"gen_ctx": gen_ctx, "timestamp": time.time()}
         # キャッシュサイズ制限
-        if len(self._gen_ctx_cache) > 100:
+        if len(self._gen_ctx_cache) > const.MAX_EMBEDDING_CACHE_SIZE:
             oldest = min(self._gen_ctx_cache.items(), key=lambda x: x[1]["timestamp"])
             del self._gen_ctx_cache[oldest[0]]
 
@@ -166,8 +167,8 @@ class WritingGraphManager:
             ncs_score = 50  # デフォルト値
         else:
             # 初回計算またはキャッシュ miss の場合
-            retry_delay = DEFAULT_RETRY_DELAY
-            for attempt in range(3):
+            retry_delay = const.DEFAULT_RETRY_DELAY_SEC
+            for attempt in range(const.DEFAULT_MAX_RETRIES):
                 try:
                     (
                         gen_ctx,
@@ -187,12 +188,12 @@ class WritingGraphManager:
                     self._set_cached_gen_ctx(cache_key, gen_ctx)
                     break
                 except Exception as e:
-                    if attempt < 2:
+                    if attempt < const.DEFAULT_MAX_RETRIES - 1:
                         logger.warning(
                             f"node_prepare attempt {attempt + 1} failed: {e}, retrying in {retry_delay}s"
                         )
                         await asyncio.sleep(retry_delay)
-                        retry_delay = min(retry_delay * RETRY_BACKOFF_FACTOR, MAX_RETRY_DELAY)
+                        retry_delay = min(retry_delay * const.RETRY_BACKOFF_FACTOR, const.MAX_RETRY_DELAY_SEC)
                     else:
                         logger.error(f"node_prepare failed after 3 attempts: {e}")
                         raise
@@ -203,7 +204,7 @@ class WritingGraphManager:
         max_ac_iter = 1 if ncs_score < 40 else base_max_ac_iter
 
         # 早期終了判定: NCSスコアが極めて高い場合はdogfeedスキップ
-        if ncs_score >= 90:
+        if ncs_score >= const.INTEREST_THRESHOLD_EXCELLENT:
             should_dogfeed = False
             logger.info(f"High NCS score ({ncs_score}), skipping dogfeed for Ep.{state['ep_num']}")
 
@@ -222,9 +223,9 @@ class WritingGraphManager:
         blueprint = state["context"]["plot"].detailed_blueprint or ""
 
         # 指数関数的バックオフ付きリトライ
-        retry_delay = DEFAULT_RETRY_DELAY
+        retry_delay = const.DEFAULT_RETRY_DELAY_SEC
         last_error: Any = None
-        for attempt in range(3):
+        for attempt in range(const.DEFAULT_MAX_RETRIES):
             try:
                 content, meta = await self.manager._phase_drafting(
                     state["ep_num"],
@@ -249,9 +250,9 @@ class WritingGraphManager:
                 last_error = e
                 logger.warning(f"Drafting attempt {attempt + 1} failed: {e}")
 
-            if attempt < 2:
+            if attempt < const.DEFAULT_MAX_RETRIES - 1:
                 await asyncio.sleep(retry_delay + random.uniform(0, 0.5))  # ジェッター追加
-                retry_delay = min(retry_delay * RETRY_BACKOFF_FACTOR, MAX_RETRY_DELAY)
+                retry_delay = min(retry_delay * const.RETRY_BACKOFF_FACTOR, const.MAX_RETRY_DELAY_SEC)
 
         # 全リトライ失敗時
         logger.error(f"Drafting failed after 3 attempts for Ep.{state['ep_num']}: {last_error}")
@@ -286,9 +287,9 @@ class WritingGraphManager:
         )
 
         # 指数関数的バックオフ付きリトライ
-        retry_delay = DEFAULT_RETRY_DELAY
+        retry_delay = const.DEFAULT_RETRY_DELAY_SEC
         last_error = None
-        for attempt in range(3):
+        for attempt in range(const.DEFAULT_MAX_RETRIES):
             try:
                 (
                     is_integrity_ok,
@@ -309,7 +310,7 @@ class WritingGraphManager:
 
                 # 品質が極めて高い場合は早期終了フラグ
                 quality_skip = (
-                    rate >= QUALITY_THRESHOLD_EARLY_EXIT and is_integrity_ok and is_causal_ok
+                    rate >= const.QUALITY_THRESHOLD_EARLY_EXIT and is_integrity_ok and is_causal_ok
                 )
                 if quality_skip:
                     logger.info(
@@ -333,9 +334,9 @@ class WritingGraphManager:
             except Exception as e:
                 last_error = e
                 logger.warning(f"Audit attempt {attempt + 1} failed for Ep.{state['ep_num']}: {e}")
-                if attempt < 2:
+                if attempt < const.DEFAULT_MAX_RETRIES - 1:
                     await asyncio.sleep(retry_delay + random.uniform(0, 0.3))
-                    retry_delay = min(retry_delay * RETRY_BACKOFF_FACTOR, MAX_RETRY_DELAY)
+                    retry_delay = min(retry_delay * const.RETRY_BACKOFF_FACTOR, const.MAX_RETRY_DELAY_SEC)
 
         logger.error(f"Audit failed after 3 attempts for Ep.{state['ep_num']}: {last_error}")
         raise PipelineError(f"Audit failed after retries for episode {state['ep_num']}: {last_error}")
@@ -349,7 +350,7 @@ class WritingGraphManager:
         # 品質が極めて高い場合は早期終了
         if state.get("quality_skip") and state.get("is_integrity_ok") and state.get("is_causal_ok"):
             logger.info(
-                f"Early exit triggered for Ep.{state.get('ep_num')} due to high quality (rate >= {QUALITY_THRESHOLD_EARLY_EXIT})"
+                f"Early exit triggered for Ep.{state.get('ep_num')} due to high quality (rate >= {const.QUALITY_THRESHOLD_EARLY_EXIT})"
             )
             return "finish"
 
@@ -386,9 +387,9 @@ class WritingGraphManager:
         blueprint = state["context"]["plot"].detailed_blueprint
 
         # 指数関数的バックオフ付きリトライ
-        retry_delay = DEFAULT_RETRY_DELAY
+        retry_delay = const.DEFAULT_RETRY_DELAY_SEC
         last_error = None
-        for attempt in range(3):
+        for attempt in range(const.DEFAULT_MAX_RETRIES):
             try:
                 triggered = await self.manager._phase_critic(
                     state["ac_iter"],
@@ -404,9 +405,9 @@ class WritingGraphManager:
             except Exception as e:
                 last_error = e
                 logger.warning(f"Critic attempt {attempt + 1} failed for Ep.{state['ep_num']}: {e}")
-                if attempt < 2:
+                if attempt < const.DEFAULT_MAX_RETRIES - 1:
                     await asyncio.sleep(retry_delay + random.uniform(0, 0.2))
-                    retry_delay = min(retry_delay * RETRY_BACKOFF_FACTOR, MAX_RETRY_DELAY)
+                    retry_delay = min(retry_delay * const.RETRY_BACKOFF_FACTOR, const.MAX_RETRY_DELAY_SEC)
 
         logger.error(f"Critic failed after 3 attempts for Ep.{state['ep_num']}: {last_error}")
         return {"critic_triggered": False}
@@ -432,9 +433,9 @@ class WritingGraphManager:
         blueprint = state["context"]["plot"].detailed_blueprint
 
         # 指数関数的バックオフ付きリトライ
-        retry_delay = DEFAULT_RETRY_DELAY
+        retry_delay = const.DEFAULT_RETRY_DELAY_SEC
         last_error = None
-        for attempt in range(3):
+        for attempt in range(const.DEFAULT_MAX_RETRIES):
             try:
                 content, is_causal_ok, causal_reason = await self.manager._phase_healing(
                     state["ep_num"],
@@ -456,9 +457,9 @@ class WritingGraphManager:
                 logger.warning(
                     f"Healing attempt {attempt + 1} failed for Ep.{state['ep_num']}: {e}"
                 )
-                if attempt < 2:
+                if attempt < const.DEFAULT_MAX_RETRIES - 1:
                     await asyncio.sleep(retry_delay + random.uniform(0, 0.2))
-                    retry_delay = min(retry_delay * RETRY_BACKOFF_FACTOR, MAX_RETRY_DELAY)
+                    retry_delay = min(retry_delay * const.RETRY_BACKOFF_FACTOR, const.MAX_RETRY_DELAY_SEC)
 
         logger.error(f"Healing failed after 3 attempts for Ep.{state['ep_num']}: {last_error}")
         return {
@@ -479,9 +480,9 @@ class WritingGraphManager:
             return {"dogfeed_ok": True}
 
         # 指数関数的バックオフ付きリトライ
-        retry_delay = DEFAULT_RETRY_DELAY
+        retry_delay = const.DEFAULT_RETRY_DELAY_SEC
         last_error = None
-        for attempt in range(3):
+        for attempt in range(const.DEFAULT_MAX_RETRIES):
             try:
                 dogfeed_ok = await self.manager._run_dogfeeding_loop(
                     state["ep_num"],
@@ -501,9 +502,9 @@ class WritingGraphManager:
                 logger.warning(
                     f"Dogfeed attempt {attempt + 1} failed for Ep.{state['ep_num']}: {e}"
                 )
-                if attempt < 2:
+                if attempt < const.DEFAULT_MAX_RETRIES - 1:
                     await asyncio.sleep(retry_delay + random.uniform(0, 0.2))
-                    retry_delay = min(retry_delay * RETRY_BACKOFF_FACTOR, MAX_RETRY_DELAY)
+                    retry_delay = min(retry_delay * const.RETRY_BACKOFF_FACTOR, const.MAX_RETRY_DELAY_SEC)
 
         logger.error(f"Dogfeed failed after 3 attempts for Ep.{state['ep_num']}: {last_error}")
         return {"dogfeed_ok": False}

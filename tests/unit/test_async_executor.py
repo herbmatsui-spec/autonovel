@@ -365,14 +365,14 @@ class TestAsyncExecutorErrorHandling:
             raise asyncio.TimeoutError(f"Attempt {call_count}")
 
         with pytest.raises(AsyncExecutionError):
-            await executor.run(always_fails())
+            await executor.run(always_fails)
 
         assert len(executor.errors) == 3  # 3 retry attempts
 
     @pytest.mark.asyncio
     async def test_retryable_status_code(self):
         """Test that HTTP status codes are checked for retryability."""
-        config = AsyncExecutorConfig(max_retries=2, base_delay=0.01, jitter=False)
+        config = AsyncExecutorConfig(max_retries=3, base_delay=0.01, jitter=False)
         executor = AsyncExecutor(config)
 
         # Create a mock exception with status_code
@@ -388,7 +388,7 @@ class TestAsyncExecutorErrorHandling:
             raise MockHTTPError(503)  # Retryable status code
 
         with pytest.raises(AsyncExecutionError):
-            await executor.run(http_error_task())
+            await executor.run(http_error_task)
 
         assert call_count == 3  # Initial + 2 retries
 
@@ -410,7 +410,7 @@ class TestAsyncExecutorErrorHandling:
             raise MockHTTPError(404)  # Non-retryable
 
         with pytest.raises(AsyncExecutionError):
-            await executor.run(http_404_task())
+            await executor.run(http_404_task)
 
         assert call_count == 1  # Should not retry
 
@@ -441,7 +441,7 @@ class TestAsyncExecutorIntegration:
                 raise asyncio.TimeoutError("Transient failure")
             return "success"
 
-        result = await executor.run(unreliable_service())
+        result = await executor.run(unreliable_service)
         assert result == "success"
         assert call_count == 3
         assert executor.circuit_breaker.state == CircuitState.CLOSED

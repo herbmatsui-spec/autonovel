@@ -105,6 +105,52 @@ class TestWritingGraph(unittest.IsolatedAsyncioTestCase):
         self.assertGreaterEqual(result.get("event_density", 0.0), 0.5)
         self.assertEqual(result.get("ac_iter"), 2)
 
+    async def test_assigned_foreshadows_and_audit_resolution(self):
+        """必須回収伏線が渡された際にプロンプトへ組み込まれ、未回収時にリトライされることのテスト"""
+        mock_llm = MagicMock()
+        long_text = "伏線回収の検証用テキスト。主人公が光の石を掲げると、闇が払われた。" * 50
+
+        mock_llm.generate_text = AsyncMock(
+            side_effect=[
+                LLMResponse(content=long_text, success=True),  # 初回ドラフト
+                LLMResponse(content=long_text + "伏線を明確に回収しました。", success=True),  # 修正ドラフト
+            ]
+        )
+
+        mock_llm.generate_json = AsyncMock(
+            side_effect=[
+                # 初回: 伏線未回収判定
+                LLMResponse(
+                    content='{"is_integrity_ok": true, "is_causal_ok": true, "is_foreshadow_resolved": false, "event_density": 0.8, "score": 0.7, "failures": [{"category":"Foreshadow","description":"伏線回収不足"}]}',
+                    success=True,
+                ),
+                # 2回目: 伏線回収合格
+                LLMResponse(
+                    content='{"is_integrity_ok": true, "is_causal_ok": true, "is_foreshadow_resolved": true, "event_density": 0.9, "score": 0.95, "failures": []}',
+                    success=True,
+                ),
+            ]
+        )
+
+        app = compile_writing_graph(llm_provider=mock_llm)
+        initial_state: WritingGraphState = {
+            "ep_num": 1,
+            "passion": 0.8,
+            "max_ac_iter": 2,
+            "sys_inst": "テスト作家",
+            "fw_prompt": "第1話本文",
+            "assigned_foreshadows": [
+                {"ep": 1, "text": "胸元の光の石が突如として不吉な黒に染まる"}
+            ],
+        }
+
+        result = await app.ainvoke(initial_state)
+
+        self.assertEqual(mock_llm.generate_text.call_count, 2)
+        self.assertEqual(mock_llm.generate_json.call_count, 2)
+        self.assertTrue(result.get("is_foreshadow_resolved"))
+        self.assertTrue(result.get("is_causal_ok"))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -7,12 +7,16 @@ from fastapi import APIRouter, Depends, HTTPException
 from src.backend.auth import require_api_key
 from src.backend.database import UnitOfWork
 from src.backend.engine_helpers import get_engine
+from src.backend.response_helpers import api_success
 from src.core.container import AppContainer
 from config.styles import (
     STYLE_DEFINITIONS,
     FORBIDDEN_WORD_REPLACEMENTS,
     FORBIDDEN_SUMMARY_PATTERNS,
 )
+
+from src.backend.router_helpers import workflow_endpoint
+from src.backend.utils.id_generator import generate_prefixed_id as generate_task_id
 
 router = APIRouter(prefix="/api/styles", tags=["styles"])
 
@@ -38,6 +42,7 @@ async def get_custom_styles():
     ]
 
 
+@workflow_endpoint("style_custom_save")
 @router.post("/custom")
 async def save_custom_style(req: Dict[str, Any]):
     """分析結果や手動入力からカスタム文体を保存・更新する"""
@@ -55,7 +60,10 @@ async def save_custom_style(req: Dict[str, Any]):
         await uow.misc.save_custom_style(
             name=name, instruction=instruction, score=score, analysis=analysis
         )
-    return {"status": "ok", "message": f"カスタム文体「{name}」を保存しました。"}
+    return api_success(
+        {"status": "ok", "message": f"カスタム文体「{name}」を保存しました。"},
+        f"カスタム文体「{name}」を保存しました",
+    )
 
 
 @router.delete("/custom/{style_id}")
@@ -86,6 +94,7 @@ async def get_style_fragments(tag: Optional[str] = None):
     ]
 
 
+@workflow_endpoint("style_fragment_add")
 @router.post("/fragments")
 async def add_style_fragment(req: Dict[str, Any], api_key: str = Depends(require_api_key)):
     """文体サンプル断片をRAGに登録する（Embedding自動生成）"""
@@ -108,7 +117,10 @@ async def add_style_fragment(req: Dict[str, Any], api_key: str = Depends(require
                 tag=tag, content=content, embedding=[0.0] * 768, origin=origin
             )
 
-    return {"status": "ok", "message": "文体サンプル断片をRAGに登録しました。"}
+    return api_success(
+        {"status": "ok", "message": "文体サンプル断片をRAGに登録しました。"},
+        "文体サンプル断片をRAGに登録しました",
+    )
 
 
 @router.delete("/fragments/{fragment_id}")

@@ -14,6 +14,7 @@ from src.models.easy_mode_schemas import (
 from src.services.digest_service import DigestService
 from src.services.gacha_service import GachaService
 from src.services.promotion_service import PromotionService
+from src.backend.response_helpers import api_success
 
 logger = logging.getLogger(__name__)
 
@@ -24,13 +25,13 @@ digest_service = DigestService()
 promotion_service = PromotionService()
 
 
-@router.post("/gacha", response_model=GachaResponse)
+@router.post("/gacha")
 async def create_gacha_plans(
     request: GachaRequest, api_key: str = Depends(require_api_key)
 ):
     """3案ガチャ（王道・変化球・ダーク）を生成する"""
     try:
-        return await gacha_service.generate_plans(request)
+        return api_success(await gacha_service.generate_plans(request), "ガチャ企画を生成しました")
     except ValueError as ve:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -49,13 +50,13 @@ async def create_gacha_plans(
         )
 
 
-@router.post("/digest", response_model=DigestResponse)
+@router.post("/digest")
 async def create_digest(
     request: DigestRequest, api_key: str = Depends(require_api_key)
 ):
     """選択された企画のプロット・第1話・クライマックスダイジェストを生成する"""
     try:
-        return await digest_service.generate_digest(request)
+        return api_success(await digest_service.generate_digest(request), "ダイジェストを生成しました")
     except (ConnectionError, TimeoutError, OSError) as e:
         logger.error(f"Digest API Error: {e}")
         raise HTTPException(
@@ -64,13 +65,13 @@ async def create_digest(
         )
 
 
-@router.post("/promote", response_model=PromotionResponse)
+@router.post("/promote")
 async def promote_to_advanced(
     request: PromotionRequest, api_key: str = Depends(require_api_key)
 ):
     """かんたんモードで生成した作品を上級者モードへ引き継ぐ"""
     try:
-        return promotion_service.promote(request)
+        return api_success(promotion_service.promote(request), "上級者モードへ引き継ぎました")
     except KeyError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

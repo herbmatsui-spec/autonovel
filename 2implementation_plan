@@ -1,0 +1,141 @@
+# プロジェクト全体 コードレビュー指摘事項の修正実装計画 (Implementation Plan)
+
+## 1. 概要 (Overview)
+
+プロジェクト全体の精査およびコードレビュー（[`code_review_report.md`](file:///C:/Users/keide/.gemini/antigravity-ide/brain/dc588650-684b-4271-8c17-18cb376ad16c/code_review_report.md)）で発見された **5件のクリティカルバグ**、**74件の未定義変数/型名不整合（Ruff F821）**、および **テストスイートの整合性問題** を解消し、システム全体の堅牢性とテスト完全通過を実現します。
+
+---
+
+## 2. User Review Required (ユーザー確認事項)
+
+> [!IMPORTANT]
+> - **`src/core/async_executor.py` の例外処理修正**:
+>   タイムアウト時に無限ループに陥っていた `except (AsyncExecutionError, CircuitBreakerOpenException)` を `except CircuitBreakerOpenException` のみに絞り込み、タイムアウト時は `attempt` を加算して設定回数（`max_retries`）後に `AsyncExecutionError` を送出するよう正常化します。
+> - **`src/backend/server.py` のレートリミットミドルウェア**:
+>   ローカル変数 `redis` のシャドウイングを `redis_service` に修正し、万一のRedis例外発生時も `except Exception` で安全にフェイルオープン（リクエストを許可）させます。
+> - **`src/prototype/score_adapter.py` と `novel_50ep` の接続**:
+>   `novel_50ep/score_reviewer.py` の `EpisodeScore` dataclass に新設されたフィールド（`metaphor_score`, `style_score`, `style_details`）に対応するデフォルト値を渡すよう整合化します。
+
+---
+
+## 3. Open Questions (検討事項)
+
+- なし（すべての修正は既存の型定義・テスト契約・モジュール設計のバグ修正および整合化であり、破壊的な仕様変更は含みません）。
+
+---
+
+## 4. 変更提案 (Proposed Changes)
+
+### Phase 1: クリティカルバグの即時修正 (Critical Bug Fixes)
+
+#### [MODIFY] [async_executor.py](file:///e:/sda/src/core/async_executor.py)
+- `run` メソッドの `try-except` ブロックで、`AsyncExecutionError` を握りつぶさず `_is_retryable` のフローへ流すよう修正。
+
+#### [MODIFY] [server.py](file:///e:/sda/src/backend/server.py)
+- `rate_limit_middleware` の `redis` 変数名を `redis_service` に変更し、例外句を安全なフェイルオープンに修正。
+
+#### [MODIFY] [base.py (LLM Providers)](file:///e:/sda/src/core/llm/providers/base.py)
+- `LLMResponse` の `usage` フィールドを `Optional[Dict[str, int]] = None` または `Dict[str, int] = Field(default_factory=dict)` に変更し、`None` 受入時に Pydantic ValidationError を防ぐ。
+
+#### [MODIFY] [score_adapter.py](file:///e:/sda/src/prototype/score_adapter.py)
+- `EpisodeScore` インスタンス化時に `metaphor_score=0.8, style_score=0.8, style_details={}` を追加。
+
+#### [MODIFY] [test_llm_gateway.py](file:///e:/sda/tests/unit/test_llm_gateway.py)
+- `test_gemini_api_client_retry_exhaustion_raises_exception` の `failing_call` を同期関数に修正（`_run_once` が同期関数であるため）。
+
+---
+
+### Phase 2: 静的解析エラー（F821 未定義変数 74件）の一括修正
+
+#### [MODIFY] [misc.py (Repositories)](file:///e:/sda/src/backend/database/repositories/misc.py)
+- `OptimizationHistoryDbModel`, `StyleFragmentDbModel`, `CustomStyleDbModel`, `PendingPatchDbModel`, `BackgroundTaskDbModel` の型ヒントをインポート名（`OptimizationHistory` 等）または `Dict[str, Any]` に修正。
+
+#### [MODIFY] [rules.py (Repositories)](file:///e:/sda/src/backend/database/repositories/rules.py)
+- `RuleDbModel`, `MasterpieceDbModel` を `Rule`, `Masterpiece` または `Dict[str, Any]` に修正。
+
+#### [MODIFY] [audit.py (Repositories)](file:///e:/sda/src/backend/database/repositories/audit.py)
+- `AuditIssueDbModel` を `AuditIssue` または `Dict[str, Any]` に修正。
+
+#### [MODIFY] [bible.py (Repositories)](file:///e:/sda/src/backend/database/repositories/bible.py)
+- `from typing import List` を追加。
+
+#### [MODIFY] [repository.py](file:///e:/sda/src/backend/database/repository.py)
+- `from typing import Any` を追加。
+
+#### [MODIFY] [engine.py](file:///e:/sda/src/backend/engine.py)
+- `if TYPE_CHECKING:` に `from src.backend.engine_deps import EngineDeps` を追加。
+
+#### [MODIFY] [engine_critique.py](file:///e:/sda/src/backend/engine_critique.py)
+- `from config.project_context import ProjectContext` をインポート。
+
+#### [MODIFY] [engine_helpers.py](file:///e:/sda/src/backend/engine_helpers.py)
+- `from src.core.container import AppContainer` をインポート。
+
+#### [MODIFY] [engine_plot.py](file:///e:/sda/src/backend/engine_plot.py)
+- `from src.models import EntertainmentCheckResult` または `from src.agents.early_entertainment_checker import EntertainmentCheckResult` をインポート。
+
+#### [MODIFY] [health.py (Routers)](file:///e:/sda/src/backend/routers/health.py)
+- `from typing import Any, List` をインポート。
+
+#### [MODIFY] [tasks.py](file:///e:/sda/src/backend/tasks.py)
+- `from src.backend.state import ProgressState` (または `ProgressState` の定義) をインポート。
+
+#### [MODIFY] [full_auto_workflow.py](file:///e:/sda/src/backend/workflows/full_auto_workflow.py)
+- `from src.backend.constants import constants as const` をインポート。
+
+#### [MODIFY] [openai.py (LLM Clients)](file:///e:/sda/src/core/llm_clients/openai.py)
+- `import openai` を追加。
+
+#### [MODIFY] [prompt_repository.py (Interfaces)](file:///e:/sda/src/domain/interfaces/prompt_repository.py)
+- `from typing import Any` を追加。
+
+#### [MODIFY] [ebook_export.py](file:///e:/sda/src/easy_mode/phase3/ebook_export.py)
+- `reportlab` 関連シンボル (`SimpleDocTemplate`, `A4`, `mm`, `cm`, `getSampleStyleSheet`, `PageBreak`, `pdfmetrics`, `TTFont`, `ParagraphStyle`) および `ebooklib.epub` のオプショナルインポート・フォールバックを整理。
+
+#### [MODIFY] [hegemony.py (Kernels)](file:///e:/sda/src/kernels/hegemony.py)
+- `from .base import KernelBase, KernelState` をインポート。
+
+#### [MODIFY] [redis_cache.py](file:///e:/sda/src/services/redis_cache.py)
+- `from src.core.container import AppContainer` をインポート。
+
+#### [MODIFY] [curve.py (Erotic)](file:///e:/sda/src/agents/erotic/curve.py)
+- `from typing import TYPE_CHECKING` と `if TYPE_CHECKING: from src.agents.erotic.parameters import EroticParameters` を追加。
+
+---
+
+### Phase 3: テスト修正と検証
+
+#### [MODIFY] [test_config.py](file:///e:/sda/tests/unit/test_config.py)
+- `test_config_validator_load_settings` で `isinstance(get_config(), (AppConfig, Settings))` を許容するよう更新。
+
+#### [MODIFY] [test_api_integration.py](file:///e:/sda/tests/unit/test_api_integration.py)
+- API Envelopeレスポンス（`data["data"]["status"]` または `data.get("status") or data["data"]["status"]`）に対応するアサーションに更新。
+
+---
+
+## 5. 検証計画 (Verification Plan)
+
+### 自動テスト (Automated Tests)
+1. **Ruff F821 静的解析チェック**:
+   ```bash
+   C:\Python314\python.exe -m ruff check src/ --select F821
+   ```
+   → エラーが 0 件であることを確認。
+
+2. **修正対象の単体テスト実行**:
+   ```bash
+   C:\Python314\python.exe -m pytest tests/unit/test_async_executor.py tests/unit/test_llm_gateway.py tests/unit/test_prototype* tests/unit/test_config.py tests/unit/test_api_integration.py -v
+   ```
+   → すべて PASSED になることを確認（タイムアウト・ハング・例外なし）。
+
+3. **ドメインイベントバス・プロトタイプテスト実行**:
+   ```bash
+   C:\Python314\python.exe -m pytest tests/unit/test_domain_event_bus.py tests/unit/test_subscribers.py tests/unit/test_aggregator.py tests/unit/test_prototype_llm.py tests/unit/test_prototype_score.py tests/unit/test_prototype_foreshadow.py tests/unit/test_prototype_polish.py -v
+   ```
+   → すべて PASSED になることを確認。
+
+4. **全体 Ruff & スキーマチェック**:
+   ```bash
+   C:\Python314\python.exe -m ruff check src/
+   C:\Python314\python.exe scripts/check_schema_drift.py
+   ```

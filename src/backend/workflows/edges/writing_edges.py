@@ -12,9 +12,9 @@ from src.backend.workflows.state import WritingGraphState
 logger = logging.getLogger(__name__)
 
 
-def check_audit_results(state: WritingGraphState) -> Literal["generate_draft", "__end__"]:
+def check_audit_results(state: WritingGraphState) -> Literal["generate_draft", "auto_illustration", "__end__"]:
     """
-    自己監査結果と反復回数に基づき、再ドラフト生成に進むか、完了とするかを判定する。
+    自己監査結果と反復回数に基づき、再ドラフト生成に進むか、イラスト生成または完了とするかを判定する。
     """
     integrity_ok = state.get("is_integrity_ok", True)
     causal_ok = state.get("is_causal_ok", True)
@@ -28,12 +28,17 @@ def check_audit_results(state: WritingGraphState) -> Literal["generate_draft", "
         f"[WritingEdge] Check audit: integrity={integrity_ok}, causal={causal_ok}, density={density:.2f}, score={score:.2f}, iter={ac_iter}/{max_ac_iter}"
     )
 
-    # 監査合格、または最大反復回数到達で終了
+    # 監査合格、または最大反復回数到達で終了・イラスト分岐
     if (integrity_ok and causal_ok and density_ok and score >= 0.75) or ac_iter >= max_ac_iter:
         if ac_iter >= max_ac_iter and not (integrity_ok and causal_ok and density_ok):
-            logger.warning(f"[WritingEdge] Max iterations reached ({ac_iter}). Proceeding to END with current draft.")
+            logger.warning(f"[WritingEdge] Max iterations reached ({ac_iter}). Proceeding with current draft.")
         else:
-            logger.info("[WritingEdge] Audit passed successfully. Moving to END.")
+            logger.info("[WritingEdge] Audit passed successfully.")
+
+        if state.get("detected_peaks"):
+            logger.info(f"[WritingEdge] Detected {len(state.get('detected_peaks', []))} peaks. Routing to 'auto_illustration'.")
+            return "auto_illustration"
+
         return "__end__"
 
     logger.info("[WritingEdge] Audit failed. Looping back to 'generate_draft' with feedback.")

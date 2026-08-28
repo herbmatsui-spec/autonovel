@@ -3,11 +3,18 @@ config/project_context.py — 後方互換シャム (非推奨)
 
 このモジュールは非推奨です。新しいコードでは config.settings を直接使用してください。
 """
-
 import warnings
 from typing import Any
 
-from config.settings import Settings, get_settings, reset_settings
+# 後方互換のためのエイリアス
+from .settings import (
+    Settings,
+    get_settings,
+    reset_settings,
+    GlobalConfigModel,
+    GlobalConfig,
+    PROMPT_TEMPLATES,
+)
 
 # 非推奨警告
 warnings.warn(
@@ -16,16 +23,12 @@ warnings.warn(
     stacklevel=2,
 )
 
-# 後方互換用のエイリアス
+# エイリアス設定
 Settings = Settings
 get_settings = get_settings
 reset_settings = reset_settings
-
 GlobalConfigModel = Settings
 GlobalConfig = Settings
-
-PROMPT_TEMPLATES = {}
-
 
 def get_config() -> Settings:
     """非推奨: get_settings() を使用してください。"""
@@ -36,19 +39,16 @@ def get_config() -> Settings:
     )
     return get_settings()
 
-
 def set_config(config) -> None:
     """非推奨: 設定の変更は環境変数または .env ファイルで行ってください。"""
     warnings.warn(
-        "config.project_context.set_config() は非推奨です。設定の変更は環境変数または .env ファイルで行ってください。",
+        "config.project_context.set_config() は非推奨です。設定の変更は環境変数または .env フaイルで行ってください。",
         DeprecationWarning,
         stacklevel=2,
     )
 
-
 class ProjectContext:
     """非推奨: config.settings.get_settings() を直接使用してください。"""
-
     def __init__(self):
         warnings.warn(
             "ProjectContext は非推奨です。config.settings.get_settings() を直接使用してください。",
@@ -91,10 +91,8 @@ class ProjectContext:
         )
         return get_settings().validate_consistency()
 
-
 class GlobalConfig:
     """非推奨: config.settings.get_settings() を直接使用してください。"""
-
     def __init__(self):
         warnings.warn(
             "GlobalConfig は非推奨です。",

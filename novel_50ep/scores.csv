@@ -1,4 +1,4 @@
-ep,pacing,emotion,world,cliff,total_score,evaluation
-1,0.986,1.0,1.0,0.3,0.821,A (良好)
-2,0.986,1.0,1.0,0.3,0.821,A (良好)
-3,0.989,1.0,1.0,1.0,0.997,S (優良)
+ep,pacing,emotion,world,cliff,metaphor,style,total_score,evaluation
+1,1.0,1.0,1.0,1.0,0.7,1.0,0.97,S (優良)
+2,1.0,1.0,1.0,1.0,0.7,0.9,0.952,S (優良)
+3,1.0,1.0,1.0,1.0,0.55,0.7,0.901,S (優良)

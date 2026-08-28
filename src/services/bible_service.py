@@ -1,7 +1,7 @@
 import asyncio
 import json
 import logging
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from config import MODEL_PLANNING, MODEL_PLOT_EXPANSION
 from config.domain_profile_manager import DomainProfileService
@@ -10,6 +10,8 @@ from src.backend.engine_utils import safe_get, safe_model_validate
 from src.models import (
     ArcBlueprint,
     ArcList,
+    BibleContext,
+    CharacterContext,
     CharacterRegistry,
     GlobalLogicRepairResult,
     RoadmapList,
@@ -17,6 +19,7 @@ from src.models import (
     UltraFastWorldBible,
     WorldBible,
     WorldBibleCore,
+    WorldContext,
     WorldRules,
 )
 from src.models.planning_config import PlanningConfig
@@ -618,3 +621,98 @@ class WorldBibleGenerator:
                 for i in range(1, target_eps + 1)
             ]
         return roadmap
+
+
+class BibleService:
+    """統合バイブル・コンテキストバス。
+    WorldBible や CharacterRegistry から各エージェントが必要とするコンテキストを抽出し配布する。
+    """
+
+    def __init__(self, repo=None):
+        self.repo = repo
+        self._cache: Dict[int, BibleContext] = {}
+
+    def extract_character_context(self, char: CharacterRegistry) -> CharacterContext:
+        """CharacterRegistry から CharacterContext を抽出・生成"""
+        visual_tags = list(char.keywords) if char.keywords else []
+        if char.appearance:
+            tags = [t.strip() for t in char.appearance.replace("、", ",").split(",") if t.strip()]
+            for t in tags:
+                if t not in visual_tags:
+                    visual_tags.append(t)
+
+        return CharacterContext(
+            name=char.name,
+            role=char.role,
+            gender=char.gender,
+            age=char.age,
+            appearance=char.appearance,
+            visual_tags=visual_tags,
+            personality=char.personality,
+            surface_persona=char.surface_persona,
+            inner_conflict=char.inner_conflict,
+            iron_constraint=char.iron_constraint,
+            tone=char.tone,
+            first_person=char.first_person,
+            second_person=char.second_person,
+            suffix_style=char.suffix_style,
+            social_mask_vs_truth=char.social_mask_vs_truth,
+            known_facts=list(char.known_facts),
+            unknown_facts=list(char.unknown_facts),
+            secrets=[char.social_mask_vs_truth] if char.social_mask_vs_truth else [],
+        )
+
+    def extract_world_context(self, bible: WorldBible) -> WorldContext:
+        """WorldBible から WorldContext を抽出・生成"""
+        rules = []
+        if bible.world_settings and getattr(bible.world_settings, "rules", None):
+            rules = [str(r) for r in bible.world_settings.rules]
+        return WorldContext(
+            title=bible.title or "",
+            genre=bible.genre or "",
+            concept=bible.concept or "",
+            rules=rules,
+            terminology=getattr(bible.world_settings, "terminology", {}) or {},
+            atmosphere=bible.story_direction or "",
+        )
+
+    def export_full_context(self, bible: WorldBible, book_id: Optional[int] = None) -> BibleContext:
+        """WorldBible から完全な BibleContext を構築"""
+        mc_ctx = self.extract_character_context(bible.mc_profile) if bible.mc_profile else None
+        char_dict: Dict[str, CharacterContext] = {}
+        if mc_ctx and mc_ctx.name:
+            char_dict[mc_ctx.name] = mc_ctx
+        if bible.sub_characters:
+            for sub in bible.sub_characters:
+                sub_ctx = self.extract_character_context(sub)
+                if sub_ctx.name:
+                    char_dict[sub_ctx.name] = sub_ctx
+
+        world_ctx = self.extract_world_context(bible)
+        context = BibleContext(
+            book_id=book_id,
+            title=bible.title or "",
+            genre=bible.genre or "",
+            concept=bible.concept or "",
+            mc=mc_ctx,
+            characters=char_dict,
+            world=world_ctx,
+        )
+        if book_id is not None:
+            self._cache[book_id] = context
+        return context
+
+    async def get_context_by_book_id(self, book_id: int) -> Optional[BibleContext]:
+        """book_id をキーにして DB から WorldBible を取得し BibleContext を返す"""
+        if book_id in self._cache:
+            return self._cache[book_id]
+        if self.repo and hasattr(self.repo, "get_world_bible"):
+            bible = await self.repo.get_world_bible(book_id)
+            if bible:
+                return self.export_full_context(bible, book_id=book_id)
+        return None
+
+
+# Alias for compatibility
+BibleContextBus = BibleService
+

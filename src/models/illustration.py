@@ -6,6 +6,7 @@ from typing import Dict, Optional
 class IllustrationType(Enum):
     COVER = "cover"  # 表紙
     EPISODE = "episode"  # 話数ごとの挿絵（シーン抽出）
+    SCENE = "episode"  # シーン挿絵
     CHARACTER = "character"  # キャラクター立ち絵
 
 

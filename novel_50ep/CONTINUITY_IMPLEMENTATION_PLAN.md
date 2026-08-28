@@ -470,10 +470,10 @@ def feed(self, scene):
 - 受入基準：`pytest` が通る。
 
 ### ステップ 60
-- 対象ファイル：`novel_50ep/generator.py`
-- 目的：生成時に `foreshadow_manager.get_expects()` を tracker に渡す。
-- 作業内容：generator のメインループで `tracker = ContinuityTracker(rules_dir, expects=fsm.get_expects())` を生成するよう 1 行追加。
-- 受入基準：generator 実行時に伏線ルールが有効。
+- 対象ファイル：`novel_50ep/generator.py`（および `src/prototype/`）
+- 目的：生成時に `foreshadow_manager.get_expects()` を tracker に渡し、`src/prototype` 経由で本番 LLM/スコアラ/DB に食い込む。
+- 作業内容：generator のメインループで `tracker = ContinuityTracker(rules_dir, expects=fsm.get_expects())` を生成。`GatewayLLMGenerator` / `PersistentForeshadowManager` 連携に対応。詳細は [plans/prototype_adapter_and_event_bus_plan.md](plans/prototype_adapter_and_event_bus_plan.md) を参照。
+- 受入基準：generator 実行時に伏線ルールと prototype アダプタが有効。
 
 ---
 
@@ -521,21 +521,21 @@ def feed(self, scene):
 
 ### ステップ 67
 - 対象ファイル：`frontend/src/components/dialogs/SettingsModal.tsx`
-- 目的：UI に Continuity Monitor スイッチを追加。
-- 作業内容：既存のトグルコンポーネントを 1 つコピーし、`label="Continuity Monitor"` のチェックボックスを追加し、状態を `useState` で保持。
+- 目的：UI に Continuity Monitor スイッチを追加（本番は `NarrativeState` ハブと連携）。
+- 作業内容：既存のトグルコンポーネントを 1 つコピーし、`label="Continuity Monitor"` のチェックボックスを追加し、状態を `useState` で保持。詳細は [plans/narrative_state_hub_plan.md](plans/narrative_state_hub_plan.md) を参照。
 - 受入基準：画面にスイッチが表示される。
 
 ### ステップ 68
-- 対象ファイル：`src/backend/routers/health.py`（または該当 API）
-- 目的：UI スイッチとバックエンドを繋ぐ。
-- 作業内容：フラグを受け取る POST エンドポイント `/api/continuity/check` を追加し、リクエスト本文のシーン JSON を `SceneBase.from_dict` で復元して `tracker.feed` し結果を返す。
-- 受入基準：curl でエンドポイントが動く。
+- 対象ファイル：`src/backend/routers/narrative.py`（および `src/backend/routers/health.py`）
+- 目的：UI スイッチとバックエンドを繋ぎ、ナラティブ状態を可視化。
+- 作業内容：本番は `NarrativeState` 共通ハブを提供する `/api/narrative/{book_id}/{branch_id}`（および `/api/continuity/check`）を利用し、リクエスト本文のシーン JSON やハブ状態を `feed_continuity` 経由で取得・更新する。
+- 受入基準：curl/pytest でエンドポイントが動く。
 
 ### ステップ 69
 - 対象ファイル：`novel_50ep/batch_runner.py`
-- 目的：バッチに tracker を組み込む。
-- 作業内容：バッチループ内で各シーン生成後に `violations = tracker.feed(scene)` を呼び、違反を `batch_report.txt` に追記。
-- 受入基準：バッチ実行でレポートが出力される。
+- 目的：バッチに tracker を組み込み、`src/prototype` 経由で本番 DB に食い込む。
+- 作業内容：バッチループ内で各シーン生成後に `violations = tracker.feed(scene)` を呼び、違反を `batch_report.txt` に追記。`--fix-continuity` 実行時は `PersistentForeshadowManager` 経由で伏線データを本番 DB に保存。
+- 受入基準：バッチ実行でレポートが出力され、DB 永続化が動作する。
 
 ### ステップ 70
 - 対象ファイル：`novel_50ep/batch_runner.py`

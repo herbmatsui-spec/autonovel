@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     from src.backend.database.core import DatabaseManager
     from src.backend.engine_context import ContextManager
     from src.backend.engine_critique import CritiqueAgent
+    from src.backend.engine_deps import EngineDeps
     from src.backend.engine_narrative import NarrativeController
     from src.backend.engine_style_rag import StyleRagManager
     from src.backend.engine_utils import AdaptiveCooldown

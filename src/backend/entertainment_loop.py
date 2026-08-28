@@ -11,20 +11,21 @@ import logging
 from typing import Any, Optional
 
 from src.models.entertainment_check import EntertainmentCheckResult
+from src.backend.constants import constants as const
 
 logger = logging.getLogger(__name__)
 
 
-DEFAULT_ENTERTAINMENT_THRESHOLD = 60
-DEFAULT_MAX_RETRIES = 2
+# DEFAULT_ENTERTAINMENT_THRESHOLD = 60  # Use const.INTEREST_THRESHOLD_LOW
+# DEFAULT_MAX_RETRIES = 2  # Use const.DEFAULT_MAX_RETRIES
 
 
 async def run_entertainment_first_loop(
     checker: Any,
     rough_plot: str,
     opening_chars: str,
-    threshold: int = DEFAULT_ENTERTAINMENT_THRESHOLD,
-    max_retries: int = DEFAULT_MAX_RETRIES,
+    threshold: int = const.INTEREST_THRESHOLD_LOW,
+    max_retries: int = const.DEFAULT_MAX_RETRIES,
     regenerate_callback: Optional[Any] = None,
     repo: Optional[Any] = None,
     book_id: Optional[int] = None,

@@ -13,10 +13,12 @@ WHAT_IF_SYSTEM_PROMPT = """あなたは覇権WEB小説のIFストーリー（運
 """
 
 
-def build_what_if_prompt(choice_point: str, context: str = "") -> str:
+def build_what_if_prompt(choice_point: str, context: str = "", character_context: str = "") -> str:
+    char_info = f"\n【キャラクター設定・鉄則（厳守）】:\n{character_context}\n" if character_context else ""
     return (
         f"{WHAT_IF_SYSTEM_PROMPT}\n\n"
         f"【分岐ポイント】: {choice_point}\n"
-        f"【直前の物語背景】: {context or '特になし'}\n\n"
+        f"【直前の物語背景】: {context or '特になし'}\n"
+        f"{char_info}\n"
         f"IF展開を生成してください:"
     )

@@ -14,12 +14,13 @@ from src.core.exceptions import PipelineError  # 新規カスタム例外
 from src.services.episode_writer import EpisodeWriter
 
 logger = logging.getLogger(__name__)
+from src.backend.constants import constants as const
 
 
 # ----------------------------------------------------------------------
 # リトライ デコレータ（非同期関数に対して指数バックオフでリトライ）
 # ----------------------------------------------------------------------
-def async_retry(max_attempts: int = 3, base_delay: float = 1.0):
+def async_retry(max_attempts: int = const.DEFAULT_MAX_RETRIES, base_delay: float = const.DEFAULT_RETRY_DELAY_SEC):
     """非同期関数の呼び出しを指数バックオフでリトライするデコレータ。"""
 
     def decorator(func):
@@ -59,7 +60,7 @@ class CommercialPipeline:
         """
         self.csv_path = csv_path or os.path.join(tempfile.gettempdir(), "commercial_schedule.csv")
 
-    @async_retry(max_attempts=3, base_delay=1.0)
+    @async_retry(max_attempts=const.DEFAULT_MAX_RETRIES, base_delay=const.DEFAULT_RETRY_DELAY_SEC)
     async def _step_plan_async(self, series_config: dict) -> Dict[str, Any]:
         """Bible生成ステップ（リトライ対応）"""
         return self._step_plan(series_config)
@@ -126,7 +127,7 @@ class CommercialPipeline:
             logger.exception("Error in Bible generation")
             raise PipelineError(f"Bible generation failed: {e}") from e
 
-    @async_retry(max_attempts=3, base_delay=1.0)
+    @async_retry(max_attempts=const.DEFAULT_MAX_RETRIES, base_delay=const.DEFAULT_RETRY_DELAY_SEC)
     async def _generate_content_async(
         self, bible: Dict[str, Any], samples: List[Dict[str, Any]], platforms: List[str]
     ) -> tuple[List[Dict[str, Any]], Dict[str, Any]]:
@@ -328,6 +329,7 @@ class CommercialPipeline:
     def run_continuity_check() -> Dict[str, Any]:
         """CI / パイプライン用継続性テストの実行 (ステップ 72)"""
         import subprocess
+
         try:
             cmd = ["pytest", "novel_50ep/tests/test_novel_50ep.py", "-k", "test_continuity_full", "-q"]
             res = subprocess.run(cmd, capture_output=True, text=True, check=True)
@@ -336,5 +338,29 @@ class CommercialPipeline:
             logger.error(f"Continuity check failed: {cpe.stderr or cpe.stdout}")
             raise PipelineError(
                 f"Merge Blocked: Continuity check failed: {cpe.stderr or cpe.stdout}"
+            ) from cpe
+
+    @staticmethod
+    def run_prototype_tests() -> Dict[str, Any]:
+        """CI / パイプライン用 プロトタイプアダプタ検証テスト (ステップ 18)"""
+        import subprocess
+
+        try:
+            cmd = [
+                "pytest",
+                "novel_50ep/tests",
+                "tests/unit/test_prototype_llm.py",
+                "tests/unit/test_prototype_score.py",
+                "tests/unit/test_prototype_foreshadow.py",
+                "tests/unit/test_prototype_polish.py",
+                "tests/integration/test_prototype_pipeline.py",
+                "-q",
+            ]
+            res = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            return {"status": "success", "output": res.stdout}
+        except subprocess.CalledProcessError as cpe:
+            logger.error(f"Prototype test suite failed: {cpe.stderr or cpe.stdout}")
+            raise PipelineError(
+                f"Prototype tests failed: {cpe.stderr or cpe.stdout}"
             ) from cpe
 

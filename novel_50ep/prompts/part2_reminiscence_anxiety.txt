@@ -2,6 +2,8 @@
 
 【設定情報】
 ・主人公: {protagonist_name}（{protagonist_age}歳、{protagonist_personality}、動機: {protagonist_motivation}）
+・視点指定: {viewpoint_token}
+・文体制約: {style_constraint}
 ・第{episode_num}話 コンテキスト: {context}
 ・指定感情語: {emotion_word_1}, {emotion_word_2}
 

@@ -8,6 +8,10 @@ from src.backend.auth import require_api_key
 from src.backend.database.uow import UnitOfWork
 from src.core.container import AppContainer
 from src.core.exceptions import NotFoundError, ValidationError
+from src.backend.response_helpers import api_success
+
+from src.backend.router_helpers import workflow_endpoint
+from src.backend.utils.id_generator import generate_prefixed_id as generate_task_id
 
 router = APIRouter(prefix="/api/issues", tags=["issues"])
 
@@ -18,6 +22,7 @@ async def get_issues(book_id: int):
         return await uow.issues.get_book_issues(book_id)
 
 
+@workflow_endpoint("issue_resolve")
 @router.post("/{issue_id}/resolve")
 async def resolve_issue(issue_id: int, req: Any, api_key: str = Depends(require_api_key)):
     # Note: ResolveIssueRequest should be imported from api_schemas
@@ -36,7 +41,10 @@ async def resolve_issue(issue_id: int, req: Any, api_key: str = Depends(require_
             await uow.audit.update_issue_status(
                 issue_id, "resolved", resolved_note="Auto-Fix triggered"
             )
-            return {"status": "success", "message": "Issue marked as resolved via Auto-Fix."}
+            return api_success(
+                {"status": "success", "message": "Issue marked as resolved via Auto-Fix."},
+                "Auto-Fix で Issue を解決しました",
+            )
 
         elif req.action == "Foreshadowing":
             # Foreshadowing: Mark as foreshadowed in DB and add to WorldBible foreshadowing_map
@@ -71,10 +79,10 @@ async def resolve_issue(issue_id: int, req: Any, api_key: str = Depends(require_
                         version=(bible.version or 0) + 1,
                         last_updated=time.strftime("%Y-%m-%dT%H:%M:%S"),
                     )
-            return {
-                "status": "success",
-                "message": "Issue registered as Foreshadowing in WorldBible.",
-            }
+            return api_success(
+                {"status": "success", "message": "Issue registered as Foreshadowing in WorldBible."},
+                "WorldBible の伏線として登録しました",
+            )
 
         elif req.action == "Ignore":
             # Ignore: Mark as ignored, add to exception rules
@@ -91,10 +99,10 @@ async def resolve_issue(issue_id: int, req: Any, api_key: str = Depends(require_
                 character_name=None,
                 status="active",
             )
-            return {
-                "status": "success",
-                "message": "Issue ignored and logged under Rule of Cool exceptions.",
-            }
+            return api_success(
+                {"status": "success", "message": "Issue ignored and logged under Rule of Cool exceptions."},
+                "Rule of Cool 例外として無視・記録しました",
+            )
 
         else:
             raise ValidationError(f"Invalid action type: {req.action}")

@@ -3,6 +3,9 @@ from fastapi import APIRouter, Depends
 from src.backend.auth import require_api_key
 from src.backend.database.uow import UnitOfWork
 from src.backend.task_helpers import create_task as _create_task
+from src.backend.router_helpers import workflow_endpoint
+from src.backend.response_helpers import api_success
+from src.backend.utils.id_generator import generate_prefixed_id as generate_task_id
 from src.core.container import AppContainer
 from src.core.observability import TraceContext
 from src.models.api_schemas import (
@@ -37,6 +40,7 @@ def generate_task_id(prefix: str) -> str:
     return f"{prefix}_{uuid.uuid4().hex[:12]}"
 
 
+@workflow_endpoint("episode_generate")
 @router.post("/generate")
 async def generate_episodes(req: EpisodeGenerateRequest, api_key: str = Depends(require_api_key)):
     from src.backend.tasks import execute_service_workflow
@@ -63,9 +67,10 @@ async def generate_episodes(req: EpisodeGenerateRequest, api_key: str = Depends(
         },
         trace_id=TraceContext.get_trace_id(),
     )
-    return {"task_id": task_id}
+    return api_success({"task_id": task_id}, "エピソード生成を開始しました")
 
 
+@workflow_endpoint("episode_generate_candidates")
 @router.post("/generate_candidates")
 async def generate_episodes_candidates(req: EpisodeGenerateCandidatesRequest, api_key: str = Depends(require_api_key)):
     from src.backend.tasks import execute_service_workflow
@@ -92,9 +97,10 @@ async def generate_episodes_candidates(req: EpisodeGenerateCandidatesRequest, ap
         },
         trace_id=TraceContext.get_trace_id(),
     )
-    return {"task_id": task_id}
+    return api_success({"task_id": task_id}, "エピソード候補生成を開始しました")
 
 
+@workflow_endpoint("episode_retry_failed")
 @router.post("/retry_failed")
 async def retry_failed_episodes(req: RetryFailedRequest, api_key: str = Depends(require_api_key)):
     from src.backend.tasks import execute_service_workflow
@@ -109,9 +115,10 @@ async def retry_failed_episodes(req: RetryFailedRequest, api_key: str = Depends(
         kwargs={"book_id": req.book_id, "passion": req.passion, "word_count": req.word_count},
         trace_id=TraceContext.get_trace_id(),
     )
-    return {"task_id": task_id}
+    return api_success({"task_id": task_id}, "失敗エピソード修復を開始しました")
 
 
+@workflow_endpoint("episode_import_chapter")
 @router.post("/chapters/import")
 async def import_chapter(req: ChapterImportRequest, api_key: str = Depends(require_api_key)):
     from src.backend.tasks import execute_service_workflow
@@ -131,4 +138,4 @@ async def import_chapter(req: ChapterImportRequest, api_key: str = Depends(requi
         },
         trace_id=TraceContext.get_trace_id(),
     )
-    return {"task_id": task_id}
+    return api_success({"task_id": task_id}, "原稿インポートを開始しました")

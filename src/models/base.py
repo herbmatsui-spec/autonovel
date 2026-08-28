@@ -64,7 +64,7 @@ class GenerateResult(BaseModel):
 
     success: bool
     metadata: Dict[str, Any] = Field(default_factory=dict)
-    story_content: str = ""
+    story_content: Any = ""
     error_type: Optional[str] = None
     error_message: Optional[str] = None
     token_usage: Optional[Dict[str, Any]] = None

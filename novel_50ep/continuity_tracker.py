@@ -16,6 +16,7 @@ class ContinuityTracker:
         rules_dir: Optional[str] = None,
         rules: Optional[List[Dict[str, Any]]] = None,
         expects: Optional[List[Dict[str, Any]]] = None,
+        viewpoint: str = "third_person",
     ):
         self.rules: List[Dict[str, Any]] = []
         if rules_dir and os.path.exists(rules_dir):
@@ -28,15 +29,64 @@ class ContinuityTracker:
             from novel_50ep.rule_engine import build_foreshadow_rules
             self.rules.extend(build_foreshadow_rules(expects))
 
+        # 人称・視点ルールの動的生成
+        self.rules.extend(self._build_persona_rules(viewpoint))
+
         self.prev: Optional[Union[SceneBase, Dict[str, Any]]] = None
         self.violations: List[Dict[str, Any]] = []
+
+    def _build_persona_rules(self, viewpoint: str) -> List[Dict[str, Any]]:
+        """視点に応じた一人称代名詞禁止ルールを生成"""
+        if viewpoint == "third_person":
+            forbidden = ["私", "僕", "俺", "あたし", "わし", "拙者",
+                         "私の", "僕の", "俺の", "あたしの", "わしの", "拙者の",
+                         "私が", "僕が", "俺が", "あたしが", "わしが", "拙者が",
+                         "私を", "僕を", "俺を", "あたしを", "わしを", "拙者を",
+                         "私に", "僕に", "俺に", "あたしに", "わしに", "拙者に"]
+        elif viewpoint == "first_person_watashi":
+            forbidden = ["僕", "俺", "あたし", "わし", "拙者",
+                         "僕の", "俺の", "あたしの", "わしの", "拙者の",
+                         "僕が", "俺が", "あたしが", "わしが", "拙者が",
+                         "僕を", "俺を", "あたしを", "わしを", "拙者を",
+                         "僕に", "俺に", "あたしに", "わしに", "拙者に"]
+        elif viewpoint == "first_person_boku":
+            forbidden = ["私", "俺", "あたし", "わし", "拙者",
+                         "私の", "俺の", "あたしの", "わしの", "拙者の",
+                         "私が", "俺が", "あたしが", "わしが", "拙者が",
+                         "私を", "俺を", "あたしを", "わしを", "拙者を",
+                         "私に", "俺に", "あたしに", "わしに", "拙者に"]
+        elif viewpoint == "first_person_ore":
+            forbidden = ["私", "僕", "あたし", "わし", "拙者",
+                         "私の", "僕の", "あたしの", "わしの", "拙者の",
+                         "私が", "僕が", "あたしが", "わしが", "拙者が",
+                         "私を", "僕を", "あたしを", "わしを", "拙者を",
+                         "私に", "僕に", "あたしに", "わしに", "拙者に"]
+        else:
+            forbidden = ["私", "僕", "俺", "あたし", "わし", "拙者"]
+
+        return [{
+            "id": "first_person_pronoun_violation",
+            "type": "text",
+            "op": "contains_forbidden",
+            "field": "text",
+            "forbidden": forbidden,
+            "msg": f"視点「{viewpoint}」に合わない一人称代名詞が検出されました",
+            "severity": "error",
+        }]
 
     def feed(self, scene: Union[SceneBase, Dict[str, Any]]) -> List[Dict[str, Any]]:
         """1シーンずつ受け取り、直前シーンとの連続性を検証 (ステップ 26, 27)"""
         v: List[Dict[str, Any]] = []
-        if self.prev is not None and scene is not None:
+        cur_dict = scene.to_dict() if hasattr(scene, "to_dict") else scene
+
+        # 単体チェック系ルール (contains_forbidden 等) は常に実行
+        from novel_50ep.rule_engine import check_scenes
+        v = check_scenes(None, cur_dict, self.rules)
+        self.violations.extend(v)
+
+        # 継続性チェック系は前シーンがある場合のみ
+        if self.prev is not None:
             prev_dict = self.prev.to_dict() if hasattr(self.prev, "to_dict") else self.prev
-            cur_dict = scene.to_dict() if hasattr(scene, "to_dict") else scene
             v = check_scenes(prev_dict, cur_dict, self.rules)
             self.violations.extend(v)
 

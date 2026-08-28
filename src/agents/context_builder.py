@@ -25,12 +25,13 @@ class ContextBuilder:
         book_id: int,
         branch_id: int,
         ep_num: int,
-        target_word_count: int,
+        target_word_count: int = 2000,
         style_tag: Optional[str] = None,
+        affinity_map: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
-        """�������執�������筆に必要な完全なコンテキストを構�������築する。"""
+        """執筆に必要な完全なコンテキストを構築する。"""
         return await self._build_full_writing_context_internal(
-            book_id, branch_id, ep_num, target_word_count, style_tag
+            book_id, branch_id, ep_num, target_word_count, style_tag, affinity_map=affinity_map
         )
 
     async def _build_full_writing_context_internal(
@@ -38,10 +39,11 @@ class ContextBuilder:
         book_id: int,
         branch_id: int,
         ep_num: int,
-        target_word_count: int,
+        target_word_count: int = 2000,
         style_tag: Optional[str] = None,
+        affinity_map: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
-        """内部実装: ������ ���執�������筆に必要な完全なコンテキストを構�������築する。"""
+        """内部実装: 執筆に必要な完全なコンテキストを構築する。"""
         plot = await self._get_plot(book_id, branch_id, ep_num)
         if plot is None:
             plot = await self._ensure_plot_exists(book_id, branch_id, ep_num)
@@ -52,7 +54,7 @@ class ContextBuilder:
 
         active_chars = await self._get_active_chars(chars, plot)
         char_static_ctx = self._build_char_static_ctx(active_chars)
-        char_dynamic_ctx = self._build_char_dynamic_ctx(active_chars, prev_chapter)
+        char_dynamic_ctx = self._build_char_dynamic_ctx(active_chars, prev_chapter, affinity_map=affinity_map)
         prev_ctx = self._build_prev_ctx(prev_chapter, book_id, branch_id, ep_num)
         dialogue_profiles = self._build_dialogue_profiles(active_chars)
 
@@ -102,6 +104,7 @@ class ContextBuilder:
             "pov_character_name": pov_name,
             "dialogue_profiles": dialogue_profiles,
             "density_level": density_level,
+            "affinity_map": affinity_map or {},
         }
 
     # デлегаートメソッド群（親エージェントのメソッドを呼び出す）
@@ -197,8 +200,13 @@ class ContextBuilder:
             lines.append("\n".join(parts))
         return "\n".join(lines)
 
-    def _build_char_dynamic_ctx(self, chars: List[Any], prev_chapter: Optional[Any]) -> str:
-        """キャラクターの動的状態を整形する。"""
+    def _build_char_dynamic_ctx(
+        self,
+        chars: List[Any],
+        prev_chapter: Optional[Any],
+        affinity_map: Optional[Dict[str, Any]] = None,
+    ) -> str:
+        """キャラクターの動的状態（ステータス、好感度、心理状態）を整形する。"""
         if not chars:
             return ""
         lines = []
@@ -208,7 +216,15 @@ class ContextBuilder:
             location = reg.get("location", "不明")
             inventory = reg.get("inventory", [])
             status = reg.get("status", "通常")
-            parts = [f"- {name}: 場所={location}, 状態={status}"]
+            
+            aff_info = ""
+            if affinity_map and name in affinity_map:
+                adata = affinity_map[name]
+                mood = getattr(adata, "current_mood", getattr(adata, "mood", "neutral")) if not isinstance(adata, (int, float)) else "neutral"
+                score = getattr(adata, "affinity_score", getattr(adata, "score", adata))
+                aff_info = f", 好感度={score}, 心理状態={mood}"
+
+            parts = [f"- {name}: 場所={location}, 状態={status}{aff_info}"]
             if inventory:
                 parts.append(f"  所持: {', '.join(inventory)}")
             lines.append("\n".join(parts))

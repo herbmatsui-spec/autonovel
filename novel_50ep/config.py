@@ -10,7 +10,7 @@ MIN_CHARS: int = 2900
 MAX_CHARS: int = 3100
 
 # ステップ2: エピソード総数
-TOTAL_EPISODES: int = 75
+TOTAL_EPISODES: int = 50
 
 # パート別文字数配分 (合計 3000文字)
 # 中盤の盛り上がりに合わせ、サブキャラ描写(4)とアクション(5)を強化
@@ -66,8 +66,28 @@ ILLUST_SAFETY: List[str] = [
     "残酷な描写",
 ]
 
+# 視点指定の有効値
+VALID_VIEWPOINTS: List[str] = [
+    "third_person",
+    "first_person_watashi",
+    "first_person_boku",
+    "first_person_ore",
+]
+
 # ステップ58: ドライラン（サンプル1話だけ生成）
 MANGA_DRY_RUN: bool = False
+
+
+# 文体ガイド デフォルト値 (world.yaml 未設定時のフォールバック)
+STYLE_GUIDE_DEFAULT: dict = {
+    "tone": "常体",
+    "vocabulary_level": "中級",
+    "avg_sentence_length": 45,
+    "unique_words_target": 180,
+    "formality": "やや硬め",
+    "sentence_endings": ["だ。", "である。", "た。"],
+    "forbidden_endings": ["です。", "ます。"],
+}
 
 
 def enable_manga_prompts() -> None:
@@ -102,6 +122,22 @@ def load_illust_style() -> dict:
     merged = dict(defaults)
     merged.update(data)
     return merged
+
+
+def load_world_with_viewpoint() -> dict:
+    """world.yaml を読み込み、viewpoint を検証して返す"""
+    if not WORLD_FILE.exists():
+        return {}
+    try:
+        data = yaml.safe_load(WORLD_FILE.read_text(encoding="utf-8")) or {}
+    except Exception:
+        return {}
+    # viewpoint 検証
+    vp = data.get("viewpoint", "third_person")
+    if vp not in VALID_VIEWPOINTS:
+        print(f"[WARN] 無効な viewpoint: {vp}, デフォルト 'third_person' を使用")
+        data["viewpoint"] = "third_person"
+    return data
 
 
 # 各種ディレクトリの自動生成

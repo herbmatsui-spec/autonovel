@@ -20,12 +20,31 @@ logger = logging.getLogger(__name__)
 
 
 # オプショナル依存チェック
-EPUB_AVAILABLE = importlib.util.find_spec("ebooklib") is not None
-if not EPUB_AVAILABLE:
+try:
+    from ebooklib import epub
+    EPUB_AVAILABLE = True
+except ImportError:
+    epub = None  # type: ignore
+    EPUB_AVAILABLE = False
     logger.warning("ebooklib not available. EPUB export will be limited.")
 
-PDF_AVAILABLE = importlib.util.find_spec("reportlab") is not None
-if not PDF_AVAILABLE:
+try:
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.units import cm, mm
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, PageBreak, Spacer, TableOfContents
+    from reportlab.pdfgen import canvas
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
+    PDF_AVAILABLE = True
+except ImportError:
+    A4 = None  # type: ignore
+    mm = cm = 1  # type: ignore
+    getSampleStyleSheet = ParagraphStyle = None  # type: ignore
+    SimpleDocTemplate = Paragraph = PageBreak = Spacer = TableOfContents = None  # type: ignore
+    canvas = None  # type: ignore
+    pdfmetrics = TTFont = None  # type: ignore
+    PDF_AVAILABLE = False
     logger.warning("reportlab not available. PDF export will be limited.")
 
 
@@ -384,11 +403,11 @@ class PdfGenerator:
         story = []
 
         # 表紙
-        story.extend(self._build_cover(series))
+        story.extend(self._build_cover(series, styles))
         story.append(PageBreak())
 
         # 目次
-        story.extend(self._build_toc(series))
+        story.extend(self._build_toc(series, styles))
         story.append(PageBreak())
 
         # 本文
@@ -454,10 +473,11 @@ class PdfGenerator:
                 parent=styles["Heading1"],
                 fontName="Japanese",
                 fontSize=18,
-                leading=27,
-                spaceBefore=24,
-                spaceAfter=12,
-                textColor=HexColor("#1a1a1a"),
+                leading=28,
+                alignment=TA_LEFT,
+                spaceBefore=12,
+                spaceAfter=8,
+                textColor=HexColor("#2c3e50"),
             )
         )
 
@@ -466,11 +486,12 @@ class PdfGenerator:
                 "JapaneseHeading2",
                 parent=styles["Heading2"],
                 fontName="Japanese",
-                fontSize=15,
+                fontSize=14,
                 leading=22,
-                spaceBefore=18,
-                spaceAfter=10,
-                textColor=HexColor("#333333"),
+                alignment=TA_LEFT,
+                spaceBefore=8,
+                spaceAfter=4,
+                textColor=HexColor("#34495e"),
             )
         )
 
@@ -479,12 +500,12 @@ class PdfGenerator:
                 "JapaneseBody",
                 parent=styles["Normal"],
                 fontName="Japanese",
-                fontSize=11,
-                leading=19,
+                fontSize=10.5,
+                leading=18,
                 alignment=TA_JUSTIFY,
-                firstLineIndent=12,
-                spaceBefore=6,
+                firstLineIndent=10.5,  # 1文字インデント
                 spaceAfter=6,
+                textColor=HexColor("#333333"),
             )
         )
 
@@ -493,12 +514,12 @@ class PdfGenerator:
                 "JapaneseDialogue",
                 parent=styles["Normal"],
                 fontName="Japanese",
-                fontSize=11,
-                leading=19,
-                alignment=TA_LEFT,
-                leftIndent=18,
-                spaceBefore=6,
+                fontSize=10.5,
+                leading=18,
+                alignment=TA_JUSTIFY,
+                firstLineIndent=0,  # かぎ括弧はインデントなし
                 spaceAfter=6,
+                textColor=HexColor("#333333"),
             )
         )
 
@@ -507,17 +528,16 @@ class PdfGenerator:
                 "JapaneseMonologue",
                 parent=styles["Normal"],
                 fontName="Japanese",
-                fontSize=11,
-                leading=19,
-                alignment=TA_LEFT,
-                leftIndent=24,
-                spaceBefore=6,
+                fontSize=10,
+                leading=17,
+                alignment=TA_JUSTIFY,
+                firstLineIndent=10,
                 spaceAfter=6,
-                fontStyle="italic",
+                textColor=HexColor("#555555"),
             )
         )
 
-    def _build_cover(self, series: SeriesResult) -> List:
+    def _build_cover(self, series: SeriesResult, styles: Any) -> List:
         """表紙ページ構築"""
         from reportlab.lib.units import cm
         from reportlab.platypus import Paragraph, Spacer
@@ -552,8 +572,9 @@ class PdfGenerator:
 
         return story
 
-    def _build_toc(self, series: SeriesResult) -> List:
+    def _build_toc(self, series: SeriesResult, styles: Any) -> List:
         """目次構築"""
+        from reportlab.lib.units import cm
         from reportlab.platypus import Paragraph, Spacer, TableOfContents
 
         story = []
