@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, ValidationError
 
-from config.project_context import GlobalConfigModel
+from schemas.config import GlobalConfigModel
 
 logger = logging.getLogger(__name__)
 
@@ -176,7 +176,7 @@ class PatchValidator:
             errors.append("Prompt patch content is empty")
             return ValidationResult(is_safe=False, errors=errors, warnings=warnings)
 
-        # 2. プロンプトインジェクションに代表される悪意あるキーワード検出
+        # 2. プロンプトインジェクションに代表される悪意あるキーワード検出（警告のみ）
         malicious_keywords = [
             "ignore previous instructions",
             "system prompt",
@@ -192,14 +192,11 @@ class PatchValidator:
             if kw in lower_content:
                 msg = f"Potential prompt injection / override pattern detected: '{kw}'"
                 warnings.append(msg)
-                errors.append(msg)
 
-        # 3. 危険なPythonコードライクな記述の検出
+        # 3. 危険なPythonコードライクな記述の検出（致命的エラー）
         for df in cls.DANGEROUS_FUNCTIONS:
-            # プロンプト内に `import os; os.system(...)` などの記述があるかを正規表現等で警戒
             if df in patch_content:
                 msg = f"Dangerous function/module keyword '{df}' detected in prompt content"
-                warnings.append(msg)
                 errors.append(msg)
 
         # プロンプトパッチは警告のみとし、重大な破損や明らかな脅威以外は is_safe=True で通すが、警告を結果に残す
