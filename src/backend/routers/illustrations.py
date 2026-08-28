@@ -6,6 +6,9 @@ from pydantic import BaseModel, Field
 from src.backend.auth import require_api_key
 from src.core.container import AppContainer
 
+from src.backend.router_helpers import workflow_endpoint
+from src.backend.utils.id_generator import generate_prefixed_id as generate_task_id
+
 from src.models.illustration import (
     IllustrationModel,
     IllustrationRequest,
@@ -13,6 +16,7 @@ from src.models.illustration import (
     SafetyLevel,
 )
 from src.shared.utils import StatusReporter
+from src.backend.response_helpers import api_success
 
 router = APIRouter(prefix="/api/illustrations", tags=["illustrations"])
 
@@ -37,6 +41,7 @@ class BatchIllustrationSchema(BaseModel):
     settings: Dict[str, Any] = Field(default_factory=dict)
 
 
+@workflow_endpoint("illustration_generate")
 @router.post("/generate")
 async def generate_illustration(
     req: GenerateIllustrationSchema,
@@ -62,13 +67,14 @@ async def generate_illustration(
         if isinstance(res, dict) and res.get("status") == "error":
             raise HTTPException(status_code=500, detail=res.get("message", "Illustration generation failed"))
 
-        return res.get("result", res) if isinstance(res, dict) else res
+        return api_success(res.get("result", res) if isinstance(res, dict) else res, "挿絵を生成しました")
     except ValueError as e:
         raise HTTPException(status_code=400, detail=f"Invalid parameter: {e}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@workflow_endpoint("illustration_batch")
 @router.post("/batch")
 async def batch_generate_illustrations(
     req: BatchIllustrationSchema,
@@ -79,6 +85,6 @@ async def batch_generate_illustrations(
     try:
         reporter = StatusReporter(id=f"batch_{req.book_id}")
         res = await workflow.execute(reporter=reporter, book_id=req.book_id, settings=req.settings)
-        return res
+        return api_success(res, "挿絵をバッチ生成しました")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

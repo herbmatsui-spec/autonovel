@@ -6,7 +6,7 @@ database/repo_rules.py - ルールおよびマスターピース操作用のリ�
 import json
 import logging
 from datetime import datetime
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from sqlalchemy import delete, or_, select, update
 
@@ -48,12 +48,12 @@ class RulesRepository(BaseRepository):
         await self.session.flush()
         return rule.id
 
-    async def get_rule(self, rule_id: int) -> Optional[RuleDbModel]:
+    async def get_rule(self, rule_id: int) -> Optional[Dict[str, Any]]:
         result = await self.session.execute(select(Rule).where(Rule.id == rule_id))
         rule = result.scalar_one_or_none()
         return self._to_dict(rule) if rule else None
 
-    async def get_all_rules(self, status: Optional[str] = None) -> List[RuleDbModel]:
+    async def get_all_rules(self, status: Optional[str] = None) -> List[Dict[str, Any]]:
         stmt = select(Rule)
         if status:
             stmt = stmt.where(Rule.status == status)
@@ -62,7 +62,7 @@ class RulesRepository(BaseRepository):
         rows = result.scalars().all()
         return [self._to_dict(r) for r in rows]
 
-    async def get_active_rules(self, domain: str = "all") -> List[RuleDbModel]:
+    async def get_active_rules(self, domain: str = "all") -> List[Dict[str, Any]]:
         """有効なルールをドメイン別(または全ドメイン)で取得"""
         stmt = select(Rule).where(Rule.status == "active")
         if domain == "all":
@@ -127,7 +127,7 @@ class RulesRepository(BaseRepository):
         await self.session.flush()
         return mp.id
 
-    async def get_all_masterpieces(self) -> List[MasterpieceDbModel]:
+    async def get_all_masterpieces(self) -> List[Dict[str, Any]]:
         result = await self.session.execute(select(Masterpiece).order_by(Masterpiece.id.desc()))
         rows = result.scalars().all()
         return [self._to_dict(r) for r in rows]

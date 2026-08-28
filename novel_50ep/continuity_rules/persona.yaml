@@ -1,0 +1,10 @@
+version: 1
+rules:
+  - id: "first_person_pronoun_violation"
+    type: "text"
+    op: "contains_forbidden"
+    field: "text"
+    # forbidden は ContinuityTracker が viewpoint に応じて動的生成
+    forbidden: []
+    msg: "一人称代名詞が指定視点と一致しません"
+    severity: "error"

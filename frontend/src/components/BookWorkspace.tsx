@@ -12,10 +12,19 @@ import { WriteStep } from './steps/WriteStep';
 import { FinishStep } from './steps/FinishStep';
 import { PublishStep } from './steps/PublishStep';
 import { ProgressPanel } from './ProgressPanel';
+import { lazy } from 'react';
+// Lazy load tab components
+const StyleLabTab = lazy(() => import('./tabs/StyleLabTab'));
+const PlotsTab = lazy(() => import('./tabs/PlotsTab'));
+const AnalyticsTab = lazy(() => import('./tabs/AnalyticsTab'));
+// Import the tab bar component
+import BookTabBar from './BookTabBar';
+// Add more tabs as needed
 
 export default function BookWorkspace() {
   const { id: bookIdParam } = useParams<{ id: string }>();
   const { step: stepParam } = useParams<{ step: string }>();
+  const { tab: tabParam } = useParams<{ tab: string }>();
   const bookId = Number(bookIdParam);
   const navigate = useNavigate();
   const { selectedBook, setSelectedBook } = useBookStore();
@@ -45,16 +54,16 @@ export default function BookWorkspace() {
     }
   }, [bookId, loadBookDetails, setSelectedBook]);
 
-  // Sync step from URL to workspace store
+  // Sync step from URL to workspace store (only if no tab is specified, to avoid overriding step when viewing a tab)
   useEffect(() => {
-    if (stepParam) {
+    if (stepParam && !tabParam) {
       setCurrentStep(stepParam);
     }
-  }, [stepParam, setCurrentStep]);
+  }, [stepParam, tabParam, setCurrentStep]);
 
-  // When step changes in store, update URL
+  // When step changes in store, update URL (only if no tab is specified)
   useEffect(() => {
-    if (currentStep && bookId && !isNaN(bookId) && bookId > 0) {
+    if (currentStep && bookId && !isNaN(bookId) && bookId > 0 && !tabParam) {
       navigate(`/book/${bookId}/${currentStep}`, { replace: true });
     }
   }, [currentStep, bookId, navigate]);
@@ -62,34 +71,68 @@ export default function BookWorkspace() {
   // Determine step to display (fallback to theme)
   const displayStep = stepParam || currentStep || 'theme';
 
-  // Map step to component
+  // Map step component
   const StepComponent = () => {
     switch (displayStep) {
       case 'theme':
-        return <ThemeStep bookId={bookId} />;
+        return <ThemeStep bookId={bookId} step={displayStep} />;
       case 'outline':
-        return <OutlineStep bookId={bookId} />;
+        return <OutlineStep bookId={bookId} step={displayStep} />;
       case 'write':
-        return <WriteStep bookId={bookId} />;
+        return <WriteStep bookId={bookId} step={displayStep} />;
       case 'finish':
-        return <FinishStep bookId={bookId} />;
+        return <FinishStep bookId={bookId} step={displayStep} />;
       case 'publish':
-        return <PublishStep bookId={bookId} />;
+        return <PublishStep bookId={bookId} step={displayStep} />;
       default:
         return <div>Unknown step</div>;
     }
   };
 
+  // Map tab to component
+  const TabComponent = () => {
+    switch (tabParam) {
+      case 'style-lab':
+        return <StyleLabTab bookId={bookId} />;
+      case 'plots':
+        return <PlotsTab bookId={bookId} />;
+      case 'analytics':
+        return <AnalyticsTab bookId={bookId} />;
+      default:
+        return <div>Unknown tab</div>;
+    }
+  };
+
+  // Handler for changing tab
+  const handleTabChange = (tabId: string) => {
+    navigate(`/book/${bookId}/${displayStep}/${tabId}`, { replace: true });
+  };
+
   return (
     <div className="flex h-[100vh] bg-[var(--bg-main)]">
       {/* Left: Step Bar */}
-      <StepBar bookId={bookId} currentStep={displayStep} />
+      <StepBar bookId={bookId} currentStep={displayStep} currentTab={tabParam} />
 
       {/* Center: Step Content */}
       <div className="flex-1 overflow-hidden">
-        <StepShell>
-          <StepComponent />
-        </StepShell>
+        {tabParam ? (
+          <>
+            {/* Tab bar when viewing a tab */}
+            <BookTabBar
+              bookId={bookId}
+              currentStep={displayStep}
+              currentTab={tabParam}
+              onTabChange={handleTabChange}
+            />
+            <StepShell>
+              <TabComponent />
+            </StepShell>
+          </>
+        ) : (
+          <StepShell>
+            <StepComponent />
+          </StepShell>
+        )}
       </div>
 
       {/* Right: Progress Panel */}

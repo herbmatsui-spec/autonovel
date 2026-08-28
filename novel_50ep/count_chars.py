@@ -36,6 +36,27 @@ except ImportError:
     )
 
 
+METAPHOR_PATTERNS: List[str] = [
+    r"まるで[^。！？]*?(?:ようだ|ような|ような気がする|のように見える|のように)",
+    r"[^。！？]*?(?:のようだ|のように見える|のように|のようで|のような)",
+    r"[^。！？]*?(?:に似て|に酷似)",
+    r"[^。！？]*?といった",
+    r"[^。！？]*?のごとく",
+]
+
+MAX_METAPHOR_RATIO: float = 0.15
+MAX_METAPHOR_PER_EP: int = 4
+
+
+@dataclass
+class MetaphorResult:
+    count: int
+    type_counts: Dict[str, int]
+    dup_found: bool
+    dup_details: List[str]
+    ratio: float
+
+
 @dataclass
 class ValidationResult:
     is_valid: bool
@@ -47,6 +68,11 @@ class ValidationResult:
     matched_cliff: Optional[str]
     dup_found: bool
     dup_details: List[str]
+    metaphor_count: int = 0
+    metaphor_types: Dict[str, int] = field(default_factory=dict)
+    metaphor_dup_found: bool = False
+    metaphor_dup_details: List[str] = field(default_factory=list)
+    metaphor_ratio: float = 0.0
     errors: List[str] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
 
@@ -58,6 +84,7 @@ class ValidationResult:
             f"・感情語出現数: {self.emotion_count}個 (一致: {', '.join(self.matched_emotions) if self.matched_emotions else 'なし'})",
             f"・クリフハンガー: {'検出済み (' + str(self.matched_cliff) + ')' if self.has_cliff else '未検出'}",
             f"・連続重複表現: {'検出あり' if self.dup_found else 'なし'}",
+            f"・比喩出現数: {self.metaphor_count}個 (率: {self.metaphor_ratio:.1%}, 重複: {'あり' if self.metaphor_dup_found else 'なし'})",
             "・パート別文字数内訳:",
         ]
         for p, count in sorted(self.part_chars.items()):
@@ -79,6 +106,85 @@ class ValidationResult:
                 lines.append(f"  [WARN] {warn}")
 
         return "\n".join(lines)
+
+
+# =========================================================================
+# 文体統計計算 (長編トーン・文体ズレ対策)
+# =========================================================================
+
+@dataclass
+class StyleStats:
+    """文体統計データクラス"""
+    avg_sentence_length: float    # 平均文長（文字）
+    plain_form_ratio: float       # 常体率 (0.0〜1.0)
+    unique_word_count: int        # ユニーク語数
+    sentence_count: int           # 文数
+    total_chars: int              # 総文字数
+
+
+def _split_words(text: str) -> List[str]:
+    """簡易単語分割（形態素解析なし・正規表現ベース・低性能LLM対応）"""
+    # ひらがな・カタカナ・漢字・英数字の連続を単語とみなす
+    # 記号・句読点・空白で分割
+    words = re.findall(r"[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF\uFF66-\uFF9F\u0030-\u0039\u0041-\u005A\u0061-\u007A]+", text)
+    # 1文字のみの助詞・助動詞等は除外（より実態に近いユニーク語数にするため）
+    words = [w for w in words if len(w) >= 2]
+    return words
+
+
+def _split_sentences(text: str) -> List[str]:
+    """文分割（句点・感嘆符・疑問符で分割）"""
+    sentences = re.split(r"[。！？]", text)
+    return [s.strip() for s in sentences if s.strip()]
+
+
+def calculate_style_stats(text: str) -> StyleStats:
+    """文体統計を計算する（低性能LLM環境でも動作する簡易実装）"""
+    if not text:
+        return StyleStats(
+            avg_sentence_length=0.0,
+            plain_form_ratio=0.0,
+            unique_word_count=0,
+            sentence_count=0,
+            total_chars=0,
+        )
+
+    # 総文字数
+    total_chars = len(text)
+
+    # 文分割
+    sentences = _split_sentences(text)
+    sentence_count = len(sentences)
+
+    if sentence_count == 0:
+        return StyleStats(
+            avg_sentence_length=0.0,
+            plain_form_ratio=0.0,
+            unique_word_count=0,
+            sentence_count=0,
+            total_chars=total_chars,
+        )
+
+    # 平均文長
+    avg_sentence_length = total_chars / sentence_count
+
+    # 常体率計算（文末が「だ。」「である。」「た。」で終わる文の割合）
+    plain_endings = ("だ。", "である。", "た。")
+    plain_count = sum(1 for s in sentences if s.endswith(plain_endings))
+    plain_form_ratio = plain_count / sentence_count
+
+    # ユニーク語数（簡易単語分割＋重複除去）
+    words = _split_words(text)
+    unique_words = set(words)
+    unique_word_count = len(unique_words)
+
+    return StyleStats(
+        avg_sentence_length=round(avg_sentence_length, 1),
+        plain_form_ratio=round(plain_form_ratio, 3),
+        unique_word_count=unique_word_count,
+        sentence_count=sentence_count,
+        total_chars=total_chars,
+    )
 
 
 # ステップ19: count_chars
@@ -245,6 +351,54 @@ def detect_dup(text: str, max_repeat: int = 3) -> Tuple[bool, List[str]]:
     return len(duplicates) > 0, duplicates
 
 
+# ステップ27: extract_metaphors
+def extract_metaphors(text: str) -> List[str]:
+    """比喩構文に一致する句を抽出する"""
+    found: List[str] = []
+    for pat in METAPHOR_PATTERNS:
+        matches = re.findall(pat, text)
+        found.extend(matches)
+    return found
+
+
+# ステップ28: count_metaphor_types
+def count_metaphor_types(text: str) -> Dict[str, int]:
+    """パターン別の比喩出現回数を集計する"""
+    counts: Dict[str, int] = {}
+    # パターン→表示名のマッピング
+    pattern_names = {
+        0: "ようだ類",
+        1: "のようだ類",
+        2: "に似て",
+        3: "といった",
+        4: "のごとく",
+    }
+    for i, pat in enumerate(METAPHOR_PATTERNS):
+        matches = re.findall(pat, text)
+        if matches:
+            counts[pattern_names.get(i, f"pattern_{i}")] = len(matches)
+    return counts
+
+
+# ステップ29: detect_metaphor_dup
+def detect_metaphor_dup(text: str) -> Tuple[bool, List[str]]:
+    """比喩の核（名詞部分）が重複していないか検出する"""
+    metaphors = extract_metaphors(text)
+    cores: List[str] = []
+    for m in metaphors:
+        # より精密な核抽出: 「まるで/あたかも」以降から比喩マーカー手前まで
+        core_match = re.search(r"(?:まるで|あたかも)?([^のにと]{2,20}?)(?:のようだ|ような|に似て|といった|のごとく)", m)
+        if core_match:
+            core = core_match.group(1).strip()
+            # 助詞で終わる場合は除去
+            core = re.sub(r"[がをのはにと]$", "", core)
+            if len(core) >= 2:
+                cores.append(core)
+    dup_cores = [c for c in set(cores) if cores.count(c) > 1]
+    details = [f"比喩核重複: 『{c}』" for c in dup_cores]
+    return len(details) > 0, details
+
+
 # ステップ25 & 26: validate_episode
 def validate_episode(
     data: Union[str, Path, Dict[int, str]],
@@ -310,6 +464,20 @@ def validate_episode(
     if dup_found:
         errors.append(f"同一表現の連続重複が検出されました: {'; '.join(dup_details)}")
 
+    # 6. 比喩テンプレ化判定 (ステップ27-29)
+    metaphors = extract_metaphors(full_text)
+    metaphor_count = len(metaphors)
+    metaphor_types = count_metaphor_types(full_text)
+    metaphor_dup_found, metaphor_dup_details = detect_metaphor_dup(full_text)
+    metaphor_ratio = metaphor_count / max(1, len(full_text) / 100) if full_text else 0.0
+
+    if metaphor_ratio > MAX_METAPHOR_RATIO:
+        warnings.append(f"比喩率({metaphor_ratio:.1%})が閾値({MAX_METAPHOR_RATIO:.0%})を超過しています。")
+    if metaphor_count > MAX_METAPHOR_PER_EP:
+        warnings.append(f"比喩出現数({metaphor_count}個)が上限({MAX_METAPHOR_PER_EP}個)を超過しています。")
+    if metaphor_dup_found:
+        errors.append(f"比喩表現の核が重複しています: {'; '.join(metaphor_dup_details)}")
+
     is_valid = len(errors) == 0
 
     return ValidationResult(
@@ -322,6 +490,11 @@ def validate_episode(
         matched_cliff=matched_cliff,
         dup_found=dup_found,
         dup_details=dup_details,
+        metaphor_count=metaphor_count,
+        metaphor_types=metaphor_types,
+        metaphor_dup_found=metaphor_dup_found,
+        metaphor_dup_details=metaphor_dup_details,
+        metaphor_ratio=metaphor_ratio,
         errors=errors,
         warnings=warnings,
     )
@@ -331,11 +504,27 @@ def main():
     parser = argparse.ArgumentParser(description="50話×3000文字 小説エピソード文字数・品質チェッカー")
     parser.add_argument("file_path", type=str, help="検証するエピソードファイルパス (例: output/ep01.md)")
     parser.add_argument("--details", action="store_true", help="詳細ログを表示")
+    parser.add_argument("--metaphor", action="store_true", help="比喩テンプレ化チェックのみ実行")
     args = parser.parse_args()
 
     target_path = Path(args.file_path)
     if not target_path.exists():
         print(f"エラー: ファイルが見つかりません: {target_path}")
+        return
+
+    if args.metaphor:
+        text = target_path.read_text(encoding="utf-8")
+        metaphors = extract_metaphors(text)
+        types = count_metaphor_types(text)
+        dup, dup_details = detect_metaphor_dup(text)
+        ratio = len(metaphors) / max(1, len(text) / 100) if text else 0.0
+        print(f"=== 比喩テンプレ化チェック ===")
+        print(f"・総比喩数: {len(metaphors)}個")
+        print(f"・比喩率: {ratio:.1%}")
+        print(f"・タイプ別: {types}")
+        print(f"・重複核: {dup_details if dup else 'なし'}")
+        for m in metaphors:
+            print(f"  - {m}")
         return
 
     result = validate_episode(target_path)

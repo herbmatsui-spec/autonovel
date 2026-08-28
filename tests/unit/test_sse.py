@@ -34,3 +34,24 @@ async def test_sse_endpoint_no_task(monkeypatch):
             os.unlink(temp_db_path)
         except PermissionError:
             pass
+
+
+@pytest.mark.asyncio
+async def test_sse_manager_lifecycle():
+    """SSEManager の登録、ブロードキャスト、登録解除、Lock遅延初期化を検証"""
+    from src.backend.sse_manager import SSEManager
+
+    manager = SSEManager()
+    assert manager.lock is not None
+
+    queue = await manager.register()
+    assert queue in manager._queues
+
+    await manager.broadcast("agent_status", {"agent": "PlotAgent", "status": "ok"})
+    msg = await queue.get()
+    assert "event: agent_status" in msg
+    assert "PlotAgent" in msg
+
+    await manager.unregister(queue)
+    assert queue not in manager._queues
+

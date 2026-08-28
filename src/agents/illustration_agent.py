@@ -30,11 +30,12 @@ class IllustrationAgent(BaseAgent):
     AGENT_NAME = "illustration"
     DISPLAY_NAME = "イラスト作成サブエージェント"
 
-    def __init__(self, image_service: ImageService, **kwargs):
+    def __init__(self, image_service: ImageService, bible_service: Optional[Any] = None, **kwargs):
         super().__init__(**kwargs)
         self.image_service = image_service
+        self.bible_service = bible_service
         self.cover_generator = CoverGenerator(image_service)
-        self.character_illustrator = CharacterIllustrator(image_service)
+        self.character_illustrator = CharacterIllustrator(image_service, bible_service=bible_service)
         self.scene_illustrator = SceneIllustrator(image_service)
         self.scene_service = SceneIllustrationService(image_service, llm=self.llm)
 

@@ -30,6 +30,8 @@ try:
         TARGET_CHARS,
         WORLD_FILE,
         load_illust_style,
+        load_world_with_viewpoint,
+        STYLE_GUIDE_DEFAULT,
         ILLUST_SAFETY,
         MANGA_DRY_RUN,
     )
@@ -57,6 +59,8 @@ except ImportError:
         TARGET_CHARS,
         WORLD_FILE,
         load_illust_style,
+        load_world_with_viewpoint,
+        STYLE_GUIDE_DEFAULT,
         ILLUST_SAFETY,
         MANGA_DRY_RUN,
     )
@@ -71,8 +75,62 @@ import novel_50ep.config as _cfg
 class MockLLMGenerator:
     """オフライン検証・低性能LLMシミュレーション用の高品質テンプレート生成器"""
 
+# ステップ10: 比喩バリエーション辞書（パターン → 3つ以上の別表現）
+    METAPHOR_VARIANTS: Dict[str, List[str]] = {
+        "ようだ": [
+            "{subj}は{obj}のようだ。",
+            "{subj}が{obj}のように見える。",
+            "{subj}の様子は{obj}そのものだ。",
+        ],
+        "に似て": [
+            "{subj}は{obj}に似ている。",
+            "{subj}の姿は{obj}に似ている。",
+            "{subj}には{obj}の面影がある。",
+        ],
+        "といった": [
+            "{subj}といった{obj}のようなものだ。",
+            "{subj}のような{obj}がそこにある。",
+        ],
+        "のごとく": [
+            "{subj}は{obj}のごとく{action}。",
+            "{subj}の動きは{obj}のごとくだ。",
+        ],
+    }
+
+    MAX_METAPHOR_PER_EP: int = 4
+
     def __init__(self, world_data: dict):
         self.world = world_data
+        self._metaphor_count = 0
+        self._metaphor_budget = 4  # デフォルト上限
+
+    def set_metaphor_budget(self, budget: int):
+        """エピソード全体の比喩予算を設定"""
+        self._metaphor_budget = budget
+        self._metaphor_count = 0
+
+    def _pick_metaphor(self, kind: str, ep: int, idx: int) -> str:
+        """話数・インデックスで決定論的に比喩バリエーションを選出"""
+        import random
+        variants = self.METAPHOR_VARIANTS.get(kind, [])
+        if not variants:
+            return ""
+        rnd = random.Random(ep * 1000 + idx * 100)
+        template = rnd.choice(variants)
+        # 文脈に合わせてプレースホルダ置換
+        protagonist = self.world.get("protagonist", {}).get("name", "凛")
+        symbol = self.world.get("symbol", "光の石")
+        antagonist = self.world.get("antagonist", {}).get("name", "闇結社")
+        
+        # パートによって主語/目的語を変える
+        subj_map = {
+            "{subj}": protagonist,
+            "{obj}": symbol,
+            "{action}": "輝く",
+        }
+        for k, v in subj_map.items():
+            template = template.replace(k, v)
+        return template
 
     def generate(self, prompt: str, target_chars: int, part_id: int, ep: int, cliff: str = "") -> str:
         symbol = self.world.get("symbol", "光の石")
@@ -122,11 +180,14 @@ class MockLLMGenerator:
                 f"息の合った連携で二人は結界の亀裂を滑り抜け、迷宮のような内部通路へと足を踏み入れた。",
                 f"背後を警戒する{sub2}の足音が重厚に響き、頼もしい援護の気配が背中を支えてくれる。",
                 f"互いの役割を熟知したチームワークが、暗闇の中で確固たる前進を可能にしていた。",
+                f"「油断するなよ、敵の気配はまだ消えていない」{sub2}が低く呟き、巨大な戦斧を構え直した。",
+                f"「ええ、慎重に進みましょう」{sub1}の魔力感知が、通路の先にある微かな魔力反応を捉えていた。",
+                f"信頼し合える仲間たちと共に、{protagonist}は確実な歩調で遺跡の深層へと進んでいった。",
             ],
             5: [
                 f"回廊の大広間に踏み込んだ瞬間、空間を鋭く引き裂く風切り音が鼓膜を打った。",
                 f"視界の端から黒炎を纏った漆黒の刃が閃光のように迫り、{protagonist}は反射的に身を翻す。",
-                f"閃いた光刃と闇の刃が激突し、眩い火花が視界いっぱいに激しく飛び散った。",
+                f"閃いた光の剣と闇の刃が激突し、眩い火花が視界いっぱいに激しく飛び散った。",
                 f"周囲の気温が急激に氷点下へと下がり、肌を突き刺すような凄まじい冷気と痛烈な衝撃が全身を襲う。",
                 f"「小癪な光の徒が！」敵の尖兵が怒号と共に振り下ろす重撃を、{protagonist}は光の盾で受け止める。",
                 f"金属が軋む凄まじい衝撃と痺れが両腕を貫き、足元の石畳に放射状の亀裂が走る。",
@@ -136,6 +197,8 @@ class MockLLMGenerator:
                 f"呼吸を乱すことなく即座に残敵の気配を索敵し、次の襲撃に備えて武器を構え直した。",
                 f"極限の集中状態の中で研ぎ澄まされた感覚が、僅かな空気の揺らぎすらも見逃さない。",
                 f"光と闇の激突は一瞬の油断が生死を分ける、まさに紙一重の死線だった。",
+                f"背後から迫る敵の増援を感知し、{protagonist}は即座に防御陣形を再構築した。",
+                f"一筋の光が闇を切り裂き、激戦の舞台はさらなる緊迫の極みへと突入していく。",
             ],
             6: [
                 f"荒い息を吐き出しながら、{protagonist}は武器の切っ先をゆっくりと下ろした。",
@@ -146,6 +209,8 @@ class MockLLMGenerator:
                 f"倒した尖兵は単なる囮に過ぎず、真の脅威が目覚めようとしているのだ。",
                 f"解放された直後の空気が一転して冷え込み、さらなる危機の予兆が重くのしかかる。",
                 f"戦いはまだ終わっていないことを、その不穏な振動が雄弁に物語っていた。",
+                f"「すぐに体勢を立て直そう」{protagonist}は静かに告げ、残された魔力を集中させた。",
+                f"予断を許さない暗雲が立ち込める中、一行は次なる決断の時を迎えようとしていた。",
             ],
             7: [
                 f"戦闘の余燼が漂う静寂の中、かすかな光の粉塵が暗闇へと吸い込まれていく。",
@@ -156,7 +221,7 @@ class MockLLMGenerator:
                 f"次なる戦いの幕が上がる予感に、一行は静かに覚悟を固める。",
                 f"仲間たちの表情にも緊張の色が戻り、誰もが次の展開を見据えていた。",
                 f"幾重にも重なる試練の先にある真実を求め、決して歩みを止めることはない。",
-                f"冷徹な静寂が広間を満たし、次の嵐を告げるかのように大気が震える。",
+                f"冷徹な静寂が広間を満たし、次の嵐の気配に大気が震える。",
                 f"その時、突如として空間が歪み、信じがたい異変が眼前で発生した。",
                 f"{cliff if cliff else '胸元の光の石が突如として不吉な黒に染まり、脈打ち始めた。'}",
             ],
@@ -169,41 +234,114 @@ class MockLLMGenerator:
         for s in pool:
             if part_id == 7 and s == cliff_sentence:
                 continue
+            if part_id == 7 and count_chars("".join(selected) + s + (cliff_sentence or "")) > target_chars:
+                break
             selected.append(s)
             current_c = count_chars("".join(selected) + (cliff_sentence or ""))
             if current_c >= target_chars:
                 break
 
-        if part_id == 7 and cliff_sentence:
+        if part_id == 7 and cliff_sentence and cliff_sentence not in selected:
             selected.append(cliff_sentence)
 
         result_text = "".join(selected)
 
         # 文字数が足りない場合は動的フィラーで補填（Step 1: 固定リスト廃止）
-        extra_sentences = self._build_dynamic_fillers(ep, part_id, cliff_sentence)
-
-        ext_idx = 0
-        while count_chars(result_text) < target_chars - 10 and ext_idx < len(extra_sentences):
-            ext = extra_sentences[ext_idx]
-            if count_chars(result_text) + count_chars(ext) <= target_chars + 15:
-                if part_id == 7 and cliff_sentence and cliff_sentence in result_text:
-                    result_text = result_text.replace(cliff_sentence, ext + cliff_sentence)
-                else:
+        if part_id != 7:
+            extra_sentences = self._build_dynamic_fillers(ep, part_id, cliff_sentence)
+            ext_idx = 0
+            while count_chars(result_text) < target_chars - 10 and extra_sentences and ext_idx < 15:
+                ext = extra_sentences[ext_idx % len(extra_sentences)]
+                if count_chars(result_text) + count_chars(ext) <= target_chars + PART_TOLERANCE:
                     result_text += ext
-            ext_idx += 1
+                else:
+                    break
+                ext_idx += 1
 
-        # 許容上限を超えた場合は末尾文を調整
-        while count_chars(result_text) > target_chars + PART_TOLERANCE:
-            idx = result_text.rfind("。")
-            if idx > 50:
-                result_text = result_text[:idx]
-            else:
-                break
+            # 許容上限を超えた場合は末尾文を調整
+            while count_chars(result_text) > target_chars + PART_TOLERANCE:
+                idx = result_text.rfind("。")
+                if idx > 50:
+                    result_text = result_text[:idx]
+                else:
+                    break
 
         # Step 8: パート②・⑥に感情語を挿入
         result_text = self._inject_emotion_words(result_text, part_id, ep)
 
+        # Step 11: 比喩を挿入（上限まで）
+        result_text = self._inject_metaphors(result_text, part_id, ep)
+
         return result_text
+
+    def _inject_metaphors(self, text: str, part_id: int, ep: int) -> str:
+        """比喩を上限まで挿入する（決定論的）"""
+        if self._metaphor_count >= self._metaphor_budget:
+            return text
+        
+        # パートによって挿入する比喩の種類を変える
+        kind_map = {
+            1: "ようだ", 2: "に似て", 3: "といった", 4: "ようだ",
+            5: "のごとく", 6: "に似て", 7: "ようだ"
+        }
+        kind = kind_map.get(part_id, "ようだ")
+        
+        # 既にこの種類の比喩が含まれているかチェック（より広いパターンで）
+        import re
+        if kind == "ようだ" and re.search(r"(ようだ|ような|のように見える|のように|のようで|のような)", text):
+            return text
+        if kind == "に似て" and re.search(r"(に似て|に酷似)", text):
+            return text
+        if kind == "といった" and "といった" in text:
+            return text
+        if kind == "のごとく" and "のごとく" in text:
+            return text
+
+        # 文の途中に挿入（最後から2番目の文の後）
+        sentences = text.split("。")
+        if len(sentences) >= 2:
+            insert_idx = -2
+            metaphor = self._pick_metaphor(kind, ep, self._metaphor_count)
+            if metaphor:
+                sentences[insert_idx] = sentences[insert_idx].rstrip() + metaphor
+                self._metaphor_count += 1
+                text = "。".join(sentences)
+        
+        return text
+
+    # Step 17: MockLLM用比喩書き換え（決定論的置換）
+    def rewrite_metaphors(self, text: str, ep: int) -> str:
+        """重複比喩をバリエーションから決定論的に置換"""
+        from novel_50ep.count_chars import extract_metaphors, detect_metaphor_dup, METAPHOR_PATTERNS
+        import re
+        
+        metaphors = extract_metaphors(text)
+        dup_found, dup_details = detect_metaphor_dup(text)
+        if not dup_found:
+            return text
+        
+        # 重複している核を特定し、該当する比喩文を置換
+        result = text
+        for detail in dup_details:
+            core = detail.replace("比喩核重複: 『", "").replace("』", "")
+            # この核を含む比喩文を探して置換
+            for pat in METAPHOR_PATTERNS:
+                matches = list(re.finditer(pat, result))
+                for m in matches:
+                    if core in m.group():
+                        # どの種類の比喩か判定して別バリエーションで置換
+                        kind = "ようだ"
+                        if "に似て" in m.group() or "に酷似" in m.group():
+                            kind = "に似て"
+                        elif "といった" in m.group():
+                            kind = "といった"
+                        elif "のごとく" in m.group():
+                            kind = "のごとく"
+                        replacement = self._pick_metaphor(kind, ep, hash(core) % 100)
+                        if replacement:
+                            result = result[:m.start()] + replacement + result[m.end():]
+                        break
+        return result
 
     def _inject_emotion_words(self, text: str, part_id: int, ep: int) -> str:
         """パート②・⑥に感情語をランダム挿入（Step 8）"""
@@ -268,7 +406,7 @@ class MockLLMGenerator:
             ],
             5: [
                 f"刃が交わる瞬きの隙に、{protagonist}は勝機を見出す。",
-                f"激闘の只中で、{protagonist}の光刃が一筋の閃きを放つ。",
+                f"激闘の只中で、{protagonist}の光の剣が一筋の閃きを放つ。",
                 f"敵の隙を突くタイミングを、{protagonist}は五感で計り知る。",
             ],
             6: [
@@ -294,7 +432,13 @@ class MockLLMGenerator:
         if cliff_sentence:
             shuffled = [s for s in shuffled if s != cliff_sentence]
         
-        return shuffled[:3]  # 最大3文まで返す
+        # Step 13: 比喩パターンを含むフィラーを除外（テンプレ化防止）
+        filtered = []
+        for s in shuffled:
+            if not (re.search(r"(ようだ|のように|に似て|といった|のごとく)", s)):
+                filtered.append(s)
+        
+        return filtered[:3]  # 最大3文まで返す
 
 
 # ==============================================================================
@@ -518,15 +662,45 @@ class NovelGenerator:
     ):
         self.world_path = world_path
         self.world_data = self._load_world()
+        # 文体ガイドを読み込み（world.yaml の style_guide またはデフォルト）
+        self.style_guide = self.world_data.get("style_guide", STYLE_GUIDE_DEFAULT)
         self.foreshadow_mgr = ForeshadowManager()
         self.mock_generator = MockLLMGenerator(self.world_data)
+        try:
+            from src.prototype.llm_adapter import GatewayLLMGenerator
+
+            self.gateway_generator = GatewayLLMGenerator(world_data=self.world_data)
+        except Exception:
+            self.gateway_generator = None
         self.manga_builder = MangaBuilder(self.world_data)
         self.llm_fn = llm_fn
 
     def _load_world(self) -> dict:
-        if self.world_path.exists():
-            return yaml.safe_load(self.world_path.read_text(encoding="utf-8")) or {}
-        return {}
+        return load_world_with_viewpoint()
+
+    def _build_style_constraint(self) -> str:
+        """文体制約プロンプトを構築（プロンプトテンプレートへ注入用）"""
+        sg = self.style_guide
+        tone = sg.get("tone", "常体")
+        vocab = sg.get("vocabulary_level", "中級")
+        avg_len = sg.get("avg_sentence_length", 45)
+        unique_target = sg.get("unique_words_target", 180)
+        formality = sg.get("formality", "やや硬め")
+        endings = sg.get("sentence_endings", ["だ。", "である。", "た。"])
+        forbidden = sg.get("forbidden_endings", ["です。", "ます。"])
+
+        endings_str = "、".join(endings)
+        forbidden_str = "、".join(forbidden)
+
+        return (
+            f"【文体制約】\n"
+            f"- 文体: {tone}（{endings_str} を基本とする）を厳守。敬体（{forbidden_str}）は使用禁止。\n"
+            f"- 平均文長: {avg_len}文字前後を目安に、長文・短文の極端な偏りを避ける。\n"
+            f"- 語彙レベル: {vocab}程度。難解な専門語・過度な口語は避ける。\n"
+            f"- 文末表現: {endings_str} を基本とし、{forbidden_str} は使わない。\n"
+            f"- ユニーク語数: {unique_target}語以上を目指す。\n"
+            f"- 文体トーン: {formality}。"
+        )
 
     def _load_prompt_template(self, part: int) -> str:
         prompt_files = {
@@ -735,7 +909,18 @@ class NovelGenerator:
             else:
                 prev_ep_summary = f"第{ep - 1}話での激闘を乗り越え、さらなる深層の秘密へと迫る。"
 
-        return f"前話あらすじ: {prev_ep_summary} / {foreshadow_text}"
+        viewpoint = self.world_data.get("viewpoint", "third_person")
+        vp_token = self._viewpoint_token(viewpoint)
+        return f"前話あらすじ: {prev_ep_summary} / {foreshadow_text} / 視点指定: {vp_token}"
+
+    def _viewpoint_token(self, viewpoint: str) -> str:
+        tokens = {
+            "third_person": "[三人称視点: 主人公を「彼女/凛」と呼ぶ、心理描写は外部から観察]",
+            "first_person_watashi": "[一人称視点・私: 「私」を使用、内面独白を含む]",
+            "first_person_boku": "[一人称視点・僕: 「僕」を使用、やや柔らかい口調]",
+            "first_person_ore": "[一人称視点・俺: 「俺」を使用、男性的/強気な口調]",
+        }
+        return tokens.get(viewpoint, tokens["third_person"])
 
     # ステップ34: 感情語補正補助関数
     def inject_emotion_words(self, text: str, emotions: Optional[List[str]] = None) -> str:
@@ -774,6 +959,9 @@ class NovelGenerator:
 
         cliff_to_use = cliff_override or self.foreshadow_mgr.next_cliff()
 
+        # 文体制約を構築
+        style_constraint = self._build_style_constraint()
+
         prompt_str = prompt_tmpl.format(
             genre=self.world_data.get("genre", "ファンタジー"),
             symbol=self.world_data.get("symbol", "光の石"),
@@ -792,6 +980,8 @@ class NovelGenerator:
             emotion_word_2="決意",
             mission_summary=f"第{ep}話の重要拠点突破ミッション",
             cliff_pattern=cliff_to_use,
+            viewpoint_token=self._viewpoint_token(self.world_data.get("viewpoint", "third_person")),
+            style_constraint=style_constraint,
         )
 
         # ステップ29: 文字数300±50等に収まるまで再生成（最大3回）
@@ -839,7 +1029,11 @@ class NovelGenerator:
     ) -> Tuple[str, ValidationResult, Dict[int, str]]:
         # ステップ 60: 生成時に foreshadow_manager.get_expects() を tracker に渡す
         rules_dir = str(Path(__file__).parent / "continuity_rules")
-        tracker = ContinuityTracker(rules_dir=rules_dir, expects=self.foreshadow_mgr.get_expects())
+        viewpoint = self.world_data.get("viewpoint", "third_person")
+        tracker = ContinuityTracker(rules_dir=rules_dir, expects=self.foreshadow_mgr.get_expects(), viewpoint=viewpoint)
+
+        # Step 13: エピソード全体の比喩予算を設定
+        self.mock_generator.set_metaphor_budget(4)
 
         ctx = self.build_ctx(ep, prev_summary)
         chosen_cliff = self.foreshadow_mgr.next_cliff()
@@ -877,15 +1071,19 @@ class NovelGenerator:
                 raw_file.write_text(raw_content, encoding="utf-8")
                 val_result = validate_episode(part_texts, part7_text_override=part_texts[7])
 
-        # 総文字数が3100を超過した場合は最大パートから微調整
-        cur_total = count_chars("\n\n".join([part_texts[p] for p in range(1, 8)]))
-        if cur_total > MAX_CHARS:
-            longest_p = max([p for p in range(1, 7)], key=lambda p: count_chars(part_texts[p]))
+        # 総文字数が3100を超過した場合は目標超過パートから微調整
+        while count_chars("\n\n".join([part_texts[p] for p in range(1, 8)])) > MAX_CHARS:
+            candidates = [p for p in range(1, 7) if count_chars(part_texts[p]) > PART_TARGETS.get(p, 300)]
+            if not candidates:
+                break
+            longest_p = max(candidates, key=lambda p: count_chars(part_texts[p]))
             p_text = part_texts[longest_p]
             s_list = [s for s in p_text.split("。") if s]
             if len(s_list) > 3:
                 part_texts[longest_p] = "。".join(s_list[:-1]) + "。"
                 val_result = validate_episode(part_texts, part7_text_override=part_texts[7])
+            else:
+                break
 
         # ステップ36: 完成版 epNN.md 保存 (ステップ 63: polish 呼び出し)
         clean_novel_text = "\n\n".join([part_texts[p] for p in range(1, 8)])
@@ -893,7 +1091,8 @@ class NovelGenerator:
             from novel_50ep.polish_tool import polish
         except ImportError:
             from polish_tool import polish
-        polished_novel_text = polish(clean_novel_text, tracker=tracker)
+        viewpoint = self.world_data.get("viewpoint", "third_person")
+        polished_novel_text = polish(clean_novel_text, tracker=tracker, viewpoint=viewpoint)
         final_ep_file = OUTPUT_DIR / f"ep{ep:02d}.md"
         final_ep_file.write_text(polished_novel_text, encoding="utf-8")
 

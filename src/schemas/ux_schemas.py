@@ -21,10 +21,28 @@ class HeatmapData(BaseModel):
 # Feature 2: Affinity Data
 class AffinityData(BaseModel):
     character_name: str
-    affinity_score: float = Field(50.0, ge=0.0, le=100.0)
-    dependency_score: float = Field(20.0, ge=0.0, le=100.0)
-    current_mood: str = "neutral"
+    affinity_score: float = Field(50.0, ge=0.0, le=100.0, description="Affection score (0-100)")
+    dependency_score: float = Field(20.0, ge=0.0, le=100.0, description="Dependency / Possessiveness score (0-100)")
+    trust_score: float = Field(50.0, ge=0.0, le=100.0, description="Trust score (0-100)")
+    wariness_score: float = Field(30.0, ge=0.0, le=100.0, description="Wariness / Psychological wall score (0-100)")
+    current_mood: str = Field("neutral", description="Current mood / FSM stage (wary, observation, tsundere, affectionate, deep_love, neutral)")
     recent_change: float = 0.0
+
+    @property
+    def affection(self) -> float:
+        return self.affinity_score
+
+    @property
+    def trust(self) -> float:
+        return self.trust_score
+
+    @property
+    def dependency(self) -> float:
+        return self.dependency_score
+
+    @property
+    def wariness(self) -> float:
+        return self.wariness_score
 
 
 # Feature 3: Scene Theme
@@ -36,9 +54,10 @@ class SceneTheme(BaseModel):
     ambient_mood: str = "standard"
 
 
-# Feature 4: What-If Route
 class WhatIfRequest(BaseModel):
     episode_id: Optional[str] = None
+    book_id: Optional[int] = None
+    character_name: Optional[str] = None
     choice_point: str
     novel_context: Optional[str] = None
 
@@ -48,6 +67,46 @@ class WhatIfResponse(BaseModel):
     alternative_snippet: str
     outcome_summary: str
     impact_level: str = "major"
+    branch_cache_key: Optional[str] = None
+
+
+# Feature 4: Branch Forking & Multi-Ending Schemas
+class BranchCreateRequest(BaseModel):
+    book_id: int
+    parent_branch_id: Optional[int] = 1
+    fork_ep_num: int
+    new_name: str
+    divergence_reason: Optional[str] = ""
+    what_if_snippet: Optional[str] = None
+
+
+class BranchCreateResponse(BaseModel):
+    branch_id: int
+    book_id: int
+    name: str
+    parent_id: Optional[int]
+    fork_ep_num: int
+    divergence_reason: str
+    status: str = "created"
+
+
+# Feature 10: HITL (Human-in-the-Loop) Schemas
+class HITLRequestPayload(BaseModel):
+    session_id: str
+    task_id: Optional[str] = None
+    step_name: str
+    prompt_preview: Optional[str] = None
+    current_content: Optional[str] = None
+    parameters: Dict[str, Any] = Field(default_factory=dict)
+    options: List[str] = Field(default_factory=list)
+    timeout_seconds: int = 300
+
+
+class HITLResumePayload(BaseModel):
+    session_id: str
+    approved: bool = True
+    feedback: Optional[str] = None
+    overrides: Dict[str, Any] = Field(default_factory=dict)
 
 
 # Feature 5: Dynamic Pacing / Reading Speed

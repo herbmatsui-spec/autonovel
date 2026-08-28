@@ -96,15 +96,30 @@ async def check_character_consistency_node(state: ReviewGraphState, *, llm_provi
         {
             "agent": "CharacterSupervisor",
             "phase": "character_checking",
-            "message": f"第{ep_num}話 登場人物の口調・性格の一貫性を監修中...",
+            "message": f"第{ep_num}話 登場人物の口調・性格および好感度・心理状態の一貫性を監修中...",
             "ep_num": ep_num,
         },
     )
 
-    prompt = f"""あなたは小説のキャラクター監修エディターです。
-第{ep_num}話本文における登場人物の口調や性格のブレ、行動の不自然さをチェックしてください。
+    affinity_info = ""
+    metadata = state.get("metadata", {})
+    affinity_map = metadata.get("affinity_map") or metadata.get("narrative_hub", {}).get("affinity_map")
+    if affinity_map:
+        lines = []
+        for cname, cdata in affinity_map.items():
+            if hasattr(cdata, "affinity_score"):
+                lines.append(f"- {cname}: 好感度={cdata.affinity_score}, 心理状態={cdata.current_mood}")
+            elif isinstance(cdata, dict):
+                lines.append(f"- {cname}: 好感度={cdata.get('affinity_score', 50)}, 心理状態={cdata.get('current_mood', 'neutral')}")
+            else:
+                lines.append(f"- {cname}: 好感度={cdata}")
+        if lines:
+            affinity_info = "【登場人物の現在の好感度・心理状態】\n" + "\n".join(lines) + "\n\n"
 
-【本文】
+    prompt = f"""あなたは小説のキャラクター監修エディターです。
+第{ep_num}話本文における登場人物の口調や性格のブレ、行動の不自然さ、および設定された心理状態との整合性をチェックしてください。
+
+{affinity_info}【本文】
 {content[:3000]}
 
 【出力形式】
@@ -112,7 +127,9 @@ JSON形式:
 {{
   "character_score": 0.0〜1.0,
   "is_character_ok": true/false,
-  "inconsistencies": ["口調や動機のブレの指摘"]
+  "is_affinity_ok": true/false,
+  "inconsistencies": ["口調や動機のブレの指摘"],
+  "affinity_issues": ["好感度や心理状態（ツンデレ・警戒・好意等）と言動の不整合"]
 }}
 """
 
@@ -124,7 +141,7 @@ JSON形式:
             res = await llm_provider.generate_json(model_name=model, prompt=prompt, temperature=0.2)
             data = json.loads(res.content) if isinstance(res.content, str) else res.content
         else:
-            data = {"character_score": 0.9, "is_character_ok": True, "inconsistencies": []}
+            data = {"character_score": 0.9, "is_character_ok": True, "is_affinity_ok": True, "inconsistencies": [], "affinity_issues": []}
 
         return {
             "character_consistency": data,
@@ -133,7 +150,7 @@ JSON形式:
     except Exception as e:
         logger.error(f"[ReviewGraph] Character consistency check failed: {e}")
         return {
-            "character_consistency": {"character_score": 0.8, "is_character_ok": True, "inconsistencies": []},
+            "character_consistency": {"character_score": 0.8, "is_character_ok": True, "is_affinity_ok": True, "inconsistencies": [], "affinity_issues": []},
             "status": "character_error",
         }
 
@@ -163,12 +180,15 @@ async def propose_edits_node(state: ReviewGraphState, *, llm_provider: Any = Non
 
     is_pacing_ok = pacing.get("is_pacing_ok", True)
     is_char_ok = char.get("is_character_ok", True)
+    is_affinity_ok = char.get("is_affinity_ok", True)
 
     issues = []
     for iss in pacing.get("issues", []):
         issues.append({"category": "Pacing", "description": iss})
     for inc in char.get("inconsistencies", []):
         issues.append({"category": "Character", "description": inc})
+    for aff_iss in char.get("affinity_issues", []):
+        issues.append({"category": "Affinity", "description": aff_iss})
 
     commercial_score = state.get("commercial_score")
     is_commercial_ok = True
@@ -180,7 +200,7 @@ async def propose_edits_node(state: ReviewGraphState, *, llm_provider: Any = Non
                 "description": f"商業スコア基準未達 ({commercial_score:.2f} < {COMMERCIAL_PASS})。冒頭フックまたは次話へのクリフハンガーを強化してください。",
             })
 
-    requires_revision = not (is_pacing_ok and is_char_ok and is_commercial_ok)
+    requires_revision = not (is_pacing_ok and is_char_ok and is_affinity_ok and is_commercial_ok)
     instructions = [iss["description"] for iss in issues]
 
     sse = get_sse_manager()
@@ -199,6 +219,7 @@ async def propose_edits_node(state: ReviewGraphState, *, llm_provider: Any = Non
     return {
         "requires_revision": requires_revision,
         "revision_instructions": instructions,
+        "issues": issues,
         "status": "review_completed",
     }
 

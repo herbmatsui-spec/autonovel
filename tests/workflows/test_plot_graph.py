@@ -53,6 +53,47 @@ class TestPlotGraph(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(result.get("is_approved"))
         self.assertGreaterEqual(result.get("quality_score", 0.0), 0.8)
 
+    async def test_plot_graph_with_unresolved_foreshadows(self):
+        """未回収伏線（unresolved_foreshadows）をプロットに割り当てられることのテスト"""
+        mock_llm = MagicMock()
+
+        mock_llm.generate_json = AsyncMock(
+            side_effect=[
+                LLMResponse(
+                    content='[{"ep_num": 1, "title": "光の石の謎", "summary": "石の秘密が明かされる", "next_hook": "敵の強襲", "assigned_foreshadows": ["胸元の光の石"]}]',
+                    success=True,
+                ),
+                LLMResponse(
+                    content='{"is_approved": true, "score": 0.9, "issues": [], "suggestions": []}',
+                    success=True,
+                ),
+            ]
+        )
+
+        app = compile_plot_graph(llm_provider=mock_llm)
+
+        initial_state: PlotGraphState = {
+            "genre": "ハイファンタジー",
+            "theme": "英雄譚",
+            "target_episodes": 1,
+            "max_iterations": 2,
+            "unresolved_foreshadows": [
+                {"id": "f-01", "ep": 1, "text": "胸元の光の石が突如として不吉な黒に染まる", "status": "未回収"}
+            ],
+        }
+
+        result = await app.ainvoke(initial_state)
+
+        self.assertIsNotNone(result)
+        parsed = result.get("parsed_plots", [])
+        self.assertEqual(len(parsed), 1)
+        self.assertEqual(parsed[0].get("assigned_foreshadows"), ["胸元の光の石"])
+        
+        # プロンプトに未回収伏線が含まれていることを確認
+        call_args_list = mock_llm.generate_json.call_args_list
+        prompt_arg = call_args_list[0].kwargs.get("prompt")
+        self.assertIn("胸元の光の石が突如として不吉な黒に染まる", prompt_arg)
+
 
 if __name__ == "__main__":
     unittest.main()

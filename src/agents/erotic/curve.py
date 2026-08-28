@@ -4,9 +4,12 @@ erotic/curve.py - 官能カーブ生成モジュール
 
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 from pydantic import BaseModel
+
+if TYPE_CHECKING:
+    from src.agents.erotic.parameters import EroticParameters
 
 
 class EroticPoint(BaseModel):

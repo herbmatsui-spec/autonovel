@@ -42,6 +42,9 @@ from novel_50ep.count_chars import (
     extract_parts,
     require_words,
     validate_episode,
+    extract_metaphors,
+    count_metaphor_types,
+    detect_metaphor_dup,
 )
 from novel_50ep.foreshadow_manager import ForeshadowManager
 from novel_50ep.generator import MangaBuilder, MockLLMGenerator, NovelGenerator
@@ -100,6 +103,20 @@ def test_phase_c_validation_suite():
     dup_text = "同じ言葉。\n同じ言葉。\n同じ言葉。"
     has_dup, _ = detect_dup(dup_text)
     assert has_dup is True
+
+    # Step 21-22: 比喩テンプレ化検出テスト
+    metaphor_text = "まるで光のようだ。まるで闇のようだ。まるで風のように見える。"
+    metaphors = extract_metaphors(metaphor_text)
+    # パターンが重複マッチするため6件になる（正常動作）
+    assert len(metaphors) >= 3
+    types = count_metaphor_types(metaphor_text)
+    assert "のようだ類" in types
+    assert types["のようだ類"] >= 3
+    
+    dup_text2 = "まるで光のようだ。まるで光のように見える。"
+    has_dup_meta, dup_details = detect_metaphor_dup(dup_text2)
+    assert has_dup_meta is True
+    assert any("光" in d for d in dup_details)
 
 
 # ==============================================================================

@@ -10,6 +10,10 @@ from src.backend.patch_validator import PatchValidator
 from src.backend.prompt_version_manager import PromptVersionManager
 from src.core.container import AppContainer
 from src.core.exceptions import NotFoundError, ValidationError
+from src.backend.response_helpers import api_success
+
+from src.backend.router_helpers import workflow_endpoint
+from src.backend.utils.id_generator import generate_prefixed_id as generate_task_id
 
 router = APIRouter(prefix="/api/patches", tags=["patches"])
 
@@ -23,6 +27,7 @@ async def get_pending_patches(book_id: int):
     return patches
 
 
+@workflow_endpoint("patch_approve")
 @router.post("/{patch_id}/approve")
 async def approve_patch(
     patch_id: int, req: Optional[Any] = None, api_key: str = Depends(require_api_key)
@@ -80,9 +85,10 @@ async def approve_patch(
         # ステータス更新
         await uow.misc.update_patch_status(patch_id, "approved")
 
-    return {"message": "Patch approved and applied successfully"}
+    return api_success({"message": "Patch approved and applied successfully"}, "パッチを適用しました")
 
 
+@workflow_endpoint("patch_reject")
 @router.post("/{patch_id}/reject")
 async def reject_patch(
     patch_id: int, req: Optional[Any] = None, api_key: str = Depends(require_api_key)
@@ -102,9 +108,10 @@ async def reject_patch(
             raise ValidationError(f"Patch is already {patch.status}")
 
         await uow.misc.update_patch_status(patch_id, "rejected")
-    return {"message": "Patch rejected successfully"}
+    return api_success({"message": "Patch rejected successfully"}, "パッチを拒否しました")
 
 
+@workflow_endpoint("patch_edit")
 @router.post("/{patch_id}/edit")
 async def edit_patch(patch_id: int, req: Any, api_key: str = Depends(require_api_key)):
     # Note: PatchEditRequest should be imported from api_schemas in the actual final version
@@ -150,4 +157,4 @@ async def edit_patch(patch_id: int, req: Any, api_key: str = Depends(require_api
             if ver:
                 ver.content = req.content
 
-    return {"message": "Patch content updated successfully"}
+    return api_success({"message": "Patch content updated successfully"}, "パッチを更新しました")

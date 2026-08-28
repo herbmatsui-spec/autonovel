@@ -12,11 +12,21 @@ AFTERGLOW_MONOLOGUE_SYSTEM_PROMPT = """あなたは小説に登場するキャ�
 """
 
 
-def build_afterglow_prompt(character_name: str, scene_type: str, story_summary: str = "") -> str:
+def build_afterglow_prompt(
+    character_name: str,
+    scene_type: str,
+    story_summary: str = "",
+    mood: Optional[str] = None,
+    character_context: str = "",
+) -> str:
+    mood_str = f"\n【キャラクターの現在の心理状態】: {mood}" if mood else ""
+    char_info = f"\n【キャラクター深層設定・口調・秘密】:\n{character_context}" if character_context else ""
     return (
         f"{AFTERGLOW_MONOLOGUE_SYSTEM_PROMPT}\n\n"
         f"【対象キャラクター】: {character_name}\n"
-        f"【直前シーン種別】: {scene_type}\n"
-        f"【ストーリー概要】: {story_summary or '激しい戦いまたは親密な触れ合いの直後'}\n\n"
-        f"内心独白を生成してください:"
+        f"【直前シーン種別】: {scene_type}{mood_str}\n"
+        f"【ストーリー概要】: {story_summary or '激しい戦いまたは親密な触れ合いの直後'}\n"
+        f"{char_info}\n"
+        f"現在の心理状態に完全に沿った、胸を打つ内心独白（……）を生成してください:"
     )
+

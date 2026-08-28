@@ -12,6 +12,10 @@ from src.backend.redis_util import get_redis_client
 from src.backend.sse import task_event_generator
 from src.core.container import AppContainer
 from src.core.exceptions import NotFoundError
+from src.backend.response_helpers import api_success
+
+from src.backend.router_helpers import workflow_endpoint
+from src.backend.utils.id_generator import generate_prefixed_id as generate_task_id
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +23,7 @@ router = APIRouter(prefix="/api/tasks", tags=["tasks"])
 
 
 @router.get("/{task_id}/status")
-async def get_task_status(task_id: str):
+async def get_task_status(task_id: str, api_key: str = Depends(require_api_key)):
     redis_client = get_redis_client()
     if redis_client is not None:
         try:
@@ -55,6 +59,7 @@ async def stream_task_status(request: Request, task_id: str, last_event_id: str 
     )
 
 
+@workflow_endpoint("task_stop")
 @router.post("/{task_id}/stop")
 async def stop_task(task_id: str, api_key: str = Depends(require_api_key)):
     # Retrieve current task status, set stop event
@@ -90,7 +95,7 @@ async def stop_task(task_id: str, api_key: str = Depends(require_api_key)):
     if redis_client is not None:
         try:
             redis_client.set(f"task_status:{task_id}", state_json, ex=86400)
-            return {"message": "Stop request registered via Redis"}
+            return api_success({"message": "Stop request registered via Redis"}, "タスクの停止要求を登録しました")
         except Exception as exc:
             logger.warning(
                 "Redis task_status 保存失敗、DB にフォールバックします: %s", exc, exc_info=True
@@ -99,4 +104,4 @@ async def stop_task(task_id: str, api_key: str = Depends(require_api_key)):
     await db.save_internal_state(
         f"task_status:{task_id}", state_json, time.strftime("%Y-%m-%d %H:%M:%S")
     )
-    return {"message": "Stop request registered"}
+    return api_success({"message": "Stop request registered"}, "タスクの停止要求を登録しました")

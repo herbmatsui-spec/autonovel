@@ -50,6 +50,29 @@ class ForeshadowManager:
             for f in items
         ]
 
+    # ステップ 12: DB 永続化連携
+    async def persist_to_db(self, book_id: int = 1, branch_id: int = 1, repo: Optional[Any] = None) -> None:
+        try:
+            from src.prototype.foreshadow_adapter import PersistentForeshadowManager
+
+            pm = PersistentForeshadowManager(csv_path=self.csv_path, cliffs_path=self.cliffs_path)
+            pm.foreshadows = self.foreshadows
+            await pm.persist(book_id, branch_id, repo=repo)
+        except Exception:
+            pass
+
+    async def load_from_db(self, book_id: int = 1, branch_id: int = 1, repo: Optional[Any] = None) -> List[Dict[str, Any]]:
+        try:
+            from src.prototype.foreshadow_adapter import PersistentForeshadowManager
+
+            pm = PersistentForeshadowManager(csv_path=self.csv_path, cliffs_path=self.cliffs_path)
+            data = await pm.load_persistent(book_id, branch_id, repo=repo)
+            if data:
+                self.foreshadows = data
+            return data
+        except Exception:
+            return []
+
     # ステップ51: foreshadow.csv 作成
     def init_csv(self) -> None:
         if not self.csv_path.exists():
@@ -114,15 +137,17 @@ class ForeshadowManager:
     def resolve_foreshadow(self, target_text: str, resolved_ep: int) -> bool:
         items = self.load_all()
         updated = False
+        resolved_items = []
         for item in items:
             if item.status == "未回収" and (target_text in item.text or item.text in target_text):
                 item.status = "回収"
                 updated = True
-                break
+                resolved_items.append(item)
         if updated:
             self.save_all(items)
             # 回収レコードも追記
-            self.add_foreshadow(ep=resolved_ep, f_type="回収", text=f"第{item.ep}話の伏線回収: {target_text[:30]}...", status="回収")
+            for r_item in resolved_items:
+                self.add_foreshadow(ep=resolved_ep, f_type="回収", text=f"第{r_item.ep}話の伏線回収: {target_text[:30]}...", status="回収")
         return updated
 
     # ステップ55: 50話最後の全伏線回収チェック
@@ -131,36 +156,40 @@ class ForeshadowManager:
         unresolved = [item for item in items if item.status == "未回収" and item.type == "伏線"]
         return len(unresolved) == 0, unresolved
 
+    def get_unresolved_foreshadows(self) -> List[ForeshadowItem]:
+        """未回収の伏線一覧を取得"""
+        items = self.load_all()
+        return [item for item in items if item.status == "未回収" and item.type == "伏線"]
+
+    def get_stale_foreshadows(self, current_ep: int, threshold: int = 5) -> List[ForeshadowItem]:
+        """設置から threshold 話以上経過している未回収の放置伏線を取得"""
+        unresolved = self.get_unresolved_foreshadows()
+        return [item for item in unresolved if (current_ep - item.ep) >= threshold]
+
     def load_cliff_patterns(self) -> List[str]:
         """
-        優先的に foreshadow_map.md のテーブルからクリフハンガーを読み込む。
-        存在しない場合は CLIFFS_FILE を参照する。
+        CLIFFS_FILE (cliff_patterns.txt) から正規クリフハンガーパターンを読み込む。
         """
-        # 1. foreshadow_map.md からの抽出を試みる
-        try:
-            if FORESHADOW_MAP_FILE.exists():
-                lines = FORESHADOW_MAP_FILE.read_text(encoding="utf-8").splitlines()
-                cliffs = []
-                for line in lines:
-                    if line.startswith("| 第") and "伏線" in line:
-                        # テーブル形式: | 話数 | 種別 | 内容 | ステータス |
-                        parts = line.split("|")
-                        if len(parts) >= 4:
-                            content = parts[3].strip()
-                            # 「第NN話クリフ: 」などの接頭辞を除去して中身だけを抽出
-                            if ":" in content:
-                                content = content.split(":", 1)[1].strip()
-                            cliffs.append(content)
-                if cliffs:
-                    return cliffs
-        except Exception:
-            pass
-
-        # 2. フォールバック: 従来の CLIFFS_FILE
         if self.cliffs_path.exists():
-            return [line.strip() for line in self.cliffs_path.read_text(encoding="utf-8").splitlines() if line.strip()]
-        
-        return ["胸元の光の石が突如として不吉な黒に染まり、脈打ち始めた。"]
+            patterns = [
+                p.strip()
+                for p in self.cliffs_path.read_text(encoding="utf-8").splitlines()
+                if p.strip()
+            ]
+            if patterns:
+                return patterns
+        return [
+            "胸元の光の石が突如として不吉な黒に染まり、脈打ち始めた。",
+            "背後から、死んだはずの男の冷酷な嗤い声が静寂を切り裂いた。",
+            "足元の大地が突如として光の亀裂を走らせ、底知れぬ奈落へと崩落し始めた。",
+            "手にした通信水晶から、絶体絶命の悲鳴と共に通信が途絶した。",
+            "守るべき拠点の防壁に、何者かが内側から結界解除の鍵を差し込んだ。",
+            "敵の仮面が割れ、覗いた素顔は幼き日に生き別れた肉親その人だった。",
+            "頼みの光術が完全に吸い尽くされ、闇の巨影が頭上から静かに眼を見開いた。",
+            "懐の古文書に、予告されていなかった第十三の災厄の紋章が浮かび上がった。",
+            "信じて背中を預けていた仲間の切っ先が、ゆっくりとこちらに向けられていた。",
+            "夜空を覆う雲が晴れた瞬間、天頂に第二の不吉な月が冷たく輝いていた。",
+        ]
 
     # ステップ56: クリフパターン使用頻度集計
     def cliff_usage(self) -> Dict[str, int]:

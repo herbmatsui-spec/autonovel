@@ -28,21 +28,27 @@ class SSEManager:
         if getattr(self, "_initialized", False):
             return
         self._queues: Set[asyncio.Queue[str]] = set()
-        self._lock = asyncio.Lock()
+        self._lock: Optional[asyncio.Lock] = None
         self._initialized = True
         logger.info("[SSEManager] Initialized SSEManager singleton.")
+
+    @property
+    def lock(self) -> asyncio.Lock:
+        if self._lock is None:
+            self._lock = asyncio.Lock()
+        return self._lock
 
     async def register(self) -> asyncio.Queue[str]:
         """新規クライアント用のイベントキューを登録する"""
         queue: asyncio.Queue[str] = asyncio.Queue(maxsize=100)
-        async with self._lock:
+        async with self.lock:
             self._queues.add(queue)
         logger.info(f"[SSEManager] Client connected. Total active clients: {len(self._queues)}")
         return queue
 
     async def unregister(self, queue: asyncio.Queue[str]) -> None:
         """切断されたクライアントのイベントキューを削除する"""
-        async with self._lock:
+        async with self.lock:
             self._queues.discard(queue)
         logger.info(f"[SSEManager] Client disconnected. Remaining clients: {len(self._queues)}")
 
@@ -55,7 +61,7 @@ class SSEManager:
         }
         message = f"event: {event_type}\ndata: {json.dumps(payload, ensure_ascii=False)}\n\n"
 
-        async with self._lock:
+        async with self.lock:
             dead_queues = set()
             for queue in self._queues:
                 try:

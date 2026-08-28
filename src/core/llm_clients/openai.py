@@ -4,6 +4,8 @@ import asyncio
 import time
 from typing import Any, Callable, Dict, Optional, Tuple
 
+import openai
+
 from src.backend.engine_utils import AdaptiveCooldown, safe_model_validate
 from src.backend.sanitizer import OutputSanitizer
 from src.core.exceptions import LLMUnrecoverableError

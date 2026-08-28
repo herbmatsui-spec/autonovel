@@ -18,6 +18,11 @@ class BaseGraphState(TypedDict, total=False):
     metadata: Dict[str, Any]
     step_count: int
     max_steps: int
+    enable_hitl: bool
+    hitl_session_id: Optional[str]
+    hitl_timeout: Optional[float]
+    hitl_status: Optional[str]
+    hitl_override_data: Optional[Dict[str, Any]]
 
 
 class PlotGraphState(BaseGraphState, total=False):
@@ -27,6 +32,7 @@ class PlotGraphState(BaseGraphState, total=False):
     target_episodes: int
     user_instructions: Optional[str]
     bible_context: Dict[str, Any]
+    unresolved_foreshadows: List[Dict[str, Any]]
     
     # プロット生成と推敲のループ状態
     current_iteration: int
@@ -52,6 +58,7 @@ class WritingGraphState(BaseGraphState, total=False):
     sys_inst: str
     fw_prompt: str
     style_tag: Optional[str]
+    assigned_foreshadows: List[Dict[str, Any]]
 
     # 内部イテレーション状態
     ac_iter: int
@@ -67,6 +74,18 @@ class WritingGraphState(BaseGraphState, total=False):
     failures: List[Dict[str, Any]]
     quality_score: float
     event_density: float
+    is_foreshadow_resolved: bool
+
+    # 感情ピーク・自動イラスト
+    detected_peaks: List[Dict[str, Any]]
+    generated_illustrations: List[Dict[str, Any]]
+
+    # HITL (Human-in-the-Loop) 状態
+    enable_hitl: bool
+    hitl_session_id: Optional[str]
+    hitl_timeout: Optional[float]
+    hitl_status: Optional[str]
+    hitl_override_data: Optional[Dict[str, Any]]
 
 
 class ReviewGraphState(BaseGraphState, total=False):
@@ -89,6 +108,7 @@ class ReviewGraphState(BaseGraphState, total=False):
 class MasterGraphState(BaseGraphState, total=False):
     """マスターオーケストレーター（MasterGraph）の状態定義"""
     task_id: str
+    active_branch_id: int
     mode: str  # "full_pipeline", "plot_only", "writing_batch", "review_only"
     target_start_ep: int
     target_end_ep: int
@@ -106,3 +126,7 @@ class MasterGraphState(BaseGraphState, total=False):
     
     overall_progress: float
     current_phase: str
+
+    # NarrativeState 共通ハブ参照およびレポート
+    narrative: Any
+    narrative_report: Dict[str, Any]

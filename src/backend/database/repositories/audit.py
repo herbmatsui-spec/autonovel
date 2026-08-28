@@ -4,7 +4,7 @@ from __future__ import annotations
 database/repositories/audit.py - 監査Issueデータ操作用のリポジトリ
 """
 import logging
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from sqlalchemy import select, update
 
@@ -43,14 +43,14 @@ class AuditRepository(BaseRepository):
         await self.session.flush()
         return issue.id
 
-    async def get_issue(self, issue_id: int) -> Optional[AuditIssueDbModel]:
+    async def get_issue(self, issue_id: int) -> Optional[Dict[str, Any]]:
         result = await self.session.execute(select(AuditIssue).where(AuditIssue.id == issue_id))
         row = result.scalar_one_or_none()
         return self._to_dict(row) if row else None
 
     async def get_issues_by_book(
         self, book_id: int, status: Optional[str] = None
-    ) -> List[AuditIssueDbModel]:
+    ) -> List[Dict[str, Any]]:
         stmt = select(AuditIssue).where(AuditIssue.book_id == book_id)
         if status:
             stmt = stmt.where(AuditIssue.status == status)

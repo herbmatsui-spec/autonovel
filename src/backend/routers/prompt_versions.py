@@ -5,6 +5,7 @@ from src.backend.auth import require_api_key
 from src.backend.database import UnitOfWork
 from src.core.container import AppContainer
 from src.models.api_schemas import RollbackRequest
+from src.backend.response_helpers import api_success
 
 router = APIRouter(tags=["prompt_versions"])
 
@@ -58,4 +59,4 @@ async def rollback_prompt_version(book_id: int, req: RollbackRequest, api_key: s
             GlobalConfig().set("optimized_prompt_patch", "")
             msg = "Rollback successful. Reverted to default empty prompt (no healthy history found)"
 
-    return {"message": msg}
+    return api_success({"message": msg}, "プロンプトバージョンをロールバックしました")

@@ -18,7 +18,7 @@ class BedtimeSupporter:
 
         if self.llm_gateway and hasattr(self.llm_gateway, "generate_text"):
             try:
-                res = await self.llm_gateway.generate_text(purpose="bedtime", prompt=prompt)
+                res = await self.llm_gateway.generate_text("bedtime", prompt=prompt)
                 content = res if isinstance(res, str) else getattr(res, "story_content", str(res))
                 return BedtimeMessage(
                     character_name=character_name,

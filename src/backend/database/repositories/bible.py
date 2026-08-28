@@ -6,7 +6,7 @@ database/repo_bible.py - バイブル(Bible)データ操作用のリポジトリ
 import json
 import logging
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, List, Optional
 
 from sqlalchemy import select
 

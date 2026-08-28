@@ -2,6 +2,7 @@
 
 from src.backend.engine_config import EngineConfig
 from src.backend.engine_facade import EngineFacade
+from src.core.container import AppContainer
 
 
 def get_engine(api_key: str) -> EngineFacade:

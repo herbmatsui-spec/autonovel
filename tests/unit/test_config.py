@@ -6,6 +6,7 @@ from config.project_context import get_config
 from config.validator import ConfigValidator
 from schemas.config import (
     DomainProfileModel,
+    GlobalConfigModel,
     InteractionMatrixModel,
     ModelRegistryModel,
     SystemPluginsModel,
@@ -35,7 +36,7 @@ def test_config_validator_all_files_exist():
 def test_config_validator_load_settings():
     """settings.toml の読み込みとバリデーションをテスト"""
     config = ConfigValidator.load_settings_toml()
-    assert isinstance(config, get_config().__class__)
+    assert isinstance(config, GlobalConfigModel)
     assert config.model_writing == "gemma-4-31b-it"
     assert config.auto_backup is True
 
@@ -106,7 +107,7 @@ def test_config_validator_validate_all():
     assert "interaction" in configs
     assert "domain_profiles" in configs
 
-    assert isinstance(configs["settings"], get_config().__class__)
+    assert isinstance(configs["settings"], GlobalConfigModel)
     assert isinstance(configs["models"], ModelRegistryModel)
     assert isinstance(configs["plugins"], SystemPluginsModel)
     assert isinstance(configs["tropes"], TropesModel)

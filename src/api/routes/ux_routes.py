@@ -8,6 +8,10 @@ from src.schemas.ux_schemas import (
     SceneTheme,
     WhatIfRequest,
     WhatIfResponse,
+    BranchCreateRequest,
+    BranchCreateResponse,
+    HITLRequestPayload,
+    HITLResumePayload,
     ReadingSpeedData,
     MonologueResponse,
     GapMoePreference,
@@ -17,6 +21,9 @@ from src.services.metrics_analyzer import MetricsAnalyzer
 from src.services.affinity_tracker import AffinityTracker
 from src.services.pacing_adjuster import PacingAdjuster
 from src.services.preference_store import PreferenceStore
+from src.services.branch_service import BranchService
+from src.backend.hitl_manager import get_hitl_manager
+from src.backend.response_helpers import api_success
 from src.agents.what_if_generator import WhatIfGenerator
 from src.agents.afterglow_generator import AfterglowGenerator
 from src.agents.bedtime_supporter import BedtimeSupporter
@@ -31,6 +38,8 @@ pacing_adjuster = PacingAdjuster()
 afterglow_generator = AfterglowGenerator()
 preference_store = PreferenceStore()
 bedtime_supporter = BedtimeSupporter()
+branch_service = BranchService()
+hitl_manager = get_hitl_manager()
 
 _current_theme = SceneTheme(
     theme_type="default",
@@ -61,10 +70,10 @@ async def get_affinity(text_sample: Optional[str] = Query(None)):
     return affinity_tracker.get_all_affinities()
 
 
-@router.post("/affinity/update", response_model=list[AffinityData])
+@router.post("/affinity/update")
 async def update_affinity(data: AffinityData):
     """好感度を手動更新する"""
-    return affinity_tracker.set_affinity(data)
+    return api_success(affinity_tracker.set_affinity(data), "好感度を更新しました")
 
 
 
@@ -101,10 +110,16 @@ async def get_scene_theme(scene_type: Optional[str] = Query(None)):
 
 
 # Feature 4: What-If Route
-@router.post("/what-if", response_model=WhatIfResponse)
+@router.post("/what-if")
 async def generate_what_if(req: WhatIfRequest):
     """「もしも」IFルートの短編を生成・取得する"""
-    return await what_if_generator.generate_branch(req)
+    return api_success(await what_if_generator.generate_branch(req), "What-Ifを生成しました")
+
+
+@router.post("/what-if/fork")
+async def fork_what_if_branch(req: BranchCreateRequest):
+    """What-If 分岐を正式な新規ブランチとして登録する"""
+    return api_success(await branch_service.create_fork(req), "What-If分岐を作成しました")
 
 
 # Feature 5: Dynamic Pacing / Reading Speed
@@ -112,12 +127,12 @@ async def generate_what_if(req: WhatIfRequest):
 async def report_reading_pacing(data: ReadingSpeedData):
     """読書速度を受信し、動的に調整された描写密度とペーシングモードを返す"""
     density = pacing_adjuster.calculate_density(data)
-    return {
+    return api_success({
         "status": "ok",
         "scroll_speed": data.scroll_speed_px_per_sec,
         "suggested_metaphor_density": density,
         "pacing_mode": "fast_pace" if density < 40 else ("deep_dive" if density > 60 else "balanced")
-    }
+    }, "ペーシングを計算しました")
 
 
 # Feature 6: Monologue / Afterglow
@@ -135,7 +150,7 @@ async def get_afterglow_monologue(
 async def save_preference(pref: GapMoePreference):
     """ユーザーのギャップ萌え設定を保存する"""
     saved = preference_store.save_preference("default", pref)
-    return {"status": "saved", "preference": saved}
+    return api_success({"status": "saved", "preference": saved}, "ギャップ萌え設定を保存しました")
 
 
 # Feature 9: Bedtime Supporter
@@ -143,3 +158,21 @@ async def save_preference(pref: GapMoePreference):
 async def get_bedtime_support(character_name: str = Query("絶対的肯定シェルター")):
     """おやすみモードの癒やしメッセージを取得する"""
     return await bedtime_supporter.generate_message(character_name=character_name)
+
+
+# Feature 10: HITL (Human-in-the-Loop) Control Endpoints
+@router.post("/hitl/resume")
+async def resume_hitl_session(payload: HITLResumePayload):
+    """待機中のHITLワークフローに対して人間のフィードバック/上書きを送信して再開する"""
+    success = await hitl_manager.resume(payload.session_id, payload.model_dump())
+    return api_success({
+        "session_id": payload.session_id,
+        "resumed": success,
+        "status": "resumed" if success else "not_found_or_already_done",
+    }, "HITLセッションを再開しました")
+
+
+@router.get("/hitl/pending")
+async def list_pending_hitl():
+    """現在人間の介入待ち（一時停止中）のセッション一覧を取得する"""
+    return {"pending_sessions": hitl_manager.get_pending()}

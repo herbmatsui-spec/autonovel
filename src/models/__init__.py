@@ -3,6 +3,7 @@ from src.models.base import *
 from src.models.beat_sheet import *
 from src.models.bible import *
 from src.models.character import *
+from src.models.context_bus import *
 from src.models.db import *
 from src.models.marketing import *
 from src.models.planning_config import *

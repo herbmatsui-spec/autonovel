@@ -34,4 +34,15 @@ class PromptVersionDbModel(BaseModel):
         except Exception:
             return default
 
+    def __getitem__(self, key: str) -> Any:
+        """Allow dict‑style access like ``model["field"]``.
+
+        This shim is needed for legacy code that treats the Pydantic model as a
+        mapping. It simply returns the attribute if it exists, otherwise raises
+        ``KeyError`` to mimic normal dict behaviour.
+        """
+        if hasattr(self, key):
+            return getattr(self, key)
+        raise KeyError(key)
+
     model_config = MODEL_CONFIG_DEFAULTS

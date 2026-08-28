@@ -24,8 +24,9 @@ function AppRouter() {
         <Route path="/landing" element={<LandingWizard />} />
         <Route path="/books" element={<BooksTab />} />
         <Route path="/style-lab" element={<StyleLabTab />} />
-        <Route path="/book/:id" element={<BookWorkspace />} />
+        <Route path="/book/:id/:step/:tab" element={<BookWorkspace />} />
         <Route path="/book/:id/:step" element={<BookWorkspace />} />
+        <Route path="/book/:id" element={<BookWorkspace />} />
         {/* Existing routes - redirect to appropriate new locations */}
         <Route path="/landing/*" element={<Navigate to="/landing" replace />} />
         <Route path="/books/*" element={<Navigate to="/books" replace />} />

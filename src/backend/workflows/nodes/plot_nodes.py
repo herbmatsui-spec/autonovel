@@ -28,6 +28,7 @@ async def generate_initial_plot_node(state: PlotGraphState, *, llm_provider: Any
     target_episodes = state.get("target_episodes", 10)
     user_instructions = state.get("user_instructions", "")
     bible_context = state.get("bible_context", {})
+    unresolved_foreshadows = state.get("unresolved_foreshadows", [])
 
     sse = get_sse_manager()
     await sse.broadcast(
@@ -40,6 +41,17 @@ async def generate_initial_plot_node(state: PlotGraphState, *, llm_provider: Any
         },
     )
 
+    foreshadow_info = ""
+    if unresolved_foreshadows:
+        foreshadow_lines = [
+            f"- [ID: {f.get('id', f.get('ep', idx+1))}] 第{f.get('ep', '?')}話設置: {f.get('text', '')}"
+            for idx, f in enumerate(unresolved_foreshadows)
+        ]
+        foreshadow_info = (
+            f"\n- 未回収伏線（各話へ適切に割り当ててください）:\n"
+            + "\n".join(foreshadow_lines)
+        )
+
     prompt = f"""あなたは商業ライトノベルの熟練プロットプランナーです。
 以下の前提条件に基づき、全{target_episodes}話の構成プロット案（JSON配列形式）を策定してください。
 
@@ -47,7 +59,7 @@ async def generate_initial_plot_node(state: PlotGraphState, *, llm_provider: Any
 - ジャンル: {genre}
 - テーマ: {theme}
 - 追加指示: {user_instructions or "特になし"}
-- 世界観/設定: {json.dumps(bible_context, ensure_ascii=False) if bible_context else "標準設定"}
+- 世界観/設定: {json.dumps(bible_context, ensure_ascii=False) if bible_context else "標準設定"}{foreshadow_info}
 
 【出力フォーマット】
 以下のキーを持つJSON配列形式で出力してください:
@@ -57,6 +69,9 @@ async def generate_initial_plot_node(state: PlotGraphState, *, llm_provider: Any
     "title": "エピソードタイトル",
     "summary": "エピソードのあらすじ・主要イベント",
     "next_hook": "次話への引き・クリフハンガー",
+    "assigned_foreshadows": ["回収または進展させる伏線の内容やID（該当なしなら空配列）"],
+    "is_emotional_peak": true,
+    "peak_reason": "感情ピークや重大イベントの内容（例: 宿敵との直接対決、ヒロインの告白等。該当なしなら空文字）",
     "physical_tension_delta": 20,
     "psychological_tension_delta": 10,
     "social_tension_delta": 0
@@ -185,6 +200,7 @@ async def evaluate_plot_node(state: PlotGraphState, *, llm_provider: Any = None)
 1. 因果関係の破綻はないか
 2. 各話の引き（クリフハンガー）が読者を惹きつけるか
 3. テンポ（起承転結・緊張感の推移）が適切か
+4. 未回収の伏線が適切に割り当てられ、回収・進展の道筋が立っているか（assigned_foreshadowsの妥当性）
 
 【出力形式】
 JSONオブジェクト形式で出力してください:
@@ -192,7 +208,7 @@ JSONオブジェクト形式で出力してください:
   "is_approved": true/false,
   "score": 0.0〜1.0 (0.85以上で合格),
   "issues": [
-    {{"category": "Pacing/Logic/Hook", "description": "具体的な課題"}}
+    {{"category": "Pacing/Logic/Hook/Foreshadow", "description": "具体的な課題"}}
   ],
   "suggestions": ["具体的な改善指示"]
 }}
@@ -217,6 +233,7 @@ JSONオブジェクト形式で出力してください:
 1. 因果関係の破綻はないか
 2. 各話の引き（クリフハンガー）が読者を惹きつけるか
 3. テンポ（起承転結・緊張感の推移）が適切か
+4. 未回収の伏線が適切に割り当てられ、回収・進展の道筋が立っているか（assigned_foreshadowsの妥当性）
 
 【出力形式】
 JSONオブジェクト形式で出力してください:
@@ -224,7 +241,7 @@ JSONオブジェクト形式で出力してください:
   "is_approved": true/false,
   "score": 0.0〜1.0 (0.85以上で合格),
   "issues": [
-    {{"category": "Pacing/Logic/Hook", "description": "具体的な課題"}}
+    {{"category": "Pacing/Logic/Hook/Foreshadow", "description": "具体的な課題"}}
   ],
   "suggestions": ["具体的な改善指示"]
 }}

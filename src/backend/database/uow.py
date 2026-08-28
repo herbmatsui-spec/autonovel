@@ -197,7 +197,7 @@ class UnitOfWork:
             .values(status="done", processed_at=datetime.datetime.now())
         )
 
-async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
         try:
             if exc_type is not None:
                 # Rollback: if we have a subtransaction, rollback it; else rollback session

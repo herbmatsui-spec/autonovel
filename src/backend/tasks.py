@@ -12,6 +12,7 @@ from src.backend.database.uow import UnitOfWork
 from src.core.observability import with_trace_context
 from src.backend.worker_config import huey
 from src.backend.redis_util import get_redis_client
+from src.backend.background import ProgressState
 
 logger = logging.getLogger('huey')
 
@@ -194,20 +195,14 @@ def async_score_narrative_metrics(book_id: int, branch_id: int, ep_num: int, tra
     """エピソードのスコアリングをバックグラウンドで実行するタスク"""
     import asyncio
     from src.core.container import AppContainer
-    from src.agents.audit import LogicalAuditor
     from src.backend.database.repositories.narrative_metrics_repo import NarrativeMetricRepository
     from src.services.narrative_scoring_service import NarrativeScoringService
 
     async def _run():
         try:
-            container = get_container()
-            async with container.async_session() as session:
-                auditor = LogicalAuditor(
-                    repo=container.repo_plot(),
-                    pm=container.prompt_manager(),
-                    generate_json=container.llm().generate_json,
-                    ctx_mgr=container.project_context()
-                )
+            db = AppContainer.db()
+            async with db.get_session() as session:
+                auditor = AppContainer.auditor()
                 metrics_repo = NarrativeMetricRepository(session)
                 service = NarrativeScoringService(session, auditor, metrics_repo)
                 success = await service.rescore_episode(book_id, branch_id, ep_num)
@@ -226,18 +221,12 @@ def enqueue_audit_after_write(book_id: int, write_from: int, write_to: int, trac
     """執筆完了後の論理監査 (Shadow Mode) をバックグラウンドで実行するタスク。"""
     import asyncio
     from src.core.container import AppContainer
-    from src.agents.audit import LogicalAuditor
 
     async def _run():
         try:
-            container = get_container()
-            async with container.async_session() as session:
-                auditor = LogicalAuditor(
-                    repo=container.repo_plot(),
-                    pm=container.prompt_manager(),
-                    generate_json=container.llm().generate_json,
-                    ctx_mgr=container.project_context(),
-                )
+            db = AppContainer.db()
+            async with db.get_session() as session:
+                auditor = AppContainer.auditor()
                 for ep_num in range(write_from, write_to + 1):
                     await auditor.audit_episode(session, book_id, ep_num)
                 logger.info(

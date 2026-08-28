@@ -84,6 +84,26 @@ class LLMTemporaryError(LLMError):
         )
 
 
+class LLMAuthenticationError(LLMError):
+    """認証エラー（APIキーやトークンが無効）"""
+
+    def __init__(
+        self,
+        message: str = "",
+        status_code: int = 401,
+        error_code: str = "LLM_AUTHENTICATION_ERROR",
+        original: Optional[Exception] = None,
+        **kwargs,
+    ):
+        super().__init__(
+            message=message,
+            status_code=status_code,
+            error_code=error_code,
+            original=original,
+            **kwargs,
+        )
+
+
 class LLMTokenLimitError(LLMError):
     """トークン制限エラー"""
 

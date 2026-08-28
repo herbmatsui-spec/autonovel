@@ -30,7 +30,7 @@ try:
         MIN_CHARS,
         enable_manga_prompts,
     )
-    from novel_50ep.count_chars import count_chars, require_words, validate_episode, ValidationResult
+    from novel_50ep.count_chars import count_chars, require_words, validate_episode, ValidationResult, extract_metaphors
     from novel_50ep.generator import NovelGenerator
     from novel_50ep.continuity_tracker import ContinuityTracker
     from novel_50ep.scene_model import SceneBase
@@ -44,7 +44,7 @@ except ImportError:
         MIN_CHARS,
         enable_manga_prompts,
     )
-    from count_chars import count_chars, require_words, validate_episode, ValidationResult
+    from count_chars import count_chars, require_words, validate_episode, ValidationResult, extract_metaphors
     from generator import NovelGenerator
     from continuity_tracker import ContinuityTracker
     from scene_model import SceneBase
@@ -132,6 +132,7 @@ class BatchRunner:
     def intermediate_review(self, start_ep: int, end_ep: int) -> Dict[str, float]:
         char_counts: List[int] = []
         emotion_counts: List[int] = []
+        metaphor_counts: List[int] = []
 
         for ep in range(start_ep, end_ep + 1):
             ep_file = OUTPUT_DIR / f"ep{ep:02d}.md"
@@ -140,13 +141,16 @@ class BatchRunner:
                 char_counts.append(count_chars(text))
                 em_cnt, _ = require_words(text)
                 emotion_counts.append(em_cnt)
+                metaphor_counts.append(len(extract_metaphors(text)))
 
         avg_chars = sum(char_counts) / len(char_counts) if char_counts else 0.0
         avg_emotions = sum(emotion_counts) / len(emotion_counts) if emotion_counts else 0.0
+        avg_metaphors = sum(metaphor_counts) / len(metaphor_counts) if metaphor_counts else 0.0
 
         print(f"\n--- [第{start_ep}話〜第{end_ep}話 中間レビュー (ステップ46)] ---")
         print(f"・平均文字数: {avg_chars:.1f}字 (基準: 2900〜3100字)")
         print(f"・平均感情語数: {avg_emotions:.1f}個 (基準: 2.0個以上)")
+        print(f"・平均比喩数: {avg_metaphors:.1f}個/話 (基準: {4}個以下/話)")
 
         # ステップ47: 平均が基準を下回れば調整フラグ
         if avg_chars < 2900:
@@ -156,7 +160,7 @@ class BatchRunner:
         else:
             print("[OK] 文字数ペースは完全に目標範囲内です。")
 
-        return {"avg_chars": avg_chars, "avg_emotions": avg_emotions}
+        return {"avg_chars": avg_chars, "avg_emotions": avg_emotions, "avg_metaphors": avg_metaphors}
 
     # ステップ41: run_batch(start, end)
     def run_batch(
@@ -208,11 +212,18 @@ class BatchRunner:
                     with open(batch_report_file, "a", encoding="utf-8") as rf:
                         rf.write(f"第{ep:02d}話 継続性警告: {tracker.report()}\n")
 
-                # ステップ 70: --fix-continuity による自動修正
+                # ステップ 70: --fix-continuity による自動修正 (ステップ 14: DB 保存連携)
                 if fix_continuity and violations:
                     try:
                         from novel_50ep.polish_tool import polish
+
                         cleaned_text = polish(cleaned_text, tracker=tracker)
+                        # ステップ 14: DB 永続化
+                        try:
+                            import asyncio
+                            asyncio.run(self.generator.foreshadow_mgr.persist_to_db(book_id=1, branch_id=1))
+                        except Exception:
+                            pass
                     except Exception as pe:
                         print(f"[WARN] 第{ep:02d}話 自動修正失敗: {pe}")
 
@@ -259,6 +270,9 @@ class BatchRunner:
             print(f"\n[RETRY] 失敗したエピソード ({len(self.failed_eps)}件) の再試行を行います: {sorted(self.failed_eps)}")
             self.retry_failed()
 
+        # Step 23: 比喩レポート出力
+        self.export_metaphor_report(end)
+
         return successful
 
     # ステップ45: retry_failed()
@@ -279,6 +293,56 @@ class BatchRunner:
             except Exception as e:
                 print(f"[FAIL] 第{ep:02d}話 再試行失敗: {e}")
         return retried
+
+    # Step 23: 比喩使用レポート出力 (foreshadow_map.md 同様)
+    def export_metaphor_report(self, total: int = TOTAL_EPISODES) -> Path:
+        from novel_50ep.config import LOG_DIR
+        from novel_50ep.count_chars import extract_metaphors, count_metaphor_types, detect_metaphor_dup
+        report_path = LOG_DIR / "metaphor_report.md"
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        lines = [
+            "# 50話 比喩テンプレ化対策レポート (metaphor_report.md)",
+            "",
+            "## 1. 話別比喩使用量",
+            "",
+            "| 話数 | 比喩数 | 比喩率 | 重複核 |",
+            "|---|---|---|---|",
+        ]
+        
+        total_metaphors = 0
+        total_chars = 0
+        
+        for ep in range(1, total + 1):
+            ep_file = OUTPUT_DIR / f"ep{ep:02d}.md"
+            if ep_file.exists():
+                text = ep_file.read_text(encoding="utf-8")
+                metaphors = extract_metaphors(text)
+                m_count = len(metaphors)
+                types = count_metaphor_types(text)
+                dup_found, dup_details = detect_metaphor_dup(text)
+                ratio = m_count / max(1, len(text) / 100) if text else 0.0
+                
+                total_metaphors += m_count
+                total_chars += len(text)
+                
+                dup_str = "; ".join(dup_details) if dup_found else "なし"
+                type_str = ", ".join(f"{k}:{v}" for k, v in types.items()) if types else "なし"
+                lines.append(f"| 第{ep:02d}話 | {m_count}個 | {ratio:.1%} | {dup_str} |")
+        
+        avg_ratio = (total_metaphors / max(1, total_chars / 100)) if total_chars else 0.0
+        lines.extend([
+            "",
+            f"## 2. 全体サマリー",
+            "",
+            f"- 総比喩数: {total_metaphors}個",
+            f"- 平均比喩率: {avg_ratio:.1%}",
+            f"- 目標閾値: 15%以下, 4個/話以下",
+        ])
+        
+        report_path.write_text("\n".join(lines), encoding="utf-8")
+        print(f"[INFO] 比喩レポート出力: {report_path}")
+        return report_path
 
     # ステップ50: check_all() 全50話揃っているか確認
     def check_all(self, total: int = TOTAL_EPISODES) -> Tuple[bool, List[int], List[int]]:

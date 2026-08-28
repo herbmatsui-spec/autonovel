@@ -172,11 +172,9 @@ class AsyncExecutor(Generic[T]):
                         self.circuit_breaker.record_success()
                         return result
 
-                    except (AsyncExecutionError, CircuitBreakerOpenException) as e:
-                        # Handle circuit breaker errors
-                        if isinstance(e, CircuitBreakerOpenException):
-                            self.circuit_breaker.record_failure()
-                            raise
+                    except CircuitBreakerOpenException:
+                        self.circuit_breaker.record_failure()
+                        raise
 
                     except Exception as e:
                         is_retryable = self._is_retryable(e)

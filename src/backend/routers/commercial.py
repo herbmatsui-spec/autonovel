@@ -8,7 +8,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from src.backend.auth import require_api_key
+from src.backend.response_helpers import api_success
 from src.backend.workflows.commercial_pipeline import CommercialPipeline
+from src.backend.router_helpers import workflow_endpoint
+from src.backend.utils.id_generator import generate_prefixed_id as generate_task_id
 
 router = APIRouter(prefix="/commercial", tags=["commercial"])
 
@@ -21,7 +24,8 @@ class CommercialConfig(BaseModel):
     platforms: List[str] = ["kakuyomu", "naru"]  # デフォルトプラットフォーム
 
 
-@router.post("/run", response_model=Dict[str, Any])
+@workflow_endpoint("commercial_publish")
+@router.post("/run")
 async def run_commercial_pipeline(
     config: CommercialConfig, api_key: str = Depends(require_api_key)
 ):
@@ -41,7 +45,7 @@ async def run_commercial_pipeline(
         )
 
         # 結果を標準化して返却
-        return {"success": True, "data": result, "trace_id": f"comm_{hash(str(config))[:8]}"}
+        return api_success(result, "商用パイプラインを実行しました")
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Pipeline execution failed: {str(e)}")

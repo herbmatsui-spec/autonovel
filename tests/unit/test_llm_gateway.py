@@ -74,8 +74,8 @@ async def test_gemini_api_client_retry_exhaustion_raises_exception():
     mock_cooldown.on_success = MagicMock()
 
     # Make the client always raise a retryable error (e.g., 503) to trigger retries
-    async def failing_call(*args, **kwargs):
-        raise Exception("503 Service Unavailable")
+    def failing_call(*args, **kwargs):
+        raise ConnectionError("503 Service Unavailable")
 
     mock_client.models.generate_content = MagicMock(side_effect=failing_call)
     mock_client.models.generate_content_async = AsyncMock(side_effect=failing_call)
@@ -85,7 +85,7 @@ async def test_gemini_api_client_retry_exhaustion_raises_exception():
     # The decorator @with_llm_retry will retry up to max_retries (default 5) then raise
     with pytest.raises(Exception, match="503 Service Unavailable"):
         await api_client.generate_text(
-            model_name="test_model", prompt="Test prompt", max_retries=2
+            model_name="test_model", prompt="Test prompt", max_retries=3
         )
 
     # Ensure the cooldown.on_rate_limit was called for each retry attempt
@@ -93,3 +93,32 @@ async def test_gemini_api_client_retry_exhaustion_raises_exception():
     # Expect calls equal to number of retries (max_retries) because on_rate_limit is called in _handle_error
     # Actually _handle_error is called for each attempt except the last? Let's just assert it was called.
     assert mock_cooldown.on_rate_limit.call_count >= 2
+
+
+@pytest.mark.asyncio
+async def test_llm_generate_result_proxy_purpose_keyword():
+    """LLMGenerateResultProxy が purpose='what_if' などのキーワード引数を正しく処理することを検証"""
+    from src.core.llm_gateway import LLMGenerateResultProxy
+    from src.core.llm.providers import LLMResponse
+
+    mock_factory = MagicMock()
+    mock_provider = MagicMock()
+    mock_provider.generate_text = AsyncMock(
+        return_value=LLMResponse(success=True, content="Test content", usage=None, metadata={})
+    )
+    mock_provider.generate_json = AsyncMock(
+        return_value=LLMResponse(success=True, content={"result": "ok"}, usage=None, metadata={})
+    )
+    mock_factory.get_provider = MagicMock(return_value=mock_provider)
+
+    proxy = LLMGenerateResultProxy(llm_factory=mock_factory)
+
+    # 1. generate_text with purpose keyword
+    res_text = await proxy.generate_text(purpose="what_if", prompt="Test prompt")
+    assert res_text.story_content == "Test content"
+    mock_factory.get_provider.assert_called()
+
+    # 2. generate_json with purpose keyword
+    res_json = await proxy.generate_json(purpose="audit", prompt="Audit prompt")
+    assert res_json.story_content == {"result": "ok"}
+
