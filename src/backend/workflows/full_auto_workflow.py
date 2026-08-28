@@ -2,6 +2,7 @@ import os
 from typing import Any, Dict
 
 from src.agents.illustration_agent import IllustrationAgent
+from src.backend.constants import constants as const
 from src.backend.workflows.illustration_workflow import IllustrationWorkflow
 from src.services.image_service import ImageService
 from src.shared.utils import StatusReporter
@@ -124,7 +125,7 @@ class FullAutoWorkflow(BaseWorkflow):
                 word_count=word_count,
                 reporter=reporter,
                 is_easy_mode=True,
-                max_retries=1,
+                max_retries=const.DEFAULT_MAX_RETRIES,
             )
 
             if reporter.state.should_stop():

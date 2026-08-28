@@ -1,441 +1,542 @@
-# 覇権小説エンジン v3.72
-# 更新: リアルタイムSSEエージェント監視 & LangGraphワークフロー再構成 (2026-08-27)
+# 覇権小説エンジン Hegemony Novel Engine v3.72
 
-![Tests](https://img.shields.io/badge/tests-passing-brightgreen)
-![Coverage](https://img.shields.io/badge/coverage-80%25-yellow)
-![Python](https://img.shields.io/badge/python-3.12-blue)
-![SSE](https://img.shields.io/badge/real--time%20SSE-agent%20monitoring-brightgreen)
-![Demo](https://img.shields.io/badge/demo-try_now-brightgreen)
+## 📚 プロジェクト概要
 
-## 最新の修正 (2026-08-25) — セキュリティ・安定性
+覇権小説エンジンは、人工知能（AI）を活用してライトノベル・Web小説を「かんたんに」「高品質に」創作するためのオープンソース統合開発環境です。このシステムは、プロット構築、キャラクター設定、エピソード執筆、品質レビュー、そして各種出版プラットフォームへのエクスポートまで、小説創作の全工程をAIアシスタントでサポートします。
 
-コードレビューで検出された CRITICAL 級の不具合を修正しました（コミット `276aeb6`）。
+### 主な目的
+- 初心者でもプロ品質の小説を短時間で創作可能
+- プロ作家の負荷を軽減し、創造的作業に集中できる環境提供
+- AIと人間の協働（Human-in-the-Loop）による品質管理
+- 複数の出版プラットフォーム（カクヨム、小説家になろう等）への直接出力対応
 
-### セキュリティ
-- 未認証で全文が取得できた `GET /api/export/books/{book_id}` に API キー認証を追加。
-- 認証の無かった `POST /api/easy-mode/{gacha,digest,promote}` と `GET /api/tasks/{task_id}/status` に認証を追加（無断の LLM コスト発生・ジョブ情報漏洩を防止）。
-- API キー検証を `hmac.compare_digest` による定数時間比較に変更（タイミング攻撃対策）。
-- リクエスト越しに指定できる `openai_base_url` に SSRF 検証を追加（プライベート/ループバック/予約アドレス宛を拒否）。
-- 資産化パック生成時のタイトル由来ファイルパスをサニタイズ（パストラバーサル防止）。
-- フロントエンドで `apiKey` を `localStorage` に永続化しないよう変更（XSS での盗難防止）。
 
-### クラッシュ・デッドコード修正
-- かんたんモード起動時に `NameError` になっていた `load_preset` の import 欠落を修正。
-- `run_parallel` の戻り値欠落（常に `None`）を修正。
-- `PlotEpisode` の実行時 import 化、`writing_langgraph` の `checkpointer` 初期化順の修正。
-- `continuity.py` で `storage/db` ディレクトリを自動作成（存在しないと例外だった）。
 
-> **運用注意**: 上記エンドポイントは既存の `generate_easy` 等と同様に `X-API-Key` ヘッダでの認証を期待します。本番（`ENVIRONMENT=production`）ではリクエストにヘッダを付与してください（フロントエンドは現状リクエスト body で `api_key` を送るため、ゲートウェイ等でのヘッダ注入かフロントエンド側の送信対応が必要です）。
+## 🌟 主な機能と特徴
 
----
+### 1. AIエージェント協調システム
+本エンジンは複数の専門AIエージェントが協調して動作するマルチエージェントシステムです：
 
-## 最新の修正 (2026-08-27) — リアルタイム監視 & ワークフロー再構成
+- **プロットエージェント**：物語の全体構造、起承転結、伏線を設計
+- **キャラクターAI**：人物設定、関係性、成長 arcs を作成
+- **執筆AI**：実際のエピソード本文を生成（情景描写、対話、心理描写）
+- **レビューAI**：生成された内容の品質チェック、矛盾点指摘、改善提案
+- **世界観AI**：舞台設定、用語集、歴史背景を構築
+- **マーケティングAI**：タイトル、あらすじ、販売ポイントを最適化
 
-### リアルタイム SSE エージェント監視
-生成パイプラインの内部動作をブラウザでリアルタイムに可視化する仕組みを追加しました。
+### 2. LangGraph ワークフローエンジン
+複雑な創作プロセスをグラフ理論に基づくワークフローで管理：
 
-- バックエンドに `SSEManager`（`src/backend/sse_manager.py`）シングルトンを追加。ワークフロー各ノードからエージェント思考・推敲ログ・進捗率をブロードキャストします。
-- 新規エンドポイント `GET /api/v1/events/stream`（`src/backend/routers/events.py`）で SSE ストリームを配信（接続確認 `connected` イベント＋15秒ごとの `ping` ハートビート）。
-- フロントエンドに `sseClient`（`frontend/src/lib/sseClient.ts`）・`useAgentLiveStore`（`frontend/src/store/useAgentLiveStore.ts`）を追加。`agent_status` / `pipeline_progress` イベントを購読し、切断時は3秒後に自動再接続します。
-- `AgentDashboard` コンポーネントと `ProgressPanel`（`frontend/src/components/`）に統合。エージェント別の思考ログ・スコア・承認状態・全体進捗率をライブ表示します。
+- 状態遷移グラフによるフェーズ管理（プロット→執筆→レビュー→修正）
+- 条件分岐による品質ゲート（一定基準を満たさなければ前の工程に戻る）
+- 並列実行可能なタスクの最適スケジューリング
+- チェックポイント機能による中断・再開対応
+- リアルタイム進捗監視とブロッキング防止
 
-### LangGraph ワークフローの再構成
-執筆パイプラインをグラフ指向に整理し、全体を `MasterGraph` で統括する構成に変更しました。
+### 3. リアルタイム監視システム（SSE）
+Server-Sent Events（サーバーサントイベント）により、AIの思考過程をブラウザでリアルタイム可視化：
 
-- `src/backend/workflows/graphs/`：`master_graph`（Plot→Writing→Review を統括）、`writing_graph`、`review_graph`、`plot_graph` の StateGraph 定義を集約。
-- `src/backend/workflows/nodes/`：各フェーズの処理ノード（`master_nodes` / `writing_nodes` / `review_nodes` / `plot_nodes`）を配置。実行のたび `SSEManager` へ進捗をブロードキャストします。
-- `src/backend/workflows/edges/`：グラフ間遷移ロジック（`writing_edges` / `review_edges` / `plot_edges`）を分離。
-- LangGraph 非導入環境向けに `SequentialMasterGraphFallback` による逐次実行フォールバックを実装。
+- エージェント別思考ログのライブストリーミング
+- 進捗率と現在処理中のフェーズ表示
+- 品質スコアと改善提案のリアルタイムフィードバック
+- ブラウザ切断時の自動再接続機能
+- カスタムアラートと通知システム
 
-**覇権小説エンジン**は、AI を使って小説を「かんたんに」「高品質に」書くためのツールです。
+### 4. マルチプラットフォーム出版対応
+生成された小説を様々な出版フォーマットに自動変換：
 
-カクヨムなどの Web 小説サイトでランキング上位を狙える作品を、**ボタンひとつ**で自動生成します。
+- カクヨム用EPUB/テキストフォーマット
+- 小説家になろう用テキストフォーマット
+- Kindle Direct Publishing (KDP) 用フォーマット
+- PDF印刷用レイアウト
+- Web公開用HTMLフォーマット
 
----
+### 5. プリセットとカスタマイズ機能
+すぐに使えるジャンルプリセットと詳細なカスタマイズオプション：
 
-## 🚀 インタラクティブデモ
+- ジャンルプリセット：異世界ファンタジー、ライトノベル、ラブコメ、サスペンス等（20種類以上）
+- キャラクターアーキタイプ：主人公のタイプ別テンプレート（勇者型、賢者型、悪役令嬢等）
+- 文体プリセット：軽快会話調、文学調、歴史調等の執筆スタイル
+- 世界観テンプレート：魔法システム、種族関係、技術レベル等の設定
 
-デモをすぐに体験したい方は、以下の方法でお試しください。
 
-- **ローカルで実行**: リポジトリをクローンして `demo.html` をブラウザで開く  
-  → [./demo.html](./demo.html)
-- **GitHub Pages で公開（推奨）**: リポジトリを GitHub に push し、Settings → Pages から `main` ブランチの `/ (root)` を公開すると、  
-  `https://<あなたのユーザー名>.github.io/autonovel/demo.html` でフル機能デモが利用可能です。  
-  （※GitHub 上の `./demo.html` リンクはソース表示になるため、インタラクティブに動かすには上記 URL をご利用ください）
 
-デモでは以下の機能を体験できます：
-- かんたんモード / 上級者モードの切替
-- ジャンル選択とキーワード・オプション設定
-- 生成パイプラインのステップ別進捗表示（SSE 風ログ）
-- 感情ヒートマップ、キャラクター好感度メーター、What-If 分岐、余韻独白、ギャップ萌えカスタマイズ、おやすみモードなど
-- 生成結果のプレビューと EPUB/TXT/PDF 出力、資産化パック作成
+## 🏗️ システムアーキテクチャ（初心者向け説明）
 
----
+### 基本構成要素
+覇権小説エンジンは以下の層で構成されています：
 
-## 最新アップデート (v3.72 - 2026-08-27)
-
-### 🏗️ アーキテクチャリファクタリング & ファイル整理 (全4フェーズ・36ステップ完了)
-
-コードベースの保守性と拡張性を最大化するため、過渡期のアーキテクチャ残債を完全排除し、プロジェクト構造を体系化しました。
-
-| フェーズ | 実施内容 |
-|---|---|
-| **Phase 1: ドキュメント整理** | ルートの計画書・ログ・レポートを `archive/plans/`, `archive/logs/`, `docs/reports/`, `docs/specs/` に集約（ルートファイル数を大幅削減） |
-| **Phase 2: DIコンテナ一本化** | 旧実装を廃止し、`src/core/container/`（`AppContainer2` / `InfraContainer`）へ完全統一 |
-| **Phase 3: LLMゲートウェイ集約** | `src/core/llm_gateway.py`（Facade）に統合し、孤立していた旧 `llm_client.py` を削除 |
-| **Phase 4: 重複排除 & DB層統一** | 同名モジュール（`erotic_integrity.py`, `spice_guard.py`）を各パッケージへ統合。旧Mixinリポジトリ（`repo_*.py`）を全廃し `repositories/` & `UnitOfWork` に一本化 |
-
----
-
-### 小説の面白さ・ユーザー体験（UX）向上 72段階マイクロステップ実装完了 (v3.4.0)
-
-読者の没入感とエンゲージメントを極限まで高めるため、9つの新機能（合計72のマイクロステップ）を実装・検証しました。
-
-| 機能 | 詳細 |
-|------|------|
-| **🔥 感情ヒートマップ・ナビゲーション** | 物語の緊張感・官能度・ヘイト度の推移をリアルタイムにカラーバーで可視化 |
-| **💖 キャラクター好感度・依存度メーター** | 本文中の言動・セリフを解析し、ヒロインの好感度・心理状態を動的更新 |
-| **🎨 シーンに応じた動的UI・環境演出** | 官能・戦闘・ほのぼの等のシーン種別に応じて、UI全体のテーマカラーがなめらかに変色 |
-| **🔀 「もしも（What-If）」分岐ジェネレーター** | クライマックスでの運命分岐（IFルート短編シナリオ）をモーダルで即時生成・閲覧 |
-| **⚡ 読者ペースに合わせた動的ペーシング調整** | 読者のスクロール速度・滞在時間から、描写密度（テンポ重視 ⇔ 心理描写重視）を自動最適化 |
-| **👁️ 「余韻（Afterglow）」の個別視点独白機能** | エピソード読了後、ヒロインが秘めていた内心の声をアコーディオン形式でフェードイン展開 |
-| **⚙️ 「ギャップ萌え」カスタマイズUI** | ツンデレ・クーデレ・ポンコツ天才などの属性と強度をスライダーで設定しプロンプトに注入 |
-| **💬 会話文の感情アニメーション表示** | 怒り（震え）、悲しみ（浮遊）、クライマックス（発光）などセリフごとに躍動するタイポグラフィ演出 |
-| **🌙 絶対的肯定シェルターの「おやすみモード」** | 一日を終えた読者を夜空のフルスクリーン演出と優しい言葉で無条件に肯定・癒やす専用モード |
-
----
-
-## プロジェクト構造 & アーキテクチャ
-
-- **DI コンテナ**: `src/core/container/`（`AppContainer2` / `InfraContainer`）
-- **DB アクセス層**: `src/backend/database/repositories/` + `UnitOfWork` パターン
-- **エージェント群**: `src/agents/`（`erotic/`, `audit/`, `plot/` 等）
-- **リアルタイム監視**: `src/backend/sse_manager.py` + `src/backend/routers/events.py`（SSE ストリーム）、`frontend/src/lib/sseClient.ts` + `frontend/src/store/useAgentLiveStore.ts`
-- **ワークフロー**: `src/backend/workflows/`（graph: `graphs/` / `nodes/` / `edges/` に分割、`master_graph` で統括）
-- **C4 モデル**: [docs/architecture/](docs/architecture/)
-- **開発者ガイド**: [docs/DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md)
-- **過去の計画書・ログ**: `archive/plans/`, `archive/logs/`
-
----
-
-## なにができる？
-
-### 小説を自動で書いてくれる
-
-たとえば...
-
-> **「なろう系の異世界ファンタジーを今日中に書きたい」**
-
-→ ジャンルを選んで「生成」ボタンを押すだけ。数十秒〜数分で、企画からプロット（話の骨組み）、本文まですべて自動で作ります。
-
-### デモ動画
-
-アプリの機能を簡単に体験できるデモを用意しています。
-
-- **ローカルで見る**：リポジトリをクローンして `demo.html` をブラウザで開く（または下のリンクから）
-  → [デモページを開く](./demo.html)
-- **GitHub Pages で公開して見る（推奨）**：下の手順でホストすると、README から**実際に動くデモ**へ飛べます
-  → `https://<あなたのユーザー名>.github.io/autonovel/demo.html`
-
-#### GitHub Pages でデモを公開する手順
-
-1. このリポジトリを GitHub に push する
-2. リポジトリの **Settings → Pages** を開く
-3. `Build and deployment` の `Source` を **Deploy from a branch** にする
-4. `Branch` で **`main`**（または `master`）を選び、`/ (root)` を指定して保存
-5. 数分待つと `https://<ユーザー名>.github.io/autonovel/` で公開される
-6. `demo.html` は `https://<ユーザー名>.github.io/autonovel/demo.html` でそのまま動作する
-
-> 注：GitHub の README 上の `./demo.html` リンクは、github.com 上では**ソースコード表示**になるため、インタラクティブに動かすには上記 GitHub Pages の URL をご利用ください。
-
-実際のアプリケーションでは、さらに高度な機能として：
-- 上級者モードでの細かい設定調整
-- メディアミックス台本生成（漫画・音声ドラマ・動画用）
-- 電子書籍書き出し（EPUB / PDF / MOBI）
-- 資産化パック作成（原本・IFルート・メディアミックス・電子書籍・プロモ素材・メタデータ・チェックサムを1つの ZIP に統合）
-
-などが利用可能です。
-
-### 2 つのモード
-
-| モード | こんな人に | 何ができるか |
-|---|---|---|
-| **かんたんモード** | とにかく今すぐ小説が欲しい人 | **ジャンル選んでボタンを押すだけ**。何も考えなくて OK。9ジャンルプリセット + SpiceGuard で「尖り」を守りながら全自動生成 |
-| **上級者モード** | こだわりたい人 | 各話のプロットを編集したり、文章の濃さを変えたり、納得いくまで修正できる |
-
-### かんたんモード 対応ジャンル (9種)
-
-| ジャンル | アイコン | キーワード | 尖り保護の要所 |
-|---|---|---|---|
-| ざまぁ・追放・無双 |  | `ざまぁ` `無双` `圧倒的` `顔面蒼白` | カタルシス完結・悪党の絶望・戦力差 |
-| 悪役令嬢・断罪回避 |  | `フラグ回避` `隠しルート` `百合` `尊い` | フラグ折り・百合テンション・契約 |
-| チート転生・即最強 |  | `スキル習得∞` `秒殺` `最適解` `デバッグ` | システム風味・効率自慢 |
-| スローライフ・ほのぼの |  | `ふわふわ` `とろける` `ほっこり` `香り` | 五感豊かさ・日常儀式 |
-| ダンジョン運営・経営 |  | `罠` `ギミック` `忠誠` `進化` `個性` | 罠クリエイティブ・モンスター個性 |
-| 現代チート・都市伝説 |  | `ルート権限` `パッチ` `実体化` `同期` | テックメタファー・現実干渉 |
-| TS転生・百合・性別反転 |  | `可愛い` `美少女` `百合キス` `尊い` `永遠` | 性別ユーフォリア・百合親密 |
-| VRMMO・ゲーム世界 |  | `フルダイブ` `同期` `実体化` `現実侵食` | 同期用語・現実滲み出し |
-| ループ・時間逆行・真エンド |  | `周目` `真エンド` `全フラグ` `確率1` `必然` | ループカウント・収束・完全攻略 |
-
----
-
-### 「ざまぁ」展開を自動で仕組む
-
-面白い小説には「ストレス」と「解放」の波が大切です。
-
-このツールは物語中の**読者のストレスを自動計算**して、「そろそろ気持ちよくなれる場面を入れよう」と判断。適切なタイミングで「ざまぁ」展開（無双・逆転）をねじ込んでくれます。
-
-### 官能描写にも対応（オプトイン）
-
-NSFW モードを ON にすれば、官能的な描写を含む小説も書けます。
-オプトイン方式で、ON にしない限り生成されません。
-
----
-
-## 動かし方
-
-### 方法 A: Docker でさくっと（おすすめ）
-
-```bash
-# 1. Google AI Studio で API キーを取得（無料）
-# https://aistudio.google.com/app/apikey
-
-# 2. 設定ファイルをコピーしてキーを書く
-cp .env.example .env
-# → .env ファイルを開いて GEMINI_API_KEY=取得したキー を追記
-
-# 3. Docker を起動（開発用: フロントエンドは Vite dev server）
-docker compose up --build
-
-# または本番用ビルド（Nginx で静的配信）
-docker compose --profile prod up --build
+```
+[ユーザーインターフェース]
+        ↓
+[APIゲートウェイ] ← リクエスト/レスポンス
+        ↓
+[ワークフローオーケストレーター] ← LangGraphによるプロセス管理
+        ↓
+[AIエージェント群] ← 専門タスクを担当する複数のAI
+        ↓
+[データストレージ] ← SQLiteデータベースとファイルシステム
+        ↓
+[外部サービス] ← LLM API（Gemini, OpenAI等）、出版プラットフォームAPI
 ```
 
-立ち上がったらブラウザで以下を開いてください：
-- **開発モード**: http://localhost:5173 (Vite HMR 付き)
-- **本番モード**: http://localhost:3000 (Nginx 静的配信)
-- **バックエンド API**: http://localhost:8200/docs (Swagger UI)
+### データフローの例（小説執筆プロセス）
+1. ユーザーが「異世界ファンタジーで高校生主人公の物語を書きたい」と入力
+2. システムがジャンルプリセットから基本設定をロード
+3. プロットエージェントが起承転結と伏線を設計（SSEで思考過程を配信）
+4. キャラクターAIが主要人物の設定と関係性を作成
+5. 執筆AIがエピソードごとに本文を生成（品質チェックループあり）
+6. レビューAIが矛盾や品質問題をチェックし、必要に応じて修正指示
+7. 世界観AIが用語集と背景設定を整備
+8. 最終出力として選択フォーマットで小説データを生成
 
-### 方法 B: 手動で起動する（開発者向け）
+### 主要技術スタック
+- バックエンド：Python 3.12 + FastAPI（Web APIフレームワーク）
+- ワークフロー管理：LangGraph（グラフベース状態機械）
+- データベース：SQLite（軽量組み込みDB）
+- フロントエンド：TypeScript + React（現代的SPA）
+- 通信プロトコル：REST API + Server-Sent Events (SSE)
+- 外部連携：各種LLM API、出版プラットフォームAPI
+- コンテナ化：Docker対応（開発・本番環境の統一）
 
+
+
+
+## 🚀 始め方 - クイックスタートガイド
+
+### 必要条件
+- Python 3.12 以上
+- Git 2.0 以上
+- （オプション）Docker Desktop
+- LLM API キー（Gemini または OpenAI 推奨）
+
+### ステップバイステップセットアップ
+
+#### 1. リポジトリの取得
 ```bash
-# 1. 依存ライブラリを入れる
+git clone https://github.com/your-repo/hegemony-novel-engine.git
+cd hegemony-novel-engine
+```
+
+#### 2. 仮想環境の作成（推奨）
+```bash
+# Windows
+python -m venv venv
+.\venv\Scripts\activate
+
+# Linux/Mac
+python3 -m venv venv
+source venv/bin/activate
+```
+
+#### 3. 依存関係のインストール
+```bash
 pip install -r requirements.txt
-
-# 2. フロントエンド依存関係
-cd frontend && npm install && cd ..
-
-# 3. 環境変数を設定
-cp .env.example .env
-# → .env を編集して GEMINI_API_KEY と ALLOWED_API_KEYS を設定
-
-# 4. バックエンド起動
-uvicorn src.backend.server:app --host 127.0.0.1 --port 8200 --reload
-
-# 5. （別のターミナルで）フロントエンド起動
-cd frontend && npm run dev
+pip install -r requirements-dev.txt  # 開発用追加パッケージ
 ```
 
-これで以下にアクセスできます：
-- フロントエンド: **http://localhost:5173**
-- バックエンド API: **http://localhost:8200/docs**
-
-### 必要なもの
-
-| 必須/任意 | 何に使うか |
-|---|---|
-| **必須** Python 3.12 以上 | バックエンド実行に必要 |
-| **必須** Node.js 22 以上 | フロントエンドビルドに必要 |
-| **必須** Gemini API キー | AI に小説を書かせるのに必要（Google AI Studio で無料取得可） |
-| **任意** Docker / Docker Compose | 面倒な環境構築をスキップしたい人向け |
-| **任意** Redis | 裏でジョブを管理する（Docker なら自動起動、ローカルなら別途必要） |
-
----
-
-## 使い方の流れ
-
-1. 起動するとブラウザにツールが表示されます
-2. 左のサイドバーからタブを切り替えるか、**かんたんモード**ダイアログを開きます
-3. かんたんモードなら↓
-   - 「お好みのジャンル」を選択
-   - 「小説を生成」ボタンをクリック
-   - しばらく待つと → 企画 → プロット → 本文 → 納品 まで自動で完了
-4. 上級者モードなら↓
-   - タブを切り替えながら各工程を細かく編集・調整できます
-
----
-
-## アーキテクチャ概要
+#### 4. 環境変数の設定
+`.env.example` をコピーして `.env` を作成し、必要なAPIキーを設定：
 
 ```
-Frontend (React 18 + TypeScript + Vite + TailwindCSS)
-   ├── Landing / Books / Plots / Write
-   ├── Analytics / Planning / StyleLab / Audit
-   └── EasyModeDialog (モーダル)
-         │
-         ▼ HTTP/REST + SSE
-Backend (FastAPI + Uvicorn)
-    ├── routers/: health, books, plots, episodes, tasks, patches
-    │         issues, marketing, prompt_versions, metrics, misc
-    │         novel, commercial, easy_mode, illustrations, events (SSE)
-    ├── sse_manager.py: SSE 接続・イベントブロードキャスト管理
-    ├── workflows/: LangGraph ベースの執筆パイプライン
-    │   ├── graphs/: master / writing / review / plot の StateGraph
-    │   ├── nodes/: 各フェーズ処理ノード（SSE 進捗配信付き）
-    │   └── edges/: グラフ間遷移ロジック
-   ├── services/: ビジネスロジック層
-   ├── easy_mode/: かんたんモードパイプライン + Phase3 資産化
-   ├── core/
-   │   ├── container/: DI コンテナ (AppContainer2 / InfraContainer)
-   │   ├── llm_clients/: LLM抽象層 (BaseLLMClient / GeminiClient / OpenAIClient)
-   │   ├── llm_gateway.py: プロバイダファクトリ・キャッシュ・プロキシ
-   │   └── state/: 状態管理
-   ├── backend/: タスクキュー・DB・認証・ヘルスチェック
-   └── agents/: エージェント群 (writing, erotic, audit 等)
-         │
-         ▼
-Data Stores
-   ├── SQLite (dev) / PostgreSQL (prod) + Alembic
-   ├── ChromaDB (RAG ベクトル検索)
-   └── Redis (Huey タスクキュー・キャッシュ)
+# .env ファイルの例
+GEMINI_API_KEY=your_gemini_api_key_here
+# または
+OPENAI_API_KEY=your_openai_api_key_here
+
+# その他オプション設定
+REDIS_URL=redis://localhost:6379
+DATABASE_URL=sqlite:///./autonovel.db
 ```
 
-### コアコンポーネント
-
-| レイヤー | 技術スタック | 役割 |
-|---|---|---|
-| **Frontend** | React 18 + TypeScript + Vite + TailwindCSS + Zustand | モダンな SPA UI |
-| **Backend** | FastAPI + Uvicorn | REST API、SSE、非同期処理 |
-| **AI Orchestration** | LangGraph + Google Gemini | グラフベースの執筆パイプライン |
-| **EasyMode Pipeline** | Python asyncio + SpiceGuard | ジャンル選択のみで全自動生成 |
-| **Task Queue** | Huey + Redis | バックグラウンドジョブ管理 |
-| **Persistence** | SQLite (dev) / PostgreSQL (prod) + Alembic | データ永続化 |
-| **Vector Store** | ChromaDB | RAG 用ベクトル検索 |
-| **Observability** | OpenTelemetry + Prometheus | トレース・メトリクス |
-| **Auth** | API Key + Rate Limiting | フェイルクローズ認証 |
-
-### LLM クライアント階層
-
-| コンポーネント | 役割 |
-|---|---|
-| **BaseLLMClient** | Gemini/OpenAI 互換クライアントの共通抽象 |
-| **GeminiClient** | Google Generative AI との直接通信 |
-| **OpenAIClient** | OpenAI 互換 API との通信 |
-| **LLMProviderFactory** | モデル名に応じたクライアント選択 |
-| **SemanticCacheManager** | 意味的キャッシュによるコスト削減 |
-| **SemanticEdgePreserver** | 尖り要素の意味的類似度判定 |
-| **LLMGenerateResultProxy** | アプリケーション層向け統一インターフェース |
-
----
-
-## かんたんモード パイプライン詳細
-
-```
-ユーザー操作          バックグラウンド処理
-─────────            ────────────────
-ジャンル選択 ──▶  1. Bible生成（世界観・キャラ・チート設定）
-     │                2. プロット生成（テンション曲線×テンプレ展開）
-     ▼                3. 各話ループ:
-                        ├─ 執筆（Style DNA・フック・官能ルール注入）
-                        ├─ 監査（95点未満なら）
-                        ├─ SpiceGuard抽出（尖り要素検出）
-                        ├─ マーカー注入（<<<SPICE:...>>>）
-                        ├─ リライト（マーカー保護付き）
-                        ├─ マーカー除去
-                        └─ 最大3回繰り返し
-                        4. シリーズ完結処理（タイトル・あらすじ・メタデータ）
-                           ↓
-     完了 ◀──────── 結果取得・人間レビュー表示（必要時）
+#### 5. データベースの初期化
+```bash
+python -m alembic upgrade head  # マイグレーション実行
 ```
 
-### SpiceGuard（尖り保護システム）
+#### 6. アプリケーションの起動
+```bash
+# 開発モード（自動リロード有効）
+python -m uvicorn src.backend.server:app --reload --host 0.0.0.0 --port 8000
 
-自動リライトで面白さが平準化されないよう、**「この話の命」**となる要素を保護：
+# または簡易起動スクリプト使用
+.\start_app.bat  # Windows
+./start_app.sh   # Linux/Mac
+```
 
-| 保護カテゴリ | 例 |
-|---|---|
-| **独自比喩** | 「まるで絶望の底から這い上がったかのように」 |
-| **キャラ声** | 禁句・キャッチフレーズ（プリセット定義から） |
-| **伏線・回収** | 「実は」「真真」「正体」「覚醒」 |
-| **生々しい感情** | 「胸が締め付けられ」「背筋が凍る」 |
-| **ジャンル専用語彙** | ざまぁ/無双/フラグ/百合/スキル∞/真エンド 等 |
+#### 7. ブラウザでアクセス
+- メインダッシュボード: http://localhost:8000
+- APIドキュメント: http://localhost:8000/docs
+- ヘルスチェック: http://localhost:8000/api/health
 
-**仕組み**: 抽出 → `<<<SPICE:type_pos>>>テキスト<<</SPICE>>>` マーカー注入 → LLMリライト（マーカー変更禁止指示） → マーカー除去
 
----
 
-## 認証・セキュリティ
 
-### API キー認証
+## 📖 基本的な使い方 - 最初の小説を創作する
 
-本プロジェクトは API キーによる認証をサポートしています。
+### ステップ1: プロジェクトの作成
+1. ブラウザで http://localhost:8000 にアクセス
+2. 「新しいプロジェクトを作成」ボタンをクリック
+3. 基本情報を入力：
+   - 作品タイトル：`私の最初の小説`
+   - ジャンル：`異世界ファンタジー`
+   - 対象話数：`12話`
+   - 主人公タイプ：`勇者型高校生`
+   - 世界観テーマ：`魔法学園`
 
-| 環境変数 | 説明 | デフォルト |
-|---|---|---|
-| `ALLOWED_API_KEYS` | カンマ区切りの許可 API キー一覧 | `dev-key-1,dev-key-2` |
-| `AUTH_DISABLED` | 認証をバイパスするか（非本番環境のみ推奨） | `false` |
+### ステップ2: AIによる自動生成プロセス
+1. 「全話自動生成を開始」ボタンをクリック
+2. リアルタイム監視パネルでAIの思考過程を観察：
+   - プロットエージェントが物語の構造を設計中...
+   - キャラクターAIが主要人物の性格を決定中...
+   - 執筆AIが第1話の導入部を創作中...
+   - レビューAIが内容の整合性をチェック中...
+3. 各エピソードの生成完了時に通知が表示されます
 
-### セキュリティ設計原則
+### ステップ3: 人間によるレビューと修正（Human-in-the-Loop）
+1. 生成された各エピソードを読んでフィードバックを提供：
+   - 「このシーンの感情描写がもう少し欲しい」
+   - 「キャラクターAの発言が設定と矛盾している」
+   - 「ここで伏線を張って次回に活かしたい」
+2. フィードバックを入力して「修正を指示」ボタンをクリック
+3. AIが指摘された点を修正して再生成
 
-- **フェイルクローズ**: 許可リストが空の場合は常に拒否
-- **本番環境保護**: `ENVIRONMENT=production` では `AUTH_DISABLED` を無視
-- **レート制限**: IP/API キー単位でのリクエスト制限
-- **CORS 制御**: 設定ファイルで許可オリジンを一元管理
+### ステップ4: 出力と出版準備
+1. 全話生成完了後、「最終出力準備」をクリック
+2. 望む出版形式を選択：
+   - カクヨム投稿用ZIPパッケージ
+   - 小説家になろう用テキストファイル
+   - Kindle出版用MOBIファイル
+   - 印刷用PDFブックレット
+3. 出力ファイルをダウンロードし、各プラットフォームにアップロード
 
-詳細は [docs/SECURITY.md](docs/SECURITY.md) および [docs/CORS_CONFIG.md](docs/CORS_CONFIG.md) を参照してください。
 
----
 
-## テスト
 
+## 📖 基本的な使い方 - 最初の小説を創作する
+
+### ステップ1: プロジェクトの作成
+1. ブラウザで http://localhost:8000 にアクセス
+2. 「新しいプロジェクトを作成」ボタンをクリック
+3. 基本情報を入力：
+   - 作品タイトル：`私の最初の小説`
+   - ジャンル：`異世界ファンタジー`
+   - 対象話数：`12話`
+   - 主人公タイプ：`勇者型高校生`
+   - 世界観テーマ：`魔法学園`
+
+### ステップ2: AIによる自動生成プロセス
+1. 「全話自動生成を開始」ボタンをクリック
+2. リアルタイム監視パネルでAIの思考過程を観察：
+   - プロットエージェントが物語の構造を設計中...
+   - キャラクターAIが主要人物の性格を決定中...
+   - 執筆AIが第1話の導入部を創作中...
+   - レビューAIが内容の整合性をチェック中...
+3. 各エピソードの生成完了時に通知が表示されます
+
+### ステップ3: 人間によるレビューと修正（Human-in-the-Loop）
+1. 生成された各エピソードを読んでフィードバックを提供：
+   - 「このシーンの感情描写がもう少し欲しい」
+   - 「キャラクターAの発言が設定と矛盾している」
+   - 「ここで伏線を張って次回に活かしたい」
+2. フィードバックを入力して「修正を指示」ボタンをクリック
+3. AIが指摘された点を修正して再生成
+
+### ステップ4: 出力と出版準備
+1. 全話生成完了後、「最終出力準備」をクリック
+2. 望む出版形式を選択：
+   - カクヨム投稿用ZIPパッケージ
+   - 小説家になろう用テキストファイル
+   - Kindle出版用MOBIファイル
+   - 印刷用PDFブックレット
+3. 出力ファイルをダウンロードし、各プラットフォームにアップロード
+
+
+
+
+## ⚙️ 高度な機能とカスタマイズ
+
+### カスタムプリセットの作成
+自分だけのジャンルプリセットやキャラクタータイプを作成できます：
+
+#### 1. カスタム文体の作成
+- 「文体管理」→「カスタム文体作成」から新規作成
+- 執筆指針、好む語彙、避ける表現を詳細設定
+- サンプルテキストを入力してAIに学習させる
+- 保存後、小説生成時に選択可能に
+
+#### 2. 世界観テンプレートの編集
+- 「世界観ビルダー」→「新規テンプレート作成」
+- 魔法システムのルール、種族関係図、歴史年表を作成
+- 用語集を自動生成し、一貫した表現を維持
+- 複数の作品で同じ世界観を共有可能
+
+#### 3. プロットテンプレートのカスタマイズ
+- 既存の三幕構造、起承転結、 Kishotenketsu から選択
+- または独自の構造テンプレートを作成可能
+- ビートごとの目標ページ数と感情の起伏を設定
+
+### ワークフローの細かい調整
+上級者向けの設定オプション：
+
+#### エージェントのパラメータ調整
+- 各AIエージェントの創造性 vs 一貫性のバランス調整
+- リトライ回数とタイムアウト設定の最適化
+- 並列実行数のハードウェア性能に応じた調整
+
+#### 品質ゲートの設定
+- 各工程を通過するための最低スコアを設定
+- 特定のチェック項目の重み付け調整
+- 自動修正と人間介入のしきい値設定
+
+#### 出力フォーマットの詳細設定
+- 章立てとエピソード番号のフォーマット
+- 改行・インデントスタイルの選択
+- フッター・ヘダー情報のカスタマイズ
+- 画像挿入位置と説明文のフォーマット
+
+
+
+
+## 🔧 開発者向け情報
+
+### コード構造とモジュール分割
+プロジェクトは以下の主要モジュールで構成されています：
+
+```
+src/
+├── backend/                 # バックエンドAPI・ビジネスロジック
+│   ├── routers/            # APIエンドポイント定義
+│   ├── workflows/          # LangGraphワークフロー実装
+│   │   ├── graphs/         # 状態遷移グラフ定義
+│   │   ├── nodes/          # ワークフローの処理ノード
+│   │   ├── edges/          # ノード間遷移ロジック
+│   │   └── adapters/       # 外部サービス連携アダプター
+│   ├── core/               # 基盤サービス（DIコンテナ等）
+│   ├── utils/              # ユーティリティ関数群
+│   └── observability/      # ロギング・メトリクス・トレーシング
+├── frontend/               # React + TypeScript フロントエンド
+│   ├── src/
+│   │   ├── components/     # UIコンポーネント集
+│   │   ├── store/          # Zustand状態管理
+│   │   └── lib/            # カスタムフック・ユーティリティ
+├── core/                   # ドメインロジック・エンティティ定義
+├── services/               # 外部サービスラッパー（LLM、出版等）
+├── schemas/                # Pydanticモデル・APIスキーマ定義
+└── shared/                 # フロントエンド・バックエンド共有コード
+```
+
+### 重要な設計パターン
+1. **Dependency Injection (DI)**
+   - `src.core.container.AppContainer` による依存性注入
+   - テスト容易性とモック置換の容易性を確保
+   - 設定の一元管理と環境別切替をサポート
+
+2. **Observer Pattern (SSE)**
+   - `src.backend.sse_manager.SSEManager` によるイベントブロードキャスト
+   - フロントエンドコンポーネントがリアルタイム更新を購読
+   - ロー結合でスケーラブルなアーキテクチャ
+
+3. **State Machine (LangGraph)**
+   - ワークフローを有向グラフとしてモデル化
+   - 条件分岐と並列実行を宣言的に定義
+   - チェックポイントとエラー回復機能を組み込み
+
+4. **Repository Pattern**
+   - データアクセス層を抽象化し、ビジネスロジックから分離
+   - テスト時のインメモリデータベース置換を容易に
+   - 今後の他データベース（PostgreSQL等）への移行を容易に
+
+### テスト戦略
+プロジェクトは以下のレベルでテストを実施しています：
+
+- **単体テスト**：個別の関数・クラスの振る舞いを検証
+- **統合テスト**：モジュール間の連携動作を確認
+- **エンドツーエンドテスト**：実際のユーザーフローをシミュレート
+- **負荷テスト**：多数の同時リクエストに対する耐久性確認
+- **セキュリティテスト**：一般的な脆弱性への耐性評価
+
+テスト実行コマンド：
 ```bash
 # 全テスト実行
 pytest
 
-# かんたんモード Phase 1-3 統合テストのみ
-pytest tests/phase1/test_phase1_preset_integration.py tests/phase2/test_phase2_pipeline_integration.py tests/phase3/test_phase3_asset_pack.py -v
+# カバレッジ測定付きテスト
+pytest --cov=src --cov-report=html
 
-# LangGraph ワークフロー（master / writing / review / plot）のグラフテスト
-pytest tests/workflows/ -v
-
-# 詳細出力
-pytest -xvs tests/
+# 特定のテストのみ実行
+pytest tests/test_novel_50ep.py -v
 ```
 
-テストは `tests/` 配下をロール別に整理しています：`unit/`（単体）、`integration/`（API・DB・パイプライン統合）、`e2e/`（エンドツーエンド）、`phase1`〜`phase4`（かんたんモード各フェーズ）、`workflows/`（LangGraph グラフ）。
 
-### テストカバレッジ (Phase 1-3)
 
-| テスト種別 | 件数 | 内容 |
-|---|---|---|
-| **Phase 1: プリセット** | 17 | 全ジャンル存在確認・ローダー検証・UIインポート |
-| **Phase 2: パイプライン** | 20 | SpiceGuard・設定・統合・E2E（フルラン・低スコア・尖り保護・キャンセル） |
-| **Phase 3: 資産化** | 25 | IFルート・メディアミックス・電子書籍・資産化パック・統合 |
-| **合計** | **62** | 全件通過 |
+
+## 🤝 コントリビューションガイド
+
+### 貢献の方法
+覇権小説エンジンはオープンソースプロジェクトとして、様々な形での貢献を歓迎しています：
+
+1. **バグ報告**：Issueテンプレートに従って詳細なレポートを提出
+2. **機能提案**：新機能のアイデアや改善点を議論
+3. **コード貢献**：Pull Request による実装コードの提供
+4. **ドキュメント改善**：使用方法や仕様説明の充実
+5. **翻訳貢献**：ドキュメントやUIの多言語対応
+6. **テストケース追加**：エッジケースやシナリオテストの追加
+
+### 開発環境のセットアップ
+貢献者向けの開発環境構築手順：
+
+```bash
+# フォークしてクローン
+git clone https://github.com/your-account/hegemony-novel-engine.git
+cd hegemony-novel-engine
+
+# 開発ブランチ作成
+git checkout -b feature/your-feature-name
+
+# 開発依存関係インストール
+pip install -r requirements-dev.txt
+pre-commit install  # Gitフックのセットアップ
+
+# テスト実行確認
+pytest -x  # 最初の失敗で停止
+
+# コーディングスタイルチェック
+ruff check .
+black --check src/
+```
+
+### プルリクエストのガイドライン
+PRを送信する際は以下を守ってください：
+
+1. **単一の責務**：1つのPRは1つの機能またはバグ修正に焦点を当てる
+2. **十分なテスト**：新機能にはテストを、バグ修正には再発防止テストを追加
+3. **ドキュメント更新**：ユーザーに影響する変更はドキュメントも更新
+4. **コードスタイル**：プロジェクトのスタイルガイド（ruff, black）に準拠
+5. **明確なコミットメッセージ**：従来型と squamous コミットメッセージガイドラインに従う
+6. **issue参照**：関連するIssue番号をコミットメッセージに含める
+
+## 📋 よくある質問（FAQ）
+
+### Q1: プログラミング経験がなくても使えますか？
+A: はい、基本的な操作はブラウザベースのグラフィカルインターフェースで完結します。プログラミング知識は必要ありません。ただし、APIキーの取得や環境変数設定など、初期設定段階で少しだけターミナル操作が必要です。
+
+### Q2: どの程度の創作が可能ですか？著作権はどうなりますか？
+A: エンジンは補助ツールであり、最終的な創作物の著作権は利用者に帰属します。AIが生成したベースに人間が編集・加筆を行うことで、十分な創造性が認められます。ただし、使用するLLMの利用規約を確認し、商用利用時は十分に注意してください。
+
+### Q3: 日本語以外の言語にも対応していますか？
+A: 現在のところ日本語に特化して設計されていますが、アーキテクチャ自体は言語非依存です。将来的には多言語対応を計画していますが、現時点では日本語最適化となっています。
+
+### Q4: GPUsや特別なハードウェアは必要ですか？
+A: いいえ。LLMの処理はクラウドAPI（Gemini, OpenAI等）を利用するため、ローカルでの heavy computation は発生しません。標準的なノートパソコンまたはデスクトップPCで十分動作します。
+
+### Q5: 生成される小説の品質はどの程度ですか？
+A: 品質は使用するLLMの能力と、プロンプトエンジニアリングの質、そして人間によるレビューの徹底度に依存します。適切な設定と十分なHuman-in-the-Loopプロセスを経れば、ウェブ小説レベルの中上位品質は達成可能です。ただし、文学賞レベルの深いテーマ探求にはまだ人間の創造性が必要不可欠です。
+
+### Q6: 複数人で共同作業はできますか？
+A: 現在のところシングルユーザー向けに最適化されていますが、データベースとファイルシステムを共有すればある程度の共同作業は可能です。今後のアップデートで本格的なマルチユーザー協力機能を検証中です。
+
+### Q7: 更新はどのくらいの頻度で行われますか？
+A: メジャーリリースは季節ごと（約3ヶ月ごと）、マイナーアップデートは月1回程度を目安にしています。セキュリティパッチは必要に応じて随時リリースされます。
+
+### Q8: 商用利用は可能ですか？
+A: はい、可能です。ただし、使用しているLLMの商用利用規約を必ず確認してください。また、生成物が第三者の著作権を侵害していないか、十分なオリジナリティチェックを行うことをお勧めします。
+
+### Q9: エラーが発生したときの対処法は？
+A: まずはログファイル（`logs/` ディレクトリ）を確認してください。一般的なエラーと対処法は `TROUBLESHOOTING.md` にまとめています。それでも解決しない場合は、Issueテンプレートを使用して詳細な情報を添えてバグ報告をお願いします。
+
+### Q10: 今後のロードマップは？
+A: 近々のアップデートでは以下を予定しています：
+- 改善されたキャラクター関係性モデリング
+- より高度なプロット構造分析機能
+- 出版プラットフォームへの直接API連携強化
+- マルチ modal（画像・音声）生成機能の実験的導入
+- 改善されたユーザーインターフェースとアクセシビリティ
+
+## 🔐 セキュリティとプライバシー
+
+### データの取り扱い
+- ユーザーが入力したプロットアイデアやキャラクター設定は、ローカルのデータベースにのみ保存されます
+- 外部に送信されるのはLLMへのプロンプトと、そこから得られたレスポンスのみです
+- 生成された小説データは、ユーザーが明示的にエクスポートしない限り外部に送信されません
+
+### API キーの管理
+- API キーは環境変数または `.env` ファイルに安全に保存されます
+- ソフトウェアは API キーをログやエラーメッセージに出力しません
+- キーのローテーションと権限の最小限定を推奨します
+
+### 通信のセキュリティ
+- すべての API 通信は HTTPS/TLS で暗号化されます
+- SSE ストリームも同様に保護されます
+- クロスサイトスクリプティング（XSS）およびクロスサイトリクエストフォージェリ（CSRF）対策が実装されています
+
+## 📞 サポートとコミュニティ
+
+### 公式チャネル
+- **公式ドキュメント**：この README および `docs/` ディレクトリ
+- **Issueトラッカー**：GitHub Issues でバグ報告・機能提案
+- **ディスカッションフォーラム**：GitHub Discussions で一般的な質問・アイデア共有
+- **変更履歴**：`CHANGELOG.md` でバージョンごとの変更点を確認
+
+### コミュニティガイドライン
+建設的で敬意を持ったコミュニティを維持するため、以下をお願いします：
+- 他者の意見を尊重し、罵倒や差別的表現は禁止
+- Issue や PR では十分な情報を提供し、再現可能な状況を提示
+- テスト環境での確認を推奨し、本番環境への影響を最小限に
+- 知的財産権とプライバシーを尊重し、第三者の著作物を不適切に使用しない
+
+### スポンサーシップと支援
+このプロジェクトはオープンソースとして維持されています。ご支援いただける場合は：
+- スターを付けてプロジェクトの可視性を向上
+- Issue のラベリングやドキュメント改善に貢献
+- 互助の精神で初心者ユーザーをサポート
 
 ---
 
-## 環境変数
+## 📄 ライセンス
 
-| 変数名 | 説明 | デフォルト |
-|---|---|---|
-| `GEMINI_API_KEY` | **必須** Google Gemini API キー | - |
-| `ALLOWED_API_KEYS` | カンマ区切りの許可 API キー | `dev-key-1,dev-key-2` |
-| `AUTH_DISABLED` | 認証を無効化（非本番のみ） | `false` |
-| `PYTHONPATH` | Python モジュール検索パス | `/app` (Docker) |
-| `DATABASE_URL` | DB 接続文字列 | `sqlite+aiosqlite:///./autonovel.db` |
-| `REDIS_URL` | Redis 接続文字列 | `redis://localhost:6379/0` |
-| `LOG_LEVEL` | ログレベル | `INFO` |
-| `CORS_ALLOWED_ORIGINS` | CORS 許可オリジン | `http://localhost:5173,http://localhost:3000` |
-| `KAKU_HEALTH_CHECK_LLM` | LLM ヘルスチェックを無効化 | `true` |
-| `ENVIRONMENT` | 実行環境 (`development` / `production`) | `development` |
+覇権小説エンジンは [MIT License](LICENSE) の下で配布されています。
+
+```
+Copyright (c) 2026 Hegemony Novel Engine Project
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+```
+
+## 🙏 謝辞
+
+このプロジェクトは多くのオープンソースプロジェクトとコミュニティの貢献により成り立っています：
+
+- FastAPI チーム：優れた Web フレームワークの提供
+- LangGraph チーム：革新的なワークフロー管理システム
+- SQLite コミュニティ：信頼性の高い組み込みデータベース
+- React & TypeScript コミュニティ：現代的フロントエンド開発基盤
+- 各種 LLM プロバイダー：最先端の言語モデルへのアクセス
+- オープンソース小説コミュニティ：実用的なフィードバックとユースケース提供
+- 早期 adopter ユーザーたち：貴重なフィードバックと改善提案
 
 ---
 
-## ライセンス
+**最終更新日**: 2026年8月28日  
+**バージョン**: 3.72.0  
+**対象読者**: 初心者から中級者までの小説創作に興味のある方  
 
-このプロジェクトは個人利用・研究目的で提供されています。商用利用の際は Google Gemini API の利用規約をご確認ください。
+ご質問やご提案がございましたら、いつでもお気軽に Issue を開いてください。  
+Happy Writing! 📖✨
 
----
-
-**Enjoy Writing!**

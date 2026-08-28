@@ -10,14 +10,18 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Any, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional
 
 from pydantic import ValidationError
 
 from config.sharp_edge_vocabulary import SHARP_EDGE_TYPES
+from src.backend.constants import constants as const
 from src.models.db import PlotDbModel
 from src.models.emotional_hook import EmotionalHookSpec
 from src.models.sharp_edge import SharpEdgeSpec
+
+if TYPE_CHECKING:
+    from src.agents.early_entertainment_checker import EntertainmentCheckResult
 
 logger = logging.getLogger(__name__)
 
@@ -184,8 +188,8 @@ async def enforce_entertainment_gate(
     checker: Any,
     rough_plot: str,
     opening_chars: str,
-    threshold: int = 60,
-    max_retries: int = 2,
+    threshold: int = const.INTEREST_THRESHOLD_LOW,
+    max_retries: int = const.DEFAULT_MAX_RETRIES,
     regenerate_callback: Optional[Any] = None,
 ) -> "EntertainmentCheckResult":
     """
