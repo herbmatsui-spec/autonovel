@@ -7,7 +7,7 @@ from huey import crontab
 
 from src.core.container import AppContainer
 from config.container import get_container
-from prompts.manager import prompt_manager
+
 from src.backend.database.uow import UnitOfWork
 from src.core.observability import with_trace_context
 from src.backend.worker_config import huey
@@ -15,6 +15,20 @@ from src.backend.redis_util import get_redis_client
 from src.backend.background import ProgressState
 
 logger = logging.getLogger('huey')
+
+_NO_VALUE = object()
+
+# Configuration keys that may be overridden via task request payloads.
+# This mirrors the whitelist used by the original ProjectContext implementation.
+# Extend as needed for additional configurable parameters.
+_CONFIG_OVERRIDE_KEYS = [
+    "openai_base_url",
+    "openai_api_key",
+    "gemini_api_key",
+    "inference_top_p",
+    "inference_top_k",
+    "system_sandbox",
+]
 
 # openai_base_url はリクエスト越しに指定可能だが、SSRF 回避のため
 # プライベート/ループバック/予約アドレス宛は拒否する。
@@ -40,24 +54,23 @@ def _is_safe_base_url(value: str) -> bool:
     return True
 
 
-_CONFIG_OVERRIDE_KEYS = {
-    "model_planning",
-    "model_plot_expansion",
-    "model_writing",
-    "model_climax",
-    "model_stable_fallback",
-    "model_ultra_stable",
-    "model_embedding",
-    "openai_base_url",
-    "openai_api_key",
-}
+def _apply_config_overrides(config_dict: Optional[dict]) -> dict:
+    """Apply configuration overrides for a task and return original values for restoration.
 
-
-def _apply_config_overrides(config_dict: Optional[dict]) -> None:
+    This replaces the deprecated ``ProjectContext`` usage with direct manipulation of the
+    global ``Settings`` instance from ``config.settings``. Only keys explicitly listed in
+    ``_CONFIG_OVERRIDE_KEYS`` are honored.
+    """
+    """Apply configuration overrides and return a dict of (key, original_value) for restoration.
+    Returns a dict mapping key to original_value (or _NO_VALUE if key did not exist).
+    Caller is responsible for restoring the original values after use.
+    """
     if not config_dict:
-        return
+        return {}
     try:
-        from config.project_context import ProjectContext
+        from config.settings import get_settings
+        overrides = {}
+        settings_obj = get_settings()
         for key in _CONFIG_OVERRIDE_KEYS:
             if key in config_dict and config_dict[key] not in (None, ""):
                 if key == "openai_base_url" and not _is_safe_base_url(str(config_dict[key])):
@@ -65,9 +78,15 @@ def _apply_config_overrides(config_dict: Optional[dict]) -> None:
                         f"Rejected unsafe openai_base_url override: {config_dict[key]}"
                     )
                     continue
-                ProjectContext.set_setting(key, config_dict[key])
+                # Get the original value
+                original_value = getattr(settings_obj, key, _NO_VALUE)
+                overrides[key] = original_value
+                # Apply the override directly on the settings object
+                setattr(settings_obj, key, config_dict[key])
+        return overrides
     except Exception as e:
         logger.warning(f"Failed to apply config overrides: {e}")
+        return {}
 
 
 @huey.periodic_task(crontab(minute='*'))
@@ -139,6 +158,9 @@ def execute_service_workflow(task_id: str, api_key: str, config_dict: dict, meth
 
     async def _run():
         try:
+            # Apply config overrides and get original values for restoration
+            overrides = _apply_config_overrides(config_dict)
+            
             from src.core.container import AppContainer
             from src.core.container import make_container
 
@@ -165,6 +187,17 @@ def execute_service_workflow(task_id: str, api_key: str, config_dict: dict, meth
             state.is_running = False
             state.error = str(e)
             state._save_to_db()
+        finally:
+            # Restore config overrides to original values
+            from config.settings import get_settings
+            settings = get_settings()
+            for key, original_value in overrides.items():
+                if original_value is _NO_VALUE:
+                    # Key did not exist originally; remove the attribute if present
+                    if hasattr(settings, key):
+                        delattr(settings, key)
+                else:
+                    setattr(settings, key, original_value)
 
     try:
         asyncio.run(_run())
@@ -188,6 +221,179 @@ def run_test_coro(task_id: str, message: str, trace_id: Optional[str] = None):
     state.logs = [message]
     state._save_to_db()
 
+# Task for overriding affinity (narrative endpoint)
+@huey.task(retries=3, retry_delay=5)
+@with_trace_context
+def run_override_affinity_task(task_id: str, book_id: int, branch_id: int, req_data: dict, api_key: str):
+    """Background task to apply affinity overrides and broadcast SSE."""
+    import asyncio
+    from src.backend.background import BackgroundReporter, ProgressState
+    from src.backend.sse_manager import get_sse_manager
+    from src.backend.database import UnitOfWork
+    from src.core.container import AppContainer
+    from src.backend.workflows.narrative_state import NarrativeState
+    from src.schemas.ux_schemas import AffinityData
+
+    state = ProgressState(is_running=True, task_id=task_id, repo=None)
+    reporter = BackgroundReporter(state)
+
+    async def _run():
+        try:
+            async with UnitOfWork(AppContainer.db()) as uow:
+                raw_data = await uow.misc.load_narrative(book_id, branch_id)
+                if raw_data:
+                    narrative_state = NarrativeState.from_dict(raw_data)
+                else:
+                    narrative_state = NarrativeState(book_id=book_id, branch_id=branch_id)
+
+                cname = req_data.get("character_name")
+                existing = narrative_state.affinity_map.get(cname)
+                if not isinstance(existing, AffinityData):
+                    if isinstance(existing, dict):
+                        existing_copy = dict(existing)
+                        existing_copy.setdefault("character_name", cname)
+                        try:
+                            existing = AffinityData(**existing_copy)
+                        except Exception:
+                            existing = AffinityData(character_name=cname)
+                    elif isinstance(existing, (int, float)):
+                        existing = AffinityData(character_name=cname, affinity_score=float(existing))
+                    else:
+                        existing = AffinityData(character_name=cname)
+
+                for field in ["affinity_score", "trust_score", "dependency_score", "wariness_score", "current_mood"]:
+                    val = req_data.get(field)
+                    if val is not None:
+                        setattr(existing, field, val)
+                existing.recent_change = 0.0
+
+                narrative_state.affinity_map[cname] = existing
+                await uow.misc.save_narrative(book_id, branch_id, narrative_state.to_dict())
+
+            sse = get_sse_manager()
+            await sse.broadcast(
+                "affinity_overridden",
+                {
+                    "book_id": book_id,
+                    "branch_id": branch_id,
+                    "character_name": cname,
+                    "affinity_data": existing.model_dump(),
+                    "message": f"{cname} の好感度・心理状態が手動更新されました (好意:{existing.affinity_score}, 状態:{existing.current_mood})",
+                },
+            )
+
+            state.result_data = {"status": "success", "character_name": cname, "affinity_data": existing.model_dump()}
+            state.is_running = False
+            state.message = "Affinity override completed"
+            state._save_to_db()
+        except Exception as e:
+            logger.error(f"Affinity override task failed: {e}")
+            state.is_running = False
+            state.error = str(e)
+            state._save_to_db()
+
+    try:
+        asyncio.run(_run())
+    except Exception as e:
+        logger.error(f"Task execution failed: {e}", exc_info=True)
+
+
+# Task for rebuilding plot with foreshadows (narrative endpoint)
+@huey.task(retries=3, retry_delay=5)
+@with_trace_context
+def run_rebuild_plot_task(task_id: str, book_id: int, branch_id: int, req_data: dict, api_key: str):
+    """Background task to rebuild plot using foreshadow data and broadcast SSE."""
+    import asyncio
+    from src.backend.background import BackgroundReporter, ProgressState
+    from src.backend.sse_manager import get_sse_manager
+    from src.backend.database import UnitOfWork
+    from src.core.container import AppContainer
+    from src.backend.workflows.graphs.plot_graph import compile_plot_graph
+    from src.schemas.ux_schemas import AffinityData
+
+    state = ProgressState(is_running=True, task_id=task_id, repo=None)
+    reporter = BackgroundReporter(state)
+
+    async def _run():
+        try:
+            from novel_50ep.foreshadow_manager import ForeshadowManager
+            fm = ForeshadowManager()
+            try:
+                from src.prototype.foreshadow_adapter import PersistentForeshadowManager
+                pfm = PersistentForeshadowManager(csv_path=fm.csv_path, cliffs_path=fm.cliffs_path)
+                async with UnitOfWork(AppContainer.db()) as uow:
+                    db_data = await pfm.load_persistent(book_id, branch_id, repo=uow.misc)
+                    if db_data:
+                        fm.foreshadows = db_data
+            except Exception:
+                pass
+
+            unresolved = fm.get_unresolved_foreshadows()
+            stale = fm.get_stale_foreshadows(current_ep=req_data.get("current_ep", 1), threshold=3)
+
+            foreshadow_list = []
+            for s in stale:
+                foreshadow_list.append({
+                    "ep": s.ep if hasattr(s, "ep") else s.get("ep"),
+                    "text": f'【最優先放置伏線】{s.text if hasattr(s, "text") else s.get("text")}',
+                })
+            for u in unresolved:
+                if u not in stale:
+                    foreshadow_list.append({
+                        "ep": u.ep if hasattr(u, "ep") else u.get("ep"),
+                        "text": u.text if hasattr(u, "text") else u.get("text"),
+                    })
+
+            app = compile_plot_graph()
+            target_eps = req_data.get("target_episodes") or 10
+            extra_inst = req_data.get("user_instructions") or ""
+            if stale:
+                extra_inst += f" ※長期未回収となっている伏線（{len(stale)}件）を必ず序盤の話数で回収・進展させてください。"
+
+            initial_state = {
+                "book_id": book_id,
+                "branch_id": branch_id,
+                "genre": req_data.get("genre"),
+                "theme": req_data.get("theme"),
+                "target_episodes": target_eps,
+                "user_instructions": extra_inst,
+                "unresolved_foreshadows": foreshadow_list,
+                "max_iterations": 2,
+            }
+
+            result = await app.ainvoke(initial_state)
+
+            sse = get_sse_manager()
+            await sse.broadcast(
+                "plot_rebuilt",
+                {
+                    "book_id": book_id,
+                    "branch_id": branch_id,
+                    "current_ep": req_data.get("current_ep"),
+                    "plots_count": len(result.get("parsed_plots", [])),
+                    "resolved_foreshadows_assigned": sum(
+                        len(p.get("assigned_foreshadows", []))
+                        for p in result.get("parsed_plots", [])
+                        if isinstance(p, dict)
+                    ),
+                    "message": f"第{req_data.get('current_ep')}話以降のプロットを伏線回収優先で再構成しました。",
+                },
+            )
+
+            state.result_data = result
+            state.is_running = False
+            state.message = "Plot rebuild completed"
+            state._save_to_db()
+        except Exception as e:
+            logger.error(f"Plot rebuild task failed: {e}")
+            state.is_running = False
+            state.error = str(e)
+            state._save_to_db()
+
+    try:
+        asyncio.run(_run())
+    except Exception as e:
+        logger.error(f"Task execution failed: {e}", exc_info=True)
 
 @huey.task(retries=3, retry_delay=5)
 @with_trace_context
@@ -284,6 +490,48 @@ def execute_easy_mode_generation(task_id: str, api_key: str, genre: str, keyword
 
         except Exception as e:
             logger.error(f"Easy mode pipeline failed: {e}", exc_info=True)
+            state.is_running = False
+            state.error = str(e)
+            state._save_to_db()
+
+    try:
+        asyncio.run(_run())
+    except Exception as e:
+        logger.error(f"Task execution failed: {e}", exc_info=True)
+
+
+@huey.task(retries=3, retry_delay=5)
+@with_trace_context
+def run_commercial_pipeline_task(task_id: str, series_config: dict, samples: list, platforms: list, api_key: str, trace_id: Optional[str] = None):
+    """商用化パイプラインをバックグラウンドで実行するタスク"""
+    import asyncio
+    import logging
+    from src.backend.background import BackgroundReporter, ProgressState
+    from src.core.container import AppContainer
+    from src.backend.workflows.commercial_pipeline import CommercialPipeline
+
+    # Use the module-level logger (or create a local one)
+    logger = logging.getLogger('huey')
+
+    state = ProgressState(is_running=True, task_id=task_id, repo=None)
+    reporter = BackgroundReporter(state)
+
+    async def _run():
+        try:
+            # Apply config overrides if needed (the endpoint does not apply overrides, but we can support them if passed via a config_dict)
+            # For now, we assume the config is already final.
+            pipeline = CommercialPipeline()
+            result = await pipeline.run(
+                series_config=series_config,
+                samples=samples,
+                platforms=platforms
+            )
+            state.result_data = result
+            state.is_running = False
+            state.message = "商用化パイプラインが完了しました。"
+            state._save_to_db()
+        except Exception as e:
+            logger.error(f"Commercial pipeline error: {e}", exc_info=True)
             state.is_running = False
             state.error = str(e)
             state._save_to_db()

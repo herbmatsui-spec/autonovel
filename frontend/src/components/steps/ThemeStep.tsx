@@ -1,7 +1,9 @@
+import { useNavigate } from 'react-router-dom';
 import { PlanningTab } from '@/components/tabs/PlanningTab';
 import ContextActionBar from '@/components/ContextActionBar';
 
 export function ThemeStep(_props: { bookId?: number; step?: string } = {}) {
+  const navigate = useNavigate();
   const { bookId, step } = _props;
   const currentStep = step || 'theme';
   
@@ -10,9 +12,9 @@ export function ThemeStep(_props: { bookId?: number; step?: string } = {}) {
       label: 'スタイルラボで参照',
       icon: '🧬',
       tab: 'style-lab',
-      onClick: (bookId, currentStep) => {
-        if (bookId) {
-          navigate(`/book/${bookId}/${currentStep}/style-lab`, { replace: true });
+      onClick: (bId: number, cStep: string) => {
+        if (bId) {
+          navigate(`/book/${bId}/${cStep}/style-lab`, { replace: true });
         }
       }
     },
@@ -20,9 +22,9 @@ export function ThemeStep(_props: { bookId?: number; step?: string } = {}) {
       label: '市場分析を確認',
       icon: '📈',
       tab: 'analytics',
-      onClick: (bookId, currentStep) => {
-        if (bookId) {
-          navigate(`/book/${bookId}/${currentStep}/analytics`, { replace: true });
+      onClick: (bId: number, cStep: string) => {
+        if (bId) {
+          navigate(`/book/${bId}/${cStep}/analytics`, { replace: true });
         }
       }
     }
@@ -34,9 +36,11 @@ export function ThemeStep(_props: { bookId?: number; step?: string } = {}) {
         AIが企画を下書きします。よければ次へ進んでください。
       </p>
       <PlanningTab />
-      <ContextActionBar bookId={bookId} currentStep={currentStep} suggestedActions={suggestedActions} />
+      {bookId !== undefined && (
+        <ContextActionBar bookId={bookId} currentStep={currentStep} suggestedActions={suggestedActions} />
+      )}
     </div>
   );
 }
 
-export default ThemeStep;
+export default ThemeStep;

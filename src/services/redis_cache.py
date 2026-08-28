@@ -78,6 +78,30 @@ class RedisCacheService:
 
         logger.info(f"RedisCacheService initialized: namespace={namespace}, url={redis_url}")
 
+    async def close(self) -> None:
+        """Redis接続プールおよびクライアントをクローズ."""
+        if self._client is not None:
+            try:
+                if hasattr(self._client, "aclose"):
+                    await self._client.aclose()
+                elif hasattr(self._client, "close"):
+                    res = self._client.close()
+                    if asyncio.iscoroutine(res):
+                        await res
+            except Exception as e:
+                logger.warning(f"Error closing Redis client: {e}")
+        if self._pool is not None:
+            try:
+                if hasattr(self._pool, "aclose"):
+                    await self._pool.aclose()
+                elif hasattr(self._pool, "disconnect"):
+                    res = self._pool.disconnect()
+                    if asyncio.iscoroutine(res):
+                        await res
+            except Exception as e:
+                logger.warning(f"Error disconnecting Redis pool: {e}")
+        logger.info("RedisCacheService closed.")
+
     def _make_key(self, key: str) -> str:
         """ネームスペース付きキーを生成."""
         return f"{self.namespace}:{key}"
@@ -301,6 +325,16 @@ class RedisCacheService:
             return await self._client.ping()
         except (RedisConnectionError, RedisTimeoutError, RedisError):
             return False
+
+    async def eval(self, lua_script: str, keys: list, args: list) -> Any:
+        """Execute a Lua script on the Redis server."""
+        if not self._client:
+            return None
+        try:
+            return await self._client.eval(lua_script, len(keys), *keys, *args)
+        except (RedisConnectionError, RedisTimeoutError, RedisError) as e:
+            logger.error(f"[REDIS CACHE EVAL ERROR]: {e}")
+            return None
 
     async def close(self):
         """接続プールを閉じる."""

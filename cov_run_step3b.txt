@@ -1,0 +1,1564 @@
+============================= test session starts =============================
+platform win32 -- Python 3.14.0, pytest-9.0.3, pluggy-1.6.0
+rootdir: E:\sda
+configfile: pytest.ini
+testpaths: tests
+plugins: anyio-4.12.1, langsmith-0.8.8, locust-2.45.0, asyncio-1.4.0, cov-7.1.0, docker-3.2.5, mock-3.15.1, recording-0.13.4, xdist-3.8.0, typeguard-4.5.2
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 1055 items
+
+tests\api\test_affinity_override.py F                                    [  0%]
+tests\e2e\test_new_sharp_edge.py .                                       [  0%]
+tests\integration\test_api.py sss                                        [  0%]
+tests\integration\test_api_client_http_semantics.py sss                  [  0%]
+tests\integration\test_api_client_resources.py ssssssss                  [  1%]
+tests\integration\test_collab.py ss                                      [  1%]
+tests\integration\test_containers_integration.py ssssssssss              [  2%]
+tests\integration\test_enigma_engine.py ss                               [  2%]
+tests\integration\test_erotic_full_pipeline.py ssssssssssssssss          [  4%]
+tests\integration\test_erotic_refine_workflow.py ss                      [  4%]
+tests\integration\test_eventbus_flow.py ..                               [  4%]
+tests\integration\test_exporter.py ssssss                                [  5%]
+tests\integration\test_hook_cost.py sss                                  [  5%]
+tests\integration\test_isolation.py s                                    [  5%]
+tests\integration\test_narrative_hub_flow.py ...                         [  5%]
+tests\integration\test_plot_workflow.py s                                [  6%]
+tests\integration\test_prompt_compare.py sssss                           [  6%]
+tests\integration\test_prototype_pipeline.py .                           [  6%]
+tests\integration\test_repo_book.py ssss                                 [  7%]
+tests\integration\test_repo_character.py s                               [  7%]
+tests\integration\test_repo_plot.py s                                    [  7%]
+tests\integration\test_resilience.py sssss                               [  7%]
+tests\integration\test_schema_check.py ss                                [  7%]
+tests\integration\test_structure.py sssssss                              [  8%]
+tests\integration\test_tension_integration.py ss                         [  8%]
+tests\integration\test_trace.py ssss                                     [  9%]
+tests\integration\test_version.py ss                                     [  9%]
+tests\integration\test_what_if_and_hitl_orchestration.py s               [  9%]
+tests\integration\test_workflow.py sss                                   [  9%]
+tests\perf_container_test.py F                                           [  9%]
+tests\phase1\test_phase1_preset_integration.py .................         [ 11%]
+tests\phase1\test_phase1to3_e2e.py ....                                  [ 11%]
+tests\phase2\test_phase2_pipeline_integration.py ........FFFFFF..FFFF    [ 13%]
+tests\phase3\test_phase3_asset_pack.py .......................F.         [ 16%]
+tests\phase4\test_phase4to5_e2e.py ...F                                  [ 16%]
+tests\prompts\test_registry_cache.py ...                                 [ 16%]
+tests\prompts\test_registry_perf.py .                                    [ 16%]
+tests\shared\test_result.py .......                                      [ 17%]
+tests\state\test_app_state.py .....                                      [ 17%]
+tests\test_backend\test_engine.py ...................................... [ 21%]
+......................................................................   [ 28%]
+tests\test_bible_generator.py .                                          [ 28%]
+tests\unit\test_actor_critic.py ...F                                     [ 28%]
+tests\unit\test_affinity_tracker.py ...                                  [ 28%]
+tests\unit\test_afterglow_affinity.py ..                                 [ 29%]
+tests\unit\test_aggregator.py .                                          [ 29%]
+tests\unit\test_api_integration.py FF.F                                  [ 29%]
+tests\unit\test_async_executor.py .......................                [ 31%]
+tests\unit\test_async_utils.py ....                                      [ 32%]
+tests\unit\test_auth.py .......                                          [ 32%]
+tests\unit\test_auth_fallback_and_test_keys.py ....F                     [ 33%]
+tests\unit\test_auth_rate_limit.py .                                     [ 33%]
+tests\unit\test_auth_service.py ....                                     [ 33%]
+tests\unit\test_backend_verification.py FF.FF                            [ 34%]
+tests\unit\test_background_strategy.py ........                          [ 34%]
+tests\unit\test_background_worker.py .                                   [ 35%]
+tests\unit\test_bible_service_erotic.py ..                               [ 35%]
+tests\unit\test_branch_schemas.py ....                                   [ 35%]
+tests\unit\test_branch_service.py ..                                     [ 35%]
+tests\unit\test_commercial_end_to_end.py F                               [ 35%]
+tests\unit\test_commercial_pipeline_error.py F.                          [ 36%]
+tests\unit\test_commercial_pipeline_unit.py .....                        [ 36%]
+tests\unit\test_commercial_score_correlation.py .                        [ 36%]
+tests\unit\test_commercial_scoring.py ..                                 [ 36%]
+tests\unit\test_concurrent_write.py .                                    [ 36%]
+tests\unit\test_config.py ..........                                     [ 37%]
+tests\unit\test_config_centralization.py .FFF.FF                         [ 38%]
+tests\unit\test_config_loading.py .F                                     [ 38%]
+tests\unit\test_config_validator.py ...F.F...                            [ 39%]
+tests\unit\test_constants.py ....                                        [ 40%]
+tests\unit\test_container.py ..                                          [ 40%]
+tests\unit\test_container_smoke.py .                                     [ 40%]
+tests\unit\test_context_bus.py ..                                        [ 40%]
+tests\unit\test_context_manager.py .                                     [ 40%]
+tests\unit\test_continuity_tracker.py ..............                     [ 41%]
+tests\unit\test_cors_config.py .F                                        [ 42%]
+tests\unit\test_cors_configuration.py ..                                 [ 42%]
+tests\unit\test_cors_endpoints.py F                                      [ 42%]
+tests\unit\test_critique_edge_rejection.py ..                            [ 42%]
+tests\unit\test_deai_auditor_edges.py ....                               [ 42%]
+tests\unit\test_density_rubric.py ...                                    [ 43%]
+tests\unit\test_domain_event_bus.py ...                                  [ 43%]
+tests\unit\test_draft_polish.py FFFF                                     [ 43%]
+tests\unit\test_early_entertainment_checker.py ....                      [ 44%]
+tests\unit\test_early_entertainment_prompt.py FFF                        [ 44%]
+tests\unit\test_easy_mode_api.py FFFF                                    [ 44%]
+tests\unit\test_easy_mode_erotic.py ..                                   [ 45%]
+tests\unit\test_emotional_hook.py .......                                [ 45%]
+tests\unit\test_emotional_hook_prompt.py ...                             [ 46%]
+tests\unit\test_emotional_hook_vocabulary.py .......                     [ 46%]
+tests\unit\test_engine_config.py ...                                     [ 47%]
+tests\unit\test_engine_entertainment_gate.py ...                         [ 47%]
+tests\unit\test_engine_facade.py ......                                  [ 47%]
+tests\unit\test_engine_init.py .........                                 [ 48%]
+tests\unit\test_engine_plot_enforce.py ...                               [ 49%]
+tests\unit\test_engine_plot_hook_integration.py .......                  [ 49%]
+tests\unit\test_engine_service.py ..                                     [ 49%]
+tests\unit\test_engine_sharp_edge_proposal.py .....                      [ 50%]
+tests\unit\test_engines.py ..F                                           [ 50%]
+tests\unit\test_entertainment_check_model.py ......                      [ 51%]
+tests\unit\test_entertainment_loop.py ....                               [ 51%]
+tests\unit\test_entertainment_loop_persistence.py ..                     [ 51%]
+tests\unit\test_episode_context.py ......                                [ 52%]
+tests\unit\test_episode_writer.py ..F...                                 [ 52%]
+tests\unit\test_episode_writer_single_pass.py ..                         [ 53%]
+tests\unit\test_erotic_afterglow_evaluator.py .....                      [ 53%]
+tests\unit\test_erotic_density_controller.py ......                      [ 54%]
+tests\unit\test_erotic_mocks.py ..................                       [ 55%]
+tests\unit\test_erotic_thresholds.py ...                                 [ 56%]
+tests\unit\test_erotic_workflow.py ........................              [ 58%]
+tests\unit\test_exceptions.py ....                                       [ 58%]
+tests\unit\test_file_watcher.py ..                                       [ 58%]
+tests\unit\test_foreshadow_orchestration.py ..F                          [ 59%]
+tests\unit\test_full_balance_pipeline_e2e.py .........                   [ 60%]
+tests\unit\test_generate_plot.py ....................................... [ 63%]
+..........                                                               [ 64%]
+tests\unit\test_health.py .........sss...FFssss                          [ 66%]
+tests\unit\test_hitl_manager.py ...                                      [ 67%]
+tests\unit\test_illustration_agent.py ...                                [ 67%]
+tests\unit\test_illustration_context.py ..                               [ 67%]
+tests\unit\test_illustration_features.py .........................       [ 69%]
+tests\unit\test_implementation_plan.py ..F                               [ 70%]
+tests\unit\test_infra_container.py F                                     [ 70%]
+tests\unit\test_llm_gateway.py ....                                      [ 70%]
+tests\unit\test_llm_service_di.py ..                                     [ 70%]
+tests\unit\test_llm_service_nsfw.py ..                                   [ 70%]
+tests\unit\test_llm_streaming.py .                                       [ 71%]
+tests\unit\test_metrics.py ....F.....F...........                        [ 73%]
+tests\unit\test_minimal.py .                                             [ 73%]
+tests\unit\test_narrative_adapters.py ......                             [ 73%]
+tests\unit\test_narrative_metrics_audit.py .                             [ 73%]
+tests\unit\test_narrative_persistence_and_api.py ...                     [ 74%]
+tests\unit\test_narrative_state.py ....                                  [ 74%]
+tests\unit\test_ncs_calibration.py .....                                 [ 75%]
+tests\unit\test_novel_producer.py ..........                             [ 76%]
+tests\unit\test_observability.py ..                                      [ 76%]
+tests\unit\test_outbox_worker.py .                                       [ 76%]
+tests\unit\test_parse_character_registry.py ......                       [ 76%]
+tests\unit\test_patch_validator.py FFFFFF                                [ 77%]
+tests\unit\test_peak_detection.py ..                                     [ 77%]
+tests\unit\test_plan_workflow.py ..                                      [ 77%]
+tests\unit\test_planning_service.py ...                                  [ 78%]
+tests\unit\test_plot_variants.py ...                                     [ 78%]
+tests\unit\test_plugin_and_graph.py ss                                   [ 78%]
+tests\unit\test_prompt_composer_affinity.py ..                           [ 78%]
+tests\unit\test_prompt_version_manager.py .                              [ 78%]
+tests\unit\test_prompts.py F..                                           [ 79%]
+tests\unit\test_protocols.py ........                                    [ 79%]
+tests\unit\test_prototype_foreshadow.py .                                [ 80%]
+tests\unit\test_prototype_llm.py ...                                     [ 80%]
+tests\unit\test_prototype_polish.py ..                                   [ 80%]
+tests\unit\test_prototype_score.py ..                                    [ 80%]
+tests\unit\test_quality_metrics.py ......                                [ 81%]
+tests\unit\test_quality_scorer.py ...F......                             [ 82%]
+tests\unit\test_rate_limiter_unit.py ...                                 [ 82%]
+tests\unit\test_redis_availability.py .                                  [ 82%]
+tests\unit\test_redis_cache_container.py ..                              [ 82%]
+tests\unit\test_redis_rate_limiter.py ....                               [ 83%]
+tests\unit\test_refactoring.py .                                         [ 83%]
+tests\unit\test_report_models.py ........                                [ 83%]
+tests\unit\test_retry_decorator.py .FF                                   [ 84%]
+tests\unit\test_review_nodes_affinity.py ..                              [ 84%]
+tests\unit\test_safe_replace.py ..........                               [ 85%]
+tests\unit\test_sanitizer.py ...                                         [ 85%]
+tests\unit\test_scene_continuity_tracker.py .......FF.F.                 [ 86%]
+tests\unit\test_security_headers.py ..F                                  [ 87%]
+tests\unit\test_semantic_cache.py ss                                     [ 87%]
+tests\unit\test_sharp_edge.py ..........                                 [ 88%]
+tests\unit\test_sharp_edge_preserver.py ...................              [ 90%]
+tests\unit\test_sharp_edge_prompt.py ...                                 [ 90%]
+tests\unit\test_specialized_amplifiers.py .                              [ 90%]
+tests\unit\test_sse.py ..                                                [ 90%]
+tests\unit\test_state_desires_to_hook.py .....                           [ 91%]
+tests\unit\test_structured_logging.py ....                               [ 91%]
+tests\unit\test_subscribers.py .                                         [ 91%]
+tests\unit\test_tension_utils.py ..........                              [ 92%]
+tests\unit\test_token_tracker.py .......                                 [ 93%]
+tests\unit\test_trace_context.py ..                                      [ 93%]
+tests\unit\test_unified_errors.py FF.F                                   [ 93%]
+tests\unit\test_uow.py FF                                                [ 93%]
+tests\unit\test_ux_enhancements.py ....F                                 [ 94%]
+tests\unit\test_vector_store_lifecycle.py F.                             [ 94%]
+tests\unit\test_verbose_fixture.py .....                                 [ 95%]
+tests\unit\test_what_if_context.py ..                                    [ 95%]
+tests\unit\test_workflow_logic.py ...                                    [ 95%]
+tests\unit\test_workflow_registry.py .                                   [ 95%]
+tests\unit\test_workflows.py .....                                       [ 96%]
+tests\unit\test_writing_graph_fallback.py ........s                      [ 96%]
+tests\unit\test_writing_graph_integration.py ....                        [ 97%]
+tests\unit\test_writing_service.py .....                                 [ 97%]
+tests\unit\test_writing_workflow.py ..                                   [ 98%]
+tests\unit\test_zamaa_curve.py .                                         [ 98%]
+tests\unit\test_zamaa_generation.py .                                    [ 98%]
+tests\unit\test_zamaa_injection.py .                                     [ 98%]
+tests\workflows\test_auto_illustration.py .                              [ 98%]
+tests\workflows\test_master_graph.py ..                                  [ 98%]
+tests\workflows\test_plot_graph.py ...                                   [ 98%]
+tests\workflows\test_review_graph.py ..                                  [ 99%]
+tests\workflows\test_three_episodes_review.py ....                       [ 99%]
+tests\workflows\test_writing_graph.py ....                               [ 99%]
+tests\workflows\test_writing_hitl.py ..                                  [100%]
+
+================================== FAILURES ===================================
+_____________________ test_override_affinity_api_endpoint _____________________
+tests\api\test_affinity_override.py:39: in test_override_affinity_api_endpoint
+    assert res.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = <Response [404 Not Found]>.status_code
+---------------------------- Captured stdout call -----------------------------
+{"asctime": "2026-08-28 18:04:11,481", "levelname": "INFO", "name": "src.services.redis_cache", "trace_id": "9bc24acc-78bc-4358-841f-3993767c6921", "message": "RedisCacheService initialized: namespace=kaku:cache, url=redis://localhost:6379"}
+{"asctime": "2026-08-28 18:04:11,494", "levelname": "INFO", "name": "httpx", "trace_id": "606aefe2-8d54-4cb3-a9fa-47cf3ff48964", "message": "HTTP Request: POST http://test/api/narrative/1/1/affinity/override \"HTTP/1.1 404 Not Found\""}
+------------------------------ Captured log call ------------------------------
+INFO     src.services.redis_cache:redis_cache.py:79 RedisCacheService initialized: namespace=kaku:cache, url=redis://localhost:6379
+INFO     httpx:_client.py:1740 HTTP Request: POST http://test/api/narrative/1/1/affinity/override "HTTP/1.1 404 Not Found"
+________________ test_container_initialization_and_resolution _________________
+tests\perf_container_test.py:48: in test_container_initialization_and_resolution
+    provider = getattr(AppContainer, p_name)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: type object 'AppContainer2' has no attribute 'connection_pipeline'
+
+During handling of the above exception, another exception occurred:
+tests\perf_container_test.py:53: in test_container_initialization_and_resolution
+    pytest.fail(f"Failed to resolve provider '{p_name}': {e}")
+E   Failed: Failed to resolve provider 'connection_pipeline': type object 'AppContainer2' has no attribute 'connection_pipeline'
+_______________ TestPipelineIntegration.test_pipeline_creation ________________
+tests\phase2\test_phase2_pipeline_integration.py:183: in test_pipeline_creation
+    pipeline = create_series(engine, "zarma", target_episodes=3)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\easy_mode\pipeline.py:200: in create_series
+    context_window=settings.context_window_target_ratio * 128000,  # Approximate
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'Settings' object has no attribute 'context_window_target_ratio'
+________________ TestPipelineIntegration.test_bible_generation ________________
+tests\phase2\test_phase2_pipeline_integration.py:193: in test_bible_generation
+    pipeline = create_series(engine, "zarma", target_episodes=1)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\easy_mode\pipeline.py:200: in create_series
+    context_window=settings.context_window_target_ratio * 128000,  # Approximate
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'Settings' object has no attribute 'context_window_target_ratio'
+________________ TestPipelineIntegration.test_plot_generation _________________
+tests\phase2\test_phase2_pipeline_integration.py:206: in test_plot_generation
+    pipeline = create_series(engine, "zarma", target_episodes=3)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\easy_mode\pipeline.py:200: in create_series
+    context_window=settings.context_window_target_ratio * 128000,  # Approximate
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'Settings' object has no attribute 'context_window_target_ratio'
+__________ TestPipelineIntegration.test_spice_extraction_in_pipeline __________
+tests\phase2\test_phase2_pipeline_integration.py:221: in test_spice_extraction_in_pipeline
+    pipeline = create_series(engine, "zarma", target_episodes=1)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\easy_mode\pipeline.py:200: in create_series
+    context_window=settings.context_window_target_ratio * 128000,  # Approximate
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'Settings' object has no attribute 'context_window_target_ratio'
+________________ TestPipelineIntegration.test_marker_injection ________________
+tests\phase2\test_phase2_pipeline_integration.py:236: in test_marker_injection
+    pipeline = create_series(engine, "zarma")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\easy_mode\pipeline.py:200: in create_series
+    context_window=settings.context_window_target_ratio * 128000,  # Approximate
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'Settings' object has no attribute 'context_window_target_ratio'
+_________________ TestPipelineIntegration.test_rewrite_prompt _________________
+tests\phase2\test_phase2_pipeline_integration.py:254: in test_rewrite_prompt
+    pipeline = create_series(engine, "zarma")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\easy_mode\pipeline.py:200: in create_series
+    context_window=settings.context_window_target_ratio * 128000,  # Approximate
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'Settings' object has no attribute 'context_window_target_ratio'
+________________ TestPipelineE2E.test_full_pipeline_run_small _________________
+tests\phase2\test_phase2_pipeline_integration.py:315: in test_full_pipeline_run_small
+    pipeline = create_series(engine, "zarma", target_episodes=2)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\easy_mode\pipeline.py:200: in create_series
+    context_window=settings.context_window_target_ratio * 128000,  # Approximate
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'Settings' object has no attribute 'context_window_target_ratio'
+_____________ TestPipelineE2E.test_pipeline_with_low_audit_score ______________
+tests\phase2\test_phase2_pipeline_integration.py:360: in test_pipeline_with_low_audit_score
+    pipeline = create_series(engine, "zarma", target_episodes=1)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\easy_mode\pipeline.py:200: in create_series
+    context_window=settings.context_window_target_ratio * 128000,  # Approximate
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'Settings' object has no attribute 'context_window_target_ratio'
+____________ TestPipelineE2E.test_pipeline_spice_guard_integration ____________
+tests\phase2\test_phase2_pipeline_integration.py:375: in test_pipeline_spice_guard_integration
+    pipeline = create_series(engine, "zarma", target_episodes=1)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\easy_mode\pipeline.py:200: in create_series
+    context_window=settings.context_window_target_ratio * 128000,  # Approximate
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'Settings' object has no attribute 'context_window_target_ratio'
+_________________ TestPipelineE2E.test_pipeline_cancellation __________________
+tests\phase2\test_phase2_pipeline_integration.py:399: in test_pipeline_cancellation
+    pipeline = create_series(engine, "zarma", target_episodes=3)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\easy_mode\pipeline.py:200: in create_series
+    context_window=settings.context_window_target_ratio * 128000,  # Approximate
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'Settings' object has no attribute 'context_window_target_ratio'
+___________________ TestAssetPack.test_checksum_calculation ___________________
+tests\phase3\test_phase3_asset_pack.py:541: in test_checksum_calculation
+    assert "sub/file3.txt" in checksums
+E   AssertionError: assert 'sub/file3.txt' in {'file1.txt': '2cf24dba5fb0a30e', 'file2.txt': '486ea46224d1bb4f', 'sub\\file3.txt': '9f86d081884c7d65'}
+__________ TestPhase4To5Integration.test_deai_auditor_preserves_hook __________
+tests\phase4\test_phase4to5_e2e.py:65: in test_deai_auditor_preserves_hook
+    result = asyncio.run(
+C:\Python314\Lib\asyncio\runners.py:204: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+C:\Python314\Lib\asyncio\runners.py:127: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Python314\Lib\asyncio\base_events.py:719: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+src\agents\audit.py:107: in audit
+    SharpEdgeSpec(
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for SharpEdgeSpec
+E   edge_type
+E     Value error, ���m�̊p�̎�ނł�: emotional_hook [type=value_error, input_value='emotional_hook', input_type=str]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+____________________ test_phase_critic_filtering[asyncio] _____________________
+tests\unit\test_actor_critic.py:151: in test_phase_critic_filtering
+    triggered = await manager._phase_critic(
+src\services\writing_services.py:441: in _phase_critic
+    if not cfg.actor_critic_enabled:
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'Settings' object has no attribute 'actor_critic_enabled'
+---------------------------- Captured stdout setup ----------------------------
+{"asctime": "2026-08-28 18:04:26,894", "levelname": "INFO", "name": "prompts.manager", "trace_id": "73cbc398-f0e5-47b2-b20a-562355642563", "message": "PromptManager initialized with registry path: E:\\sda\\prompts"}
+----------------------------- Captured log setup ------------------------------
+INFO     prompts.manager:manager.py:59 PromptManager initialized with registry path: E:\sda\prompts
+_________________________ test_produce_novel_endpoint _________________________
+tests\unit\test_api_integration.py:30: in test_produce_novel_endpoint
+    assert response.status_code == 200
+E   assert 403 == 200
+E    +  where 403 = <Response [403 Forbidden]>.status_code
+---------------------------- Captured stdout call -----------------------------
+{"asctime": "2026-08-28 18:04:27,025", "levelname": "ERROR", "name": "src.backend.rate_limit", "trace_id": "3062234a-2910-42d6-a758-beec3a9720e9", "message": "Rate limit check failed: Event loop is closed", "exc_info": "Traceback (most recent call last):\n  File \"C:\\Users\\keide\\AppData\\Roaming\\Python\\Python314\\site-packages\\redis\\asyncio\\connection.py\", line 493, in send_packed_command\n    self._writer.writelines(command)\n    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^\n  File \"C:\\Python314\\Lib\\asyncio\\streams.py\", line 343, in writelines\n    self._transport.writelines(data)\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^\n  File \"C:\\Python314\\Lib\\asyncio\\transports.py\", line 123, in writelines\n    self.write(data)\n    ~~~~~~~~~~^^^^^^\n  File \"C:\\Python314\\Lib\\asyncio\\proactor_events.py\", line 366, in write\n    self._loop_writing(data=bytes(data))\n    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^\n  File \"C:\\Python314\\Lib\\asyncio\\proactor_events.py\", line 402, in _loop_writing\n    self._write_fut = self._loop._proactor.send(self._sock, data)\n                      ^^^^^^^^^^^^^^^^^^^^^^^^^\nAttributeError: 'NoneType' object has no attribute 'send'\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"E:\\sda\\src\\backend\\rate_limit.py\", line 60, in is_allowed\n    result = await self.redis.eval(\n             ^^^^^^^^^^^^^^^^^^^^^^\n    ...<3 lines>...\n    )\n    ^\n  File \"E:\\sda\\src\\services\\redis_cache.py\", line 334, in eval\n    return await self._client.eval(lua_script, len(keys), *keys, *args)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\keide\\AppData\\Roaming\\Python\\Python314\\site-packages\\redis\\asyncio\\client.py\", line 646, in execute_command\n    return await conn.retry.call_with_retry(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<4 lines>...\n    )\n    ^\n  File \"C:\\Users\\keide\\AppData\\Roaming\\Python\\Python314\\site-packages\\redis\\asyncio\\retry.py\", line 59, in call_with_retry\n    return await do()\n           ^^^^^^^^^^\n  File \"C:\\Users\\keide\\AppData\\Roaming\\Python\\Python314\\site-packages\\redis\\asyncio\\client.py\", line 619, in _send_command_parse_response\n    await conn.send_command(*args)\n  File \"C:\\Users\\keide\\AppData\\Roaming\\Python\\Python314\\site-packages\\redis\\asyncio\\connection.py\", line 518, in send_command\n    await self.send_packed_command(\n        self.pack_command(*args), check_health=kwargs.get(\"check_health\", True)\n    )\n  File \"C:\\Users\\keide\\AppData\\Roaming\\Python\\Python314\\site-packages\\redis\\asyncio\\connection.py\", line 513, in send_packed_command\n    await self.disconnect(nowait=True)\n  File \"C:\\Users\\keide\\AppData\\Roaming\\Python\\Python314\\site-packages\\redis\\asyncio\\connection.py\", line 438, in disconnect\n    self._writer.close()  # type: ignore[union-attr]\n    ~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\Python314\\Lib\\asyncio\\streams.py\", line 352, in close\n    return self._transport.close()\n           ~~~~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\Python314\\Lib\\asyncio\\proactor_events.py\", line 109, in close\n    self._loop.call_soon(self._call_connection_lost, None)\n    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Python314\\Lib\\asyncio\\base_events.py\", line 827, in call_soon\n    self._check_closed()\n    ~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\Python314\\Lib\\asyncio\\base_events.py\", line 550, in _check_closed\n    raise RuntimeError('Event loop is closed')\nRuntimeError: Event loop is closed"}
+{"asctime": "2026-08-28 18:04:27,055", "levelname": "WARNING", "name": "src.backend.auth", "trace_id": "3062234a-2910-42d6-a758-beec3a9720e9", "message": "Invalid API key attempt from 127.0.0.1 key_prefix=test***"}
+{"asctime": "2026-08-28 18:04:27,057", "levelname": "INFO", "name": "httpx", "trace_id": "e9e380fc-56fa-4a1d-badf-a8685416c72a", "message": "HTTP Request: POST http://test/api/novel/produce \"HTTP/1.1 403 Forbidden\""}
+------------------------------ Captured log call ------------------------------
+ERROR    src.backend.rate_limit:rate_limit.py:74 Rate limit check failed: Event loop is closed
+Traceback (most recent call last):
+  File "C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\redis\asyncio\connection.py", line 493, in send_packed_command
+    self._writer.writelines(command)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "C:\Python314\Lib\asyncio\streams.py", line 343, in writelines
+    self._transport.writelines(data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Python314\Lib\asyncio\transports.py", line 123, in writelines
+    self.write(data)
+    ~~~~~~~~~~^^^^^^
+  File "C:\Python314\Lib\asyncio\proactor_events.py", line 366, in write
+    self._loop_writing(data=bytes(data))
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\asyncio\proactor_events.py", line 402, in _loop_writing
+    self._write_fut = self._loop._proactor.send(self._sock, data)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'send'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "E:\sda\src\backend\rate_limit.py", line 60, in is_allowed
+    result = await self.redis.eval(
+             ^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "E:\sda\src\services\redis_cache.py", line 334, in eval
+    return await self._client.eval(lua_script, len(keys), *keys, *args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\redis\asyncio\client.py", line 646, in execute_command
+    return await conn.retry.call_with_retry(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+    )
+    ^
+  File "C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\redis\asyncio\retry.py", line 59, in call_with_retry
+    return await do()
+           ^^^^^^^^^^
+  File "C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\redis\asyncio\client.py", line 619, in _send_command_parse_response
+    await conn.send_command(*args)
+  File "C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\redis\asyncio\connection.py", line 518, in send_command
+    await self.send_packed_command(
+        self.pack_command(*args), check_health=kwargs.get("check_health", True)
+    )
+  File "C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\redis\asyncio\connection.py", line 513, in send_packed_command
+    await self.disconnect(nowait=True)
+  File "C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\redis\asyncio\connection.py", line 438, in disconnect
+    self._writer.close()  # type: ignore[union-attr]
+    ~~~~~~~~~~~~~~~~~~^^
+  File "C:\Python314\Lib\asyncio\streams.py", line 352, in close
+    return self._transport.close()
+           ~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Python314\Lib\asyncio\proactor_events.py", line 109, in close
+    self._loop.call_soon(self._call_connection_lost, None)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\asyncio\base_events.py", line 827, in call_soon
+    self._check_closed()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "C:\Python314\Lib\asyncio\base_events.py", line 550, in _check_closed
+    raise RuntimeError('Event loop is closed')
+RuntimeError: Event loop is closed
+WARNING  src.backend.auth:auth.py:120 Invalid API key attempt from 127.0.0.1 key_prefix=test***
+INFO     httpx:_client.py:1740 HTTP Request: POST http://test/api/novel/produce "HTTP/1.1 403 Forbidden"
+____________________________ test_get_novel_status ____________________________
+tests\unit\test_api_integration.py:40: in test_get_novel_status
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = <Response [404 Not Found]>.status_code
+---------------------------- Captured stdout call -----------------------------
+{"asctime": "2026-08-28 18:04:27,084", "levelname": "INFO", "name": "httpx", "trace_id": "39b509b0-c4d9-4c7a-99ed-714af0e24e6a", "message": "HTTP Request: GET http://test/api/novel/1/status \"HTTP/1.1 404 Not Found\""}
+------------------------------ Captured log call ------------------------------
+INFO     httpx:_client.py:1740 HTTP Request: GET http://test/api/novel/1/status "HTTP/1.1 404 Not Found"
+_______________________________ test_get_report _______________________________
+tests\unit\test_api_integration.py:61: in test_get_report
+    assert response.status_code == 200
+E   assert 500 == 200
+E    +  where 500 = <Response [500 Internal Server Error]>.status_code
+---------------------------- Captured stdout call -----------------------------
+{"asctime": "2026-08-28 18:04:27,139", "levelname": "INFO", "name": "httpx", "trace_id": "e1405b8d-309d-410c-b086-01e471f340dc", "message": "HTTP Request: GET http://test/api/novel/1/report \"HTTP/1.1 500 Internal Server Error\""}
+------------------------------ Captured log call ------------------------------
+INFO     httpx:_client.py:1740 HTTP Request: GET http://test/api/novel/1/report "HTTP/1.1 500 Internal Server Error"
+___________ test_validate_api_key_or_raise_with_test_key_production ___________
+tests\unit\test_auth_fallback_and_test_keys.py:50: in test_validate_api_key_or_raise_with_test_key_production
+    assert "FORBIDDEN" in str(exc.value)
+E   AssertionError: assert 'FORBIDDEN' in 'API �L�[�������ł��B'
+E    +  where 'API �L�[�������ł��B' = str(AppError('API �L�[�������ł��B'))
+E    +    where AppError('API �L�[�������ł��B') = <ExceptionInfo AppError('API �L�[�������ł��B') tblen=2>.value
+___________________________ test_get_plots_success ____________________________
+tests\unit\test_backend_verification.py:49: in test_get_plots_success
+    with patch("src.backend.routers.plots.Container") as mock_container:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Python314\Lib\unittest\mock.py:1503: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+C:\Python314\Lib\unittest\mock.py:1473: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'src.backend.routers.plots' from 'E:\\sda\\src\\backend\\routers\\plots.py'> does not have the attribute 'Container'
+__________________________ test_get_chapters_success __________________________
+tests\unit\test_backend_verification.py:101: in test_get_chapters_success
+    with patch("src.backend.routers.episodes.Container") as mock_container:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Python314\Lib\unittest\mock.py:1503: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+C:\Python314\Lib\unittest\mock.py:1473: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'src.backend.routers.episodes' from 'E:\\sda\\src\\backend\\routers\\episodes.py'> does not have the attribute 'Container'
+__________________________ test_expand_plots_success __________________________
+tests\unit\test_backend_verification.py:160: in test_expand_plots_success
+    assert "task_id" in result
+E   AssertionError: assert 'task_id' in {'data': {'task_id': 'plot_expand_ee2b07b1dc0a'}, 'message': '�v���b�g�W�J���J�n���܂���', 'success': True, 'timestamp': '2026-08-28T09:04:28.997382+00:00'}
+_______________________ test_expand_plots_auth_failure ________________________
+tests\unit\test_backend_verification.py:182: in test_expand_plots_auth_failure
+    with pytest.raises(AppError) as excinfo:
+         ^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE <class 'src.core.exceptions.AppError'>
+_____________________ test_commercial_pipeline_end_to_end _____________________
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\httpx\_transports\default.py:101: in map_httpcore_exceptions
+    yield
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\httpx\_transports\default.py:394: in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\httpcore\_async\connection_pool.py:256: in handle_async_request
+    raise exc from None
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\httpcore\_async\connection_pool.py:236: in handle_async_request
+    response = await connection.handle_async_request(
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\httpcore\_async\connection.py:101: in handle_async_request
+    raise exc
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\httpcore\_async\connection.py:78: in handle_async_request
+    stream = await self._connect(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\httpcore\_async\connection.py:124: in _connect
+    stream = await self._network_backend.connect_tcp(**kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\httpcore\_backends\auto.py:31: in connect_tcp
+    return await self._backend.connect_tcp(
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\httpcore\_backends\anyio.py:113: in connect_tcp
+    with map_exceptions(exc_map):
+         ^^^^^^^^^^^^^^^^^^^^^^^
+C:\Python314\Lib\contextlib.py:162: in __exit__
+    self.gen.throw(value)
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\httpcore\_exceptions.py:14: in map_exceptions
+    raise to_exc(exc) from exc
+E   httpcore.ConnectError: All connection attempts failed
+
+The above exception was the direct cause of the following exception:
+tests\unit\test_commercial_end_to_end.py:72: in test_commercial_pipeline_end_to_end
+    resp = await client.post(
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\httpx\_client.py:1859: in post
+    return await self.request(
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\httpx\_client.py:1540: in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\httpx\_client.py:1629: in send
+    response = await self._send_handling_auth(
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\httpx\_client.py:1657: in _send_handling_auth
+    response = await self._send_handling_redirects(
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\httpx\_client.py:1694: in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\httpx\_client.py:1730: in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\httpx\_transports\default.py:393: in handle_async_request
+    with map_httpcore_exceptions():
+         ^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Python314\Lib\contextlib.py:162: in __exit__
+    self.gen.throw(value)
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\httpx\_transports\default.py:118: in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+E   httpx.ConnectError: All connection attempts failed
+________ test_generate_content_raises_pipeline_error_on_episode_write _________
+async def functions are not natively supported.
+You need to install a suitable plugin for your async framework, for example:
+  - anyio
+  - pytest-asyncio
+  - pytest-tornasync
+  - pytest-trio
+  - pytest-twisted
+______________________ test_env_override_explicit_merge _______________________
+tests\unit\test_config_centralization.py:51: in test_env_override_explicit_merge
+    assert cfg.fail_fast_mode is True
+           ^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'Settings' object has no attribute 'fail_fast_mode'
+_______________________ test_env_override_type_coercion _______________________
+tests\unit\test_config_centralization.py:65: in test_env_override_type_coercion
+    assert cfg.max_concurrency == 4
+           ^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'Settings' object has no attribute 'max_concurrency'
+____________________ test_env_override_missing_is_ignored _____________________
+tests\unit\test_config_centralization.py:78: in test_env_override_missing_is_ignored
+    assert cfg.fail_fast_mode is False  # TOML �̃f�t�H���g
+           ^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'Settings' object has no attribute 'fail_fast_mode'
+__________________ test_configmanager_is_canonical_accessor ___________________
+tests\unit\test_config_centralization.py:97: in test_configmanager_is_canonical_accessor
+    assert a.model_writing == "gemma-4-31b-it"
+           ^^^^^^^^^^^^^^^
+E   AttributeError: 'Config' object has no attribute 'model_writing'
+_________________ test_projectcontext_delegates_to_canonical __________________
+tests\unit\test_config_centralization.py:104: in test_projectcontext_delegates_to_canonical
+    assert ProjectContext.get_setting("fail_fast_mode") is True
+E   AssertionError: assert None is True
+E    +  where None = <function ProjectContext.get_setting at 0x000001C4183F4BF0>('fail_fast_mode')
+E    +    where <function ProjectContext.get_setting at 0x000001C4183F4BF0> = ProjectContext.get_setting
+_________________________ test_config_initialization __________________________
+tests\unit\test_config_loading.py:16: in test_config_initialization
+    assert hasattr(config, "model_writing")
+E   AssertionError: assert False
+E    +  where False = hasattr(<config.settings.Settings object at 0x000001C415684410>, 'model_writing')
+_________ TestGlobalConfigModelLoad.test_load_includes_merged_models __________
+tests\unit\test_config_validator.py:101: in test_load_includes_merged_models
+    assert config.model_planning == "gemini-3.1-flash-lite"
+E   AssertionError: assert 'gemini-3.5-flash-lite' == 'gemini-3.1-flash-lite'
+E     
+E     - gemini-3.1-flash-lite
+E     ?          ^
+E     + gemini-3.5-flash-lite
+E     ?          ^
+________________ TestGetConfig.test_get_config_returns_merged _________________
+tests\unit\test_config_validator.py:118: in test_get_config_returns_merged
+    assert isinstance(config, GlobalConfigModel)
+E   assert False
+E    +  where False = isinstance(<config.settings.Settings object at 0x000001C415684410>, GlobalConfigModel)
+______________________ test_get_allowed_origins_default _______________________
+tests\unit\test_cors_config.py:19: in test_get_allowed_origins_default
+    assert "http://localhost:5173" in origins
+E   AssertionError: assert 'http://localhost:5173' in []
+___________________________ test_health_cors_header ___________________________
+tests\unit\test_cors_endpoints.py:38: in test_health_cors_header
+    assert header_value in allowed, f"CORS header '{header_value}' not in allowed list {allowed}"
+E   AssertionError: CORS header 'None' not in allowed list ['http://example.com']
+E   assert None in ['http://example.com']
+---------------------------- Captured stdout call -----------------------------
+{"asctime": "2026-08-28 18:04:43,287", "levelname": "ERROR", "name": "src.backend.rate_limit", "trace_id": "d1b027b5-8572-4381-9b9b-e8a514e5dc04", "message": "Rate limit check failed: Event loop is closed", "exc_info": "Traceback (most recent call last):\n  File \"C:\\Users\\keide\\AppData\\Roaming\\Python\\Python314\\site-packages\\redis\\asyncio\\connection.py\", line 493, in send_packed_command\n    self._writer.writelines(command)\n    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^\n  File \"C:\\Python314\\Lib\\asyncio\\streams.py\", line 343, in writelines\n    self._transport.writelines(data)\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^\n  File \"C:\\Python314\\Lib\\asyncio\\transports.py\", line 123, in writelines\n    self.write(data)\n    ~~~~~~~~~~^^^^^^\n  File \"C:\\Python314\\Lib\\asyncio\\proactor_events.py\", line 366, in write\n    self._loop_writing(data=bytes(data))\n    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^\n  File \"C:\\Python314\\Lib\\asyncio\\proactor_events.py\", line 402, in _loop_writing\n    self._write_fut = self._loop._proactor.send(self._sock, data)\n                      ^^^^^^^^^^^^^^^^^^^^^^^^^\nAttributeError: 'NoneType' object has no attribute 'send'\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"E:\\sda\\src\\backend\\rate_limit.py\", line 60, in is_allowed\n    result = await self.redis.eval(\n             ^^^^^^^^^^^^^^^^^^^^^^\n    ...<3 lines>...\n    )\n    ^\n  File \"E:\\sda\\src\\services\\redis_cache.py\", line 334, in eval\n    return await self._client.eval(lua_script, len(keys), *keys, *args)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\keide\\AppData\\Roaming\\Python\\Python314\\site-packages\\redis\\asyncio\\client.py\", line 646, in execute_command\n    return await conn.retry.call_with_retry(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<4 lines>...\n    )\n    ^\n  File \"C:\\Users\\keide\\AppData\\Roaming\\Python\\Python314\\site-packages\\redis\\asyncio\\retry.py\", line 59, in call_with_retry\n    return await do()\n           ^^^^^^^^^^\n  File \"C:\\Users\\keide\\AppData\\Roaming\\Python\\Python314\\site-packages\\redis\\asyncio\\client.py\", line 619, in _send_command_parse_response\n    await conn.send_command(*args)\n  File \"C:\\Users\\keide\\AppData\\Roaming\\Python\\Python314\\site-packages\\redis\\asyncio\\connection.py\", line 518, in send_command\n    await self.send_packed_command(\n        self.pack_command(*args), check_health=kwargs.get(\"check_health\", True)\n    )\n  File \"C:\\Users\\keide\\AppData\\Roaming\\Python\\Python314\\site-packages\\redis\\asyncio\\connection.py\", line 513, in send_packed_command\n    await self.disconnect(nowait=True)\n  File \"C:\\Users\\keide\\AppData\\Roaming\\Python\\Python314\\site-packages\\redis\\asyncio\\connection.py\", line 438, in disconnect\n    self._writer.close()  # type: ignore[union-attr]\n    ~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\Python314\\Lib\\asyncio\\streams.py\", line 352, in close\n    return self._transport.close()\n           ~~~~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\Python314\\Lib\\asyncio\\proactor_events.py\", line 109, in close\n    self._loop.call_soon(self._call_connection_lost, None)\n    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Python314\\Lib\\asyncio\\base_events.py\", line 827, in call_soon\n    self._check_closed()\n    ~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\Python314\\Lib\\asyncio\\base_events.py\", line 550, in _check_closed\n    raise RuntimeError('Event loop is closed')\nRuntimeError: Event loop is closed"}
+{"asctime": "2026-08-28 18:04:43,324", "levelname": "INFO", "name": "src.services.vector_store", "trace_id": "d1b027b5-8572-4381-9b9b-e8a514e5dc04", "message": "[CHROMA PROVIDER] Initializing ChromaDB client at ./chroma_db (Attempt 1/3)"}
+{"asctime": "2026-08-28 18:04:43,936", "levelname": "INFO", "name": "httpx", "trace_id": "73cbc398-f0e5-47b2-b20a-562355642563", "message": "HTTP Request: GET http://testserver/health \"HTTP/1.1 200 OK\""}
+------------------------------ Captured log call ------------------------------
+ERROR    src.backend.rate_limit:rate_limit.py:74 Rate limit check failed: Event loop is closed
+Traceback (most recent call last):
+  File "C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\redis\asyncio\connection.py", line 493, in send_packed_command
+    self._writer.writelines(command)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "C:\Python314\Lib\asyncio\streams.py", line 343, in writelines
+    self._transport.writelines(data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Python314\Lib\asyncio\transports.py", line 123, in writelines
+    self.write(data)
+    ~~~~~~~~~~^^^^^^
+  File "C:\Python314\Lib\asyncio\proactor_events.py", line 366, in write
+    self._loop_writing(data=bytes(data))
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\asyncio\proactor_events.py", line 402, in _loop_writing
+    self._write_fut = self._loop._proactor.send(self._sock, data)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'send'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "E:\sda\src\backend\rate_limit.py", line 60, in is_allowed
+    result = await self.redis.eval(
+             ^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "E:\sda\src\services\redis_cache.py", line 334, in eval
+    return await self._client.eval(lua_script, len(keys), *keys, *args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\redis\asyncio\client.py", line 646, in execute_command
+    return await conn.retry.call_with_retry(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+    )
+    ^
+  File "C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\redis\asyncio\retry.py", line 59, in call_with_retry
+    return await do()
+           ^^^^^^^^^^
+  File "C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\redis\asyncio\client.py", line 619, in _send_command_parse_response
+    await conn.send_command(*args)
+  File "C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\redis\asyncio\connection.py", line 518, in send_command
+    await self.send_packed_command(
+        self.pack_command(*args), check_health=kwargs.get("check_health", True)
+    )
+  File "C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\redis\asyncio\connection.py", line 513, in send_packed_command
+    await self.disconnect(nowait=True)
+  File "C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\redis\asyncio\connection.py", line 438, in disconnect
+    self._writer.close()  # type: ignore[union-attr]
+    ~~~~~~~~~~~~~~~~~~^^
+  File "C:\Python314\Lib\asyncio\streams.py", line 352, in close
+    return self._transport.close()
+           ~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Python314\Lib\asyncio\proactor_events.py", line 109, in close
+    self._loop.call_soon(self._call_connection_lost, None)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\asyncio\base_events.py", line 827, in call_soon
+    self._check_closed()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "C:\Python314\Lib\asyncio\base_events.py", line 550, in _check_closed
+    raise RuntimeError('Event loop is closed')
+RuntimeError: Event loop is closed
+INFO     src.services.vector_store:vector_store.py:211 [CHROMA PROVIDER] Initializing ChromaDB client at ./chroma_db (Attempt 1/3)
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+_________________________ test_build_drafting_prompt __________________________
+tests\unit\test_draft_polish.py:37: in test_build_drafting_prompt
+    sys_inst, fw_prompt = await prompt_manager.build_drafting_prompt(
+prompts\manager.py:331: in build_drafting_prompt
+    return await self.writing_builder.build_drafting_prompt(
+prompts\builders\writing.py:67: in build_drafting_prompt
+    quota_inst = await self._build_quota_section(
+prompts\builders\writing.py:33: in _build_quota_section
+    return await self.registry.render_async(
+E   TypeError: PromptRegistry.render_async() got an unexpected keyword argument 'normalized_scenes'
+---------------------------- Captured stdout setup ----------------------------
+{"asctime": "2026-08-28 18:04:44,322", "levelname": "INFO", "name": "prompts.manager", "trace_id": "73cbc398-f0e5-47b2-b20a-562355642563", "message": "PromptManager initialized with registry path: E:\\sda\\prompts"}
+----------------------------- Captured log setup ------------------------------
+INFO     prompts.manager:manager.py:59 PromptManager initialized with registry path: E:\sda\prompts
+_________________________ test_build_polishing_prompt _________________________
+tests\unit\test_draft_polish.py:55: in test_build_polishing_prompt
+    prompt = await prompt_manager.build_polishing_prompt(
+prompts\manager.py:359: in build_polishing_prompt
+    return await self.writing_builder.build_polishing_prompt(
+prompts\builders\writing.py:215: in build_polishing_prompt
+    hook_inst = await self._build_hook_strategy_section(book_id=book_id)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'WritingPromptBuilder' object has no attribute '_build_hook_strategy_section'. Did you mean: '_build_show_tell_section'?
+---------------------------- Captured stdout setup ----------------------------
+{"asctime": "2026-08-28 18:04:44,446", "levelname": "INFO", "name": "prompts.manager", "trace_id": "73cbc398-f0e5-47b2-b20a-562355642563", "message": "PromptManager initialized with registry path: E:\\sda\\prompts"}
+----------------------------- Captured log setup ------------------------------
+INFO     prompts.manager:manager.py:59 PromptManager initialized with registry path: E:\sda\prompts
+____________________ test_polishing_pass_success[asyncio] _____________________
+tests\unit\test_draft_polish.py:101: in test_polishing_pass_success
+    polished = await manager._polishing_pass(
+src\services\writing_services.py:657: in _polishing_pass
+    polish_prompt = await self.pm.build_polishing_prompt(
+prompts\manager.py:359: in build_polishing_prompt
+    return await self.writing_builder.build_polishing_prompt(
+prompts\builders\writing.py:215: in build_polishing_prompt
+    hook_inst = await self._build_hook_strategy_section(book_id=book_id)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'WritingPromptBuilder' object has no attribute '_build_hook_strategy_section'. Did you mean: '_build_show_tell_section'?
+---------------------------- Captured stdout setup ----------------------------
+{"asctime": "2026-08-28 18:04:44,504", "levelname": "INFO", "name": "prompts.manager", "trace_id": "73cbc398-f0e5-47b2-b20a-562355642563", "message": "PromptManager initialized with registry path: E:\\sda\\prompts"}
+----------------------------- Captured log setup ------------------------------
+INFO     prompts.manager:manager.py:59 PromptManager initialized with registry path: E:\sda\prompts
+____________________ test_polishing_pass_fallback[asyncio] ____________________
+tests\unit\test_draft_polish.py:138: in test_polishing_pass_fallback
+    polished = await manager._polishing_pass(
+src\services\writing_services.py:657: in _polishing_pass
+    polish_prompt = await self.pm.build_polishing_prompt(
+prompts\manager.py:359: in build_polishing_prompt
+    return await self.writing_builder.build_polishing_prompt(
+prompts\builders\writing.py:215: in build_polishing_prompt
+    hook_inst = await self._build_hook_strategy_section(book_id=book_id)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'WritingPromptBuilder' object has no attribute '_build_hook_strategy_section'. Did you mean: '_build_show_tell_section'?
+---------------------------- Captured stdout setup ----------------------------
+{"asctime": "2026-08-28 18:04:44,604", "levelname": "INFO", "name": "prompts.manager", "trace_id": "73cbc398-f0e5-47b2-b20a-562355642563", "message": "PromptManager initialized with registry path: E:\\sda\\prompts"}
+----------------------------- Captured log setup ------------------------------
+INFO     prompts.manager:manager.py:59 PromptManager initialized with registry path: E:\sda\prompts
+____ TestEarlyEntertainmentPrompt.test_contains_quality_ignore_instruction ____
+tests\unit\test_early_entertainment_prompt.py:22: in test_contains_quality_ignore_instruction
+    result = asyncio.run(
+C:\Python314\Lib\asyncio\runners.py:204: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+C:\Python314\Lib\asyncio\runners.py:127: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Python314\Lib\asyncio\base_events.py:719: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+prompts\manager.py:298: in build_early_entertainment_check_prompt
+    return await self.narrative_builder.build_early_entertainment_check_prompt(
+                 ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'DummyPromptManager' object has no attribute 'narrative_builder'
+______________ TestEarlyEntertainmentPrompt.test_inputs_embedded ______________
+tests\unit\test_early_entertainment_prompt.py:36: in test_inputs_embedded
+    result = asyncio.run(
+C:\Python314\Lib\asyncio\runners.py:204: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+C:\Python314\Lib\asyncio\runners.py:127: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Python314\Lib\asyncio\base_events.py:719: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+prompts\manager.py:298: in build_early_entertainment_check_prompt
+    return await self.narrative_builder.build_early_entertainment_check_prompt(
+                 ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'DummyPromptManager' object has no attribute 'narrative_builder'
+______ TestEarlyEntertainmentPrompt.test_opening_truncated_to_500_chars _______
+tests\unit\test_early_entertainment_prompt.py:49: in test_opening_truncated_to_500_chars
+    result = asyncio.run(
+C:\Python314\Lib\asyncio\runners.py:204: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+C:\Python314\Lib\asyncio\runners.py:127: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Python314\Lib\asyncio\base_events.py:719: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+prompts\manager.py:298: in build_early_entertainment_check_prompt
+    return await self.narrative_builder.build_early_entertainment_check_prompt(
+                 ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'DummyPromptManager' object has no attribute 'narrative_builder'
+_______________________ test_gacha_api_validation_error _______________________
+tests\unit\test_easy_mode_api.py:20: in test_gacha_api_validation_error
+    assert response.status_code == 422
+E   assert 403 == 422
+E    +  where 403 = <Response [403 Forbidden]>.status_code
+---------------------------- Captured stdout call -----------------------------
+{"asctime": "2026-08-28 18:04:45,186", "levelname": "WARNING", "name": "src.backend.auth", "trace_id": "624c963a-6d6b-4bcf-a49a-296af44f7e0f", "message": "Invalid API key attempt from testclient key_prefix=test***"}
+{"asctime": "2026-08-28 18:04:45,191", "levelname": "INFO", "name": "httpx", "trace_id": "73cbc398-f0e5-47b2-b20a-562355642563", "message": "HTTP Request: POST http://testserver/api/easy-mode/gacha \"HTTP/1.1 403 Forbidden\""}
+------------------------------ Captured log call ------------------------------
+WARNING  src.backend.auth:auth.py:120 Invalid API key attempt from testclient key_prefix=test***
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/easy-mode/gacha "HTTP/1.1 403 Forbidden"
+___________________________ test_gacha_api_success ____________________________
+tests\unit\test_easy_mode_api.py:30: in test_gacha_api_success
+    assert response.status_code == 200
+E   assert 403 == 200
+E    +  where 403 = <Response [403 Forbidden]>.status_code
+---------------------------- Captured stdout call -----------------------------
+{"asctime": "2026-08-28 18:04:45,206", "levelname": "ERROR", "name": "src.backend.rate_limit", "trace_id": "4a6aaeea-45ed-4dae-aae4-f9e5e420476e", "message": "Rate limit check failed: Event loop is closed", "exc_info": "Traceback (most recent call last):\n  File \"C:\\Users\\keide\\AppData\\Roaming\\Python\\Python314\\site-packages\\redis\\asyncio\\connection.py\", line 493, in send_packed_command\n    self._writer.writelines(command)\n    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^\n  File \"C:\\Python314\\Lib\\asyncio\\streams.py\", line 343, in writelines\n    self._transport.writelines(data)\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^\n  File \"C:\\Python314\\Lib\\asyncio\\transports.py\", line 123, in writelines\n    self.write(data)\n    ~~~~~~~~~~^^^^^^\n  File \"C:\\Python314\\Lib\\asyncio\\proactor_events.py\", line 366, in write\n    self._loop_writing(data=bytes(data))\n    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^\n  File \"C:\\Python314\\Lib\\asyncio\\proactor_events.py\", line 402, in _loop_writing\n    self._write_fut = self._loop._proactor.send(self._sock, data)\n                      ^^^^^^^^^^^^^^^^^^^^^^^^^\nAttributeError: 'NoneType' object has no attribute 'send'\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"E:\\sda\\src\\backend\\rate_limit.py\", line 60, in is_allowed\n    result = await self.redis.eval(\n             ^^^^^^^^^^^^^^^^^^^^^^\n    ...<3 lines>...\n    )\n    ^\n  File \"E:\\sda\\src\\services\\redis_cache.py\", line 334, in eval\n    return await self._client.eval(lua_script, len(keys), *keys, *args)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\keide\\AppData\\Roaming\\Python\\Python314\\site-packages\\redis\\asyncio\\client.py\", line 646, in execute_command\n    return await conn.retry.call_with_retry(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<4 lines>...\n    )\n    ^\n  File \"C:\\Users\\keide\\AppData\\Roaming\\Python\\Python314\\site-packages\\redis\\asyncio\\retry.py\", line 59, in call_with_retry\n    return await do()\n           ^^^^^^^^^^\n  File \"C:\\Users\\keide\\AppData\\Roaming\\Python\\Python314\\site-packages\\redis\\asyncio\\client.py\", line 619, in _send_command_parse_response\n    await conn.send_command(*args)\n  File \"C:\\Users\\keide\\AppData\\Roaming\\Python\\Python314\\site-packages\\redis\\asyncio\\connection.py\", line 518, in send_command\n    await self.send_packed_command(\n        self.pack_command(*args), check_health=kwargs.get(\"check_health\", True)\n    )\n  File \"C:\\Users\\keide\\AppData\\Roaming\\Python\\Python314\\site-packages\\redis\\asyncio\\connection.py\", line 513, in send_packed_command\n    await self.disconnect(nowait=True)\n  File \"C:\\Users\\keide\\AppData\\Roaming\\Python\\Python314\\site-packages\\redis\\asyncio\\connection.py\", line 438, in disconnect\n    self._writer.close()  # type: ignore[union-attr]\n    ~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\Python314\\Lib\\asyncio\\streams.py\", line 352, in close\n    return self._transport.close()\n           ~~~~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\Python314\\Lib\\asyncio\\proactor_events.py\", line 109, in close\n    self._loop.call_soon(self._call_connection_lost, None)\n    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Python314\\Lib\\asyncio\\base_events.py\", line 827, in call_soon\n    self._check_closed()\n    ~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\Python314\\Lib\\asyncio\\base_events.py\", line 550, in _check_closed\n    raise RuntimeError('Event loop is closed')\nRuntimeError: Event loop is closed"}
+{"asctime": "2026-08-28 18:04:45,224", "levelname": "WARNING", "name": "src.backend.auth", "trace_id": "4a6aaeea-45ed-4dae-aae4-f9e5e420476e", "message": "Invalid API key attempt from testclient key_prefix=test***"}
+{"asctime": "2026-08-28 18:04:45,227", "levelname": "INFO", "name": "httpx", "trace_id": "73cbc398-f0e5-47b2-b20a-562355642563", "message": "HTTP Request: POST http://testserver/api/easy-mode/gacha \"HTTP/1.1 403 Forbidden\""}
+------------------------------ Captured log call ------------------------------
+ERROR    src.backend.rate_limit:rate_limit.py:74 Rate limit check failed: Event loop is closed
+Traceback (most recent call last):
+  File "C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\redis\asyncio\connection.py", line 493, in send_packed_command
+    self._writer.writelines(command)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "C:\Python314\Lib\asyncio\streams.py", line 343, in writelines
+    self._transport.writelines(data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Python314\Lib\asyncio\transports.py", line 123, in writelines
+    self.write(data)
+    ~~~~~~~~~~^^^^^^
+  File "C:\Python314\Lib\asyncio\proactor_events.py", line 366, in write
+    self._loop_writing(data=bytes(data))
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\asyncio\proactor_events.py", line 402, in _loop_writing
+    self._write_fut = self._loop._proactor.send(self._sock, data)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'send'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "E:\sda\src\backend\rate_limit.py", line 60, in is_allowed
+    result = await self.redis.eval(
+             ^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "E:\sda\src\services\redis_cache.py", line 334, in eval
+    return await self._client.eval(lua_script, len(keys), *keys, *args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\redis\asyncio\client.py", line 646, in execute_command
+    return await conn.retry.call_with_retry(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+    )
+    ^
+  File "C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\redis\asyncio\retry.py", line 59, in call_with_retry
+    return await do()
+           ^^^^^^^^^^
+  File "C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\redis\asyncio\client.py", line 619, in _send_command_parse_response
+    await conn.send_command(*args)
+  File "C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\redis\asyncio\connection.py", line 518, in send_command
+    await self.send_packed_command(
+        self.pack_command(*args), check_health=kwargs.get("check_health", True)
+    )
+  File "C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\redis\asyncio\connection.py", line 513, in send_packed_command
+    await self.disconnect(nowait=True)
+  File "C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\redis\asyncio\connection.py", line 438, in disconnect
+    self._writer.close()  # type: ignore[union-attr]
+    ~~~~~~~~~~~~~~~~~~^^
+  File "C:\Python314\Lib\asyncio\streams.py", line 352, in close
+    return self._transport.close()
+           ~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Python314\Lib\asyncio\proactor_events.py", line 109, in close
+    self._loop.call_soon(self._call_connection_lost, None)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\asyncio\base_events.py", line 827, in call_soon
+    self._check_closed()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "C:\Python314\Lib\asyncio\base_events.py", line 550, in _check_closed
+    raise RuntimeError('Event loop is closed')
+RuntimeError: Event loop is closed
+WARNING  src.backend.auth:auth.py:120 Invalid API key attempt from testclient key_prefix=test***
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/easy-mode/gacha "HTTP/1.1 403 Forbidden"
+___________________________ test_digest_api_success ___________________________
+tests\unit\test_easy_mode_api.py:47: in test_digest_api_success
+    assert response.status_code == 200
+E   assert 403 == 200
+E    +  where 403 = <Response [403 Forbidden]>.status_code
+---------------------------- Captured stdout call -----------------------------
+{"asctime": "2026-08-28 18:04:45,252", "levelname": "WARNING", "name": "src.backend.auth", "trace_id": "75afff99-58fd-4552-91ea-7cb7932ff62a", "message": "Invalid API key attempt from testclient key_prefix=test***"}
+{"asctime": "2026-08-28 18:04:45,258", "levelname": "INFO", "name": "httpx", "trace_id": "73cbc398-f0e5-47b2-b20a-562355642563", "message": "HTTP Request: POST http://testserver/api/easy-mode/digest \"HTTP/1.1 403 Forbidden\""}
+------------------------------ Captured log call ------------------------------
+WARNING  src.backend.auth:auth.py:120 Invalid API key attempt from testclient key_prefix=test***
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/easy-mode/digest "HTTP/1.1 403 Forbidden"
+__________________________ test_promote_api_success ___________________________
+tests\unit\test_easy_mode_api.py:63: in test_promote_api_success
+    assert response.status_code == 200
+E   assert 403 == 200
+E    +  where 403 = <Response [403 Forbidden]>.status_code
+---------------------------- Captured stdout call -----------------------------
+{"asctime": "2026-08-28 18:04:45,273", "levelname": "ERROR", "name": "src.backend.rate_limit", "trace_id": "b5d005a7-b426-417e-ae60-b3d5a05096c0", "message": "Rate limit check failed: Event loop is closed", "exc_info": "Traceback (most recent call last):\n  File \"C:\\Users\\keide\\AppData\\Roaming\\Python\\Python314\\site-packages\\redis\\asyncio\\connection.py\", line 493, in send_packed_command\n    self._writer.writelines(command)\n    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^\n  File \"C:\\Python314\\Lib\\asyncio\\streams.py\", line 343, in writelines\n    self._transport.writelines(data)\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^\n  File \"C:\\Python314\\Lib\\asyncio\\transports.py\", line 123, in writelines\n    self.write(data)\n    ~~~~~~~~~~^^^^^^\n  File \"C:\\Python314\\Lib\\asyncio\\proactor_events.py\", line 366, in write\n    self._loop_writing(data=bytes(data))\n    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^\n  File \"C:\\Python314\\Lib\\asyncio\\proactor_events.py\", line 402, in _loop_writing\n    self._write_fut = self._loop._proactor.send(self._sock, data)\n                      ^^^^^^^^^^^^^^^^^^^^^^^^^\nAttributeError: 'NoneType' object has no attribute 'send'\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"E:\\sda\\src\\backend\\rate_limit.py\", line 60, in is_allowed\n    result = await self.redis.eval(\n             ^^^^^^^^^^^^^^^^^^^^^^\n    ...<3 lines>...\n    )\n    ^\n  File \"E:\\sda\\src\\services\\redis_cache.py\", line 334, in eval\n    return await self._client.eval(lua_script, len(keys), *keys, *args)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\keide\\AppData\\Roaming\\Python\\Python314\\site-packages\\redis\\asyncio\\client.py\", line 646, in execute_command\n    return await conn.retry.call_with_retry(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<4 lines>...\n    )\n    ^\n  File \"C:\\Users\\keide\\AppData\\Roaming\\Python\\Python314\\site-packages\\redis\\asyncio\\retry.py\", line 59, in call_with_retry\n    return await do()\n           ^^^^^^^^^^\n  File \"C:\\Users\\keide\\AppData\\Roaming\\Python\\Python314\\site-packages\\redis\\asyncio\\client.py\", line 619, in _send_command_parse_response\n    await conn.send_command(*args)\n  File \"C:\\Users\\keide\\AppData\\Roaming\\Python\\Python314\\site-packages\\redis\\asyncio\\connection.py\", line 518, in send_command\n    await self.send_packed_command(\n        self.pack_command(*args), check_health=kwargs.get(\"check_health\", True)\n    )\n  File \"C:\\Users\\keide\\AppData\\Roaming\\Python\\Python314\\site-packages\\redis\\asyncio\\connection.py\", line 513, in send_packed_command\n    await self.disconnect(nowait=True)\n  File \"C:\\Users\\keide\\AppData\\Roaming\\Python\\Python314\\site-packages\\redis\\asyncio\\connection.py\", line 438, in disconnect\n    self._writer.close()  # type: ignore[union-attr]\n    ~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\Python314\\Lib\\asyncio\\streams.py\", line 352, in close\n    return self._transport.close()\n           ~~~~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\Python314\\Lib\\asyncio\\proactor_events.py\", line 109, in close\n    self._loop.call_soon(self._call_connection_lost, None)\n    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Python314\\Lib\\asyncio\\base_events.py\", line 827, in call_soon\n    self._check_closed()\n    ~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\Python314\\Lib\\asyncio\\base_events.py\", line 550, in _check_closed\n    raise RuntimeError('Event loop is closed')\nRuntimeError: Event loop is closed"}
+{"asctime": "2026-08-28 18:04:45,290", "levelname": "WARNING", "name": "src.backend.auth", "trace_id": "b5d005a7-b426-417e-ae60-b3d5a05096c0", "message": "Invalid API key attempt from testclient key_prefix=test***"}
+{"asctime": "2026-08-28 18:04:45,295", "levelname": "INFO", "name": "httpx", "trace_id": "73cbc398-f0e5-47b2-b20a-562355642563", "message": "HTTP Request: POST http://testserver/api/easy-mode/promote \"HTTP/1.1 403 Forbidden\""}
+------------------------------ Captured log call ------------------------------
+ERROR    src.backend.rate_limit:rate_limit.py:74 Rate limit check failed: Event loop is closed
+Traceback (most recent call last):
+  File "C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\redis\asyncio\connection.py", line 493, in send_packed_command
+    self._writer.writelines(command)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "C:\Python314\Lib\asyncio\streams.py", line 343, in writelines
+    self._transport.writelines(data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Python314\Lib\asyncio\transports.py", line 123, in writelines
+    self.write(data)
+    ~~~~~~~~~~^^^^^^
+  File "C:\Python314\Lib\asyncio\proactor_events.py", line 366, in write
+    self._loop_writing(data=bytes(data))
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\asyncio\proactor_events.py", line 402, in _loop_writing
+    self._write_fut = self._loop._proactor.send(self._sock, data)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'send'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "E:\sda\src\backend\rate_limit.py", line 60, in is_allowed
+    result = await self.redis.eval(
+             ^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "E:\sda\src\services\redis_cache.py", line 334, in eval
+    return await self._client.eval(lua_script, len(keys), *keys, *args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\redis\asyncio\client.py", line 646, in execute_command
+    return await conn.retry.call_with_retry(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+    )
+    ^
+  File "C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\redis\asyncio\retry.py", line 59, in call_with_retry
+    return await do()
+           ^^^^^^^^^^
+  File "C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\redis\asyncio\client.py", line 619, in _send_command_parse_response
+    await conn.send_command(*args)
+  File "C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\redis\asyncio\connection.py", line 518, in send_command
+    await self.send_packed_command(
+        self.pack_command(*args), check_health=kwargs.get("check_health", True)
+    )
+  File "C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\redis\asyncio\connection.py", line 513, in send_packed_command
+    await self.disconnect(nowait=True)
+  File "C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\redis\asyncio\connection.py", line 438, in disconnect
+    self._writer.close()  # type: ignore[union-attr]
+    ~~~~~~~~~~~~~~~~~~^^
+  File "C:\Python314\Lib\asyncio\streams.py", line 352, in close
+    return self._transport.close()
+           ~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Python314\Lib\asyncio\proactor_events.py", line 109, in close
+    self._loop.call_soon(self._call_connection_lost, None)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\asyncio\base_events.py", line 827, in call_soon
+    self._check_closed()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "C:\Python314\Lib\asyncio\base_events.py", line 550, in _check_closed
+    raise RuntimeError('Event loop is closed')
+RuntimeError: Event loop is closed
+WARNING  src.backend.auth:auth.py:120 Invalid API key attempt from testclient key_prefix=test***
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/easy-mode/promote "HTTP/1.1 403 Forbidden"
+_________________ test_retry_decorator_retry_on_503[asyncio] __________________
+tests\unit\test_engines.py:99: in test_retry_decorator_retry_on_503
+    res = await client.generate_json("gemini-1.5-flash", "hello")
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\services\retry_decorator.py:136: in wrapper
+    result = await func(self, *args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\unit\test_engines.py:64: in generate_json
+    raise Exception("503 Service Unavailable")
+E   Exception: 503 Service Unavailable
+_________________ TestEpisodeWriter.test_write_fallback_mode __________________
+tests\unit\test_episode_writer.py:57: in test_write_fallback_mode
+    assert "��" in result.text or len(result["text"]) > 0
+                  ^^^^^^^^^^^
+E   AttributeError: 'dict' object has no attribute 'text'
+---------------------------- Captured stdout call -----------------------------
+{"asctime": "2026-08-28 18:04:46,077", "levelname": "INFO", "name": "prompts.manager", "trace_id": "73cbc398-f0e5-47b2-b20a-562355642563", "message": "PromptManager initialized with registry path: E:\\sda\\prompts"}
+{"asctime": "2026-08-28 18:04:46,078", "levelname": "ERROR", "name": "src.services.episode_writer", "trace_id": "73cbc398-f0e5-47b2-b20a-562355642563", "message": "Writing agent failed: 'WritingPromptBuilder' object has no attribute '_build_hook_strategy_section'"}
+------------------------------ Captured log call ------------------------------
+INFO     prompts.manager:manager.py:59 PromptManager initialized with registry path: E:\sda\prompts
+ERROR    src.services.episode_writer:episode_writer.py:68 Writing agent failed: 'WritingPromptBuilder' object has no attribute '_build_hook_strategy_section'
+____________________________ test_plot_rebuild_api ____________________________
+tests\unit\test_foreshadow_orchestration.py:106: in test_plot_rebuild_api
+    assert response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+---------------------------- Captured stdout call -----------------------------
+{"asctime": "2026-08-28 18:04:46,545", "levelname": "INFO", "name": "httpx", "trace_id": "73cbc398-f0e5-47b2-b20a-562355642563", "message": "HTTP Request: POST http://testserver/api/narrative/1/1/plot/rebuild \"HTTP/1.1 401 Unauthorized\""}
+------------------------------ Captured log call ------------------------------
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/narrative/1/1/plot/rebuild "HTTP/1.1 401 Unauthorized"
+_____________ TestCheckLLMGateway.test_check_llm_gateway_success ______________
+tests\unit\test_health.py:195: in test_check_llm_gateway_success
+    assert result.status == HealthStatus.OK
+E   AssertionError: assert <HealthStatus.ERROR: 'error'> == <HealthStatus.OK: 'ok'>
+E     
+E     - ok
+E     + error
+---------------------------- Captured stdout call -----------------------------
+{"asctime": "2026-08-28 18:04:47,464", "levelname": "INFO", "name": "src.core.executor_manager", "trace_id": "73cbc398-f0e5-47b2-b20a-562355642563", "message": "ExecutorManager initialized with IO and CPU pools."}
+{"asctime": "2026-08-28 18:04:47,468", "levelname": "WARNING", "name": "src.backend.health.checks", "trace_id": "73cbc398-f0e5-47b2-b20a-562355642563", "message": "LLM Gateway health check failed: Unknown Gemini Error: expected string or bytes-like object, got 'MagicMock'"}
+------------------------------ Captured log call ------------------------------
+INFO     src.core.executor_manager:executor_manager.py:31 ExecutorManager initialized with IO and CPU pools.
+WARNING  src.backend.health.checks:checks.py:154 LLM Gateway health check failed: Unknown Gemini Error: expected string or bytes-like object, got 'MagicMock'
+_____________ TestCheckLLMGateway.test_check_llm_gateway_failure ______________
+tests\unit\test_health.py:211: in test_check_llm_gateway_failure
+    assert "API Error" in result.error
+E   assert 'API Error' in "Unknown Gemini Error: expected string or bytes-like object, got 'MagicMock'"
+E    +  where "Unknown Gemini Error: expected string or bytes-like object, got 'MagicMock'" = HealthCheckResult(status=<HealthStatus.ERROR: 'error'>, latency_ms=None, details='', error="Unknown Gemini Error: expected string or bytes-like object, got 'MagicMock'").error
+---------------------------- Captured stdout call -----------------------------
+{"asctime": "2026-08-28 18:04:47,537", "levelname": "WARNING", "name": "src.backend.health.checks", "trace_id": "73cbc398-f0e5-47b2-b20a-562355642563", "message": "LLM Gateway health check failed: Unknown Gemini Error: expected string or bytes-like object, got 'MagicMock'"}
+------------------------------ Captured log call ------------------------------
+WARNING  src.backend.health.checks:checks.py:154 LLM Gateway health check failed: Unknown Gemini Error: expected string or bytes-like object, got 'MagicMock'
+____________________ test_erotic_pacing_type_safe_fallback ____________________
+tests\unit\test_implementation_plan.py:33: in test_erotic_pacing_type_safe_fallback
+    fallback_curve = EroticCurve.create_from_parameters(MockParams())
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+config\erotic_pacing.py:150: in create_from_parameters
+    build_ratio = params.pace_ratios.get("build", 3)
+                  ^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'MockParams' object has no attribute 'pace_ratios'
+___________________ test_infra_container_providers_resolved ___________________
+tests\unit\test_infra_container.py:8: in test_infra_container_providers_resolved
+    container = InfraContainer()
+                ^^^^^^^^^^^^^^^^
+src/dependency_injector/containers.pyx:761: in dependency_injector.containers.DeclarativeContainer.__new__
+    ???
+src/dependency_injector/containers.pyx:321: in dependency_injector.containers.DynamicContainer.wire
+    ???
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\dependency_injector\wiring.py:481: in wire
+    modules.extend(_fetch_modules(package))
+                   ^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\dependency_injector\wiring.py:811: in _fetch_modules
+    module = import_module(module_info.name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Python314\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1398: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1371: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1342: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:938: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:762: in exec_module
+    ???
+<frozen importlib._bootstrap>:491: in _call_with_frames_removed
+    ???
+src\llm\gemini_provider.py:6: in <module>
+    from src.core.exceptions import (
+E   ImportError: cannot import name 'LLMContentFilterError' from 'src.core.exceptions' (E:\sda\src\core\exceptions.py)
+__________________ TestUtilityFunctions.test_record_llm_call __________________
+tests\unit\test_metrics.py:99: in test_record_llm_call
+    assert after_prompt == before_prompt + 100
+E   assert 150 == (0 + 100)
+_____ TestMetricsEndpoint.test_metrics_endpoint_returns_prometheus_format _____
+tests\unit\test_metrics.py:150: in test_metrics_endpoint_returns_prometheus_format
+    assert "http_requests_total" in content
+E   AssertionError: assert 'http_requests_total' in ''
+____________________ test_validate_config_patch_valid_json ____________________
+tests\unit\test_patch_validator.py:6: in test_validate_config_patch_valid_json
+    res = PatchValidator.validate_config_patch(patch)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\backend\patch_validator.py:92: in validate_config_patch
+    if key not in GlobalConfigModel.model_fields:
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: type object 'Settings' has no attribute 'model_fields'
+_____________________ test_validate_config_patch_valid_kv _____________________
+tests\unit\test_patch_validator.py:14: in test_validate_config_patch_valid_kv
+    res = PatchValidator.validate_config_patch(patch)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\backend\patch_validator.py:92: in validate_config_patch
+    if key not in GlobalConfigModel.model_fields:
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: type object 'Settings' has no attribute 'model_fields'
+___________________ test_validate_config_patch_unknown_key ____________________
+tests\unit\test_patch_validator.py:22: in test_validate_config_patch_unknown_key
+    res = PatchValidator.validate_config_patch(patch)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\backend\patch_validator.py:92: in validate_config_patch
+    if key not in GlobalConfigModel.model_fields:
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: type object 'Settings' has no attribute 'model_fields'
+__________________ test_validate_config_patch_type_mismatch ___________________
+tests\unit\test_patch_validator.py:29: in test_validate_config_patch_type_mismatch
+    res = PatchValidator.validate_config_patch(patch)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\backend\patch_validator.py:92: in validate_config_patch
+    if key not in GlobalConfigModel.model_fields:
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: type object 'Settings' has no attribute 'model_fields'
+__________________ test_validate_config_patch_dangerous_ast ___________________
+tests\unit\test_patch_validator.py:36: in test_validate_config_patch_dangerous_ast
+    res = PatchValidator.validate_config_patch(patch)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\backend\patch_validator.py:92: in validate_config_patch
+    if key not in GlobalConfigModel.model_fields:
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: type object 'Settings' has no attribute 'model_fields'
+____________________ test_validate_prompt_patch_injection _____________________
+tests\unit\test_patch_validator.py:44: in test_validate_prompt_patch_injection
+    assert res.is_safe is True  # prompts are warning-only unless fatal
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert False is True
+E    +  where False = ValidationResult(is_safe=False, errors=["Potential prompt injection / override pattern detected: 'ignore previous inst...nings=["Potential prompt injection / override pattern detected: 'ignore previous instructions'"], sanitized_patch=None).is_safe
+__________ TestAPCandDeltaPolish.test_apc_system_prompt_determinism ___________
+tests\unit\test_prompts.py:34: in test_apc_system_prompt_determinism
+    prompt1 = await self.pm.build_apc_system_prompt(
+E   TypeError: PromptManager.build_apc_system_prompt() takes from 2 to 3 positional arguments but 6 were given
+---------------------------- Captured stdout call -----------------------------
+{"asctime": "2026-08-28 18:05:01,016", "levelname": "INFO", "name": "prompts.manager", "trace_id": "73cbc398-f0e5-47b2-b20a-562355642563", "message": "PromptManager initialized with registry path: E:\\sda\\prompts"}
+------------------------------ Captured log call ------------------------------
+INFO     prompts.manager:manager.py:59 PromptManager initialized with registry path: E:\sda\prompts
+_____________ TestQualityScorer.test_score_character_consistency ______________
+tests\unit\test_quality_scorer.py:43: in test_score_character_consistency
+    assert score >= 0.75
+E   assert 0.0 >= 0.75
+___________________ test_with_llm_retry_retry_then_success ____________________
+tests\unit\test_retry_decorator.py:46: in test_with_llm_retry_retry_then_success
+    result = await client.generate(max_retries=3)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\services\retry_decorator.py:136: in wrapper
+    result = await func(self, *args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\unit\test_retry_decorator.py:42: in generate
+    raise Exception("429 Too Many Requests")
+E   Exception: 429 Too Many Requests
+__________________ test_with_llm_retry_max_retries_exceeded ___________________
+tests\unit\test_retry_decorator.py:68: in test_with_llm_retry_max_retries_exceeded
+    await client.generate(max_retries=2)
+src\services\retry_decorator.py:136: in wrapper
+    result = await func(self, *args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\unit\test_retry_decorator.py:64: in generate
+    raise Exception("503 Service Unavailable")
+E   Exception: 503 Service Unavailable
+___________ TestSceneContinuityTracker.test_perspective_continuity ____________
+tests\unit\test_scene_continuity_tracker.py:146: in test_perspective_continuity
+    assert any("���_���ύX" in issue for issue in issues)
+E   assert False
+E    +  where False = any(<generator object TestSceneContinuityTracker.test_perspective_continuity.<locals>.<genexpr> at 0x000001C42A9A2330>)
+_______________ TestSceneContinuityTracker.test_time_continuity _______________
+tests\unit\test_scene_continuity_tracker.py:159: in test_time_continuity
+    assert any("�s���R�ɑJ��" in issue for issue in issues)
+E   assert False
+E    +  where False = any(<generator object TestSceneContinuityTracker.test_time_continuity.<locals>.<genexpr> at 0x000001C42A9A39F0>)
+________ TestSceneContinuityTracker.test_extract_snapshot_integration _________
+tests\unit\test_scene_continuity_tracker.py:186: in test_extract_snapshot_integration
+    assert "����" in snap.items_held
+E   AssertionError: assert '����' in []
+E    +  where [] = SceneStateSnapshot(character_name=None, episode_num=None, scene_type=None, injury_level='severe', attitude='hostile', ..., recovery_state='unknown', perspective='third_person', foreshadowing_active=False, time_of_day='night', items_held=[]).items_held
+_____________________ test_security_headers_on_auth_error _____________________
+tests\unit\test_security_headers.py:40: in test_security_headers_on_auth_error
+    assert response.status_code in (403, 404)
+E   assert 200 in (403, 404)
+E    +  where 200 = <Response [200 OK]>.status_code
+---------------------------- Captured stdout call -----------------------------
+{"asctime": "2026-08-28 18:05:03,414", "levelname": "INFO", "name": "httpx", "trace_id": "33061837-028a-4c85-8b0f-6967da7d5f8f", "message": "HTTP Request: GET http://testserver/api/health \"HTTP/1.1 200 OK\""}
+------------------------------ Captured log call ------------------------------
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/health "HTTP/1.1 200 OK"
+_____________________ test_fail_fast_token_limit[asyncio] _____________________
+tests\unit\test_unified_errors.py:42: in test_fail_fast_token_limit
+    await client.generate_json("gemini-1.5-flash", "token_limit", max_retries=3)
+src\services\retry_decorator.py:136: in wrapper
+    result = await func(self, *args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\unit\test_unified_errors.py:27: in generate_json
+    raise Exception("resource exhausted: token limit exceeded")
+E   Exception: resource exhausted: token limit exceeded
+________________________ test_fail_fast_fatal[asyncio] ________________________
+tests\unit\test_unified_errors.py:50: in test_fail_fast_fatal
+    await client.generate_json("gemini-1.5-flash", "fatal", max_retries=3)
+src\services\retry_decorator.py:136: in wrapper
+    result = await func(self, *args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\unit\test_unified_errors.py:29: in generate_json
+    raise Exception("404 Model Not Found")
+E   Exception: 404 Model Not Found
+___________________ test_temporary_retry_and_fail[asyncio] ____________________
+tests\unit\test_unified_errors.py:66: in test_temporary_retry_and_fail
+    await client.generate_json("gemini-1.5-flash", "temporary", max_retries=2)
+src\services\retry_decorator.py:136: in wrapper
+    result = await func(self, *args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\unit\test_unified_errors.py:34: in generate_json
+    raise Exception("503 Service Unavailable")
+E   Exception: 503 Service Unavailable
+__________________________ test_unit_of_work_commit ___________________________
+tests\unit\test_uow.py:16: in test_unit_of_work_commit
+    async with db.get_session() as session:
+               ^^^^^^^^^^^^^^
+E   AttributeError: 'NoneType' object has no attribute 'get_session'
+_________________________ test_unit_of_work_rollback __________________________
+tests\unit\test_uow.py:67: in test_unit_of_work_rollback
+    async with db.get_session() as session:
+               ^^^^^^^^^^^^^^
+E   AttributeError: 'NoneType' object has no attribute 'get_session'
+____________________________ test_ux_api_endpoints ____________________________
+tests\unit\test_ux_enhancements.py:83: in test_ux_api_endpoints
+    assert "alternative_snippet" in res.json()
+E   AssertionError: assert 'alternative_snippet' in {'data': {'alternative_snippet': '�y�^���̕���z�����w�G�Ƃ̑Λ��x�ŕʂ̓���I��ł����Ȃ�\�\\n\n��l���͂����Đ��ʏՓ˂�����A�e�̘H�n�ɐg����߂��B\n�����ȓG�Ύ҂͖��l�̋�Ԃ�؂�􂫁A�՗�����...ct_level': 'high', ...}, 'message': 'What-If�𐶐����܂���', 'success': True, 'timestamp': '2026-08-28T09:05:04.948240+00:00'}
+E    +  where {'data': {'alternative_snippet': '�y�^���̕���z�����w�G�Ƃ̑Λ��x�ŕʂ̓���I��ł����Ȃ�\�\\n\n��l���͂����Đ��ʏՓ˂�����A�e�̘H�n�ɐg����߂��B\n�����ȓG�Ύ҂͖��l�̋�Ԃ�؂�􂫁A�՗�����...ct_level': 'high', ...}, 'message': 'What-If�𐶐����܂���', 'success': True, 'timestamp': '2026-08-28T09:05:04.948240+00:00'} = json()
+E    +    where json = <Response [200 OK]>.json
+---------------------------- Captured stdout call -----------------------------
+{"asctime": "2026-08-28 18:05:04,886", "levelname": "INFO", "name": "httpx", "trace_id": "38731927-e8e5-4fda-a7cc-acbfff4aad3a", "message": "HTTP Request: GET http://testserver/api/ux/heatmap?title=Test&text_sample=%E6%BF%80%E3%81%97%E3%81%84%E6%88%A6%E3%81%84 \"HTTP/1.1 200 OK\""}
+{"asctime": "2026-08-28 18:05:04,891", "levelname": "ERROR", "name": "src.backend.rate_limit", "trace_id": "cfa97c97-9cd7-40c5-8af7-c02c336436e9", "message": "Rate limit check failed: Event loop is closed", "exc_info": "Traceback (most recent call last):\n  File \"C:\\Users\\keide\\AppData\\Roaming\\Python\\Python314\\site-packages\\redis\\asyncio\\connection.py\", line 493, in send_packed_command\n    self._writer.writelines(command)\n    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^\n  File \"C:\\Python314\\Lib\\asyncio\\streams.py\", line 343, in writelines\n    self._transport.writelines(data)\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^\n  File \"C:\\Python314\\Lib\\asyncio\\transports.py\", line 123, in writelines\n    self.write(data)\n    ~~~~~~~~~~^^^^^^\n  File \"C:\\Python314\\Lib\\asyncio\\proactor_events.py\", line 366, in write\n    self._loop_writing(data=bytes(data))\n    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^\n  File \"C:\\Python314\\Lib\\asyncio\\proactor_events.py\", line 402, in _loop_writing\n    self._write_fut = self._loop._proactor.send(self._sock, data)\n                      ^^^^^^^^^^^^^^^^^^^^^^^^^\nAttributeError: 'NoneType' object has no attribute 'send'\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"E:\\sda\\src\\backend\\rate_limit.py\", line 60, in is_allowed\n    result = await self.redis.eval(\n             ^^^^^^^^^^^^^^^^^^^^^^\n    ...<3 lines>...\n    )\n    ^\n  File \"E:\\sda\\src\\services\\redis_cache.py\", line 334, in eval\n    return await self._client.eval(lua_script, len(keys), *keys, *args)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\keide\\AppData\\Roaming\\Python\\Python314\\site-packages\\redis\\asyncio\\client.py\", line 646, in execute_command\n    return await conn.retry.call_with_retry(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<4 lines>...\n    )\n    ^\n  File \"C:\\Users\\keide\\AppData\\Roaming\\Python\\Python314\\site-packages\\redis\\asyncio\\retry.py\", line 59, in call_with_retry\n    return await do()\n           ^^^^^^^^^^\n  File \"C:\\Users\\keide\\AppData\\Roaming\\Python\\Python314\\site-packages\\redis\\asyncio\\client.py\", line 619, in _send_command_parse_response\n    await conn.send_command(*args)\n  File \"C:\\Users\\keide\\AppData\\Roaming\\Python\\Python314\\site-packages\\redis\\asyncio\\connection.py\", line 518, in send_command\n    await self.send_packed_command(\n        self.pack_command(*args), check_health=kwargs.get(\"check_health\", True)\n    )\n  File \"C:\\Users\\keide\\AppData\\Roaming\\Python\\Python314\\site-packages\\redis\\asyncio\\connection.py\", line 513, in send_packed_command\n    await self.disconnect(nowait=True)\n  File \"C:\\Users\\keide\\AppData\\Roaming\\Python\\Python314\\site-packages\\redis\\asyncio\\connection.py\", line 438, in disconnect\n    self._writer.close()  # type: ignore[union-attr]\n    ~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\Python314\\Lib\\asyncio\\streams.py\", line 352, in close\n    return self._transport.close()\n           ~~~~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\Python314\\Lib\\asyncio\\proactor_events.py\", line 109, in close\n    self._loop.call_soon(self._call_connection_lost, None)\n    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Python314\\Lib\\asyncio\\base_events.py\", line 827, in call_soon\n    self._check_closed()\n    ~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\Python314\\Lib\\asyncio\\base_events.py\", line 550, in _check_closed\n    raise RuntimeError('Event loop is closed')\nRuntimeError: Event loop is closed"}
+{"asctime": "2026-08-28 18:05:04,910", "levelname": "INFO", "name": "httpx", "trace_id": "38731927-e8e5-4fda-a7cc-acbfff4aad3a", "message": "HTTP Request: GET http://testserver/api/ux/affinity \"HTTP/1.1 200 OK\""}
+{"asctime": "2026-08-28 18:05:04,927", "levelname": "INFO", "name": "httpx", "trace_id": "38731927-e8e5-4fda-a7cc-acbfff4aad3a", "message": "HTTP Request: GET http://testserver/api/ux/theme?scene_type=erotic \"HTTP/1.1 200 OK\""}
+{"asctime": "2026-08-28 18:05:04,931", "levelname": "ERROR", "name": "src.backend.rate_limit", "trace_id": "a137812f-3a0e-4552-8480-f8ae570af1f3", "message": "Rate limit check failed: Event loop is closed", "exc_info": "Traceback (most recent call last):\n  File \"C:\\Users\\keide\\AppData\\Roaming\\Python\\Python314\\site-packages\\redis\\asyncio\\connection.py\", line 493, in send_packed_command\n    self._writer.writelines(command)\n    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^\n  File \"C:\\Python314\\Lib\\asyncio\\streams.py\", line 343, in writelines\n    self._transport.writelines(data)\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^\n  File \"C:\\Python314\\Lib\\asyncio\\transports.py\", line 123, in writelines\n    self.write(data)\n    ~~~~~~~~~~^^^^^^\n  File \"C:\\Python314\\Lib\\asyncio\\proactor_events.py\", line 366, in write\n    self._loop_writing(data=bytes(data))\n    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^\n  File \"C:\\Python314\\Lib\\asyncio\\proactor_events.py\", line 402, in _loop_writing\n    self._write_fut = self._loop._proactor.send(self._sock, data)\n                      ^^^^^^^^^^^^^^^^^^^^^^^^^\nAttributeError: 'NoneType' object has no attribute 'send'\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"E:\\sda\\src\\backend\\rate_limit.py\", line 60, in is_allowed\n    result = await self.redis.eval(\n             ^^^^^^^^^^^^^^^^^^^^^^\n    ...<3 lines>...\n    )\n    ^\n  File \"E:\\sda\\src\\services\\redis_cache.py\", line 334, in eval\n    return await self._client.eval(lua_script, len(keys), *keys, *args)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\keide\\AppData\\Roaming\\Python\\Python314\\site-packages\\redis\\asyncio\\client.py\", line 646, in execute_command\n    return await conn.retry.call_with_retry(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<4 lines>...\n    )\n    ^\n  File \"C:\\Users\\keide\\AppData\\Roaming\\Python\\Python314\\site-packages\\redis\\asyncio\\retry.py\", line 59, in call_with_retry\n    return await do()\n           ^^^^^^^^^^\n  File \"C:\\Users\\keide\\AppData\\Roaming\\Python\\Python314\\site-packages\\redis\\asyncio\\client.py\", line 619, in _send_command_parse_response\n    await conn.send_command(*args)\n  File \"C:\\Users\\keide\\AppData\\Roaming\\Python\\Python314\\site-packages\\redis\\asyncio\\connection.py\", line 518, in send_command\n    await self.send_packed_command(\n        self.pack_command(*args), check_health=kwargs.get(\"check_health\", True)\n    )\n  File \"C:\\Users\\keide\\AppData\\Roaming\\Python\\Python314\\site-packages\\redis\\asyncio\\connection.py\", line 513, in send_packed_command\n    await self.disconnect(nowait=True)\n  File \"C:\\Users\\keide\\AppData\\Roaming\\Python\\Python314\\site-packages\\redis\\asyncio\\connection.py\", line 438, in disconnect\n    self._writer.close()  # type: ignore[union-attr]\n    ~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\Python314\\Lib\\asyncio\\streams.py\", line 352, in close\n    return self._transport.close()\n           ~~~~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\Python314\\Lib\\asyncio\\proactor_events.py\", line 109, in close\n    self._loop.call_soon(self._call_connection_lost, None)\n    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Python314\\Lib\\asyncio\\base_events.py\", line 827, in call_soon\n    self._check_closed()\n    ~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\Python314\\Lib\\asyncio\\base_events.py\", line 550, in _check_closed\n    raise RuntimeError('Event loop is closed')\nRuntimeError: Event loop is closed"}
+{"asctime": "2026-08-28 18:05:04,952", "levelname": "INFO", "name": "httpx", "trace_id": "38731927-e8e5-4fda-a7cc-acbfff4aad3a", "message": "HTTP Request: POST http://testserver/api/ux/what-if \"HTTP/1.1 200 OK\""}
+------------------------------ Captured log call ------------------------------
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/ux/heatmap?title=Test&text_sample=%E6%BF%80%E3%81%97%E3%81%84%E6%88%A6%E3%81%84 "HTTP/1.1 200 OK"
+ERROR    src.backend.rate_limit:rate_limit.py:74 Rate limit check failed: Event loop is closed
+Traceback (most recent call last):
+  File "C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\redis\asyncio\connection.py", line 493, in send_packed_command
+    self._writer.writelines(command)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "C:\Python314\Lib\asyncio\streams.py", line 343, in writelines
+    self._transport.writelines(data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Python314\Lib\asyncio\transports.py", line 123, in writelines
+    self.write(data)
+    ~~~~~~~~~~^^^^^^
+  File "C:\Python314\Lib\asyncio\proactor_events.py", line 366, in write
+    self._loop_writing(data=bytes(data))
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\asyncio\proactor_events.py", line 402, in _loop_writing
+    self._write_fut = self._loop._proactor.send(self._sock, data)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'send'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "E:\sda\src\backend\rate_limit.py", line 60, in is_allowed
+    result = await self.redis.eval(
+             ^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "E:\sda\src\services\redis_cache.py", line 334, in eval
+    return await self._client.eval(lua_script, len(keys), *keys, *args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\redis\asyncio\client.py", line 646, in execute_command
+    return await conn.retry.call_with_retry(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+    )
+    ^
+  File "C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\redis\asyncio\retry.py", line 59, in call_with_retry
+    return await do()
+           ^^^^^^^^^^
+  File "C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\redis\asyncio\client.py", line 619, in _send_command_parse_response
+    await conn.send_command(*args)
+  File "C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\redis\asyncio\connection.py", line 518, in send_command
+    await self.send_packed_command(
+        self.pack_command(*args), check_health=kwargs.get("check_health", True)
+    )
+  File "C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\redis\asyncio\connection.py", line 513, in send_packed_command
+    await self.disconnect(nowait=True)
+  File "C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\redis\asyncio\connection.py", line 438, in disconnect
+    self._writer.close()  # type: ignore[union-attr]
+    ~~~~~~~~~~~~~~~~~~^^
+  File "C:\Python314\Lib\asyncio\streams.py", line 352, in close
+    return self._transport.close()
+           ~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Python314\Lib\asyncio\proactor_events.py", line 109, in close
+    self._loop.call_soon(self._call_connection_lost, None)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\asyncio\base_events.py", line 827, in call_soon
+    self._check_closed()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "C:\Python314\Lib\asyncio\base_events.py", line 550, in _check_closed
+    raise RuntimeError('Event loop is closed')
+RuntimeError: Event loop is closed
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/ux/affinity "HTTP/1.1 200 OK"
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/ux/theme?scene_type=erotic "HTTP/1.1 200 OK"
+ERROR    src.backend.rate_limit:rate_limit.py:74 Rate limit check failed: Event loop is closed
+Traceback (most recent call last):
+  File "C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\redis\asyncio\connection.py", line 493, in send_packed_command
+    self._writer.writelines(command)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "C:\Python314\Lib\asyncio\streams.py", line 343, in writelines
+    self._transport.writelines(data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Python314\Lib\asyncio\transports.py", line 123, in writelines
+    self.write(data)
+    ~~~~~~~~~~^^^^^^
+  File "C:\Python314\Lib\asyncio\proactor_events.py", line 366, in write
+    self._loop_writing(data=bytes(data))
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\asyncio\proactor_events.py", line 402, in _loop_writing
+    self._write_fut = self._loop._proactor.send(self._sock, data)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'send'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "E:\sda\src\backend\rate_limit.py", line 60, in is_allowed
+    result = await self.redis.eval(
+             ^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "E:\sda\src\services\redis_cache.py", line 334, in eval
+    return await self._client.eval(lua_script, len(keys), *keys, *args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\redis\asyncio\client.py", line 646, in execute_command
+    return await conn.retry.call_with_retry(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+    )
+    ^
+  File "C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\redis\asyncio\retry.py", line 59, in call_with_retry
+    return await do()
+           ^^^^^^^^^^
+  File "C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\redis\asyncio\client.py", line 619, in _send_command_parse_response
+    await conn.send_command(*args)
+  File "C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\redis\asyncio\connection.py", line 518, in send_command
+    await self.send_packed_command(
+        self.pack_command(*args), check_health=kwargs.get("check_health", True)
+    )
+  File "C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\redis\asyncio\connection.py", line 513, in send_packed_command
+    await self.disconnect(nowait=True)
+  File "C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\redis\asyncio\connection.py", line 438, in disconnect
+    self._writer.close()  # type: ignore[union-attr]
+    ~~~~~~~~~~~~~~~~~~^^
+  File "C:\Python314\Lib\asyncio\streams.py", line 352, in close
+    return self._transport.close()
+           ~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Python314\Lib\asyncio\proactor_events.py", line 109, in close
+    self._loop.call_soon(self._call_connection_lost, None)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\asyncio\base_events.py", line 827, in call_soon
+    self._check_closed()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "C:\Python314\Lib\asyncio\base_events.py", line 550, in _check_closed
+    raise RuntimeError('Event loop is closed')
+RuntimeError: Event loop is closed
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/ux/what-if "HTTP/1.1 200 OK"
+_______________________ test_chroma_provider_lifecycle ________________________
+tests\unit\test_vector_store_lifecycle.py:14: in test_chroma_provider_lifecycle
+    assert provider._client is None
+E   assert <chromadb.api.client.Client object at 0x000001C42B1EB0E0> is None
+E    +  where <chromadb.api.client.Client object at 0x000001C42B1EB0E0> = <src.services.vector_store.ChromaClientProvider object at 0x000001C42A2F1D30>._client
+============================== warnings summary ===============================
+C:\Python314\Lib\importlib\__init__.py:88
+  C:\Python314\Lib\importlib\__init__.py:88: DeprecationWarning: config.project_context �͔񐄏��ł��Bconfig.settings �𒼐ڎg�p���Ă��������B
+    return _bootstrap._gcd_import(name[level:], package, level)
+
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\chromadb\telemetry\opentelemetry\__init__.py:128
+  C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\chromadb\telemetry\opentelemetry\__init__.py:128: DeprecationWarning: 'asyncio.iscoroutinefunction' is deprecated and slated for removal in Python 3.16; use inspect.iscoroutinefunction() instead
+    if asyncio.iscoroutinefunction(f):
+
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\pydantic\_internal\_generate_schema.py:663
+  C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\pydantic\_internal\_generate_schema.py:663: ArbitraryTypeWarning: <built-in function any> is not a Python type (it may be an instance of an object), Pydantic will allow any object with no validation since we cannot even enforce that the input is an instance of the given type. To get rid of this error wrap the type with `pydantic.SkipValidation`.
+    warnings.warn(
+
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\pythonjsonlogger\jsonlogger.py:11
+  C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\pythonjsonlogger\jsonlogger.py:11: DeprecationWarning: pythonjsonlogger.jsonlogger has been moved to pythonjsonlogger.json
+    warnings.warn(
+
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\testcontainers\redis\__init__.py:46
+  C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\testcontainers\redis\__init__.py:46: DeprecationWarning: The @wait_container_is_ready decorator is deprecated and will be removed in a future version. Use structured wait strategies instead: container.waiting_for(HttpWaitStrategy(8080).for_status_code(200)) or container.waiting_for(LogMessageWaitStrategy('ready'))
+    @wait_container_is_ready(redis.exceptions.ConnectionError)
+
+tests\integration\conftest.py:245
+  E:\sda\tests\integration\conftest.py:245: PytestUnknownMarkWarning: Unknown pytest.mark.unit - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    item.add_marker(pytest.mark.unit)
+
+tests/unit/test_actor_critic.py::test_phase_critic_filtering[asyncio]
+  E:\sda\tests\unit\test_actor_critic.py:144: DeprecationWarning: ProjectContext.set_setting() �͔񐄏��ł��B
+    ProjectContext.set_setting("actor_critic_severity_threshold", "Major")
+
+tests/unit/test_actor_critic.py::test_phase_critic_filtering[asyncio]
+  E:\sda\tests\unit\test_actor_critic.py:145: DeprecationWarning: ProjectContext.set_setting() �͔񐄏��ł��B
+    ProjectContext.set_setting("actor_critic_enabled", True)
+
+tests/unit/test_async_utils.py::test_safe_timeout_normal
+  C:\Python314\Lib\inspect.py:2416: RuntimeWarning: coroutine 'sleep' was never awaited
+    _get_signature_of = functools.partial(_signature_from_callable,
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/unit/test_async_utils.py::test_safe_timeout_normal
+  C:\Python314\Lib\inspect.py:2416: RuntimeWarning: coroutine 'TestAsyncExecutorCircuitBreaker.test_circuit_breaker_opens_after_threshold.<locals>.failing_task' was never awaited
+    _get_signature_of = functools.partial(_signature_from_callable,
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/unit/test_async_utils.py::test_safe_timeout_normal
+  C:\Python314\Lib\inspect.py:2416: RuntimeWarning: coroutine 'TestAsyncExecutorIntegration.test_concurrent_executions_share_circuit_breaker.<locals>.failing_task' was never awaited
+    _get_signature_of = functools.partial(_signature_from_callable,
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/unit/test_background_strategy.py::test_async_db_save_strategy_success
+  E:\sda\src\backend\background.py:53: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    task.add_done_callback(
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/unit/test_config_centralization.py::test_env_override_explicit_merge
+  E:\sda\tests\unit\test_config_centralization.py:49: DeprecationWarning: config.project_context.get_config() �͔񐄏��ł��Bconfig.settings.get_settings() ���g�p���Ă��������B
+    cfg = get_config()
+
+tests/unit/test_config_centralization.py::test_env_override_type_coercion
+  E:\sda\tests\unit\test_config_centralization.py:63: DeprecationWarning: config.project_context.get_config() �͔񐄏��ł��Bconfig.settings.get_settings() ���g�p���Ă��������B
+    cfg = get_config()
+
+tests/unit/test_config_centralization.py::test_env_override_missing_is_ignored
+  E:\sda\tests\unit\test_config_centralization.py:77: DeprecationWarning: config.project_context.get_config() �͔񐄏��ł��Bconfig.settings.get_settings() ���g�p���Ă��������B
+    cfg = get_config()
+
+tests/unit/test_config_centralization.py::test_projectcontext_delegates_to_canonical
+  E:\sda\tests\unit\test_config_centralization.py:104: DeprecationWarning: ProjectContext.get_setting() �͔񐄏��ł��Bconfig.settings.get_settings().KEY �𒼐ڎg�p���Ă��������B
+    assert ProjectContext.get_setting("fail_fast_mode") is True
+
+tests/unit/test_config_loading.py::test_config_initialization
+  E:\sda\tests\unit\test_config_loading.py:14: DeprecationWarning: config.project_context.get_config() �͔񐄏��ł��Bconfig.settings.get_settings() ���g�p���Ă��������B
+    config = get_config()
+
+tests/unit/test_config_validator.py::TestGetConfig::test_get_config_returns_merged
+  E:\sda\tests\unit\test_config_validator.py:117: DeprecationWarning: config.project_context.get_config() �͔񐄏��ł��Bconfig.settings.get_settings() ���g�p���Ă��������B
+    config = get_config()
+
+tests/unit/test_container.py::test_all_providers_resolved
+  E:\sda\tests\unit\test_container.py:71: DeprecationWarning: GlobalConfig �͔񐄏��ł��B
+    instance = provider()
+
+tests/unit/test_cors_endpoints.py::test_health_cors_header
+tests/unit/test_security_headers.py::test_security_headers_present
+tests/unit/test_security_headers.py::test_security_headers_on_auth_error
+  E:\sda\src\backend\health\checks.py:63: DeprecationWarning: Call to deprecated close. (Use aclose() instead) -- Deprecated since version 5.0.1.
+    await client.close()
+
+tests/unit/test_early_entertainment_checker.py::TestEarlyEntertainmentChecker::test_llm_exception_returns_fallback
+  C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\_pytest\stash.py:108: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    del self._storage[key]
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/unit/test_engine_init.py::TestEngineConstructor::test_legacy_dep_raises_for_missing_key
+  E:\sda\tests\unit\test_engine_init.py:152: DeprecationWarning: _legacy_dep('nonexistent') is deprecated. Pass 'nonexistent' explicitly to constructor.
+    engine._legacy_dep("nonexistent")
+
+tests/unit/test_infra_container.py::test_infra_container_providers_resolved
+  C:\Python314\Lib\importlib\__init__.py:88: DeprecationWarning: src.llm is deprecated. Use src.core.llm.providers instead.
+    return _bootstrap._gcd_import(name[level:], package, level)
+
+tests/unit/test_prompt_version_manager.py::test_prompt_version_flow
+tests/unit/test_prompt_version_manager.py::test_prompt_version_flow
+  E:\sda\src\backend\prompt_version_manager.py:74: DeprecationWarning: GlobalConfig �͔񐄏��ł��B
+    GlobalConfig().set("optimized_prompt_patch", ver["content"])
+
+tests/unit/test_prompt_version_manager.py::test_prompt_version_flow
+tests/unit/test_prompt_version_manager.py::test_prompt_version_flow
+  E:\sda\src\backend\prompt_version_manager.py:74: DeprecationWarning: GlobalConfig.set() �͔񐄏��ł��B
+    GlobalConfig().set("optimized_prompt_patch", ver["content"])
+
+tests/unit/test_prompt_version_manager.py::test_prompt_version_flow
+  E:\sda\tests\unit\test_prompt_version_manager.py:55: DeprecationWarning: GlobalConfig �͔񐄏��ł��B
+    assert GlobalConfig().get("optimized_prompt_patch") == "�v�����v�g ver1"
+
+tests/unit/test_prompt_version_manager.py::test_prompt_version_flow
+  E:\sda\tests\unit\test_prompt_version_manager.py:55: DeprecationWarning: GlobalConfig.get() �͔񐄏��ł��B
+    assert GlobalConfig().get("optimized_prompt_patch") == "�v�����v�g ver1"
+
+tests/unit/test_prompt_version_manager.py::test_prompt_version_flow
+  E:\sda\tests\unit\test_prompt_version_manager.py:65: DeprecationWarning: GlobalConfig �͔񐄏��ł��B
+    assert GlobalConfig().get("optimized_prompt_patch") == "�v�����v�g ver2"
+
+tests/unit/test_prompt_version_manager.py::test_prompt_version_flow
+  E:\sda\tests\unit\test_prompt_version_manager.py:65: DeprecationWarning: GlobalConfig.get() �͔񐄏��ł��B
+    assert GlobalConfig().get("optimized_prompt_patch") == "�v�����v�g ver2"
+
+tests/unit/test_prompt_version_manager.py::test_prompt_version_flow
+  E:\sda\src\backend\prompt_version_manager.py:124: DeprecationWarning: GlobalConfig �͔񐄏��ł��B
+    GlobalConfig().set("optimized_prompt_patch", fallback_ver["content"])
+
+tests/unit/test_prompt_version_manager.py::test_prompt_version_flow
+  E:\sda\src\backend\prompt_version_manager.py:124: DeprecationWarning: GlobalConfig.set() �͔񐄏��ł��B
+    GlobalConfig().set("optimized_prompt_patch", fallback_ver["content"])
+
+tests/unit/test_prompt_version_manager.py::test_prompt_version_flow
+  E:\sda\tests\unit\test_prompt_version_manager.py:74: DeprecationWarning: GlobalConfig �͔񐄏��ł��B
+    assert GlobalConfig().get("optimized_prompt_patch") == "�v�����v�g ver1"
+
+tests/unit/test_prompt_version_manager.py::test_prompt_version_flow
+  E:\sda\tests\unit\test_prompt_version_manager.py:74: DeprecationWarning: GlobalConfig.get() �͔񐄏��ł��B
+    assert GlobalConfig().get("optimized_prompt_patch") == "�v�����v�g ver1"
+
+tests/unit/test_writing_graph_fallback.py::test_create_initial_state_has_required_keys
+tests/unit/test_writing_graph_fallback.py::test_route_after_audit_easy_mode
+tests/unit/test_writing_graph_fallback.py::test_route_after_audit_quality_skip
+tests/unit/test_writing_graph_fallback.py::test_route_after_audit_max_iter_reached
+tests/unit/test_writing_graph_fallback.py::test_route_after_audit_goes_to_critic
+tests/unit/test_writing_graph_fallback.py::test_route_after_audit_causal_fail_heals
+tests/unit/test_writing_graph_fallback.py::test_route_after_critic_triggered_no_iter_left
+tests/unit/test_writing_graph_fallback.py::test_route_after_critic_triggered_retry
+  E:\sda\src\backend\workflows\writing_langgraph.py:584: DeprecationWarning: ProjectContext.get_setting() �͔񐄏��ł��Bconfig.settings.get_settings().KEY �𒼐ڎg�p���Ă��������B
+    base_max = ProjectContext.get_setting("actor_critic_max_iterations", 2)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/api/test_affinity_override.py::test_override_affinity_api_endpoint
+FAILED tests/perf_container_test.py::test_container_initialization_and_resolution
+FAILED tests/phase2/test_phase2_pipeline_integration.py::TestPipelineIntegration::test_pipeline_creation
+FAILED tests/phase2/test_phase2_pipeline_integration.py::TestPipelineIntegration::test_bible_generation
+FAILED tests/phase2/test_phase2_pipeline_integration.py::TestPipelineIntegration::test_plot_generation
+FAILED tests/phase2/test_phase2_pipeline_integration.py::TestPipelineIntegration::test_spice_extraction_in_pipeline
+FAILED tests/phase2/test_phase2_pipeline_integration.py::TestPipelineIntegration::test_marker_injection
+FAILED tests/phase2/test_phase2_pipeline_integration.py::TestPipelineIntegration::test_rewrite_prompt
+FAILED tests/phase2/test_phase2_pipeline_integration.py::TestPipelineE2E::test_full_pipeline_run_small
+FAILED tests/phase2/test_phase2_pipeline_integration.py::TestPipelineE2E::test_pipeline_with_low_audit_score
+FAILED tests/phase2/test_phase2_pipeline_integration.py::TestPipelineE2E::test_pipeline_spice_guard_integration
+FAILED tests/phase2/test_phase2_pipeline_integration.py::TestPipelineE2E::test_pipeline_cancellation
+FAILED tests/phase3/test_phase3_asset_pack.py::TestAssetPack::test_checksum_calculation
+FAILED tests/phase4/test_phase4to5_e2e.py::TestPhase4To5Integration::test_deai_auditor_preserves_hook
+FAILED tests/unit/test_actor_critic.py::test_phase_critic_filtering[asyncio]
+FAILED tests/unit/test_api_integration.py::test_produce_novel_endpoint - asse...
+FAILED tests/unit/test_api_integration.py::test_get_novel_status - assert 404...
+FAILED tests/unit/test_api_integration.py::test_get_report - assert 500 == 200
+FAILED tests/unit/test_auth_fallback_and_test_keys.py::test_validate_api_key_or_raise_with_test_key_production
+FAILED tests/unit/test_backend_verification.py::test_get_plots_success - Attr...
+FAILED tests/unit/test_backend_verification.py::test_get_chapters_success - A...
+FAILED tests/unit/test_backend_verification.py::test_expand_plots_success - A...
+FAILED tests/unit/test_backend_verification.py::test_expand_plots_auth_failure
+FAILED tests/unit/test_commercial_end_to_end.py::test_commercial_pipeline_end_to_end
+FAILED tests/unit/test_commercial_pipeline_error.py::test_generate_content_raises_pipeline_error_on_episode_write
+FAILED tests/unit/test_config_centralization.py::test_env_override_explicit_merge
+FAILED tests/unit/test_config_centralization.py::test_env_override_type_coercion
+FAILED tests/unit/test_config_centralization.py::test_env_override_missing_is_ignored
+FAILED tests/unit/test_config_centralization.py::test_configmanager_is_canonical_accessor
+FAILED tests/unit/test_config_centralization.py::test_projectcontext_delegates_to_canonical
+FAILED tests/unit/test_config_loading.py::test_config_initialization - Assert...
+FAILED tests/unit/test_config_validator.py::TestGlobalConfigModelLoad::test_load_includes_merged_models
+FAILED tests/unit/test_config_validator.py::TestGetConfig::test_get_config_returns_merged
+FAILED tests/unit/test_cors_config.py::test_get_allowed_origins_default - Ass...
+FAILED tests/unit/test_cors_endpoints.py::test_health_cors_header - Assertion...
+FAILED tests/unit/test_draft_polish.py::test_build_drafting_prompt - TypeErro...
+FAILED tests/unit/test_draft_polish.py::test_build_polishing_prompt - Attribu...
+FAILED tests/unit/test_draft_polish.py::test_polishing_pass_success[asyncio]
+FAILED tests/unit/test_draft_polish.py::test_polishing_pass_fallback[asyncio]
+FAILED tests/unit/test_early_entertainment_prompt.py::TestEarlyEntertainmentPrompt::test_contains_quality_ignore_instruction
+FAILED tests/unit/test_early_entertainment_prompt.py::TestEarlyEntertainmentPrompt::test_inputs_embedded
+FAILED tests/unit/test_early_entertainment_prompt.py::TestEarlyEntertainmentPrompt::test_opening_truncated_to_500_chars
+FAILED tests/unit/test_easy_mode_api.py::test_gacha_api_validation_error - as...
+FAILED tests/unit/test_easy_mode_api.py::test_gacha_api_success - assert 403 ...
+FAILED tests/unit/test_easy_mode_api.py::test_digest_api_success - assert 403...
+FAILED tests/unit/test_easy_mode_api.py::test_promote_api_success - assert 40...
+FAILED tests/unit/test_engines.py::test_retry_decorator_retry_on_503[asyncio]
+FAILED tests/unit/test_episode_writer.py::TestEpisodeWriter::test_write_fallback_mode
+FAILED tests/unit/test_foreshadow_orchestration.py::test_plot_rebuild_api - a...
+FAILED tests/unit/test_health.py::TestCheckLLMGateway::test_check_llm_gateway_success
+FAILED tests/unit/test_health.py::TestCheckLLMGateway::test_check_llm_gateway_failure
+FAILED tests/unit/test_implementation_plan.py::test_erotic_pacing_type_safe_fallback
+FAILED tests/unit/test_infra_container.py::test_infra_container_providers_resolved
+FAILED tests/unit/test_metrics.py::TestUtilityFunctions::test_record_llm_call
+FAILED tests/unit/test_metrics.py::TestMetricsEndpoint::test_metrics_endpoint_returns_prometheus_format
+FAILED tests/unit/test_patch_validator.py::test_validate_config_patch_valid_json
+FAILED tests/unit/test_patch_validator.py::test_validate_config_patch_valid_kv
+FAILED tests/unit/test_patch_validator.py::test_validate_config_patch_unknown_key
+FAILED tests/unit/test_patch_validator.py::test_validate_config_patch_type_mismatch
+FAILED tests/unit/test_patch_validator.py::test_validate_config_patch_dangerous_ast
+FAILED tests/unit/test_patch_validator.py::test_validate_prompt_patch_injection
+FAILED tests/unit/test_prompts.py::TestAPCandDeltaPolish::test_apc_system_prompt_determinism
+FAILED tests/unit/test_quality_scorer.py::TestQualityScorer::test_score_character_consistency
+FAILED tests/unit/test_retry_decorator.py::test_with_llm_retry_retry_then_success
+FAILED tests/unit/test_retry_decorator.py::test_with_llm_retry_max_retries_exceeded
+FAILED tests/unit/test_scene_continuity_tracker.py::TestSceneContinuityTracker::test_perspective_continuity
+FAILED tests/unit/test_scene_continuity_tracker.py::TestSceneContinuityTracker::test_time_continuity
+FAILED tests/unit/test_scene_continuity_tracker.py::TestSceneContinuityTracker::test_extract_snapshot_integration
+FAILED tests/unit/test_security_headers.py::test_security_headers_on_auth_error
+FAILED tests/unit/test_unified_errors.py::test_fail_fast_token_limit[asyncio]
+FAILED tests/unit/test_unified_errors.py::test_fail_fast_fatal[asyncio] - Exc...
+FAILED tests/unit/test_unified_errors.py::test_temporary_retry_and_fail[asyncio]
+FAILED tests/unit/test_uow.py::test_unit_of_work_commit - AttributeError: 'No...
+FAILED tests/unit/test_uow.py::test_unit_of_work_rollback - AttributeError: '...
+FAILED tests/unit/test_ux_enhancements.py::test_ux_api_endpoints - AssertionE...
+FAILED tests/unit/test_vector_store_lifecycle.py::test_chroma_provider_lifecycle
+===== 76 failed, 873 passed, 106 skipped, 45 warnings in 92.48s (0:01:32) =====
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\coverage\inorout.py:561: CoverageWarning: Module streamlit_app was never imported. (module-not-imported); see https://coverage.readthedocs.io/en/7.14.3/messages.html#warning-module-not-imported
+  self.warn(f"Module {pkg} was never imported.", slug="module-not-imported")

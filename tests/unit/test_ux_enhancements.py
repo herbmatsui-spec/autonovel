@@ -61,36 +61,42 @@ def test_preference_store():
 
 def test_ux_api_endpoints():
     client = TestClient(app)
-    
+
+    def extract_data(response):
+        js = response.json()
+        if isinstance(js, dict) and "data" in js:
+            return js["data"]
+        return js
+
     # 1. Heatmap
     res = client.get("/api/ux/heatmap?title=Test&text_sample=激しい戦い")
     assert res.status_code == 200
-    assert "points" in res.json()
+    assert "points" in extract_data(res)
 
     # 2. Affinity
     res = client.get("/api/ux/affinity")
     assert res.status_code == 200
-    assert isinstance(res.json(), list)
+    assert isinstance(extract_data(res), list)
 
     # 3. Theme
     res = client.get("/api/ux/theme?scene_type=erotic")
     assert res.status_code == 200
-    assert res.json()["theme_type"] == "erotic"
+    assert extract_data(res)["theme_type"] == "erotic"
 
     # 4. What-If
     res = client.post("/api/ux/what-if", json={"choice_point": "敵との対峙"})
     assert res.status_code == 200
-    assert "alternative_snippet" in res.json()
+    assert "alternative_snippet" in extract_data(res)
 
     # 5. Pacing
     res = client.post("/api/ux/pacing", json={"chars_read": 500, "duration_ms": 2000, "scroll_speed_px_per_sec": 350})
     assert res.status_code == 200
-    assert "suggested_metaphor_density" in res.json()
+    assert "suggested_metaphor_density" in extract_data(res)
 
     # 6. Monologue
     res = client.get("/api/ux/afterglow-monologue?character_name=メインヒロイン")
     assert res.status_code == 200
-    assert "inner_monologue" in res.json()
+    assert "inner_monologue" in extract_data(res)
 
     # 7. Preference
     res = client.post("/api/ux/preference", json={"gap_type": "tsundere", "intensity": 70})
@@ -99,4 +105,6 @@ def test_ux_api_endpoints():
     # 9. Bedtime
     res = client.get("/api/ux/bedtime")
     assert res.status_code == 200
-    assert "お疲れ様でした" in res.json()["message"]
+    assert "お疲れ様でした" in extract_data(res)["message"]
+
+

@@ -143,7 +143,7 @@ class EroticCurve:
                 params.base_intensity if hasattr(params, "base_intensity") else 2
             )
 
-        if not params.enabled or params.base_intensity == 0:
+        if not getattr(params, "enabled", True) or getattr(params, "base_intensity", 0) == 0:
             return EroticCurve.create_default(0)
 
         intensity = params.base_intensity

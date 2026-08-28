@@ -5,6 +5,7 @@ import type { TabId } from "../store/useProjectStore";
 import { useBookStore } from "../store/useBookStore";
 import { useUIStore } from "../store/useUIStore";
 import { useNavigate, useLocation } from 'react-router-dom';
+import { recordTransition, NodeId } from '@/lib/usageTracker';
 
 import { toast } from 'sonner';
 
@@ -29,10 +30,29 @@ export function Sidebar() {
   const currentTab = activeTabId || 'landing';
 
   const navAction = (tab: TabId, needsBook = true) => () => {
+    // Record transition from current location to new tab
+    const fromPath = pathname;
+    const toPath = `/${tab}`;
+    
+    // Convert paths to node IDs for tracking
+    const fromNode: NodeId = fromPath === '/' || fromPath === '' ? 'node-landing' : 
+      fromPath.startsWith('/book/') ? `node-book-${fromPath.split('/')[2]}` : 
+      `node-${fromPath.replace(/^\//, '')}`;
+    
+    const toNode: NodeId = toPath === '/' || toPath === '' ? 'node-landing' : 
+      toPath.startsWith('/book/') ? `node-book-${toPath.split('/')[2]}` : 
+      `node-${toPath.replace(/^\//, '')}`;
+    
     if (needsBook) {
-      requireBook(selectedBook, () => navigate(`/${tab}`));
+      requireBook(selectedBook, () => {
+        navigate(`/${tab}`);
+        // Record the transition after navigation
+        recordTransition(fromNode, toNode);
+      });
     } else {
       navigate(`/${tab}`);
+      // Record the transition after navigation
+      recordTransition(fromNode, toNode);
     }
   };
 

@@ -1,0 +1,359 @@
+============================= test session starts =============================
+platform win32 -- Python 3.14.0, pytest-9.0.3, pluggy-1.6.0
+rootdir: E:\sda
+configfile: pytest.ini
+testpaths: tests
+plugins: anyio-4.12.1, langsmith-0.8.8, locust-2.45.0, asyncio-1.4.0, cov-7.1.0, docker-3.2.5, mock-3.15.1, recording-0.13.4, xdist-3.8.0, typeguard-4.5.2
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 1009 items / 12 errors
+
+=================================== ERRORS ====================================
+____________ ERROR collecting tests/api/test_affinity_override.py _____________
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\_pytest\python.py:507: in importtestmodule
+    mod = import_path(
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\_pytest\pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+C:\Python314\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1398: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1371: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1342: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:938: in _load_unlocked
+    ???
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\_pytest\assertion\rewrite.py:197: in exec_module
+    exec(co, module.__dict__)
+tests\api\test_affinity_override.py:8: in <module>
+    from src.backend.server import app
+src\backend\server.py:30: in <module>
+    from src.backend.auth import require_api_key, get_api_key_service
+E     File "E:\sda\src\backend\auth.py", line 91
+E       def get_api_key_service() -> APIKeyService:
+E       ^^^
+E   IndentationError: expected an indented block after function definition on line 88
+_____________ ERROR collecting tests/unit/test_api_integration.py _____________
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\_pytest\python.py:507: in importtestmodule
+    mod = import_path(
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\_pytest\pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+C:\Python314\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1398: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1371: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1342: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:938: in _load_unlocked
+    ???
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\_pytest\assertion\rewrite.py:197: in exec_module
+    exec(co, module.__dict__)
+tests\unit\test_api_integration.py:10: in <module>
+    from src.backend.server import app
+src\backend\server.py:30: in <module>
+    from src.backend.auth import require_api_key, get_api_key_service
+E     File "E:\sda\src\backend\auth.py", line 91
+E       def get_api_key_service() -> APIKeyService:
+E       ^^^
+E   IndentationError: expected an indented block after function definition on line 88
+__________________ ERROR collecting tests/unit/test_auth.py ___________________
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\_pytest\python.py:507: in importtestmodule
+    mod = import_path(
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\_pytest\pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+C:\Python314\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1398: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1371: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1342: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:938: in _load_unlocked
+    ???
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\_pytest\assertion\rewrite.py:197: in exec_module
+    exec(co, module.__dict__)
+tests\unit\test_auth.py:10: in <module>
+    from src.backend.auth import APIKeyService, validate_api_key_or_raise
+E     File "E:\sda\src\backend\auth.py", line 91
+E       def get_api_key_service() -> APIKeyService:
+E       ^^^
+E   IndentationError: expected an indented block after function definition on line 88
+_______ ERROR collecting tests/unit/test_auth_fallback_and_test_keys.py _______
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\_pytest\python.py:507: in importtestmodule
+    mod = import_path(
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\_pytest\pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+C:\Python314\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1398: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1371: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1342: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:938: in _load_unlocked
+    ???
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\_pytest\assertion\rewrite.py:197: in exec_module
+    exec(co, module.__dict__)
+tests\unit\test_auth_fallback_and_test_keys.py:4: in <module>
+    from src.backend.auth import APIKeyService, get_api_key_service, reset_api_key_service, validate_api_key_or_raise
+E     File "E:\sda\src\backend\auth.py", line 91
+E       def get_api_key_service() -> APIKeyService:
+E       ^^^
+E   IndentationError: expected an indented block after function definition on line 88
+______________ ERROR collecting tests/unit/test_auth_service.py _______________
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\_pytest\python.py:507: in importtestmodule
+    mod = import_path(
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\_pytest\pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+C:\Python314\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1398: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1371: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1342: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:938: in _load_unlocked
+    ???
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\_pytest\assertion\rewrite.py:197: in exec_module
+    exec(co, module.__dict__)
+tests\unit\test_auth_service.py:3: in <module>
+    from src.backend.auth import APIKeyService, get_api_key_service, reset_api_key_service, validate_api_key_or_raise
+E     File "E:\sda\src\backend\auth.py", line 91
+E       def get_api_key_service() -> APIKeyService:
+E       ^^^
+E   IndentationError: expected an indented block after function definition on line 88
+__________ ERROR collecting tests/unit/test_backend_verification.py ___________
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\_pytest\python.py:507: in importtestmodule
+    mod = import_path(
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\_pytest\pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+C:\Python314\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1398: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1371: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1342: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:938: in _load_unlocked
+    ???
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\_pytest\assertion\rewrite.py:197: in exec_module
+    exec(co, module.__dict__)
+tests\unit\test_backend_verification.py:5: in <module>
+    from src.backend.routers.episodes import get_chapters
+src\backend\routers\episodes.py:3: in <module>
+    from src.backend.auth import require_api_key
+E     File "E:\sda\src\backend\auth.py", line 91
+E       def get_api_key_service() -> APIKeyService:
+E       ^^^
+E   IndentationError: expected an indented block after function definition on line 88
+___________ ERROR collecting tests/unit/test_cors_configuration.py ____________
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\_pytest\python.py:507: in importtestmodule
+    mod = import_path(
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\_pytest\pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+C:\Python314\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1398: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1371: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1342: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:938: in _load_unlocked
+    ???
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\_pytest\assertion\rewrite.py:197: in exec_module
+    exec(co, module.__dict__)
+tests\unit\test_cors_configuration.py:5: in <module>
+    from src.backend.server import configure_cors
+src\backend\server.py:30: in <module>
+    from src.backend.auth import require_api_key, get_api_key_service
+E     File "E:\sda\src\backend\auth.py", line 91
+E       def get_api_key_service() -> APIKeyService:
+E       ^^^
+E   IndentationError: expected an indented block after function definition on line 88
+______________ ERROR collecting tests/unit/test_easy_mode_api.py ______________
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\_pytest\python.py:507: in importtestmodule
+    mod = import_path(
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\_pytest\pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+C:\Python314\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1398: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1371: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1342: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:938: in _load_unlocked
+    ???
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\_pytest\assertion\rewrite.py:197: in exec_module
+    exec(co, module.__dict__)
+tests\unit\test_easy_mode_api.py:7: in <module>
+    from src.backend.server import app
+src\backend\server.py:30: in <module>
+    from src.backend.auth import require_api_key, get_api_key_service
+E     File "E:\sda\src\backend\auth.py", line 91
+E       def get_api_key_service() -> APIKeyService:
+E       ^^^
+E   IndentationError: expected an indented block after function definition on line 88
+________ ERROR collecting tests/unit/test_foreshadow_orchestration.py _________
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\_pytest\python.py:507: in importtestmodule
+    mod = import_path(
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\_pytest\pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+C:\Python314\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1398: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1371: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1342: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:938: in _load_unlocked
+    ???
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\_pytest\assertion\rewrite.py:197: in exec_module
+    exec(co, module.__dict__)
+tests\unit\test_foreshadow_orchestration.py:14: in <module>
+    from src.backend.routers.narrative import router as narrative_router
+src\backend\routers\narrative.py:14: in <module>
+    from src.backend.auth import require_api_key
+E     File "E:\sda\src\backend\auth.py", line 91
+E       def get_api_key_service() -> APIKeyService:
+E       ^^^
+E   IndentationError: expected an indented block after function definition on line 88
+______ ERROR collecting tests/unit/test_narrative_persistence_and_api.py ______
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\_pytest\python.py:507: in importtestmodule
+    mod = import_path(
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\_pytest\pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+C:\Python314\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1398: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1371: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1342: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:938: in _load_unlocked
+    ???
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\_pytest\assertion\rewrite.py:197: in exec_module
+    exec(co, module.__dict__)
+tests\unit\test_narrative_persistence_and_api.py:13: in <module>
+    from src.backend.routers.narrative import router as narrative_router
+src\backend\routers\narrative.py:14: in <module>
+    from src.backend.auth import require_api_key
+E     File "E:\sda\src\backend\auth.py", line 91
+E       def get_api_key_service() -> APIKeyService:
+E       ^^^
+E   IndentationError: expected an indented block after function definition on line 88
+____________ ERROR collecting tests/unit/test_security_headers.py _____________
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\_pytest\python.py:507: in importtestmodule
+    mod = import_path(
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\_pytest\pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+C:\Python314\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1398: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1371: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1342: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:938: in _load_unlocked
+    ???
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\_pytest\assertion\rewrite.py:197: in exec_module
+    exec(co, module.__dict__)
+tests\unit\test_security_headers.py:4: in <module>
+    from src.backend.server import app
+src\backend\server.py:30: in <module>
+    from src.backend.auth import require_api_key, get_api_key_service
+E     File "E:\sda\src\backend\auth.py", line 91
+E       def get_api_key_service() -> APIKeyService:
+E       ^^^
+E   IndentationError: expected an indented block after function definition on line 88
+_____________ ERROR collecting tests/unit/test_ux_enhancements.py _____________
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\_pytest\python.py:507: in importtestmodule
+    mod = import_path(
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\_pytest\pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+C:\Python314\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1398: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1371: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1342: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:938: in _load_unlocked
+    ???
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\_pytest\assertion\rewrite.py:197: in exec_module
+    exec(co, module.__dict__)
+tests\unit\test_ux_enhancements.py:8: in <module>
+    from src.backend.server import app
+src\backend\server.py:30: in <module>
+    from src.backend.auth import require_api_key, get_api_key_service
+E     File "E:\sda\src\backend\auth.py", line 91
+E       def get_api_key_service() -> APIKeyService:
+E       ^^^
+E   IndentationError: expected an indented block after function definition on line 88
+============================== warnings summary ===============================
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\testcontainers\redis\__init__.py:46
+  C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\testcontainers\redis\__init__.py:46: DeprecationWarning: The @wait_container_is_ready decorator is deprecated and will be removed in a future version. Use structured wait strategies instead: container.waiting_for(HttpWaitStrategy(8080).for_status_code(200)) or container.waiting_for(LogMessageWaitStrategy('ready'))
+    @wait_container_is_ready(redis.exceptions.ConnectionError)
+
+C:\Python314\Lib\importlib\__init__.py:88
+  C:\Python314\Lib\importlib\__init__.py:88: DeprecationWarning: config.project_context �͔񐄏��ł��Bconfig.settings �𒼐ڎg�p���Ă��������B
+    return _bootstrap._gcd_import(name[level:], package, level)
+
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\chromadb\telemetry\opentelemetry\__init__.py:128
+  C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\chromadb\telemetry\opentelemetry\__init__.py:128: DeprecationWarning: 'asyncio.iscoroutinefunction' is deprecated and slated for removal in Python 3.16; use inspect.iscoroutinefunction() instead
+    if asyncio.iscoroutinefunction(f):
+
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\pydantic\_internal\_generate_schema.py:663
+  C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\pydantic\_internal\_generate_schema.py:663: ArbitraryTypeWarning: <built-in function any> is not a Python type (it may be an instance of an object), Pydantic will allow any object with no validation since we cannot even enforce that the input is an instance of the given type. To get rid of this error wrap the type with `pydantic.SkipValidation`.
+    warnings.warn(
+
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\pythonjsonlogger\jsonlogger.py:11
+  C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\pythonjsonlogger\jsonlogger.py:11: DeprecationWarning: pythonjsonlogger.jsonlogger has been moved to pythonjsonlogger.json
+    warnings.warn(
+
+tests\integration\conftest.py:245
+  E:\sda\tests\integration\conftest.py:245: PytestUnknownMarkWarning: Unknown pytest.mark.unit - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    item.add_marker(pytest.mark.unit)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+ERROR tests/api/test_affinity_override.py
+ERROR tests/unit/test_api_integration.py
+ERROR tests/unit/test_auth.py
+ERROR tests/unit/test_auth_fallback_and_test_keys.py
+ERROR tests/unit/test_auth_service.py
+ERROR tests/unit/test_backend_verification.py
+ERROR tests/unit/test_cors_configuration.py
+ERROR tests/unit/test_easy_mode_api.py
+ERROR tests/unit/test_foreshadow_orchestration.py
+ERROR tests/unit/test_narrative_persistence_and_api.py
+ERROR tests/unit/test_security_headers.py
+ERROR tests/unit/test_ux_enhancements.py
+!!!!!!!!!!!!!!!!!! Interrupted: 12 errors during collection !!!!!!!!!!!!!!!!!!!
+================== 6 warnings, 12 errors in 61.12s (0:01:01) ==================
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\coverage\inorout.py:561: CoverageWarning: Module streamlit_app was never imported. (module-not-imported); see https://coverage.readthedocs.io/en/7.14.3/messages.html#warning-module-not-imported
+  self.warn(f"Module {pkg} was never imported.", slug="module-not-imported")

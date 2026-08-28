@@ -4,13 +4,20 @@ import pytest
 from sqlalchemy import text
 
 from src.backend.database import UnitOfWork
+from src.core.container import AppContainer
+
+
+@pytest.fixture(autouse=True)
+def clean_container():
+    AppContainer.db.reset_override()
+    yield
+    AppContainer.db.reset_override()
 
 
 @pytest.mark.asyncio
 async def test_unit_of_work_commit():
-    from config.container import Container
+    db = AppContainer.db()
 
-    db = Container.db()
 
     # テーブル初期化
     async with db.get_session() as session:
@@ -60,9 +67,8 @@ async def test_unit_of_work_commit():
 
 @pytest.mark.asyncio
 async def test_unit_of_work_rollback():
-    from config.container import Container
+    db = AppContainer.db()
 
-    db = Container.db()
 
     async with db.get_session() as session:
         async with session.begin():

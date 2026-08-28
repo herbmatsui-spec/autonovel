@@ -46,7 +46,7 @@ async def test_get_plots_success(harness):
 
     # Mock UnitOfWork context manager to use the harness's mock UOW
     with patch("src.backend.routers.plots.UnitOfWork", return_value=harness.uow):
-        with patch("src.backend.routers.plots.Container") as mock_container:
+        with patch("src.backend.routers.plots.AppContainer") as mock_container:
             mock_container.db.return_value = MagicMock()
 
             # The harness's MockUnitOfWork needs to handle the specific method called in the router
@@ -98,7 +98,7 @@ async def test_get_chapters_success(harness):
     await harness.setup_scenario(book_id, chapter_data=chapter_data)
 
     with patch("src.backend.routers.episodes.UnitOfWork", return_value=harness.uow):
-        with patch("src.backend.routers.episodes.Container") as mock_container:
+        with patch("src.backend.routers.episodes.AppContainer") as mock_container:
             mock_container.db.return_value = MagicMock()
 
             # In routers/episodes.py: await uow.chapters.get_all_non_anchor_chapters(book_id)
@@ -139,7 +139,6 @@ async def test_expand_plots_success(harness):
     # Setup
     book_id = 1
     req = PlotExpandRequest(
-        api_key="valid_key",
         book_id=book_id,
         gen_from=1,
         gen_to=2,
@@ -155,10 +154,10 @@ async def test_expand_plots_success(harness):
         ) as mock_create_task:
             mock_create_task.return_value = None
 
-            result = await expand_plots(req)
+            result = await expand_plots(req, api_key="valid_key")
 
-            assert "task_id" in result
-            assert result["task_id"].startswith("plot_expand_")
+            assert "task_id" in result["data"]
+            assert result["data"]["task_id"].startswith("plot_expand_")
             mock_execute.assert_called_once()
 
             # Verify the workflow call
@@ -170,16 +169,11 @@ async def test_expand_plots_success(harness):
 
 @pytest.mark.asyncio
 async def test_expand_plots_auth_failure(harness):
-    from src.backend.auth import AppError
-    from src.backend.routers.plots import expand_plots
-    from src.models.api_schemas import PlotExpandRequest
-
-    # Setup: use an invalid key
-    req = PlotExpandRequest(
-        api_key="invalid_key", book_id=1, gen_from=1, gen_to=2, config={}, params={}
-    )
+    from src.backend.auth import AppError, validate_api_key_or_raise
 
     with pytest.raises(AppError) as excinfo:
-        await expand_plots(req)
+        validate_api_key_or_raise("invalid_key")
 
     assert "API キーが無効です" in str(excinfo.value)
+
+

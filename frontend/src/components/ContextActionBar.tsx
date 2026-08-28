@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { Term } from '@/components/Term';
+import { recordTransition, NodeId } from '@/lib/usageTracker';
 
 interface ContextActionBarProps {
   bookId: number;
@@ -37,6 +38,11 @@ export default function ContextActionBar({ bookId, currentStep, suggestedActions
               // Default action: navigate to the tab for the current step
               navigate(`/book/${bookId}/${currentStep}/${action.tab}`, { replace: true });
             }
+            
+            // Record transition from step to tab
+            const fromNode: NodeId = `step-${currentStep}`;
+            const toNode: NodeId = `tab-${action.tab}`;
+            recordTransition(fromNode, toNode);
           }}
           className={`flex items-center space-x-2 px-3 py-1.5 rounded text-sm font-medium transition-colors hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)]`}
         >

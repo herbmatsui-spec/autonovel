@@ -41,7 +41,7 @@ class WritingAgent(BaseAgent):
 
         # 分割後のコンポーネントを初期化
         context_builder = ContextBuilder(self)
-        self._episode_writer = EpisodeWriter(llm, context_builder)
+        self._episode_writer = EpisodeWriter(llm, context_builder, self.prompt_manager)
         self._rewrite_orchestrator = RewriteOrchestrator(
             writer=self._episode_writer,
             auditor=auditor,

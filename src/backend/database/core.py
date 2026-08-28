@@ -247,6 +247,32 @@ class DatabaseManager:
                     # checkin 時の rollback 失敗は次回の接続で再試行されるためデバッグログのみ
                     logger.debug("reset_on_checkin rollback 失敗: %s", exc)
 
+    # Create tables in test environment
+        is_test_env = False
+        try:
+            from config.settings import get_settings
+            settings = get_settings()
+            is_test_env = settings.environment.lower() in ("test", "testing")
+        except Exception:
+            pass
+        if not is_test_env:
+            is_test_env = (
+                os.environ.get("ENVIRONMENT", "").lower() in ("test", "testing")
+                or os.environ.get("PYTEST_CURRENT_TEST") is not None
+                or os.environ.get("KAKU_ENV") == "test"
+            )
+        if is_test_env:
+            from sqlalchemy import create_engine
+            from src.backend.database.models import Base
+            sync_url = db_url
+            if "sqlite+aiosqlite" in sync_url:
+                sync_url = sync_url.replace("sqlite+aiosqlite://", "sqlite://")
+            elif "postgresql+asyncpg" in sync_url:
+                sync_url = sync_url.replace("postgresql+asyncpg://", "postgresql://")
+            sync_engine = create_engine(sync_url)
+            Base.metadata.create_all(sync_engine)
+            sync_engine.dispose()
+
     def get_session(self) -> AsyncSession:
         """SQLAlchemyのAsyncSessionを取得する"""
         return self.session_factory()
@@ -276,32 +302,21 @@ class DatabaseManager:
         pass
 
     async def execute(self, sql: Any, params: Any = ()) -> None:
-        import warnings
-
         if isinstance(sql, str):
-            warnings.warn(
-                "DatabaseManager.execute() with raw string is deprecated. Please use sqlalchemy.text() or repositories instead.",
-                DeprecationWarning,
-                stacklevel=2,
+            raise TypeError(
+                "Raw SQL strings are not allowed in DatabaseManager.execute(); "
+                "please use sqlalchemy.text() or repository methods."
             )
-            sql = text(sql)
-
         logger.debug(f"DatabaseManager.execute called: {sql}")
         async with self.engine.begin() as conn:
             await conn.execute(sql, params)
 
     async def fetch_one(self, sql: Any, params: Any = ()) -> Optional[Any]:
         """読み取り専用接続プールを使用した単一行取得"""
-        import warnings
-
         if isinstance(sql, str):
-            warnings.warn(
-                "DatabaseManager.fetch_one() with raw string is deprecated. Please use sqlalchemy.text() or repositories instead.",
-                DeprecationWarning,
-                stacklevel=2,
+            raise TypeError(
+                "Raw SQL strings are not allowed in DatabaseManager.fetch_one(); please use sqlalchemy.text() or repository methods."
             )
-            sql = text(sql)
-
         logger.debug(f"DatabaseManager.fetch_one called: {sql}")
         async with self.engine.connect() as conn:
             result = await conn.execute(sql, params)
@@ -309,16 +324,11 @@ class DatabaseManager:
 
     async def fetch_all(self, sql: Any, params: Any = ()) -> List[Any]:
         """読み取り専用接続プールを使用した複数行取得"""
-        import warnings
-
         if isinstance(sql, str):
-            warnings.warn(
-                "DatabaseManager.fetch_all() with raw string is deprecated. Please use sqlalchemy.text() or repositories instead.",
-                DeprecationWarning,
-                stacklevel=2,
+            raise TypeError(
+                "Raw SQL strings are not allowed in DatabaseManager.fetch_all(); "
+                "please use sqlalchemy.text() or repository methods."
             )
-            sql = text(sql)
-
         logger.debug(f"DatabaseManager.fetch_all called: {sql}")
         async with self.engine.connect() as conn:
             result = await conn.execute(sql, params)
@@ -361,11 +371,6 @@ class DatabaseManager:
                     session.add(new_state)
 
 
-# ==========================================
-# グローバルDB取得
-# ==========================================
-
-
 def init_db(db_path: str, force_create_all: bool = False):
     """データベースのマイグレーションを実行。テスト時のみ force_create_all=True で直接作成可能。"""
     from alembic import command
@@ -393,29 +398,37 @@ def init_db(db_path: str, force_create_all: bool = False):
             or os.environ.get("PYTEST_CURRENT_TEST") is not None
             or os.environ.get("KAKU_ENV") == "test"
         )
-
+    
     # In test mode with explicit flag, allow create_all
     if force_create_all or is_test_env:
         from sqlalchemy import create_engine
         from src.backend.database.models import Base
-
+        
         engine = create_engine(sync_url)
         Base.metadata.create_all(engine)
         logger.info("init_db: Base.metadata.create_all executed (test/force mode)")
         return
-
+    
     # Production: ONLY run alembic migrations
     ini_path = BASE_DIR / "alembic.ini"
     logger.debug("init_db alembic ini_path=%s exists=%s", ini_path, ini_path.exists())
     alembic_cfg = Config(str(ini_path))
     alembic_cfg.set_main_option("sqlalchemy.url", sync_url)
-
+    
     try:
         command.upgrade(alembic_cfg, "head")
         logger.info("init_db: alembic command.upgrade('head') executed successfully")
     except Exception as e:
         logger.error(f"Alembic upgrade failed: {e}")
         raise
+
+
+# ==========================================
+# グローバルDB取得
+# ==========================================
+
+
+
 
 
 def get_db_manager() -> DatabaseManager:

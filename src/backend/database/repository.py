@@ -5,6 +5,7 @@ database/repository.py - UoWコンテキストを自動解決する DataReposito
 """
 
 from typing import Any
+import inspect
 
 from .core import DatabaseManager
 from .uow_context import current_uow
@@ -32,32 +33,38 @@ class DataRepositoryFacade:
         メソッド呼び出しを動的に解決する。
         各Repository（Book, Plotなど）が持つメソッドであれば、UoWが保持するそのRepositoryに委譲する。
         """
-
         async def wrapper(*args, **kwargs):
             import logging
-
             log = logging.getLogger("debug.uow_flow")
             uow = current_uow.get()
             log.debug(f"Calling {name} - UoW Context: {'Exists' if uow else 'None'}")
+            repo_attrs = [
+                "books",
+                "plots",
+                "chapters",
+                "characters",
+                "branches",
+                "bible",
+                "misc",
+                "rules",
+                "audit",
+                "prompt_versions",
+                "illustrations",
+            ]
             if uow:
                 # 既存のUoWコンテキストがある場合はそれを利用
-                for repo_attr in [
-                    "books",
-                    "plots",
-                    "chapters",
-                    "characters",
-                    "branches",
-                    "bible",
-                    "misc",
-                    "rules",
-                    "audit",
-                    "prompt_versions",
-                    "illustrations",
-                ]:
-                    repo = getattr(uow, repo_attr)
-                    if hasattr(repo, name):
-                        log.debug(f"Resolved {name} via UoW {repo_attr}")
-                        return await getattr(repo, name)(*args, **kwargs)
+                for repo_attr in repo_attrs:
+                    repo = getattr(uow, repo_attr, None)
+                    if repo is not None and hasattr(repo, name):
+                        attr = getattr(repo, name)
+                        if inspect.iscoroutinefunction(attr):
+                            log.debug(f"Resolved {name} via UoW {repo_attr}")
+                            return await attr(*args, **kwargs)
+                        else:
+                            # If it's not a coroutine function, we could return the value directly,
+                            # but the facade is intended for async method calls.
+                            # For safety, we raise AttributeError to avoid returning non-callable.
+                            raise AttributeError(f"DataRepositoryFacade: '{name}' on {repo_attr} is not a coroutine function")
                 raise AttributeError(f"DataRepositoryFacade (UoW mode) has no attribute '{name}'")
             else:
                 # 明示的なUoWがない場合は、単発のトランザクションとしてUoWを自動生成（後方互換）
@@ -67,25 +74,18 @@ class DataRepositoryFacade:
                 from .uow import UnitOfWork
 
                 async with UnitOfWork(self.db) as temp_uow:
-                    for repo_attr in [
-                        "books",
-                        "plots",
-                        "chapters",
-                        "characters",
-                        "branches",
-                        "bible",
-                        "misc",
-                        "rules",
-                        "audit",
-                        "prompt_versions",
-                    ]:
-                        repo = getattr(temp_uow, repo_attr)
-                        if hasattr(repo, name):
-                            log.debug(f"Resolved {name} via Auto-UoW {repo_attr}")
-                            return await getattr(repo, name)(*args, **kwargs)
-                    raise AttributeError(
-                        f"DataRepositoryFacade (Auto mode) has no attribute '{name}'"
-                    )
+                    for repo_attr in repo_attrs:
+                        repo = getattr(temp_uow, repo_attr, None)
+                        if repo is not None and hasattr(repo, name):
+                            attr = getattr(repo, name)
+                            if inspect.iscoroutinefunction(attr):
+                                log.debug(f"Resolved {name} via Auto-UoW {repo_attr}")
+                                return await attr(*args, **kwargs)
+                            else:
+                                raise AttributeError(f"DataRepositoryFacade: '{name}' on {repo_attr} is not a coroutine function")
+                raise AttributeError(
+                    f"DataRepositoryFacade (Auto mode) has no attribute '{name}'"
+                )
 
         return wrapper
 

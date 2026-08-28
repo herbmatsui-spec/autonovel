@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { Term } from '@/components/Term';
+import { getAssociationStrength, NodeId } from '@/lib/usageTracker';
 
 interface StepBarProps {
   bookId: number;
@@ -7,8 +8,10 @@ interface StepBarProps {
   currentTab?: string;
 }
 
-export default function StepBar({ bookId, currentStep, currentTab }: StepBarProps) {
+export default function StepBar({ bookId, currentStep, currentTab: _currentTab }: StepBarProps) {
   const navigate = useNavigate();
+
+
   const steps = [
     { id: 'theme', label: 'テーマ', icon: '🎯' },
     { id: 'outline', label: 'あらすじ', icon: '📖' },
@@ -18,21 +21,41 @@ export default function StepBar({ bookId, currentStep, currentTab }: StepBarProp
   ];
 
   // Define related tabs for each step
-  const stepTabRelations: Record<string, string[]> = {
-    theme: ['style-lab', 'analytics'],
-    outline: ['plots', 'strategy'],
-    write: ['style-lab', 'plots'],
-    finish: ['style-lab', 'analytics'],
-    publish: ['analytics', 'strategy'],
-  };
+  const functionTabs = [
+    { id: 'style-lab', label: '文体ラボ', icon: '🧬' },
+    { id: 'plots', label: 'プロット設計', icon: '📖' },
+    { id: 'analytics', label: '品質＆販促', icon: '📈' },
+    { id: 'audit', label: '品質監査', icon: '⚖️' },
+    { id: 'monitor', label: '進捗モニター', icon: '📡' },
+    { id: 'strategy', label: '戦略分析', icon: '📈' },
+    { id: 'import', label: 'インポート', icon: '📥' },
+  ];
 
   return (
     <div className="flex-shrink-0 w-[200px] bg-[var(--bg-sidebar)] border-r border-[var(--border)] p-4">
       <div className="space-y-2">
         {steps.map((step) => {
           const isCurrentStep = step.id === currentStep;
-          const relatedTabs = stepTabRelations[step.id] || [];
-          const isCurrentTab = currentTab && relatedTabs.includes(currentTab);
+          
+          // Calculate association strengths between this step and each function tab
+          const tabAssociations: Array<{
+            tab: typeof functionTabs[number];
+            strength: number;
+          }> = [];
+          
+          const stepNodeId: NodeId = `step-${step.id}`;
+          
+          functionTabs.forEach((tab) => {
+            const tabNodeId: NodeId = `tab-${tab.id}`;
+            const strength = getAssociationStrength(stepNodeId, tabNodeId);
+            tabAssociations.push({ tab, strength });
+          });
+          
+          // Sort by association strength descending
+          tabAssociations.sort((a, b) => b.strength - a.strength);
+          
+          // Get the top 2 most associated tabs for display
+          const topTabs = tabAssociations.slice(0, 2);
           
           return (
             <button
@@ -47,15 +70,15 @@ export default function StepBar({ bookId, currentStep, currentTab }: StepBarProp
                   ? 'bg-[var(--accent)]/20 text-[var(--accent)]'
                   : 'text-[var(--text-secondary)] hover:bg-[var(--bg-muted)]'
               }`}
-              title={relatedTabs.length > 0 ? `関連タブ: ${relatedTabs.map(t => t).join(', ')}` : undefined}
+              title={topTabs.length > 0 ? `関連タブ: ${topTabs.map(t => `${t.tab.label} (${Math.round(t.strength * 100)}%)`).join(', ')}` : '関連データなし'}
             >
               <div className="flex items-center space-x-2">
                 <span>{step.icon}</span>
                 <Term term={step.label}>{step.label}</Term>
-                {/* Show current tab badge if the current tab is one of the related tabs for this step */}
-                {currentTab && isCurrentStep && relatedTabs.includes(currentTab) && (
+                {/* Show association strength for the most related tab if available */}
+                {topTabs.length > 0 && topTabs[0].strength > 0 && (
                   <span className="text-xs bg-[var(--accent)]/20 text-[var(--accent)] rounded-full px-1.5">
-                    <Term term={currentTab}>{currentTab}</Term>
+                    {Math.round(topTabs[0].strength * 100)}%
                   </span>
                 )}
               </div>

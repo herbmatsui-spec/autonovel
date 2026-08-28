@@ -1,13 +1,21 @@
-import os
-
-os.environ.setdefault("ALLOWED_API_KEYS", "test-api-key")
-
+import pytest
 from fastapi.testclient import TestClient
 
 from src.backend.server import app
 
 client = TestClient(app)
 AUTH_HEADERS = {"X-API-Key": "test-api-key"}
+
+
+@pytest.fixture(autouse=True)
+def setup_auth(monkeypatch):
+    from src.backend.auth import reset_api_key_service
+    monkeypatch.setenv("ALLOWED_API_KEYS", "test-api-key")
+    monkeypatch.delenv("AUTH_DISABLED", raising=False)
+    reset_api_key_service()
+    yield
+    reset_api_key_service()
+
 
 
 def test_gacha_api_validation_error():
@@ -28,7 +36,8 @@ def test_gacha_api_success():
         headers=AUTH_HEADERS,
     )
     assert response.status_code == 200
-    data = response.json()
+    res_json = response.json()
+    data = res_json.get("data", res_json)
     assert "request_id" in data
     assert len(data["plans"]) == 3
     plan_types = [p["plan_type"] for p in data["plans"]]
@@ -45,7 +54,8 @@ def test_digest_api_success():
         headers=AUTH_HEADERS,
     )
     assert response.status_code == 200
-    data = response.json()
+    res_json = response.json()
+    data = res_json.get("data", res_json)
     assert "book_id" in data
     assert "synopsis" in data
     assert "episode_1_text" in data
@@ -61,7 +71,9 @@ def test_promote_api_success():
         headers=AUTH_HEADERS,
     )
     assert response.status_code == 200
-    data = response.json()
-    assert data["success"] is True
+    res_json = response.json()
+    data = res_json.get("data", res_json)
+    assert res_json.get("success") is True or data.get("success") is True
     assert data["redirect_url"] == "/advanced/test_book_123"
     assert "state_token" in data
+

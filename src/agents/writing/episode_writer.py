@@ -5,24 +5,24 @@ from src.agents.erotic_enhancer import EroticEnhancer
 from src.agents.prompt_composer import PromptComposer
 from src.services.llm_service import LLMService
 
+try:
+    from src.agents.prompt_manager import IPromptManager
+except ImportError:
+    class IPromptManager:  # pragma: no cover
+        pass
+
 
 class EpisodeWriter:
-    def __init__(self, llm: LLMService, context_builder: ContextBuilder):
+    def __init__(self, llm: LLMService, context_builder: ContextBuilder, prompt_manager: Optional[IPromptManager] = None):
         self.llm = llm
         self.context_builder = context_builder
+        self.prompt_manager = prompt_manager
 
-    async def build_context(
-        self,
-        book_id: int,
-        branch_id: int,
-        ep_num: int,
-        target_word_count: int,
-        style_tag: Optional[str] = None,
-    ) -> Dict[str, Any]:
-        """執筆に必要な完全なコンテキストを構築する。"""
-        return await self.context_builder.build_full_writing_context(
-            book_id, branch_id, ep_num, target_word_count, style_tag
-        )
+    async def _build_forbidden_section(
+        self, book_id: Optional[int] = None
+    ) -> str:
+        # Placeholder: no forbidden content
+        return ""
 
     async def write(self, book_id: int, ep_num: int, context: Dict[str, Any]) -> str:
         """

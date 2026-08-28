@@ -5,6 +5,8 @@ src/services/episode_writer.py — エピソード執筆サービス
 import logging
 from typing import Any, Dict
 
+from prompts.manager import get_prompt_manager
+
 logger = logging.getLogger(__name__)
 
 
@@ -24,7 +26,7 @@ class EpisodeWriter:
             try:
                 from src.agents.writing import WritingAgent
 
-                self._writing_agent = WritingAgent(prompt_manager=None)
+                self._writing_agent = WritingAgent(prompt_manager=get_prompt_manager())
             except ImportError as e:
                 logger.warning(f"WritingAgent not available: {e}")
                 self._writing_agent = None

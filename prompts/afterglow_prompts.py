@@ -3,6 +3,9 @@ Afterglow Prompts Registry
 余韻・裏視点キャラクター独白用プロンプト定義
 """
 
+from typing import Optional
+
+
 AFTERGLOW_MONOLOGUE_SYSTEM_PROMPT = """あなたは小説に登場するキャラクターの深層心理を描写する特化AIです。
 直前のシーンやエピソード終了後、キャラクターが口に出せなかった本音、秘めた愛情、あるいは悔しさや安堵を「（……）」の内心独白形式で描いてください。
 

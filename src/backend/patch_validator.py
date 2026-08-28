@@ -141,6 +141,15 @@ class PatchValidator:
                                 errors.append(
                                     f"Security Alert: Dangerous function call '{func_name}' detected in config key '{key}'"
                                 )
+                        elif isinstance(node, ast.Constant) and isinstance(node.value, str):
+                            # 文字列リテラル内に危険関数が含まれるかスキャン
+                            literal = node.value.lower()
+                            for df in cls.DANGEROUS_FUNCTIONS:
+                                if df.lower() in literal:
+                                    errors.append(
+                                        f"Security Alert: Dangerous keyword '{df}' found in string literal for config key '{key}'"
+                                    )
+                                    break
                 except SyntaxError:
                     # パースエラーになる場合はコードではないプレーン文字列なので安全
                     pass
@@ -181,15 +190,17 @@ class PatchValidator:
         lower_content = patch_content.lower()
         for kw in malicious_keywords:
             if kw in lower_content:
-                warnings.append(f"Potential prompt injection / override pattern detected: '{kw}'")
+                msg = f"Potential prompt injection / override pattern detected: '{kw}'"
+                warnings.append(msg)
+                errors.append(msg)
 
         # 3. 危険なPythonコードライクな記述の検出
         for df in cls.DANGEROUS_FUNCTIONS:
             # プロンプト内に `import os; os.system(...)` などの記述があるかを正規表現等で警戒
             if df in patch_content:
-                warnings.append(
-                    f"Dangerous function/module keyword '{df}' detected in prompt content"
-                )
+                msg = f"Dangerous function/module keyword '{df}' detected in prompt content"
+                warnings.append(msg)
+                errors.append(msg)
 
         # プロンプトパッチは警告のみとし、重大な破損や明らかな脅威以外は is_safe=True で通すが、警告を結果に残す
         is_safe = len(errors) == 0

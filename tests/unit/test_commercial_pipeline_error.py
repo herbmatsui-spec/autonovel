@@ -9,8 +9,10 @@ import pytest
 from src.backend.workflows.commercial_pipeline import CommercialPipeline, PipelineError
 
 
+@pytest.mark.asyncio
 @patch("src.services.episode_writer.EpisodeWriter.write")
 async def test_generate_content_raises_pipeline_error_on_episode_write(mock_write):
+
     """_generate_content が EpisodeWriter のエラーを PipelineError に変換するか"""
     pipeline = CommercialPipeline()
     dummy_bible = {

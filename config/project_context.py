@@ -114,6 +114,8 @@ class GlobalConfig:
             DeprecationWarning,
             stacklevel=2,
         )
+        getattr(get_settings(), key, None)  # noqa: B018
+        setattr(get_settings(), key, value)
 
     def update(self, **kwargs) -> None:
         warnings.warn(

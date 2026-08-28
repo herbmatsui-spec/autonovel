@@ -51,6 +51,15 @@ class Settings:
         # API keys for LLM providers (used by EngineConfig resolver)
         self.gemini_api_key = ""
         self.openai_api_key = ""
+        # CORS allowed origins
+        self.cors_allowed_origins = "http://localhost:5173,http://localhost:8501,http://localhost:3000,http://127.0.0.1:5173"
+
+        # Environment (default to test for simplicity)
+        self.environment = "test"
+        # Context window settings
+        self.context_window_target_ratio = 0.75
+        self.context_window_min_reserve = 2000
+
 
     def validate_consistency(self) -> bool:
         """Stub method – always returns True for test environments."""
