@@ -12,7 +12,18 @@ from src.backend.server import app
 AUTH_HEADERS = {"X-API-Key": "test-api-key"}
 
 
+@pytest.fixture(autouse=True)
+def setup_auth(monkeypatch):
+    from src.backend.auth import reset_api_key_service
+    monkeypatch.setenv("ALLOWED_API_KEYS", "test-api-key")
+    monkeypatch.delenv("AUTH_DISABLED", raising=False)
+    reset_api_key_service()
+    yield
+    reset_api_key_service()
+
+
 @pytest.mark.asyncio
+
 async def test_produce_novel_endpoint():
     """作品生成エンドポイントのテスト"""
     payload = {
@@ -29,8 +40,10 @@ async def test_produce_novel_endpoint():
         response = await client.post("/api/novel/produce", json=payload, headers=AUTH_HEADERS)
         assert response.status_code == 200
         data = response.json()
-        assert data["status"] == "completed"
-        assert data["project_id"] == 1
+        result = data.get("data", data)
+        assert result["status"] == "completed"
+        assert result["project_id"] == 1
+
 
 
 @pytest.mark.asyncio

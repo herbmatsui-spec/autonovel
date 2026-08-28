@@ -51,6 +51,15 @@ class Settings:
         # API keys for LLM providers (used by EngineConfig resolver)
         self.gemini_api_key = ""
         self.openai_api_key = ""
+        # CORS allowed origins
+        self.cors_allowed_origins = "http://localhost:5173,http://localhost:8501,http://localhost:3000,http://127.0.0.1:5173"
+
+        # Environment (default to test for simplicity)
+        self.environment = "test"
+        # Context window settings
+        self.context_window_target_ratio = 0.75
+        self.context_window_min_reserve = 2000
+
 
     def validate_consistency(self) -> bool:
         """Stub method – always returns True for test environments."""
@@ -77,17 +86,17 @@ class Config:
         self.prompt_cache_max_size = 100  # default cache size
 
 class ConfigManager:
-    """Accessor for a global ``Config`` instance.
-
-    The original project may load settings from files; for tests we provide a
-    static in‑memory instance.
+    """Accessor for a global ``GlobalConfigModel`` instance.
     """
 
-    _config = Config()
+    _instance: Optional[Any] = None
 
     @classmethod
-    def get_config(cls) -> Config:
-        return cls._config
+    def get_config(cls):
+        if cls._instance is None:
+            from schemas.config import GlobalConfigModel
+            cls._instance = GlobalConfigModel.load()
+        return cls._instance
 
 
 def get_settings() -> Settings:
@@ -104,6 +113,9 @@ def reset_settings() -> None:
     This mirrors the behaviour of the original configuration module.
     """
     global _settings_instance
+    _settings_instance = Settings()
+    ConfigManager._instance = None
+
 GlobalConfigModel = Settings
 GlobalConfig = Settings
 _settings_instance = Settings()

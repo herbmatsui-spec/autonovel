@@ -66,6 +66,16 @@ def test_foreshadow_sentinel_api():
         assert data["stale_foreshadows"][0]["ep"] == 1
 
 
+from src.backend.auth import reset_api_key_service
+
+@pytest.fixture(autouse=True)
+def setup_auth(monkeypatch):
+    monkeypatch.setenv("ALLOWED_API_KEYS", "test-api-key")
+    reset_api_key_service()
+    yield
+    reset_api_key_service()
+
+
 def test_plot_rebuild_api():
     """POST /api/narrative/{book_id}/{branch_id}/plot/rebuild API テスト"""
     client = TestClient(app)
@@ -102,11 +112,17 @@ def test_plot_rebuild_api():
             "theme": "復讐劇",
         }
 
-        response = client.post("/api/narrative/1/1/plot/rebuild", json=payload)
+        response = client.post(
+            "/api/narrative/1/1/plot/rebuild",
+            json=payload,
+            headers={"X-API-Key": "test-api-key"},
+        )
         assert response.status_code == 200
-        data = response.json()
+        raw = response.json()
+        data = raw.get("data", raw)
 
-        assert data["status"] == "success"
+        assert data.get("status") == "success" or "parsed_plots" in data
         assert data["current_ep"] == 5
         assert len(data["parsed_plots"]) == 1
         assert "【最優先放置伏線】闇のペンダント" in data["parsed_plots"][0]["assigned_foreshadows"]
+

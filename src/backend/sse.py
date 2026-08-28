@@ -1,10 +1,10 @@
 import asyncio
 import json
 import logging
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Optional
 from fastapi import Request
 
-from src.backend.redis_util import get_redis_client
+from src.backend.redis_util import get_redis_client, get_async_redis_client
 
 logger = logging.getLogger(__name__)
 
@@ -17,16 +17,16 @@ async def task_event_generator(task_id: str, request: Request, last_event_id: st
     """
     redis_client = get_redis_client()
 
-    if redis_client is not None:
+    async_redis = get_async_redis_client()
+    if async_redis is not None:
         try:
-            # 既に保存されている現在のステータスを最初に送信
-            initial_state = redis_client.get(f"task_status:{task_id}")
+            # Initial task state (may be in Redis or DB fallback)
+            initial_state = await async_redis.get(f"task_status:{task_id}")
             if not initial_state:
+                # Fallback to DB if not present in Redis
                 from sqlalchemy import select
-
                 from src.backend.database.models import InternalState
                 from src.core.container import AppContainer
-
                 db = AppContainer.db()
                 try:
                     async with db.get_session() as session:
@@ -41,51 +41,45 @@ async def task_event_generator(task_id: str, request: Request, last_event_id: st
                     logger.error(f"[SSE] DB check failed for task {task_id}: {db_err}")
 
             if initial_state:
-                # Decode and parse initial state JSON
                 state_json = initial_state.decode('utf-8') if isinstance(initial_state, bytes) else initial_state
                 state_data = json.loads(state_json)
-                # Determine event ID (defaults to 0 if missing)
                 event_id = state_data.get("event_id", 0)
-                # Send only if client does not have this or newer event
-                if last_event_id is None or int(event_id) > int(last_event_id):
+                try:
+                    last_event_id_int = int(last_event_id) if last_event_id is not None else -1
+                except ValueError:
+                    last_event_id_int = -1
+                if last_event_id is None or event_id > last_event_id_int:
                     yield f"id: {event_id}\n" + f"data: {state_json}\n\n"
                 if not state_data.get("is_running", True):
-                    # タスクが完了している場合はストリーム終了
                     return
             else:
                 err_state = {"is_running": False, "message": "タスクが見つかりません", "logs": []}
                 yield f"data: {json.dumps(err_state, ensure_ascii=False)}\n\n"
                 return
 
-            pubsub = redis_client.pubsub()
-            pubsub.subscribe(f"task_events:{task_id}")
-            logger.info(f"[SSE] Subscribed to Redis channel task_events:{task_id}")
+            pubsub = async_redis.pubsub()
+            await pubsub.subscribe(f"task_events:{task_id}")
+            logger.info(f"[SSE] Subscribed to async Redis channel task_events:{task_id}")
 
-            try:
-                while True:
-                    if await request.is_disconnected():
+            while True:
+                if await request.is_disconnected():
+                    break
+                message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
+                if message and message["type"] == "message":
+                    data = message["data"]
+                    decoded_data = data.decode("utf-8") if isinstance(data, bytes) else data
+                    state = json.loads(decoded_data)
+                    event_id = state.get("event_id", 0)
+                    yield f"id: {event_id}\n" + f"data: {decoded_data}\n\n"
+                    if not state.get("is_running", True):
+                        logger.info(f"[SSE] Task {task_id} completed. Closing async Redis stream.")
                         break
-                    # Redisの非ブロッキング取得
-                    message = pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
-                    if message and message["type"] == "message":
-                        data = message["data"]
-                        decoded_data = data.decode("utf-8") if isinstance(data, bytes) else data
-                        # Decode JSON to extract event_id
-                        state = json.loads(decoded_data)
-                        event_id = state.get("event_id", 0)
-                        yield f"id: {event_id}\n" + f"data: {decoded_data}\n\n"
-
-                        # 進捗イベントの終了判定
-                        if not state.get("is_running", True):
-                            logger.info(f"[SSE] Task {task_id} completed. Closing Redis stream.")
-                            break
-                    await asyncio.sleep(0.1)
-            finally:
-                pubsub.unsubscribe(f"task_events:{task_id}")
-                pubsub.close()
+                await asyncio.sleep(0.1)
+            await pubsub.unsubscribe(f"task_events:{task_id}")
+            await pubsub.close()
             return
         except Exception as e:
-            logger.error(f"[SSE] Redis subscription failed ({e}). Falling back to SQLite polling.")
+            logger.error(f"[SSE] Async Redis subscription failed ({e}). Falling back to SQLite polling.")
 
     # SQLiteポーリングフォールバック
     async for event in _sqlite_polling_fallback(task_id, last_event_id=last_event_id, request=request):
@@ -134,7 +128,11 @@ async def _sqlite_polling_fallback(task_id: str, request: Request, last_event_id
                         state = json.loads(val)
                         event_id = state.get("event_id", 0)
                         # Filter based on last_event_id
-                        if last_event_id is None or int(event_id) > int(last_event_id):
+                        try:
+                            last_event_id_int = int(last_event_id) if last_event_id is not None else -1
+                        except ValueError:
+                            last_event_id_int = -1
+                        if last_event_id is None or event_id > last_event_id_int:
                             yield f"id: {event_id}\n" + f"data: {val}\n\n"
                         last_val = val
 

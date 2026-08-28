@@ -7,14 +7,10 @@ prompts/manager.py の build_early_entertainment_check_prompt の単体テスト
 from prompts.manager import PromptManager
 
 
-class DummyPromptManager(PromptManager):
-    def __init__(self):
-        pass
-
-
 class TestEarlyEntertainmentPrompt:
     def setup_method(self):
-        self.pm = DummyPromptManager()
+        self.pm = PromptManager()
+
 
     def test_contains_quality_ignore_instruction(self):
         import asyncio

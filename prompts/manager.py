@@ -576,3 +576,6 @@ class PromptManager:
 
 def get_prompt_manager():
     return PromptManager()
+
+# Global singleton instance for backward compatibility
+prompt_manager = PromptManager()

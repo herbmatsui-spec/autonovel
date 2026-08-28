@@ -527,7 +527,26 @@ class WritingPromptBuilder:
             "villain_instruction.j2", context_dict, book_id=book_id
         )
 
-    async def build_refinement_prompt(
+    async def _build_forbidden_section(
+        self, book_id: Optional[int] = None
+    ) -> str:
+        # Placeholder: no forbidden content
+        return ""
+
+    async def _build_hook_strategy_section(self, book_id: Optional[int] = None) -> str:
+        return await self.registry.render_async("hook_strategy_section.j2", book_id=book_id)
+
+    async def _build_assertion_section(
+        self, constraints: List[Any], book_id: Optional[int] = None
+    ) -> str:
+        if not constraints:
+            return ""
+        return await self.registry.render_async(
+            "assertion_section.j2", constraints=constraints, book_id=book_id
+        )
+
+
+    async def _build_refinement_prompt(
         self,
         content: str,
         style_key: str,

@@ -19,6 +19,8 @@ const PlotsTab = lazy(() => import('./tabs/PlotsTab'));
 const AnalyticsTab = lazy(() => import('./tabs/AnalyticsTab'));
 // Import the tab bar component
 import BookTabBar from './BookTabBar';
+// Import usage tracker
+import { recordTransition, NodeId } from '@/lib/usageTracker';
 // Add more tabs as needed
 
 export default function BookWorkspace() {
@@ -57,16 +59,30 @@ export default function BookWorkspace() {
   // Sync step from URL to workspace store (only if no tab is specified, to avoid overriding step when viewing a tab)
   useEffect(() => {
     if (stepParam && !tabParam) {
+      const previousStep = currentStep;
       setCurrentStep(stepParam);
+      // Record transition from previous step to new step
+      if (previousStep && previousStep !== stepParam) {
+        const fromNode: NodeId = `step-${previousStep}`;
+        const toNode: NodeId = `step-${stepParam}`;
+        recordTransition(fromNode, toNode);
+      }
     }
   }, [stepParam, tabParam, setCurrentStep]);
 
   // When step changes in store, update URL (only if no tab is specified)
   useEffect(() => {
     if (currentStep && bookId && !isNaN(bookId) && bookId > 0 && !tabParam) {
+      const previousStepParam = stepParam;
       navigate(`/book/${bookId}/${currentStep}`, { replace: true });
+      // Record transition from previous step to new step
+      if (previousStepParam && previousStepParam !== currentStep) {
+        const fromNode: NodeId = `step-${previousStepParam}`;
+        const toNode: NodeId = `step-${currentStep}`;
+        recordTransition(fromNode, toNode);
+      }
     }
-  }, [currentStep, bookId, navigate]);
+  }, [currentStep, bookId, navigate, stepParam, tabParam]);
 
   // Determine step to display (fallback to theme)
   const displayStep = stepParam || currentStep || 'theme';
@@ -93,11 +109,11 @@ export default function BookWorkspace() {
   const TabComponent = () => {
     switch (tabParam) {
       case 'style-lab':
-        return <StyleLabTab bookId={bookId} />;
+        return <StyleLabTab />;
       case 'plots':
-        return <PlotsTab bookId={bookId} />;
+        return <PlotsTab />;
       case 'analytics':
-        return <AnalyticsTab bookId={bookId} />;
+        return <AnalyticsTab />;
       default:
         return <div>Unknown tab</div>;
     }
@@ -106,6 +122,20 @@ export default function BookWorkspace() {
   // Handler for changing tab
   const handleTabChange = (tabId: string) => {
     navigate(`/book/${bookId}/${displayStep}/${tabId}`, { replace: true });
+    // Record transition from previous tab to new tab (if we were viewing a tab)
+    // or from step to tab (if we were viewing a step)
+
+    if (tabParam) {
+      // Transition from tab to tab
+      const fromNode: NodeId = `tab-${tabParam}`;
+      const toNode: NodeId = `tab-${tabId}`;
+      recordTransition(fromNode, toNode);
+    } else {
+      // Transition from step to tab
+      const fromNode: NodeId = `step-${displayStep}`;
+      const toNode: NodeId = `tab-${tabId}`;
+      recordTransition(fromNode, toNode);
+    }
   };
 
   return (

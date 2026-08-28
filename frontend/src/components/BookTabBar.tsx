@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { Term } from '@/components/Term';
+import { recordTransition, NodeId } from '@/lib/usageTracker';
 
 interface BookTabBarProps {
   bookId: number;
@@ -24,6 +25,11 @@ export default function BookTabBar({ bookId, currentStep, currentTab, onTabChang
     onTabChange(tabId);
     // Update URL to include the tab, keeping the current step
     navigate(`/book/${bookId}/${currentStep}/${tabId}`, { replace: true });
+    
+    // Record transition
+    const fromNode: NodeId = currentTab ? `tab-${currentTab}` : `step-${currentStep}`;
+    const toNode: NodeId = `tab-${tabId}`;
+    recordTransition(fromNode, toNode);
   };
 
   return (

@@ -201,14 +201,28 @@ class PromptRegistry:
         return {}, source
 
 
-    def _prepare_context(self, context: Union[dict[str, Any], PromptContext]) -> dict[str, Any]:
-        """PydanticモデルまたはdictをJinja2用のdictに変換。"""
-        if isinstance(context, PromptContext):
-            return context.model_dump()
-        return context
+    def _prepare_context(
+        self, context: Optional[Union[dict[str, Any], PromptContext]] = None, kwargs: Optional[dict[str, Any]] = None
+    ) -> dict[str, Any]:
+        """PydanticモデルまたはdictをJinja2用のdictに変換し、kwargsをマージ。"""
+        if context is None:
+            ctx = {}
+        elif isinstance(context, PromptContext):
+            ctx = context.model_dump()
+        elif isinstance(context, dict):
+            ctx = dict(context)
+        else:
+            ctx = {}
+        if kwargs:
+            ctx.update(kwargs)
+        return ctx
 
     def render(
-        self, template_name: str, context: Union[dict[str, Any], PromptContext], book_id: Optional[BookId] = None
+        self,
+        template_name: str,
+        context: Optional[Union[dict[str, Any], PromptContext]] = None,
+        book_id: Optional[BookId] = None,
+        **kwargs: Any,
     ) -> str:
         """同期レンダリング (DB override は無視される)"""
         # 拡張子補正
@@ -219,7 +233,7 @@ class PromptRegistry:
         ):
             template_name = f"{template_name}.j2"
 
-        ctx = self._prepare_context(context)
+        ctx = self._prepare_context(context, kwargs)
 
         # キャッシュから pure_template を取得してコンパイルコストを削減
         if template_name in self._template_cache:
@@ -261,7 +275,11 @@ class PromptRegistry:
             raise
 
     async def render_async(
-        self, template_name: str, context: Union[dict[str, Any], PromptContext], book_id: Optional[BookId] = None
+        self,
+        template_name: str,
+        context: Optional[Union[dict[str, Any], PromptContext]] = None,
+        book_id: Optional[BookId] = None,
+        **kwargs: Any,
     ) -> str:
         """
         非同期レンダリング。DB上の最新最適化プロンプトを優先的に適用する。
@@ -274,7 +292,8 @@ class PromptRegistry:
         ):
             template_name = f"{template_name}.j2"
 
-        ctx = self._prepare_context(context)
+        ctx = self._prepare_context(context, kwargs)
+
 
         source = None
         if book_id and self.db_manager:

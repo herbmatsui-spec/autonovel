@@ -1,8 +1,10 @@
+import { useNavigate } from 'react-router-dom';
 import { AnalyticsTab } from '@/components/tabs/AnalyticsTab';
 import { StrategyTab } from '@/components/tabs/StrategyTab';
 import ContextActionBar from '@/components/ContextActionBar';
 
 export function PublishStep(_props: { bookId?: number; step?: string } = {}) {
+  const navigate = useNavigate();
   const { bookId, step } = _props;
   const currentStep = step || 'publish';
   
@@ -11,19 +13,19 @@ export function PublishStep(_props: { bookId?: number; step?: string } = {}) {
       label: 'スタイルラボで最終確認',
       icon: '🧬',
       tab: 'style-lab',
-      onClick: (bookId, currentStep) => {
-        if (bookId) {
-          navigate(`/book/${bookId}/${currentStep}/style-lab`, { replace: true });
+      onClick: (bId: number, cStep: string) => {
+        if (bId) {
+          navigate(`/book/${bId}/${cStep}/style-lab`, { replace: true });
         }
       }
     },
     {
       label: '配信チャネルを設定',
       icon: '⚙️',
-      tab: 'analytics', // Using analytics for now, but we might want a distribution tab
-      onClick: (bookId, currentStep) => {
-        if (bookId) {
-          navigate(`/book/${bookId}/${currentStep}/analytics`, { replace: true });
+      tab: 'analytics',
+      onClick: (bId: number, cStep: string) => {
+        if (bId) {
+          navigate(`/book/${bId}/${cStep}/analytics`, { replace: true });
         }
       }
     }
@@ -38,9 +40,11 @@ export function PublishStep(_props: { bookId?: number; step?: string } = {}) {
         <AnalyticsTab />
         <StrategyTab />
       </div>
-      <ContextActionBar bookId={bookId} currentStep={currentStep} suggestedActions={suggestedActions} />
+      {bookId !== undefined && (
+        <ContextActionBar bookId={bookId} currentStep={currentStep} suggestedActions={suggestedActions} />
+      )}
     </div>
   );
 }
 
-export default PublishStep;
+export default PublishStep;

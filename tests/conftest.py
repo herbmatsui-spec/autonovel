@@ -63,6 +63,28 @@ async def real_db_manager():
 
 @pytest.fixture
 def mock_llm():
+    from tests.mocks.mock_llm import MockGeminiApiClient
+    return MockGeminiApiClient()
+
+# ---------------------------------------------------------------------------
+# RedisCacheService のテスト用モック
+# ---------------------------------------------------------------------------
+from unittest.mock import AsyncMock
+
+class MockRedisCacheService:
+    """RedisCacheService の簡易モック。
+    すべてのメソッドは AsyncMock を利用し、実際の Redis 接続は行わない。
+    必要に応じて属性や戻り値を個別テストで設定できる。
+    """
+    def __init__(self, *args, **kwargs):
+        self._client = AsyncMock()
+        self._pool = None
+
+# pytest の自動適用 (autouse) で全テストに適用
+@pytest.fixture(autouse=True)
+def mock_redis_service(monkeypatch):
+    monkeypatch.setattr('src.services.redis_cache.RedisCacheService', MockRedisCacheService)
+    return MockRedisCacheService
     """
     統合テスト用の LLM モックを提供する。
     MockGeminiApiClient インスタンスを返し、レスポンスを事前定義できる。

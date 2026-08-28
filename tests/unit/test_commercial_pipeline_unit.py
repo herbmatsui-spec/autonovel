@@ -32,16 +32,19 @@ async def test_pipeline_retry_decorator_success():
 @pytest.mark.asyncio
 async def test_pipeline_retry_decorator_exceeds_attempts():
     """retry_decorator should raise PipelineError after max attempts"""
-    pipeline = CommercialPipeline()
+    from src.backend.workflows.commercial_pipeline import async_retry
 
-    async def mock_failing_call(
-        bible: Dict[str, Any], samples: List[Dict[str, Any]], platforms: List[str]
-    ):
+    call_count = 0
+
+    @async_retry(max_attempts=3, base_delay=0.001)
+    async def mock_failing_call():
+        nonlocal call_count
+        call_count += 1
         raise RuntimeError("Transient error")
 
-    with patch.object(pipeline, "_generate_content_async", new=mock_failing_call):
-        with pytest.raises(PipelineError, match="Pipeline step failed after 3 attempts"):
-            await pipeline._generate_content_async({}, [], ["kakuyomu"])
+    with pytest.raises(PipelineError, match="Pipeline step failed after 3 attempts"):
+        await mock_failing_call()
+    assert call_count == 3
 
 
 @pytest.mark.asyncio
@@ -64,7 +67,7 @@ async def test_csv_schedule_creation():
     }
 
     csv_path = pipeline._create_schedule_csv(exports)
-    assert csv_path == "/tmp/commercial_schedule.csv"
+    assert csv_path == pipeline.csv_path
 
     with open(csv_path, "r", encoding="utf-8") as f:
         content = f.read()
@@ -77,9 +80,10 @@ async def test_run_handles_pipeline_error_gracefully():
     """run should catch PipelineError and return error dict"""
     pipeline = CommercialPipeline()
 
-    with patch.object(pipeline, "run", new_value=PipelineError("Test error")):
+    with patch.object(pipeline, "_step_plan_async", side_effect=PipelineError("Test error")):
         result = await pipeline.run({}, [], ["kakuyomu"])
         assert result["error"] == "Test error"
         assert result["selected"] == []
         assert result["exports"] == {}
         assert result["schedule_csv"] is None
+

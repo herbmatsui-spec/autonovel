@@ -164,6 +164,127 @@ class LLMUnrecoverableError(LLMError):
         )
 
 
+class LLMContentFilterError(LLMError):
+    """コンテンツフィルターによる遮断エラー"""
+
+    def __init__(
+        self,
+        message: str = "",
+        original: Optional[Exception] = None,
+        status_code: int = 400,
+        error_code: str = "LLM_CONTENT_FILTER_ERROR",
+        **kwargs,
+    ):
+        super().__init__(
+            message=message,
+            status_code=status_code,
+            error_code=error_code,
+            original=original,
+            **kwargs,
+        )
+
+
+class LLMInvalidRequestError(LLMError):
+    """無効なリクエストエラー"""
+
+    def __init__(
+        self,
+        message: str = "",
+        original: Optional[Exception] = None,
+        status_code: int = 400,
+        error_code: str = "LLM_INVALID_REQUEST_ERROR",
+        **kwargs,
+    ):
+        super().__init__(
+            message=message,
+            status_code=status_code,
+            error_code=error_code,
+            original=original,
+            **kwargs,
+        )
+
+
+class LLMRateLimitError(LLMTemporaryError):
+    """レート制限エラー"""
+
+    def __init__(
+        self,
+        message: str = "",
+        original: Optional[Exception] = None,
+        status_code: int = 429,
+        error_code: str = "LLM_RATE_LIMIT_ERROR",
+        **kwargs,
+    ):
+        super().__init__(
+            message=message,
+            status_code=status_code,
+            error_code=error_code,
+            original=original,
+            **kwargs,
+        )
+
+
+class LLMServerError(LLMError):
+    """LLMサーバー側エラー"""
+
+    def __init__(
+        self,
+        message: str = "",
+        original: Optional[Exception] = None,
+        status_code: int = 500,
+        error_code: str = "LLM_SERVER_ERROR",
+        **kwargs,
+    ):
+        super().__init__(
+            message=message,
+            status_code=status_code,
+            error_code=error_code,
+            original=original,
+            **kwargs,
+        )
+
+
+class LLMTimeoutError(LLMTemporaryError):
+    """タイムアウトエラー"""
+
+    def __init__(
+        self,
+        message: str = "",
+        original: Optional[Exception] = None,
+        status_code: int = 504,
+        error_code: str = "LLM_TIMEOUT_ERROR",
+        **kwargs,
+    ):
+        super().__init__(
+            message=message,
+            status_code=status_code,
+            error_code=error_code,
+            original=original,
+            **kwargs,
+        )
+
+
+class LLMUnknownError(LLMError):
+    """未知のLLMエラー"""
+
+    def __init__(
+        self,
+        message: str = "",
+        original: Optional[Exception] = None,
+        status_code: int = 500,
+        error_code: str = "LLM_UNKNOWN_ERROR",
+        **kwargs,
+    ):
+        super().__init__(
+            message=message,
+            status_code=status_code,
+            error_code=error_code,
+            original=original,
+            **kwargs,
+        )
+
+
+
 class APIError(HegemonyError):
     """API呼び出しエラー"""
 

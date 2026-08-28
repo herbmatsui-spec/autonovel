@@ -7,10 +7,11 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
 from src.backend.database import UnitOfWork
 from src.core.container import AppContainer
+from src.backend.auth import require_api_key
 
 from pydantic import BaseModel, Field
 from src.backend.sse_manager import get_sse_manager
@@ -21,6 +22,7 @@ from src.schemas.ux_schemas import AffinityData
 logger = logging.getLogger(__name__)
 
 from src.backend.router_helpers import workflow_endpoint
+from src.backend.task_helpers import create_task as _create_task
 from src.backend.utils.id_generator import generate_prefixed_id as generate_task_id
 
 router = APIRouter(prefix="/api/narrative", tags=["narrative"])
@@ -66,73 +68,32 @@ async def get_narrative_hub(book_id: int, branch_id: int = 1) -> Dict[str, Any]:
 @router.post("/{book_id}/{branch_id}/affinity/override")
 async def override_affinity(
     book_id: int,
-    branch_id: int,
     req: AffinityOverrideRequest,
+    branch_id: int = 1,
+    api_key: str = Depends(require_api_key),
 ) -> Dict[str, Any]:
     """読者/作者のリアルタイム介入（HITL）によりキャラクター好感度・心理状態を動的に上書きする"""
     try:
-        async with UnitOfWork(AppContainer.db()) as uow:
-            raw_data = await uow.misc.load_narrative(book_id, branch_id)
-            if raw_data:
-                state = NarrativeState.from_dict(raw_data)
-            else:
-                state = NarrativeState(book_id=book_id, branch_id=branch_id)
+        # Offload processing to background task
+        task_id = generate_task_id("override_affinity")
+        # Initialize task state in DB
+        await _create_task(task_id, "好感度上書きを開始中...", total_steps=1)
+        from src.backend.tasks import run_override_affinity_task
 
-            cname = req.character_name
-            existing = state.affinity_map.get(cname)
-            if not isinstance(existing, AffinityData):
-                if isinstance(existing, dict):
-                    existing_copy = dict(existing)
-                    existing_copy.setdefault("character_name", cname)
-                    try:
-                        existing = AffinityData(**existing_copy)
-                    except Exception:
-                        existing = AffinityData(character_name=cname)
-                elif isinstance(existing, (int, float)):
-                    existing = AffinityData(character_name=cname, affinity_score=float(existing))
-                else:
-                    existing = AffinityData(character_name=cname)
-
-            if req.affinity_score is not None:
-                existing.affinity_score = req.affinity_score
-            if req.trust_score is not None:
-                existing.trust_score = req.trust_score
-            if req.dependency_score is not None:
-                existing.dependency_score = req.dependency_score
-            if req.wariness_score is not None:
-                existing.wariness_score = req.wariness_score
-            if req.current_mood is not None:
-                existing.current_mood = req.current_mood
-            existing.recent_change = 0.0
-
-            state.affinity_map[cname] = existing
-            await uow.misc.save_narrative(book_id, branch_id, state.to_dict())
-
-        # SSEでUIへブロードキャスト通知
-        sse = get_sse_manager()
-        await sse.broadcast(
-            "affinity_overridden",
-            {
-                "book_id": book_id,
-                "branch_id": branch_id,
-                "character_name": cname,
-                "affinity_data": existing.model_dump(),
-                "message": f"{cname} の好感度・心理状態が手動更新されました (好意:{existing.affinity_score}, 状態:{existing.current_mood})",
-            },
+        # Enqueue background task
+        run_override_affinity_task(
+            task_id=task_id,
+            book_id=book_id,
+            branch_id=branch_id,
+            req_data=req.dict(),
+            api_key=api_key,
         )
-
-        return api_success(
-            {
-                "status": "success",
-                "character_name": cname,
-                "affinity_data": existing.model_dump(),
-            },
-            "好感度を上書きしました",
-        )
+        return api_success({"task_id": task_id}, "好感度上書きが開始されました")
     except Exception as e:
         logger.error(f"Failed to override affinity for book {book_id}, branch {branch_id}: {e}")
         raise HTTPException(
-            status_code=500, detail=f"好感度の上書きに失敗しました: {e}"
+            status_code=500,
+            detail=f"好感度の上書きに失敗しました: {e}",
         )
 
 
@@ -206,6 +167,7 @@ async def rebuild_plot_with_foreshadows(
     book_id: int,
     branch_id: int,
     req: PlotRebuildRequest,
+    api_key: str = Depends(require_api_key),
 ) -> Dict[str, Any]:
     """未回収・放置伏線を最優先回収対象として組み込み、次章以降のプロットを再構成する"""
     try:

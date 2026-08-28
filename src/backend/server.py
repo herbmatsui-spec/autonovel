@@ -119,7 +119,20 @@ async def lifespan(app: FastAPI):
             if llm_client and hasattr(llm_client, 'aclose'):
                 await llm_client.aclose()
                 logger.info("LLM クライアントを正常にクローズしました。")
-        except (ConnectionError, TimeoutError, OSError) as e:
+
+            # Redis キャッシュ / レートリミッターのクローズ
+            try:
+                from src.services.redis_cache import close_cache_services
+                await close_cache_services()
+            except Exception as e:
+                logger.warning(f"Redis キャッシュのクローズ中にエラーが発生しました: {e}")
+
+            global _redis_rate_limiter
+            if _redis_rate_limiter and hasattr(_redis_rate_limiter, "redis") and _redis_rate_limiter.redis:
+                if hasattr(_redis_rate_limiter.redis, "close"):
+                    await _redis_rate_limiter.redis.close()
+            logger.info("Redis 接続を正常にクローズしました。")
+        except (ConnectionError, TimeoutError, OSError, Exception) as e:
             logger.error(f"リソース解放中にエラーが発生しました: {e}")
         logger.info("全てのリソースを解放しました。サーバーを終了します。")
 
@@ -210,6 +223,18 @@ async def rate_limit_middleware(request: Request, call_next):
 def configure_cors(app: FastAPI):
     allowed_origins = get_allowed_origins()
     logger.info(f"CORS allowed origins: {allowed_origins}")
+    # Security check: do not allow credentials with wildcard origins
+    if allowed_origins == ["*"] or (len(allowed_origins) == 1 and allowed_origins[0] == "*"):
+        raise ValueError(
+            "CORS configuration error: allow_credentials=True is incompatible with allow_origins=['*']. "
+            "Either set specific origins or set allow_credentials=False."
+        )
+    # Additionally, if any origin is "*" in a list, that's also invalid when credentials are true
+    if "*" in allowed_origins:
+        raise ValueError(
+            "CORS configuration error: allow_credentials=True is incompatible with any origin being '*'. "
+            "Remove wildcard origins when using credentials."
+        )
     app.add_middleware(
         CORSMiddleware,
         allow_origins=allowed_origins,
@@ -360,7 +385,7 @@ async def generate_easy(req: EasyModeRequest, api_key: str = Depends(require_api
             erotic_intensity=req.erotic_intensity,
             trace_id=str(uuid.uuid4()),  # generate a trace ID
         )
-    except (ConnectionError, TimeoutError, OSError, Exception) as e:
+    except Exception as e:
         logger.error(f"Failed to enqueue easy mode task: {e}", exc_info=True)
         progress_state.is_running = False
         progress_state.error = str(e)

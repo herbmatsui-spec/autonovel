@@ -1,6 +1,7 @@
-from typing import Any, Optional
+from typing import Optional, Any
 
 from fastapi import APIRouter, Depends
+from src.models.api_schemas import PatchEditRequest
 from sqlalchemy import select
 
 from config.project_context import GlobalConfig
@@ -113,9 +114,7 @@ async def reject_patch(
 
 @workflow_endpoint("patch_edit")
 @router.post("/{patch_id}/edit")
-async def edit_patch(patch_id: int, req: Any, api_key: str = Depends(require_api_key)):
-    # Note: PatchEditRequest should be imported from api_schemas in the actual final version
-    # For now, we assume it's handled by the request body
+async def edit_patch(patch_id: int, req: PatchEditRequest, api_key: str = Depends(require_api_key)):
     from src.backend.database.uow import UnitOfWork
 
     async with UnitOfWork(AppContainer.db()) as uow:

@@ -193,11 +193,14 @@ def create_series(
 ) -> EasyModePipeline:
     """シリーズ作成エントリーポイント"""
     settings = get_settings()
+    ratio = getattr(settings, "context_window_target_ratio", 0.75)
+
+    min_reserve = getattr(settings, "context_window_min_reserve", 2000)
     config = PipelineConfig(
         genre=genre,
         target_episodes=target_episodes,
         progress_callback=progress_callback,
-        context_window=settings.context_window_target_ratio * 128000,  # Approximate
-        context_window_min_reserve=settings.context_window_min_reserve,
+        context_window=ratio * 128000,  # Approximate
+        context_window_min_reserve=min_reserve,
     )
     return EasyModePipeline(engine, config)

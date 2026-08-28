@@ -54,7 +54,7 @@ async def produce_novel(req: ProduceNovelRequest, api_key: str = Depends(require
             status="completed",
             message="全話生成が完了しました",
             token_usage_estimate=None,
-        ),
+        ).model_dump(),
         "小説制作を開始しました",
     )
 
@@ -101,6 +101,7 @@ async def get_report(project_id: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-    # Report を dict に変換（簡易）
-    report_dict = report.dict()
+    # Report を dict に変換
+    report_dict = report.model_dump() if hasattr(report, "model_dump") else report.dict()
     return NovelReportResponse(report=report_dict)
+

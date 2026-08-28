@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, ValidationError
 
-from config.project_context import GlobalConfigModel
+from schemas.config import GlobalConfigModel
 
 logger = logging.getLogger(__name__)
 
@@ -141,6 +141,15 @@ class PatchValidator:
                                 errors.append(
                                     f"Security Alert: Dangerous function call '{func_name}' detected in config key '{key}'"
                                 )
+                        elif isinstance(node, ast.Constant) and isinstance(node.value, str):
+                            # 文字列リテラル内に危険関数が含まれるかスキャン
+                            literal = node.value.lower()
+                            for df in cls.DANGEROUS_FUNCTIONS:
+                                if df.lower() in literal:
+                                    errors.append(
+                                        f"Security Alert: Dangerous keyword '{df}' found in string literal for config key '{key}'"
+                                    )
+                                    break
                 except SyntaxError:
                     # パースエラーになる場合はコードではないプレーン文字列なので安全
                     pass
@@ -167,7 +176,7 @@ class PatchValidator:
             errors.append("Prompt patch content is empty")
             return ValidationResult(is_safe=False, errors=errors, warnings=warnings)
 
-        # 2. プロンプトインジェクションに代表される悪意あるキーワード検出
+        # 2. プロンプトインジェクションに代表される悪意あるキーワード検出（警告のみ）
         malicious_keywords = [
             "ignore previous instructions",
             "system prompt",
@@ -181,15 +190,14 @@ class PatchValidator:
         lower_content = patch_content.lower()
         for kw in malicious_keywords:
             if kw in lower_content:
-                warnings.append(f"Potential prompt injection / override pattern detected: '{kw}'")
+                msg = f"Potential prompt injection / override pattern detected: '{kw}'"
+                warnings.append(msg)
 
-        # 3. 危険なPythonコードライクな記述の検出
+        # 3. 危険なPythonコードライクな記述の検出（致命的エラー）
         for df in cls.DANGEROUS_FUNCTIONS:
-            # プロンプト内に `import os; os.system(...)` などの記述があるかを正規表現等で警戒
             if df in patch_content:
-                warnings.append(
-                    f"Dangerous function/module keyword '{df}' detected in prompt content"
-                )
+                msg = f"Dangerous function/module keyword '{df}' detected in prompt content"
+                errors.append(msg)
 
         # プロンプトパッチは警告のみとし、重大な破損や明らかな脅威以外は is_safe=True で通すが、警告を結果に残す
         is_safe = len(errors) == 0

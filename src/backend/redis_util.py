@@ -2,6 +2,7 @@ import logging
 import os
 
 import redis
+import redis.asyncio as aioredis
 
 logger = logging.getLogger(__name__)
 
@@ -35,3 +36,24 @@ def get_redis_client():
 
 def is_redis_available():
     return get_redis_client() is not None
+
+# Async Redis client handling
+_async_redis_client = None
+_async_redis_available = None
+
+def get_async_redis_client():
+    global _async_redis_client, _async_redis_available
+    if _async_redis_available is False:
+        return None
+    if _async_redis_client is not None:
+        return _async_redis_client
+    try:
+        client = aioredis.from_url(REDIS_URL)
+        _async_redis_client = client
+        _async_redis_available = True
+        logger.info("Successfully created async Redis client.")
+        return _async_redis_client
+    except Exception as e:
+        _async_redis_available = False
+        logger.warning(f"Async Redis client unavailable: {e}")
+        return None
