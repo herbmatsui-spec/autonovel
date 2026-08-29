@@ -58,6 +58,7 @@ class Book(Base):
     cumulative_cost = Column(Float, default=0.0)
     sanctuary_integrity = Column(Integer, default=100)
     current_branch_id = Column(Integer, nullable=True)
+    axis_lock_flags = Column(Text, default="{}")
 
 
 class Branch(Base):
@@ -215,6 +216,45 @@ class Foreshadowing(Base):
 
     __table_args__ = (
         UniqueConstraint("book_id", "branch_id", "ep_num", "type", name="uq_foreshadowing"),
+    )
+
+
+class StoryNode(Base):
+    __tablename__ = "story_nodes"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    book_id = Column(Integer, ForeignKey("books.id", ondelete="CASCADE"), nullable=False)
+    kind = Column(String(50), nullable=False)  # premise, act, episode, scene, character, foreshadow
+    label = Column(String(500), nullable=False)
+    ep_num = Column(Integer, nullable=True)
+    character_id = Column(Integer, ForeignKey("characters.id", ondelete="SET NULL"), nullable=True)
+    x = Column(Float, default=0.0)
+    y = Column(Float, default=0.0)
+    data = Column(Text, default="{}")  # JSON
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+    __table_args__ = (
+        Index("idx_story_nodes_book_id", "book_id"),
+        Index("idx_story_nodes_kind", "kind"),
+    )
+
+
+class StoryEdge(Base):
+    __tablename__ = "story_edges"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    book_id = Column(Integer, ForeignKey("books.id", ondelete="CASCADE"), nullable=False)
+    source = Column(String(100), nullable=False)
+    target = Column(String(100), nullable=False)
+    kind = Column(String(50), nullable=False)  # flow, part_of, pov, dependency, relationship
+    data = Column(Text, default="{}")  # JSON
+    created_at = Column(DateTime, server_default=func.now())
+
+    __table_args__ = (
+        Index("idx_story_edges_book_id", "book_id"),
+        Index("idx_story_edges_source", "source"),
+        Index("idx_story_edges_target", "target"),
     )
 
 

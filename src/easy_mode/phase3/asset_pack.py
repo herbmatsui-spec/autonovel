@@ -473,15 +473,15 @@ class AssetPackGenerator:
             output_path = output_dir / f"{sanitize_filename(series.title)}.{fmt}"
             try:
                 if fmt == "epub":
-                    result = self.ebook_exporter.export_epub(
+                    self.ebook_exporter.export_epub(
                         series, output_path, cover_image_path=cover_path, **kwargs
                     )
                 elif fmt == "pdf":
-                    result = self.ebook_exporter.export_pdf(
+                    self.ebook_exporter.export_pdf(
                         series, output_path, cover_image_path=cover_path, **kwargs
                     )
                 elif fmt == "mobi":
-                    result = self.ebook_exporter.export_mobi(
+                    self.ebook_exporter.export_mobi(
                         series, output_path, cover_image_path=cover_path, **kwargs
                     )
                 else:

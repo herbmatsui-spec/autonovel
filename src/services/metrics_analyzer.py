@@ -1,6 +1,5 @@
 import logging
 import math
-import re
 from typing import List, Optional
 
 from src.schemas.ux_schemas import HeatmapData, HeatmapPoint

@@ -170,7 +170,7 @@ class HegemonyGenerator(KernelBase):
     ) -> str:
         """章を生成"""
         # プロンプト作成
-        prompt = self._build_chapter_prompt(
+        self._build_chapter_prompt(
             chapter_number, plot_point, characters, style_preferences
         )
         # 実際の生成（ダミー実装）

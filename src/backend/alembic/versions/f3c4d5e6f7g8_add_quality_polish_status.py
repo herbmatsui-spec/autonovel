@@ -9,7 +9,6 @@ Create Date: 2026-07-09 00:02:00.000000
 from typing import Sequence, Union
 
 import sqlalchemy as sa
-
 from alembic import op
 
 revision: str = "f3c4d5e6f7g8_add_quality_polish_status"

@@ -3,6 +3,7 @@
 from datetime import datetime, timezone
 from typing import Any, Dict
 
+
 def api_success(data: Any = None, message: str = "成功") -> Dict[str, Any]:
     """統一成功レスポンス"""
     return {
@@ -14,6 +15,7 @@ def api_success(data: Any = None, message: str = "成功") -> Dict[str, Any]:
 
 
 from fastapi.responses import JSONResponse
+
 
 def api_error(error_code: str, message: str, detail: Any = None, status_code: int = 400) -> JSONResponse:
     """統一エラーレスポンス"""

@@ -181,7 +181,6 @@ class OpenAIApiClient(BaseLLMClient):
         nsfw_mode: bool = False,
     ) -> Tuple[str, Any]:
         """テキスト生成。戻り値は (text, usage)。"""
-        import openai
 
         retry_state = retry_state or RetryState()
         current_temp = retry_state.temp if retry_state else temp

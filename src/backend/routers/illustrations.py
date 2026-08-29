@@ -1,14 +1,12 @@
-import os
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
+
 from src.backend.auth import require_api_key
-from src.core.container import AppContainer
-
+from src.backend.response_helpers import api_success
 from src.backend.router_helpers import workflow_endpoint
-from src.backend.utils.id_generator import generate_prefixed_id as generate_task_id
-
+from src.core.container import AppContainer
 from src.models.illustration import (
     IllustrationModel,
     IllustrationRequest,
@@ -16,7 +14,6 @@ from src.models.illustration import (
     SafetyLevel,
 )
 from src.shared.utils import StatusReporter
-from src.backend.response_helpers import api_success
 
 router = APIRouter(prefix="/api/illustrations", tags=["illustrations"])
 

@@ -270,7 +270,7 @@ async def self_audit_node(state: WritingGraphState, *, llm_provider: Any = None)
             for f in assigned_foreshadows
         ]
         foreshadow_audit_str = (
-            f"\n5. 以下の必須回収伏線が本文中で適切に描写・回収または進展されているか:\n"
+            "\n5. 以下の必須回収伏線が本文中で適切に描写・回収または進展されているか:\n"
             + "\n".join(f_lines)
         )
 

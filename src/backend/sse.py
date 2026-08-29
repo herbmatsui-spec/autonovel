@@ -1,10 +1,11 @@
 import asyncio
 import json
 import logging
-from typing import AsyncGenerator, Optional
+from typing import AsyncGenerator
+
 from fastapi import Request
 
-from src.backend.redis_util import get_redis_client, get_async_redis_client
+from src.backend.redis_util import get_async_redis_client, get_redis_client
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +16,7 @@ async def task_event_generator(task_id: str, request: Request, last_event_id: st
     1. Redisが利用可能な場合: Redis Pub/Sub を使ってプッシュ配信。
     2. Redisが利用不可の場合: 1秒ポーリングでデータベースから状態を読み出すフォールバック。
     """
-    redis_client = get_redis_client()
+    get_redis_client()
 
     async_redis = get_async_redis_client()
     if async_redis is not None:
@@ -25,6 +26,7 @@ async def task_event_generator(task_id: str, request: Request, last_event_id: st
             if not initial_state:
                 # Fallback to DB if not present in Redis
                 from sqlalchemy import select
+
                 from src.backend.database.models import InternalState
                 from src.core.container import AppContainer
                 db = AppContainer.db()
@@ -106,7 +108,7 @@ async def _sqlite_polling_fallback(task_id: str, request: Request, last_event_id
             row = result.scalar_one_or_none()
             if not row:
                 err_state = {"is_running": False, "message": "タスクが見つかりません", "logs": [], "event_id": 0}
-                yield f"id: 0\n" + f"data: {json.dumps(err_state, ensure_ascii=False)}\n\n"
+                yield "id: 0\n" + f"data: {json.dumps(err_state, ensure_ascii=False)}\n\n"
                 return
     except Exception as e:
         logger.error(f"[SSE] Database initial task check error: {e}")

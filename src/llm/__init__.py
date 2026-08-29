@@ -12,17 +12,16 @@ warnings.warn(
 
 # Re-export for backward compatibility
 from src.core.llm.providers import (
-    LLMProvider,
-    LLMResponse,
     GeminiProvider,
-    OpenAIProvider,
+    LLMProvider,
     LLMProviderFactory,
+    LLMResponse,
+    OpenAIProvider,
 )
-
 from src.core.llm.router import (
     is_openai_compatible,
-    select_model,
     resolve_model,
+    select_model,
 )
 
 __all__ = [

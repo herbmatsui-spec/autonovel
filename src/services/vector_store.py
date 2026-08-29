@@ -539,7 +539,7 @@ class ChromaVectorStore(BaseVectorStore):
             bm25_data = self._bm25_indexes[collection_name]
             bm25 = bm25_data["bm25"]
             doc_ids = bm25_data["doc_ids"]
-            corpus_tokens = bm25_data["corpus_tokens"]
+            bm25_data["corpus_tokens"]
             documents = bm25_data["documents"]
 
             # クエリをトークン化

@@ -2,7 +2,8 @@
 AppContainer2 - アプリケーション層のDIコンテナ (後方互換名: AppContainer)
 InfraContainer を継承し、エージェント・サービス・エンジンを定義する。
 """
-
+# mypy: ignore-errors
+from __future__ import annotations
 import logging
 import os
 from typing import TYPE_CHECKING
@@ -17,7 +18,34 @@ from src.backend.engine_deps import EngineDeps
 from src.core.container.infra import InfraContainer
 
 if TYPE_CHECKING:
-    pass
+    from src.core.interfaces import (
+        ICritiqueAgent,
+        ILogicalAuditor,
+        IMarketingAgent,
+        INarrativeController,
+        IPlanningAgent,
+        IPlotAgent,
+        IPlotExpander,
+        IStyleRagManager,
+        ITextFormatter,
+        IWorldBibleGenerator,
+        IWritingAgent,
+    )
+else:
+    from src.core.interfaces import (
+        ICritiqueAgent,
+        ILogicalAuditor,
+        IMarketingAgent,
+        INarrativeController,
+        IPlanningAgent,
+        IPlotAgent,
+        IPlotExpander,
+        IStyleRagManager,
+        ITextFormatter,
+        IWorldBibleGenerator,
+        IWritingAgent,
+    )
+
 
 logger = logging.getLogger(__name__)
 
@@ -99,13 +127,13 @@ class AppContainer2(InfraContainer):
         llm=llm,
         ctx_mgr=ctx_mgr,
     )
-    marketing = providers.Singleton["MarketingAgent"](
+    marketing = providers.Singleton[IMarketingAgent](
         "src.agents.MarketingAgent",
         repo=repo,
         prompt_manager=pm,
         llm=llm,
     )
-    bible_generator = providers.Singleton["WorldBibleGenerator"](
+    bible_generator = providers.Singleton[IWorldBibleGenerator](
         "src.services.bible_service.WorldBibleGenerator",
         repo=repo,
         llm=llm,
@@ -114,32 +142,32 @@ class AppContainer2(InfraContainer):
         marketing=marketing,
         auditor=auditor,
     )
-    plot_expander = providers.Singleton["PlotAgent"](
+    plot_expander = providers.Singleton[IPlotAgent](
         "src.agents.plot.PlotAgent",
         repo=repo,
         pm=pm,
         generate_json=llm.provided.generate_json,
-        plot_expander=providers.Singleton["DefaultPlotExpander"](
+        plot_expander=providers.Singleton[IPlotExpander](
             "src.services.default_plot_expander.DefaultPlotExpander",
             repo=repo,
             pm=pm,
             llm=llm,
         ),
     )
-    planner = providers.Singleton["PlanningAgent"](
+    planner = providers.Singleton[IPlanningAgent](
         "src.agents.PlanningAgent",
         repo=repo,
         llm=llm,
         prompt_manager=pm,
     )
-    validator = providers.Singleton["LogicalAuditor"](
+    validator = providers.Singleton[ILogicalAuditor](
         "src.agents.audit.LogicalAuditor",
         repo=repo,
         pm=pm,
         llm=llm,
         ctx_mgr=ctx_mgr,
     )
-    narrative = providers.Singleton["NarrativeController"](
+    narrative = providers.Singleton[INarrativeController](
         "src.backend.engine_narrative.NarrativeController",
         repo=repo,
         pm=pm,
@@ -148,28 +176,28 @@ class AppContainer2(InfraContainer):
         logic_validator=validator,
         auditor=auditor,
     )
-    critique = providers.Singleton["CritiqueAgent"](
+    critique = providers.Singleton[ICritiqueAgent](
         "src.backend.engine_critique.CritiqueAgent",
         repo=repo,
         pm=pm,
         generate_json=llm.provided.generate_json,
     )
-    style_rag = providers.Singleton["StyleRagManager"](
+    style_rag = providers.Singleton[IStyleRagManager](
         "src.backend.engine_style_rag.StyleRagManager",
         client=genai_client,
         repo=repo,
     )
-    writer = providers.Singleton["WritingAgent"](
-        "src.agents.WritingAgent",
-        repo=repo,
-        llm=llm,
-        prompt_manager=pm,
-        style_rag=style_rag,
-        plot_expander=plot_expander,
-    )
-    formatter = providers.Singleton["TextFormatter"](
-        "src.backend.sanitizer.TextFormatter",
-    )
+    writer = providers.Singleton[IWritingAgent](
+    "src.agents.WritingAgent",
+    repo=repo,
+    llm=llm,
+    prompt_manager=pm,
+    style_rag=style_rag,
+    plot_expander=plot_expander,
+)
+    formatter = providers.Singleton[ITextFormatter](
+            "src.backend.sanitizer.TextFormatter",
+        )
     engine_deps = providers.Factory(
         EngineDeps,
         planner=planner,
@@ -230,5 +258,8 @@ class AppContainer2(InfraContainer):
     )
     sse_manager = providers.Singleton["SSEManager"](
         "src.backend.sse_manager.get_sse_manager",
+    )
+    engine_service = providers.Factory["EngineService"](
+        "src.engine_service.EngineService",
     )
 

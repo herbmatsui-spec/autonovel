@@ -6,9 +6,24 @@ exception types and manual error conditions.
 """
 
 from datetime import datetime
+import logging
 from typing import Any, Dict, Optional
 
+from src.core.observability import TraceContext
 from src.models.api_schemas import TaskErrorDetail
+
+
+def log_exception(
+    logger: logging.Logger,
+    msg: str,
+    exc: BaseException,
+    *args,
+) -> None:
+    """trace_id を自動付与して例外をログ出力"""
+    trace_id = TraceContext.get_trace_id()
+    extra = {"trace_id": trace_id} if trace_id else {}
+    logger.error("%s: %s", msg, exc, exc_info=exc, extra=extra, *args)
+
 
 # ---------------------------------------------------------------------------
 # Helper to build a TaskErrorDetail from explicit arguments.

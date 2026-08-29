@@ -17,6 +17,7 @@ import { lazy } from 'react';
 const StyleLabTab = lazy(() => import('./tabs/StyleLabTab'));
 const PlotsTab = lazy(() => import('./tabs/PlotsTab'));
 const AnalyticsTab = lazy(() => import('./tabs/AnalyticsTab'));
+const StoryCanvasTab = lazy(() => import('./tabs/StoryCanvasTab'));
 // Import the tab bar component
 import BookTabBar from './BookTabBar';
 // Import usage tracker
@@ -29,7 +30,7 @@ export default function BookWorkspace() {
   const { tab: tabParam } = useParams<{ tab: string }>();
   const bookId = Number(bookIdParam);
   const navigate = useNavigate();
-  const { selectedBook, setSelectedBook } = useBookStore();
+  const { selectedBook, selectBook } = useBookStore();
   const { loadBookDetails } = useBookDetails(bookId || null);
   const { currentStep, setCurrentStep } = useWorkspaceStore();
 
@@ -46,7 +47,7 @@ export default function BookWorkspace() {
       // Fetch book metadata (title, genre, etc.)
       getBook(bookId)
         .then((book) => {
-          setSelectedBook(book);
+          selectBook(book);
         })
         .catch((err) => {
           console.error('Failed to fetch book metadata:', err);
@@ -54,7 +55,7 @@ export default function BookWorkspace() {
       // Load related data (plots, chapters, etc.)
       loadBookDetails(bookId);
     }
-  }, [bookId, loadBookDetails, setSelectedBook]);
+  }, [bookId, loadBookDetails, selectBook]);
 
   // Sync step from URL to workspace store (only if no tab is specified, to avoid overriding step when viewing a tab)
   useEffect(() => {
@@ -114,6 +115,8 @@ export default function BookWorkspace() {
         return <PlotsTab />;
       case 'analytics':
         return <AnalyticsTab />;
+      case 'story-canvas':
+        return <StoryCanvasTab />;
       default:
         return <div>Unknown tab</div>;
     }

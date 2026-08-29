@@ -1,10 +1,11 @@
 # agents/planning.py
 import logging
-from typing import Any, Optional
+from typing import Any, Optional, Dict
 
 from src.agents.base import BaseAgent
+from src.core.interfaces import ILLMClient, IPromptManager
+from src.core.errors import AgentResult, handle_error
 from src.models.plot import ArcList
-from src.services.llm_service import LLMService
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +16,10 @@ class PlanningAgent(BaseAgent):
     """
 
     def __init__(
-        self, repo: Any = None, llm: Optional[LLMService] = None, prompt_manager: Any = None
+        self,
+        repo: Any = None,
+        llm: Optional[ILLMClient] = None,
+        prompt_manager: Optional[IPromptManager] = None,
     ):
         super().__init__(repo=repo, llm=llm)
         self.prompt_manager = prompt_manager
@@ -91,6 +95,8 @@ class PlanningAgent(BaseAgent):
                         arc[key] = arc[key] + (start_ep - 1)
         return metadata
 
-    async def run(self, *args, **kwargs):
+    @handle_error(logger_name=__name__)
+    async def run(self, *args, **kwargs) -> AgentResult[Dict[str, Any]]:
         logger.info("PlanningAgent run invoked")
-        return await self.generate_arcs(**kwargs)
+        arcs = await self.generate_arcs(**kwargs)
+        return AgentResult.ok({"arcs": arcs.model_dump()})

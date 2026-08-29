@@ -223,7 +223,7 @@ class WorldBibleGenerator:
                         await self.repo.save_plot(book_id, p.ep_num, p)
 
             async with asyncio.TaskGroup() as tg:
-                tasks = [tg.create_task(_process_batch_item([ep])) for ep in ep_list]
+                [tg.create_task(_process_batch_item([ep])) for ep in ep_list]
             # Wait for all tasks to complete (TaskGroup does this automatically)
 
         return book_id, bible_obj

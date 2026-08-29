@@ -6,6 +6,7 @@ from typing import Any, Callable, Dict, List, Optional, Protocol, Tuple
 
 from src.models.base import GenerateResult
 from src.models.db import BibleDbModel, BookDbModel, ChapterDbModel, CharacterDbModel, PlotDbModel
+from src.models.plot import ArcList, PlotDetail
 
 
 class ILLMClient(Protocol):
@@ -13,7 +14,7 @@ class ILLMClient(Protocol):
 
     async def generate_json(
         self,
-        model_name: str,
+        purpose: str,
         prompt: str,
         response_schema: Optional[Any] = None,
         system_instruction: Optional[str] = None,
@@ -21,17 +22,17 @@ class ILLMClient(Protocol):
         expected_ep_num: Optional[int] = None,
         stream_callback: Optional[Callable[[str], None]] = None,
         **kwargs: Any,
-    ) -> GenerateResult: ...
+    ) -> Dict[str, Any]: ...
 
     async def generate_text(
         self,
-        model_name: str,
+        purpose: str,
         prompt: str,
         system_instruction: Optional[str] = None,
         temp: float = 0.7,
         stream_callback: Optional[Callable[[str], None]] = None,
         **kwargs: Any,
-    ) -> GenerateResult: ...
+    ) -> str: ...
 
 
 class IPromptManager(Protocol):
@@ -225,5 +226,139 @@ class IPlanAuditor(Protocol):
         trend_memo: str,
         sanctuary: str = "",
         originality_score: int = 50,
-        platform: str = "カクヨム/なろう",
+        platform: str = "カクヨむ/なろう",
     ) -> Optional[Any]: ...
+
+
+# --- Agent Protocols ---
+
+class IPlanningAgent(Protocol):
+    """企画・アーク生成エージェントのインターフェース"""
+
+    async def generate_arcs(
+        self,
+        title: str,
+        synopsis: str,
+        target_eps: int,
+        start_ep: int = 1,
+        **kwargs: Any,
+    ) -> ArcList: ...
+
+    async def run(self, *args: Any, **kwargs: Any) -> Any: ...  # delegate to generate_arcs
+
+
+class IWritingAgent(Protocol):
+    """執筆エージェントのインターフェース"""
+
+    async def generate_episodes(
+        self,
+        book_id: int,
+        start_ep: int,
+        end_ep: int,
+        passion: float,
+        target_word_count: int,
+        is_easy_mode: bool,
+        reporter: Optional[IReporter] = None,
+        branch_id: int = 1,
+        style_tag: Optional[str] = None,
+    ) -> int: ...
+
+    async def generate_episodes_pipeline(
+        self,
+        book_id: int,
+        start_ep: int,
+        end_ep: int,
+        passion: float,
+        target_word_count: int,
+        is_easy_mode: bool,
+        reporter: Optional[IReporter] = None,
+        branch_id: int = 1,
+        style_tag: Optional[str] = None,
+    ) -> Tuple[int, List[int]]: ...
+
+    async def trigger_bible_extraction(
+        self, book_id: int, content: str, reporter: Optional[IReporter] = None
+    ) -> Any: ...
+
+    async def run(self, *args: Any, **kwargs: Any) -> Any: ...
+
+
+class IPlotAgent(Protocol):
+    """プロット展開エージェントのインターフェース"""
+
+    async def expand_plots(
+        self,
+        book_id: int,
+        ep_nums: List[int],
+        arcs: List[Any],
+        reporter: Optional[IReporter] = None,
+        force: bool = False,
+        branch_id: Optional[int] = None,
+    ) -> List[PlotDetail]: ...
+
+    async def run(self, *args: Any, **kwargs: Any) -> Any: ...
+
+
+class ICritiqueAgent(Protocol):
+    """批評・改善提案エージェントのインターフェース"""
+
+    async def analyze_work_quality(self, book_id: int) -> str: ...
+    async def run_iterative_gap_analysis(
+        self, book_id: int, max_iterations: int = 10
+    ) -> GenerateResult: ...
+    async def run_dry_run(self, book_id: int, ep_num: int, improved_prompt: str) -> str: ...
+    async def run_dogfeeding_approval_loop(
+        self, content: str, ep_num: int, passion: float, temp: float
+    ) -> Dict[str, Any]: ...
+
+
+class IMarketingAgent(Protocol):
+    """マーケティングエージェントのインターフェース"""
+
+    async def generate_pack(
+        self, book_title: str, synopsis: str, latest_ep: int, **kwargs: Any
+    ) -> Dict[str, Any]: ...
+
+    async def run(self, *args: Any, **kwargs: Any) -> Any: ...
+
+    async def create_export_package(self, book_id: int) -> Tuple[bytes, str]: ...
+
+
+class ILogicalAuditor(Protocol):
+    """論理監査エージェントのインターフェース"""
+
+    async def audit_logical_consistency(
+        self, book_id: int, ep_num: int, blueprint: str
+    ) -> Tuple[bool, str]: ...
+
+    async def check_integrity(
+        self, keywords: List[str], blueprint: str, content: str, threshold: float
+    ) -> Tuple[bool, float, List[str]]: ...
+
+
+class INarrativeController(Protocol):
+    """ナラティブコントローラーのインターフェース"""
+
+    async def run(self, *args: Any, **kwargs: Any) -> Any: ...
+
+
+class IStyleRagManager(Protocol):
+    """スタイルRAGマネージャーのインターフェース"""
+
+    # Methods used by WritingAgent etc.
+    pass  # Placeholder; actual methods to be defined as needed
+
+
+class IContextManager(Protocol):
+    """コンテキストマネージャーのインターフェース"""
+
+    pass  # Placeholder
+
+
+class ITextFormatter(Protocol):
+    """テキストフォーマッターのインターフェース"""
+
+    def format(self, text: str) -> str: ...
+
+
+# end of file

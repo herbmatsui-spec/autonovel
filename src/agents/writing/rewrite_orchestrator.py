@@ -1,4 +1,5 @@
 from typing import Any, Optional
+
 from src.easy_mode.spice_guard import SpiceGuard
 from src.shared.errors import GenerationError
 from src.shared.result import Result

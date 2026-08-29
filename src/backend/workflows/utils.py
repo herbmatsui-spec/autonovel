@@ -11,7 +11,6 @@ from typing import Any, Callable, Dict, List, Optional, TypeVar
 
 from src.core.exceptions import LLMTemporaryError
 
-
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T")

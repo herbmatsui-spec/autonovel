@@ -12,7 +12,6 @@ import sqlite3
 import time
 import traceback
 from pathlib import Path
-import os
 from typing import Any, List, Optional
 
 try:
@@ -24,6 +23,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
 from config import BASE_DIR, DATABASE_URL
+from src.backend.error_utils import log_exception
 
 logger = logging.getLogger(__name__)
 
@@ -124,7 +124,6 @@ class DatabaseConnectionWrapper:
         AsyncConnection. Returns a cursor-like object that provides async
         fetchone/fetchall methods.
         """
-        from sqlalchemy import text
         if isinstance(sql, str):
             sql = text(sql)
         result = await self.sql_conn.execute(sql, params)
@@ -155,7 +154,7 @@ class DatabaseConnectionWrapper:
     async def close(self) -> None:
         try:
             await self.dbapi_conn.rollback()
-        except Exception as exc:
+        except (RuntimeError, sqlite3.Error) as exc:
             # close 時の rollback 失敗はクリティカルではないが、追跡用にログを出力する
             logger.debug("DatabaseConnectionWrapper.close: rollback 失敗: %s", exc)
         await self.sql_conn.close()
@@ -243,7 +242,7 @@ class DatabaseManager:
             def reset_on_checkin(dbapi_connection, connection_record):
                 try:
                     dbapi_connection.rollback()
-                except Exception as exc:
+                except (RuntimeError, sqlite3.Error) as exc:
                     # checkin 時の rollback 失敗は次回の接続で再試行されるためデバッグログのみ
                     logger.debug("reset_on_checkin rollback 失敗: %s", exc)
 
@@ -253,7 +252,7 @@ class DatabaseManager:
             from config.settings import get_settings
             settings = get_settings()
             is_test_env = settings.environment.lower() in ("test", "testing")
-        except Exception:
+        except (ImportError, AttributeError, RuntimeError):
             pass
         if not is_test_env:
             is_test_env = (
@@ -263,6 +262,7 @@ class DatabaseManager:
             )
         if is_test_env:
             from sqlalchemy import create_engine
+
             from src.backend.database.models import Base
             sync_url = db_url
             if "sqlite+aiosqlite" in sync_url:
@@ -388,9 +388,9 @@ def init_db(db_path: str, force_create_all: bool = False):
         from config.settings import get_settings
         settings = get_settings()
         is_test_env = settings.environment.lower() in ("test", "testing")
-    except Exception as exc:
-        logger.debug(f"Could not check test environment via settings: {exc}")
-    
+    except (ImportError, AttributeError, RuntimeError) as exc:
+        log_exception(logger, "Could not check test environment via settings", exc)
+
     # Fallback to env vars
     if not is_test_env:
         is_test_env = (
@@ -398,28 +398,29 @@ def init_db(db_path: str, force_create_all: bool = False):
             or os.environ.get("PYTEST_CURRENT_TEST") is not None
             or os.environ.get("KAKU_ENV") == "test"
         )
-    
+
     # In test mode with explicit flag, allow create_all
     if force_create_all or is_test_env:
         from sqlalchemy import create_engine
+
         from src.backend.database.models import Base
-        
+
         engine = create_engine(sync_url)
         Base.metadata.create_all(engine)
         logger.info("init_db: Base.metadata.create_all executed (test/force mode)")
         return
-    
+
     # Production: ONLY run alembic migrations
     ini_path = BASE_DIR / "alembic.ini"
     logger.debug("init_db alembic ini_path=%s exists=%s", ini_path, ini_path.exists())
     alembic_cfg = Config(str(ini_path))
     alembic_cfg.set_main_option("sqlalchemy.url", sync_url)
-    
+
     try:
         command.upgrade(alembic_cfg, "head")
         logger.info("init_db: alembic command.upgrade('head') executed successfully")
-    except Exception as e:
-        logger.error(f"Alembic upgrade failed: {e}")
+    except (RuntimeError, OSError) as e:
+        log_exception(logger, "Alembic upgrade failed", e)
         raise
 
 
@@ -465,5 +466,5 @@ def set_db_manager(manager: Optional[DatabaseManager]) -> None:
         from src.core.container import AppContainer
 
         AppContainer.db.override(manager)
-    except Exception as exc:
-        logger.warning("AppContainer.db.override に失敗: %s", exc, exc_info=True)
+    except (ImportError, AttributeError, RuntimeError) as exc:
+        log_exception(logger, "AppContainer.db.override に失敗", exc)

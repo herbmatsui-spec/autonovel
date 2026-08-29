@@ -42,6 +42,7 @@ class BookSchema(BaseModel):
     target_eps: int = 0
     cumulative_stress: Optional[float] = 0.0
     created_at: Optional[datetime] = None
+    axis_lock_flags: Dict[str, bool] = Field(default_factory=dict)
 
 
 class PlotSchema(BaseModel):
@@ -330,6 +331,82 @@ class ResolveIssueRequest(BaseModel):
     action: str  # 'Auto-Fix', 'Foreshadowing', 'Ignore'
 
 
+# ==========================================
+# ストーリーキャンバス関連
+# ==========================================
+
+
+class StoryNodeSchema(BaseModel):
+    """ストーリーキャンバス ノードスキーマ"""
+
+    id: str
+    book_id: int
+    kind: str  # 'premise' | 'act' | 'episode' | 'scene' | 'character' | 'foreshadow'
+    label: str
+    ep_num: Optional[int] = None
+    character_id: Optional[int] = None
+    x: float
+    y: float
+    data: Dict[str, Any] = Field(default_factory=dict)
+
+
+class StoryEdgeSchema(BaseModel):
+    """ストーリーキャンバス エッジスキーマ"""
+
+    id: str
+    book_id: int
+    source: str
+    target: str
+    kind: str  # 'flow' | 'part_of' | 'pov' | 'dependency' | 'relationship'
+    data: Dict[str, Any] = Field(default_factory=dict)
+
+
+class StoryCanvasResponse(BaseModel):
+    """ストーリーキャンバス取得レスポンス"""
+
+    nodes: List[StoryNodeSchema] = Field(default_factory=list)
+    edges: List[StoryEdgeSchema] = Field(default_factory=list)
+
+
+class CreateNodeRequest(BaseModel):
+    """ノード作成リクエスト"""
+
+    kind: str
+    label: str
+    ep_num: Optional[int] = None
+    character_id: Optional[int] = None
+    x: float
+    y: float
+    data: Dict[str, Any] = Field(default_factory=dict)
+
+
+class UpdateNodeRequest(BaseModel):
+    """ノード更新リクエスト"""
+
+    id: str
+    x: Optional[float] = None
+    y: Optional[float] = None
+    label: Optional[str] = None
+    data: Optional[Dict[str, Any]] = None
+
+
+class CreateEdgeRequest(BaseModel):
+    """エッジ作成リクエスト"""
+
+    source: str
+    target: str
+    kind: str
+    data: Dict[str, Any] = Field(default_factory=dict)
+
+
+class SeedCanvasRequest(BaseModel):
+    """キャンバス初期化リクエスト（既存データから自動生成）"""
+
+    include_plots: bool = True
+    include_characters: bool = True
+    include_structure: bool = True
+
+
 class ErrorResponse(BaseResponse):
     """統一エラーレスポンスモデル"""
 
@@ -365,5 +442,12 @@ __all__ = [
     "PatchEditRequest",
     "RollbackRequest",
     "ResolveIssueRequest",
+    "StoryNodeSchema",
+    "StoryEdgeSchema",
+    "StoryCanvasResponse",
+    "CreateNodeRequest",
+    "UpdateNodeRequest",
+    "CreateEdgeRequest",
+    "SeedCanvasRequest",
     "ErrorResponse",
 ]

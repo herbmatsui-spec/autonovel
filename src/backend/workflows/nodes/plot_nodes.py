@@ -11,7 +11,7 @@ from typing import Any, Dict
 
 from src.backend.sse_manager import get_sse_manager
 from src.backend.workflows.state import PlotGraphState
-from src.backend.workflows.utils import calculate_quality_score, format_critique_feedback
+from src.backend.workflows.utils import format_critique_feedback
 from src.core.llm.router import resolve_model
 
 logger = logging.getLogger(__name__)
@@ -48,7 +48,7 @@ async def generate_initial_plot_node(state: PlotGraphState, *, llm_provider: Any
             for idx, f in enumerate(unresolved_foreshadows)
         ]
         foreshadow_info = (
-            f"\n- 未回収伏線（各話へ適切に割り当ててください）:\n"
+            "\n- 未回収伏線（各話へ適切に割り当ててください）:\n"
             + "\n".join(foreshadow_lines)
         )
 
@@ -168,7 +168,7 @@ async def evaluate_plot_node(state: PlotGraphState, *, llm_provider: Any = None)
     複数案が存在する場合は asyncio.gather で並列評価し、最高スコア案を選抜＆他案アイデアを抽出。
     """
     parsed_plots = state.get("parsed_plots", [])
-    genre = state.get("genre", "")
+    state.get("genre", "")
 
     sse = get_sse_manager()
     await sse.broadcast(

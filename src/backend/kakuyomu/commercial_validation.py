@@ -16,19 +16,21 @@ Kakuyomu page layout changes.
 """
 
 import asyncio
-import json
 import logging
 import math
-from typing import List, Dict
+from typing import Dict, List
 
 logger = logging.getLogger(__name__)
+
+PLAYWRIGHT_TIMEOUT_MS: int = 30000
+BROWSER_LAUNCH_TIMEOUT_MS: int = 60000
 
 # ---------------------------------------------------------------------------
 # Playwright based scraper – optional import to avoid hard runtime dependency
 # ---------------------------------------------------------------------------
 try:
     from playwright.sync_api import sync_playwright
-except ImportError as e:  # pragma: no cover – Playwright may be missing in CI
+except ImportError:  # pragma: no cover – Playwright may be missing in CI
     sync_playwright = None
     logger.warning("playwright not installed – fetch_top_works will be unavailable")
 
@@ -58,10 +60,10 @@ def fetch_top_works(limit: int = 20) -> List[Dict]:
 
     works: List[Dict] = []
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = p.chromium.launch(headless=True, timeout=BROWSER_LAUNCH_TIMEOUT_MS)
         page = browser.new_page()
-        page.goto("https://kakuyomu.jp/works?order=popular")
-        page.wait_for_load_state("networkidle")
+        page.goto("https://kakuyomu.jp/works?order=popular", timeout=PLAYWRIGHT_TIMEOUT_MS)
+        page.wait_for_load_state("networkidle", timeout=PLAYWRIGHT_TIMEOUT_MS)
 
         # Work cards have a data-work-id attribute (observed on the site).
         items = page.query_selector_all("[data-work-id]")
@@ -77,8 +79,8 @@ def fetch_top_works(limit: int = 20) -> List[Dict]:
             bookmark = int("".join(filter(str.isdigit, bookmark_text))) if bookmark_text else 0
 
             # Open the work page to fetch a short excerpt (first chapter preview)
-            page.goto(f"https://kakuyomu.jp/works/{work_id}")
-            page.wait_for_load_state("networkidle")
+            page.goto(f"https://kakuyomu.jp/works/{work_id}", timeout=PLAYWRIGHT_TIMEOUT_MS)
+            page.wait_for_load_state("networkidle", timeout=PLAYWRIGHT_TIMEOUT_MS)
             # Content preview – observed selector ".c-episode__content"
             content_el = page.query_selector(".c-episode__content")
             excerpt = content_el.inner_text() if content_el else ""

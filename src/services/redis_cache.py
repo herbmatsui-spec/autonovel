@@ -12,7 +12,9 @@ from typing import Any, Dict, List, Optional
 
 try:
     import redis.asyncio as redis
-    from redis.exceptions import ConnectionError as RedisConnectionError, TimeoutError as RedisTimeoutError, RedisError
+    from redis.exceptions import ConnectionError as RedisConnectionError
+    from redis.exceptions import RedisError
+    from redis.exceptions import TimeoutError as RedisTimeoutError
 
     REDIS_AVAILABLE = True
 except ImportError:
@@ -408,12 +410,14 @@ class PromptCacheService:
         prompt_hash: str,
         model_id: str,
         template_version: str = "1.0",
+        task_type: str = "generation",
     ) -> str:
         """プロンプトキャッシュ用の一意キーを生成.
 
-        形式: prompt:{template_name}:{model_id}:{template_version}:{prompt_hash[:16]}
+        形式: prompt:{template_name}:{model_id}:{template_version}:{task_type}:{prompt_hash[:16]}
+        タスクタイプをキー構造に含めることで、無効化パターンの整合性を確保。
         """
-        return f"prompt:{template_name}:{model_id}:{template_version}:{prompt_hash[:16]}"
+        return f"prompt:{template_name}:{model_id}:{template_version}:{task_type}:{prompt_hash[:16]}"
 
     @staticmethod
     def compute_prompt_hash(prompt: str, **params: Any) -> str:
@@ -482,11 +486,13 @@ class PromptCacheService:
         検索順序: L1 (インメモリ) -> L2 (Redis) -> L3 (セマンティック/ChromaDB)
         """
         prompt_hash = self.compute_prompt_hash(prompt, **params)
-        cache_key = self._generate_cache_key(template_name, prompt_hash, model_id, template_version)
+        cache_key = self._generate_cache_key(
+            template_name, prompt_hash, model_id, template_version, task_type
+        )
 
         # L1: インメモリキャッシュ
         if self.l1:
-            l1_key = f"{cache_key}:{task_type}:{genre}:{temperature}"
+            l1_key = f"{cache_key}:{genre}:{temperature}"
             if l1_key in self.l1:
                 await self._record_hit("l1")
                 logger.info(f"[PROMPT CACHE] L1 HIT: {template_name} (task={task_type})")
@@ -556,8 +562,10 @@ class PromptCacheService:
     ) -> None:
         """3層キャッシュに応答を保存."""
         prompt_hash = self.compute_prompt_hash(prompt, **params)
-        cache_key = self._generate_cache_key(template_name, prompt_hash, model_id, template_version)
-        l1_key = f"{cache_key}:{task_type}:{genre}:{temperature}"
+        cache_key = self._generate_cache_key(
+            template_name, prompt_hash, model_id, template_version, task_type
+        )
+        l1_key = f"{cache_key}:{genre}:{temperature}"
         effective_ttl = self._get_ttl(task_type, ttl)
 
         # L1: インメモリ
@@ -614,9 +622,12 @@ class PromptCacheService:
     async def invalidate_task_type(self, task_type: str) -> int:
         """特定タスクタイプのキャッシュを全削除."""
         if self.redis:
-            pattern = f"prompt:*:*:*:*:{task_type}:*"
+            # キー形式: prompt:{template}:{model}:{version}:{task_type}:{hash[:16]}
+            # パターンは 6 要素中 5 番目が task_type
+            pattern = f"prompt:*:*:*:{task_type}:*"
             deleted = await self.redis.invalidate_pattern(pattern)
             # L1からも削除
+            keys_to_delete = []
             if self.l1:
                 keys_to_delete = [k for k in self.l1.keys() if f":{task_type}:" in k]
                 for k in keys_to_delete:

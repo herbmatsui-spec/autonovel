@@ -28,6 +28,14 @@ import type {
   ExportPackageResult,
   Issue,
 } from './types/api';
+import type {
+  StoryNode,
+  StoryEdge,
+  StoryCanvasResponse,
+  CreateNodeRequest,
+  UpdateNodeRequest,
+  CreateEdgeRequest,
+} from './types/storyCanvas';
 
 export type {
   Book,
@@ -55,6 +63,12 @@ export type {
   ExportPackageResult,
   AuditPlanResult,
   Issue,
+  StoryNode,
+  StoryEdge,
+  StoryCanvasResponse,
+  CreateNodeRequest,
+  UpdateNodeRequest,
+  CreateEdgeRequest,
 };
 
 // useUserSettingsStore import removed, no config usage needed
@@ -535,4 +549,63 @@ export async function deleteStyleFragment(id: number): Promise<{ status: string;
 
 export async function getStylePresets(): Promise<StylePresetsResponse> {
   return apiRequest(`${API_BASE_URL}/styles/presets`);
+}
+
+// ---------- Story Canvas APIs ----------
+
+export async function getStoryCanvas(bookId: number): Promise<StoryCanvasResponse> {
+  return apiRequest(`${API_BASE_URL}/story_canvas/${bookId}`);
+}
+
+export async function seedStoryCanvas(bookId: number, options?: {
+  include_plots?: boolean;
+  include_characters?: boolean;
+  include_structure?: boolean;
+}): Promise<StoryCanvasResponse> {
+  return apiRequest(`${API_BASE_URL}/story_canvas/${bookId}/seed`, {
+    method: 'POST',
+    body: JSON.stringify(options || {}),
+  });
+}
+
+export async function saveStoryNode(
+  bookId: number,
+  node: UpdateNodeRequest
+): Promise<StoryNode> {
+  return apiRequest(`${API_BASE_URL}/story_canvas/${bookId}/nodes`, {
+    method: 'PUT',
+    body: JSON.stringify([node]),
+  }).then((res: StoryNode[]) => res[0]);
+}
+
+export async function createStoryNode(
+  bookId: number,
+  req: CreateNodeRequest
+): Promise<StoryNode> {
+  return apiRequest(`${API_BASE_URL}/story_canvas/${bookId}/nodes`, {
+    method: 'POST',
+    body: JSON.stringify(req),
+  });
+}
+
+export async function deleteStoryNode(bookId: number, nodeId: string): Promise<void> {
+  return apiRequest(`${API_BASE_URL}/story_canvas/${bookId}/nodes/${nodeId}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function createStoryEdge(
+  bookId: number,
+  req: CreateEdgeRequest
+): Promise<StoryEdge> {
+  return apiRequest(`${API_BASE_URL}/story_canvas/${bookId}/edges`, {
+    method: 'POST',
+    body: JSON.stringify(req),
+  });
+}
+
+export async function deleteStoryEdge(bookId: number, edgeId: string): Promise<void> {
+  return apiRequest(`${API_BASE_URL}/story_canvas/${bookId}/edges/${edgeId}`, {
+    method: 'DELETE',
+  });
 }

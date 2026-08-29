@@ -9,13 +9,11 @@ from sqlalchemy import select
 from src.backend.auth import require_api_key
 from src.backend.database.models import InternalState
 from src.backend.redis_util import get_redis_client
+from src.backend.response_helpers import api_success
+from src.backend.router_helpers import workflow_endpoint
 from src.backend.sse import task_event_generator
 from src.core.container import AppContainer
 from src.core.exceptions import NotFoundError
-from src.backend.response_helpers import api_success
-
-from src.backend.router_helpers import workflow_endpoint
-from src.backend.utils.id_generator import generate_prefixed_id as generate_task_id
 
 logger = logging.getLogger(__name__)
 

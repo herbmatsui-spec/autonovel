@@ -1,17 +1,18 @@
 import json
-from typing import Any, Dict
+from typing import Any, Awaitable, Callable, Dict
 
 from config import MODEL_PLANNING
 from config.project_context import ProjectContext
 from src.backend.constants import constants as const
 from src.backend.sharp_edge_preserver import SemanticEdgePreserver, check_edges_preserved
+from src.core.interfaces import IPromptManager, IRepository
 from src.models import GenerateResult
 
 
 class CritiqueAgent:
     """生成された作品を分析し、エンジンの改善案を提案する専用エージェント"""
 
-    def __init__(self, repo, pm, generate_json, edge_preserver=None):
+    def __init__(self, repo: IRepository, pm: IPromptManager, generate_json: Callable[..., Awaitable[Dict[str, Any]]], edge_preserver=None):
         self.repo = repo
         self.pm = pm
         self.generate_json = generate_json

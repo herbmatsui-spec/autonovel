@@ -4,7 +4,6 @@ src/prototype/adapters/narrative_sub.py - ナラティブ品質スコア購読�
 
 from __future__ import annotations
 
-from typing import Any
 from src.backend.workflows.narrative_state import NarrativeState
 from src.shared.domain_event_bus import DomainEvent, DomainEventBus, NarrativeEventType
 

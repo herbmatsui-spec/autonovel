@@ -48,7 +48,7 @@ class ContextBuilder:
         if plot is None:
             plot = await self._ensure_plot_exists(book_id, branch_id, ep_num)
 
-        book = await self._get_book(book_id)
+        await self._get_book(book_id)
         chars = await self._get_chars(book_id)
         prev_chapter = await self._get_prev_chapter(book_id, branch_id, ep_num)
 
@@ -216,7 +216,7 @@ class ContextBuilder:
             location = reg.get("location", "不明")
             inventory = reg.get("inventory", [])
             status = reg.get("status", "通常")
-            
+
             aff_info = ""
             if affinity_map and name in affinity_map:
                 adata = affinity_map[name]

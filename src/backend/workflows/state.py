@@ -33,7 +33,7 @@ class PlotGraphState(BaseGraphState, total=False):
     user_instructions: Optional[str]
     bible_context: Dict[str, Any]
     unresolved_foreshadows: List[Dict[str, Any]]
-    
+
     # プロット生成と推敲のループ状態
     current_iteration: int
     max_iterations: int
@@ -92,12 +92,12 @@ class ReviewGraphState(BaseGraphState, total=False):
     """推敲・レビューグラフ（ReviewGraph）の状態定義"""
     ep_num: int
     source_content: str
-    
+
     # 各監査ノードの結果
     pacing_analysis: Dict[str, Any]
     character_consistency: Dict[str, Any]
     style_adherence: Dict[str, Any]
-    
+
     # 総合判断と修正案
     requires_revision: bool
     revision_instructions: List[str]
@@ -116,14 +116,14 @@ class MasterGraphState(BaseGraphState, total=False):
     quality_metrics: Dict[str, Any]
     revision_budget: int
     needs_revision_eps: List[int]
-    
+
     # 各サブグラフの実行結果
     plot_result: Optional[PlotGraphState]
     writing_results: Dict[int, WritingGraphState]
     review_results: Dict[int, ReviewGraphState]
     review_summary: Dict[str, Any]
     bible_state: Dict[str, Any]
-    
+
     overall_progress: float
     current_phase: str
 

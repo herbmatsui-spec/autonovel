@@ -5,13 +5,12 @@ from fastapi.responses import Response
 
 from src.backend.auth import require_api_key
 from src.backend.engine_helpers import get_engine
-from src.backend.task_helpers import create_task
+from src.backend.response_helpers import api_success
 from src.backend.router_helpers import workflow_endpoint
-from src.backend.utils.id_generator import generate_prefixed_id as generate_task_id
+from src.backend.task_helpers import create_task
 from src.backend.tasks import execute_service_workflow
 from src.core.observability import TraceContext
 from src.models.api_schemas import MarketingGenerateRequest
-from src.backend.response_helpers import api_success
 
 router = APIRouter(tags=["marketing"])
 
@@ -101,7 +100,7 @@ async def analyze_style_dna_endpoint(req: dict, api_key: str = Depends(require_a
             "total_chars": total_len,
         }
         return api_success(result, "文体DNAを解析しました")
-    except Exception as e:
+    except Exception:
         # フォールバック
         return api_success({
             "name": "Web標準テンポ体" if dialogue_ratio > 40 else "叙情・重厚体",

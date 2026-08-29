@@ -8,12 +8,10 @@ import asyncio
 import json
 import logging
 from typing import Any, Dict
-import os
 
+from config.settings import get_settings
 from src.backend.sse_manager import get_sse_manager
 from src.backend.workflows.state import ReviewGraphState
-from src.backend.workflows.utils import calculate_quality_score, format_critique_feedback
-from config.settings import get_settings
 from src.core.llm.router import resolve_model
 
 logger = logging.getLogger(__name__)

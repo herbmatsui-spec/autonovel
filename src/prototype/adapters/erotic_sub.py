@@ -4,7 +4,6 @@ src/prototype/adapters/erotic_sub.py - 官能品質スコア購読アダプタ
 
 from __future__ import annotations
 
-from typing import Any
 from src.backend.workflows.narrative_state import NarrativeState
 from src.shared.domain_event_bus import DomainEvent, DomainEventBus, NarrativeEventType
 

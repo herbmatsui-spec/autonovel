@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 import logging
 from typing import TYPE_CHECKING, Any, Awaitable, Callable, Dict, List, Optional
 
 from src.agents.base import BaseAgent
+from src.core.errors import AgentResult, handle_error
 from src.models import PlotEpisode
 
 if TYPE_CHECKING:
@@ -21,14 +24,14 @@ class PlotAgent(BaseAgent):
 
     def __init__(
         self,
-        repo: "IRepository",
-        pm: "IPromptManager",
+        repo: IRepository,
+        pm: IPromptManager,
         generate_json: Callable[..., Awaitable[Any]],
         plot_expander: Optional["IPlotExpander"] = None,
         auditor: Optional[Any] = None,
         uow_factory: Optional[Callable[[], Any]] = None,
     ):
-        super().__init__()
+        super().__init__(repo=repo)  # llm, style_rag, rag_prefetch default to None
         self.repo = repo
         self.pm = pm
         self.generate_json = generate_json
@@ -423,6 +426,9 @@ class PlotAgent(BaseAgent):
         )
         return results
 
-    async def run(self, *args, **kwargs):
+    @handle_error(logger_name=__name__)
+    async def run(self, *args, **kwargs) -> AgentResult[Dict[str, Any]]:
         logger.info("PlotAgent run invoked")
-        return await self.expand_plots(**kwargs)
+        plots = await self.expand_plots(**kwargs)
+        plots_dict = [p.model_dump() for p in plots]
+        return AgentResult.ok({"plots": plots_dict})

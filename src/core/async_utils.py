@@ -24,7 +24,6 @@ async def run_parallel(
     Returns:
         実行結果のリスト。
     """
-    results = []
     tasks = []
 
     async with asyncio.TaskGroup() as tg:

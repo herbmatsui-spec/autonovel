@@ -49,3 +49,24 @@ def test_validate_api_key_or_raise_with_test_key_production(monkeypatch):
         validate_api_key_or_raise("test-should-fail")
     assert getattr(exc.value, "error_code", None) == "FORBIDDEN"
 
+
+def test_auth_disabled_in_production_raises_error(monkeypatch):
+    """AUTH_DISABLED が production 環境で設定されている場合、起動時にエラーが発生するはず"""
+    monkeypatch.setenv("ENVIRONMENT", "production")
+    monkeypatch.setenv("AUTH_DISABLED", "true")
+    reset_api_key_service()
+    with pytest.raises(RuntimeError) as exc:
+        get_api_key_service()
+    assert "AUTH_DISABLED" in str(exc.value)
+    assert "production" in str(exc.value)
+
+
+def test_auth_disabled_in_development_allowed(monkeypatch):
+    """AUTH_DISABLED が development 環境で設定されていても、警告のみでサービス取得可能"""
+    monkeypatch.setenv("ENVIRONMENT", "development")
+    monkeypatch.setenv("AUTH_DISABLED", "true")
+    reset_api_key_service()
+    service = get_api_key_service()
+    assert service.disabled is True
+    assert service.validate("any-key") is True
+

@@ -7,10 +7,11 @@ api_key の検証ロジックを提供する。現在はシンプルな許可リ
 
 from __future__ import annotations
 
+import hmac
 import logging
 import os
-import hmac
 from typing import List, Optional
+
 try:
     from dotenv import load_dotenv
     load_dotenv()
@@ -96,6 +97,12 @@ def get_api_key_service() -> APIKeyService:
     global _api_key_service
     if _api_key_service is None:
         disabled_env = os.environ.get("AUTH_DISABLED", "false").lower() in ("1", "true", "yes")
+        env = os.environ.get("ENVIRONMENT", "development")
+        if disabled_env and env == "production":
+            raise RuntimeError(
+                "起動時エラー: AUTH_DISABLED が設定されていますが、ENVIRONMENT=production では認証をバイパスできません。"
+                "本番環境では認証が無効化された状態での起動は許可されません。"
+            )
         keys_env = os.environ.get("ALLOWED_API_KEYS", "")
         allowed_keys = [k.strip() for k in keys_env.split(",") if k.strip()]
         _api_key_service = APIKeyService(allowed_keys=allowed_keys, disabled=disabled_env if "AUTH_DISABLED" in os.environ else None)

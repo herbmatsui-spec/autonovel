@@ -4,7 +4,7 @@ prompt_composer.py - 執筆プロンプト構築ユーティリティ
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from src.agents.base import BaseAgent
 

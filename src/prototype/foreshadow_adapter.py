@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional
 try:
     from novel_50ep.foreshadow_manager import ForeshadowItem, ForeshadowManager
 except ImportError:
-    from foreshadow_manager import ForeshadowItem, ForeshadowManager
+    from foreshadow_manager import ForeshadowManager
 
 
 class PersistentForeshadowManager(ForeshadowManager):
@@ -44,7 +44,6 @@ class PersistentForeshadowManager(ForeshadowManager):
                 await repo.save_internal_state(key, serialized)
         else:
             try:
-                from src.backend.database.repositories.misc import MiscRepository
                 from src.backend.database.uow import UnitOfWork
                 from src.core.container import AppContainer
 

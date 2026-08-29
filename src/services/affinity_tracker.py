@@ -1,5 +1,4 @@
 import logging
-import re
 from typing import Dict, List, Optional
 
 from src.schemas.ux_schemas import AffinityData

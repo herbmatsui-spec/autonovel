@@ -4,7 +4,6 @@ src/prototype/aggregator.py - ナラティブ評価結果集約モジュール (
 
 from __future__ import annotations
 
-from typing import Any, Optional
 from src.backend.workflows.narrative_state import NarrativeState
 from src.shared.domain_event_bus import DomainEvent, DomainEventBus, NarrativeEventType
 

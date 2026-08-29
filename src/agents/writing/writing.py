@@ -6,8 +6,8 @@ from typing import Any, Dict, List, Optional
 from src.agents.base import BaseAgent
 from src.agents.context_builder import ContextBuilder
 from src.agents.episode_pipeline import EpisodePipeline
-from src.core.interfaces import IPromptManager
-from src.services.llm_service import LLMService
+from src.core.interfaces import ILLMClient, IPromptManager
+from src.core.errors import AgentResult, handle_error
 
 from .bible_extractor import BibleExtractor
 
@@ -27,7 +27,7 @@ class WritingAgent(BaseAgent):
     def __init__(
         self,
         repo: Any = None,
-        llm: Optional[LLMService] = None,
+        llm: Optional[ILLMClient] = None,
         prompt_manager: Optional[IPromptManager] = None,
         style_rag: Any = None,
         rag_prefetch: Any = None,
@@ -329,7 +329,8 @@ class WritingAgent(BaseAgent):
         # TODO: 新しいコンポーネントを使うように実装を更新
         return await self._bible_extractor.extract(book_id, content, reporter)
 
-    async def run(self, *args, **kwargs):
+    @handle_error(logger_name=__name__)
+    async def run(self, *args, **kwargs) -> AgentResult[Dict[str, Any]]:
         """エージェントのメインループ（簡易版）。
         ここでは generate_episodes と連動して実行する。
         """
@@ -340,7 +341,7 @@ class WritingAgent(BaseAgent):
             raise ValueError("book_id, start_ep, end_ep are required for WritingAgent.run")
         passion = kwargs.get("passion", 0.5)
         target_word_count = kwargs.get("target_word_count", 2000)
-        return await self.generate_episodes(
+        total_chars = await self.generate_episodes(
             book_id=book_id,
             start_ep=start_ep,
             end_ep=end_ep,
@@ -351,3 +352,4 @@ class WritingAgent(BaseAgent):
             branch_id=kwargs.get("branch_id", 1),
             style_tag=kwargs.get("style_tag"),
         )
+        return AgentResult.ok({"total_chars": total_chars})

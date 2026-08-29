@@ -201,7 +201,7 @@ class IFRouteGraph:
             target = self.get_node(choice.target_node_id)
             if target:
                 # 副作用を適用した新しいコンテキストで評価
-                new_context = choice.apply_effects(context)
+                choice.apply_effects(context)
                 next_nodes.append(target)
         return next_nodes
 

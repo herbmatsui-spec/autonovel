@@ -36,7 +36,7 @@ def update_affinity(
                     a.set_affinity(AffinityData(character_name=cname, affinity_score=float(cdata)))
 
     res = a.update_from_text(text, character_name=character_name)
-    
+
     # hub.affinity_map は {name: float} を格納（後方互換性）
     hub.affinity_map = {
         getattr(d, "character_name", getattr(d, "character", "")): getattr(
@@ -51,6 +51,6 @@ def update_affinity(
     for d in res:
         cname = getattr(d, "character_name", getattr(d, "character", ""))
         hub.affinity_details[cname] = d
-    
+
     # 辞書シリアライズ形式で episode データに記録
     hub.upsert_episode(int(ep), affinity=dict(hub.affinity_map))

@@ -13,24 +13,28 @@ from typing import TYPE_CHECKING, Any, Optional, Tuple
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from prompts.manager import PromptManager
-    from src.agents.audit import LogicalAuditor
-    from src.agents.MarketingAgent import MarketingAgent
-    from src.agents.PlanningAgent import PlanningAgent
-    from src.agents.plot import PlotAgent
-    from src.agents.WritingAgent import WritingAgent
     from src.backend.database import DataRepository
     from src.backend.database.core import DatabaseManager
-    from src.backend.engine_context import ContextManager
-    from src.backend.engine_critique import CritiqueAgent
     from src.backend.engine_deps import EngineDeps
-    from src.backend.engine_narrative import NarrativeController
-    from src.backend.engine_style_rag import StyleRagManager
     from src.backend.engine_utils import AdaptiveCooldown
-    from src.backend.sanitizer import TextFormatter
     from src.core.llm_gateway import LLMGenerateResultProxy
-    from src.services.bible_service import WorldBibleGenerator
     from src.services.plot_service import PlotService
+
+# Interface imports for actual type annotations
+from src.core.interfaces import (
+    IContextManager,
+    ICritiqueAgent,
+    ILogicalAuditor,
+    IMarketingAgent,
+    INarrativeController,
+    IPlanningAgent,
+    IPlotAgent,
+    IPromptManager,
+    IStyleRagManager,
+    ITextFormatter,
+    IWorldBibleGenerator,
+    IWritingAgent,
+)
 
 
 # ==========================================
@@ -47,19 +51,19 @@ class UltimateHegemonyEngine:
         llm: Optional["LLMGenerateResultProxy"] = None,
         cooldown: Optional["AdaptiveCooldown"] = None,
         plot_service: Optional["PlotService"] = None,
-        planner: Optional["PlanningAgent"] = None,
-        writer: Optional["WritingAgent"] = None,
-        pm: Optional["PromptManager"] = None,
-        ctx_mgr: Optional["ContextManager"] = None,
-        formatter: Optional["TextFormatter"] = None,
-        validator: Optional["TextFormatter"] = None,
-        auditor: Optional["LogicalAuditor"] = None,
-        narrative: Optional["NarrativeController"] = None,
-        critique: Optional["CritiqueAgent"] = None,
-        marketing: Optional["MarketingAgent"] = None,
-        bible_agent: Optional["WorldBibleGenerator"] = None,
-        plot_agent: Optional["PlotAgent"] = None,
-        style_rag: Optional["StyleRagManager"] = None,
+        planner: Optional[IPlanningAgent] = None,
+        writer: Optional[IWritingAgent] = None,
+        pm: Optional[IPromptManager] = None,
+        ctx_mgr: Optional[IContextManager] = None,
+        formatter: Optional[ITextFormatter] = None,
+        validator: Optional[ILogicalAuditor] = None,
+        auditor: Optional[ILogicalAuditor] = None,
+        narrative: Optional[INarrativeController] = None,
+        critique: Optional[ICritiqueAgent] = None,
+        marketing: Optional[IMarketingAgent] = None,
+        bible_agent: Optional[IWorldBibleGenerator] = None,
+        plot_agent: Optional[IPlotAgent] = None,
+        style_rag: Optional[IStyleRagManager] = None,
         deps: Optional["EngineDeps"] = None,
         **legacy: Any,
     ):
@@ -177,89 +181,89 @@ class UltimateHegemonyEngine:
     # ---- 明示的依存を返すプロパティ（未設定なら _legacy_dep にフォールバック） ----
 
     @property
-    def planner(self) -> "PlanningAgent":
+    def planner(self) -> IPlanningAgent:
         if self._planner is not None:
             return self._planner
         return self._legacy_dep("planner")
 
     @property
-    def planning_agent(self) -> "PlanningAgent":
+    def planning_agent(self) -> IPlanningAgent:
         return self.planner
 
     @property
-    def writer(self) -> "WritingAgent":
+    def writer(self) -> IWritingAgent:
         if self._writer is not None:
             return self._writer
         return self._legacy_dep("writer")
 
     @property
-    def pm(self) -> "PromptManager":
+    def pm(self) -> IPromptManager:
         if self._pm is not None:
             return self._pm
         return self._legacy_dep("pm")
 
     @property
-    def ctx_mgr(self) -> "ContextManager":
+    def ctx_mgr(self) -> IContextManager:
         if self._ctx_mgr is not None:
             return self._ctx_mgr
         return self._legacy_dep("ctx_mgr")
 
     @property
-    def formatter(self) -> "TextFormatter":
+    def formatter(self) -> ITextFormatter:
         if self._formatter is not None:
             return self._formatter
         return self._legacy_dep("formatter")
 
     @property
-    def validator(self) -> "LogicalAuditor":
+    def validator(self) -> ILogicalAuditor:
         if self._validator is not None:
             return self._validator
         return self._legacy_dep("validator")
 
     @property
-    def auditor(self) -> "LogicalAuditor":
+    def auditor(self) -> ILogicalAuditor:
         if self._auditor is not None:
             return self._auditor
         return self._legacy_dep("auditor")
 
     @property
-    def narrative(self) -> "NarrativeController":
+    def narrative(self) -> INarrativeController:
         if self._narrative is not None:
             return self._narrative
         return self._legacy_dep("narrative")
 
     @property
-    def critique(self) -> "CritiqueAgent":
+    def critique(self) -> ICritiqueAgent:
         if self._critique is not None:
             return self._critique
         return self._legacy_dep("critique")
 
     @property
-    def marketing(self) -> "MarketingAgent":
+    def marketing(self) -> IMarketingAgent:
         if self._marketing is not None:
             return self._marketing
         return self._legacy_dep("marketing")
 
     @property
-    def bible_agent(self) -> "WorldBibleGenerator":
+    def bible_agent(self) -> IWorldBibleGenerator:
         if self._bible_agent is not None:
             return self._bible_agent
         return self._legacy_dep("bible_agent")
 
     @property
-    def plot_agent(self) -> "PlotAgent":
+    def plot_agent(self) -> IPlotAgent:
         if self._plot_agent is not None:
             return self._plot_agent
         return self._legacy_dep("plot_agent")
 
     @property
-    def style_rag(self) -> "StyleRagManager":
+    def style_rag(self) -> IStyleRagManager:
         if self._style_rag is not None:
             return self._style_rag
         return self._legacy_dep("style_rag")
 
     @property
-    def logic_validator(self) -> "LogicalAuditor":
+    def logic_validator(self) -> ILogicalAuditor:
         return self.validator
 
     @property

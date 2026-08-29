@@ -5,6 +5,7 @@ The tests and code rely on this value to locate the ``prompts`` folder.
 """
 
 from pathlib import Path
+from typing import Any, Optional
 
 # Directory containing this file's parent (the repository root)
 BASE_DIR = Path(__file__).resolve().parent.parent

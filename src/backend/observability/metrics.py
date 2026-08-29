@@ -203,7 +203,7 @@ def track_llm_metrics(model: str):
             start = time.perf_counter()
             try:
                 result = await func(*args, **kwargs)
-                duration = time.perf_counter() - start
+                time.perf_counter() - start
                 record_llm_call(model, "success")
                 return result
             except Exception:

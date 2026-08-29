@@ -70,6 +70,15 @@ class SSEClient {
         }
       });
 
+      this.eventSource.addEventListener('axis_locks', (e: MessageEvent) => {
+        try {
+          const parsed = JSON.parse(e.data);
+          this.notify('axis_locks', parsed.data || parsed);
+        } catch (err) {
+          console.error('[SSE] Failed to parse axis_locks:', err);
+        }
+      });
+
       this.eventSource.addEventListener('connected', (e: MessageEvent) => {
         console.log('[SSE] Stream handshake confirmed:', e.data);
       });

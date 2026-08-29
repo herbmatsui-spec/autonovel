@@ -8,16 +8,13 @@ import logging
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
-
-from src.backend.database import UnitOfWork
-from src.core.container import AppContainer
-from src.backend.auth import require_api_key
-
 from pydantic import BaseModel, Field
-from src.backend.sse_manager import get_sse_manager
+
+from src.backend.auth import require_api_key
+from src.backend.database import UnitOfWork
 from src.backend.response_helpers import api_success
-from src.backend.workflows.narrative_state import NarrativeState
-from src.schemas.ux_schemas import AffinityData
+from src.backend.sse_manager import get_sse_manager
+from src.core.container import AppContainer
 
 logger = logging.getLogger(__name__)
 

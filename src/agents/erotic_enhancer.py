@@ -4,9 +4,30 @@ erotic_enhancer.py - 官能後処理・品質向上ユーティリティ
 
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 from src.agents.base import BaseAgent
+
+
+def resolve_erotic_config(context: Dict[str, Any]) -> Tuple[int, bool]:
+    """NSFW/官能関連フラグを単一の正規表現に丸める。
+
+    歴史的経緯で enable_erotic / nsfw_enabled / erotic_enabled の表記揺れが存在するため、
+    いずれかが真・あるいは erotic_intensity > 0 であれば有効とみなす。
+
+    Returns:
+        (erotic_intensity, is_enabled)
+    """
+    intensity = int(context.get("erotic_intensity", 0) or 0)
+    enabled = bool(
+        context.get("erotic_enabled", False)
+        or context.get("enable_erotic", False)
+        or context.get("nsfw_enabled", False)
+        or intensity > 0
+    )
+    if not enabled:
+        intensity = 0
+    return intensity, enabled
 
 
 class EroticEnhancer:
@@ -33,8 +54,7 @@ class EroticEnhancer:
         Returns:
             後処理適用後の本文文字列
         """
-        erotic_intensity = context.get("erotic_intensity", 0)
-        nsfw_enabled = context.get("nsfw_enabled", False) or context.get("enable_erotic", False)
+        erotic_intensity, nsfw_enabled = resolve_erotic_config(context)
 
         if not (erotic_intensity > 0 and nsfw_enabled):
             return text

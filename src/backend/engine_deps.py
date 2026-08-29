@@ -1,33 +1,34 @@
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 
-if TYPE_CHECKING:
-    from prompts.manager import PromptManager
-    from src.agents.audit import LogicalAuditor
-    from src.agents.MarketingAgent import MarketingAgent
-    from src.agents.PlanningAgent import PlanningAgent
-    from src.agents.plot import PlotAgent
-    from src.agents.WritingAgent import WritingAgent
-    from src.backend.engine_context import ContextManager
-    from src.backend.engine_critique import CritiqueAgent
-    from src.backend.engine_narrative import NarrativeController
-    from src.backend.engine_style_rag import StyleRagManager
-    from src.backend.sanitizer import TextFormatter
-    from src.services.bible_service import WorldBibleGenerator
+from src.core.interfaces import (
+    IContextManager,
+    ICritiqueAgent,
+    ILogicalAuditor,
+    IMarketingAgent,
+    INarrativeController,
+    IPlanningAgent,
+    IPlotAgent,
+    IPromptManager,
+    IStyleRagManager,
+    ITextFormatter,
+    IWorldBibleGenerator,
+    IWritingAgent,
+)
 
 
 @dataclass
 class EngineDeps:
-    planner: Optional["PlanningAgent"] = None
-    writer: Optional["WritingAgent"] = None
-    pm: Optional["PromptManager"] = None
-    ctx_mgr: Optional["ContextManager"] = None
-    formatter: Optional["TextFormatter"] = None
-    validator: Optional["LogicalAuditor"] = None
-    auditor: Optional["LogicalAuditor"] = None
-    narrative: Optional["NarrativeController"] = None
-    critique: Optional["CritiqueAgent"] = None
-    marketing: Optional["MarketingAgent"] = None
-    bible_agent: Optional["WorldBibleGenerator"] = None
-    plot_agent: Optional["PlotAgent"] = None
-    style_rag: Optional["StyleRagManager"] = None
+    planner: Optional[IPlanningAgent] = None
+    writer: Optional[IWritingAgent] = None
+    pm: Optional[IPromptManager] = None
+    ctx_mgr: Optional[IContextManager] = None
+    formatter: Optional[ITextFormatter] = None
+    validator: Optional[ILogicalAuditor] = None
+    auditor: Optional[ILogicalAuditor] = None
+    narrative: Optional[INarrativeController] = None
+    critique: Optional[ICritiqueAgent] = None
+    marketing: Optional[IMarketingAgent] = None
+    bible_agent: Optional[IWorldBibleGenerator] = None
+    plot_agent: Optional[IPlotAgent] = None
+    style_rag: Optional[IStyleRagManager] = None

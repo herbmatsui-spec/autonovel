@@ -390,7 +390,7 @@ class GenerationLoopManager:
                 elif isinstance(item, CharacterStatusChange):
                     normalized_changes.append(item)
 
-            changes_obj = EpisodeStatusChanges(character_status_changes=normalized_changes)
+            EpisodeStatusChanges(character_status_changes=normalized_changes)
             prev_ws = ctx.prev_world_state or {}
             StateValidator.validate_transitions(prev_ws, normalized_changes)
         except StateContradictionError as e:

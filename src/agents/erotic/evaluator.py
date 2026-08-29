@@ -8,6 +8,8 @@ from typing import Any, Dict, List
 
 from pydantic import BaseModel, Field
 
+from src.agents.erotic.vocabulary import EROTIC_QUALITY_KEYWORDS  # single source of truth
+
 
 class EroticQualityReport(BaseModel):
     """官能品質評価レポート"""
@@ -24,91 +26,8 @@ class EroticQualityScorer:
     """官能品質を評価するスコアラー"""
 
     def __init__(self):
-        # キー�ーワードベースのスコアリング用�辞書（実際には外部ファイルから読み込むか、より複�雑なロジックを使用）
-        self.quality_keywords = {
-            "sensory": [
-                "熱",
-                "温もり",
-                "冷たさ",
-                "����らか",
-                "����さ",
-                "����らか",
-                "ざらつき",
-                "����り",
-                "����き",
-                "����い",
-                "香り",
-                "味",
-                "����",
-                "����",
-                "����",
-                "指先",
-                "����",
-                "����",
-                "息",
-                "����息",
-                "����動",
-                "����",
-                "震え",
-                "����れ",
-                "電流",
-                "火照り",
-                "����",
-                "����",
-                "��������",
-                "体����",
-            ],
-            "emotional": [
-                "愛おしい",
-                "愛しい",
-                "切ない",
-                "����しい",
-                "����しい",
-                "幸せ",
-                "恐ろしい",
-                "不安",
-                "安心",
-                "信頼",
-                "裏切り",
-                "��������",
-                "独占欲",
-                "����着",
-                "����身",
-                "��������",
-                "許し",
-                "受容",
-                "共感",
-                "同情",
-                "����れ",
-                "����敬",
-                "��������",
-            ],
-            "psychological": [
-                "支配",
-                "服従",
-                "従����",
-                "反抗",
-                "����服",
-                "解放",
-                "束����",
-                "自由",
-                "罪悪感",
-                "背徳",
-                "禁����",
-                "��������",
-                "����れ",
-                "清らか",
-                "����ら",
-                "恥����",
-                "����り",
-                "プライド",
-                "自����心",
-                "自我",
-                "自我��������",
-                "自我����失",
-                "自我統合",
-            ],
-        }
+        # キーーワードベースのスコアリング用辞書（実際には外部ファイルから読み込むか、より複雑なロジックを使用）
+        self.quality_keywords = EROTIC_QUALITY_KEYWORDS  # consolidated (see src/agents/erotic/vocabulary.py)
 
     def score(self, text: str) -> EroticQualityReport:
         """score_quality のエイリアス。"""
@@ -147,7 +66,7 @@ class EroticQualityScorer:
             text_lower, self.quality_keywords.get("psychological", []), total_chars
         )
 
-        # � 技術的スコアは文章構造などから評価（簡易実装）
+        #  技術的スコアは文章構造などから評価（簡易実装）
         technical_score = self._score_technical(text, total_chars)
 
         # 総合スコアは重み付き平均
@@ -179,17 +98,17 @@ class EroticQualityScorer:
         )
 
     def _score_category(self, text: str, keywords: List[str], total_chars: int) -> float:
-        """特定のカテゴリのキー�ーワードマッチに基づいてスコアを計算"""
+        """特定のカテゴリのキーーワードマッチに基づいてスコアを計算"""
         if not keywords or total_chars == 0:
             return 0.0
 
         matches = self._count_matches(text, keywords)
-        # キー�ーワード密度に基づいてスコアを計算（0-100の�範�囲に正規化）
+        # キーーワード密度に基づいてスコアを計算（0-100の範囲に正規化）
         density = matches / max(total_chars, 1) * 1000  # 文字1000あたりのマッチ数
         return min(100.0, density * 10)  # 適切なスケーリング
 
     def _score_technical(self, text: str, total_chars: int) -> float:
-        """技術的�側面（文章構造、読みやすさなど）を評価"""
+        """技術的側面（文章構造、読みやすさなど）を評価"""
         if total_chars == 0:
             return 0.0
 
@@ -205,14 +124,14 @@ class EroticQualityScorer:
         else:
             length_score = max(50.0, 100.0 - (avg_sentence_length - 50) * 0.5)
 
-        # �� 段落構造の評価
+        #  段落構造の評価
         paragraphs = text.split("\n\n")
         para_score = 100.0 if len(paragraphs) >= 1 else 50.0
 
         return (length_score + para_score) / 2
 
     def _count_matches(self, text: str, keywords: List[str]) -> int:
-        """テキスト内のキー�ーワードマッチ数をカウント"""
+        """テキスト内のキーーワードマッチ数をカウント"""
         if not text or not keywords:
             return 0
 

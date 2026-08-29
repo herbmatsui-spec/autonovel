@@ -9,26 +9,26 @@ from typing import Any, Optional
 
 from config.settings import get_settings
 from src.core.async_utils import limit_concurrency
-from src.presets.loader import load_preset
 from src.core.exceptions import (
     BibleGenerationError,
     EpisodeAuditError,
     EpisodeRewriteError,
     EpisodeWritingError,
+    PipelineError,
     PlotGenerationError,
     SeriesFinalizationError,
-    PipelineError,
 )
 from src.easy_mode.bible_generator import BibleGenerator
 from src.easy_mode.episode_auditor import EpisodeAuditor
+from src.easy_mode.episode_generator import EpisodeGenerator
 from src.easy_mode.episode_rewriter import EpisodeRewriter
 from src.easy_mode.episode_writer import EpisodeWriter
 from src.easy_mode.models import EpisodeResult, PipelineConfig, RetryConfig, SeriesResult
 from src.easy_mode.plot_generator import PlotGenerator
 from src.easy_mode.progress_reporter import ProgressReporter
 from src.easy_mode.series_finalizer import SeriesFinalizer
-from src.easy_mode.context_helper import build_prev_context
-from src.easy_mode.episode_generator import EpisodeGenerator
+from src.presets.loader import load_preset
+
 logger = logging.getLogger(__name__)
 
 

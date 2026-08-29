@@ -8,6 +8,7 @@ SceneTypeDetector と EroticIntegrityChecker を提供する。
 from __future__ import annotations
 
 import logging
+import re
 from typing import List, Optional, Tuple
 
 from src.agents.erotic.continuity import (
@@ -172,381 +173,16 @@ LOCATION_INDOOR_KW = ["部屋", "室内", "寝室", "浴室", "宿", "屋敷", "
 LOCATION_OUTDOOR_KW = ["外", "森", "庭", "野原", "河", "海", "空の下", "屋外"]
 LOCATION_TRANSITION_KW = ["移動", "向かう", "戻る", "出る", "入る", "到着"]
 
-# ===== シーン種別定数（汎用 Continuity Tracker 用） =====
-SCENE_TYPES = [
-    "combat",
-    "conversation",
-    "exploration",
-    "travel",
-    "rest",
-    "monologue",
-    "erotic",
-    "unknown",
-]
-
-COMBAT_KEYWORDS = [
-    "戦う",
-    "斬る",
-    "打つ",
-    "攻撃",
-    "防御",
-    "魔法",
-    "剣",
-    "槍",
-    "弓",
-    "呪文",
-    "殺",
-    "討つ",
-    "防ぐ",
-    "避ける",
-    "盾",
-    "刃",
-]
-CONVERSATION_KEYWORDS = [
-    "言った",
-    "答えた",
-    "聞いた",
-    "問う",
-    "語る",
-    "話す",
-    "囁く",
-    "叫ぶ",
-    "会話",
-    "対話",
-    "応える",
-    "返す",
-]
-EXPLORATION_KEYWORDS = [
-    "調べる",
-    "探索",
-    "探す",
-    "発見",
-    "手がかり",
-    "足跡",
-    "痕跡",
-    "調べ",
-    "観察",
-    "捜索",
-    "見つけ",
-]
-TRAVEL_KEYWORDS = [
-    "向かう",
-    "移動",
-    "歩く",
-    "道を",
-    "戻る",
-    "出る",
-    "入る",
-    "到着",
-    "出発",
-    "旅路",
-    "街道",
-]
-REST_KEYWORDS = [
-    "休む",
-    "眠る",
-    "睡眠",
-    "休息",
-    "座り込む",
-    "横たわる",
-    "眠りにつ",
-    "宿",
-    "野営",
-    "仮眠",
-]
-MONOLOGUE_KEYWORDS = [
-    "思う",
-    "考える",
-    "心に",
-    "独白",
-    "内心",
-    "胸の奥で",
-    "～だろうか",
-    "問いかける",
-    "自問",
-]
-
-# ===== シーン種別定数（汎用 Continuity Tracker 用） =====
-SCENE_TYPES = [
-    "combat",
-    "conversation",
-    "exploration",
-    "travel",
-    "rest",
-    "monologue",
-    "erotic",
-    "unknown",
-]
-
-COMBAT_KEYWORDS = [
-    "戦う",
-    "斬る",
-    "打つ",
-    "攻撃",
-    "防御",
-    "魔法",
-    "剣",
-    "槍",
-    "弓",
-    "呪文",
-    "殺",
-    "討つ",
-    "防ぐ",
-    "避ける",
-    "盾",
-    "刃",
-]
-CONVERSATION_KEYWORDS = [
-    "言った",
-    "答えた",
-    "聞いた",
-    "問う",
-    "語る",
-    "話す",
-    "囁く",
-    "叫ぶ",
-    "会話",
-    "対話",
-    "応える",
-    "返す",
-]
-EXPLORATION_KEYWORDS = [
-    "調べる",
-    "探索",
-    "探す",
-    "発見",
-    "手がかり",
-    "足跡",
-    "痕跡",
-    "調べ",
-    "観察",
-    "捜索",
-    "見つけ",
-]
-TRAVEL_KEYWORDS = [
-    "向かう",
-    "移動",
-    "歩く",
-    "道を",
-    "戻る",
-    "出る",
-    "入る",
-    "到着",
-    "出発",
-    "旅路",
-    "街道",
-]
-REST_KEYWORDS = [
-    "休む",
-    "眠る",
-    "睡眠",
-    "休息",
-    "座り込む",
-    "横たわる",
-    "眠りにつ",
-    "宿",
-    "野営",
-    "仮眠",
-]
-MONOLOGUE_KEYWORDS = [
-    "思う",
-    "考える",
-    "心に",
-    "独白",
-    "内心",
-    "胸の奥で",
-    "～だろうか",
-    "問いかける",
-    "自問",
-]
-
-# ===== シーン種別定数（汎用 Continuity Tracker 用） =====
-SCENE_TYPES = [
-    "combat",
-    "conversation",
-    "exploration",
-    "travel",
-    "rest",
-    "monologue",
-    "erotic",
-    "unknown",
-]
-
-COMBAT_KEYWORDS = [
-    "戦う",
-    "斬る",
-    "打つ",
-    "攻撃",
-    "防御",
-    "魔法",
-    "剣",
-    "槍",
-    "弓",
-    "呪文",
-    "殺",
-    "討つ",
-    "防ぐ",
-    "避ける",
-    "盾",
-    "刃",
-]
-CONVERSATION_KEYWORDS = [
-    "言った",
-    "答えた",
-    "聞いた",
-    "問う",
-    "語る",
-    "話す",
-    "囁く",
-    "叫ぶ",
-    "会話",
-    "対話",
-    "応える",
-    "返す",
-]
-EXPLORATION_KEYWORDS = [
-    "調べる",
-    "探索",
-    "探す",
-    "発見",
-    "手がかり",
-    "足跡",
-    "痕跡",
-    "調べ",
-    "観察",
-    "捜索",
-    "見つけ",
-]
-TRAVEL_KEYWORDS = [
-    "向かう",
-    "移動",
-    "歩く",
-    "道を",
-    "戻る",
-    "出る",
-    "入る",
-    "到着",
-    "出発",
-    "旅路",
-    "街道",
-]
-REST_KEYWORDS = [
-    "休む",
-    "眠る",
-    "睡眠",
-    "休息",
-    "座り込む",
-    "横たわる",
-    "眠りにつ",
-    "宿",
-    "野営",
-    "仮眠",
-]
-MONOLOGUE_KEYWORDS = [
-    "思う",
-    "考える",
-    "心に",
-    "独白",
-    "内心",
-    "胸の奥で",
-    "～だろうか",
-    "問いかける",
-    "自問",
-]
-
-# ===== シーン種別定数（汎用 Continuity Tracker 用） =====
-SCENE_TYPES = [
-    "combat",
-    "conversation",
-    "exploration",
-    "travel",
-    "rest",
-    "monologue",
-    "erotic",
-    "unknown",
-]
-
-COMBAT_KEYWORDS = [
-    "戦う",
-    "斬る",
-    "打つ",
-    "攻撃",
-    "防御",
-    "魔法",
-    "剣",
-    "槍",
-    "弓",
-    "呪文",
-    "殺",
-    "討つ",
-    "防ぐ",
-    "避ける",
-    "盾",
-    "刃",
-]
-CONVERSATION_KEYWORDS = [
-    "言った",
-    "答えた",
-    "聞いた",
-    "問う",
-    "語る",
-    "話す",
-    "囁く",
-    "叫ぶ",
-    "会話",
-    "対話",
-    "応える",
-    "返す",
-]
-EXPLORATION_KEYWORDS = [
-    "調べる",
-    "探索",
-    "探す",
-    "発見",
-    "手がかり",
-    "足跡",
-    "痕跡",
-    "調べ",
-    "観察",
-    "捜索",
-    "見つけ",
-]
-TRAVEL_KEYWORDS = [
-    "向かう",
-    "移動",
-    "歩く",
-    "道を",
-    "戻る",
-    "出る",
-    "入る",
-    "到着",
-    "出発",
-    "旅路",
-    "街道",
-]
-REST_KEYWORDS = [
-    "休む",
-    "眠る",
-    "睡眠",
-    "休息",
-    "座り込む",
-    "横たわる",
-    "眠りにつ",
-    "宿",
-    "野営",
-    "仮眠",
-]
-MONOLOGUE_KEYWORDS = [
-    "思う",
-    "考える",
-    "心に",
-    "独白",
-    "内心",
-    "胸の奥で",
-    "～だろうか",
-    "問いかける",
-    "自問",
-]
+# シーン種別・キーワードは単一ソース (vocabulary.py) からインポートし重複を排除
+from src.agents.erotic.vocabulary import (
+    COMBAT_KEYWORDS,
+    CONVERSATION_KEYWORDS,
+    EXPLORATION_KEYWORDS,
+    MONOLOGUE_KEYWORDS,
+    REST_KEYWORDS,
+    SCENE_TYPES,
+    TRAVEL_KEYWORDS,
+)
 
 STAMINA_ALLOWED_TRANSITIONS = {
     "exhausted": ["exhausted", "tired"],
@@ -674,38 +310,26 @@ class EroticIntegrityChecker:
         self.scene_continuity_tracker = SceneContinuityTracker(db_path=db_path)
 
     def check_mutual_consent(self, scene_text: str) -> Tuple[bool, List[str]]:
-        """簡易双方向同意チェック。両者それぞれに同意表現があるかを検証する。"""
+        """双方向同意チェック。
+
+        同意キーワードの「種類」が 2 種類以上検出されることを要求する。
+        1 種類のみ（例: 同じ単語の反復や片方だけの発話）の場合は双方向同意が
+        成立していないとみなす。これにより、従来の「同一発話内での複数キーワードは
+        OK」という抜け穴を塞ぐ。
+        """
         issues: List[str] = []
 
-        # 全同意キーワードの出現位置を収集
-        consent_positions: List[Tuple[int, str]] = []
-        for kw in CONSENT_ALL_CHARACTERS_KEYWORDS:
-            pos = 0
-            while True:
-                pos = scene_text.find(kw, pos)
-                if pos == -1:
-                    break
-                consent_positions.append((pos, kw))
-                pos += len(kw)
+        found = {kw for kw in CONSENT_ALL_CHARACTERS_KEYWORDS if kw in scene_text}
 
-        if len(consent_positions) == 0:
+        if len(found) == 0:
             issues.append("両者からの同意表現が検出されませんでした")
             return False, issues
 
-        if len(consent_positions) == 1:
-            issues.append("片方からの同意表現のみが検出されました（双方向同意が成立していません）")
+        if len(found) == 1:
+            issues.append(
+                "片方からの同意表現のみが検出されました（双方向同意が成立していません）"
+            )
             return False, issues
-
-        # 2つ以上あるが、同じ位置に密集しているかチェック
-        consent_positions.sort()
-        spread = (
-            consent_positions[-1][0] - consent_positions[0][0] if len(consent_positions) >= 2 else 0
-        )
-
-        if spread < 50 and len(consent_positions) >= 2:
-            # 同じ発話内での複数キーワード（片方だけの可能性あり）
-            # 距離が短い=同じ話者の可能性が高い。少なくとも一方の同意はあるのでOKにする
-            pass
 
         return len(issues) == 0, issues
 
@@ -718,32 +342,22 @@ class EroticIntegrityChecker:
 
         return len(issues) == 0, issues
 
+    _SENTENCE_RE = re.compile(r"[^。！？」\n]*[。！？」\n]")
+
     def _extract_clothing_events(self, scene_text: str) -> None:
-        """文を解析して衣服イベントを抽出する。"""
+        """文を解析して衣服イベントを抽出する（正規表現・1パス走査）。"""
         self.clothing_events.clear()
 
-        sentences = []
-        current_sentence = ""
-        for char in scene_text:
-            current_sentence += char
-            if char in ["。", "！", "？", "）", "」"]:
-                sentences.append(current_sentence)
-                current_sentence = ""
-        if current_sentence:
-            sentences.append(current_sentence)
-
-        for sentence in sentences:
-            sentence = sentence.strip()
+        for m in self._SENTENCE_RE.finditer(scene_text):
+            sentence = m.group(0).strip()
             if not sentence:
                 continue
 
             event_type = self._detect_event_type(sentence)
             if event_type:
                 phase = self._detect_phase(sentence)
-                pos_in_text = scene_text.find(sentence)
-
                 self.clothing_events.append(
-                    self.ClothingEvent(event_type, pos_in_text, phase, sentence)
+                    self.ClothingEvent(event_type, m.start(), phase, sentence)
                 )
 
     def _detect_event_type(self, sentence: str) -> Optional[str]:
@@ -1075,15 +689,23 @@ class EroticIntegrityChecker:
         _, coercive_issues = self.check_coercive_context(scene_text)
         all_issues.extend(coercive_issues)
 
-        quality_report = self.quality_scorer.score(scene_text) if self.quality_scorer else None
+        quality_report = None
+        try:
+            if self.quality_scorer:
+                quality_report = self.quality_scorer.score(scene_text)
+        except Exception as exc:  # 内部エラーが外部に漏れないようログのみ記録
+            logger.error("erotic quality scoring failed: %s", exc)
 
         # Continuity check（前話データと現在のエピソード番号/キャラクター名がある場合のみ）
         continuity_report = None
         if current_ep > 0 and character_name:
-            continuity_report = self.check_continuity(
-                current_ep, character_name, scene_text, prev_text
-            )
-            if continuity_report and not continuity_report.is_consistent:
-                all_issues.extend(continuity_report.issues)
+            try:
+                continuity_report = self.check_continuity(
+                    current_ep, character_name, scene_text, prev_text
+                )
+                if continuity_report and not continuity_report.is_consistent:
+                    all_issues.extend(continuity_report.issues)
+            except Exception as exc:
+                logger.error("erotic continuity check failed: %s", exc)
 
         return len(all_issues) == 0, all_issues, quality_report, continuity_report

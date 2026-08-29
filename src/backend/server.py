@@ -10,44 +10,34 @@ import uuid
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import FastAPI, Request, Depends
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from config.constants import (
     LONG_RUNNING_TIMEOUT_SEC as _LONG_RUNNING_TIMEOUT_SEC,
-    )
-from src.backend.constants import constants as const
-from config.constants import (
-    RATE_LIMIT_MAX_REQUESTS as _RATE_LIMIT_MAX_REQUESTS,
-)
-from config.constants import (
-    RATE_LIMIT_WINDOW_SECONDS as _RATE_LIMIT_WINDOW_SECONDS,
 )
 from config.cors_config import get_allowed_origins
 from config.logging_config import setup_logging
-from src.backend.auth import require_api_key, get_api_key_service
+from src.backend.auth import get_api_key_service, require_api_key
 from src.backend.background import BackgroundReporter, ProgressState
+from src.backend.constants import constants as const
 from src.backend.database import init_db
 from src.backend.error_handlers import register_error_handlers
-from src.backend.response_helpers import api_success
 from src.backend.observability.metrics import MetricsMiddleware
 from src.backend.rate_limit import RedisRateLimiter
+from src.backend.response_helpers import api_success
+from src.backend.tasks import execute_easy_mode_generation
 from src.core.container import AppContainer
 from src.core.observability import TraceContext
-from src.core.opentelemetry import setup_opentelemetry
-from src.core.exceptions import PipelineError
-from src.easy_mode.pipeline import EasyModePipeline, PipelineConfig
+from src.easy_mode.pipeline import PipelineConfig
 from src.models.api_schemas import (
     CritiqueOptimizeRequest,
     EasyModeRequest,
     RefineEroticRequest,
 )
 from src.services.redis_cache import RedisCacheService
-import redis.exceptions
-from src.backend.worker_config import huey
-from src.backend.tasks import execute_easy_mode_generation
 
 logger = logging.getLogger(__name__)
 # Redis rate limiter (initialized in lifespan)
@@ -138,7 +128,8 @@ async def lifespan(app: FastAPI):
 
 
 def generate_task_id(prefix: str) -> str:
-    return f"{prefix}_{uuid.uuid4().hex[:12]}"
+    """タスクIDを生成する。UUIDの最初の16文字を使用して一意性を確保。"""
+    return f"{prefix}_{uuid.uuid4().hex[:16]}"
 
 
 async def add_trace_id_middleware(request: Request, call_next):
@@ -194,7 +185,6 @@ async def rate_limit_middleware(request: Request, call_next):
     trace_id = getattr(request.state, "trace_id", None)
 
     try:
-        # Lazy initialization (Redis not available at import time)
         if _redis_rate_limiter is None:
             redis_service = RedisCacheService()
             _redis_rate_limiter = RedisRateLimiter(
@@ -214,8 +204,11 @@ async def rate_limit_middleware(request: Request, call_next):
                 ) | {"detail": "リクエスト数が制限を超えました。"},
             )
     except Exception as e:
-        logger.warning(f"Rate limiting error (failing open): {e}")
-        return await call_next(request)
+        logger.error(f"Rate limiting error: {e}", exc_info=True)
+        return JSONResponse(
+            status_code=503,
+            content={"detail": "レートリミットサービスが一時的に利用できません。"},
+        )
 
     return await call_next(request)
 
@@ -309,6 +302,8 @@ def create_app() -> FastAPI:
         "src.backend.routers.easy_mode",
         "src.backend.routers.illustrations",
         "src.backend.routers.events",
+        "src.backend.routers.prompt",
+        "src.backend.routers.story_canvas",
         "src.api.routes.ux_routes",
     ]
 
@@ -362,7 +357,7 @@ async def generate_easy(req: EasyModeRequest, api_key: str = Depends(require_api
         task_id=task_id,
         repo=AppContainer.db(),
     )
-    reporter = BackgroundReporter(progress_state)
+    BackgroundReporter(progress_state)
 
     # 初期タスク作成（DBに保存）
     await _create_task(task_id, "かんたんモード生成を開始中...", total_steps=1)

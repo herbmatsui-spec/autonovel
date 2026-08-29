@@ -21,19 +21,24 @@ def compute_ngram_similarity(text1: str, text2: str, n: int = 2) -> float:
     """
     bi-gram Jaccard類似度による高速類似度計算。
     embedding不要。0.0-1.0 を返す。
-    低性能LLM環境でのフォールバック、あるいは pre-filter として使用可能。
+    日本語・英語混合テキスト対応のため、トークンベースのn-gramを採用。
     """
     if not text1 or not text2:
         return 0.0
 
-    def get_ngrams(s: str, n: int):
-        s = s.replace(" ", "").lower()
-        if len(s) < n:
+    def get_token_ngrams(s: str, n: int):
+        tokens = s.split()
+        if not tokens:
             return set()
-        return set(s[i : i + n] for i in range(len(s) - n + 1))
+        ngrams = set()
+        for token in tokens:
+            token_lower = token.lower()
+            if len(token_lower) >= n:
+                ngrams.update(token_lower[i : i + n] for i in range(len(token_lower) - n + 1))
+        return ngrams
 
-    grams1 = get_ngrams(text1, n)
-    grams2 = get_ngrams(text2, n)
+    grams1 = get_token_ngrams(text1, n)
+    grams2 = get_token_ngrams(text2, n)
 
     if not grams1 or not grams2:
         return 0.0
@@ -89,6 +94,7 @@ def safe_model_validate(model_cls: Any, data: Any) -> Any:
             logger.info(f"🔄 自動修復: モデル {model_cls.__name__} を再構築してリトライします。")
             model_cls.model_rebuild()
             return model_cls.model_validate(data)
+        logger.error(f"Model validation failed for {model_cls.__name__}: {e}", exc_info=True)
         raise LLMValidationError(f"Model validation failed: {e}") from e
 
 
@@ -197,33 +203,31 @@ class AdaptiveCooldown:
         """トークンが補充されるまで待機する"""
         await self.bucket.wait_and_consume(1.0)
 
-    def _fire_adjust_rate(self, factor: float):
+    async def _fire_adjust_rate(self, factor: float):
+        """レート調整を非同期で実行し、例外はログに記録する。"""
         try:
-            loop = asyncio.get_running_loop()
-            loop.create_task(self.bucket.adjust_rate(factor))
-        except RuntimeError:
-            asyncio.run(self.bucket.adjust_rate(factor))
+            await self.bucket.adjust_rate(factor)
+        except Exception as e:
+            logger.warning(f"Failed to adjust rate (factor={factor}): {e}")
 
     def on_success(self):
         """成功時に補充レートを徐々に上げる"""
         self._consecutive_successes += 1
         if self._consecutive_successes >= 5:
-            # 補充レートを10%向上 (待機時間の短縮に相当)
-            self._fire_adjust_rate(1.1)
-            # 最大レート制限
+            asyncio.create_task(self._fire_adjust_rate(1.1))
             if self.bucket.fill_rate > self.max_rate:
                 self.bucket.fill_rate = self.max_rate
             self._consecutive_successes = 0
 
     def on_rate_limit(self):
         """429/503エラー時に補充レートを大幅に下げる"""
-        self._fire_adjust_rate(0.4)  # レートを60%削減
+        asyncio.create_task(self._fire_adjust_rate(0.4))
         if self.bucket.fill_rate < self.min_rate:
             self.bucket.fill_rate = self.min_rate
 
     def on_error(self):
         """一般エラー時に補充レートを少し下げる"""
-        self._fire_adjust_rate(0.8)  # レートを20%削減
+        asyncio.create_task(self._fire_adjust_rate(0.8))
         if self.bucket.fill_rate < self.min_rate:
             self.bucket.fill_rate = self.min_rate
 
@@ -238,11 +242,22 @@ def safe_get(data: Any, key: str, default: Any = None) -> Any:
 
 
 def extract_markdown_content(text: str) -> str:
-    """Extracts content from a markdown code block if present."""
+    """Extracts content from a markdown code block if present.
+
+     다양한言語指定子 (例: ```python, ```js) を持つフェンスブロック霞対応。
+    最初のフェンスブロックの内容を抽出します。
+    """
     if not text:
         return ""
 
-    # Remove markdown code block wrappers
-    text = re.sub(r"^```(?:markdown|md)?\s*\n", "", text, flags=re.IGNORECASE)
-    text = re.sub(r"\n```\s*$", "", text)
-    return text.strip()
+    fence_pattern = re.compile(r"^```(\w*)\s*\n", re.MULTILINE)
+    match = fence_pattern.search(text)
+    if not match:
+        return text.strip()
+
+    match.group(1)
+    start = match.end()
+    end_fence = text.find("```", start)
+    if end_fence == -1:
+        return text[start:].strip()
+    return text[start:end_fence].strip()

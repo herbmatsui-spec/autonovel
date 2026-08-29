@@ -1,0 +1,20 @@
+{# {{ axis.output_mode.value }} template #}
+{% set o = axis.output_mode.value %}
+{{ o }} mode prompt placeholder.
+
+Theme: {{ axis.theme.value or '未設定' }}
+Genre: {{ axis.genre.value or '未設定' }}
+Worldview: {{ axis.worldview.value or '未設定' }}
+Audience: {{ axis.audience.value or '未設定' }}
+Era: {{ axis.era.value or '未設定' }}
+Ending: {{ axis.ending_style.value or '未設定' }}
+Narrator: {{ axis.narrator.value or '未設定' }}
+Characters: {{ axis.characters.value or '未設定' }}
+UniversalInput: {{ axis.universal_input.value or '未設定' }}
+Supplemental: {{ axis.supplemental_note.value or '未設定' }}
+
+--- BEGIN STORY ---
+{% if axis.output_mode.value == 'novel' %}
+# 小説形式テンプレート
+{% endif %}
+--- END STORY ---

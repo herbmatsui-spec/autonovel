@@ -5,7 +5,7 @@ Provides consistent error handling, logging, and response formatting across the 
 """
 import logging
 import traceback
-from typing import Any, Dict, Optional, Type
+from typing import Any, Dict, Optional
 
 from src.core.exceptions import HegemonyError, LLMError, PipelineError
 

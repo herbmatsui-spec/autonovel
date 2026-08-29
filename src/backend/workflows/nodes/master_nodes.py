@@ -14,7 +14,6 @@ from src.backend.workflows.adapters import (
     update_erotic,
     update_narrative,
     update_quality,
-    update_tension,
 )
 from src.backend.workflows.graphs.plot_graph import compile_plot_graph
 from src.backend.workflows.graphs.review_graph import compile_review_graph
@@ -41,7 +40,7 @@ async def call_plot_graph_node(
     PlotGraph サブグラフを実行し、プロットを生成・推敲する。
     """
     logger.info(f"[MasterGraph] Executing Plot Subgraph for task {state.get('task_id')}...")
-    
+
     sse = get_sse_manager()
     await sse.broadcast(
         "pipeline_progress",
@@ -127,7 +126,7 @@ async def call_writing_graph_node(
 
     for ep in range(start_ep, end_ep + 1):
         progress = 0.35 + (0.45 * ((ep - start_ep + 1) / max(1, (end_ep - start_ep + 1))))
-        
+
         await sse.broadcast(
             "pipeline_progress",
             {
@@ -171,8 +170,12 @@ async def call_writing_graph_node(
 
         # ステップ 31: ドメインイベントバスへ EPISODE_WRITTEN 発行と集約
         try:
-            from src.shared.domain_event_bus import DomainEvent, NarrativeEventType, get_domain_event_bus
             from src.prototype.aggregator import aggregate
+            from src.shared.domain_event_bus import (
+                DomainEvent,
+                NarrativeEventType,
+                get_domain_event_bus,
+            )
 
             bus = get_domain_event_bus()
             ev = DomainEvent(

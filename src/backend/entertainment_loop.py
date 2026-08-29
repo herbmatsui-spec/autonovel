@@ -10,8 +10,8 @@ from __future__ import annotations
 import logging
 from typing import Any, Optional
 
-from src.models.entertainment_check import EntertainmentCheckResult
 from src.backend.constants import constants as const
+from src.models.entertainment_check import EntertainmentCheckResult
 
 logger = logging.getLogger(__name__)
 

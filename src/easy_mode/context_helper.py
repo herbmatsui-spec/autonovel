@@ -3,7 +3,8 @@
 """
 
 import logging
-from typing import List, Optional
+from typing import List
+
 from src.easy_mode.models import EpisodeResult
 
 logger = logging.getLogger(__name__)
@@ -23,7 +24,7 @@ class _CharFallbackEncoding:
 
     def decode(self, tokens: list[int]) -> str:
         # トークン長に応じた文字数で切り詰め
-        char_len = max(1, int(len(tokens) / 1.5))
+        max(1, int(len(tokens) / 1.5))
         return ""  # 実際には decode 前の文字列からスライスするためヘルパー側でケア
 
 

@@ -5,10 +5,8 @@ Compares alembic migration state with ORM model definitions to detect
 schema drift in production environments.
 """
 import logging
-from pathlib import Path
 from typing import Optional
 
-from alembic import command
 from alembic.config import Config
 from alembic.script import ScriptDirectory
 from sqlalchemy import create_engine, inspect, text

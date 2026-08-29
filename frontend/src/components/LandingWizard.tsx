@@ -77,7 +77,7 @@ export default function LandingWizard() {
 
   const { apiKey, setApiKey, modelType, nsfwConsented, setNsfwConsented } = useUserSettingsStore();
   const { books } = useBooks();
-  const { setSelectedBook } = useBookStore();
+  const { selectBook } = useBookStore();
   const { setPendingEasyMode } = useWorkspaceStore();
   const { handleCreateEasyMode } = useAppActions(() => {});
   const navigate = useNavigate();
@@ -152,7 +152,7 @@ export default function LandingWizard() {
   };
 
   const handleQuickResume = (book: typeof books[0]) => {
-    setSelectedBook(book);
+    selectBook(book);
     navigate(`/book/${book.id}`);
   };
 

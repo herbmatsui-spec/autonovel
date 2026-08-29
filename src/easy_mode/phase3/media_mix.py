@@ -240,7 +240,7 @@ class MangaScriptGenerator:
 
     def _classify_scene(self, text: str) -> str:
         """シーンタイプ分類"""
-        text_lower = text.lower()
+        text.lower()
 
         # 会話重視
         dialogue_ratio = len(re.findall(r'「[^」]*」|『[^』]*』|"[^"]*"', text)) / max(

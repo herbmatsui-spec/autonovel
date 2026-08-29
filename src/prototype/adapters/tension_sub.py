@@ -4,7 +4,6 @@ src/prototype/adapters/tension_sub.py - テンション曲線イベント購読�
 
 from __future__ import annotations
 
-from typing import Any
 from src.backend.workflows.narrative_state import NarrativeState
 from src.shared.domain_event_bus import DomainEvent, DomainEventBus, NarrativeEventType
 

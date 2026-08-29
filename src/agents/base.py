@@ -5,12 +5,15 @@ from typing import Any, Dict
 
 logger = logging.getLogger(__name__)
 
+from src.core.interfaces import ILLMClient, IRepository, IStyleRagManager
+from src.core.errors import AgentResult, handle_error
+
 
 class BaseAgent(ABC):
     """すべてのエージェントの基底クラス"""
 
     def __init__(
-        self, repo: Any = None, llm: Any = None, style_rag: Any = None, rag_prefetch: Any = None
+        self, repo: IRepository = None, llm: ILLMClient = None, style_rag: IStyleRagManager = None, rag_prefetch: Any = None
     ):
         self.repo = repo
         self.llm = llm
@@ -54,7 +57,7 @@ class BaseAgent(ABC):
         return book.current_branch_id if book and book.current_branch_id else 1
 
     @abstractmethod
-    async def run(self, *args, **kwargs):
+    async def run(self, *args, **kwargs) -> AgentResult[Dict[str, Any]]:
         """エージェント固有のメインロジック。サブクラスで実装する。"""
         pass
 
@@ -62,9 +65,15 @@ class BaseAgent(ABC):
         """LangGraph ノードから呼び出された際に State を受け取り、差分辞書を返す標準アダプタ"""
         try:
             result = await self.run(**{**state, **kwargs})
-            if isinstance(result, dict):
-                return result
-            return {"result": result}
+            if result.is_success():
+                if isinstance(result.data, dict):
+                    return result.data
+                return {"result": result.data}
+            else:
+                # エラー時はステータスとメッセージを返す
+                err = result.error
+                msg = str(err) if err is not None else "不明なエラー"
+                return {"status": "error", "error_message": msg}
         except Exception as e:
             logger.error(f"[{self.__class__.__name__}] Node execution failed: {e}")
             return {"status": "error", "error_message": str(e)}

@@ -1,22 +1,21 @@
 """
 src/backend/routers/styles.py - 文体管理・カスタム文体・文体RAG・プリセットAPI
 """
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
+
 from fastapi import APIRouter, Depends, HTTPException
 
+from config.styles import (
+    FORBIDDEN_SUMMARY_PATTERNS,
+    FORBIDDEN_WORD_REPLACEMENTS,
+    STYLE_DEFINITIONS,
+)
 from src.backend.auth import require_api_key
 from src.backend.database import UnitOfWork
 from src.backend.engine_helpers import get_engine
 from src.backend.response_helpers import api_success
-from src.core.container import AppContainer
-from config.styles import (
-    STYLE_DEFINITIONS,
-    FORBIDDEN_WORD_REPLACEMENTS,
-    FORBIDDEN_SUMMARY_PATTERNS,
-)
-
 from src.backend.router_helpers import workflow_endpoint
-from src.backend.utils.id_generator import generate_prefixed_id as generate_task_id
+from src.core.container import AppContainer
 
 router = APIRouter(prefix="/api/styles", tags=["styles"])
 
@@ -109,7 +108,7 @@ async def add_style_fragment(req: Dict[str, Any], api_key: str = Depends(require
     success = False
     if hasattr(engine, "style_rag") and engine.style_rag:
         success = await engine.style_rag.add_master_fragment(tag=tag, content=content, origin=origin)
-    
+
     if not success:
         # フォールバック: ダミーEmbeddingでDB登録
         async with UnitOfWork(AppContainer.db()) as uow:

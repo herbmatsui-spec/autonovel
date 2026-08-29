@@ -280,7 +280,7 @@ class EroticSpecialist:
 
         build_beats = [b for b in curve.beats if b.phase == "build"]
         peak_beats = [b for b in curve.beats if b.phase == "peak"]
-        afterglow_beats = [b for b in curve.beats if b.phase == "afterglow"]
+        [b for b in curve.beats if b.phase == "afterglow"]
 
         if len(build_beats) > 1:
             lines.append(f"  - 溜め（build）は{len(build_beats)}段階で段階的に構築すること")

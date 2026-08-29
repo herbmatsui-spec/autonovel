@@ -8,7 +8,7 @@ import { useUIStore } from '@/store/useUIStore';
 
 export default function BooksTab() {
   const { books, loading: booksLoading, error: booksError, handleDeleteBook } = useBooks();
-  const { selectedBook, setSelectedBook } = useBookStore();
+  const { selectedBook, selectBook } = useBookStore();
   const { setCreateModalOpen } = useUIStore();
 
   return (
@@ -42,11 +42,11 @@ export default function BooksTab() {
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
-                  setSelectedBook(book);
+                  selectBook(book);
                 }
               }}
               className={`flex items-center justify-between p-4 rounded-lg border border-[var(--border)] cursor-pointer ${selectedBook?.id === book.id ? 'bg-[var(--accent)]/20' : 'bg-transparent'}`}
-              onClick={() => setSelectedBook(book)}
+              onClick={() => selectBook(book)}
             >
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 bg-[var(--accent)] rounded-flex flex items-center justify-center">
@@ -65,7 +65,7 @@ export default function BooksTab() {
                   size="sm"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setSelectedBook(book);
+                    selectBook(book);
                   }}
                 >
                   選択

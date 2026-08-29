@@ -4,7 +4,6 @@ src/prototype/adapters/affinity_sub.py - 好感度イベント購読アダプタ
 
 from __future__ import annotations
 
-from typing import Any
 from src.backend.workflows.narrative_state import NarrativeState
 from src.shared.domain_event_bus import DomainEvent, DomainEventBus, NarrativeEventType
 

@@ -10,6 +10,15 @@
 - Critical components like `rate_limit.py` have full coverage.
 - The test suite has a high number of passing tests (867), showing a substantial test base.
 
+## Recent Improvements (2026-08-28)
+- 認証バイパス防止テスト追加 (`test_auth_fallback_and_test_keys.py`):
+  - `AUTH_DISABLED` + `ENVIRONMENT=production` 組み合わせで起動時エラー発生ことを確認
+  - 開発環境での `AUTH_DISABLED` 動作をテスト
+- レートリミッター フェイルクローズ テスト追加 (`test_rate_limiter.py`):
+  - Redis 障害時のフェイルクローズ動作をテスト
+  - `fail_open=True` オプション時の動作をテスト
+  - 通常時のレート制限動作をテスト
+
 ## Weaknesses & Gaps
 ### Low Coverage Files (<30% Coverage)
 - `src\agents\context_builder.py`: 9% coverage
@@ -24,7 +33,7 @@
 - `src\agents\audit.py`: 44% coverage (borderline)
 
 ### Test Suite Health
-- Passing: 867
+- Passing: 869 (+2 新規テスト)
 - Failing: 82 (primarily due to missing fixtures/mocks, not syntax errors)
 - Skipped: 106
 - The failing tests indicate setup issues that, once resolved, could improve both test pass rate and coverage.
@@ -44,4 +53,18 @@
 - Re-run coverage after fixes to measure progress.
 
 ---
+
+## Baseline for Code Review Fixes (2026-08-28)
+
+| 指標 | 値 | 備考 |
+|------|-----|------|
+| mypy --strict エラー数 | 2045 | 277 files |
+| ruff 違反数 | 190 | 24 fixable |
+| pytest 収集テスト数 | 1066 | 0 collection errors |
+| `except Exception` 箇所数 | 32 | tasks.py:18, writing_langgraph.py:10, database/core.py:4 |
+| `print` 文 (本番コード) | 3+ | commercial_validation.py, promptops.py, alembic migrations |
+| UUID 生成長さ | 12文字 | id_generator.py デフォルト |
+
 *Review generated on 2026-08-28*
+
+*Baseline recorded on 2026-08-28 for code review fix implementation*

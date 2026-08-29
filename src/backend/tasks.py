@@ -1,18 +1,16 @@
-import logging
 import ipaddress
+import logging
 from typing import Optional
 from urllib.parse import urlparse
 
 from huey import crontab
 
-from src.core.container import AppContainer
 from config.container import get_container
-
-from src.backend.database.uow import UnitOfWork
-from src.core.observability import with_trace_context
-from src.backend.worker_config import huey
-from src.backend.redis_util import get_redis_client
 from src.backend.background import ProgressState
+from src.backend.database.uow import UnitOfWork
+from src.backend.worker_config import huey
+from src.core.container import AppContainer
+from src.core.observability import with_trace_context
 
 logger = logging.getLogger('huey')
 
@@ -84,8 +82,8 @@ def _apply_config_overrides(config_dict: Optional[dict]) -> dict:
                 # Apply the override directly on the settings object
                 setattr(settings_obj, key, config_dict[key])
         return overrides
-    except Exception as e:
-        logger.warning(f"Failed to apply config overrides: {e}")
+    except (AttributeError, TypeError, KeyError, ValueError) as e:
+        log_exception(logger, "Failed to apply config overrides", e)
         return {}
 
 
@@ -96,8 +94,8 @@ def process_outbox_events():
     import asyncio
     try:
         asyncio.run(_process_outbox_events_async())
-    except Exception as e:
-        logger.error(f"Failed to process outbox events: {e}")
+    except (RuntimeError, asyncio.CancelledError) as e:
+        log_exception(logger, "Failed to process outbox events", e)
 
 
 async def _process_outbox_events_async():
@@ -110,8 +108,8 @@ async def _process_outbox_events_async():
         for event in events:
             try:
                 await uow.mark_outbox_event_processed(event.id)
-            except Exception as e:
-                logger.error(f"Failed to process outbox event {event.id}: {e}")
+            except (ValueError, RuntimeError, KeyError) as e:
+                log_exception(logger, f"Failed to process outbox event {event.id}", e)
 
 
 def _create_workflow(method_name: str, **services):
@@ -151,6 +149,7 @@ def _build_service_dict(container):
 @with_trace_context
 def execute_service_workflow(task_id: str, api_key: str, config_dict: dict, method_name: str, kwargs: dict, trace_id: Optional[str] = None):
     import asyncio
+
     from src.backend.background import BackgroundReporter, ProgressState
 
     state = ProgressState(is_running=True, task_id=task_id, repo=None)
@@ -160,9 +159,8 @@ def execute_service_workflow(task_id: str, api_key: str, config_dict: dict, meth
         try:
             # Apply config overrides and get original values for restoration
             overrides = _apply_config_overrides(config_dict)
-            
+
             from src.core.container import AppContainer
-            from src.core.container import make_container
 
             _apply_config_overrides(config_dict)
 
@@ -182,8 +180,8 @@ def execute_service_workflow(task_id: str, api_key: str, config_dict: dict, meth
             state.message = "処理が完了しました。"
             state._save_to_db()
 
-        except Exception as e:
-            logger.error(f"Workflow error: {e}", exc_info=True)
+        except (ValueError, RuntimeError, KeyError, TypeError) as e:
+            log_exception(logger, "Workflow error", e)
             state.is_running = False
             state.error = str(e)
             state._save_to_db()
@@ -201,8 +199,8 @@ def execute_service_workflow(task_id: str, api_key: str, config_dict: dict, meth
 
     try:
         asyncio.run(_run())
-    except Exception as e:
-        logger.error(f"Task execution failed: {e}", exc_info=True)
+    except (RuntimeError, asyncio.CancelledError) as e:
+        log_exception(logger, "Task execution failed", e)
 
 
 @huey.task(retries=3, retry_delay=5)
@@ -227,15 +225,15 @@ def run_test_coro(task_id: str, message: str, trace_id: Optional[str] = None):
 def run_override_affinity_task(task_id: str, book_id: int, branch_id: int, req_data: dict, api_key: str):
     """Background task to apply affinity overrides and broadcast SSE."""
     import asyncio
+
     from src.backend.background import BackgroundReporter, ProgressState
-    from src.backend.sse_manager import get_sse_manager
     from src.backend.database import UnitOfWork
-    from src.core.container import AppContainer
+    from src.backend.sse_manager import get_sse_manager
     from src.backend.workflows.narrative_state import NarrativeState
     from src.schemas.ux_schemas import AffinityData
 
     state = ProgressState(is_running=True, task_id=task_id, repo=None)
-    reporter = BackgroundReporter(state)
+    BackgroundReporter(state)
 
     async def _run():
         try:
@@ -254,7 +252,7 @@ def run_override_affinity_task(task_id: str, book_id: int, branch_id: int, req_d
                         existing_copy.setdefault("character_name", cname)
                         try:
                             existing = AffinityData(**existing_copy)
-                        except Exception:
+                        except (TypeError, ValueError):
                             existing = AffinityData(character_name=cname)
                     elif isinstance(existing, (int, float)):
                         existing = AffinityData(character_name=cname, affinity_score=float(existing))
@@ -286,16 +284,16 @@ def run_override_affinity_task(task_id: str, book_id: int, branch_id: int, req_d
             state.is_running = False
             state.message = "Affinity override completed"
             state._save_to_db()
-        except Exception as e:
-            logger.error(f"Affinity override task failed: {e}")
+        except (ValueError, RuntimeError, KeyError, TypeError) as e:
+            log_exception(logger, "Affinity override task failed", e)
             state.is_running = False
             state.error = str(e)
             state._save_to_db()
 
     try:
         asyncio.run(_run())
-    except Exception as e:
-        logger.error(f"Task execution failed: {e}", exc_info=True)
+    except (RuntimeError, asyncio.CancelledError) as e:
+        log_exception(logger, "Task execution failed", e)
 
 
 # Task for rebuilding plot with foreshadows (narrative endpoint)
@@ -304,15 +302,14 @@ def run_override_affinity_task(task_id: str, book_id: int, branch_id: int, req_d
 def run_rebuild_plot_task(task_id: str, book_id: int, branch_id: int, req_data: dict, api_key: str):
     """Background task to rebuild plot using foreshadow data and broadcast SSE."""
     import asyncio
+
     from src.backend.background import BackgroundReporter, ProgressState
-    from src.backend.sse_manager import get_sse_manager
     from src.backend.database import UnitOfWork
-    from src.core.container import AppContainer
+    from src.backend.sse_manager import get_sse_manager
     from src.backend.workflows.graphs.plot_graph import compile_plot_graph
-    from src.schemas.ux_schemas import AffinityData
 
     state = ProgressState(is_running=True, task_id=task_id, repo=None)
-    reporter = BackgroundReporter(state)
+    BackgroundReporter(state)
 
     async def _run():
         try:
@@ -325,7 +322,8 @@ def run_rebuild_plot_task(task_id: str, book_id: int, branch_id: int, req_data: 
                     db_data = await pfm.load_persistent(book_id, branch_id, repo=uow.misc)
                     if db_data:
                         fm.foreshadows = db_data
-            except Exception:
+            except (ImportError, AttributeError, RuntimeError):
+                # PersistentForeshadowManager が利用不可、または読み込み失敗時は無視
                 pass
 
             unresolved = fm.get_unresolved_foreshadows()
@@ -384,23 +382,23 @@ def run_rebuild_plot_task(task_id: str, book_id: int, branch_id: int, req_data: 
             state.is_running = False
             state.message = "Plot rebuild completed"
             state._save_to_db()
-        except Exception as e:
-            logger.error(f"Plot rebuild task failed: {e}")
+        except (ValueError, RuntimeError, KeyError, TypeError) as e:
+            log_exception(logger, "Plot rebuild task failed", e)
             state.is_running = False
             state.error = str(e)
             state._save_to_db()
 
     try:
         asyncio.run(_run())
-    except Exception as e:
-        logger.error(f"Task execution failed: {e}", exc_info=True)
+    except (RuntimeError, asyncio.CancelledError) as e:
+        log_exception(logger, "Task execution failed", e)
 
 @huey.task(retries=3, retry_delay=5)
 @with_trace_context
 def async_score_narrative_metrics(book_id: int, branch_id: int, ep_num: int, trace_id: Optional[str] = None):
     """エピソードのスコアリングをバックグラウンドで実行するタスク"""
     import asyncio
-    from src.core.container import AppContainer
+
     from src.backend.database.repositories.narrative_metrics_repo import NarrativeMetricRepository
     from src.services.narrative_scoring_service import NarrativeScoringService
 
@@ -414,8 +412,8 @@ def async_score_narrative_metrics(book_id: int, branch_id: int, ep_num: int, tra
                 success = await service.rescore_episode(book_id, branch_id, ep_num)
                 logger.info(f"Background scoring for Ep.{ep_num} finished. Success: {success}")
                 return success
-        except Exception as e:
-            logger.exception(f"Error in async_score_narrative_metrics for Ep.{ep_num}: {e}")
+        except (ValueError, RuntimeError, KeyError, TypeError, AttributeError) as e:
+            log_exception(logger, f"Error in async_score_narrative_metrics for Ep.{ep_num}", e)
             return False
 
     return asyncio.run(_run())
@@ -426,7 +424,6 @@ def async_score_narrative_metrics(book_id: int, branch_id: int, ep_num: int, tra
 def enqueue_audit_after_write(book_id: int, write_from: int, write_to: int, trace_id: Optional[str] = None):
     """執筆完了後の論理監査 (Shadow Mode) をバックグラウンドで実行するタスク。"""
     import asyncio
-    from src.core.container import AppContainer
 
     async def _run():
         try:
@@ -438,8 +435,8 @@ def enqueue_audit_after_write(book_id: int, write_from: int, write_to: int, trac
                 logger.info(
                     f"Shadow audit finished for book_id={book_id}, ep{write_from}-ep{write_to}"
                 )
-        except Exception as e:
-            logger.exception(f"Error in enqueue_audit_after_write for book_id={book_id}: {e}")
+        except (ValueError, RuntimeError, KeyError, TypeError, AttributeError) as e:
+            log_exception(logger, f"Error in enqueue_audit_after_write for book_id={book_id}", e)
 
     return asyncio.run(_run())
 
@@ -449,8 +446,8 @@ def enqueue_audit_after_write(book_id: int, write_from: int, write_to: int, trac
 def execute_easy_mode_generation(task_id: str, api_key: str, genre: str, keywords: str, archetype_key: str, target_eps: int, initial_limit: int, word_count: int, concept: str, tone_vibe: float, style_key: Optional[str], enable_erotic: bool, erotic_intensity: int, trace_id: Optional[str] = None):
     """かんたんモード全自動生成をバックグラウンドで実行するタスク"""
     import asyncio
+
     from src.backend.background import BackgroundReporter, ProgressState
-    from src.core.container import AppContainer
     from src.backend.workflows.full_auto_workflow import FullAutoWorkflow
 
     state = ProgressState(is_running=True, task_id=task_id, repo=None)
@@ -488,16 +485,16 @@ def execute_easy_mode_generation(task_id: str, api_key: str, genre: str, keyword
 
             logger.info(f"Easy mode pipeline completed: {task_id}")
 
-        except Exception as e:
-            logger.error(f"Easy mode pipeline failed: {e}", exc_info=True)
+        except (ValueError, RuntimeError, KeyError, TypeError) as e:
+            log_exception(logger, "Easy mode pipeline failed", e)
             state.is_running = False
             state.error = str(e)
             state._save_to_db()
 
     try:
         asyncio.run(_run())
-    except Exception as e:
-        logger.error(f"Task execution failed: {e}", exc_info=True)
+    except (RuntimeError, asyncio.CancelledError) as e:
+        log_exception(logger, "Task execution failed", e)
 
 
 @huey.task(retries=3, retry_delay=5)
@@ -506,15 +503,15 @@ def run_commercial_pipeline_task(task_id: str, series_config: dict, samples: lis
     """商用化パイプラインをバックグラウンドで実行するタスク"""
     import asyncio
     import logging
+
     from src.backend.background import BackgroundReporter, ProgressState
-    from src.core.container import AppContainer
     from src.backend.workflows.commercial_pipeline import CommercialPipeline
 
     # Use the module-level logger (or create a local one)
     logger = logging.getLogger('huey')
 
     state = ProgressState(is_running=True, task_id=task_id, repo=None)
-    reporter = BackgroundReporter(state)
+    BackgroundReporter(state)
 
     async def _run():
         try:
@@ -530,13 +527,13 @@ def run_commercial_pipeline_task(task_id: str, series_config: dict, samples: lis
             state.is_running = False
             state.message = "商用化パイプラインが完了しました。"
             state._save_to_db()
-        except Exception as e:
-            logger.error(f"Commercial pipeline error: {e}", exc_info=True)
+        except (ValueError, RuntimeError, KeyError, TypeError) as e:
+            log_exception(logger, "Commercial pipeline error", e)
             state.is_running = False
             state.error = str(e)
             state._save_to_db()
 
     try:
         asyncio.run(_run())
-    except Exception as e:
-        logger.error(f"Task execution failed: {e}", exc_info=True)
+    except (RuntimeError, asyncio.CancelledError) as e:
+        log_exception(logger, "Task execution failed", e)

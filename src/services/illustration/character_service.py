@@ -2,7 +2,6 @@
 
 import logging
 import time
-
 from typing import Any, Optional
 
 from src.models.illustration import IllustrationRequest, IllustrationResult, IllustrationType

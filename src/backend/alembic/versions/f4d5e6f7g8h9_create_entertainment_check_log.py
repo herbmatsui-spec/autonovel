@@ -9,7 +9,6 @@ Create Date: 2026-07-09 00:03:00.000000
 from typing import Sequence, Union
 
 import sqlalchemy as sa
-
 from alembic import op
 
 revision: str = "f4d5e6f7g8h9_create_entertainment_check_log"

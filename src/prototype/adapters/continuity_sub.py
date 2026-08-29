@@ -4,7 +4,6 @@ src/prototype/adapters/continuity_sub.py - 継続性・整合性イベント購�
 
 from __future__ import annotations
 
-from typing import Any
 from src.backend.workflows.narrative_state import NarrativeState
 from src.shared.domain_event_bus import DomainEvent, DomainEventBus, NarrativeEventType
 

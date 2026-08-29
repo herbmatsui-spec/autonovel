@@ -5,18 +5,24 @@ from src.engine_service import EngineService
 
 def test_engine_service_initialization():
     """EngineServiceが正しく初期化できるかテスト"""
-    # モック用に空のAPIキーを使用
     service = EngineService(api_key="test-key")
     assert service is not None
     assert service.engine is not None
 
 
-def test_get_instance_in_session():
-    """Streamlitセッション経由でインスタンスが取得できるか"""
-    # streamlitのセッション状態をモックする必要があるかもしれないが
-    # ここでは基本的な構造の確認とする
-    try:
-        instance = EngineService.get_instance(api_key="test-key")
-        assert instance is not None
-    except Exception as e:
-        pytest.fail(f"get_instance failed: {e}")
+def test_engine_service_create_book():
+    """EngineServiceで書籍作成ができるかテスト"""
+    service = EngineService(api_key="test-key")
+    book = service.create_book(title="Test Novel", genre="fantasy", target_eps=10)
+    assert book["title"] == "Test Novel"
+    assert book["genre"] == "fantasy"
+    assert book["target_eps"] == 10
+    assert book["id"] == 1
+
+
+def test_engine_service_get_all_books():
+    """EngineServiceで全書籍取得ができるかテスト"""
+    service = EngineService(api_key="test-key")
+    books = service.get_all_books()
+    assert isinstance(books, list)
+    assert len(books) == 0

@@ -17,6 +17,7 @@ export interface Book {
   target_eps: number;
   cumulative_stress?: number;
   created_at: string;
+  axis_lock_flags?: Record<string, boolean>;
 }
 
 export interface Plot {
@@ -318,4 +319,25 @@ export interface Issue {
   constraint_for_next_ep?: string;
   status: string;
   resolved_note?: string;
+}
+
+export type AxisType =
+  | 'output_mode'
+  | 'theme'
+  | 'genre'
+  | 'worldview'
+  | 'audience'
+  | 'era'
+  | 'ending_style'
+  | 'narrator'
+  | 'characters'
+  | 'universal_input'
+  | 'supplemental_note';
+
+export type AxisValue = string | string[] | null;
+
+export interface AxisState {
+  value: AxisValue;
+  locked: boolean;
+  defaultValue: AxisValue;
 }

@@ -13,6 +13,7 @@ import { useTaskStream, type StreamError } from '@/hooks/useTaskStream';
 import { useBookDetails } from '@/hooks/useBookDetails';
 import { useTaskRestore } from '@/hooks/useTaskRestore';
 import { useAppActions } from '@/hooks/useAppActions';
+import { useAxisLocksSync } from '@/hooks/useAxisLocksSync';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { useWorkspaceStore } from '@/store/useWorkspaceStore';
 import { Header } from '@/components/layout/Header';
@@ -28,7 +29,7 @@ export default function App() {
   const { books, handleDeleteBook } = useBooks();
 
   // Book Store
-  const { selectedBook, setSelectedBook } = useBookStore();
+  const { selectedBook, selectBook, hydrateLocks } = useBookStore();
 
   // UI Store
   const { globalError, setGlobalError } = useUIStore();
@@ -42,8 +43,16 @@ export default function App() {
   // Navigation
   const navigate = useNavigate();
 
+  // Sync axis locks via SSE
+  useAxisLocksSync();
+
   // Task restore on mount
   useTaskRestore();
+
+  // Hydrate axis locks from localStorage
+  useEffect(() => {
+    hydrateLocks();
+  }, [hydrateLocks]);
 
   // Book details loading (based on selectedBook.id)
   const { loadBookDetails } = useBookDetails(selectedBook?.id ?? null);
@@ -51,10 +60,10 @@ export default function App() {
   // Auto-select first book if none selected and list loaded
   useEffect(() => {
     if (books.length > 0 && !selectedBook) {
-      setSelectedBook(books[0]);
+      selectBook(books[0]);
       setSelectedBookId(books[0].id);
     }
-  }, [books, selectedBook, setSelectedBook, setSelectedBookId]);
+  }, [books, selectedBook, selectBook, setSelectedBookId]);
 
   // Load book details when selected book changes
   useEffect(() => {
@@ -76,7 +85,7 @@ export default function App() {
           const newest = allBooks.slice().sort((a, b) => 
             new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
           )[0];
-          setSelectedBook(newest);
+          selectBook(newest);
           setSelectedBookId(newest.id);
           navigate(`/book/${newest.id}/theme`, { replace: true });
         }
@@ -97,7 +106,7 @@ export default function App() {
     } else {
       toast.error(`タスクエラーが発生しました: ${status.task_error?.message ?? status.error ?? '不明なエラー'}`);
     }
-  }, [loadBookDetails, pendingEasyMode, setPendingEasyMode, navigate, setSelectedBook, setSelectedBookId, setActiveTaskId]);
+  }, [loadBookDetails, pendingEasyMode, setPendingEasyMode, navigate, selectBook, setSelectedBookId, setActiveTaskId]);
 
   const handleTaskError = useCallback((error: StreamError) => {
     console.error('Task stream connection error:', error);
@@ -137,7 +146,7 @@ export default function App() {
         <Header
           books={books}
           selectedBook={selectedBook}
-          onSelectBook={setSelectedBook}
+          onSelectBook={selectBook}
           onDeleteBook={handleDeleteBook}
           apiKey={apiKey}
           onCreateEasyMode={handleCreateEasyModeWithFlag}

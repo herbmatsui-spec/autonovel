@@ -1,32 +1,30 @@
 import logging
 from typing import Optional
-from fastapi import APIRouter, Query, Body
 
-from src.schemas.ux_schemas import (
-    HeatmapData,
-    AffinityData,
-    SceneTheme,
-    WhatIfRequest,
-    WhatIfResponse,
-    BranchCreateRequest,
-    BranchCreateResponse,
-    HITLRequestPayload,
-    HITLResumePayload,
-    ReadingSpeedData,
-    MonologueResponse,
-    GapMoePreference,
-    BedtimeMessage,
-)
-from src.services.metrics_analyzer import MetricsAnalyzer
-from src.services.affinity_tracker import AffinityTracker
-from src.services.pacing_adjuster import PacingAdjuster
-from src.services.preference_store import PreferenceStore
-from src.services.branch_service import BranchService
-from src.backend.hitl_manager import get_hitl_manager
-from src.backend.response_helpers import api_success
-from src.agents.what_if_generator import WhatIfGenerator
+from fastapi import APIRouter, Query
+
 from src.agents.afterglow_generator import AfterglowGenerator
 from src.agents.bedtime_supporter import BedtimeSupporter
+from src.agents.what_if_generator import WhatIfGenerator
+from src.backend.hitl_manager import get_hitl_manager
+from src.backend.response_helpers import api_success
+from src.schemas.ux_schemas import (
+    AffinityData,
+    BedtimeMessage,
+    BranchCreateRequest,
+    GapMoePreference,
+    HeatmapData,
+    HITLResumePayload,
+    MonologueResponse,
+    ReadingSpeedData,
+    SceneTheme,
+    WhatIfRequest,
+)
+from src.services.affinity_tracker import AffinityTracker
+from src.services.branch_service import BranchService
+from src.services.metrics_analyzer import MetricsAnalyzer
+from src.services.pacing_adjuster import PacingAdjuster
+from src.services.preference_store import PreferenceStore
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/ux", tags=["UX Enhancements"])

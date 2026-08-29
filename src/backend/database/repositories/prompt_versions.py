@@ -104,7 +104,7 @@ class PromptVersionRepository(PromptVersionRepositoryInterface, BaseRepository):
             select(PromptVersion)
             .where(PromptVersion.book_id == book_id)
             .where(PromptVersion.prompt_key == prompt_key)
-            .where(PromptVersion.is_active == True)
+            .where(PromptVersion.is_active)
         )
         row = result.scalar_one_or_none()
         if row:

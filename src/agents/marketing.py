@@ -6,7 +6,8 @@ import zipfile
 from typing import Any, Dict, Optional, Tuple
 
 from src.agents.base import BaseAgent
-from src.services.llm_service import LLMService
+from src.core.interfaces import ILLMClient, IPromptManager
+from src.core.errors import AgentResult, handle_error
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +16,7 @@ class MarketingAgent(BaseAgent):
     """マーケティング素材（表紙案、キャッチコピー、あらすじ）を生成するエージェント。"""
 
     def __init__(
-        self, repo: Any = None, llm: Optional[LLMService] = None, prompt_manager: Any = None
+        self, repo: Any = None, llm: Optional[ILLMClient] = None, prompt_manager: Optional[IPromptManager] = None
     ):
         super().__init__(repo=repo, llm=llm)
         self.prompt_manager = prompt_manager
@@ -31,9 +32,11 @@ class MarketingAgent(BaseAgent):
         result = await self.llm.generate_json(purpose="marketing", prompt=prompt)
         return result.get("metadata", {})
 
-    async def run(self, *args, **kwargs):
+    @handle_error(logger_name=__name__)
+    async def run(self, *args, **kwargs) -> AgentResult[Dict[str, Any]]:
         logger.info("MarketingAgent run invoked")
-        return await self.generate_pack(**kwargs)
+        pack = await self.generate_pack(**kwargs)
+        return AgentResult.ok(pack)
 
     async def create_export_package(self, book_id: int) -> Tuple[bytes, str]:
         """作品データ一式（本文、設定、プロット、JSONダンプ）をZIPパッケージ化する"""

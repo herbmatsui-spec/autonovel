@@ -38,7 +38,7 @@ def setup_opentelemetry(
     Returns:
         TracerProvider インスタンス
     """
-    settings = get_settings()
+    get_settings()
 
     # サービス名決定
     if service_name is None:

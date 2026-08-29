@@ -18,6 +18,7 @@ export default function BookTabBar({ bookId, currentStep, currentTab, onTabChang
     { id: 'style-lab', label: '文体ラボ', icon: '🧬' },
     { id: 'plots', label: 'プロット設計', icon: '📖' },
     { id: 'analytics', label: '品質＆販促', icon: '📈' },
+    { id: 'story-canvas', label: 'ストーリーキャンバス', icon: '🗺️' },
     // Add more tabs as needed
   ];
 

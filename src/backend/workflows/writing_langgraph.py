@@ -14,7 +14,7 @@ import asyncio
 import logging
 import random
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 try:
     from langgraph.checkpoint.memory import MemorySaver
@@ -27,6 +27,7 @@ except ImportError:
     StateGraph = None  # type: ignore
     HAS_LANGGRAPH = False
 
+from src.backend.error_utils import log_exception
 from src.core.exceptions import PipelineError
 
 logger = logging.getLogger(__name__)
@@ -40,8 +41,6 @@ from src.backend.constants import constants as const
 # MAX_RETRY_DELAY = 30.0  # Use const.MAX_RETRY_DELAY_SEC
 # RETRY_BACKOFF_FACTOR = 2.0  # Use const.RETRY_BACKOFF_FACTOR
 # QUALITY_THRESHOLD_EARLY_EXIT = 0.95  # Use const.QUALITY_THRESHOLD_EARLY_EXIT
-
-
 from src.backend.workflows.state import WritingGraphState
 
 
@@ -189,13 +188,11 @@ class WritingGraphManager:
                     break
                 except Exception as e:
                     if attempt < const.DEFAULT_MAX_RETRIES - 1:
-                        logger.warning(
-                            f"node_prepare attempt {attempt + 1} failed: {e}, retrying in {retry_delay}s"
-                        )
+                        log_exception(logger, f"node_prepare attempt {attempt + 1} failed, retrying in {retry_delay}s", e)
                         await asyncio.sleep(retry_delay)
                         retry_delay = min(retry_delay * const.RETRY_BACKOFF_FACTOR, const.MAX_RETRY_DELAY_SEC)
                     else:
-                        logger.error(f"node_prepare failed after 3 attempts: {e}")
+                        log_exception(logger, f"node_prepare failed after 3 attempts", e)
                         raise
 
         from config.project_context import ProjectContext
@@ -248,14 +245,14 @@ class WritingGraphManager:
                     last_error = "Insufficient content generated"
             except Exception as e:
                 last_error = e
-                logger.warning(f"Drafting attempt {attempt + 1} failed: {e}")
+                log_exception(logger, f"Drafting attempt {attempt + 1} failed", e)
 
             if attempt < const.DEFAULT_MAX_RETRIES - 1:
                 await asyncio.sleep(retry_delay + random.uniform(0, 0.5))  # ジェッター追加
                 retry_delay = min(retry_delay * const.RETRY_BACKOFF_FACTOR, const.MAX_RETRY_DELAY_SEC)
 
         # 全リトライ失敗時
-        logger.error(f"Drafting failed after 3 attempts for Ep.{state['ep_num']}: {last_error}")
+        log_exception(logger, f"Drafting failed after 3 attempts for Ep.{state['ep_num']}", last_error)
         raise PipelineError(f"Drafting failed after retries for episode {state['ep_num']}: {last_error}")
 
     async def node_audit(self, state: Dict[str, Any]):
@@ -333,12 +330,12 @@ class WritingGraphManager:
                 }
             except Exception as e:
                 last_error = e
-                logger.warning(f"Audit attempt {attempt + 1} failed for Ep.{state['ep_num']}: {e}")
+                log_exception(logger, f"Audit attempt {attempt + 1} failed for Ep.{state['ep_num']}", e)
                 if attempt < const.DEFAULT_MAX_RETRIES - 1:
                     await asyncio.sleep(retry_delay + random.uniform(0, 0.3))
                     retry_delay = min(retry_delay * const.RETRY_BACKOFF_FACTOR, const.MAX_RETRY_DELAY_SEC)
 
-        logger.error(f"Audit failed after 3 attempts for Ep.{state['ep_num']}: {last_error}")
+        log_exception(logger, f"Audit failed after 3 attempts for Ep.{state['ep_num']}", last_error)
         raise PipelineError(f"Audit failed after retries for episode {state['ep_num']}: {last_error}")
 
     def route_after_audit(self, state: Dict[str, Any]) -> str:
@@ -404,12 +401,12 @@ class WritingGraphManager:
                 return {"critic_triggered": triggered}
             except Exception as e:
                 last_error = e
-                logger.warning(f"Critic attempt {attempt + 1} failed for Ep.{state['ep_num']}: {e}")
+                log_exception(logger, f"Critic attempt {attempt + 1} failed for Ep.{state['ep_num']}", e)
                 if attempt < const.DEFAULT_MAX_RETRIES - 1:
                     await asyncio.sleep(retry_delay + random.uniform(0, 0.2))
                     retry_delay = min(retry_delay * const.RETRY_BACKOFF_FACTOR, const.MAX_RETRY_DELAY_SEC)
 
-        logger.error(f"Critic failed after 3 attempts for Ep.{state['ep_num']}: {last_error}")
+        log_exception(logger, f"Critic failed after 3 attempts for Ep.{state['ep_num']}", last_error)
         return {"critic_triggered": False}
 
     def route_after_critic(self, state: Dict[str, Any]) -> str:
@@ -454,14 +451,12 @@ class WritingGraphManager:
                 }
             except Exception as e:
                 last_error = e
-                logger.warning(
-                    f"Healing attempt {attempt + 1} failed for Ep.{state['ep_num']}: {e}"
-                )
+                log_exception(logger, f"Healing attempt {attempt + 1} failed for Ep.{state['ep_num']}", e)
                 if attempt < const.DEFAULT_MAX_RETRIES - 1:
                     await asyncio.sleep(retry_delay + random.uniform(0, 0.2))
                     retry_delay = min(retry_delay * const.RETRY_BACKOFF_FACTOR, const.MAX_RETRY_DELAY_SEC)
 
-        logger.error(f"Healing failed after 3 attempts for Ep.{state['ep_num']}: {last_error}")
+        log_exception(logger, f"Healing failed after 3 attempts for Ep.{state['ep_num']}", last_error)
         return {
             "draft_content": state["draft_content"],  # 元のコンテンツを保持
             "is_causal_ok": False,
@@ -544,8 +539,8 @@ class WritingGraphManager:
                 causal_reason=state.get("causal_reason", ""),
             )
             self.metrics_collector.record(metrics)
-        except Exception as e:
-            logger.warning(f"Failed to record quality metrics for Ep.{ep_num}: {e}")
+        except (ValueError, RuntimeError, AttributeError, TypeError) as e:
+            log_exception(logger, f"Failed to record quality metrics for Ep.{ep_num}", e)
 
         if not (
             state.get("is_integrity_ok")
@@ -668,11 +663,11 @@ class WritingGraphManager:
             )
             return res["draft_content"], res["final_meta"], res["is_integrity_ok"]
         except PipelineError as e:
-            logger.error(f"LangGraph execution failed for Ep.{ep_num}: {e}")
+            log_exception(logger, f"LangGraph execution failed for Ep.{ep_num}", e)
             # Return failure result
             return "", {}, False
         except Exception as e:
-            logger.error(f"LangGraph execution failed for Ep.{ep_num}: {e}")
+            log_exception(logger, f"LangGraph execution failed for Ep.{ep_num}", e)
             raise
 
     def get_checkpoint_metadata(self, ep_num: int) -> Optional[Dict[str, Any]]:
@@ -742,8 +737,8 @@ class WritingGraphManager:
         try:
             await self._scheduler.await_plot_ready(depends_on)
             logger.info(f"Ep.{ep_num}: Dependency Ep.{depends_on} ready")
-        except Exception as e:
-            logger.warning(f"Ep.{ep_num}: Failed to wait for Ep.{depends_on}: {e}")
+        except (RuntimeError, asyncio.TimeoutError, ValueError) as e:
+            log_exception(logger, f"Ep.{ep_num}: Failed to wait for Ep.{depends_on}", e)
 
     async def run_with_dependencies(
         self,

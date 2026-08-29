@@ -9,8 +9,8 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from src.backend.response_helpers import api_error
 
+from src.backend.response_helpers import api_error
 from src.core.exceptions import HegemonyError
 
 logger = logging.getLogger(__name__)

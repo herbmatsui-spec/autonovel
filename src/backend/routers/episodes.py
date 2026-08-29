@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends
 
 from src.backend.auth import require_api_key
 from src.backend.database.uow import UnitOfWork
-from src.backend.task_helpers import create_task as _create_task
-from src.backend.router_helpers import workflow_endpoint
 from src.backend.response_helpers import api_success
+from src.backend.router_helpers import workflow_endpoint
+from src.backend.task_helpers import create_task as _create_task
 from src.backend.utils.id_generator import generate_prefixed_id as generate_task_id
 from src.core.container import AppContainer
 from src.core.observability import TraceContext
@@ -35,9 +35,10 @@ async def get_chapters(book_id: int):
 
 
 def generate_task_id(prefix: str) -> str:
+    """タスクIDを生成する。UUIDの最初の16文字を使用して一意性を確保。"""
     import uuid
 
-    return f"{prefix}_{uuid.uuid4().hex[:12]}"
+    return f"{prefix}_{uuid.uuid4().hex[:16]}"
 
 
 @workflow_endpoint("episode_generate")

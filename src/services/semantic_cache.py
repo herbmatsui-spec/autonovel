@@ -352,7 +352,7 @@ class SemanticCacheManager:
             logger.info(
                 f"[PREFETCH] Queued prefetch for ep{next_ep} task={task_type}, key={l1_key[:16]}..."
 )
-        
+
     async def _prefetch_embedding(
         self, prompt: str, task_type: str, genre: str, temperature: float
     ) -> None:

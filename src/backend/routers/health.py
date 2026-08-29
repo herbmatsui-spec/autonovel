@@ -1,24 +1,24 @@
+import asyncio
 import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
-import asyncio
 
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
-from src.core.container import AppContainer
 from config.settings import get_settings
-from src.backend.router_helpers import workflow_endpoint
-from src.backend.response_helpers import api_success
 from src.backend.health.checks import (
-    check_database,
-    check_redis,
-    check_chromadb,
-    check_llm_gateway,
-    check_worker,
-    HealthStatus,
     HealthCheckResult,
+    HealthStatus,
+    check_chromadb,
+    check_database,
+    check_llm_gateway,
+    check_redis,
+    check_worker,
 )
+from src.backend.response_helpers import api_success
+from src.backend.router_helpers import workflow_endpoint
+from src.core.container import AppContainer
 
 logger = logging.getLogger(__name__)
 
@@ -118,8 +118,9 @@ async def check_continuity_endpoint(req: ContinuityCheckRequest):
 
     try:
         import os
-        from novel_50ep.scene_model import SceneBase
+
         from novel_50ep.continuity_tracker import ContinuityTracker
+        from novel_50ep.scene_model import SceneBase
 
         rules_dir = os.path.abspath(
             os.path.join(os.path.dirname(__file__), "../../../novel_50ep/continuity_rules")

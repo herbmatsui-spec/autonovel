@@ -7,6 +7,7 @@ from typing import Any, Dict, List
 from fastapi import APIRouter, Depends, HTTPException
 
 from src.backend.auth import require_api_key
+from src.backend.response_helpers import api_success
 from src.models.api_schemas import (
     EpisodeListResponse,
     NovelReportResponse,
@@ -16,7 +17,6 @@ from src.models.api_schemas import (
 )
 from src.services.novel_producer import NovelProducer
 from src.services.report_generator import ReportGenerator
-from src.backend.response_helpers import api_success
 
 router = APIRouter(prefix="/api/novel", tags=["novel"])
 

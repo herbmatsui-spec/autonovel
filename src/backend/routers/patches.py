@@ -1,7 +1,6 @@
-from typing import Optional, Any
+from typing import Any, Optional
 
 from fastapi import APIRouter, Depends
-from src.models.api_schemas import PatchEditRequest
 from sqlalchemy import select
 
 from config.project_context import GlobalConfig
@@ -9,12 +8,11 @@ from src.backend.auth import require_api_key
 from src.backend.database.models import PendingPatch, PromptVersion
 from src.backend.patch_validator import PatchValidator
 from src.backend.prompt_version_manager import PromptVersionManager
+from src.backend.response_helpers import api_success
+from src.backend.router_helpers import workflow_endpoint
 from src.core.container import AppContainer
 from src.core.exceptions import NotFoundError, ValidationError
-from src.backend.response_helpers import api_success
-
-from src.backend.router_helpers import workflow_endpoint
-from src.backend.utils.id_generator import generate_prefixed_id as generate_task_id
+from src.models.api_schemas import PatchEditRequest
 
 router = APIRouter(prefix="/api/patches", tags=["patches"])
 
@@ -75,7 +73,7 @@ async def approve_patch(
             ver = ver_res.scalar_one_or_none()
 
             if ver:
-                pvm = PromptVersionManager(uow.db)
+                PromptVersionManager(uow.db)
                 await uow.prompt_versions.set_active_prompt_version(
                     book_id=patch.book_id, prompt_key="optimized_prompt_patch", version_id=ver.id
                 )

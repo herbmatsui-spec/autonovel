@@ -4,8 +4,8 @@ from __future__ import annotations
 database/repository.py - UoWコンテキストを自動解決する DataRepository ファサード
 """
 
-from typing import Any
 import inspect
+from typing import Any
 
 from .core import DatabaseManager
 from .uow_context import current_uow

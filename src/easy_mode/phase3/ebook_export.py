@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-import importlib.util
 import logging
 import re
 import uuid
@@ -30,12 +29,12 @@ except ImportError:
 
 try:
     from reportlab.lib.pagesizes import A4
+    from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
     from reportlab.lib.units import cm, mm
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.platypus import SimpleDocTemplate, Paragraph, PageBreak, Spacer, TableOfContents
-    from reportlab.pdfgen import canvas
     from reportlab.pdfbase import pdfmetrics
     from reportlab.pdfbase.ttfonts import TTFont
+    from reportlab.pdfgen import canvas
+    from reportlab.platypus import PageBreak, Paragraph, SimpleDocTemplate, Spacer, TableOfContents
     PDF_AVAILABLE = True
 except ImportError:
     A4 = None  # type: ignore

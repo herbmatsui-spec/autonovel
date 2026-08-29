@@ -19,7 +19,7 @@ class FullAutoWorkflow(BaseWorkflow):
         keywords = kwargs["keywords"]
         archetype_key = kwargs["archetype_key"]
         target_eps = kwargs["target_eps"]
-        initial_limit = kwargs["initial_limit"]
+        kwargs["initial_limit"]
         word_count = kwargs["word_count"]
         concept = kwargs.get("concept", "")
         tone_vibe = kwargs.get("tone_vibe", 0.6)

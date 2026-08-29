@@ -7,7 +7,7 @@ src/backend/workflows/narrative_state.py - NarrativeState 共通ハブ定義 (SS
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 
