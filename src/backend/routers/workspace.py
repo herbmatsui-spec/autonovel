@@ -71,3 +71,21 @@ async def list_chapter_summaries(book_id: int):
         ep_num = int(m.group(1)) if m else None
         result.append({"ep_num": ep_num, "filename": f.name, "summary": read_file(f)})
     return {"chapters": result}
+
+
+@router.post("/{book_id}/sync", dependencies=[Depends(require_api_key)])
+async def sync_workspace(book_id: int, payload: dict = {}):
+    from src.filesystem_memory.sync import (
+        sync_fs_to_db,
+        sync_db_to_fs,
+        sync_bidirectional,
+        SyncDirection,
+    )
+
+    direction = payload.get("direction", "fs_to_db")
+    try:
+        d = SyncDirection(direction)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Invalid direction: {direction}")
+    report = sync_bidirectional(book_id, d)
+    return report.to_dict()

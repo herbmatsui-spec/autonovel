@@ -347,7 +347,7 @@ class StoryNodeSchema(BaseModel):
     character_id: Optional[int] = None
     x: float
     y: float
-    data: Dict[str, Any] = Field(default_factory=dict)
+    data: Dict[str, Any] = Field(default_factory=dict, description="ノード種別別の追加データ")
 
 
 class StoryEdgeSchema(BaseModel):
@@ -358,7 +358,7 @@ class StoryEdgeSchema(BaseModel):
     source: str
     target: str
     kind: str  # 'flow' | 'part_of' | 'pov' | 'dependency' | 'relationship'
-    data: Dict[str, Any] = Field(default_factory=dict)
+    data: Dict[str, Any] = Field(default_factory=dict, description="エッジ種別別の追加データ（強度、ラベル等）")
 
 
 class StoryCanvasResponse(BaseModel):

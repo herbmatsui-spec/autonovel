@@ -129,6 +129,12 @@ repos:
           "--filter-files",
         ]
 
+  # ===================== フォーマッター (black) =====================
+  - repo: https://github.com/psf/black
+    rev: 24.4.2
+    hooks:
+      - id: black
+
   # ===================== シークレット検出 (ローカル) =====================
   - repo: local
     hooks:
@@ -150,6 +156,6 @@ repos:
 default_language_version:
   python: python3.12
 
-default_stages: [commit, push]
+default_stages: [pre-commit, pre-push]
 
 fail_fast: true  # 最初のエラーで停止

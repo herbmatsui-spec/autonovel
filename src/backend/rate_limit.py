@@ -4,6 +4,13 @@ import logging
 import time
 
 from src.services.redis_cache import RedisCacheService
+from src.backend.error_utils import log_exception
+
+try:
+    from redis.exceptions import RedisError
+except ImportError:  # pragma: no cover
+    class RedisError(Exception):
+        """Fallback when redis package is unavailable."""
 
 logger = logging.getLogger(__name__)
 
@@ -79,8 +86,8 @@ class RedisRateLimiter:
                 )
                 return self.fail_open
             return bool(result)
-        except Exception as e:
-            logger.error(f"Rate limit check failed: {e}", exc_info=True)
+        except (RedisError, OSError) as e:
+            log_exception(logger, "Rate limit check failed", e)
             if self.fail_open:
                 return True
             return False

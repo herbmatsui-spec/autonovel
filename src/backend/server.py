@@ -303,6 +303,8 @@ def create_app() -> FastAPI:
         "src.backend.routers.illustrations",
         "src.backend.routers.events",
         "src.backend.routers.prompt",
+        "src.backend.routers.workspace",
+        "src.backend.routers.consistency",
         "src.backend.routers.story_canvas",
         "src.api.routes.ux_routes",
     ]

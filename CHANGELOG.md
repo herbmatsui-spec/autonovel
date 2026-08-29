@@ -19,6 +19,7 @@
 - FastAPI アプリバージョンを `settings.app_version` (SSOT) から動的取得に変更、`config/settings.py` に `app_version` フィールド追加
 - `scripts/no_print_check.py` と `scripts/no_secret_check.py` による本番コードの `print()`/シークレット検出、pre-commit フック追加
 - バージョン同期確認テスト `tests/integration/test_version.py` 追加
+- エラー処理ガイド `docs/error_handling.md` を追加（`log_exception` の利用方針とドメイン例外への変換パターンを記載）
 
 ### Changed
 - `init_db`: 本番環境では `create_all` フォールバックを行わず、Alembic 失敗時は即座にエラー終了

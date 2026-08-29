@@ -49,6 +49,7 @@ export function StoryCanvasTab() {
   const [linkingFrom, setLinkingFrom] = useState<string | null>(null);
   const [linkingLineEnd, setLinkingLineEnd] = useState<{ x: number; y: number } | null>(null);
   const [debounceTimer, setDebounceTimer] = useState<NodeJS.Timeout | null>(null);
+  const [hoveredEdgeId, setHoveredEdgeId] = useState<string | null>(null);
 
   const handleSeed = async () => {
     if (!selectedBook) return;
@@ -113,6 +114,25 @@ export function StoryCanvasTab() {
   const handleCanvasMouseUp = (e: MouseEvent) => {
     if (isDragging) {
       setIsDragging(false);
+      // Actually move the selected node to the new position
+      if (selectedId && dragStartPos && dragStartPan) {
+        const rect = canvasRef.current?.getBoundingClientRect();
+        if (rect) {
+          const clientX = e.clientX - rect.left;
+          const clientY = e.clientY - rect.top;
+          const x = (clientX - panX) / scale;
+          const y = (clientY - panY) / scale;
+          
+          // Update node position in store
+          moveNode(selectedId, x, y);
+          // Actually save to backend
+          saveStoryNode(selectedBook.id, {
+            id: selectedId,
+            x,
+            y,
+          }).catch(console.error);
+        }
+      }
       setDragStartPos(null);
       setDragStartPan(null);
     }
@@ -196,6 +216,41 @@ export function StoryCanvasTab() {
     }
   };
 
+  const handleCreateNode = async (kind: string) => {
+    if (!selectedBook) return;
+    // Create node at center of viewport
+    const centerX = (canvasRef.current?.clientWidth || 800) / 2 / scale - panX / scale;
+    const centerY = (canvasRef.current?.clientHeight || 600) / 2 / scale - panY / scale;
+    
+    const labelMap: Record<string, string> = {
+      episode: '新しいエピソード',
+      character: '新しいキャラクター',
+      premise: '作品の核',
+      act: '新しい幕',
+      scene: '新しいシーン',
+      foreshadow: '新しい伏線',
+    };
+    
+    await createStoryNode(selectedBook.id, {
+      kind,
+      label: labelMap[kind] || '新しいノード',
+      x: centerX,
+      y: centerY,
+    });
+  };
+
+  const handleNodeDoubleClick = async (e: React.MouseEvent<HTMLDivElement>, nodeId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const node = nodes.find(n => n.id === nodeId);
+    if (node && node.ep_num !== undefined) {
+      // Navigate to the episode detail page
+      // In a real app, we'd use navigate or update URL
+      // For now, we'll just show a toast or focus on the plots tab
+      console.log(`Navigate to episode ${node.ep_num}`);
+    }
+  };
+
   // Handle auto-saving dirty state with debounce
   useEffect(() => {
     if (dirty) {
@@ -263,6 +318,22 @@ export function StoryCanvasTab() {
           >
             ビューポートリセット
           </Button>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => handleCreateNode('episode')}
+              size="sm"
+            >
+              +エピソード
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => handleCreateNode('character')}
+              size="sm"
+            >
+              +キャラクター
+            </Button>
+          </div>
           <Button
             variant="outline"
             onClick={() => setLinkingFrom(null)}
@@ -338,26 +409,41 @@ export function StoryCanvasTab() {
             
             // Different stroke styles based on edge kind
             return (
-              <line 
-                key={edge.id}
-                x1={sourceX}
-                y1={sourceY}
-                x2={targetX}
-                y2={targetY}
-                stroke={edge.kind === 'dependency' || edge.kind === 'relationship' 
-                  ? '#ec4899' 
-                  : edge.kind === 'foreshadow'
-                    ? '#f43f5e'
-                    : '#6b7280'}
-                strokeWidth={2}
-                strokeDasharray={ 
-                  edge.kind === 'dependency' || edge.kind === 'relationship' 
-                    ? '4 2' 
+              <g key={edge.id}>
+                <line 
+                  x1={sourceX}
+                  y1={sourceY}
+                  x2={targetX}
+                  y2={targetY}
+                  stroke={edge.kind === 'dependency' || edge.kind === 'relationship' 
+                    ? '#ec4899' 
+                    : edge.kind === 'foreshadow'
+                      ? '#f43f5e'
+                      : '#6b7280'}
+                  strokeWidth={2}
+                  strokeDasharray={ 
+                    edge.kind === 'dependency' || edge.kind === 'relationship' 
+                      ? '4 2' 
                     : edge.kind === 'foreshadow' 
                       ? '8 4' 
                       : 'none' 
-                }
-              />
+                  }
+                />
+                {/* Delete button for edge (×) */}
+                {(hoveredEdgeId === edge.id) && (
+                  <foreignObject x={Math.min(sourceX, targetX) - 10} y={Math.min(sourceY, targetY) - 10} width="20" height="20">
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteEdge(edge.id);
+                      }}
+                      className="absolute -top-1 -left-1 h-4 w-4 rounded-full bg-red-500 text-white text-xs flex items-center justify-center"
+                    >
+                      ✕
+                    </button>
+                  </foreignObject>
+                )}
+              </g>
             );
           })}
         </svg>
@@ -387,64 +473,74 @@ export function StoryCanvasTab() {
               }}
               onContextMenu={(e) => handleNodeContextMenu(e, node.id)}
               onDragStart={(e) => handleNodeDragStart(e, node.id)}
-              onDragOver={(e) => handleNodeDragOver(e)}
+              onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => handleNodeDrop(e, node.id)}
               onDoubleClick={(e) => handleNodeDoubleClick(e, node.id)}
             >
-              <div className="flex items-center gap-2 text-[{isSelected ? 'var(--accent)' : isSourceForLink ? '#3b82f6' : color}] font-medium">
-                {/* Node type icon */}
-                <span 
-                  title={node.kind}
-                  className="text-xs"
-                >
-                  {node.kind === 'premise' ? '🎯' 
-                   : node.kind === 'act' ? '🎪' 
-                   : node.kind === 'episode' ? '📖' 
-                   : node.kind === 'scene' ? '🎬' 
-                   : node.kind === 'character' ? '👤' 
-                   : node.kind === 'foreshadow' ? '⚡' 
-                   : '⬤'}
-                </span>
-                <span className="truncate w-[120px]">{node.label}</span>
-                {node.ep_num !== undefined && (
-                  <span className="text-xs ml-1">#{node.ep_num}</span>
-                )}
-              </div>
-              {/* Show character arc sparkline if expert mode and character node */}
-              {isExpertMode && node.kind === 'character' && node.data?.arc_stages && Array.isArray(node.data.arc_stages) && node.data.arc_stages.length > 0 && (
-                <svg 
-                  className="absolute bottom-[-18px] left-[-50%] w-[60px] h-[12px]"
-                  viewBox="0 0 60 12"
-                  preserveAspectRatio="none"
-                >
-                  <polyline 
-                    points={node.data.arc_stages.map((stage, i) => `${i * (60 / Math.max(node.data.arc_stages.length - 1, 1))},${12 - (stage * 10)}`).join(' ')}
-                    fill="none"
-                    stroke={color}
-                    strokeWidth="1.5"
-                  />
-                </svg>
-              )}
-              {/* Show tension badge for episode nodes */}
-              {node.kind === 'episode' && node.data?.tension !== undefined && (
-                <div className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold">
-                  <span className={node.data.tension >= 70 ? 'bg-red-500' : node.data.tension >= 40 ? 'bg-yellow-500' : 'bg-green-500'} text-white">
-                    {Math.round(node.data.tension)}
+              <div className="relative">
+                <div className="flex items-center gap-2 text-[{isSelected ? 'var(--accent)' : isSourceForLink ? '#3b82f6' : color}] font-medium">
+                  {/* Node type icon */}
+                  <span 
+                    title={node.kind}
+                    className="text-xs"
+                  >
+                    {node.kind === 'premise' ? '🎯' 
+                     : node.kind === 'act' ? '🎪' 
+                     : node.kind === 'episode' ? '📖' 
+                     : node.kind === 'scene' ? '🎬' 
+                     : node.kind === 'character' ? '👤' 
+                     : node.kind === 'foreshadow' ? '⚡' 
+                     : '⬤'}
                   </span>
+                  <span className="truncate w-[120px]">{node.label}</span>
+                  {node.ep_num !== undefined && (
+                    <span className="text-xs ml-1">#{node.ep_num}</span>
+                  )}
                 </div>
-              )}
-              {/* Show catharsis badge */}
-              {node.kind === 'episode' && node.data?.is_catharsis && (
-                <div className="absolute -top-2 left-2 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold bg-purple-500 text-white">
-                  †
+                {/* Show character arc sparkline if expert mode and character node */}
+                {isExpertMode && node.kind === 'character' && node.data?.arc_stages && Array.isArray(node.data.arc_stages) && node.data.arc_stages.length > 0 && (
+                  <svg 
+                    className="absolute bottom-[-18px] left-[-50%] w-[60px] h-[12px]"
+                    viewBox="0 0 60 12"
+                    preserveAspectRatio="none"
+                  >
+                    <polyline 
+                      points={node.data.arc_stages.map((stage, i) => `${i * (60 / Math.max(node.data.arc_stages.length - 1, 1))},${12 - (stage * 10)}`).join(' ')}
+                      fill="none"
+                      stroke={color}
+                      strokeWidth="1.5"
+                    />
+                  </svg>
+                )}
+                {/* Show tension badge for episode nodes */}
+                {node.kind === 'episode' && node.data?.tension !== undefined && (
+                  <div className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold">
+                    <span className={node.data.tension >= 70 ? 'bg-red-500' : node.data.tension >= 40 ? 'bg-yellow-500' : 'bg-green-500'} text-white">
+                      {Math.round(node.data.tension)}
+                    </span>
+                  </div>
+                )}
+                {/* Show catharsis badge */}
+                {node.kind === 'episode' && node.data?.is_catharsis && (
+                  <div className="absolute -top-2 left-2 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold bg-purple-500 text-white">
+                    †
+                  </div>
+                )}
+                {/* Selection indicator */}
+                {isSelected && (
+                  <div className="absolute -left-4 -top-4 flex h-6 w-6 items-center justify-center rounded-full border-2 border-[var(--accent)] bg-[var(--accent)]/20">
+                    <span className="text-[var(--accent)] font-bold">●</span>
+                  </div>
+                )}
+                {/* Create edge button (+) */}
+                <div className="absolute -top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold bg-[color]/30 hover:bg-[color]/40">
+                  +
                 </div>
-              )}
-              {/* Selection indicator */}
-              {isSelected && (
-                <div className="absolute -left-4 -top-4 flex h-6 w-6 items-center justify-center rounded-full border-2 border-[var(--accent)] bg-[var(--accent)]/20">
-                  <span className="text-[var(--accent)] font-bold">●</span>
+                {/* Delete node button (🗑) */}
+                <div className="absolute bottom-2 left-2 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold bg-red-500/20 hover:bg-red-500/30">
+                  𗚖
                 </div>
-              )}
+              </div>
             </div>
           );
         })}
@@ -473,7 +569,6 @@ export function StoryCanvasTab() {
                     onChange={(e) => {
                       const newLabel = e.target.value;
                       renameNode(selectedId, newLabel);
-                      // Update node data via store (will trigger auto-save)
                       updateNodeData(selectedId, { label: newLabel });
                     }}
                   />

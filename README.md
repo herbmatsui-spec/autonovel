@@ -42,7 +42,18 @@ Server-Sent Events（サーバーサントイベント）により、AIの思考
 - ブラウザ切断時の自動再接続機能
 - カスタムアラートと通知システム
 
-### 4. マルチプラットフォーム出版対応
+### 4. ストーリーキャンバス（新機能）
+物語の構造を視覚的に編集・分析するインタラクティブツール：
+
+- エピソード・キャラクター・構造要素をノードとして配置
+- ドラッグ＆ドロップでノード位置を自由に変更
+- ノード間をエッジで結びつけてフロー・依存関係・関係を表現
+- キャラクター弧のスパークライン視覚化（エキスパートモード）
+- ナラティブタイムラインによるテンションカーブ表示（エキスパートモード）
+- キーボードショートカットとコンテキストメニューによる高速操作
+- シード機能により既存データから自動初期化可能
+
+### 5. マルチプラットフォーム出版対応
 生成された小説を様々な出版フォーマットに自動変換：
 
 - カクヨム用EPUB/テキストフォーマット
@@ -368,6 +379,25 @@ pytest --cov=src --cov-report=html
 pytest tests/test_novel_50ep.py -v
 ```
 
+### エラー処理とドメイン例外
+
+バックエンドの例外処理は統一された方針に従います（詳細は [エラー処理ガイド](docs/error_handling.md)）。
+
+- **構造化ログ**: `src/backend/error_utils.log_exception(logger, msg, exc)` でトレース ID を自動付与して例外を記録。
+- **ドメイン例外**: `src/backend/exceptions.py` に共通基底 `BackendError` と以下の具象例外を定義。
+  - `RateLimitExceeded` — レート制限超過
+  - `CacheError` / `CacheMiss` — Redis/キャッシュ関連の失敗・欠損
+  - `DatabaseError` — DB 操作中の失敗
+- **設計原則**: 広範な `except Exception` を避け、具体的な例外を捕捉して必要に応じドメイン例外へ変換して再送出。
+
+### 継続的改善プロセス
+
+コード品質の維持・向上のため、以下の仕組みを運用しています：
+
+- **CI ゲート**: 新規・変更ファイルに対する `ruff format --check` / `ruff check` / `mypy --strict` をブロッキング化。全量ブロッキング化は負債削減後に実施（[ポリシー](docs/ci_gate_policy.md)、[バーンダウン目標](docs/lint_burn_down.md)）。
+- **pre-commit**: `ruff`, `ruff-format`, `black`, `isort`, `mypy` 等を Git フックで自動実行（設定: `.pre-commit-config.yaml`）。
+- **実装計画**: 段階的な品質向上の手順は [継続的改善 実装計画書](docs/continuous_improvement_plan.md) を参照。
+
 
 
 
@@ -397,14 +427,24 @@ git checkout -b feature/your-feature-name
 # 開発依存関係インストール
 pip install -r requirements-dev.txt
 pre-commit install  # Gitフックのセットアップ
+pre-commit run --all-files  # 初回一括チェック
 
 # テスト実行確認
 pytest -x  # 最初の失敗で停止
 
 # コーディングスタイルチェック
 ruff check .
+ruff format --check .
+isort --check-only .
 black --check src/
+mypy --config-file pyproject.toml --strict src/
 ```
+
+関連ドキュメント:
+- [CI の現在状態](docs/ci_current_state.md)
+- [CI ブロッキングゲート ポリシー](docs/ci_gate_policy.md)
+- [Lint / Type バーンダウン目標](docs/lint_burn_down.md)
+- [エラー処理ガイド](docs/error_handling.md)
 
 ### プルリクエストのガイドライン
 PRを送信する際は以下を守ってください：

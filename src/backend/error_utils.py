@@ -19,7 +19,15 @@ def log_exception(
     exc: BaseException,
     *args,
 ) -> None:
-    """trace_id を自動付与して例外をログ出力"""
+    """trace_id を自動付与して例外をログ出力。
+
+    使用例:
+        try:
+            ...
+        except ValueError as e:
+            log_exception(logger, "処理失敗", e)
+            raise
+    """
     trace_id = TraceContext.get_trace_id()
     extra = {"trace_id": trace_id} if trace_id else {}
     logger.error("%s: %s", msg, exc, exc_info=exc, extra=extra, *args)

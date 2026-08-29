@@ -146,6 +146,15 @@ ignore = ["E501"] # Line too long (handled by formatter/line-length)
 [tool.ruff.lint.mccabe]
 max-complexity = 15
 
+[tool.isort]
+profile = "black"
+line_length = 100
+known_first_party = ["src", "config", "schemas", "services", "prompts", "formatters", "models", "plugins", "kernels"]
+
+[tool.black]
+line-length = 100
+target-version = ["py312"]
+
 [build-system]
 requires = ["setuptools>=61.0.0"]
 build-backend = "setuptools.build_meta"

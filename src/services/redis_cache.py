@@ -90,7 +90,7 @@ class RedisCacheService:
                     res = self._client.close()
                     if asyncio.iscoroutine(res):
                         await res
-            except Exception as e:
+            except (RedisConnectionError, RedisTimeoutError, RedisError, RuntimeError, OSError) as e:
                 logger.warning(f"Error closing Redis client: {e}")
         if self._pool is not None:
             try:
@@ -100,7 +100,7 @@ class RedisCacheService:
                     res = self._pool.disconnect()
                     if asyncio.iscoroutine(res):
                         await res
-            except Exception as e:
+            except (RedisConnectionError, RedisTimeoutError, RedisError, RuntimeError, OSError) as e:
                 logger.warning(f"Error disconnecting Redis pool: {e}")
         logger.info("RedisCacheService closed.")
 

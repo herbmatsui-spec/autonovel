@@ -1,0 +1,18 @@
+=== ruff check (summary) ===
+9 | from src.backend.workflows.state import WritingGraphState
+  |
+
+Found 554 errors.
+[*] 181 fixable with the `--fix` option (38 hidden fixes can be enabled with the `--unsafe-fixes` option).
+=== ruff format check ===
+   |
+
+233 files would be reformatted, 440 files already formatted
+=== isort check ===
+ERROR: /home/herbmatsui/autonovel/tests/api/test_affinity_override.py Imports are incorrectly sorted and/or formatted.
+ERROR: /home/herbmatsui/autonovel/tests/workflows/test_writing_hitl.py Imports are incorrectly sorted and/or formatted.
+ERROR: /home/herbmatsui/autonovel/tests/services/test_redis_cache_invalidate.py Imports are incorrectly sorted and/or formatted.
+=== black check ===
+
+Oh no! 💥 💔 💥
+247 files would be reformatted, 421 files would be left unchanged, 1 file would fail to reformat.

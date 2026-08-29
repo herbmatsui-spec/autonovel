@@ -68,6 +68,24 @@ class ChapterRepository(BaseRepository):
         ch.tension_delta = tension_delta
         ch.qol_delta = qol_delta
 
+        # Best-effort filesystem memory update (Step 22)
+        try:
+            from src.filesystem_memory.auto_update import (
+                generate_chapter_summary,
+                update_chapter_memory,
+                update_story_summary,
+            )
+
+            summary_text = generate_chapter_summary(content)
+            update_chapter_memory(book_id, ep_num, summary_text, branch_id=branch_id)
+            update_story_summary(book_id, ep_num, summary_text, branch_id=branch_id)
+        except Exception as _e:  # noqa: BLE001
+            import logging
+
+            logging.getLogger(__name__).warning(
+                f"Failed to update filesystem memory for chapter {ep_num}: {_e}"
+            )
+
     async def get_chapter(self, branch_id: int, ep_num: int) -> Optional["ChapterDbModel"]:
         result = await self.session.execute(
             select(Chapter).where(Chapter.branch_id == branch_id).where(Chapter.ep_num == ep_num)
