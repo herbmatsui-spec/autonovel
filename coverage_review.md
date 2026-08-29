@@ -56,14 +56,36 @@
 
 ## Baseline for Code Review Fixes (2026-08-28)
 
-| 指標 | 値 | 備考 |
-|------|-----|------|
-| mypy --strict エラー数 | 2045 | 277 files |
-| ruff 違反数 | 190 | 24 fixable |
-| pytest 収集テスト数 | 1066 | 0 collection errors |
-| `except Exception` 箇所数 | 32 | tasks.py:18, writing_langgraph.py:10, database/core.py:4 |
-| `print` 文 (本番コード) | 3+ | commercial_validation.py, promptops.py, alembic migrations |
-| UUID 生成長さ | 12文字 | id_generator.py デフォルト |
+| 指標 | Before | After | Delta | 備考 |
+|------|--------|-------|-------|------|
+| mypy --strict エラー数 | 2045 | 2110 | +65 | 既存の型不足が主因 |
+| ruff 違反数 | 190 | 223 | +33 | log_exception未認識等が主因 |
+| pytest 収集テスト数 | 1066 | 1066 | 0 | 収集エラー解消済み |
+| `except Exception` 箇所数 | 32 | 0 | -32 | 全箇所具体的例外型に狭化 |
+| `print` 文 (本番コード) | 3+ | 0 | -3+ | logger に置換完了 |
+| UUID 生成長さ | 12文字 | 16文字 | +4 | 衝突確率大幅低減 |
+
+## 解消済み課題 (F-01〜F-09)
+
+| ID | 課題 | 状態 | 対象ファイル |
+|----|------|------|-------------|
+| F-01 | `invalidate_task_type` パターン不一致 | ✅ | redis_cache.py |
+| F-02 | Redis 例外 import | ✅ | redis_cache.py (既存) |
+| F-03 | UUID 12文字→16文字 | ✅ | id_generator.py |
+| F-04 | `except Exception` 狭化 + trace_id | ✅ | tasks.py, writing_langgraph.py, database/core.py |
+| F-05 | `print` 文 logger 化 | ✅ | commercial_validation.py, promptops.py |
+| F-06 | Redis DI 化 | ⏭️ | 別タスクで実施予定 |
+| F-07 | `safe_run_async` 最適化 | ✅ | engine_utils.py |
+| F-08 | `run_validation` 非同期化 | ✅ | commercial_validation.py |
+| F-09 | `archive/` 整理 | ✅ | README.md 追加 |
+
+## 新規テスト追加
+
+| テストファイル | テスト数 | 内容 |
+|--------------|---------|------|
+| test_redis_cache_invalidate.py | 2 | キャッシュ無効化パターン |
+| test_id_generator.py | 3 | UUID 長・一意性 |
+| test_safe_run_async.py | 2 | パフォーマンス回帰防止 |
 
 *Review generated on 2026-08-28*
 

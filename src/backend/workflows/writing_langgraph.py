@@ -192,7 +192,7 @@ class WritingGraphManager:
                         await asyncio.sleep(retry_delay)
                         retry_delay = min(retry_delay * const.RETRY_BACKOFF_FACTOR, const.MAX_RETRY_DELAY_SEC)
                     else:
-                        log_exception(logger, f"node_prepare failed after 3 attempts", e)
+                        log_exception(logger, "node_prepare failed after 3 attempts", e)
                         raise
 
         from config.project_context import ProjectContext
@@ -221,7 +221,7 @@ class WritingGraphManager:
 
         # 指数関数的バックオフ付きリトライ
         retry_delay = const.DEFAULT_RETRY_DELAY_SEC
-        last_error: Any = None
+        last_error: BaseException | None = None
         for attempt in range(const.DEFAULT_MAX_RETRIES):
             try:
                 content, meta = await self.manager._phase_drafting(
@@ -252,6 +252,7 @@ class WritingGraphManager:
                 retry_delay = min(retry_delay * const.RETRY_BACKOFF_FACTOR, const.MAX_RETRY_DELAY_SEC)
 
         # 全リトライ失敗時
+        assert last_error is not None
         log_exception(logger, f"Drafting failed after 3 attempts for Ep.{state['ep_num']}", last_error)
         raise PipelineError(f"Drafting failed after retries for episode {state['ep_num']}: {last_error}")
 
@@ -335,6 +336,7 @@ class WritingGraphManager:
                     await asyncio.sleep(retry_delay + random.uniform(0, 0.3))
                     retry_delay = min(retry_delay * const.RETRY_BACKOFF_FACTOR, const.MAX_RETRY_DELAY_SEC)
 
+        assert last_error is not None
         log_exception(logger, f"Audit failed after 3 attempts for Ep.{state['ep_num']}", last_error)
         raise PipelineError(f"Audit failed after retries for episode {state['ep_num']}: {last_error}")
 
@@ -406,6 +408,7 @@ class WritingGraphManager:
                     await asyncio.sleep(retry_delay + random.uniform(0, 0.2))
                     retry_delay = min(retry_delay * const.RETRY_BACKOFF_FACTOR, const.MAX_RETRY_DELAY_SEC)
 
+        assert last_error is not None
         log_exception(logger, f"Critic failed after 3 attempts for Ep.{state['ep_num']}", last_error)
         return {"critic_triggered": False}
 
@@ -456,6 +459,7 @@ class WritingGraphManager:
                     await asyncio.sleep(retry_delay + random.uniform(0, 0.2))
                     retry_delay = min(retry_delay * const.RETRY_BACKOFF_FACTOR, const.MAX_RETRY_DELAY_SEC)
 
+        assert last_error is not None
         log_exception(logger, f"Healing failed after 3 attempts for Ep.{state['ep_num']}", last_error)
         return {
             "draft_content": state["draft_content"],  # 元のコンテンツを保持

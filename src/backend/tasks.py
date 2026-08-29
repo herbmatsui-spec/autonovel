@@ -8,6 +8,7 @@ from huey import crontab
 from config.container import get_container
 from src.backend.background import ProgressState
 from src.backend.database.uow import UnitOfWork
+from src.backend.error_utils import log_exception
 from src.backend.worker_config import huey
 from src.core.container import AppContainer
 from src.core.observability import with_trace_context
