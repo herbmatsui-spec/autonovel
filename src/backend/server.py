@@ -216,10 +216,39 @@ async def rate_limit_middleware(request: Request, call_next):
 def configure_cors(app: FastAPI):
     allowed_origins = get_allowed_origins()
     logger.info(f"CORS allowed origins: {allowed_origins}")
+    
+    # CORS security validation: when allow_credentials=True, 
+    # allowed_origins must not contain wildcards for security reasons
+    allow_credentials = True
+    if allow_credentials:
+        # Check if any origin is a wildcard or too permissive
+        unsafe_origins = [
+            origin for origin in allowed_origins 
+            if origin == "*" or origin.strip() == ""
+        ]
+        if unsafe_origins:
+            # For development convenience, allow override via environment variable
+            import os
+            if os.getenv("CORS_ALLOW_UNSAFE_CREDENTIALS", "false").lower() != "true":
+                logger.error(
+                    f"CORS security violation: allow_credentials=True cannot be used with wildcard origins. "
+                    f"Unsafe origins: {unsafe_origins}. "
+                    f"Set CORS_ALLOW_UNSAFE_CREDENTIALS=true to override (development only)."
+                )
+                raise RuntimeError(
+                    f"Invalid CORS configuration: allow_credentials=True is incompatible with wildcard origins. "
+                    f"Found unsafe origins: {unsafe_origins}. "
+                    f"Please specify explicit origins in CORS_ALLOWED_ORIGINS environment variable."
+                )
+            else:
+                logger.warning(
+                    f"CORS security override active: allow_credentials=True used with wildcard origins: {unsafe_origins}"
+                )
+    
     app.add_middleware(
         CORSMiddleware,
         allow_origins=allowed_origins,
-        allow_credentials=True,
+        allow_credentials=allow_credentials,
         allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allow_headers=["Content-Type", "X-API-Key", "X-Trace-ID", "Authorization"],
     )

@@ -1,17 +1,14 @@
 import pytest
 
-from config.project_context import ProjectContext, get_config
 from config.settings import ConfigManager
 from config.validator import ConfigValidator
 from schemas.config import GlobalConfigModel
 
 
 def _reset_config_cache():
-    """ConfigManager / project_context のメモリキャッシュをリセット"""
+    """ConfigManager のメモリキャッシュをリセット"""
     ConfigManager._instance = None
-    import config.project_context as pc
-
-    pc._global_config = None
+    ConfigManager._config_cache = None
 
 
 @pytest.fixture(autouse=True)
@@ -46,7 +43,7 @@ def test_env_override_explicit_merge(monkeypatch):
     monkeypatch.setenv("RANDOM_UNMAPPED_VAR", "should_be_ignored")
 
     _reset_config_cache()
-    cfg = get_config()
+    cfg = ConfigManager.get_config()
 
     assert cfg.fail_fast_mode is True
     assert cfg.redis_url == "redis://example:6379/1"
@@ -60,7 +57,7 @@ def test_env_override_type_coercion(monkeypatch):
     monkeypatch.setenv("KAKU_CONTEXT_WINDOW_TARGET_RATIO", "0.5")
 
     _reset_config_cache()
-    cfg = get_config()
+    cfg = ConfigManager.get_config()
 
     assert cfg.max_concurrency == 4
     assert isinstance(cfg.max_concurrency, int)
@@ -74,7 +71,7 @@ def test_env_override_missing_is_ignored(monkeypatch):
     monkeypatch.delenv("REDIS_URL", raising=False)
 
     _reset_config_cache()
-    cfg = get_config()
+    cfg = ConfigManager.get_config()
     assert cfg.fail_fast_mode is False  # TOML のデフォルト
 
 
@@ -97,8 +94,8 @@ def test_configmanager_is_canonical_accessor():
     assert a.model_writing == "gemma-4-31b-it"
 
 
-def test_projectcontext_delegates_to_canonical(monkeypatch):
-    """ProjectContext.get_setting が SSOT 経由の値を返すことを確認"""
+def test_configmanager_delegates_to_canonical(monkeypatch):
+    """ConfigManager.get_config() が SSOT 経由の値を返すことを確認"""
     monkeypatch.setenv("KAKU_FAIL_FAST_MODE", "true")
     _reset_config_cache()
-    assert ProjectContext.get_setting("fail_fast_mode") is True
+    assert ConfigManager.get_config().fail_fast_mode is True

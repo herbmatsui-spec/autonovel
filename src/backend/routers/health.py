@@ -50,11 +50,58 @@ def determine_overall_status(checks: Dict[str, HealthCheckResult]) -> HealthStat
     return HealthStatus.OK
 
 
+@workflow_endpoint("health_check_live")
+@router.get("/health/live", response_model=HealthResponse)
+@router.get("/api/health/live", response_model=HealthResponse)
+async def health_check_live():
+    """Liveness check: Basic internal health (no external dependencies that could cause false positives)"""
+    cfg = get_settings()
+    db_manager = AppContainer.db()
+
+    # 並列実行でレイテンシ短縮
+    results = await asyncio.gather(
+        check_database(db_manager),
+        check_redis(cfg.redis_url),
+        check_worker(),
+        return_exceptions=True
+    )
+
+    check_names = ["database", "redis", "worker"]
+    checks: Dict[str, HealthCheckResult] = {}
+    check_responses: Dict[str, CheckResponse] = {}
+
+    for name, result in zip(check_names, results):
+        if isinstance(result, Exception):
+            checks[name] = HealthCheckResult(status=HealthStatus.ERROR, error=str(result))
+            check_responses[name] = CheckResponse(status=HealthStatus.ERROR, error=str(result))
+        elif isinstance(result, HealthCheckResult):
+            checks[name] = result
+            check_responses[name] = CheckResponse(
+                status=result.status,
+                latency_ms=result.latency_ms,
+                details=result.details,
+                error=result.error
+            )
+        else:
+            checks[name] = HealthCheckResult(status=HealthStatus.ERROR, error="Unexpected result type")
+            check_responses[name] = CheckResponse(status=HealthStatus.ERROR, error="Unexpected result type")
+
+    overall = determine_overall_status(checks)
+
+    return HealthResponse(
+        status=overall,
+        timestamp=datetime.now(timezone.utc).isoformat(),
+        checks=check_responses
+    )
+
+
 @workflow_endpoint("health_check")
 @router.get("/health", response_model=HealthResponse)
 @router.get("/api/health", response_model=HealthResponse)
+@router.get("/health/ready", response_model=HealthResponse)
+@router.get("/api/health/ready", response_model=HealthResponse)
 async def health_check():
-    """拡張ヘルスチェック: DB, Redis, ChromaDB, LLM Gateway, Worker を並列チェック"""
+    """Readiness check: Comprehensive health including optional LLM gateway"""
     cfg = get_settings()
     db_manager = AppContainer.db()
 

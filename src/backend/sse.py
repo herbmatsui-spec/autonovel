@@ -63,23 +63,37 @@ async def task_event_generator(task_id: str, request: Request, last_event_id: st
             await pubsub.subscribe(f"task_events:{task_id}")
             logger.info(f"[SSE] Subscribed to async Redis channel task_events:{task_id}")
 
-            while True:
-                if await request.is_disconnected():
-                    break
-                message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
-                if message and message["type"] == "message":
-                    data = message["data"]
-                    decoded_data = data.decode("utf-8") if isinstance(data, bytes) else data
-                    state = json.loads(decoded_data)
-                    event_id = state.get("event_id", 0)
-                    yield f"id: {event_id}\n" + f"data: {decoded_data}\n\n"
-                    if not state.get("is_running", True):
-                        logger.info(f"[SSE] Task {task_id} completed. Closing async Redis stream.")
+            try:
+                while True:
+                    if await request.is_disconnected():
                         break
-                await asyncio.sleep(0.1)
-            await pubsub.unsubscribe(f"task_events:{task_id}")
-            await pubsub.close()
-            return
+                    
+                    # Use async iterator pattern for non-blocking message consumption
+                    try:
+                        # Wait for message with timeout to allow disconnection checks
+                        message = await asyncio.wait_for(pubsub.get_message(ignore_subscribe_messages=True), timeout=1.0)
+                        if message and message["type"] == "message":
+                            data = message["data"]
+                            decoded_data = data.decode("utf-8") if isinstance(data, bytes) else data
+                            state = json.loads(decoded_data)
+                            event_id = state.get("event_id", 0)
+                            yield f"id: {event_id}\n" + f"data: {decoded_data}\n\n"
+                            if not state.get("is_running", True):
+                                logger.info(f"[SSE] Task {task_id} completed. Closing async Redis stream.")
+                                break
+                    except asyncio.TimeoutError:
+                        # Timeout is expected - just continue loop to check disconnection
+                        await asyncio.sleep(0.1)
+                        continue
+                    except Exception as e:
+                        logger.error(f"[SSE] Error processing Redis message: {e}")
+                        await asyncio.sleep(0.1)
+                        continue
+                        
+            finally:
+                await pubsub.unsubscribe(f"task_events:{task_id}")
+                await pubsub.close()
+                return
         except Exception as e:
             logger.error(f"[SSE] Async Redis subscription failed ({e}). Falling back to SQLite polling.")
 

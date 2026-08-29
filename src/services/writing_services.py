@@ -32,7 +32,7 @@ else:
             pass
 
 
-from config.project_context import ProjectContext
+from config.settings import ConfigManager
 from src.agents.audit import PlotIntegrityMonitor
 from src.models import WritingContext
 
@@ -105,7 +105,7 @@ class GenerationLoopManager:
         )
 
         # 動的バジェット管理: 重要度が低い通常回はループを1回に制限
-        base_max_ac_iter = ProjectContext.get_setting("actor_critic_max_iterations", 2)
+        base_max_ac_iter = ConfigManager.get_config().actor_critic_max_iterations
         max_ac_iter = 1 if ncs_score < 40 else base_max_ac_iter
         if reporter and max_ac_iter == 1:
             reporter.report(
@@ -128,7 +128,7 @@ class GenerationLoopManager:
         threshold = self.narrative.get_integrity_threshold(
             ctx.genre_str, ctx.prev_integrity, engine_key=engine_key
         )
-        fail_fast = ProjectContext.get_setting("fail_fast_mode", False)
+        fail_fast = ConfigManager.get_config().fail_fast_mode
 
         for ac_iter in range(max_ac_iter):
             temp = 0.7 + (passion - 0.5) * 0.2 + (ac_iter * 0.1)
@@ -307,17 +307,16 @@ class GenerationLoopManager:
         )
         # ---- Style learning injection (Step 21-22) ----
         from src.services.style_prompt import build_style_injection
-        from config.project_context import ProjectContext
         book_id = ctx.book.id if ctx.book else (ctx.book_id or 0)
         branch_id = ctx.branch_id
-        if ProjectContext.get_setting("style_learning_enabled", True):
+        if ConfigManager.get_config().style_learning_enabled:
             injection = build_style_injection(book_id, branch_id)
             if injection:
                 sys_inst = sys_inst + "\n\n" + injection
         # ------------------------------------------------
         # ---- Consistency Guardian injection (Step 28-30) ----
         from src.consistency.guardian_hook import get_consistency_prompt_injection
-        if ProjectContext.get_setting("consistency_guardian_enabled", True):
+        if ConfigManager.get_config().consistency_guardian_enabled:
             cinjection = get_consistency_prompt_injection(book_id, branch_id, ep_num)
             if cinjection:
                 sys_inst = sys_inst + "\n\n" + cinjection
@@ -366,10 +365,10 @@ class GenerationLoopManager:
             return "", {}
 
         do_polish = gen_ctx.enable_polishing and should_beat_decompose
-        if not do_polish and ProjectContext.get_setting("fallback_polish_in_easy_mode", False):
+        if not do_polish and ConfigManager.get_config().fallback_polish_in_easy_mode:
             do_polish = True
 
-        if do_polish and ProjectContext.get_setting("draft_polish_enabled", True):
+        if do_polish and ConfigManager.get_config().draft_polish_enabled:
             use_beat_rules = bool(gen_ctx.expanded_beats)
             final_content = await self._polishing_pass(
                 ep_num, raw_content, gen_ctx, temp, reporter, use_beat_rules=use_beat_rules
@@ -560,7 +559,7 @@ class GenerationLoopManager:
         # Let's check if we can get it from elsewhere or if we should pass None.
         beat_prompt = await self.pm.build_beat_expansion_prompt(blueprint, book_id=None)
         beat_res = await self.llm.generate_json(
-            ProjectContext.get_setting("model_writing"), beat_prompt, temp=0.7
+            ConfigManager.get_config().model_writing, beat_prompt, temp=0.7
         )
         beat_meta, beat_content = beat_res.unwrap_or({}, "")
 
@@ -608,7 +607,7 @@ class GenerationLoopManager:
             "【分割執筆モード：前半】\nこのエピソードの「前半部分（物語 of 導入から中盤の展開まで）」のみを執筆してください。"
         )
         res1 = await self.llm.generate_text(
-            ProjectContext.get_setting("model_writing"),
+            ConfigManager.get_config().model_writing,
             p1_prompt,
             system_instruction=gen_ctx.build_sys_inst(),
             temp=temp,
@@ -627,7 +626,7 @@ class GenerationLoopManager:
             f"【分割執筆モード：後半】\n以下の『前半部分』の続きから、エピソードの最後までを執筆してください。前半と同じ内容（重複）は書かず、純粋に続きから再開してください。\n\n=== 前半部分 ===\n{raw_content1}\n================\n"
         )
         res2 = await self.llm.generate_text(
-            ProjectContext.get_setting("model_writing"),
+            ConfigManager.get_config().model_writing,
             p2_prompt,
             system_instruction=gen_ctx.build_sys_inst(),
             temp=temp,
@@ -693,14 +692,14 @@ class GenerationLoopManager:
                 reporter.update_streaming_text(text)
 
         res = await self.llm.generate_text(
-            model_name=ProjectContext.get_setting("model_writing"),
+            model_name=ConfigManager.get_config().model_writing,
             prompt=polish_prompt,
             system_instruction=polish_sys_inst,
             temp=max(0.4, temp - 0.2),
             stream_callback=stream_callback,
         )
 
-        min_ratio = ProjectContext.get_setting("polishing_min_content_ratio", 0.5)
+        min_ratio = ConfigManager.get_config().polishing_min_content_ratio
         if (
             res.success
             and res.story_content
@@ -738,7 +737,7 @@ class GenerationLoopManager:
         )
 
         res = await self.llm.generate_json(
-            model_name=ProjectContext.get_setting("model_writing"),
+            model_name=ConfigManager.get_config().model_writing,
             prompt=prompt,
             response_schema=EpisodeMetadata,
             system_instruction=sys_inst,
@@ -977,7 +976,7 @@ class GenerationLoopManager:
         prompt = self.pm.build_surgical_causality_healing_prompt(
             target_content, world_settings, blueprint, failure_reason
         )
-        res = await self.llm.generate_text(ProjectContext.get_setting("model_writing"), prompt)
+        res = await self.llm.generate_text(ConfigManager.get_config().model_writing, prompt)
 
         if res.success and res.story_content:
             if target_content != content:

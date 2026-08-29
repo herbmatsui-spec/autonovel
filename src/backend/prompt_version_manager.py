@@ -71,6 +71,9 @@ class PromptVersionManager:
             ver = await uow.prompt_versions.get_prompt_version(version_id)
             if ver:
                 os.environ["KAKU_OPTIMIZED_PROMPT_PATCH"] = ver["content"]
+                # ConfigManagerのキャッシュをクリアして、次回get_config()で環境変数が反映されるようにする
+                from config.settings import ConfigManager
+                ConfigManager.clear_cache()
                 logger.info(f"Activated prompt version {ver['version_tag']} for key {prompt_key}")
 
     async def evaluate_and_rollback_if_needed(
@@ -118,17 +121,18 @@ class PromptVersionManager:
                         await uow.prompt_versions.set_active_prompt_version(
                             book_id, prompt_key, fallback_ver["id"]
                         )
-                        from config.project_context import GlobalConfig
-
-                        GlobalConfig().set("optimized_prompt_patch", fallback_ver["content"])
+                        # 環境変数経由で設定を更新
+                        os.environ["KAKU_OPTIMIZED_PROMPT_PATCH"] = fallback_ver["content"]
+                        from config.settings import ConfigManager
+                        ConfigManager.clear_cache()
                         logger.info(
                             f"Successfully rolled back to version {fallback_ver['version_tag']}"
                         )
                     else:
                         # 候補がない場合はデフォルト（空文字列）に戻す
-                        from config.project_context import GlobalConfig
-
-                        GlobalConfig().set("optimized_prompt_patch", "")
+                        os.environ["KAKU_OPTIMIZED_PROMPT_PATCH"] = ""
+                        from config.settings import ConfigManager
+                        ConfigManager.clear_cache()
                         logger.info(
                             "No fallback prompt version found. Reverted to default empty prompt."
                         )

@@ -2,7 +2,6 @@ from pathlib import Path
 
 import pytest
 
-from config.project_context import get_config
 from config.validator import ConfigValidator
 from schemas.config import (
     DomainProfileModel,

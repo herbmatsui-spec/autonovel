@@ -1,7 +1,7 @@
 import logging
 from typing import Any, Dict
 
-from config.project_context import ProjectContext
+from config.settings import ConfigManager
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +41,7 @@ class RuleABTester:
         text_b = sample_context
         try:
             res_b = await self.engine._generate_text(
-                ProjectContext.get_setting("model_lightweight"), prompt_b
+                ConfigManager.get_config().model_lightweight, prompt_b
             )
             if res_b.success and res_b.story_content:
                 text_b = res_b.story_content.strip()
@@ -80,7 +80,7 @@ class RuleABTester:
                 rationale: str = Field(description="評価の理由")
 
             res_eval = await self.engine.llm.generate_json(
-                ProjectContext.get_setting("model_planning"),
+                ConfigManager.get_config().model_planning,
                 eval_prompt,
                 response_schema=ABEvalSchema,
             )

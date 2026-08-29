@@ -2,8 +2,8 @@ from typing import Any, Optional
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import select
+import os
 
-from config.project_context import GlobalConfig
 from src.backend.auth import require_api_key
 from src.backend.database.models import PendingPatch, PromptVersion
 from src.backend.patch_validator import PatchValidator
@@ -13,6 +13,7 @@ from src.backend.router_helpers import workflow_endpoint
 from src.core.container import AppContainer
 from src.core.exceptions import NotFoundError, ValidationError
 from src.models.api_schemas import PatchEditRequest
+from config.settings import ConfigManager
 
 router = APIRouter(prefix="/api/patches", tags=["patches"])
 
@@ -55,7 +56,8 @@ async def approve_patch(
 
             # GlobalConfigに即時適用
             for k, v in validation.sanitized_patch.items():
-                GlobalConfig().set(k, v)
+                os.environ[f"KAKU_{k.upper()}"] = str(v)
+                ConfigManager.clear_cache()
 
         elif patch.patch_type == "prompt":
             validation = PatchValidator.validate_prompt_patch(patch.patch_content)
@@ -78,8 +80,9 @@ async def approve_patch(
                     book_id=patch.book_id, prompt_key="optimized_prompt_patch", version_id=ver.id
                 )
 
-            # GlobalConfigに反映
-            GlobalConfig().set("optimized_prompt_patch", patch.patch_content)
+            # 環境変数経由で反映
+            os.environ["KAKU_OPTIMIZED_PROMPT_PATCH"] = patch.patch_content
+            ConfigManager.clear_cache()
 
         # ステータス更新
         await uow.misc.update_patch_status(patch_id, "approved")

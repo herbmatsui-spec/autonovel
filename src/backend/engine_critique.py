@@ -2,7 +2,7 @@ import json
 from typing import Any, Awaitable, Callable, Dict
 
 from config import MODEL_PLANNING
-from config.project_context import ProjectContext
+from config.settings import ConfigManager
 from src.backend.constants import constants as const
 from src.backend.sharp_edge_preserver import SemanticEdgePreserver, check_edges_preserved
 from src.core.interfaces import IPromptManager, IRepository
@@ -233,7 +233,7 @@ class CritiqueAgent:
             ep_num, improved_prompt, plot.detailed_blueprint, plot.script_content
         )
         res = await self.generate_json(
-            ProjectContext.get_setting("model_writing"),  # ドライランは執筆モデルで実行
+            ConfigManager.get_config().model_writing,  # ドライランは執筆モデルで実行
             prompt,
             temp=0.7,
         )
@@ -259,7 +259,7 @@ class CritiqueAgent:
         )
         try:
             res = await self.generate_json(
-                ProjectContext.get_setting("model_writing"), prompt, temp=temp
+                ConfigManager.get_config().model_writing, prompt, temp=temp
             )
             if res.success and res.metadata:
                 return res.metadata

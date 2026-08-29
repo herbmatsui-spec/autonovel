@@ -1,11 +1,13 @@
 from fastapi import APIRouter, Depends
+import os
 
-from config.project_context import GlobalConfig
 from src.backend.auth import require_api_key
 from src.backend.database import UnitOfWork
 from src.backend.response_helpers import api_success
 from src.core.container import AppContainer
 from src.models.api_schemas import RollbackRequest
+from src.backend.prompt_version_manager import PromptVersionManager
+from config.settings import ConfigManager
 
 router = APIRouter(tags=["prompt_versions"])
 
@@ -53,10 +55,12 @@ async def rollback_prompt_version(book_id: int, req: RollbackRequest, api_key: s
             await uow.prompt_versions.set_active_prompt_version(
                 book_id, "optimized_prompt_patch", fallback_ver["id"]
             )
-            GlobalConfig().set("optimized_prompt_patch", fallback_ver["content"])
+            os.environ["KAKU_OPTIMIZED_PROMPT_PATCH"] = fallback_ver["content"]
+            ConfigManager.clear_cache()
             msg = f"Rollback successful. Reverted to version {fallback_ver['version_tag']}"
         else:
-            GlobalConfig().set("optimized_prompt_patch", "")
+            os.environ["KAKU_OPTIMIZED_PROMPT_PATCH"] = ""
+            ConfigManager.clear_cache()
             msg = "Rollback successful. Reverted to default empty prompt (no healthy history found)"
 
     return api_success({"message": msg}, "プロンプトバージョンをロールバックしました")

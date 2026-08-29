@@ -12,6 +12,7 @@ from src.core.exceptions import LLMUnrecoverableError
 from src.core.llm_clients.base import BaseLLMClient
 from src.core.observability import StructuredLogger
 from src.services.retry_decorator import RetryState, with_llm_retry
+from config.settings import ConfigManager
 
 logger = StructuredLogger(__name__)
 
@@ -56,19 +57,19 @@ class OpenAIApiClient(BaseLLMClient):
                 "OpenAI / Gemma integration requires the 'openai' python package. Please install it with 'pip install openai'."
             )
 
-        from config.project_context import ProjectContext
+        from config.settings import ConfigManager
 
-        base_url = ProjectContext.get_setting("openai_base_url") or "https://api.openai.com/v1"
-        api_key = ProjectContext.get_setting("openai_api_key") or "dummy"
+        base_url = ConfigManager.get_config().openai_base_url or "https://api.openai.com/v1"
+        api_key = ConfigManager.get_config().openai_api_key or "dummy"
         client = self._get_client(base_url, api_key)
 
         current_temp = retry_state.temp if retry_state else temp
         current_model = retry_state.model_name if retry_state else model_name
         error_feedback = retry_state.error_feedback if retry_state else ""
-        top_p = ProjectContext.get_setting("inference_top_p", 0.95)
-        top_k = ProjectContext.get_setting("inference_top_k", 64)
+        top_p = ConfigManager.get_config().inference_top_p
+        top_k = ConfigManager.get_config().inference_top_k
 
-        system_sandbox = ProjectContext.get_setting("system_sandbox", "")
+        system_sandbox = ConfigManager.get_config().system_sandbox
 
         system_content = ""
         if system_sandbox:
@@ -186,19 +187,19 @@ class OpenAIApiClient(BaseLLMClient):
         current_temp = retry_state.temp if retry_state else temp
         current_model = retry_state.model_name if retry_state else model_name
 
-        from config.project_context import ProjectContext
+        from config.settings import ConfigManager
 
-        base_url = ProjectContext.get_setting("openai_base_url") or "https://api.openai.com/v1"
-        api_key = ProjectContext.get_setting("openai_api_key") or "dummy"
+        base_url = ConfigManager.get_config().openai_base_url or "https://api.openai.com/v1"
+        api_key = ConfigManager.get_config().openai_api_key or "dummy"
         client = self._get_client(base_url, api_key)
 
         current_temp = retry_state.temp if retry_state else temp
         current_model = retry_state.model_name if retry_state else model_name
         error_feedback = retry_state.error_feedback if retry_state else ""
-        top_p = ProjectContext.get_setting("inference_top_p", 0.95)
-        top_k = ProjectContext.get_setting("inference_top_k", 64)
+        top_p = ConfigManager.get_config().inference_top_p
+        top_k = ConfigManager.get_config().inference_top_k
 
-        system_sandbox = ProjectContext.get_setting("system_sandbox", "")
+        system_sandbox = ConfigManager.get_config().system_sandbox
 
         system_content = ""
         if system_sandbox:

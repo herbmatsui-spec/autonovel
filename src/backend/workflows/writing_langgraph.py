@@ -195,9 +195,9 @@ class WritingGraphManager:
                         log_exception(logger, "node_prepare failed after 3 attempts", e)
                         raise
 
-        from config.project_context import ProjectContext
+        from config.settings import ConfigManager
 
-        base_max_ac_iter = ProjectContext.get_setting("actor_critic_max_iterations", 2)
+        base_max_ac_iter = ConfigManager.get_config().actor_critic_max_iterations
         max_ac_iter = 1 if ncs_score < 40 else base_max_ac_iter
 
         # 早期終了判定: NCSスコアが極めて高い場合はdogfeedスキップ
@@ -578,9 +578,9 @@ class WritingGraphManager:
         is_easy_mode: bool,
     ) -> Dict[str, Any]:
         """初期状態を生成（フォールバック・LangGraph共通）"""
-        from config.project_context import ProjectContext
+        from config.settings import ConfigManager
 
-        base_max = ProjectContext.get_setting("actor_critic_max_iterations", 2)
+        base_max = ConfigManager.get_config().actor_critic_max_iterations
         return {
             "ep_num": ep_num,
             "passion": passion,

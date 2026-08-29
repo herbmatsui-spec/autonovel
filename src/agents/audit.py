@@ -318,7 +318,7 @@ class LogicalAuditor:
     async def analyze_tension_wave(self, book_id: int, ep_range: tuple = (1, 9999)) -> Any:
         """作品のtension履歴からNarrativeWavePatternを生成する"""
         try:
-            from config.project_context import ProjectContext
+            from config.settings import ConfigManager
             from src.models.audit import NarrativeWavePattern
 
             if self.repo is None:
@@ -334,8 +334,8 @@ class LogicalAuditor:
                 from src.backend.engine_narrative import WavePatternAnalyzer
 
                 self.wave_analyzer = WavePatternAnalyzer(
-                    threshold=ProjectContext.get_setting("catharsis_threshold", 65),
-                    reset_value=ProjectContext.get_setting("catharsis_reset_value", 0),
+                    threshold=ConfigManager.get_config().catharsis_threshold,
+                    reset_value=ConfigManager.get_config().catharsis_reset_value,
                 )
 
             return self.wave_analyzer.analyze(tension_history)

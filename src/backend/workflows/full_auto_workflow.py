@@ -55,7 +55,7 @@ class FullAutoWorkflow(BaseWorkflow):
 
             # P1-15: カタルシスパターン自動生成
             try:
-                from config.project_context import ProjectContext
+                from config.settings import ConfigManager
                 from src.backend.engine_narrative import WavePatternAnalyzer
 
                 # tension履歴を取得（初期プロット用）
@@ -64,8 +64,8 @@ class FullAutoWorkflow(BaseWorkflow):
 
                 # WavePatternAnalyzerでパターン分析
                 wave_analyzer = WavePatternAnalyzer(
-                    threshold=ProjectContext.get_setting("catharsis_threshold", 65),
-                    reset_value=ProjectContext.get_setting("catharsis_reset_value", 0),
+                    threshold=ConfigManager.get_config().catharsis_threshold,
+                    reset_value=ConfigManager.get_config().catharsis_reset_value,
                 )
                 catharsis_pattern = wave_analyzer.analyze(tension_history)
 

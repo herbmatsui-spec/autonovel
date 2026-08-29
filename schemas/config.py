@@ -87,6 +87,8 @@ class GlobalConfigModel(BaseModel):
     actor_critic_max_iterations: int = 2
     actor_critic_severity_threshold: str = "Major"
     specialized_amplifier_enabled: bool = True
+    style_learning_enabled: bool = True
+    consistency_guardian_enabled: bool = True
 
     # ===================== NSFW/セーフティ設定 =====================
     enable_nsfw: bool = False
