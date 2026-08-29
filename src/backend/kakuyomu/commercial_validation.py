@@ -131,14 +131,22 @@ async def compute_correlation(works: List[Dict], llm_provider=None) -> float:
         return 0.0
     return cov / math.sqrt(var_x * var_y)
 
-def run_validation(limit: int = 20, llm_provider=None) -> None:
-    """CLI entry point – fetches works, computes correlation and prints it."""
+async def run_validation(limit: int = 20, llm_provider=None) -> float:
+    """非同期コンテキストから呼び出す検証関数"""
+    works = await asyncio.to_thread(fetch_top_works, limit)
+    return await compute_correlation(works, llm_provider=llm_provider)
+
+
+def run_validation_sync(limit: int = 20, llm_provider=None) -> None:
+    """同期互換性用ラッパー"""
     works = fetch_top_works(limit)
-    corr = asyncio.run(compute_correlation(works, llm_provider=llm_provider))
+    corr = asyncio.run(run_validation(limit, llm_provider=llm_provider))
     logger.info(
         f"Correlation between bookmark count and commercial_score (n={len(works)}): {corr:.3f}"
     )
-    print(f"Correlation: {corr:.3f}")
 
 if __name__ == "__main__":  # pragma: no cover
-    run_validation()
+    async def _main():
+        corr = await run_validation()
+        print(f"Correlation: {corr:.3f}")
+    asyncio.run(_main())

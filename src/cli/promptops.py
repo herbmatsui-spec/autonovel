@@ -2,8 +2,11 @@
 """PromptOps CLI commands for managing prompt templates and versions."""
 
 import argparse
+import logging
 import sys
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 def init_command(args):
@@ -19,11 +22,11 @@ def init_command(args):
         "docs",
     ]
 
-    print("Creating PromptOps package structure...")
+    logger.info("Creating PromptOps package structure...")
     for d in dirs:
         path = project_root / d
         path.mkdir(parents=True, exist_ok=True)
-        print(f"  Created: {d}")
+        logger.info(f"  Created: {d}")
 
     # Create __init__.py files
     init_files = [
@@ -37,7 +40,7 @@ def init_command(args):
         path = project_root / f
         if not path.exists():
             path.touch()
-            print(f"  Created: {f}")
+            logger.info(f"  Created: {f}")
 
     # Create scaffold files
     scaffold_files = {
@@ -52,38 +55,38 @@ def init_command(args):
         path = project_root / filepath
         if not path.exists():
             path.write_text(content)
-            print(f"  Created: {filepath}")
+            logger.info(f"  Created: {filepath}")
 
-    print("\nPromptOps scaffold created successfully!")
-    print("\nNext steps:")
-    print("  1. Add your .j2 templates to the prompts/ directory")
-    print("  2. Import PromptRegistry from src.promptops.registry")
-    print("  3. Use ABTestRouter for A/B testing variants")
+    logger.info("\nPromptOps scaffold created successfully!")
+    logger.info("\nNext steps:")
+    logger.info("  1. Add your .j2 templates to the prompts/ directory")
+    logger.info("  2. Import PromptRegistry from src.promptops.registry")
+    logger.info("  3. Use ABTestRouter for A/B testing variants")
 
 
 def list_templates_command(args):
     """List available prompt templates."""
     prompts_dir = Path.cwd() / "prompts"
     if not prompts_dir.exists():
-        print("No prompts directory found.")
+        logger.info("No prompts directory found.")
         return
 
     templates = list(prompts_dir.rglob("*.j2"))
     if not templates:
-        print("No .j2 templates found in prompts/")
+        logger.info("No .j2 templates found in prompts/")
         return
 
-    print("Available prompt templates:")
+    logger.info("Available prompt templates:")
     for t in sorted(templates):
         rel = t.relative_to(prompts_dir)
-        print(f"  {rel}")
+        logger.info(f"  {rel}")
 
 
 def version_command(args):
     """Show PromptOps version."""
     from src.promptops.registry import __version__
 
-    print(f"PromptOps {__version__}")
+    logger.info(f"PromptOps {__version__}")
 
 
 def main():

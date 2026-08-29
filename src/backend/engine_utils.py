@@ -153,23 +153,14 @@ def safe_run_async(coro):
     """同期コンテキストから非同期コルーチンを実行する。
 
     既にイベントループが動作中の場合（Streamlit/FastAPI）、
-    別スレッドで新ループを作成して実行する。
+    既存ループへコルーチンをスケジュールする。
     """
     try:
         loop = asyncio.get_running_loop()
         if loop.is_running():
-            import concurrent.futures
-
-            def _worker(c):
-                new_loop = asyncio.new_event_loop()
-                try:
-                    asyncio.set_event_loop(new_loop)
-                    return new_loop.run_until_complete(c)
-                finally:
-                    new_loop.close()
-
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                return executor.submit(_worker, coro).result()
+            # 既存ループへスケジュール（スレッドプール生成コスト回避）
+            future = asyncio.run_coroutine_threadsafe(coro, loop)
+            return future.result()
 
         # ループはあるが動いていない（稀なケース）
         return asyncio.run(coro)
