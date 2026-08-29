@@ -10,6 +10,7 @@ WORKSPACE_FILES = [
     "OUTLINE.md",
     "STORY_SUMMARY.md",
     "MEMORY.md",
+    "STYLE_LEARNED.md",
 ]
 
 

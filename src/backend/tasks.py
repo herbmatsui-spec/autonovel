@@ -1,21 +1,34 @@
 import ipaddress
 import logging
+import functools
 from typing import Optional
 from urllib.parse import urlparse
 
 from huey import crontab
 
-from config.container import get_container
+from config.container import get_container, Container
 from src.backend.background import ProgressState
 from src.backend.database.uow import UnitOfWork
 from src.backend.error_utils import log_exception
 from src.backend.worker_config import huey
 from src.core.container import AppContainer
 from src.core.observability import with_trace_context
+from config.settings import _config_overrides_context, get_settings
 
 logger = logging.getLogger('huey')
 
 _NO_VALUE = object()
+
+
+async def _process_outbox_events_async():
+    """Process pending outbox events and mark them as done."""
+    from config.container import Container
+    from src.backend.database.uow import UnitOfWork
+    db_manager = Container.db()
+    async with UnitOfWork(db=db_manager) as uow:
+        pending = await uow.get_pending_outbox_events()
+        for event in pending:
+            await uow.mark_outbox_event_processed(event.id)
 
 # Configuration keys that may be overridden via task request payloads.
 # This mirrors the whitelist used by the original ProjectContext implementation.
@@ -59,17 +72,19 @@ def _apply_config_overrides(config_dict: Optional[dict]) -> dict:
     This replaces the deprecated ``ProjectContext`` usage with direct manipulation of the
     global ``Settings`` instance from ``config.settings``. Only keys explicitly listed in
     ``_CONFIG_OVERRIDE_KEYS`` are honored.
-    """
-    """Apply configuration overrides and return a dict of (key, original_value) for restoration.
+
     Returns a dict mapping key to original_value (or _NO_VALUE if key did not exist).
     Caller is responsible for restoring the original values after use.
     """
     if not config_dict:
         return {}
     try:
-        from config.settings import get_settings
-        overrides = {}
-        settings_obj = get_settings()
+        from config.settings import _config_overrides_context
+        # Get the current overrides in the context (to be restored later)
+        current_overrides = _config_overrides_context.get()
+        # Build the new overrides dict from the config_dict, after validation
+        new_overrides = {}
+        settings_obj = get_settings()._settings  # Get the underlying Settings instance
         for key in _CONFIG_OVERRIDE_KEYS:
             if key in config_dict and config_dict[key] not in (None, ""):
                 if key == "openai_base_url" and not _is_safe_base_url(str(config_dict[key])):
@@ -77,51 +92,17 @@ def _apply_config_overrides(config_dict: Optional[dict]) -> dict:
                         f"Rejected unsafe openai_base_url override: {config_dict[key]}"
                     )
                     continue
-                # Get the original value
+                # Get the original value from the settings instance (not from overrides)
                 original_value = getattr(settings_obj, key, _NO_VALUE)
-                overrides[key] = original_value
-                # Apply the override directly on the settings object
-                setattr(settings_obj, key, config_dict[key])
-        return overrides
+                new_overrides[key] = original_value
+                # Note: We do not apply the override to the settings instance here.
+                # The override will be applied via the context variable.
+        # Set the new overrides in the context variable
+        _config_overrides_context.set(new_overrides)
+        return current_overrides
     except (AttributeError, TypeError, KeyError, ValueError) as e:
         log_exception(logger, "Failed to apply config overrides", e)
         return {}
-
-
-@huey.periodic_task(crontab(minute='*'))
-def process_outbox_events():
-    """Huey periodic task for processing Outbox events."""
-    logger.info("Running outbox processor task...")
-    import asyncio
-    try:
-        asyncio.run(_process_outbox_events_async())
-    except (RuntimeError, asyncio.CancelledError) as e:
-        log_exception(logger, "Failed to process outbox events", e)
-
-
-async def _process_outbox_events_async():
-    container = get_container()
-    db = container.db()
-    uow = UnitOfWork(db=db)
-
-    async with uow:
-        events = await uow.get_pending_outbox_events()
-        for event in events:
-            try:
-                await uow.mark_outbox_event_processed(event.id)
-            except (ValueError, RuntimeError, KeyError) as e:
-                log_exception(logger, f"Failed to process outbox event {event.id}", e)
-
-
-def _create_workflow(method_name: str, **services):
-    """WORKFLOW_REGISTRY からワークフローを検索しインスタンス化する。"""
-    from src.backend.workflows import WORKFLOW_REGISTRY
-
-    workflow_cls = WORKFLOW_REGISTRY.get(method_name)
-    if workflow_cls is None:
-        raise ValueError(f"Unknown workflow method: {method_name}")
-    return workflow_cls(**services)
-
 
 def _build_service_dict(container):
     """コンテナからワークフローに必要な全サービスを取得して辞書として返す。"""
@@ -163,7 +144,6 @@ def execute_service_workflow(task_id: str, api_key: str, config_dict: dict, meth
 
             from src.core.container import AppContainer
 
-            _apply_config_overrides(config_dict)
 
             container = AppContainer(
                 api_key=api_key,
@@ -188,16 +168,8 @@ def execute_service_workflow(task_id: str, api_key: str, config_dict: dict, meth
             state._save_to_db()
         finally:
             # Restore config overrides to original values
-            from config.settings import get_settings
-            settings = get_settings()
-            for key, original_value in overrides.items():
-                if original_value is _NO_VALUE:
-                    # Key did not exist originally; remove the attribute if present
-                    if hasattr(settings, key):
-                        delattr(settings, key)
-                else:
-                    setattr(settings, key, original_value)
-
+            from config.settings import _config_overrides_context
+            _config_overrides_context.set(overrides)
     try:
         asyncio.run(_run())
     except (RuntimeError, asyncio.CancelledError) as e:
@@ -509,32 +481,20 @@ def run_commercial_pipeline_task(task_id: str, series_config: dict, samples: lis
     from src.backend.workflows.commercial_pipeline import CommercialPipeline
 
     # Use the module-level logger (or create a local one)
-    logger = logging.getLogger('huey')
+logger = logging.getLogger('huey')
 
-    state = ProgressState(is_running=True, task_id=task_id, repo=None)
-    BackgroundReporter(state)
 
-    async def _run():
-        try:
-            # Apply config overrides if needed (the endpoint does not apply overrides, but we can support them if passed via a config_dict)
-            # For now, we assume the config is already final.
-            pipeline = CommercialPipeline()
-            result = await pipeline.run(
-                series_config=series_config,
-                samples=samples,
-                platforms=platforms
-            )
-            state.result_data = result
-            state.is_running = False
-            state.message = "商用化パイプラインが完了しました。"
-            state._save_to_db()
-        except (ValueError, RuntimeError, KeyError, TypeError) as e:
-            log_exception(logger, "Commercial pipeline error", e)
-            state.is_running = False
-            state.error = str(e)
-            state._save_to_db()
+async def _process_outbox_events_async():
+    """Process pending outbox events and mark them as done."""
+    from config.container import Container
+    from src.backend.database.uow import UnitOfWork
+    db_manager = Container.db()
+    async with UnitOfWork(db=db_manager) as uow:
+        pending = await uow.get_pending_outbox_events()
+        for event in pending:
+            await uow.mark_outbox_event_processed(event.id)
 
-    try:
-        asyncio.run(_run())
-    except (RuntimeError, asyncio.CancelledError) as e:
-        log_exception(logger, "Task execution failed", e)
+    # Process pending outbox events
+    asyncio.run(_process_outbox_events_async())
+
+

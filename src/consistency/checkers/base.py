@@ -1,6 +1,6 @@
 """consistency/checkers/base.py - Checker 基底クラス"""
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Optional
 
 from src.consistency.findings import Finding
 

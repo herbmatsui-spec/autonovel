@@ -22,6 +22,11 @@ logger = logging.getLogger(__name__)
 
 
 class EngineFacade:
+    def __getattr__(self, name):
+        """Delegate unknown attributes to the underlying engine implementation."""
+        if hasattr(self._engine, name):
+            return getattr(self._engine, name)
+        raise AttributeError(f"{self.__class__.__name__} has no attribute '{name}'")
     """
     既存の UltimateHegemonyEngine を内包し、そのまま委譲するファサード。
 
@@ -38,13 +43,9 @@ class EngineFacade:
         self._engine = engine
 
     # ---- 後方互換プロパティ (engine の属性をそのまま公開) ----
-    @property
-    def api_key(self) -> str:
-        return self._config.api_key
-
-    @property
-    def cooldown(self) -> Any:  # noqa: ANN401
-        return self._config.cooldown
+    # 今後のフェーズ (ADR-0004) で、内包する engine を
+    # CoreEngine + 5つのドメインサービスへ段階的に置換していく。
+    # 現在は engine_impl のみを公開し、他の属性へのアクセスは非推奨。
 
     @property
     def engine_impl(self) -> Any:  # noqa: ANN401
@@ -52,80 +53,14 @@ class EngineFacade:
         return self._engine
 
     @property
-    def repo(self) -> Any:  # noqa: ANN401
-        return self._engine.repo
+    def api_key(self) -> str:
+        """Expose API key from configuration for compatibility."""
+        return self._config.api_key
 
     @property
-    def llm(self) -> Any:  # noqa: ANN401
-        return self._engine.llm
-
-    @property
-    def pm(self) -> Any:  # noqa: ANN401
-        return self._engine.pm
-
-    @property
-    def ctx_mgr(self) -> Any:  # noqa: ANN401
-        return self._engine.ctx_mgr
-
-    @property
-    def formatter(self) -> Any:  # noqa: ANN401
-        return self._engine.formatter
-
-    @property
-    def validator(self) -> Any:  # noqa: ANN401
-        return self._engine.validator
-
-    @property
-    def auditor(self) -> Any:  # noqa: ANN401
-        return self._engine.auditor
-
-    @property
-    def narrative(self) -> Any:  # noqa: ANN401
-        return self._engine.narrative
-
-    @property
-    def critique(self) -> Any:  # noqa: ANN401
-        return self._engine.critique
-
-    @property
-    def marketing(self) -> Any:  # noqa: ANN401
-        return self._engine.marketing
-
-    @property
-    def bible_agent(self) -> Any:  # noqa: ANN401
-        return self._engine.bible_agent
-
-    @property
-    def plot_agent(self) -> Any:  # noqa: ANN401
-        return self._engine.plot_agent
-
-    @property
-    def style_rag(self) -> Any:  # noqa: ANN401
-        return self._engine.style_rag
-
-    @property
-    def db(self) -> Any:  # noqa: ANN401
-        return self._engine.db
-
-    @property
-    def planner(self) -> Any:  # noqa: ANN401
-        return self._engine.planner
-
-    @property
-    def writer(self) -> Any:  # noqa: ANN401
-        return self._engine.writer
-
-    @property
-    def plot_service(self) -> Any:  # noqa: ANN401
-        return self._engine.plot_service
-
-    @property
-    def logic_validator(self) -> Any:  # noqa: ANN401
-        return self._engine.validator
-
-    @property
-    def generate_json(self) -> Any:  # noqa: ANN401
-        return self._engine.llm.generate_json
+    def cooldown(self):
+        """Expose AdaptiveCooldown instance from configuration."""
+        return self._config.cooldown
 
     def dispose(self) -> None:
         if hasattr(self._engine.db, "engine"):

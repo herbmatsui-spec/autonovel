@@ -20,8 +20,11 @@
 - `scripts/no_print_check.py` と `scripts/no_secret_check.py` による本番コードの `print()`/シークレット検出、pre-commit フック追加
 - バージョン同期確認テスト `tests/integration/test_version.py` 追加
 - エラー処理ガイド `docs/error_handling.md` を追加（`log_exception` の利用方針とドメイン例外への変換パターンを記載）
-
+- 提案1: スタイル学習の即時実装：章完了時に文体特徴を抽出しSTYLE_LEARNED.mdに蓄積、次章生成時にプロンプト注入
+- 提案2: 整合性 Guardian の完全統合：章執筆プロンプトに整合性チェック結果を強制注入（フラグ `consistency_guardian_enabled`）
+- 提案3: 章単位の自動改稿ループ：生成直後に整合性チェック→指摘があれば同一プロンプトで最大2回リライト（フラグ `auto_revision_enabled` ）
 ### Changed
+
 - `init_db`: 本番環境では `create_all` フォールバックを行わず、Alembic 失敗時は即座にエラー終了
 - `LLMGenerateResultProxy` コンストラクタ: `factory` キーワード引数も受け付けるよう後方互換性を維持
 - ヘルスチェック `check_llm_gateway`: 新 `LLMProviderFactory` 使用に更新

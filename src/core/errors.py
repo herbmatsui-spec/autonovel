@@ -10,6 +10,13 @@ T = TypeVar('T')
 
 
 class AgentResult(Generic[T]):
+    def __getitem__(self, key):
+        """Allow dict-like access to the underlying data when successful."""
+        if not self.success:
+            raise TypeError("AgentResult is not successful; cannot get items")
+        if isinstance(self.data, dict):
+            return self.data[key]
+        raise TypeError("AgentResult data is not a dict, indexing not supported")
     """エージェントの実行結果を表すジェネリッククラス。
     成功時は data に値、失敗時は error に例外またはエラーメッセージを格納。
     """

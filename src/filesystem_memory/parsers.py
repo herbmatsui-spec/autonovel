@@ -61,9 +61,11 @@ def parse_characters(content: str) -> List[Dict[str, Any]]:
             continue
         char = {"name": name}
         for line in lines[1:]:
-            if ":" in line:
-                k, v = line.split(":", 1)
-                char[k.strip()] = v.strip()
+                if ":" in line:
+                    k, v = line.split(":", 1)
+                    # Remove leading dash and whitespace from key (e.g., "- 名前")
+                    k = k.lstrip('- ').strip()
+                    char[k] = v.strip()
         chars.append(char)
     return chars
 

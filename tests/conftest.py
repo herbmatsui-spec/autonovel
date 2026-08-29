@@ -4,6 +4,7 @@ import tempfile
 from pathlib import Path
 
 import pytest
+from src.backend.database import UnitOfWork
 
 # Set test environment for database init
 os.environ.setdefault("KAKU_ENV", "test")
@@ -33,7 +34,7 @@ except ImportError:
 
 
 @pytest.fixture
-async def real_db_manager():
+def real_db_manager():
     """
     実際の SQLite データベース管理器を提供する。
     FullAutoWorkflow のテストに使用される。
@@ -55,10 +56,15 @@ async def real_db_manager():
     manager = DatabaseManager(db_url)
     yield manager
 
+
     try:
         db_path.unlink()
     except OSError:
         pass
+
+@pytest.fixture
+def real_uow(real_db_manager):
+    return UnitOfWork(real_db_manager)
 
 
 @pytest.fixture

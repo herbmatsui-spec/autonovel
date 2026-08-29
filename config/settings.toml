@@ -44,6 +44,15 @@ actor_critic_max_iterations = 2
 actor_critic_severity_threshold = "Major"
 specialized_amplifier_enabled = true
 enable_nsfw = false
+# Opt-in flag for Kakuyomu ranking ingestion & style learning
+# When false (default), the scraper and learn_from_corpus() are no-ops.
+kakuyomu_ingest_enabled = true
+# Number of works to ingest per CLI run (top-N of the selected ranking)
+kakuyomu_ingest_limit = 10
+# Seconds to wait between HTTP requests (politeness / robots.txt)
+kakuyomu_request_interval = 2.0
+# Custom User-Agent string (operators MUST identify their bot)
+kakuyomu_user_agent = "autonovel-bot/0.1 (+contact: see config/settings.toml)"
 safety_filter_level = "BLOCK_ONLY_HIGH"
 catharsis_threshold = 65
 catharsis_reset_value = 0

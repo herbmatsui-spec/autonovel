@@ -37,4 +37,6 @@ class TimelineChecker(Checker):
                     )
                 )
             prev = cur
+        if not findings:
+            findings.append(self._make_finding("low", "Timeline check passed", ""))
         return findings

@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import Any, Dict, Optional
 
 from src.backend.database.core import DatabaseManager
@@ -65,13 +66,11 @@ class PromptVersionManager:
         """指定したプロンプトバージョンをアクティブ化し、グローバル設定などと同期する"""
         async with UnitOfWork(self.db) as uow:
             await uow.prompt_versions.set_active_prompt_version(book_id, prompt_key, version_id)
-            # 現在のプロンプトパッチをGlobalConfigに反映させるため、
-            # contentをGlobalConfig("optimized_prompt_patch")に同期
+            # 現在のプロンプトパッチを環境変数経由でグローバル設定に反映
+            # KAKU_OPTIMIZED_PROMPT_PATCH 環境変数を使用
             ver = await uow.prompt_versions.get_prompt_version(version_id)
             if ver:
-                from config.project_context import GlobalConfig
-
-                GlobalConfig().set("optimized_prompt_patch", ver["content"])
+                os.environ["KAKU_OPTIMIZED_PROMPT_PATCH"] = ver["content"]
                 logger.info(f"Activated prompt version {ver['version_tag']} for key {prompt_key}")
 
     async def evaluate_and_rollback_if_needed(

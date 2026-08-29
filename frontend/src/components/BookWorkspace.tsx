@@ -10,7 +10,7 @@ import { ThemeStep } from './steps/ThemeStep';
 import { OutlineStep } from './steps/OutlineStep';
 import { WriteStep } from './steps/WriteStep';
 import { FinishStep } from './steps/FinishStep';
-import { PublishStep } from './steps/PublishStep';
+import { PublishStep } from './steps/FinishStep';
 import { ProgressPanel } from './ProgressPanel';
 import { lazy } from 'react';
 // Lazy load tab components
@@ -18,6 +18,8 @@ const StyleLabTab = lazy(() => import('./tabs/StyleLabTab'));
 const PlotsTab = lazy(() => import('./tabs/PlotsTab'));
 const AnalyticsTab = lazy(() => import('./tabs/AnalyticsTab'));
 const StoryCanvasTab = lazy(() => import('./tabs/StoryCanvasTab'));
+const ConsistencyTab = lazy(() => import('../components/ConsistencyPanel/ConsistencyPanel'));
+const WorkspaceTab = lazy(() => import('../components/WorkspaceEditor/WorkspaceEditor'));
 // Import the tab bar component
 import BookTabBar from './BookTabBar';
 // Import usage tracker
@@ -117,6 +119,10 @@ export default function BookWorkspace() {
         return <AnalyticsTab />;
       case 'story-canvas':
         return <StoryCanvasTab />;
+      case 'consistency':
+        return <ConsistencyTab />;
+      case 'workspace':
+        return <WorkspaceTab />;
       default:
         return <div>Unknown tab</div>;
     }

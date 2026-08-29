@@ -12,8 +12,7 @@ from jinja2 import DictLoader, Environment, FileSystemLoader, select_autoescape
 from jinja2.exceptions import TemplateError, UndefinedError
 
 from prompts.metrics import IMetricsCollector, InMemoryCollector
-from config.project_context import PROMPT_TEMPLATES
-from config.settings import BASE_DIR
+from config.settings import BASE_DIR, PROMPT_TEMPLATES
 from prompts.exceptions import PromptDbError, PromptRenderingError, PromptTemplateNotFoundError
 from prompts.schemas import PromptContext
 from src.domain.types import BookId

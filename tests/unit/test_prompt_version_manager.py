@@ -1,7 +1,7 @@
 import pytest
 from sqlalchemy import text
 
-from config.project_context import GlobalConfig
+from config.settings import ConfigManager
 from src.backend.database.uow import UnitOfWork
 from src.backend.prompt_version_manager import PromptVersionManager
 
@@ -52,7 +52,7 @@ async def test_prompt_version_flow():
 
     # 3. アクティブ化
     await pvm.activate_version(book_id, "optimized_prompt_patch", v1_id)
-    assert GlobalConfig().get("optimized_prompt_patch") == "プロンプト ver1"
+    assert getattr(ConfigManager.get_config(), "optimized_prompt_patch", None) == "プロンプト ver1"
 
     # 4. バージョン2を保存 (スコアが85)
     v2_id = await pvm.save_new_version(
@@ -62,7 +62,7 @@ async def test_prompt_version_flow():
         score_before=85.0,
     )
     await pvm.activate_version(book_id, "optimized_prompt_patch", v2_id)
-    assert GlobalConfig().get("optimized_prompt_patch") == "プロンプト ver2"
+    assert getattr(ConfigManager.get_config(), "optimized_prompt_patch", None) == "プロンプト ver2"
 
     # 5. スコア評価による自動ロールバック検証 (スコアが大きく劣化した場合)
     # 85.0 -> 70.0 (劣化閾値5.0を超える)
@@ -71,7 +71,7 @@ async def test_prompt_version_flow():
     )
     assert rolled_back is True
     # v1 (健全なバージョン) に自動的に戻ることを検証
-    assert GlobalConfig().get("optimized_prompt_patch") == "プロンプト ver1"
+    assert getattr(ConfigManager.get_config(), "optimized_prompt_patch", None) == "プロンプト ver1"
 
     # 後片付け
     async with UnitOfWork(db) as uow:

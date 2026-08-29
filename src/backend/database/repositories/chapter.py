@@ -75,10 +75,13 @@ class ChapterRepository(BaseRepository):
                 update_chapter_memory,
                 update_story_summary,
             )
+            from src.services.style_learning import update_style_learned
 
             summary_text = generate_chapter_summary(content)
             update_chapter_memory(book_id, ep_num, summary_text, branch_id=branch_id)
             update_story_summary(book_id, ep_num, summary_text, branch_id=branch_id)
+            # Style learning: update STYLE_LEARNED.md with chapter content
+            update_style_learned(book_id, ep_num, content, branch_id=branch_id)
         except Exception as _e:  # noqa: BLE001
             import logging
 

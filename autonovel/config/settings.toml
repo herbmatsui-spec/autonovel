@@ -1,0 +1,63 @@
+[general]
+model_writing = "gemma-4-31b-it"
+model_planning = "gemini-3.5-flash-lite"
+model_plot_expansion = "gemma-4-31b-it"
+model_climax = "gemma-4-31b-it"
+model_stable_fallback = "gemma-4-31b-it"
+model_ultra_stable = "gemma-4-31b-it"
+model_embedding = "text-embedding-004"
+
+openai_base_url = "https://openrouter.ai/api/v1"
+openai_api_key = ""
+
+database_url = ""
+redis_url = ""
+redis_max_connections = 10
+redis_default_ttl = 3600
+redis_namespace = "kaku:cache"
+
+prompt_cache_max_size = 100
+
+context_window_target_ratio = 0.85
+context_window_min_reserve = 2000
+context_trimming_enabled = true
+prefetch_enabled = true
+prefetch_episode_count = 3
+hybrid_search_alpha = 0.5
+
+stress_catharsis_threshold = 85
+stress_filler_threshold = 35
+stress_climax_bonus = 50
+stress_hate_gain_base = 2
+max_history_len = 30
+auto_backup = true
+safe_append_mode = "auto"
+cooldown_base = 0.0
+cooldown_min = 0.0
+cooldown_max = 90.0
+max_concurrency = 0
+max_concurrent_api_calls = 5
+optimized_prompt_patch = ""
+
+fail_fast_mode = false
+enable_dogfeeding = true
+enable_heavy_audit = true
+
+similarity_threshold = 0.75
+enable_semantic_edge_preservation = true
+
+draft_polish_enabled = true
+polishing_min_content_ratio = 0.5
+actor_critic_enabled = true
+actor_critic_max_iterations = 2
+actor_critic_severity_threshold = "Major"
+specialized_amplifier_enabled = true
+
+enable_nsfw = false
+safety_filter_level = "BLOCK_ONLY_HIGH"
+
+catharsis_threshold = 65
+catharsis_reset_value = 0
+wave_pattern_ratio = {small = 0.7, medium = 0.15, large = 0.15}
+catharsis_density_range = {min = 2, max = 5}
+min_immersion_score = 0.0

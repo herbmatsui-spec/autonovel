@@ -89,3 +89,22 @@ async def sync_workspace(book_id: int, payload: dict = {}):
         raise HTTPException(status_code=400, detail=f"Invalid direction: {direction}")
     report = sync_bidirectional(book_id, d)
     return report.to_dict()
+
+
+@router.post("/{book_id}/learn_style", dependencies=[Depends(require_api_key)])
+async def learn_style_endpoint(book_id: int, payload: dict):
+    """手動で文体学習をトリガーするエンドポイント。
+    本文と章番号を受け取り、STYLE_LEARNED.md を更新する。
+    """
+    from src.services.style_learning import update_style_learned
+
+    ep_num = payload.get("ep_num")
+    content = payload.get("content")
+    if ep_num is None or content is None:
+        raise HTTPException(status_code=400, detail="ep_num and content are required")
+    # branch_id デフォルトは 1
+    try:
+        path = update_style_learned(book_id, ep_num, content, branch_id=1)
+        return {"message": "style learned", "path": str(path)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to learn style: {e}")

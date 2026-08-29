@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from __future__ import annotations
 
 import logging
@@ -27,6 +28,8 @@ from src.backend.database.repositories import (
     PromptMetricsRepository,
     PromptVersionRepository,
     RulesRepository,
+    CollabRepository,
+    TraceRepository,
 )
 from src.backend.database.uow_context import current_uow
 
@@ -55,6 +58,8 @@ class UnitOfWork:
         self._prompt_versions: Optional[PromptVersionRepository] = None
         self._prompt_metrics: Optional[PromptMetricsRepository] = None
         self._illustrations: Optional[IllustrationRepository] = None
+        self._collab: Optional[CollabRepository] = None
+        self._trace: Optional[TraceRepository] = None
 
         self.outbox_service = ChromaOutboxService()
         self._chroma_additions: List[Dict[str, Any]] = []
@@ -155,6 +160,18 @@ class UnitOfWork:
         if self._illustrations is None:
             self._illustrations = IllustrationRepository(self.session)
         return self._illustrations
+
+    @property
+    def trace(self) -> TraceRepository:
+        if self._trace is None:
+            self._trace = TraceRepository(self.session)
+        return self._trace
+
+    @property
+    def collab(self) -> CollabRepository:
+        if self._collab is None:
+            self._collab = CollabRepository(self.session)
+        return self._collab
 
     async def __aenter__(self) -> UnitOfWork:
         self.session = self.db.get_session()

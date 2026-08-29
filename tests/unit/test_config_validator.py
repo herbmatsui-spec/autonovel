@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pytest
 
-from config.project_context import get_config
+from config.settings import ConfigManager
 from config.validator import ConfigValidator
 from schemas.config import GlobalConfigModel
 
@@ -98,7 +98,7 @@ class TestGlobalConfigModelLoad:
         """load() の戻り値に models.yaml の値がマージされていることを確認"""
         config = GlobalConfigModel.load()
         # models.yaml の値が settings にマージされている
-        assert config.model_planning == "gemini-3.1-flash-lite"
+        assert config.model_planning == "gemini-3.5-flash-lite"
         assert config.model_plot_expansion == "gemma-4-31b-it"
         assert config.model_writing == "gemma-4-31b-it"
 
@@ -110,14 +110,14 @@ class TestGlobalConfigModelLoad:
 
 
 class TestGetConfig:
-    """project_context.get_config() のテスト"""
+    """ConfigManager.get_config() のテスト"""
 
     def test_get_config_returns_merged(self):
-        """get_config() がマージ済み設定を返すことを確認"""
-        config = get_config()
+        """ConfigManager.get_config() がマージ済み設定を返すことを確認"""
+        config = ConfigManager.get_config()
         assert isinstance(config, GlobalConfigModel)
         # models.yaml の値が反映されている
-        assert config.model_planning == "gemini-3.1-flash-lite"
+        assert config.model_planning == "gemini-3.5-flash-lite"
         # tropes がマージされている
         assert hasattr(config, "tropes")
         assert len(config.tropes["tropes"]) > 0

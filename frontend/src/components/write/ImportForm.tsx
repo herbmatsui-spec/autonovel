@@ -1,4 +1,7 @@
 import { NumberInput } from '../ui/NumberInput';
+import { TiptapEditor } from '@/components/editor/TiptapEditor';
+import { uploadImage } from '@/components/editor/extensions/ImageUploadExtension';
+import { useUserSettingsStore } from '@/store/useUserSettingsStore';
 
 interface ImportFormProps {
   importEpNum: number;
@@ -25,6 +28,8 @@ export function ImportForm({
   showPreview,
   setShowPreview,
 }: ImportFormProps) {
+  const { apiKey } = useUserSettingsStore();
+
   return (
     <form
       className="glass-panel p-6"
@@ -54,13 +59,13 @@ export function ImportForm({
             {importText.length.toLocaleString()}文字
           </span>
         </div>
-        <textarea
-          id="import-text"
+        <TiptapEditor
           value={importText}
-          onChange={(e) => setImportText(e.target.value)}
+          onChange={setImportText}
           placeholder="インポートするエピソード本文を入力..."
-          rows={6}
-          required
+          className="w-full"
+          onImageUpload={uploadImage}
+          apiKey={apiKey}
         />
       </div>
       {showPreview && importText && (

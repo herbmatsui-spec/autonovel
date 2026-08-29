@@ -10,7 +10,7 @@ from __future__ import annotations
 import hmac
 import logging
 import os
-from typing import List, Optional
+from typing import List, Optional, Any
 
 try:
     from dotenv import load_dotenv
@@ -49,9 +49,10 @@ class APIKeyService:
         return os.environ.get("AUTH_DISABLED", "false").lower() in ("1", "true", "yes")
 
     def validate(self, api_key: str) -> bool:
-        if self.disabled:
-            # 本番環境では AUTH_DISABLED を無視して認証を要求
-            env = os.environ.get("ENVIRONMENT", "development")
+        # Check if authentication is disabled via AUTH_DISABLED
+        disabled_env = os.getenv("AUTH_DISABLED", "false").lower() in ("1", "true", "yes")
+        env = os.getenv("ENVIRONMENT", "development")
+        if disabled_env:
             if env == "production":
                 logger.error(
                     "AUTH_DISABLED is set but ENVIRONMENT=production - authentication is required"
@@ -59,17 +60,14 @@ class APIKeyService:
                 return False
             logger.warning("AUTH_DISABLED is set - authentication is bypassed (non-production)")
             return True
-        # No allowed keys configured – apply fallback rules
-        if not self.allowed_keys:
-            # Allow "test" prefixed keys in non‑production environments
-            env = os.environ.get("ENVIRONMENT", "development").lower()
-            if env != "production" and api_key.lower().startswith("test"):
+        
+        # If allowed_keys list is provided, check membership
+        if self.allowed_keys:
+            # Development bypass for convenience
+            if os.getenv("API_KEY_DEV_BYPASS", "false").lower() == "true":
                 return True
-            # Otherwise fail closed
-            return False
-        for k in self.allowed_keys:
-            if hmac.compare_digest(api_key, k):
-                return True
+            return api_key in self.allowed_keys
+        # No allowed keys configured – fail closed
         return False
 
     def get_rate_limit_key(self, api_key: str) -> str:
@@ -105,6 +103,18 @@ def get_api_key_service() -> APIKeyService:
             )
         keys_env = os.environ.get("ALLOWED_API_KEYS", "")
         allowed_keys = [k.strip() for k in keys_env.split(",") if k.strip()]
+        
+        # Warn if no API keys are configured and we're not using bypass mechanisms
+        if not allowed_keys and not disabled_env:
+            dev_bypass = os.getenv("API_KEY_DEV_BYPASS", "false").lower() == "true"
+            if not dev_bypass:
+                logger.warning(
+                    "ALLOWED_API_KEYS environment variable is not set or empty. "
+                    "API key authentication is enabled but no keys are configured. "
+                    "All API key validation attempts will fail. "
+                    "For development, set API_KEY_DEV_BYPASS=true or configure explicit API keys."
+                )
+        
         _api_key_service = APIKeyService(allowed_keys=allowed_keys, disabled=disabled_env if "AUTH_DISABLED" in os.environ else None)
     return _api_key_service
 

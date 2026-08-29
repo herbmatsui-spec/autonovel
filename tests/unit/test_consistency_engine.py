@@ -3,6 +3,7 @@ from src.consistency.findings import Finding, Evidence
 from src.consistency.engine import ConsistencyEngine
 from src.consistency.checkers.base import Checker, CheckContext
 from src.consistency.filters import filter_intentional
+from typing import List
 
 
 class _DummyChecker(Checker):

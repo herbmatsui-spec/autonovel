@@ -32,6 +32,7 @@ _TEMPLATE_FILES = {
     "OUTLINE.md": "OUTLINE.md.j2",
     "STORY_SUMMARY.md": "STORY_SUMMARY.md.j2",
     "MEMORY.md": "MEMORY.md.j2",
+    "STYLE_LEARNED.md": "STYLE_LEARNED.md.j2",
 }
 
 

@@ -31,13 +31,14 @@ GlobalConfigModel = Settings
 GlobalConfig = Settings
 
 def get_config() -> Settings:
-    """非推奨: get_settings() を使用してください。"""
+    """非推奨: ConfigManager.get_config() を使用してください。"""
     warnings.warn(
-        "config.project_context.get_config() は非推奨です。config.settings.get_settings() を使用してください。",
+        "config.project_context.get_config() は非推奨です。config.settings.ConfigManager.get_config() を使用してください。",
         DeprecationWarning,
         stacklevel=2,
     )
-    return get_settings()
+    from config.settings import ConfigManager
+    return ConfigManager.get_config()
 
 def set_config(config) -> None:
     """非推奨: 設定の変更は環境変数または .env ファイルで行ってください。"""
@@ -59,11 +60,13 @@ class ProjectContext:
     @staticmethod
     def get_setting(key: str, default: Any = None) -> Any:
         warnings.warn(
-            "ProjectContext.get_setting() は非推奨です。config.settings.get_settings().KEY を直接使用してください。",
+            "ProjectContext.get_setting() は非推奨です。config.settings.ConfigManager.get_config().KEY を直接使用してください。",
             DeprecationWarning,
             stacklevel=2,
         )
-        return getattr(get_settings(), key, default)
+        from config.settings import ConfigManager
+        config = ConfigManager.get_config()
+        return getattr(config, key, default)
 
     @staticmethod
     def set_setting(key: str, value: Any) -> None:

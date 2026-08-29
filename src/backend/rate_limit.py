@@ -2,6 +2,9 @@
 
 import logging
 import time
+import os
+import asyncio
+from typing import Dict, Tuple
 
 from src.services.redis_cache import RedisCacheService
 from src.backend.error_utils import log_exception
@@ -14,7 +17,7 @@ except ImportError:  # pragma: no cover
 
 logger = logging.getLogger(__name__)
 
-RATE_LIMIT_FAIL_OPEN: bool = False
+RATE_LIMIT_FAIL_OPEN: bool = os.getenv("RATE_LIMIT_FAIL_OPEN", "false").lower() in ("true", "1", "yes")
 
 # Lua script for atomic sliding window rate limiting
 # Removes expired entries, counts current requests, adds new request if under limit
@@ -40,12 +43,36 @@ else
 end
 """
 
+# Token bucket fallback for when Redis is unavailable
+_TOKEN_BUCKETS: Dict[str, Tuple[float, float]] = {}  # client_id -> (tokens, last_refill)
+_TOKEN_BUCKET_LOCK = asyncio.Lock()
+
+
+async def _token_bucket_allow(client_id: str, max_requests: int, window_seconds: int) -> bool:
+    """Token bucket rate limiting fallback (in-memory, per-process).
+    Returns True if allowed, False if rate limited.
+    """
+    rate = max_requests / window_seconds  # tokens per second
+    now = time.time()
+    async with _TOKEN_BUCKET_LOCK:
+        tokens, last_refill = _TOKEN_BUCKETS.get(client_id, (float(max_requests), now))
+        # Refill tokens based on elapsed time
+        elapsed = now - last_refill
+        tokens = min(float(max_requests), tokens + elapsed * rate)
+        if tokens >= 1.0:
+            tokens -= 1.0
+            _TOKEN_BUCKETS[client_id] = (tokens, now)
+            return True
+        else:
+            _TOKEN_BUCKETS[client_id] = (tokens, last_refill)
+            return False
+
 
 class RedisRateLimiter:
-    """Redis-backed sliding window rate limiter.
+    """Redis-backed sliding window rate limiter with token bucket fallback.
 
     Uses a sorted set per client to track request timestamps.
-    デフォルトではフェイルクローズ（Redis障害時はリクエストを拒否）。
+    When Redis is unavailable, falls back to an in-memory token bucket per client.
     """
 
     def __init__(
@@ -67,7 +94,7 @@ class RedisRateLimiter:
         """Check if request is allowed under rate limit.
 
         Returns True if allowed, False if rate limited.
-        Redis障害時はfail_open設定に従う（デフォルトはFalse:拒否）。
+        Redis障害時はローカル token bucket フォールバックを使用。
         """
         key = self._get_key(client_id)
         now = time.time()
@@ -82,12 +109,11 @@ class RedisRateLimiter:
             if result is None:
                 logger.warning(
                     "Rate limit Lua script evaluation failed (Redis unavailable)."
-                    f" Failing {'open' if self.fail_open else 'close'}."
+                    " Falling back to token bucket."
                 )
-                return self.fail_open
+                return await _token_bucket_allow(client_id, self.max_requests, self.window_seconds)
             return bool(result)
         except (RedisError, OSError) as e:
             log_exception(logger, "Rate limit check failed", e)
-            if self.fail_open:
-                return True
-            return False
+            logger.warning("Falling back to token bucket due to Redis error.")
+            return await _token_bucket_allow(client_id, self.max_requests, self.window_seconds)

@@ -305,6 +305,23 @@ class GenerationLoopManager:
         pov_instruction = self._determine_pov_instruction(
             ep_num, current_tension, is_catharsis, reporter
         )
+        # ---- Style learning injection (Step 21-22) ----
+        from src.services.style_prompt import build_style_injection
+        from config.project_context import ProjectContext
+        book_id = ctx.book.id if ctx.book else (ctx.book_id or 0)
+        branch_id = ctx.branch_id
+        if ProjectContext.get_setting("style_learning_enabled", True):
+            injection = build_style_injection(book_id, branch_id)
+            if injection:
+                sys_inst = sys_inst + "\n\n" + injection
+        # ------------------------------------------------
+        # ---- Consistency Guardian injection (Step 28-30) ----
+        from src.consistency.guardian_hook import get_consistency_prompt_injection
+        if ProjectContext.get_setting("consistency_guardian_enabled", True):
+            cinjection = get_consistency_prompt_injection(book_id, branch_id, ep_num)
+            if cinjection:
+                sys_inst = sys_inst + "\n\n" + cinjection
+        # -----------------------------------------------------
         gen_ctx = WritingGenerationContext(
             sys_inst=sys_inst,
             fw_prompt=fw_prompt,
@@ -433,11 +450,11 @@ class GenerationLoopManager:
         True = 次ループで再執筆すべき指摘あり
         False = スキップ（軽微な矛盾 or Critic無効）
         """
-        from config.settings import get_settings
+        from config.settings import ConfigManager
         from src.agents.audit import LogicalAuditor
         from src.models.audit import AuditIssue, LogicalAuditIssueList
 
-        cfg = get_settings()
+        cfg = ConfigManager.get_config()
         if not cfg.actor_critic_enabled:
             return False
 

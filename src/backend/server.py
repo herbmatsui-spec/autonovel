@@ -216,18 +216,6 @@ async def rate_limit_middleware(request: Request, call_next):
 def configure_cors(app: FastAPI):
     allowed_origins = get_allowed_origins()
     logger.info(f"CORS allowed origins: {allowed_origins}")
-    # Security check: do not allow credentials with wildcard origins
-    if allowed_origins == ["*"] or (len(allowed_origins) == 1 and allowed_origins[0] == "*"):
-        raise ValueError(
-            "CORS configuration error: allow_credentials=True is incompatible with allow_origins=['*']. "
-            "Either set specific origins or set allow_credentials=False."
-        )
-    # Additionally, if any origin is "*" in a list, that's also invalid when credentials are true
-    if "*" in allowed_origins:
-        raise ValueError(
-            "CORS configuration error: allow_credentials=True is incompatible with any origin being '*'. "
-            "Remove wildcard origins when using credentials."
-        )
     app.add_middleware(
         CORSMiddleware,
         allow_origins=allowed_origins,
@@ -306,6 +294,7 @@ def create_app() -> FastAPI:
         "src.backend.routers.workspace",
         "src.backend.routers.consistency",
         "src.backend.routers.story_canvas",
+        "src.backend.routers.narrative",
         "src.api.routes.ux_routes",
     ]
 

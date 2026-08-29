@@ -2,10 +2,9 @@ from __future__ import annotations
 
 import json
 import logging
-from pathlib import Path
-from typing import Any, Dict, Callable
-
 import tomllib
+from pathlib import Path
+from typing import Any, Callable, Dict
 
 import yaml
 
@@ -25,19 +24,22 @@ class ConfigValidator:
     @staticmethod
     def _resolve_config_path(path_str: str) -> Path:
         p = Path(path_str)
-        if p.exists():
-            return p.resolve()
         base_dir = Path(__file__).resolve().parent.parent
+        # Candidate 1: base_dir / path_str (e.g. config/settings.toml)
         candidate1 = base_dir / path_str
         if candidate1.exists():
             return candidate1.resolve()
+        # Candidate 2: base_dir / "config" / filename (e.g. config/settings.toml)
         candidate2 = base_dir / "config" / Path(path_str).name
         if candidate2.exists():
             return candidate2.resolve()
+        # Fallback: treat path_str as relative to CWD
+        if p.exists():
+            return p.resolve()
         return p.resolve()
 
     @staticmethod
-    def load_settings_toml(path: str = "autonovel/config/settings.toml") -> GlobalConfigModel:
+    def load_settings_toml(path: str = "config/settings.toml") -> GlobalConfigModel:
         resolved_path = ConfigValidator._resolve_config_path(path)
         logger.debug(
             f"[LOAD] ConfigValidator.load_settings_toml() called from: path={resolved_path}"
@@ -58,7 +60,7 @@ class ConfigValidator:
             raise
 
     @staticmethod
-    def load_models_yaml(path: str = "autonovel/config/models.yaml") -> ModelRegistryModel:
+    def load_models_yaml(path: str = "config/models.yaml") -> ModelRegistryModel:
         resolved_path = ConfigValidator._resolve_config_path(path)
         logger.debug(f"[LOAD] ConfigValidator.load_models_yaml() called from: path={resolved_path}")
         try:
@@ -79,7 +81,7 @@ class ConfigValidator:
 
     @staticmethod
     def load_system_plugins_yaml(
-        path: str = "autonovel/config/system_plugins.yaml",
+        path: str = "config/system_plugins.yaml",
     ) -> SystemPluginsModel:
         resolved_path = ConfigValidator._resolve_config_path(path)
         logger.debug(
@@ -100,7 +102,7 @@ class ConfigValidator:
             raise
 
     @staticmethod
-    def load_tropes_json(path: str = "autonovel/config/tropes.json") -> TropesModel:
+    def load_tropes_json(path: str = "config/tropes.json") -> TropesModel:
         resolved_path = ConfigValidator._resolve_config_path(path)
         logger.debug(f"[LOAD] ConfigValidator.load_tropes_json() called from: path={resolved_path}")
         try:
@@ -124,7 +126,7 @@ class ConfigValidator:
 
     @staticmethod
     def load_interaction_matrix_yaml(
-        path: str = "autonovel/config/interaction_matrix.yaml",
+        path: str = "config/interaction_matrix.yaml",
     ) -> InteractionMatrixModel:
         resolved_path = ConfigValidator._resolve_config_path(path)
         logger.debug(

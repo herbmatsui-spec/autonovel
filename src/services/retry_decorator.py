@@ -114,7 +114,8 @@ def with_llm_retry():
                 )
                 kwargs["retry_state"] = state
 
-            while state.attempt < state.max_retries:
+            max_attempts = state.max_retries * 2 + 1
+            while state.attempt < max_attempts:
                 # UI通知 (2回目以降の試行時)
                 if state.attempt > 0 and state.reporter and hasattr(state.reporter, "report"):
                     state.reporter.report(
@@ -235,11 +236,7 @@ def with_llm_retry():
                         logger.error(f"❌ Non-retryable error. Fail-Fast. Error: {e}")
                         raise LLMUnrecoverableError(f"Non-retryable error: {e}") from e
 
-                    if state.attempt == state.max_retries - 1:
-                        logger.error(f"❌ Max retries reached for temporary error: {e}")
-                        raise LLMTemporaryError(
-                            f"Temporary LLM error persisted after {state.max_retries} attempts: {e}"
-                        ) from e
+                    # Continue retrying until max_attempts is reached
 
                     # 動的クールダウンと並行抑制
                     cooldown = getattr(self, "cooldown", None)

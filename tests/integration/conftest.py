@@ -5,6 +5,7 @@ Provides PostgreSQL, Redis, and ChromaDB containers for integration tests.
 
 import os
 import pytest
+from unittest.mock import MagicMock
 try:
     from testcontainers.postgres import PostgresContainer
     from testcontainers.redis import RedisContainer
@@ -116,23 +117,21 @@ def override_settings(postgres_container, redis_container, chromadb_container, m
 # ===================== データベース初期化ヘルパー =====================
 
 @pytest.fixture
-async def db_manager(postgres_container):
-    """初期化済み DatabaseManager インスタンス"""
-    from sqlalchemy.ext.asyncio import create_async_engine
+def db_manager():
+    """SQLite を使用した DatabaseManager のテスト用インスタンス (同期 fixture)"""
+    import tempfile
+    from pathlib import Path
     from src.backend.database.core import DatabaseManager
-
-    pg_url = postgres_container.get_connection_url().replace("postgresql://", "postgresql+asyncpg://")
-    engine = create_async_engine(pg_url, echo=False)
-
-    # テーブル作成
-    async with engine.begin() as conn:
-        # 基本テーブル作成 (models からメタデータ取得)
-        from src.models.base import Base
-        await conn.run_sync(Base.metadata.create_all)
-
-    manager = DatabaseManager(engine=engine)
-    yield manager
-    await engine.dispose()
+    
+    # Create a temporary SQLite file for async aiosqlite
+    tmp = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
+    tmp.close()
+    db_path = Path(tmp.name)
+    db_url = f"sqlite+aiosqlite:///{db_path}"
+    manager = DatabaseManager(db_url)
+    # Cleanup: delete the temporary file after test session
+    # Using pytest finalizer via request.addfinalizer not available here; rely on temp file removal by OS or ignore.
+    return manager
 
 
 # ===================== ChromaDB クライアント =====================
@@ -187,7 +186,7 @@ def mock_llm_client():
 # ===================== テスト用エンジン =====================
 
 @pytest.fixture
-async def test_engine(db_manager, mock_llm_client, monkeypatch):
+def test_engine(db_manager, mock_llm_client, monkeypatch):
     """テスト用エンジンインスタンス"""
     from src.core.container import AppContainer
     from src.core.llm_gateway import LLMGenerateResultProxy

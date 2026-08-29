@@ -11,7 +11,7 @@ import logging
 import os
 import typing
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, ClassVar, Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field
 
@@ -92,6 +92,14 @@ class GlobalConfigModel(BaseModel):
     enable_nsfw: bool = False
     safety_filter_level: str = "BLOCK_ONLY_HIGH"  # BLOCK_NONE, BLOCK_ONLY_HIGH, etc.
 
+    # ===================== カクヨム取り込み設定（オプトイン） =====================
+    kakuyomu_ingest_enabled: bool = Field(default=False)
+    kakuyomu_ingest_limit: int = Field(default=10)
+    kakuyomu_request_interval: float = Field(default=2.0)
+    kakuyomu_user_agent: str = Field(
+        default="autonovel-bot/0.1 (+contact: see config/settings.toml)"
+    )
+
     # ===================== 拡張設定（ファイル由来） =====================
     domain_profiles: Optional[Dict[str, Any]] = None
     interaction_matrix: Optional[Dict[str, Any]] = None
@@ -165,7 +173,9 @@ class GlobalConfigModel(BaseModel):
          "KAKU_SPECIALIZED_AMPLIFIER_ENABLED": "specialized_amplifier_enabled",
          "KAKU_ENABLE_NSFW": "enable_nsfw",
          "KAKU_SAFETY_FILTER_LEVEL": "safety_filter_level",
-         "KAKU_MAX_CONCURRENT_API_CALLS": "max_concurrent_api_calls",
+         "KAKU_KAKUYOMU_INGEST_ENABLED": "kakuyomu_ingest_enabled",
+         "KAKU_KAKUYOMU_INGEST_LIMIT": "kakuyomu_ingest_limit",
+         "KAKU_KAKUYOMU_REQUEST_INTERVAL": "kakuyomu_request_interval",
     }
 
     # ===================== ファクトリメソッド =====================

@@ -1,5 +1,5 @@
 from config.models import GlobalConfigModel
-from config.project_context import get_config
+from config.settings import ConfigManager
 
 
 def test_global_config_model_loading():
@@ -10,8 +10,8 @@ def test_global_config_model_loading():
 
 
 def test_config_initialization():
-    """get_config() で設定が初期化されることを確認"""
-    config = get_config()
+    """ConfigManager.get_config() で設定が初期化されることを確認"""
+    config = ConfigManager.get_config()
     assert config is not None
     assert hasattr(config, "model_writing")
 

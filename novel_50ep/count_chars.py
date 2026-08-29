@@ -190,8 +190,16 @@ def calculate_style_stats(text: str) -> StyleStats:
 # ステップ19: count_chars
 def count_chars(target: Union[str, Path]) -> int:
     """引数のファイルまたは文字列の文字数をカウントして返す（改行・空白のみの行間調整を考慮）"""
-    if isinstance(target, Path) or (isinstance(target, str) and Path(target).is_file()):
-        content = Path(target).read_text(encoding="utf-8")
+    if isinstance(target, Path):
+        content = target.read_text(encoding="utf-8")
+    elif isinstance(target, str):
+        try:
+            if Path(target).is_file():
+                content = Path(target).read_text(encoding="utf-8")
+            else:
+                content = target
+        except OSError:
+            content = target
     else:
         content = str(target)
 

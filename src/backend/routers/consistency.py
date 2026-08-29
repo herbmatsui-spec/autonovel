@@ -10,6 +10,7 @@ from src.consistency.checkers.base import CheckContext
 from src.consistency.filters import filter_intentional
 from src.consistency.dismissed_store import add_dismissal, get_all_dismissals
 from src.consistency.checkers import get_default_checkers
+from src.consistency.injector import format_findings_for_prompt
 
 router = APIRouter(prefix="/api/consistency", tags=["consistency"])
 
@@ -51,3 +52,15 @@ async def dismiss_finding(book_id: int, req: DismissRequest):
 @router.get("/{book_id}/dismissed", dependencies=[Depends(require_api_key)])
 async def list_dismissed(book_id: int, branch_id: int = 1):
     return {"dismissed": get_all_dismissals(book_id, branch_id)}
+
+
+@router.get("/{book_id}/inject", dependencies=[Depends(require_api_key)])
+async def get_consistency_injection(book_id: int, ep_num: Optional[int] = None, branch_id: int = 1):
+    """Return the consistency injection string for prompting."""
+    engine = ConsistencyEngine(get_default_checkers())
+    context = CheckContext(book_id=book_id, branch_id=branch_id, ep_num=ep_num)
+    findings = engine.run(context)
+    dismissed = get_all_dismissals(book_id, branch_id)
+    filtered = filter_intentional(findings, set(dismissed.keys()))
+    injection = format_findings_for_prompt(filtered)
+    return {"injection": injection}

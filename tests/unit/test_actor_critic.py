@@ -3,7 +3,6 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from jinja2 import Environment, FileSystemLoader
 
-from config.project_context import ProjectContext
 from prompts.manager import PromptManager
 from src.agents.audit import LogicalAuditor
 from src.models.audit import AuditIssue, LogicalAuditIssueList
@@ -21,6 +20,13 @@ def jinja_env():
 @pytest.fixture
 def prompt_manager(jinja_env):
     return PromptManager(jinja_env)
+
+
+@pytest.fixture(autouse=True)
+def _actor_critic_settings(monkeypatch):
+    """ActorCritic settings for tests"""
+    monkeypatch.setenv("KAKU_ACTOR_CRITIC_SEVERITY_THRESHOLD", "Major")
+    monkeypatch.setenv("KAKU_ACTOR_CRITIC_ENABLED", "true")
 
 
 @pytest.mark.anyio
@@ -140,10 +146,6 @@ async def test_phase_critic_filtering(prompt_manager):
     if hasattr(manager, "critique") and manager.critique:
         manager.critique.prompt_manager = prompt_manager
 
-    # Set threshold to Major
-    ProjectContext.set_setting("actor_critic_severity_threshold", "Major")
-    ProjectContext.set_setting("actor_critic_enabled", True)
-
     gen_ctx = WritingGenerationContext()
 
     # 1. Minor failure (should be filtered out, returning False)
@@ -186,5 +188,3 @@ async def test_phase_critic_filtering(prompt_manager):
     assert triggered is True
     assert "Please rewrite" in gen_ctx.feedback_patch
     mock_llm.generate_json.assert_called_once()
-
-    ProjectContext.reset_overrides()

@@ -1,16 +1,12 @@
-import json
-import os
 from typing import List
-
-from config.settings import Settings
-
+import os
+import json
 
 def get_allowed_origins() -> List[str]:
     """環境変数からCORS許可originリストを取得"""
-    origins_env = os.getenv("CORS_ALLOWED_ORIGINS", "")
-    if not origins_env:
-        # デフォルトは開発用。環境の変更を反映させるため都度 Settings を構築する
-        return [o.strip() for o in Settings().cors_allowed_origins.split(",") if o.strip()]
+    origins_env = os.getenv("CORS_ALLOWED_ORIGINS")
+    if origins_env is None:
+        return []   # デフォルトは空リスト。生産環境ではライフサイクルで検証するため必須とする
     # Attempt to parse JSON array first (e.g., '["http://example.com"]')
     try:
         parsed = json.loads(origins_env)
