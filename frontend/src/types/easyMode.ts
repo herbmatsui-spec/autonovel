@@ -6,6 +6,7 @@ export interface EasyModeInput {
 }
 
 export interface GenerationResponse {
+  task_id?: string;
   output: string;
   completion_time_ms: number;
   error: string;

@@ -35,7 +35,7 @@ async def generate_content(
         processed_chapter = process_chapter(input_data.current_chapter)
 
         # 生成パラメータ準備
-        params = {
+        params: dict[str, Any] = {
             "chapter_history": input_data.chapter_history,
             "current_chapter": processed_chapter,
             "character": input_data.character_params,

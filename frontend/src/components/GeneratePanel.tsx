@@ -32,11 +32,12 @@ export default function GeneratePanel({ onGenerated, onMessage }: GeneratePanelP
         content_length_limit: 2000,
       });
 
-      // 非同期タスク ID を含む提案からポーリング対象を抽出
-      const taskMatch = response.suggestions
-        .join("\n")
-        .match(/(?:ステータスを\s*)?\/easy_mode\/status\/([^\s]+)/);
-      const taskId = taskMatch?.[1];
+      // 非同期タスク ID の取得 (APIレスポンスまたは提案文字列から)
+      const taskId =
+        response.task_id ||
+        response.suggestions
+          .join("\n")
+          .match(/(?:ステータスを\s*)?\/easy_mode\/status\/([^\s]+)/)?.[1];
 
       if (taskId) {
         setStatusText("タスクステータスをポーリング中...");

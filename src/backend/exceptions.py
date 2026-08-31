@@ -26,7 +26,7 @@ class NotFoundException(AutoNovelException):
 class ValidationException(AutoNovelException):
     """バリデーションエラーが発生した場合の例外。"""
     def __init__(self, detail: str = "Invalid input data"):
-        super().__init__(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=detail)
+        super().__init__(status_code=422, detail=detail)
 
 class ServiceException(AutoNovelException):
     """サービス層でのビジネスロジックエラー。"""

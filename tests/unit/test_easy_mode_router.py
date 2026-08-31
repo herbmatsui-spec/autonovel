@@ -1,10 +1,13 @@
 """Tests for src.backend.routers.easy_mode router functions."""
 
-import pytest
 import asyncio
-from src.backend.routers import easy_mode
+
+import pytest
+
 import src.backend.tasks.generation_tasks as generation_tasks_mod
 import src.backend.tasks.huey as huey_mod
+from src.backend.routers import easy_mode
+
 
 class DummySession:
     """Minimal dummy session object for repository usage."""
@@ -34,25 +37,25 @@ class DummyRepo:
         self.session = session
         self.task_id = 42
 
-    async def create_task(self, status: str = "pending", result: str | None = None):
+    def create_task(self, status: str = "pending", result: str | None = None):
         return DummyTask(self.task_id)
 
-    async def update_task_status(self, task_id: int, status: str):
+    def update_task_status(self, task_id: int, status: str):
         pass
 
-    async def get_latest_bible(self, book_id: int):
+    def get_latest_bible(self, book_id: int):
         return None
 
-    async def get_all_non_anchor_chapters(self, *args, **kwargs):
+    def get_all_non_anchor_chapters(self, *args, **kwargs):
         return []
 
-    async def get_all_characters(self, *args, **kwargs):
+    def get_all_characters(self, *args, **kwargs):
         return []
 
-    async def get_all_plots(self, *args, **kwargs):
+    def get_all_plots(self, *args, **kwargs):
         return []
 
-    async def get_book(self, *args, **kwargs):
+    def get_book(self, *args, **kwargs):
         return None
 
 @pytest.fixture

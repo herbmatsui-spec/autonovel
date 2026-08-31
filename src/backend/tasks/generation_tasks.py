@@ -37,20 +37,14 @@ async def _generate(payload: dict[str, Any]) -> dict[str, Any]:
     return await generate_with_llm(payload)
 
 
-async def _persist_success(repo: BookRepository, task_id: int, result: dict[str, Any]) -> None:
-    """成功時の DB 永続化処理。
-
-    結果を ``tasks`` テーブルへ反映した後、後続ポーリングが継続可能なように
-    レコードを即時削除せず維持する設計もあり得るが、本実装ではジョブ完了後の
-    不用品を残さないため削除する (クリーンアップ)。
-    """
-    await repo.set_task_result(task_id, json.dumps(result, ensure_ascii=False))
-    await repo.delete_task(task_id)
+def _persist_success(repo: BookRepository, task_id: int, result: dict[str, Any]) -> None:
+    """成功時の DB 永続化処理。"""
+    repo.set_task_result(task_id, json.dumps(result, ensure_ascii=False))
 
 
-async def _mark_failed(repo: BookRepository, task_id: int, exc: Exception) -> None:
+def _mark_failed(repo: BookRepository, task_id: int, exc: Exception) -> None:
     """失敗時のステータス更新。"""
-    await repo.update_task_status(task_id, "failed")
+    repo.update_task_status(task_id, "failed")
     logger.exception("Generation task failed (task_id=%s): %s", task_id, exc)
 
 
@@ -69,7 +63,7 @@ def generate_chapter_task(payload: dict[str, Any]) -> dict[str, Any]:
             session = database.SessionLocal()
             try:
                 repo = BookRepository(session)
-                _run_async(_persist_success(repo, int(task_id), result))
+                _persist_success(repo, int(task_id), result)
             finally:
                 session.close()
         metrics.increment("tasks_completed")
@@ -82,7 +76,7 @@ def generate_chapter_task(payload: dict[str, Any]) -> dict[str, Any]:
             session = database.SessionLocal()
             try:
                 repo = BookRepository(session)
-                _run_async(_mark_failed(repo, int(task_id), exc))
+                _mark_failed(repo, int(task_id), exc)
             finally:
                 session.close()
         return {"error": str(exc), "text": "", "time": 0}

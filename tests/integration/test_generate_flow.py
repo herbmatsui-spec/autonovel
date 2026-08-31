@@ -36,11 +36,13 @@ def client(real_db_manager) -> Generator[TestClient, None, None]:
         yield c
 
 
-def _extract_task_id(suggestions: list[str]) -> str:
-    """GenerateResponse.suggestions から task_id を正規表現で抽出する。"""
-    joined = " ".join(suggestions)
-    m = re.search(r"/easy_mode/status/(\d+)", joined)
-    assert m is not None, f"task_id が suggestions に見つかりません: {suggestions}"
+def _extract_task_id(data: dict) -> str:
+    """GenerateResponse から task_id を取得または正規表現で抽出する。"""
+    if "task_id" in data and data["task_id"]:
+        return str(data["task_id"])
+    joined = " ".join(data.get("suggestions", []))
+    m = re.search(r"/easy_mode/status/([^\s]+)", joined)
+    assert m is not None, f"task_id が suggestions に見つかりません: {data}"
     return m.group(1)
 
 
@@ -63,7 +65,7 @@ def test_generate_flow_status_pending(client: TestClient) -> None:
     data = resp.json()
     assert "suggestions" in data
 
-    task_id = _extract_task_id(data["suggestions"])
+    task_id = _extract_task_id(data)
 
     status_resp = client.get(f"/easy_mode/status/{task_id}")
     assert status_resp.status_code == 200

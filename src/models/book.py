@@ -8,7 +8,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from src.models.base import Base
 
 
-
 class Book(Base):
     """作品（シリーズ）のルートモデル。"""
 
