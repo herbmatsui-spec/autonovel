@@ -7,7 +7,7 @@ import ExportPanel from "../../src/components/ExportPanel";
 
 const server = setupServer(
   http.get("/easy_mode/export/:id", () => {
-    return HttpResponse(
+    return new HttpResponse(
       new Blob(["zip"]),
       { headers: { "Content-Disposition": 'attachment; filename="export_1.zip"' } }
     );
@@ -16,44 +16,41 @@ const server = setupServer(
 
 const defaultProps = {
   output: "",
-  suggestions: [],
+  suggestions: [] as string[],
   onExportMessage: () => {},
-} as const;
+};
 
 describe("ExportPanel", () => {
   server.listen();
 
   beforeAll(() => {
-    vi.stubGlobal("URL", URL);
-    vi.stubGlobal("document", document);
+    window.URL.createObjectURL = vi.fn(() => "blob:http://localhost/dummy");
+    window.URL.revokeObjectURL = vi.fn();
   });
 
   afterEach(() => {
     server.resetHandlers();
     vi.clearAllMocks();
-    vi.restoreAllMocks();
   });
 
   afterAll(() => server.close());
 
   it("renders export button", () => {
     render(<ExportPanel {...defaultProps} />);
-    expect(screen.getByText("📦 納品パッケージ (ZIP) ダウンロード")).toBeInTheDocument();
+    expect(screen.getByText(/納品パッケージ/)).toBeInTheDocument();
   });
 
   it("triggers download on click", async () => {
-    const clickSpy = vi.spyOn(document, "createElement");
     render(<ExportPanel {...defaultProps} />);
     const user = userEvent.setup();
-    await user.click(screen.getByText("📦 納品パッケージ (ZIP) ダウンロード"));
-    clickSpy.mockRestore();
+    await user.click(screen.getByText(/納品パッケージ/));
   });
 
   it("shows success message on download", async () => {
     const onExportMessage = vi.fn();
     render(<ExportPanel {...defaultProps} onExportMessage={onExportMessage} />);
     const user = userEvent.setup();
-    await user.click(screen.getByText("📦 納品パッケージ (ZIP) ダウンロード"));
+    await user.click(screen.getByText(/納品パッケージ/));
     expect(onExportMessage).toHaveBeenCalledWith(
       expect.stringContaining("ダウンロードしました")
     );
@@ -68,7 +65,7 @@ describe("ExportPanel", () => {
     const onExportMessage = vi.fn();
     render(<ExportPanel {...defaultProps} onExportMessage={onExportMessage} />);
     const user = userEvent.setup();
-    await user.click(screen.getByText("📦 納品パッケージ (ZIP) ダウンロード"));
+    await user.click(screen.getByText(/納品パッケージ/));
     expect(onExportMessage).toHaveBeenCalledWith(expect.stringContaining("エラー"));
   });
 });

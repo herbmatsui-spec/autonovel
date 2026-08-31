@@ -1,14 +1,26 @@
 import { describe, it, expect, vi } from "vitest";
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
-import { generateContent, exportPackage } from "../../src/api/easyMode";
+import { generateContent, exportPackage, pollGenerationStatus } from "../../src/api/easyMode";
 
 const server = setupServer(
   http.post("/easy_mode/generate", () => {
-    return HttpResponse.json({ output: "output", suggestions: [] });
+    return HttpResponse.json({
+      output: "output",
+      completion_time_ms: 0,
+      error: "",
+      suggestions: [],
+    });
+  }),
+  http.get("/easy_mode/status/:taskId", () => {
+    return HttpResponse.json({
+      task_id: "t123",
+      status: "completed",
+      result: { output: "done" },
+    });
   }),
   http.get("/easy_mode/export/:id", () => {
-    return HttpResponse(
+    return new HttpResponse(
       new Blob(["zip"]),
       { headers: { "Content-Disposition": 'attachment; filename="export_1.zip"' } }
     );
@@ -26,7 +38,7 @@ describe("easyMode API client", () => {
     const result = await generateContent({
       chapter_history: ["a"],
       current_chapter: "b",
-      character_params: {},
+      character_params: { name: "hero", personality: "", ability: "", genre: "" },
       content_length_limit: 2000,
     });
     expect(result.output).toBe("output");
@@ -44,10 +56,25 @@ describe("easyMode API client", () => {
       generateContent({
         chapter_history: ["a"],
         current_chapter: "b",
-        character_params: {},
+        character_params: { name: "hero", personality: "", ability: "", genre: "" },
         content_length_limit: 2000,
       })
     ).rejects.toThrow();
+  });
+
+  it("pollGenerationStatus returns status on 200", async () => {
+    const result = await pollGenerationStatus("t123");
+    expect(result.task_id).toBe("t123");
+    expect(result.status).toBe("completed");
+  });
+
+  it("pollGenerationStatus throws on 500", async () => {
+    server.use(
+      http.get("/easy_mode/status/:taskId", () => {
+        return new HttpResponse(null, { status: 500 });
+      })
+    );
+    await expect(pollGenerationStatus("t123")).rejects.toThrow();
   });
 
   it("exportPackage returns blob + filename", async () => {
@@ -59,7 +86,7 @@ describe("easyMode API client", () => {
   it("exportPackage falls back to default filename when header missing", async () => {
     server.use(
       http.get("/easy_mode/export/:id", () => {
-        return HttpResponse(new Blob(["zip"]));
+        return new HttpResponse(new Blob(["zip"]));
       })
     );
 
@@ -74,7 +101,7 @@ describe("easyMode API client", () => {
       generateContent({
         chapter_history: [],
         current_chapter: "",
-        character_params: {},
+        character_params: { name: "", personality: "", ability: "", genre: "" },
         content_length_limit: 10,
       })
     ).rejects.toThrow(TypeError);

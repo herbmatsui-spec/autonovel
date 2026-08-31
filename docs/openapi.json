@@ -94,7 +94,7 @@
           "easy_mode"
         ],
         "summary": "Get Task Status",
-        "description": "Return the status of a generation task.\n\nReturns \"pending\" if not yet completed, otherwise includes result.",
+        "description": "Return the status of a generation task.\n\nReturns \"pending\" if not yet completed, \"failed\" if an error occurred,\notherwise \"completed\" with the result.",
         "operationId": "get_task_status_easy_mode_status__task_id__get",
         "parameters": [
           {
@@ -180,6 +180,37 @@
   },
   "components": {
     "schemas": {
+      "CharacterParams": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "title": "Name",
+            "default": ""
+          },
+          "personality": {
+            "type": "string",
+            "maxLength": 500,
+            "title": "Personality",
+            "default": ""
+          },
+          "ability": {
+            "type": "string",
+            "maxLength": 500,
+            "title": "Ability",
+            "default": ""
+          },
+          "genre": {
+            "type": "string",
+            "maxLength": 100,
+            "title": "Genre",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "title": "CharacterParams",
+        "description": "キャラクター設定パラメータ。"
+      },
       "EasyModeInput": {
         "properties": {
           "chapter_history": {
@@ -195,9 +226,7 @@
             "default": ""
           },
           "character_params": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Character Params"
+            "$ref": "#/components/schemas/CharacterParams"
           },
           "content_length_limit": {
             "type": "integer",
@@ -208,10 +237,22 @@
           }
         },
         "type": "object",
-        "title": "EasyModeInput"
+        "title": "EasyModeInput",
+        "description": "かんたんモード生成リクエスト入力。"
       },
       "GenerationResponse": {
         "properties": {
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
           "output": {
             "type": "string",
             "title": "Output",
@@ -236,7 +277,8 @@
           }
         },
         "type": "object",
-        "title": "GenerationResponse"
+        "title": "GenerationResponse",
+        "description": "かんたんモード生成レスポンス。"
       },
       "HTTPValidationError": {
         "properties": {
