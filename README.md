@@ -1,15 +1,18 @@
 # AutoNovel
 
-AutoNovel は FastAPI + React 18 + TypeScript + Huey + SQLAlchemy で構築された小説生成エンジンです。「かんたんモード」での章生成と、作品データ一式の ZIP エクスポートを提供します。
+**AutoNovel** は、R15 ファンタジー小説の執筆を AI で支援する「かんたん制作」エンジンです。FastAPI + React 18/TypeScript + Huey + SQLAlchemy 2.x のモダンスタックで構築され、**非同期の章生成パイプライン**と**作品データ一式の ZIP エクスポート**を提供します。
 
-[![CI](https://github.com/herbmatsui-spec/autonovel/actions/workflows/ci.yml/badge.svg)](https://github.com/herbmatsui-spec/autonovel/actions/workflows/ci.yml)
+![AutoNovel デモ](docs/demo.gif)
+
 [![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue)](https://www.python.org/)
+[![React 18](https://img.shields.io/badge/react-18-61dafb)](https://react.dev/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](#ライセンス)
 
 ---
 
 ## 目次
 
+- [概要](#概要)
 - [特徴](#特徴)
 - [アーキテクチャ](#アーキテクチャ)
 - [ディレクトリ構成](#ディレクトリ構成)
@@ -18,8 +21,9 @@ AutoNovel は FastAPI + React 18 + TypeScript + Huey + SQLAlchemy で構築さ�
   - [ワンクリック起動 (Windows バッチ)](#ワンクリック起動-windows-バッチ)
   - [Docker Compose 起動](#docker-compose-起動)
   - [ローカル手動起動 (Windows PowerShell)](#ローカル手動起動-windows-powershell)
+- [かんたんモードの使い方](#かんたんモードの使い方)
 - [開発ワークフロー](#開発ワークフロー)
-- [API エンドポイント](#apiエンドポイント)
+- [API エンドポイント](#api-エンドポイント)
 - [環境変数](#環境変数)
 - [オブザーバビリティ](#オブザーバビリティ)
 - [本番デプロイ](#本番デプロイ)
@@ -32,13 +36,22 @@ AutoNovel は FastAPI + React 18 + TypeScript + Huey + SQLAlchemy で構築さ�
 
 ---
 
+## 概要
+
+AutoNovel は、小説生成の**オーケストレーション基盤**を完成させたプロダクトです。フロントエンドからのリクエストを受けると、バックエンドは生成ジョブを Huey キューへ非同期投入し、ワーカーが処理した結果を DB へ永続化、フロントエンドはステータスをポーリングして受け取ります。最終的に作品（本文・キャラクター/世界観設定・プロット・JSON ダンプ）を 1 つの ZIP にまとめて即ダウンロードできます。
+
+> **現在の実装ステータス（ご留意）**
+> 生成パイプライン全体（キュー投入 → 非同期実行 → 永続化 → ステータスポーリング → エクスポート）は本番相当に動作しますが、**実際の本文を生成する LLM アダプタはプラグイン式のスタブ**です。`src/backend/routers/easy_mode.py` の `generate_with_llm()` は現在 `NotImplementedError` を送出する設計となっており、ここに実際の LLM プロバイダ呼び出しを実装することで本格生成が有効になります。ZIP エクスポートはフォールバック・データでも常に成功する仕様のため、LLM 未実装でも UI の全体フローを確認できます。
+
+---
+
 ## 特徴
 
-- ✨ **かんたんモード**: 章履歴・キャラクタ設定を与えるだけで次章を生成。Huey タスクキューで非同期実行し、ステータスポーリングで結果を取得。
-- 📦 **ZIP エクスポート**: 作品本文・設定・プロット・JSON ダンプを 1 つの ZIP アーカイブにまとめて即ダウンロード。
+- ✨ **かんたんモード**: ジャンル・主人公設定・冒頭文を入力するだけで次章を生成。Huey タスクキューで非同期実行し、ステータスポーリングで結果を取得。
+- 📦 **ZIP エクスポート**: 作品本文・キャラクター/世界観設定・プロット・JSON ダンプを 1 つの ZIP アーカイブにまとめて即ダウンロード（`book_id` 不在時もフォールバックで生成）。
 - 🧱 **モダンスタック**: FastAPI (async) + SQLAlchemy 2.x + Huey (Redis/SQLite バックエンド切替可) + React 18 + Vite + TypeScript (strict)。
-- 🧪 **テスト駆動**: pytest (asyncio_mode=auto) + Vitest。`real_db_manager` フィクスチャで実 DB セッションを用いた統合テストを実装。
-- 🔍 **品質ゲート**: ruff (lint/format) + mypy (strict) + OpenAPI schema 生成・差分検知を CI で実施。
+- 🧪 **テスト駆動**: pytest (`asyncio_mode=auto`) + Vitest。`real_db_manager` フィクスチャで実 DB セッションを用いた統合テストを実装。
+- 🔍 **品質ゲート**: ruff (lint/format) + mypy (strict) + OpenAPI スキーマ生成・差分検知を CI で実施。
 - 🐳 **本番対応**: マルチステージ Dockerfile、nginx リバースプロキシ、PostgreSQL 16 / Redis 7 の `docker-compose.prod.yml` を同梱。
 - 📊 **オブザーバビリティ**: 構造化 JSON ロギング、詳細ヘルスチェック (`/health`)、プロセス内メトリクス (`/metrics`) を標準装備。
 
@@ -51,16 +64,16 @@ AutoNovel は FastAPI + React 18 + TypeScript + Huey + SQLAlchemy で構築さ�
 │  React UI  │ ─────────▶  │  FastAPI    │ ──────────────▶ │ PostgreSQL  │
 │ (Vite/TS)  │ ◀─────────  │  (uvicorn)  │ ◀────────────── │   (本体)    │
 └────────────┘             └─────────────┘                  └─────────────┘
-                                  │ enqueue
-                                  ▼
-                           ┌─────────────┐    dequeue       ┌─────────────┐
-                           │   Huey      │ ───────────────▶ │   Redis     │
-                           │  (worker)   │                  └─────────────┘
-                           └─────────────┘
-                                  │
-                                  ▼
-                           LLM 生成 (generate_chapter_task)
-                           結果を DB へ永続化し task レコードをクリーンアップ
+                                   │ enqueue
+                                   ▼
+                            ┌─────────────┐    dequeue       ┌─────────────┐
+                            │   Huey      │ ───────────────▶ │   Redis     │
+                            │  (worker)   │                  └─────────────┘
+                            └─────────────┘
+                                   │
+                                   ▼
+                            generate_chapter_task()
+                            (LLM アダプタ呼出 → DB 永続化 → task クリーンアップ)
 ```
 
 - **backend**: FastAPI アプリ (`src/backend/server.py`)。lifespan で `init_db()` を実行。
@@ -77,51 +90,33 @@ AutoNovel は FastAPI + React 18 + TypeScript + Huey + SQLAlchemy で構築さ�
 autonovel/
 ├── src/
 │   ├── backend/
-│   │   ├── server.py              # FastAPI アプリ + lifespan
+│   │   ├── server.py              # FastAPI アプリ + lifespan + /health /metrics
 │   │   ├── observability.py       # ヘルスチェック・軽量メトリクスカウンタ
+│   │   ├── logging_config.py      # structlog 風の JSON / テキストログ設定
 │   │   ├── database/
 │   │   │   ├── __init__.py        # engine, SessionLocal, init_db()
 │   │   │   └── repository.py      # BookRepository (Task/Book/Chapter/...)
 │   │   ├── routers/
-│   │   │   └── easy_mode.py       # /easy_mode/* エンドポイント
+│   │   │   └── easy_mode.py       # /easy_mode/* エンドポイント + generate_with_llm スタブ
 │   │   ├── tasks/
-│   │   │   ├── huey.py            # Huey インスタンス
+│   │   │   ├── huey.py            # Huey インスタンス (sqlite/redis 切替)
 │   │   │   └── generation_tasks.py# generate_chapter_task
-│   │   └── logging_config.py      # structlog 風の JSON / テキストログ設定
 │   ├── models/                    # SQLAlchemy モデル + Pydantic スキーマ
 │   └── services/                  # digest_service / marketing (export)
 ├── frontend/
 │   ├── src/
-│   │   ├── App.tsx
+│   │   ├── App.tsx                # 2カラムレイアウト (Generate / Export)
 │   │   ├── api/easyMode.ts        # API クライアント (fetch)
 │   │   ├── components/            # GeneratePanel / ExportPanel
 │   │   └── types/easyMode.ts
 │   ├── Dockerfile                 # マルチステージ (dev / production nginx)
 │   └── tests/                     # Vitest
-├── tests/                         # pytest (backend)
-│   ├── conftest.py                # real_db_manager (engine 差替え)
-│   ├── test_health.py
-│   └── integration/
-├── scripts/
-│   ├── release.ps1                # バージョンタグ付きリリース
-│   ├── smoke_test.ps1             # 5 エンドポイントの smoke test
-│   ├── generate_openapi.py        # docs/openapi.json 生成・差分検知
-│   ├── sync_reqs.py               # 依存関係同期スクリプト
-│   └── verify_all.ps1             # 全検証一括実行
-├── docs/api.md                    # API リファレンス
-├── .github/workflows/ci.yml       # backend / frontend パイプライン
-├── Dockerfile                     # バックエンド (マルチステージ)
-├── docker-compose.yml             # 開発用 (PostgreSQL + Redis + Vite dev)
-├── docker-compose.prod.yml        # 本番用 (PostgreSQL + Redis + Nginx)
-├── Makefile                       # install/dev/test/lint/typecheck/run/...
-├── pyproject.toml
-├── requirements.txt
-├── requirements-dev.txt
-├── CHANGELOG.md
-├── SECURITY.md
-├── CONTRIBUTING.md
-├── アプリ起動.bat                 # Windows用 Docker Compose 一括起動バッチ
-└── アプリ起動_ローカル.bat         # Windows用 ローカルPython/Vite 一括起動バッチ
+├── tests/                         # pytest (backend) — conftest.py の real_db_manager
+├── scripts/                       # release / smoke_test / generate_openapi / verify_all
+├── docs/                          # api.md, openapi.json, demo.gif
+├── Dockerfile / docker-compose.yml / docker-compose.prod.yml
+├── Makefile / pyproject.toml / requirements*.txt
+└── アプリ起動.bat / アプリ起動_ローカル.bat  # Windows 用起動バッチ
 ```
 
 ---
@@ -131,7 +126,7 @@ autonovel/
 - **Python** 3.12 以上
 - **Node.js** 18 以上 (フロントエンドビルド・開発時)
 - **Docker** 24 以上 + Docker Compose v2 (コンテナ実行時)
-- Windows では PowerShell 7 推奨 (`アプリ起動.bat` / `アプリ起動_ローカル.bat` 利用可)
+- Windows では PowerShell 7 推奨（付属バッチ利用可）
 
 ---
 
@@ -141,15 +136,8 @@ autonovel/
 
 Windows 環境では、付属のバッチファイルをダブルクリックするだけで起動できます。
 
-- **`アプリ起動.bat`** (Docker Compose 推奨):
-  - Docker Compose を利用して Backend, Worker, Frontend (dev), PostgreSQL, Redis を一括起動します。
-  - 起動後、自動的にブラウザで `http://localhost:5173` が開きます。
-- **`アプリ起動_ローカル.bat`** (ローカル Python + Vite):
-  - ローカルの `.venv` と SQLite を利用して、Backend, Worker, Frontend をそれぞれ別ウィンドウで一括起動します。
-  - 事前に `py -m venv .venv` および `pip install -r requirements-dev.txt`、`cd frontend && npm install` を完了させておく必要があります。
-  - 起動後、自動的にブラウザで `http://localhost:5173` が開きます。
-
----
+- **`アプリ起動.bat`** (Docker Compose 推奨): Backend / Worker / Frontend (dev) / PostgreSQL / Redis を一括起動。起動後 `http://localhost:5173` が開きます。
+- **`アプリ起動_ローカル.bat`** (ローカル Python + Vite): ローカルの `.venv` と SQLite を利用して別ウィンドウで一括起動。事前に `py -m venv .venv`、`pip install -r requirements-dev.txt`、`cd frontend && npm install` を済ませてください。
 
 ### Docker Compose 起動
 
@@ -166,11 +154,10 @@ docker compose up --build
 ```powershell
 docker compose -f docker-compose.prod.yml up -d --build
 # フロントエンド (Nginx経由): http://localhost:8080
-# バックエンド API (内部)   : 8200
-# ※ postgres / redis は内部ネットワークのみに公開
+# バックエンド API (内部)   : 8200 （postgres / redis は内部ネットワークのみ）
 ```
 
-停止する場合:
+停止:
 
 ```powershell
 docker compose down
@@ -178,11 +165,7 @@ docker compose down
 # docker compose -f docker-compose.prod.yml down
 ```
 
----
-
 ### ローカル手動起動 (Windows PowerShell)
-
-Docker を使わずにローカルの Python / Node 環境で起動する場合の手順です。
 
 ```powershell
 # 1. Python 仮想環境の作成と依存関係のインストール
@@ -212,29 +195,40 @@ npm run dev
 
 ---
 
+## かんたんモードの使い方
+
+1. **設定入力**: 左の「⚙️ 制作設定」で 作品ジャンル・レーティング / 主人公の名前 / 性格・特徴 / 特殊能力・スキル / 冒頭プロンプト を入力します。
+2. **生成開始**: 「🪄 かんたん執筆開始」をクリック。バックエンドは `POST /easy_mode/generate` でタスクを Huey キューへ投入し、タスク ID を返します。
+3. **ポーリング**: フロントエンドは `GET /easy_mode/status/{task_id}` を 1.5 秒間隔（最大 30 秒）でポーリングし、完了を待ちます。
+4. **プレビュー**: 生成された章が右の「📖 執筆プレビュー」に表示され、次話への AI 提案（chips）も提示されます。
+5. **納品**: 作品 ID（既定 `1`）を指定して「📦 納品パッケージ (ZIP) ダウンロード」をクリック。`GET /easy_mode/export/{book_id}` が本文・設定・プロット・JSON を含む ZIP を即ダウンロードします。
+
+> ZIP には `01_本文.txt` / `02_キャラクター・世界観設定集.txt` / `03_プロット概要.txt` / `04_データダンプ.json` が含まれます。DB に該当作品がなくてもフォールバック・データで生成されるため、デモ用途でも常に動作します。
+
+---
+
 ## 開発ワークフロー
 
-主要な操作は `Makefile` または PowerShell スクリプトで簡単に実行できます。
+主要な操作は `Makefile` または PowerShell スクリプトで実行できます。
 
 | コマンド | 内容 |
 |----------|------|
-| `make install` | バックエンド依存関係をインストール (`pip install -r requirements-dev.txt -e .`) |
-| `make dev` | フロントエンドの依存関係も含めてセットアップ (`cd frontend && npm install`) |
-| `make test` | バックエンドの単体・統合テストを実行 (`pytest -q --tb=short`) |
-| `make lint` | ruff によるコード静的解析 (`ruff check src tests`) |
+| `make install` | バックエンド依存をインストール (`pip install -r requirements-dev.txt -e .`) |
+| `make dev` | フロントエンド依存も含めてセットアップ (`cd frontend && npm install`) |
+| `make test` | バックエンドの pytest を実行 |
+| `make lint` | ruff による静的解析 (`ruff check src tests`) |
 | `make typecheck` | mypy による型チェック (`mypy src`) |
-| `make openapi` | OpenAPI 仕様書を `docs/openapi.json` に再生成 |
-| `make frontend-test` | フロントエンドの Vitest テストを実行 |
-| `make frontend-lint` | フロントエンドの ESLint と 型チェックを実行 |
-| `make run` | バックエンド開発サーバー単体を起動 (Port 8200) |
+| `make openapi` | OpenAPI 仕様書を `docs/openapi.json` へ再生成 |
+| `make frontend-test` | フロントエンドの Vitest を実行 |
+| `make frontend-lint` | フロントエンドの ESLint + 型チェック |
+| `make run` | バックエンド開発サーバー単体起動 (Port 8200) |
 | `make dev-up` / `make dev-down` | Docker Compose 開発環境の起動 / 停止 |
 | `make prod-up` / `make prod-down` | Docker Compose 本番構成の起動 / 停止 |
-| `make verify` | lint + typecheck + test + openapi + frontend-lint + frontend-test の全検証を一括実行 |
-| `make clean` | キャッシュ (`.pytest_cache`, `__pycache__`) や一時 DB を削除 |
-
-PowerShell スクリプトで全検証を行う場合:
+| `make verify` | lint + test + openapi + frontend-lint + frontend-test の全検証を一括実行 |
+| `make clean` | キャッシュ (`__pycache__`, `.pytest_cache`) や一時 DB を削除 |
 
 ```powershell
+# PowerShell スクリプトで全検証
 .\scripts\verify_all.ps1
 ```
 
@@ -242,34 +236,33 @@ PowerShell スクリプトで全検証を行う場合:
 
 ## API エンドポイント
 
-Base URL (開発時): `http://localhost:8200` (Nginx 本番時: `http://localhost:8080`)
+Base URL (開発時): `http://localhost:8200`（Nginx 本番時: `http://localhost:8080`）
 
 | Method | Path | 説明 |
 |--------|------|------|
 | `GET`  | `/health` | ヘルスチェック (DB / Huey 生存確認 + メトリクススナップショット。`status` は `ok` / `degraded`) |
-| `GET`  | `/metrics` | プロセス内メトリクスカウンタのスナップショット (タスク/エクスポート/ヘルスチェック件数) |
-| `POST` | `/easy_mode/generate` | 章生成タスクを Huey キューに投入し `suggestions` に task ID を返却 |
-| `GET`  | `/easy_mode/status/{task_id}` | タスクのステータス (`pending` / `success` / `failed`) と生成結果を取得 |
+| `GET`  | `/metrics` | プロセス内メトリクスカウンタのスナップショット |
+| `POST` | `/easy_mode/generate` | 章生成タスクを Huey キューに投入し、suggestions に task ID を返却 |
+| `GET`  | `/easy_mode/status/{task_id}` | タスクのステータス (`pending` / `completed` / `failed`) と生成結果を取得 |
 | `GET`  | `/easy_mode/export/{book_id}` | 指定 `book_id` の ZIP エクスポート (`book_id >= 1`、違反時は 422) |
 
-詳細なスキーマ定義とリクエスト/レスポンス例は [`docs/api.md`](docs/api.md) を参照してください。
-OpenAPI 仕様書は `python scripts/generate_openapi.py` で `docs/openapi.json` として生成できます。
+詳細なスキーマ定義とリクエスト/レスポンス例は [`docs/api.md`](docs/api.md) を参照してください。OpenAPI 仕様書は `py scripts/generate_openapi.py` で `docs/openapi.json` として生成できます。
 
 ---
 
 ## 環境変数
 
-`.env.example` を参考に `.env` を作成して設定してください。
+`.env.example` を参考に `.env` を作成してください。
 
 | 変数 | 既定値 | 説明 |
 |------|--------|------|
-| `DATABASE_URL` | `postgresql://autonovel:autonovel@db:5432/autonovel` | SQLAlchemy 接続 URL。SQLite 利用時は `sqlite:///./autonovel.db`。 |
-| `REDIS_URL` | `redis://redis:6379/0` | Redis 接続 URL (`HUEY_BACKEND=redis` 時に使用)。 |
-| `HUEY_BACKEND` | `redis` | `redis` または `sqlite`。開発・ローカル時は `sqlite` で Redis 不要。 |
-| `LOG_LEVEL` | `INFO` | ルートロガーのログレベル (`DEBUG`, `INFO`, `WARNING`, `ERROR`)。 |
-| `LOG_FORMAT` | `json` | ログ形式 (`json`: python-json-logger による構造化ログ、`text`: プレーンテキスト)。 |
-| `APP_ENV` | `local` | デプロイ環境識別子 (`local`, `dev`, `prod` など)。全ログの `env` フィールドに付与。 |
-| `LOG_LEVEL_<NAME>` | (なし) | 特定ロガー `<NAME>` のレベル個別上書き (例: `LOG_LEVEL_HUEY=DEBUG`)。 |
+| `DATABASE_URL` | `sqlite:///./autonovel.db` | SQLAlchemy 接続 URL。PostgreSQL 利用時は `postgresql+psycopg2://...` |
+| `REDIS_URL` | `redis://redis:6379/0` | Redis 接続 URL (`HUEY_BACKEND=redis` 時に使用) |
+| `HUEY_BACKEND` | `sqlite` | `redis` または `sqlite`。開発・ローカル時は `sqlite` で Redis 不要 |
+| `LOG_LEVEL` | `INFO` | ルートロガーのログレベル |
+| `LOG_FORMAT` | `json` | ログ形式 (`json`: 構造化ログ、`text`: プレーンテキスト) |
+| `APP_ENV` | `local` | デプロイ環境識別子 (全ログの `env` フィールドに付与) |
+| `LOG_LEVEL_<NAME>` | (なし) | 特定ロガー `<NAME>` のレベル個別上書き (例: `LOG_LEVEL_HUEY=DEBUG`) |
 
 ---
 
@@ -279,31 +272,18 @@ AutoNovel では運用信頼性と保守性を高めるため、構造化ロギ�
 
 ### 構造化ロギング
 
-`src/backend/logging_config.py` により `python-json-logger` を用いた JSON ログ出力を提供します。
-全ログレコードには以下の共通コンテキストが自動付与されます:
-
-| フィールド | 内容 |
-|------------|------|
-| `app`       | `autonovel` |
-| `version`   | パッケージバージョン (`0.2.0`) |
-| `env`       | `APP_ENV` 環境変数の値 (既定: `local`) |
-
-主要処理で構造化ログが出力されます:
-- タスク投入 (`Enqueued generation task`)
-- 生成完了 / 失敗 (`Generation task completed` / `failed`)
-- エクスポート要求 / 成功 (`Export requested` / `succeeded`)
-- ステータスポーリング / ヘルスチェック呼出
+`src/backend/logging_config.py` により `python-json-logger` を用いた JSON ログ出力を提供します。全ログに `app` / `version` / `env` コンテキストが自動付与され、タスク投入・生成完了/失敗・エクスポート要求/成功・ステータスポーリング等の主要処理が構造化されます。
 
 ### ヘルスチェック (`GET /health`)
 
-DB 接続確認 (`SELECT 1`) と Huey バックエンド (`len(huey)`) の生存確認を同期的に実施し、メトリクススナップショットを含むペイロードを返します。
+DB 接続確認 (`SELECT 1`) と Huey バックエンド (`len(huey)`) の生存確認を実施し、メトリクススナップショットを含むペイロードを返します。
 
 - 全コンポーネント正常時: `"status": "ok"`
-- いずれか異常時: `"status": "degraded"` (HTTP 200 を維持しつつ状態を明示)
+- いずれか異常時: `"status": "degraded"`（HTTP 200 を維持しつつ状態を明示）
 
 ### メトリクス (`GET /metrics`)
 
-プロセス内カウンタ (`src/backend/observability.py`) により以下のメトリクスを追跡可能です:
+プロセス内カウンタ (`src/backend/observability.py`) により以下を追跡します（外部依存なしの最小実装、本格運用では Prometheus 等へ置換可能）:
 
 | メトリクス名 | カウント対象 |
 |--------------|--------------|
@@ -382,10 +362,10 @@ git push origin v0.2.0
 ## ドキュメント
 
 - [`docs/api.md`](docs/api.md) — REST API リファレンス
+- [`docs/openapi.json`](docs/openapi.json) — OpenAPI 3.1 仕様書（自動生成）
 - [`CHANGELOG.md`](CHANGELOG.md) — 変更履歴 (Semantic Versioning 準拠)
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — 開発環境構築・コーディング規約・PR フロー
 - [`SECURITY.md`](SECURITY.md) — セキュリティポリシー・脆弱性報告フロー
-- [`plans/implementation_plan_72steps.md`](plans/implementation_plan_72steps.md) — 実装計画ドキュメント
 
 ---
 
@@ -397,11 +377,10 @@ git push origin v0.2.0
 
 ## コントリビュート
 
-コントリビューションを歓迎します。作業を開始する前に [CONTRIBUTING.md](CONTRIBUTING.md) をご確認ください。
-コミットメッセージは [Conventional Commits](https://www.conventionalcommits.org/) を推奨します。
+コントリビューションを歓迎します。作業を開始する前に [CONTRIBUTING.md](CONTRIBUTING.md) をご確認ください。コミットメッセージは [Conventional Commits](https://www.conventionalcommits.org/) を推奨します。
 
 ---
 
 ## ライセンス
 
-[MIT License](LICENSE) (詳細はリポジトリのライセンス表記を参照してください)。
+[MIT License](LICENSE)（詳細はリポジトリのライセンス表記を参照してください）。
