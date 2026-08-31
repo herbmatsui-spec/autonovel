@@ -8,10 +8,12 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from src.models.base import Base
 
 
+
 class Book(Base):
     """作品（シリーズ）のルートモデル。"""
 
     __tablename__ = "books"
+    __table_args__ = {"extend_existing": True}
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -36,6 +38,7 @@ class Chapter(Base):
     """各話（本文）モデル。is_anchor=True は固定_anchor 章として扱う。"""
 
     __tablename__ = "chapters"
+    __table_args__ = {"extend_existing": True}
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     book_id: Mapped[int] = mapped_column(ForeignKey("books.id"), nullable=False)
@@ -51,13 +54,16 @@ class Character(Base):
     """キャラクター設定モデル。"""
 
     __tablename__ = "characters"
+    __table_args__ = {"extend_existing": True}
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     book_id: Mapped[int] = mapped_column(ForeignKey("books.id"), nullable=False)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
-    role: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    personality: Mapped[str | None] = mapped_column(Text, nullable=True)
-    ability: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+    role: Mapped[str] = mapped_column(String(100), nullable=True)
+    personality: Mapped[str] = mapped_column(Text, nullable=True)
+    ability: Mapped[str] = mapped_column(Text, nullable=True)
 
     book: Mapped[Book] = relationship(back_populates="characters")
 
@@ -66,6 +72,7 @@ class Plot(Base):
     """プロット概要モデル。分岐 (branch_id) を持つ。"""
 
     __tablename__ = "plots"
+    __table_args__ = {"extend_existing": True}
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     book_id: Mapped[int] = mapped_column(ForeignKey("books.id"), nullable=False)
@@ -81,6 +88,7 @@ class Bible(Base):
     """世界観設定（JSON 文字列として保存）。"""
 
     __tablename__ = "bibles"
+    __table_args__ = {"extend_existing": True}
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     book_id: Mapped[int] = mapped_column(ForeignKey("books.id"), nullable=False)
