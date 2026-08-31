@@ -20,11 +20,11 @@ class BookRepository:
     def __init__(self, session: Session) -> None:
         self.session = session
 
-    async def get_book(self, book_id: int) -> Book | None:
+    def get_book(self, book_id: int) -> Book | None:
         """指定した ID の作品情報を取得する"""
         return self.session.get(Book, book_id)
 
-    async def create_task(self, status: str = "pending", result: str | None = None) -> Task:
+    def create_task(self, status: str = "pending", result: str | None = None) -> Task:
         """Create a new Task record and return it."""
         now = int(time.time())
         task = Task(status=status, result=result, created_at=now, updated_at=now)
@@ -33,11 +33,11 @@ class BookRepository:
         self.session.refresh(task)
         return task
 
-    async def get_task(self, task_id: int) -> Task | None:
+    def get_task(self, task_id: int) -> Task | None:
         """指定した ID のタスクを取得する"""
         return self.session.get(Task, task_id)
 
-    async def update_task_status(self, task_id: int, status: str) -> None:
+    def update_task_status(self, task_id: int, status: str) -> None:
         """タスクのステータスを更新する"""
         task = self.session.get(Task, task_id)
         if task:
@@ -45,7 +45,7 @@ class BookRepository:
             task.updated_at = int(time.time())
             self.session.commit()
 
-    async def set_task_result(self, task_id: int, result: str) -> None:
+    def set_task_result(self, task_id: int, result: str) -> None:
         """タスクの結果を保存し、ステータスを completed に更新する"""
         task = self.session.get(Task, task_id)
         if task:
@@ -54,14 +54,14 @@ class BookRepository:
             task.status = "completed"
             self.session.commit()
 
-    async def delete_task(self, task_id: int) -> None:
+    def delete_task(self, task_id: int) -> None:
         """Delete a task record from the database."""
         task = self.session.get(Task, task_id)
         if task:
             self.session.delete(task)
             self.session.commit()
 
-    async def get_all_non_anchor_chapters(
+    def get_all_non_anchor_chapters(
         self, book_id: int, branch_id: int = 1, order_by: str = "ep_num"
     ) -> list[Chapter]:
         """
@@ -76,13 +76,13 @@ class BookRepository:
         result = self.session.execute(stmt)
         return list(result.scalars().all())
 
-    async def get_all_characters(self, book_id: int) -> list[Character]:
+    def get_all_characters(self, book_id: int) -> list[Character]:
         """指定した作品に紐づくキャラクターをすべて取得する"""
         stmt = select(Character).where(Character.book_id == book_id)
         result = self.session.execute(stmt)
         return list(result.scalars().all())
 
-    async def get_latest_bible(self, book_id: int) -> Bible | None:
+    def get_latest_bible(self, book_id: int) -> Bible | None:
         """指定した作品の最新の世界観設定（Bible）を取得する"""
         stmt = (
             select(Bible)
@@ -93,7 +93,7 @@ class BookRepository:
         result = self.session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def get_all_plots(self, book_id: int, branch_id: int = 1) -> list[Plot]:
+    def get_all_plots(self, book_id: int, branch_id: int = 1) -> list[Plot]:
         """指定した作品・ブランチのプロットをすべて取得する"""
         stmt = (
             select(Plot)

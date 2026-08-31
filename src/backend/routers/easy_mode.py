@@ -43,29 +43,31 @@ async def generate_content(
 
         # DB セッションを利用、Task を作成
         repo = BookRepository(session)
-        task = await repo.create_task()
+        task = repo.create_task()
         task_id = task.id
         # タスク ID を payload に追加
         params["task_id"] = task_id
 
         # タスクステータスを "running" に更新
-        await repo.update_task_status(task_id, "running")
+        repo.update_task_status(task_id, "running")
 
         # タスクをキューに投入 (関数内 import で循環参照回避)
         from src.backend.tasks.generation_tasks import generate_chapter_task
 
-        generate_chapter_task(params)
+        task_result = generate_chapter_task(params)
+        huey_task_id = str(getattr(task_result, "id", task_id))
         metrics.increment("tasks_enqueued")
-        logger.info("Enqueued generation task: %s", task_id)
+        logger.info("Enqueued generation task: db_id=%s, huey_id=%s", task_id, huey_task_id)
 
         return GenerationResponse(
+            task_id=huey_task_id,
             output="",
             completion_time_ms=0,
             error="",
             suggestions=[
                 "生成タスク ID: "
-                f"{task_id} を投入しました。"
-                f"ステータスを /easy_mode/status/{task_id} で確認してください。"
+                f"{huey_task_id} を投入しました。"
+                f"ステータスを /easy_mode/status/{huey_task_id} で確認してください。"
             ],
         )
     except ValidationError as e:

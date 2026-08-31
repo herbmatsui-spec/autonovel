@@ -33,7 +33,7 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: autonovel_worker
-    command: python -m huey.bin.huey_consumer src.backend.tasks.huey
+    command: python -m huey.bin.huey_consumer src.backend.tasks.huey.huey
     environment:
       - PYTHONPATH=/app
       - DATABASE_URL=postgresql://autonovel:autonovel@db:5432/autonovel

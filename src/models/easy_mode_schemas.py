@@ -8,6 +8,7 @@ class EasyModeInput(BaseModel):
     content_length_limit: int = Field(default=2000, ge=1, le=10000)
 
 class GenerationResponse(BaseModel):
+    task_id: str | None = None
     output: str = ""
     completion_time_ms: int = 0
     error: str = ""

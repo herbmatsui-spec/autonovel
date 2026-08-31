@@ -65,7 +65,7 @@ class MarketingAgent:
 
         if self.repo:
             try:
-                book = await self.repo.get_book(book_id)
+                book = self.repo.get_book(book_id)
                 if book:
                     logger.info(
                         "Export: book found in DB book_id=%s title=%s",
@@ -76,7 +76,7 @@ class MarketingAgent:
                     genre = getattr(book, "genre", genre)
                     branch_id = getattr(book, "current_branch_id", 1) or 1
 
-                    db_chapters = await self.repo.get_all_non_anchor_chapters(
+                    db_chapters = self.repo.get_all_non_anchor_chapters(
                         book_id, branch_id=branch_id, order_by="ep_num"
                     )
                     chapters = [
@@ -88,7 +88,7 @@ class MarketingAgent:
                         for i, c in enumerate(db_chapters)
                     ]
 
-                    db_chars = await self.repo.get_all_characters(book_id)
+                    db_chars = self.repo.get_all_characters(book_id)
                     characters = [
                         {
                             "name": getattr(c, "name", "不明"),
@@ -99,11 +99,11 @@ class MarketingAgent:
                         for c in db_chars
                     ]
 
-                    bible = await self.repo.get_latest_bible(book_id)
+                    bible = self.repo.get_latest_bible(book_id)
                     if bible and hasattr(bible, "settings"):
                         bible_settings = bible.settings or {}
 
-                    db_plots = await self.repo.get_all_plots(book_id, branch_id=branch_id)
+                    db_plots = self.repo.get_all_plots(book_id, branch_id=branch_id)
                     plots = [
                         {
                             "ep_num": getattr(p, "ep_num", i + 1),
