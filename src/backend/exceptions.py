@@ -1,13 +1,19 @@
-from fastapi import HTTPException, status
+from fastapi import status
+
 
 class AutoNovelException(Exception):
     """AutoNovel アプリケーションの基底例外クラス。
-    
+
     Attributes:
         status_code (int): HTTP ステータスコード
         detail (str): エラー詳細メッセージ
     """
-    def __init__(self, status_code: int = status.HTTP_500_INTERNAL_SERVER_ERROR, detail: str = "Internal server error"):
+
+    def __init__(
+        self,
+        status_code: int = status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail: str = "Internal server error",
+    ):
         self.status_code = status_code
         self.detail = detail
         super().__init__(self.detail)

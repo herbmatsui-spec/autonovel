@@ -35,7 +35,13 @@ export default function App() {
       )}
 
       <main style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr", gap: "24px" }}>
-        <GeneratePanel onGenerated={setOutput} onMessage={setMessage} />
+        <GeneratePanel
+          onGenerated={(out, sug) => {
+            setOutput(out);
+            setSuggestions(sug);
+          }}
+          onMessage={setMessage}
+        />
         <ExportPanel output={output} suggestions={suggestions} onExportMessage={setMessage} />
       </main>
     </div>

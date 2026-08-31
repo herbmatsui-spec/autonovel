@@ -4,9 +4,11 @@ from __future__ import annotations
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 
 from src.backend.database import init_db
+from src.backend.exceptions import AutoNovelException
 from src.backend.logging_config import configure as configure_logging
 from src.backend.observability import build_health_payload, metrics
 from src.backend.routers import easy_mode
@@ -20,12 +22,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     yield
 
 
-from src.backend.exceptions import AutoNovelException
-
 app = FastAPI(title="AutoNovel Backend", lifespan=lifespan)
 
+
 @app.exception_handler(AutoNovelException)
-async def autonovel_exception_handler(request: Request, exc: AutoNovelException):
+async def autonovel_exception_handler(request: Request, exc: AutoNovelException) -> JSONResponse:
     """カスタム例外を一括で処理し、構造化されたJSONを返却するハンドラ"""
     return JSONResponse(
         status_code=exc.status_code,

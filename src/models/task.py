@@ -1,7 +1,7 @@
 from sqlalchemy import Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
-from src.models import Base
+from src.models.base import Base
 
 
 class Task(Base):

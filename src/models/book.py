@@ -5,7 +5,7 @@ from __future__ import annotations
 from sqlalchemy import ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.models import Base
+from src.models.base import Base
 
 
 class Book(Base):

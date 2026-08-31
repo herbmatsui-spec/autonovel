@@ -1,12 +1,8 @@
 import logging
 import urllib.parse
-from fastapi import Request
-from fastapi.responses import JSONResponse
-
-from src.backend.exceptions import AutoNovelException
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Path, Response, Depends
+from fastapi import APIRouter, Depends, Path, Response
 from pydantic import ValidationError
 
 from src.backend import database
