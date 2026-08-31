@@ -18,24 +18,15 @@ import os
 import sys
 from typing import Any
 
-# アプリメタデータ (server.py と重複定義を避けるため簡易 import)
-_APP_NAME = "autonovel"
-try:
-    from importlib.metadata import PackageNotFoundError, version  # type: ignore[import-not-found]
-    try:
-        _APP_VERSION = version(_APP_NAME)
-    except PackageNotFoundError:
-        _APP_VERSION = "0.0.0+dev"
-except Exception:  # pragma: no cover - 非常に稀な import 障害
-    _APP_VERSION = "0.0.0+dev"
+from src.backend.config import settings
 
 
 def _extra_attributes() -> dict[str, Any]:
     """ログレコードへ常時付与するアプリコンテキストを構築する。"""
     return {
-        "app": _APP_NAME,
-        "version": _APP_VERSION,
-        "env": os.getenv("APP_ENV", "local"),
+        "app": settings.APP_NAME,
+        "version": settings.APP_VERSION,
+        "env": settings.APP_ENV,
     }
 
 
@@ -74,8 +65,8 @@ def configure() -> None:
     場合はプレーンテキストへフォールバックする。また ``LOG_LEVEL_<NAME>``
     で個別ロガー (例: huey, src.backend) のレベルを上書きできる。
     """
-    level = os.getenv("LOG_LEVEL", "INFO").upper()
-    log_format = os.getenv("LOG_FORMAT", "json").lower()
+    level = os.getenv("LOG_LEVEL", settings.LOG_LEVEL).upper()
+    log_format = os.getenv("LOG_FORMAT", settings.LOG_FORMAT).lower()
 
     root = logging.getLogger()
     # 既存ハンドラをクリアして重複出力を防止

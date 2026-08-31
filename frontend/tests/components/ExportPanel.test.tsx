@@ -3,6 +3,7 @@ import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { NovelProvider } from "../../src/context/NovelContext";
 import ExportPanel from "../../src/components/ExportPanel";
 
 const server = setupServer(
@@ -20,6 +21,8 @@ const defaultProps = {
   onExportMessage: () => {},
 };
 
+const renderWithProvider = (ui: React.ReactElement) => render(<NovelProvider>{ui}</NovelProvider>);
+
 describe("ExportPanel", () => {
   server.listen();
 
@@ -36,19 +39,19 @@ describe("ExportPanel", () => {
   afterAll(() => server.close());
 
   it("renders export button", () => {
-    render(<ExportPanel {...defaultProps} />);
+    renderWithProvider(<ExportPanel {...defaultProps} />);
     expect(screen.getByText(/納品パッケージ/)).toBeInTheDocument();
   });
 
   it("triggers download on click", async () => {
-    render(<ExportPanel {...defaultProps} />);
+    renderWithProvider(<ExportPanel {...defaultProps} />);
     const user = userEvent.setup();
     await user.click(screen.getByText(/納品パッケージ/));
   });
 
   it("shows success message on download", async () => {
     const onExportMessage = vi.fn();
-    render(<ExportPanel {...defaultProps} onExportMessage={onExportMessage} />);
+    renderWithProvider(<ExportPanel {...defaultProps} onExportMessage={onExportMessage} />);
     const user = userEvent.setup();
     await user.click(screen.getByText(/納品パッケージ/));
     expect(onExportMessage).toHaveBeenCalledWith(
@@ -63,7 +66,7 @@ describe("ExportPanel", () => {
       })
     );
     const onExportMessage = vi.fn();
-    render(<ExportPanel {...defaultProps} onExportMessage={onExportMessage} />);
+    renderWithProvider(<ExportPanel {...defaultProps} onExportMessage={onExportMessage} />);
     const user = userEvent.setup();
     await user.click(screen.getByText(/納品パッケージ/));
     expect(onExportMessage).toHaveBeenCalledWith(expect.stringContaining("エラー"));

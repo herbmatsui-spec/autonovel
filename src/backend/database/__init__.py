@@ -7,10 +7,11 @@ from collections.abc import Generator
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
+from src.backend.config import settings
 from src.models import Base
 
-# 環境変数から DATABASE_URL を取得、デフォルトは SQLite
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./autonovel.db")
+# settings から DATABASE_URL を取得
+DATABASE_URL = settings.DATABASE_URL
 
 # SQLite の場合は check_same_thread=False が必要
 engine_args = {}

@@ -30,6 +30,6 @@ describe("easyMode integration flow", () => {
 
   it("renders panels and all endpoints", async () => {
     render(<App />);
-    expect(screen.getByText("AutoNovel かんたん制作")).toBeInTheDocument();
+    expect(screen.getByText("AutoNovel Studio")).toBeInTheDocument();
   });
 });

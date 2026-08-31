@@ -23,6 +23,14 @@ export async function pollGenerationStatus(taskId: string): Promise<TaskStatusRe
   return res.json();
 }
 
+export async function cancelTask(taskId: string): Promise<{ task_id: string; status: string }> {
+  const res = await fetch(`${BASE}/task/${taskId}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
 export async function exportPackage(bookId: number): Promise<ExportPackage> {
   const res = await fetch(`${BASE}/export/${bookId}`);
   if (!res.ok) throw new Error(await res.text());

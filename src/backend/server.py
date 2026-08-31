@@ -9,11 +9,12 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from src.backend.config import settings
 from src.backend.database import init_db
 from src.backend.exceptions import AutoNovelException
 from src.backend.logging_config import configure as configure_logging
 from src.backend.observability import build_health_payload, metrics
-from src.backend.routers import easy_mode
+from src.backend.routers import easy_mode, streaming
 
 
 @asynccontextmanager
@@ -24,22 +25,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     yield
 
 
-app = FastAPI(title="AutoNovel Backend", lifespan=lifespan)
-
-ALLOWED_ORIGINS = [
-    origin.strip()
-    for origin in os.getenv(
-        "CORS_ORIGINS",
-        "http://localhost:5173,http://localhost:8080,http://127.0.0.1:5173,http://127.0.0.1:8080",
-    ).split(",")
-    if origin.strip()
-]
+app = FastAPI(title=f"{settings.APP_NAME} Backend", version=settings.APP_VERSION, lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
+    allow_origins=settings.cors_origin_list,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_methods=["GET", "POST", "OPTIONS", "DELETE"],
     allow_headers=["*"],
 )
 
@@ -53,6 +45,7 @@ async def autonovel_exception_handler(request: Request, exc: AutoNovelException)
     )
 
 app.include_router(easy_mode.router, prefix="/easy_mode", tags=["easy_mode"])
+app.include_router(streaming.router, prefix="/easy_mode", tags=["streaming"])
 
 
 @app.get("/health")

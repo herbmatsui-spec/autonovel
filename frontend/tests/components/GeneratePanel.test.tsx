@@ -3,6 +3,7 @@ import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { NovelProvider } from "../../src/context/NovelContext";
 import GeneratePanel from "../../src/components/GeneratePanel";
 
 const server = setupServer(
@@ -36,7 +37,11 @@ describe("GeneratePanel", () => {
   afterAll(() => server.close());
 
   const renderPanel = () =>
-    render(<GeneratePanel onGenerated={onGenerated} onMessage={onMessage} />);
+    render(
+      <NovelProvider>
+        <GeneratePanel onGenerated={onGenerated} onMessage={onMessage} />
+      </NovelProvider>
+    );
 
   it("renders form and button", () => {
     renderPanel();

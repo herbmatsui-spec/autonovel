@@ -2,19 +2,15 @@
 from __future__ import annotations
 
 import logging
-import os
-
+from src.backend.config import settings
 from huey import RedisHuey, SqliteHuey
 
 logger = logging.getLogger(__name__)
 
-huey_backend = os.getenv("HUEY_BACKEND", "sqlite")
-redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-
-if huey_backend == "redis":
-    huey = RedisHuey("autonovel", url=redis_url)
+if settings.HUEY_BACKEND == "redis":
+    huey = RedisHuey("autonovel", url=settings.REDIS_URL)
 else:
-    huey = SqliteHuey("autonovel")
+    huey = SqliteHuey("autonovel", filename=settings.HUEY_SQLITE_PATH)
 
 # ワーカー上で即時実行せず、キュー経由で実行する
 huey.immediate = False

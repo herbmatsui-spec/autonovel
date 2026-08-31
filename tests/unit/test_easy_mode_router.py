@@ -5,7 +5,6 @@ from unittest.mock import MagicMock
 
 import pytest
 
-import src.backend.tasks.generation_tasks as generation_tasks_mod
 import src.backend.tasks.huey as huey_mod
 from src.backend.routers import easy_mode
 
@@ -80,7 +79,15 @@ def dummy_request():
 def patch_dependencies(monkeypatch):
     monkeypatch.setattr(easy_mode, "process_chapter", lambda x: f"processed:{x}")
     monkeypatch.setattr(easy_mode, "BookRepository", DummyRepo)
-    monkeypatch.setattr(generation_tasks_mod, "generate_chapter_task", lambda params: None)
+    
+    # Mock huey.enqueue to return an object with .id
+    class DummyEnqueueResult:
+        def __init__(self):
+            self.id = "test-huey-id"
+    
+    import src.backend.tasks.huey as huey_mod
+    monkeypatch.setattr(huey_mod.huey, "enqueue", lambda task, **kwargs: DummyEnqueueResult())
+    
     called = []
 
     class DummyMetrics:
@@ -91,6 +98,19 @@ def patch_dependencies(monkeypatch):
 
     monkeypatch.setattr(easy_mode, "metrics", DummyMetrics)
     return called
+
+
+@pytest.mark.asyncio
+async def test_execute_generation():
+    payload = {
+        "current_chapter": "テスト冒頭",
+        "chapter_history": ["前話"],
+        "character": {"name": "テスト勇者", "genre": "ファンタジー (R15)"},
+    }
+    result = await easy_mode.execute_generation(payload)
+    assert "output" in result
+    assert "suggestions" in result
+    assert isinstance(result["suggestions"], list)
 
 
 @pytest.mark.asyncio
@@ -106,7 +126,8 @@ async def test_generate_content_success(monkeypatch, dummy_session, dummy_reques
         valid_input, request=dummy_request, session=dummy_session
     )
     assert isinstance(response, easy_mode.GenerationResponse)
-    assert any("42" in s for s in response.suggestions)
+    # huey_task_id should be in suggestions (now using huey enqueue)
+    assert "test-huey-id" in response.suggestions[0]
     assert "tasks_enqueued" in called_metrics
 
 

@@ -1,51 +1,45 @@
-import { useState } from "react";
-import { exportPackage } from "../api/easyMode";
+import React, { useState } from "react";
+import { useNovelContext } from "../context/NovelContext";
+import { useNovelExport } from "../hooks/useNovelExport";
+import { Editor } from "./editor/Editor";
+import { AiSuggestions } from "./editor/AiSuggestions";
 
 interface ExportPanelProps {
-  output: string;
-  suggestions: string[];
-  onExportMessage: (message: string) => void;
+  output?: string;
+  suggestions?: string[];
+  onExportMessage?: (message: string) => void;
 }
 
-export default function ExportPanel({ output, suggestions, onExportMessage }: ExportPanelProps) {
-  const [exporting, setExporting] = useState(false);
-  const [bookIdInput, setBookIdInput] = useState("1");
+export default function ExportPanel({
+  output,
+  suggestions,
+  onExportMessage,
+}: ExportPanelProps) {
+  const {
+    generationState,
+    setGenerationState,
+    selectedBookId,
+    setSelectedBookId,
+    applySuggestion,
+  } = useNovelContext();
+
   const [validationError, setValidationError] = useState("");
 
-  const validateBookId = (raw: string): number | null => {
-    const trimmed = raw.trim();
-    if (!/^[1-9]\d*$/.test(trimmed)) {
+  const { exporting, downloadExportPackage } = useNovelExport(
+    (msg) => onExportMessage?.(msg),
+    (errMsg) => onExportMessage?.(errMsg)
+  );
+
+  const displayOutput = output !== undefined ? output : generationState.currentOutput;
+  const displaySuggestions = suggestions !== undefined ? suggestions : generationState.suggestions;
+
+  const validateAndExport = async () => {
+    if (selectedBookId < 1 || !Number.isInteger(selectedBookId)) {
       setValidationError("1以上の整数を入力してください");
-      return null;
+      return;
     }
     setValidationError("");
-    return Number.parseInt(trimmed, 10);
-  };
-
-  const handleExport = async () => {
-    const bookId = validateBookId(bookIdInput);
-    if (bookId === null) return;
-
-    setExporting(true);
-    onExportMessage("");
-    try {
-      const { zipBlob, filename } = await exportPackage(bookId);
-      const url = window.URL.createObjectURL(zipBlob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
-
-      onExportMessage(`📦 納品パッケージ (${filename}) をダウンロードしました！`);
-    } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : "不明なエラーが発生しました";
-      onExportMessage(`❌ ダウンロードエラー: ${message}`);
-    } finally {
-      setExporting(false);
-    }
+    await downloadExportPackage(selectedBookId);
   };
 
   return (
@@ -58,7 +52,9 @@ export default function ExportPanel({ output, suggestions, onExportMessage }: Ex
           marginBottom: "16px",
         }}
       >
-        <h2 style={{ fontSize: "1.2rem", color: "#38bdf8" }}>📖 執筆プレビュー</h2>
+        <h2 style={{ fontSize: "1.2rem", color: "var(--accent-secondary, #38bdf8)" }}>
+          📖 執筆プレビュー & エディタ
+        </h2>
       </div>
 
       <div className="form-group" style={{ marginBottom: "16px" }}>
@@ -67,8 +63,16 @@ export default function ExportPanel({ output, suggestions, onExportMessage }: Ex
           className="input"
           type="number"
           min={1}
-          value={bookIdInput}
-          onChange={(e) => setBookIdInput(e.target.value)}
+          value={selectedBookId}
+          onChange={(e) => {
+            const val = Number.parseInt(e.target.value, 10);
+            if (val > 0) {
+              setSelectedBookId(val);
+              setValidationError("");
+            } else {
+              setValidationError("1以上の整数を入力してください");
+            }
+          }}
           placeholder="1以上の整数"
         />
         {validationError && (
@@ -81,28 +85,25 @@ export default function ExportPanel({ output, suggestions, onExportMessage }: Ex
       <button
         className="btn btn-export"
         style={{ width: "100%", marginBottom: "16px" }}
-        onClick={handleExport}
+        onClick={validateAndExport}
         disabled={exporting}
       >
         {exporting ? "📦 パッケージ生成中..." : "📦 納品パッケージ (ZIP) ダウンロード"}
       </button>
 
-      <div className="output-area" style={{ flex: 1 }}>
-        {output || "「🪄 かんたん執筆開始」を押すと、AIがファンタジー作品の続きを生成します。"}
+      <div style={{ flex: 1, minHeight: "240px" }}>
+        <Editor
+          content={displayOutput}
+          onChange={(val) =>
+            setGenerationState((prev) => ({ ...prev, currentOutput: val }))
+          }
+        />
       </div>
 
-      {suggestions.length > 0 && (
-        <div style={{ marginTop: "16px" }}>
-          <span className="label">💡 次話へのAI提案</span>
-          <div className="chips">
-            {suggestions.map((s, idx) => (
-              <span className="chip" key={idx}>
-                {s}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
+      <AiSuggestions
+        suggestions={displaySuggestions}
+        onApplySuggestion={applySuggestion}
+      />
     </section>
   );
 }

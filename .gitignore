@@ -5,12 +5,27 @@
 .coverage
 .coverage.*
 htmlcov/
-.kilo/node_modules/
+.kilo/
+
+# environments & secrets
+.env
+.env.local
+.venv/
+env/
+venv/
+
+# storage & local dbs
+storage/
+*.db
+*.db-shm
+*.db-wal
 
 # build artifacts
 *.egg-info/
 __pycache__/
 *.pyc
+dist/
+build/
 
 # legacy work files
 tmp_replace_normalize.py
@@ -19,11 +34,11 @@ mypy_out.txt
 ruff_e722.txt
 ruff_f841_src.txt
 backup/
-
-# local dbs
-*.db
+temp/
+archive/
 
 # frontend
 frontend/node_modules/
 frontend/dist/
 frontend/coverage/
+

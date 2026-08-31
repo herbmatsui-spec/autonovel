@@ -1,0 +1,81 @@
+"""AutoNovel アプリケーション設定モジュール。
+
+Pydantic BaseSettings により環境変数のバリデーションと一元管理を行う。
+"""
+from __future__ import annotations
+
+import os
+from pathlib import Path
+from typing import Literal
+
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# プロジェクトのルートディレクトリ
+ROOT_DIR = Path(__file__).resolve().parent.parent.parent
+STORAGE_DIR = ROOT_DIR / "storage"
+
+# storage ディレクトリが存在しない場合は自動作成
+STORAGE_DIR.mkdir(parents=True, exist_ok=True)
+
+
+class Settings(BaseSettings):
+    """アプリケーション設定クラス。"""
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+    # サーバー基本設定
+    APP_NAME: str = "AutoNovel"
+    APP_VERSION: str = "0.2.0"
+    APP_ENV: Literal["development", "production", "testing"] = "development"
+    PORT: int = 8200
+    HOST: str = "0.0.0.0"
+
+    # データベース設定
+    DATABASE_URL: str = Field(
+        default_factory=lambda: f"sqlite:///{STORAGE_DIR / 'autonovel.db'}"
+    )
+
+    # Huey / Redis 設定
+    HUEY_BACKEND: Literal["sqlite", "redis"] = "sqlite"
+    HUEY_SQLITE_PATH: str = Field(
+        default_factory=lambda: str(STORAGE_DIR / "huey.db")
+    )
+    REDIS_URL: str = "redis://localhost:6379/0"
+
+    # CORS設定
+    CORS_ORIGINS: str = (
+        "http://localhost:5173,http://localhost:8080,http://127.0.0.1:5173,http://127.0.0.1:8080"
+    )
+
+    # ロギング設定
+    LOG_LEVEL: str = "INFO"
+    LOG_FORMAT: Literal["json", "console"] = "console"
+
+    # LLM設定 (OpenAI / Gemini 互換)
+    LLM_PROVIDER: Literal["openai", "gemini", "mock"] = "openai"
+    OPENAI_API_KEY: str | None = None
+    OPENAI_BASE_URL: str | None = None  # LocalLLM, Ollama, vLLM 等の差し替え用
+    OPENAI_MODEL: str = "gpt-4o-mini"
+
+    GEMINI_API_KEY: str | None = None
+    GEMINI_MODEL: str = "gemini-1.5-flash"
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        """CORS origins をリスト形式で取得する。"""
+        return [
+            origin.strip()
+            for origin in self.CORS_ORIGINS.split(",")
+            if origin.strip()
+        ]
+
+
+# グローバルな設定インスタンス
+settings = Settings()
+
+__all__ = ["Settings", "settings", "STORAGE_DIR", "ROOT_DIR"]

@@ -1,4 +1,5 @@
 import logging
+import time
 import urllib.parse
 from typing import Any
 
@@ -11,19 +12,72 @@ from src.backend.observability import metrics
 from src.backend.rate_limit import generate_limiter
 from src.models.easy_mode_schemas import EasyModeInput, GenerationResponse
 from src.services.digest_service import process_chapter
+from src.services.llm.factory import get_llm_adapter
+from src.services.llm.prompts import (
+    NOVEL_SYSTEM_PROMPT,
+    NOVEL_USER_PROMPT_TEMPLATE,
+    SUGGESTIONS_PROMPT_TEMPLATE,
+)
 from src.services.marketing import MarketingAgent
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-async def generate_with_llm(payload: dict[str, Any]) -> dict[str, Any]:
-    """Stub function to simulate asynchronous LLM generation.
+async def execute_generation(payload: dict[str, Any]) -> dict[str, Any]:
+    """LLM アダプタを利用して非同期に小説本文と次話提案を生成する。"""
+    start_time = time.time()
+    current_chapter = payload.get("current_chapter", "")
+    chapter_history = payload.get("chapter_history", [])
+    character = payload.get("character", {})
 
-    TODO: Replace with real LLM API call in production.
-    """
-    msg = "generate_with_llm is not implemented yet; replace with real LLM adapter."
-    raise NotImplementedError(msg)
+    history_context = "\n".join(chapter_history[:-1]) if len(chapter_history) > 1 else "なし"
+    user_prompt = NOVEL_USER_PROMPT_TEMPLATE.format(
+        genre=character.get("genre", "ハイファンタジー (R15)"),
+        char_name=character.get("name", "主人公"),
+        char_personality=character.get("personality", "正義感が強い"),
+        char_ability=character.get("ability", "剣術・魔導"),
+        history_context=history_context,
+        current_chapter=current_chapter,
+    )
+
+    adapter = get_llm_adapter()
+    generated_text = await adapter.generate_text(
+        prompt=user_prompt,
+        system_prompt=NOVEL_SYSTEM_PROMPT,
+        max_tokens=2000,
+    )
+
+    # 次話展開提案の生成
+    suggestions_prompt = SUGGESTIONS_PROMPT_TEMPLATE.format(chapter_text=generated_text[:1000])
+    try:
+        suggestions_raw = await adapter.generate_text(
+            prompt=suggestions_prompt,
+            max_tokens=300,
+        )
+        suggestions = [
+            line.lstrip("- ").strip()
+            for line in suggestions_raw.strip().split("\n")
+            if line.strip()
+        ][:3]
+    except Exception:
+        logger.warning("Failed to generate suggestions, using defaults", exc_info=True)
+        suggestions = [
+            "新たな仲間との出会いと衝突",
+            "古代遺跡に隠された真実の解明",
+            "強敵の急襲と覚醒する未知の力",
+        ]
+
+    elapsed_ms = int((time.time() - start_time) * 1000)
+    return {
+        "output": generated_text,
+        "suggestions": suggestions,
+        "completion_time_ms": elapsed_ms,
+    }
+
+
+# 後方互換性エイリアス
+generate_with_llm = execute_generation
 
 
 @router.post("/generate", response_model=GenerationResponse)
@@ -61,11 +115,12 @@ async def generate_content(
         # タスクステータスを "running" に更新
         repo.update_task_status(task_id, "running")
 
-        # タスクをキューに投入 (関数内 import で循環参照回避)
+        # タスクをキューに投入 (Huey enqueue 経由で非同期化)
         from src.backend.tasks.generation_tasks import generate_chapter_task
+        from src.backend.tasks.huey import huey
 
-        task_result = generate_chapter_task(params)
-        huey_task_id = str(getattr(task_result, "id", task_id))
+        task_result = huey.enqueue(generate_chapter_task, payload=params)
+        huey_task_id = str(task_result.id)
         metrics.increment("tasks_enqueued")
         logger.info("Enqueued generation task: db_id=%s, huey_id=%s", task_id, huey_task_id)
 
@@ -151,3 +206,23 @@ async def get_task_status(task_id: str) -> dict[str, Any]:
 
     logger.info("Task status polled (completed): task_id=%s", task_id)
     return {"task_id": task_id, "status": "completed", "result": result}
+
+
+# Task cancellation endpoint (Step 69)
+@router.delete("/task/{task_id}")
+async def cancel_task(task_id: str, session=Depends(database.get_db)) -> dict[str, str]:
+    """タスクをキャンセルまたは削除する。"""
+    from src.backend.tasks.huey import huey
+
+    # Hueyのタスクを取り消し試行
+    try:
+        huey.revoke_by_id(task_id)
+    except Exception:
+        logger.warning("Failed to revoke huey task_id=%s", task_id)
+
+    # DBタスクのステータス更新 (数値IDの場合)
+    if task_id.isdigit():
+        repo = BookRepository(session)
+        repo.update_task_status(int(task_id), "cancelled")
+
+    return {"task_id": task_id, "status": "cancelled"}
