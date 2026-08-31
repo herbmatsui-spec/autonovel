@@ -10,6 +10,8 @@
   --accent-purple: #8b5cf6;
   --accent-cyan: #06b6d4;
   --accent-glow: rgba(139, 92, 246, 0.3);
+  --accent-danger: #ef4444;
+  --accent-success: #10b981;
   --radius-lg: 16px;
   --radius-md: 10px;
 }
@@ -59,6 +61,63 @@ body {
   border-radius: 20px;
   font-size: 0.8rem;
   font-weight: 600;
+}
+
+.toast {
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  margin-bottom: 20px;
+  font-size: 0.95rem;
+  animation: fadeIn 0.3s ease;
+}
+
+.toast--success {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #34d399;
+}
+
+.toast--error {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #f87171;
+}
+
+.toast--info {
+  background: rgba(139, 92, 246, 0.15);
+  border: 1px solid var(--accent-purple);
+  color: #a78bfa;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.main-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 24px;
+}
+
+@media (max-width: 768px) {
+  body {
+    padding: 16px;
+  }
+
+  .main-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .brand-title {
+    font-size: 1.5rem;
+  }
 }
 
 .card {

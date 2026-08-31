@@ -1,7 +1,14 @@
+export interface CharacterParams {
+  name: string;
+  personality: string;
+  ability: string;
+  genre: string;
+}
+
 export interface EasyModeInput {
   chapter_history: string[];
   current_chapter: string;
-  character_params: Record<string, unknown>;
+  character_params: CharacterParams | Record<string, unknown>;
   content_length_limit: number;
 }
 
@@ -24,4 +31,5 @@ export interface TaskStatusResponse {
   task_id: string;
   status: TaskStatus;
   result?: unknown;
+  error?: string;
 }

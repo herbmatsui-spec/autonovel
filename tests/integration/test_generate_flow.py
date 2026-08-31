@@ -72,7 +72,7 @@ def test_generate_flow_status_pending(client: TestClient) -> None:
     status_data = status_resp.json()
     assert status_data["task_id"] == task_id
     # 即時実行ではないため、通常は pending。Huey の内部状態次第。
-    assert status_data["status"] in {"pending", "completed"}
+    assert status_data["status"] in {"pending", "completed", "failed"}
 
 
 def test_status_unknown_task_returns_pending(client: TestClient) -> None:

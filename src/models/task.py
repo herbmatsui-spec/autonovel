@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import Any
+
 from sqlalchemy import Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -13,9 +17,9 @@ class Task(Base):
     created_at: Mapped[int] = mapped_column(Integer, nullable=False)
     updated_at: Mapped[int] = mapped_column(Integer, nullable=False)
 
-    def __init__(self, **kwargs):
-        """Simple initializer to allow creating Task instances in tests.
-        Stores provided keyword arguments as attributes.
-        """
-        for key, value in kwargs.items():
-            setattr(self, key, value)
+    def __init__(self, **kwargs: Any) -> None:
+        """SQLAlchemy 宣言モデル標準の初期化を行う。"""
+        super().__init__(**kwargs)
+
+
+__all__ = ["Task"]

@@ -1,8 +1,11 @@
 """SQLAlchemy engine と SessionLocal を初期化するデータベース設定モジュール。"""
+from __future__ import annotations
+
 import os
+from collections.abc import Generator
 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 
 from src.models import Base
 
@@ -17,7 +20,8 @@ if DATABASE_URL.startswith("sqlite"):
 engine = create_engine(DATABASE_URL, **engine_args)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-def get_db():
+
+def get_db() -> Generator[Session, None, None]:
     """FastAPI 依存注入用の DB セッションジェネレーター"""
     db = SessionLocal()
     try:
@@ -25,9 +29,17 @@ def get_db():
     finally:
         db.close()
 
+
 def init_db() -> None:
     """データベースのテーブルを初期化する"""
     Base.metadata.create_all(bind=engine)
 
 
-__all__: list[str] = ["Base", "SessionLocal", "engine", "init_db", "DATABASE_URL"]
+__all__: list[str] = [
+    "Base",
+    "DATABASE_URL",
+    "SessionLocal",
+    "engine",
+    "get_db",
+    "init_db",
+]

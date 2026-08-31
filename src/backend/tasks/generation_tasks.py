@@ -22,12 +22,10 @@ logger = logging.getLogger(__name__)
 def _run_async(coro: Any) -> Any:
     """新規 event loop を作成して coroutine を同期実行する。"""
     loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
     try:
         return loop.run_until_complete(coro)
     finally:
         loop.close()
-        asyncio.set_event_loop(None)
 
 
 async def _generate(payload: dict[str, Any]) -> dict[str, Any]:
@@ -37,21 +35,30 @@ async def _generate(payload: dict[str, Any]) -> dict[str, Any]:
     return await generate_with_llm(payload)
 
 
-def _persist_success(repo: BookRepository, task_id: int, result: dict[str, Any]) -> None:
-    """成功時の DB 永続化処理。"""
-    repo.set_task_result(task_id, json.dumps(result, ensure_ascii=False))
-
-
-def _mark_failed(repo: BookRepository, task_id: int, exc: Exception) -> None:
-    """失敗時のステータス更新。"""
-    repo.update_task_status(task_id, "failed")
-    logger.exception("Generation task failed (task_id=%s): %s", task_id, exc)
+def _update_task_in_db(
+    task_id: int,
+    status: str,
+    result_json: str | None = None,
+) -> None:
+    """DB 上の Task レコードを安全に更新する (rollback 保証付き)。"""
+    session = database.SessionLocal()
+    try:
+        repo = BookRepository(session)
+        if status == "completed" and result_json is not None:
+            repo.set_task_result(task_id, result_json)
+        else:
+            repo.update_task_status(task_id, status)
+    except Exception:
+        session.rollback()
+        logger.exception("DB update failed for task_id=%s status=%s", task_id, status)
+    finally:
+        session.close()
 
 
 @huey.task()
 def generate_chapter_task(payload: dict[str, Any]) -> dict[str, Any]:
-    """
-    非同期で小説の章を生成する Huey タスク。
+    """非同期で小説の章を生成する Huey タスク。
+
     ワーカー上で ``generate_with_llm`` を実行し、結果を DB に保存する。
     """
     logger.info("Starting generation task: %s", payload)
@@ -59,26 +66,20 @@ def generate_chapter_task(payload: dict[str, Any]) -> dict[str, Any]:
 
     try:
         result = _run_async(_generate(payload))
-        if task_id:
-            session = database.SessionLocal()
-            try:
-                repo = BookRepository(session)
-                _persist_success(repo, int(task_id), result)
-            finally:
-                session.close()
         metrics.increment("tasks_completed")
         logger.info("Generation task completed: task_id=%s", task_id)
+        if task_id:
+            _update_task_in_db(
+                int(task_id),
+                "completed",
+                json.dumps(result, ensure_ascii=False),
+            )
         return result
     except Exception as exc:
         logger.exception("Generation task failed: %s", exc)
         metrics.increment("tasks_failed")
         if task_id:
-            session = database.SessionLocal()
-            try:
-                repo = BookRepository(session)
-                _mark_failed(repo, int(task_id), exc)
-            finally:
-                session.close()
+            _update_task_in_db(int(task_id), "failed")
         return {"error": str(exc), "text": "", "time": 0}
 
 

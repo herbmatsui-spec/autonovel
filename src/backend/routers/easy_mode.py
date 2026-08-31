@@ -2,12 +2,13 @@ import logging
 import urllib.parse
 from typing import Any
 
-from fastapi import APIRouter, Depends, Path, Response
+from fastapi import APIRouter, Depends, Path, Request, Response
 from pydantic import ValidationError
 
 from src.backend import database
 from src.backend.database.repository import BookRepository
 from src.backend.observability import metrics
+from src.backend.rate_limit import generate_limiter
 from src.models.easy_mode_schemas import EasyModeInput, GenerationResponse
 from src.services.digest_service import process_chapter
 from src.services.marketing import MarketingAgent
@@ -28,17 +29,26 @@ async def generate_with_llm(payload: dict[str, Any]) -> dict[str, Any]:
 @router.post("/generate", response_model=GenerationResponse)
 async def generate_content(
     input_data: EasyModeInput,
-    session=Depends(database.get_db)
+    request: Request,
+    session=Depends(database.get_db),
 ) -> GenerationResponse:
+    generate_limiter.check(request)
     try:
         # 章の中身処理
         processed_chapter = process_chapter(input_data.current_chapter)
+
+        # キャラクター設定を dict に変換
+        char_dict = (
+            input_data.character_params.model_dump()
+            if hasattr(input_data.character_params, "model_dump")
+            else dict(input_data.character_params)
+        )
 
         # 生成パラメータ準備
         params: dict[str, Any] = {
             "chapter_history": input_data.chapter_history,
             "current_chapter": processed_chapter,
-            "character": input_data.character_params,
+            "character": char_dict,
         }
 
         # DB セッションを利用、Task を作成
@@ -73,17 +83,19 @@ async def generate_content(
     except ValidationError as e:
         logger.warning("Validation error in generate_content: %s", e.errors())
         from src.backend.exceptions import ValidationException
+
         raise ValidationException(detail=str(e.errors())) from e
-    except Exception:
+    except Exception as e:
         logger.exception("Internal generation error")
         from src.backend.exceptions import ServiceException
-        raise ServiceException() from None
+
+        raise ServiceException(detail=str(e)) from e
 
 
 @router.get("/export/{book_id}")
 async def export_easy_mode_package(
     book_id: int = Path(ge=1),
-    session=Depends(database.get_db)
+    session=Depends(database.get_db),
 ) -> Response:
     """かんたんモードで作成された作品の納品パッケージ (ZIP) をエクスポートする。
 
@@ -121,10 +133,10 @@ async def export_easy_mode_package(
 # Task status endpoint
 @router.get("/status/{task_id}")
 async def get_task_status(task_id: str) -> dict[str, Any]:
-    """
-    Return the status of a generation task.
+    """Return the status of a generation task.
 
-    Returns "pending" if not yet completed, otherwise includes result.
+    Returns "pending" if not yet completed, "failed" if an error occurred,
+    otherwise "completed" with the result.
     """
     from src.backend.tasks.huey import huey
 
@@ -132,5 +144,10 @@ async def get_task_status(task_id: str) -> dict[str, Any]:
     if result is None:
         logger.info("Task status polled (pending): task_id=%s", task_id)
         return {"task_id": task_id, "status": "pending"}
+
+    if isinstance(result, dict) and result.get("error"):
+        logger.info("Task status polled (failed): task_id=%s error=%s", task_id, result["error"])
+        return {"task_id": task_id, "status": "failed", "error": result["error"], "result": result}
+
     logger.info("Task status polled (completed): task_id=%s", task_id)
     return {"task_id": task_id, "status": "completed", "result": result}

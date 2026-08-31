@@ -67,7 +67,7 @@ export default function GeneratePanel({ onGenerated, onMessage }: GeneratePanelP
         return normalizeResult(status.result);
       }
       if (status.status === "failed") {
-        throw new Error("生成タスクが失敗しました");
+        throw new Error(status.error || "生成タスクが失敗しました");
       }
       setStatusText(`ステータス: ${status.status}`);
       await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));

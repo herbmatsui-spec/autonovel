@@ -13,8 +13,6 @@
 # 注意: 本番運用にあたり、環境変数は .env またはデプロイ先の secrets から注入してください。
 # uvicorn のワーカー数は環境変数 UVICORN_WORKERS (既定 2) で調整。
 
-version: "3.9"
-
 services:
   backend:
     build:
@@ -22,8 +20,8 @@ services:
       dockerfile: Dockerfile
     image: autonovel-backend:0.2.0
     environment:
-      - DATABASE_URL=postgresql+psycopg2://autonovel:${POSTGRES_PASSWORD:-autonovel}@postgres:5432/autonovel
-      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=postgresql+psycopg2://autonovel:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/autonovel
+      - REDIS_URL=redis://:${REDIS_PASSWORD:?REDIS_PASSWORD is required}@redis:6379/0
       - HUEY_BACKEND=redis
       - UVICORN_WORKERS=${UVICORN_WORKERS:-2}
       - PYTHONUNBUFFERED=1
@@ -31,7 +29,7 @@ services:
       postgres:
         condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
     restart: unless-stopped
     logging:
       driver: json-file
@@ -50,15 +48,15 @@ services:
     image: autonovel-backend:0.2.0
     command: ["python", "-m", "huey.bin.huey_consumer", "src.backend.tasks.huey.huey", "-w", "2", "-k", "threadpool"]
     environment:
-      - DATABASE_URL=postgresql+psycopg2://autonovel:${POSTGRES_PASSWORD:-autonovel}@postgres:5432/autonovel
-      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=postgresql+psycopg2://autonovel:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/autonovel
+      - REDIS_URL=redis://:${REDIS_PASSWORD:?REDIS_PASSWORD is required}@redis:6379/0
       - HUEY_BACKEND=redis
       - PYTHONUNBUFFERED=1
     depends_on:
       postgres:
         condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
     restart: unless-stopped
     logging:
       driver: json-file
@@ -91,7 +89,7 @@ services:
     image: postgres:16-alpine
     environment:
       - POSTGRES_USER=autonovel
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-autonovel}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
       - POSTGRES_DB=autonovel
     volumes:
       - autonovel_pgdata:/var/lib/postgresql/data
@@ -111,9 +109,14 @@ services:
 
   redis:
     image: redis:7-alpine
-    command: ["redis-server", "--appendonly", "yes"]
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:?REDIS_PASSWORD is required}"]
     volumes:
       - autonovel_redis:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$${REDIS_PASSWORD}\" ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
     logging:
       driver: json-file

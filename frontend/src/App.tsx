@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import GeneratePanel from "./components/GeneratePanel";
 import ExportPanel from "./components/ExportPanel";
 
@@ -6,6 +6,12 @@ export default function App() {
   const [output, setOutput] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [message, setMessage] = useState("");
+
+  const getToastClass = (msg: string): string => {
+    if (msg.startsWith("❌")) return "toast toast--error";
+    if (msg.startsWith("✨") || msg.startsWith("📦")) return "toast toast--success";
+    return "toast toast--info";
+  };
 
   return (
     <div className="container">
@@ -20,21 +26,12 @@ export default function App() {
       </header>
 
       {message && (
-        <div
-          style={{
-            padding: "12px 16px",
-            background: "rgba(139, 92, 246, 0.15)",
-            border: "1px solid var(--accent-purple)",
-            borderRadius: "var(--radius-md)",
-            marginBottom: "20px",
-            fontSize: "0.95rem",
-          }}
-        >
+        <div className={getToastClass(message)}>
           {message}
         </div>
       )}
 
-      <main style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr", gap: "24px" }}>
+      <main className="main-grid">
         <GeneratePanel
           onGenerated={(out, sug) => {
             setOutput(out);

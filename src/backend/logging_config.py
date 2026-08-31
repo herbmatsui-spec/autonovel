@@ -1,7 +1,7 @@
 """構造化ロギング設定を提供するモジュール (Phase 5: Step 51-54).
 
 python-json-logger を用いた JSON ログ出力を既定とし、プレーンテキスト
-フォールバックも備える。コンテキ sansserifスト項目 (app, env, version) を常時付与し、
+フォールバックも備える。コンテキスト項目 (app, env, version) を常時付与し、
 ロガー別のログレベル制御も行う。
 
 環境変数:
@@ -91,7 +91,10 @@ def configure() -> None:
         )
     else:
         try:
-            from pythonjsonlogger import jsonlogger  # type: ignore[import-not-found]
+            try:
+                from pythonjsonlogger import json as jsonlogger  # type: ignore[import-not-found]
+            except ImportError:
+                from pythonjsonlogger import jsonlogger  # type: ignore[import-not-found,no-redef]
         except ImportError:
             handler = logging.StreamHandler(sys.stdout)
             formatter = logging.Formatter(

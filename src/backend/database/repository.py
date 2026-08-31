@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import time
-from typing import Any
 
 from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
@@ -10,10 +9,12 @@ from sqlalchemy.orm import Session
 from src.models.book import Bible, Book, Chapter, Character, Plot
 from src.models.task import Task
 
+ALLOWED_CHAPTER_ORDER_FIELDS = {"ep_num", "id", "title"}
+
 
 class BookRepository:
-    """
-    作品データへのアクセスを抽象化するリポジトリ。
+    """作品データへのアクセスを抽象化するリポジトリ。
+
     SQLAlchemy Session を使用して DB 操作を行う。
     """
 
@@ -64,14 +65,13 @@ class BookRepository:
     def get_all_non_anchor_chapters(
         self, book_id: int, branch_id: int = 1, order_by: str = "ep_num"
     ) -> list[Chapter]:
-        """
-        指定した作品・ブランチの、アンカーではない章をすべて取得する。
-        """
+        """指定した作品・ブランチの、アンカーではない章をすべて取得する。"""
+        order_field = order_by if order_by in ALLOWED_CHAPTER_ORDER_FIELDS else "ep_num"
         stmt = (
             select(Chapter)
             .where(Chapter.book_id == book_id)
             .where(Chapter.is_anchor.is_(False))
-            .order_by(getattr(Chapter, order_by))
+            .order_by(getattr(Chapter, order_field))
         )
         result = self.session.execute(stmt)
         return list(result.scalars().all())
@@ -105,4 +105,4 @@ class BookRepository:
         return list(result.scalars().all())
 
 
-__all__: list[str] = ["BookRepository", "Any"]
+__all__: list[str] = ["BookRepository"]
