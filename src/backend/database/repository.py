@@ -25,20 +25,28 @@ class BookRepository:
         """指定した ID の作品情報を取得する"""
         return self.session.get(Book, book_id)
 
-    def create_task(self, status: str = "pending", result: str | None = None) -> Task:
+    def create_task(
+        self,
+        task_id: str | None = None,
+        status: str = "pending",
+        result: str | None = None,
+    ) -> Task:
         """Create a new Task record and return it."""
+        import uuid
+
         now = int(time.time())
-        task = Task(status=status, result=result, created_at=now, updated_at=now)
+        tid = task_id or str(uuid.uuid4())
+        task = Task(id=tid, status=status, result=result, created_at=now, updated_at=now)
         self.session.add(task)
         self.session.commit()
         self.session.refresh(task)
         return task
 
-    def get_task(self, task_id: int) -> Task | None:
+    def get_task(self, task_id: str) -> Task | None:
         """指定した ID のタスクを取得する"""
         return self.session.get(Task, task_id)
 
-    def update_task_status(self, task_id: int, status: str) -> None:
+    def update_task_status(self, task_id: str, status: str) -> None:
         """タスクのステータスを更新する"""
         task = self.session.get(Task, task_id)
         if task:
@@ -46,7 +54,7 @@ class BookRepository:
             task.updated_at = int(time.time())
             self.session.commit()
 
-    def set_task_result(self, task_id: int, result: str) -> None:
+    def set_task_result(self, task_id: str, result: str) -> None:
         """タスクの結果を保存し、ステータスを completed に更新する"""
         task = self.session.get(Task, task_id)
         if task:
@@ -55,7 +63,7 @@ class BookRepository:
             task.status = "completed"
             self.session.commit()
 
-    def delete_task(self, task_id: int) -> None:
+    def delete_task(self, task_id: str) -> None:
         """Delete a task record from the database."""
         task = self.session.get(Task, task_id)
         if task:

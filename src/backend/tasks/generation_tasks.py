@@ -36,7 +36,7 @@ async def _generate(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def _update_task_in_db(
-    task_id: int,
+    task_id: str,
     status: str,
     result_json: str | None = None,
 ) -> None:
@@ -70,7 +70,7 @@ def generate_chapter_task(payload: dict[str, Any]) -> dict[str, Any]:
         logger.info("Generation task completed: task_id=%s", task_id)
         if task_id:
             _update_task_in_db(
-                int(task_id),
+                str(task_id),
                 "completed",
                 json.dumps(result, ensure_ascii=False),
             )
@@ -79,7 +79,7 @@ def generate_chapter_task(payload: dict[str, Any]) -> dict[str, Any]:
         logger.exception("Generation task failed: %s", exc)
         metrics.increment("tasks_failed")
         if task_id:
-            _update_task_in_db(int(task_id), "failed")
+            _update_task_in_db(str(task_id), "failed")
         return {"error": str(exc), "text": "", "time": 0}
 
 

@@ -18,7 +18,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: autonovel-backend:0.2.0
+    image: autonovel-backend:4.0.0
     environment:
       - DATABASE_URL=postgresql+psycopg2://autonovel:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/autonovel
       - REDIS_URL=redis://:${REDIS_PASSWORD:?REDIS_PASSWORD is required}@redis:6379/0
@@ -45,7 +45,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: autonovel-backend:0.2.0
+    image: autonovel-backend:4.0.0
     command: ["python", "-m", "huey.bin.huey_consumer", "src.backend.tasks.huey.huey", "-w", "2", "-k", "threadpool"]
     environment:
       - DATABASE_URL=postgresql+psycopg2://autonovel:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/autonovel
@@ -71,7 +71,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       target: production
-    image: autonovel-frontend:0.2.0
+    image: autonovel-frontend:4.0.0
     ports:
       - "8080:80"
     depends_on:

@@ -1,7 +1,6 @@
 """SQLAlchemy engine と SessionLocal を初期化するデータベース設定モジュール。"""
 from __future__ import annotations
 
-import os
 from collections.abc import Generator
 
 from sqlalchemy import create_engine

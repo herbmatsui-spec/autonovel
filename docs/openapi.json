@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "AutoNovel Backend",
-    "version": "0.1.0"
+    "version": "4.0.0"
   },
   "paths": {
     "/easy_mode/generate": {
@@ -117,6 +117,93 @@
                   "additionalProperties": true,
                   "title": "Response Get Task Status Easy Mode Status  Task Id  Get"
                 }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/easy_mode/task/{task_id}": {
+      "delete": {
+        "tags": [
+          "easy_mode"
+        ],
+        "summary": "Cancel Task",
+        "description": "タスクをキャンセルまたは削除する。",
+        "operationId": "cancel_task_easy_mode_task__task_id__delete",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Task Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Cancel Task Easy Mode Task  Task Id  Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/easy_mode/generate/stream": {
+      "post": {
+        "tags": [
+          "streaming"
+        ],
+        "summary": "Stream Generation",
+        "description": "小説執筆をストリーミング配信するエンドポイント。",
+        "operationId": "stream_generation_easy_mode_generate_stream_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EasyModeInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             }
           },

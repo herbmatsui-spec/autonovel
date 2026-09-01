@@ -4,14 +4,11 @@ from __future__ import annotations
 import asyncio
 import logging
 from collections.abc import Callable, Coroutine
-from typing import Any, TypeVar
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
-T = TypeVar("T")
-
-
-async def with_retry(
+async def with_retry[T](
     async_func: Callable[[], Coroutine[Any, Any, T]],
     max_retries: int = 3,
     initial_delay: float = 1.0,

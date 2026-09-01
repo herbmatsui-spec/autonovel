@@ -4,7 +4,6 @@ Pydantic BaseSettings により環境変数のバリデーションと一元管�
 """
 from __future__ import annotations
 
-import os
 from pathlib import Path
 from typing import Literal
 
@@ -30,7 +29,7 @@ class Settings(BaseSettings):
 
     # サーバー基本設定
     APP_NAME: str = "AutoNovel"
-    APP_VERSION: str = "0.2.0"
+    APP_VERSION: str = "4.0.0"
     APP_ENV: Literal["development", "production", "testing"] = "development"
     PORT: int = 8200
     HOST: str = "0.0.0.0"

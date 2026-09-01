@@ -21,8 +21,13 @@ max-complexity = 15
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 norecursedirs = ["temp", "backup", "archive", "frontend", "node_modules"]
-addopts = "-p no:cacheprovider --import-mode=importlib -q --tb=short --strict-markers"
+addopts = "-p no:cacheprovider --import-mode=importlib -q --tb=short --strict-markers --cov=src --cov-report=term-missing --cov-report=html --cov-fail-under=80"
 asyncio_mode = "auto"
+[tool.coverage.report]
+fail_under = 80
+[tool.coverage.run]
+branch = true
+omit = ["*/tests/*", "*/migrations/*", "*/node_modules/*"]
 markers = [
     "asyncio: pytest-asyncio で実行する非同期テスト",
 ]
@@ -33,7 +38,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "autonovel"
-version = "0.2.0"
+version = "4.0.0"
 description = "AutoNovel - 小説生成エンジン (FastAPI + React + Huey + SQLAlchemy)"
 readme = "README.md"
 requires-python = ">=3.12"

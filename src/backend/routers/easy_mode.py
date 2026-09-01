@@ -105,24 +105,19 @@ async def generate_content(
             "character": char_dict,
         }
 
-        # DB セッションを利用、Task を作成
-        repo = BookRepository(session)
-        task = repo.create_task()
-        task_id = task.id
-        # タスク ID を payload に追加
-        params["task_id"] = task_id
-
-        # タスクステータスを "running" に更新
-        repo.update_task_status(task_id, "running")
-
-        # タスクをキューに投入 (Huey enqueue 経由で非同期化)
+        # タスクをキューに投入 (Huey 非同期タスク呼び出し)
         from src.backend.tasks.generation_tasks import generate_chapter_task
-        from src.backend.tasks.huey import huey
 
-        task_result = huey.enqueue(generate_chapter_task, payload=params)
+        task_result = generate_chapter_task(params)
         huey_task_id = str(task_result.id)
+        params["task_id"] = huey_task_id
+
+        # DB レコードを作成
+        repo = BookRepository(session)
+        repo.create_task(task_id=huey_task_id, status="running")
+
         metrics.increment("tasks_enqueued")
-        logger.info("Enqueued generation task: db_id=%s, huey_id=%s", task_id, huey_task_id)
+        logger.info("Enqueued generation task: task_id=%s", huey_task_id)
 
         return GenerationResponse(
             task_id=huey_task_id,
@@ -220,9 +215,8 @@ async def cancel_task(task_id: str, session=Depends(database.get_db)) -> dict[st
     except Exception:
         logger.warning("Failed to revoke huey task_id=%s", task_id)
 
-    # DBタスクのステータス更新 (数値IDの場合)
-    if task_id.isdigit():
-        repo = BookRepository(session)
-        repo.update_task_status(int(task_id), "cancelled")
+    # DBタスクのステータス更新
+    repo = BookRepository(session)
+    repo.update_task_status(task_id, "cancelled")
 
     return {"task_id": task_id, "status": "cancelled"}

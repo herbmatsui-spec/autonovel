@@ -42,10 +42,10 @@ class DummyRepo:
         self.session = session
         self.task_id = 42
 
-    def create_task(self, status: str = "pending", result: str | None = None):
-        return DummyTask(self.task_id)
+    def create_task(self, task_id: str | None = None, status: str = "pending", result: str | None = None):
+        return DummyTask(task_id or self.task_id)
 
-    def update_task_status(self, task_id: int, status: str):
+    def update_task_status(self, task_id: str, status: str):
         pass
 
     def get_latest_bible(self, book_id: int):
@@ -79,15 +79,15 @@ def dummy_request():
 def patch_dependencies(monkeypatch):
     monkeypatch.setattr(easy_mode, "process_chapter", lambda x: f"processed:{x}")
     monkeypatch.setattr(easy_mode, "BookRepository", DummyRepo)
-    
-    # Mock huey.enqueue to return an object with .id
-    class DummyEnqueueResult:
+
+    # Mock generate_chapter_task
+    class DummyTaskResult:
         def __init__(self):
             self.id = "test-huey-id"
-    
-    import src.backend.tasks.huey as huey_mod
-    monkeypatch.setattr(huey_mod.huey, "enqueue", lambda task, **kwargs: DummyEnqueueResult())
-    
+
+    import src.backend.tasks.generation_tasks as gen_tasks_mod
+    monkeypatch.setattr(gen_tasks_mod, "generate_chapter_task", lambda *args, **kwargs: DummyTaskResult())
+
     called = []
 
     class DummyMetrics:

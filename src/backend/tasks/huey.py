@@ -2,8 +2,10 @@
 from __future__ import annotations
 
 import logging
-from src.backend.config import settings
+
 from huey import RedisHuey, SqliteHuey
+
+from src.backend.config import settings
 
 logger = logging.getLogger(__name__)
 

@@ -7,8 +7,7 @@ help:  ## 利用可能ターゲット一覧を表示
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
 
 install:  ## バックエンド依存をインストール
-	py -m pip install -r requirements-dev.txt
-	py -m pip install -e .
+	py -m pip install -e .[dev]
 
 dev: install  ## 開発用インストール (バック + フロント)
 	cd frontend && npm install
@@ -51,5 +50,15 @@ clean:  ## 生成物・キャッシュを削除
 	-rm -f autonovel.db huey.db docs/openapi.json
 	-find . -type d -name __pycache__ -prune -exec rm -rf {} +
 
-verify: lint test openapi frontend-lint frontend-test  ## PR 前のフル検証
+verify: lint test openapi frontend-lint frontend-test coverage  ## PR 前のフル検証
 	@echo "All checks passed."
+
+coverage:  ## カバレッジ計測・レポート生成
+	py -m pytest --cov=src --cov-report=term-missing --cov-report=html
+	cd frontend && npm run test:ci -- --coverage
+
+frontend-coverage:  ## フロントエンドのカバレッジのみ
+	cd frontend && npm run test:ci -- --coverage
+
+backend-coverage:  ## バックエンドのカバレッジのみ
+	py -m pytest --cov=src --cov-report=term-missing --cov-report=html
