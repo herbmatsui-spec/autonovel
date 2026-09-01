@@ -238,9 +238,8 @@ async def get_task_status(task_id: str) -> dict[str, Any]:
     return {"task_id": task_id, "status": "completed", "result": result}
 
 
-# Task cancellation endpoint (Step 69)
 @router.delete("/task/{task_id}")
-async def cancel_task(task_id: str, session=Depends(database.get_db)) -> dict[str, str]:
+async def cancel_task(task_id: str) -> dict[str, str]:
     """タスクをキャンセルまたは削除する。"""
     from src.backend.tasks.huey import huey
 
@@ -251,10 +250,11 @@ async def cancel_task(task_id: str, session=Depends(database.get_db)) -> dict[st
         logger.warning("Failed to revoke huey task_id=%s", task_id)
 
     # DBタスクのステータス更新
-    repo = BookRepository(session)
+    repo = BookRepository()
     repo.update_task_status(task_id, "cancelled")
 
     return {"task_id": task_id, "status": "cancelled"}
+
 
 
 # --- ガチャ / ダイジェスト / 昇格 エンドポイント ---

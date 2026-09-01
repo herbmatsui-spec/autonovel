@@ -184,3 +184,10 @@ class PathNormalizer:
         for pattern, replacement in self._patterns:
             path = pattern.sub(replacement, path)
         return path
+
+
+def reset():
+    """テスト用リセット関数"""
+    from src.backend.observability.health import metrics as h_metrics
+    h_metrics.reset()
+

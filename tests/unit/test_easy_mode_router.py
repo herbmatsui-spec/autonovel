@@ -214,26 +214,14 @@ def test_export_easy_mode_package(monkeypatch, dummy_session):
 
 
 def test_get_task_status_pending(monkeypatch):
-    class DummyHuey:
-
-        @staticmethod
-        def result(task_id):
-            return None
-
-    monkeypatch.setattr(huey_mod, "huey", DummyHuey)
+    monkeypatch.setattr(huey_mod, "result", lambda task_id: None)
     result = asyncio.run(easy_mode.get_task_status("abc123"))
     assert result["status"] == "pending"
     assert result["task_id"] == "abc123"
 
 
 def test_get_task_status_completed(monkeypatch):
-    class DummyHuey:
-
-        @staticmethod
-        def result(task_id):
-            return {"output": "done"}
-
-    monkeypatch.setattr(huey_mod, "huey", DummyHuey)
+    monkeypatch.setattr(huey_mod, "result", lambda task_id: {"output": "done"})
     result = asyncio.run(easy_mode.get_task_status("xyz789"))
     assert result["status"] == "completed"
     assert result["result"] == {"output": "done"}
@@ -241,14 +229,9 @@ def test_get_task_status_completed(monkeypatch):
 
 
 def test_get_task_status_failed(monkeypatch):
-    class DummyHuey:
-
-        @staticmethod
-        def result(task_id):
-            return {"error": "LLM generation timeout", "text": "", "time": 0}
-
-    monkeypatch.setattr(huey_mod, "huey", DummyHuey)
+    monkeypatch.setattr(huey_mod, "result", lambda task_id: {"error": "LLM generation timeout", "text": "", "time": 0})
     result = asyncio.run(easy_mode.get_task_status("err456"))
     assert result["status"] == "failed"
     assert result["error"] == "LLM generation timeout"
     assert result["task_id"] == "err456"
+

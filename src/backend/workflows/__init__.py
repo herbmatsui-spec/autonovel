@@ -1,6 +1,7 @@
 from .base_workflow import BaseWorkflow
 from .chapter_import_workflow import ChapterImportWorkflow
 from .critique_optimization_workflow import CritiqueOptimizationWorkflow
+from .easy_mode_workflow import EasyModeWorkflow
 from .episode_writing_workflow import EpisodeWritingWorkflow
 from .full_auto_workflow import FullAutoWorkflow
 from .logical_audit_workflow import LogicalAuditWorkflow
@@ -15,6 +16,7 @@ __all__ = [
     "BaseWorkflow",
     "ChapterImportWorkflow",
     "CritiqueOptimizationWorkflow",
+    "EasyModeWorkflow",
     "EpisodeWritingWorkflow",
     "FullAutoWorkflow",
     "LogicalAuditWorkflow",
@@ -27,6 +29,7 @@ __all__ = [
 ]
 
 WORKFLOW_REGISTRY = {
+    "easy_mode_workflow": EasyModeWorkflow,
     "full_auto_workflow": FullAutoWorkflow,
     "plan_generation_workflow": PlanGenerationWorkflow,
     "plot_expansion_workflow": PlotExpansionWorkflow,
@@ -38,5 +41,5 @@ WORKFLOW_REGISTRY = {
     "run_logical_audit_workflow": LogicalAuditWorkflow,
     "marketing_generation_workflow": MarketingGenerationWorkflow,
     "refine_erotic_workflow": RefineEroticWorkflow,
-    "retry_failed_episodes_workflow": RetryFailedEpisodesWorkflow,
 }
+

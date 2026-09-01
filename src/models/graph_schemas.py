@@ -32,3 +32,16 @@ class GraphExtractionResult(BaseModel):
     entities: list[Entity] = Field(default_factory=list, description="抽出されたエンティティ一覧")
     relationships: list[Relationship] = Field(default_factory=list, description="抽出された関係性一覧")
     plot_summary: str = Field("", description="この章の1行ダイジェスト要約")
+
+    @classmethod
+    def get_response_format(cls) -> dict[str, Any]:
+        """OpenAI 構造化出力 (Structured Outputs) 用の strict json_schema を生成."""
+        return {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "graph_extraction_result",
+                "strict": True,
+                "schema": cls.model_json_schema(),
+            },
+        }
+

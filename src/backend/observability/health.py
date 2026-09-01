@@ -33,6 +33,9 @@ class _Metrics:
         with self._lock:
             return dict(self._counters)
 
+    def reset(self) -> None:
+        self.reset_for_testing()
+
     def reset_for_testing(self) -> None:
         with self._lock:
             for k in self._counters:
@@ -72,5 +75,10 @@ def build_health_payload() -> dict[str, Any]:
         "status": overall_status,
         "database": db_status,
         "huey": huey_status,
+        "components": {
+            "database": db_status,
+            "queue": huey_status,
+        },
         "metrics": metrics.snapshot(),
     }
+

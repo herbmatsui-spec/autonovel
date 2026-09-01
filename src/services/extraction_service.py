@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 
 from src.backend.logging_config import get_logger
-from src.models.graph_schemas import Entity, GraphExtractionResult
+from src.models.graph_schemas import Entity, GraphExtractionResult, Relationship
 from src.services.llm.base import BaseLLMAdapter
 from src.services.llm.factory import get_llm_adapter
 from src.services.llm.prompts import (
@@ -56,13 +56,7 @@ class ExtractionService:
         )
 
         # Structured Outputs 用のスキーマ定義
-        response_format = {
-            "type": "json_schema",
-            "json_schema": {
-                "name": "graph_extraction_result",
-                "schema": GraphExtractionResult.model_json_schema(),
-            },
-        }
+        response_format = GraphExtractionResult.get_response_format()
 
         try:
             raw_response = self._llm.generate(
@@ -113,6 +107,89 @@ class ExtractionService:
         if text.endswith("```"):
             text = text[:-3]
         return text.strip()
+
+    def resolve_entities(
+        self,
+        extracted: GraphExtractionResult,
+        existing_entity_names: list[str],
+        similarity_threshold: float = 0.85,
+    ) -> GraphExtractionResult:
+        """既存エンティティ名と新規抽出エンティティを照合し、表記揺れ（例: 'アルス' と '勇者アルス'）を既存名に名寄せする."""
+        if not existing_entity_names or not extracted.entities:
+            return extracted
+
+        from src.services.embedding_service import embedding_service
+
+        # 既存エンティティ名のベクトル化キャッシュ
+        existing_vecs = {
+            name: embedding_service.get_embedding(name) for name in existing_entity_names if name.strip()
+        }
+
+        # 新規エンティティ名の置換マップ
+        name_map: dict[str, str] = {}
+        for entity in extracted.entities:
+            if entity.name in existing_vecs:
+                continue  # 完全一致はそのまま
+
+            ent_vec = embedding_service.get_embedding(entity.name)
+            best_match: str | None = None
+            best_sim = 0.0
+
+            for ex_name, ex_vec in existing_vecs.items():
+                # 単純な内包チェック（例: "アルス" in "勇者アルス"）も考慮
+                if entity.name in ex_name or ex_name in entity.name:
+                    best_match = ex_name
+                    break
+
+                # コサイン類似度
+                dot = sum(a * b for a, b in zip(ent_vec, ex_vec))
+                norm_a = sum(a * a for a in ent_vec) ** 0.5
+                norm_b = sum(b * b for b in ex_vec) ** 0.5
+                sim = dot / (norm_a * norm_b) if norm_a and norm_b else 0.0
+
+                if sim > best_sim and sim >= similarity_threshold:
+                    best_sim = sim
+                    best_match = ex_name
+
+            if best_match:
+                logger.info("Entity resolved: '%s' -> '%s' (similarity: %.2f)", entity.name, best_match, best_sim)
+                name_map[entity.name] = best_match
+
+        if not name_map:
+            return extracted
+
+        # エンティティおよびリレーションの名前を置換して統合
+        new_entities = []
+        seen_names = set()
+        for ent in extracted.entities:
+            resolved_name = name_map.get(ent.name, ent.name)
+            if resolved_name not in seen_names:
+                seen_names.add(resolved_name)
+                new_entities.append(
+                    Entity(
+                        name=resolved_name,
+                        type=ent.type,
+                        description=ent.description,
+                        properties=ent.properties,
+                    )
+                )
+
+        new_relationships = []
+        for rel in extracted.relationships:
+            new_relationships.append(
+                Relationship(
+                    source=name_map.get(rel.source, rel.source),
+                    target=name_map.get(rel.target, rel.target),
+                    type=rel.type,
+                    detail=rel.detail,
+                )
+            )
+
+        return GraphExtractionResult(
+            entities=new_entities,
+            relationships=new_relationships,
+            plot_summary=extracted.plot_summary,
+        )
 
     def _heuristic_fallback(self, text: str) -> GraphExtractionResult:
         """LLM呼び出し失敗時やモック環境でのヒューリスティック抽出フォールバック."""

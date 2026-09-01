@@ -32,8 +32,7 @@ from .metrics import (
     update_redis_clients,
 )
 
-from .health import build_health_payload
-from .health import metrics as simple_metrics
+from .health import build_health_payload, metrics
 
 __all__ = [
     "http_requests_total",

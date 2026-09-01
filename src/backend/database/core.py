@@ -302,33 +302,25 @@ class DatabaseManager:
 # ==========================================
 
 
-def init_db(db_path: str):
-    """データベースのマイグレーションを同期的に実行"""
-    from alembic.config import Config
+def init_db(db_path: str = ""):
+    """データベースのマイグレーションまたはテーブル作成を同期的に実行"""
+    import os
 
-    sync_url = DATABASE_URL
+    sync_url = os.environ.get("DATABASE_URL") or DATABASE_URL
     if "sqlite+aiosqlite" in sync_url:
         sync_url = sync_url.replace("sqlite+aiosqlite://", "sqlite://")
     elif "postgresql+asyncpg" in sync_url:
         sync_url = sync_url.replace("postgresql+asyncpg://", "postgresql://")
 
-    ini_path = BASE_DIR / "alembic.ini"
-    logger.debug("init_db alembic ini_path=%s exists=%s", ini_path, ini_path.exists())
-    alembic_cfg = Config(str(ini_path))
-    alembic_cfg.set_main_option("sqlalchemy.url", sync_url)
-    # テスト環境などの一時的なDBでは、マイグレーションではなくBase.metadata.create_allで
-    # 最新のスキーマを強制的に作成することで、不整合を防ぐ
-    from sqlalchemy import create_engine
+    from src.infrastructure.database.models import Base
+    import src.infrastructure.database.models  # noqa
+    import src.backend.database.models  # noqa
 
-    from src.backend.database.models import Base
+    engine_obj = create_engine(sync_url)
+    Base.metadata.create_all(engine_obj)
 
-    # sync_url を使用して同期的なエンジンを作成し、テーブルを作成
-    engine = create_engine(sync_url)
-    Base.metadata.create_all(engine)
 
-    # 本来のマイグレーションも実行したい場合は以下を有効にするが、
-    # create_all の後は不整合が起きる可能性があるため、ここでは create_all を優先する
-    # command.upgrade(alembic_cfg, "head")
+
 
 
 def get_db_manager() -> DatabaseManager:
@@ -342,20 +334,34 @@ _sync_engine = None
 _sync_session_factory = None
 
 
-def get_sync_db_manager():
-    """同期的なDB操作用のエンジンとセッションファクトリを取得する"""
+def _get_sync_engine_and_factory():
     global _sync_engine, _sync_session_factory
     if _sync_engine is None:
-        from config import DATABASE_URL
-
         sync_url = DATABASE_URL
         if "sqlite+aiosqlite" in sync_url:
-            sync_url = sync_url.replace("sqlite+aiosqlite:///", "sqlite:///")
+            sync_url = sync_url.replace("sqlite+aiosqlite://", "sqlite://")
         elif "postgresql+asyncpg" in sync_url:
             sync_url = sync_url.replace("postgresql+asyncpg://", "postgresql://")
         _sync_engine = create_engine(sync_url)
         _sync_session_factory = sessionmaker(bind=_sync_engine, expire_on_commit=False)
-    return _sync_session_factory
+    return _sync_engine, _sync_session_factory
+
+
+class _SessionLocalProxy:
+    def __call__(self, *args, **kwargs):
+        _, factory = _get_sync_engine_and_factory()
+        return factory(*args, **kwargs)
+
+
+class _EngineProxy:
+    def __getattr__(self, name):
+        eng, _ = _get_sync_engine_and_factory()
+        return getattr(eng, name)
+
+
+SessionLocal = _SessionLocalProxy()
+engine = _EngineProxy()
+
 
 
 def set_db_manager(manager: Optional[DatabaseManager]) -> None:

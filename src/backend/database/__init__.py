@@ -4,7 +4,7 @@ from __future__ import annotations
 database/__init__.py - データベースパッケージのパブリックインターフェース（後方互換性保証用Facade）
 """
 # 既存ファイルが database からモデルを間接インポートしているため、モデルも再エクスポートする
-from src.models import (
+from .models import (
     BibleDbModel,
     BookDbModel,
     BranchDbModel,
@@ -15,9 +15,12 @@ from src.models import (
     WorldBible,
 )
 
+
 from .core import (
     DatabaseManager,
+    SessionLocal,
     WorkspaceManager,
+    engine,
     get_db_manager,
     init_db,
     retry_with_logging,
@@ -34,7 +37,19 @@ def get_db():
     try:
         yield session
     finally:
-        session.close()
+        import inspect
+        if inspect.iscoroutinefunction(getattr(session, "close", None)):
+            pass
+        elif hasattr(session, "close"):
+            session.close()
+
+
+async def get_uow():
+    """FastAPI Depends 用の UnitOfWork プロバイダ。"""
+    mgr = get_db_manager()
+    async with UnitOfWork(mgr) as uow:
+        yield uow
+
 
 
 __all__ = [

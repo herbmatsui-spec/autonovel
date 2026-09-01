@@ -91,7 +91,12 @@ class GraphPipelineService:
             return {"entities": 0, "relationships": 0}
 
         # 1. LLM 抽出
-        extraction = extraction_service.extract_graph_from_text(chapter_text)
+        raw_extraction = extraction_service.extract_graph_from_text(chapter_text)
+
+        # 既存エンティティ名との名寄せ（Entity Resolution）
+        existing_nodes = age_client.get_all_nodes(session) if settings.DATABASE_URL.startswith("postgresql") else []
+        existing_names = [n.get("name", "") for n in existing_nodes if isinstance(n, dict) and n.get("name")]
+        extraction = extraction_service.resolve_entities(raw_extraction, existing_names)
 
         entities_count = 0
         relationships_count = 0

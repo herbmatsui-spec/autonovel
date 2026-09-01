@@ -19,11 +19,7 @@ from sqlalchemy import (
     func,
     text,
 )
-from sqlalchemy.orm import DeclarativeBase
-
-
-class Base(DeclarativeBase):
-    pass
+from src.infrastructure.database.models.base_orm import Base
 
 
 # Engine event listener for SQLite WAL mode (applied in core.py via DatabaseManager)
@@ -71,6 +67,21 @@ class Branch(Base):
     created_at = Column(DateTime, server_default=func.now())
 
 
+from datetime import datetime
+from sqlalchemy.types import TypeDecorator
+
+
+class SafeDateTime(TypeDecorator):
+    """datetime または unix timestamp (int/float) の両方を受け付けるカラム型"""
+    impl = DateTime
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        if isinstance(value, (int, float)):
+            return datetime.fromtimestamp(value)
+        return value
+
+
 class Bible(Base):
     __tablename__ = "bibles"
 
@@ -79,6 +90,7 @@ class Bible(Base):
     settings = Column(Text, default="")
     revealed = Column(Text, default="")
     version = Column(Integer, default=1)
+    created_at = Column(SafeDateTime, server_default=func.now())
     last_updated = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
 
@@ -107,6 +119,7 @@ class Plot(Base):
     thought_process = Column(Text, default="")
     title = Column(String(200))
     summary = Column(Text)
+    one_line_summary = Column(Text, default="")
     detailed_blueprint = Column(Text, default="")
     tension = Column(Integer, default=50)
     tension_delta = Column(Integer, default=0)
@@ -166,6 +179,7 @@ class Chapter(Base):
     created_at = Column(DateTime, server_default=func.now())
     tension_delta = Column(Integer, default=0)
     qol_delta = Column(Integer, default=0)
+    is_anchor = Column(Boolean, default=False)
 
     __table_args__ = (
         UniqueConstraint("book_id", "branch_id", "ep_num", name="uq_chapters_book_branch_ep"),
@@ -179,6 +193,8 @@ class Character(Base):
     book_id = Column(Integer, ForeignKey("books.id", ondelete="CASCADE"), nullable=False)
     name = Column(String(100))
     role = Column(String(50))
+    personality = Column(String(500), default="")
+    ability = Column(String(500), default="")
     registry_data = Column(Text)
 
 
@@ -513,3 +529,15 @@ class Illustration(Base):
         Index("idx_illustrations_book_id", "book_id"),
         Index("idx_illustrations_book_type", "book_id", "illustration_type"),
     )
+
+
+# 後方互換性用エイリアス
+BibleDbModel = Bible
+BookDbModel = Book
+BranchDbModel = Branch
+ChapterDbModel = Chapter
+CharacterDbModel = Character
+PlotDbModel = Plot
+PromptVersionDbModel = PromptVersion
+WorldBible = Bible
+

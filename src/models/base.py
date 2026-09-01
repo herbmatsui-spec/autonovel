@@ -5,13 +5,7 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, Literal, Optional, Tuple
 
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy.orm import DeclarativeBase
-
-
-class Base(DeclarativeBase):
-    """SQLAlchemy 宣言的マッピング基底クラス。"""
-
-    pass
+from src.infrastructure.database.models.base_orm import Base
 
 from src.core.exceptions import EngineError  # noqa: F401 - backward compat re-export
 
