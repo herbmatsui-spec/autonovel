@@ -1,0 +1,26 @@
+---
+name: memory_pruning
+version: "1.0.0"
+description: "Memory Pruning template"
+variables: [latest_summary, latest_content_slice, current_ws_json]
+---
+あなたは物語の長期記憶管理者です。最新エピソードの内容に基づいて、物語の記憶（WorldState）を統合・圧縮（忘却）してください。
+
+【最新エピソード要約】
+{{ latest_summary }}
+
+【最新エピソード本文（冒頭と結末のみ抽出）】
+{{ latest_content_slice }}
+
+【現在の記憶（WorldState）】
+{{ current_ws_json }}
+
+【更新・圧縮指示】
+1. `cumulative_summary` (累積あらすじ): 最新エピソードの重要な進展を取り込みつつ、全体で800文字以内に極限まで濃縮・要約してください。すでに解決した古い事件の詳細記述は切り捨ててください。
+2. `story_threads` (伏線元帳): 最新エピソードで解決・進展した伏線について、statusを更新してください。
+   - 完全に解決した伏線: 'Closed'
+   - 当面展開されない、または一時的に棚上げされた伏線: 'Dormant'
+   - 継続中のアクティブな伏線: 'Active'
+3. `character_states` (キャラクター状態): 最新エピソードの描写を反映して状態を更新してください。（例: 主人公: 通常 -> 負傷, 敵A: 死亡、など）
+4. `new_facts` & `revealed_mysteries`: 必要に応じて追加・整理してください。
+※注意: 絶対に破らない行動原則やキャラクターの不変属性（不変設定）は変更しないでください。

@@ -1,0 +1,7 @@
+{% if matched_mps %}
+【参考にする名文表現（ポジティブ・ガイダンス）】
+{% for content_ex in matched_mps[:3] -%}
+・{{ content_ex }}
+{% endfor %}
+※上記の表現例を参考に、陳腐な表現を避け、読者を惹きつける具体的な描写（Show, Don't Tell）を試みてください。
+{% endif %}

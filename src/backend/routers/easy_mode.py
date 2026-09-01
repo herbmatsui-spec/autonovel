@@ -255,3 +255,40 @@ async def cancel_task(task_id: str, session=Depends(database.get_db)) -> dict[st
     repo.update_task_status(task_id, "cancelled")
 
     return {"task_id": task_id, "status": "cancelled"}
+
+
+# --- ガチャ / ダイジェスト / 昇格 エンドポイント ---
+
+from src.models.easy_mode_schemas import (
+    GachaRequest,
+    GachaResponse,
+    DigestRequest,
+    DigestResponse,
+    PromotionRequest,
+    PromotionResponse,
+)
+from src.services.gacha_service import GachaService
+from src.services.digest_service import DigestService
+from src.services.promotion_service import PromotionService
+
+
+@router.post("/gacha", response_model=GachaResponse)
+async def gacha_endpoint(req: GachaRequest) -> GachaResponse:
+    """3案ガチャ企画生成"""
+    svc = GachaService()
+    return await svc.generate_plans(req)
+
+
+@router.post("/digest", response_model=DigestResponse)
+async def digest_endpoint(req: DigestRequest) -> DigestResponse:
+    """ダイジェスト生成"""
+    svc = DigestService()
+    return await svc.create_digest(req)
+
+
+@router.post("/promote", response_model=PromotionResponse)
+async def promote_endpoint(req: PromotionRequest) -> PromotionResponse:
+    """上級者モード昇格"""
+    svc = PromotionService()
+    return await svc.promote_book(req)
+

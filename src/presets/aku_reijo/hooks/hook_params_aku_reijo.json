@@ -1,0 +1,41 @@
+{
+  "genre": "aku_reijo",
+  "description": "悪役令嬢・断罪回避・逆転劇ジャンル専用フック戦略パラメータ",
+  "opening_patterns": [
+    {
+      "name": "condemnation_flashback",
+      "template": "「{{villainess_name}}、貴女との婚約を破棄する！」\n王子のその声が、舞踏室に冷たく響いた瞬間——\n{{villainess_name}}は、思い出した。\nこれは、前世でプレイした乙女ゲーム『{{game_title}}』の、《悪役令嬢断罪ルート》の冒頭シーンだと。",
+      "variables": ["villainess_name", "game_title"],
+      "effect": "断罪宣言という定型フックから即スタート。前世記憶・ゲーム世界という前提を3行で提示。"
+    },
+    {
+      "name": "reincarnation_realization",
+      "template": "目が覚めれば、そこは『悪役令嬢』の体だった。\n{{villainess_name}}・{{age}}歳。\n待っているのは、半年後に迫る《断罪イベント》——そして、それに続く《没落・追放・修道院送り》のバッドエンドのみ。\n「笑わせないでよね、私の人生は、私が決めるから」",
+      "variables": ["villainess_name", "age"],
+      "effect": "転生即断罪フラグ認識。主人公の強い意志宣言で『やり直し・抗い』のテーマ提示。"
+    }
+  ],
+  "closing_patterns": [
+    {
+      "name": "avoidance_success",
+      "template": "「……えっ？」\n王子の顔から、勝ち誇った色が消える。\n{{villainess_name}}が差し出したのは、断罪を覆す《決定的証拠》——あるいは《圧倒的な実力》だった。\n「婚約破棄？　ごめんなさい、もう《破棄》されたのは、貴方の方よ」\n\n——次話、『{{next_ep_title}}』",
+      "variables": ["villainess_name", "next_ep_title"],
+      "effect": "断罪回避の瞬間を爽快に描写。主人公の優位性・機転を強調。セリフで完全勝利を宣言。"
+    },
+    {
+      "name": "hidden_power_reveal",
+      "template": "「{{villainess_name}}様……その魔力、《{{true_power}}》では？」\n周囲の空気が、凍りつく。\n{{villainess_name}}は、静かに微笑んだ。\n「あら、気づいちゃった？　でも、もう遅いわよ」\n\n——次話、『{{next_ep_title}}』",
+      "variables": ["villainess_name", "true_power", "next_ep_title"],
+      "effect": "隠していた真の力（チート）がバレる瞬間。余裕の微笑みで『まだ底がある』を示唆。"
+    }
+  ],
+  "cliffhanger_templates": [
+    "——その夜、{{villainess_name}}の部屋に、《隠しキャラ》が忍び込んだ。",
+    "——ゲームには存在しない《新規イベント》が発生した。\n『{{new_event_name}}』——その選択肢に、正解はない。",
+    "——王子の裏で糸を引いていた《真の黒幕》が、ついに動き出した。"
+  ],
+  "hook_intensity": 0.85,
+  "cliffhanger_frequency": 1.0,
+  "opening_hook_length_lines": 3,
+  "closing_hook_length_lines": 5
+}

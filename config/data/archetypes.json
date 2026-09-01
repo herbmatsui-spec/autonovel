@@ -1,0 +1,1051 @@
+{
+  "TREND_TITLE_PATTERNS": [
+    "【悲報】〜な俺、実は〜だった件",
+    "追放された〜が実は〜で、今さら戻ってこいと言われてももう遅い",
+    "無能と言われた〜、実は〜がカンストしていた。気づいた時には世界最強",
+    "〜の〜、実は〜。〜して〜する物語",
+    "〜な俺、実は世界で唯一の〜使い。〜を〜して〜無双する"
+  ],
+  "PLOT_STRUCTURES": {
+    "exile_rise": {
+      "name": "追放→成り上がり（王道ざまぁ）",
+      "hook": "不当な追放と屈辱",
+      "mid_crisis": "旧勢力の妨害と拮抗",
+      "climax_type": "圧倒的逆転と断罪",
+      "ending": "社会的成功と完全な立場逆転",
+      "key_tropes": ["ざまぁ", "断罪", "成り上がり"]
+    },
+    "peerless_reincarnation": {
+      "name": "無双転生（規格外覚醒）",
+      "hook": "前世の知識と規格外ステータスの自覚",
+      "mid_crisis": "力の制御と周囲の過剰評価によるトラブル",
+      "climax_type": "敵対勢力（魔王軍など）の主力の一撃粉砕",
+      "ending": "英雄としての認知と新生活の確立",
+      "key_tropes": ["無双", "転生", "規格外"]
+    },
+    "avenger_dark": {
+      "name": "復讐のダークヒーロー（闇の粛清）",
+      "hook": "裏切りによる全て（仲間・名誉）の喪失",
+      "mid_crisis": "冷酷な復讐劇と、立ちはだかる「偽りの正義」",
+      "climax_type": "仇敵の完全な精神的・物理的崩壊",
+      "ending": "目的を遂げた暗闇への旅立ち",
+      "key_tropes": ["復讐", "ダークヒーロー", "因果応報"]
+    },
+    "bottom_up_growth": {
+      "name": "最弱から最強へ（泥臭い努力）",
+      "hook": "才能ゼロと評された絶望のスタート",
+      "mid_crisis": "泥臭い修行と強敵との限界突破バトル",
+      "climax_type": "階級や才能の壁を打ち破る大金星",
+      "ending": "「最強」の称号と仲間からの絶大な信頼",
+      "key_tropes": ["努力", "下克上", "限界突破"]
+    },
+    "master_disciple": {
+      "name": "隠居師匠の再始動（伝説の再来）",
+      "hook": "かつて世界を救った英雄の静かな隠居",
+      "mid_crisis": "才能ある弟子との出会いと、再び迫る世界の危機",
+      "climax_type": "弟子の成長と、師匠の「本気」の力の解放",
+      "ending": "次世代への継承と、新たな伝説の始まり",
+      "key_tropes": ["師匠", "実力隠し", "世代交代"]
+    },
+    "secret_identity": {
+      "name": "能ある鷹は爪を隠す（実力隠蔽）",
+      "hook": "凡人を装う超実力者としての日常",
+      "mid_crisis": "正体がバレそうになる緊迫感と身近な危機",
+      "climax_type": "誰も勝てない絶望的状況での「正体表白」と無双",
+      "ending": "正体を知った一部の仲間との新たな秘密の共有",
+      "key_tropes": ["実力隠し", "能ある鷹", "正体表白"]
+    },
+    "dungeon_conqueror": {
+      "name": "ダンジョン攻略記（深層の真実）",
+      "hook": "未踏破の超難関ダンジョンへの挑戦開始",
+      "mid_crisis": "未知の罠、凶悪なボス、ライバルギルドの裏切り",
+      "climax_type": "最深部における「世界の真実」を守るボスとの死闘",
+      "ending": "伝説の遺物の獲得とギルドの殿堂入り",
+      "key_tropes": ["ダンジョン", "ハクスラ", "世界の真実"]
+    },
+    "guild_rebuilder": {
+      "name": "落ちこぼれギルドの再興（零細から躍進）",
+      "hook": "借金まみれで解散寸前の弱小ギルドの引き継ぎ",
+      "mid_crisis": "大手ギルドからの理不尽な買収工作と人材不足",
+      "climax_type": "ギルド対抗戦または大型クエストでの大逆転勝利",
+      "ending": "地域No.1ギルドへの成長と強固な絆の獲得",
+      "key_tropes": ["ギルド運営", "組織再建", "大逆転"]
+    },
+    "summon_hero_betrayal": {
+      "name": "召喚勇者の反逆（理不尽脱却）",
+      "hook": "異世界召喚されたが、無能と判定され捨てられる",
+      "mid_crisis": "魔境サバイバルと、召喚した王国の卑劣な陰謀の察知",
+      "climax_type": "王国と魔王軍の双方を出し抜く第三勢力としての君臨",
+      "ending": "理不尽な世界システムからの脱却と真の自由",
+      "key_tropes": ["召喚", "人間不信", "第三勢力"]
+    },
+    "tournament_champion": {
+      "name": "武闘大会無双（最強の証明）",
+      "hook": "天下分け目の大武闘会の開幕と、無名としての参戦",
+      "mid_crisis": "卑怯な工作を行う本命候補や、宿命のライバルとの激突",
+      "climax_type": "満員の観客の前での、最強の王者との極限バトル",
+      "ending": "大会優勝と、世界中への名声の轟き",
+      "key_tropes": ["トーナメント", "ライバル", "頂上決戦"]
+    },
+    "slow_life": {
+      "name": "スローライフ（ほのぼの飯テロ）",
+      "hook": "穏やかな日常の始まりと辺境新生活",
+      "mid_crisis": "軽いトラブル（魔物の迷い込み等）と優しい解決",
+      "climax_type": "大きな発見や特産品によるコミュニティの深化",
+      "ending": "静かな充実感と日常への回帰",
+      "key_tropes": ["飯テロ", "のんびり最強", "田舎暮らし"]
+    },
+    "gourmet_conqueror": {
+      "name": "美食開拓（異世界飯テロ）",
+      "hook": "食文化の乏しい異世界で、現代知識による料理の再現",
+      "mid_crisis": "食材の入手困難や、既存の権威ある料理人からの嫉妬",
+      "climax_type": "国王や大貴族を唸らせる「至高の一皿」の披露",
+      "ending": "伝説の料理人としての店の大繁盛",
+      "key_tropes": ["グルメ", "料理", "胃袋掌握"]
+    },
+    "territory_management": {
+      "name": "ホワイト領地経営（僻地開発）",
+      "hook": "貧困を極める不毛な僻地への領主としての赴任",
+      "mid_crisis": "飢饉、隣国の小競り合い、既得権益の反発",
+      "climax_type": "科学・魔法技術を統合した大インフラ改革の成功",
+      "ending": "誰もが憧れる豊かで平和な先進都市の完成",
+      "key_tropes": ["内政", "領地経営", "技術革新"]
+    },
+    "alchemy_workshop": {
+      "name": "万能錬金術師の工房（特需創出）",
+      "hook": "独自の錬金術でひっそりとアトリエを開業",
+      "mid_crisis": "粗悪な偽物の流通や、悪徳商会からの圧力",
+      "climax_type": "流行病や戦争を防ぐ「奇跡の薬」の超短期大量錬成",
+      "ending": "国家公認の錬金術師としての名声と穏やかな経営",
+      "key_tropes": ["錬金術", "ものづくり", "工房経営"]
+    },
+    "pet_tamer": {
+      "name": "もふもふ聖獣飼育記（ペット溺愛）",
+      "hook": "規格外の「テイム」能力の覚醒と、最初の聖獣との出会い",
+      "mid_crisis": "聖獣を狙う密猟組織や、凶暴化した魔獣の襲来",
+      "climax_type": "心を通わせた聖獣たちとの共闘による危機の回避",
+      "ending": "賑やかで愛らしいもふもふパラダイスの完成",
+      "key_tropes": ["テイマー", "聖獣", "もふもふ"]
+    },
+    "craftsman_legend": {
+      "name": "魔導具職人のこだわり（名工誕生）",
+      "hook": "どんな物でも修復・改造できる職人としての独立",
+      "mid_crisis": "失われた伝説の遺物の修復依頼と、それを狙う組織",
+      "climax_type": "命がけの作業と、遺物の真の機能の覚醒",
+      "ending": "歴史を塗り替える至高の名工としての確立",
+      "key_tropes": ["職人", "魔導具", "遺物修復"]
+    },
+    "modern_knowledge": {
+      "name": "現代知識による産業革命（文明開化）",
+      "hook": "紙、砂糖、ガラス等、現代の知識による新技術の開発",
+      "mid_crisis": "技術の盗用や、古い商業ギルドからの妨害工作",
+      "climax_type": "国際見本市や王室コンペでの圧倒的勝利",
+      "ending": "異世界の産業構造を塗り替える大企業の創設",
+      "key_tropes": ["現代知識", "文明無双", "商会無双"]
+    },
+    "villainess_destruction_avoid": {
+      "name": "悪役令嬢の破滅回避（フラグ破壊）",
+      "hook": "乙女ゲームの悪役令嬢への転生と、破滅フラグの自覚",
+      "mid_crisis": "ヒロインや攻略対象たちとのすれ違いと、シナリオの強制力",
+      "climax_type": "断罪イベントでの華麗な身の潔白の証明と逆転",
+      "ending": "望んでいた平穏（または真の恋）の獲得",
+      "key_tropes": ["悪役令嬢", "破滅フラグ", "断罪回避"]
+    },
+    "contract_marriage": {
+      "name": "契約結婚の真実（不器用な二人の愛）",
+      "hook": "利害一致による、愛のない契約結婚の締結",
+      "mid_crisis": "周囲の詮索、元婚約者の嫌がらせ、不器用な距離感",
+      "climax_type": "どちらか一方の危機を、もう一方が全力で救う事件",
+      "ending": "契約を超えた、本物の夫婦としての結ばれ",
+      "key_tropes": ["契約結婚", "すれ違い", "純愛"]
+    },
+    "doted_saint": {
+      "name": "不遇な聖女の溺愛（立場逆転 of 愛）",
+      "hook": "偽聖女として虐げられ、国から追放される",
+      "mid_crisis": "隣国の冷徹な皇帝に拾われるが、最初は警戒される日常",
+      "climax_type": "主人公の真の聖なる力が開花し、国や人々を救う",
+      "ending": "皇帝からの無自覚な甘い溺愛と、前国の崩壊",
+      "key_tropes": ["聖女", "追放", "溺愛"]
+    },
+    "academy_cinderella": {
+      "name": "学園シンデレラ（身分差の恋）",
+      "hook": "貴族だらけのエリート学園に入学した特待生の庶民",
+      "mid_crisis": "学内のカーストによるいじめと、孤高のプリンスとの接近",
+      "climax_type": "舞踏会や学園の危機における、見事な知性と気品の証明",
+      "ending": "身分差の壁を壊し、公認のカップルへ",
+      "key_tropes": ["学園", "シンデレラ", "格差恋愛"]
+    },
+    "love_comedy_density": {
+      "name": "じれじれ両片想い（尊さ最大）",
+      "hook": "近すぎる距離感の幼馴染や同僚との、進まない関係",
+      "mid_crisis": "魅力的なライバルの出現と、お互いの配置換え・焦燥感",
+      "climax_type": "勘違いの解消と、劇的な場所での告白",
+      "ending": "恥ずかしがりながらも幸せいっぱいの交際開始",
+      "key_tropes": ["ラブコメ", "両片想い", "幼馴染"]
+    },
+    "death_loop": {
+      "name": "死に戻り（絶望と執念）",
+      "hook": "圧倒的な理不尽な死とループ現象の発覚",
+      "mid_crisis": "繰り返しの中での情報収集と精神の摩耗",
+      "climax_type": "すべてのピースが繋がる「唯一の正解ルート」の発見",
+      "ending": "ループからの完全な脱出と救済",
+      "key_tropes": ["ループ", "絶望からの逆転", "知識の蓄積"]
+    },
+    "vr_streamer": {
+      "name": "異世界VR配信（ネットバズ無双）",
+      "hook": "新作VRゲームの開始と、趣味の配信活動の開始",
+      "mid_crisis": "ユニークスキルの獲得による炎上騒ぎや、悪質ギルドの妨害",
+      "climax_type": "公式大会やレイドボス戦での神懸かりプレイでの大バズり",
+      "ending": "同接100万人超えのトップ配信者への君臨",
+      "key_tropes": ["VRMMO", "ライブ配信", "バズり"]
+    },
+    "brain_battle": {
+      "name": "頭脳戦デスゲーム（心理ブラフ）",
+      "hook": "命がけの知略ゲームへの強制参加",
+      "mid_crisis": "裏切り者だらけの心理戦と、一歩間違えれば即死の極限状況",
+      "climax_type": "相手の裏の裏をかく、壮大なブラフによるチェックメイト",
+      "ending": "ゲームの支配者（運営）への宣戦布告と生還",
+      "key_tropes": ["デスゲーム", "心理戦", "ブラフ"]
+    },
+    "detective_mystery": {
+      "name": "異世界ミステリー（論理の勝利）",
+      "hook": "不可解な密室殺人事件や怪奇事件の発生",
+      "mid_crisis": "容疑者たちの嘘、第二の犠牲者、引導",
+      "climax_type": "全員を集めた解決編での完璧な論理展開による犯人特定",
+      "ending": "事件の裏にある悲しい真相の解決と、探偵としての名声",
+      "key_tropes": ["探偵", "ミステリー", "謎解き"]
+    },
+    "army_rational": {
+      "name": "鉄血の軍事戦略（合理的勝利）",
+      "hook": "劣勢の戦場への若き指揮官としての参戦",
+      "mid_crisis": "無能な上層部の命令、圧倒的物量の敵軍、味方の精神崩壊",
+      "climax_type": "地形と心理を計算し尽くした「奇策」による大勝利",
+      "ending": "英雄としての昇進と、次の戦場への警戒",
+      "key_tropes": ["知略", "ミリタリー", "合理的思考"]
+    },
+    "shadow_organization": {
+      "name": "影の結社プレイ（勘違い覇権）",
+      "hook": "「闇の組織」の設定を冗談で作ったら、現実化する",
+      "mid_crisis": "主人公の適当な発言を部下が超解釈し、世界の巨悪と衝突",
+      "climax_type": "勘違いが積み重なった結果、主人公がクールに大ボス撃破",
+      "ending": "組織の覇権がさらに広がり、本人は内心焦る日常",
+      "key_tropes": ["勘違い", "影の支配者", "黒幕"]
+    },
+    "onmyo_exorcism": {
+      "name": "最強陰陽師（現代怪異退治）",
+      "hook": "現代に蔓延る怪異を祓う、隠れた最強陰陽師の暗躍",
+      "mid_crisis": "巨大な怨霊の目覚めと、一般人（ヒロイン等）への迫る危機",
+      "climax_type": "呪歌詠唱と式神を駆使した、壮絶な結界大決戦",
+      "ending": "怪異の鎮滅と、いつもの平穏な日常への回帰",
+      "key_tropes": ["陰陽師", "現代怪異", "式神無双"]
+    },
+    "space_odyssey": {
+      "name": "宇宙船サバイバル（極限開拓）",
+      "hook": "未知の惑星への不時着と、宇宙船AIとの孤独な生活",
+      "mid_crisis": "酸素や資源の枯渇、荒野、通信不能の絶望",
+      "climax_type": "船の修復と、惑星の危機（火山の噴火など）からの大脱出",
+      "ending": "母星への通信回線の回復と、新たな宇宙の旅路へ",
+      "key_tropes": ["SF", "サバイバル", "AI相棒"]
+    },
+    "reincarnation_cheat": {
+      "name": "転生チート（ステータス無双）",
+      "hook": "転生と隠されたステータス覚醒",
+      "mid_crisis": "隠された真の力を発揮する場面",
+      "climax_type": "真の力の完全解放と認知",
+      "ending": "世界に認められた新たな立場の確立",
+      "key_tropes": ["無自覚無双", "ステータス偽装", "スキル強奪"]
+    }
+  },
+  "ARCHETYPE_ENGINES": {
+    "conflict": {
+      "name": "外部圧搾エンジン (Conflict)",
+      "desc": "ストレスとカタルシスの循環。覇権、ざまぁ、絶望系。",
+      "icon": "⚔️"
+    },
+    "comfort": {
+      "name": "内部充足エンジン (Comfort) 🍲",
+      "desc": "「発見」と「充足」のループ。圧倒的な技術的深度、社会的承認、そして外界から守られた『聖域』での至高の日常体験。",
+      "icon": "🍲"
+    },
+    "connection": {
+      "name": "関係距離エンジン (Connection)",
+      "desc": "距離感と絆。恋愛、相棒、家族愛系。",
+      "icon": "💖"
+    },
+    "enigma": {
+      "name": "知略・謎解きエンジン (Enigma)",
+      "desc": "情報非対称と伏線。ミステリー、SF、頭脳戦系。",
+      "icon": "🌌"
+    }
+  },
+  "DEFAULT_ARCHETYPE_KEY": "王道ざまぁ（爽快感最大）",
+  "STORY_ARCHETYPES": {
+    "カスタム": {},
+    "王道ざまぁ（爽快感最大）": {
+      "genre": "ファンタジー",
+      "keywords": "追放, チート, ざまあら, 成り上がり",
+      "plot_pattern": "exile_rise",
+      "cheat_scale": 5,
+      "growth_curve": "最初からカンスト(無双)",
+      "system_assist": 90,
+      "reality_cost": 20,
+      "cost_severity": 1,
+      "style_key": "style_web_standard",
+      "default_target_eps": 50,
+      "default_word_count": 2500,
+      "stress_threshold": 85,
+      "stress_gain": 2.5
+    },
+    "本格戦記（泥臭い逆転）": {
+      "genre": "ファンタジー",
+      "keywords": "戦記, 兵法, 泥臭い, 逆転",
+      "cheat_scale": 2,
+      "growth_curve": "徐々に成長(王道)",
+      "system_assist": 30,
+      "reality_cost": 80,
+      "cost_severity": 4,
+      "style_key": "style_military_rational",
+      "default_target_eps": 80,
+      "default_word_count": 3000,
+      "stress_threshold": 70,
+      "stress_gain": 1.5
+    },
+    "死に戻り（絶望と執念）": {
+      "genre": "ファンタジー",
+      "keywords": "ループ, 死に戻り, 絶望, 執念",
+      "cheat_scale": 3,
+      "growth_curve": "条件付き最強(ピーキー)",
+      "system_assist": 50,
+      "reality_cost": 60,
+      "cost_severity": 5,
+      "style_key": "style_psychological_loop",
+      "default_target_eps": 60,
+      "default_word_count": 2800,
+      "stress_threshold": 95,
+      "stress_gain": 4.0
+    },
+    "ほのぼの飯テロ（ストレス皆無）": {
+      "genre": "ファンタジー",
+      "keywords": "スローライフ, 飯テロ, 料理, 癒やし",
+      "plot_pattern": "slow_life",
+      "cheat_scale": 4,
+      "growth_curve": "最初からカンスト(無双)",
+      "system_assist": 100,
+      "reality_cost": 10,
+      "cost_severity": 0,
+      "style_key": "style_bookworm_daily",
+      "default_target_eps": 30,
+      "default_word_count": 1500,
+      "stress_threshold": 25,
+      "stress_gain": 0.2
+    },
+    "悪役令嬢の逆転劇": {
+      "genre": "恋愛",
+      "keywords": "悪役令嬢, 婚約破棄, ざまぁ, 転生",
+      "plot_pattern": "reincarnation_cheat",
+      "cheat_scale": 3,
+      "growth_curve": "徐々に成長(王道)",
+      "system_assist": 60,
+      "reality_cost": 40,
+      "cost_severity": 2,
+      "style_key": "style_villainess_elegant",
+      "default_target_eps": 40,
+      "default_word_count": 2000,
+      "stress_threshold": 65,
+      "stress_gain": 1.2
+    },
+    "勘違い爆走（爆速伝説化）": {
+      "plot_pattern": "reincarnation_cheat",
+      "cheat_scale": 4,
+      "growth_curve": "最初からカンスト(無双)",
+      "system_assist": 80,
+      "reality_cost": 20,
+      "cost_severity": 0,
+      "style_key": "style_light_fun",
+      "default_target_eps": 50,
+      "default_word_count": 2500,
+      "stress_threshold": 80,
+      "stress_gain": 2.0
+    },
+    "最強テイマー（もふもふ無双）": {
+      "plot_pattern": "slow_life",
+      "cheat_scale": 4,
+      "growth_curve": "徐々に成長(王道)",
+      "system_assist": 70,
+      "reality_cost": 10,
+      "cost_severity": 1,
+      "style_key": "style_bookworm_daily",
+      "default_target_eps": 35,
+      "default_word_count": 1800,
+      "stress_threshold": 30,
+      "stress_gain": 0.4
+    },
+    "万能錬金術師（商会成り上がり）": {
+      "plot_pattern": "exile_rise",
+      "cheat_scale": 3,
+      "growth_curve": "徐々に成長(王道)",
+      "system_assist": 60,
+      "reality_cost": 30,
+      "cost_severity": 1,
+      "style_key": "style_web_standard",
+      "default_target_eps": 55,
+      "default_word_count": 2600,
+      "stress_threshold": 75,
+      "stress_gain": 1.5
+    },
+    "現代知識チート（文明無双）": {
+      "plot_pattern": "reincarnation_cheat",
+      "cheat_scale": 3,
+      "growth_curve": "最初からカンスト(無双)",
+      "system_assist": 50,
+      "reality_cost": 40,
+      "cost_severity": 0,
+      "style_key": "style_web_standard",
+      "default_target_eps": 60,
+      "default_word_count": 2700,
+      "stress_threshold": 70,
+      "stress_gain": 1.2
+    },
+    "絶品料理人（美食無双）": {
+      "plot_pattern": "slow_life",
+      "cheat_scale": 4,
+      "growth_curve": "最初からカンスト(無双)",
+      "system_assist": 80,
+      "reality_cost": 10,
+      "cost_severity": 0,
+      "style_key": "style_bookworm_daily",
+      "default_target_eps": 30,
+      "default_word_count": 1600,
+      "stress_threshold": 25,
+      "stress_gain": 0.2
+    },
+    "爆笑冒険譚（コメディ最大）": {
+      "plot_pattern": "reincarnation_cheat",
+      "cheat_scale": 3,
+      "growth_curve": "最初からカンスト(無双)",
+      "system_assist": 40,
+      "reality_cost": 10,
+      "cost_severity": 0,
+      "style_key": "style_comedy_speed",
+      "default_target_eps": 40,
+      "default_word_count": 1800,
+      "stress_threshold": 40,
+      "stress_gain": 0.5
+    },
+    "異世界配信者（バズり無双）": {
+      "plot_pattern": "reincarnation_cheat",
+      "cheat_scale": 4,
+      "growth_curve": "最初からカンスト(無双)",
+      "system_assist": 100,
+      "reality_cost": 10,
+      "cost_severity": 0,
+      "style_key": "style_chat_log",
+      "default_target_eps": 50,
+      "default_word_count": 2000,
+      "stress_threshold": 50,
+      "stress_gain": 0.8
+    },
+    "癒やしの聖女（溺愛平和）": {
+      "plot_pattern": "slow_life",
+      "cheat_scale": 5,
+      "growth_curve": "徐々に成長(王道)",
+      "system_assist": 50,
+      "reality_cost": 20,
+      "cost_severity": 0,
+      "style_key": "style_bookworm_daily",
+      "default_target_eps": 35,
+      "default_word_count": 1700,
+      "stress_threshold": 15,
+      "stress_gain": 0.1
+    },
+    "万能魔導具師（快適生活）": {
+      "plot_pattern": "slow_life",
+      "cheat_scale": 3,
+      "growth_curve": "徐々に成長(王道)",
+      "system_assist": 60,
+      "reality_cost": 30,
+      "cost_severity": 1,
+      "style_key": "style_bookworm_daily",
+      "default_target_eps": 40,
+      "default_word_count": 1900,
+      "stress_threshold": 30,
+      "stress_gain": 0.3
+    },
+    "モブ生徒の学園青春記": {
+      "plot_pattern": "slow_life",
+      "cheat_scale": 1,
+      "growth_curve": "徐々に成長(王道)",
+      "system_assist": 20,
+      "reality_cost": 10,
+      "cost_severity": 1,
+      "style_key": "style_web_standard",
+      "default_target_eps": 25,
+      "default_word_count": 1200,
+      "stress_threshold": 45,
+      "stress_gain": 0.5
+    },
+    "お気楽宝探し（浪漫追求）": {
+      "plot_pattern": "reincarnation_cheat",
+      "cheat_scale": 3,
+      "growth_curve": "最初からカンスト(無双)",
+      "system_assist": 40,
+      "reality_cost": 40,
+      "cost_severity": 2,
+      "style_key": "style_light_fun",
+      "default_target_eps": 50,
+      "default_word_count": 2300,
+      "stress_threshold": 40,
+      "stress_gain": 0.6
+    },
+    "聖獣カフェのまったり経営": {
+      "plot_pattern": "slow_life",
+      "cheat_scale": 4,
+      "growth_curve": "最初からカンスト(無双)",
+      "system_assist": 80,
+      "reality_cost": 10,
+      "cost_severity": 0,
+      "style_key": "style_bookworm_daily",
+      "default_target_eps": 30,
+      "default_word_count": 1400,
+      "stress_threshold": 20,
+      "stress_gain": 0.2
+    },
+    "ダンジョン農家（魔力で豊作）": {
+      "plot_pattern": "slow_life",
+      "cheat_scale": 4,
+      "growth_curve": "最初からカンスト(無双)",
+      "system_assist": 90,
+      "reality_cost": 5,
+      "cost_severity": 0,
+      "style_key": "style_bookworm_daily",
+      "default_target_eps": 40,
+      "default_word_count": 1700,
+      "stress_threshold": 30,
+      "stress_gain": 0.3
+    },
+    "癒やしの衛生兵（後方支援無双）": {
+      "plot_pattern": "exile_rise",
+      "cheat_scale": 3,
+      "growth_curve": "徐々に成長(王道)",
+      "system_assist": 40,
+      "reality_cost": 20,
+      "cost_severity": 1,
+      "style_key": "style_light_fun",
+      "default_target_eps": 50,
+      "default_word_count": 2400,
+      "stress_threshold": 60,
+      "stress_gain": 1.0
+    },
+    "異世界コンビニ（現代品無双）": {
+      "plot_pattern": "slow_life",
+      "cheat_scale": 5,
+      "growth_curve": "最初からカンスト(無双)",
+      "system_assist": 100,
+      "reality_cost": 0,
+      "cost_severity": 0,
+      "style_key": "style_web_standard",
+      "default_target_eps": 45,
+      "default_word_count": 2000,
+      "stress_threshold": 30,
+      "stress_gain": 0.3
+    },
+    "モブ執事の矜持（有能側近）": {
+      "plot_pattern": "reincarnation_cheat",
+      "cheat_scale": 3,
+      "growth_curve": "最初からカンスト(無双)",
+      "system_assist": 30,
+      "reality_cost": 40,
+      "cost_severity": 1,
+      "style_key": "style_villainess_elegant",
+      "default_target_eps": 50,
+      "default_word_count": 2300,
+      "stress_threshold": 70,
+      "stress_gain": 1.5
+    },
+    "不老不死の道楽（伝説の趣味人）": {
+      "plot_pattern": "slow_life",
+      "cheat_scale": 4,
+      "growth_curve": "最初からカンスト(無双)",
+      "system_assist": 10,
+      "reality_cost": 10,
+      "cost_severity": 0,
+      "style_key": "style_serious_fantasy",
+      "default_target_eps": 70,
+      "default_word_count": 2800,
+      "stress_threshold": 85,
+      "stress_gain": 2.0
+    },
+    "ギャル転生（ハイテンション）": {
+      "plot_pattern": "reincarnation_cheat",
+      "cheat_scale": 3,
+      "growth_curve": "最初からカンスト(無双)",
+      "system_assist": 60,
+      "reality_cost": 10,
+      "cost_severity": 0,
+      "style_key": "style_comedy_speed",
+      "default_target_eps": 40,
+      "default_word_count": 1700,
+      "stress_threshold": 45,
+      "stress_gain": 0.6
+    },
+    "辺境開拓（ホワイト領地経営）": {
+      "plot_pattern": "slow_life",
+      "cheat_scale": 4,
+      "growth_curve": "最初からカンスト(無双)",
+      "system_assist": 70,
+      "reality_cost": 20,
+      "cost_severity": 1,
+      "style_key": "style_bookworm_daily",
+      "default_target_eps": 60,
+      "default_word_count": 2500,
+      "stress_threshold": 40,
+      "stress_gain": 0.5
+    },
+    "竜騎士無双（伝説の再起）": {
+      "plot_pattern": "exile_rise",
+      "cheat_scale": 5,
+      "growth_curve": "最初からカンスト(無双)",
+      "system_assist": 30,
+      "reality_cost": 40,
+      "cost_severity": 2,
+      "style_key": "style_web_standard",
+      "default_target_eps": 70,
+      "default_word_count": 2900,
+      "stress_threshold": 80,
+      "stress_gain": 1.8
+    },
+    "鉄壁タンク（不動の守護）": {
+      "plot_pattern": "exile_rise",
+      "cheat_scale": 4,
+      "growth_curve": "最初からカンスト(無双)",
+      "system_assist": 50,
+      "reality_cost": 50,
+      "cost_severity": 1,
+      "style_key": "style_iron_wall",
+      "default_target_eps": 65,
+      "default_word_count": 2700,
+      "stress_threshold": 85,
+      "stress_gain": 1.5
+    },
+    "鬼人進化（弱肉強食）": {
+      "plot_pattern": "reincarnation_cheat",
+      "cheat_scale": 5,
+      "growth_curve": "徐々に成長(王道)",
+      "system_assist": 30,
+      "reality_cost": 70,
+      "cost_severity": 3,
+      "style_key": "style_evolution",
+      "default_target_eps": 75,
+      "default_word_count": 3000,
+      "stress_threshold": 90,
+      "stress_gain": 2.5
+    },
+    "禁書司書（全知の隠者）": {
+      "plot_pattern": "slow_life",
+      "cheat_scale": 3,
+      "growth_curve": "最初からカンスト(無双)",
+      "system_assist": 10,
+      "reality_cost": 80,
+      "cost_severity": 2,
+      "style_key": "style_forbidden_library",
+      "default_target_eps": 50,
+      "default_word_count": 2400,
+      "stress_threshold": 60,
+      "stress_gain": 1.0
+    },
+    "豪運ギャンブラー（一攫千金）": {
+      "plot_pattern": "reincarnation_cheat",
+      "cheat_scale": 4,
+      "growth_curve": "最初からカンスト(無双)",
+      "system_assist": 60,
+      "reality_cost": 30,
+      "cost_severity": 2,
+      "style_key": "style_high_luck_gambler",
+      "default_target_eps": 55,
+      "default_word_count": 2600,
+      "stress_threshold": 85,
+      "stress_gain": 3.0
+    },
+    "旋律の魔術師（伝説の演奏）": {
+      "plot_pattern": "slow_life",
+      "cheat_scale": 3,
+      "growth_curve": "最初からカンスト(無双)",
+      "system_assist": 40,
+      "reality_cost": 20,
+      "cost_severity": 1,
+      "style_key": "style_melody_mage",
+      "default_target_eps": 40,
+      "default_word_count": 1900,
+      "stress_threshold": 50,
+      "stress_gain": 0.8
+    },
+    "孤高の真祖（夜の支配者）": {
+      "plot_pattern": "reincarnation_cheat",
+      "cheat_scale": 5,
+      "growth_curve": "最初からカンスト(無双)",
+      "system_assist": 20,
+      "reality_cost": 40,
+      "cost_severity": 1,
+      "style_key": "style_true_ancestor",
+      "default_target_eps": 60,
+      "default_word_count": 2700,
+      "stress_threshold": 95,
+      "stress_gain": 2.5
+    },
+    "遺物修理屋（職人の矜持）": {
+      "plot_pattern": "slow_life",
+      "cheat_scale": 3,
+      "growth_curve": "最初からカンスト(無双)",
+      "system_assist": 30,
+      "reality_cost": 10,
+      "cost_severity": 1,
+      "style_key": "style_relic_repairer",
+      "default_target_eps": 45,
+      "default_word_count": 2100,
+      "stress_threshold": 40,
+      "stress_gain": 0.5
+    },
+    "呪いの剣聖（一刀両断）": {
+      "plot_pattern": "exile_rise",
+      "cheat_scale": 4,
+      "growth_curve": "徐々に成長(王道)",
+      "system_assist": 0,
+      "reality_cost": 90,
+      "cost_severity": 4,
+      "style_key": "style_cursed_sword",
+      "default_target_eps": 70,
+      "default_word_count": 2900,
+      "stress_threshold": 90,
+      "stress_gain": 3.0
+    },
+    "影の支配者（黒幕の愉悦）": {
+      "plot_pattern": "reincarnation_cheat",
+      "cheat_scale": 3,
+      "growth_curve": "最初からカンスト(無双)",
+      "system_assist": 40,
+      "reality_cost": 50,
+      "cost_severity": 2,
+      "style_key": "style_shadow_ruler",
+      "default_target_eps": 60,
+      "default_word_count": 2600,
+      "stress_threshold": 85,
+      "stress_gain": 2.0
+    },
+    "最強陰陽師（和風無双）": {
+      "plot_pattern": "reincarnation_cheat",
+      "cheat_scale": 5,
+      "growth_curve": "最初からカンスト(無双)",
+      "system_assist": 50,
+      "reality_cost": 30,
+      "cost_severity": 2,
+      "style_key": "style_onmyoji_master",
+      "default_target_eps": 65,
+      "default_word_count": 2800,
+      "stress_threshold": 80,
+      "stress_gain": 2.0
+    }
+  },
+  "EASY_MODE_KEYWORDS_MAP": {
+    "⚔️ 追放ざまぁ（AIおすすめ）": "追放, チート, ざまぁ, 成り上がり, 認められなかった才能",
+    "🌸 悪役令嬢（AIおすすめ）": "乙女ゲーム, 転生, 破滅フラグ, 攻略対象, 逆転",
+    "🔄 死に戻り（AIおすすめ）": "ループ, 死に戻り, 絶望, 執念, 完璧なルート",
+    "🍲 ほのぼのスローライフ": "スローライフ, 飯テロ, 田舎暮らし, 料理, 癒し",
+    "⚡ 転生チート（AIおすすめ）": "転生, チートスキル, 無自覚無双, ステータス, 異世界",
+    "🗡️ 本格戦記": "戦記, 知略, 逆転, 兵法, 硬派ファンタジー",
+    "🎭 勘違い魔王（爆速伝説化）": "勘違い, 魔王, ギャップ, 威厳, 小心者, 伝説, 勘違い無双",
+    "🐾 もふもふ（AIおすすめ）": "もふもふ, 聖獣, テイマー, 癒やし, 召喚",
+    "💰 商会無双": "錬金術, 商会, 経営, 成り上がり, 経済",
+    "💡 現代知識（AIおすすめ）": "現代知識, 文明開化, 無双, チート, 異世界",
+    "🍳 絶品グルメ": "料理, 飯テロ, 美食, 胃袋, 異世界メシ",
+    "🤣 爆笑コメディ": "コメディ, ギャグ, 残念な仲間, 爆笑, 冒険",
+    "📱 異世界配信": "配信, コメント欄, バズる, 地球, ネットスラング",
+    "👼 癒やし聖女": "聖女, 溺愛, 浄化, ほのぼの, 逆ハーレム",
+    "🧙 万能魔導具師": "魔導具, 発明, 製作, 快適, 生活魔法",
+    "🌸 モブ学園": "学園, モブ, 青春, 恋愛, 乙女ゲーム",
+    "🗺️ お気楽トレジャー": "宝探し, 鑑定, ロマン, 冒険, 秘境",
+    "🐈 聖獣カフェ": "カフェ, 聖獣, もふもふ, 経営, 癒やし",
+    "🌾 ダンジョン農家": "農家, 野菜, 収穫, ダンジョン, ステータス",
+    "💊 衛生兵": "衛生兵, 治療, サポート, TS, 勘違い",
+    "🏪 異世界コンビニ": "コンビニ, 現代知識, 道具, 利便性, 依存",
+    "🤵 モブ執事": "執事, 悪役令嬢, 献身, 有能, モブ",
+    "🎨 不老不死道楽": "不老不死, 趣味, 道具, 伝説, 超然",
+    "💅 ギャル転生": "ギャル, 陽キャ, ポジティブ, 破壊, コメディ",
+    "🏰 辺境開拓": "辺境, 開拓, 領地経営, 現代知識, 快適生活",
+    "🐉 竜騎士無双": "竜騎士, 復讐, 再起, 伝説の竜, パートナー",
+    "🛡️ 鉄壁タンク": "タンク, 鉄壁, 防御特化, 追放, 物理無効",
+    "👺 鬼人進化": "鬼人, 復讐, 進化, 覚醒, 弱肉強食",
+    "📚 禁書司書": "図書館, 禁書, 司書, 全知, 魔導書",
+    "🎲 豪運ギャンブラー": "ギャンブル, 豪運, カジノ, 心理戦, 一攫千金",
+    "🎻 旋律の魔術師": "音楽, 吟遊詩人, 旋律, バフ, 伝説の演奏",
+    "🧛 孤高の真祖": "吸血鬼, 真祖, 君臨, 眷属, 夜の支配者",
+    "🛠️ 遺物修理屋": "アーティファクト, 修理, 鑑定, 職人, ロストテクノロジー",
+    "🗡️ 呪いの剣聖": "剣聖, 呪い, 孤独, 修練, 一刀両断",
+    "👑 影の支配者": "王, 傀儡, 策略, 裏工作, 国家運営",
+    "⛩️ 最強陰陽師": "陰陽師, 式神, 呪術, 和風, 転生"
+  },
+  "WIZARD_GENRE_OPTIONS": [
+    "ファンタジー",
+    "恋愛",
+    "ミステリー",
+    "VR・ゲーム",
+    "ダンジョン",
+    "転生",
+    "その他"
+  ],
+  "WIZARD_ARCHETYPE_LABELS": {
+    "王道ざまぁ（爽快感最大）": "⚔️ 王道ざまぁ（AIおすすめ）",
+    "本格戦記（泥臭い逆転）": "🗡️ 本格戦記",
+    "死に戻り（絶望と執念）": "🔄 死に戻り（AIおすすめ）",
+    "ほのぼの飯テロ（ストレス皆無）": "🍲 ほのぼの飯テロ",
+    "悪役令嬢の逆転劇": "🌸 悪役令嬢（AIおすすめ）",
+    "勘違い爆走（爆速伝説化）": "🎭 勘違い魔王（爆速伝説化）",
+    "最強テイマー（もふもふ無双）": "🐾 最強テイマー（AIおすすめ）",
+    "万能錬金術師（商会成り上がり）": "💰 万能錬金術師",
+    "現代知識チート（文明無双）": "💡 現代知識（AIおすすめ）",
+    "絶品料理人（美食無双）": "🍳 絶品料理人",
+    "爆笑冒険譚（コメディ最大）": "🤣 爆笑冒険譚",
+    "異世界配信者（バズり無双）": "📱 異世界配信",
+    "癒やしの聖女（溺愛平和）": "👼 癒やし聖女",
+    "万能魔導具師（快適生活）": "🧙 万能魔導具師",
+    "モブ生徒の学園青春記": "🌸 モブ学園",
+    "お気楽宝探し（浪漫追求）": "🗺️ お気楽トレジャー",
+    "聖獣カフェのまったり経営": "🐈 聖獣カフェ",
+    "ダンジョン農家（魔力で豊作）": "🌾 ダンジョン農家",
+    "癒やしの衛生兵（後方支援無双）": "💊 衛生兵",
+    "異世界コンビニ（現代品無双）": "🏪 異世界コンビニ",
+    "モブ執事の矜持（有能側近）": "🤵 モブ執事",
+    "不老不死の道楽（伝説の趣味人）": "🎨 不老不死道楽",
+    "ギャル転生（ハイテンション）": "💅 ギャル転生",
+    "辺境開拓（ホワイト領地経営）": "🏰 辺境開拓",
+    "竜騎士無双（伝説の再起）": "🐉 竜騎士無双",
+    "鉄壁タンク（不動の守護）": "🛡️ 鉄壁タンク",
+    "鬼人進化（弱肉強食）": "👺 鬼人進化",
+    "禁書司書（全知の隠者）": "📚 禁書司書",
+    "豪運ギャンブラー（一攫千金）": "🎲 豪運ギャンブラー",
+    "旋律の魔術師（伝説の演奏）": "🎻 旋律の魔術師",
+    "孤高の真祖（夜の支配者）": "🧛 孤高の真祖",
+    "遺物修理屋（職人の矜持）": "🛠️ 遺物修理屋",
+    "呪いの剣聖（一刀両断）": "🗡️ 呪いの剣聖",
+    "影の支配者（黒幕の愉悦）": "👑 影の支配者",
+    "最強陰陽師（和風無双）": "⛩️ 最強陰陽師",
+    "カスタム": "🎨 カスタム（自由設定）"
+  },
+  "EASY_GENRES": {
+    "⚔️ 追放ざまぁ（AIおすすめ）": {
+      "genre": "ファンタジー",
+      "archetype": "王道ざまぁ（爽快感最大）",
+      "engine": "conflict",
+      "desc": "不当に追放された主人公が成り上がり、元の仲間を見返す爽快ストーリー"
+    },
+    "🌸 悪役令嬢（AIおすすめ）": {
+      "genre": "恋愛",
+      "archetype": "悪役令嬢の逆転劇",
+      "engine": "conflict",
+      "desc": "乙女ゲームに転生した令嬢が破滅フラグを回避しながら逆転を狙う"
+    },
+    "🔄 死に戻り（AIおすすめ）": {
+      "genre": "ファンタジー",
+      "archetype": "死に戻り（絶望と執念）",
+      "engine": "conflict",
+      "desc": "何度も死に戻りながら完璧な結末を目指す絶望と執念のループ作品"
+    },
+    "🍲 ほのぼのスローライフ": {
+      "genre": "ファンタジー",
+      "archetype": "ほのぼの飯テロ（ストレス皆無）",
+      "engine": "comfort",
+      "desc": "異世界でのんびりと料理や農業を楽しむ癒し系スローライフ"
+    },
+    "⚡ 転生チート（AIおすすめ）": {
+      "genre": "ファンタジー",
+      "archetype": "王道ざまぁ（爽快感最大）",
+      "engine": "conflict",
+      "desc": "チートスキルを持って転生した主人公が無自覚に無双するストーリー"
+    },
+    "🗡️ 本格戦記": {
+      "genre": "ファンタジー",
+      "archetype": "本格戦記（泥臭い逆転）",
+      "engine": "conflict",
+      "desc": "知略と泥臭い努力で戦局を覆す硬派なリアル戦記ファンタジー"
+    },
+    "🎭 勘違い魔王（爆速伝説化）": {
+      "genre": "dark_comedy_fantasy",
+      "archetype": "勘違い爆走（爆速伝説化）",
+      "engine": "conflict",
+      "desc": "内心ビクビクなのに、なぜか周囲には威厳たっぷりに誤解される爆笑と驚愕の伝説劇"
+    },
+    "🐾 もふもふ（AIおすすめ）": {
+      "genre": "ファンタジー",
+      "archetype": "最強テイマー（もふもふ無双）",
+      "engine": "comfort",
+      "desc": "聖獣や魔獣をテイムして愛でる、癒やしと冒険のライトストーリー"
+    },
+    "💰 商会無双": {
+      "genre": "ファンタジー",
+      "archetype": "万能錬金術師（商会成り上がり）",
+      "engine": "enigma",
+      "desc": "便利な錬金アイテムで商売繁盛. 富と名声を築くサクセスストーリー"
+    },
+    "💡 現代知識（AIおすすめ）": {
+      "genre": "ファンタジー",
+      "archetype": "現代知識チート（文明無双）",
+      "engine": "enigma",
+      "desc": "砂糖、石鹸、マヨネーズ. 現代の知識で異世界の常識を塗り替える"
+    },
+    "🍳 絶品グルメ": {
+      "genre": "ファンタジー",
+      "archetype": "絶品料理人（美食無双）",
+      "engine": "comfort",
+      "desc": "異世界の食材を究極の料理へ. 胃袋から世界を征服する飯テロ物語"
+    },
+    "🤣 爆笑コメディ": {
+      "genre": "ファンタジー",
+      "archetype": "爆笑冒険譚（コメディ最大）",
+      "engine": "comfort",
+      "desc": "残念な仲間たちと贈る、腹筋崩壊間違いなしのハイテンション冒険譚"
+    },
+    "📱 異世界配信": {
+      "genre": "ファンタジー",
+      "archetype": "異世界配信者（バズり無双）",
+      "engine": "comfort",
+      "desc": "魔導具で異世界から地球へ配信. リスナーとの掛け合いで爆速成り上がり"
+    },
+    "👼 癒やし聖女": {
+      "genre": "ファンタジー",
+      "archetype": "癒やしの聖女（溺愛平和）",
+      "engine": "connection",
+      "desc": "ただそこにいるだけで周囲を浄化. 最強の騎士たちに溺愛される平和な日常"
+    },
+    "🧙 万能魔導具師": {
+      "genre": "ファンタジー",
+      "archetype": "万能魔導具師（快適生活）",
+      "engine": "comfort",
+      "desc": "現代の便利家電を魔導具で再現. 異世界の生活をQOL爆上げで快適に"
+    },
+    "🌸 モブ学園": {
+      "genre": "学園",
+      "archetype": "モブ生徒の学園青春記",
+      "engine": "connection",
+      "desc": "乙女ゲームの舞台で、メインキャラを横目にモブ同士で青春を謳歌する"
+    },
+    "🌾 ダンジョン農家": {
+      "genre": "ファンタジー",
+      "archetype": "ダンジョン農家（魔力で豊作）",
+      "engine": "comfort",
+      "desc": "危険なダンジョンで家庭菜園？ 魔力の水で育つ野菜はステータス爆上げ"
+    },
+    "🗺️ お気楽トレジャー": {
+      "genre": "ファンタジー",
+      "archetype": "お気楽宝探し（浪漫追求）",
+      "engine": "comfort",
+      "desc": "鑑定スキル片手に世界中の秘境を巡り、お宝を掘り出すロマン溢れる冒険譚"
+    },
+    "🐈 聖獣カフェ": {
+      "genre": "ファンタジー",
+      "archetype": "聖獣カフェのまったり経営",
+      "engine": "comfort",
+      "desc": "最強の聖獣たちに懐かれた主人公が、街の片隅で癒やしのカフェを営む物語"
+    },
+    "💊 衛生兵": {
+      "genre": "ファンタジー",
+      "archetype": "癒やしの衛生兵（後方支援無双）",
+      "engine": "connection",
+      "desc": "戦場で傷つく兵士たちを規格外の魔法で救い、知らぬ間に伝説となる物語"
+    },
+    "🏪 異世界コンビニ": {
+      "genre": "ファンタジー",
+      "archetype": "異世界コンビニ（現代品無双）",
+      "engine": "comfort",
+      "desc": "現代の商品で異世界の常識を塗り替え、便利な暮らしを広めるサクセスストーリー"
+    },
+    "🤵 モブ執事": {
+      "genre": "恋愛",
+      "archetype": "モブ執事の矜持（有能側近）",
+      "engine": "connection",
+      "desc": "悪役令嬢の側近として、彼女を救うために影で無双する有能な執事の物語"
+    },
+    "🎨 不老不死道楽": {
+      "genre": "ファンタジー",
+      "archetype": "不老不死の道楽（伝説の趣味人）",
+      "engine": "enigma",
+      "desc": "永遠の時を生きる主人公が、気が向くままに究極の逸品を作る悠久の物語"
+    },
+    "💅 ギャル転生": {
+      "genre": "ファンタジー",
+      "archetype": "ギャル転生（ハイテンション）",
+      "engine": "comfort",
+      "desc": "陽キャなギャルが異世界を救う？ 圧倒的ポジティブさで全てをハッピーにする物語"
+    },
+    "🏰 辺境開拓": {
+      "genre": "ファンタジー",
+      "archetype": "辺境開拓（ホワイト領地経営）",
+      "engine": "comfort",
+      "desc": "見捨てられた辺境の地を、魔法と現代の知恵で理想のホワイト領地に変える領地経営物語"
+    },
+    "🐉 竜騎士無双": {
+      "genre": "ファンタジー",
+      "archetype": "竜騎士無双（伝説の再起）",
+      "engine": "conflict",
+      "desc": "かつて世界を救った伝説の竜騎士が、名前を隠して学園に入学し無双するサクセスストーリー"
+    },
+    "🛡️ 鉄壁タンク": {
+      "genre": "ファンタジー",
+      "archetype": "鉄壁タンク（不動の守護）",
+      "engine": "conflict",
+      "desc": "攻撃力ゼロと蔑まれ追放されたタンクが、実は物理無効の最強防御で無双する"
+    },
+    "👺 鬼人進化": {
+      "genre": "ファンタジー",
+      "archetype": "鬼人進化（弱肉強食）",
+      "engine": "conflict",
+      "desc": "最弱の鬼として転生した主人公が、喰らった敵の能力を奪い進化し続ける物語"
+    },
+    "📚 禁書司書": {
+      "genre": "ファンタジー",
+      "archetype": "禁書司書（全知の隠者）",
+      "engine": "enigma",
+      "desc": "世界の全知識を収めた禁断의 図書館の主となり、知略で歴史を動かす隠者の物語"
+    },
+    "🎲 豪運ギャンブラー": {
+      "genre": "その他",
+      "archetype": "豪運ギャンブラー（一攫千金）",
+      "engine": "enigma",
+      "desc": "異世界カジノを舞台に、スキル『豪運』で強敵たちを破産させる逆転サクセスストーリー"
+    },
+    "🎻 旋律の魔術師": {
+      "genre": "ファンタジー",
+      "archetype": "旋律の魔術師（伝説の演奏）",
+      "engine": "comfort",
+      "desc": "失われた古代の音楽魔法を操り、歌声一つで軍勢を鎮め世界を癒やす旅路"
+    },
+    "🧛 孤高の真祖": {
+      "genre": "ファンタジー",
+      "archetype": "孤高の真祖（夜の支配者）",
+      "engine": "enigma",
+      "desc": "長い眠りから覚めた伝説の吸血鬼が、ただ静かに暮らしたいのに神格化される物語"
+    },
+    "🛠️ 遺物修理屋": {
+      "genre": "ファンタジー",
+      "archetype": "遺物修理屋（職人の矜持）",
+      "engine": "comfort",
+      "desc": "ガラクタにしか見えない古代遺物を直し、現代知識を組み合わせて新文明を築く物語"
+    },
+    "🗡️ 呪いの剣聖": {
+      "genre": "ファンタジー",
+      "archetype": "呪いの剣聖（一刀両断）",
+      "engine": "conflict",
+      "desc": "抜けば命を削る呪いの剣を背負い、たった一人で帝国の軍勢を迎え撃つ剣聖の孤独な戦記"
+    },
+    "👑 影の支配者": {
+      "genre": "ミステリー",
+      "archetype": "影の支配者（黒幕の愉悦）",
+      "engine": "enigma",
+      "desc": "無能な傀儡王として擁立された少年が、裏で糸を引き国家を救い上げる策略譚"
+    },
+    "⛩️ 最強陰陽師": {
+      "genre": "転生",
+      "archetype": "最強陰陽師（和風無双）",
+      "engine": "enigma",
+      "desc": "現代最強の陰陽師が魔法世界に転生. 式神と呪術で魔法の常識を破壊する"
+    }
+  }
+}

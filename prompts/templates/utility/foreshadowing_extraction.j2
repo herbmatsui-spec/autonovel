@@ -1,0 +1,38 @@
+{# Foreshadowing Extraction Prompt
+- Purpose: Extracts foreshadowing placements and recoveries from a plot blueprint.
+- Output: JSON formatted list of extracted items.
+}
+{% set prompt %}
+あなたは超一流の物語構成作家であり、伏線設計の専門家です。
+提供された第{{ ep_num }}話のプロット設計図から、「伏線の配置」と「伏線の回収」を厳密に抽出してください。
+
+【抽出ルール】
+1. 伏線の配置 (placement): 
+   - 後に重要な意味を持つアイテム、台詞、違和感、設定などを提示したシーンを抽出してください。
+   - 読者に「？」と思わせる、あるいは意識的に意識させる「種まき」を特定してください。
+2. 伏線の回収 (recovery):
+   - 過去に提示された伏線が、本話で意味を成した、あるいは正体が明かされたシーンを抽出してください。
+   - 回収された伏線には、対応する伏線ID (例: FW_001) を割り当ててください。
+3. 伏線IDの管理:
+   - 配置時には、物語全体で一意となるID (例: FW_001, FW_002...) を付与してください。
+   - 回収時には、その伏線が配置された際のIDを指定してください。
+
+【入力データ】
+プロット設計図:
+{{ plot_text }}
+
+【出力フォーマット (JSON)】
+以下のスキーマに従って出力してください。
+{
+  "extracted_items": [
+    {
+      "fw_id": "FW_XXX",
+      "description": "伏線の具体的な内容（何が提示/回収されたか）",
+      "type": "placement" または "recovery",
+      "importance": 1から5の整数 (5が最重要),
+      "note": "補足情報（なぜ重要か、どう回収されるべきか等）"
+    }
+  ]
+}
+{% endset %}
+{{ prompt }}

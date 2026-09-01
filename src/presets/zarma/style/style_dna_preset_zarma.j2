@@ -1,0 +1,80 @@
+あなたは「なろう系・カクヨム系・Web小説」の文体専門アナリストです。「ざまぁ・追放・無双」ジャンルの**黄金標準文体**を定量パラメータ化し、プロンプト変数として注入可能なテンプレートを作成してください。
+
+【ジャンル】: ざまぁ・追放・無双（なろう系・カクヨム系）
+【対象読者】: 20-40代男性中心、スキマ時間で爽快感を求める層
+【文体コード】: "zarma_standard_v1"
+
+以下のパラメータをJSON形式で出力してください。各値は0.0-1.0の正規化スコア、または具体的数値で指定。
+
+{
+  "sentence_length": {
+    "avg": 42,
+    "std_dev": 12,
+    "min": 15,
+    "max": 80,
+    "description": "平均文長42文字。短文（15-25文字）でテンポを作り、長文（60-80文字）で描写・心理を深める二峰性分布"
+  },
+  "vocab_diversity": {
+    "type_token_ratio": 0.42,
+    "rare_word_ratio": 0.08,
+    "description": "語彙多様性は中程度。難解語は避け、読みやすさ優先。ジャンル定型語（追放、無双、ざまぁ、チート、スキル、ステータス、ギルド、ダンジョン）を高頻度使用"
+  },
+  "sentence_end_distribution": {
+    "desu_masu": 0.55,
+    "da_dearu": 0.25,
+    "nominal": 0.10,
+    "exclamatory": 0.07,
+    "interrogative": 0.03,
+    "description": "「です・ます」調中心で親しみやすさ確保。地の文は「だ・である」でテンポよく。体言止めでリズム作り。感嘆符で爽快感強調"
+  },
+  "metaphor_frequency": {
+    "per_1000_chars": 3.5,
+    "types": {
+      "visual": 0.40,
+      "tactile": 0.25,
+      "auditory": 0.15,
+      "kinesthetic": 0.10,
+      "abstract": 0.10
+    },
+    "description": "1000文字あたり3-4個の比喩。視覚・触覚優位で『見える・感じる』描写を重視。抽象比喩は感情表現に限定"
+  },
+  "pov_distance": {
+    "level": "close_third",
+    "internal_monologue_ratio": 0.35,
+    "free_indirect_discourse": true,
+    "description": "密接な三人称視点。主人公の内心独白を35%混在。自由間接話法で思考・感覚をシームレスに融合。POV漏れ厳禁"
+  },
+  "narration_tone": {
+    "base": "clinical_cool",
+    "emotional_peaks": "visceral_raw",
+    "catharsis_mode": "explosive_triumphant",
+    "description": "平常時はクール・客観的な語り口で『実力差』を強調。感情ピークでは生々しい内面描写。カタルシス時は爆発的・勝利のトーンで一気に畳み掛ける"
+  },
+  "dialogue_style": {
+    "protagonist": "calm_condescending",
+    "heroine": "devoted_awestruck",
+    "antagonist": "arrogant_then_desperate",
+    "mob": "fearful_gossipy",
+    "description": "主人公：冷静・見下し気味・余裕の口調。ヒロイン：献身的・畏敬・主人公絶対信頼。敵：傲慢→焦り→哀れな懇願の変化。モブ：恐怖・噂話・主人公讃美"
+  },
+  "pacing": {
+    "scene_transition_speed": "fast",
+    "time_skip_frequency": "high",
+    "chapter_hook_density": 1.0,
+    "description": "シーン転換は高速。時間スキップ多用（数日〜数週間を一文で）。各話末尾に必ずフック。章単位でも大型フック"
+  },
+  "forbidden_patterns": [
+    "過度な心理描写の連発（テンポ殺し）",
+    "説明的な地の文（Show, Don't Tell徹底）",
+    "主人公の迷い・弱音（無双ジャンルでは原則NG）",
+    "難解な漢字・文学的表現（読みやすさ最優先）",
+    "視点漏れ（主人公が知り得ぬ情報の地の文記述）"
+  ],
+  "required_patterns": [
+    "ステータス・スキル・数値の明示的提示",
+    "「〜していた」「〜ことになる」等の結果先行描写",
+    "読者の予想を裏切る「実は〜だった」展開",
+    "圧倒的実力差を数値・描写で証明",
+    "ざまぁ対象の心理描写（焦り・恐怖・絶望）を丁寧に"
+  ]
+}

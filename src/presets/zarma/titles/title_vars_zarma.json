@@ -1,0 +1,52 @@
+{
+  "genre": "zarma",
+  "description": "ざまぁジャンル専用タイトル生成プロンプト変数",
+  "genre_label": "ざまぁ・追放・無双",
+  "platform": "kakuyomu",
+  "title_templates": [
+    "追放された最強の{{protagonist_role}}が、{{cheat_ability}}で無双して{{catharsis_target}}を見返す話",
+    "『{{insult_title}}』と呼ばれた俺、実は『{{true_title}}』でした〜{{cheat_ability}}で元パーティをざまぁするまで〜",
+    "今さら戻れと言われても、もう遅い。{{protagonist_name}}は{{cheat_ability}}で世界を制する〜追放から始まる無双譚〜",
+    "{{protagonist_name}}、{{betrayal_type}}される。でも{{cheat_ability}}手に入れたから、もう誰にも負けません。{{catharsis_target}}ざまぁ＜＜完結＞＞",
+    "最強の{{protagonist_role}}、{{betrayal_type}}されても『{{cheat_ability}}』で秒殺無双〜{{catharsis_target}}「許して」俺「遅い」〜"
+  ],
+  "trend_keywords": [
+    "追放された",
+    "最強",
+    "無双",
+    "ざまぁ",
+    "チート",
+    "スキル",
+    "ステータス",
+    "実は〜だった",
+    "今さら戻れ",
+    "許して",
+    "遅い",
+    "元パーティ",
+    "裏切り",
+    "復讐",
+    "成り上がり"
+  ],
+  "title_length_range": {
+    "min": 40,
+    "max": 100,
+    "optimal": 60
+  },
+  "required_elements": [
+    "追放・裏切りの事実",
+    "チート能力・最強であることの示唆",
+    "ざまぁ・見返す・復讐の予告",
+    "主人公名または役割名"
+  ],
+  "forbidden_elements": [
+    "謙遜・弱気な表現",
+    "主人公が迷う・悩むニュアンス",
+    "ハーレム要素の前面押し出し（サブ要素としては可）",
+    "難解な造語・読みにくいタイトル"
+  ],
+  "generation_params": {
+    "num_candidates": 5,
+    "temperature": 0.8,
+    "top_p": 0.9
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "DISABLE_CATHARSIS_ENGINE": false,
+  "STRESS_CATHARSIS_THRESHOLD": 90,
+  "STRESS_FILLER_THRESHOLD": 40,
+  "STRESS_CLIMAX_BONUS": 60,
+  "STRESS_HATE_GAIN_BASE": 10,
+  "SPECULATIVE_BRANCH_CATHARSIS_NAME": "TragicClimax",
+  "SPECULATIVE_INSTRUCTION_CATHARSIS": "【⚠️分岐プロット（悲劇的クライマックス）】\nこのエピソードは登場人物の破滅や避けられない悲劇的結末を美しく描き出す構成に特化させてください。",
+  "AUDIT_TRIGGER_KEYWORDS": ["破滅", "衰退", "孤独", "運命", "沈黙", "崩壊"],
+  "AUDIT_WORDS_CATHARSIS": ["滅び", "喪失", "悲哀", "諦念"],
+  "DE_AI_MODE": "none",
+  "AUDITOR_PERSONA": "文芸誌のベテラン編集者",
+  "AUDITOR_INSTRUCTIONS": "「テーマの深みが足りない」「内面描写が安直である」「比喩表現をもっと洗練させろ」と指摘する文芸誌のベテラン編集者。",
+  "WEIGHT_EMOTIONAL_RESONANCE": 2.0,
+  "WEIGHT_THEMATIC_DEPTH": 3.0,
+  "WEIGHT_LITERARY_BEAUTY": 3.0,
+  "WEIGHT_BASE_ENGAGEMENT": 1.0
+}

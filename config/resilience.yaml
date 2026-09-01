@@ -1,0 +1,36 @@
+# Resilience Configuration
+# This file defines retry and circuit breaker policies for various system services.
+
+# Default policies used when no service-specific override is provided
+default:
+  retry_policy:
+    max_attempts: 3
+    base_delay: 1.0
+    max_delay: 30.0
+    exponential_backoff: true
+    jitter: true
+    retryable_status_codes: [429, 500, 502, 503, 504]
+  circuit_breaker:
+    failure_threshold: 5
+    recovery_timeout: 30.0
+    half_open_max_success: 2
+
+# Service-specific overrides
+services:
+  llm_api:
+    retry_policy:
+      max_attempts: 5
+      base_delay: 2.0
+      max_delay: 60.0
+    circuit_breaker:
+      failure_threshold: 3
+      recovery_timeout: 60.0
+  
+  backend_server:
+    retry_policy:
+      max_attempts: 2
+      base_delay: 0.5
+      max_delay: 10.0
+    circuit_breaker:
+      failure_threshold: 10
+      recovery_timeout: 15.0

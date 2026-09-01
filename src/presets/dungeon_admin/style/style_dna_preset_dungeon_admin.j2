@@ -1,0 +1,74 @@
+{
+  "genre": "dungeon_admin",
+  "description": "ダンジョン運営ジャンル専用 文体DNAプリセット",
+  "sentence_length": {
+    "avg": 38,
+    "std_dev": 10,
+    "min": 12,
+    "max": 75,
+    "description": "平均文長38文字。システムログ・設計図・モンスターステータスは短文・箇条書き風。戦闘・ギミック発動は長文で臨場感。"
+  },
+  "vocab_diversity": {
+    "type_token_ratio": 0.44,
+    "rare_word_ratio": 0.10,
+    "description": "ダンジョン・モンスター・罠・ギミック・冒険者・ギルド・アイテム・スキル・階層・ドロップ・レアリティ等の専門語高頻度。独自用語・略語も適度に。"
+  },
+  "sentence_end_distribution": {
+    "desu_masu": 0.45,
+    "da_dearu": 0.35,
+    "nominal": 0.12,
+    "exclamatory": 0.05,
+    "interrogative": 0.03,
+    "description": "システム・ログ・設計思考は「だ・である」。冒険者視点・会話は「です・ます」。体言止めでステータス・効果・結果強調。"
+  },
+  "metaphor_frequency": {
+    "per_1000_chars": 3.0,
+    "types": {
+      "visual": 0.40,
+      "tactile": 0.20,
+      "auditory": 0.15,
+      "kinesthetic": 0.15,
+      "abstract": 0.10
+    },
+    "description": "罠発動・モンスター攻撃・ギミック動作・魔法エフェクトで視覚・運動感覚。システム的比喩（ログ・フラグ・デバッグ・パッチ）も使用。"
+  },
+  "pov_distance": {
+    "level": "omniscient_gm",
+    "internal_monologue_ratio": 0.35,
+    "free_indirect_discourse": true,
+    "description": "GM視点（全知全能・ダンジョン全域把握）。内心独白は『設計・分析・効率・悪戯心・冒険者への愛（歪んだ）』中心。冒険者視点への切替も自在。"
+  },
+  "narration_tone": {
+    "base": "analytical_playful",
+    "emotional_peaks": "battle_management",
+    "catharsis_mode": "godlike_architect",
+    "description": "平常時は分析的・遊び心・効率厨。戦闘管理時は指揮官・監督・実況者のトーン。カタルシス時は世界の設計者・絶対支配者の余裕。"
+  },
+  "dialogue_style": {
+    "dm": "casual_gm",
+    "monsters": "loyal_unique",
+    "adventurers": "diverse_dramatic",
+    "guild_nobles": "political_scheming",
+    "system": "mechanical_absolute",
+    "description": "DM：カジュアル・GM視点・悪戯好き。モンスター：忠誠・個性的・擬人化。冒険者：多様・ドラマチック・成長・絶望・狂気。ギルド/貴族：政治的・算計・建前と本音。システム：機械的・絶対・簡潔。"
+  },
+  "pacing": {
+    "scene_transition_speed": "fast",
+    "time_skip_frequency": "high",
+    "chapter_hook_density": 1.0,
+    "description": "侵入・迎撃・ログ分析・改良・拡張のサイクル高速。冒険者視点・DM視点・システムログを高速切替。各話・各階層に大型フック。"
+  },
+  "forbidden_patterns": [
+    "DMが現場で戦う（原則：指揮・ギミック・モンスターで処理）",
+    "冒険者視点のみで長々描写（DM視点・システムログで客観化必須）",
+    "説明的な地の文（ログ・会話・ギミック発動で自然提示）",
+    "視点漏れ（DMが知り得ぬ冒険者の内心・ギルドの極秘会議等を地の文で）"
+  ],
+  "required_patterns": [
+    "システムログ風・ステータス画面風・設計図風のフォーマット多用",
+    "モンスター・罠・ギミック・ドロップの『数値・効果・条件』を明示",
+    "冒険者の『ビルド・装備・戦術・心理』を分析し『対策・悪戯』で返す構造",
+    "『失敗・全滅・ドロップ』を『データ・次への糧』としてポジティブに再定義",
+    "ダンジョン拡張・モンスター進化・新ギミック開発の『ワクワク感』を毎話提示"
+  ]
+}

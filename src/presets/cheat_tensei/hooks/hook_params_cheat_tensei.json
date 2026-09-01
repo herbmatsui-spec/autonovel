@@ -1,0 +1,41 @@
+{
+  "genre": "cheat_tensei",
+  "description": "チート転生・即最強・無双・成り上がりジャンル専用フック戦略パラメータ",
+  "opening_patterns": [
+    {
+      "name": "status_screen_cheat",
+      "template": "『ステータスオープン』\n【名前】{{protagonist_name}}\n【レベル】1\n【職業】{{cheat_job}}\n【スキル】{{cheat_skill_list}}\n【全ステータス】∞（無限）\n\n鑑定士「え、嘘だろ……？」\n{{protagonist_name}}「あー、これ、バグかな？」",
+      "variables": ["protagonist_name", "cheat_job", "cheat_skill_list"],
+      "effect": "ステータス画面という定型UIで即チート提示。鑑定士の驚きで読者の代弁。主人公の余裕で無双予感。"
+    },
+    {
+      "name": "reincarnation_awakening",
+      "template": "目覚めれば、そこは剣と魔法の世界。\n前世の記憶、そのまま。\nそして——『{{cheat_ability}}』という、世界の理をねじ曲げる力が、魂に刻まれていた。\n「さて、どこまで行けるかな。この世界の、頂点まで。」",
+      "variables": ["cheat_ability"],
+      "effect": "転生即チート認識。主人公の自信・野心を冒頭から提示。『頂点まで』でスケール感演出。"
+    }
+  ],
+  "closing_patterns": [
+    {
+      "name": "first_battle_dominance",
+      "template": "「『{{monster_name}}』……レベル{{monster_level}}、か」\n{{protagonist_name}}は、剣を構えるまでもなく、指を一本立てた。\n「消えろ」\n光の一閃。\n魔王級モンスターが、灰すら残さず消滅した。\n\n——次話、『{{next_ep_title}}』",
+      "variables": ["monster_name", "monster_level", "protagonist_name", "next_ep_title"],
+      "effect": "圧倒的実力差を『指一本・一言』で表現。魔王級瞬殺で読者の爽快感最大化。"
+    },
+    {
+      "name": "new_skill_awakening",
+      "template": "【新スキル習得：{{new_skill_name}}】\n『{{new_skill_effect}}』\n{{protagonist_name}}の瞳が、妖しく光る。\n「面白い……ますます、退屈しない世界になりそうだ」\n\n——次話、『{{next_ep_title}}』",
+      "variables": ["new_skill_name", "new_skill_effect", "protagonist_name", "next_ep_title"],
+      "effect": "システムメッセージ風で新能力提示。主人公の知的好奇心・戦闘狂気質を示唆。"
+    }
+  ],
+  "cliffhanger_templates": [
+    "——ダンジョン最深部で、{{protagonist_name}}は『世界の真実』を知る。",
+    "——『神』を名乗る存在が、{{protagonist_name}}の前に降臨した。",
+    "——{{protagonist_name}}のステータスに、新たな『制約』が刻まれた。"
+  ],
+  "hook_intensity": 0.90,
+  "cliffhanger_frequency": 1.0,
+  "opening_hook_length_lines": 3,
+  "closing_hook_length_lines": 5
+}

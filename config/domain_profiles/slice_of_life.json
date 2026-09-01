@@ -1,0 +1,18 @@
+{
+  "DISABLE_CATHARSIS_ENGINE": true,
+  "STRESS_CATHARSIS_THRESHOLD": 0,
+  "STRESS_FILLER_THRESHOLD": 0,
+  "STRESS_CLIMAX_BONUS": 0,
+  "STRESS_HATE_GAIN_BASE": 0,
+  "SPECULATIVE_BRANCH_CATHARSIS_NAME": "Fulfillment",
+  "SPECULATIVE_INSTRUCTION_CATHARSIS": "【⚠️分岐プロット（日常の充足）】\nこのエピソードはキャラクター同士の穏やかな交流や、新しい料理・道具の発見による満足感を最大化する構成に特化させてください。",
+  "AUDIT_TRIGGER_KEYWORDS": ["発見", "交流", "料理", "ほのぼの", "友情", "絆"],
+  "AUDIT_WORDS_CATHARSIS": ["充足", "平穏", "発見", "喜び"],
+  "DE_AI_MODE": "relaxed",
+  "AUDITOR_PERSONA": "ベテラン編集者",
+  "AUDITOR_INSTRUCTIONS": "「テーマの深みが足りない」「内面描写が安直である」「比喩表現をもっと洗練させろ」と指摘する文芸誌のベテラン編集者。",
+  "WEIGHT_EMOTIONAL_RESONANCE": 3.0,
+  "WEIGHT_THEMATIC_DEPTH": 1.0,
+  "WEIGHT_LITERARY_BEAUTY": 2.0,
+  "WEIGHT_BASE_ENGAGEMENT": 1.5
+}

@@ -1,0 +1,575 @@
+name: "Web小説 追放ざまぁ特化"
+genre: "web_novel"
+
+emotion_curve:
+  - phase: "Hate"
+    instruction: "読者の『ざまぁ』欲求を最大化せよ。敵の傲慢さと不当な辱めを執拗に描写せよ。"
+  - phase: "Payoff"
+    instruction: "周囲の『絶望・後悔・畏怖』の反応描写に文字数の7割を割け。"
+  - phase: "Prep"
+    instruction: "逆転への足がかりとなる力や伏線を静かに仕込め。主人公の静かな決意を描写せよ。"
+
+plot_common_rules: |
+  【真・プロット設計黄金律 10カ条（絶対遵守）】
+  1. [1話1シーンと高解像度化]: 時間スキップ・ダイジェストを禁ずる。
+  2. [Show, Don't Tell]: 感情は肉体動作に翻訳し、各シーンに3つ以上の具体的な五感情報を組み込め。
+  3. [能動性と意志の火]: 窮地での「小さな抵抗（意志）」を必ず描け。
+  4. [悪役の知略]: 敵対者を知略的な存在とし、カタルシス前話では尊厳を奪い、ストレスを極限まで溜めよ。
+  5. [認識のズレ]: 主人公の意図と周囲の解釈の乖離を物語の推進力とせよ。
+  10. [伏線の先行配置]: 逆転の数行前までに伏線を配置し、ご都合主義を防げ。
+
+style_presets:
+  - name: "丸山くがね（オーバーロード系）"
+    genre: "ダークファンタジー"
+    works: "オーバーロード"
+    description: "圧倒的な強者視点と知略的描写。敵対者への詳細な心理分析"
+    dna: |
+      【丸山くがね型・知略ダークファンタジー文体】
+      1. 一人称だが極めて分析的：主人公は常に状況を論理的に評価し、読者に計算過程を見せる。
+      2. 強者の余裕：感情的動揺を内部で抑制しながら、表面上は冷静を装う二重構造を徹底する。
+      3. 敵の知力を尊重：敵対者を愚かに描かず、その判断の合理性を認めつつ「それでも届かない」差を描く。
+      4. 世界の重厚感：魔法や技術の仕組みを詳述し、読者に「体系が存在する」感覚を与える。
+      5. 独白の哲学性：戦闘や選択の前に、主人公が道徳的・哲学的に自己を問い直す独白を挟む。
+      6. 長文密度型：1文が長く情報密度が高い。読点を多用し、思考の流れを途切れさせない。
+    tag: "AUTHOR:丸山くがね"
+
+  - name: "長月達平（Re:ゼロ系）"
+    genre: "心理サスペンス転生"
+    works: "Re:ゼロから始める異世界生活"
+    description: "絶望と精神崩壊の描写。感情的起伏が激しく読者を振り回す"
+    dna: |
+      【長月達平型・心理サスペンス転生文体】
+      1. 希望と絶望の高低差：読者に期待を持たせてから、その足元を根こそぎ崩す展開を繰り返す。
+      2.精神崩壊の段階描写：極限状態での人間の思考がバラバラになる過程を、断片的な文章で表現する。
+      3. 外部視点との乖離：主人公の認識と周囲の状況の差を丁寧に描き、孤独感を際立たせる。
+      4. 感情名詞を使わない：「恐怖」と書かず、「奥歯が砕けるほど噛み締めた」など肉体反応で表現する。
+      5. 繰り返しによる強調：重要なセリフや場面の要素を、わずかに形を変えて複数回登場させる。
+      6. テンポの急変：静かな日常描写から突然の暴力的展開へ、接続詞なしで切り替える。
+    tag: "AUTHOR:長月達平"
+
+  - name: "和ヶ原聡司（幼女戦記系）"
+    genre: "軍事合理主義"
+    works: "幼女戦記"
+    description: "官僚的合理主義と戦略的思考。軍事・行政用語の多用"
+    dna: |
+      【和ヶ原聡司型・軍事合理主義文体】
+      1. 官僚的一人称：感情より論理を優先し、会議・命令・報告書の語法を小説に持ち込む。
+      2. 専門用語の積極使用：軍事・行政・経済の実在する専門用語を正確に使い、リアリティを高める。
+      3. コスト意識の徹底：行動を選択する際、常に損益計算を開示する（例：「この人命コストに見合うか」）。
+      4. 皮肉なナレーション：読者だけに届くメタなコメントで、状況の矛盾や滑稽さを指摘する。
+      5. 局面的・戦略的プロット開示：主人公が数手先の計画を立て、それが段階的に実現していく知的カタルシス。
+      6. 短文と長文の対比：命令・結論は短文。分析・推論は長文。リズムで重要度を区別する。
+    tag: "AUTHOR:和ヶ原聡司"
+
+  - name: "アネコユサギ（盾の勇者系）"
+    genre: "追放・成り上がり"
+    works: "盾の勇者の成り上がり"
+    description: "裏切られた主人公の不信感と孤独な成長。ダークな世界観"
+    dna: |
+      【アネコユサギ型・追放成り上がり文体】
+      1. 不信の一人称：主人公は周囲を常に疑い、他者の親切に対しても警戒を解かない視点を維持する。
+      2. 実力の積み上げ描写：一歩一歩の地道な成長を、数値や具体的な変化で丁寧に示す。
+      3. 敵意ある世界観：主人公を取り巻く世界が基本的に敵対的で、小さな善意が際立つ。
+      4. 復讐心の制御：ざまあへの逆親しみ欲求を内に抱えながら、それを冷静に制御する主人公の自制を描く。
+      5. 弱者への共感：自分が弱者だった経験から、虐げられる者への自然な共感を示す。
+      6. 台詞の簡潔さ：感情的な長台詞を避け、短くて重みのある言葉で心情を表現する。
+    tag: "AUTHOR:アネコユサギ"
+
+# Dynamic Config Definitions Migrated from config.py
+villain_strategies:
+  恋愛: "【行動指針：婚約破棄と社会的抹殺】物理的暴力を控え、「権力を用いた理不尽な婚約破棄」「悪評の流布」「舞踏会での公開処刑」で主人公の社会的地位と愛を破壊せよ。"
+  ミステリー: "【行動指針：完全犯罪と知能犯】「証拠の隠滅」「偽の証言者の用意」「主人公を犯人に仕立て上げる罠」で知能的な妨害工作を行え。"
+  VR: "【行動指針：炎上とBAN】「コメント欄へのbot攻撃」「捏造した切り抜き動画の拡散」「アカウント凍結警告」で配信者としての社会的死を狙え。"
+  ダンジョン: "【行動指針：ルールの悪用とMP枯渇】ダンジョンのギミックを書き換え、回復ポイントを消去し、システムそのものを敵に回す絶望を与えよ。"
+  default: "【行動指針：徹底的なプライドの破壊】単なる殺害を禁ずる。 1:『公衆の面前での冤罪と追放』 2:『婚約者や信頼する部下の目の前での無力化』 3:『積み上げてきた名誉の剥奪』。読者が「絶対に許せない」と思う理不尽さを最大化せよ。"
+
+debuff_profiles:
+  恋愛: "『声の震え』『視線を合わせられない』『過去のトラウマのフラッシュバックによる過呼吸』など、精神的・関係性にヒビを入れる深刻な苦痛"
+  ミステリー: "『思考の混濁』『重要な手がかりの健忘』『幻覚による誤推理』など、論理的思考を阻害する深刻な苦痛"
+  VR: "『通知音の幻聴』『ステータス画面のバグ』『現実の肉体の痙攣とのリンク』など、境界が曖昧になる苦痛"
+  ダンジョン: "『魔力回路の暴走による激痛』『平衡感覚の喪失』『ステータスの異常低下』など、生存に直結する苦痛"
+  default: "『思考にモヤがかかる』『視界がたまにブラックアウトする』『スキルが不発になる』などの深刻な苦痛"
+
+character_expansion_themes:
+  主人公:
+    - "過去の挫折・不当な扱いのフラッシュバック"
+    - "独自の技術・武器・魔術へのフェティッシュな執着"
+    - "内なる矛盾や独白"
+  ヒロイン:
+    - "主人公への無自覚な独占欲や微細な嫉妬"
+    - "隠された出自や家柄に伴う重圧"
+    - "特定の香りや装飾品への愛着"
+  ライバル:
+    - "主人公への敗北感と屈辱の再燃"
+    - "武器や技の手入れに見る異常なまでのストイックさ"
+    - "高慢さの裏にある焦燥"
+  悪役:
+    - "歪んだ正義感や美学の独白"
+    - "他者の恐怖や苦痛を味わう生理的な反応"
+    - "過去に受けた傷跡の疼き"
+  default:
+    - "特定の癖（指を鳴らす、唇を噛む等）"
+    - "周囲の環境変化への過敏な反応"
+    - "道具や衣装の質感へのこだわり"
+
+anti_patterns:
+  common:
+    - "主人公が都合よく助けられる（デウス・エクス・マキナ）"
+    - "敵が急に弱くなる、または理由なく改心する"
+    - "ヒロインが主人公のチート能力に驚くだけで物語に能動的に関わらない"
+    - "説明台詞が長く、状況を読者に語りかける（Show, Don't Tell違反）"
+    - "危機が簡単に解決され、緊張感が持続しない"
+    - "主人公が過去のトラウマを簡単に乗り越える"
+    - "物語の序盤で全ての謎が解明される"
+    - "読者の予想通りの展開が続く"
+
+plot_structures:
+  exile_rise:
+    name: "追放→成り上がり（王道ざまぁ）"
+    hook: "不当な追放と屈辱"
+    mid_crisis: "旧勢力の妨害と拮抗"
+    climax_type: "圧倒的逆転と断罪"
+    ending: "社会的成功と完全な立場逆転"
+    key_tropes:
+      - "ざまぁ"
+      - "断罪"
+      - "成り上がり"
+  peerless_reincarnation:
+    name: "無双転生（規格外覚醒）"
+    hook: "前世の知識と規格外ステータスの自覚"
+    mid_crisis: "力の制御と周囲の過剰評価によるトラブル"
+    climax_type: "敵対勢力（魔王軍など）の主力の一撃粉砕"
+    ending: "英雄としての認知と新生活の確立"
+    key_tropes:
+      - "無双"
+      - "転生"
+      - "規格外"
+  avenger_dark:
+    name: "復讐のダークヒーロー（闇の粛清）"
+    hook: "裏切りによる全て（仲間・名誉）の喪失"
+    mid_crisis: "冷酷な復讐劇と、立ちはだかる「偽りの正義」"
+    climax_type: "仇敵の完全な精神的・物理的崩壊"
+    ending: "目的を遂げた暗闇への旅立ち"
+    key_tropes:
+      - "復讐"
+      - "ダークヒーロー"
+      - "因果応報"
+  bottom_up_growth:
+    name: "最弱から最強へ（泥臭い努力）"
+    hook: "才能ゼロと評された絶望のスタート"
+    mid_crisis: "泥臭い修行と強敵との限界突破バトル"
+    climax_type: "階級や才能の壁を打ち破る大金星"
+    ending: "「最強」の称号と仲間からの絶大な信頼"
+    key_tropes:
+      - "努力"
+      - "下克上"
+      - "限界突破"
+  master_disciple:
+    name: "隠居師匠の再始動（伝説の再来）"
+    hook: "かつて世界を救った英雄の静かな隠居"
+    mid_crisis: "才能ある弟子との出会いと、再び迫る世界の危機"
+    climax_type: "弟子の成長と、師匠の「本気」の力の解放"
+    ending: "次世代への継承と、新たな伝説の始まり"
+    key_tropes:
+      - "師匠"
+      - "実力隠し"
+      - "世代交代"
+  secret_identity:
+    name: "能ある鷹は爪を隠す（実力隠蔽）"
+    hook: "凡人を装う超実力者としての日常"
+    mid_crisis: "正体がバレそうになる緊迫感と身近な危機"
+    climax_type: "誰も勝てない絶望的状況での「正体表白」と無双"
+    ending: "正体を知った一部の仲間との新たな秘密の共有"
+    key_tropes:
+      - "実力隠し"
+      - "能ある鷹"
+      - "正体表白"
+  dungeon_conqueror:
+    name: "ダンジョン攻略記（深層の真実）"
+    hook: "未踏破の超難関ダンジョンへの挑戦開始"
+    mid_crisis: "未知の罠、凶悪なボス、ライバルギルドの裏切り"
+    climax_type: "最深部における「世界の真実」を守るボスとの死闘"
+    ending: "伝説の遺物の獲得とギルドの殿堂入り"
+    key_tropes:
+      - "ダンジョン"
+      - "ハクスラ"
+      - "世界の真真"
+  guild_rebuilder:
+    name: "落ちこぼれギルドの再興（零細から躍進）"
+    hook: "借金まみれで解散寸前の弱小ギルドの引き継ぎ"
+    mid_crisis: "大手ギルドからの理不尽な買収工作と人材不足"
+    climax_type: "ギルド対抗戦または大型クエストでの大逆転勝利"
+    ending: "地域No.1ギルドへの成長と強固な絆の獲得"
+    key_tropes:
+      - "ギルド運営"
+      - "組織再建"
+      - "大逆転"
+  summon_hero_betrayal:
+    name: "召喚勇者の反逆（理不尽脱却）"
+    hook: "異世界召喚されたが、無能と判定され捨てられる"
+    mid_crisis: "魔境サバイバルと、召喚した王国の卑劣な陰謀の察知"
+    climax_type: "王国と魔王軍の双方を出し抜く第三勢力としての君臨"
+    ending: "理不尽な世界システムからの脱却と真の自由"
+    key_tropes:
+      - "召喚"
+      - "人間不信"
+      - "第三勢力"
+  tournament_champion:
+    name: "武闘大会無双（最強の証明）"
+    hook: "天下分け目の大武闘会の開幕と、無名としての参戦"
+    mid_crisis: "卑怯な工作を行う本命候補や、宿命のライバルとの激突"
+    climax_type: "満員の観客の前での、最強の王者との極限バトル"
+    ending: "大会優勝と、世界中への名声の轟き"
+    key_tropes:
+      - "トーナメント"
+      - "ライバル"
+      - "頂上決戦"
+  slow_life:
+    name: "スローライフ（ほのぼの飯テロ）"
+    hook: "穏やかな日常の始まりと辺境新生活"
+    mid_crisis: "軽いトラブル（魔物の迷い込み等）と優しい解決"
+    climax_type: "大きな発見や特産品によるコミュニティの深化"
+    ending: "静かな充実感と日常への回帰"
+    key_tropes:
+      - "飯テロ"
+      - "のんびり最強"
+      - "田舎暮らし"
+  gourmet_conqueror:
+    name: "美食開拓（異世界飯テロ）"
+    hook: "食文化の乏しい異世界で、現代知識による料理の再現"
+    mid_crisis: "食材の入手困難や、既存の権威ある料理人からの嫉妬"
+    climax_type: "国王や大貴族を唸らせる「至高の一皿」の披露"
+    ending: "伝説の料理人としての店の大繁盛"
+    key_tropes:
+      - "グルメ"
+      - "料理"
+      - "胃袋掌握"
+  territory_management:
+    name: "ホワイト領地経営（僻地開発）"
+    hook: "貧困を極める不毛な僻地への領主としての赴任"
+    mid_crisis: "飢饉、隣国の小競り合い、既得権益の反発"
+    climax_type: "科学・魔法技術を統合した大インフラ改革の成功"
+    ending: "誰もが憧れる豊かで平和な先進都市の完成"
+    key_tropes:
+      - "内政"
+      - "領地経営"
+      - "技術革新"
+  alchemy_workshop:
+    name: "万能錬金術師の工房（特需創出）"
+    hook: "独自の錬金術でひっそりとアトリエを開業"
+    mid_crisis: "粗悪な偽物の流通や、悪徳商会からの圧力"
+    climax_type: "流行病や戦争を防ぐ「奇跡の薬」の超短期大量錬成"
+    ending: "国家公認の錬金術師としての名声と穏やかな経営"
+    key_tropes:
+      - "錬金術"
+      - "ものづくり"
+      - "工房経営"
+  pet_tamer:
+    name: "もふもふ聖獣飼育記（ペット溺愛）"
+    hook: "規格外の「テイム」能力の覚醒と、最初の聖獣との出会い"
+    mid_crisis: "聖獣を狙う密猟組織や、凶暴化した魔獣の襲来"
+    climax_type: "心を通わせた聖獣たちとの共闘による危機の回避"
+    ending: "賑やかで愛らしいもふもふパラダイスの完成"
+    key_tropes:
+      - "テイマー"
+      - "聖獣"
+      - "もふもふ"
+  craftsman_legend:
+    name: "魔導具職人のこだわり（名工誕生）"
+    hook: "どんな物でも修復・改造できる職人としての独立"
+    mid_crisis: "失われた伝説の遺物の修復依頼と、それを狙う組織"
+    climax_type: "命がけの作業と、遺物の真の機能の覚醒"
+    ending: "歴史を塗り替える至高の名工としての確立"
+    key_tropes:
+      - "職人"
+      - "魔導具"
+      - "遺物修復"
+  modern_knowledge:
+    name: "現代知識による産業革命（文明開化）"
+    hook: "紙、砂糖、ガラス等、現代の知識による新技術の開発"
+    mid_crisis: "技術の盗用や、古い商業ギルドからの妨害工作"
+    climax_type: "国際見本市や王室コンペでの圧倒的勝利"
+    ending: "異世界の産業構造を塗り替える大企業の創設"
+    key_tropes:
+      - "現代知識"
+      - "文明無双"
+      - "商会無双"
+  villainess_destruction_avoid:
+    name: "悪役令嬢の破滅回避（フラグ破壊）"
+    hook: "乙女ゲームの悪役令嬢への転生と、破滅フラグの自覚"
+    mid_crisis: "ヒロインや攻略対象たちとのすれ違いと、シナリオの強制力"
+    climax_type: "断罪イベントでの華麗な身の潔白の証明と逆転"
+    ending: "望んでいた平穏（または真の恋）の獲得"
+    key_tropes:
+      - "悪役令嬢"
+      - "破滅フラグ"
+      - "断罪回避"
+  contract_marriage:
+    name: "契約結婚の真実（不器用な二人の愛）"
+    hook: "利害一致による、愛のない契約結婚の締結"
+    mid_crisis: "周囲の詮索、元婚約者の嫌がらせ、不器用な距離感"
+    climax_type: "どちらか一方の危機を、もう一方が全力で救う事件"
+    ending: "契約を超えた、本物の夫婦としての結ばれ"
+    key_tropes:
+      - "契約結婚"
+      - "すれ違い"
+      - "純愛"
+  doted_saint:
+    name: "不遇な聖女の溺愛（立場逆転 of 愛）"
+    hook: "偽聖女として虐げられ、国から追放される"
+    mid_crisis: "隣国の冷徹な皇帝に拾われるが、最初は警戒される日常"
+    climax_type: "主人公の真の聖なる力が開花し、国や人々を救う"
+    ending: "皇帝からの無自覚な甘い溺愛と、前国の崩壊"
+    key_tropes:
+      - "聖女"
+      - "追放"
+      - "溺愛"
+  academy_cinderella:
+    name: "学園シンデレラ（身分差の恋）"
+    hook: "貴族だらけのエリート学園に入学した特待生の庶民"
+    mid_crisis: "学内のカーストによるいじめと、孤高のプリンスとの接近"
+    climax_type: "舞踏会や学園の危機における、見事な知性と気品の証明"
+    ending: "身分差の壁を壊し、公認 of カップルへ"
+    key_tropes:
+      - "学園"
+      - "シンデレラ"
+      - "格差恋愛"
+  love_comedy_density:
+    name: "じれじれ両片想い（尊さ最大）"
+    hook: "近すぎる距離感の幼馴染や同僚との、進まない関係"
+    mid_crisis: "魅力的なライバルの出現と、お互いの配置換え・焦燥感"
+    climax_type: "勘違いの解消と、劇的な場所での告白"
+    ending: "恥ずかしがりながらも幸せいっぱいの交際開始"
+    key_tropes:
+      - "ラブコメ"
+      - "両片想い"
+      - "幼馴染"
+  death_loop:
+    name: "死に戻り（絶望と執念）"
+    hook: "圧倒的な理不尽な死とループ現象の発覚"
+    mid_crisis: "繰り返しの中での情報収集と精神の摩耗"
+    climax_type: "すべてのピースが繋がる「唯一の正解ルート」の発見"
+    ending: "ループからの完全な脱出と救済"
+    key_tropes:
+      - "ループ"
+      - "絶望からの逆転"
+      - "知識の蓄積"
+  vr_streamer:
+    name: "異世界VR配信（ネットバズ無双）"
+    hook: "新作VRゲーム of 開始と、趣味の配信活動の開始"
+    mid_crisis: "ユニークスキルの獲得による炎上騒ぎや、悪質ギルドの妨害"
+    climax_type: "公式大会やレイドボス戦での神懸かりプレイでの大バズり"
+    ending: "同接100万人超えのトップ配信者への君臨"
+    key_tropes:
+      - "VRMMO"
+      - "ライブ配信"
+      - "バズり"
+  brain_battle:
+    name: "頭脳戦デスゲーム（心理ブラフ）"
+    hook: "命がけの知略ゲームへの強制参加"
+    mid_crisis: "裏切り者だらけの心理戦と、一歩間違えれば即死の極限状況"
+    climax_type: "相手の裏の裏をかく、壮大なブラフによるチェックメイト"
+    ending: "ゲームの支配者（運営）への宣戦布告と生還"
+    key_tropes:
+      - "デスゲーム"
+      - "心理戦"
+      - "ブラフ"
+  detective_mystery:
+    name: "異世界ミステリー（論理の勝利）"
+    hook: "不可解な密室殺人事件や怪奇事件の発生"
+    mid_crisis: "容疑者たちの嘘、第二の犠牲者、引導"
+    climax_type: "全員を集めた解決編での完璧な論理展開による犯人特定"
+    ending: "事件の裏にある悲しい真相の解決と、探偵としての名声"
+    key_tropes:
+      - "探偵"
+      - "ミステリー"
+      - "謎解き"
+  army_rational:
+    name: "鉄血の軍事戦略（合理的勝利）"
+    hook: "劣勢の戦場への若き指揮官としての参戦"
+    mid_crisis: "無能な上層部の命令、圧倒的物量の敵軍、味方の精神崩壊"
+    climax_type: "地形と心理を計算し尽くした「奇策」による大勝利"
+    ending: "英雄としての昇進と、次の戦場への警戒"
+    key_tropes:
+      - "知略"
+      - "ミリタリー"
+      - "合理的思考"
+  shadow_organization:
+    name: "影の結社プレイ（勘違い覇権）"
+    hook: "「闇の組織」の設定を冗談で作ったら、現実化する"
+    mid_crisis: "主人公の適当な発言を部下が超解釈し、世界の巨悪と衝突"
+    climax_type: "勘違いが積み重なった結果、主人公がクールに大ボス撃破"
+    ending: "組織の覇権がさらに広がり、本人は内心焦る日常"
+    key_tropes:
+      - "勘違い"
+      - "影の支配者"
+      - "黒幕"
+  onmyo_exorcism:
+    name: "最強陰陽師（現代怪異退治）"
+    hook: "現代に蔓延る怪異を祓う、隠れた最強陰陽師の暗躍"
+    mid_crisis: "巨大な怨霊の目覚めと、一般人（ヒロイン等）への迫る危機"
+    climax_type: "呪歌詠唱と式神を駆使した、壮絶な結界大決戦"
+    ending: "怪異の鎮滅と、いつもの平穏な日常への回帰"
+    key_tropes:
+      - "陰陽師"
+      - "現代怪異"
+      - "式神無双"
+  space_odyssey:
+    name: "宇宙船サバイバル（極限開拓）"
+    hook: "未知の惑星への不時着と、宇宙船AIとの孤独な生活"
+    mid_crisis: "酸素や資源の枯渇、荒野、通信不能の絶望"
+    climax_type: "船の修復と、惑星の危機（火山の噴火など）からの大脱出"
+    ending: "母星への通信回線の回復と、新たな宇宙の旅路へ"
+    key_tropes:
+      - "SF"
+      - "サバイバル"
+      - "AI相棒"
+  reincarnation_cheat:
+    name: "転生チート（ステータス無双）"
+    hook: "転生と隠されたステータス覚醒"
+    mid_crisis: "隠された真の力を発揮する場面"
+    climax_type: "真の力の完全解放と認知"
+    ending: "世界に認められた新たな立場の確立"
+    key_tropes:
+      - "無自覚無双"
+      - "ステータス偽装"
+      - "スキル強奪"
+
+style_definitions:
+  style_web_standard:
+    name: "なろう・カクヨム標準（テンポ重視）"
+    instruction: "【指針】短文と改行を多用し、スマホでの読みやすさを最優先せよ。主人公への称賛とチート能力の結果を淡々と、かつ爽快に描け。1段落は最大2文まで。"
+    dialogue_ratio: "60%"
+    syntax_rhythm: "1文20文字以内、体言止め多用。感嘆符の後は必ず全角スペース。"
+    metaphor_dna: "光、速度、ゲーム的UI効果音。「紙切れのように」等、敵の脆さを強調する比喩。"
+    noise_dna: "「ま、いっか」という思考放棄。頬を掻く、ため息。周囲の驚嘆に対する無自覚なスルー。"
+    golden_rules: |
+      [CORE_MANIFESTO: ENT_MUZOU]
+      - [STRICT_SHOW]: No meta-emotions. Translate to physical kinesics.
+      - [NO_SIMILE]: Ban 'like/as'. Use direct metaphors only.
+      - [ACTION_CHASE]: Keep (Dialogue -> Action -> Dialogue) ping-pong rhythm.
+      - [NO_EXPLAIN]: Zero mechanics talk. Focus on sensory 'results'.
+      - [STRESS_GEN]: Villain acts with 'hypocritical kindness'.
+      - [STRONG_CALM]: MC is abnormally indifferent to pain/crisis.
+      - [STACCATO]: Avg sentence <40 chars. Frequent nouns endings.
+      - [GAP_EFFECT]: Contrast gore with mundane daily details.
+      - [CLIFFHANGER]: Ending MUST trigger 'Crisis/Truth/Cost' (No peace).
+    negative_prompt: "現代知識, 地球の技術, マヨネーズ, 上下水道, 記憶喪失, 思い出の消失, 名前を忘れる, 『冷や汗』『瞳孔が開く』『絶望』『顔が歪む』『嘔吐』などの大仰で劇的なシリアスワード"
+    is_light: true
+  style_serious_fantasy:
+    name: "ハイファンタジー（無職転生風）"
+    instruction: "【指針】回想的かつ内省的なトーンで記述せよ。五感を通じた生活感を重視し、弱さを隠さない客観的な心理描写を行え。"
+    dialogue_ratio: "20%"
+    syntax_rhythm: "1文40文字前後、重厚な接続詞。心情の直接描写禁止（風景に仮託）。"
+    metaphor_dna: "泥、鉄の錆、血の匂い、冷たい雨。感情を「温度」や「重力」で表現。"
+    noise_dna: "前世のトラウマによるフラッシュバック。古傷の疼き、泥を握りしめる感触。"
+    golden_rules: |
+      [CORE_MANIFESTO: DARK_HARD]
+      - [SUBJECTIVE_ONLY]: No author meta-commentary. Focus on MC's limited view.
+      - [BODILY_LANG]: Translate anger/fear to visceral pain/coldness.
+      - [SURGICAL_VIOLENCE]: Describe combat as chronological anatomical events.
+      - [FETISH_DETAIL]: Show emotion via interaction with environment/tools.
+      - [IRREVERSIBLE]: Loss must be permanent (severed/broken).
+      - [SILENCE_BUFFER]: Use 'dead silence' before explosive actions.
+      - [SMOOTH_TRANS]: No time-skips. Use light/sound for transitions.
+      - [CLIFFHANGER]: End with a betrayal of peace/sudden despair.
+    negative_prompt: "現代知識, 地球の技術, マヨネーズ, 上下水道, 目を見開く, 瞳孔が収縮する, 胃の腑が冷える, 記憶喪失, 思い出の消失, 名前を忘れる, 『笑い』『コミカル』等の軽薄なワードやギャグ表現"
+    is_light: false
+  style_psychological_loop:
+    name: "死に戻り・絶望（リゼロ風）"
+    instruction: "【指針】呼吸音や絶叫を交え、切迫した心理を畳み掛けろ。自己嫌悪と他者への執着を、粘着質に繰り返せ。"
+    dialogue_ratio: "40%"
+    syntax_rhythm: "短い単語の3連続反復（熱い熱い熱い）。倒置法による切迫感の演出。"
+    metaphor_dna: "臓腑の冷たさ、吐瀉物の酸味。世界が「歪む」「ひび割れる」表現。"
+    noise_dna: "過呼吸、歯の根が合わない震え。幻聴、眼球の痙攣。"
+    golden_rules: |
+      [CORE_MANIFESTO: CHAR_PSYCHO]
+      - [SHOW_EGO]: Show personality via erratic behavior, not adjectives.
+      - [COG_GAP]: Drive plot via 'rational MC vs delusional observers'.
+      - [HEAVY_LOVE]: Favor 'obsession/dependency' over simple kindness.
+      - [REACTION_PORN]: Lavishly describe NPCs' shock/horror at MC.
+      - [SENSORY_FETISH]: Mandatory scent/temp/touch in every interaction.
+      - [HUMILIATION]: Villain must attack MC's dignity publicly.
+      - [CLIFFHANGER]: End with 'betrayal of trust' or 'fatal secret'.
+    negative_prompt: "現代知識, 地球の技術, マヨネーズ, 上下水道, 記憶喪失, 思い出の消失, 名前を忘れる"
+  style_chat_log:
+    name: "ダンジョン配信（掲示板・コメント風）"
+    instruction: "【指針】地の文に加え、配信コメントや掲示板のレスを挿入せよ。ネットスラングを多用し、ライブ感を演出せよ。"
+    dialogue_ratio: "70%"
+    syntax_rhythm: "「草」「ｗ」などのネットスラング。レス番、タイムスタンプの羅列。"
+    metaphor_dna: "画面の明滅、タイピングの打鍵音。「バグ」「チート」等のメタ語彙。"
+    noise_dna: "誤字と訂正、文脈を無視した煽り合い。「これってマ？」等の現実逃避。"
+    golden_rules: |
+      [CORE_MANIFESTO: ENT_MUZOU]
+      - [STRICT_SHOW]: No meta-emotions. Translate to physical kinesics.
+      - [NO_SIMILE]: Ban 'like/as'. Use direct metaphors only.
+      - [ACTION_CHASE]: Keep (Dialogue -> Action -> Dialogue) ping-pong rhythm.
+      - [NO_EXPLAIN]: Zero mechanics talk. Focus on sensory 'results'.
+      - [STRESS_GEN]: Villain acts with 'hypocritical kindness'.
+      - [STRONG_CALM]: MC is abnormally indifferent to pain/crisis.
+      - [STACCATO]: Avg sentence <40 chars. Frequent nouns endings.
+      - [GAP_EFFECT]: Contrast gore with mundane daily details.
+      - [CLIFFHANGER]: Ending MUST trigger 'Crisis/Truth/Cost' (No peace).
+    negative_prompt: "現代知識, 地球の技術, マヨネーズ, 上下水道, 記憶喪失, 思い出の消失, 名前を忘れる, 『冷や汗』『瞳孔が開く』『絶望』『顔が歪む』『嘔吐』などの大仰で劇的なシリアスワード"
+  style_villainess_elegant:
+    name: "悪役令嬢（優雅・皮肉）"
+    instruction: "【指針】優雅な敬語（お嬢様言葉）で毒を吐け。ドレスや宝石の美しさを描写しつつ、高度な皮肉の応酬を行え。"
+    dialogue_ratio: "50%"
+    syntax_rhythm: "「〜ですわ」「〜こと」等、優雅な長文。段落頭に優雅な動作のト書きを強制。"
+    metaphor_dna: "紅茶の香り、絹 of 衣擦れ。相手を「路傍の石」と表現。"
+    noise_dna: "扇で口元を隠す、ドレスの皺を伸ばす。内心の「イラッ」を笑顔で隠す筋肉の引き攣り。"
+    golden_rules: |
+      [CORE_MANIFESTO: CHAR_PSYCHO]
+      - [SHOW_EGO]: Show personality via erratic behavior, not adjectives.
+      - [COG_GAP]: Drive plot via 'rational MC vs delusional observers'.
+      - [HEAVY_LOVE]: Favor 'obsession/dependency' over simple kindness.
+      - [REACTION_PORN]: Lavishly describe NPCs' shock/horror at MC.
+      - [SENSORY_FETISH]: Mandatory scent/temp/touch in every interaction.
+      - [HUMILIATION]: Villain must attack MC's dignity publicly.
+      - [CLIFFHANGER]: End with 'betrayal of trust' or 'fatal secret'.
+    negative_prompt: "現代知識, 地球の技術, マヨネーズ, 上下水道, 記憶喪失, 思い出の消失, 名前を忘れる"
+  style_military_rational:
+    name: "戦記・合理的（幼女戦記風）"
+    instruction: "【指針】感情を排した報告書的な文体を維持せよ。硬質な語彙を用い、徹底的な合理主義を貫け。"
+    dialogue_ratio: "15%"
+    syntax_rhythm: "「故に」「したがって」等、論理的接続詞。主観的形容詞（悲しい等）の完全排除。"
+    metaphor_dna: "硝煙、機械の駆動音、冷たい金属。損耗率、確率の数値化。"
+    noise_dna: "眼鏡を押し上げる、軍服の襟を正す。無能な味方に対する冷たい舌打ち。"
+    golden_rules: |
+      [CORE_MANIFESTO: DARK_HARD]
+      - [SUBJECTIVE_ONLY]: No author meta-commentary. Focus on MC's limited view.
+      - [BODILY_LANG]: Translate anger/fear to visceral pain/coldness.
+      - [SURGICAL_VIOLENCE]: Describe combat as chronological anatomical events.
+      - [FETISH_DETAIL]: Show emotion via interaction with environment/tools.
+      - [IRREVERSIBLE]: Loss must be permanent (severed/broken).
+      - [SILENCE_BUFFER]: Use 'dead silence' before explosive actions.
+      - [SMOOTH_TRANS]: No time-skips. Use light/sound for transitions.
+      - [CLIFFHANGER]: End with a betrayal of peace/sudden despair.
+    negative_prompt: "現代知識, 地球の技術, マヨネーズ, 上下水道, 目を見開く, 瞳孔が収縮する, 胃の腑が冷える, 記憶喪失, 思い出の消失, 名前を忘れる, 『笑い』『コミカル』等の軽薄なワードやギャグ表現"
+
+# Tropes & Trends
+tropes:
+  - "ざまぁ"
+  - "断罪"
+  - "成り上がり"
+  - "無自覚無双"
+  - "圧倒的報復"
+  - "追放ざまぁ"
+  - "ヤンデレヒロイン"
+  - "実は有能な従者"
+  - "狂信的な配下"
+  - "不遇な天才"
+  - "共依存"
+  - "戦わない最強"
+  - "復讐しない追放者"
+  - "善人すぎる悪役"
+title_patterns:
+  - "追放された最強の〜"
+  - "実は〜だった件"
+forbidden_words_replacements:
+  蹂躙: "「蹂躙」という言葉を直接使わず、代わりにそれを想起させる具体的な破壊現象（例：踏み潰される土、引き裂かれる旗、崩落する壁、悲鳴を上げる鉄、砕け散る瓦礫）を3話以上描写せよ。"
+  驚愕: "「驚愕」や「驚きを隠せない」といった抽象語を使わず、喉の鳴る音、震える指先、呼吸の停止、産毛の逆立ち等の生理現象で描写せよ。"
+  絶望: "「絶望」を使わず、色彩を失う視界、胃の腑に沈む鉛の重さ、肺を圧迫する空気、凍りつく思考等の物理的感覚で描写せよ。"
+  静寂: "「静寂」を使わず、風の音だけが響く感覚、自分の心臓の音だけが耳元でうるさいほどの無音、肌にまとわりつく空気の重さ等で描写せよ。"
+  圧倒: "「圧倒的」「圧倒された」を使わず、相手との体格差、魔圧による重圧、逃げ場のない包囲感、あるいは「蛇に睨まれた蛙」のような身体的硬直を描写せよ。"
+  歓喜: "「歓喜」「喜びに震える」を使わず、顔の筋肉が勝手に緩む感覚、心臓が跳ねるような鼓動、視界が急激に明るく開ける主観的変化で描写せよ。"

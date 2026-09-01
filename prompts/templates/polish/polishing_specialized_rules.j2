@@ -1,0 +1,6 @@
+{% if specialized_rules_data %}
+【プロット構造の制約】
+{% for rule in specialized_rules_data %}
+- シーン{{ rule.scene_no }}: {{ rule.action }}
+{% endfor %}
+{% endif %}

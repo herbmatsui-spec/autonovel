@@ -1,0 +1,62 @@
+{
+  "genre": "zarma",
+  "description": "ざまぁジャンル専用マーケティングパック生成変数",
+  "catchphrase_templates": [
+    "追放された最強、{{cheat_ability}}で全てを奪い返す——",
+    "『{{insult_title}}』の烙印を、{{cheat_ability}}で焼き払え。",
+    "ざまぁ、とはこのことだ。{{protagonist_name}}の無双譚、開幕。",
+    "元パーティ、震撼。{{protagonist_name}}の『真の力』、今暴かれる。",
+    "裏切りは、最強への招待状だった。{{protagonist_name}}、無双無双また無双。"
+  ],
+  "kakuyomu_notes_templates": [
+    "【{{current_ep}}話更新】{{protagonist_name}}、{{current_ep_achievement}}達成！\n\n{{catharsis_target}}への『ざまぁ』、遂に完了——。\n読者の皆様の『スカッとした』が、作者の最大の栄養です。\n\n次回、{{next_ep_teaser}}。\nお楽しみに！\n\n#ざまぁ #無双 #チート #追放 #成り上がり #{{protagonist_name}}",
+    "【{{current_ep}}話更新】\n{{protagonist_name}}の『{{cheat_ability}}』、遂に本気を見せる時が来た。\n\n{{catharsis_target}}の顔面蒼白、必見です。\n『ざまぁ』の快感、存分に味わってください。\n\n感想・ブクマ・評価、全て糧にします！\n\n#ざまぁ #最強 #チート #追放 #カタルシス"
+  ],
+  "tags": [
+    "ざまぁ",
+    "主人公最強",
+    "追放",
+    "チート",
+    "無双",
+    "成り上がり",
+    "復讐",
+    "スキル",
+    "ステータス",
+    "ファンタジー",
+    "異世界",
+    "冒険",
+    "バトル",
+    "カタルシス",
+    "スカッとする"
+  ],
+  "tag_selection_rules": {
+    "mandatory": ["ざまぁ", "主人公最強", "追放", "チート"],
+    "optional_count": 6,
+    "priority_order": [
+      "無双",
+      "成り上がり",
+      "復讐",
+      "スキル",
+      "ステータス",
+      "ファンタジー",
+      "異世界",
+      "冒険",
+      "バトル",
+      "カタルシス",
+      "スカッとする"
+    ]
+  },
+  "synopsis_structure": {
+    "hook": "追放された最強の{{protagonist_role}}、{{protagonist_name}}。",
+    "inciting_incident": "{{betrayal_type}}により、全てを失った——はずだった。",
+    "turning_point": "だが、彼は手に入れた。『{{cheat_ability}}』という、世界の理をねじ曲げる力を。",
+    "promise": "今、{{catharsis_target}}への『ざまぁ』が始まる。\n圧倒的実力差で、見返し、奪い、支配する。\nこれは、落第生が世界を制する——痛快無双譚。"
+  },
+  "promo_image_concepts": [
+    "主人公が片手で巨大モンスターを押し潰すシルエット",
+    "ステータス画面に『EX』『∞』が並ぶクローズアップ",
+    "元パーティメンバーが恐怖で震える背中、主人公は余裕の表情で背を向ける",
+    "ヒロインが主人公に膝をつき忠誠を誓う、主人公は優しく頭を撫でる",
+    "『ざまぁ完了』のスタンプを押す主人公の手元"
+  ]
+}

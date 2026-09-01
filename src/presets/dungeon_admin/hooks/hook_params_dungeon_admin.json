@@ -1,0 +1,41 @@
+{
+  "genre": "dungeon_admin",
+  "description": "ダンジョン運営・経営・防衛ジャンル専用フック戦略パラメータ",
+  "opening_patterns": [
+    {
+      "name": "core_awakening",
+      "template": "『ダンジョンコア、認証完了。マスター権限、付与。』\n{{dm_name}}の手元で、無機質な結晶が——『世界の一部』を、書き換える権利へと変わる。\n「さて、どんな迷宮を作ろうか。冒険者が『二度と来たくない』と思って、また来たくなるような。」",
+      "variables": ["dm_name"],
+      "effect": "システムメッセージ風で権限獲得即提示。主人公の『悪趣味・知的・サービス精神』を冒頭から示唆。"
+    },
+    {
+      "name": "first_adventurers",
+      "template": "「おい、噂の『新生ダンジョン』だぞ！」「レアドロップ狙いで、一発当てようぜ！」\n冒険者パーティ『{{party_name}}』、意気揚々とエントランスへ。\n{{dm_name}}は、モニター（水晶球）越しに、ニヤリと笑う。\n「いらっしゃいませ。『チュートリアル』は、甘くないですよ？」",
+      "variables": ["party_name", "dm_name"],
+      "effect": "冒険者視点の期待と、ダンジョンマスター視点の余裕を対比。チュートリアルという言葉で『教育的悪意』予感。"
+    }
+  ],
+  "closing_patterns": [
+    {
+      "name": "layer_clear_cliffhanger",
+      "template": "『{{layer_name}}、クリア。生還者：0名。』\nログに刻まれる、無慈悲な文字列。\nだが、ドロップアイテム『{{rare_drop}}』の輝きは、次なる挑戦者を呼ぶ。\n{{dm_name}}は、次の階層設計図に、新たな『悪戯』を書き込む。\n\n——次話、『{{next_ep_title}}』",
+      "variables": ["layer_name", "rare_drop", "dm_name", "next_ep_title"],
+      "effect": "全滅という残酷さとレアドロップの誘惑の対比。設計図への『悪戯』書き込みで次回への期待。"
+    },
+    {
+      "name": "monster_evolution",
+      "template": "『{{monster_name}}、進化。新種族：{{new_species}}。スキル：{{new_skill}}習得。』\nモニターに映る、かつての雑魚モンスターが——『守護者』へと姿を変える。\n{{dm_name}}は、満足げに頷く。\n「よし、次は『罠』を増やそうか。……あ、宝箱も『ミミック率』上げとこ。」\n\n——次話、『{{next_ep_title}}』",
+      "variables": ["monster_name", "new_species", "new_skill", "dm_name", "next_ep_title"],
+      "effect": "モンスター育成の喜び・進化の驚き。宝箱ミミック率という『悪趣味』で次回予告。"
+    }
+  ],
+  "cliffhanger_templates": [
+    "——ダンジョンコアに、『未知のコマンド』が追加された。\n『{{unknown_command}}——実行しますか？』",
+    "——『{{rival_dungeon}}』のダンジョンマスターが、{{dm_name}}の前に現れた。",
+    "——冒険者ギルドから、『ダンジョン閉鎖勧告』が届いた。\n理由：『難易度が、人権を無視している』ため。"
+  ],
+  "hook_intensity": 0.80,
+  "cliffhanger_frequency": 1.0,
+  "opening_hook_length_lines": 3,
+  "closing_hook_length_lines": 5
+}

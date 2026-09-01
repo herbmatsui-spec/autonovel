@@ -1,0 +1,41 @@
+{
+  "genre": "loop",
+  "description": "ループ・時間逆行・やり直しジャンル専用フック戦略パラメータ",
+  "opening_patterns": [
+    {
+      "name": "death_restart",
+      "template": "『{{death_count}}回目』\nまた、死んだ。\n{{protagonist_name}}は、慣れた天井を見上げながら、そう思う。\n『{{loop_trigger}}』——それが、ループの合図だ。\n記憶は、全部、残ってる。\n「よし、{{target_number}}回目だ。今度は、誰も死なせない」",
+      "variables": ["death_count", "protagonist_name", "loop_trigger", "target_number"],
+      "effect": "死に戻りの回数即提示。慣れた視点で『今度は誰も死なせない』決意表明。ループベテランの余裕と執念。"
+    },
+    {
+      "name": "perfect_run_declaration",
+      "template": "『{{current_loop}}ループ目』\n敵の動き、全部、頭に入ってる。\nフラグの分岐、全部、把握してる。\n隠しルート、全部、開けてる。\n真実、全部、知ってる。\n{{protagonist_name}}は、剣を構える。\n「今度こそ、『完全攻略』してみせる」",
+      "variables": ["current_loop", "protagonist_name"],
+      "effect": "完全把握宣言で『最適解探索』の知的快感提示。迷いゼロの『完璧な立ち回り』予告。"
+    }
+  ],
+  "closing_patterns": [
+    {
+      "name": "flag_recovery_cliffhanger",
+      "template": "『……っ？』\n{{character_name}}の瞳に、光が戻る。\n『{{protagonist_name}}……お前、分かってたのか？』\n{{protagonist_name}}は、頷く。\n「『{{flag_name}}』、回収完了。次は、『{{next_flag}}』だ」\n\n——次話、『{{next_ep_title}}』",
+      "variables": ["character_name", "protagonist_name", "flag_name", "next_flag", "next_ep_title"],
+      "effect": "フラグ回収の爽快感。次のフラグ予告で『収集・完成』への期待継続。"
+    },
+    {
+      "name": "truth_revelation",
+      "template": "『……ループの、原因は、お前だ』\n黒幕——『{{true_enemy}}』の声が、世界中に響く。\n{{protagonist_name}}の瞳が、鋭く光る。\n「知ってた。{{loop_count}}回目で、気づいた」\n\n——次話、『{{next_ep_title}}』",
+      "variables": ["true_enemy", "protagonist_name", "loop_count", "next_ep_title"],
+      "effect": "真実看破の余裕。ループ回数で『データ収集完了』を示唆。最終決戦への期待最大化。"
+    }
+  ],
+  "cliffhanger_templates": [
+    "——{{protagonist_name}}の『{{loop_ability}}』に、新たな制約『{{new_constraint}}』が追加された。\n『残りループ回数：{{remaining_loops}}回』",
+    "——『{{hidden_character}}』が、{{protagonist_name}}の前で『正体』を現した。\n『やっと、会えたね。……{{loop_count}}回も、待ってたんだよ』",
+    "——世界が、『バグ』を吐き出した。\nループの『外側』から、何かが、覗いている。"
+  ],
+  "hook_intensity": 0.90,
+  "cliffhanger_frequency": 1.0,
+  "opening_hook_length_lines": 3,
+  "closing_hook_length_lines": 5
+}

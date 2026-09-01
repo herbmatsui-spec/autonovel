@@ -1,0 +1,41 @@
+{
+  "genre": "vrmmo",
+  "description": "VRMMO・ゲーム世界・チート・配信者ジャンル専用フック戦略パラメータ",
+  "opening_patterns": [
+    {
+      "name": "stream_start_bug",
+      "template": "『{{game_title}}』──世界初の『完全没入型VRMMO』\n配信タイトル：『初見プレイ！　最弱ジョブ『{{weak_job}}』で、どこまで行ける？』\n視聴者：{{initial_viewers}}人\nコメント：『また『{{weak_job}}』かよ……』『即死だろ』『面白くねー』\n{{avatar_name}}は、ヘッドセット越しにニヤリと笑う。\n『弱い？　あー、なら『バグ』使うわ』\n——スキル『{{cheat_ability}}』、習得。",
+      "variables": ["game_title", "weak_job", "initial_viewers", "avatar_name", "cheat_ability"],
+      "effect": "配信開始という現代的フック。最弱ジョブ×視聴者の懐疑×即バグスキル習得で『チーター』宣言。"
+    },
+    {
+      "name": "impossible_clear",
+      "template": "『{{raid_boss_name}}』──公式『ソロクリア不可能』とされた、最凶レイドボス。\n全鯖トップギルド『{{top_guild}}』でさえ、全滅した相手だ。\n{{avatar_name}}は、ポーションも、バフも、仲間も、呼ばない。\n『{{cheat_ability}}』一つで、レイドボスの『HPバー』を、『0』に書き換えた。\n\n配信チャット、沈黙の後──爆発する。\n『嘘だろ……』『チート確定』『運営仕事しろ』",
+      "variables": ["raid_boss_name", "top_guild", "avatar_name", "cheat_ability"],
+      "effect": "公式不可能ボスをソロでチート無双。チャット反応で読者代弁。チート確定の炎上込みでカタルシス。"
+    }
+  ],
+  "closing_patterns": [
+    {
+      "name": "reality_leak",
+      "template": "画面の向こうで、{{avatar_name}}が『{{item_name}}』を『取り出す』。\n光の粒子が、モニターを超えて──{{real_name}}の手元に、実体化する。\n『{{item_effect}}』\n現実世界で、『ゲームのアイテム』が、効いた。\n{{real_name}}は、ニヤリと笑う。\n「『ログアウト』なんて、もう、いらないな」\n\n——次話、『{{next_ep_title}}』",
+      "variables": ["avatar_name", "item_name", "item_effect", "real_name", "next_ep_title"],
+      "effect": "ゲームアイテムの現実実体化という『現実侵食』提示。ログアウト不要宣言で『ゲーム=現実』確信。"
+    },
+    {
+      "name": "admin_access",
+      "template": "『管理者モード：オン』\n{{avatar_name}}の瞳に、『コード』が流れる。\n『{{game_title}}』の『全ソースコード』が、視界に広がる。\nNPCのAI、ドロップテーブル、物理エンジン、時間進行、プレイヤーの記憶──\n全てが、『書き換え可能』な『テキスト』に見える。\n「さて、『パッチノート v∞.0.0』、書くか」\n\n——次話、『{{next_ep_title}}』",
+      "variables": ["avatar_name", "game_title", "next_ep_title"],
+      "effect": "管理者権限獲得で世界のコード可視化。『パッチノート』メタファーで世界書き換え開始宣言。"
+    }
+  ],
+  "cliffhanger_templates": [
+    "——{{real_name}}の部屋に、『{{game_title}}』の『NPC』が、実体化して現れた。\n『マスター、お帰りなさいませ』",
+    "——『{{game_title}}』の『サーバー』が、現実世界の『電力網/通信網/金融システム』に、接続された。",
+    "——『{{rival_player}}』が、{{real_name}}の『正体』を、特定した。\n『見つけたぞ、『{{avatar_name}}』──お前の『現実』を、壊してやる』"
+  ],
+  "hook_intensity": 0.90,
+  "cliffhanger_frequency": 1.0,
+  "opening_hook_length_lines": 3,
+  "closing_hook_length_lines": 5
+}

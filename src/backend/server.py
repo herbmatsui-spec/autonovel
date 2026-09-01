@@ -43,9 +43,40 @@ async def autonovel_exception_handler(request: Request, exc: AutoNovelException)
         content={"error": exc.__class__.__name__, "detail": exc.detail},
     )
 
+import importlib
+import logging
+
+logger = logging.getLogger(__name__)
+
 app.include_router(easy_mode.router, prefix="/easy_mode", tags=["easy_mode"])
+app.include_router(easy_mode.router, prefix="/api/easy-mode", tags=["easy-mode"])
 app.include_router(streaming.router, prefix="/easy_mode", tags=["streaming"])
 app.include_router(graph.router)
+
+
+# 復元されたルーターの動的/静的登録
+restored_routers = [
+    "src.backend.routers.books",
+    "src.backend.routers.plots",
+    "src.backend.routers.episodes",
+    "src.backend.routers.tasks",
+    "src.backend.routers.patches",
+    "src.backend.routers.issues",
+    "src.backend.routers.marketing",
+    "src.backend.routers.prompt_versions",
+    "src.backend.routers.misc",
+    "src.backend.routers.novel",
+    "src.backend.routers.commercial",
+    "src.backend.routers.illustrations",
+]
+
+for mod_path in restored_routers:
+    try:
+        mod = importlib.import_module(mod_path)
+        if hasattr(mod, "router"):
+            app.include_router(mod.router)
+    except Exception as e:
+        logger.warning(f"Could not load router {mod_path}: {e}")
 
 
 @app.get("/health")

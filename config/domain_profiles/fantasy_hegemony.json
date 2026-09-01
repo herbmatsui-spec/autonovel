@@ -1,0 +1,22 @@
+{
+  "DISABLE_CATHARSIS_ENGINE": false,
+  "STRESS_CATHARSIS_THRESHOLD": 85,
+  "STRESS_FILLER_THRESHOLD": 35,
+  "STRESS_CLIMAX_BONUS": 50,
+  "STRESS_HATE_GAIN_BASE": 20,
+  "SPECULATIVE_BRANCH_CATHARSIS_NAME": "Catharsis",
+  "SPECULATIVE_INSTRUCTION_CATHARSIS": "【⚠️分岐プロット（カタルシス強め）】\nこのエピソードは読者のカタルシスを最大化する構成（ざまぁ・圧倒的勝利等）に特化させてください。",
+  "AUDIT_TRIGGER_KEYWORDS": [
+    "魔法", "スキル", "能力", "加護", "呪い", "代償", "コスト", "禁忌", "制約", "ルール",
+    "死", "殺", "滅", "敗北", "勝利", "決戦", "戦闘", "激闘", "王", "皇帝", "神", "教義",
+    "因果", "運命", "伏線", "真実", "正体", "裏切り", "契約", "誓約", "儀式"
+  ],
+  "AUDIT_WORDS_CATHARSIS": ["ざまぁ", "圧倒的勝利", "破滅", "ヘイト", "屈服"],
+  "DE_AI_MODE": "strict",
+  "AUDITOR_PERSONA": "覇権プロデューサー",
+  "AUDITOR_INSTRUCTIONS": "「バズるキーワードを追加しろ」「カタルシスが足りない」と指摘する敏腕プロデューサー。商用出版でランキング1位を狙える具体的な修正案を出力せよ。",
+  "WEIGHT_EMOTIONAL_RESONANCE": 1.0,
+  "WEIGHT_THEMATIC_DEPTH": 0.5,
+  "WEIGHT_LITERARY_BEAUTY": 0.5,
+  "WEIGHT_BASE_ENGAGEMENT": 4.0
+}

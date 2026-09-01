@@ -1,0 +1,37 @@
+[
+    {
+        "pattern_id": "misunderstanding_trigger",
+        "name": "致命的な誤解 (Critical Misunderstanding)",
+        "description": "断片的な情報から最悪の結論を導き出し、信頼関係に亀裂を入れる",
+        "mechanism": "情報の非対称性を利用し、意図的に文脈を切り取って提示する",
+        "tension_impact": "high"
+    },
+    {
+        "pattern_id": "value_clash",
+        "name": "信念の正面衝突 (Direct Value Collision)",
+        "description": "互いの譲れない正義がぶつかり合い、妥協点が見つからない状態",
+        "mechanism": "相手の正論を肯定しつつ、それを上回る別の正論で否定する",
+        "tension_impact": "very_high"
+    },
+    {
+        "pattern_id": "hidden_truth_exposure",
+        "name": "秘匿事項の露呈 (Exposure of Secret)",
+        "description": "隠していた弱点や過去が暴かれ、権力構造が逆転する",
+        "mechanism": "最も触れられたくない記憶を、最も不適切なタイミングで突きつける",
+        "tension_impact": "high"
+    },
+    {
+        "pattern_id": "betrayal_of_expectation",
+        "name": "期待の裏切り (Betrayal of Expectation)",
+        "description": "信頼していた相手が、状況に応じて自分とは異なる選択をする",
+        "mechanism": "「あなたなら分かってくれる」という期待を、論理的な正論で拒絶する",
+        "tension_impact": "moderate"
+    },
+    {
+        "pattern_id": "power_struggle",
+        "name": "主導権争い (Power Struggle)",
+        "description": "関係性における決定権や精神的な優位性を巡る静かな闘争",
+        "mechanism": "言葉の端々に優越感や支配欲を滲ませ、相手の自尊心を刺激する",
+        "tension_impact": "moderate"
+    }
+]
