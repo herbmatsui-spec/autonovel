@@ -7,6 +7,10 @@ export default defineConfig({
     host: true,
     port: 5173,
     proxy: {
+      "/api": {
+        target: "http://localhost:8200",
+        changeOrigin: true,
+      },
       "/easy_mode": {
         target: "http://localhost:8200",
         changeOrigin: true,

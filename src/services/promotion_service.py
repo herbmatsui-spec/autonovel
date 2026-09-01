@@ -1,38 +1,60 @@
 import logging
-import uuid
+import secrets
 
-from src.models.easy_mode_schemas import PromotionRequest, PromotionResponse
-from src.services.digest_service import _BOOK_STORE
+from src.domain.entities.easy_mode import PromotionRequest, PromotionResponse
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("producer_handoff")
 
 
 class PromotionService:
-    """プロデューサー昇格（かんたんモード -> 上級者モード引継ぎ）サービス"""
+    """かんたんモード → 上級者モードへの作品引き継ぎサービス [Producer Handoff]。
+
+    ``db`` に DatabaseManager を渡すと Book.mode を ``'easy'`` → ``'advanced'`` に更新する。
+    対応する Draft が見つからない場合は ValueError を raise（router 層で 404 に変換）。
+    state_token には暗号論的に安全な secrets.token_urlsafe を使う。
+    """
+
+    def __init__(self, db=None):
+        self._db = db
 
     async def promote_book(self, request: PromotionRequest) -> PromotionResponse:
-        return self.promote(request)
-
-    def promote(self, request: PromotionRequest) -> PromotionResponse:
         book_id = request.book_id
-        book_data = _BOOK_STORE.get(book_id)
 
-        if not book_data:
-            # 存在しない場合でもテストやフォールバックで空データを生成登録
+        if self._db is None:
             logger.warning(
-                f"Book data for {book_id} not found in memory store. Initializing default."
+                "[producer-handoff] db=None: skipping Book.mode update for %s",
+                book_id,
             )
-            book_data = {
-                "book_id": book_id,
-                "title": "昇格作品",
-                "mode": "easy",
-            }
-            _BOOK_STORE[book_id] = book_data
+            state_token = secrets.token_urlsafe(16)
+            return PromotionResponse(
+                success=True,
+                redirect_url=f"/advanced/{book_id}",
+                state_token=state_token,
+            )
 
-        # ステータスフラグを上級者モードへ変更
-        book_data["mode"] = "advanced"
+        from src.backend.database.models import Book
+        from src.backend.database.repositories import EasyModeDraftRepository
 
-        state_token = f"token_{uuid.uuid4().hex[:12]}"
+        async with self._db.get_session() as session:
+            repo = EasyModeDraftRepository(session)
+            draft_json = await repo.load_digest(book_id)
+            if draft_json is None:
+                raise ValueError(f"Book draft not found: {book_id}")
+
+            db_book_id = draft_json.get("db_book_id")
+            if db_book_id is not None:
+                result = await session.execute(
+                    Book.__table__.select().where(Book.id == db_book_id)
+                )
+                book_row = result.fetchone()
+                if book_row is None:
+                    raise ValueError(f"Book record not found for db_book_id={db_book_id}")
+                await session.execute(
+                    Book.__table__.update().where(Book.id == db_book_id).values(mode="advanced")
+                )
+                await session.commit()
+
+        state_token = secrets.token_urlsafe(16)
         redirect_url = f"/advanced/{book_id}"
 
         return PromotionResponse(

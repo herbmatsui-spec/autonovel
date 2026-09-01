@@ -13,6 +13,7 @@ from src.models.api_schemas import (
     PlotExpandCandidatesRequest,
     PlotExpandRequest,
     PlotRebuildRequest,
+    ReversePlotGenerateRequest,
 )
 
 router = APIRouter(prefix="/api/plots", tags=["plots"])
@@ -169,3 +170,26 @@ async def audit_plan(req: AuditPlanRequest):
         "recommended_tropes": res.recommended_tropes,
         "candidates": [c.model_dump() for c in res.candidates],
     }
+
+
+@router.post("/reverse-generate")
+async def reverse_generate_plot(req: ReversePlotGenerateRequest):
+    """逆算プロットビルダーからの回答を受け、プロット構造を生成"""
+    validate_api_key_or_raise(req.api_key)
+    from src.backend.tasks import execute_service_workflow
+
+    task_id = generate_task_id("reverse_plot")
+    await _create_task(task_id, "逆算プロット構造を生成中...", total_steps=3)
+    execute_service_workflow(
+        task_id=task_id,
+        api_key=req.api_key,
+        config_dict=req.config,
+        method_name="reverse_plot_generation_workflow",
+        kwargs={
+            "answers": req.answers,
+            "target_episodes": req.target_episodes,
+            "genre": req.genre,
+        },
+        trace_id=TraceContext.get_trace_id(),
+    )
+    return {"task_id": task_id}

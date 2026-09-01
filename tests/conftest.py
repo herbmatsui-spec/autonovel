@@ -78,6 +78,18 @@ def db_session(real_db_manager: Generator[Session, None, None]) -> Generator[Ses
     return real_db_manager
 
 
+@pytest.fixture(autouse=True)
+def reset_metrics():
+    """各テスト後に health.py のプロセスメトリクスをゼロリセットする。
+
+    pytest-xdist 並列実行時にメトリクスがリークするのを防止する。
+    """
+    from src.backend.observability.health import metrics
+
+    yield
+    metrics.reset_for_testing()
+
+
 @pytest.fixture
 def client(db_session: Session):
     """FastAPI TestClient フィクスチャ."""

@@ -15,7 +15,7 @@ import zipfile
 import pytest
 
 from src.backend.database.repository import BookRepository
-from src.models.book import Bible, Book, Chapter, Character, Plot
+from src.backend.database.models import Bible, Book, Chapter, Character, Plot
 from src.services.marketing import MarketingAgent
 
 

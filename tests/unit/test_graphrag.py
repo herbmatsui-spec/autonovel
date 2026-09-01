@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from src.models.chunk import ChapterChunk
+from src.infrastructure.database.models.chunk import ChapterChunk
 from src.models.graph_schemas import Entity, GraphExtractionResult, Relationship
 from src.services.age_client import AgeClient
 from src.services.embedding_service import EmbeddingService

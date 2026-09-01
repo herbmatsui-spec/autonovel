@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from src.backend import database
 from src.backend.config import settings
-from src.models.chunk import ChapterChunk
+from src.infrastructure.database.models.chunk import ChapterChunk
 from src.services.age_client import age_client
 
 router = APIRouter(prefix="/api/graph", tags=["graph"])

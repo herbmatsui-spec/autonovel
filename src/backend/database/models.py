@@ -48,6 +48,7 @@ class Book(Base):
     target_eps = Column(Integer, default=50)
     style_dna = Column(Text, default="")
     status = Column(String(50), default="draft")
+    mode = Column(String(20), default="easy", nullable=False)
     created_at = Column(DateTime, server_default=func.now())
     marketing_data = Column(Text, default="")
     cumulative_tension = Column(Integer, default=0)
@@ -530,6 +531,40 @@ class Illustration(Base):
     __table_args__ = (
         Index("idx_illustrations_book_id", "book_id"),
         Index("idx_illustrations_book_type", "book_id", "illustration_type"),
+    )
+
+
+# ==========================================
+# Easy Mode Suite — Gacha / Digest / Handoff persistence
+# ==========================================
+
+
+class EasyModeDraft(Base):
+    """Gacha Pitch で生成した企画と、Quick Digest で生成した中間成果物を永続化する。
+
+    ``kind`` 区分:
+    - ``gacha``: GachaService.generate_plans() の出力（3 案企画）
+    - ``digest``: DigestService.generate_digest() の出力（第 1 話＋あらすじ等）
+
+    ``parent_draft_id``:
+    - ``gacha``  Draft からは未設定
+    - ``digest`` Draft からは対応する ``gacha`` Draft の ``draft_id`` を参照
+    """
+
+    __tablename__ = "easy_mode_drafts"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    draft_id = Column(String(64), unique=True, nullable=False, index=True)
+    kind = Column(String(20), nullable=False)
+    payload_json = Column(Text, nullable=False, default="{}")
+    parent_draft_id = Column(String(64), nullable=True, index=True)
+    book_id = Column(String(64), nullable=True, index=True)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+    __table_args__ = (
+        Index("idx_easy_mode_drafts_kind", "kind"),
+        Index("idx_easy_mode_drafts_created", "created_at"),
     )
 
 

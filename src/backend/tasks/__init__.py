@@ -76,15 +76,16 @@ async def _process_outbox_events_async():
     from src.backend.database.uow import UnitOfWork
     container = get_container()
     db = container.db()
-    uow = UnitOfWork(db=db)
 
-    async with uow:
+    async with UnitOfWork(db=db) as uow:
         events = await uow.get_pending_outbox_events()
-        for event in events:
-            try:
-                await uow.mark_outbox_event_processed(event.id)
-            except Exception as e:
-                logger.error(f"Failed to process outbox event {event.id}: {e}")
+
+    for event in events:
+        try:
+            async with UnitOfWork(db=db) as event_uow:
+                await event_uow.mark_outbox_event_processed(event.id)
+        except Exception as e:
+            logger.error(f"Failed to process outbox event {event.id}: {e}")
 
 
 def _create_workflow(method_name: str, **services):

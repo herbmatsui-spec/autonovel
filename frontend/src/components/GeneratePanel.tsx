@@ -1,6 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNovelContext } from "../context/NovelContext";
 import { useNovelGeneration } from "../hooks/useNovelGeneration";
+import { ReversePlotBuilder } from "./ReversePlotBuilder";
+import { GeneratedPlotStructure } from "../types/reversePlot";
 
 interface GeneratePanelProps {
   onGenerated?: (output: string, suggestions: string[]) => void;
@@ -24,13 +26,39 @@ export default function GeneratePanel({ onGenerated, onMessage }: GeneratePanelP
     (errMsg) => onMessage?.(errMsg)
   );
 
+  const [mode, setMode] = useState<'simple' | 'reverse'>('simple');
+
+  const handleReversePlotComplete = (structure: GeneratedPlotStructure) => {
+    onMessage?.(`✅ 逆算プロット構造を生成しました: ${structure.arcs.length}アーク, ${structure.episodes.length}話`);
+    setMode('simple');
+  };
+
   return (
     <section className="card">
       <h2 style={{ fontSize: "1.2rem", marginBottom: "16px", color: "var(--accent-primary, #a78bfa)" }}>
         ⚙️ 制作設定 & プロンプト
       </h2>
 
-      <div className="form-group">
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+        <button
+          className={`btn ${mode === 'simple' ? 'btn-primary' : 'btn-secondary'}`}
+          onClick={() => setMode('simple')}
+          disabled={generationState.isGenerating}
+        >
+          ⚙️ かんたんモード
+        </button>
+        <button
+          className={`btn ${mode === 'reverse' ? 'btn-primary' : 'btn-secondary'}`}
+          onClick={() => setMode('reverse')}
+          disabled={generationState.isGenerating}
+        >
+          🔮 逆算プロットビルダー
+        </button>
+      </div>
+
+      {mode === 'simple' ? (
+        <>
+          <div className="form-group">
         <label className="label">作品ジャンル・レーティング</label>
         <select
           className="select"
@@ -107,6 +135,15 @@ export default function GeneratePanel({ onGenerated, onMessage }: GeneratePanelP
           </button>
         )}
       </div>
-    </section>
+    </>
+  ) : (
+    <ReversePlotBuilder
+      onComplete={handleReversePlotComplete}
+      onCancel={() => setMode('simple')}
+      targetEpisodes={10}
+      genre={character.genre}
+    />
+  )}
+</section>
   );
 }

@@ -10,7 +10,7 @@ from src.backend import database
 from src.backend.database.repository import BookRepository
 from src.backend.observability.health import metrics
 from src.backend.rate_limit import generate_limiter
-from src.models.easy_mode_schemas import EasyModeInput, GenerationResponse
+from src.domain.entities.easy_mode import EasyModeInput, GenerationResponse
 from src.services.digest_service import process_chapter
 from src.services.graph_pipeline import graph_pipeline_service
 from src.services.llm.factory import get_llm_adapter
@@ -121,6 +121,7 @@ async def generate_content(
     request: Request,
     session=Depends(database.get_db),
 ) -> GenerationResponse:
+    """章単位の対話型自動生成 [Interactive Writer]"""
     generate_limiter.check(request)
     try:
         # 章の中身処理
@@ -259,7 +260,7 @@ async def cancel_task(task_id: str) -> dict[str, str]:
 
 # --- ガチャ / ダイジェスト / 昇格 エンドポイント ---
 
-from src.models.easy_mode_schemas import (
+from src.domain.entities.easy_mode import (
     DigestRequest,
     DigestResponse,
     GachaRequest,
@@ -274,21 +275,34 @@ from src.services.promotion_service import PromotionService
 
 @router.post("/gacha", response_model=GachaResponse)
 async def gacha_endpoint(req: GachaRequest) -> GachaResponse:
-    """3案ガチャ企画生成"""
-    svc = GachaService()
+    """3案ガチャ企画生成 [Gacha Pitch]"""
+    from src.backend.database.core import get_db_manager
+
+    db = get_db_manager()
+    svc = GachaService(db=db)
     return await svc.generate_plans(req)
 
 
 @router.post("/digest", response_model=DigestResponse)
 async def digest_endpoint(req: DigestRequest) -> DigestResponse:
-    """ダイジェスト生成"""
-    svc = DigestService()
+    """ダイジェスト生成 [Quick Digest]"""
+    from src.backend.database.core import get_db_manager
+
+    db = get_db_manager()
+    svc = DigestService(db=db)
     return await svc.create_digest(req)
 
 
 @router.post("/promote", response_model=PromotionResponse)
 async def promote_endpoint(req: PromotionRequest) -> PromotionResponse:
-    """上級者モード昇格"""
-    svc = PromotionService()
-    return await svc.promote_book(req)
+    """上級者モード昇格 [Producer Handoff]"""
+    from src.backend.database.core import get_db_manager
+    from fastapi import HTTPException
+
+    db = get_db_manager()
+    svc = PromotionService(db=db)
+    try:
+        return await svc.promote_book(req)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 

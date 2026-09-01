@@ -200,6 +200,14 @@ class PlotRebuildRequest(AuthenticatedRequest):
     params: dict[str, Any]
 
 
+class ReversePlotGenerateRequest(AuthenticatedRequest):
+    """逆算プロット生成リクエスト"""
+
+    answers: dict[str, Any]
+    target_episodes: int
+    genre: str
+
+
 class CritiqueOptimizeRequest(AuthenticatedRequest):
     """品質分析最適化リクエスト"""
 
@@ -350,6 +358,7 @@ __all__ = [
     "PlotExpandRequest",
     "PlotExpandCandidatesRequest",
     "PlotRebuildRequest",
+    "ReversePlotGenerateRequest",
     "CritiqueOptimizeRequest",
     "AuditPlanRequest",
     "ChapterImportRequest",

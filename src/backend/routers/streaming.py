@@ -7,7 +7,7 @@ from collections.abc import AsyncIterator
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 
-from src.models.easy_mode_schemas import EasyModeInput
+from src.domain.entities.easy_mode import EasyModeInput
 from src.services.digest_service import process_chapter
 from src.services.llm.factory import get_llm_adapter
 from src.services.llm.prompts import NOVEL_SYSTEM_PROMPT, NOVEL_USER_PROMPT_TEMPLATE

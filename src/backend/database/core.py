@@ -136,6 +136,7 @@ class DatabaseManager:
     def __init__(self, db_url: str, pool_size: int = 10):
         self.db_path = db_url  # 後方互換のため db_path に接続URLを保持
         self._pool_size = pool_size
+        self._warned_about_str_sql = False  # DeprecationWarning の重複抑制
 
         is_sqlite = "sqlite" in db_url
         connect_args = {}
@@ -237,14 +238,16 @@ class DatabaseManager:
         import warnings
 
         if isinstance(sql, str):
-            warnings.warn(
-                "DatabaseManager.execute() with raw string is deprecated. Please use sqlalchemy.text() or repositories instead.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
+            if not self._warned_about_str_sql:
+                warnings.warn(
+                    "DatabaseManager.execute() with raw string is deprecated. Please use sqlalchemy.text() or repositories instead.",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
+                self._warned_about_str_sql = True
             sql = text(sql)
 
-        logger.warning(f"DatabaseManager.execute called: {sql}")
+        logger.debug("DatabaseManager.execute called: %s", sql)
         async with self.engine.begin() as conn:
             await conn.execute(sql, params)
 
@@ -253,14 +256,16 @@ class DatabaseManager:
         import warnings
 
         if isinstance(sql, str):
-            warnings.warn(
-                "DatabaseManager.fetch_one() with raw string is deprecated. Please use sqlalchemy.text() or repositories instead.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
+            if not self._warned_about_str_sql:
+                warnings.warn(
+                    "DatabaseManager.fetch_one() with raw string is deprecated. Please use sqlalchemy.text() or repositories instead.",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
+                self._warned_about_str_sql = True
             sql = text(sql)
 
-        logger.warning(f"DatabaseManager.fetch_one called: {sql}")
+        logger.debug("DatabaseManager.fetch_one called: %s", sql)
         async with self.engine.connect() as conn:
             result = await conn.execute(sql, params)
             return result.mappings().fetchone()
@@ -270,14 +275,16 @@ class DatabaseManager:
         import warnings
 
         if isinstance(sql, str):
-            warnings.warn(
-                "DatabaseManager.fetch_all() with raw string is deprecated. Please use sqlalchemy.text() or repositories instead.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
+            if not self._warned_about_str_sql:
+                warnings.warn(
+                    "DatabaseManager.fetch_all() with raw string is deprecated. Please use sqlalchemy.text() or repositories instead.",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
+                self._warned_about_str_sql = True
             sql = text(sql)
 
-        logger.warning(f"DatabaseManager.fetch_all called: {sql}")
+        logger.debug("DatabaseManager.fetch_all called: %s", sql)
         async with self.engine.connect() as conn:
             result = await conn.execute(sql, params)
             return list(result.mappings().fetchall())

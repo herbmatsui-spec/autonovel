@@ -6,16 +6,16 @@ from src.agents.illustration_agent import IllustrationAgent
 from src.models.illustration import (
     IllustrationModel,
     IllustrationRequest,
+    IllustrationResult,
     IllustrationType,
     SafetyLevel,
 )
 
 
 @pytest.mark.asyncio
-async def test_illustration_agent_prompt_generation():
+async def test_illustration_agent_cover_generation():
+    """Cover タイプ: image_service.generate が呼ばれ、正常 URL が返ることを検証。"""
     mock_llm = mock.AsyncMock()
-    mock_llm.generate.return_value = "A beautiful fantasy landscape with a floating castle."
-
     mock_service = mock.AsyncMock()
     mock_service.generate.return_value = "/static/illustrations/fake.png"
     agent = IllustrationAgent(llm=mock_llm, image_service=mock_service)
@@ -35,15 +35,16 @@ async def test_illustration_agent_prompt_generation():
 
     assert result["status"] == "success"
     assert result["result"].image_url == "/static/illustrations/fake.png"
+    mock_service.generate.assert_called_once()
 
 
 @pytest.mark.asyncio
-async def test_illustration_agent_erotic_mode_modifier():
+async def test_illustration_agent_episode_r15_prompt_contains_r15():
+    """EPISODE + R15_CONTENT: 画像生成プロンプトに R15 キーワードが含まれることを検証。"""
     mock_llm = mock.AsyncMock()
-    mock_llm.generate.return_value = "A romantic scene in a moonlit bedroom."
-
     mock_service = mock.AsyncMock()
-    agent = IllustrationAgent(llm=mock.AsyncMock(), image_service=mock_service)
+    mock_service.generate.return_value = "/static/illustrations/erotic_scene.png"
+    agent = IllustrationAgent(llm=mock_llm, image_service=mock_service)
 
     request = IllustrationRequest(
         book_id=1,
@@ -55,13 +56,14 @@ async def test_illustration_agent_erotic_mode_modifier():
     result = await agent.run(request=request)
 
     assert result["status"] == "success"
-    # Check if the resulting prompt contains R15 keywords (since we didn't use LLM mock for the actual prompt in this version)
     prompt = result["result"].prompt
-    assert any(word in prompt.lower() for word in ["r15", "artistic", "intimate"])
+    assert "r15" in prompt.lower(), f"Expected 'r15' in prompt, got: {prompt}"
+    mock_service.generate.assert_called_once()
 
 
 @pytest.mark.asyncio
 async def test_illustration_agent_auto_model_resolves():
+    """AUTO モデル解決: model_used が期待値と一致することを検証。"""
     mock_service = mock.AsyncMock()
     mock_service.generate.return_value = "/static/illustrations/fake.png"
     agent = IllustrationAgent(llm=mock.AsyncMock(), image_service=mock_service)
@@ -76,3 +78,4 @@ async def test_illustration_agent_auto_model_resolves():
 
     assert result["status"] == "success"
     assert result["result"].model_used == "imagen-4.0-ultra-generate-001"
+    mock_service.generate.assert_called_once()

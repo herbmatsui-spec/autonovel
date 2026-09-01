@@ -92,7 +92,7 @@ class SceneStateSnapshot(BaseModel):
 class SceneContinuityTracker:
     """一般シーンの一貫性を追跡する。SQLiteでの永続化に対応。"""
 
-    def __init__(self, db_path: str = "storage/db/kaku_hegemony_v2.db"):
+    def __init__(self, db_path: str):
         self.db_path = db_path
         self._init_db()
 
@@ -588,7 +588,7 @@ class SceneContinuityTracker:
         all_issues = []
 
         # 各種チェックメソッドのリスト
-        check_check_methods = [
+        check_methods = [
             self.check_injury_continuity,
             self.check_attitude_continuity,
             self.check_discovery_continuity,
@@ -600,7 +600,7 @@ class SceneContinuityTracker:
             self.check_item_continuity,
         ]
 
-        for method in check_check_methods:
+        for method in check_methods:
             all_issues.extend(method(current_ep, character_name, current_text))
 
         return all_issues
@@ -719,7 +719,7 @@ class ContinuityReport(BaseModel):
 class ContinuityTracker:
     """連続話間のキャラクター状態一貫性を追跡する。SQLiteでの永続化に対応。"""
 
-    def __init__(self, db_path: str = "storage/db/kaku_hegemony_v2.db"):
+    def __init__(self, db_path: str):
         self.db_path = db_path
         self._snapshots: dict[int, dict[str, CharacterStateSnapshot]] = {}
         self._init_db()

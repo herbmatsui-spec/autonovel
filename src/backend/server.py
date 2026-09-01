@@ -15,7 +15,7 @@ from src.backend.database import init_db
 from src.backend.exceptions import AutoNovelException
 from src.backend.logging_config import configure as configure_logging
 from src.backend.observability.health import build_health_payload, metrics
-from src.backend.routers import easy_mode, graph, streaming
+from src.backend.routers import easy_mode, editor, graph, streaming
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +52,7 @@ app.include_router(easy_mode.router, prefix="/easy_mode", tags=["easy_mode"])
 app.include_router(easy_mode.router, prefix="/api/easy-mode", tags=["easy-mode"])
 app.include_router(streaming.router, prefix="/easy_mode", tags=["streaming"])
 app.include_router(graph.router)
+app.include_router(editor.router)
 
 
 # 復元されたルーターの動的/静的登録
@@ -88,7 +89,7 @@ async def health() -> dict[str, object]:
     互換性のため簡易 ``{"status": "ok"}`` のスーパーセットを返す。
     """
     logger.info("Health check invoked")
-    return build_health_payload()
+    return await build_health_payload()
 
 
 @app.get("/metrics")

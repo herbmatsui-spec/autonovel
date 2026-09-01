@@ -1,6 +1,7 @@
 """Health check payload builder and basic in-memory metrics."""
 from __future__ import annotations
 
+import asyncio
 import logging
 import threading
 from typing import Any
@@ -45,26 +46,53 @@ class _Metrics:
 metrics = _Metrics()
 
 
-def check_database() -> dict[str, Any]:
+async def check_database(timeout: float = 5.0) -> dict[str, Any]:
+    """SQLite / PostgreSQL への actual ping を実行する。"""
     try:
+        from sqlalchemy import text
+
+        from src.backend.database.core import DatabaseManager, get_db_manager
+
+        mgr: DatabaseManager = get_db_manager()
+        async with asyncio.timeout(timeout):
+            async with mgr.get_session() as session:
+                await session.execute(text("SELECT 1"))
         return {"status": "ok", "type": "sqlite"}
+    except asyncio.TimeoutError:
+        logger.warning("[health] Database ping timed out after %ss", timeout)
+        return {"status": "error", "code": "DB_TIMEOUT"}
     except Exception as e:
-        logger.warning(f"Database health check failed: {e}")
-        return {"status": "error", "error": str(e)}
+        logger.warning("[health] Database health check failed: %s", e)
+        return {"status": "error", "code": "DB_UNAVAILABLE"}
 
 
-def check_huey() -> dict[str, Any]:
+async def check_huey(timeout: float = 3.0) -> dict[str, Any]:
+    """Huey ワーカーの生存確認を行う。"""
     try:
-        return {"status": "ok", "backend": "sqlite"}
+        import os
+
+        from src.backend.tasks.huey import huey
+
+        async with asyncio.timeout(timeout):
+            result = await asyncio.to_thread(huey.ping)
+        if result is True:
+            return {"status": "ok", "backend": "sqlite"}
+        return {"status": "error", "code": "HUEY_NO_RESPONSE"}
+    except asyncio.TimeoutError:
+        logger.warning("[health] Huey ping timed out after %ss", timeout)
+        return {"status": "error", "code": "HUEY_TIMEOUT"}
     except Exception as e:
-        logger.warning(f"Huey health check failed: {e}")
-        return {"status": "error", "error": str(e)}
+        logger.warning("[health] Huey health check failed: %s", e)
+        return {"status": "error", "code": "HUEY_DOWN"}
 
 
-def build_health_payload() -> dict[str, Any]:
+async def build_health_payload() -> dict[str, Any]:
+    """全コンポーネントのヘルスチェックを実行し_payload を構築する。"""
     metrics.increment("health_checks")
-    db_status = check_database()
-    huey_status = check_huey()
+    db_status, huey_status = await asyncio.gather(
+        check_database(),
+        check_huey(),
+    )
 
     all_ok = db_status.get("status") == "ok" and huey_status.get("status") == "ok"
     overall_status = "ok" if all_ok else "degraded"
@@ -79,4 +107,3 @@ def build_health_payload() -> dict[str, Any]:
         },
         "metrics": metrics.snapshot(),
     }
-

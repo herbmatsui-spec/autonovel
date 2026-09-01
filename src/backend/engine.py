@@ -173,3 +173,16 @@ class UltimateHegemonyEngine:
             book_id=book_id,
             tolerance=tolerance,
         )
+
+    async def reverse_plot_generation_workflow(
+        self,
+        answers: dict,
+        target_episodes: int,
+        genre: str,
+        reporter=None,
+    ) -> dict[str, Any]:
+        """逆算プロット生成ワークフローを実行"""
+        from src.backend.workflows.reverse_plot_workflow import ReversePlotGenerationWorkflow
+
+        workflow = ReversePlotGenerationWorkflow(self.repo, self.pm, self.generate_json)
+        return await workflow.execute(reporter, answers=answers, target_episodes=target_episodes, genre=genre)

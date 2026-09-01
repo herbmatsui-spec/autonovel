@@ -2,11 +2,12 @@ import asyncio
 import json
 import logging
 import uuid
+import warnings
 from typing import Any
 
 from pydantic import ValidationError
 
-from src.models.easy_mode_schemas import (
+from src.domain.entities.easy_mode import (
     GachaPlan,
     GachaPlanType,
     GachaRequest,
@@ -14,17 +15,36 @@ from src.models.easy_mode_schemas import (
 )
 from src.services.llm_service import LLMService
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("gacha_pitch")
 
-# ガチャリクエスト結果の一時ストア（Digest生成用キャッシュ）
 _GACHA_CACHE: dict[str, dict[str, Any]] = {}
 
 
 class GachaService:
-    """3案ガチャ生成サービス"""
+    """3案ガチャ企画生成サービス [Gacha Pitch]。
 
-    def __init__(self, llm_service: LLMService | None = None):
+    永続化対応: ``db`` に DatabaseManager を渡すと結果を DB に保存する。
+    ``db=None`` の場合は旧来のプロセスメモリ ``_GACHA_CACHE`` に保存
+    （テスト用フォールバック）。後者は将来削除予定。
+    """
+
+    def __init__(
+        self,
+        llm_service: LLMService | None = None,
+        db: Any = None,
+    ):
         self.llm_service = llm_service or LLMService()
+        self._db = db
+
+    async def _save_gacha_plans_db(self, request_id: str, plans_json: dict) -> None:
+        if self._db is None:
+            return
+        from src.backend.database.repositories import EasyModeDraftRepository
+
+        async with self._db.get_session() as session:
+            repo = EasyModeDraftRepository(session)
+            await repo.save_gacha_plans(request_id, plans_json)
+            await session.commit()
 
     async def generate_plans(self, request: GachaRequest) -> GachaResponse:
         """王道・変化球・ダークの3案企画を並列生成する"""
@@ -77,10 +97,9 @@ JSONキー:
                     )
                 except (ValidationError, json.JSONDecodeError, Exception) as e:
                     logger.warning(
-                        f"Plan generation failed (attempt {attempt + 1}/{max_retries + 1}): {e}"
+                        f"[gacha-pitch] Plan generation failed (attempt {attempt + 1}/{max_retries + 1}): {e}"
                     )
                     if attempt == max_retries:
-                        # フォールバックプラン
                         plan_id = f"plan_{uuid.uuid4().hex[:6]}"
                         return GachaPlan(
                             plan_id=plan_id,
@@ -88,22 +107,32 @@ JSONキー:
                             title=f"{request.genre}：{plan_type.value}の物語",
                             logline=f"{', '.join(request.keywords)}をモチーフにした{direction}",
                             protagonist_summary="個性的で魅力的な主人公",
-                            charm_point=f"{plan_type.value}ならではの怒涛の展開",
+                            charm_point=f"{plan_type.value}nikovの怒涛の展開",
                         )
 
         try:
             tasks = [_generate_single_plan(pt, direction) for pt, direction in types]
             plans = await asyncio.wait_for(asyncio.gather(*tasks), timeout=30.0)
         except TimeoutError:
-            logger.error("Gacha generation timed out (30s)")
+            logger.error("[gacha-pitch] Gacha generation timed out (30s)")
             raise TimeoutError("企画の生成処理がタイムアウトしました")
 
         response = GachaResponse(request_id=request_id, plans=list(plans))
 
-        # キャッシュに保存
-        _GACHA_CACHE[request_id] = {
+        plans_json = {
             "request": request.model_dump(),
             "response": response.model_dump(),
         }
+
+        if self._db is not None:
+            await self._save_gacha_plans_db(request_id, plans_json)
+        else:
+            warnings.warn(
+                "[gacha-pitch] GachaService is using in-memory _GACHA_CACHE. "
+                "Pass db=DatabaseManager(...) to enable DB persistence.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            _GACHA_CACHE[request_id] = plans_json
 
         return response

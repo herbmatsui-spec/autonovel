@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from src.backend.config import settings
 from src.backend.logging_config import get_logger
-from src.models.chunk import ChapterChunk
+from src.infrastructure.database.models.chunk import ChapterChunk
 from src.services.age_client import age_client
 from src.services.embedding_service import embedding_service
 from src.services.extraction_service import extraction_service

@@ -5,6 +5,7 @@ from .book import BookRepository
 from .branch import BranchRepository
 from .chapter import ChapterRepository
 from .character import CharacterRepository
+from .easy_mode_draft_repository import EasyModeDraftRepository
 from .illustration import IllustrationRepository
 from .misc import MiscRepository
 from .plot import PlotRepository
@@ -19,6 +20,7 @@ __all__ = [
     "BranchRepository",
     "ChapterRepository",
     "CharacterRepository",
+    "EasyModeDraftRepository",
     "IllustrationRepository",
     "MiscRepository",
     "PlotRepository",
