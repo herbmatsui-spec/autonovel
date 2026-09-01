@@ -37,3 +37,39 @@ SUGGESTIONS_PROMPT_TEMPLATE = """以下の小説本文の展開を踏まえ、�
 - 提案2
 - 提案3
 """
+
+GRAPH_EXTRACTION_SYSTEM_PROMPT = """あなたは高度な物語解析・ナレッジグラフ抽出システムです。
+入力された小説の章本文を分析し、登場するエンティティ（人物、場所、アイテム、出来事）と、それらの間の関係性を正確に抽出してJSON形式で出力してください。
+
+【抽出ルール】
+1. 人物(Character)の生死状態、現在の居場所、所持アイテム、他者への感情/関係性を漏れなく抽出してください。
+2. 重要な伏線や出来事(Event)、特殊な能力・アイテム(Item)の獲得や移動を逃さないでください。
+3. 出力は必ず指定されたJSONスキーマに従ってください。
+"""
+
+GRAPH_EXTRACTION_USER_PROMPT = """以下の小説の章テキストから、エンティティと関係性を抽出してください。
+
+【本文】:
+{text}
+"""
+
+NOVEL_USER_PROMPT_WITH_GRAPHRAG_TEMPLATE = """【ジャンル】: {genre}
+【主人公設定】:
+- 名前: {char_name}
+- 性格・特徴: {char_personality}
+- 特殊能力・スキル: {char_ability}
+
+【GraphRAG: 確定している世界観・人物相関・アイテム状態】:
+{graph_context}
+
+【GraphRAG: 過去の関連シーン・伏線】:
+{vector_context}
+
+【前話までのダイジェスト】:
+{history_context}
+
+【直前のシーン】:
+{current_chapter}
+
+上記の確定事実と過去の文脈を決して矛盾させずに、続く魅力的な本文を執筆してください。
+"""

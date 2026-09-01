@@ -17,9 +17,17 @@ class MockLLMAdapter(BaseLLMAdapter):
         system_prompt: str | None = None,
         max_tokens: int = 2000,
         temperature: float = 0.7,
+        response_format: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> str:
-        await asyncio.sleep(0.05)
+        await asyncio.sleep(0.01)
+        if response_format and response_format.get("type") in ("json_object", "json_schema"):
+            return (
+                '{"entities": [{"name": "主人公", "type": "Character", "description": "勇者", "properties": {"is_alive": true}}],'
+                '"relationships": [{"source": "主人公", "target": "聖剣", "type": "POSSESSES", "detail": "所持"}],'
+                '"plot_summary": "主人公が聖剣を入手した。"}'
+            )
+
         return (
             "薄暗い洞窟の奥、古びた石扉の前に立ったアルトは、静かに息を呑んだ。\n"
             "手にした魔導剣が微かに共鳴し、暗闇を青白い光が照らし出す。\n"
@@ -46,5 +54,5 @@ class MockLLMAdapter(BaseLLMAdapter):
             "守護獣が姿を現した。",
         ]
         for chunk in chunks:
-            await asyncio.sleep(0.02)
+            await asyncio.sleep(0.01)
             yield chunk

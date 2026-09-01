@@ -13,7 +13,7 @@ from src.backend.database import init_db
 from src.backend.exceptions import AutoNovelException
 from src.backend.logging_config import configure as configure_logging
 from src.backend.observability import build_health_payload, metrics
-from src.backend.routers import easy_mode, streaming
+from src.backend.routers import easy_mode, graph, streaming
 
 
 @asynccontextmanager
@@ -45,6 +45,7 @@ async def autonovel_exception_handler(request: Request, exc: AutoNovelException)
 
 app.include_router(easy_mode.router, prefix="/easy_mode", tags=["easy_mode"])
 app.include_router(streaming.router, prefix="/easy_mode", tags=["streaming"])
+app.include_router(graph.router)
 
 
 @app.get("/health")

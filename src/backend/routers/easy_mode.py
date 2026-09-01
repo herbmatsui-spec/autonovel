@@ -12,31 +12,53 @@ from src.backend.observability import metrics
 from src.backend.rate_limit import generate_limiter
 from src.models.easy_mode_schemas import EasyModeInput, GenerationResponse
 from src.services.digest_service import process_chapter
+from src.services.graph_pipeline import graph_pipeline_service
 from src.services.llm.factory import get_llm_adapter
 from src.services.llm.prompts import (
     NOVEL_SYSTEM_PROMPT,
-    NOVEL_USER_PROMPT_TEMPLATE,
+    NOVEL_USER_PROMPT_WITH_GRAPHRAG_TEMPLATE,
     SUGGESTIONS_PROMPT_TEMPLATE,
 )
 from src.services.marketing import MarketingAgent
+from src.services.rag_service import rag_service
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
 async def execute_generation(payload: dict[str, Any]) -> dict[str, Any]:
-    """LLM アダプタを利用して非同期に小説本文と次話提案を生成する。"""
+    """LLM アダプタを利用して非同期に小説本文と次話提案を生成する (GraphRAG 統合済み)。"""
     start_time = time.time()
     current_chapter = payload.get("current_chapter", "")
     chapter_history = payload.get("chapter_history", [])
     character = payload.get("character", {})
+    chapter_id = payload.get("chapter_id", 1)
 
+    char_name = character.get("name", "主人公")
+    genre = character.get("genre", "ハイファンタジー (R15)")
+    personality = character.get("personality", "正義感が強い")
+    ability = character.get("ability", "剣術・魔導")
     history_context = "\n".join(chapter_history[:-1]) if len(chapter_history) > 1 else "なし"
-    user_prompt = NOVEL_USER_PROMPT_TEMPLATE.format(
-        genre=character.get("genre", "ハイファンタジー (R15)"),
-        char_name=character.get("name", "主人公"),
-        char_personality=character.get("personality", "正義感が強い"),
-        char_ability=character.get("ability", "剣術・魔導"),
+
+    # GraphRAG コンテキストの取得
+    session = database.SessionLocal()
+    try:
+        graph_context, vector_context = rag_service.build_rag_context(
+            session=session,
+            current_prompt=current_chapter,
+            character_name=char_name,
+        )
+    finally:
+        session.close()
+
+    # GraphRAG を反映したユーザープロンプトの構築
+    user_prompt = NOVEL_USER_PROMPT_WITH_GRAPHRAG_TEMPLATE.format(
+        genre=genre,
+        char_name=char_name,
+        char_personality=personality,
+        char_ability=ability,
+        graph_context=graph_context,
+        vector_context=vector_context,
         history_context=history_context,
         current_chapter=current_chapter,
     )
@@ -47,6 +69,19 @@ async def execute_generation(payload: dict[str, Any]) -> dict[str, Any]:
         system_prompt=NOVEL_SYSTEM_PROMPT,
         max_tokens=2000,
     )
+
+    # 生成完了後、バックグラウンド/同期でナレッジグラフとベクトルを更新
+    session = database.SessionLocal()
+    try:
+        graph_pipeline_service.process_chapter_knowledge(
+            session=session,
+            chapter_id=chapter_id,
+            chapter_text=generated_text,
+        )
+    except Exception as e:
+        logger.warning("Failed to process chapter knowledge in background: %s", e)
+    finally:
+        session.close()
 
     # 次話展開提案の生成
     suggestions_prompt = SUGGESTIONS_PROMPT_TEMPLATE.format(chapter_text=generated_text[:1000])

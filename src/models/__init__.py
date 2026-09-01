@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from src.models.base import Base
 from src.models.book import Bible, Book, Chapter, Character, Plot
+from src.models.chunk import ChapterChunk
 from src.models.task import Task
 
 __all__ = [
@@ -10,6 +11,7 @@ __all__ = [
     "Bible",
     "Book",
     "Chapter",
+    "ChapterChunk",
     "Character",
     "Plot",
     "Task",

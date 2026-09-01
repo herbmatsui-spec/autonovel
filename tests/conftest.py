@@ -63,3 +63,23 @@ def real_db_manager() -> Generator[Session, None, None]:
                 db_path.unlink()
         except OSError:
             pass
+
+
+@pytest.fixture
+def db_session(real_db_manager: Generator[Session, None, None]) -> Generator[Session, None, None]:
+    """テスト用 DB セッションフィクスチャ (real_db_manager のエイリアス)."""
+    return real_db_manager
+
+
+@pytest.fixture
+def client(db_session: Session):
+    """FastAPI TestClient フィクスチャ."""
+    from fastapi.testclient import TestClient
+
+    from src.backend import database
+    from src.backend.server import app
+
+    app.dependency_overrides[database.get_db] = lambda: db_session
+    with TestClient(app) as test_client:
+        yield test_client
+    app.dependency_overrides.clear()

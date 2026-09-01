@@ -1,12 +1,14 @@
-import React from "react";
+import React, { useState } from "react";
 import { NovelProvider } from "./context/NovelContext";
 import { useToast } from "./hooks/useToast";
 import { ToastContainer } from "./components/common/ToastContainer";
 import GeneratePanel from "./components/GeneratePanel";
 import ExportPanel from "./components/ExportPanel";
+import GraphVisualization from "./components/GraphVisualization";
 
 function AppContent() {
   const { toasts, addToast, removeToast } = useToast();
+  const [showGraph, setShowGraph] = useState(false);
 
   const handleMessage = (msg: string) => {
     if (!msg) return;
@@ -23,6 +25,8 @@ function AppContent() {
     <div className="container">
       <ToastContainer toasts={toasts} onClose={removeToast} />
 
+      {showGraph && <GraphVisualization onClose={() => setShowGraph(false)} />}
+
       <header className="header">
         <div>
           <h1 className="brand-title">AutoNovel Studio</h1>
@@ -31,6 +35,22 @@ function AppContent() {
           </p>
         </div>
         <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+          <button
+            onClick={() => setShowGraph(true)}
+            style={{
+              padding: "6px 12px",
+              borderRadius: "6px",
+              backgroundColor: "var(--primary, #3b82f6)",
+              color: "white",
+              border: "none",
+              cursor: "pointer",
+              fontSize: "0.85rem",
+              fontWeight: 500,
+            }}
+            data-testid="open-graph-btn"
+          >
+            📊 相関図を表示
+          </button>
           <span className="badge-r15">R15 ファンタジー対応</span>
           <span className="badge-status">Gemini & OpenAI 対応</span>
         </div>

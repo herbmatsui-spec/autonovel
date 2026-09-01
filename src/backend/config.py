@@ -64,6 +64,11 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str | None = None
     GEMINI_MODEL: str = "gemini-1.5-flash"
 
+    # Embedding / GraphRAG (pgvector + Apache AGE) 設定
+    EMBEDDING_MODEL: str = "text-embedding-3-small"
+    AGE_GRAPH_NAME: str = "autonovel_graph"
+    ENABLE_GRAPHRAG: bool = True
+
     @property
     def cors_origin_list(self) -> list[str]:
         """CORS origins をリスト形式で取得する。"""

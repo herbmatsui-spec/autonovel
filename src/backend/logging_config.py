@@ -126,12 +126,13 @@ def configure() -> None:
 
 
 def _is_text_mode() -> bool:
-    """stdout が TTY で環境上 JSON を出していない場合などにテキスト化するか判断。
-
-    CI やファイル保存を想定し JSON を維持できるよう、明示的に LOG_FORMAT=text
-    でない限り TTY 判定のみでは切り替えない (将来の拡張ポイント)。
-    """
+    """stdout が TTY で環境上 JSON を出していない場合などにテキスト化するか判断。"""
     return False
 
 
-__all__: list[str] = ["configure"]
+def get_logger(name: str) -> logging.Logger:
+    """指定された名前の Logger を取得するヘルパー関数。"""
+    return logging.getLogger(name)
+
+
+__all__: list[str] = ["configure", "get_logger", "_is_text_mode"]
