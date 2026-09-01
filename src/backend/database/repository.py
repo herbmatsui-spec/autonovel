@@ -241,6 +241,77 @@ class BookRepository:
         result = self.session.execute(stmt)
         return list(result.scalars().all())
 
+    def save_or_update_book_with_chapter(
+        self,
+        book_id: int,
+        title: str = "R15ファンタジー作品",
+        genre: str = "ファンタジー (R15)",
+        chapter_text: str = "",
+        character_params: dict | None = None,
+        plots: list | None = None,
+    ) -> Book:
+        """かんたんモード等のデータをDBに新規作成または更新保存する"""
+        book = self.get_book(book_id)
+        if not book:
+            book = Book(
+                id=book_id,
+                title=title,
+                genre=genre,
+                concept="かんたんモード生成作品",
+                synopsis=chapter_text[:200] if chapter_text else "",
+                target_eps=10,
+            )
+            self.session.add(book)
+            self._safe_commit()
+            self._safe_refresh(book)
+
+        # 第1話の更新または作成
+        if chapter_text:
+            stmt = (
+                select(Chapter)
+                .where(Chapter.book_id == book_id)
+                .where(Chapter.ep_num == 1)
+            )
+            chapter = self.session.execute(stmt).scalar_one_or_none()
+            if chapter:
+                chapter.content = chapter_text
+                chapter.summary = chapter_text[:100]
+            else:
+                chapter = Chapter(
+                    book_id=book_id,
+                    ep_num=1,
+                    title="第1話 運命の覚醒",
+                    content=chapter_text,
+                    summary=chapter_text[:100],
+                )
+                self.session.add(chapter)
+
+        # キャラクターの登録/更新
+        if character_params and character_params.get("name"):
+            char_name = character_params["name"]
+            stmt = (
+                select(Character)
+                .where(Character.book_id == book_id)
+                .where(Character.name == char_name)
+            )
+            char = self.session.execute(stmt).scalar_one_or_none()
+            if char:
+                char.personality = character_params.get("personality", "")
+                char.ability = character_params.get("ability", "")
+            else:
+                char = Character(
+                    book_id=book_id,
+                    name=char_name,
+                    role="主人公",
+                    personality=character_params.get("personality", ""),
+                    ability=character_params.get("ability", ""),
+                )
+                self.session.add(char)
+
+        self._safe_commit()
+        return book
+
+
 
 # Re-export individual repositories for compatibility
 from .repositories.audit import AuditRepository  # noqa: E402

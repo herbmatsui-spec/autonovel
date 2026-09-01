@@ -343,10 +343,13 @@ def init_db(db_path: str = ""):
 
     import src.backend.database.models  # noqa
     import src.infrastructure.database.models  # noqa
-    from src.infrastructure.database.models import Base
+    from src.backend.database.models import Base as BackendBase
+    from src.infrastructure.database.models import Base as InfraBase
 
     engine_obj = create_engine(sync_url)
-    Base.metadata.create_all(engine_obj)
+    InfraBase.metadata.create_all(engine_obj)
+    BackendBase.metadata.create_all(engine_obj)
+
 
 
 

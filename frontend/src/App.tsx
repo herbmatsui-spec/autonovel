@@ -84,7 +84,10 @@ function AppContent() {
       {mode === "easy" ? (
         <main className="main-grid">
           <GeneratePanel onMessage={handleMessage} />
-          <ExportPanel onExportMessage={handleMessage} />
+          <ExportPanel
+            onExportMessage={handleMessage}
+            onPromoteToStudio={() => setMode("studio")}
+          />
         </main>
       ) : (
         <StudioWorkspace

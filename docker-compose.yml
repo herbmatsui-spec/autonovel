@@ -9,6 +9,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       - PYTHONPATH=/app
       - DATABASE_URL=postgresql://autonovel:autonovel@db:5432/autonovel
@@ -33,7 +35,7 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: autonovel_worker
-    command: python -m huey.bin.huey_consumer src.backend.tasks.huey.huey
+    command: ["python", "-m", "huey.bin.huey_consumer", "src.backend.tasks.huey.huey", "-w", "2", "-k", "threadpool"]
     environment:
       - PYTHONPATH=/app
       - DATABASE_URL=postgresql://autonovel:autonovel@db:5432/autonovel
@@ -44,6 +46,8 @@ services:
 #      - ./src:/app/src
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
       backend:
         condition: service_healthy
@@ -93,6 +97,7 @@ services:
 #      - /app/node_modules
     environment:
       - CHOKIDAR_USEPOLLING=true
+      - VITE_BACKEND_URL=http://backend:8200
     depends_on:
       backend:
         condition: service_healthy

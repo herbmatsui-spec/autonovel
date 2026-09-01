@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from enum import Enum
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -96,6 +97,24 @@ class PromotionResponse(BaseModel):
     state_token: str = Field(..., description="引き継ぎ用の状態トークン")
 
 
+class ReversePlotGeneratePayload(BaseModel):
+    """逆算プロット生成リクエスト（APIキー不要のかんたんモード・UI用）"""
+    answers: dict[str, Any] = Field(default_factory=dict, description="4ステップ回答")
+    target_episodes: int = Field(default=10, ge=1, le=50, alias="targetEpisodes", description="目標話数")
+    genre: str = Field(default="ハイファンタジー (R15)", description="ジャンル")
+
+    model_config = {"populate_by_name": True}
+
+
+class ExportRequestPayload(BaseModel):
+    """エクスポート用即時反映ペイロード"""
+    title: str = Field(default="R15ファンタジー作品", description="タイトル")
+    genre: str = Field(default="ファンタジー (R15)", description="ジャンル")
+    current_text: str = Field(default="", description="画面上の最新本文")
+    character: dict[str, Any] = Field(default_factory=dict, description="主人公設定")
+    plots: list[dict[str, Any]] = Field(default_factory=list, description="プロット概要リスト")
+
+
 __all__ = [
     "CharacterParams",
     "EasyModeInput",
@@ -109,4 +128,7 @@ __all__ = [
     "DigestResponse",
     "PromotionRequest",
     "PromotionResponse",
+    "ReversePlotGeneratePayload",
+    "ExportRequestPayload",
 ]
+

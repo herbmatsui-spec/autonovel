@@ -23,7 +23,15 @@ export interface ReversePlotAnswers {
 export interface GeneratedPlotStructure {
   arcs: ArcBlueprint[];
   episodes: PlotEpisodeInit[];
-  catharsisPattern: CatharsisPatternInit;
+  catharsisPattern?: CatharsisPatternInit;
+  catharsis_pattern?: CatharsisPatternInit;
+}
+
+export interface ReversePlotGenerateRequest {
+  answers: ReversePlotAnswers | Partial<ReversePlotAnswers>;
+  target_episodes?: number;
+  targetEpisodes?: number;
+  genre: string;
 }
 
 export interface ArcBlueprint {

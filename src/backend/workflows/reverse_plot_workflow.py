@@ -58,29 +58,35 @@ ARC_SUMMARIES = {
 class ReversePlotGenerationWorkflow(BaseWorkflow):
     """4ステップ回答からプロット構造を生成"""
 
-    async def execute(self, reporter: StatusReporter, **kwargs) -> dict[str, Any]:
+    async def execute(self, reporter: StatusReporter | None = None, **kwargs) -> dict[str, Any]:
         answers = kwargs["answers"]
-        target_episodes = kwargs["target_episodes"]
-        genre = kwargs["genre"]
+        target_episodes = kwargs.get("target_episodes") or kwargs.get("targetEpisodes", 10)
+        genre = kwargs.get("genre", "ハイファンタジー (R15)")
 
-        reporter.report("回答を解析し、プロット構造を設計中...", "info")
+        if reporter:
+            reporter.report("回答を解析し、プロット構造を設計中...", "info")
 
         # 1. 回答からアーク構成を決定
         arcs = self._design_arcs(answers, target_episodes)
-        reporter.update_progress(1, 3, "アーク構成完了", f"{len(arcs)}アークに分割")
+        if reporter:
+            reporter.update_progress(1, 3, "アーク構成完了", f"{len(arcs)}アークに分割")
 
         # 2. 各話の初期プロット設計
         episodes = self._design_episodes(answers, arcs, target_episodes, genre)
-        reporter.update_progress(2, 3, "エピソード設計完了", f"{len(episodes)}話分生成")
+        if reporter:
+            reporter.update_progress(2, 3, "エピソード設計完了", f"{len(episodes)}話分生成")
 
         # 3. カタルシスパターン生成
         catharsis = self._design_catharsis(answers, target_episodes)
-        reporter.update_progress(3, 3, "感情曲線設計完了")
+        if reporter:
+            reporter.update_progress(3, 3, "感情曲線設計完了")
 
+        catharsis_dict = catharsis.model_dump()
         return {
             "arcs": [arc.model_dump() for arc in arcs],
             "episodes": [ep.model_dump() for ep in episodes],
-            "catharsis_pattern": catharsis.model_dump(),
+            "catharsis_pattern": catharsis_dict,
+            "catharsisPattern": catharsis_dict,
         }
 
     def _design_arcs(self, answers: dict, target_episodes: int) -> List[ArcBlueprint]:

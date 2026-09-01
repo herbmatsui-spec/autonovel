@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from "react";
 import { CharacterParams, GenerationState } from "../types";
+import { GeneratedPlotStructure } from "../types/reversePlot";
 
 interface NovelContextType {
   character: CharacterParams;
@@ -10,7 +11,10 @@ interface NovelContextType {
   setGenerationState: React.Dispatch<React.SetStateAction<GenerationState>>;
   selectedBookId: number;
   setSelectedBookId: React.Dispatch<React.SetStateAction<number>>;
+  plotStructure: GeneratedPlotStructure | null;
+  setPlotStructure: React.Dispatch<React.SetStateAction<GeneratedPlotStructure | null>>;
   applySuggestion: (suggestion: string) => void;
+  syncGenerationToEditor: (output: string) => void;
 }
 
 const defaultCharacter: CharacterParams = {
@@ -38,12 +42,20 @@ export const NovelProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   );
   const [generationState, setGenerationState] = useState<GenerationState>(defaultGenerationState);
   const [selectedBookId, setSelectedBookId] = useState<number>(1);
+  const [plotStructure, setPlotStructure] = useState<GeneratedPlotStructure | null>(null);
 
   const applySuggestion = (suggestion: string) => {
     setCurrentChapterText((prev) => {
       const trimmed = prev.trim();
       return trimmed ? `${trimmed}\n\n【展開】${suggestion}` : suggestion;
     });
+  };
+
+  const syncGenerationToEditor = (output: string) => {
+    if (output) {
+      setCurrentChapterText(output);
+      setGenerationState((prev) => ({ ...prev, currentOutput: output }));
+    }
   };
 
   return (
@@ -57,7 +69,10 @@ export const NovelProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         setGenerationState,
         selectedBookId,
         setSelectedBookId,
+        plotStructure,
+        setPlotStructure,
         applySuggestion,
+        syncGenerationToEditor,
       }}
     >
       {children}

@@ -19,6 +19,7 @@ huey.immediate = False
 
 
 # ワーカー側でタスクを認識するためにここでインポートしておく
+import src.backend.tasks  # noqa
 import src.backend.tasks.generation_tasks  # noqa
 
 __all__: list[str] = ["huey", "logger"]

@@ -263,10 +263,12 @@ async def cancel_task(task_id: str) -> dict[str, str]:
 from src.domain.entities.easy_mode import (
     DigestRequest,
     DigestResponse,
+    ExportRequestPayload,
     GachaRequest,
     GachaResponse,
     PromotionRequest,
     PromotionResponse,
+    ReversePlotGeneratePayload,
 )
 from src.services.digest_service import DigestService
 from src.services.gacha_service import GachaService
@@ -305,4 +307,92 @@ async def promote_endpoint(req: PromotionRequest) -> PromotionResponse:
         return await svc.promote_book(req)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.post("/reverse-generate")
+async def reverse_generate_endpoint(
+    req: ReversePlotGeneratePayload,
+) -> dict[str, Any]:
+    """逆算プロットビルダー用同期生成エンドポイント [Reverse Plot Builder]"""
+    from src.backend.workflows.reverse_plot_workflow import ReversePlotGenerationWorkflow
+
+    workflow = ReversePlotGenerationWorkflow()
+    return await workflow.execute(
+        reporter=None,
+        answers=req.answers,
+        target_episodes=req.target_episodes,
+        genre=req.genre,
+    )
+
+
+@router.post("/export-with-data")
+async def export_with_data_endpoint(
+    payload: ExportRequestPayload,
+    book_id: int = 1,
+    session=Depends(database.get_db),
+) -> Response:
+    """クライアントの最新ステート（本文・設定）を反映して即座にZIPパッケージをエクスポートする"""
+    logger.info("Export with custom data requested: book_id=%s title=%s", book_id, payload.title)
+    metrics.increment("exports_attempted")
+
+    repo = BookRepository(session)
+    # DBにも永続化
+    try:
+        repo.save_or_update_book_with_chapter(
+            book_id=book_id,
+            title=payload.title,
+            genre=payload.genre,
+            chapter_text=payload.current_text,
+            character_params=payload.character,
+            plots=payload.plots,
+        )
+    except Exception as e:
+        logger.warning("Failed to auto-save book during export: %s", e)
+
+    agent = MarketingAgent(repo=repo)
+    book_data = {
+        "title": payload.title,
+        "genre": payload.genre,
+        "chapters": [
+            {
+                "ep_num": 1,
+                "title": "第1話 運命の覚醒",
+                "content": payload.current_text or "本文未入力",
+            }
+        ],
+        "characters": [
+            {
+                "name": payload.character.get("name", "主人公"),
+                "role": "主人公",
+                "personality": payload.character.get("personality", "設定なし"),
+                "ability": payload.character.get("ability", "設定なし"),
+            }
+        ] if payload.character else [],
+        "plots": payload.plots or [
+            {
+                "ep_num": 1,
+                "title": "第1話 運命の覚醒",
+                "one_line_summary": payload.current_text[:100] if payload.current_text else "冒険の始まり",
+            }
+        ],
+        "bible_settings": {},
+    }
+
+    zip_bytes, zip_filename = await agent.create_export_package(book_id, book_data=book_data)
+
+    encoded_filename = urllib.parse.quote(zip_filename)
+    ascii_filename = zip_filename.encode("ascii", "ignore").decode("ascii") or "export.zip"
+    metrics.increment("exports_succeeded")
+
+    return Response(
+        content=zip_bytes,
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": (
+                f"attachment; filename=\"{ascii_filename}\"; filename*=UTF-8''{encoded_filename}"
+            ),
+            "Cache-Control": "no-store",
+        },
+    )
+
 

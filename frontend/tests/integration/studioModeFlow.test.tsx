@@ -22,7 +22,7 @@ describe("Studio Mode Flow Integration Test", () => {
 
     // かんたんモードの UI が表示される
     expect(screen.getByText("⚙️ 制作設定 & プロンプト")).toBeInTheDocument();
-    expect(screen.getByText("📦 ZIP・EPUB 出力パッケージ")).toBeInTheDocument();
+    expect(screen.getByText(/納品パッケージ/)).toBeInTheDocument();
 
     // 再度 Studio モードに切り替え
     const studioBtn = screen.getByTestId("btn-mode-studio");

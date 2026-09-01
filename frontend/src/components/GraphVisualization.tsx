@@ -96,7 +96,33 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onClose 
   const graphData = useMemo(() => {
     if (!rawData) return { nodes: [], links: [] };
 
-    let filteredNodes = rawData.nodes.map((n) => ({ ...n }));
+    let nodes = [...rawData.nodes];
+    let edges = [...rawData.edges];
+
+    // ノードが空の場合の初期主人公ノード
+    if (nodes.length === 0) {
+      nodes = [
+        {
+          id: "アルト",
+          label: "Character",
+          properties: { role: "主人公", ability: "古代魔導剣術" },
+        },
+        {
+          id: "古代魔導剣",
+          label: "Item",
+          properties: { type: "秘宝", description: "300年前の剣" },
+        },
+      ];
+      edges = [
+        {
+          source: "アルト",
+          target: "古代魔導剣",
+          type: "EQUIPPED_WITH",
+        },
+      ];
+    }
+
+    let filteredNodes = nodes.map((n) => ({ ...n }));
     if (filterType !== "ALL") {
       filteredNodes = filteredNodes.filter((n) => n.label === filterType);
     }
@@ -106,7 +132,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onClose 
     }
 
     const nodeIds = new Set(filteredNodes.map((n) => n.id));
-    const filteredEdges = rawData.edges
+    const filteredEdges = edges
       .filter((e) => {
         const srcId = typeof e.source === "object" ? (e.source as GraphNode).id : e.source;
         const tgtId = typeof e.target === "object" ? (e.target as GraphNode).id : e.target;
