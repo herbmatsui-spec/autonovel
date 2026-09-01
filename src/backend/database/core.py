@@ -133,19 +133,22 @@ class DatabaseManager:
             # タイムアウトを60秒に設定し、待機時間を十分に確保する
             connect_args = {"timeout": 60.0}
 
-        # 接続プールの最適化
-        # pool_size: 基本的な保持接続数
-        # max_overflow: pool_sizeを超えて一時的に作成可能な接続数
-        # pool_recycle: 接続の有効期限（秒）。DB側のタイムアウトより短く設定し、断線を防ぐ
-        # pool_pre_ping: 接続を再利用する前に有効性を確認し、切断されていた場合に透過的に再接続する
+        engine_kwargs: dict[str, Any] = {
+            "connect_args": connect_args,
+            "pool_pre_ping": True,
+        }
+        if not is_sqlite:
+            engine_kwargs.update({
+                "pool_size": pool_size,
+                "max_overflow": 20,
+                "pool_recycle": 1200,
+            })
+
         self.engine = create_async_engine(
             db_url,
-            pool_size=pool_size,
-            max_overflow=20,
-            pool_recycle=1200,
-            pool_pre_ping=True,
-            connect_args=connect_args,
+            **engine_kwargs,
         )
+
 
         # Ensure is_plot_twist column exists in SQLite database
         # (Skipped: Schema updates should be handled by Alembic migrations)

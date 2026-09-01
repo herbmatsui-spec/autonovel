@@ -129,6 +129,24 @@ class GraphRAGService:
             return 0.0
         return dot_product / (norm_a * norm_b)
 
+    def get_community_context(
+        self,
+        session: Session,
+        core_faction: str = "主人公派閥",
+    ) -> list[str]:
+        """派閥（コミュニティ）に所属するメンバー一覧と関係性を抽出する."""
+        if not settings.ENABLE_GRAPHRAG or not settings.DATABASE_URL.startswith("postgresql"):
+            return []
+
+        neighbors = age_client.get_neighbors(session, core_faction, max_depth=1)
+        faction_members = []
+        for item in neighbors:
+            name = item.get("name", "")
+            rel = item.get("relation_type", "")
+            if name:
+                faction_members.append(f"{name} ({rel})")
+        return faction_members
+
     def build_rag_context(
         self,
         session: Session,
@@ -172,6 +190,7 @@ class GraphRAGService:
             vector_context = "なし（第1話または関連シーンなし）"
 
         return graph_context, vector_context
+
 
 
 rag_service = GraphRAGService()
