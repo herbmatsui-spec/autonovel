@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
@@ -39,16 +39,16 @@ class PromptService(PromptServiceInterface):
         )
 
         # Cache for rendered templates
-        self._source_cache: Dict[str, str] = {}
-        self._metadata_cache: Dict[str, Dict[str, Any]] = {}
+        self._source_cache: dict[str, str] = {}
+        self._metadata_cache: dict[str, dict[str, Any]] = {}
 
     async def render(
         self,
         template_name: str,
-        context: Dict[str, Any],
-        book_id: Optional[int] = None,
-        user_id: Optional[str] = None,
-        request_id: Optional[str] = None,
+        context: dict[str, Any],
+        book_id: int | None = None,
+        user_id: str | None = None,
+        request_id: str | None = None,
     ) -> str:
         """Render a prompt template, preferring DB version if available."""
         source = await self._get_source(template_name, book_id, user_id, request_id)
@@ -58,10 +58,10 @@ class PromptService(PromptServiceInterface):
     async def render_async(
         self,
         template_name: str,
-        context: Dict[str, Any],
-        book_id: Optional[int] = None,
-        user_id: Optional[str] = None,
-        request_id: Optional[str] = None,
+        context: dict[str, Any],
+        book_id: int | None = None,
+        user_id: str | None = None,
+        request_id: str | None = None,
     ) -> str:
         """Async render - delegates to render for now (templates are stateless)."""
         return await self.render(template_name, context, book_id, user_id, request_id)
@@ -69,9 +69,9 @@ class PromptService(PromptServiceInterface):
     async def _get_source(
         self,
         template_name: str,
-        book_id: Optional[int],
-        user_id: Optional[str],
-        request_id: Optional[str],
+        book_id: int | None,
+        user_id: str | None,
+        request_id: str | None,
     ) -> str:
         """Get template source, preferring DB version for book_id."""
         # Normalize template name (add .j2 if needed)
@@ -100,7 +100,7 @@ class PromptService(PromptServiceInterface):
 
     async def get_active_version(
         self, book_id: int, prompt_key: str
-    ) -> Optional[PromptVersionDbModel]:
+    ) -> PromptVersionDbModel | None:
         """Get the currently active prompt version."""
         return await self._repository.get_active_prompt_version(book_id, prompt_key)
 
@@ -110,8 +110,8 @@ class PromptService(PromptServiceInterface):
         prompt_key: str,
         version_tag: str,
         content: str,
-        score_before: Optional[float] = None,
-        ab_test_metrics: Optional[Dict[str, Any]] = None,
+        score_before: float | None = None,
+        ab_test_metrics: dict[str, Any] | None = None,
     ) -> PromptVersionDbModel:
         """Create a new prompt version."""
         return await self._repository.create_prompt_version(
@@ -128,7 +128,7 @@ class PromptService(PromptServiceInterface):
         """Activate a specific prompt version."""
         await self._repository.set_active_prompt_version(book_id, prompt_key, version_id)
 
-    async def list_versions(self, book_id: int, limit: int = 20) -> List[PromptVersionDbModel]:
+    async def list_versions(self, book_id: int, limit: int = 20) -> list[PromptVersionDbModel]:
         """List prompt versions for a book."""
         return await self._repository.get_prompt_versions(book_id, limit)
 
@@ -136,7 +136,7 @@ class PromptService(PromptServiceInterface):
         """Update the post-A/B test score."""
         await self._repository.update_score_after(version_id, score)
 
-    async def update_ab_test_metrics(self, version_id: int, metrics: Dict[str, Any]) -> None:
+    async def update_ab_test_metrics(self, version_id: int, metrics: dict[str, Any]) -> None:
         """Update A/B test metrics."""
         await self._repository.update_ab_test_metrics(version_id, metrics)
 
@@ -158,7 +158,7 @@ class PromptRegistry:
         self._service = prompt_service
         self._router = ab_test_router or ABTestRouter()
         self._cache_max_size = cache_max_size
-        self._cache: Dict[str, Any] = {}
+        self._cache: dict[str, Any] = {}
 
         if templates_dir:
             self._templates_dir = templates_dir
@@ -168,7 +168,7 @@ class PromptRegistry:
             current_dir = os.path.dirname(os.path.abspath(__file__))
             self._templates_dir = os.path.join(current_dir, "..", "prompts")
 
-    def get_template_source(self, template_name: str, book_id: Optional[int] = None) -> str:
+    def get_template_source(self, template_name: str, book_id: int | None = None) -> str:
         """Get raw template source (for caching purposes)."""
         cache_key = f"{book_id or 'global'}:{template_name}"
         if cache_key in self._cache:
@@ -190,11 +190,11 @@ class PromptRegistry:
     async def render_for_user(
         self,
         template_name: str,
-        context: Dict[str, Any],
+        context: dict[str, Any],
         user_id: str,
-        request_id: Optional[str] = None,
-        book_id: Optional[int] = None,
-        version_tags: Optional[List[str]] = None,
+        request_id: str | None = None,
+        book_id: int | None = None,
+        version_tags: list[str] | None = None,
     ) -> str:
         """Render template with A/B variant selection based on user/request."""
         if self._service and book_id:
@@ -217,10 +217,10 @@ class PromptRegistry:
     async def _get_ab_variant(
         self,
         template_name: str,
-        book_id: Optional[int],
+        book_id: int | None,
         user_id: str,
-        request_id: Optional[str],
-        version_tags: Optional[List[str]],
+        request_id: str | None,
+        version_tags: list[str] | None,
     ) -> str:
         """Get A/B variant based on user bucketing."""
         # Try DB version first

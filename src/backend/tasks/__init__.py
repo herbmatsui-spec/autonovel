@@ -1,11 +1,12 @@
 """AutoNovel tasks package."""
-import os
 import logging
-from typing import Optional, Any
+import os
+from typing import Any, Optional
+
 from huey import crontab
 
-from src.backend.tasks.huey import huey
 from src.backend.tasks.generation_tasks import generate_chapter_task
+from src.backend.tasks.huey import huey
 from src.core.observability import with_trace_context
 
 logger = logging.getLogger(__name__)
@@ -23,7 +24,7 @@ _CONFIG_OVERRIDE_KEYS = (
 )
 
 
-def _apply_config_overrides(config_dict: Optional[dict]) -> None:
+def _apply_config_overrides(config_dict: dict | None) -> None:
     if not config_dict:
         return
     try:
@@ -37,7 +38,7 @@ def _apply_config_overrides(config_dict: Optional[dict]) -> None:
 
 @huey.task(retries=3, retry_delay=5)
 @with_trace_context
-def process_vector_event(event_type: str, payload: dict, trace_id: Optional[str] = None):
+def process_vector_event(event_type: str, payload: dict, trace_id: str | None = None):
     """非同期でChromaDBへの操作を実行するタスク"""
     logger.info(f"Processing vector event: {event_type}")
     from src.services.vector_store import DefaultVectorStore
@@ -121,8 +122,9 @@ def _build_service_dict(container):
 
 @huey.task(retries=3, retry_delay=5)
 @with_trace_context
-def execute_service_workflow(task_id: str, api_key: str, config_dict: dict, method_name: str, kwargs: dict, trace_id: Optional[str] = None):
+def execute_service_workflow(task_id: str, api_key: str, config_dict: dict, method_name: str, kwargs: dict, trace_id: str | None = None):
     import asyncio
+
     from src.backend.background import BackgroundReporter, ProgressState
 
     state = ProgressState(is_running=True, task_id=task_id, repo=None)
@@ -164,7 +166,7 @@ def execute_service_workflow(task_id: str, api_key: str, config_dict: dict, meth
 
 @huey.task(retries=3, retry_delay=5)
 @with_trace_context
-def run_test_coro(task_id: str, message: str, trace_id: Optional[str] = None):
+def run_test_coro(task_id: str, message: str, trace_id: str | None = None):
     """テスト用のダミータスク"""
     from config.container import get_container
     from src.backend.background import ProgressState
@@ -183,9 +185,10 @@ def run_test_coro(task_id: str, message: str, trace_id: Optional[str] = None):
 
 @huey.task(retries=3, retry_delay=5)
 @with_trace_context
-def async_score_narrative_metrics(book_id: int, branch_id: int, ep_num: int, trace_id: Optional[str] = None):
+def async_score_narrative_metrics(book_id: int, branch_id: int, ep_num: int, trace_id: str | None = None):
     """エピソードのスコアリングをバックグラウンドで実行するタスク"""
     import asyncio
+
     from config.container import get_container
     from src.agents.audit import LogicalAuditor
     from src.backend.database.repositories.narrative_metrics_repo import NarrativeMetricRepository
@@ -215,9 +218,10 @@ def async_score_narrative_metrics(book_id: int, branch_id: int, ep_num: int, tra
 
 @huey.task(retries=3, retry_delay=5)
 @with_trace_context
-def enqueue_audit_after_write(book_id: int, write_from: int, write_to: int, trace_id: Optional[str] = None):
+def enqueue_audit_after_write(book_id: int, write_from: int, write_to: int, trace_id: str | None = None):
     """執筆完了後の論理監査 (Shadow Mode) をバックグラウンドで実行するタスク。"""
     import asyncio
+
     from config.container import get_container
     from src.agents.audit import LogicalAuditor
 

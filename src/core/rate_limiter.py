@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import time
-from typing import Optional
 
 from src.core.observability import StructuredLogger
 
@@ -27,7 +26,7 @@ class TokenBucket:
         self.name = name
         self.tokens = capacity
         self.last_update = time.monotonic()
-        self._lock: Optional[asyncio.Lock] = None
+        self._lock: asyncio.Lock | None = None
 
     def _get_lock(self) -> asyncio.Lock:
         if self._lock is None:

@@ -1,4 +1,6 @@
 # src/backend/observability/__init__.py
+from .health import build_health_payload
+from .health import metrics as metrics
 from .metrics import (
     # ミドルウェア
     MetricsMiddleware,
@@ -32,8 +34,6 @@ from .metrics import (
     update_redis_clients,
 )
 
-from .health import build_health_payload, metrics
-
 __all__ = [
     "http_requests_total",
     "http_request_duration_seconds",
@@ -59,4 +59,6 @@ __all__ = [
     "metrics_endpoint",
     "MetricsMiddleware",
     "track_llm_metrics",
+    "metrics",
+    "build_health_payload",
 ]

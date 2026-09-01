@@ -1,5 +1,5 @@
 # agents/audit.py
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from src.backend.sharp_edge_preserver import check_edges_preserved
 from src.models.audit import CriticFeedback, LogicalAuditIssueList
@@ -15,7 +15,7 @@ class FastPlotScreener:
         self.llm = llm
         self.prompt_manager = prompt_manager
 
-    async def screen_plot(self, blueprint: str) -> Tuple[bool, str]:
+    async def screen_plot(self, blueprint: str) -> tuple[bool, str]:
         prompt = self.prompt_manager.build_fast_plot_screen_prompt(blueprint)
         result = await self.llm.generate_json(purpose="audit", prompt=prompt)
         metadata = result.get("metadata", {})
@@ -31,7 +31,7 @@ class AbilityConsistencyChecker:
 
     async def audit_ability_consistency(
         self, blueprint: str, settings_json: str, characters_json: str
-    ) -> Tuple[bool, str, str]:
+    ) -> tuple[bool, str, str]:
         if self.prompt_manager is None:
             return True, "OK", ""
         prompt = self.prompt_manager.build_ability_audit_prompt(
@@ -49,12 +49,12 @@ class AbilityConsistencyChecker:
 class PlotIntegrityMonitor:
     """プロット整合性モニター（簡易スタブ）"""
 
-    def extract_keywords(self, blueprint: str) -> List[str]:
+    def extract_keywords(self, blueprint: str) -> list[str]:
         return []
 
     async def check_integrity(
-        self, keywords: List[str], blueprint: str, content: str, threshold: float = 0.7
-    ) -> Tuple[bool, float, Any]:
+        self, keywords: list[str], blueprint: str, content: str, threshold: float = 0.7
+    ) -> tuple[bool, float, Any]:
         return True, 1.0, None
 
 
@@ -78,10 +78,10 @@ class DeAIAuditor:
     async def audit(
         self,
         content: str,
-        before_content: Optional[str] = None,
-        edges: Optional[List[SharpEdgeSpec]] = None,
-        emotional_hook: Optional[Any] = None,
-    ) -> Tuple[bool, str]:
+        before_content: str | None = None,
+        edges: list[SharpEdgeSpec] | None = None,
+        emotional_hook: Any | None = None,
+    ) -> tuple[bool, str]:
         if edges:
             if self.edge_preserver is not None:
                 # Semantic mode: use SemanticEdgePreserver for robust detection
@@ -165,13 +165,13 @@ class InternalLogicValidator:
 
     async def validate_alibi_and_timeline(
         self, blueprint: str, script: str
-    ) -> Tuple[bool, List[str]]:
+    ) -> tuple[bool, list[str]]:
         """アリバイとタイムラインの整合性を検証する（スタブ）。"""
         return True, []
 
     async def check_information_asymmetry(
         self, past_info: str, current_info: str
-    ) -> Tuple[bool, List[str]]:
+    ) -> tuple[bool, list[str]]:
         """情報の非対称性を検証する（スタブ）。"""
         return True, []
 
@@ -245,7 +245,7 @@ class LogicalAuditor:
 
     async def validate_alibi_and_timeline(
         self, blueprint: str, script: str
-    ) -> Tuple[bool, List[str]]:
+    ) -> tuple[bool, list[str]]:
         """
         アリバイとタイムラインの整合性を検証する（スタブ）
         """
@@ -253,7 +253,7 @@ class LogicalAuditor:
 
     async def audit_logical_consistency(
         self, book_id: int, ep_num: int, blueprint: str
-    ) -> Tuple[bool, str, float]:
+    ) -> tuple[bool, str, float]:
         """作品のロジカル整合性をチェックします"""
         base_ok, base_feedback = await self._check_base_config(book_id, ep_num)
         if not base_ok:
@@ -273,7 +273,7 @@ class LogicalAuditor:
 
         return True, "OK", 1.0
 
-    async def _check_base_config(self, book_id: int, ep_num: int) -> Tuple[bool, str]:
+    async def _check_base_config(self, book_id: int, ep_num: int) -> tuple[bool, str]:
         """基本設定の一貫性"""
         if self.repo is None:
             return True, "OK"
@@ -284,7 +284,7 @@ class LogicalAuditor:
             return False, "scene integrity violation"
         return True, "OK"
 
-    async def _check_plot_integrity(self, book_id: int, ep_num: int) -> Tuple[bool, str]:
+    async def _check_plot_integrity(self, book_id: int, ep_num: int) -> tuple[bool, str]:
         """プロット全体の一貫性"""
         if self.repo is None:
             return True, "OK"
@@ -301,17 +301,17 @@ class LogicalAuditor:
 
     async def check_information_asymmetry(
         self, past_info: str, current_info: str
-    ) -> Tuple[bool, List[str]]:
+    ) -> tuple[bool, list[str]]:
         """
         情報の非対称性を検証する（スタブ）
         """
         return True, []
 
-    async def _check_character_actions(self, book_id: int) -> Tuple[bool, str]:
+    async def _check_character_actions(self, book_id: int) -> tuple[bool, str]:
         """キャラクターの行動一貫性（スタブ）"""
         return True, "OK"
 
-    async def _check_theme_continuity(self, blueprint: str) -> Tuple[bool, str]:
+    async def _check_theme_continuity(self, blueprint: str) -> tuple[bool, str]:
         """テーマの連続性（スタブ）"""
         return True, "OK"
 
@@ -353,7 +353,7 @@ class LogicalAuditor:
         scene_content: str,
         context: str = "",
         reporter: Any = None,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """1シーン分の没入スコアと物語メトリクスをLLMで算出する"""
         default_scores = [
             {

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel
 
@@ -14,8 +13,8 @@ class BranchDbModel(BaseModel):
     id: int
     book_id: int
     name: str
-    parent_id: Optional[int] = None
-    fork_ep_num: Optional[int] = 0
-    created_at: Optional[datetime] = None
+    parent_id: int | None = None
+    fork_ep_num: int | None = 0
+    created_at: datetime | None = None
 
     model_config = MODEL_CONFIG_DEFAULTS

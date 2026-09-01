@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Any, Dict
+from typing import Any
 
 from src.shared.utils import StatusReporter
 
@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 class PlotExpansionWorkflow(BaseWorkflow):
     """プロットの追加・再生成フロー"""
 
-    async def execute(self, reporter: StatusReporter, **kwargs) -> Dict[str, Any]:
+    async def execute(self, reporter: StatusReporter, **kwargs) -> dict[str, Any]:
         book_id = kwargs["book_id"]
         gen_from = kwargs["gen_from"]
         gen_to = kwargs["gen_to"]

@@ -11,13 +11,23 @@ import sqlite3
 import time
 import traceback
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any
 
 import aiosqlite
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
-from config import BASE_DIR, DATABASE_URL
+try:
+    from src.backend.config import ROOT_DIR as BASE_DIR
+    from src.backend.config import settings
+    DATABASE_URL = settings.DATABASE_URL
+except ImportError:
+    try:
+        from config import BASE_DIR, DATABASE_URL
+    except ImportError:
+        from pathlib import Path
+        BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
+        DATABASE_URL = f"sqlite:///{BASE_DIR / 'storage' / 'autonovel.db'}"
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +42,7 @@ def retry_with_logging(retries: int = 15, base_delay: float = 0.1, max_delay: fl
             for i in range(retries):
                 try:
                     return await func(*args, **kwargs)
-                except (aiosqlite.Error, sqlite3.Error, OSError, asyncio.TimeoutError) as e:
+                except (TimeoutError, aiosqlite.Error, sqlite3.Error, OSError) as e:
                     if i == retries - 1:
                         logger.error(
                             f"Final error in {func.__name__} after {retries} retries: {e}\n{traceback.format_exc()}"
@@ -60,7 +70,7 @@ class WorkspaceManager:
         return str(BASE_DIR / filename)
 
     @staticmethod
-    def list_backups() -> List[Path]:
+    def list_backups() -> list[Path]:
         return sorted(BASE_DIR.glob("*.bak_*.db"), key=lambda x: x.stat().st_mtime, reverse=True)
 
     @staticmethod
@@ -144,8 +154,17 @@ class DatabaseManager:
                 "pool_recycle": 1200,
             })
 
+        if db_url.startswith("sqlite:///"):
+            async_url = db_url.replace("sqlite:///", "sqlite+aiosqlite:///")
+        elif db_url.startswith("sqlite:"):
+            async_url = db_url.replace("sqlite:", "sqlite+aiosqlite:")
+        elif db_url.startswith("postgresql://"):
+            async_url = db_url.replace("postgresql://", "postgresql+asyncpg://")
+        else:
+            async_url = db_url
+
         self.engine = create_async_engine(
-            db_url,
+            async_url,
             **engine_kwargs,
         )
 
@@ -229,7 +248,7 @@ class DatabaseManager:
         async with self.engine.begin() as conn:
             await conn.execute(sql, params)
 
-    async def fetch_one(self, sql: Any, params: Any = ()) -> Optional[Any]:
+    async def fetch_one(self, sql: Any, params: Any = ()) -> Any | None:
         """読み取り専用接続プールを使用した単一行取得"""
         import warnings
 
@@ -246,7 +265,7 @@ class DatabaseManager:
             result = await conn.execute(sql, params)
             return result.mappings().fetchone()
 
-    async def fetch_all(self, sql: Any, params: Any = ()) -> List[Any]:
+    async def fetch_all(self, sql: Any, params: Any = ()) -> list[Any]:
         """読み取り専用接続プールを使用した複数行取得"""
         import warnings
 
@@ -315,9 +334,9 @@ def init_db(db_path: str = ""):
     elif "postgresql+asyncpg" in sync_url:
         sync_url = sync_url.replace("postgresql+asyncpg://", "postgresql://")
 
-    from src.infrastructure.database.models import Base
-    import src.infrastructure.database.models  # noqa
     import src.backend.database.models  # noqa
+    import src.infrastructure.database.models  # noqa
+    from src.infrastructure.database.models import Base
 
     engine_obj = create_engine(sync_url)
     Base.metadata.create_all(engine_obj)
@@ -367,7 +386,7 @@ engine = _EngineProxy()
 
 
 
-def set_db_manager(manager: Optional[DatabaseManager]) -> None:
+def set_db_manager(manager: DatabaseManager | None) -> None:
     """グローバルDBマネージャーを明示的にセット（主にテスト用DIで使用）"""
     logger.warning("set_db_manager is deprecated. Use DI container instead.")
     try:

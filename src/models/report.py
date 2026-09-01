@@ -3,7 +3,6 @@ src/models/report.py — 制作レポート用データモデル
 """
 
 from datetime import datetime
-from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -55,11 +54,11 @@ class ProductionReport(BaseModel):
     title: str = Field(description="作品タイトル")
     genre: str = Field(description="ジャンル")
     target_word_count: int = Field(default=3000, description="目標文字数/話")
-    token_usage: Optional[TokenUsageReport] = Field(default=None, description="トークン使用量")
-    quality_metrics: Optional[QualityMetricsReport] = Field(
+    token_usage: TokenUsageReport | None = Field(default=None, description="トークン使用量")
+    quality_metrics: QualityMetricsReport | None = Field(
         default=None, description="品質メトリクス"
     )
-    episode_summaries: List[EpisodeSummary] = Field(
+    episode_summaries: list[EpisodeSummary] = Field(
         default_factory=list, description="エピソード一覧"
     )
     total_generation_time: float = Field(default=0.0, description="総生成時間（秒）")

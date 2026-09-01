@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Generic, List, Optional, Protocol, TypeVar
+from typing import Any, Generic, Protocol, TypeVar
 
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -12,13 +12,13 @@ TCreate = TypeVar("TCreate", bound=BaseModel)
 class RepositoryProtocol(Protocol[T, TCreate]):
     """Repository のプロトコル（構造的型付け用）"""
 
-    async def get(self, entity_id: int) -> Optional[T]: ...
+    async def get(self, entity_id: int) -> T | None: ...
 
-    async def get_all(self) -> List[T]: ...
+    async def get_all(self) -> list[T]: ...
 
     async def create(self, data: TCreate) -> T: ...
 
-    async def update(self, entity_id: int, data: dict[str, Any]) -> Optional[T]: ...
+    async def update(self, entity_id: int, data: dict[str, Any]) -> T | None: ...
 
     async def delete(self, entity_id: int) -> bool: ...
 
@@ -30,12 +30,12 @@ class AsyncRepository(Generic[T, TCreate], ABC):
         self.session = session
 
     @abstractmethod
-    async def get(self, entity_id: int) -> Optional[T]:
+    async def get(self, entity_id: int) -> T | None:
         """ID でエンティティを取得する"""
         ...
 
     @abstractmethod
-    async def get_all(self) -> List[T]:
+    async def get_all(self) -> list[T]:
         """全エンティティを取得する"""
         ...
 
@@ -45,7 +45,7 @@ class AsyncRepository(Generic[T, TCreate], ABC):
         ...
 
     @abstractmethod
-    async def update(self, entity_id: int, data: dict[str, Any]) -> Optional[T]:
+    async def update(self, entity_id: int, data: dict[str, Any]) -> T | None:
         """エンティティを更新する"""
         ...
 
@@ -62,7 +62,7 @@ class SQLAlchemyRepository(AsyncRepository[T, TCreate]):
         super().__init__(session)
         self.model_class = model_class
 
-    async def get(self, entity_id: int) -> Optional[T]:
+    async def get(self, entity_id: int) -> T | None:
         stmt = select(self.model_class).where(self.model_class.id == entity_id)
         result = await self.session.execute(stmt)
         row = result.scalar_one_or_none()
@@ -70,7 +70,7 @@ class SQLAlchemyRepository(AsyncRepository[T, TCreate]):
             return None
         return self._to_domain(row)
 
-    async def get_all(self) -> List[T]:
+    async def get_all(self) -> list[T]:
         stmt = select(self.model_class)
         result = await self.session.execute(stmt)
         rows = result.scalars().all()
@@ -83,7 +83,7 @@ class SQLAlchemyRepository(AsyncRepository[T, TCreate]):
         await self.session.refresh(orm_obj)
         return self._to_domain(orm_obj)
 
-    async def update(self, entity_id: int, data: dict[str, Any]) -> Optional[T]:
+    async def update(self, entity_id: int, data: dict[str, Any]) -> T | None:
         stmt = select(self.model_class).where(self.model_class.id == entity_id)
         result = await self.session.execute(stmt)
         row = result.scalar_one_or_none()

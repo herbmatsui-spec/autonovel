@@ -4,7 +4,8 @@ src/services/novel_producer.py — 小説制作サービス
 
 import logging
 import time
-from typing import Any, Callable, Dict, List, Optional
+from collections.abc import Callable
+from typing import Any
 
 from src.models.production_config import (
     EpisodeResult,
@@ -25,7 +26,7 @@ class NovelProducer:
     1作品の全エピソードを生成し、レポートを作成する。
     """
 
-    def __init__(self, token_tracker: Optional[TokenTracker] = None):
+    def __init__(self, token_tracker: TokenTracker | None = None):
         """初期化
 
         Args:
@@ -34,12 +35,12 @@ class NovelProducer:
         self.token_tracker = token_tracker or TokenTracker()
         self.episode_writer = EpisodeWriter()
         self.report_generator = ReportGenerator()
-        self.progress_callback: Optional[Callable] = None
+        self.progress_callback: Callable | None = None
 
         # 内部状態
-        self._current_project: Optional[NovelProject] = None
-        self._episodes: List[EpisodeResult] = []
-        self._progress: Optional[ProductionProgress] = None
+        self._current_project: NovelProject | None = None
+        self._episodes: list[EpisodeResult] = []
+        self._progress: ProductionProgress | None = None
 
     def set_progress_callback(self, callback: Callable[[ProductionProgress], None]):
         """進捗コールバックを設定
@@ -122,7 +123,7 @@ class NovelProducer:
 
         return episode_result
 
-    def _build_context(self, ep_num: int) -> Dict[str, Any]:
+    def _build_context(self, ep_num: int) -> dict[str, Any]:
         """エピソード生成用のコンテキストをビルド
 
         Args:
@@ -149,7 +150,7 @@ class NovelProducer:
 
         return context
 
-    async def generate_all_episodes(self, project_id: int) -> List[EpisodeResult]:
+    async def generate_all_episodes(self, project_id: int) -> list[EpisodeResult]:
         """全話を生成
 
         Args:
@@ -190,7 +191,7 @@ class NovelProducer:
 
         return self._episodes
 
-    def get_progress(self) -> Optional[ProductionProgress]:
+    def get_progress(self) -> ProductionProgress | None:
         """進捗を取得
 
         Returns:
@@ -198,7 +199,7 @@ class NovelProducer:
         """
         return self._progress
 
-    def get_episodes(self) -> List[EpisodeResult]:
+    def get_episodes(self) -> list[EpisodeResult]:
         """生成されたエピソード一覧を取得
 
         Returns:

@@ -2,7 +2,6 @@
 kernels/interaction_formatter.py - インタラクションフォーマッタ
 """
 
-from typing import List
 
 
 class InteractionFormatter:
@@ -22,7 +21,7 @@ class InteractionFormatter:
         template = self.templates.get(category, self.templates["default"])
         return template.format(content=content)
 
-    def format_batch(self, contents: List[str], category: str = "default") -> List[str]:
+    def format_batch(self, contents: list[str], category: str = "default") -> list[str]:
         """複数コンテンツを一括フォーマット"""
         return [self.format(c, category) for c in contents]
 

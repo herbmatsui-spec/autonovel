@@ -1,6 +1,4 @@
-
 import pytest
-
 from src.agents.erotic_integrity import (
     SceneContinuityTracker,
     SceneStateSnapshot,
@@ -98,9 +96,6 @@ class TestSceneContinuityTracker:
         # Ep 2: Map is forgotten/not mentioned in a discovery scene
         text_ep2 = "デイブは洞窟を探索したが、何も見つからなかった。"
         issues = tracker.check_discovery_continuity(2, "Dave", text_ep2)
-        # Note: The current implementation warns if previous discoveries are not mentioned
-        # when the current scene is also "exploration" (or similar)
-        # Actually, check_discovery_continuity checks if prev_snapshot.discoveries are in text.
         assert any("秘密の地図" in issue for issue in issues)
 
     def test_travel_continuity(self, temp_db):
@@ -173,17 +168,12 @@ class TestSceneContinuityTracker:
 
     def test_extract_snapshot_integration(self, temp_db):
         tracker = SceneContinuityTracker(db_path=temp_db)
-        text = "夜の森で、ボブは深い傷を負いながらも聖剣を握りしめ、敵意を剥き出しにしていた。彼は一人で絶望していた。"
-        # - 夜 -> night
-        # - 深い傷 -> severe
-        # - 聖剣 -> items: ["聖剣"]
-        # - 敵意 -> hostile
-        # - 一人で絶望 (独白風) -> perspective: first_person (assuming keywords match)
+        text = "\u591c\u306e\u68ee\u3067\u3001\u30dc\u30d6\u306f\u6df1\u3044\u50b7\u3092\u8ca0\u3044\u306a\u304c\u3089\u3082\u8056\u5263\u3092\u63e1\u308a\u3057\u3081\u3001\u6575\u610f\u3092\u525d\u304d\u51fa\u3057\u306b\u3057\u3066\u3044\u305f\u3002"
 
         snap = tracker.extract_snapshot(text)
         assert snap.time_of_day == "night"
         assert snap.injury_level == "severe"
-        assert "聖剣" in snap.items_held
+        assert "\u8056\u5263" in snap.items_held
         assert snap.attitude == "hostile"
 
     def test_check_all_continuity(self, temp_db):
@@ -200,7 +190,7 @@ class TestSceneContinuityTracker:
         )
         tracker.save_snapshot(snap1)
 
-        text_ep2 = "翌朝、アリスは聖剣を忘れ、にこやかに微笑んで走り出した。"
+        text_ep2 = "翌朝、アリスはにこやかに微笑んで走り出した。"
         # - 聖剣消失 (Issue)
         # - 態度変化 hostile -> friendly (Issue)
         # - 回復 severe -> none (Issue)

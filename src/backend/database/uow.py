@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any
 
 from dependency_injector.wiring import Provide, inject
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -41,32 +41,32 @@ class UnitOfWork:
     @inject
     def __init__(self, db: DatabaseManager = Provide["db"]):
         self.db = db
-        self.session: Optional[AsyncSession] = None
+        self.session: AsyncSession | None = None
         self._token = None
-        self._bible: Optional[BibleRepository] = None
-        self._books: Optional[BookRepository] = None
-        self._branches: Optional[BranchRepository] = None
-        self._chapters: Optional[ChapterRepository] = None
-        self._characters: Optional[CharacterRepository] = None
-        self._misc: Optional[MiscRepository] = None
-        self._plots: Optional[PlotRepository] = None
-        self._rules: Optional[RulesRepository] = None
-        self._audit: Optional[AuditRepository] = None
-        self._prompt_versions: Optional[PromptVersionRepository] = None
-        self._prompt_metrics: Optional[PromptMetricsRepository] = None
-        self._illustrations: Optional[IllustrationRepository] = None
+        self._bible: BibleRepository | None = None
+        self._books: BookRepository | None = None
+        self._branches: BranchRepository | None = None
+        self._chapters: ChapterRepository | None = None
+        self._characters: CharacterRepository | None = None
+        self._misc: MiscRepository | None = None
+        self._plots: PlotRepository | None = None
+        self._rules: RulesRepository | None = None
+        self._audit: AuditRepository | None = None
+        self._prompt_versions: PromptVersionRepository | None = None
+        self._prompt_metrics: PromptMetricsRepository | None = None
+        self._illustrations: IllustrationRepository | None = None
 
         self.outbox_service = ChromaOutboxService()
-        self._chroma_additions: List[Dict[str, Any]] = []
-        self._chroma_deletions: List[Dict[str, Any]] = []
+        self._chroma_additions: list[dict[str, Any]] = []
+        self._chroma_deletions: list[dict[str, Any]] = []
 
     def stage_chroma_add(
         self,
         collection: str,
         doc_id: str,
         doc_content: str,
-        embedding: List[float],
-        metadata: Optional[Dict[str, Any]] = None,
+        embedding: list[float],
+        metadata: dict[str, Any] | None = None,
     ):
         """ChromaDBへのドキュメント追加をステージング"""
         self._chroma_additions.append(
@@ -79,7 +79,7 @@ class UnitOfWork:
             }
         )
 
-    def stage_chroma_delete(self, collection: str, ids: List[str]):
+    def stage_chroma_delete(self, collection: str, ids: list[str]):
         """ChromaDBからのドキュメント削除をステージング"""
         self._chroma_deletions.append({"collection": collection, "ids": ids})
 
@@ -163,7 +163,7 @@ class UnitOfWork:
         self._token = current_uow.set(self)  # type: ignore
         return self
 
-    async def get_pending_outbox_events(self) -> List[Outbox]:
+    async def get_pending_outbox_events(self) -> list[Outbox]:
         """未処理のアウトボックスイベントを取得"""
         from sqlalchemy import select
 

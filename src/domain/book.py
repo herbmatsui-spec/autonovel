@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -43,7 +43,7 @@ class Book(BookBase):
     """作品エンティティ — 完全なデータモデル"""
 
     id: int = Field(..., ge=1, description="作品ID")
-    chapters: List["Chapter"] = Field(default_factory=list, description="章一覧")
+    chapters: list["Chapter"] = Field(default_factory=list, description="章一覧")
     tension: float = Field(default=0.0, ge=0.0, le=1.0, description="緊張度 (0-1)")
     emotional_resonance: float = Field(
         default=0.0, ge=0.0, le=1.0, description="感情的共鳴度 (0-1)"

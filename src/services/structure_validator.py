@@ -9,11 +9,11 @@ services/structure_validator.py - 物語構造テンプレート検証
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
-STRUCTURE_DEFINITIONS: Dict[str, Dict[str, Any]] = {
+STRUCTURE_DEFINITIONS: dict[str, dict[str, Any]] = {
     "three_act": {
         "name": "三幕構成",
         "required_beats": [
@@ -48,12 +48,12 @@ STRUCTURE_DEFINITIONS: Dict[str, Dict[str, Any]] = {
 }
 
 
-def load_structure(name: str) -> Dict[str, Any]:
+def load_structure(name: str) -> dict[str, Any]:
     """構造テンプレートを取得する。未知の場合は三幕構成を既定とする。"""
     return STRUCTURE_DEFINITIONS.get(name, STRUCTURE_DEFINITIONS["three_act"])
 
 
-def assign_phases(chapters: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def assign_phases(chapters: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """各章を 0..1 のフェーズ（出現位置）に割り当てる。"""
     n = len(chapters)
     if n == 0:
@@ -62,8 +62,8 @@ def assign_phases(chapters: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
 
 def check_required_beats(
-    assigned: List[Dict[str, Any]], structure: Dict[str, Any]
-) -> List[Dict[str, Any]]:
+    assigned: list[dict[str, Any]], structure: dict[str, Any]
+) -> list[dict[str, Any]]:
     """各必須ビートが「そのフェーズ付近に章が存在するか」を判定する。"""
     if not assigned:
         return [
@@ -86,8 +86,8 @@ def check_required_beats(
 
 
 def check_climax_placement(
-    assigned: List[Dict[str, Any]], structure: Dict[str, Any]
-) -> Dict[str, Any]:
+    assigned: list[dict[str, Any]], structure: dict[str, Any]
+) -> dict[str, Any]:
     """後半1/3等にクライマックス相当の章（tension が最大の章）があるかを検証する。"""
     min_phase = structure.get("climax_min_phase", 0.66)
     if not assigned:
@@ -101,7 +101,7 @@ def check_climax_placement(
     }
 
 
-def check_pacing(assigned: List[Dict[str, Any]]) -> Dict[str, Any]:
+def check_pacing(assigned: list[dict[str, Any]]) -> dict[str, Any]:
     """前半詰め込み/後半スカスカ等の偏りを検出する。"""
     if len(assigned) < 3:
         return {"ok": True, "reason": "章数が少なく判定省略", "skew": 0.0}
@@ -115,7 +115,7 @@ def check_pacing(assigned: List[Dict[str, Any]]) -> Dict[str, Any]:
     }
 
 
-def validate(chapters: List[Dict[str, Any]], structure_name: str = "three_act") -> Dict[str, Any]:
+def validate(chapters: list[dict[str, Any]], structure_name: str = "three_act") -> dict[str, Any]:
     """物語構造検証レポートを生成する。"""
     structure = load_structure(structure_name)
     assigned = assign_phases(chapters)
@@ -134,7 +134,7 @@ def validate(chapters: List[Dict[str, Any]], structure_name: str = "three_act") 
     }
 
 
-def list_structures() -> List[Dict[str, Any]]:
+def list_structures() -> list[dict[str, Any]]:
     return [
         {"key": k, "name": v["name"], "beats": [b["label"] for b in v["required_beats"]]}
         for k, v in STRUCTURE_DEFINITIONS.items()

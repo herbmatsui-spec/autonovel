@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from pydantic import AliasChoices, BaseModel, Field, field_validator, model_validator
 
@@ -16,7 +16,7 @@ class CharacterConcept(BaseModel):
     trait: str = Field(..., description="特性・二つ名")
     core_idea: str = Field(..., description="コアコンセプト・核心")
     appeal_point: str = Field(..., description="読者への訴求点・カタルシス要素")
-    villain_concept: Optional[str] = Field(default=None, description="想定される敵対者像")
+    villain_concept: str | None = Field(default=None, description="想定される敵対者像")
 
     model_config = MODEL_CONFIG_DEFAULTS
 
@@ -24,7 +24,7 @@ class CharacterConcept(BaseModel):
 class CharacterConceptList(BaseModel):
     """キャラクターコンセプト案のリスト"""
 
-    concepts: List[CharacterConcept] = Field(default_factory=list)
+    concepts: list[CharacterConcept] = Field(default_factory=list)
 
     @model_validator(mode="before")
     @classmethod
@@ -54,7 +54,7 @@ class CharacterRelationship(BaseModel):
     )
     description: str = Field(default="", description="関係性の具体的な内容や背景")
     intensity: int = Field(default=3, ge=1, le=5, description="関係性の強度（1:弱い〜5:強い）")
-    secret_aspect: Optional[str] = Field(default=None, description="関係性の秘密の側面や裏の顔")
+    secret_aspect: str | None = Field(default=None, description="関係性の秘密の側面や裏の顔")
 
     model_config = MODEL_CONFIG_DEFAULTS
 
@@ -109,14 +109,14 @@ class CharacterRegistry(BaseModel):
         description="特徴的な語尾",
         validation_alias=AliasChoices("suffix_style", "suffix", "style"),
     )
-    suffix_patterns: List[str] = Field(
+    suffix_patterns: list[str] = Field(
         default_factory=list,
         description="語尾検証用の正規表現パターン（例: ['〜だわ$', '〜ですわ$']）",
     )
-    known_facts: List[str] = Field(
+    known_facts: list[str] = Field(
         default_factory=list, description="このキャラが知っている事実（Truth Ledger）"
     )
-    unknown_facts: List[str] = Field(
+    unknown_facts: list[str] = Field(
         default_factory=list, description="このキャラが知らない事実（会話で漏らしてはいけない）"
     )
     ability: str = Field(
@@ -135,18 +135,18 @@ class CharacterRegistry(BaseModel):
     social_mask_vs_truth: str = Field(
         default="", description="表向きの社会的仮面と、夜一人でいる時に見せる剥き出しの真実の対比"
     )
-    pronouns: Dict[str, str] = Field(default_factory=dict)
-    relationships: List[CharacterRelationship] = Field(
+    pronouns: dict[str, str] = Field(default_factory=dict)
+    relationships: list[CharacterRelationship] = Field(
         default_factory=list, validation_alias=AliasChoices("relationships", "relations", "rels")
     )
-    dialogue_samples: List[str] = Field(
+    dialogue_samples: list[str] = Field(
         default_factory=list,
         validation_alias=AliasChoices("dialogue_samples", "dlg_smp", "samples", "quotes"),
     )
-    keywords: List[str] = Field(
+    keywords: list[str] = Field(
         default_factory=list, validation_alias=AliasChoices("keywords", "kws", "tags")
     )
-    expansion_hooks: List[str] = Field(
+    expansion_hooks: list[str] = Field(
         default_factory=list,
         validation_alias=AliasChoices("expansion_hooks", "exp_hooks", "hooks", "hooks_list"),
         description="描写を膨らせるための固有要素",
@@ -244,7 +244,7 @@ class CharacterRegistry(BaseModel):
         return prompt
 
     @classmethod
-    def from_db(cls, data: Union[dict, str]) -> CharacterRegistry:
+    def from_db(cls, data: dict | str) -> CharacterRegistry:
         """DBからの復元時に型変換を安全に行う"""
         if isinstance(data, str):
             try:

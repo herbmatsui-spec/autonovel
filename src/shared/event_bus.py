@@ -5,10 +5,10 @@ kernels/ 配下のモジュールが streamlit_app/ へ直接依存しないよ�
 中継ぎモジュール。実体は streamlit_app.event_bus 側に存在する。
 """
 
-from enum import Enum
+from enum import StrEnum
 
 
-class UIEventType(str, Enum):
+class UIEventType(StrEnum):
     """UI イベント種別 (streamlit_app.event_bus.UIEventType と互換)。
 
     kernels 側はこの enum を介してのみイベント種別を参照する。

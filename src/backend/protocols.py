@@ -8,7 +8,7 @@ Protocol を使うことで、実装の置換・モックが import サイクル
 
 from __future__ import annotations
 
-from typing import Any, Optional, Protocol, Tuple
+from typing import Any, Protocol
 
 
 # ---------------------------------------------------------------------------
@@ -32,7 +32,7 @@ class PlanningPort(Protocol):
         initial_plot_limit: int = 3,
         config: Any = None,
         reporter: Any = None,
-    ) -> Tuple[int, Any]: ...
+    ) -> tuple[int, Any]: ...
 
     async def expand_plots(self, *args: Any, **kwargs: Any) -> Any: ...
 
@@ -56,7 +56,7 @@ class WritingPort(Protocol):
         reporter: Any,
         branch_id: int = 1,
         style_tag: Any = None,
-    ) -> Tuple[int, list]: ...
+    ) -> tuple[int, list]: ...
 
     async def generate_episodes(
         self,
@@ -95,7 +95,7 @@ class BiblePort(Protocol):
 
     async def resolve_pending_setting(self, setting_id: int, status: str) -> None: ...
 
-    async def get_latest_bible(self, book_id: int) -> Optional[Any]: ...
+    async def get_latest_bible(self, book_id: int) -> Any | None: ...
 
 
 # ---------------------------------------------------------------------------
@@ -109,7 +109,7 @@ class TensionPort(Protocol):
         book_id: int,
         ep_num: int,
         genre: str,
-        story_type: Optional[str] = None,
+        story_type: str | None = None,
     ) -> float: ...
 
     async def validate_tension_deviation(
@@ -118,7 +118,7 @@ class TensionPort(Protocol):
         generated_tension: float,
         book_id: int,
         tolerance: float = 0.2,
-    ) -> Tuple[bool, float]: ...
+    ) -> tuple[bool, float]: ...
 
 
 # ---------------------------------------------------------------------------
@@ -127,11 +127,11 @@ class TensionPort(Protocol):
 class DataRepositoryPort(Protocol):
     """ワークフローが読み取りで利用するリポジトリ操作のインターフェース。"""
 
-    async def get_book(self, book_id: int) -> Optional[Any]: ...
+    async def get_book(self, book_id: int) -> Any | None: ...
 
     async def get_total_episodes(self, book_id: int) -> int: ...
 
-    async def get_latest_bible(self, book_id: int) -> Optional[Any]: ...
+    async def get_latest_bible(self, book_id: int) -> Any | None: ...
 
     @property
     def plots(self) -> Any: ...

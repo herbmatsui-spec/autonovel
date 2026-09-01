@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, Field
 
@@ -24,13 +24,13 @@ class WorkflowContext(BaseModel):
     concept: str = ""
     tone_vibe: float = 0.6
     user_prompt: str = ""
-    book_id: Optional[int] = None
+    book_id: int | None = None
     chars_count: int = 0
-    failed_episodes: List[Dict[str, Any]] = Field(default_factory=list)
-    zip_data: Optional[bytes] = None
-    zip_filename: Optional[str] = None
+    failed_episodes: list[dict[str, Any]] = Field(default_factory=list)
+    zip_data: bytes | None = None
+    zip_filename: str | None = None
     title: str = ""
-    easy_parameters: Dict[str, Any] = Field(default_factory=dict)
+    easy_parameters: dict[str, Any] = Field(default_factory=dict)
 
 
 class WorkflowStep:
@@ -235,7 +235,7 @@ class PackageStep(WorkflowStep):
 
 
 class AutoWorkflowPipeline:
-    def __init__(self, steps: List[WorkflowStep]):
+    def __init__(self, steps: list[WorkflowStep]):
         self.steps = steps
 
     async def execute(

@@ -10,7 +10,7 @@ from __future__ import annotations
 
 # Remove unused asyncio import
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from config import BASE_DIR
 
@@ -29,19 +29,19 @@ class _InMemorySaver:
     """LangGraph が無い環境用のダミー永続化（インメモリ）。"""
 
     def __init__(self) -> None:
-        self._store: Dict[str, Any] = {}
+        self._store: dict[str, Any] = {}
 
-    def from_conn_string(self, _db_path: str) -> "_InMemorySaver":
+    def from_conn_string(self, _db_path: str) -> _InMemorySaver:
         return self
 
-    async def aput(self, checkpoint: Dict[str, Any]) -> None:
+    async def aput(self, checkpoint: dict[str, Any]) -> None:
         cid = checkpoint.get("id") or str(id(checkpoint))
         self._store[cid] = checkpoint
 
-    async def aget(self, checkpoint_id: str) -> Optional[Dict[str, Any]]:
+    async def aget(self, checkpoint_id: str) -> dict[str, Any] | None:
         return self._store.get(checkpoint_id)
 
-    async def alist(self, thread_id: str) -> List[Dict[str, Any]]:
+    async def alist(self, thread_id: str) -> list[dict[str, Any]]:
         return [c for c in self._store.values() if c.get("thread_id") == thread_id]
 
     async def adelete(self, checkpoint_id: str) -> None:
@@ -57,7 +57,7 @@ class CheckpointSaver:
     - LangGraph が未インストールの場合はインメモリ保存にフォールバックする。
     """
 
-    def __init__(self, db_path: Optional[str] = None):
+    def __init__(self, db_path: str | None = None):
         if db_path is None:
             db_path = str(BASE_DIR / "checkpoints.db")
         self.db_path = db_path
@@ -75,17 +75,17 @@ class CheckpointSaver:
                 self._saver = _InMemorySaver()
         return self._saver
 
-    async def save_checkpoint(self, checkpoint: Dict[str, Any]) -> None:
+    async def save_checkpoint(self, checkpoint: dict[str, Any]) -> None:
         """checkpoint を保存"""
         saver = self._get_saver()
         await saver.aput(checkpoint)
 
-    async def get_checkpoint(self, checkpoint_id: str) -> Optional[Dict[str, Any]]:
+    async def get_checkpoint(self, checkpoint_id: str) -> dict[str, Any] | None:
         """checkpoint を取得"""
         saver = self._get_saver()
         return await saver.aget(checkpoint_id)
 
-    async def list_checkpoints(self, thread_id: str) -> List[Dict[str, Any]]:
+    async def list_checkpoints(self, thread_id: str) -> list[dict[str, Any]]:
         """thread に紐づく checkpoint 一覧を取得"""
         saver = self._get_saver()
         return await saver.alist(thread_id)

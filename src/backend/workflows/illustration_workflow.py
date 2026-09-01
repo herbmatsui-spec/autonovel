@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict
+from typing import Any
 
 from src.agents.illustration_agent import IllustrationAgent
 from src.backend.workflows.base_workflow import BaseWorkflow
@@ -21,7 +21,7 @@ class IllustrationWorkflow(BaseWorkflow):
         super().__init__(**kwargs)
         self.illustration_agent = illustration_agent
 
-    async def execute(self, reporter: StatusReporter, **kwargs) -> Dict[str, Any]:
+    async def execute(self, reporter: StatusReporter, **kwargs) -> dict[str, Any]:
         """
         挿絵生成ワークフローの実行
         kwargs:
@@ -88,7 +88,7 @@ class IllustrationWorkflow(BaseWorkflow):
 
         return {"status": "success", "illustrations": results}
 
-    def _determine_safety_level(self, settings: Dict[str, Any]) -> SafetyLevel:
+    def _determine_safety_level(self, settings: dict[str, Any]) -> SafetyLevel:
         """設定に基づいてセーフティレベルを決定"""
         if settings.get("enableErotic", False):
             return SafetyLevel.R15_CONTENT

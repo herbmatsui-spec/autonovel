@@ -3,7 +3,7 @@ src/services/episode_context.py — エピソードコンテキスト生成サ�
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -16,15 +16,15 @@ class EpisodeContextBuilder:
 
     def __init__(self):
         """初期化"""
-        self._episode_history: List[Dict[str, Any]] = []
+        self._episode_history: list[dict[str, Any]] = []
 
     def build_context(
         self,
         book_id: int,
         ep_num: int,
         target_word_count: int = 3000,
-        previous_episode: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        previous_episode: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """コンテキストをビルド
 
         Args:
@@ -64,7 +64,7 @@ class EpisodeContextBuilder:
 
         return context
 
-    def _add_to_history(self, ep_num: int, context: Dict[str, Any]):
+    def _add_to_history(self, ep_num: int, context: dict[str, Any]):
         """履歴に追加
 
         Args:
@@ -77,7 +77,7 @@ class EpisodeContextBuilder:
         if len(self._episode_history) > 10:
             self._episode_history = self._episode_history[-10:]
 
-    def _get_last_episode_summary(self) -> Dict[str, str]:
+    def _get_last_episode_summary(self) -> dict[str, str]:
         """最後のエピソードの概要を取得
 
         Returns:
@@ -93,7 +93,7 @@ class EpisodeContextBuilder:
             "summary": last["context"].get("previous_episode", {}).get("summary", ""),
         }
 
-    def get_history(self) -> List[Dict[str, Any]]:
+    def get_history(self) -> list[dict[str, Any]]:
         """履歴を取得
 
         Returns:

@@ -2,7 +2,6 @@
 src/core/state/desires.py — Desire to emotional hook mapping
 """
 
-from typing import List, Optional
 
 from src.models.emotional_hook import EmotionalHookSpec
 
@@ -18,7 +17,7 @@ DESIRE_TO_HOOK_MAP = {
 }
 
 
-def desires_to_hook(desires: List[str]) -> Optional[EmotionalHookSpec]:
+def desires_to_hook(desires: list[str]) -> EmotionalHookSpec | None:
     """
     selected_desires の先頭を感情起点名に変�換し、EmotionalHookSpec を構�築する。
 

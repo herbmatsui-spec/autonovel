@@ -1,4 +1,3 @@
-from typing import List
 
 from pydantic import BaseModel, Field
 
@@ -6,11 +5,11 @@ from pydantic import BaseModel, Field
 class BeatSheetItem(BaseModel):
     beat_number: int = Field(..., description="ビートの順番")
     description: str = Field(..., description="このビートで起こる出来事（3〜5行程度）")
-    character_focus: List[str] = Field(default_factory=list, description="主要に動くキャラクター")
+    character_focus: list[str] = Field(default_factory=list, description="主要に動くキャラクター")
 
 
 class BeatSheet(BaseModel):
-    items: List[BeatSheetItem] = Field(..., description="ストーリーの起承転結を構成するビート群")
+    items: list[BeatSheetItem] = Field(..., description="ストーリーの起承転結を構成するビート群")
     summary: str = Field(..., description="この話の全体的な要約")
 
 

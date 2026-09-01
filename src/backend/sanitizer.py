@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 import logging
 import re
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from src.models import CharacterRegistry
 
@@ -208,7 +208,7 @@ class NormalizationFlow:
 
         return data
 
-    def normalize_lists(self, data: list, key_name: Optional[str]) -> list:
+    def normalize_lists(self, data: list, key_name: str | None) -> list:
         """リスト構造正規化（scenes/beats/story_threads等）"""
         if key_name == "scenes":
             data = [{"action": x} if isinstance(x, str) else x for x in data]
@@ -268,7 +268,7 @@ class NormalizationFlow:
         return data
 
     def normalize_metadata(
-        self, data: Any, key_name: Optional[str] = None, is_root: bool = True
+        self, data: Any, key_name: str | None = None, is_root: bool = True
     ) -> Any:
         """AIが生成するメタデータ構造の揺れ（ネスト・キー名）を吸収して正規化する"""
         if data is None or data == "":
@@ -313,7 +313,7 @@ class TonePerfector:
     """キャラクターの口調・一人称・二人称をDB設定に基づき強制置換する"""
 
     @staticmethod
-    def enforce_tone(text: str, characters: List[CharacterRegistry]) -> str:
+    def enforce_tone(text: str, characters: list[CharacterRegistry]) -> str:
         for char in characters:
             if not char.name:
                 continue
@@ -358,7 +358,7 @@ class OutputSanitizer:
     _normalization_flow = NormalizationFlow()
 
     @staticmethod
-    def parse_llm_json(text: str) -> Dict[str, Any]:
+    def parse_llm_json(text: str) -> dict[str, Any]:
         """
         LLMの出力からJSON部分を抽出し、修復してパースする。
         """
@@ -377,7 +377,7 @@ class OutputSanitizer:
             return {}
 
     @staticmethod
-    def extract_content_and_metadata(text: str) -> Tuple[Dict[str, Any], str]:
+    def extract_content_and_metadata(text: str) -> tuple[dict[str, Any], str]:
         """
         本文とメタデータJSONを安全に分離して返す。
         セパレーター形式 → JSON末尾抽出 → プレーンテキスト の順でフォールバック。
@@ -475,7 +475,7 @@ class OutputSanitizer:
         return re.sub(r"\n{4,}", "\n\n", text).strip()
 
     @staticmethod
-    def normalize_metadata(data: Any, key_name: Optional[str] = None, is_root: bool = True) -> Any:
+    def normalize_metadata(data: Any, key_name: str | None = None, is_root: bool = True) -> Any:
         """AIが生成するメタデータ構造の揺れ（ネスト・キー名）を吸収して正規化する"""
         return OutputSanitizer._normalization_flow.normalize_metadata(data, key_name, is_root)
 
@@ -572,7 +572,7 @@ class ContentValidator:
     """生成されたテキストの視点・リズム・商業的強度を検証する"""
 
     @staticmethod
-    def check_rhythm(text: str) -> List[str]:
+    def check_rhythm(text: str) -> list[str]:
         errors = []
         sentences = [s.strip() for s in re.split(r"[。？！]", text) if s.strip()]
         if len(sentences) < 5:
@@ -600,7 +600,7 @@ class ContentValidator:
         return errors
 
     @staticmethod
-    def check_catharsis_reservation(text: str, ep_num: int) -> List[str]:
+    def check_catharsis_reservation(text: str, ep_num: int) -> list[str]:
         """第1話において、将来的な逆転（解決の予感）が提示されているか検証する"""
         errors = []
         if ep_num == 1:
@@ -620,7 +620,7 @@ class ContentValidator:
     def _regex_auto_correct_rhythm(text: str, target_std: float = 12.0) -> str:
         """正規表現ベースのリズム補正実装（SudachiPy不在時のフォールバック）"""
         parts = re.split(r"([。？！\n])", text)
-        sentences: List[Dict] = []
+        sentences: list[dict] = []
         temp = ""
         for p in parts:
             if p in "。？！\n":
@@ -645,7 +645,7 @@ class ContentValidator:
         for _ in range(3):
             if get_std(sentences) >= target_std:
                 break
-            new_sentences: List[Dict] = []
+            new_sentences: list[dict] = []
             i = 0
             while i < len(sentences):
                 s = sentences[i]
@@ -668,7 +668,7 @@ class ContentValidator:
         return "".join(s["text"] + s["punct"] for s in sentences)
 
     @staticmethod
-    def analyze_word_heaviness(text: str) -> Dict[str, Any]:
+    def analyze_word_heaviness(text: str) -> dict[str, Any]:
         """
         文章の「重さ」を漢字率と難読語から判定（APIコスト0）
         """
@@ -866,7 +866,7 @@ class AtmosphereGenerator:
         return f"【環境演出指令】現在の舞台背景: {season}/{weather}。描写に季節感と空気感を含めよ。"
 
     @staticmethod
-    def get_sensory_anchors(season: str, weather: str, location: str) -> List[str]:
+    def get_sensory_anchors(season: str, weather: str, location: str) -> list[str]:
         anchors = []
         if season == "夏":
             anchors.append("肌を焼くような熱気")

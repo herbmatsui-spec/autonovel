@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, Optional, Tuple
+from collections.abc import Callable
+from typing import Any
 
 
 class BaseLLMClient(ABC):
@@ -16,14 +17,14 @@ class BaseLLMClient(ABC):
         self,
         model_name: str,
         prompt: str,
-        system_instruction: Optional[str] = None,
+        system_instruction: str | None = None,
         response_schema: Any = None,
         temp: float = 0.7,
         max_retries: int = 5,
-        stream_callback: Optional[Callable[[str], None]] = None,
-        retry_state: Optional[Any] = None,
+        stream_callback: Callable[[str], None] | None = None,
+        retry_state: Any | None = None,
         nsfw_mode: bool = False,
-    ) -> Tuple[Dict[str, Any], str, Any]:
+    ) -> tuple[dict[str, Any], str, Any]:
         """JSON を期待する生成。戻り値は (metadata, story, usage)。"""
         raise NotImplementedError
 
@@ -32,12 +33,12 @@ class BaseLLMClient(ABC):
         self,
         model_name: str,
         prompt: str,
-        system_instruction: Optional[str] = None,
+        system_instruction: str | None = None,
         temp: float = 0.7,
         max_retries: int = 5,
-        stream_callback: Optional[Callable[[str], None]] = None,
-        retry_state: Optional[Any] = None,
+        stream_callback: Callable[[str], None] | None = None,
+        retry_state: Any | None = None,
         nsfw_mode: bool = False,
-    ) -> Tuple[str, Any]:
+    ) -> tuple[str, Any]:
         """テキスト生成。戻り値は (text, usage)。"""
         raise NotImplementedError

@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Any, Dict
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +57,7 @@ def check_gemini() -> str:
         return "error"
 
 
-def get_system_status() -> Dict[str, Any]:
+def get_system_status() -> dict[str, Any]:
     """システム全体の耐障害ステータスを返す。"""
     db = check_database()
     gemini = check_gemini()

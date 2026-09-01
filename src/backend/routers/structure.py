@@ -7,7 +7,7 @@ structure_validator を用いて、作品のプロット構造をテンプレー
 
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any
 
 from fastapi import APIRouter, Query
 
@@ -20,7 +20,7 @@ router = APIRouter(prefix="/api/structure", tags=["structure"])
 
 
 @router.get("/templates")
-async def get_templates() -> List[Dict[str, Any]]:
+async def get_templates() -> list[dict[str, Any]]:
     """利用可能な構造テンプレート一覧を取得する。"""
     return list_structures()
 
@@ -29,7 +29,7 @@ async def get_templates() -> List[Dict[str, Any]]:
 async def validate_structure(
     book_id: int,
     structure: str = Query("three_act", description="three_act | kishotenketsu | hero_journey"),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """作品のプロット構造を検証する。"""
     from sqlalchemy import select
 

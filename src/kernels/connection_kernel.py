@@ -2,7 +2,7 @@
 kernels/connection_kernel.py - 接続関連の基盤機能
 """
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 from src.shared.network import NetworkUtils
 
@@ -15,11 +15,11 @@ class ConnectionKernel(KernelBase):
     接続関連機能を管理するカーネル
     """
 
-    def __init__(self, api_key: Optional[str] = None, timeout: int = 30):
+    def __init__(self, api_key: str | None = None, timeout: int = 30):
         super().__init__()
         self.api_key = api_key
         self.timeout = timeout
-        self.connections: Dict[str, BaseConnection] = {}
+        self.connections: dict[str, BaseConnection] = {}
 
     async def connect(self, service_url: str) -> str:
         """サービスに接続"""
@@ -42,7 +42,7 @@ class ConnectionKernel(KernelBase):
             return True
         return False
 
-    async def send(self, connection_id: str, data: Dict[str, Any]) -> Dict[str, Any]:
+    async def send(self, connection_id: str, data: dict[str, Any]) -> dict[str, Any]:
         """データを送信"""
         connection = self.connections.get(connection_id)
         if connection:

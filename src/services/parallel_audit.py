@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import Any, List, Tuple
+from typing import Any
 
 from src.services.audit_service import AuditService
 
@@ -13,7 +13,7 @@ class ParallelAudit:
     def __init__(self, audit_service: AuditService):
         self.audit_service = audit_service
 
-    async def run(self, tasks: List[Tuple[str, Any]]) -> List[Any]:
+    async def run(self, tasks: list[tuple[str, Any]]) -> list[Any]:
         coros = []
         for task_name, payload in tasks:
             if task_name == "fast_plot":

@@ -6,7 +6,6 @@ Supports OTLP export over HTTP and gRPC protocols.
 
 import logging
 import os
-from typing import Optional
 
 from opentelemetry import metrics, trace
 from opentelemetry._logs import set_logger_provider
@@ -56,9 +55,9 @@ class TelemetryConfig:
 
     def __init__(
         self,
-        service_name: Optional[str] = None,
-        deployment_env: Optional[str] = None,
-        otlp_endpoint: Optional[str] = None,
+        service_name: str | None = None,
+        deployment_env: str | None = None,
+        otlp_endpoint: str | None = None,
         use_http: bool = False,
         sampling_ratio: float = 1.0,
         batch_timeout_ms: int = 5000,
@@ -158,7 +157,7 @@ def init_logs(config: TelemetryConfig):
     return provider
 
 
-def setup_telemetry(config: Optional[TelemetryConfig] = None) -> TelemetryConfig:
+def setup_telemetry(config: TelemetryConfig | None = None) -> TelemetryConfig:
     """Set up complete OpenTelemetry telemetry stack (traces, metrics, logs)."""
     config = config or TelemetryConfig()
 

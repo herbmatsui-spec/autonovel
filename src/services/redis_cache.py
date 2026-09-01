@@ -8,7 +8,7 @@ import asyncio
 import hashlib
 import json
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 try:
     import redis.asyncio as redis
@@ -38,7 +38,7 @@ class RedisCacheService:
 
     def __init__(
         self,
-        redis_url: Optional[str] = None,
+        redis_url: str | None = None,
         namespace: str = DEFAULT_NAMESPACE,
         default_ttl: int = DEFAULT_TTL,
         max_connections: int = 10,
@@ -93,7 +93,7 @@ class RedisCacheService:
         except json.JSONDecodeError:
             return data
 
-    async def get(self, key: str) -> Optional[Any]:
+    async def get(self, key: str) -> Any | None:
         """キャッシュから値を取得.
 
         Args:
@@ -118,7 +118,7 @@ class RedisCacheService:
             return None
 
     async def set(
-        self, key: str, value: Any, ttl: Optional[int] = None, nx: bool = False, xx: bool = False
+        self, key: str, value: Any, ttl: int | None = None, nx: bool = False, xx: bool = False
     ) -> bool:
         """キャッシュに値を設定.
 
@@ -222,7 +222,7 @@ class RedisCacheService:
         """ネームスペース配下の全キーを削除."""
         return await self.invalidate_pattern("*")
 
-    async def mget(self, keys: List[str]) -> Dict[str, Any]:
+    async def mget(self, keys: list[str]) -> dict[str, Any]:
         """複数キーを一括取得."""
         if not self._client or not keys:
             return {}
@@ -239,7 +239,7 @@ class RedisCacheService:
             logger.error(f"[REDIS CACHE MGET ERROR]: {e}")
             return {}
 
-    async def mset(self, mapping: Dict[str, Any], ttl: Optional[int] = None) -> bool:
+    async def mset(self, mapping: dict[str, Any], ttl: int | None = None) -> bool:
         """複数キーを一括設定 (パイプライン使用)."""
         if not self._client or not mapping:
             return False
@@ -295,7 +295,7 @@ class PromptCacheService:
     """
 
     # タスクタイプ別デフォルトTTL（秒）
-    DEFAULT_TTL_BY_TASK_TYPE: Dict[str, int] = {
+    DEFAULT_TTL_BY_TASK_TYPE: dict[str, int] = {
         "generation": 7 * 24 * 3600,  # 7日 - 本文生成
         "plot_expansion": 14 * 24 * 3600,  # 14日 - プロット展開
         "audit": 3 * 24 * 3600,  # 3日 - 監査/品質チェック
@@ -311,8 +311,8 @@ class PromptCacheService:
     def __init__(
         self,
         redis_cache: RedisCacheService,
-        semantic_cache: Optional[Any] = None,  # SemanticCacheManager
-        l1_cache: Optional[Any] = None,  # LRUCache 等
+        semantic_cache: Any | None = None,  # SemanticCacheManager
+        l1_cache: Any | None = None,  # LRUCache 等
     ):
         self.redis = redis_cache
         self.semantic = semantic_cache
@@ -353,7 +353,7 @@ class PromptCacheService:
         content = f"{prompt}|{param_str}"
         return hashlib.sha256(content.encode("utf-8")).hexdigest()
 
-    def _get_ttl(self, task_type: str, custom_ttl: Optional[int] = None) -> int:
+    def _get_ttl(self, task_type: str, custom_ttl: int | None = None) -> int:
         """タスクタイプに基づくTTLを取得."""
         if custom_ttl is not None:
             return custom_ttl
@@ -406,7 +406,7 @@ class PromptCacheService:
         temperature: float = 0.7,
         template_version: str = "1.0",
         **params: Any,
-    ) -> Optional[Any]:
+    ) -> Any | None:
         """3層キャッシュから応答を取得.
 
         検索順序: L1 (インメモリ) -> L2 (Redis) -> L3 (セマンティック/ChromaDB)
@@ -481,7 +481,7 @@ class PromptCacheService:
         genre: str = "general",
         temperature: float = 0.7,
         template_version: str = "1.0",
-        ttl: Optional[int] = None,
+        ttl: int | None = None,
         **params: Any,
     ) -> None:
         """3層キャッシュに応答を保存."""
@@ -557,7 +557,7 @@ class PromptCacheService:
             return deleted
         return 0
 
-    async def get_stats(self) -> Dict[str, Any]:
+    async def get_stats(self) -> dict[str, Any]:
         """キャッシュ統計情報を取得（ダッシュボード用拡張版）."""
         async with self._stats_lock:
             metrics = self._metrics.copy()
@@ -612,7 +612,7 @@ class PromptCacheService:
 
     async def warm_cache(
         self,
-        entries: List[Dict[str, Any]],
+        entries: list[dict[str, Any]],
         task_type: str = "generation",
     ) -> int:
         """キャッシュウォーミング: 事前に複数のエントリをキャッシュに投入.
@@ -697,7 +697,7 @@ class PromptCacheService:
         genre: str = "general",
         temperature: float = 0.7,
         top_k: int = 5,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """類似プロンプトに基づいてキャッシュウォーミング候補を取得.
 
         セマンティックキャッシュから類似プロンプトを検索し、
@@ -743,20 +743,22 @@ async def get_redis_cache() -> RedisCacheService:
 
 
 async def get_prompt_cache(
-    semantic_cache: Optional[Any] = None,
-    l1_cache: Optional[Any] = None,
+    semantic_cache: Any | None = None,
+    l1_cache: Any | None = None,
 ) -> PromptCacheService:
-    container = __get_app_container()
+    from src.core.container import AppContainer
+    container = AppContainer()
     return container.prompt_cache(semantic_cache=semantic_cache, l1_cache=l1_cache)
 
 
 def __get_app_container():
-
+    from src.core.container import AppContainer
     return AppContainer()
 
 
 async def close_cache_services():
     """全キャッシュサービスをクローズ."""
+    from src.core.container import AppContainer
     container = AppContainer()
     if container.redis_cache:
         await container.redis_cache().close()

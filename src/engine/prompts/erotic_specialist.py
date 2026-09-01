@@ -4,7 +4,7 @@
 
 import logging
 from string import Template
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from config.erotic_direct_mappings import get_combined_mappings
 from config.erotic_pacing import EroticBeat, EroticCurve
@@ -44,7 +44,7 @@ class EroticSpecialist:
     def build_scene_prompt(
         self,
         curve: EroticCurve,
-        context: Dict[str, Any],
+        context: dict[str, Any],
         params: Optional["EroticParameters"] = None,
     ) -> str:
         """官能シーン描写用プロンプトを構築する。
@@ -316,7 +316,7 @@ class EroticSpecialist:
 7. 「滞留」（反復的な高まり）を許容し、单一のピークで終わらないこと{density_addition}
 """
 
-    def build_aftercare_prompt(self, context: Dict[str, Any]) -> str:
+    def build_aftercare_prompt(self, context: dict[str, Any]) -> str:
         """
         余韻（afterglow）生成プロンプトを構築する。
 
@@ -366,7 +366,7 @@ class EroticSpecialist:
         return "\n".join(parts)
 
     def metaphor_filter(
-        self, raw_scene: str, intensity: int, vocab: Optional[Dict[str, Any]] = None
+        self, raw_scene: str, intensity: int, vocab: dict[str, Any] | None = None
     ) -> str:
         """過剰な直接表現を比喩表現に置換する。
 

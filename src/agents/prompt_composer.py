@@ -4,7 +4,7 @@ prompt_composer.py - プロンプト構�築ユーティリティ
 
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any
 
 from src.agents.base import BaseAgent
 
@@ -23,7 +23,7 @@ class PromptComposer:
         self,
         book_id: int,
         ep_num: int,
-        context: Dict[str, Any],
+        context: dict[str, Any],
     ) -> str:
         """�執�筆用プロンプトを構�築する。
 

@@ -1,10 +1,9 @@
 import contextvars
 import logging
 import uuid
-from typing import Optional
 
 # コンテキスト変数として相関IDを管理
-correlation_id_var: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar(
+correlation_id_var: contextvars.ContextVar[str | None] = contextvars.ContextVar(
     "correlation_id", default=None
 )
 
@@ -40,7 +39,7 @@ class JsonLogFormatter(logging.Formatter):
         return json.dumps(log_data, ensure_ascii=False)
 
 
-def setup_tracing(log_level: int = logging.INFO, log_file: Optional[str] = "app.log"):
+def setup_tracing(log_level: int = logging.INFO, log_file: str | None = "app.log"):
     """
     アプリケーション全体の構造化ロギングとトレーサビリティを設定する。
     """
@@ -79,14 +78,14 @@ def setup_tracing(log_level: int = logging.INFO, log_file: Optional[str] = "app.
         logger.addHandler(fh)
 
 
-def set_correlation_id(cid: Optional[str] = None) -> str:
+def set_correlation_id(cid: str | None = None) -> str:
     """新しい相関IDを発行し、コンテキストにセットする"""
     new_id = cid or str(uuid.uuid4())
     correlation_id_var.set(new_id)
     return new_id
 
 
-def get_correlation_id() -> Optional[str]:
+def get_correlation_id() -> str | None:
     """現在の相関IDを取得する"""
     return correlation_id_var.get()
 
@@ -94,7 +93,7 @@ def get_correlation_id() -> Optional[str]:
 class TracingContext:
     """with文でスコープ内の相関IDを管理するコンテキストマネージャ"""
 
-    def __init__(self, cid: Optional[str] = None):
+    def __init__(self, cid: str | None = None):
         self.cid = cid or str(uuid.uuid4())
         self.token = None
 

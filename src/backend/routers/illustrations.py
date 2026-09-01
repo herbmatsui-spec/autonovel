@@ -1,5 +1,5 @@
 import os
-from typing import Any, Dict
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -21,7 +21,7 @@ def get_illustration_workflow():
 
 @router.post("/generate")
 async def generate_illustration(
-    request: Dict[str, Any], workflow=Depends(get_illustration_workflow)
+    request: dict[str, Any], workflow=Depends(get_illustration_workflow)
 ):
     """単一の挿絵を生成する"""
     try:
@@ -52,7 +52,7 @@ async def generate_illustration(
 
 @router.post("/batch")
 async def batch_generate_illustrations(
-    params: Dict[str, Any], workflow=Depends(get_illustration_workflow)
+    params: dict[str, Any], workflow=Depends(get_illustration_workflow)
 ):
     """バッチで挿絵を生成する"""
     try:

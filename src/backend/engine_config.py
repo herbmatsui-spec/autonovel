@@ -25,7 +25,7 @@ class EngineConfig:
         cls,
         api_key: str,
         cooldown: AdaptiveCooldown | None = None,
-    ) -> "EngineConfig":
+    ) -> EngineConfig:
         """デフォルト冷却設定で EngineConfig を生成するファクトリ。"""
         if cooldown is None:
             cooldown = AdaptiveCooldown(base_sec=2.0, min_sec=0.5, max_sec=10.0)

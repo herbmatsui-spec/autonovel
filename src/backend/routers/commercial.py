@@ -2,7 +2,7 @@
 src/backend/routers/commercial.py — Commercial Pipeline API
 """
 
-from typing import Any, Dict, List
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -16,12 +16,12 @@ router = APIRouter(prefix="/commercial", tags=["commercial"])
 class CommercialConfig(BaseModel):
     """商用化パイプライン設定"""
 
-    series_config: Dict[str, Any] = {}
-    samples: List[Dict[str, Any]] = []
-    platforms: List[str] = ["kakuyomu", "naru"]  # デフォルトプラットフォーム
+    series_config: dict[str, Any] = {}
+    samples: list[dict[str, Any]] = []
+    platforms: list[str] = ["kakuyomu", "naru"]  # デフォルトプラットフォーム
 
 
-@router.post("/run", response_model=Dict[str, Any])
+@router.post("/run", response_model=dict[str, Any])
 async def run_commercial_pipeline(
     config: CommercialConfig, api_key: str = Depends(require_api_key)
 ):

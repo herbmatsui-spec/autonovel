@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Any, Callable, List, Optional
+from collections.abc import Callable
+from typing import Any
 
 from src.core.llm_clients import BaseLLMClient, GeminiApiClient, OpenAIApiClient
 from src.core.observability import StructuredLogger
@@ -40,7 +41,7 @@ class LLMProviderFactory:
         # デフォルトは Gemini
         return GeminiApiClient(client=self.genai_client, cooldown=self.cooldown)
 
-    def get_available_providers(self) -> List[str]:
+    def get_available_providers(self) -> list[str]:
         """Get list of available providers"""
         providers = []
         if self.genai_client:
@@ -119,10 +120,10 @@ class LLMGenerateResultProxy:
         purpose_or_request: Any = "writing",
         prompt: str = "",
         response_schema: Any = None,
-        system_instruction: Optional[str] = None,
+        system_instruction: str | None = None,
         temp: float = 0.7,
-        model_name: Optional[str] = None,
-        stream_callback: Optional[Callable[[str], None]] = None,
+        model_name: str | None = None,
+        stream_callback: Callable[[str], None] | None = None,
         **kwargs: Any,
     ) -> GenerateResult:
         from src.llm.model_router import resolve_model
@@ -166,10 +167,10 @@ class LLMGenerateResultProxy:
         self,
         purpose_or_request: Any = "writing",
         prompt: str = "",
-        system_instruction: Optional[str] = None,
+        system_instruction: str | None = None,
         temp: float = 0.7,
-        model_name: Optional[str] = None,
-        stream_callback: Optional[Callable[[str], None]] = None,
+        model_name: str | None = None,
+        stream_callback: Callable[[str], None] | None = None,
         **kwargs: Any,
     ) -> GenerateResult:
         from src.llm.model_router import select_model

@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -10,11 +10,11 @@ class WorkflowState(BaseModel):
     ep_num: int
     branch_id: int
     # コンテキスト
-    context_alignment: Dict[str, Any] = Field(default_factory=dict)
-    blueprint: Dict[str, Any] = Field(default_factory=dict)
-    final_plot: Dict[str, Any] = Field(default_factory=dict)
+    context_alignment: dict[str, Any] = Field(default_factory=dict)
+    blueprint: dict[str, Any] = Field(default_factory=dict)
+    final_plot: dict[str, Any] = Field(default_factory=dict)
     # 監査結果
-    audit_results: List[Dict[str, Any]] = Field(default_factory=list)
+    audit_results: list[dict[str, Any]] = Field(default_factory=list)
     is_consistent: bool = Field(default=True)
     # 制御フラグ
     retry_count: int = Field(default=0)
@@ -26,5 +26,5 @@ class PlotNodeOutput(BaseModel):
     """ノード間のデータ受け渡し用モデル"""
 
     status: str
-    data: Dict[str, Any]
-    error: Optional[str] = None
+    data: dict[str, Any]
+    error: str | None = None

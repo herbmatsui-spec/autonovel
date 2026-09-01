@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 from src.llm.model_router import resolve_model, select_model
 
@@ -26,7 +26,7 @@ class LLMService:
     クライアントへ自動的にルーティングします。
     """
 
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: str | None = None):
         self.api_key = api_key or ""
         if not self.api_key:
             logger.warning("LLMService initialized without API key – calls will fail")
@@ -51,10 +51,10 @@ class LLMService:
         self,
         purpose: str,
         prompt: str,
-        response_schema: Optional[Any] = None,
-        system_instruction: Optional[str] = None,
+        response_schema: Any | None = None,
+        system_instruction: str | None = None,
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         model_name = self._resolve_model(purpose)
         client = self._ensure_factory().get_client(model_name)
         metadata, story, _usage = await client.generate_json(
@@ -70,7 +70,7 @@ class LLMService:
         self,
         purpose: str,
         prompt: str,
-        system_instruction: Optional[str] = None,
+        system_instruction: str | None = None,
         **kwargs: Any,
     ) -> str:
         model_name = self._resolve_model(purpose)

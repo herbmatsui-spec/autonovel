@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 # [Update: 2026-05-15 17:29 - Force Reload]
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Literal
 
 from pydantic import AliasChoices, BaseModel, Field, field_validator, model_validator
 
@@ -25,8 +25,8 @@ class GapAnalysisReport(BaseModel):
 
     habits: str = Field(default="", description="AIのサボり癖パターンの分析")
     style_gap: str = Field(default="", description="文体DNAの乖離レポート")
-    config_patch: Dict[str, Any] = Field(default_factory=dict, description="config.pyへの修正案")
-    prompt_patches: List[PromptPatch] = Field(
+    config_patch: dict[str, Any] = Field(default_factory=dict, description="config.pyへの修正案")
+    prompt_patches: list[PromptPatch] = Field(
         default_factory=list, description="プロンプトへの具体的修正パッチのリスト"
     )
     refactor_instruction: str = Field(
@@ -36,9 +36,9 @@ class GapAnalysisReport(BaseModel):
             "refactor_instruction", "coding_ai_instruction", "refactor_instructions", "instructions"
         ),
     )
-    scores: Dict[str, int] = Field(default_factory=dict, description="各種スコア")
-    style_radar: Dict[str, Any] = Field(default_factory=dict, description="文体レーダー解析データ")
-    persona_reviews: List[Dict[str, Any]] = Field(
+    scores: dict[str, int] = Field(default_factory=dict, description="各種スコア")
+    style_radar: dict[str, Any] = Field(default_factory=dict, description="文体レーダー解析データ")
+    persona_reviews: list[dict[str, Any]] = Field(
         default_factory=list, description="ペルソナ監査結果"
     )
 
@@ -72,11 +72,11 @@ class DogfeedingReport(BaseModel):
         default="",
         description="現在の作風がどの方向に振れすぎているか（例: シリアスすぎ、描写が淡白すぎ等）",
     )
-    phenomenon_logic_map: List[Dict[str, str]] = Field(
+    phenomenon_logic_map: list[dict[str, str]] = Field(
         default_factory=list,
         description="現象（症状）と原因（ロジック）の対応マップ。{'symptom': '...', 'cause_logic': '...', 'patch_target': '...'} ",
     )
-    prompt_patches: List[PromptPatch] = Field(
+    prompt_patches: list[PromptPatch] = Field(
         default_factory=list, description="プロンプトへの具体的修正パッチのリスト"
     )
     prompt_patch: str = Field(
@@ -94,21 +94,21 @@ class DogfeedingReport(BaseModel):
         default="",
         description="作品ドメイン固有の修正案（世界観設定、プロンプト定義、因果応報ロジック等）",
     )
-    scores: Dict[str, int] = Field(default_factory=dict, description="全体的な品質スコア")
-    genre_profile_scores: Dict[str, float] = Field(
+    scores: dict[str, int] = Field(default_factory=dict, description="全体的な品質スコア")
+    genre_profile_scores: dict[str, float] = Field(
         default_factory=dict, description="ジャンル別・多次元スコアリング（0.0-1.0）"
     )
-    taboo_list: List[str] = Field(
+    taboo_list: list[str] = Field(
         default_factory=list, description="今後禁止すべき表現・設定のリスト"
     )
-    style_radar: Dict[str, Any] = Field(default_factory=dict, description="文体レーダー解析データ")
-    persona_reviews: List[Dict[str, Any]] = Field(
+    style_radar: dict[str, Any] = Field(default_factory=dict, description="文体レーダー解析データ")
+    persona_reviews: list[dict[str, Any]] = Field(
         default_factory=list, description="ペルソナ監査結果"
     )
-    patch_validation: Dict[str, Any] = Field(
+    patch_validation: dict[str, Any] = Field(
         default_factory=dict, description="パッチの検証結果（ABテスト結果含む）"
     )
-    improvement_milestones: List[str] = Field(
+    improvement_milestones: list[str] = Field(
         default_factory=list, description="中長期的なエンジン進化のロードマップ"
     )
 
@@ -138,8 +138,8 @@ class ProducerPlanCandidate(BaseModel):
     refined_concept: str = Field(default="", description="ブラッシュアップされたコンセプト")
     refined_mc_suggestion: str = Field(default="", description="読者に刺さる主人公像の提案")
     refined_villain_suggestion: str = Field(default="", description="ヘイトを高める敵対者像の提案")
-    recommended_tropes: List[str] = Field(default_factory=list, description="推奨トロープのリスト")
-    anti_tropes: List[str] = Field(
+    recommended_tropes: list[str] = Field(default_factory=list, description="推奨トロープのリスト")
+    anti_tropes: list[str] = Field(
         default_factory=list, description="アンチトロープ・逆張りの要素リスト"
     )
     hybrid_idea: str = Field(default="", description="異ジャンルハイブリッドのアイデア")
@@ -160,10 +160,10 @@ class HegemonyAuditResult(BaseModel):
     refined_villain_suggestion: str = Field(
         default="", description="[Legacy] ヘイトを高める敵対者像の提案"
     )
-    recommended_tropes: List[str] = Field(
+    recommended_tropes: list[str] = Field(
         default_factory=list, description="[Legacy] 推奨トロープのリスト"
     )
-    candidates: List[ProducerPlanCandidate] = Field(
+    candidates: list[ProducerPlanCandidate] = Field(
         default_factory=list, description="A/B/Cの3パターンの提案"
     )
 
@@ -186,7 +186,7 @@ class LogicalAuditResult(BaseModel):
         description="過去の事実と矛盾がないか",
         validation_alias=AliasChoices("is_consistent", "consistent", "isConsistent", "consistency"),
     )
-    conflict_points: List[str] = Field(default_factory=list)
+    conflict_points: list[str] = Field(default_factory=list)
     severity: Literal["Minor", "Major", "Critical"] = Field(default="Minor")
     audit_type: Literal["Full", "Lightweight"] = Field(
         default="Full",
@@ -231,7 +231,7 @@ class HegemonyOracleResult(BaseModel):
     """未来予測オーラ診断の結果モデル"""
 
     hegemony_score: int = Field(default=0, description="覇権スコア (0-100)")
-    metrics: Dict[str, int] = Field(
+    metrics: dict[str, int] = Field(
         default_factory=dict, description="詳細メトリクス (retention, catharsis, viral)"
     )
     aura_color: str = Field(default="#38bdf8", description="この作品が放つオーラの色 (Hex形式)")
@@ -265,10 +265,10 @@ class GlobalLogicRepairResult(BaseModel):
     """企画段階の矛盾を一括修正するためのモデル"""
 
     synopsis: str = Field(..., description="修正されたあらすじ")
-    world_rules: Optional[Dict[str, Any]] = Field(
+    world_rules: dict[str, Any] | None = Field(
         default=None, description="修正された世界設定（変更がある場合のみ）"
     )
-    mc_profile: Optional[Dict[str, Any]] = Field(
+    mc_profile: dict[str, Any] | None = Field(
         default=None, description="修正された主人公プロフィール（変更がある場合のみ）"
     )
     repair_summary: str = Field(..., description="どのような矛盾をどう修正したかの要約")
@@ -344,26 +344,26 @@ class ImmersionScore(BaseModel):
         return self.total_immersion_score
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "ImmersionScore":
+    def from_dict(cls, data: dict) -> ImmersionScore:
         return cls(**data)
 
 
 class NarrativeWavePattern(BaseModel):
     """物語のストレス/カタルシスの波パターンを表すモデル"""
 
-    stress_levels: List[int] = Field(default_factory=list, description="各話のストレス値履歴")
-    catharsis_indices: List[int] = Field(
+    stress_levels: list[int] = Field(default_factory=list, description="各話のストレス値履歴")
+    catharsis_indices: list[int] = Field(
         default_factory=list, description="カタルシス発生話数のインデックス"
     )
-    emotional_peaks: List[int] = Field(
+    emotional_peaks: list[int] = Field(
         default_factory=list, description="感情的高揚点の話数インデックス"
     )
-    trough_markers: List[int] = Field(
+    trough_markers: list[int] = Field(
         default_factory=list, description="感情の谷間（緊張解放後）の話数インデックス"
     )
     wave_score: float = Field(default=0.0, description="波の成熟度スコア (0.0-100.0)")
     is_healthy: bool = Field(default=True, description="健康的な波パターンかどうか")
-    issues: List[str] = Field(default_factory=list, description="検出された問題点")
+    issues: list[str] = Field(default_factory=list, description="検出された問題点")
 
     model_config = MODEL_CONFIG_DEFAULTS
 
@@ -403,7 +403,7 @@ class LogicalAuditIssueList(BaseModel):
     """
 
     is_consistent: bool = Field(default=True, description="ファクト矛盾がないか")
-    issues: List[AuditIssue] = Field(default_factory=list, description="指摘されたIssueのリスト")
+    issues: list[AuditIssue] = Field(default_factory=list, description="指摘されたIssueのリスト")
     overall_severity: Literal["Critical", "Major", "Minor", "None"] = Field(
         default="None", description="最も深刻なIssueの深刻度"
     )
@@ -460,7 +460,7 @@ class CriticFeedback(BaseModel):
 
     has_critical_issues: bool = False
     overall_assessment: str = ""  # 矛盾の全体像の要約
-    directives: List[CriticDirective] = Field(default_factory=list)
+    directives: list[CriticDirective] = Field(default_factory=list)
     rewrite_guidance: str = ""  # WritingAgentへの一括注入用テキスト
 
     @model_validator(mode="before")

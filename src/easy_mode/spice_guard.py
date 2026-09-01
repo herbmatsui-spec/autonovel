@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from typing import Dict, List, Set
 
 from src.presets.loader import load_preset
 
@@ -19,7 +18,7 @@ class SpiceElement:
     text: str  # 元のテキスト
     position: int  # 文字位置
     priority: str  # "critical", "high", "medium", "low"
-    metadata: Dict = field(default_factory=dict)
+    metadata: dict = field(default_factory=dict)
 
 
 class SpiceGuard:
@@ -344,7 +343,7 @@ class SpiceGuard:
         self.preset = load_preset(genre)
         self._compiled_patterns = self._compile_patterns()
 
-    def _compile_patterns(self) -> Dict[str, List[re.Pattern]]:
+    def _compile_patterns(self) -> dict[str, list[re.Pattern]]:
         """正規表現を事前コンパイル"""
         compiled = {}
 
@@ -362,7 +361,7 @@ class SpiceGuard:
 
         return compiled
 
-    def extract_spice(self, text: str) -> List[SpiceElement]:
+    def extract_spice(self, text: str) -> list[SpiceElement]:
         """テキストから尖り要素を抽出"""
         elements = []
 
@@ -434,7 +433,7 @@ class SpiceGuard:
         # 4. 重複除去・ソート
         return self._deduplicate_and_sort(elements)
 
-    def _extract_character_elements(self, text: str) -> List[SpiceElement]:
+    def _extract_character_elements(self, text: str) -> list[SpiceElement]:
         """プリセットのキャラクター定義から固有要素を抽出"""
         elements = []
         chars = self.preset.get("characters", {})
@@ -463,10 +462,10 @@ class SpiceGuard:
 
         return elements
 
-    def _deduplicate_and_sort(self, elements: List[SpiceElement]) -> List[SpiceElement]:
+    def _deduplicate_and_sort(self, elements: list[SpiceElement]) -> list[SpiceElement]:
         """重複除去・優先度順ソート"""
         # 位置・タイプ・テキストで重複判定
-        seen: Set[tuple] = set()
+        seen: set[tuple] = set()
         unique = []
 
         for elem in elements:
@@ -481,7 +480,7 @@ class SpiceGuard:
 
         return unique
 
-    def inject_markers(self, text: str, elements: List[SpiceElement]) -> str:
+    def inject_markers(self, text: str, elements: list[SpiceElement]) -> str:
         """尖り要素を保護マーカーで囲む"""
         # 後ろから置換（位置がずれないように）
         sorted_elements = sorted(elements, key=lambda x: x.position, reverse=True)
@@ -506,7 +505,7 @@ class SpiceGuard:
         return re.sub(r"<<<SPICE:[^>]+>>>|<<</SPICE>>>", "", text)
 
     def build_rewrite_prompt(
-        self, content: str, improvements: List[str], elements: List[SpiceElement]
+        self, content: str, improvements: list[str], elements: list[SpiceElement]
     ) -> str:
         """SpiceGuard付きリライトプロンプト構築"""
         protected_content = self.inject_markers(content, elements)

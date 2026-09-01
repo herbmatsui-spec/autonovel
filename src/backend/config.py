@@ -51,6 +51,10 @@ class Settings(BaseSettings):
         "http://localhost:5173,http://localhost:8080,http://127.0.0.1:5173,http://127.0.0.1:8080"
     )
 
+    # 認証設定
+    AUTH_DISABLED: bool = False
+    ALLOWED_API_KEYS: str = ""
+
     # ロギング設定
     LOG_LEVEL: str = "INFO"
     LOG_FORMAT: Literal["json", "console"] = "console"

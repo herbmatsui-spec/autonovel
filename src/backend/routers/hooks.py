@@ -6,7 +6,7 @@ routers/hooks.py - 章末フック診断 API
 
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -24,7 +24,7 @@ class FixRequest(BaseModel):
 
 
 @router.get("/books/{book_id}/diagnose")
-async def diagnose_hooks(book_id: int) -> Dict[str, Any]:
+async def diagnose_hooks(book_id: int) -> dict[str, Any]:
     """作品の全章についてフック強度を診断する。"""
     from src.backend.database.models import Chapter
 
@@ -52,7 +52,7 @@ async def diagnose_hooks(book_id: int) -> Dict[str, Any]:
 
 
 @router.post("/books/{book_id}/suggest")
-async def suggest_hook_fix(book_id: int, req: FixRequest) -> Dict[str, Any]:
+async def suggest_hook_fix(book_id: int, req: FixRequest) -> dict[str, Any]:
     """指定章のフック改善案を生成する。"""
     from sqlalchemy import select
 
@@ -76,7 +76,7 @@ async def suggest_hook_fix(book_id: int, req: FixRequest) -> Dict[str, Any]:
 
 
 @router.post("/books/{book_id}/episodes/{ep_num}/apply")
-async def apply_hook_fix(book_id: int, ep_num: int, payload: Dict[str, Any]) -> Dict[str, Any]:
+async def apply_hook_fix(book_id: int, ep_num: int, payload: dict[str, Any]) -> dict[str, Any]:
     """生成した修正案を章末に適用する（本文の末尾を置換し、履歴は別途管理）。"""
     new_tail = payload.get("content")
     if not new_tail:

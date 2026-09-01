@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any
 
 from src.shared.utils import StatusReporter
 
@@ -8,7 +8,7 @@ from .base_workflow import BaseWorkflow
 class ChapterImportWorkflow(BaseWorkflow):
     """本文インポートワークフロー"""
 
-    async def execute(self, reporter: Optional[StatusReporter] = None, **kwargs) -> Dict[str, Any]:
+    async def execute(self, reporter: StatusReporter | None = None, **kwargs) -> dict[str, Any]:
         book_id = kwargs["book_id"]
         ep_num = kwargs["ep_num"]
         import_text = kwargs["import_text"]

@@ -4,7 +4,7 @@ tension_service.py - TensionService: テンション曲線・カタルシス管�
 UltimateHegemonyEngine から分離し、TensionPort インターフェースを実装する。
 """
 
-from typing import Any, Optional, Tuple
+from typing import Any
 
 from src.backend.protocols import TensionPort
 
@@ -25,7 +25,7 @@ class TensionService(TensionPort):
         book_id: int,
         ep_num: int,
         genre: str,
-        story_type: Optional[str] = None,
+        story_type: str | None = None,
     ) -> float:
         """
         エピソードの目標テンション値を算出する。
@@ -44,7 +44,7 @@ class TensionService(TensionPort):
         generated_tension: float,
         book_id: int,
         tolerance: float = 0.2,
-    ) -> Tuple[bool, float]:
+    ) -> tuple[bool, float]:
         """
         生成されたテンション値が目標値から許容範囲内にあるか検証する。
         実際の実行は tension_agent.validate_tension_deviation に委譲。

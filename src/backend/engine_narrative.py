@@ -1,6 +1,6 @@
 import logging
 import random
-from typing import TYPE_CHECKING, Any, Dict, List
+from typing import TYPE_CHECKING, Any
 
 from config import (
     DEFAULT_GOLDEN_PEAKS,
@@ -35,7 +35,7 @@ class PacingGraph:
     """物語の各話における情報密度や温度感（Pacing）を定義"""
 
     @staticmethod
-    def get_instruction(ep_num: int, total_eps: int = 50, is_light: bool = False) -> Dict[str, Any]:
+    def get_instruction(ep_num: int, total_eps: int = 50, is_light: bool = False) -> dict[str, Any]:
         mid_twist_ep = total_eps // 2
         late_twist_ep = int(total_eps * 0.8)
 
@@ -109,7 +109,7 @@ class NarrativeController:
         self.logic_validator = logic_validator
         self.auditor = auditor
 
-    def _is_climax_ep(self, ep_num: int, settings: Dict[str, Any]) -> bool:
+    def _is_climax_ep(self, ep_num: int, settings: dict[str, Any]) -> bool:
         """指定された話数がクライマックス（アークの終点）か判定する"""
         arcs = settings.get("arcs", [])
         for arc in arcs:
@@ -138,7 +138,7 @@ class NarrativeController:
 
     def compute_stress_phase(
         self, ep_num: int, current_stress: int, is_planned_catharsis: bool, genre: str = "default"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         force_catharsis = False
         phase_instruction = ""
         adjusted_stress = current_stress
@@ -182,8 +182,8 @@ class NarrativeController:
         }
 
     def get_stress_history_data(
-        self, chapters: List[ChapterDbModel], plots: List[PlotDbModel]
-    ) -> List[Dict[str, Any]]:
+        self, chapters: list[ChapterDbModel], plots: list[PlotDbModel]
+    ) -> list[dict[str, Any]]:
         """各エピソードのストレス蓄積値を可視化用に整形して返す"""
         stress_data = []
         for ch in chapters:
@@ -216,12 +216,12 @@ class WavePatternAnalyzer:
         self.threshold = threshold
         self.reset_value = reset_value
 
-    def analyze(self, tension_history: List[int]) -> NarrativeWavePattern:
+    def analyze(self, tension_history: list[int]) -> NarrativeWavePattern:
         """tension履歴から波パターンを分析する"""
-        issues: List[str] = []
-        catharsis_indices: List[int] = []
-        emotional_peaks: List[int] = []
-        trough_markers: List[int] = []
+        issues: list[str] = []
+        catharsis_indices: list[int] = []
+        emotional_peaks: list[int] = []
+        trough_markers: list[int] = []
         cumulative = 0
         prev_tension = 50
 
@@ -251,7 +251,7 @@ class WavePatternAnalyzer:
         )
 
     def _calculate_wave_score(
-        self, tension_history: List[int], catharsis_indices: List[int]
+        self, tension_history: list[int], catharsis_indices: list[int]
     ) -> float:
         """波パターンの成熟度を0.0-100.0でスコアリング"""
         if not tension_history:

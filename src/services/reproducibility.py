@@ -10,12 +10,12 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 
-def compute_input_hash(payload: Dict[str, Any]) -> str:
+def compute_input_hash(payload: dict[str, Any]) -> str:
     """入力ペイロードの SHA256 ハッシュを計算する。"""
     canonical = json.dumps(payload, sort_keys=True, ensure_ascii=False, default=str)
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
@@ -26,12 +26,12 @@ def build_run_record(
     task_type: str,
     prompt_version: str,
     model_name: str,
-    params: Dict[str, Any],
-    payload: Dict[str, Any],
+    params: dict[str, Any],
+    payload: dict[str, Any],
     output_preview: str = "",
     trace_id: str = "",
-    chapter_ep: Optional[int] = None,
-) -> Dict[str, Any]:
+    chapter_ep: int | None = None,
+) -> dict[str, Any]:
     """GenerationRun のレコード辞書を構築する。"""
     return {
         "book_id": book_id,
@@ -46,7 +46,7 @@ def build_run_record(
     }
 
 
-def build_report(runs: List[Dict[str, Any]]) -> Dict[str, Any]:
+def build_report(runs: list[dict[str, Any]]) -> dict[str, Any]:
     """再現性レポート（Markdown + メタデータ）を構築する。"""
     lines = ["# 生成再現性レポート", ""]
     lines.append(f"記録数: {len(runs)}")

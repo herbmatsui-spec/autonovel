@@ -5,7 +5,7 @@ kernels/dialogue.py - 対話機能
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List
+from typing import Any
 
 
 class DialoguePhase(str, Enum):
@@ -27,7 +27,7 @@ class DialogueTurn:
     content: str
     phase: DialoguePhase = DialoguePhase.DEVELOPMENT
     timestamp: float = field(default_factory=time.time)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -36,9 +36,9 @@ class DialogueSession:
 
     session_id: str
     participant: str
-    turns: List[DialogueTurn] = field(default_factory=list)
+    turns: list[DialogueTurn] = field(default_factory=list)
     current_phase: DialoguePhase = DialoguePhase.OPENING
-    context: Dict[str, Any] = field(default_factory=dict)
+    context: dict[str, Any] = field(default_factory=dict)
 
 
 class DialogueManager:
@@ -51,13 +51,13 @@ class DialogueManager:
 
     def __init__(self, max_turns: int = 50) -> None:
         self.max_turns = max_turns
-        self._sessions: Dict[str, DialogueSession] = {}
+        self._sessions: dict[str, DialogueSession] = {}
 
     def create_session(
         self,
         session_id: str,
         participant: str,
-        context: Dict[str, Any] | None = None,
+        context: dict[str, Any] | None = None,
     ) -> DialogueSession:
         session = DialogueSession(
             session_id=session_id,
@@ -75,7 +75,7 @@ class DialogueManager:
         session_id: str,
         speaker: str,
         content: str,
-        metadata: Dict[str, Any] | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> DialogueTurn:
         session = self._sessions.get(session_id)
         if session is None:

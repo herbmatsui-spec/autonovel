@@ -2,7 +2,8 @@
 kernels/preset_triggers.py - プリセットトリガー
 """
 
-from typing import Any, Callable, Dict
+from collections.abc import Callable
+from typing import Any
 
 from .base import KernelBase
 from .interaction_trigger import InteractionTriggerManager
@@ -16,7 +17,7 @@ class PresetTriggers(KernelBase):
     def __init__(self):
         super().__init__()
         self.trigger_manager = None
-        self.presets: Dict[str, Callable] = {}
+        self.presets: dict[str, Callable] = {}
 
     async def initialize(self) -> bool:
         """初期化"""
@@ -31,7 +32,7 @@ class PresetTriggers(KernelBase):
         # コンバージョン最適化
         self.presets["conversion_optimize"] = self._conversion_handler
 
-    async def _engagement_boost_handler(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def _engagement_boost_handler(self, context: dict[str, Any]) -> dict[str, Any]:
         """エンゲージメントブースト処理"""
         return {
             "action": "recommend_related_content",
@@ -39,7 +40,7 @@ class PresetTriggers(KernelBase):
             "message": "読者に関連コンテンツをおすすめします",
         }
 
-    async def _conversion_handler(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def _conversion_handler(self, context: dict[str, Any]) -> dict[str, Any]:
         """コンバージョン最適化処理"""
         return {
             "action": "offer_premium_content",
@@ -47,7 +48,7 @@ class PresetTriggers(KernelBase):
             "message": "プレミアムコンテンツの試読を提供します",
         }
 
-    async def trigger_preset(self, name: str, context: Dict[str, Any]) -> Any:
+    async def trigger_preset(self, name: str, context: dict[str, Any]) -> Any:
         """プリセットトリガーを発動"""
         if name not in self.presets:
             return {"error": f"Unknown preset: {name}"}

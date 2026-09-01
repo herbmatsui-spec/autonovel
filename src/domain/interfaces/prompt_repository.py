@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional
 
 from src.domain.models.prompt_version import PromptVersionDbModel
 
@@ -16,37 +15,37 @@ class PromptVersionRepository(ABC):
         prompt_key: str,
         version_tag: str,
         content: str,
-        score_before: Optional[float] = None,
-        score_after: Optional[float] = None,
-        ab_test_metrics: Optional[Dict[str, Any]] = None,
+        score_before: float | None = None,
+        score_after: float | None = None,
+        ab_test_metrics: dict[str, Any] | None = None,
         is_active: bool = False,
     ) -> PromptVersionDbModel:
         """Create a new prompt version."""
         ...
 
     @abstractmethod
-    async def get_prompt_version(self, version_id: int) -> Optional[PromptVersionDbModel]:
+    async def get_prompt_version(self, version_id: int) -> PromptVersionDbModel | None:
         """Get a prompt version by its ID."""
         ...
 
     @abstractmethod
     async def get_prompt_version_by_tag(
         self, book_id: int, prompt_key: str, version_tag: str
-    ) -> Optional[PromptVersionDbModel]:
+    ) -> PromptVersionDbModel | None:
         """Get a prompt version by book ID, prompt key, and version tag."""
         ...
 
     @abstractmethod
     async def get_prompt_versions(
         self, book_id: int, limit: int = 20
-    ) -> List[PromptVersionDbModel]:
+    ) -> list[PromptVersionDbModel]:
         """Get prompt versions for a book, ordered by creation date (descending)."""
         ...
 
     @abstractmethod
     async def get_active_prompt_version(
         self, book_id: int, prompt_key: str
-    ) -> Optional[PromptVersionDbModel]:
+    ) -> PromptVersionDbModel | None:
         """Get the currently active prompt version for a book and prompt key."""
         ...
 
@@ -63,7 +62,7 @@ class PromptVersionRepository(ABC):
         ...
 
     @abstractmethod
-    async def update_ab_test_metrics(self, version_id: int, metrics: Dict[str, Any]) -> None:
+    async def update_ab_test_metrics(self, version_id: int, metrics: dict[str, Any]) -> None:
         """Update the A/B test metrics for a prompt version."""
         ...
 

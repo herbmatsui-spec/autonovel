@@ -12,18 +12,18 @@ import logging
 import threading
 import time
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 
 class SaveStrategy(ABC):
     @abstractmethod
-    def save(self, state: "ProgressState", state_json: str, now: str) -> None: ...
+    def save(self, state: ProgressState, state_json: str, now: str) -> None: ...
 
 
 class RedisSaveStrategy(SaveStrategy):
-    def save(self, state: "ProgressState", state_json: str, now: str) -> None:
+    def save(self, state: ProgressState, state_json: str, now: str) -> None:
         from src.backend.redis_util import get_redis_client
 
         redis_client = get_redis_client()
@@ -38,7 +38,7 @@ class RedisSaveStrategy(SaveStrategy):
 
 
 class AsyncDbSaveStrategy(SaveStrategy):
-    def save(self, state: "ProgressState", state_json: str, now: str) -> None:
+    def save(self, state: ProgressState, state_json: str, now: str) -> None:
         if state.repo is None:
             return
         try:
@@ -58,7 +58,7 @@ class AsyncDbSaveStrategy(SaveStrategy):
 
 
 class SyncDbSaveStrategy(SaveStrategy):
-    def save(self, state: "ProgressState", state_json: str, now: str) -> None:
+    def save(self, state: ProgressState, state_json: str, now: str) -> None:
         if state.repo is None:
             return
         try:
@@ -68,11 +68,11 @@ class SyncDbSaveStrategy(SaveStrategy):
 
 
 class NoOpSaveStrategy(SaveStrategy):
-    def save(self, state: "ProgressState", state_json: str, now: str) -> None:
+    def save(self, state: ProgressState, state_json: str, now: str) -> None:
         pass
 
 
-def _select_strategy(state: "ProgressState") -> SaveStrategy:
+def _select_strategy(state: ProgressState) -> SaveStrategy:
     from src.backend.redis_util import get_redis_client
 
     redis_client = get_redis_client()
@@ -96,8 +96,8 @@ class ProgressState:
     def __init__(
         self,
         is_running: bool = False,
-        task_id: Optional[str] = None,
-        repo: Optional[Any] = None,
+        task_id: str | None = None,
+        repo: Any | None = None,
         skip_initial_save: bool = False,
     ):
         self.is_running = is_running
@@ -108,15 +108,15 @@ class ProgressState:
         self.message = "準備中..."
         self.sub_message = ""
         self.streaming_text = ""
-        self.logs: List[str] = []
-        self.error: Optional[str] = None
-        self.result_data: Optional[Dict[str, Any]] = None
+        self.logs: list[str] = []
+        self.error: str | None = None
+        self.result_data: dict[str, Any] | None = None
         self.start_time = time.time()
         self.last_updated = time.time()
         self._stop_event = threading.Event()
         self._last_stop_check: float = 0.0
         # スレッド間でのトークン受け渡し用
-        self.token_usage: Dict[str, int] = {"prompt": 0, "completion": 0, "calls": 0}
+        self.token_usage: dict[str, int] = {"prompt": 0, "completion": 0, "calls": 0}
         self._save_strategy = _select_strategy(self)
 
         if not skip_initial_save:
@@ -192,9 +192,9 @@ class ProgressState:
         self,
         message: str,
         sub_message: str = "",
-        step: Optional[int] = None,
-        total: Optional[int] = None,
-        error: Optional[str] = None,
+        step: int | None = None,
+        total: int | None = None,
+        error: str | None = None,
     ) -> None:
         display_msg = message
         full_msg = f"{display_msg}: {sub_message}" if sub_message else display_msg
@@ -278,7 +278,7 @@ class StatusReporter:
     update_streaming_text を実装する。ここでは最小実装を提供し、サブクラスで上書きする前提。
     """
 
-    def __init__(self, state: Optional[ProgressState] = None):
+    def __init__(self, state: ProgressState | None = None):
         self.state = state
 
     def report(self, message: str, level: str = "info") -> None:

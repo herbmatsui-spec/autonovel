@@ -3,12 +3,11 @@
 各関数は小さく、低性能なLLMでも1つずつ実装・テストできるよう分割している。
 """
 
-from typing import Dict, List
 
 from src.models.illustration import IllustrationType, SafetyLevel
 
 # ジャンルごとの視覚スタイルのヒント
-_GENRE_STYLE_HINTS: Dict[str, str] = {
+_GENRE_STYLE_HINTS: dict[str, str] = {
     "ファンタジー": "epic fantasy art style, magical atmosphere, detailed armor and castles",
     "ラブコメ": "soft pastel shoujo style, romantic tone, warm lighting",
     "SF": "futuristic sci-fi style, neon lighting, sleek technology",
@@ -19,7 +18,7 @@ _GENRE_STYLE_HINTS: Dict[str, str] = {
 }
 
 # 表紙のバリエーション別カメラワーク指示
-_COVER_VARIATIONS: List[str] = [
+_COVER_VARIATIONS: list[str] = [
     "centered composition, hero framing, title space at top",
     "wide cinematic shot, dramatic perspective, title space at bottom",
     "close-up portrait focus, soft bokeh background, title space on side",
@@ -35,7 +34,7 @@ def _genre_hint(genre: str) -> str:
     return f"{genre} themed illustration style, professional book cover"
 
 
-def build_cover_prompt(book_context: Dict[str, str], variation: int = 0) -> str:
+def build_cover_prompt(book_context: dict[str, str], variation: int = 0) -> str:
     """表紙生成プロンプトを構築する。
 
     book_context には title / genre / concept / keywords を含める想定。
@@ -62,7 +61,7 @@ def build_cover_prompt(book_context: Dict[str, str], variation: int = 0) -> str:
     return " ".join(parts)
 
 
-def build_scene_prompt(scene_text: str, book_context: Dict[str, str]) -> str:
+def build_scene_prompt(scene_text: str, book_context: dict[str, str]) -> str:
     """挿絵（シーン）生成プロンプトを構築する。"""
     genre = book_context.get("genre", "")
     style = _genre_hint(genre)
@@ -80,7 +79,7 @@ def build_scene_prompt(scene_text: str, book_context: Dict[str, str]) -> str:
     return " ".join(parts)
 
 
-def build_character_prompt(character_data: Dict[str, str]) -> str:
+def build_character_prompt(character_data: dict[str, str]) -> str:
     """キャラクター立ち絵生成プロンプトを構築する。"""
     name = character_data.get("name", "character")
     role = character_data.get("role", "")

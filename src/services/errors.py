@@ -6,7 +6,7 @@ services/errors.py - 覇権AIエンジン例外定義モジュール
 import asyncio
 import functools
 import logging
-from typing import Callable
+from collections.abc import Callable
 
 from sqlalchemy.exc import OperationalError
 

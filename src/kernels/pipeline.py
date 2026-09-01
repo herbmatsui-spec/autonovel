@@ -3,9 +3,10 @@ kernels/pipeline.py - パイプライン管理
 """
 
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 
 class PipelineStatus(Enum):
@@ -21,20 +22,20 @@ class PipelineResult:
     """パイプライン結果"""
 
     status: PipelineStatus = PipelineStatus.PENDING
-    data: Dict[str, Any] = None
-    error: Optional[str] = None
+    data: dict[str, Any] = None
+    error: str | None = None
     execution_time: float = 0.0
 
 
 class Stage:
     """パイプラインステージ"""
 
-    def __init__(self, name: str, func: Callable, condition: Optional[Callable] = None):
+    def __init__(self, name: str, func: Callable, condition: Callable | None = None):
         self.name = name
         self.func = func
         self.condition = condition
 
-    async def execute(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    async def execute(self, data: dict[str, Any]) -> dict[str, Any]:
         if self.condition and not self.condition(data):
             return data
         return await self.func(data)
@@ -47,16 +48,16 @@ class PipelineManager:
 
     def __init__(self, max_stages: int = 10):
         self.max_stages = max_stages
-        self.stages: List[Stage] = []
-        self.results: Dict[str, PipelineResult] = {}
+        self.stages: list[Stage] = []
+        self.results: dict[str, PipelineResult] = {}
         self._current_index = 0
 
-    def add_stage(self, name: str, func: Callable, condition: Optional[Callable] = None) -> None:
+    def add_stage(self, name: str, func: Callable, condition: Callable | None = None) -> None:
         """ステージを追加"""
         stage = Stage(name, func, condition)
         self.stages.append(stage)
 
-    async def run(self, initial_data: Dict[str, Any]) -> PipelineResult:
+    async def run(self, initial_data: dict[str, Any]) -> PipelineResult:
         """パイプラインを実行"""
         # パイプライン結果を初期化
         result = PipelineResult(status=PipelineStatus.RUNNING, data=initial_data)
@@ -78,7 +79,7 @@ class PipelineManager:
 
         return result
 
-    def get_progress(self) -> Dict[str, Any]:
+    def get_progress(self) -> dict[str, Any]:
         """進捗を取得"""
         return {
             "current_stage": self._current_index,

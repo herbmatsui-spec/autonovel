@@ -3,7 +3,7 @@ kernels/resonance.py - 共鳴エンジン
 """
 
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Any
 
 from .base import KernelBase
 
@@ -15,7 +15,7 @@ class ResonancePoint:
     location: int
     intensity: float
     type: str
-    associated_elements: List[str]
+    associated_elements: list[str]
 
 
 class ResonanceEngine(KernelBase):
@@ -25,7 +25,7 @@ class ResonanceEngine(KernelBase):
 
     def __init__(self):
         super().__init__()
-        self.resonance_points: List[ResonancePoint] = []
+        self.resonance_points: list[ResonancePoint] = []
         self.intensity_threshold = 0.3
 
     async def initialize(self) -> bool:
@@ -33,7 +33,7 @@ class ResonanceEngine(KernelBase):
         self.set_state("active")
         return True
 
-    def calculate_resonance(self, scene_content: str) -> Dict[str, Any]:
+    def calculate_resonance(self, scene_content: str) -> dict[str, Any]:
         """シーンの共鳴度を計算"""
         # キーワードベースの共鳴計算
         resonance_keywords = {
@@ -57,8 +57,8 @@ class ResonanceEngine(KernelBase):
         return results
 
     def suggest_resonance_enhancement(
-        self, current_text: str, target_points: List[str]
-    ) -> Dict[str, Any]:
+        self, current_text: str, target_points: list[str]
+    ) -> dict[str, Any]:
         """共鳴強化の提案"""
         enhancement_map = {
             "shared_suffering": "もっと深い苦しみや悲しみの描写を加えると効果的です",

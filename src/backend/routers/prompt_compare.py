@@ -8,7 +8,7 @@ LLM呼び出しは行わない（低性能環境でも実行可能）。
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from fastapi import APIRouter, Query
 from pydantic import BaseModel
@@ -23,12 +23,12 @@ router = APIRouter(prefix="/api/prompt-compare", tags=["prompt-compare"])
 
 class CompareRequest(BaseModel):
     prompt_key: str
-    texts: List[str]
-    weights: Optional[Dict[str, float]] = None
+    texts: list[str]
+    weights: dict[str, float] | None = None
 
 
 @router.get("/books/{book_id}/versions")
-async def list_versions(book_id: int, prompt_key: str = Query(...)) -> List[Dict[str, Any]]:
+async def list_versions(book_id: int, prompt_key: str = Query(...)) -> list[dict[str, Any]]:
     """作品の指定プロンプトキーのバージョン一覧を取得する。"""
     async with UnitOfWork(AppContainer.db()) as uow:
         from sqlalchemy import select
@@ -47,7 +47,7 @@ async def list_versions(book_id: int, prompt_key: str = Query(...)) -> List[Dict
 
 
 @router.post("/books/{book_id}/compare")
-async def compare(book_id: int, req: CompareRequest) -> Dict[str, Any]:
+async def compare(book_id: int, req: CompareRequest) -> dict[str, Any]:
     """複数バージョンの出力を比較し、勝者を決定する。"""
     if not req.texts:
         from fastapi import HTTPException
@@ -82,7 +82,7 @@ async def compare(book_id: int, req: CompareRequest) -> Dict[str, Any]:
 
 
 @router.post("/books/{book_id}/versions/{version_id}/activate")
-async def activate_version(book_id: int, version_id: int) -> Dict[str, Any]:
+async def activate_version(book_id: int, version_id: int) -> dict[str, Any]:
     """指定バージョンをアクティブ（採用）にする。"""
     async with UnitOfWork(AppContainer.db()) as uow:
         await uow.prompt_versions.set_active_prompt_version(book_id, "", -1)

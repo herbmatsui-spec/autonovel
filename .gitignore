@@ -19,6 +19,9 @@ storage/
 *.db
 *.db-shm
 *.db-wal
+*.db-journal
+*.bak_*.db
+coverage.xml
 
 # build artifacts
 *.egg-info/

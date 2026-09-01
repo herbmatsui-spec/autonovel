@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 from src.backend.database.core import DatabaseManager
 from src.backend.database.uow import UnitOfWork
@@ -20,8 +20,8 @@ class PromptVersionManager:
         book_id: int,
         prompt_key: str,
         content: str,
-        score_before: Optional[float] = None,
-        ab_test_metrics: Optional[Dict[str, Any]] = None,
+        score_before: float | None = None,
+        ab_test_metrics: dict[str, Any] | None = None,
     ) -> int:
         """新しいプロンプトバージョンを非アクティブ状態で保存。古いバージョンはMAX_HISTORY件に制限する。"""
         async with UnitOfWork(self.db) as uow:

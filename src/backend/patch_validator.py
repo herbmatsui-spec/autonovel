@@ -1,7 +1,7 @@
 import ast
 import json
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, ValidationError
 
@@ -12,9 +12,9 @@ logger = logging.getLogger(__name__)
 
 class ValidationResult(BaseModel):
     is_safe: bool
-    errors: List[str]
-    warnings: List[str]
-    sanitized_patch: Optional[Dict[str, Any]] = None
+    errors: list[str]
+    warnings: list[str]
+    sanitized_patch: dict[str, Any] | None = None
 
 
 class PatchValidator:

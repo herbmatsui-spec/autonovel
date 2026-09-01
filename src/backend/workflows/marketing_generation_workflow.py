@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any
 
 from src.shared.utils import StatusReporter
 
@@ -8,7 +8,7 @@ from .base_workflow import BaseWorkflow
 class MarketingGenerationWorkflow(BaseWorkflow):
     """マーケティング情報生成ワークフロー"""
 
-    async def execute(self, reporter: Optional[StatusReporter] = None, **kwargs) -> Dict[str, Any]:
+    async def execute(self, reporter: StatusReporter | None = None, **kwargs) -> dict[str, Any]:
         book_id = kwargs["book_id"]
         latest_ep = kwargs["latest_ep"]
 

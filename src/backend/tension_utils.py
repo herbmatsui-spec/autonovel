@@ -1,9 +1,8 @@
-from typing import Optional
 
 from src.backend.tension_curve_config import DEFAULT_CURVE, EMOTIONAL_CURVES, select_curve_by_hook
 
 
-def select_tension_curve(genre: str, story_type: Optional[str] = None) -> str:
+def select_tension_curve(genre: str, story_type: str | None = None) -> str:
     """
     ジャンルや物語のタイプに基づいて最適な感情曲線を選択する。
     """
@@ -32,7 +31,7 @@ def calculate_progress(current_episode: int, total_episodes: int) -> float:
     return (current_episode - 1) / total_episodes
 
 
-def get_target_tension(curve_name: str, progress: float, hook_name: Optional[str] = None) -> float:
+def get_target_tension(curve_name: str, progress: float, hook_name: str | None = None) -> float:
     """
     指定された曲線と進行度から、線形補間を用いて目標Tension値を算出する。
 

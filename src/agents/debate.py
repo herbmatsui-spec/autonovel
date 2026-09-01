@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -10,5 +10,5 @@ class NullDebateAgent:
     def __init__(self):
         pass
 
-    async def run_debate(self, initial_concept: Dict[str, Any], rounds: int = 1) -> Dict[str, Any]:
+    async def run_debate(self, initial_concept: dict[str, Any], rounds: int = 1) -> dict[str, Any]:
         return {"final_concept": initial_concept, "debate_log": []}

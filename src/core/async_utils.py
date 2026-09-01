@@ -1,7 +1,8 @@
 import asyncio
 import logging
+from collections.abc import Coroutine, Iterable, Sequence
 from contextlib import asynccontextmanager
-from typing import Any, Coroutine, Iterable, Sequence, TypeVar
+from typing import Any, TypeVar
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +56,7 @@ async def safe_timeout(seconds: float):
     try:
         async with asyncio.timeout(seconds):
             yield
-    except asyncio.TimeoutError:
+    except TimeoutError:
         logger.warning(f"Async operation timed out after {seconds} seconds")
         raise
 

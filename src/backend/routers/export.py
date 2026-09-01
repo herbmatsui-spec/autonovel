@@ -7,7 +7,7 @@ routers/export.py - 出版フォーマット自動整形エクスポーター AP
 
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
 
@@ -20,7 +20,7 @@ router = APIRouter(prefix="/api/export", tags=["export"])
 
 
 @router.get("/platforms")
-async def get_platforms() -> List[Dict[str, str]]:
+async def get_platforms() -> list[dict[str, str]]:
     """対応プラットフォーム一覧を取得する。"""
     return list_platforms()
 
@@ -29,7 +29,7 @@ async def get_platforms() -> List[Dict[str, str]]:
 async def export_book(
     book_id: int,
     platform: str = Query("narou", description="narou | kakuyomu | nocturn"),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """作品を指定プラットフォーム用に整形して出力する。"""
     from sqlalchemy import select
 

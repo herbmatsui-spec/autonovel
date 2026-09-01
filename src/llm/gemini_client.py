@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 import httpx
 
@@ -19,7 +19,7 @@ class GeminiClient:
         self.timeout = timeout
         self._client = httpx.AsyncClient(timeout=self.timeout)
 
-    async def _post(self, model: str, payload: Dict[str, Any]) -> httpx.Response:
+    async def _post(self, model: str, payload: dict[str, Any]) -> httpx.Response:
         url = f"{self.BASE_URL}/{model}:generateContent"
         params = {"key": self.api_key}
         try:
@@ -34,15 +34,15 @@ class GeminiClient:
         self,
         model_name: str,
         prompt: str,
-        response_schema: Optional[Any] = None,
-        system_instruction: Optional[str] = None,
+        response_schema: Any | None = None,
+        system_instruction: str | None = None,
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Gemini へテキストプロンプトを送り、JSON 形式で結果を取得する。
         `response_schema` が渡された場合は Pydantic の `model_validate` で検証し、
         `data` キーに結果を格納した dict を返す。
         """
-        payload: Dict[str, Any] = {"contents": [{"role": "user", "parts": [{"text": prompt}]}]}
+        payload: dict[str, Any] = {"contents": [{"role": "user", "parts": [{"text": prompt}]}]}
         if system_instruction:
             payload["systemInstruction"] = {"parts": [{"text": system_instruction}]}
         # 追加オプションはそのまま payload にマージ（例: temperature）
@@ -65,11 +65,11 @@ class GeminiClient:
         self,
         model_name: str,
         prompt: str,
-        system_instruction: Optional[str] = None,
+        system_instruction: str | None = None,
         **kwargs: Any,
     ) -> str:
         """テキスト生成のみを行うシンプルラッパー。"""
-        payload: Dict[str, Any] = {"contents": [{"role": "user", "parts": [{"text": prompt}]}]}
+        payload: dict[str, Any] = {"contents": [{"role": "user", "parts": [{"text": prompt}]}]}
         if system_instruction:
             payload["systemInstruction"] = {"parts": [{"text": system_instruction}]}
         payload.update(kwargs)

@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -17,56 +17,56 @@ class PlotStructure(BaseModel):
     mid_crisis: str = ""
     climax_type: str = ""
     ending: str = ""
-    key_tropes: List[str] = Field(default_factory=list)
+    key_tropes: list[str] = Field(default_factory=list)
 
 
 class StyleDefinition(BaseModel):
-    name: Optional[str] = None
-    instruction: Optional[str] = None
-    dialogue_ratio: Optional[str] = None
-    syntax_rhythm: Optional[str] = None
-    metaphor_dna: Optional[str] = None
-    noise_dna: Optional[str] = None
-    golden_rules: Optional[str] = None
-    negative_prompt: Optional[str] = None
-    is_light: Optional[bool] = None
+    name: str | None = None
+    instruction: str | None = None
+    dialogue_ratio: str | None = None
+    syntax_rhythm: str | None = None
+    metaphor_dna: str | None = None
+    noise_dna: str | None = None
+    golden_rules: str | None = None
+    negative_prompt: str | None = None
+    is_light: bool | None = None
 
 
 class ArchetypePreset(BaseModel):
-    visual_icon: Optional[str] = None
-    summary: Optional[str] = None
-    trend_tag: Optional[str] = None
-    plot_pattern: Optional[str] = None
-    cheat_scale: Optional[int] = None
-    growth_curve: Optional[str] = None
-    system_assist: Optional[int] = None
-    reality_cost: Optional[int] = None
-    cost_severity: Optional[int] = None
-    style_key: Optional[str] = None
-    default_target_eps: Optional[int] = None
-    default_word_count: Optional[int] = None
+    visual_icon: str | None = None
+    summary: str | None = None
+    trend_tag: str | None = None
+    plot_pattern: str | None = None
+    cheat_scale: int | None = None
+    growth_curve: str | None = None
+    system_assist: int | None = None
+    reality_cost: int | None = None
+    cost_severity: int | None = None
+    style_key: str | None = None
+    default_target_eps: int | None = None
+    default_word_count: int | None = None
 
 
 class StorytellingPlugin(BaseModel):
-    name: Optional[str] = None
-    genre: Optional[str] = None
-    emotion_curve: List[EmotionPhase] = Field(default_factory=list)
-    plot_common_rules: Optional[str] = None
-    style_presets: List[Any] = Field(default_factory=list)
+    name: str | None = None
+    genre: str | None = None
+    emotion_curve: list[EmotionPhase] = Field(default_factory=list)
+    plot_common_rules: str | None = None
+    style_presets: list[Any] = Field(default_factory=list)
 
     # Core Data-Driven Maps
-    archetypes: Optional[Dict[str, ArchetypePreset]] = None
-    style_definitions: Optional[Dict[str, StyleDefinition]] = None
-    easy_mode_keywords: Optional[Dict[str, str]] = None
+    archetypes: dict[str, ArchetypePreset] | None = None
+    style_definitions: dict[str, StyleDefinition] | None = None
+    easy_mode_keywords: dict[str, str] | None = None
 
     # Optional dynamic config values
-    villain_strategies: Optional[Dict[str, str]] = None
-    debuff_profiles: Optional[Dict[str, str]] = None
-    character_expansion_themes: Optional[Dict[str, List[str]]] = None
-    anti_patterns: Optional[Dict[str, List[str]]] = None
-    plot_structures: Optional[Dict[str, PlotStructure]] = None
+    villain_strategies: dict[str, str] | None = None
+    debuff_profiles: dict[str, str] | None = None
+    character_expansion_themes: dict[str, list[str]] | None = None
+    anti_patterns: dict[str, list[str]] | None = None
+    plot_structures: dict[str, PlotStructure] | None = None
 
     # Tropes / Trends config
-    tropes: Optional[List[str]] = None
-    title_patterns: Optional[List[str]] = None
-    forbidden_words_replacements: Optional[Dict[str, str]] = None
+    tropes: list[str] | None = None
+    title_patterns: list[str] | None = None
+    forbidden_words_replacements: dict[str, str] | None = None

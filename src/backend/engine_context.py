@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -12,20 +12,20 @@ logger = logging.getLogger(__name__)
 
 class ImmutableInput(BaseModel):
     past_summary: str
-    active_subplots: List[str]
-    locked_foreshadowings: List[str]
-    static_character_profiles: Dict[str, str]
+    active_subplots: list[str]
+    locked_foreshadowings: list[str]
+    static_character_profiles: dict[str, str]
 
 
 class SystemConfig(BaseModel):
-    active_constraints: List[Dict[str, str]]
+    active_constraints: list[dict[str, str]]
     pacing_instruction: str
 
 
 class DynamicState(BaseModel):
-    character_states: Dict[str, str]
+    character_states: dict[str, str]
     current_tension: int
-    unresolved_threads: List[str]
+    unresolved_threads: list[str]
 
 
 class ContextData(BaseModel):
@@ -73,9 +73,9 @@ class ContextManager:
 
     def filter_active_characters(
         self,
-        plots: Union[PlotDbModel, List[PlotDbModel]],
-        all_chars: List[CharacterDbModel],
-        char_states: Dict[str, str],
+        plots: PlotDbModel | list[PlotDbModel],
+        all_chars: list[CharacterDbModel],
+        char_states: dict[str, str],
         recent_ctx: str = "",
     ) -> str:
         plot_list = plots if isinstance(plots, list) else [plots]
@@ -110,7 +110,7 @@ class ContextManager:
         return "\n".join(lines) if lines else "キャラクター情報なし"
 
     async def build_past_context(
-        self, book_id: int, end_ep: int, active_char_names: Optional[List[str]] = None
+        self, book_id: int, end_ep: int, active_char_names: list[str] | None = None
     ) -> str:
         book = await self.repo.get_book(book_id)
         branch_id = book.current_branch_id if book and book.current_branch_id else 1
@@ -190,9 +190,9 @@ class ContextManager:
         self,
         book_id: int,
         ep_num: int,
-        plots: Union[PlotDbModel, List[PlotDbModel]],
-        all_chars: List[CharacterDbModel],
-    ) -> Tuple[str, str]:
+        plots: PlotDbModel | list[PlotDbModel],
+        all_chars: list[CharacterDbModel],
+    ) -> tuple[str, str]:
         """プロット生成時に最適な文体・過去文脈を構築する"""
         book = await self.repo.get_book(book_id)
         branch_id = book.current_branch_id if book and book.current_branch_id else 1
@@ -238,8 +238,8 @@ class ContextManager:
         return char_ctx, prev_ctx
 
     async def get_optimal_context_split(
-        self, book_id: int, ep_num: int, plot: PlotDbModel, chars: List[CharacterRegistry]
-    ) -> Tuple[str, str, str]:
+        self, book_id: int, ep_num: int, plot: PlotDbModel, chars: list[CharacterRegistry]
+    ) -> tuple[str, str, str]:
         """不変設定と動的状態に分けてコンテキストを構築（提案3: 視点/シーンベースのフィルタリング適用）"""
         book = await self.repo.get_book(book_id)
         branch_id = book.current_branch_id if book and book.current_branch_id else 1
@@ -303,8 +303,8 @@ class ContextManager:
         book_id: int,
         ep_num: int,
         plot: PlotDbModel,
-        chars: List[Any],
-        active_constraints: List[Dict] = None,
+        chars: list[Any],
+        active_constraints: list[dict] = None,
         pacing_instruction: str = "",
     ) -> ContextData:
         """提案6: データの構造を不変入力、システム設定、状態出力に明確に分割したモデルを返す"""

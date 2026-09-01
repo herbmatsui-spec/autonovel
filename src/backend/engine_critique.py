@@ -1,5 +1,5 @@
 import json
-from typing import Any, Dict
+from typing import Any
 
 from config import MODEL_PLANNING
 from src.backend.sharp_edge_preserver import SemanticEdgePreserver, check_edges_preserved
@@ -238,7 +238,7 @@ class CritiqueAgent:
 
     async def run_dogfeeding_approval_loop(
         self, content: str, ep_num: int, passion: float, temp: float
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         [Dogfeeding] 執筆された小説本文を自己評価し、合格スコア（80点）を満たしているか判定する。
         """

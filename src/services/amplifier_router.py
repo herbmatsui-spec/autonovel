@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, Dict
+from typing import Any
 
 
 class AmplifierType(str, Enum):
@@ -96,7 +96,7 @@ def detect_amplifier_type(
     return AmplifierType.NONE
 
 
-def get_episode_dominant_amplifier(plot_data: Dict[str, Any]) -> AmplifierType:
+def get_episode_dominant_amplifier(plot_data: dict[str, Any]) -> AmplifierType:
     """
     エピソード全体の設定から代表的なAmplifierTypeを判定する。
     ビート分解がスキップされた場合のフォールバックなどで利用。

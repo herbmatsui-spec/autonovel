@@ -2,7 +2,8 @@
 core/interfaces.py - 依存性注入のためのインターフェース（Protocol）定義
 """
 
-from typing import Any, Callable, Dict, List, Optional, Protocol, Tuple
+from collections.abc import Callable
+from typing import Any, Protocol
 
 from src.models.base import GenerateResult
 from src.models.db import BibleDbModel, BookDbModel, ChapterDbModel, CharacterDbModel, PlotDbModel
@@ -15,11 +16,11 @@ class ILLMClient(Protocol):
         self,
         model_name: str,
         prompt: str,
-        response_schema: Optional[Any] = None,
-        system_instruction: Optional[str] = None,
+        response_schema: Any | None = None,
+        system_instruction: str | None = None,
         temp: float = 0.7,
-        expected_ep_num: Optional[int] = None,
-        stream_callback: Optional[Callable[[str], None]] = None,
+        expected_ep_num: int | None = None,
+        stream_callback: Callable[[str], None] | None = None,
         **kwargs: Any,
     ) -> GenerateResult: ...
 
@@ -27,9 +28,9 @@ class ILLMClient(Protocol):
         self,
         model_name: str,
         prompt: str,
-        system_instruction: Optional[str] = None,
+        system_instruction: str | None = None,
         temp: float = 0.7,
-        stream_callback: Optional[Callable[[str], None]] = None,
+        stream_callback: Callable[[str], None] | None = None,
         **kwargs: Any,
     ) -> GenerateResult: ...
 
@@ -46,11 +47,11 @@ class IPromptManager(Protocol):
     def build_final_writing_prompt(
         self,
         ep_num: int,
-        plot_data: Dict[str, Any],
+        plot_data: dict[str, Any],
         script_text: str,
         target_word_count: int,
         **kwargs: Any,
-    ) -> Tuple[str, str]: ...
+    ) -> tuple[str, str]: ...
     def build_bible_extraction_prompt(self, content: str) -> str: ...
     def build_producer_audit_prompt(
         self, genre: str, keywords: str, trend_memo: str, archetype: str = "", **kwargs: Any
@@ -66,7 +67,7 @@ class IPromptManager(Protocol):
         self, issue_list: Any, draft_content: str, blueprint: str
     ) -> str: ...
     def build_foreshadowing_audit_prompt(
-        self, f_map: List[Dict[str, Any]], content: str
+        self, f_map: list[dict[str, Any]], content: str
     ) -> str: ...
     def build_misunderstanding_validation_prompt(self, content: str, gap_desc: str) -> str: ...
     def build_marketing_pack_prompt(
@@ -84,7 +85,7 @@ class IPromptManager(Protocol):
         self,
         world_rules_json: str,
         mc_data_json: str,
-        causality_map: List[str],
+        causality_map: list[str],
         mc_name: str,
         **kwargs: Any,
     ) -> str: ...
@@ -109,9 +110,9 @@ class IPromptManager(Protocol):
         self,
         book_title: str,
         ep_num: int,
-        ep_info: Dict[str, Any],
-        past_plots: List[Any],
-        arcs: List[Any],
+        ep_info: dict[str, Any],
+        past_plots: list[Any],
+        arcs: list[Any],
         book_genre: str,
         **kwargs: Any,
     ) -> str: ...
@@ -126,7 +127,7 @@ class IPromptManager(Protocol):
         book_synopsis: str,
         keywords: str,
         trend_memo: str,
-        pending_foreshadowing: List[str],
+        pending_foreshadowing: list[str],
     ) -> str: ...
     def build_amplify_prompt(
         self, final_content: str, current_target_word_count: int, fix_inst: str = ""
@@ -146,16 +147,16 @@ class IPromptManager(Protocol):
         plot_script_content: str,
     ) -> str: ...
     def build_easy_mode_inference_prompt(
-        self, user_prompt: str, schema_json: Optional[Any] = None
+        self, user_prompt: str, schema_json: Any | None = None
     ) -> str: ...
 
 
 class DatabaseManagerProtocol(Protocol):
     """データベース接続管理のインターフェース"""
 
-    async def fetch_one(self, query: str, params: Tuple[Any, ...] = ()) -> Optional[Any]: ...
-    async def fetch_all(self, query: str, params: Tuple[Any, ...] = ()) -> List[Any]: ...
-    async def execute(self, query: str, params: Tuple[Any, ...] = ()) -> Any: ...
+    async def fetch_one(self, query: str, params: tuple[Any, ...] = ()) -> Any | None: ...
+    async def fetch_all(self, query: str, params: tuple[Any, ...] = ()) -> list[Any]: ...
+    async def execute(self, query: str, params: tuple[Any, ...] = ()) -> Any: ...
 
 
 class IRepository(Protocol):
@@ -163,18 +164,18 @@ class IRepository(Protocol):
 
     @property
     def db(self) -> DatabaseManagerProtocol: ...
-    async def get_book(self, book_id: int) -> Optional[BookDbModel]: ...
-    async def get_chapter(self, branch_id: int, ep_num: int) -> Optional[ChapterDbModel]: ...
-    async def get_latest_bible(self, book_id: int) -> Optional[BibleDbModel]: ...
-    async def get_all_characters(self, book_id: int) -> List[CharacterDbModel]: ...
+    async def get_book(self, book_id: int) -> BookDbModel | None: ...
+    async def get_chapter(self, branch_id: int, ep_num: int) -> ChapterDbModel | None: ...
+    async def get_latest_bible(self, book_id: int) -> BibleDbModel | None: ...
+    async def get_all_characters(self, book_id: int) -> list[CharacterDbModel]: ...
     async def get_plots_between(
         self, book_id: int, start_ep: int, end_ep: int
-    ) -> List[PlotDbModel]: ...
+    ) -> list[PlotDbModel]: ...
     async def get_all_non_anchor_chapters(
         self, book_id: int, order_by: str = "ep_num"
-    ) -> List[ChapterDbModel]: ...
-    async def get_all_plots(self, book_id: int) -> List[PlotDbModel]: ...
-    async def get_plot(self, branch_id: int, ep_num: int) -> Optional[PlotDbModel]: ...
+    ) -> list[ChapterDbModel]: ...
+    async def get_all_plots(self, book_id: int) -> list[PlotDbModel]: ...
+    async def get_plot(self, branch_id: int, ep_num: int) -> PlotDbModel | None: ...
     async def create_chapter(self, *args: Any, **kwargs: Any) -> Any: ...
     async def create_or_replace_plot(self, *args: Any, **kwargs: Any) -> Any: ...
 
@@ -183,7 +184,7 @@ class UnitOfWorkProtocol(Protocol):
     """トランザクション管理のインターフェース"""
 
     async def __aenter__(self) -> Any: ...
-    async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> Optional[bool]: ...
+    async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> bool | None: ...
 
 
 class IReporter(Protocol):
@@ -197,8 +198,8 @@ class IWorldBibleGenerator(Protocol):
     """世界観・企画書生成のインターフェース"""
 
     async def create_hegemony_plan(
-        self, config: Any, uow: Any, reporter: Optional[IReporter] = None
-    ) -> Tuple[int, Any]: ...
+        self, config: Any, uow: Any, reporter: IReporter | None = None
+    ) -> tuple[int, Any]: ...
 
 
 class IPlotExpander(Protocol):
@@ -207,12 +208,12 @@ class IPlotExpander(Protocol):
     async def expand_plots(
         self,
         book_id: int,
-        target_ep_list: List[int],
-        arcs: List[Any],
-        reporter: Optional[IReporter] = None,
+        target_ep_list: list[int],
+        arcs: list[Any],
+        reporter: IReporter | None = None,
         force: bool = False,
-        branch_id: Optional[int] = None,
-    ) -> List[Any]: ...
+        branch_id: int | None = None,
+    ) -> list[Any]: ...
 
 
 class IPlanAuditor(Protocol):
@@ -226,4 +227,4 @@ class IPlanAuditor(Protocol):
         sanctuary: str = "",
         originality_score: int = 50,
         platform: str = "カクヨム/なろう",
-    ) -> Optional[Any]: ...
+    ) -> Any | None: ...

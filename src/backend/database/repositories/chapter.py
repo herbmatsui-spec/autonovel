@@ -5,7 +5,7 @@ database/repo_chapter.py - チャプター(Chapters)本文データ操作用の�
 """
 import json
 import re
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import delete, or_, select, update
 
@@ -30,7 +30,7 @@ class ChapterRepository(BaseRepository):
         title: str,
         content: str,
         summary: str,
-        killer_phrase: Optional[str],
+        killer_phrase: str | None,
         ai_insight: str,
         world_state: Any,
         trinity_review_log: Any,
@@ -68,7 +68,7 @@ class ChapterRepository(BaseRepository):
         ch.tension_delta = tension_delta
         ch.qol_delta = qol_delta
 
-    async def get_chapter(self, branch_id: int, ep_num: int) -> Optional["ChapterDbModel"]:
+    async def get_chapter(self, branch_id: int, ep_num: int) -> ChapterDbModel | None:
         result = await self.session.execute(
             select(Chapter).where(Chapter.branch_id == branch_id).where(Chapter.ep_num == ep_num)
         )
@@ -81,7 +81,7 @@ class ChapterRepository(BaseRepository):
             **self._parse_row(self._to_dict(ch), ["world_state", "trinity_review_log", "summary"])
         )
 
-    async def get_chapters_before(self, branch_id: int, ep_num: int) -> List["ChapterDbModel"]:
+    async def get_chapters_before(self, branch_id: int, ep_num: int) -> list[ChapterDbModel]:
         result = await self.session.execute(
             select(Chapter)
             .where(Chapter.branch_id == branch_id)
@@ -103,10 +103,10 @@ class ChapterRepository(BaseRepository):
     async def get_all_non_anchor_chapters(
         self,
         book_id_or_branch_id: int,
-        branch_id: Optional[int] = None,
+        branch_id: int | None = None,
         order_by: str = "ep_num",
-        limit: Optional[int] = None,
-    ) -> List["ChapterDbModel"]:
+        limit: int | None = None,
+    ) -> list[ChapterDbModel]:
         target_branch_id = branch_id if branch_id is not None else book_id_or_branch_id
         stmt = select(Chapter).where(Chapter.branch_id == target_branch_id)
         if "desc" in order_by.lower():
@@ -130,7 +130,7 @@ class ChapterRepository(BaseRepository):
 
     @retry_on_lock()
     async def delete_chapter(
-        self, book_id_or_branch_id: int, ep_num: int, branch_id: Optional[int] = None
+        self, book_id_or_branch_id: int, ep_num: int, branch_id: int | None = None
     ) -> None:
         target_branch_id = branch_id if branch_id is not None else book_id_or_branch_id
         await self.session.execute(
@@ -150,7 +150,7 @@ class ChapterRepository(BaseRepository):
 
     @retry_on_lock()
     async def update_chapter_candidates(
-        self, branch_id: int, ep_num: int, candidates: List[Any]
+        self, branch_id: int, ep_num: int, candidates: list[Any]
     ) -> None:
         """チャプターの候補案のみを更新する"""
         await self.session.execute(

@@ -9,10 +9,10 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import List, Optional
 
 from fastapi import HTTPException, Request
 
+from src.backend.config import settings
 from src.core.exceptions import AppError
 
 logger = logging.getLogger(__name__)
@@ -21,17 +21,16 @@ logger = logging.getLogger(__name__)
 class APIKeyService:
     """API キーの検証を司るサービス。"""
 
-    def __init__(self, allowed_keys: Optional[List[str]] = None, disabled: bool = False):
+    def __init__(self, allowed_keys: list[str] | None = None, disabled: bool = False):
         self.allowed_keys = allowed_keys or []
         self.disabled = disabled
 
     def validate(self, api_key: str) -> bool:
         if self.disabled:
             # 本番環境では AUTH_DISABLED を無視して認証を要求
-            env = os.environ.get("ENVIRONMENT", "development")
-            if env == "production":
+            if settings.APP_ENV == "production" or os.environ.get("ENVIRONMENT") == "production":
                 logger.error(
-                    "AUTH_DISABLED is set but ENVIRONMENT=production - authentication is required"
+                    "AUTH_DISABLED is set but APP_ENV=production - authentication is strictly required"
                 )
                 return False
             logger.warning("AUTH_DISABLED is set - authentication is bypassed (non-production)")
@@ -45,14 +44,14 @@ class APIKeyService:
         return f"apikey:{api_key[:8]}"
 
 
-_api_key_service: Optional[APIKeyService] = None
+_api_key_service: APIKeyService | None = None
 
 
 def get_api_key_service() -> APIKeyService:
     global _api_key_service
     if _api_key_service is None:
-        disabled = os.environ.get("AUTH_DISABLED", "false").lower() in ("1", "true", "yes")
-        keys_env = os.environ.get("ALLOWED_API_KEYS", "")
+        disabled = settings.AUTH_DISABLED or os.environ.get("AUTH_DISABLED", "false").lower() in ("1", "true", "yes")
+        keys_env = settings.ALLOWED_API_KEYS or os.environ.get("ALLOWED_API_KEYS", "")
         allowed_keys = [k.strip() for k in keys_env.split(",") if k.strip()]
         _api_key_service = APIKeyService(allowed_keys=allowed_keys, disabled=disabled)
     return _api_key_service

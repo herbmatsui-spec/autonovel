@@ -9,7 +9,7 @@ models/api_schemas.py — フロントエンド/バックエンド共通のAPI�
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -22,8 +22,8 @@ class BaseResponse(BaseModel):
     """基本レスポンス構造"""
 
     success: bool = True
-    error_message: Optional[str] = None
-    error_type: Optional[str] = None
+    error_message: str | None = None
+    error_type: str | None = None
 
 
 # ==========================================
@@ -37,11 +37,11 @@ class BookSchema(BaseModel):
     id: int
     title: str
     genre: str
-    concept: Optional[str] = ""
-    synopsis: Optional[str] = ""
+    concept: str | None = ""
+    synopsis: str | None = ""
     target_eps: int = 0
-    cumulative_stress: Optional[float] = 0.0
-    created_at: Optional[datetime] = None
+    cumulative_stress: float | None = 0.0
+    created_at: datetime | None = None
 
 
 class PlotSchema(BaseModel):
@@ -50,11 +50,11 @@ class PlotSchema(BaseModel):
     ep_num: int
     title: str
     summary: str
-    detailed_blueprint: Optional[str] = ""
+    detailed_blueprint: str | None = ""
     tension: float = 50.0
     is_catharsis: bool = False
     status: str = "open"  # "open", "closed"
-    script_content: Optional[str] = ""
+    script_content: str | None = ""
 
 
 class ChapterSchema(BaseModel):
@@ -64,11 +64,11 @@ class ChapterSchema(BaseModel):
     title: str
     content: str
     summary: str
-    killer_phrase: Optional[str] = ""
-    ai_insight: Optional[str] = ""  # ai_insight
-    world_state: Dict[str, Any] = Field(default_factory=dict)
-    trinity_review_log: Dict[str, Any] = Field(default_factory=dict)
-    created_at: Optional[datetime] = None
+    killer_phrase: str | None = ""
+    ai_insight: str | None = ""  # ai_insight
+    world_state: dict[str, Any] = Field(default_factory=dict)
+    trinity_review_log: dict[str, Any] = Field(default_factory=dict)
+    created_at: datetime | None = None
 
 
 class BibleSchema(BaseModel):
@@ -76,8 +76,8 @@ class BibleSchema(BaseModel):
 
     id: int
     book_id: int
-    settings: Dict[str, Any] = Field(default_factory=dict)
-    revealed: Dict[str, Any] = Field(default_factory=dict)
+    settings: dict[str, Any] = Field(default_factory=dict)
+    revealed: dict[str, Any] = Field(default_factory=dict)
     version: int = 0
 
 
@@ -85,8 +85,8 @@ class OptimizationReportSchema(BaseModel):
     """最適化レポートスキーマ"""
 
     id: int
-    report_json: Dict[str, Any] = Field(default_factory=dict)
-    created_at: Optional[datetime] = None
+    report_json: dict[str, Any] = Field(default_factory=dict)
+    created_at: datetime | None = None
 
 
 # ==========================================
@@ -105,10 +105,10 @@ class TaskStatusSchema(BaseModel):
     sub_message: str = ""
     trace_id: str = "N/A"
     streaming_text: str = ""
-    logs: List[str] = Field(default_factory=list)
-    error: Optional[str] = None
-    result_data: Optional[Any] = None
-    token_usage: Dict[str, int] = Field(
+    logs: list[str] = Field(default_factory=list)
+    error: str | None = None
+    result_data: Any | None = None
+    token_usage: dict[str, int] = Field(
         default_factory=lambda: {"prompt": 0, "completion": 0, "calls": 0}
     )
     start_time: float = 0.0
@@ -123,7 +123,7 @@ class AuthenticatedRequest(BaseModel):
     """API認証付きリクエストの共通ベース"""
 
     api_key: str
-    config: Dict[str, Any] = Field(default_factory=dict)
+    config: dict[str, Any] = Field(default_factory=dict)
 
 
 # ==========================================
@@ -142,7 +142,7 @@ class EasyModeRequest(AuthenticatedRequest):
     word_count: int
     concept: str = ""
     tone_vibe: float = 0.6
-    style_key: Optional[str] = "style_web_standard"
+    style_key: str | None = "style_web_standard"
     enable_erotic: bool = False
     erotic_intensity: int = 2
 
@@ -156,7 +156,7 @@ class EpisodeGenerateRequest(AuthenticatedRequest):
     passion: float
     word_count: int
     do_refine: bool
-    env_state: Dict[str, str] = Field(default_factory=dict)
+    env_state: dict[str, str] = Field(default_factory=dict)
     pipeline_mode: bool = False
 
 
@@ -169,7 +169,7 @@ class EpisodeGenerateCandidatesRequest(EpisodeGenerateRequest):
 class PlanGenerationRequest(AuthenticatedRequest):
     """企画生成リクエスト"""
 
-    params: Dict[str, Any]
+    params: dict[str, Any]
 
 
 class RetryFailedRequest(AuthenticatedRequest):
@@ -197,7 +197,7 @@ class PlotExpandCandidatesRequest(PlotExpandRequest):
 class PlotRebuildRequest(AuthenticatedRequest):
     """プロット再構築リクエスト"""
 
-    params: Dict[str, Any]
+    params: dict[str, Any]
 
 
 class CritiqueOptimizeRequest(AuthenticatedRequest):
@@ -248,7 +248,7 @@ class RefineEroticRequest(AuthenticatedRequest):
 class PatchActionRequest(BaseModel):
     """パッチアクションリクエスト"""
 
-    notes: Optional[str] = None
+    notes: str | None = None
 
 
 class PatchEditRequest(BaseModel):
@@ -268,7 +268,7 @@ class ProduceNovelRequest(BaseModel):
     title: str = Field(..., description="作品タイトル")
     genre: str = Field(..., description="ジャンル")
     synopsis: str = Field(default="", description="あらすじ")
-    keywords: List[str] = Field(default_factory=list, description="キーワード")
+    keywords: list[str] = Field(default_factory=list, description="キーワード")
     target_episodes: int = Field(default=10, ge=1, le=100, description="目標話数")
     target_word_count: int = Field(default=3000, ge=100, le=50000, description="1話目標文字数")
     style_key: str = Field(default="default", description="スタイルキー")
@@ -281,7 +281,7 @@ class ProduceNovelResponse(BaseResponse):
     project_id: int = Field(..., description="プロジェクトID")
     status: str = Field(default="started", description="ステータス")
     message: str = Field(default="", description="メッセージ")
-    token_usage_estimate: Optional[Dict[str, int]] = Field(
+    token_usage_estimate: dict[str, int] | None = Field(
         default=None, description="推定トークン使用量"
     )
 
@@ -295,26 +295,26 @@ class NovelStatusResponse(BaseResponse):
     total_episodes: int
     progress_percent: float
     message: str
-    completed_episodes: List[int] = Field(default_factory=list)
+    completed_episodes: list[int] = Field(default_factory=list)
 
 
 class EpisodeListResponse(BaseResponse):
     """エピソード一覧取得レスポンス"""
 
-    episodes: List[Dict[str, Any]] = Field(default_factory=list)
+    episodes: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class NovelReportResponse(BaseResponse):
     """制作レポート取得レスポンス"""
 
-    report: Optional[Dict[str, Any]] = Field(default=None, description="レポートデータ")
+    report: dict[str, Any] | None = Field(default=None, description="レポートデータ")
 
 
 class RollbackRequest(BaseModel):
     """プロンプトロールバックリクエスト"""
 
     version_id: int
-    reason: Optional[str] = "手動ロールバック"
+    reason: str | None = "手動ロールバック"
 
 
 class ResolveIssueRequest(BaseModel):
@@ -330,7 +330,7 @@ class ErrorResponse(BaseResponse):
     success: bool = False
     error_code: str = "INTERNAL_ERROR"
     error_message: str = ""
-    detail: Optional[str] = None
+    detail: str | None = None
 
 
 __all__ = [

@@ -4,7 +4,8 @@ import threading
 from src.core.observability import get_structured_logger
 
 logger = get_structured_logger("llm_client")
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any
 
 from src.core.llm_clients.gemini import GeminiApiClient
 from src.models import GenerateResult
@@ -29,10 +30,10 @@ class EngineLLMClient:
         model_name: str,
         prompt: str,
         response_schema: Any = None,
-        system_instruction: Optional[str] = None,
+        system_instruction: str | None = None,
         temp: float = 0.7,
-        expected_ep_num: Optional[int] = None,
-        stream_callback: Optional[Callable[[str], None]] = None,
+        expected_ep_num: int | None = None,
+        stream_callback: Callable[[str], None] | None = None,
     ) -> GenerateResult:
         try:
             try:

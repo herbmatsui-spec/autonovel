@@ -2,7 +2,7 @@
 src/backend/routers/novel.py — 小説制作関連APIエンドポイント
 """
 
-from typing import Any, Dict, List
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -76,7 +76,7 @@ async def get_novel_status(project_id: int):
 async def list_episodes(project_id: int):
     """エピソード一覧取得"""
     episodes = producer.get_episodes()
-    data: List[Dict[str, Any]] = []
+    data: list[dict[str, Any]] = []
     for ep in episodes:
         data.append(
             {

@@ -4,7 +4,7 @@ import json
 import logging
 import math
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from config import MODEL_EMBEDDING
 
@@ -45,7 +45,7 @@ class SemanticCacheManager:
         key_str = f"{prompt}:{task_type}:{genre}:{temperature}"
         return hashlib.sha256(key_str.encode("utf-8")).hexdigest()
 
-    async def _get_embedding(self, text: str) -> List[float]:
+    async def _get_embedding(self, text: str) -> list[float]:
         """Gemini API を使用してプロンプトの埋め込み（ベクトル）を生成。L2-Bキャッシュを適用。"""
         # L2-B キャッシュチェック (完全一致ハッシュ)
         text_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
@@ -78,7 +78,7 @@ class SemanticCacheManager:
         temperature: float = 0.7,
         threshold: float = 0.95,
         **kwargs: Any,
-    ) -> Optional[Any]:
+    ) -> Any | None:
         """
         類似したキャッシュエントリを検索する。
         """
@@ -274,7 +274,7 @@ class SemanticCacheManager:
         self,
         book_id: int,
         current_ep_num: int,
-        task_types: List[str],
+        task_types: list[str],
         genre: str = "general",
         temperature: float = 0.7,
     ) -> None:
@@ -358,9 +358,9 @@ class SemanticCacheManager:
         book_id: int,
         ep_range_start: int,
         ep_range_end: int,
-        task_types: List[str],
+        task_types: list[str],
         genre: str = "general",
-    ) -> Dict[str, int]:
+    ) -> dict[str, int]:
         """
         エピソード範囲全体のプリフェッチを実行する。
         現在生成中のエピソードの後続エピソード群を一括でウォームアップする。
@@ -389,7 +389,7 @@ class SemanticCacheManager:
         logger.info(f"[PREFETCH] Batch prefetch completed: {results}")
         return results
 
-    async def get_cache_warmth(self, task_type: str, genre: str) -> Dict[str, Any]:
+    async def get_cache_warmth(self, task_type: str, genre: str) -> dict[str, Any]:
         """
         キャッシュのウォーム度を取得する。
         特定のtask_type+genreの組み合わせで、どれくらいキャッシュがウォームかを示す。

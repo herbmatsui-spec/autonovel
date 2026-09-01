@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -11,7 +11,7 @@ class NarrativeScoringService:
         self.llm = llm
         self.prompt_manager = prompt_manager
 
-    async def score(self, content: str, schema: Any) -> Dict[str, Any]:
+    async def score(self, content: str, schema: Any) -> dict[str, Any]:
         if self.prompt_manager is None:
             return {"score": 0.0, "feedback": "OK"}
         prompt = self.prompt_manager.build_critique_quality_prompt(

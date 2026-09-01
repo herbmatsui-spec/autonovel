@@ -1,6 +1,6 @@
 import json
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from src.backend.database.uow_context import current_uow
 
@@ -20,7 +20,7 @@ class MockBaseRepository:
     def __init__(self):
         self.data = {}
 
-    async def get_by_id(self, id_val: Any) -> Optional[Dict[str, Any]]:
+    async def get_by_id(self, id_val: Any) -> dict[str, Any] | None:
         return self.data.get(id_val)
 
     async def save(self, data: dict) -> Any:
@@ -55,7 +55,7 @@ class MockPlotRepository(MockBaseRepository):
         ep_num = plot_data.get("ep_num")
         self.data[f"{book_id}_{ep_num}"] = plot_data
 
-    async def get_plots(self, book_id: int) -> List[Dict[str, Any]]:
+    async def get_plots(self, book_id: int) -> list[dict[str, Any]]:
         return [p for k, p in self.data.items() if str(k).startswith(f"{book_id}_")]
 
 
@@ -78,7 +78,7 @@ class MockBibleRepository(MockBaseRepository):
 
 class MockBranchRepository(MockBaseRepository):
     async def create_branch(
-        self, book_id: int, name: str, parent_id: Optional[int] = None, fork_ep_num: int = 0
+        self, book_id: int, name: str, parent_id: int | None = None, fork_ep_num: int = 0
     ) -> int:
         b_id = len(self.data) + 1
         self.data[b_id] = {
@@ -91,7 +91,7 @@ class MockBranchRepository(MockBaseRepository):
         }
         return b_id
 
-    async def get_branches(self, book_id: int) -> List[Any]:
+    async def get_branches(self, book_id: int) -> list[Any]:
         from src.models import BranchDbModel
 
         res = []
@@ -105,7 +105,7 @@ class MockBranchRepository(MockBaseRepository):
 
 
 class MockCharacterRepository(MockBaseRepository):
-    async def get_all_characters(self, book_id: int) -> List[Any]:
+    async def get_all_characters(self, book_id: int) -> list[Any]:
         from src.models import CharacterDbModel
 
         res = []
@@ -143,7 +143,7 @@ class MockRulesRepository(MockBaseRepository):
         instruction: str,
         level: str = "global",
         domain: str = "all",
-        character_name: Optional[str] = None,
+        character_name: str | None = None,
         status: str = "active",
     ) -> int:
         r_id = len(self.data) + 1
@@ -160,17 +160,17 @@ class MockRulesRepository(MockBaseRepository):
         }
         return r_id
 
-    async def get_rule(self, rule_id: int) -> Optional[Dict[str, Any]]:
+    async def get_rule(self, rule_id: int) -> dict[str, Any] | None:
         return self.data.get(rule_id)
 
-    async def get_all_rules(self, status: Optional[str] = None) -> List[Dict[str, Any]]:
+    async def get_all_rules(self, status: str | None = None) -> list[dict[str, Any]]:
         res = []
         for r in self.data.values():
             if not status or r.get("status") == status:
                 res.append(r)
         return res
 
-    async def get_active_rules(self, domain: str = "all") -> List[Dict[str, Any]]:
+    async def get_active_rules(self, domain: str = "all") -> list[dict[str, Any]]:
         res = []
         for r in self.data.values():
             if r.get("status") == "active":
@@ -185,7 +185,7 @@ class MockRulesRepository(MockBaseRepository):
         instruction: str,
         level: str,
         domain: str,
-        character_name: Optional[str],
+        character_name: str | None,
         status: str,
     ) -> None:
         if rule_id in self.data:
@@ -211,7 +211,7 @@ class MockRulesRepository(MockBaseRepository):
             del self.data[rule_id]
 
     async def create_masterpiece(
-        self, emotion_or_scene: str, content: str, vector: Optional[List[float]] = None
+        self, emotion_or_scene: str, content: str, vector: list[float] | None = None
     ) -> int:
         m_id = len(self.masterpieces) + 1
         self.masterpieces[m_id] = {
@@ -223,7 +223,7 @@ class MockRulesRepository(MockBaseRepository):
         }
         return m_id
 
-    async def get_all_masterpieces(self) -> List[Dict[str, Any]]:
+    async def get_all_masterpieces(self) -> list[dict[str, Any]]:
         return list(self.masterpieces.values())
 
     async def delete_masterpiece(self, mp_id: int) -> None:
@@ -258,12 +258,12 @@ class MockAuditRepository(MockBaseRepository):
         }
         return i_id
 
-    async def get_issue(self, issue_id: int) -> Optional[Dict[str, Any]]:
+    async def get_issue(self, issue_id: int) -> dict[str, Any] | None:
         return self.data.get(issue_id)
 
     async def get_issues_by_book(
-        self, book_id: int, status: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, book_id: int, status: str | None = None
+    ) -> list[dict[str, Any]]:
         res = []
         for i in self.data.values():
             if i.get("book_id") == book_id:
@@ -286,9 +286,9 @@ class MockPromptVersionRepository(MockBaseRepository):
         prompt_key: str,
         version_tag: str,
         content: str,
-        score_before: Optional[float] = None,
-        score_after: Optional[float] = None,
-        ab_test_metrics: Optional[Dict[str, Any]] = None,
+        score_before: float | None = None,
+        score_after: float | None = None,
+        ab_test_metrics: dict[str, Any] | None = None,
         is_active: bool = False,
     ) -> Any:
         v_id = len(self.data) + 1
@@ -307,10 +307,10 @@ class MockPromptVersionRepository(MockBaseRepository):
         self.data[v_id] = version
         return version
 
-    async def get_prompt_version(self, version_id: int) -> Optional[Dict[str, Any]]:
+    async def get_prompt_version(self, version_id: int) -> dict[str, Any] | None:
         return self.data.get(version_id)
 
-    async def get_prompt_versions(self, book_id: int, limit: int = 20) -> List[Dict[str, Any]]:
+    async def get_prompt_versions(self, book_id: int, limit: int = 20) -> list[dict[str, Any]]:
         res = []
         for v in self.data.values():
             if v.get("book_id") == book_id:
@@ -320,7 +320,7 @@ class MockPromptVersionRepository(MockBaseRepository):
 
     async def get_active_prompt_version(
         self, book_id: int, prompt_key: str
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         for v in self.data.values():
             if (
                 v.get("book_id") == book_id
@@ -426,8 +426,8 @@ class MockUnitOfWork:
         collection: str,
         doc_id: str,
         doc_content: str,
-        embedding: List[float],
-        metadata: Optional[Dict[str, Any]] = None,
+        embedding: list[float],
+        metadata: dict[str, Any] | None = None,
     ):
         self._chroma_additions.append(
             {
@@ -439,10 +439,10 @@ class MockUnitOfWork:
             }
         )
 
-    def stage_chroma_delete(self, collection: str, ids: List[str]):
+    def stage_chroma_delete(self, collection: str, ids: list[str]):
         self._chroma_deletions.append({"collection": collection, "ids": ids})
 
-    async def get_pending_outbox_events(self) -> List[Any]:
+    async def get_pending_outbox_events(self) -> list[Any]:
         return [e for e in self.outbox if e.status == "pending"]
 
     async def mark_outbox_event_processed(self, event_id: int) -> None:

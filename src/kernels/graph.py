@@ -5,7 +5,7 @@ kernels/graph.py - 物語状態グラフ管理
 import asyncio
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 class NarrativeState(str, Enum):
@@ -28,8 +28,8 @@ class NarrativeNode:
     title: str
     description: str
     chapter_number: int
-    dependencies: List[str] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    dependencies: list[str] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):
         if isinstance(self.state, str):
@@ -44,7 +44,7 @@ class NarrativeEdge:
     to_node: str
     edge_type: str = "sequential"  # sequential, parallel, flashback, flashforward
     weight: float = 1.0
-    condition: Optional[str] = None
+    condition: str | None = None
 
 
 class NarrativeStateGraph:
@@ -53,8 +53,8 @@ class NarrativeStateGraph:
     """
 
     def __init__(self):
-        self.nodes: Dict[str, NarrativeNode] = {}
-        self.edges: List[NarrativeEdge] = []
+        self.nodes: dict[str, NarrativeNode] = {}
+        self.edges: list[NarrativeEdge] = []
         self._current_state = NarrativeState.SETUP
         self._lock = asyncio.Lock()
 
@@ -66,11 +66,11 @@ class NarrativeStateGraph:
         """エッジを追加"""
         self.edges.append(edge)
 
-    def get_node(self, node_id: str) -> Optional[NarrativeNode]:
+    def get_node(self, node_id: str) -> NarrativeNode | None:
         """ノードを取得"""
         return self.nodes.get(node_id)
 
-    def get_adjacent_nodes(self, node_id: str) -> List[NarrativeNode]:
+    def get_adjacent_nodes(self, node_id: str) -> list[NarrativeNode]:
         """隣接ノードを取得"""
         adjacent = []
         for edge in self.edges:
@@ -80,7 +80,7 @@ class NarrativeStateGraph:
                     adjacent.append(target)
         return adjacent
 
-    def get_path(self, from_node: str, to_node: str) -> List[str]:
+    def get_path(self, from_node: str, to_node: str) -> list[str]:
         """2ノード間のパスを取得（BFS）"""
         from collections import deque
 
@@ -139,7 +139,7 @@ class NarrativeStateManager:
         self.graph = NarrativeStateGraph()
         self.active_chapter = 0
 
-    async def initialize_story(self, outline: List[Dict[str, Any]]) -> None:
+    async def initialize_story(self, outline: list[dict[str, Any]]) -> None:
         """物語のアウトラインから初期化"""
         for i, chapter_data in enumerate(outline):
             node = NarrativeNode(
@@ -159,7 +159,7 @@ class NarrativeStateManager:
                     NarrativeEdge(from_node=f"ch{i}", to_node=f"ch{i + 1}", edge_type="sequential")
                 )
 
-    def get_chapter_state(self, chapter: int) -> Optional[NarrativeState]:
+    def get_chapter_state(self, chapter: int) -> NarrativeState | None:
         """章の状態を取得"""
         node = self.graph.get_node(f"ch{chapter}")
         if node:

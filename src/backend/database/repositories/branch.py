@@ -4,7 +4,7 @@ from __future__ import annotations
 database/repo_branch.py - ブランチ(Branches)データ操作用のリポジトリMixin
 """
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING
 
 from sqlalchemy import select, update
 
@@ -21,7 +21,7 @@ class BranchRepository(BaseRepository):
     """Branchesテーブルに関するDB操作をまとめたMixin"""
 
     async def create_branch(
-        self, book_id: int, name: str, parent_id: Optional[int] = None, fork_ep_num: int = 0
+        self, book_id: int, name: str, parent_id: int | None = None, fork_ep_num: int = 0
     ) -> int:
         """新しいブランチを作成し、必要に応じて親ブランチからデータをコピーする"""
         branch = Branch(
@@ -60,7 +60,7 @@ class BranchRepository(BaseRepository):
 
         return branch_id
 
-    async def get_branches(self, book_id: int) -> List["BranchDbModel"]:
+    async def get_branches(self, book_id: int) -> list[BranchDbModel]:
         result = await self.session.execute(
             select(Branch).where(Branch.book_id == book_id).order_by(Branch.created_at)
         )

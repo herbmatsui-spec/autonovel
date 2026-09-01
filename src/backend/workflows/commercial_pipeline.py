@@ -6,7 +6,7 @@ src/backend/workflows/commercial_pipeline.py — 商用化統合パイプライ�
 import asyncio
 import logging
 import random
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from src.core.exceptions import PipelineError  # 新規カスタム例外
 from src.services.episode_writer import EpisodeWriter
@@ -48,7 +48,7 @@ def async_retry(max_attempts: int = 3, base_delay: float = 1.0):
 class CommercialPipeline:
     """統合パイプラインクラス"""
 
-    def __init__(self, csv_path: Optional[str] = None):
+    def __init__(self, csv_path: str | None = None):
         """
         Initialize pipeline with optional CSV output path.
 
@@ -58,12 +58,12 @@ class CommercialPipeline:
         self.csv_path = csv_path or "/tmp/commercial_schedule.csv"
 
     @async_retry(max_attempts=3, base_delay=1.0)
-    async def _step_plan_async(self, series_config: dict) -> Dict[str, Any]:
+    async def _step_plan_async(self, series_config: dict) -> dict[str, Any]:
         """Bible生成ステップ（リトライ対応）"""
         return self._step_plan(series_config)
 
     @staticmethod
-    def _step_plan(series_config: dict) -> Dict[str, Any]:
+    def _step_plan(series_config: dict) -> dict[str, Any]:
         """
         Bible生成ステップ。
 
@@ -119,14 +119,14 @@ class CommercialPipeline:
 
     @async_retry(max_attempts=3, base_delay=1.0)
     async def _generate_content_async(
-        self, bible: Dict[str, Any], samples: List[Dict[str, Any]], platforms: List[str]
-    ) -> tuple[List[Dict[str, Any]], Dict[str, Any]]:
+        self, bible: dict[str, Any], samples: list[dict[str, Any]], platforms: list[str]
+    ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
         """コンテンツ生成ステップ（リトライ対応）"""
         return await self._generate_content(bible, samples, platforms)
 
     async def _generate_content(
-        self, bible: Dict[str, Any], samples: List[Dict[str, Any]], platforms: List[str]
-    ) -> tuple[List[Dict[str, Any]], Dict[str, Any]]:
+        self, bible: dict[str, Any], samples: list[dict[str, Any]], platforms: list[str]
+    ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
         """
         コンテンツ生成ステップ。
 
@@ -138,8 +138,8 @@ class CommercialPipeline:
         Returns:
             tuple: (selected_items, exports_data)
         """
-        selected: List[Dict[str, Any]] = []
-        exports: Dict[str, Any] = {}
+        selected: list[dict[str, Any]] = []
+        exports: dict[str, Any] = {}
 
         try:
             # 目標エピソード数取得
@@ -235,7 +235,7 @@ class CommercialPipeline:
             logger.exception("Error in content generation pipeline")
             raise PipelineError(f"Content generation failed: {e}") from e
 
-    def _create_schedule_csv(self, exports: Dict[str, Any]) -> str:
+    def _create_schedule_csv(self, exports: dict[str, Any]) -> str:
         """
         CSV出力スケジュール作成ステップ。
 
@@ -265,7 +265,7 @@ class CommercialPipeline:
             logger.exception("Failed to create schedule CSV")
             raise PipelineError(f"CSV creation failed: {e}") from e
 
-    async def run(self, series_config: dict, samples: list, platforms: list) -> Dict[str, Any]:
+    async def run(self, series_config: dict, samples: list, platforms: list) -> dict[str, Any]:
         """
         パイプラインのエントリーポイント。
 

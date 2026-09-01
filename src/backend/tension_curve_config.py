@@ -1,11 +1,10 @@
-from typing import Dict, List, Tuple
 
 # 感情曲線（Tension Curve）の定義
 # 各曲線は (進行度, 目標Tension値) のリストで定義される。
 # 進行度は 0.0 (開始) から 1.0 (終了) まで。
 # Tension値は 0.0 (安寧/日常) から 1.0 (最大緊張/絶望) まで。
 
-EMOTIONAL_CURVES: Dict[str, List[Tuple[float, float]]] = {
+EMOTIONAL_CURVES: dict[str, list[tuple[float, float]]] = {
     "standard": [
         (0.0, 0.2),  # 導入
         (0.2, 0.4),  # 状況の悪化

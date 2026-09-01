@@ -8,7 +8,7 @@ from pydantic import ValidationError
 
 from src.backend import database
 from src.backend.database.repository import BookRepository
-from src.backend.observability import metrics
+from src.backend.observability.health import metrics
 from src.backend.rate_limit import generate_limiter
 from src.models.easy_mode_schemas import EasyModeInput, GenerationResponse
 from src.services.digest_service import process_chapter
@@ -260,15 +260,15 @@ async def cancel_task(task_id: str) -> dict[str, str]:
 # --- ガチャ / ダイジェスト / 昇格 エンドポイント ---
 
 from src.models.easy_mode_schemas import (
-    GachaRequest,
-    GachaResponse,
     DigestRequest,
     DigestResponse,
+    GachaRequest,
+    GachaResponse,
     PromotionRequest,
     PromotionResponse,
 )
-from src.services.gacha_service import GachaService
 from src.services.digest_service import DigestService
+from src.services.gacha_service import GachaService
 from src.services.promotion_service import PromotionService
 
 

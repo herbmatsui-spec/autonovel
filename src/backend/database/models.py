@@ -19,6 +19,7 @@ from sqlalchemy import (
     func,
     text,
 )
+
 from src.infrastructure.database.models.base_orm import Base
 
 
@@ -68,6 +69,7 @@ class Branch(Base):
 
 
 from datetime import datetime
+
 from sqlalchemy.types import TypeDecorator
 
 

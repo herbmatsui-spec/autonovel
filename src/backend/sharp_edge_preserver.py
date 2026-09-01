@@ -6,7 +6,6 @@ src/backend/sharp_edge_preserver.py
 from __future__ import annotations
 
 import logging
-from typing import List, Optional
 
 from src.models.sharp_edge import SharpEdgeSpec
 
@@ -33,7 +32,7 @@ class SemanticEdgePreserver:
 
     def __init__(
         self,
-        semantic_cache: Optional[SemanticCacheManager] = None,
+        semantic_cache: SemanticCacheManager | None = None,
         similarity_threshold: float = 0.75,
         use_semantic: bool = True,
         use_ngram_fallback: bool = True,
@@ -47,8 +46,8 @@ class SemanticEdgePreserver:
         self,
         before_content: str,
         after_content: str,
-        edges: List[SharpEdgeSpec],
-    ) -> tuple[List[SharpEdgeSpec], List[SharpEdgeSpec]]:
+        edges: list[SharpEdgeSpec],
+    ) -> tuple[list[SharpEdgeSpec], list[SharpEdgeSpec]]:
         """
         角の保全確認を実行。2つの結果を返す：
 
@@ -91,13 +90,13 @@ class SemanticEdgePreserver:
         return semantic_lost, string_lost
 
     def _check_string_only(
-        self, after_content: str, edges: List[SharpEdgeSpec]
-    ) -> List[SharpEdgeSpec]:
+        self, after_content: str, edges: list[SharpEdgeSpec]
+    ) -> list[SharpEdgeSpec]:
         """文字列チェック（key_phrase もしくは description[:20]）のみを行う実装"""
         if not edges:
             return []
 
-        lost: List[SharpEdgeSpec] = []
+        lost: list[SharpEdgeSpec] = []
         after_lower = after_content.lower()
 
         for edge in edges:
@@ -162,8 +161,8 @@ class SemanticEdgePreserver:
 
 
 def check_edges_preserved(
-    before_content: str, after_content: str, edges: List[SharpEdgeSpec]
-) -> List[SharpEdgeSpec]:
+    before_content: str, after_content: str, edges: list[SharpEdgeSpec]
+) -> list[SharpEdgeSpec]:
     """
     品質向上前後のコンテンツを比較し、削除された角を検出する（同期版・後方互換）。
 
@@ -176,7 +175,7 @@ def check_edges_preserved(
     if not edges:
         return []
 
-    lost: List[SharpEdgeSpec] = []
+    lost: list[SharpEdgeSpec] = []
     after_lower = after_content.lower()
 
     for edge in edges:

@@ -3,7 +3,6 @@ src/services/erotic_afterglow_evaluator.py
 afterglow フェーズ専用の品質評価サービス
 """
 
-from typing import List, Tuple
 
 from config.erotic_thresholds import AFTERGLOW_MIN_CHARS, AFTERGLOW_MIN_PARAGRAPHS
 
@@ -41,14 +40,14 @@ class AfterglowEvaluator:
         """次話への伏線が含まれているかチェックする。"""
         return any(kw in text for kw in self.FOREShadow_KEYWORDS)
 
-    def evaluate(self, text: str) -> Tuple[bool, List[str]]:
+    def evaluate(self, text: str) -> tuple[bool, list[str]]:
         """
         afterglow テキストを多角的に評価する。
 
         Returns:
             (is_acceptable, issues): 評価結果と問題リスト
         """
-        issues: List[str] = []
+        issues: list[str] = []
 
         paragraph_count = self.count_paragraphs(text)
         if paragraph_count < AFTERGLOW_MIN_PARAGRAPHS:

@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import asyncio
 import time
-from typing import Any, Callable, Dict, Optional, Tuple
+from collections.abc import Callable
+from typing import Any
 
 from src.backend.engine_utils import AdaptiveCooldown, safe_model_validate
 from src.backend.sanitizer import OutputSanitizer
@@ -29,13 +29,13 @@ class OpenAIApiClient(BaseLLMClient):
         self,
         model_name: str,
         prompt: str,
-        system_instruction: Optional[str] = None,
+        system_instruction: str | None = None,
         response_schema: Any = None,
         temp: float = 1.0,
         max_retries: int = 5,
-        stream_callback: Optional[Callable[[str], None]] = None,
-        retry_state: Optional[RetryState] = None,
-    ) -> Tuple[Dict[str, Any], str, Any]:
+        stream_callback: Callable[[str], None] | None = None,
+        retry_state: RetryState | None = None,
+    ) -> tuple[dict[str, Any], str, Any]:
         try:
             import openai
         except ImportError:
@@ -104,7 +104,7 @@ class OpenAIApiClient(BaseLLMClient):
                     response_format=response_format,
                     extra_body=extra_body if extra_body else None,
                 )
-        except asyncio.TimeoutError as e:
+        except TimeoutError as e:
             raise TimeoutError(f"OpenAI API timed out after 120s: {e}")
         except Exception as e:
             err_msg = str(e).lower()

@@ -11,9 +11,10 @@ kernels/interaction_trigger.py - インタラクショントリガー
 """
 
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Callable, Dict, List
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -35,7 +36,7 @@ class TriggerConfig:
     """トリガー設定"""
 
     trigger_type: TriggerType
-    conditions: Dict[str, Any]
+    conditions: dict[str, Any]
     cooldown_seconds: float = 30.0
     max_activations: int = 3
 
@@ -57,7 +58,7 @@ class InteractionTrigger(BaseModel):
     # 現在のクールダウン残り
     current_cooldown: int = 0
     # 任意のメタデータ
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class TriggerRegistry:
@@ -66,7 +67,7 @@ class TriggerRegistry:
     """
 
     def __init__(self) -> None:
-        self.triggers: List[InteractionTrigger] = []
+        self.triggers: list[InteractionTrigger] = []
 
     def register(self, trigger: InteractionTrigger) -> None:
         """トリガーを登録"""
@@ -74,11 +75,11 @@ class TriggerRegistry:
 
     def check_triggers(
         self, current_state: KernelState, next_state: KernelState
-    ) -> List[InteractionTrigger]:
+    ) -> list[InteractionTrigger]:
         """
         現在の状態遷移からトリガーされるイベントを抽出する。
         """
-        activated: List[InteractionTrigger] = []
+        activated: list[InteractionTrigger] = []
         for trigger in self.triggers:
             if trigger.current_cooldown > 0:
                 trigger.current_cooldown -= 1
@@ -114,10 +115,10 @@ class InteractionTriggerManager:
     """
 
     def __init__(self) -> None:
-        self.triggers: Dict[str, TriggerConfig] = {}
-        self.handlers: Dict[str, Callable] = {}
-        self._last_trigger_time: Dict[str, float] = {}
-        self._activation_counts: Dict[str, int] = {}
+        self.triggers: dict[str, TriggerConfig] = {}
+        self.handlers: dict[str, Callable] = {}
+        self._last_trigger_time: dict[str, float] = {}
+        self._activation_counts: dict[str, int] = {}
 
     def register_trigger(self, name: str, config: TriggerConfig, handler: Callable) -> None:
         """トリガーを登録"""
@@ -125,7 +126,7 @@ class InteractionTriggerManager:
         self.handlers[name] = handler
         self._activation_counts[name] = 0
 
-    def should_trigger(self, name: str, context: Dict[str, Any]) -> bool:
+    def should_trigger(self, name: str, context: dict[str, Any]) -> bool:
         """トリガーを発動すべきか判定"""
         trigger = self.triggers.get(name)
         if not trigger:
@@ -153,7 +154,7 @@ class InteractionTriggerManager:
         self._last_trigger_time[name] = time.time()
         return True
 
-    async def trigger(self, name: str, context: Dict[str, Any]) -> Any:
+    async def trigger(self, name: str, context: dict[str, Any]) -> Any:
         """トリガーを発動"""
         if not self.should_trigger(name, context):
             return None

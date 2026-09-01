@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ class StateContradictionError(Exception):
 
 class StateValidator:
     @staticmethod
-    def validate_transitions(prev_ws: Dict[str, Any], changes_obj: list):
+    def validate_transitions(prev_ws: dict[str, Any], changes_obj: list):
         # Implement actual validation logic here
         pass
 
@@ -35,8 +35,8 @@ class StateValidatorAgent:
     def __init__(self):
         self.name = "state_validator"
 
-    async def validate(self, state: Dict[str, Any]) -> List[str]:
-        issues: List[str] = []
+    async def validate(self, state: dict[str, Any]) -> list[str]:
+        issues: list[str] = []
         if not state.get("api_key"):
             issues.append("APIキーが未設定です。")
         mode = state.get("app_mode")

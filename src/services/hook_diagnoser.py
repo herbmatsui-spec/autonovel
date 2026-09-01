@@ -8,7 +8,7 @@ services/hook_diagnoser.py - 章末フック強度診断・修正案生成サー
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from src.services.quality_scorer import QualityScorer
 
@@ -20,13 +20,13 @@ HOOK_THRESHOLD = 0.7
 class HookDiagnoser:
     """章末フックの診断と修正案生成を行うサービス。"""
 
-    def __init__(self, llm_service: Optional[Any] = None):
+    def __init__(self, llm_service: Any | None = None):
         self.scorer = QualityScorer()
         self._llm = llm_service
 
-    async def diagnose(self, chapters: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    async def diagnose(self, chapters: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """各章のフックスコアを算出し、弱いフックをフラグ付けする。"""
-        results: List[Dict[str, Any]] = []
+        results: list[dict[str, Any]] = []
         for ch in chapters:
             text = ch.get("content") or ""
             ep_num = ch.get("ep_num")
@@ -45,11 +45,11 @@ class HookDiagnoser:
             )
         return results
 
-    async def detect_weak_hooks(self, chapters: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    async def detect_weak_hooks(self, chapters: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """閾値を下回る章のみを返す。"""
         return [r for r in await self.diagnose(chapters) if r["is_weak"]]
 
-    async def generate_hook_fix(self, chapter: Dict[str, Any], api_key: str) -> str:
+    async def generate_hook_fix(self, chapter: dict[str, Any], api_key: str) -> str:
         """弱いフックの章に対し、章末を改善する修正案を生成する。"""
         if self._llm is None:
             from src.services.llm_service import LLMService

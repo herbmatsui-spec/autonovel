@@ -11,7 +11,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from typing import Any, List, Optional
+from typing import Any
 
 from config.constants import MODEL_PLOT_EXPANSION
 from src.core.interfaces import IReporter, IRepository
@@ -35,12 +35,12 @@ class DefaultPlotExpander:
     async def expand_plots(
         self,
         book_id: int,
-        target_ep_list: List[int],
-        arcs: List[Any],
-        reporter: Optional[IReporter] = None,
+        target_ep_list: list[int],
+        arcs: list[Any],
+        reporter: IReporter | None = None,
         force: bool = False,
-        branch_id: Optional[int] = None,
-    ) -> List[Any]:
+        branch_id: int | None = None,
+    ) -> list[Any]:
         """各エピソードのプロット詳細を展開する。"""
         if not target_ep_list:
             return []
@@ -72,10 +72,10 @@ class DefaultPlotExpander:
 
         bible_json_str = json.dumps(bible_dict, ensure_ascii=False)
 
-        results: List[Any] = []
+        results: list[Any] = []
         sem = asyncio.Semaphore(2)
 
-        async def _process_single(ep_num: int) -> Optional[Any]:
+        async def _process_single(ep_num: int) -> Any | None:
             async with sem:
                 try:
                     existing = await self.repo.get_plot(book_id, ep_num, branch_id=branch_id)

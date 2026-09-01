@@ -1,7 +1,7 @@
 import json
 import logging
 import uuid
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel
 
@@ -21,14 +21,14 @@ else:
         new_value: Any = None
 
     class EpisodeStatusChanges(BaseModel):
-        character_status_changes: List["CharacterStatusChange"] = []
+        character_status_changes: list["CharacterStatusChange"] = []
 
     class StateContradictionError(Exception):
         pass
 
     class StateValidator:
         @staticmethod
-        def validate_transitions(prev_ws: Dict[str, Any], changes_obj: Any) -> None:
+        def validate_transitions(prev_ws: dict[str, Any], changes_obj: Any) -> None:
             pass
 
 
@@ -49,7 +49,7 @@ class WritingGenerationContext(BaseModel):
     target_word_count: int = 2000
     enable_polishing: bool = True
     prose_sample: str = ""
-    plot: Optional[Any] = None
+    plot: Any | None = None
 
     def build_sys_inst(self) -> str:
         parts = [self.sys_inst]
@@ -90,7 +90,7 @@ class GenerationLoopManager:
         passion: float,
         is_easy_mode: bool,
         reporter,
-    ) -> Tuple[str, Dict[str, Any], bool]:
+    ) -> tuple[str, dict[str, Any], bool]:
         trace_id = str(uuid.uuid4())
         logger.info(f"[Trace {trace_id}] Starting generation loop for Ep.{ep_num}")
 
@@ -114,11 +114,11 @@ class GenerationLoopManager:
             )
 
         final_content: str = ""
-        final_meta: Dict[str, Any] = {}
+        final_meta: dict[str, Any] = {}
         is_integrity_ok = True
         is_causal_ok = True
         causal_reason = ""
-        failures: List[Any] = []
+        failures: list[Any] = []
         rate = 1.0
         blueprint = ctx.plot.detailed_blueprint if ctx.plot else ""
         engine_key = ctx.engine_key or "unknown"
@@ -254,8 +254,6 @@ class GenerationLoopManager:
                 0.0,
             )
             if not is_easy_mode:
-                from config.project_context import ProjectContext
-
                 min_immersion = float(ProjectContext.get_setting("min_immersion_score", 0.0) or 0.0)
                 if immersion_score < min_immersion and fail_fast:
                     raise RuntimeError(
@@ -282,7 +280,7 @@ class GenerationLoopManager:
         fw_prompt: str,
         is_easy_mode: bool,
         reporter,
-    ) -> Tuple[WritingGenerationContext, bool, bool, bool, int]:
+    ) -> tuple[WritingGenerationContext, bool, bool, bool, int]:
         current_tension = ctx.current_tension
         is_catharsis = getattr(ctx.plot, "is_catharsis", False) if ctx.plot else False
 
@@ -331,7 +329,7 @@ class GenerationLoopManager:
         should_beat_decompose: bool,
         gen_ctx: WritingGenerationContext,
         reporter,
-    ) -> Tuple[str, Dict[str, Any]]:
+    ) -> tuple[str, dict[str, Any]]:
         expanded_beats = ""
         if should_beat_decompose:
             expanded_beats = await self._expand_scene_beats(ep_num, blueprint, temp, reporter)
@@ -368,12 +366,12 @@ class GenerationLoopManager:
         ep_num: int,
         ctx: WritingContext,
         final_content: str,
-        final_meta: Dict[str, Any],
+        final_meta: dict[str, Any],
         blueprint: str,
         threshold: float,
         should_heavy_audit: bool,
         monitor,
-    ) -> Tuple[bool, float, bool, str, List[Dict[str, Any]]]:
+    ) -> tuple[bool, float, bool, str, list[dict[str, Any]]]:
         is_integrity_ok, rate, _ = await monitor.check_integrity(
             monitor.extract_keywords(blueprint), blueprint, final_content, threshold=threshold
         )
@@ -410,9 +408,9 @@ class GenerationLoopManager:
         ctx: WritingContext,
         blueprint: str,
         causal_reason: str,
-        failures: List[Dict[str, Any]],
+        failures: list[dict[str, Any]],
         monitor,
-    ) -> Tuple[str, bool, str]:
+    ) -> tuple[str, bool, str]:
         return await self._apply_surgical_healing(
             ep_num, content, ctx, blueprint, causal_reason, failures, monitor
         )
@@ -423,7 +421,7 @@ class GenerationLoopManager:
         ep_num: int,
         draft_content: str,
         blueprint: str,
-        failures: List[Dict[str, Any]],
+        failures: list[dict[str, Any]],
         gen_ctx: WritingGenerationContext,
         reporter,
     ) -> bool:
@@ -706,7 +704,7 @@ class GenerationLoopManager:
 
     async def _extract_episode_metadata(
         self, ep_num: int, content: str, blueprint: str, temp: float
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         from src.models.writing import EpisodeMetadata
 
         prompt = (
@@ -739,7 +737,7 @@ class GenerationLoopManager:
         blueprint: str,
         should_heavy_audit: bool,
         monitor,
-    ) -> Tuple[bool, str, List[Dict[str, Any]]]:
+    ) -> tuple[bool, str, list[dict[str, Any]]]:
         from config import AUDIT_TRIGGER_KEYWORDS
 
         is_causal_ok = True
@@ -796,9 +794,9 @@ class GenerationLoopManager:
         ctx: WritingContext,
         blueprint: str,
         causal_reason: str,
-        failures: List[Dict[str, Any]],
+        failures: list[dict[str, Any]],
         monitor,
-    ) -> Tuple[str, bool, str]:
+    ) -> tuple[str, bool, str]:
         logger.info(f"Ep.{ep_num} triggering surgical causality healing...")
         snippets = [
             f.get("fragment", "")
@@ -943,7 +941,7 @@ class GenerationLoopManager:
         world_settings: str,
         blueprint: str,
         failure_reason: str,
-        snippets: Optional[List[str]] = None,
+        snippets: list[str] | None = None,
     ) -> str:
         target_content = content
         if snippets and len(snippets) > 0:

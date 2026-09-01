@@ -12,7 +12,7 @@ RefineEroticWorkflow 等) は WritingService を依存対象にし、EngineFacad
 - analyze_and_import_chapter: 手書き原稿インポート（委譲先があれば）
 """
 
-from typing import Any, List, Tuple
+from typing import Any
 
 
 class WritingService:
@@ -45,7 +45,7 @@ class WritingService:
         reporter: Any,
         branch_id: int = 1,
         style_tag: Any = None,
-    ) -> Tuple[int, List[Any]]:
+    ) -> tuple[int, list[Any]]:
         """
         エピソード生成パイプラインを実行する。
         実際の実行は writer.generate_episodes_pipeline に委譲。

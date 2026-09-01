@@ -8,7 +8,7 @@ services/prompt_comparison.py - ジャンル別プロンプト A/B 比較
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +22,7 @@ DEFAULT_WEIGHTS = {
 }
 
 
-async def score_output(text: str) -> Dict[str, float]:
+async def score_output(text: str) -> dict[str, float]:
     """QualityScorer を用いて出力を評価する。"""
     from src.services.quality_scorer import QualityScorer
 
@@ -41,7 +41,7 @@ async def score_output(text: str) -> Dict[str, float]:
         return {k: 0.0 for k in DEFAULT_WEIGHTS}
 
 
-def weighted_total(scores: Dict[str, float], weights: Optional[Dict[str, float]] = None) -> float:
+def weighted_total(scores: dict[str, float], weights: dict[str, float] | None = None) -> float:
     """重み付け合計スコアを算出する。"""
     w = weights or DEFAULT_WEIGHTS
     total = 0.0
@@ -51,8 +51,8 @@ def weighted_total(scores: Dict[str, float], weights: Optional[Dict[str, float]]
 
 
 def decide_winner(
-    results: List[Dict[str, Any]], weights: Optional[Dict[str, float]] = None
-) -> Dict[str, Any]:
+    results: list[dict[str, Any]], weights: dict[str, float] | None = None
+) -> dict[str, Any]:
     """各バージョンの評価結果から勝者を決定する。"""
     if not results:
         return {"winner_id": None, "reason": "no results"}
@@ -65,12 +65,12 @@ def decide_winner(
 
 
 async def build_comparison(
-    versions: List[Dict[str, Any]],
-    texts: List[str],
-    weights: Optional[Dict[str, float]] = None,
-) -> Dict[str, Any]:
+    versions: list[dict[str, Any]],
+    texts: list[str],
+    weights: dict[str, float] | None = None,
+) -> dict[str, Any]:
     """バージョンごとの評価・勝者判定を行う。"""
-    results: List[Dict[str, Any]] = []
+    results: list[dict[str, Any]] = []
     for ver, text in zip(versions, texts):
         scores = await score_output(text)
         results.append(

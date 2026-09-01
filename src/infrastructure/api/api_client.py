@@ -16,7 +16,7 @@ import inspect
 import logging
 import os
 import threading
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import httpx
 
@@ -68,7 +68,7 @@ def get_client() -> httpx.Client:
 
 
 # 共有クライアント。テストから直接代入可能なモジュール属性。
-_resilient_client: Optional[httpx.Client] = None
+_resilient_client: httpx.Client | None = None
 
 
 def _resolve_if_coroutine(result: Any) -> Any:
@@ -95,7 +95,7 @@ def _resolve_if_coroutine(result: Any) -> Any:
     if running_loop is not None and running_loop.is_running():
         # 既に実行中のイベントループ内からは await できないため、
         # 別スレッドで新規ループを立てて解決する。
-        result_box: Dict[str, Any] = {}
+        result_box: dict[str, Any] = {}
 
         def _runner() -> None:
             new_loop = asyncio.new_event_loop()
@@ -138,8 +138,8 @@ def _request(method: str, path: str, timeout: float = SYNC_REQUEST_TIMEOUT, **kw
     method_upper = (method or "").upper()
 
     if method_upper in _JSON_METHODS:
-        params: Optional[Dict[str, Any]] = None
-        json_body: Optional[Dict[str, Any]] = dict(kwargs) if kwargs else None
+        params: dict[str, Any] | None = None
+        json_body: dict[str, Any] | None = dict(kwargs) if kwargs else None
     else:
         # GET/DELETE/HEAD および未知メソッドは query params として扱う。
         params = dict(kwargs) if kwargs else {}
@@ -161,7 +161,7 @@ def _request(method: str, path: str, timeout: float = SYNC_REQUEST_TIMEOUT, **kw
 # -----------------------------------------------------------------------------
 
 # 共有の非同期クライアント。遅延生成し、同じ接続プールを再利用する。
-_async_client: Optional[httpx.AsyncClient] = None
+_async_client: httpx.AsyncClient | None = None
 
 
 def _get_async_client() -> httpx.AsyncClient:
@@ -180,7 +180,7 @@ async def close_async_client() -> None:
     _async_client = None
 
 
-async def _async_request(method: str, url: str, **kwargs: Any) -> Optional[httpx.Response]:
+async def _async_request(method: str, url: str, **kwargs: Any) -> httpx.Response | None:
     """内部的な非同期リクエスト処理。
 
     UI層への直接的な依存 (st.toast など) を排除し、例外で通知する。
@@ -283,13 +283,13 @@ def close_client() -> None:
 # -----------------------------------------------------------------------------
 
 
-async def list_books() -> List[Dict[str, Any]]:
+async def list_books() -> list[dict[str, Any]]:
     """登録されている本の一覧を取得する。"""
     response = await _async_request("GET", f"{API_BASE_URL}/books")
     return response.json() if response else []
 
 
-async def get_book(book_id: int) -> Optional[Dict[str, Any]]:
+async def get_book(book_id: int) -> dict[str, Any] | None:
     """指定した本の詳細を取得する。"""
     response = await _async_request("GET", f"{API_BASE_URL}/books/{book_id}")
     return response.json() if response else None
@@ -301,31 +301,31 @@ async def delete_book(book_id: int) -> bool:
     return True if response else False
 
 
-async def get_plots(book_id: int) -> List[Dict[str, Any]]:
+async def get_plots(book_id: int) -> list[dict[str, Any]]:
     """指定した本のプロット一覧を取得する。"""
     response = await _async_request("GET", f"{API_BASE_URL}/plots/{book_id}")
     return response.json() if response else []
 
 
-async def get_chapters(book_id: int) -> List[Dict[str, Any]]:
+async def get_chapters(book_id: int) -> list[dict[str, Any]]:
     """指定した本のチャプター一覧を取得する。"""
     response = await _async_request("GET", f"{API_BASE_URL}/chapters/{book_id}")
     return response.json() if response else []
 
 
-async def get_bible(book_id: int) -> Dict[str, Any]:
+async def get_bible(book_id: int) -> dict[str, Any]:
     """指定した本のバイブル(設定集)を取得する。"""
     response = await _async_request("GET", f"{API_BASE_URL}/bibles/{book_id}")
     return response.json() if response else {}
 
 
-async def get_opt_history(book_id: int) -> List[Dict[str, Any]]:
+async def get_opt_history(book_id: int) -> list[dict[str, Any]]:
     """指定した本の最適化履歴を取得する。"""
     response = await _async_request("GET", f"{API_BASE_URL}/optimization_history/{book_id}")
     return response.json() if response else []
 
 
-async def get_task_status(task_id: str, timeout: float = ASYNC_REQUEST_TIMEOUT) -> Dict[str, Any]:
+async def get_task_status(task_id: str, timeout: float = ASYNC_REQUEST_TIMEOUT) -> dict[str, Any]:
     """非同期タスクのステータスを取得する。
 
     Args:
@@ -377,7 +377,7 @@ async def generate_easy(
     word_count: int,
     concept: str,
     tone_vibe: float,
-) -> Optional[str]:
+) -> str | None:
     """かんたん生成モードでタスクを起動し、task_id を返す。"""
     payload = {
         "api_key": api_key,
@@ -404,9 +404,9 @@ async def generate_episodes(
     passion: float,
     word_count: int,
     do_refine: bool,
-    env_state: Dict[str, str],
+    env_state: dict[str, str],
     pipeline_mode: bool,
-) -> Optional[str]:
+) -> str | None:
     """エピソード(章)を生成するタスクを起動し、task_id を返す。"""
     payload = {
         "api_key": api_key,
@@ -424,7 +424,7 @@ async def generate_episodes(
     return response.json().get("task_id") if response else None
 
 
-async def plan_generation(api_key: str, config: dict, params: Dict[str, Any]) -> Optional[str]:
+async def plan_generation(api_key: str, config: dict, params: dict[str, Any]) -> str | None:
     """プロットの計画生成タスクを起動し、task_id を返す。"""
     payload = {"api_key": api_key, "config": config, "params": params}
     response = await _async_request("POST", f"{API_BASE_URL}/plots/plan_generation", json=payload)
@@ -433,7 +433,7 @@ async def plan_generation(api_key: str, config: dict, params: Dict[str, Any]) ->
 
 async def retry_failed_episodes(
     api_key: str, config: dict, book_id: int, passion: float, word_count: int
-) -> Optional[str]:
+) -> str | None:
     """失敗したエピソードを再試行するタスクを起動し、task_id を返す。"""
     payload = {
         "api_key": api_key,
@@ -448,7 +448,7 @@ async def retry_failed_episodes(
 
 async def expand_plots(
     api_key: str, config: dict, book_id: int, gen_from: int, gen_to: int
-) -> Optional[str]:
+) -> str | None:
     """プロットを拡張するタスクを起動し、task_id を返す。"""
     payload = {
         "api_key": api_key,
@@ -461,14 +461,14 @@ async def expand_plots(
     return response.json().get("task_id") if response else None
 
 
-async def rebuild_plots(api_key: str, config: dict, params: Dict[str, Any]) -> Optional[str]:
+async def rebuild_plots(api_key: str, config: dict, params: dict[str, Any]) -> str | None:
     """プロットを再構築するタスクを起動し、task_id を返す。"""
     payload = {"api_key": api_key, "config": config, "params": params}
     response = await _async_request("POST", f"{API_BASE_URL}/plots/rebuild", json=payload)
     return response.json().get("task_id") if response else None
 
 
-async def critique_optimize(api_key: str, config: dict, book_id: int) -> Optional[str]:
+async def critique_optimize(api_key: str, config: dict, book_id: int) -> str | None:
     """批評最適化タスクを起動し、task_id を返す。"""
     payload = {"api_key": api_key, "config": config, "book_id": book_id}
     response = await _async_request("POST", f"{API_BASE_URL}/critique/optimize", json=payload)
@@ -477,7 +477,7 @@ async def critique_optimize(api_key: str, config: dict, book_id: int) -> Optiona
 
 async def import_chapter(
     api_key: str, book_id: int, ep_num: int, import_text: str, do_refine: bool
-) -> Optional[str]:
+) -> str | None:
     """チャプターを外部テキストから取り込むタスクを起動し、task_id を返す。"""
     payload = {
         "api_key": api_key,
@@ -490,14 +490,14 @@ async def import_chapter(
     return response.json().get("task_id") if response else None
 
 
-async def generate_marketing(api_key: str, book_id: int, latest_ep: int) -> Optional[str]:
+async def generate_marketing(api_key: str, book_id: int, latest_ep: int) -> str | None:
     """マーケティング素材生成タスクを起動し、task_id を返す。"""
     payload = {"api_key": api_key, "book_id": book_id, "latest_ep": latest_ep}
     response = await _async_request("POST", f"{API_BASE_URL}/marketing/generate", json=payload)
     return response.json().get("task_id") if response else None
 
 
-async def analyze_style_dna(api_key: str, sample: str) -> Dict[str, Any]:
+async def analyze_style_dna(api_key: str, sample: str) -> dict[str, Any]:
     """文体DNAを解析し、結果の辞書を返す。"""
     payload = {"api_key": api_key, "sample": sample}
     response = await _async_request("POST", f"{API_BASE_URL}/marketing/analyze_style", json=payload)
@@ -538,13 +538,13 @@ async def delete_chapter(book_id: int, ep_num: int) -> bool:
     return True if response else False
 
 
-async def get_issues(book_id: int) -> List[Dict[str, Any]]:
+async def get_issues(book_id: int) -> list[dict[str, Any]]:
     """本に紐づく課題(issues)一覧を取得する。"""
     response = await _async_request("GET", f"{API_BASE_URL}/books/{book_id}/issues")
     return response.json() if response else []
 
 
-async def resolve_issue(issue_id: int, action: str, api_key: str) -> Dict[str, Any]:
+async def resolve_issue(issue_id: int, action: str, api_key: str) -> dict[str, Any]:
     """課題を解決する。結果の辞書を返す。"""
     payload = {"action": action, "api_key": api_key}
     response = await _async_request(
@@ -554,8 +554,8 @@ async def resolve_issue(issue_id: int, action: str, api_key: str) -> Dict[str, A
 
 
 async def save_pending_patch(
-    book_id: int, patch_type: str, patch_content: str, ab_test_result: Dict[str, Any]
-) -> Dict[str, Any]:
+    book_id: int, patch_type: str, patch_content: str, ab_test_result: dict[str, Any]
+) -> dict[str, Any]:
     """保留中パッチを保存する。結果の辞書を返す。"""
     payload = {
         "book_id": book_id,
@@ -567,31 +567,31 @@ async def save_pending_patch(
     return response.json() if response else {"success": False, "error": "No response"}
 
 
-async def get_pending_patches(book_id: int) -> List[Dict[str, Any]]:
+async def get_pending_patches(book_id: int) -> list[dict[str, Any]]:
     """保留中パッチ一覧を取得する。"""
     response = await _async_request("GET", f"{API_BASE_URL}/patches/pending/{book_id}")
     return response.json() if response else []
 
 
-async def approve_patch(patch_id: int) -> Dict[str, Any]:
+async def approve_patch(patch_id: int) -> dict[str, Any]:
     """保留中パッチを承認する。"""
     response = await _async_request("POST", f"{API_BASE_URL}/patches/{patch_id}/approve")
     return {"success": True} if response else {"success": False, "error": "No response"}
 
 
-async def reject_patch(patch_id: int) -> Dict[str, Any]:
+async def reject_patch(patch_id: int) -> dict[str, Any]:
     """保留中パッチを却下する。"""
     response = await _async_request("POST", f"{API_BASE_URL}/patches/{patch_id}/reject")
     return {"success": True} if response else {"success": False, "error": "No response"}
 
 
-async def get_prompt_versions(book_id: int) -> List[Dict[str, Any]]:
+async def get_prompt_versions(book_id: int) -> list[dict[str, Any]]:
     """プロンプトのバージョン一覧を取得する。"""
     response = await _async_request("GET", f"{API_BASE_URL}/prompts/versions/{book_id}")
     return response.json() if response else []
 
 
-async def rollback_prompt_version(book_id: int, version_id: int) -> Dict[str, Any]:
+async def rollback_prompt_version(book_id: int, version_id: int) -> dict[str, Any]:
     """プロンプトを指定バージョンにロールバックする。"""
     payload = {"version_id": version_id}
     response = await _async_request(
@@ -608,7 +608,7 @@ async def audit_producer_plan(
     sanctuary: str = "",
     originality_score: int = 50,
     platform: str = "カクヨム/なろう",
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """プロデューサー監査(企画評価)を実行し、結果の辞書を返す。"""
     payload = {
         "api_key": api_key,
@@ -623,7 +623,7 @@ async def audit_producer_plan(
     return response.json() if response else {}
 
 
-async def export_package(api_key: str, book_id: int) -> Optional[httpx.Response]:
+async def export_package(api_key: str, book_id: int) -> httpx.Response | None:
     """マーケティング用パッケージをエクスポートし、レスポンスを返す。"""
     return await _async_request(
         "GET", f"{API_BASE_URL}/marketing/export_package/{book_id}", params={"api_key": api_key}

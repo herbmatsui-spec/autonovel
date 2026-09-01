@@ -7,7 +7,7 @@ WritingGraphManager の Actor-Critic ループで生成された各エピソー�
 """
 
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 @dataclass
@@ -19,11 +19,11 @@ class QualityMetrics:
     ac_iter: int
     threshold: int
     timestamp: float
-    genre: Optional[str] = None
+    genre: str | None = None
     dogfeed_ok: bool = True
     causal_reason: str = ""
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "ep_num": self.ep_num,
             "integrity_ok": self.integrity_ok,
@@ -55,15 +55,15 @@ class QualityMetricsCollector:
     """エピソード品質を蓄積し、ジャンル別のベースラインを更新する"""
 
     def __init__(self):
-        self.episode_metrics: Dict[int, QualityMetrics] = {}
-        self.genre_baselines: Dict[str, Dict[str, float]] = {}
+        self.episode_metrics: dict[int, QualityMetrics] = {}
+        self.genre_baselines: dict[str, dict[str, float]] = {}
 
     def record(self, metrics: QualityMetrics) -> None:
         self.episode_metrics[metrics.ep_num] = metrics
         if metrics.genre:
             self._update_genre_baseline(metrics)
 
-    def get(self, ep_num: int) -> Optional[QualityMetrics]:
+    def get(self, ep_num: int) -> QualityMetrics | None:
         return self.episode_metrics.get(ep_num)
 
     def _update_genre_baseline(self, metrics: QualityMetrics) -> None:
@@ -86,7 +86,7 @@ class QualityMetricsCollector:
         baseline["avg_rate"] = (baseline["avg_rate"] * count + metrics.rate) / (count + 1)
         baseline["count"] = count + 1
 
-    def get_quality_trend(self, genre: Optional[str] = None) -> Dict[str, float]:
+    def get_quality_trend(self, genre: str | None = None) -> dict[str, float]:
         if genre and genre in self.genre_baselines:
             return self.genre_baselines[genre]
         all_metrics = list(self.episode_metrics.values())

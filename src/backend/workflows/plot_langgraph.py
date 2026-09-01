@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict
+from typing import Any
 
 try:
     from langgraph.graph import END, StateGraph
@@ -38,7 +38,7 @@ class PlotGraphManager:
             return state.model_dump()
         return state
 
-    async def node_align_context(self, state) -> Dict[str, Any]:
+    async def node_align_context(self, state) -> dict[str, Any]:
         state_dict = self._state_to_dict(state)
         char_ctx, prev_ctx = await self.ctx_mgr.get_optimal_context(
             state_dict.get("book_id"), state_dict.get("ep_num"), state_dict.get("branch_id")
@@ -48,14 +48,14 @@ class PlotGraphManager:
             "status": "context_aligned",
         }
 
-    async def node_generate_blueprint(self, state) -> Dict[str, Any]:
+    async def node_generate_blueprint(self, state) -> dict[str, Any]:
         state_dict = self._state_to_dict(state)
         prompt = f"Generate plot blueprint for book {state_dict.get('book_id')}, ep {state_dict.get('ep_num')}"
         res = await self.generate_json("gemini-3.1-flash-lite", prompt, response_schema=None)
         blueprint = res.metadata if res.success else {}
         return {"blueprint": blueprint, "status": "blueprint_generated"}
 
-    async def node_audit_plot(self, state) -> Dict[str, Any]:
+    async def node_audit_plot(self, state) -> dict[str, Any]:
         state_dict = self._state_to_dict(state)
         audit_result = await self.auditor.audit(state_dict.get("blueprint", {}))
         if hasattr(audit_result, "model_dump"):
@@ -65,13 +65,13 @@ class PlotGraphManager:
     def should_retry_blueprint(self, state) -> str:
         return "proceed"
 
-    async def node_expand_scenes(self, state) -> Dict[str, Any]:
+    async def node_expand_scenes(self, state) -> dict[str, Any]:
         state_dict = self._state_to_dict(state)
         blueprint = state_dict.get("blueprint", {})
         scenes = blueprint.get("scenes", [])
         return {"scenes": scenes, "status": "scenes_expanded"}
 
-    async def node_save_plot(self, state) -> Dict[str, Any]:
+    async def node_save_plot(self, state) -> dict[str, Any]:
         state_dict = self._state_to_dict(state)
         plot_data = {
             "book_id": state_dict.get("book_id"),
@@ -127,7 +127,7 @@ class PlotGraphManager:
 
         if self.workflow is None:
             # LangGraph 非依存のフォールバック: ノードを順次実行
-            state: Dict[str, Any] = dict(initial_state)
+            state: dict[str, Any] = dict(initial_state)
             state.update(await self.node_align_context(state))
             state.update(await self.node_generate_blueprint(state))
             audit = await self.node_audit_plot(state)

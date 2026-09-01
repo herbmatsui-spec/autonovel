@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 from dependency_injector.wiring import Provide, inject
 
@@ -40,7 +39,7 @@ class PromptVersionService:
             await self.uow.commit()
             return version.id
 
-    async def get_active_prompt(self, book_id: int, prompt_key: str) -> Optional[str]:
+    async def get_active_prompt(self, book_id: int, prompt_key: str) -> str | None:
         """現在アクティブなプロンプトを取得する"""
         async with self.uow:
             prompt_repo = self.uow.prompt_versions

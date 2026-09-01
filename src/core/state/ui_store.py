@@ -2,7 +2,8 @@
 src/core/state/ui_store.py — UI�層の状態アクセスをカプセル化するストア
 """
 
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 import streamlit as st
 

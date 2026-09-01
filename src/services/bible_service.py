@@ -1,7 +1,7 @@
 import asyncio
 import json
 import logging
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 from config import MODEL_PLANNING, MODEL_PLOT_EXPANSION
 from config.domain_profile_manager import DomainProfileService
@@ -84,7 +84,7 @@ class WorldBibleGenerator:
         erotic_intensity: int = 2,
         config: PlanningConfig = None,
         reporter=None,
-    ) -> Tuple[int, WorldBible]:
+    ) -> tuple[int, WorldBible]:
         """
         覇権企画書の作成フロー全体を制御。UOWによるトランザクション管理下で実行。
         """
@@ -119,7 +119,7 @@ class WorldBibleGenerator:
 
     async def _create_ultra_fast_plan(
         self, config: PlanningConfig, reporter
-    ) -> Tuple[int, WorldBible]:
+    ) -> tuple[int, WorldBible]:
         if reporter:
             reporter.report("⚡ 超高速モード（統合プランニング）を起動しました...", "info")
 
@@ -214,7 +214,7 @@ class WorldBibleGenerator:
 
     async def _create_standard_plan(
         self, config: PlanningConfig, reporter
-    ) -> Tuple[int, WorldBible]:
+    ) -> tuple[int, WorldBible]:
         if reporter:
             reporter.report("🌍 企画の深層検証を開始...", "info")
 
@@ -318,7 +318,7 @@ class WorldBibleGenerator:
 
     async def _enrich_concept(
         self, title: str, concept: str, keywords: str, genre: str, run_debate: bool
-    ) -> Tuple[str, str, str, str]:
+    ) -> tuple[str, str, str, str]:
         if run_debate and self.debate:
             current_concept = {
                 "title": title,
@@ -375,7 +375,7 @@ class WorldBibleGenerator:
         style_key: str,
         engine_key: str,
         reporter,
-    ) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
+    ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
         # Memory retrieval could be mocked or passed
         mc_prompt = await self.pm.build_mc_creation_prompt(
             world_rules.model_dump_json(),
@@ -410,8 +410,8 @@ class WorldBibleGenerator:
     async def _generate_bible_core(
         self,
         world_rules: WorldRules,
-        mc_data: Dict[str, Any],
-        subs_data: List[Dict[str, Any]],
+        mc_data: dict[str, Any],
+        subs_data: list[dict[str, Any]],
         concept: str,
         genre: str,
         keywords: str,
@@ -530,7 +530,7 @@ class WorldBibleGenerator:
 
     async def _generate_roadmap(
         self, bible_core: WorldBibleCore, target_eps: int, genre: str, engine_key: str, reporter
-    ) -> List[Any]:
+    ) -> list[Any]:
         if not bible_core.arcs:
             if target_eps <= 5:
                 bible_core.arcs = [

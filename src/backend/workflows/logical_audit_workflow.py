@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from src.shared.utils import StatusReporter
 
@@ -8,7 +8,7 @@ from .base_workflow import BaseWorkflow
 class LogicalAuditWorkflow(BaseWorkflow):
     """論理監査ワークフロー (Shadow Mode): 非同期でエピソードを監査し、不整合をDBにIssueとして保存する"""
 
-    async def execute(self, reporter: StatusReporter, **kwargs) -> Dict[str, Any]:
+    async def execute(self, reporter: StatusReporter, **kwargs) -> dict[str, Any]:
         book_id = kwargs["book_id"]
         branch_id = kwargs.get("branch_id", 1)
         ep_from = kwargs["ep_from"]

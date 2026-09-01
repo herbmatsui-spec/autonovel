@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import List, Optional
-
 from sqlalchemy import select
 
 from src.backend.database.models import Illustration
@@ -23,8 +21,8 @@ class IllustrationRepository(BaseRepository):
         illustration_type: str,
         image_url: str,
         prompt: str = "",
-        episode_number: Optional[int] = None,
-        character_id: Optional[int] = None,
+        episode_number: int | None = None,
+        character_id: int | None = None,
         model: str = "imagen-4.0-fast-generate-001",
         safety_level: str = "BLOCK_SOME",
         generation_time_ms: int = 0,
@@ -46,8 +44,8 @@ class IllustrationRepository(BaseRepository):
 
     @retry_on_lock()
     async def list_illustrations(
-        self, book_id: int, illustration_type: Optional[str] = None
-    ) -> List[Illustration]:
+        self, book_id: int, illustration_type: str | None = None
+    ) -> list[Illustration]:
         stmt = select(Illustration).where(Illustration.book_id == book_id)
         if illustration_type:
             stmt = stmt.where(Illustration.illustration_type == illustration_type)

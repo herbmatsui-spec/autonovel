@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from src.domain.models.prompt_version import PromptVersionDbModel
 
@@ -13,10 +13,10 @@ class PromptService(ABC):
     async def render(
         self,
         template_name: str,
-        context: Dict[str, Any],
-        book_id: Optional[int] = None,
-        user_id: Optional[str] = None,
-        request_id: Optional[str] = None,
+        context: dict[str, Any],
+        book_id: int | None = None,
+        user_id: str | None = None,
+        request_id: str | None = None,
     ) -> str:
         """Render a prompt template with context."""
         ...
@@ -25,10 +25,10 @@ class PromptService(ABC):
     async def render_async(
         self,
         template_name: str,
-        context: Dict[str, Any],
-        book_id: Optional[int] = None,
-        user_id: Optional[str] = None,
-        request_id: Optional[str] = None,
+        context: dict[str, Any],
+        book_id: int | None = None,
+        user_id: str | None = None,
+        request_id: str | None = None,
     ) -> str:
         """Async render a prompt template with context."""
         ...
@@ -36,7 +36,7 @@ class PromptService(ABC):
     @abstractmethod
     async def get_active_version(
         self, book_id: int, prompt_key: str
-    ) -> Optional[PromptVersionDbModel]:
+    ) -> PromptVersionDbModel | None:
         """Get the currently active prompt version."""
         ...
 
@@ -52,14 +52,14 @@ class PromptService(ABC):
         prompt_key: str,
         version_tag: str,
         content: str,
-        score_before: Optional[float] = None,
-        ab_test_metrics: Optional[Dict[str, Any]] = None,
+        score_before: float | None = None,
+        ab_test_metrics: dict[str, Any] | None = None,
     ) -> PromptVersionDbModel:
         """Create a new prompt version."""
         ...
 
     @abstractmethod
-    async def list_versions(self, book_id: int, limit: int = 20) -> List[PromptVersionDbModel]:
+    async def list_versions(self, book_id: int, limit: int = 20) -> list[PromptVersionDbModel]:
         """List prompt versions for a book."""
         ...
 
@@ -69,7 +69,7 @@ class PromptService(ABC):
         ...
 
     @abstractmethod
-    async def update_ab_test_metrics(self, version_id: int, metrics: Dict[str, Any]) -> None:
+    async def update_ab_test_metrics(self, version_id: int, metrics: dict[str, Any]) -> None:
         """Update A/B test metrics."""
         ...
 

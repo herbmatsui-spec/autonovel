@@ -1,6 +1,6 @@
 import logging
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -38,10 +38,10 @@ class BaseVectorStore(ABC):
     async def add_documents(
         self,
         collection_name: str,
-        ids: List[str],
-        documents: List[str],
-        embeddings: List[List[float]],
-        metadatas: Optional[List[Dict[str, Any]]] = None,
+        ids: list[str],
+        documents: list[str],
+        embeddings: list[list[float]],
+        metadatas: list[dict[str, Any]] | None = None,
     ):
         pass
 
@@ -49,14 +49,14 @@ class BaseVectorStore(ABC):
     async def search(
         self,
         collection_name: str,
-        query_embedding: List[float],
+        query_embedding: list[float],
         top_k: int = 5,
-        where: Optional[Dict[str, Any]] = None,
-    ) -> List[Dict[str, Any]]:
+        where: dict[str, Any] | None = None,
+    ) -> list[dict[str, Any]]:
         pass
 
     @abstractmethod
-    async def delete_by_id(self, collection_name: str, ids: List[str]):
+    async def delete_by_id(self, collection_name: str, ids: list[str]):
         pass
 
     @abstractmethod
@@ -81,8 +81,8 @@ class CollectionConfig(BaseModel):
     name: str
     space: str = "cosine"
     description: str = ""
-    metadata_schema: Dict[str, Any] = Field(default_factory=dict)
-    hnsw_params: Dict[str, Any] = Field(
+    metadata_schema: dict[str, Any] = Field(default_factory=dict)
+    hnsw_params: dict[str, Any] = Field(
         default_factory=lambda: {
             "hnsw:construction_ef": 100,
             "hnsw:search_ef": 50,
@@ -90,7 +90,7 @@ class CollectionConfig(BaseModel):
         }
     )
 
-    def get_metadata(self) -> Dict[str, Any]:
+    def get_metadata(self) -> dict[str, Any]:
         """ChromaDB用のメタデータを生成"""
         meta = {"hnsw:space": self.space}
         meta.update(self.hnsw_params)
@@ -99,7 +99,7 @@ class CollectionConfig(BaseModel):
 
 
 # デフォルトコレクション設定
-DEFAULT_COLLECTIONS: Dict[CollectionType, CollectionConfig] = {
+DEFAULT_COLLECTIONS: dict[CollectionType, CollectionConfig] = {
     CollectionType.SEMANTIC_CACHE: CollectionConfig(
         name="semantic_cache",
         space="cosine",
@@ -248,10 +248,10 @@ class ChromaVectorStore(BaseVectorStore):
 
     def __init__(self, client_provider: ChromaClientProvider):
         self.client_provider = client_provider
-        self._collections: Dict[str, Any] = {}
+        self._collections: dict[str, Any] = {}
         self._initialized_collections: set = set()
         # BM25インデックス: collection_name -> {"docs -> BM25Okapi, corpus_tokens -> List[List[str]], doc_ids -> List[str] }
-        self._bm25_indexes: Dict[str, Dict[str, Any]] = {}
+        self._bm25_indexes: dict[str, dict[str, Any]] = {}
 
     @property
     def client(self):
@@ -259,8 +259,8 @@ class ChromaVectorStore(BaseVectorStore):
         return self.client_provider.get_client()
 
     def initialize_collections(
-        self, collection_types: Optional[List[CollectionType]] = None
-    ) -> Dict[str, bool]:
+        self, collection_types: list[CollectionType] | None = None
+    ) -> dict[str, bool]:
         """
         指定されたコレクションタイプを初期化する。
         未指定の場合は全デフォルトコレクションを初期化。
@@ -316,7 +316,7 @@ class ChromaVectorStore(BaseVectorStore):
             logger.error(f"[VECTOR STORE] Failed to initialize collection '{config.name}': {e}")
             return False
 
-    def get_collection(self, name: str, metadata: Optional[Dict[str, Any]] = None):
+    def get_collection(self, name: str, metadata: dict[str, Any] | None = None):
         """コレクションを取得または作成する（後方互換性）"""
         if not self.client:
             return None
@@ -337,10 +337,10 @@ class ChromaVectorStore(BaseVectorStore):
     async def add_documents(
         self,
         collection_name: str,
-        ids: List[str],
-        documents: List[str],
-        embeddings: List[List[float]],
-        metadatas: Optional[List[Dict[str, Any]]] = None,
+        ids: list[str],
+        documents: list[str],
+        embeddings: list[list[float]],
+        metadatas: list[dict[str, Any]] | None = None,
     ):
         """ドキュメントをベクトルDBに追加する"""
         collection = self.get_collection(collection_name)
@@ -355,10 +355,10 @@ class ChromaVectorStore(BaseVectorStore):
     async def search(
         self,
         collection_name: str,
-        query_embedding: List[float],
+        query_embedding: list[float],
         top_k: int = 5,
-        where: Optional[Dict[str, Any]] = None,
-    ) -> List[Dict[str, Any]]:
+        where: dict[str, Any] | None = None,
+    ) -> list[dict[str, Any]]:
         """ベクトル類似度検索を実行する"""
         collection = self.get_collection(collection_name)
         if not collection:
@@ -387,11 +387,11 @@ class ChromaVectorStore(BaseVectorStore):
     async def search_with_score(
         self,
         collection_name: str,
-        query_embedding: List[float],
+        query_embedding: list[float],
         top_k: int = 5,
-        where: Optional[Dict[str, Any]] = None,
+        where: dict[str, Any] | None = None,
         min_score: float = 0.0,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """スコア閾値付き検索（コサイン類似度ベース）"""
         results = await self.search(collection_name, query_embedding, top_k, where)
 
@@ -407,7 +407,7 @@ class ChromaVectorStore(BaseVectorStore):
         filtered.sort(key=lambda x: x.get("similarity", 0), reverse=True)
         return filtered
 
-    async def delete_by_id(self, collection_name: str, ids: List[str]):
+    async def delete_by_id(self, collection_name: str, ids: list[str]):
         """指定したIDのドキュメントを削除する"""
         collection = self.get_collection(collection_name)
         if not collection:
@@ -431,7 +431,7 @@ class ChromaVectorStore(BaseVectorStore):
             self._initialized_collections.remove(collection_name)
         logger.info(f"[VECTOR STORE] Cleared collection '{collection_name}'")
 
-    async def get_collection_stats(self, collection_name: str) -> Dict[str, Any]:
+    async def get_collection_stats(self, collection_name: str) -> dict[str, Any]:
         """コレクションの統計情報を取得"""
         collection = self.get_collection(collection_name)
         if not collection:
@@ -444,18 +444,18 @@ class ChromaVectorStore(BaseVectorStore):
             logger.error(f"[VECTOR STORE] Failed to get stats for '{collection_name}': {e}")
             return {"count": 0, "error": str(e)}
 
-    def list_collections(self) -> List[str]:
+    def list_collections(self) -> list[str]:
         """初期化済みコレクションの一覧を取得"""
         return list(self._initialized_collections)
 
-    def _build_bm25_index(self, collection_name: str, documents: List[str], doc_ids: List[str]):
+    def _build_bm25_index(self, collection_name: str, documents: list[str], doc_ids: list[str]):
         """BM25インデックスを構築または更新する"""
         if not HAS_BM25:
             logger.warning("[VECTOR STORE] BM25 not available, skipping index build")
             return
 
         # ドキュメントをトークン化（簡易的な日本語対応：文字単位 + スペース区切り）
-        def tokenize(text: str) -> List[str]:
+        def tokenize(text: str) -> list[str]:
             # 日本語文字と英数字を分離してトークン化
             import re
 
@@ -483,10 +483,10 @@ class ChromaVectorStore(BaseVectorStore):
     async def add_documents_with_bm25(
         self,
         collection_name: str,
-        ids: List[str],
-        documents: List[str],
-        embeddings: List[List[float]],
-        metadatas: Optional[List[Dict[str, Any]]] = None,
+        ids: list[str],
+        documents: list[str],
+        embeddings: list[list[float]],
+        metadatas: list[dict[str, Any]] | None = None,
     ):
         """ドキュメントをベクトルDBに追加し、BM25インデックスも更新する"""
         # 通常のベクトル追加
@@ -507,12 +507,12 @@ class ChromaVectorStore(BaseVectorStore):
         self,
         collection_name: str,
         query_text: str,
-        query_embedding: List[float],
+        query_embedding: list[float],
         top_k: int = 5,
-        where: Optional[Dict[str, Any]] = None,
+        where: dict[str, Any] | None = None,
         alpha: float = 0.5,
         min_score: float = 0.0,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         ハイブリッド検索: ベクトル類似度検索 + BM25キーワード検索
 
@@ -543,7 +543,7 @@ class ChromaVectorStore(BaseVectorStore):
             documents = bm25_data["documents"]
 
             # クエリをトークン化
-            def tokenize(text: str) -> List[str]:
+            def tokenize(text: str) -> list[str]:
                 import re
 
                 tokens = re.findall(

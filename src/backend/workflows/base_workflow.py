@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional
+from typing import Any
 
 from src.backend.database import DataRepository
 from src.backend.engine import UltimateHegemonyEngine
@@ -22,23 +22,23 @@ class BaseWorkflow(ABC):
 
     def __init__(
         self,
-        engine: Optional[UltimateHegemonyEngine] = None,
-        writing: Optional[WritingPort] = None,
-        planner: Optional[PlanningService] = None,
-        writing_service: Optional[WritingService] = None,
-        repo: Optional[DataRepository] = None,
-        critique: Optional[CritiquePort] = None,
-        narrative: Optional[Any] = None,
-        marketing: Optional[Any] = None,
-        bible_agent: Optional[BiblePort] = None,
-        plot_agent: Optional[Any] = None,
-        formatter: Optional[Any] = None,
-        vector_store: Optional[Any] = None,
-        llm_client: Optional[Any] = None,
-        tension: Optional[TensionPort] = None,
-        image_service: Optional[Any] = None,
-        illustration_agent: Optional[Any] = None,
-        illustration_workflow: Optional[Any] = None,
+        engine: UltimateHegemonyEngine | None = None,
+        writing: WritingPort | None = None,
+        planner: PlanningService | None = None,
+        writing_service: WritingService | None = None,
+        repo: DataRepository | None = None,
+        critique: CritiquePort | None = None,
+        narrative: Any | None = None,
+        marketing: Any | None = None,
+        bible_agent: BiblePort | None = None,
+        plot_agent: Any | None = None,
+        formatter: Any | None = None,
+        vector_store: Any | None = None,
+        llm_client: Any | None = None,
+        tension: TensionPort | None = None,
+        image_service: Any | None = None,
+        illustration_agent: Any | None = None,
+        illustration_workflow: Any | None = None,
     ):
         self.engine = engine
         # WritingPort: 注入されなければ engine.writer で代用（後方互換）
@@ -48,64 +48,64 @@ class BaseWorkflow(ABC):
             else (getattr(engine, "writer", None) if engine else None)  # type: ignore[assignment]
         )
         # PlanningService: 注入されなければ engine.planner で代用
-        self.planner: Optional[PlanningService] = (
+        self.planner: PlanningService | None = (
             planner
             if planner is not None
             else (getattr(engine, "planner", None) if engine else None)
         )
         # WritingService: 注入されなければ engine.writer で代用（プロトコル互換）
-        self.writing_service: Optional[WritingService] = (
+        self.writing_service: WritingService | None = (
             writing_service
             if writing_service is not None
             else (getattr(engine, "writer", None) if engine else None)
         )
         # DataRepository: 注入されなければ engine.repo で代用
-        self.repo: Optional[DataRepository] = (
+        self.repo: DataRepository | None = (
             repo if repo is not None else (getattr(engine, "repo", None) if engine else None)
         )
         # その他のサービスポート
-        self.critique: Optional[CritiquePort] = (
+        self.critique: CritiquePort | None = (
             critique
             if critique is not None
             else (getattr(engine, "critique", None) if engine else None)
         )
-        self.narrative: Optional[Any] = (
+        self.narrative: Any | None = (
             narrative
             if narrative is not None
             else (getattr(engine, "narrative", None) if engine else None)
         )
-        self.marketing: Optional[Any] = (
+        self.marketing: Any | None = (
             marketing
             if marketing is not None
             else (getattr(engine, "marketing", None) if engine else None)
         )
-        self.bible_agent: Optional[BiblePort] = (
+        self.bible_agent: BiblePort | None = (
             bible_agent
             if bible_agent is not None
             else (getattr(engine, "bible_agent", None) if engine else None)
         )
-        self.plot_agent: Optional[Any] = (
+        self.plot_agent: Any | None = (
             plot_agent
             if plot_agent is not None
             else (getattr(engine, "plot_agent", None) if engine else None)
         )
-        self.formatter: Optional[Any] = (
+        self.formatter: Any | None = (
             formatter
             if formatter is not None
             else (getattr(engine, "formatter", None) if engine else None)
         )
         # Prefetch 用
-        self.vector_store: Optional[Any] = (
+        self.vector_store: Any | None = (
             vector_store if vector_store is not None else getattr(engine, "vector_store", None)
         )
-        self.llm_client: Optional[Any] = (
+        self.llm_client: Any | None = (
             llm_client
             if llm_client is not None
             else (getattr(engine, "llm", None) or getattr(engine, "client", None))
         )
         # TensionService: 注入されなければ engine の tension_agent で代用、
         # なければ engine のメソッドで代用（engine が TensionPort 相当のメソッドを持つため）
-        self.tension: Optional[TensionPort] = (
+        self.tension: TensionPort | None = (
             tension
             if tension is not None
             else (getattr(engine, "tension_agent", None) if engine else None)
@@ -123,7 +123,7 @@ class BaseWorkflow(ABC):
         self.illustration_workflow = illustration_workflow
 
     @abstractmethod
-    async def execute(self, reporter: StatusReporter, **kwargs) -> Dict[str, Any]:
+    async def execute(self, reporter: StatusReporter, **kwargs) -> dict[str, Any]:
         """
         Execute the workflow logic.
         """

@@ -2,7 +2,7 @@
 kernels/engines.py - 生成エンジンの基盤
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -18,7 +18,7 @@ class EngineConfig(BaseModel):
     top_p: float = Field(default=1.0, ge=0.0, le=1.0)
     frequency_penalty: float = Field(default=0.0)
     presence_penalty: float = Field(default=0.0)
-    stop_sequences: List[str] = Field(default_factory=list)
+    stop_sequences: list[str] = Field(default_factory=list)
 
 
 class GenerationResult(BaseModel):
@@ -27,7 +27,7 @@ class GenerationResult(BaseModel):
     text: str
     tokens_used: int = 0
     finish_reason: str = "stop"
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class GenerationEngine(KernelBase):
@@ -35,7 +35,7 @@ class GenerationEngine(KernelBase):
     テキスト生成エンジン
     """
 
-    def __init__(self, config: Optional[EngineConfig] = None):
+    def __init__(self, config: EngineConfig | None = None):
         super().__init__()
         self.config = config or EngineConfig()
         self._initialized = False
@@ -48,7 +48,7 @@ class GenerationEngine(KernelBase):
         return True
 
     async def generate(
-        self, prompt: str, config: Optional[EngineConfig] = None, **kwargs
+        self, prompt: str, config: EngineConfig | None = None, **kwargs
     ) -> GenerationResult:
         """テキストを生成"""
         if not self._initialized:
@@ -77,10 +77,10 @@ class LLMEngine(GenerationEngine):
     LLMを使用した生成エンジン
     """
 
-    def __init__(self, api_key: str, config: Optional[EngineConfig] = None):
+    def __init__(self, api_key: str, config: EngineConfig | None = None):
         super().__init__(config)
         self.api_key = api_key
-        self.base_url: Optional[str] = None
+        self.base_url: str | None = None
 
     async def set_base_url(self, url: str) -> None:
         """ベースURLを設定"""

@@ -5,14 +5,14 @@ database/repository.py - UoWコンテキストを自動解決する DataReposito
 """
 import json
 import time
-from typing import Any, Optional
+from typing import Any
 
 from sqlalchemy import desc, select
-from sqlalchemy.orm import Session
 
 from src.backend.database.core import DatabaseManager, SessionLocal
 from src.backend.database.models import Bible, Book, Chapter, Character, Plot
 from src.infrastructure.database.models.task import Task
+
 from .uow_context import current_uow
 
 
@@ -124,6 +124,38 @@ class BookRepository:
             self.session = SessionLocal()
             self._db = None
 
+    def _safe_commit(self) -> None:
+        """同期・非同期どちらのセッションでも安全にコミットする"""
+        import asyncio
+        import inspect
+
+        res = self.session.commit()
+        if inspect.isawaitable(res):
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    asyncio.create_task(res)
+                else:
+                    loop.run_until_complete(res)
+            except Exception:
+                pass
+
+    def _safe_refresh(self, instance: Any) -> None:
+        """同期・非同期どちらのセッションでも安全にリフレッシュする"""
+        import asyncio
+        import inspect
+
+        res = self.session.refresh(instance)
+        if inspect.isawaitable(res):
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    asyncio.create_task(res)
+                else:
+                    loop.run_until_complete(res)
+            except Exception:
+                pass
+
     def get_book(self, book_id: int) -> Book | None:
         """指定した ID の作品情報を取得する"""
         return self.session.get(Book, book_id)
@@ -136,8 +168,8 @@ class BookRepository:
             task_id = str(uuid.uuid4())
         task = Task(id=task_id, status=status, result=result, created_at=now, updated_at=now)
         self.session.add(task)
-        self.session.commit()
-        self.session.refresh(task)
+        self._safe_commit()
+        self._safe_refresh(task)
         return task
 
     def get_task(self, task_id: str) -> Task | None:
@@ -150,7 +182,7 @@ class BookRepository:
         if task:
             task.status = status
             task.updated_at = int(time.time())
-            self.session.commit()
+            self._safe_commit()
 
     def set_task_result(self, task_id: str, result: str) -> None:
         """タスクの結果を保存し、ステータスを completed に更新する"""
@@ -159,14 +191,14 @@ class BookRepository:
             task.result = result
             task.updated_at = int(time.time())
             task.status = "completed"
-            self.session.commit()
+            self._safe_commit()
 
     def delete_task(self, task_id: str) -> None:
         """Delete a task record from the database."""
         task = self.session.get(Task, task_id)
         if task:
             self.session.delete(task)
-            self.session.commit()
+            self._safe_commit()
 
     def get_all_non_anchor_chapters(
         self, book_id: int, branch_id: int = 1, order_by: str = "ep_num"
@@ -211,13 +243,13 @@ class BookRepository:
 
 
 # Re-export individual repositories for compatibility
+from .repositories.audit import AuditRepository  # noqa: E402
+from .repositories.bible import BibleRepository  # noqa: E402
 from .repositories.book import BookRepository as AsyncBookRepository  # noqa: E402
 from .repositories.chapter import ChapterRepository  # noqa: E402
 from .repositories.character import CharacterRepository  # noqa: E402
-from .repositories.plot import PlotRepository  # noqa: E402
-from .repositories.bible import BibleRepository  # noqa: E402
-from .repositories.audit import AuditRepository  # noqa: E402
 from .repositories.narrative_metrics_repo import NarrativeMetricRepository  # noqa: E402
+from .repositories.plot import PlotRepository  # noqa: E402
 
 __all__ = [
     "DataRepositoryFacade",

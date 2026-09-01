@@ -4,8 +4,6 @@ database/repositories/cost.py - コスト記録(CostRecord)操作用リポジト
 
 from __future__ import annotations
 
-from typing import List, Optional
-
 from sqlalchemy import select
 
 from src.backend.database.models import CostRecord
@@ -26,7 +24,7 @@ class CostRepository:
         output_tokens: int,
         total_tokens: int,
         est_cost_usd: float,
-        ep_num: Optional[int] = None,
+        ep_num: int | None = None,
     ) -> int:
         rec = CostRecord(
             book_id=book_id,
@@ -43,7 +41,7 @@ class CostRepository:
         return rec.id
 
     @retry_on_lock()
-    async def list_by_book(self, book_id: int, branch_id: int = 1) -> List[CostRecord]:
+    async def list_by_book(self, book_id: int, branch_id: int = 1) -> list[CostRecord]:
         result = await self.session.execute(
             select(CostRecord)
             .where(CostRecord.book_id == book_id)

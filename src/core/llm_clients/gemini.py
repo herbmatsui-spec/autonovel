@@ -4,7 +4,8 @@ import asyncio
 import json
 import re
 import time
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from collections.abc import Callable
+from typing import Any
 
 from google import genai  # type: ignore
 from google.genai import types as genai_types
@@ -36,14 +37,14 @@ class GeminiApiClient(BaseLLMClient):
         self,
         model_name: str,
         prompt: str,
-        system_instruction: Optional[str] = None,
+        system_instruction: str | None = None,
         response_schema: Any = None,
         temp: float = 0.7,
         max_retries: int = 5,
-        stream_callback: Optional[Callable[[str], None]] = None,
-        retry_state: Optional[RetryState] = None,
+        stream_callback: Callable[[str], None] | None = None,
+        retry_state: RetryState | None = None,
         nsfw_mode: bool = False,
-    ) -> Tuple[Dict[str, Any], str, Any]:
+    ) -> tuple[dict[str, Any], str, Any]:
         current_temp = retry_state.temp if retry_state else temp
         current_model = retry_state.model_name if retry_state else model_name
         error_feedback = retry_state.error_feedback if retry_state else ""
@@ -122,7 +123,7 @@ class GeminiApiClient(BaseLLMClient):
 
                         async with safe_timeout(120.0):
                             response = await executor_manager.run_io(_call)
-                    except asyncio.TimeoutError as e:
+                    except TimeoutError as e:
                         raise TimeoutError(f"Gemini API timed out after 120s: {e}")
                     if not response or not response.text:
                         raise ValueError("API応答が空です。")
@@ -173,13 +174,13 @@ class GeminiApiClient(BaseLLMClient):
         self,
         model_name: str,
         prompt: str,
-        system_instruction: Optional[str] = None,
+        system_instruction: str | None = None,
         temp: float = 0.7,
         max_retries: int = 5,
-        stream_callback: Optional[Callable[[str], None]] = None,
-        retry_state: Optional[RetryState] = None,
+        stream_callback: Callable[[str], None] | None = None,
+        retry_state: RetryState | None = None,
         nsfw_mode: bool = False,
-    ) -> Tuple[str, Any]:
+    ) -> tuple[str, Any]:
         current_temp = retry_state.temp if retry_state else temp
         current_model = retry_state.model_name if retry_state else model_name
 
@@ -202,7 +203,7 @@ class GeminiApiClient(BaseLLMClient):
                 # イベントループをブロックしないようにする（google-genai SDK に
                 # *_async メソッドは存在しない）。
                 def _run_stream():
-                    collected: List[str] = []
+                    collected: list[str] = []
                     last_usage = None
                     # 404 NOT_FOUND 回避のため、モデル名に 'models/' プレフィックスが
                     # 付いていない場合は付与する
@@ -273,7 +274,7 @@ class GeminiApiClient(BaseLLMClient):
 
     def build_config(
         self,
-        system_instruction: Optional[str],
+        system_instruction: str | None,
         temp: float,
         attempt: int,
         response_schema: Any = None,
@@ -284,7 +285,7 @@ class GeminiApiClient(BaseLLMClient):
 
     def build_config_for_mode(
         self,
-        system_instruction: Optional[str],
+        system_instruction: str | None,
         temp: float,
         attempt: int,
         response_schema: Any,

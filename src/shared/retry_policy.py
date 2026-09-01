@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Tuple
-
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -12,7 +10,7 @@ class RetryPolicy(BaseModel):
     max_delay: float = 30.0
     exponential_backoff: bool = True
     jitter: bool = True
-    retryable_status_codes: Tuple[int, ...] = Field(
+    retryable_status_codes: tuple[int, ...] = Field(
         default_factory=lambda: (429, 500, 502, 503, 504)
     )
 

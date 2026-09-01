@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -13,9 +13,9 @@ class EpisodeDraft(BaseModel):
     anti_pattern_prediction: str = Field(default="")
     initial_manuscript: str = Field(default="")
     entertainment_audit: str = Field(default="")
-    audit_checklist: Dict[str, bool] = Field(default_factory=dict)
+    audit_checklist: dict[str, bool] = Field(default_factory=dict)
     final_content: str = Field(default="")
-    candidates: List[EpisodeDraft] = Field(
+    candidates: list[EpisodeDraft] = Field(
         default_factory=list, description="AIが提示した複数の本文候補案"
     )
     self_critique: str = Field(default="")
@@ -41,7 +41,7 @@ class EpisodeDraft(BaseModel):
 class CharacterStatusChange(BaseModel):
     character: str = Field(..., description="キャラクター名")
     location: str = Field(..., description="現在の居場所")
-    inventory_changes: List[str] = Field(
+    inventory_changes: list[str] = Field(
         default_factory=list, description="持ち物の変化（例: ['剣を失った', '聖杯を得た']）"
     )
     status: str = Field(..., description="現在のステータス（生存/死亡/負傷/封印など）")
@@ -59,7 +59,7 @@ class EpisodeMetadata(BaseModel):
     next_world_state: WorldState = Field(
         default_factory=WorldState, description="次のエピソード開始時の世界の状態メタデータ"
     )
-    character_status_changes: List[CharacterStatusChange] = Field(
+    character_status_changes: list[CharacterStatusChange] = Field(
         default_factory=list,
         description="この話で発生した各キャラのステータス変更（生死、所持品、位置）",
     )
@@ -88,10 +88,10 @@ class StyleDNA(BaseModel):
 class StyleFragment(BaseModel):
     """RAG用：覇権作品の文体断片データ"""
 
-    id: Optional[int] = None
+    id: int | None = None
     tag: str = Field(..., description="シーン属性（戦闘、心理、逆転、濡れ場等）")
     content: str = Field(..., description="理想的な文章の断片（100-500文字）")
-    embedding_json: Optional[str] = Field(default=None, description="ベクトルデータ（JSON）")
+    embedding_json: str | None = Field(default=None, description="ベクトルデータ（JSON）")
     origin: str = Field(default="Masterpiece", description="出典元")
 
     model_config = MODEL_CONFIG_DEFAULTS
@@ -100,7 +100,7 @@ class StyleFragment(BaseModel):
 class MarketingPack(BaseModel):
     catchphrase: str = Field(default="")
     kakuyomu_notes: str = Field(default="")
-    tags: List[str] = Field(default_factory=list)
+    tags: list[str] = Field(default_factory=list)
 
     @model_validator(mode="before")
     @classmethod
@@ -120,27 +120,27 @@ from src.models.db import BibleDbModel, BookDbModel, CharacterDbModel, PlotDbMod
 
 
 class WritingContext(BaseModel):
-    book: Optional[BookDbModel] = None
-    plot: Optional[PlotDbModel] = None
-    bible: Optional[BibleDbModel] = None
-    chars: List[CharacterDbModel] = Field(default_factory=list)
+    book: BookDbModel | None = None
+    plot: PlotDbModel | None = None
+    bible: BibleDbModel | None = None
+    chars: list[CharacterDbModel] = Field(default_factory=list)
     prev_ctx: str = ""
     static_ctx: str = ""
     dynamic_ctx: str = ""
     current_tension: int = 0
     genre_str: str = "fantasy"
     prev_integrity: int = 100
-    prev_world_state: Dict[str, Any] = Field(default_factory=dict)
-    pacing: Dict[str, Any] = Field(default_factory=dict)
+    prev_world_state: dict[str, Any] = Field(default_factory=dict)
+    pacing: dict[str, Any] = Field(default_factory=dict)
 
     target_word_count: int = 2000
-    tone_instruction: Dict[str, Any] = Field(default_factory=dict)
-    sanitizer_policy: Dict[str, Any] = Field(default_factory=dict)
+    tone_instruction: dict[str, Any] = Field(default_factory=dict)
+    sanitizer_policy: dict[str, Any] = Field(default_factory=dict)
     masterpiece_guidance: str = ""
     prompt_patch: str = ""
     memories: str = ""
-    prose_samples: List[Any] = Field(default_factory=list)
-    dna_samples: List[Any] = Field(default_factory=list)
+    prose_samples: list[Any] = Field(default_factory=list)
+    dna_samples: list[Any] = Field(default_factory=list)
     engine_key: str = ""
     branch_id: int = 1
 
@@ -154,14 +154,14 @@ class WritingContext(BaseModel):
 
 
 class FullAutoWorkflowResult(BaseModel):
-    book_id: Optional[int] = None
+    book_id: int | None = None
     title: str = ""
     chars_count: int = 0
-    failed_episodes: List[Dict[str, Any]] = Field(default_factory=list)
-    zip_data: Optional[bytes] = None
-    zip_filename: Optional[str] = None
+    failed_episodes: list[dict[str, Any]] = Field(default_factory=list)
+    zip_data: bytes | None = None
+    zip_filename: str | None = None
     status: str = "success"
-    easy_parameters: Optional[Dict[str, Any]] = None
+    easy_parameters: dict[str, Any] | None = None
 
     model_config = MODEL_CONFIG_DEFAULTS
 
@@ -182,7 +182,7 @@ class PlotExpansionResult(BaseModel):
 class RetryFailedEpisodesResult(BaseModel):
     book_id: int
     chars_count: int
-    failed_episodes: List[Dict[str, Any]] = Field(default_factory=list)
+    failed_episodes: list[dict[str, Any]] = Field(default_factory=list)
 
     model_config = MODEL_CONFIG_DEFAULTS
 
@@ -190,7 +190,7 @@ class RetryFailedEpisodesResult(BaseModel):
 class EpisodeWritingResult(BaseModel):
     book_id: int
     chars_count: int
-    failed_episodes: List[Dict[str, Any]] = Field(default_factory=list)
+    failed_episodes: list[dict[str, Any]] = Field(default_factory=list)
 
     model_config = MODEL_CONFIG_DEFAULTS
 

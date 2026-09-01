@@ -4,7 +4,7 @@ kernels/serenity.py - 安全な遷移・静穏管理
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from .base import KernelBase, KernelState
 
@@ -35,10 +35,10 @@ class SerenityManager(KernelBase):
     シーンやチャプター間のスムーズな遷移を管理
     """
 
-    def __init__(self, default_config: Optional[TransitionConfig] = None):
+    def __init__(self, default_config: TransitionConfig | None = None):
         super().__init__()
         self.default_config = default_config or TransitionConfig()
-        self.transition_history: List[Dict[str, Any]] = []
+        self.transition_history: list[dict[str, Any]] = []
 
     async def initialize(self) -> bool:
         """初期化"""
@@ -46,8 +46,8 @@ class SerenityManager(KernelBase):
         return True
 
     def create_transition(
-        self, from_scene: str, to_scene: str, config: Optional[TransitionConfig] = None
-    ) -> Dict[str, Any]:
+        self, from_scene: str, to_scene: str, config: TransitionConfig | None = None
+    ) -> dict[str, Any]:
         """遷移を作成"""
         config = config or self.default_config
 
@@ -64,14 +64,14 @@ class SerenityManager(KernelBase):
         self.transition_history.append(transition)
         return transition
 
-    async def execute_transition(self, transition: Dict[str, Any]) -> bool:
+    async def execute_transition(self, transition: dict[str, Any]) -> bool:
         """遷移を実行"""
         # 実際の遷移実装（アニメーション、フェード等）
         # ここでは即座に完了として扱う
         transition["status"] = "completed"
         return True
 
-    def get_transition_history(self) -> List[Dict[str, Any]]:
+    def get_transition_history(self) -> list[dict[str, Any]]:
         """遷移履歴を取得"""
         return self.transition_history.copy()
 

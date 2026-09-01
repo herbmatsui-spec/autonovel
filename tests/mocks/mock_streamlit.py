@@ -1,7 +1,7 @@
 import sys
 import time
-import types
 from unittest.mock import MagicMock
+
 
 class MockStreamlitSessionState(dict):
     """st.session_state をシミュレートする辞書クラス"""
@@ -20,19 +20,32 @@ class MockStreamlitSessionState(dict):
         except KeyError:
             raise AttributeError(f"'MockStreamlitSessionState' object has no attribute '{name}'")
 
+
 class MockStreamlitContext:
-    """Streamlit コンテキストをエミュレートするコンテキストマネージャー"""
+    """Streamlit の実行環境とウィジェット状態を記録・シミュレートするクラス"""
     def __init__(self):
         self.session_state = MockStreamlitSessionState()
+        self.sidebar = self
+        self.tabs_created = []
         self.toast_calls = []
         self.error_calls = []
-        self.write_calls = []
+        self.success_calls = []
+        self.warning_calls = []
+        self.info_calls = []
         self.metrics = {}
+        self.buttons_clicked = set()
+        self.button_clicked = None
+        self.markdown_texts = []
+        self.text_inputs = {}
+        self.selectboxes = {}
+        self.text_areas = {}
+        self.chat_messages = []
+        self.expander_titles = []
+        self.write_calls = []
         self.navigation_run_called = False
         self.rerun_called = False
         self.api_key_input = "mock-api-key"
         self.app_mode_select = "easy"
-        self.buttons_clicked = set()
 
     def __enter__(self):
         return self
@@ -45,9 +58,6 @@ class MockStreamlitContext:
 
     def set_app_mode(self, mode: str):
         self.app_mode_select = mode
-
-    def click_button(self, label: str):
-        self.buttons_clicked.add(label)
 
     def toast(self, message, icon=None):
         self.toast_calls.append((message, icon))

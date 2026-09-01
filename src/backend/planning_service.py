@@ -12,7 +12,7 @@ UltimateHegemonyEngine から分離したサービス。
 
 from __future__ import annotations
 
-from typing import Any, Optional, Tuple
+from typing import Any
 
 
 class PlanningService:
@@ -45,8 +45,8 @@ class PlanningService:
         cost_severity: int = 2,
         target_eps: int = 10,
         initial_plot_limit: int = 3,
-        reporter: Optional[Any] = None,
-    ) -> Tuple[int, Any]:
+        reporter: Any | None = None,
+    ) -> tuple[int, Any]:
         """覇権企画を生成し、book_id と bible を返す (WorldBibleGenerator へ委譲)。"""
         return await self.bible_generator.create_hegemony_plan(
             genre=genre,

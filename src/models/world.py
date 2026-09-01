@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Literal
 
 from pydantic import AliasChoices, BaseModel, Field, model_validator
 
@@ -49,10 +49,10 @@ class WorldRules(BaseModel):
     social_hierarchy_and_discrimination: str = Field(
         default="なし", description="主人公が迫害される絶対的な社会的構造"
     )
-    hidden_truths: Dict[str, str] = Field(
+    hidden_truths: dict[str, str] = Field(
         default_factory=dict, description="絶望的な真実・最大の伏線を3つ以上"
     )
-    truth_ledger: Dict[str, Any] = Field(
+    truth_ledger: dict[str, Any] = Field(
         default_factory=dict, description="物語の根幹に関わる真実のデータベース"
     )
     geopolitics_and_economy: str = Field(
@@ -61,21 +61,21 @@ class WorldRules(BaseModel):
     religious_dogma_and_heresy: str = Field(
         default="なし", description="信仰と、それを破った際の社会的制裁"
     )
-    causality_map: List[str] = Field(
+    causality_map: list[str] = Field(
         default_factory=list, description="設定間の不可避な因果律の連鎖（AがBを生み、Cに繋がる等）"
     )
-    foreshadowing_map: List[Foreshadowing] = Field(default_factory=list)
-    active_constraints: List[NarrativeConstraint] = Field(
+    foreshadowing_map: list[Foreshadowing] = Field(default_factory=list)
+    active_constraints: list[NarrativeConstraint] = Field(
         default_factory=list, description="現在有効な論理制約リスト"
     )
-    climax_scenes: List[ClimaxScene] = Field(
+    climax_scenes: list[ClimaxScene] = Field(
         default_factory=list, description="読者の心を揺さぶる名場面(3〜5個)"
     )
-    mystery_disclosure_schedule: List[Dict[str, Any]] = Field(default_factory=list)
+    mystery_disclosure_schedule: list[dict[str, Any]] = Field(default_factory=list)
     tension_threshold: int = Field(default=85)
     tension_gain: float = Field(default=1.0)
     memory_integrity_score: int = Field(default=100, description="作品全体の精神的整合性初期値")
-    location_sensory_map: Dict[str, Dict[str, str]] = Field(
+    location_sensory_map: dict[str, dict[str, str]] = Field(
         default_factory=dict,
         description="場所・環境別の生理描写オーバーレイ辞書（場所名 -> {感情名: 置換描写}）",
     )
@@ -148,7 +148,7 @@ class AnchorResponse(BaseModel):
     # --- Comfort Engine Metrics ---
     qol_score: int = Field(default=0, description="生活の質（0-1000）")
     sanctuary_integrity: int = Field(default=100, description="聖域の堅牢性（0-100）")
-    discovery_logs: List[Dict[str, Any]] = Field(
+    discovery_logs: list[dict[str, Any]] = Field(
         default_factory=list, description="発見された素材・技術の履歴"
     )
 
@@ -166,21 +166,21 @@ class StoryThread(BaseModel):
     status: Literal["Active", "Dormant", "Resolving", "Closed"] = Field(default="Active")
     urgency: int = Field(default=1, ge=1, le=5)
     setup_episode: int = Field(..., description="発生話数")
-    target_resolve_episode: Optional[int] = Field(default=None)
+    target_resolve_episode: int | None = Field(default=None)
 
 
 class WorldState(BaseModel):
-    new_facts: List[str] = Field(default_factory=list)
-    revealed_mysteries: List[str] = Field(default_factory=list)
-    pending_foreshadowing: List[str] = Field(default_factory=list)
-    story_threads: List[StoryThread] = Field(default_factory=list)
-    dynamic_anchors: List[str] = Field(default_factory=list)
-    subplot_progression: Dict[str, int] = Field(default_factory=dict)
+    new_facts: list[str] = Field(default_factory=list)
+    revealed_mysteries: list[str] = Field(default_factory=list)
+    pending_foreshadowing: list[str] = Field(default_factory=list)
+    story_threads: list[StoryThread] = Field(default_factory=list)
+    dynamic_anchors: list[str] = Field(default_factory=list)
+    subplot_progression: dict[str, int] = Field(default_factory=dict)
     cumulative_summary: str = Field(
         default="", description="第1話から最新話までの圧縮あらすじ（800文字以内）"
     )
-    dependency_graph: Dict[str, Any] = Field(default_factory=dict)
-    character_states: Dict[str, str] = Field(default_factory=dict)
+    dependency_graph: dict[str, Any] = Field(default_factory=dict)
+    character_states: dict[str, str] = Field(default_factory=dict)
     memory_integrity_score: int = Field(
         default=100, ge=0, le=100, description="精神的整合性スコア。0で文章が完全崩壊する"
     )
@@ -191,12 +191,12 @@ class WorldState(BaseModel):
     veneration_level: float = Field(
         default=0.0, description="周囲からの崇拝度・神格化レベル (0.0 - 1.0)"
     )
-    fulfillment_matrix: Dict[str, float] = Field(
+    fulfillment_matrix: dict[str, float] = Field(
         default_factory=lambda: {"cuisine": 0.0, "craft": 0.0, "nature": 0.0, "relation": 0.0},
         description="多次元的充足指標（CCTに基づく）",
     )
     sanctuary_expansion_rate: float = Field(default=1.0, description="聖域の物理的・心理的拡張範囲")
-    discovery_logs: List[Dict[str, Any]] = Field(default_factory=list, description="発見履歴")
+    discovery_logs: list[dict[str, Any]] = Field(default_factory=list, description="発見履歴")
 
 
 class RecoveredItem(BaseModel):
@@ -213,8 +213,8 @@ class ForeshadowingAudit(BaseModel):
         description="予定されていた伏線が回収されたか",
         validation_alias=AliasChoices("is_recovered", "recovered", "isRecovered"),
     )
-    recovered_items: List[RecoveredItem] = Field(default_factory=list)
-    missing_items: List[str] = Field(default_factory=list, description="未回収の伏線リスト")
+    recovered_items: list[RecoveredItem] = Field(default_factory=list)
+    missing_items: list[str] = Field(default_factory=list, description="未回収の伏線リスト")
     audit_type: Literal["Full", "Lightweight"] = Field(default="Full")
     rewrite_suggestion: str = Field(default="")
 

@@ -3,7 +3,7 @@ src/services/episode_writer.py — エピソード執筆サービス
 """
 
 import logging
-from typing import Any, Dict
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ class EpisodeWriter:
                 self._writing_agent = None
         return self._writing_agent
 
-    async def write(self, book_id: int, ep_num: int, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def write(self, book_id: int, ep_num: int, context: dict[str, Any]) -> dict[str, Any]:
         """エピソードを執筆
 
         Args:
@@ -70,7 +70,7 @@ class EpisodeWriter:
             # フォールバック: サンプルテキスト生成
             return self._generate_fallback_text(ep_num, context)
 
-    def _generate_fallback_text(self, ep_num: int, context: Dict[str, Any]) -> Dict[str, Any]:
+    def _generate_fallback_text(self, ep_num: int, context: dict[str, Any]) -> dict[str, Any]:
         """フォールバックテキスト生成
 
         この機能は実際のLLM呼び出しの代替であり、
@@ -132,7 +132,7 @@ class EpisodeWriter:
             },
         }
 
-    def word_count_estimate(self, context: Dict[str, Any]) -> int:
+    def word_count_estimate(self, context: dict[str, Any]) -> int:
         """文字数を見積もる
 
         Args:

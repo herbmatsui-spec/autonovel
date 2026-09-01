@@ -4,7 +4,7 @@ kernels/hegemony.py - 覇権小説生成エンジン
 
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from .base import KernelBase
 
@@ -27,9 +27,9 @@ class Character:
 
     name: str
     role: str
-    traits: List[str] = field(default_factory=list)
+    traits: list[str] = field(default_factory=list)
     background: str = ""
-    relationships: Dict[str, str] = field(default_factory=dict)
+    relationships: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
@@ -39,7 +39,7 @@ class PlotPoint:
     id: str
     description: str
     chapter: int
-    characters_involved: List[str] = field(default_factory=list)
+    characters_involved: list[str] = field(default_factory=list)
     emotional_intensity: float = 0.0  # 0.0-1.0
     importance: float = 0.5  # 0.0-1.0
 
@@ -80,10 +80,10 @@ class HegemonyGenerator(KernelBase):
     async def create_novel(
         self,
         title: str,
-        characters: List[Dict[str, Any]],
-        plot_outline: List[Dict[str, Any]],
-        style_preferences: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        characters: list[dict[str, Any]],
+        plot_outline: list[dict[str, Any]],
+        style_preferences: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """小説を生成"""
         if self.state != KernelState.ACTIVE:
             await self.initialize()
@@ -134,7 +134,7 @@ class HegemonyGenerator(KernelBase):
         }
         return result
 
-    async def _create_characters(self, character_data: List[Dict[str, Any]]) -> None:
+    async def _create_characters(self, character_data: list[dict[str, Any]]) -> None:
         """キャラクターを作成"""
         self.character_db = {}
         for char_data in character_data:
@@ -147,7 +147,7 @@ class HegemonyGenerator(KernelBase):
             )
             self.character_db[char.name] = char
 
-    async def _develop_plot(self, plot_outline: List[Dict[str, Any]]) -> None:
+    async def _develop_plot(self, plot_outline: list[dict[str, Any]]) -> None:
         """プロットを開発"""
         self.plot_points = []
         for i, plot_data in enumerate(plot_outline, 1):
@@ -165,8 +165,8 @@ class HegemonyGenerator(KernelBase):
         self,
         chapter_number: int,
         plot_point: PlotPoint,
-        characters: List[Dict[str, Any]],
-        style_preferences: Dict[str, Any],
+        characters: list[dict[str, Any]],
+        style_preferences: dict[str, Any],
     ) -> str:
         """章を生成"""
         # プロンプト作成
@@ -198,8 +198,8 @@ class HegemonyGenerator(KernelBase):
         self,
         chapter_number: int,
         plot_point: PlotPoint,
-        characters: List[Dict[str, Any]],
-        style_preferences: Dict[str, Any],
+        characters: list[dict[str, Any]],
+        style_preferences: dict[str, Any],
     ) -> str:
         """章生成プロンプトを構築"""
         char_descs = []
@@ -235,7 +235,7 @@ class HegemonyGenerator(KernelBase):
 """
         return prompt
 
-    async def get_progress(self) -> Dict[str, Any]:
+    async def get_progress(self) -> dict[str, Any]:
         """現在の進捗を取得"""
         elapsed = (
             time.time() - self.generation_metrics["start_time"]

@@ -13,7 +13,7 @@ from typing import Any
 
 from src.backend import database
 from src.backend.database.repository import BookRepository
-from src.backend.observability import metrics
+from src.backend.observability.health import metrics
 from src.backend.tasks.huey import huey
 
 logger = logging.getLogger(__name__)

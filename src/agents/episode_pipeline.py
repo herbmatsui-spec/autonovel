@@ -4,7 +4,7 @@ episode_pipeline.py - エピソード生成パイプライン
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from src.agents.scheduler_coordinator import SchedulerCoordinator
 
@@ -29,15 +29,15 @@ class EpisodePipeline:
         is_easy_mode: bool,
         reporter: Any,
         branch_id: int = 1,
-        style_tag: Optional[str] = None,
-    ) -> Tuple[int, List[Dict[str, Any]]]:
+        style_tag: str | None = None,
+    ) -> tuple[int, list[dict[str, Any]]]:
         """エピソード生成パイプラインを実行する。
 
         Returns:
             tuple[total_chars, failed_episodes]
         """
         total_chars = 0
-        failed_episodes: List[Dict[str, Any]] = []
+        failed_episodes: list[dict[str, Any]] = []
 
         coordinator = SchedulerCoordinator(self)
         arcs = await coordinator._load_arcs(book_id)

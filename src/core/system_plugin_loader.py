@@ -2,7 +2,7 @@ import importlib
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional, Type
+from typing import Any
 
 import yaml
 
@@ -16,14 +16,14 @@ class SystemPluginLoader:
     ハードコードされた import なしで動的ロードを実現する。
     """
 
-    _config: Optional[Dict[str, Any]] = None
-    _class_cache: Dict[str, Type] = {}
+    _config: dict[str, Any] | None = None
+    _class_cache: dict[str, type] = {}
     _config_path = os.path.join(
         Path(__file__).parent.parent.parent, "config", "system_plugins.yaml"
     )
 
     @classmethod
-    def _load_config(cls) -> Dict[str, Any]:
+    def _load_config(cls) -> dict[str, Any]:
         if cls._config is not None:
             return cls._config
 
@@ -33,7 +33,7 @@ class SystemPluginLoader:
             return cls._config
 
         try:
-            with open(cls._config_path, "r", encoding="utf-8") as f:
+            with open(cls._config_path, encoding="utf-8") as f:
                 data = yaml.safe_load(f)
                 cls._config = data.get("plugins", {}) if data else {}
         except Exception as e:
@@ -44,8 +44,8 @@ class SystemPluginLoader:
 
     @classmethod
     def get_plugin_class(
-        cls, plugin_name: str, default_class: Optional[Type] = None
-    ) -> Optional[Type]:
+        cls, plugin_name: str, default_class: type | None = None
+    ) -> type | None:
         """
         指定されたプラグイン名に対応するクラスを動的にロードして返す。
         ロードに失敗した場合や設定が存在しない場合は、default_class を返す。

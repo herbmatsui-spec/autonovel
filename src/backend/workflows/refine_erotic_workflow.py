@@ -3,7 +3,7 @@ src/backend/workflows/refine_erotic_workflow.py
 螳倩・繧ｷ繝ｼ繝ｳ遐皮｣ｨ逕ｨ繝ｯ繝ｼ繧ｯ繝輔Ο繝ｼ
 """
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 from config.erotic_pacing import EroticCurve
 from src.shared.utils import StatusReporter
@@ -14,7 +14,7 @@ from .base_workflow import BaseWorkflow
 class RefineEroticWorkflow(BaseWorkflow):
     """螳倩・繧ｷ繝ｼ繝ｳ縺ｮ遐皮｣ｨ繝ｻ謨ｴ蜷域ｧ繝√ぉ繝・け繧定｡後≧繝ｯ繝ｼ繧ｯ繝輔Ο繝�"""
 
-    async def execute(self, reporter: Optional[StatusReporter] = None, **kwargs) -> Dict[str, Any]:
+    async def execute(self, reporter: StatusReporter | None = None, **kwargs) -> dict[str, Any]:
         book_id = kwargs["book_id"]
         ep_num = kwargs["ep_num"]
         intensity = kwargs.get("intensity", 2)

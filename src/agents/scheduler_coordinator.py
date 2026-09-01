@@ -8,7 +8,7 @@ EpisodePipeline からスケジューラのライフサイクル管理（初期�
 from __future__ import annotations
 
 import json
-from typing import Any, List
+from typing import Any
 
 
 class SchedulerCoordinator:
@@ -18,8 +18,8 @@ class SchedulerCoordinator:
         self.agent = agent
         self.scheduler = None
 
-    async def _load_arcs(self, book_id: int) -> List[Any]:
-        arcs: List[Any] = []
+    async def _load_arcs(self, book_id: int) -> list[Any]:
+        arcs: list[Any] = []
         try:
             bible = await self.agent._get_bible(book_id)
             if bible:
@@ -44,7 +44,7 @@ class SchedulerCoordinator:
         self,
         book_id: int,
         end_ep: int,
-        arcs: List[Any],
+        arcs: list[Any],
         reporter: Any,
         branch_id: int = 1,
     ) -> bool:

@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Any, Dict, Tuple
+from typing import Any
 
 import yaml
 
@@ -17,12 +17,12 @@ class ResilienceConfigLoader:
     """
 
     _instance = None
-    _config_data: Dict[str, Any] = {}
+    _config_data: dict[str, Any] = {}
     _config_path = "config/resilience.yaml"
 
     def __new__(cls):
         if cls._instance is None:
-            cls._instance = super(ResilienceConfigLoader, cls).__new__(cls)
+            cls._instance = super().__new__(cls)
             cls._instance._load_config()
         return cls._instance
 
@@ -36,14 +36,14 @@ class ResilienceConfigLoader:
             return
 
         try:
-            with open(self._config_path, "r", encoding="utf-8") as f:
+            with open(self._config_path, encoding="utf-8") as f:
                 self._config_data = yaml.safe_load(f) or {}
             logger.info(f"Successfully loaded resilience config from {self._config_path}")
         except Exception as e:
             logger.error(f"Error parsing resilience config: {e}. Using defaults.")
             self._config_data = {}
 
-    def get_policy_for_service(self, service_name: str) -> Tuple[RetryPolicy, CircuitBreakerConfig]:
+    def get_policy_for_service(self, service_name: str) -> tuple[RetryPolicy, CircuitBreakerConfig]:
         """
         Retrieves the retry policy and circuit breaker config for a specific service.
         Falls back to 'default' settings if service-specific config is missing.

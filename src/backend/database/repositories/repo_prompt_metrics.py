@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any
 
 from sqlalchemy import delete, desc, select
 
@@ -21,7 +21,7 @@ class PromptMetricsRepository(BaseRepository):
     """プロンプト使用メトリクスに関するDB操作をまとめたリポジトリ"""
 
     @retry_on_lock()
-    async def save_metrics_snapshot(self, metrics: Dict[str, Dict[str, Any]]) -> None:
+    async def save_metrics_snapshot(self, metrics: dict[str, dict[str, Any]]) -> None:
         """
         PromptRegistryのメトリクスをスナップショットとして保存
 
@@ -42,7 +42,7 @@ class PromptMetricsRepository(BaseRepository):
         # コミットは呼び出し側で行うか、UnitOfWorkで管理される
 
     @retry_on_lock()
-    async def get_recent_metrics(self, limit: int = 100) -> List[Dict[str, Any]]:
+    async def get_recent_metrics(self, limit: int = 100) -> list[dict[str, Any]]:
         """
         最近のメトリクススナップショットを取得
 
@@ -73,7 +73,7 @@ class PromptMetricsRepository(BaseRepository):
     @retry_on_lock()
     async def get_metrics_by_template(
         self, template_name: str, limit: int = 50
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         特定のテンプレートのメトリクス履歴を取得
 

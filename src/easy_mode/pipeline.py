@@ -7,9 +7,10 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 from config.constants import EP_CLIMAX, EP_FINAL
 from src.easy_mode.spice_guard import SpiceElement, create_spice_guard
@@ -29,8 +30,8 @@ class EpisodeResult:
     audit_score: float
     audit_passed: bool
     rewrite_count: int
-    spice_elements: List[SpiceElement]
-    metadata: Dict[str, Any]
+    spice_elements: list[SpiceElement]
+    metadata: dict[str, Any]
     needs_human_review: bool = False
 
 
@@ -42,10 +43,10 @@ class SeriesResult:
     title: str
     concept: str
     total_episodes: int
-    episodes: List[EpisodeResult]
-    bible: Dict[str, Any]
-    plot_outline: List[Dict[str, Any]]
-    metadata: Dict[str, Any]
+    episodes: list[EpisodeResult]
+    bible: dict[str, Any]
+    plot_outline: list[dict[str, Any]]
+    metadata: dict[str, Any]
     created_at: datetime = field(default_factory=datetime.now)
     status: str = "completed"  # "in_progress", "completed", "failed", "paused"
 
@@ -59,7 +60,7 @@ class PipelineConfig:
     max_rewrite_iterations: int = 3
     target_audit_score: float = 95.0
     enable_spice_guard: bool = True
-    progress_callback: Optional[Callable[[str, int, int], None]] = None
+    progress_callback: Callable[[str, int, int], None] | None = None
 
 
 class EasyModePipeline:
@@ -73,11 +74,11 @@ class EasyModePipeline:
         self.engine = engine
         self.config = config
         self.preset = load_preset(config.genre)
-        self.series_result: Optional[SeriesResult] = None
+        self.series_result: SeriesResult | None = None
         self._cancelled = False
 
     async def _generate_with_retry(
-        self, prompt: str, variables: Dict, operation: str = "generate"
+        self, prompt: str, variables: dict, operation: str = "generate"
     ) -> str:
         """LLM生成をリトライ付きで実行"""
         last_error: Exception = Exception("Unknown error")
@@ -119,7 +120,7 @@ class EasyModePipeline:
             plot_outline = await limit_concurrency(self._generate_plot_outline(bible))
 
             # Step 3: 各話生成ループ
-            episodes: List[EpisodeResult] = []
+            episodes: list[EpisodeResult] = []
             for ep_num in range(1, self.config.target_episodes + 1):
                 if self._cancelled:
                     logger.info(f"Pipeline cancelled at episode {ep_num}")
@@ -143,7 +144,7 @@ class EasyModePipeline:
             self._cancelled = False
             raise
 
-    async def _generate_bible(self) -> Dict[str, Any]:
+    async def _generate_bible(self) -> dict[str, Any]:
         """Bible自動生成（プリセット注入）"""
         # プロンプトテンプレートを直接使用（モジュールパス問題回避）
         bible_template = self.preset.get("bible", "")
@@ -183,7 +184,7 @@ class EasyModePipeline:
 
         return bible
 
-    async def _generate_plot_outline(self, bible: Dict[str, Any]) -> List[Dict[str, Any]]:
+    async def _generate_plot_outline(self, bible: dict[str, Any]) -> list[dict[str, Any]]:
         """プロット自動生成（テンプレ曲線×テンプレ展開）"""
         tension_curve = self.preset.get("tension", {})
         curve_points = tension_curve.get("curve_points", [])
@@ -220,9 +221,9 @@ class EasyModePipeline:
     async def _generate_episode(
         self,
         ep_num: int,
-        bible: Dict[str, Any],
-        plot_outline: List[Dict[str, Any]],
-        previous_episodes: List[EpisodeResult],
+        bible: dict[str, Any],
+        plot_outline: list[dict[str, Any]],
+        previous_episodes: list[EpisodeResult],
     ) -> EpisodeResult:
         """1話生成（執筆→監査→リライト）"""
         plot = plot_outline[ep_num - 1]
@@ -276,7 +277,7 @@ class EasyModePipeline:
 
     # === ヘルパーメソッド ===
 
-    def _get_preset_defaults(self) -> Dict[str, Any]:
+    def _get_preset_defaults(self) -> dict[str, Any]:
         """プリセットからデフォルト変数を抽出"""
         # characters, titles, marketing からデフォルト値を抽出
         defaults = {}
@@ -297,7 +298,7 @@ class EasyModePipeline:
 
         return defaults
 
-    def _parse_bible(self, text: str) -> Dict[str, Any]:
+    def _parse_bible(self, text: str) -> dict[str, Any]:
         """Bibleテキストをパース"""
         # 簡易パース：JSON部分を抽出、または構造化
         try:
@@ -308,7 +309,7 @@ class EasyModePipeline:
             # フォールバック：テキストをそのまま格納
             return {"raw": text, "parsed": False}
 
-    def _fallback_bible(self, variables: Dict[str, Any]) -> Dict[str, Any]:
+    def _fallback_bible(self, variables: dict[str, Any]) -> dict[str, Any]:
         """Bible生成失敗時のフォールバック"""
         return {
             "world": variables.get("world_rules_json", "{}"),
@@ -319,7 +320,7 @@ class EasyModePipeline:
             "fallback": True,
         }
 
-    def _interpolate_tension(self, progress: float, curve_points: List[List[float]]) -> float:
+    def _interpolate_tension(self, progress: float, curve_points: list[list[float]]) -> float:
         """テンション曲線から進行度に対応する値を補間"""
         if not curve_points:
             return 0.5
@@ -333,7 +334,7 @@ class EasyModePipeline:
 
         return curve_points[-1][1]
 
-    def _select_plot_pattern(self, ep_num: int, is_catharsis: bool) -> Dict[str, Any]:
+    def _select_plot_pattern(self, ep_num: int, is_catharsis: bool) -> dict[str, Any]:
         """話数・カタルシス有無に応じた展開パターン選択"""
         patterns = {
             "opening": {
@@ -380,7 +381,7 @@ class EasyModePipeline:
         else:
             return patterns["development"]
 
-    def _build_prev_context(self, episodes: List[EpisodeResult]) -> str:
+    def _build_prev_context(self, episodes: list[EpisodeResult]) -> str:
         """前話までの要約文脈構築"""
         if not episodes:
             return "（第1話のため前話なし）"
@@ -391,7 +392,7 @@ class EasyModePipeline:
 
         return "\n\n".join(summaries)
 
-    async def _write_episode(self, ep_num: int, bible: Dict, plot: Dict, prev_context: str) -> str:
+    async def _write_episode(self, ep_num: int, bible: dict, plot: dict, prev_context: str) -> str:
         """第1話執筆"""
         # 既存のエンジン執筆機能を使用
         # engine.narrative.write_episode 等を呼び出し
@@ -415,12 +416,12 @@ class EasyModePipeline:
     def _build_writing_prompt(
         self,
         ep_num: int,
-        bible: Dict,
-        plot: Dict,
+        bible: dict,
+        plot: dict,
         prev_context: str,
-        style_dna: Dict,
-        hooks: Dict,
-        erotic_rules: Dict,
+        style_dna: dict,
+        hooks: dict,
+        erotic_rules: dict,
     ) -> str:
         """執筆プロンプト構築"""
         # 既存の final_writing_prompt.j2 相当を構築
@@ -448,8 +449,8 @@ class EasyModePipeline:
         """
 
     async def _audit_episode(
-        self, content: str, bible: Dict, plot: Dict, ep_num: int
-    ) -> Dict[str, Any]:
+        self, content: str, bible: dict, plot: dict, ep_num: int
+    ) -> dict[str, Any]:
         """監査エージェント統合呼び出し"""
         # 既存の監査機能を使用
         try:
@@ -482,13 +483,13 @@ class EasyModePipeline:
                 "details": {},
             }
 
-    def _extract_spice(self, text: str) -> List[SpiceElement]:
+    def _extract_spice(self, text: str) -> list[SpiceElement]:
         """尖り要素の自動抽出（SpiceGuard使用）"""
         if not hasattr(self, "_spice_guard"):
             self._spice_guard = create_spice_guard(self.config.genre)
         return self._spice_guard.extract_spice(text)
 
-    def _inject_spice_markers(self, text: str, spice_elements: List[SpiceElement]) -> str:
+    def _inject_spice_markers(self, text: str, spice_elements: list[SpiceElement]) -> str:
         """尖り要素を保護マーカーで囲む"""
         # 位置順にソート（後ろから置換）
         sorted_elements = sorted(spice_elements, key=lambda x: x.position, reverse=True)
@@ -507,7 +508,7 @@ class EasyModePipeline:
         return result
 
     async def _rewrite_episode(
-        self, content: str, improvements: List[str], spice_elements: List[SpiceElement]
+        self, content: str, improvements: list[str], spice_elements: list[SpiceElement]
     ) -> str:
         """SpiceGuard付きリライト"""
         if not improvements:
@@ -540,7 +541,7 @@ class EasyModePipeline:
             return content
 
     def _build_rewrite_prompt(
-        self, content: str, improvements: List[str], spice_elements: List[SpiceElement]
+        self, content: str, improvements: list[str], spice_elements: list[SpiceElement]
     ) -> str:
         """SpiceGuard付きリライトプロンプト構築（テスト用公開メソッド）"""
         if not hasattr(self, "_spice_guard"):
@@ -548,8 +549,8 @@ class EasyModePipeline:
         return self._spice_guard.build_rewrite_prompt(content, improvements, spice_elements)
 
     async def _finalize_series(
-        self, bible: Dict, plot_outline: List, episodes: List[EpisodeResult]
-    ) -> Dict:
+        self, bible: dict, plot_outline: list, episodes: list[EpisodeResult]
+    ) -> dict:
         """シリーズ完結処理・メタデータ生成"""
         total_words = sum(ep.word_count for ep in episodes)
         avg_score = sum(ep.audit_score for ep in episodes) / len(episodes) if episodes else 0
@@ -584,7 +585,7 @@ class EasyModePipeline:
 
 
 def create_series(
-    engine, genre: str, target_episodes: int = 8, progress_callback: Optional[Callable] = None
+    engine, genre: str, target_episodes: int = 8, progress_callback: Callable | None = None
 ) -> EasyModePipeline:
     """シリーズ作成エントリーポイント"""
     config = PipelineConfig(

@@ -3,7 +3,7 @@ kernels/connection.py - 基本接続機能
 """
 
 import time
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 class Connection:
@@ -11,7 +11,7 @@ class Connection:
     基本的な接続クラス
     """
 
-    def __init__(self, api_key: Optional[str] = None, timeout: int = 30):
+    def __init__(self, api_key: str | None = None, timeout: int = 30):
         self.api_key = api_key or ""
         self.timeout = timeout
         self.is_connected = False
@@ -30,7 +30,7 @@ class Connection:
         self.is_connected = False
         return True
 
-    async def send(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    async def send(self, data: dict[str, Any]) -> dict[str, Any]:
         """データ送信（デモ実装）"""
         if self.is_connected:
             return {"status": "success", "received": data}

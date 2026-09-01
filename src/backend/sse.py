@@ -1,7 +1,7 @@
 import asyncio
 import json
 import logging
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 from src.backend.redis_util import get_redis_client
 

@@ -6,7 +6,7 @@ database/repo_book.py - 作品(Books)データ操作用のリポジトリMixin
 import json
 import logging
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import delete, select, update
 
@@ -50,7 +50,7 @@ class BookRepository(BaseRepository):
         await self.session.flush()
         return book.id
 
-    async def get_book(self, book_id: int) -> Optional["BookDbModel"]:
+    async def get_book(self, book_id: int) -> BookDbModel | None:
         result = await self.session.execute(select(Book).where(Book.id == book_id))
         book = result.scalar_one_or_none()
         if not book:
@@ -61,7 +61,7 @@ class BookRepository(BaseRepository):
 
         return BookDbModel(**d)
 
-    async def get_all_books(self) -> List["BookDbModel"]:
+    async def get_all_books(self) -> list[BookDbModel]:
         result = await self.session.execute(select(Book).order_by(Book.id.desc()))
         books = result.scalars().all()
         from src.models import BookDbModel
@@ -90,7 +90,7 @@ class BookRepository(BaseRepository):
 
     @retry_on_lock()
     async def update_book_marketing_data(
-        self, book_id: int, title: str, marketing_data: Dict[str, Any]
+        self, book_id: int, title: str, marketing_data: dict[str, Any]
     ) -> None:
         """作品名とマーケティングデータを更新する。既存のデータがある場合はマージを試みる。"""
         import traceback
@@ -134,7 +134,7 @@ class BookRepository(BaseRepository):
         return total_tension
 
     @retry_on_lock()
-    async def recalculate_book_comfort(self, book_id: int, branch_id: int = 1) -> Tuple[int, int]:
+    async def recalculate_book_comfort(self, book_id: int, branch_id: int = 1) -> tuple[int, int]:
         """指定ブランチの全チャプターの qol_delta を合計して累積QOLを再計算し、DBを更新する"""
         result = await self.session.execute(
             select(Chapter.qol_delta).where(Chapter.branch_id == branch_id)

@@ -1,7 +1,7 @@
 import asyncio
 import math
 import re
-from typing import Any, List
+from typing import Any
 
 from config import STYLE_DEFINITIONS
 
@@ -44,7 +44,7 @@ def compute_ngram_similarity(text1: str, text2: str, n: int = 2) -> float:
     return intersection / union if union > 0 else 0.0
 
 
-def compute_cosine_similarity(vec1: List[float], vec2: List[float]) -> float:
+def compute_cosine_similarity(vec1: list[float], vec2: list[float]) -> float:
     """
     2つのベクトル間のコサイン類似度を計算する。
     0.0-1.0 を返す。
@@ -92,9 +92,9 @@ def safe_model_validate(model_cls: Any, data: Any) -> Any:
         raise LLMValidationError(f"Model validation failed: {e}") from e
 
 
-def verify_character_tone(original_text: str, corrected_text: str) -> List[str]:
+def verify_character_tone(original_text: str, corrected_text: str) -> list[str]:
     """リズム補正前後で台詞の口調が変わっていないか検証する。"""
-    errors: List[str] = []
+    errors: list[str] = []
     dialogues_orig = re.findall(r"「(.*?)」", original_text, re.DOTALL)
     dialogues_corr = re.findall(r"「(.*?)」", corrected_text, re.DOTALL)
 

@@ -1,5 +1,5 @@
 """GraphRAG 検索・Reranking サービスの単体テスト."""
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from src.services.rag_service import GraphRAGService
 

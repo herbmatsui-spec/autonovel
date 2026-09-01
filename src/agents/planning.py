@@ -1,6 +1,6 @@
 # agents/planning.py
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from src.agents.base import BaseAgent
 from src.models.plot import ArcList
@@ -15,7 +15,7 @@ class PlanningAgent(BaseAgent):
     """
 
     def __init__(
-        self, repo: Any = None, llm: Optional[LLMService] = None, prompt_manager: Any = None
+        self, repo: Any = None, llm: LLMService | None = None, prompt_manager: Any = None
     ):
         super().__init__(repo=repo, llm=llm)
         self.prompt_manager = prompt_manager

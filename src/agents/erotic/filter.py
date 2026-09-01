@@ -8,7 +8,6 @@ SceneTypeDetector と EroticIntegrityChecker を提供する。
 from __future__ import annotations
 
 import logging
-from typing import List, Optional, Tuple
 
 from src.agents.erotic.continuity import (
     CharacterStateSnapshot,
@@ -668,17 +667,17 @@ class EroticIntegrityChecker:
     ]
 
     def __init__(self, db_path: str = "storage/db/kaku_hegemony_v2.db"):
-        self.clothing_events: List[EroticIntegrityChecker.ClothingEvent] = []
+        self.clothing_events: list[EroticIntegrityChecker.ClothingEvent] = []
         self.quality_scorer = EroticQualityScorer()
         self.continuity_tracker = ContinuityTracker(db_path=db_path)
         self.scene_continuity_tracker = SceneContinuityTracker(db_path=db_path)
 
-    def check_mutual_consent(self, scene_text: str) -> Tuple[bool, List[str]]:
+    def check_mutual_consent(self, scene_text: str) -> tuple[bool, list[str]]:
         """簡易双方向同意チェック。両者それぞれに同意表現があるかを検証する。"""
-        issues: List[str] = []
+        issues: list[str] = []
 
         # 全同意キーワードの出現位置を収集
-        consent_positions: List[Tuple[int, str]] = []
+        consent_positions: list[tuple[int, str]] = []
         for kw in CONSENT_ALL_CHARACTERS_KEYWORDS:
             pos = 0
             while True:
@@ -709,9 +708,9 @@ class EroticIntegrityChecker:
 
         return len(issues) == 0, issues
 
-    def check_clothing_timeline(self, scene_text: str) -> Tuple[bool, List[str]]:
+    def check_clothing_timeline(self, scene_text: str) -> tuple[bool, list[str]]:
         """衣服状態の時系列整合性をチェックする。"""
-        issues: List[str] = []
+        issues: list[str] = []
 
         self._extract_clothing_events(scene_text)
         self._validate_clothing_states(issues)
@@ -746,7 +745,7 @@ class EroticIntegrityChecker:
                     self.ClothingEvent(event_type, pos_in_text, phase, sentence)
                 )
 
-    def _detect_event_type(self, sentence: str) -> Optional[str]:
+    def _detect_event_type(self, sentence: str) -> str | None:
         """文から衣服イベントを検出する。"""
         for exclude_kw in self.EXCLUDE_KEYWORDS:
             if exclude_kw in sentence:
@@ -772,7 +771,7 @@ class EroticIntegrityChecker:
             return "afterglow"
         return "peak"
 
-    def _validate_clothing_states(self, issues: List[str]) -> None:
+    def _validate_clothing_states(self, issues: list[str]) -> None:
         """衣服イベントの状態遷移を検証する。"""
         if len(self.clothing_events) <= 1:
             return
@@ -786,9 +785,9 @@ class EroticIntegrityChecker:
 
     def _check_ordering(
         self,
-        current: "EroticIntegrityChecker.ClothingEvent",
-        next_event: "EroticIntegrityChecker.ClothingEvent",
-        issues: List[str],
+        current: EroticIntegrityChecker.ClothingEvent,
+        next_event: EroticIntegrityChecker.ClothingEvent,
+        issues: list[str],
     ) -> None:
         """イベント順序を検証する。"""
         if current.event_type == "dress" and next_event.event_type == "dress":
@@ -802,16 +801,16 @@ class EroticIntegrityChecker:
         if current.event_type == "undress" and next_event.event_type == "undress":
             issues.append(f"脱衣イベントが連続しています：'{current.text}' -> '{next_event.text}'")
 
-    def check_coercive_context(self, scene_text: str) -> Tuple[bool, List[str]]:
+    def check_coercive_context(self, scene_text: str) -> tuple[bool, list[str]]:
         """文脈理解に基づく強制・暴力検出を実行する。"""
-        issues: List[str] = []
+        issues: list[str] = []
 
         self._detect_coercion_patterns(scene_text, issues)
         self._detect_violence_patterns(scene_text, issues)
 
         return len(issues) == 0, issues
 
-    def _detect_coercion_patterns(self, scene_text: str, issues: List[str]) -> None:
+    def _detect_coercion_patterns(self, scene_text: str, issues: list[str]) -> None:
         """拒否と継続の矛盾を検出する。"""
         refusal_positions = []
         for kw in CONSENT_REFUSAL_KEYWORDS:
@@ -835,7 +834,7 @@ class EroticIntegrityChecker:
                     )
                     break
 
-    def _detect_violence_patterns(self, scene_text: str, issues: List[str]) -> None:
+    def _detect_violence_patterns(self, scene_text: str, issues: list[str]) -> None:
         """暴力的表現を検出する。"""
         violence_count = 0
         for kw in self.VIOLENCE_INDICATORS:
@@ -846,9 +845,9 @@ class EroticIntegrityChecker:
                 f"暴力的表現が{violence_count}箇所検出されました（安全でない描写の可能性）"
             )
 
-    def check_clothing_consistency(self, scene_text: str) -> Tuple[bool, List[str]]:
+    def check_clothing_consistency(self, scene_text: str) -> tuple[bool, list[str]]:
         """服装の整合性をチェックする。"""
-        issues: List[str] = []
+        issues: list[str] = []
         undress_count = sum(scene_text.count(kw) for kw in self.UNDRESS_KEYWORDS)
         dress_count = sum(scene_text.count(kw) for kw in self.DRESS_KEYWORDS)
 
@@ -859,11 +858,11 @@ class EroticIntegrityChecker:
 
     def check_consent_state(
         self, scene_text: str, declared_consent: str = "implicit"
-    ) -> Tuple[bool, List[str]]:
+    ) -> tuple[bool, list[str]]:
         """
         シーン内の同意表現是否符合 declared_consent を検証する。
         """
-        issues: List[str] = []
+        issues: list[str] = []
 
         explicit_count = sum(scene_text.count(kw) for kw in CONSENT_EXPLICIT_KEYWORDS)
         implicit_count = sum(scene_text.count(kw) for kw in CONSENT_IMPLICIT_KEYWORDS)
@@ -885,7 +884,7 @@ class EroticIntegrityChecker:
         self, current_ep: int, character_name: str, current_text: str, prev_text: str = ""
     ) -> ContinuityReport:
         """全ての話間整合性チェックを実行する。"""
-        all_issues: List[str] = []
+        all_issues: list[str] = []
         checked = []
 
         # 単一キャラクター名、またはペア（カンマやハイフン、スラッシュ、コロン等で区切られたもの）
@@ -1054,14 +1053,14 @@ class EroticIntegrityChecker:
         current_ep: int = 0,
         character_name: str = "",
         prev_text: str = "",
-    ) -> Tuple[bool, List[str], Optional[EroticQualityReport], Optional[ContinuityReport]]:
+    ) -> tuple[bool, list[str], EroticQualityReport | None, ContinuityReport | None]:
         """
         全整合性チェックを実行し、官能品質と話間整合性も評価する。
 
         Returns:
             (is_safe, issues, quality_report, continuity_report)
         """
-        all_issues: List[str] = []
+        all_issues: list[str] = []
 
         _, clothing_issues = self.check_clothing_timeline(scene_text)
         all_issues.extend(clothing_issues)

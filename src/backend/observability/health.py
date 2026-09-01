@@ -47,7 +47,6 @@ metrics = _Metrics()
 
 def check_database() -> dict[str, Any]:
     try:
-        from src.backend.database.core import DatabaseManager
         return {"status": "ok", "type": "sqlite"}
     except Exception as e:
         logger.warning(f"Database health check failed: {e}")
@@ -56,7 +55,6 @@ def check_database() -> dict[str, Any]:
 
 def check_huey() -> dict[str, Any]:
     try:
-        from src.backend.tasks.huey import huey
         return {"status": "ok", "backend": "sqlite"}
     except Exception as e:
         logger.warning(f"Huey health check failed: {e}")

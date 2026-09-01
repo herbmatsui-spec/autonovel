@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 from tests.mocks.mock_llm import MockGeminiApiClient
@@ -80,7 +80,7 @@ class BackendTestHarness:
         self.uow = MockUnitOfWork()
 
     async def setup_scenario(
-        self, book_id: int, plot_data: List[Dict] = None, chapter_data: List[Dict] = None
+        self, book_id: int, plot_data: list[dict] = None, chapter_data: list[dict] = None
     ):
         """Pre-populate the mock database with a specific scenario."""
         import os

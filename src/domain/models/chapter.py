@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime
-from typing import Any, Optional, Union
+from typing import Any
 
 from pydantic import BaseModel, field_validator
 
@@ -13,17 +13,17 @@ class ChapterDbModel(BaseModel):
     book_id: int
     branch_id: int = 1
     ep_num: int
-    title: Optional[str] = None
-    content: Optional[str] = None
-    score_story: Optional[int] = None
-    killer_phrase: Optional[str] = None
-    summary: Optional[str] = None
-    world_state: Optional[Union[dict, str]] = None
-    trinity_review_log: Optional[Union[dict, str]] = None
-    ai_insight: Optional[str] = None
-    created_at: Optional[datetime] = None
-    tension_delta: Optional[int] = 0
-    qol_delta: Optional[int] = 0
+    title: str | None = None
+    content: str | None = None
+    score_story: int | None = None
+    killer_phrase: str | None = None
+    summary: str | None = None
+    world_state: dict | str | None = None
+    trinity_review_log: dict | str | None = None
+    ai_insight: str | None = None
+    created_at: datetime | None = None
+    tension_delta: int | None = 0
+    qol_delta: int | None = 0
 
     @field_validator("world_state", "trinity_review_log", mode="before")
     @classmethod

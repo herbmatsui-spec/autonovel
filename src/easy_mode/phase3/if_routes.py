@@ -10,7 +10,7 @@ import logging
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set
+from typing import Any
 
 from src.easy_mode.pipeline import EpisodeResult, SeriesResult
 
@@ -49,7 +49,7 @@ class BranchCondition:
     value: Any
     description: str = ""
 
-    def evaluate(self, context: Dict[str, Any]) -> bool:
+    def evaluate(self, context: dict[str, Any]) -> bool:
         """条件判定（ネストしたキー対応）"""
         # ネストしたキーを取得（ドット区切り対応）
         var_value = context
@@ -81,7 +81,7 @@ class BranchCondition:
             return self.value not in str(var_value)
         return False
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "variable": self.variable,
             "operator": self.operator.value,
@@ -90,7 +90,7 @@ class BranchCondition:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "BranchCondition":
+    def from_dict(cls, data: dict[str, Any]) -> BranchCondition:
         return cls(
             variable=data["variable"],
             operator=ConditionOperator(data["operator"]),
@@ -105,18 +105,18 @@ class RouteChoice:
 
     id: str
     text: str
-    conditions: List[BranchCondition] = field(default_factory=list)
+    conditions: list[BranchCondition] = field(default_factory=list)
     target_node_id: str = ""
-    effects: Dict[str, Any] = field(default_factory=dict)  # 選択時の副作用（フラグ変更等）
+    effects: dict[str, Any] = field(default_factory=dict)  # 選択時の副作用（フラグ変更等）
     priority: int = 0  # 表示優先度
 
-    def is_available(self, context: Dict[str, Any]) -> bool:
+    def is_available(self, context: dict[str, Any]) -> bool:
         """選択可能か判定"""
         if not self.conditions:
             return True
         return all(c.evaluate(context) for c in self.conditions)
 
-    def apply_effects(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    def apply_effects(self, context: dict[str, Any]) -> dict[str, Any]:
         """副作用を適用（ネストしたキー対応）"""
         new_context = json.loads(json.dumps(context))  # 深いコピー
 
@@ -140,16 +140,16 @@ class RouteNode:
     episode_num: int
     content: str
     branch_type: BranchType
-    choices: List[RouteChoice] = field(default_factory=list)
-    merge_target: Optional[str] = None  # MERGEタイプの場合の合流先
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    parent_ids: List[str] = field(default_factory=list)
+    choices: list[RouteChoice] = field(default_factory=list)
+    merge_target: str | None = None  # MERGEタイプの場合の合流先
+    metadata: dict[str, Any] = field(default_factory=dict)
+    parent_ids: list[str] = field(default_factory=list)
 
-    def get_available_choices(self, context: Dict[str, Any]) -> List[RouteChoice]:
+    def get_available_choices(self, context: dict[str, Any]) -> list[RouteChoice]:
         """利用可能な選択肢を取得"""
         return [c for c in self.choices if c.is_available(context)]
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "id": self.id,
             "episode_num": self.episode_num,
@@ -176,17 +176,17 @@ class RouteNode:
 class IFRouteGraph:
     """IFルートグラフ（分岐構造全体）"""
 
-    nodes: Dict[str, RouteNode] = field(default_factory=dict)
+    nodes: dict[str, RouteNode] = field(default_factory=dict)
     entry_node_id: str = ""
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def add_node(self, node: RouteNode) -> None:
         self.nodes[node.id] = node
 
-    def get_node(self, node_id: str) -> Optional[RouteNode]:
+    def get_node(self, node_id: str) -> RouteNode | None:
         return self.nodes.get(node_id)
 
-    def get_next_nodes(self, node_id: str, context: Dict[str, Any]) -> List[RouteNode]:
+    def get_next_nodes(self, node_id: str, context: dict[str, Any]) -> list[RouteNode]:
         """次のノード群を取得"""
         node = self.get_node(node_id)
         if not node:
@@ -205,7 +205,7 @@ class IFRouteGraph:
                 next_nodes.append(target)
         return next_nodes
 
-    def validate(self) -> List[str]:
+    def validate(self) -> list[str]:
         """グラフの整合性チェック"""
         errors = []
 
@@ -216,7 +216,7 @@ class IFRouteGraph:
         # 孤立ノードチェック
         reachable = set()
 
-        def traverse(node_id: str, visited: Set[str] = None):
+        def traverse(node_id: str, visited: set[str] = None):
             if visited is None:
                 visited = set()
             if node_id in visited or node_id not in self.nodes:
@@ -251,15 +251,15 @@ class IFRouteGraph:
 class IFRouteGenerator:
     """IFルート生成器"""
 
-    def __init__(self, genre: str, preset: Dict[str, Any]):
+    def __init__(self, genre: str, preset: dict[str, Any]):
         self.genre = genre
         self.preset = preset
         self.graph = IFRouteGraph()
-        self._context: Dict[str, Any] = {}
-        self._flags: Dict[str, Any] = {}
-        self._variables: Dict[str, Any] = {}
+        self._context: dict[str, Any] = {}
+        self._flags: dict[str, Any] = {}
+        self._variables: dict[str, Any] = {}
 
-    def set_initial_context(self, context: Dict[str, Any]) -> None:
+    def set_initial_context(self, context: dict[str, Any]) -> None:
         """初期コンテキスト設定"""
         self._context = context.copy()
         self._flags = context.get("flags", {}).copy()
@@ -351,7 +351,7 @@ class IFRouteGenerator:
 
     def _create_episode_nodes(
         self, episode: EpisodeResult, ep_num: int, prev_node_id: str, series: SeriesResult
-    ) -> List[RouteNode]:
+    ) -> list[RouteNode]:
         """エピソードのノード群を作成"""
         nodes = []
 
@@ -386,7 +386,7 @@ class IFRouteGenerator:
 
         return nodes
 
-    def _create_catharsis_choices(self, ep_num: int, series: SeriesResult) -> List[RouteChoice]:
+    def _create_catharsis_choices(self, ep_num: int, series: SeriesResult) -> list[RouteChoice]:
         """カタルシス話用の選択肢"""
         choices = []
 
@@ -466,7 +466,7 @@ class IFRouteGenerator:
 
         return choices
 
-    def _create_normal_choices(self, ep_num: int, series: SeriesResult) -> List[RouteChoice]:
+    def _create_normal_choices(self, ep_num: int, series: SeriesResult) -> list[RouteChoice]:
         """通常話用の選択肢"""
         choices = [
             RouteChoice(
@@ -532,7 +532,7 @@ class IFRouteGenerator:
 
     def _create_subroute_nodes(
         self, ep_num: int, parent_id: str, series: SeriesResult
-    ) -> List[RouteNode]:
+    ) -> list[RouteNode]:
         """サブルートノード作成"""
         nodes = []
 
@@ -627,7 +627,7 @@ class IFRouteGenerator:
                     self.graph.add_node(node)
                     changed = True
 
-    def _create_target_node(self, node_id: str, series: SeriesResult) -> Optional[RouteNode]:
+    def _create_target_node(self, node_id: str, series: SeriesResult) -> RouteNode | None:
         """ターゲットノード作成"""
         # エンディング系
         if node_id.startswith("ending_"):
@@ -1061,7 +1061,7 @@ class IFRouteGenerator:
             metadata={"route": "hidden", "continuation": True},
         )
 
-    def _create_merge_node(self, ep_num: int, nodes: List[RouteNode]) -> Optional[RouteNode]:
+    def _create_merge_node(self, ep_num: int, nodes: list[RouteNode]) -> RouteNode | None:
         """合流ノード作成"""
         # 全ルートを合流させるノード
         merge_node = RouteNode(
@@ -1099,13 +1099,13 @@ class IFRoutePlayer:
     def __init__(self, graph: IFRouteGraph):
         self.graph = graph
         self.current_node_id = graph.entry_node_id
-        self.context: Dict[str, Any] = {"flags": {}, "variables": {}, "history": [], "stats": {}}
-        self.save_points: List[Dict[str, Any]] = []
+        self.context: dict[str, Any] = {"flags": {}, "variables": {}, "history": [], "stats": {}}
+        self.save_points: list[dict[str, Any]] = []
 
-    def get_current_node(self) -> Optional[RouteNode]:
+    def get_current_node(self) -> RouteNode | None:
         return self.graph.get_node(self.current_node_id)
 
-    def get_available_choices(self) -> List[RouteChoice]:
+    def get_available_choices(self) -> list[RouteChoice]:
         node = self.get_current_node()
         if not node:
             return []
@@ -1166,7 +1166,7 @@ class IFRoutePlayer:
             return True
         return False
 
-    def get_state(self) -> Dict[str, Any]:
+    def get_state(self) -> dict[str, Any]:
         """現在状態取得"""
         node = self.get_current_node()
         return {
@@ -1179,7 +1179,7 @@ class IFRoutePlayer:
             "save_points_count": len(self.save_points),
         }
 
-    def export_playthrough(self) -> Dict[str, Any]:
+    def export_playthrough(self) -> dict[str, Any]:
         """プレイスルー記録出力"""
         return {
             "genre": self.graph.metadata.get("genre", "unknown"),
@@ -1193,7 +1193,7 @@ class IFRoutePlayer:
 
 
 def create_if_route_system(
-    genre: str, series: SeriesResult, preset: Dict[str, Any]
+    genre: str, series: SeriesResult, preset: dict[str, Any]
 ) -> IFRouteGraph:
     """IFルートシステム作成のエントリーポイント"""
     generator = IFRouteGenerator(genre, preset)

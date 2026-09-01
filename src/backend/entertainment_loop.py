@@ -8,7 +8,7 @@ src/backend/entertainment_loop.py
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from src.models.entertainment_check import EntertainmentCheckResult
 
@@ -25,10 +25,10 @@ async def run_entertainment_first_loop(
     opening_chars: str,
     threshold: int = DEFAULT_ENTERTAINMENT_THRESHOLD,
     max_retries: int = DEFAULT_MAX_RETRIES,
-    regenerate_callback: Optional[Any] = None,
-    repo: Optional[Any] = None,
-    book_id: Optional[int] = None,
-    ep_num: Optional[int] = None,
+    regenerate_callback: Any | None = None,
+    repo: Any | None = None,
+    book_id: int | None = None,
+    ep_num: int | None = None,
 ) -> EntertainmentCheckResult:
     """
     早期面白さ検証を実行し、閾値を下回る場合は再生成を要求する。
@@ -46,7 +46,7 @@ async def run_entertainment_first_loop(
     戻り値: 最終の EntertainmentCheckResult
     """
     current_plot = rough_plot
-    last_result: Optional[EntertainmentCheckResult] = None
+    last_result: EntertainmentCheckResult | None = None
 
     for attempt in range(max_retries + 1):
         result = await checker.check(current_plot, opening_chars)

@@ -1,22 +1,21 @@
-import logging
-from datetime import datetime, timezone
-from typing import Dict, Optional
 import asyncio
+import logging
+from datetime import UTC, datetime
 
 from fastapi import APIRouter
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
-from src.core.container import AppContainer
 from config import get_config
 from src.backend.health.checks import (
-    check_database,
-    check_redis,
-    check_chromadb,
-    check_llm_gateway,
-    check_worker,
-    HealthStatus,
     HealthCheckResult,
+    HealthStatus,
+    check_chromadb,
+    check_database,
+    check_llm_gateway,
+    check_redis,
+    check_worker,
 )
+from src.core.container import AppContainer
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +24,7 @@ router = APIRouter(tags=["system"])
 
 class CheckResponse(BaseModel):
     status: HealthStatus
-    latency_ms: Optional[float] = None
+    latency_ms: float | None = None
     details: str = ""
     error: str = ""
 
@@ -34,10 +33,10 @@ class HealthResponse(BaseModel):
     status: HealthStatus
     version: str = "3.0.0"
     timestamp: str
-    checks: Dict[str, CheckResponse]
+    checks: dict[str, CheckResponse]
 
 
-def determine_overall_status(checks: Dict[str, HealthCheckResult]) -> HealthStatus:
+def determine_overall_status(checks: dict[str, HealthCheckResult]) -> HealthStatus:
     """個別チェック結果から総合ステータスを決定"""
     statuses = [c.status for c in checks.values()]
     if HealthStatus.ERROR in statuses:
@@ -65,8 +64,8 @@ async def health_check():
     )
 
     check_names = ["database", "redis", "chromadb", "llm_gateway", "worker"]
-    checks: Dict[str, HealthCheckResult] = {}
-    check_responses: Dict[str, CheckResponse] = {}
+    checks: dict[str, HealthCheckResult] = {}
+    check_responses: dict[str, CheckResponse] = {}
 
     for name, result in zip(check_names, results):
         if isinstance(result, Exception):
@@ -88,6 +87,6 @@ async def health_check():
 
     return HealthResponse(
         status=overall,
-        timestamp=datetime.now(timezone.utc).isoformat(),
+        timestamp=datetime.now(UTC).isoformat(),
         checks=check_responses
     )

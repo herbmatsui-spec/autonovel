@@ -7,7 +7,6 @@ src/services/erotic_diversity_score.py
 
 import math
 from collections import Counter
-from typing import List
 
 from config.erotic_thresholds import (
     DIVERSITY_SCORE_PASS,
@@ -15,7 +14,7 @@ from config.erotic_thresholds import (
 )
 
 
-def compute_diversity_score(text: str, vocabulary_bank: List[str]) -> float:
+def compute_diversity_score(text: str, vocabulary_bank: list[str]) -> float:
     """
     テキスト中のボキャブラリー使用の多様性をエントロピーで算出する。0.0-1.0。
 
@@ -74,7 +73,7 @@ def check_diversity(text: str, vocabulary_bank: list) -> dict:
     }
 
 
-def check_repetition(text: str, vocabulary_bank: List[str], max_repeat: int = 3) -> List[str]:
+def check_repetition(text: str, vocabulary_bank: list[str], max_repeat: int = 3) -> list[str]:
     """語彙の過度な繰り返しをチェックし、警告メッセージのリストを返す。
 
     Args:

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, List
+from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -25,7 +25,7 @@ class TitleProposal(BaseModel):
 class TitleProposalList(BaseModel):
     """タイトル案のリスト"""
 
-    titles: List[TitleProposal] = Field(default_factory=list)
+    titles: list[TitleProposal] = Field(default_factory=list)
 
     @model_validator(mode="before")
     @classmethod

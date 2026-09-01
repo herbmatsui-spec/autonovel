@@ -38,7 +38,7 @@ Returns (execute):
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, cast
 
 from src.core.interfaces import IReporter
 from src.models.plot import ArcBlueprint, ArcList
@@ -66,7 +66,7 @@ class PlotRebuildWorkflow(BaseWorkflow):
     再構築に伴う監査・統合をこのワークフローが orchestration する。
     """
 
-    async def execute(self, reporter: Optional[StatusReporter], **kwargs: Any) -> Dict[str, Any]:
+    async def execute(self, reporter: StatusReporter | None, **kwargs: Any) -> dict[str, Any]:
         params = kwargs.get("params", {})
         active_reporter: Any = reporter or _NullReporter()
         try:
@@ -93,8 +93,8 @@ class PlotRebuildWorkflow(BaseWorkflow):
     # コンテキスト構築
     # ------------------------------------------------------------------
     async def _build_rebuild_context(
-        self, params: Dict[str, Any], reporter: IReporter
-    ) -> Dict[str, Any]:
+        self, params: dict[str, Any], reporter: IReporter
+    ) -> dict[str, Any]:
         """作品情報・Bible・過去プロットを聚合したコンテキストを構築する."""
         book_id = int(params["book_id"])
         start_ep = int(params["start_ep"])
@@ -124,7 +124,7 @@ class PlotRebuildWorkflow(BaseWorkflow):
     # ステップ1: 新規アーク生成
     # ------------------------------------------------------------------
     async def _step1_generate_new_arcs(
-        self, context: Dict[str, Any], params: Dict[str, Any], reporter: IReporter
+        self, context: dict[str, Any], params: dict[str, Any], reporter: IReporter
     ) -> ArcList:
         try:
             reporter.report(f"📐 第{context['start_ep']}話以降の新規アークを生成中...", "info")
@@ -158,7 +158,7 @@ class PlotRebuildWorkflow(BaseWorkflow):
             bible_like = {"arcs": [a.model_dump() for a in new_arcs.arcs]}
             is_consistent = plan_auditor.audit_bible_completeness(bible_like, reporter=reporter)
             if not is_consistent:
-                issues: List[str] = []
+                issues: list[str] = []
                 reporter.report("⚠️ ステップ2監査課題: " + "; ".join(issues), "warning")
         except Exception as e:  # noqa: BLE001
             logger.warning("ステップ2 監査スキップ: %s", e)
@@ -168,13 +168,13 @@ class PlotRebuildWorkflow(BaseWorkflow):
     # ------------------------------------------------------------------
     async def _step3_expand_affected_eps(
         self,
-        context: Dict[str, Any],
+        context: dict[str, Any],
         new_arcs: ArcList,
-        params: Dict[str, Any],
+        params: dict[str, Any],
         reporter: IReporter,
-    ) -> List[Any]:
+    ) -> list[Any]:
         ep_nums = list(range(context["start_ep"], context["new_total"] + 1))
-        arcs: List[ArcBlueprint] = new_arcs.arcs
+        arcs: list[ArcBlueprint] = new_arcs.arcs
         plot_agent = cast(Any, self.plot_agent)
         try:
             reporter.report(
@@ -188,7 +188,7 @@ class PlotRebuildWorkflow(BaseWorkflow):
                 force=True,
                 branch_id=context["branch_id"],
             )
-            result: List[Any] = list(expanded) if expanded else []
+            result: list[Any] = list(expanded) if expanded else []
             reporter.report(f"✅ プロット展開完了: {len(result)} 話", "success")
             return result
         except Exception as e:  # noqa: BLE001
@@ -202,9 +202,9 @@ class PlotRebuildWorkflow(BaseWorkflow):
     def _step4_audit_expanded(
         self,
         new_arcs: ArcList,
-        expanded: List[Any],
-        context: Dict[str, Any],
-        params: Dict[str, Any],
+        expanded: list[Any],
+        context: dict[str, Any],
+        params: dict[str, Any],
         reporter: IReporter,
     ) -> None:
         auditor = getattr(self, "auditor", None)
@@ -229,10 +229,10 @@ class PlotRebuildWorkflow(BaseWorkflow):
     def _step5_assemble_result(
         self,
         new_arcs: ArcList,
-        expanded: Optional[List[Any]],
-        context: Dict[str, Any],
-        params: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        expanded: list[Any] | None,
+        context: dict[str, Any],
+        params: dict[str, Any],
+    ) -> dict[str, Any]:
         expanded_list = expanded or []
         return {
             "done": True,
@@ -249,9 +249,9 @@ class PlotRebuildWorkflow(BaseWorkflow):
         }
 
 
-def _dump(obj: Any) -> Dict[str, Any]:
+def _dump(obj: Any) -> dict[str, Any]:
     if hasattr(obj, "model_dump"):
-        return cast(Dict[str, Any], obj.model_dump())
+        return cast(dict[str, Any], obj.model_dump())
     if isinstance(obj, dict):
         return obj
     return {"value": str(obj)}

@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from src.models.chunk import ChapterChunk
-from src.models.graph_schemas import GraphExtractionResult
+from src.models.graph_schemas import Entity, GraphExtractionResult, Relationship
 from src.services.age_client import AgeClient
 from src.services.embedding_service import EmbeddingService
 from src.services.extraction_service import ExtractionService
@@ -141,6 +141,50 @@ def test_rag_service_search_chunks_with_data(db_session):
     results = service.search_similar_chunks(db_session, "聖剣の伝説", limit=2)
     assert len(results) >= 1
     assert any("聖剣" in r for r in results)
+
+
+def test_extraction_service_resolve_entities():
+    """ExtractionService の表記揺れ名寄せ (Entity Resolution) を検証."""
+    service = ExtractionService()
+    extracted = GraphExtractionResult(
+        entities=[
+            Entity(name="勇者アルス", type="Character", description="主人公"),
+            Entity(name="王都", type="Location", description="街"),
+        ],
+        relationships=[
+            Relationship(source="勇者アルス", target="王都", type="LOCATED_IN", detail="滞在"),
+        ],
+        plot_summary="アルスが王都に滞在。",
+    )
+
+    resolved = service.resolve_entities(
+        extracted=extracted,
+        existing_entity_names=["アルス", "ルミナス王都"],
+    )
+
+    assert len(resolved.entities) == 2
+    names = [e.name for e in resolved.entities]
+    assert "アルス" in names
+    assert resolved.relationships[0].source == "アルス"
+
+
+def test_rag_service_community_context(db_session):
+    """GraphRAGService が派閥コミュニティコンテキストを取得できることを検証."""
+    service = GraphRAGService()
+    # SQLite環境では空リスト
+    assert service.get_community_context(db_session, "光の騎士団") == []
+
+    # モックによる動作検証
+    mock_members = [
+        {"name": "アルス", "relation_type": "MEMBER_OF"},
+        {"name": "セリア", "relation_type": "LEADER_OF"},
+    ]
+    with patch("src.services.rag_service.age_client.get_neighbors", return_value=mock_members), \
+         patch("src.services.rag_service.settings.ENABLE_GRAPHRAG", True), \
+         patch("src.services.rag_service.settings.DATABASE_URL", "postgresql://user:pass@localhost/db"):
+        members = service.get_community_context(db_session, "光の騎士団")
+        assert len(members) == 2
+        assert "アルス (MEMBER_OF)" in members
 
 
 def test_graphrag_build_context_with_neighbors(db_session):

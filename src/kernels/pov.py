@@ -3,7 +3,6 @@ kernels/pov.py - 視点管理
 """
 
 from enum import Enum
-from typing import Dict, List, Optional
 
 
 class POVType(Enum):
@@ -20,13 +19,13 @@ class POVManager:
     """
 
     def __init__(self):
-        self.current_pov: Optional[POVType] = None
-        self.available_povs: List[POVType] = [
+        self.current_pov: POVType | None = None
+        self.available_povs: list[POVType] = [
             POVType.FIRST_PERSON,
             POVType.THIRD_PERSON,
             POVType.OMNISCIENT,
         ]
-        self.viewpoint_characters: Dict[POVType, List[str]] = {}
+        self.viewpoint_characters: dict[POVType, list[str]] = {}
 
     def set_pov(self, pov_type: POVType) -> None:
         """視点を設定"""
@@ -40,7 +39,7 @@ class POVManager:
         if character_name not in self.viewpoint_characters[pov_type]:
             self.viewpoint_characters[pov_type].append(character_name)
 
-    def get_current_pov(self) -> Optional[POVType]:
+    def get_current_pov(self) -> POVType | None:
         """現在の視点を取得"""
         return self.current_pov
 

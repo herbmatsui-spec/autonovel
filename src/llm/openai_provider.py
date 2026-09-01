@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any
 
 from src.backend.engine_utils import AdaptiveCooldown
 from src.core.exceptions import (
@@ -29,7 +29,7 @@ class OpenAIProvider(LLMProvider):
         self,
         model_name: str,
         prompt: str,
-        system_instruction: Optional[str] = None,
+        system_instruction: str | None = None,
         temperature: float = 0.7,
         **kwargs,
     ) -> LLMResponse:
@@ -66,8 +66,8 @@ class OpenAIProvider(LLMProvider):
         self,
         model_name: str,
         prompt: str,
-        response_schema: Optional[Any] = None,
-        system_instruction: Optional[str] = None,
+        response_schema: Any | None = None,
+        system_instruction: str | None = None,
         temperature: float = 0.7,
         **kwargs,
     ) -> LLMResponse:
@@ -102,7 +102,7 @@ class OpenAIProvider(LLMProvider):
 
             raise LLMUnknownError(f"Unknown OpenAI Error: {e}", e) from e
 
-    def _parse_usage(self, usage_metadata: Any) -> Dict[str, int]:
+    def _parse_usage(self, usage_metadata: Any) -> dict[str, int]:
         """OpenAI SDK の usage メタデータを共通形式に変換"""
         if not usage_metadata:
             return {}

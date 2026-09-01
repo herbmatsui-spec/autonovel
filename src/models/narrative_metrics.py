@@ -1,4 +1,3 @@
-from typing import List
 
 from pydantic import BaseModel, Field
 
@@ -19,4 +18,4 @@ class NarrativeSceneEvaluation(BaseModel):
     """
 
     scene_num: int = Field(..., description="評価対象のシーン番号")
-    metrics: List[NarrativeMetricScore] = Field(..., description="各指標のスコアリスト")
+    metrics: list[NarrativeMetricScore] = Field(..., description="各指標のスコアリスト")

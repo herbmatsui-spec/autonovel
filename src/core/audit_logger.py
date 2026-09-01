@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -14,7 +14,7 @@ class AuditLogEntry(BaseModel):
     action: str
     resource_id: str
     status: str
-    details: Dict[str, Any] = Field(default_factory=dict)
+    details: dict[str, Any] = Field(default_factory=dict)
     ip_address: str = "unknown"
 
 
@@ -38,7 +38,7 @@ class AuditLogger:
         action: str,
         resource_id: str,
         status: str,
-        details: Optional[Dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
         ip_address: str = "unknown",
     ):
         entry = AuditLogEntry(
@@ -59,12 +59,12 @@ class AuditLogger:
         except Exception as e:
             logger.error(f"Audit logging failed: {e}")
 
-    def get_logs_for_resource(self, resource_id: str) -> List[str]:
+    def get_logs_for_resource(self, resource_id: str) -> list[str]:
         """特定リソースに関する操作履歴を抽出する"""
         results = []
         # 簡易的に全ログファイルから検索
         for log_file in self.log_dir.glob("*.log"):
-            with open(log_file, "r", encoding="utf-8") as f:
+            with open(log_file, encoding="utf-8") as f:
                 for line in f:
                     if f"RES:{resource_id}" in line:
                         results.append(line.strip())

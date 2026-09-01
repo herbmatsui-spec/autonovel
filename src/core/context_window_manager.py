@@ -8,7 +8,7 @@ v4.0: 商用化に向けたコンテキストウィンドウ最適化
 """
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 from config import get_config
 
@@ -24,7 +24,7 @@ class ContextWindowManager:
     """
 
     # 主要モデルのコンテキストウィンドウサイズ (tokens)
-    MODEL_CONTEXT_SIZES: Dict[str, int] = {
+    MODEL_CONTEXT_SIZES: dict[str, int] = {
         "gemma-4-31b-it": 32768,
         "gemini-3.1-flash-lite": 1048576,
         "gemini-3.1-flash": 1048576,
@@ -34,13 +34,13 @@ class ContextWindowManager:
     }
 
     # 各パートのデフォルト予約サイズ (tokens)
-    DEFAULT_RESERVES: Dict[str, int] = {
+    DEFAULT_RESERVES: dict[str, int] = {
         "system_instruction": 2000,
         "response_buffer": 2000,
         "min_reserve": 2000,
     }
 
-    def __init__(self, model_name: Optional[str] = None):
+    def __init__(self, model_name: str | None = None):
         self.config = get_config()
         self.model_name = model_name or self.config.model_writing
         self.target_ratio = getattr(self.config, "context_window_target_ratio", 0.85)
@@ -78,7 +78,7 @@ class ContextWindowManager:
         self,
         sys_inst: str,
         fw_prompt: str,
-        extra_context: Optional[str] = None,
+        extra_context: str | None = None,
     ) -> int:
         """
         プロンプト全体のトークン数を估算する。
@@ -97,8 +97,8 @@ class ContextWindowManager:
         self,
         sys_inst: str,
         fw_prompt: str,
-        extra_context: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        extra_context: str | None = None,
+    ) -> dict[str, Any]:
         """
         コンテキストウィンドウの使用状況を診断する。
 
@@ -149,8 +149,8 @@ class ContextWindowManager:
     def suggest_trimming(
         self,
         current_tokens: int,
-        target_tokens: Optional[int] = None,
-    ) -> Dict[str, Any]:
+        target_tokens: int | None = None,
+    ) -> dict[str, Any]:
         """
         トリミングの必要量と方法を提案する。
 
@@ -206,7 +206,7 @@ class ContextWindowManager:
 
 
 # グローバルインスタンス
-_context_window_manager: Optional[ContextWindowManager] = None
+_context_window_manager: ContextWindowManager | None = None
 
 
 def get_context_window_manager() -> ContextWindowManager:

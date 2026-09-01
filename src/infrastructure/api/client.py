@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Any, Dict
+from typing import Any
 
 logger = logging.getLogger(__name__)
 API_BASE_URL = "http://127.0.0.1:8000/api"
@@ -36,7 +36,7 @@ def start_episode_writing(**kwargs) -> str:
     return data.get("task_id", "unknown")
 
 
-def get_task_status(task_id: str, timeout: float = 5.0) -> Dict[str, Any]:
+def get_task_status(task_id: str, timeout: float = 5.0) -> dict[str, Any]:
     return _request("GET", f"/tasks/{task_id}", timeout=timeout) or {}
 
 

@@ -7,7 +7,7 @@ routers/collab.py - 共同執筆・レビューコメント API
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from fastapi import APIRouter, Query
 from pydantic import BaseModel
@@ -27,19 +27,19 @@ class CommentRequest(BaseModel):
     author_name: str
     content: str
     anchor_text: str = ""
-    parent_id: Optional[int] = None
+    parent_id: int | None = None
 
 
 # ---- Members ----
 @router.post("/books/{book_id}/members")
-async def add_member(book_id: int, req: MemberRequest) -> Dict[str, Any]:
+async def add_member(book_id: int, req: MemberRequest) -> dict[str, Any]:
     async with UnitOfWork(AppContainer.db()) as uow:
         mid = await uow.collab.add_member(book_id, req.user_name, req.role)
     return {"status": "success", "id": mid}
 
 
 @router.get("/books/{book_id}/members")
-async def list_members(book_id: int) -> List[Dict[str, Any]]:
+async def list_members(book_id: int) -> list[dict[str, Any]]:
     async with UnitOfWork(AppContainer.db()) as uow:
         members = await uow.collab.list_members(book_id)
     return [
@@ -49,7 +49,7 @@ async def list_members(book_id: int) -> List[Dict[str, Any]]:
 
 
 @router.delete("/books/{book_id}/members/{member_id}")
-async def remove_member(book_id: int, member_id: int) -> Dict[str, Any]:
+async def remove_member(book_id: int, member_id: int) -> dict[str, Any]:
     async with UnitOfWork(AppContainer.db()) as uow:
         n = await uow.collab.remove_member(member_id)
     if n == 0:
@@ -63,7 +63,7 @@ async def remove_member(book_id: int, member_id: int) -> Dict[str, Any]:
 
 # ---- Comments ----
 @router.post("/books/{book_id}/chapters/{chapter_ep}/comments")
-async def add_comment(book_id: int, chapter_ep: int, req: CommentRequest) -> Dict[str, Any]:
+async def add_comment(book_id: int, chapter_ep: int, req: CommentRequest) -> dict[str, Any]:
     async with UnitOfWork(AppContainer.db()) as uow:
         cid = await uow.collab.add_comment(
             book_id=book_id,
@@ -78,8 +78,8 @@ async def add_comment(book_id: int, chapter_ep: int, req: CommentRequest) -> Dic
 
 @router.get("/books/{book_id}/comments")
 async def list_comments(
-    book_id: int, chapter_ep: Optional[int] = Query(None)
-) -> List[Dict[str, Any]]:
+    book_id: int, chapter_ep: int | None = Query(None)
+) -> list[dict[str, Any]]:
     async with UnitOfWork(AppContainer.db()) as uow:
         comments = await uow.collab.list_comments(book_id, chapter_ep)
     return [
@@ -98,7 +98,7 @@ async def list_comments(
 
 
 @router.patch("/comments/{comment_id}/resolve")
-async def resolve_comment(comment_id: int, payload: Dict[str, Any] = {}) -> Dict[str, Any]:
+async def resolve_comment(comment_id: int, payload: dict[str, Any] = {}) -> dict[str, Any]:
     resolved = bool(payload.get("resolved", True))
     async with UnitOfWork(AppContainer.db()) as uow:
         n = await uow.collab.resolve_comment(comment_id, resolved)
@@ -112,7 +112,7 @@ async def resolve_comment(comment_id: int, payload: Dict[str, Any] = {}) -> Dict
 
 
 @router.delete("/comments/{comment_id}")
-async def delete_comment(comment_id: int) -> Dict[str, Any]:
+async def delete_comment(comment_id: int) -> dict[str, Any]:
     async with UnitOfWork(AppContainer.db()) as uow:
         n = await uow.collab.delete_comment(comment_id)
     if n == 0:

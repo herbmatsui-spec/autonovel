@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import select
@@ -25,7 +25,7 @@ async def get_pending_patches(book_id: int):
 
 @router.post("/{patch_id}/approve")
 async def approve_patch(
-    patch_id: int, req: Optional[Any] = None, api_key: str = Depends(require_api_key)
+    patch_id: int, req: Any | None = None, api_key: str = Depends(require_api_key)
 ):
     from src.backend.database.uow import UnitOfWork
 
@@ -85,7 +85,7 @@ async def approve_patch(
 
 @router.post("/{patch_id}/reject")
 async def reject_patch(
-    patch_id: int, req: Optional[Any] = None, api_key: str = Depends(require_api_key)
+    patch_id: int, req: Any | None = None, api_key: str = Depends(require_api_key)
 ):
     from src.backend.database.uow import UnitOfWork
 

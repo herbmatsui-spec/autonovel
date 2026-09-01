@@ -2,7 +2,7 @@ import asyncio
 import json
 import logging
 import uuid
-from typing import Any, Dict, Optional
+from typing import Any
 
 from pydantic import ValidationError
 
@@ -17,13 +17,13 @@ from src.services.llm_service import LLMService
 logger = logging.getLogger(__name__)
 
 # ガチャリクエスト結果の一時ストア（Digest生成用キャッシュ）
-_GACHA_CACHE: Dict[str, Dict[str, Any]] = {}
+_GACHA_CACHE: dict[str, dict[str, Any]] = {}
 
 
 class GachaService:
     """3案ガチャ生成サービス"""
 
-    def __init__(self, llm_service: Optional[LLMService] = None):
+    def __init__(self, llm_service: LLMService | None = None):
         self.llm_service = llm_service or LLMService()
 
     async def generate_plans(self, request: GachaRequest) -> GachaResponse:
@@ -94,7 +94,7 @@ JSONキー:
         try:
             tasks = [_generate_single_plan(pt, direction) for pt, direction in types]
             plans = await asyncio.wait_for(asyncio.gather(*tasks), timeout=30.0)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.error("Gacha generation timed out (30s)")
             raise TimeoutError("企画の生成処理がタイムアウトしました")
 

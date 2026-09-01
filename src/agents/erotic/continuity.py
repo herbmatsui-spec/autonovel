@@ -7,7 +7,6 @@ erotic/continuity.py - シーン・キャラクター連続性追跡
 from __future__ import annotations
 
 import logging
-from typing import Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, model_validator
 
@@ -41,28 +40,53 @@ logger = logging.getLogger(__name__)
 class SceneStateSnapshot(BaseModel):
     """一般シーンの状態を保存するためのスナップショット。"""
 
-    character_name: Optional[str] = None
-    episode_num: Optional[int] = None
-    scene_type: Optional[str] = None
+    character_name: str | None = None
+    episode_num: int | None = None
+    scene_type: str | None = None
     injury_level: str = "none"
     attitude: str = "neutral"
-    discoveries: Optional[List[str]] = None
+    discoveries: list[str] | None = None
     travel_state: str = "stable"
     recovery_state: str = "full"
     perspective: str = "standard"
     foreshadowing_active: bool = False
     time_of_day: str = "unknown"
-    items_held: Optional[List[str]] = None
+    items_held: list[str] | None = None
 
     model_config = ConfigDict(extra="forbid")
 
     @model_validator(mode="after")
-    def _init_lists(self) -> "SceneStateSnapshot":
+    def _init_lists(self) -> SceneStateSnapshot:
         if self.discoveries is None:
             self.discoveries = []
         if self.items_held is None:
             self.items_held = []
         return self
+
+    def to_illustration_prompt(self, additional_tags: list[str] | None = None) -> str:
+        """シーン状態スナップショットから画像生成AI向けの英語プロンプトタグを生成する."""
+        tags = []
+        if self.character_name:
+            tags.append(f"1girl, {self.character_name}")
+        if self.scene_type:
+            tags.append(f"{self.scene_type} scene")
+        if self.time_of_day and self.time_of_day != "unknown":
+            tags.append(self.time_of_day)
+        if self.attitude == "hostile":
+            tags.append("glaring, tense atmosphere")
+        elif self.attitude == "friendly":
+            tags.append("gentle smile, warm lighting")
+        elif self.attitude in ("sensual", "intimate"):
+            tags.append("blushing, heavy breathing, parted lips, soft romantic lighting")
+
+        if self.injury_level != "none":
+            tags.append("scratches, torn clothes")
+
+        if additional_tags:
+            tags.extend(additional_tags)
+
+        tags.append("masterpiece, best quality, highly detailed anime illustration")
+        return ", ".join(tags)
 
 
 class SceneContinuityTracker:
@@ -74,10 +98,11 @@ class SceneContinuityTracker:
 
     def save_snapshot(self, snapshot: SceneStateSnapshot) -> None:
         """シーン状態スナップショットを保存する。"""
+        import contextlib
         import json
         import sqlite3
 
-        with sqlite3.connect(self.db_path) as conn:
+        with contextlib.closing(sqlite3.connect(self.db_path)) as conn:
             conn.execute(
                 """
                 INSERT OR REPLACE INTO scene_snapshots
@@ -100,39 +125,41 @@ class SceneContinuityTracker:
                     json.dumps(snapshot.items_held),
                 ),
             )
+            conn.commit()
 
-    def get_snapshot(self, episode_num: int, character_name: str) -> Optional[SceneStateSnapshot]:
+    def get_snapshot(self, episode_num: int, character_name: str) -> SceneStateSnapshot | None:
         """指定エピソードのキャラクター状態を取得する。"""
+        import contextlib
         import json
         import sqlite3
 
-        with sqlite3.connect(self.db_path) as conn:
+        with contextlib.closing(sqlite3.connect(self.db_path)) as conn:
             conn.row_factory = sqlite3.Row
             cur = conn.execute(
                 "SELECT * FROM scene_snapshots WHERE episode_num = ? AND character_name = ?",
                 (episode_num, character_name),
             )
             row = cur.fetchone()
-            if row:
-                return SceneStateSnapshot(
-                    character_name=row["character_name"],
-                    episode_num=row["episode_num"],
-                    scene_type=row["scene_type"],
-                    injury_level=row["injury_level"],
-                    attitude=row["attitude"],
-                    discoveries=json.loads(row["discoveries"]),
-                    travel_state=row["travel_state"],
-                    recovery_state=row["recovery_state"],
-                    perspective=row["perspective"],
-                    foreshadowing_active=bool(row["foreshadowing_active"]),
-                    time_of_day=row["time_of_day"],
-                    items_held=json.loads(row["items_held"]),
-                )
-        return None
+            if not row:
+                return None
+            return SceneStateSnapshot(
+                character_name=row["character_name"],
+                episode_num=row["episode_num"],
+                scene_type=row["scene_type"],
+                injury_level=row["injury_level"],
+                attitude=row["attitude"],
+                discoveries=json.loads(row["discoveries"]) if row["discoveries"] else [],
+                travel_state=row["travel_state"],
+                recovery_state=row["recovery_state"],
+                perspective=row["perspective"],
+                foreshadowing_active=bool(row["foreshadowing_active"]),
+                time_of_day=row["time_of_day"],
+                items_held=json.loads(row["items_held"]) if row["items_held"] else [],
+            )
 
     def get_previous_snapshot(
         self, episode_num: int, character_name: str
-    ) -> Optional[SceneStateSnapshot]:
+    ) -> SceneStateSnapshot | None:
         """直前のエピソードの状態を取得する。"""
         return self.get_snapshot(episode_num - 1, character_name)
 
@@ -170,7 +197,7 @@ class SceneContinuityTracker:
 
     def check_injury_continuity(
         self, current_ep: int, character_name: str, current_text: str
-    ) -> List[str]:
+    ) -> list[str]:
         """戦闘負傷の一貫性をチェックする。"""
         issues = []
         prev_snapshot = self.get_previous_snapshot(current_ep, character_name)
@@ -210,7 +237,7 @@ class SceneContinuityTracker:
         kw_map = {
             "hostile": ["拒絶", "怒り", "罵倒", "軽蔑", "激昂", "憎しみ", "突き放す", "敵意"],
             "tense": ["緊張", "気まずい", "沈黙", "警戒", "険しい", "冷ややか", "対立"],
-            "friendly": ["親密", "信頼", "微笑み", "微笑んだ", "穏やか", "快諾", "共感", "温かい"],
+            "friendly": ["親密", "信頼", "微笑み", "微笑んだ", "微笑", "にこやか", "穏やか", "快諾", "共感", "温かい"],
         }
 
         for attitude, keywords in kw_map.items():
@@ -218,16 +245,16 @@ class SceneContinuityTracker:
                 if kw in text:
                     scores[attitude] += 1
 
-        # 最もスコアの高いものを選択。同点なら hostile > tense > friendly > neutral の順で優先
-        for attitude in ["hostile", "tense", "friendly"]:
-            if scores[attitude] > 0:
-                return attitude
+        # 最もスコアの高い態度を選択
+        best_attitude = max(scores, key=scores.get)
+        if scores[best_attitude] > 0:
+            return best_attitude
 
         return "neutral"
 
     def check_attitude_continuity(
         self, current_ep: int, character_name: str, current_text: str
-    ) -> List[str]:
+    ) -> list[str]:
         """会話態度の一貫性をチェックする。"""
         issues = []
         prev_snapshot = self.get_previous_snapshot(current_ep, character_name)
@@ -249,7 +276,7 @@ class SceneContinuityTracker:
 
         return issues
 
-    def _detect_discoveries(self, text: str) -> List[str]:
+    def _detect_discoveries(self, text: str) -> list[str]:
         """テキストから探索による発見事項を抽出する。"""
         discoveries = []
         discovery_keywords = [
@@ -271,7 +298,7 @@ class SceneContinuityTracker:
 
     def check_discovery_continuity(
         self, current_ep: int, character_name: str, current_text: str
-    ) -> List[str]:
+    ) -> list[str]:
         """探索発見の一貫性をチェックする。"""
         issues = []
         prev_snapshot = self.get_previous_snapshot(current_ep, character_name)
@@ -309,7 +336,7 @@ class SceneContinuityTracker:
 
     def check_travel_continuity(
         self, current_ep: int, character_name: str, current_text: str
-    ) -> List[str]:
+    ) -> list[str]:
         """移動接続の一貫性をチェックする。"""
         issues = []
         prev_snapshot = self.get_previous_snapshot(current_ep, character_name)
@@ -351,7 +378,7 @@ class SceneContinuityTracker:
 
     def check_perspective_continuity(
         self, current_ep: int, character_name: str, current_text: str
-    ) -> List[str]:
+    ) -> list[str]:
         """独白視点の一貫性をチェックする。"""
         issues = []
         prev_snapshot = self.get_previous_snapshot(current_ep, character_name)
@@ -389,7 +416,7 @@ class SceneContinuityTracker:
 
     def check_recovery_continuity(
         self, current_ep: int, character_name: str, current_text: str
-    ) -> List[str]:
+    ) -> list[str]:
         """休息回復の一貫性をチェックする。"""
         issues = []
         prev_snapshot = self.get_previous_snapshot(current_ep, character_name)
@@ -423,7 +450,60 @@ class SceneContinuityTracker:
 
         return issues
 
-    def _detect_foreshadowing(self, text: str) -> List[str]:
+    def _detect_item_ownership(self, text: str) -> list[str]:
+        """テキストから所持・使用しているアイテムを抽出する。"""
+        target_items = [
+            "\u8056\u5263",  # 聖剣
+            "\u9b54\u5c0e\u66f8",  # 魔導書
+            "\u30dd\u30fc\u30b7\u30e7\u30f3",  # ポーション
+            "\u6307\u8f2a",  # 指輪
+            "\u76fe",  # 盾
+            "\u6756",  # 杖
+            "\u77ed\u5263",  # 短剣
+            "\u30da\u30f3\u30c0\u30f3\u30c8",  # ペンダント
+            "\u30aa\u30fc\u30d6",  # オーブ
+            "\u5dfb\u7269",  # 巻物
+            "\u5263",  # 剣
+            "\u93a7",  # 鎧
+            "\u9375",  # 鍵
+            "\u85ac",  # 薬
+        ]
+        if isinstance(ITEM_KEYWORDS, (list, set, tuple)):
+            for kw in ITEM_KEYWORDS:
+                if isinstance(kw, str) and len(kw) >= 1:
+                    target_items.append(kw)
+
+        found = []
+        for item in sorted(set(target_items), key=len, reverse=True):
+            if item in text and item not in found:
+                found.append(item)
+        return found
+
+    def _detect_perspective(self, text: str) -> str:
+        """テキストから視点（一人称 / 三人称）を判定する。"""
+        first_person_kw = ["私は", "私が", "俺は", "俺が", "僕は", "僕が", "自分は"]
+        if any(kw in text for kw in first_person_kw):
+            return "first_person"
+        return "third_person"
+
+    def check_perspective_continuity(
+        self, current_ep: int, character_name: str, current_text: str
+    ) -> list[str]:
+        """視点の一貫性をチェックする。"""
+        issues = []
+        prev_snapshot = self.get_previous_snapshot(current_ep, character_name)
+        if not prev_snapshot or prev_snapshot.perspective == "standard":
+            return issues
+
+        current_perspective = self._detect_perspective(current_text)
+        if prev_snapshot.perspective != current_perspective:
+            issues.append(
+                f"【整合性警告】視点が変更されています（{prev_snapshot.perspective} → {current_perspective}）。"
+            )
+
+        return issues
+
+    def _detect_foreshadowing(self, text: str) -> list[str]:
         """テキストから伏線と思われるキーワードを抽出する。"""
         found = []
         for keyword in FORESHADOW_KEYWORDS:
@@ -433,7 +513,7 @@ class SceneContinuityTracker:
 
     def check_foreshadowing_continuity(
         self, current_ep: int, character_name: str, current_text: str
-    ) -> List[str]:
+    ) -> list[str]:
         """伏線が適切に継承または回収されているかを確認する。"""
         issues = []
         prev_snapshot = self.get_previous_snapshot(current_ep, character_name)
@@ -464,7 +544,7 @@ class SceneContinuityTracker:
             discoveries=self._detect_discoveries(text),
             travel_state=self._detect_travel_state(text),
             recovery_state=self._detect_recovery_state(text),
-            perspective=self._detect_monologue_perspective(text),
+            perspective=self._detect_perspective(text),
             foreshadowing_active=len(self._detect_foreshadowing(text)) > 0,
             time_of_day=self._detect_time_of_day(text),
             items_held=self._detect_item_ownership(text),
@@ -472,7 +552,7 @@ class SceneContinuityTracker:
 
     def check_time_continuity(
         self, current_ep: int, character_name: str, current_text: str
-    ) -> List[str]:
+    ) -> list[str]:
         """時間帯の不自然な遷移をチェックする。"""
         issues = []
         prev_snapshot = self.get_previous_snapshot(current_ep, character_name)
@@ -501,17 +581,9 @@ class SceneContinuityTracker:
 
         return issues
 
-    def _detect_item_ownership(self, text: str) -> List[str]:
-        """テキストから所持アイテムや重要な物品の記述を抽出する。"""
-        found = []
-        for item in ITEM_KEYWORDS:
-            if item in text:
-                found.append(item)
-        return found
-
     def check_all_continuity(
         self, current_ep: int, character_name: str, current_text: str
-    ) -> List[str]:
+    ) -> list[str]:
         """全ての整合性チェックをまとめて実行する。"""
         all_issues = []
 
@@ -535,7 +607,7 @@ class SceneContinuityTracker:
 
     def check_item_continuity(
         self, current_ep: int, character_name: str, current_text: str
-    ) -> List[str]:
+    ) -> list[str]:
         """アイテムの所持状態に矛盾がないか確認する。"""
         issues = []
         prev_snapshot = self.get_previous_snapshot(current_ep, character_name)
@@ -568,10 +640,15 @@ class SceneContinuityTracker:
 
     def _detect_time_of_day(self, text: str) -> str:
         """テキストから時間帯（朝・昼・夕・夜・不明）を判定する。"""
+        period_map = {
+            "morning": ["朝", "夜明け", "早朝", "朝日", "明け方"],
+            "day": ["昼", "正午", "昼下がり", "午後", "太陽"],
+            "evening": ["夕方", "夕暮れ", "黄昏", "日暮れ", "夕日"],
+            "night": ["夜", "深夜", "夜更け", "月明かり", "夜中"],
+        }
         scores = {"morning": 0, "day": 0, "evening": 0, "night": 0}
 
-        # TIME_KEYWORDS は {'morning': [...], 'day': [...], ...} の形式を想定
-        for period, keywords in TIME_KEYWORDS.items():
+        for period, keywords in period_map.items():
             for kw in keywords:
                 if kw in text:
                     scores[period] += 1
@@ -584,9 +661,10 @@ class SceneContinuityTracker:
 
     def _init_db(self) -> None:
         """シーン状態保存用テーブルを初期化する。"""
+        import contextlib
         import sqlite3
 
-        with sqlite3.connect(self.db_path) as conn:
+        with contextlib.closing(sqlite3.connect(self.db_path)) as conn:
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS scene_snapshots (
                     character_name TEXT,
@@ -604,6 +682,7 @@ class SceneContinuityTracker:
                     PRIMARY KEY (character_name, episode_num)
                 )
             """)
+            conn.commit()
 
 
 class CharacterStateSnapshot(BaseModel):
@@ -616,12 +695,12 @@ class CharacterStateSnapshot(BaseModel):
     clothing_state: str = "fully_dressed"
     intimacy_level: str = "acquaintance"
     location: str = "unknown"
-    custom_flags: Optional[Dict[str, str]] = None
+    custom_flags: dict[str, str] | None = None
 
     model_config = ConfigDict(extra="forbid")
 
     @model_validator(mode="after")
-    def _init_custom_flags(self) -> "CharacterStateSnapshot":
+    def _init_custom_flags(self) -> CharacterStateSnapshot:
         if self.custom_flags is None:
             self.custom_flags = {}
         return self
@@ -631,8 +710,8 @@ class ContinuityReport(BaseModel):
     """話間整合性チェックの結果レポート。"""
 
     is_consistent: bool
-    issues: List[str]
-    checked_dimensions: List[str]
+    issues: list[str]
+    checked_dimensions: list[str]
     character_name: str
     episode_num: int
 
@@ -642,31 +721,31 @@ class ContinuityTracker:
 
     def __init__(self, db_path: str = "storage/db/kaku_hegemony_v2.db"):
         self.db_path = db_path
-        self._snapshots: Dict[int, Dict[str, CharacterStateSnapshot]] = {}
+        self._snapshots: dict[int, dict[str, CharacterStateSnapshot]] = {}
         self._init_db()
 
     def _init_db(self):
+        import contextlib
         import sqlite3
 
         try:
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS character_continuity_snapshots (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    character_name TEXT,
-                    episode_num INTEGER,
-                    stamina_level TEXT,
-                    psych_state TEXT,
-                    clothing_state TEXT,
-                    intimacy_level TEXT,
-                    location TEXT,
-                    custom_flags TEXT,
-                    UNIQUE(character_name, episode_num)
-                )
-            """)
-            conn.commit()
-            conn.close()
+            with contextlib.closing(sqlite3.connect(self.db_path)) as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS character_continuity_snapshots (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        character_name TEXT,
+                        episode_num INTEGER,
+                        stamina_level TEXT,
+                        psych_state TEXT,
+                        clothing_state TEXT,
+                        intimacy_level TEXT,
+                        location TEXT,
+                        custom_flags TEXT,
+                        UNIQUE(character_name, episode_num)
+                    )
+                """)
+                conn.commit()
         except Exception as e:
             logger.warning(
                 "Failed to initialize SQLite for ContinuityTracker: %s. Using memory only.", e
@@ -679,87 +758,85 @@ class ContinuityTracker:
             self._snapshots[ep] = {}
         self._snapshots[ep][snapshot.character_name] = snapshot
 
+        import contextlib
         import json
         import sqlite3
 
         try:
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-            cursor.execute(
-                """
-                INSERT OR REPLACE INTO character_continuity_snapshots
-                (character_name, episode_num, stamina_level, psych_state, clothing_state, intimacy_level, location, custom_flags)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-                (
-                    snapshot.character_name,
-                    snapshot.episode_num,
-                    snapshot.stamina_level,
-                    snapshot.psych_state,
-                    snapshot.clothing_state,
-                    snapshot.intimacy_level,
-                    snapshot.location,
-                    json.dumps(snapshot.custom_flags),
-                ),
-            )
-            conn.commit()
-            conn.close()
+            with contextlib.closing(sqlite3.connect(self.db_path)) as conn:
+                cursor = conn.cursor()
+                cursor.execute(
+                    """
+                    INSERT OR REPLACE INTO character_continuity_snapshots
+                    (character_name, episode_num, stamina_level, psych_state, clothing_state, intimacy_level, location, custom_flags)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                    (
+                        snapshot.character_name,
+                        snapshot.episode_num,
+                        snapshot.stamina_level,
+                        snapshot.psych_state,
+                        snapshot.clothing_state,
+                        snapshot.intimacy_level,
+                        snapshot.location,
+                        json.dumps(snapshot.custom_flags),
+                    ),
+                )
+                conn.commit()
         except Exception as e:
             logger.warning("Failed to save snapshot to SQLite: %s", e)
 
     def get_snapshot(
         self, episode_num: int, character_name: str
-    ) -> Optional[CharacterStateSnapshot]:
+    ) -> CharacterStateSnapshot | None:
         """指定エピソードのキャラクター状態を取得する。"""
         # メモリ内キャッシュを優先
         if episode_num in self._snapshots and character_name in self._snapshots[episode_num]:
             return self._snapshots[episode_num][character_name]
 
+        import contextlib
         import json
         import sqlite3
 
         try:
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-            cursor.execute(
-                """
-                SELECT stamina_level, psych_state, clothing_state, intimacy_level, location, custom_flags
-                FROM character_continuity_snapshots
-                WHERE episode_num = ? AND character_name = ?
-            """,
-                (episode_num, character_name),
-            )
-            row = cursor.fetchone()
-            conn.close()
-            if row:
-                flags = {}
-                try:
-                    flags = json.loads(row[5]) if row[5] else {}
-                except Exception:
-                    pass
-                snap = CharacterStateSnapshot(
-                    character_name=character_name,
-                    episode_num=episode_num,
-                    stamina_level=row[0],
-                    psych_state=row[1],
-                    clothing_state=row[2],
-                    intimacy_level=row[3],
-                    location=row[4],
-                    custom_flags=flags,
+            with contextlib.closing(sqlite3.connect(self.db_path)) as conn:
+                cursor = conn.cursor()
+                cursor.execute(
+                    """
+                    SELECT stamina_level, psych_state, clothing_state, intimacy_level, location, custom_flags
+                    FROM character_continuity_snapshots
+                    WHERE episode_num = ? AND character_name = ?
+                """,
+                    (episode_num, character_name),
                 )
-                # キャッシュに保存
-                if episode_num not in self._snapshots:
-                    self._snapshots[episode_num] = {}
-                self._snapshots[episode_num][character_name] = snap
-                return snap
+                row = cursor.fetchone()
+                if row:
+                    flags = {}
+                    try:
+                        flags = json.loads(row[5]) if row[5] else {}
+                    except Exception:
+                        pass
+                    snap = CharacterStateSnapshot(
+                        character_name=character_name,
+                        episode_num=episode_num,
+                        stamina_level=row[0],
+                        psych_state=row[1],
+                        clothing_state=row[2],
+                        intimacy_level=row[3],
+                        location=row[4],
+                        custom_flags=flags,
+                    )
+                    if episode_num not in self._snapshots:
+                        self._snapshots[episode_num] = {}
+                    self._snapshots[episode_num][character_name] = snap
+                    return snap
         except Exception as e:
-            logger.warning("Failed to load snapshot from SQLite: %s", e)
-
+            logger.warning("Failed to get snapshot from SQLite: %s", e)
         return None
 
     def get_previous_snapshot(
         self, current_ep: int, character_name: str
-    ) -> Optional[CharacterStateSnapshot]:
+    ) -> CharacterStateSnapshot | None:
         """前話のキャラクター状態を取得する。"""
         return self.get_snapshot(current_ep - 1, character_name)
 
@@ -859,9 +936,9 @@ class ContinuityTracker:
 
     def check_stamina_continuity(
         self, current_ep: int, character_name: str, current_text: str
-    ) -> List[str]:
+    ) -> list[str]:
         """前話の体力状態と今話冒層の体力状態の矛盾を検出する。"""
-        issues: List[str] = []
+        issues: list[str] = []
         prev = self.get_previous_snapshot(current_ep, character_name)
         if prev is None:
             return issues
@@ -882,9 +959,9 @@ class ContinuityTracker:
 
     def check_recovery_description(
         self, current_ep: int, character_name: str, current_text: str
-    ) -> List[str]:
+    ) -> list[str]:
         """前話で疲弊→今話で回復している場合、回復描写があるか検証する。"""
-        issues: List[str] = []
+        issues: list[str] = []
         prev = self.get_previous_snapshot(current_ep, character_name)
         if prev is None:
             return issues
@@ -909,9 +986,9 @@ class ContinuityTracker:
 
     def check_stamina_jump(
         self, current_ep: int, character_name: str, current_text: str
-    ) -> List[str]:
+    ) -> list[str]:
         """前話→今話で体力が2段階以上ジャンプした場合に警告する。"""
-        issues: List[str] = []
+        issues: list[str] = []
         prev = self.get_previous_snapshot(current_ep, character_name)
         if prev is None:
             return issues
@@ -931,9 +1008,9 @@ class ContinuityTracker:
 
     def check_psych_continuity(
         self, current_ep: int, character_name: str, current_text: str
-    ) -> List[str]:
+    ) -> list[str]:
         """前話の心理状態と今話冒頭の心理状態の矛盾を検出する。"""
-        issues: List[str] = []
+        issues: list[str] = []
         prev = self.get_previous_snapshot(current_ep, character_name)
         if prev is None:
             return issues
@@ -956,9 +1033,9 @@ class ContinuityTracker:
 
     def check_psych_trigger(
         self, current_ep: int, character_name: str, current_text: str
-    ) -> List[str]:
+    ) -> list[str]:
         """心理状態が大きく変化する場合、トリガーイベントがあるか検証する。"""
-        issues: List[str] = []
+        issues: list[str] = []
         prev = self.get_previous_snapshot(current_ep, character_name)
         if prev is None:
             return issues
@@ -990,9 +1067,9 @@ class ContinuityTracker:
 
     def check_psych_jump(
         self, current_ep: int, character_name: str, current_text: str
-    ) -> List[str]:
+    ) -> list[str]:
         """前話→今話で心理状態が2段階以上ジャンプした場合に警告する。"""
-        issues: List[str] = []
+        issues: list[str] = []
         prev = self.get_previous_snapshot(current_ep, character_name)
         if prev is None:
             return issues
@@ -1018,11 +1095,11 @@ class ContinuityTracker:
 
     def check_clothing_continuity(
         self, current_ep: int, character_name: str, current_text: str
-    ) -> List[str]:
+    ) -> list[str]:
         from src.agents.erotic.filter import EroticIntegrityChecker
 
         """前話末の衣服状態が今話冒頭で矛盾していないか検証する。"""
-        issues: List[str] = []
+        issues: list[str] = []
         prev = self.get_previous_snapshot(current_ep, character_name)
         if prev is None:
             return issues
@@ -1048,8 +1125,8 @@ class ContinuityTracker:
 
     def check_intimacy_regression(
         self, current_ep: int, character_name: str, current_text: str
-    ) -> List[str]:
-        issues: List[str] = []
+    ) -> list[str]:
+        issues: list[str] = []
         prev = self.get_previous_snapshot(current_ep, character_name)
         if prev is None:
             return issues
@@ -1067,8 +1144,8 @@ class ContinuityTracker:
 
     def check_intimacy_rush(
         self, current_ep: int, character_name: str, current_text: str
-    ) -> List[str]:
-        issues: List[str] = []
+    ) -> list[str]:
+        issues: list[str] = []
         prev = self.get_previous_snapshot(current_ep, character_name)
         if prev is None:
             return issues
@@ -1088,8 +1165,8 @@ class ContinuityTracker:
 
     def check_intimacy_vs_erotic_level(
         self, current_ep: int, character_name: str, current_text: str
-    ) -> List[str]:
-        issues: List[str] = []
+    ) -> list[str]:
+        issues: list[str] = []
         prev = self.get_previous_snapshot(current_ep, character_name)
         if prev is None:
             return issues
@@ -1104,8 +1181,8 @@ class ContinuityTracker:
 
     def check_location_continuity(
         self, current_ep: int, character_name: str, current_text: str
-    ) -> List[str]:
-        issues: List[str] = []
+    ) -> list[str]:
+        issues: list[str] = []
         prev = self.get_previous_snapshot(current_ep, character_name)
         if prev is None or prev.location == "unknown":
             return issues
@@ -1125,8 +1202,8 @@ class ContinuityTracker:
 
     WEATHER_KEYWORDS = ["雨", "雪", "晴", "曇", "嵐", "風", "霧", "月明かり", "星"]
 
-    def check_environment_consistency(self, prev_text: str, current_text: str) -> List[str]:
-        issues: List[str] = []
+    def check_environment_consistency(self, prev_text: str, current_text: str) -> list[str]:
+        issues: list[str] = []
         prev_end = prev_text[max(0, len(prev_text) - 300) :]
         curr_start = current_text[:300]
 

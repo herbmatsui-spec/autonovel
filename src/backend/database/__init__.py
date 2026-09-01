@@ -4,18 +4,6 @@ from __future__ import annotations
 database/__init__.py - データベースパッケージのパブリックインターフェース（後方互換性保証用Facade）
 """
 # 既存ファイルが database からモデルを間接インポートしているため、モデルも再エクスポートする
-from .models import (
-    BibleDbModel,
-    BookDbModel,
-    BranchDbModel,
-    ChapterDbModel,
-    CharacterDbModel,
-    PlotDbModel,
-    PromptVersionDbModel,
-    WorldBible,
-)
-
-
 from .core import (
     DatabaseManager,
     SessionLocal,
@@ -26,22 +14,27 @@ from .core import (
     retry_with_logging,
     set_db_manager,
 )
+from .models import (
+    BibleDbModel,
+    BookDbModel,
+    BranchDbModel,
+    ChapterDbModel,
+    CharacterDbModel,
+    PlotDbModel,
+    PromptVersionDbModel,
+    WorldBible,
+)
 from .repository import DataRepository
 from .uow import UnitOfWork
 
 
 def get_db():
     """FastAPI Depends 用の DB セッションプロバイダ。"""
-    mgr = get_db_manager()
-    session = mgr.get_session()
+    session = SessionLocal()
     try:
         yield session
     finally:
-        import inspect
-        if inspect.iscoroutinefunction(getattr(session, "close", None)):
-            pass
-        elif hasattr(session, "close"):
-            session.close()
+        session.close()
 
 
 async def get_uow():

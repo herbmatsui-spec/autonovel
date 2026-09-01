@@ -8,7 +8,6 @@
 import logging
 import re
 import time
-from typing import List, Optional
 
 from src.models.illustration import IllustrationRequest, IllustrationResult, IllustrationType
 from src.services.illustration.model_selector import resolve_request_model
@@ -49,7 +48,7 @@ class SceneExtractor:
         "窓",
     ]
 
-    def extract_scenes(self, text: str, max_scenes: int = 3) -> List[str]:
+    def extract_scenes(self, text: str, max_scenes: int = 3) -> list[str]:
         """ヒューリスティックでシーンを抽出する（LLM不要）。"""
         paragraphs = [p.strip() for p in re.split(r"\n{2,}|[。！？]\s*", text) if p.strip()]
         scored = []
@@ -62,7 +61,7 @@ class SceneExtractor:
         scored.sort(key=lambda x: x[0], reverse=True)
         return [p for _, p in scored[:max_scenes]]
 
-    async def extract_scenes_with_llm(self, text: str, llm, max_scenes: int = 3) -> List[str]:
+    async def extract_scenes_with_llm(self, text: str, llm, max_scenes: int = 3) -> list[str]:
         """LLM を使ってシーンを抽出する。失敗時はヒューリスティックにフォールバック。"""
         prompt = (
             "以下の小説本文から、挿絵として視覚化するのにふさわしい"
@@ -117,12 +116,12 @@ class SceneIllustrator:
 class SceneIllustrationService:
     """シーン抽出と挿絵生成をまとめた高レベルサービス。"""
 
-    def __init__(self, image_service: ImageService, llm: Optional[object] = None):
+    def __init__(self, image_service: ImageService, llm: object | None = None):
         self.extractor = SceneExtractor()
         self.illustrator = SceneIllustrator(image_service)
         self.llm = llm
 
-    async def generate(self, request: IllustrationRequest) -> List[IllustrationResult]:
+    async def generate(self, request: IllustrationRequest) -> list[IllustrationResult]:
         """本文からシーンを抽出し、各シーンの挿絵を生成して返す。"""
         text = request.scene_text or ""
         if self.llm is not None:
@@ -130,7 +129,7 @@ class SceneIllustrationService:
         else:
             scenes = self.extractor.extract_scenes(text, max_scenes=3)
 
-        results: List[IllustrationResult] = []
+        results: list[IllustrationResult] = []
         for scene in scenes:
             results.append(await self.illustrator.generate_for_scene(scene, request))
         return results

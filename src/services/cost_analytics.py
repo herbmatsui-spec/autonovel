@@ -8,12 +8,12 @@ services/cost_analytics.py - 執筆コスト集計・予算アラート
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 # モデル別 単価 (USD / 1M tokens): (input, output)
-DEFAULT_PRICING: Dict[str, tuple] = {
+DEFAULT_PRICING: dict[str, tuple] = {
     "gemini-1.5-flash": (0.075, 0.30),
     "gemini-1.5-pro": (1.25, 5.0),
     "gemini-2.0-flash": (0.10, 0.40),
@@ -40,7 +40,7 @@ def _task_to_model(task_type: str) -> str:
     return mapping.get(task_type, "default")
 
 
-def check_budget_alert(total_cost_usd: float, budget_usd: Optional[float]) -> Dict[str, Any]:
+def check_budget_alert(total_cost_usd: float, budget_usd: float | None) -> dict[str, Any]:
     """予算アラートを判定する。"""
     if budget_usd is None or budget_usd <= 0:
         return {"enabled": False, "exceeded": False, "ratio": 0.0}

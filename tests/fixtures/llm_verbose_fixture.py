@@ -1,7 +1,6 @@
 import json
 import random
 from pathlib import Path
-from typing import Optional
 
 from src.models.sharp_edge import SharpEdgeSpec
 
@@ -12,7 +11,7 @@ class LLMVerboseFixture:
     リテラル一致に依存しない保全テストに使用する。
     """
 
-    def __init__(self, data_path: Optional[str] = None):
+    def __init__(self, data_path: str | None = None):
         if data_path is None:
             data_path = str(Path(__file__).parent / "verbose_edges.json")
         self.data_path = data_path
@@ -22,7 +21,7 @@ class LLMVerboseFixture:
         path = Path(self.data_path)
         if not path.exists():
             raise FileNotFoundError(f"Fixture data not found at {self.data_path}")
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             return json.load(f)
 
     def get_random_description(self, edge_type: str) -> str:
@@ -40,7 +39,7 @@ class LLMVerboseFixture:
             return self.get_random_description(edge_type)
         return samples[index]
 
-    def get_verbose_spec(self, edge_type: str, index: Optional[int] = None) -> SharpEdgeSpec:
+    def get_verbose_spec(self, edge_type: str, index: int | None = None) -> SharpEdgeSpec:
         """冗長な説明文を持つ SharpEdgeSpec インスタンスを生成して返す。"""
         if index is not None:
             description = self.get_description_by_index(edge_type, index)

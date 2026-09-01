@@ -4,8 +4,6 @@ database/repositories/collab.py - 共同執筆・レビューコメント用リ�
 
 from __future__ import annotations
 
-from typing import List, Optional
-
 from sqlalchemy import select
 
 from src.backend.database.models import Comment, ProjectMember
@@ -25,7 +23,7 @@ class CollabRepository:
         return member.id
 
     @retry_on_lock()
-    async def list_members(self, book_id: int) -> List[ProjectMember]:
+    async def list_members(self, book_id: int) -> list[ProjectMember]:
         result = await self.session.execute(
             select(ProjectMember).where(ProjectMember.book_id == book_id).order_by(ProjectMember.id)
         )
@@ -49,7 +47,7 @@ class CollabRepository:
         author_name: str,
         content: str,
         anchor_text: str = "",
-        parent_id: Optional[int] = None,
+        parent_id: int | None = None,
     ) -> int:
         comment = Comment(
             book_id=book_id,
@@ -65,7 +63,7 @@ class CollabRepository:
         return comment.id
 
     @retry_on_lock()
-    async def list_comments(self, book_id: int, chapter_ep: Optional[int] = None) -> List[Comment]:
+    async def list_comments(self, book_id: int, chapter_ep: int | None = None) -> list[Comment]:
         stmt = select(Comment).where(Comment.book_id == book_id)
         if chapter_ep is not None:
             stmt = stmt.where(Comment.chapter_ep == chapter_ep)

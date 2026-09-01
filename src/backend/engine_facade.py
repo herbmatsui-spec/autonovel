@@ -14,7 +14,7 @@ engine_facade.py - UltimateHegemonyEngine の後方互換ファサード。
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional, Tuple
+from typing import Any
 
 from src.backend.engine_config import EngineConfig
 
@@ -133,7 +133,7 @@ class EngineFacade:
 
     # ---- 明示的に委譲するメソッド (可読性・将来の置換のため) ----
 
-    async def sync_bible(self, book_id: int, reporter: Optional[Any] = None) -> Any:  # noqa: ANN401
+    async def sync_bible(self, book_id: int, reporter: Any | None = None) -> Any:  # noqa: ANN401
         return await self._engine.sync_bible(book_id, reporter=reporter)
 
     async def resolve_bible_setting(self, setting_id: int, status: str) -> None:
@@ -144,7 +144,7 @@ class EngineFacade:
         book_id: int,
         ep_num: int,
         genre: str,
-        story_type: Optional[str] = None,
+        story_type: str | None = None,
     ) -> float:
         return await self._engine.determine_target_tension(book_id, ep_num, genre, story_type)
 
@@ -154,7 +154,7 @@ class EngineFacade:
         generated_tension: float,
         book_id: int,
         tolerance: float = 0.2,
-    ) -> Tuple[bool, float]:
+    ) -> tuple[bool, float]:
         return await self._engine.validate_tension_deviation(
             ep_num, generated_tension, book_id, tolerance
         )

@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import List, Optional
+
 from pydantic import BaseModel, Field
 
 
@@ -59,13 +59,13 @@ class GachaPlan(BaseModel):
 
 class GachaRequest(BaseModel):
     genre: str = Field(..., description="対象ジャンル", min_length=1)
-    keywords: List[str] = Field(..., description="キーワードリスト", min_length=1)
+    keywords: list[str] = Field(..., description="キーワードリスト", min_length=1)
     temperature: float = Field(0.7, description="生成の温度感")
 
 
 class GachaResponse(BaseModel):
     request_id: str = Field(..., description="ガチャリクエスト全体のID")
-    plans: List[GachaPlan] = Field(
+    plans: list[GachaPlan] = Field(
         ..., description="生成された3つの企画案", min_length=3, max_length=3
     )
 

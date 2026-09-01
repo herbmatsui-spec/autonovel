@@ -1,6 +1,5 @@
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, Optional
 
 
 class IllustrationType(Enum):
@@ -27,14 +26,14 @@ class SafetyLevel(Enum):
 class IllustrationRequest:
     book_id: int
     illustration_type: IllustrationType
-    episode_number: Optional[int] = None
-    character_id: Optional[int] = None
-    scene_text: Optional[str] = None
-    book_context: Dict[str, str] = field(default_factory=dict)
+    episode_number: int | None = None
+    character_id: int | None = None
+    scene_text: str | None = None
+    book_context: dict[str, str] = field(default_factory=dict)
     model: IllustrationModel = IllustrationModel.AUTO
     safety_level: SafetyLevel = SafetyLevel.BLOCK_SOME
     aspect_ratio: str = "3:4"
-    prompt_override: Optional[str] = None
+    prompt_override: str | None = None
 
 
 @dataclass
@@ -44,4 +43,4 @@ class IllustrationResult:
     prompt: str
     model_used: str
     generation_time_ms: int
-    illustration_id: Optional[int] = None
+    illustration_id: int | None = None

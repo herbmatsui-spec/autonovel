@@ -1,5 +1,5 @@
 # mypy: disable-error-code="attr-defined"
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from sqlalchemy import desc, select
 
@@ -14,7 +14,7 @@ class NarrativeMetricRepository(BaseRepository[NarrativeMetric]):
 
     async def get_latest_narrative_metrics(
         self, book_id: int, branch_id: int, ep_num: int, scene_num: int
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """
         指定されたシーンの直前の最新指標を取得する。
         1. 同一エピソードの前のシーン (scene_num - 1)
@@ -68,8 +68,8 @@ class NarrativeMetricRepository(BaseRepository[NarrativeMetric]):
         branch_id: int,
         ep_num: int,
         scene_num: int,
-        scores: List[Dict[str, Any]],
-        version: Optional[int] = None,
+        scores: list[dict[str, Any]],
+        version: int | None = None,
     ) -> None:
         """
         シーンの指標を保存する。
@@ -121,13 +121,13 @@ class NarrativeMetricRepository(BaseRepository[NarrativeMetric]):
             )
         )
 
-    def _aggregate_metrics(self, metrics: List[NarrativeMetric]) -> Dict[str, int]:
+    def _aggregate_metrics(self, metrics: list[NarrativeMetric]) -> dict[str, int]:
         """
         複数のMetricレコードを {metric_name: score} 形式に変換する。
         """
         return {str(m.metric_name): int(m.metric_value) for m in metrics}
 
-    async def get_trend_metrics(self, book_id: int, branch_id: int) -> List[Dict[str, Any]]:
+    async def get_trend_metrics(self, book_id: int, branch_id: int) -> list[dict[str, Any]]:
         """
         ブランチ内の全シーンの最新指標を時系列で取得する。
         """

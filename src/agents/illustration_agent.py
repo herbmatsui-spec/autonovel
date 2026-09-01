@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from src.agents.base import BaseAgent
 from src.models.illustration import (
@@ -45,7 +45,7 @@ class IllustrationAgent(BaseAgent):
             return request
         raise ValueError("Invalid or missing illustration request")
 
-    async def run(self, **kwargs) -> Dict[str, Any]:
+    async def run(self, **kwargs) -> dict[str, Any]:
         """エージェントのメイン実行ロジック。
 
         kwargs:
@@ -120,14 +120,14 @@ class IllustrationAgent(BaseAgent):
 
     async def generate_episode_scenes(
         self, request: IllustrationRequest
-    ) -> List[IllustrationResult]:
+    ) -> list[IllustrationResult]:
         """本文から複数シーンを抽出し、各シーンの挿絵を生成して返す（シーン抽出機能）。"""
         results = await self.scene_service.generate(request)
         for r in results:
             r.illustration_id = await self._persist(request, r)
         return results
 
-    async def _persist(self, request, result: IllustrationResult) -> Optional[int]:
+    async def _persist(self, request, result: IllustrationResult) -> int | None:
         """生成結果をDBに保存する（repo がなければスキップ）。"""
         if self.repo is None or not hasattr(self.repo, "create_illustration"):
             return None

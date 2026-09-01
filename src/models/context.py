@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -8,7 +8,7 @@ class ImmutableInput(BaseModel):
 
     book_id: int
     genre: str
-    initial_concept: Dict[str, Any]
+    initial_concept: dict[str, Any]
 
 
 class SystemSettings(BaseModel):
@@ -24,5 +24,5 @@ class RunState(BaseModel):
     """実行状態（可変）"""
 
     current_episode: int
-    context_data: Dict[str, Any] = {}
+    context_data: dict[str, Any] = {}
     history: list = []

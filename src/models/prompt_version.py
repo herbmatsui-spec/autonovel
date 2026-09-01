@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Union
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -16,16 +16,16 @@ class PromptVersionDbModel(BaseModel):
     """
 
     id: int
-    book_id: Optional[int] = None
+    book_id: int | None = None
     prompt_key: str
     version_tag: str
     content: str
-    score_before: Optional[float] = None
-    score_after: Optional[float] = None
-    ab_test_metrics: Optional[Union[Dict[str, Any], str]] = None
-    rollback_reason: Optional[str] = None
+    score_before: float | None = None
+    score_after: float | None = None
+    ab_test_metrics: dict[str, Any] | str | None = None
+    rollback_reason: str | None = None
     is_active: bool = False
-    created_at: Optional[str] = None
+    created_at: str | None = None
 
     # Compatibility shim for legacy code that expects a ``dict`` like ``get`` method
     def get(self, key: str, default: Any = None) -> Any:

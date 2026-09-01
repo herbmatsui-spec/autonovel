@@ -3,8 +3,9 @@ src/backend/observability/metrics.py - Prometheus メトリクス定義・公開
 """
 
 import time
+from collections.abc import Callable
 from functools import wraps
-from typing import Any, Callable
+from typing import Any
 
 from fastapi import Response
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest

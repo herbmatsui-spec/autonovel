@@ -3,7 +3,6 @@ src/backend/error_handlers.py - FastAPI統一エラーハンドラ
 """
 
 import logging
-from typing import Optional
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -21,7 +20,7 @@ class ErrorResponse(BaseModel):
     success: bool = False
     error_code: str
     error_message: str
-    detail: Optional[str] = None
+    detail: str | None = None
 
 
 async def hegemony_error_handler(request: Request, exc: HegemonyError) -> JSONResponse:

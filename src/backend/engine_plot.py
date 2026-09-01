@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Any, List, Optional
+from typing import Any
 
 from pydantic import ValidationError
 
@@ -34,7 +34,7 @@ def _build_default_hook() -> EmotionalHookSpec:
     )
 
 
-def resolve_emotional_hook(plot: Optional[PlotDbModel]) -> Optional[EmotionalHookSpec]:
+def resolve_emotional_hook(plot: PlotDbModel | None) -> EmotionalHookSpec | None:
     """
     Plot から emotional_hook を取得する。
 
@@ -60,7 +60,7 @@ def resolve_emotional_hook(plot: Optional[PlotDbModel]) -> Optional[EmotionalHoo
 
 
 async def get_emotional_hook_for_plot(
-    plot: Optional[PlotDbModel],
+    plot: PlotDbModel | None,
     repo: Any,
     book_id: int,
     ep_num: int,
@@ -91,7 +91,7 @@ async def get_emotional_hook_for_plot(
     return hook
 
 
-def ensure_emotional_hook_set(plot: Optional[PlotDbModel]) -> None:
+def ensure_emotional_hook_set(plot: PlotDbModel | None) -> None:
     """
     面白さ先行モード時、Plot に emotional_hook が設定されていない場合は
     RuntimeError を送出し、感情設計を強制する。
@@ -103,7 +103,7 @@ def ensure_emotional_hook_set(plot: Optional[PlotDbModel]) -> None:
         raise RuntimeError("面白さ先行モード: emotional_hook が未設定です")
 
 
-def _parse_sharp_edges(raw: Optional[str]) -> List[SharpEdgeSpec]:
+def _parse_sharp_edges(raw: str | None) -> list[SharpEdgeSpec]:
     """
     JSON文字列を List[SharpEdgeSpec] にパースする。失敗時は空リスト。
     """
@@ -143,7 +143,7 @@ def _parse_sharp_edges(raw: Optional[str]) -> List[SharpEdgeSpec]:
         return []
 
 
-async def propose_sharp_edges(pm: Any, plot_summary: str) -> List[SharpEdgeSpec]:
+async def propose_sharp_edges(pm: Any, plot_summary: str) -> list[SharpEdgeSpec]:
     """
     プロット概要から「削ってはいけない3つの角」をLLMに提案させる。
 
@@ -162,7 +162,7 @@ async def propose_sharp_edges(pm: Any, plot_summary: str) -> List[SharpEdgeSpec]
         return []
 
 
-def resolve_sharp_edges(plot: Optional[PlotDbModel]) -> List[SharpEdgeSpec]:
+def resolve_sharp_edges(plot: PlotDbModel | None) -> list[SharpEdgeSpec]:
     """
     Plot から sharp_edges を取得する。
 
@@ -186,8 +186,8 @@ async def enforce_entertainment_gate(
     opening_chars: str,
     threshold: int = 60,
     max_retries: int = 2,
-    regenerate_callback: Optional[Any] = None,
-) -> "EntertainmentCheckResult":
+    regenerate_callback: Any | None = None,
+) -> EntertainmentCheckResult:
     """
     プロット生成後、本文執筆の前に面白さ検証を実行する。
 

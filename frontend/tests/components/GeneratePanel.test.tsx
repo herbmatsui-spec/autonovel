@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { NovelProvider } from "../../src/context/NovelContext";
 import GeneratePanel from "../../src/components/GeneratePanel";
@@ -117,13 +117,12 @@ describe("GeneratePanel", () => {
   it("shows loading state while submitting", async () => {
     server.use(
       http.post("/easy_mode/generate", async () => {
-        await new Promise((resolve) => setTimeout(resolve, 50));
+        await new Promise((resolve) => setTimeout(resolve, 300));
         return HttpResponse.json({ output: "ok", suggestions: [] });
       })
     );
     renderPanel();
-    const user = userEvent.setup();
-    await user.click(screen.getByText(/かんたん執筆開始/));
+    fireEvent.click(screen.getByText(/かんたん執筆開始/));
     expect(screen.getByText(/執筆中/)).toBeInTheDocument();
   });
 });

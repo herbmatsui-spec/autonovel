@@ -7,7 +7,7 @@ UltimateHegemonyEngine が全機能を統合する。
 from __future__ import annotations
 
 import logging
-from typing import Any, Tuple
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -166,7 +166,7 @@ class UltimateHegemonyEngine:
 
     async def validate_tension_deviation(
         self, ep_num: int, generated_tension: float, book_id: int, tolerance: float = 0.2
-    ) -> Tuple[bool, float]:
+    ) -> tuple[bool, float]:
         return await self.plot_service.validate_tension_deviation(
             ep_num=ep_num,
             generated_tension=generated_tension,

@@ -1,7 +1,6 @@
 import logging
 import os
 import time
-from typing import Optional
 
 from google import genai
 from google.genai import types
@@ -32,7 +31,7 @@ class ImageService:
     async def generate(
         self,
         prompt: str,
-        model: Optional[str] = None,
+        model: str | None = None,
         aspect_ratio: str = "3:4",
         negative_prompt: str = "",
         safety_level: SafetyLevel = SafetyLevel.BLOCK_SOME,

@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import Any, Optional
+from typing import Any
 
 import httpx
 
@@ -25,7 +25,7 @@ class ResilientHttpClient:
         self,
         name: str,
         retry_policy: RetryPolicy = RetryPolicy(),
-        cb_config: Optional[CircuitBreakerConfig] = None,
+        cb_config: CircuitBreakerConfig | None = None,
     ):
         self.name = name
         self.retry_policy = retry_policy

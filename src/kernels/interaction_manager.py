@@ -2,7 +2,7 @@
 kernels/interaction_manager.py - インタラクションマネージャー
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from src.shared.event_bus import UIEventType
 
@@ -15,10 +15,10 @@ class InteractionManager:
     インタラクション管理
     """
 
-    def __init__(self, config: Optional[InteractionConfig] = None):
+    def __init__(self, config: InteractionConfig | None = None):
         self.config = config or InteractionConfig()
         self.formatter = InteractionFormatterFactory.create_formatter()
-        self.events: Dict[str, List[Any]] = {}
+        self.events: dict[str, list[Any]] = {}
 
     async def send_event(self, event_type: str, data: Any) -> None:
         """イベントを送信"""
@@ -34,7 +34,7 @@ class InteractionManager:
             self.events[event_type] = []
         self.events[event_type].append(handler)
 
-    async def process_events(self) -> List[Any]:
+    async def process_events(self) -> list[Any]:
         """イベントを処理"""
         results = []
         for event_type, handlers in self.events.items():

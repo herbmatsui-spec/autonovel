@@ -4,7 +4,7 @@ src/services/report_generator.py — レポート生成サービス
 
 import os
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from src.models.report import (
     EpisodeSummary,
@@ -28,7 +28,7 @@ class ReportGenerator:
         os.makedirs(output_dir, exist_ok=True)
 
     def generate_production_report(
-        self, title: str, genre: str, token_tracker: TokenTracker, episodes: List[Dict[str, Any]]
+        self, title: str, genre: str, token_tracker: TokenTracker, episodes: list[dict[str, Any]]
     ) -> ProductionReport:
         """制作レポートを生成
 
@@ -165,7 +165,7 @@ class ReportGenerator:
         html = f"<html><body>{html}</body></html>"
         return html
 
-    def save_report(self, report: ProductionReport, filename: Optional[str] = None) -> str:
+    def save_report(self, report: ProductionReport, filename: str | None = None) -> str:
         """レポートをファイルに保存
 
         Args:

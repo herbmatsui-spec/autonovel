@@ -1,5 +1,8 @@
 import json
-from typing import Any, Callable, Dict, Optional, Tuple
+from collections.abc import Callable
+from typing import Any
+
+from src.models import GenerateResult
 
 
 class MockGeminiApiClient:
@@ -13,7 +16,7 @@ class MockGeminiApiClient:
         self.default_text_response = "アレンは静かに剣を置いた。ギルドマスターの冷酷な声が響く。「お前はクビだ」。アレンはただ黙って部屋を後にした。新たな伝説の始まりだった。これは十分な長さを持つテスト用のダミーテキストです。"
         self.models = MockModels(self)
 
-    def add_json_response(self, model_name_or_prompt: str, response: Dict[str, Any]):
+    def add_json_response(self, model_name_or_prompt: str, response: dict[str, Any]):
         self.mock_json_responses[model_name_or_prompt] = response
 
     def add_text_response(self, model_name_or_prompt: str, response: str):
@@ -28,14 +31,14 @@ class MockGeminiApiClient:
         self,
         model_name: str,
         prompt: str,
-        system_instruction: Optional[str] = None,
+        system_instruction: str | None = None,
         response_schema: Any = None,
         temp: float = 0.7,
         max_retries: int = 5,
-        stream_callback: Optional[Callable[[str], None]] = None,
-        retry_state: Optional[Any] = None,
+        stream_callback: Callable[[str], None] | None = None,
+        retry_state: Any | None = None,
         **kwargs,
-    ) -> Tuple[Dict[str, Any], str, Any]:
+    ) -> tuple[dict[str, Any], str, Any]:
 
         # Check for mock exceptions
         if hasattr(self, "mock_exceptions"):
@@ -72,13 +75,13 @@ class MockGeminiApiClient:
         self,
         model_name: str,
         prompt: str,
-        system_instruction: Optional[str] = None,
+        system_instruction: str | None = None,
         temp: float = 0.7,
         max_retries: int = 5,
-        stream_callback: Optional[Callable[[str], None]] = None,
-        retry_state: Optional[Any] = None,
+        stream_callback: Callable[[str], None] | None = None,
+        retry_state: Any | None = None,
         **kwargs,
-    ) -> Tuple[str, Any]:
+    ) -> tuple[str, Any]:
 
         # Check for mock exceptions
         if hasattr(self, "mock_exceptions"):
@@ -196,9 +199,6 @@ class MockModels:
     def generate_content_stream(self, model: str, contents: Any, config: Any = None):
         res = self.generate_content(model, contents, config)
         return [res]
-
-
-from src.models import GenerateResult
 
 
 class LLMGenerateResultMockProxy:

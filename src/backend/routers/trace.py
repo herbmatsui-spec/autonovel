@@ -6,7 +6,7 @@ GenerationRun の記録・取得・再現性レポート(Markdown)生成を提�
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from fastapi import APIRouter, Query
 from pydantic import BaseModel
@@ -22,15 +22,15 @@ class RunRequest(BaseModel):
     task_type: str = "writing"
     prompt_version: str = ""
     model_name: str = ""
-    params: Dict[str, Any] = {}
-    payload: Dict[str, Any] = {}
+    params: dict[str, Any] = {}
+    payload: dict[str, Any] = {}
     output_preview: str = ""
     trace_id: str = ""
-    chapter_ep: Optional[int] = None
+    chapter_ep: int | None = None
 
 
 @router.post("/books/{book_id}/runs")
-async def record_run(book_id: int, req: RunRequest) -> Dict[str, Any]:
+async def record_run(book_id: int, req: RunRequest) -> dict[str, Any]:
     """生成実行のメタデータを記録する。"""
     record = build_run_record(
         book_id=book_id,
@@ -49,7 +49,7 @@ async def record_run(book_id: int, req: RunRequest) -> Dict[str, Any]:
 
 
 @router.get("/books/{book_id}/runs")
-async def list_runs(book_id: int, chapter_ep: Optional[int] = Query(None)) -> List[Dict[str, Any]]:
+async def list_runs(book_id: int, chapter_ep: int | None = Query(None)) -> list[dict[str, Any]]:
     """生成実行記録を取得する。"""
     async with UnitOfWork(AppContainer.db()) as uow:
         runs = await uow.trace.list_by_book(book_id, chapter_ep)
@@ -58,8 +58,8 @@ async def list_runs(book_id: int, chapter_ep: Optional[int] = Query(None)) -> Li
 
 @router.get("/books/{book_id}/report")
 async def reproducibility_report(
-    book_id: int, chapter_ep: Optional[int] = Query(None)
-) -> Dict[str, Any]:
+    book_id: int, chapter_ep: int | None = Query(None)
+) -> dict[str, Any]:
     """再現性レポート（Markdown）を生成する。"""
     async with UnitOfWork(AppContainer.db()) as uow:
         runs = await uow.trace.list_by_book(book_id, chapter_ep)

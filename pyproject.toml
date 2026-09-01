@@ -23,14 +23,17 @@ testpaths = ["tests"]
 norecursedirs = ["temp", "backup", "archive", "frontend", "node_modules"]
 addopts = "-p no:cacheprovider --import-mode=importlib -q --tb=short --strict-markers --cov=src --cov-report=term-missing --cov-report=html --cov-fail-under=80"
 asyncio_mode = "auto"
-[tool.coverage.report]
-fail_under = 80
-[tool.coverage.run]
-branch = true
-omit = ["*/tests/*", "*/migrations/*", "*/node_modules/*"]
+asyncio_default_fixture_loop_scope = "function"
 markers = [
     "asyncio: pytest-asyncio で実行する非同期テスト",
 ]
+
+[tool.coverage.report]
+fail_under = 80
+
+[tool.coverage.run]
+branch = true
+omit = ["*/tests/*", "*/migrations/*", "*/node_modules/*"]
 
 [build-system]
 requires = ["setuptools>=61.0"]
@@ -62,6 +65,8 @@ dependencies = [
     "opentelemetry-api>=1.24.0",
     "opentelemetry-sdk>=1.24.0",
     "aiosqlite>=0.19.0",
+    "dependency-injector>=4.41.0",
+    "cachetools>=5.3.0",
 ]
 
 [project.optional-dependencies]

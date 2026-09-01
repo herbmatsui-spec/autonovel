@@ -1,5 +1,4 @@
 import json
-from typing import Optional
 
 from fastapi import APIRouter
 
@@ -10,7 +9,7 @@ router = APIRouter(tags=["misc"])
 
 
 @router.get("/api/books/{book_id}/narrative_metrics", deprecated=True, tags=["metrics"])
-async def get_narrative_metrics(book_id: int, branch_id: int = 1, ep_num: Optional[int] = None):
+async def get_narrative_metrics(book_id: int, branch_id: int = 1, ep_num: int | None = None):
     """[非推奨] 新path版 /api/narrative_metrics/{book_id}/{branch_id} を使用してください。"""
     try:
         from src.backend.database.repositories.narrative_metrics_repo import (

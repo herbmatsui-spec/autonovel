@@ -1,6 +1,7 @@
 import asyncio
 import logging
-from typing import Any, Callable, Dict, List, Literal, Optional
+from collections.abc import Callable
+from typing import Any, Literal
 
 from src.core.interfaces import IPromptManager
 from src.core.observability import StructuredLogger, TraceContext
@@ -19,7 +20,7 @@ class StreamingPlotScheduler:
         planner: Any,
         book_id: int,
         branch_id: int,
-        arcs: List[Any],
+        arcs: list[Any],
         end_ep: int,
         reporter=None,
         max_concurrent: int = 2,
@@ -40,7 +41,7 @@ class StreamingPlotScheduler:
         self.max_concurrent = max_concurrent
         self._max_retries = max_retries
         self._timeout = timeout
-        self.metrics: Dict[str, int] = {
+        self.metrics: dict[str, int] = {
             "scheduled": 0,
             "completed": 0,
             "cancelled": 0,
@@ -50,20 +51,20 @@ class StreamingPlotScheduler:
             "errors": 0,
             "retries": 0,
         }
-        self._gen_times: List[float] = []
-        self._gen_start_times: Dict[int, float] = {}
-        self._task_priorities: Dict[int, int] = {}
+        self._gen_times: list[float] = []
+        self._gen_start_times: dict[int, float] = {}
+        self._task_priorities: dict[int, int] = {}
         # Circuit breaker
         self._circuit_breaker_threshold: int = 5
         self._consecutive_errors: int = 0
         self._circuit_open: bool = False
         # Progress callbacks
-        self._callbacks: List[
+        self._callbacks: list[
             Callable[
                 [int, Literal["scheduled", "running", "completed", "failed", "cancelled"]], None
             ]
         ] = []
-        self._callback_task_states: Dict[
+        self._callback_task_states: dict[
             int, Literal["scheduled", "running", "completed", "failed", "cancelled"]
         ] = {}
 
@@ -71,8 +72,8 @@ class StreamingPlotScheduler:
         self,
         ep_num: int,
         bible: Any,
-        settings: Dict[str, Any],
-        depends_on: Optional[int] = None,
+        settings: dict[str, Any],
+        depends_on: int | None = None,
         priority: int = 5,
     ):
         """エピソードのプロット生成をスケジュールする。
@@ -168,12 +169,12 @@ class StreamingPlotScheduler:
                             self.reporter.report(f"🔄 Ep.{ep_num} はキャンセルされました", "debug")
                         self._emit_callback(ep_num, "cancelled")
                         raise
-                    except asyncio.TimeoutError:
+                    except TimeoutError:
                         if self.reporter:
                             self.reporter.report(
                                 f"⏱️ Ep.{ep_num} タイムアウト ({self._timeout}s)", "error"
                             )
-                        last_error = asyncio.TimeoutError(f"Timeout after {self._timeout}s")
+                        last_error = TimeoutError(f"Timeout after {self._timeout}s")
                         self.metrics["errors"] += 1
                         self.metrics["retries"] += 1
                         # Increment consecutive errors and check circuit breaker
@@ -236,7 +237,7 @@ class StreamingPlotScheduler:
 
         self.tasks[ep_num] = asyncio.create_task(_run_gen())
 
-    async def await_plot_ready(self, ep_num: int) -> Optional[Any]:
+    async def await_plot_ready(self, ep_num: int) -> Any | None:
         if ep_num not in self.tasks:
             self.metrics["cache_misses"] += 1
             return await self.repo.get_plot(self.branch_id, ep_num)
@@ -255,7 +256,7 @@ class StreamingPlotScheduler:
             self.metrics["completed"] += 1
         return result
 
-    async def _check_cache(self, ep_num: int) -> Optional[Any]:
+    async def _check_cache(self, ep_num: int) -> Any | None:
         plot = await self.repo.get_plot(self.branch_id, ep_num)
         if plot and plot.detailed_blueprint and len(plot.detailed_blueprint) > 50:
             fut = asyncio.Future()
@@ -314,14 +315,14 @@ class StreamingPlotScheduler:
             except Exception as e:
                 logger.warning(f"コールバック実行中にエラー: {e}")
 
-    def pending_episodes(self) -> List[int]:
+    def pending_episodes(self) -> list[int]:
         pending = [ep for ep, t in self.tasks.items() if not t.done()]
         pending.sort(key=lambda ep: self._task_priorities.get(ep, 5))
         return pending
 
-    def get_metrics(self) -> Dict[str, int]:
+    def get_metrics(self) -> dict[str, int]:
         return dict(self.metrics)
 
-    def get_latencies(self) -> Dict[str, float]:
+    def get_latencies(self) -> dict[str, float]:
         gen_avg = sum(self._gen_times) / max(1, len(self._gen_times))
         return {"gen_avg_sec": gen_avg}

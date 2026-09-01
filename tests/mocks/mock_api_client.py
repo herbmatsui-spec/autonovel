@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -42,10 +42,10 @@ class MockApiClient:
         self.prompt_versions[book_id] = []
         self.opt_history[book_id] = []
 
-    def list_books(self) -> List[Dict[str, Any]]:
+    def list_books(self) -> list[dict[str, Any]]:
         return list(self.books.values())
 
-    def get_book(self, book_id: int) -> Optional[Dict[str, Any]]:
+    def get_book(self, book_id: int) -> dict[str, Any] | None:
         return self.books.get(book_id)
 
     def delete_book(self, book_id: int) -> bool:
@@ -54,19 +54,19 @@ class MockApiClient:
             return True
         return False
 
-    def get_plots(self, book_id: int) -> List[Dict[str, Any]]:
+    def get_plots(self, book_id: int) -> list[dict[str, Any]]:
         return self.plots.get(book_id, [])
 
-    def get_chapters(self, book_id: int) -> List[Dict[str, Any]]:
+    def get_chapters(self, book_id: int) -> list[dict[str, Any]]:
         return self.chapters.get(book_id, [])
 
-    def get_bible(self, book_id: int) -> Dict[str, Any]:
+    def get_bible(self, book_id: int) -> dict[str, Any]:
         return self.bibles.get(book_id, {})
 
-    def get_opt_history(self, book_id: int) -> List[Dict[str, Any]]:
+    def get_opt_history(self, book_id: int) -> list[dict[str, Any]]:
         return self.opt_history.get(book_id, [])
 
-    def get_task_status(self, task_id: str, timeout: float = 30.0) -> Dict[str, Any]:
+    def get_task_status(self, task_id: str, timeout: float = 30.0) -> dict[str, Any]:
         return self.tasks.get(
             task_id,
             {
@@ -96,7 +96,7 @@ class MockApiClient:
         word_count: int,
         concept: str,
         tone_vibe: float,
-    ) -> Optional[str]:
+    ) -> str | None:
         task_id = "task_easy_mock"
         self.tasks[task_id] = {
             "is_running": True,
@@ -121,9 +121,9 @@ class MockApiClient:
         passion: float,
         word_count: int,
         do_refine: bool,
-        env_state: Dict[str, str],
+        env_state: dict[str, str],
         pipeline_mode: bool,
-    ) -> Optional[str]:
+    ) -> str | None:
         task_id = "task_episodes_mock"
         self.tasks[task_id] = {
             "is_running": False,
@@ -146,7 +146,7 @@ class MockApiClient:
         )
         return task_id
 
-    def plan_generation(self, api_key: str, config: dict, params: Dict[str, Any]) -> Optional[str]:
+    def plan_generation(self, api_key: str, config: dict, params: dict[str, Any]) -> str | None:
         task_id = "task_plan_mock"
         self.tasks[task_id] = {
             "is_running": False,
@@ -158,7 +158,7 @@ class MockApiClient:
 
     def retry_failed_episodes(
         self, api_key: str, config: dict, book_id: int, passion: float, word_count: int
-    ) -> Optional[str]:
+    ) -> str | None:
         task_id = "task_retry_mock"
         self.tasks[task_id] = {
             "is_running": False,
@@ -170,7 +170,7 @@ class MockApiClient:
 
     def expand_plots(
         self, api_key: str, config: dict, book_id: int, gen_from: int, gen_to: int
-    ) -> Optional[str]:
+    ) -> str | None:
         task_id = "task_expand_mock"
         self.tasks[task_id] = {
             "is_running": False,
@@ -194,7 +194,7 @@ class MockApiClient:
             )
         return task_id
 
-    def rebuild_plots(self, api_key: str, config: dict, params: Dict[str, Any]) -> Optional[str]:
+    def rebuild_plots(self, api_key: str, config: dict, params: dict[str, Any]) -> str | None:
         task_id = "task_rebuild_mock"
         self.tasks[task_id] = {
             "is_running": False,
@@ -204,7 +204,7 @@ class MockApiClient:
         }
         return task_id
 
-    def critique_optimize(self, api_key: str, config: dict, book_id: int) -> Optional[str]:
+    def critique_optimize(self, api_key: str, config: dict, book_id: int) -> str | None:
         task_id = "task_critique_mock"
         self.tasks[task_id] = {
             "is_running": False,
@@ -216,7 +216,7 @@ class MockApiClient:
 
     def import_chapter(
         self, api_key: str, book_id: int, ep_num: int, import_text: str, do_refine: bool
-    ) -> Optional[str]:
+    ) -> str | None:
         task_id = "task_import_mock"
         self.tasks[task_id] = {
             "is_running": False,
@@ -239,7 +239,7 @@ class MockApiClient:
         )
         return task_id
 
-    def generate_marketing(self, api_key: str, book_id: int, latest_ep: int) -> Optional[str]:
+    def generate_marketing(self, api_key: str, book_id: int, latest_ep: int) -> str | None:
         task_id = "task_marketing_mock"
         self.tasks[task_id] = {
             "is_running": False,
@@ -249,7 +249,7 @@ class MockApiClient:
         }
         return task_id
 
-    def analyze_style_dna(self, api_key: str, sample: str) -> Dict[str, Any]:
+    def analyze_style_dna(self, api_key: str, sample: str) -> dict[str, Any]:
         return {
             "style_dna": {"sentence_length": "medium", "pacing": "fast", "vocabulary": "standard"}
         }
@@ -263,7 +263,7 @@ class MockApiClient:
         sanctuary: str = "",
         originality_score: int = 50,
         platform: str = "カクヨム/なろう",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         return {
             "refined_keywords": keywords,
             "refined_concept": trend_memo,
@@ -328,10 +328,10 @@ class MockApiClient:
             return True
         return False
 
-    def get_issues(self, book_id: int) -> List[Dict[str, Any]]:
+    def get_issues(self, book_id: int) -> list[dict[str, Any]]:
         return self.issues.get(book_id, [])
 
-    def resolve_issue(self, issue_id: int, action: str, api_key: str) -> Dict[str, Any]:
+    def resolve_issue(self, issue_id: int, action: str, api_key: str) -> dict[str, Any]:
         for book_id, issues_list in self.issues.items():
             for issue in issues_list:
                 if issue.get("id") == issue_id:
@@ -341,8 +341,8 @@ class MockApiClient:
         return {"status": "error", "message": "Issue not found"}
 
     def save_pending_patch(
-        self, book_id: int, patch_type: str, patch_content: str, ab_test_result: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, book_id: int, patch_type: str, patch_content: str, ab_test_result: dict[str, Any]
+    ) -> dict[str, Any]:
         patch_id = len(self.patches.get(book_id, [])) + 1
         patch = {
             "id": patch_id,
@@ -355,10 +355,10 @@ class MockApiClient:
         self.patches.setdefault(book_id, []).append(patch)
         return {"success": True, "patch": patch}
 
-    def get_pending_patches(self, book_id: int) -> List[Dict[str, Any]]:
+    def get_pending_patches(self, book_id: int) -> list[dict[str, Any]]:
         return [p for p in self.patches.get(book_id, []) if p.get("status") == "pending"]
 
-    def approve_patch(self, patch_id: int) -> Dict[str, Any]:
+    def approve_patch(self, patch_id: int) -> dict[str, Any]:
         for book_id, patches_list in self.patches.items():
             for p in patches_list:
                 if p.get("id") == patch_id:
@@ -366,7 +366,7 @@ class MockApiClient:
                     return {"success": True}
         return {"success": False, "error": "Patch not found"}
 
-    def reject_patch(self, patch_id: int) -> Dict[str, Any]:
+    def reject_patch(self, patch_id: int) -> dict[str, Any]:
         for book_id, patches_list in self.patches.items():
             for p in patches_list:
                 if p.get("id") == patch_id:
@@ -374,8 +374,8 @@ class MockApiClient:
                     return {"success": True}
         return {"success": False, "error": "Patch not found"}
 
-    def get_prompt_versions(self, book_id: int) -> List[Dict[str, Any]]:
+    def get_prompt_versions(self, book_id: int) -> list[dict[str, Any]]:
         return self.prompt_versions.get(book_id, [])
 
-    def rollback_prompt_version(self, book_id: int, version_id: int) -> Dict[str, Any]:
+    def rollback_prompt_version(self, book_id: int, version_id: int) -> dict[str, Any]:
         return {"success": True, "message": f"Rolled back to version {version_id}"}

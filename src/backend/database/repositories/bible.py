@@ -6,7 +6,7 @@ database/repo_bible.py - バイブル(Bible)データ操作用のリポジトリ
 import json
 import logging
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import select
 
@@ -37,7 +37,7 @@ class BibleRepository(BaseRepository):
         )
         self.session.add(bible)
 
-    async def get_latest_bible(self, book_id: int) -> Optional["BibleDbModel"]:
+    async def get_latest_bible(self, book_id: int) -> BibleDbModel | None:
         result = await self.session.execute(
             select(Bible).where(Bible.book_id == book_id).order_by(Bible.id.desc()).limit(1)
         )
@@ -48,7 +48,7 @@ class BibleRepository(BaseRepository):
 
         return BibleDbModel(**self._parse_row(self._to_dict(bible), ["settings"]))
 
-    async def save_full_world_bible(self, bible: "WorldBible", **kwargs) -> int:
+    async def save_full_world_bible(self, bible: WorldBible, **kwargs) -> int:
         """WorldBible オブジェクトとその構成要素を一括保存する。book_id が指定されている場合は更新を行う。"""
         import traceback
 
@@ -213,14 +213,14 @@ async def add_pending_setting(
     self.session.add(pending)
 
 
-async def get_pending_settings(self, book_id: int) -> List[BiblePendingSetting]:
+async def get_pending_settings(self, book_id: int) -> list[BiblePendingSetting]:
     """未承認の仮設定一覧を取得する"""
     result = await self.session.execute(
         select(BiblePendingSetting).where(
             BiblePendingSetting.book_id == book_id, BiblePendingSetting.status == "pending"
         )
     )
-    return result.scalars().all()
+    return list(result.scalars().all())
 
 
 async def resolve_pending_setting(self, setting_id: int, status: str) -> None:

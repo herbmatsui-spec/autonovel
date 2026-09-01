@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict
+from typing import Any
 
 from config.project_context import ProjectContext
 
@@ -16,7 +16,7 @@ class RuleABTester:
     def __init__(self, engine: Any):
         self.engine = engine
 
-    async def run_rule_ab_test(self, target_word: str, instruction: str) -> Dict[str, Any]:
+    async def run_rule_ab_test(self, target_word: str, instruction: str) -> dict[str, Any]:
         # 1. テスト用の文脈/段落の生成 (またはデフォルトのサンプル文脈)
         sample_context = (
             "彼はその光景を見て驚愕した。あまりの出来事に、言葉を失って立ち尽くすしかなかった。"

@@ -4,8 +4,6 @@ database/repositories/trace.py - 生成実行記録(GenerationRun)用リポジ�
 
 from __future__ import annotations
 
-from typing import List, Optional
-
 from sqlalchemy import select
 
 from src.backend.database.models import GenerationRun
@@ -35,8 +33,8 @@ class TraceRepository:
 
     @retry_on_lock()
     async def list_by_book(
-        self, book_id: int, chapter_ep: Optional[int] = None
-    ) -> List[GenerationRun]:
+        self, book_id: int, chapter_ep: int | None = None
+    ) -> list[GenerationRun]:
         stmt = select(GenerationRun).where(GenerationRun.book_id == book_id)
         if chapter_ep is not None:
             stmt = stmt.where(GenerationRun.chapter_ep == chapter_ep)

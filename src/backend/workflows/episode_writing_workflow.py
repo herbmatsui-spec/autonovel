@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict
+from typing import Any
 
 from src.shared.utils import StatusReporter
 
@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 class EpisodeWritingWorkflow(BaseWorkflow):
     """執筆ワークフロー: 通常モードとパイプラインモードの切り替えを隠蔽"""
 
-    async def execute(self, reporter: StatusReporter, **kwargs) -> Dict[str, Any]:
+    async def execute(self, reporter: StatusReporter, **kwargs) -> dict[str, Any]:
         book_id = kwargs["book_id"]
         write_from = kwargs["write_from"]
         write_to = kwargs["write_to"]

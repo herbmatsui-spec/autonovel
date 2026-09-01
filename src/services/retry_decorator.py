@@ -2,7 +2,7 @@ import asyncio
 import inspect
 import logging
 from functools import wraps
-from typing import Any, Dict, Optional, Protocol
+from typing import Any, Protocol
 
 from pydantic import ValidationError
 
@@ -24,8 +24,8 @@ class CooldownProtocol(Protocol):
 
 
 class LLMClientProtocol(Protocol):
-    cooldown: Optional[CooldownProtocol]
-    _lock: Optional[Any]
+    cooldown: CooldownProtocol | None
+    _lock: Any | None
     _active_requests: int
     _consecutive_5xx: int
 
@@ -44,7 +44,7 @@ class RetryState:
         self.consecutive_5xx = 0
 
 
-def _extract_llm_params(func, args, kwargs) -> Dict[str, Any]:
+def _extract_llm_params(func, args, kwargs) -> dict[str, Any]:
     """引数から max_retries, temp, model_name, reporter を動的に抽出する"""
     # 1. 第一引数（selfの次）が LLMRequestOptions オブジェクトの場合
     if len(args) > 1 and hasattr(args[1], "model_name") and hasattr(args[1], "prompt"):

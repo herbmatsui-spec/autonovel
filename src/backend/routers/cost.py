@@ -7,7 +7,7 @@ CostRepository に記録されたトークン使用量を集計し、
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 from fastapi import APIRouter
 from pydantic import BaseModel
@@ -21,7 +21,7 @@ router = APIRouter(prefix="/api/cost", tags=["cost"])
 
 class CostRecordRequest(BaseModel):
     task_type: str = "writing"
-    ep_num: Optional[int] = None
+    ep_num: int | None = None
     input_tokens: int = 0
     output_tokens: int = 0
     branch_id: int = 1
@@ -32,7 +32,7 @@ class BudgetRequest(BaseModel):
 
 
 @router.post("/books/{book_id}/records")
-async def add_cost_record(book_id: int, req: CostRecordRequest) -> Dict[str, Any]:
+async def add_cost_record(book_id: int, req: CostRecordRequest) -> dict[str, Any]:
     """執筆ごとのトークン使用量を記録する（推定コストを自動算出）。"""
     est = estimate_cost_usd(req.task_type, req.input_tokens, req.output_tokens)
     async with UnitOfWork(AppContainer.db()) as uow:
@@ -50,7 +50,7 @@ async def add_cost_record(book_id: int, req: CostRecordRequest) -> Dict[str, Any
 
 
 @router.get("/books/{book_id}/summary")
-async def cost_summary(book_id: int, branch_id: int = 1) -> Dict[str, Any]:
+async def cost_summary(book_id: int, branch_id: int = 1) -> dict[str, Any]:
     """コスト集計サマリーを取得する。"""
     async with UnitOfWork(AppContainer.db()) as uow:
         agg = await uow.cost.aggregate(book_id, branch_id)
@@ -58,7 +58,7 @@ async def cost_summary(book_id: int, branch_id: int = 1) -> Dict[str, Any]:
 
 
 @router.post("/books/{book_id}/budget")
-async def set_budget(book_id: int, req: BudgetRequest) -> Dict[str, Any]:
+async def set_budget(book_id: int, req: BudgetRequest) -> dict[str, Any]:
     """予算を設定する。"""
     async with UnitOfWork(AppContainer.db()) as uow:
         await uow.cost.set_budget(book_id, req.budget_usd)
@@ -67,8 +67,8 @@ async def set_budget(book_id: int, req: BudgetRequest) -> Dict[str, Any]:
 
 @router.get("/books/{book_id}/budget-status")
 async def budget_status(
-    book_id: int, branch_id: int = 1, budget_usd: Optional[float] = None
-) -> Dict[str, Any]:
+    book_id: int, branch_id: int = 1, budget_usd: float | None = None
+) -> dict[str, Any]:
     """予算ステータス（超過判定）を取得する。"""
     async with UnitOfWork(AppContainer.db()) as uow:
         agg = await uow.cost.aggregate(book_id, branch_id)

@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any
 
 from src.agents.context_builder import ContextBuilder
 from src.agents.erotic_enhancer import EroticEnhancer
@@ -17,14 +17,14 @@ class EpisodeWriter:
         branch_id: int,
         ep_num: int,
         target_word_count: int,
-        style_tag: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        style_tag: str | None = None,
+    ) -> dict[str, Any]:
         """執筆に必要な完全なコンテキストを構築する。"""
         return await self.context_builder.build_full_writing_context(
             book_id, branch_id, ep_num, target_word_count, style_tag
         )
 
-    async def write(self, book_id: int, ep_num: int, context: Dict[str, Any]) -> str:
+    async def write(self, book_id: int, ep_num: int, context: dict[str, Any]) -> str:
         """
         エピソード本文を生成し、文字列で返す。
         :param book_id: 書籍ID

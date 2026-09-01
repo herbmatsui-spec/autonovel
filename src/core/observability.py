@@ -4,13 +4,13 @@ import contextvars
 import logging
 import uuid
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 class TraceContext:
     """Trace context for request correlation."""
 
-    _current_trace_id: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar(
+    _current_trace_id: contextvars.ContextVar[str | None] = contextvars.ContextVar(
         "_current_trace_id", default=None
     )
 
@@ -45,7 +45,7 @@ class StructuredLogger(logging.LoggerAdapter):
     def __init__(self, name: str):
         super().__init__(logging.getLogger(name), {})
 
-    def process(self, msg: str, kwargs: Dict[str, Any]) -> tuple:
+    def process(self, msg: str, kwargs: dict[str, Any]) -> tuple:
         # Extract special kwargs that should not go into extra
         special_keys = {"exc_info", "stack_info", "stacklevel", "extra"}
         # Get user-provided extra dict or create empty one

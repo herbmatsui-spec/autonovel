@@ -5,7 +5,7 @@ src/services/safe_replace.py
 """
 
 import re
-from typing import Dict, List, Optional, Pattern, Tuple
+from re import Pattern
 
 
 class SafeReplacer:
@@ -18,21 +18,21 @@ class SafeReplacer:
     置換し、置換済みテキストが再マッチしないことを保証する。
     """
 
-    def __init__(self, mappings: Dict[str, str]) -> None:
+    def __init__(self, mappings: dict[str, str]) -> None:
         """
         Args:
             mappings: {置換前文字列: 置換後文字列} の辞書
         """
         self._mappings = mappings
         # プレースホルダ方式: 各マッピングに固有のプレースホルダを割り当て
-        self._placeholders: List[Tuple[str, str, str]] = []
+        self._placeholders: list[tuple[str, str, str]] = []
         for idx, (src, dst) in enumerate(mappings.items()):
             placeholder = f"\x00PLACEHOLDER_{idx}\x00"
             self._placeholders.append((src, placeholder, dst))
         # 全パターンの正規表現を構築
         patterns = [re.escape(src) for src, _, _ in self._placeholders]
         if patterns:
-            self._combined_pattern: Optional[Pattern[str]] = re.compile("|".join(patterns))
+            self._combined_pattern: Pattern[str] | None = re.compile("|".join(patterns))
         else:
             self._combined_pattern = None
 

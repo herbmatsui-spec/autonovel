@@ -4,8 +4,6 @@ erotic/curve.py - 官能カーブ生成モジュール
 
 from __future__ import annotations
 
-from typing import List, Optional
-
 from pydantic import BaseModel
 
 
@@ -19,7 +17,7 @@ class EroticPoint(BaseModel):
 class EroticCurve:
     """官能の時間経過による変化を表すカーブ"""
 
-    def __init__(self, points: List[EroticPoint]):
+    def __init__(self, points: list[EroticPoint]):
         """
         Args:
             points: 官能カーブを構成する点のリスト（positionでソート済みであること）
@@ -42,7 +40,7 @@ class EroticCurve:
                 )
 
     @classmethod
-    def create_from_parameters(cls, params: "EroticParameters") -> "EroticCurve":
+    def create_from_parameters(cls, params: EroticParameters) -> EroticCurve:
         """
         EroticParametersから官能カーブを生成するファクトリメソッド
 
@@ -91,7 +89,7 @@ class EroticCurve:
 
         return self.points[-1].intensity  # フォールバック
 
-    def get_peak_beat(self) -> Optional[EroticPoint]:
+    def get_peak_beat(self) -> EroticPoint | None:
         """
         カーブのピーク（最高官能強度）点を取得する
 

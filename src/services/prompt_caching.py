@@ -6,7 +6,7 @@ Gemini Context Caching (静的コンテンツキャッシュ) と
 """
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 from cachetools import LRUCache
 
@@ -42,7 +42,7 @@ class PromptCacheManager:
     """
 
     def __init__(self):
-        self._cache_map: Dict[str, caching.CachedContent] = {}
+        self._cache_map: dict[str, caching.CachedContent] = {}
 
     def get_or_create_cache(
         self,
@@ -87,9 +87,9 @@ class UnifiedPromptCache:
 
     def __init__(
         self,
-        vector_store: Optional[Any] = None,
-        llm_client: Optional[Any] = None,
-        redis_url: Optional[str] = None,
+        vector_store: Any | None = None,
+        llm_client: Any | None = None,
+        redis_url: str | None = None,
         l1_maxsize: int = 1000,
     ):
         # L1 インメモリキャッシュ
@@ -101,8 +101,8 @@ class UnifiedPromptCache:
             self._semantic_cache = SemanticCacheManager(vector_store, llm_client)
 
         # L2 Redis + 統合サービス (遅延初期化)
-        self._redis_cache: Optional[RedisCacheService] = None
-        self._prompt_cache: Optional[PromptCacheService] = None
+        self._redis_cache: RedisCacheService | None = None
+        self._prompt_cache: PromptCacheService | None = None
         self._redis_url = redis_url
 
         # L4 Gemini Context Caching
@@ -129,7 +129,7 @@ class UnifiedPromptCache:
         temperature: float = 0.7,
         template_version: str = "1.0",
         **params: Any,
-    ) -> Optional[Any]:
+    ) -> Any | None:
         """キャッシュから応答を取得 (L1 -> L2 -> L3 の順で検索)."""
         cache = await self._ensure_prompt_cache()
         return await cache.get(
@@ -153,7 +153,7 @@ class UnifiedPromptCache:
         genre: str = "general",
         temperature: float = 0.7,
         template_version: str = "1.0",
-        ttl: Optional[int] = None,
+        ttl: int | None = None,
         **params: Any,
     ) -> None:
         """応答をキャッシュに保存 (L1, L2, L3 すべてに保存)."""
@@ -201,7 +201,7 @@ class UnifiedPromptCache:
         cache = await self._ensure_prompt_cache()
         return await cache.invalidate_template(template_name)
 
-    async def get_cache_stats(self) -> Dict[str, Any]:
+    async def get_cache_stats(self) -> dict[str, Any]:
         """キャッシュ統計を取得."""
         cache = await self._ensure_prompt_cache()
         return await cache.get_stats()
@@ -214,13 +214,13 @@ class UnifiedPromptCache:
 
 
 # シングルトンインスタンス
-_unified_cache_instance: Optional[UnifiedPromptCache] = None
+_unified_cache_instance: UnifiedPromptCache | None = None
 
 
 async def get_unified_prompt_cache(
-    vector_store: Optional[Any] = None,
-    llm_client: Optional[Any] = None,
-    redis_url: Optional[str] = None,
+    vector_store: Any | None = None,
+    llm_client: Any | None = None,
+    redis_url: str | None = None,
 ) -> UnifiedPromptCache:
     """統合プロンプトキャッシュのシングルトンインスタンスを取得."""
     global _unified_cache_instance

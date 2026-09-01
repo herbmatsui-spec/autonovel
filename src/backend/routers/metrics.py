@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+
 from src.backend.observability.metrics import metrics_endpoint
 
 router = APIRouter(tags=["metrics"])

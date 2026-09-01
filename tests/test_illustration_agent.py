@@ -1,6 +1,7 @@
 from unittest import mock
 
 import pytest
+
 from src.agents.illustration_agent import IllustrationAgent
 from src.models.illustration import (
     IllustrationModel,

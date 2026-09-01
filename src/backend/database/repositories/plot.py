@@ -4,7 +4,7 @@ from __future__ import annotations
 database/repo_plot.py - プロット(Plots)データ操作用のリポジトリMixin
 """
 import json
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import delete, select, update
 
@@ -22,8 +22,8 @@ class PlotRepository(BaseRepository):
     """Plotテーブルに関するDB操作をまとめたMixin"""
 
     async def get_plot(
-        self, book_id_or_branch_id: int, ep_num: int, branch_id: Optional[int] = None
-    ) -> Optional["PlotDbModel"]:
+        self, book_id_or_branch_id: int, ep_num: int, branch_id: int | None = None
+    ) -> PlotDbModel | None:
         target_branch_id = branch_id if branch_id is not None else book_id_or_branch_id
         result = await self.session.execute(
             select(Plot).where(Plot.branch_id == target_branch_id).where(Plot.ep_num == ep_num)
@@ -38,8 +38,8 @@ class PlotRepository(BaseRepository):
         )
 
     async def get_all_plots(
-        self, book_id_or_branch_id: int, branch_id: Optional[int] = None
-    ) -> List["PlotDbModel"]:
+        self, book_id_or_branch_id: int, branch_id: int | None = None
+    ) -> list[PlotDbModel]:
         target_branch_id = branch_id if branch_id is not None else book_id_or_branch_id
         result = await self.session.execute(
             select(Plot).where(Plot.branch_id == target_branch_id).order_by(Plot.ep_num)
@@ -59,7 +59,7 @@ class PlotRepository(BaseRepository):
 
     async def get_plots_with_tension(
         self, book_id: int, from_ep: int = 1, to_ep: int = 9999
-    ) -> List[PlotDbModel]:
+    ) -> list[PlotDbModel]:
         """指定範囲のプロットをtension順に取得する（波パターン分析用）"""
         result = await self.session.execute(
             select(Plot)
@@ -117,10 +117,10 @@ class PlotRepository(BaseRepository):
         discovery_item: str = "",
         sanctuary_event: str = "",
         is_locked: bool = False,
-        stress: Optional[int] = None,
+        stress: int | None = None,
         is_plot_twist: bool = False,
         is_simulation: bool = False,
-        simulation_id: Optional[str] = None,
+        simulation_id: str | None = None,
         candidates: str = "[]",
         erotic_intensity: int = 0,
     ) -> None:
@@ -334,7 +334,7 @@ class PlotRepository(BaseRepository):
 
     async def get_plots_before_limit_1(
         self, branch_id: int, ep_num: int
-    ) -> Optional["PlotDbModel"]:
+    ) -> PlotDbModel | None:
         """ep_num より前の最新プロットを1件取得（直前プロットの状態参照用）"""
         result = await self.session.execute(
             select(Plot)
@@ -357,7 +357,7 @@ class PlotRepository(BaseRepository):
 
     async def get_plots_between(
         self, branch_id: int, start_ep: int, end_ep: int
-    ) -> List["PlotDbModel"]:
+    ) -> list[PlotDbModel]:
         """start_ep〜end_ep の範囲のプロットを取得"""
         result = await self.session.execute(
             select(Plot)
@@ -415,7 +415,7 @@ class PlotRepository(BaseRepository):
 
     async def get_unrecovered_foreshadowings(
         self, book_id: int, branch_id: int = 1
-    ) -> List[Foreshadowing]:
+    ) -> list[Foreshadowing]:
         """未回収の伏線一覧を取得する"""
         result = await self.session.execute(
             select(Foreshadowing)
@@ -426,7 +426,7 @@ class PlotRepository(BaseRepository):
         )
         return result.scalars().all()
 
-    async def get_all_foreshadowings(self, book_id: int, branch_id: int = 1) -> List[Foreshadowing]:
+    async def get_all_foreshadowings(self, book_id: int, branch_id: int = 1) -> list[Foreshadowing]:
         """全ての伏線一覧を取得する"""
         result = await self.session.execute(
             select(Foreshadowing)
@@ -436,7 +436,7 @@ class PlotRepository(BaseRepository):
         )
         return result.scalars().all()
 
-    async def get_tension_curve(self, branch_id: int) -> List[Dict[str, Any]]:
+    async def get_tension_curve(self, branch_id: int) -> list[dict[str, Any]]:
         """指定したブランチの全エピソードの緊張感スコアを時系列で取得する"""
         result = await self.session.execute(
             select(Plot.ep_num, Plot.tension)
@@ -454,8 +454,8 @@ class PlotRepository(BaseRepository):
         character_id: int,
         ep_num: int,
         state_summary: str,
-        arc_delta: Optional[str] = None,
-        trigger_event: Optional[str] = None,
+        arc_delta: str | None = None,
+        trigger_event: str | None = None,
         confidence: float = 1.0,
     ) -> None:
         """キャラクターアークの状態を保存または更新する"""
@@ -479,7 +479,7 @@ class PlotRepository(BaseRepository):
 
     async def get_character_arc_history(
         self, branch_id: int, character_id: int
-    ) -> List[CharacterArc]:
+    ) -> list[CharacterArc]:
         """特定のキャラクターの全エピソードにおけるアーク履歴を取得する"""
         result = await self.session.execute(
             select(CharacterArc)
@@ -491,7 +491,7 @@ class PlotRepository(BaseRepository):
 
     async def get_latest_character_arc(
         self, branch_id: int, character_id: int, ep_num: int
-    ) -> Optional[CharacterArc]:
+    ) -> CharacterArc | None:
         """指定エピソード以前の最新のキャラクター状態を取得する"""
         result = await self.session.execute(
             select(CharacterArc)

@@ -4,7 +4,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import uuid
-from typing import Any, Dict, Optional
+from typing import Any
 
 from src.models.easy_mode_schemas import (
     DigestRequest,
@@ -17,7 +17,7 @@ from src.services.llm_service import LLMService
 logger = logging.getLogger(__name__)
 
 # ダイジェスト・作品のメモリ保存ストア（DB非依存時用）
-_BOOK_STORE: Dict[str, Dict[str, Any]] = {}
+_BOOK_STORE: dict[str, dict[str, Any]] = {}
 
 CHAPTER_MAX_LENGTH = 1500
 
@@ -44,7 +44,7 @@ async def generate_suggestions(chapter: str) -> list[str]:
 class DigestService:
     """ファスト・ダイジェスト生成サービス"""
 
-    def __init__(self, llm_service: Optional[LLMService] = None):
+    def __init__(self, llm_service: LLMService | None = None):
         self.llm_service = llm_service or LLMService()
 
     async def create_digest(self, request: DigestRequest) -> DigestResponse:

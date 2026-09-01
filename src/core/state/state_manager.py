@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import logging
 import pathlib
-from typing import Any, Optional, cast
+from typing import Any, cast
 
 import streamlit as st
 from pydantic import BaseModel, Field
@@ -78,12 +78,12 @@ class SessionManager:
             logger.error(f"Session state save failed: {e}")
 
     @classmethod
-    def _load_from_disk(cls) -> Optional[AppStateModel]:
+    def _load_from_disk(cls) -> AppStateModel | None:
         """JSON ファイルから状態を復元する"""
         try:
             save_path = cls._get_storage_path()
             if save_path.exists():
-                with open(save_path, "r", encoding="utf-8") as f:
+                with open(save_path, encoding="utf-8") as f:
                     data = f.read()
                     return AppStateModel.model_validate_json(data)
         except Exception as e:

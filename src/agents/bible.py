@@ -1,6 +1,6 @@
 # agents/bible.py
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 from src.agents.base import BaseAgent
 from src.services.llm_service import LLMService
@@ -14,14 +14,14 @@ class BibleAgent(BaseAgent):
     """
 
     def __init__(
-        self, repo: Any = None, llm: Optional[LLMService] = None, prompt_manager: Any = None
+        self, repo: Any = None, llm: LLMService | None = None, prompt_manager: Any = None
     ):
         super().__init__(repo=repo, llm=llm)
         self.prompt_manager = prompt_manager
 
     async def generate_bible(
         self, title: str, synopsis: str, target_eps: int, concept: str = "", **kwargs
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         if self.prompt_manager is None:
             raise ValueError("PromptManager is required for BibleAgent")
         world_prompt = self.prompt_manager.build_world_creation_prompt(

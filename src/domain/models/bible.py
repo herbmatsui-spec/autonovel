@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Optional, Union
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -11,10 +11,10 @@ from src.models.base import MODEL_CONFIG_DEFAULTS
 class BibleDbModel(BaseModel):
     id: int
     book_id: int
-    settings: Optional[Union[dict, str]] = None
-    revealed: Optional[str] = None
-    version: Optional[int] = None
-    last_updated: Optional[str] = None
+    settings: dict | str | None = None
+    revealed: str | None = None
+    version: int | None = None
+    last_updated: str | None = None
 
     @property
     def world_settings(self) -> Any:

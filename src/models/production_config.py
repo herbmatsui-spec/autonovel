@@ -3,7 +3,6 @@ src/models/production_config.py — 作品制作設定モデル
 """
 
 from dataclasses import dataclass, field
-from typing import List, Optional
 
 
 @dataclass
@@ -13,7 +12,7 @@ class NovelProject:
     title: str
     genre: str
     synopsis: str
-    keywords: List[str] = field(default_factory=list)
+    keywords: list[str] = field(default_factory=list)
     target_episodes: int = 10
     target_word_count_per_episode: int = 3000
     style_key: str = "default"
@@ -75,8 +74,8 @@ class ProductionProgress:
     total_episodes: int
     status: str  # idle, running, paused, completed, failed
     message: str = ""
-    started_at: Optional[float] = None
-    completed_eps: List[int] = field(default_factory=list)
+    started_at: float | None = None
+    completed_eps: list[int] = field(default_factory=list)
 
     @property
     def progress_percent(self) -> float:

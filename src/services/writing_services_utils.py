@@ -1,9 +1,9 @@
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 def select_best_episode(
-    chapters: List[Dict[str, Any]], key: str = "audit_score"
-) -> Optional[Dict[str, Any]]:
+    chapters: list[dict[str, Any]], key: str = "audit_score"
+) -> dict[str, Any] | None:
     """
     複数の生成エピソードから、指定されたスコアキーが最も高いものを1つ選択して返す。
 

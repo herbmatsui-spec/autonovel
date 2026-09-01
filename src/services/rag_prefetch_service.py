@@ -10,7 +10,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from collections import OrderedDict
-from typing import Any, Dict, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -26,9 +26,9 @@ class RagPrefetchService:
     """
 
     def __init__(self, max_cache_size: int = 50):
-        self._cache: OrderedDict[str, Dict[str, Any]] = OrderedDict()
+        self._cache: OrderedDict[str, dict[str, Any]] = OrderedDict()
         self._max_cache_size = max_cache_size
-        self._pending_tasks: Dict[str, asyncio.Task] = {}
+        self._pending_tasks: dict[str, asyncio.Task] = {}
 
     def cache_key(self, book_id: int, ep_num: int) -> str:
         return f"{book_id}_{ep_num}"
@@ -114,7 +114,7 @@ class RagPrefetchService:
         finally:
             self._pending_tasks.pop(key, None)
 
-    async def get_cached(self, book_id: int, ep_num: int) -> Optional[Dict[str, Any]]:
+    async def get_cached(self, book_id: int, ep_num: int) -> dict[str, Any] | None:
         """キャッシュされたRAG結果を取得。未完了のタスクがあれば待機する。"""
         key = self.cache_key(book_id, ep_num)
 
@@ -139,7 +139,7 @@ class RagPrefetchService:
         if task and not task.done():
             task.cancel()
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """キャッシュの統計情報を返す"""
         return {
             "cached_episodes": len(self._cache),

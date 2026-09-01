@@ -1,5 +1,5 @@
 import os
-from typing import Any, Dict
+from typing import Any
 
 from src.agents.illustration_agent import IllustrationAgent
 from src.backend.workflows.illustration_workflow import IllustrationWorkflow
@@ -13,7 +13,7 @@ from .base_workflow import BaseWorkflow
 class FullAutoWorkflow(BaseWorkflow):
     """かんたんモード: 企画・執筆・パッケージングの一連のフローを実行"""
 
-    async def execute(self, reporter: StatusReporter, **kwargs) -> Dict[str, Any]:
+    async def execute(self, reporter: StatusReporter, **kwargs) -> dict[str, Any]:
         genre = kwargs["genre"]
         keywords = kwargs["keywords"]
         archetype_key = kwargs["archetype_key"]

@@ -1,6 +1,6 @@
 import json
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from sqlalchemy import select, update
 
@@ -23,9 +23,9 @@ class PromptVersionRepository(PromptVersionRepositoryInterface, BaseRepository):
         prompt_key: str,
         version_tag: str,
         content: str,
-        score_before: Optional[float] = None,
-        score_after: Optional[float] = None,
-        ab_test_metrics: Optional[Dict[str, Any]] = None,
+        score_before: float | None = None,
+        score_after: float | None = None,
+        ab_test_metrics: dict[str, Any] | None = None,
         is_active: bool = False,
     ) -> PromptVersionDbModel:
         """新しいプロンプトバージョンを作成"""
@@ -58,7 +58,7 @@ class PromptVersionRepository(PromptVersionRepositoryInterface, BaseRepository):
             created_at=version.created_at.isoformat() if version.created_at else None,
         )
 
-    async def get_prompt_version(self, version_id: int) -> Optional[PromptVersionDbModel]:
+    async def get_prompt_version(self, version_id: int) -> PromptVersionDbModel | None:
         """IDからプロンプトバージョンを取得"""
         result = await self.session.execute(
             select(PromptVersion).where(PromptVersion.id == version_id)
@@ -70,7 +70,7 @@ class PromptVersionRepository(PromptVersionRepositoryInterface, BaseRepository):
 
     async def get_prompt_version_by_tag(
         self, book_id: int, prompt_key: str, version_tag: str
-    ) -> Optional[PromptVersionDbModel]:
+    ) -> PromptVersionDbModel | None:
         """バージョンタグからプロンプトバージョンを取得"""
         result = await self.session.execute(
             select(PromptVersion)
@@ -85,7 +85,7 @@ class PromptVersionRepository(PromptVersionRepositoryInterface, BaseRepository):
 
     async def get_prompt_versions(
         self, book_id: int, limit: int = 20
-    ) -> List[PromptVersionDbModel]:
+    ) -> list[PromptVersionDbModel]:
         """本に紐づくプロンプトバージョン一覧を取得"""
         result = await self.session.execute(
             select(PromptVersion)
@@ -98,7 +98,7 @@ class PromptVersionRepository(PromptVersionRepositoryInterface, BaseRepository):
 
     async def get_active_prompt_version(
         self, book_id: int, prompt_key: str
-    ) -> Optional[PromptVersionDbModel]:
+    ) -> PromptVersionDbModel | None:
         """現在アクティブなプロンプトバージョンを取得"""
         result = await self.session.execute(
             select(PromptVersion)
@@ -136,7 +136,7 @@ class PromptVersionRepository(PromptVersionRepositoryInterface, BaseRepository):
         )
 
     @retry_on_lock()
-    async def update_ab_test_metrics(self, version_id: int, metrics: Dict[str, Any]) -> None:
+    async def update_ab_test_metrics(self, version_id: int, metrics: dict[str, Any]) -> None:
         """A/Bテストのメトリクス(JSON)を更新する"""
         await self.session.execute(
             update(PromptVersion)

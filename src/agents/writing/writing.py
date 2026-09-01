@@ -1,7 +1,7 @@
 # agents/writing.py
 import json
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from src.agents.base import BaseAgent
 from src.agents.context_builder import ContextBuilder
@@ -27,8 +27,8 @@ class WritingAgent(BaseAgent):
     def __init__(
         self,
         repo: Any = None,
-        llm: Optional[LLMService] = None,
-        prompt_manager: Optional[IPromptManager] = None,
+        llm: LLMService | None = None,
+        prompt_manager: IPromptManager | None = None,
         style_rag: Any = None,
         rag_prefetch: Any = None,
         plot_expander: Any = None,
@@ -50,7 +50,7 @@ class WritingAgent(BaseAgent):
         self._bible_extractor = BibleExtractor(llm)
 
     # 元のメソッドをオーバーライドして、新しいコンポーネントに委譲する（後方互換性のため）
-    async def _get_plot(self, book_id: int, branch_id: int, ep_num: int) -> Optional[Any]:
+    async def _get_plot(self, book_id: int, branch_id: int, ep_num: int) -> Any | None:
         """プロットをDBから取得する。"""
         if self.repo is None:
             return None
@@ -60,7 +60,7 @@ class WritingAgent(BaseAgent):
             logger.debug(f"Plot not found for book={book_id}, branch={branch_id}, ep={ep_num}: {e}")
             return None
 
-    async def _get_book(self, book_id: int) -> Optional[Any]:
+    async def _get_book(self, book_id: int) -> Any | None:
         """作品情報をDBから取得する。"""
         if self.repo is None:
             return None
@@ -70,7 +70,7 @@ class WritingAgent(BaseAgent):
             logger.debug(f"Book not found for book_id={book_id}: {e}")
             return None
 
-    async def _get_chars(self, book_id: int) -> List[Any]:
+    async def _get_chars(self, book_id: int) -> list[Any]:
         """作品に所属する全キャラクターを取得する。"""
         if self.repo is None:
             return []
@@ -80,7 +80,7 @@ class WritingAgent(BaseAgent):
             logger.debug(f"Characters not found for book_id={book_id}: {e}")
             return []
 
-    async def _get_prev_chapter(self, book_id: int, branch_id: int, ep_num: int) -> Optional[Any]:
+    async def _get_prev_chapter(self, book_id: int, branch_id: int, ep_num: int) -> Any | None:
         """前話の章データを取得する。"""
         if self.repo is None or ep_num <= 1:
             return None
@@ -92,7 +92,7 @@ class WritingAgent(BaseAgent):
             )
             return None
 
-    async def _get_active_chars(self, chars: List[Any], plot: Any) -> List[Any]:
+    async def _get_active_chars(self, chars: list[Any], plot: Any) -> list[Any]:
         """プロットに登場するキャラクター名からアクティブなキャラクターを抽出する。"""
         if not plot or not chars:
             return chars
@@ -116,7 +116,7 @@ class WritingAgent(BaseAgent):
             logger.debug(f"Active char extraction failed: {e}")
             return chars
 
-    def _build_char_static_ctx(self, chars: List[Any]) -> str:
+    def _build_char_static_ctx(self, chars: list[Any]) -> str:
         """キャラクターの不変属性を整形する。"""
         if not chars:
             return ""
@@ -135,7 +135,7 @@ class WritingAgent(BaseAgent):
             lines.append("\n".join(parts))
         return "\n".join(lines)
 
-    def _build_char_dynamic_ctx(self, chars: List[Any], prev_chapter: Optional[Any]) -> str:
+    def _build_char_dynamic_ctx(self, chars: list[Any], prev_chapter: Any | None) -> str:
         """キャラクターの動的状態を整形する。"""
         if not chars:
             return ""
@@ -167,7 +167,7 @@ class WritingAgent(BaseAgent):
         return ctx
 
     def _build_prev_ctx(
-        self, prev_chapter: Optional[Any], book_id: int, branch_id: int, ep_num: int
+        self, prev_chapter: Any | None, book_id: int, branch_id: int, ep_num: int
     ) -> str:
         """前話までの文脈を整形する。"""
         if prev_chapter is None:
@@ -186,7 +186,7 @@ class WritingAgent(BaseAgent):
             return ""
         return "\n\n".join(parts)
 
-    def _build_dialogue_profiles(self, chars: List[Any]) -> Dict[str, str]:
+    def _build_dialogue_profiles(self, chars: list[Any]) -> dict[str, str]:
         """各キャラクターの会話プロファイルを構築する。"""
         profiles = {}
         for char in chars:
@@ -204,13 +204,13 @@ class WritingAgent(BaseAgent):
             profiles[name] = "; ".join(parts) if parts else name
         return profiles
 
-    async def _ensure_plot_exists(self, book_id: int, branch_id: int, ep_num: int) -> Optional[Any]:
+    async def _ensure_plot_exists(self, book_id: int, branch_id: int, ep_num: int) -> Any | None:
         """プロットが存在しない場合、生成を試みる。"""
         plot = await self._get_plot(book_id, branch_id, ep_num)
         if plot is None and self._plot_expander is not None:
             try:
                 logger.info(f"Plot missing for Ep.{ep_num}, attempting on-demand generation...")
-                arcs: List[Any] = []
+                arcs: list[Any] = []
                 bible = await self._get_bible(book_id)
                 if bible and hasattr(bible, "arcs"):
                     arcs = bible.arcs
@@ -231,7 +231,7 @@ class WritingAgent(BaseAgent):
                 logger.warning(f"On-demand plot generation failed for Ep.{ep_num}: {e}")
         return plot
 
-    async def _get_bible(self, book_id: int) -> Optional[Any]:
+    async def _get_bible(self, book_id: int) -> Any | None:
         """最新のバイブルを取得する。"""
         if self.repo is None:
             return None
@@ -248,14 +248,14 @@ class WritingAgent(BaseAgent):
         branch_id: int,
         ep_num: int,
         target_word_count: int,
-        style_tag: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        style_tag: str | None = None,
+    ) -> dict[str, Any]:
         """執筆に必要な完全なコンテキストを構築する。（後方互換性のため公開）"""
         return await self._episode_writer.build_context(
             book_id, branch_id, ep_num, target_word_count, style_tag
         )
 
-    async def write_episode(self, book_id: int, ep_num: int, context: Dict[str, Any]) -> str:
+    async def write_episode(self, book_id: int, ep_num: int, context: dict[str, Any]) -> str:
         """
         エピソード本文を生成し、文字列で返す。
         :param book_id: 書籍ID

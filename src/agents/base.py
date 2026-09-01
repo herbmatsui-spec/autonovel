@@ -1,7 +1,7 @@
 # agents/base.py
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Dict
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +17,7 @@ class BaseAgent(ABC):
         self.style_rag = style_rag
         self.rag_prefetch = rag_prefetch
 
-    def _safe_get_dict(self, data: Any) -> Dict[str, Any]:
+    def _safe_get_dict(self, data: Any) -> dict[str, Any]:
         """データを安全に辞書に変換するユーティリティ"""
         import json
 

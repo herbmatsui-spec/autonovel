@@ -3,7 +3,7 @@ import io
 import json
 import logging
 import zipfile
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 from src.agents.base import BaseAgent
 from src.services.llm_service import LLMService
@@ -15,14 +15,14 @@ class MarketingAgent(BaseAgent):
     """マーケティング素材（表紙案、キャッチコピー、あらすじ）を生成するエージェント。"""
 
     def __init__(
-        self, repo: Any = None, llm: Optional[LLMService] = None, prompt_manager: Any = None
+        self, repo: Any = None, llm: LLMService | None = None, prompt_manager: Any = None
     ):
         super().__init__(repo=repo, llm=llm)
         self.prompt_manager = prompt_manager
 
     async def generate_pack(
         self, book_title: str, synopsis: str, latest_ep: int, **kwargs
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         if self.prompt_manager is None:
             raise ValueError("PromptManager is required for MarketingAgent")
         prompt = self.prompt_manager.build_marketing_pack_prompt(
@@ -35,7 +35,7 @@ class MarketingAgent(BaseAgent):
         logger.info("MarketingAgent run invoked")
         return await self.generate_pack(**kwargs)
 
-    async def create_export_package(self, book_id: int) -> Tuple[bytes, str]:
+    async def create_export_package(self, book_id: int) -> tuple[bytes, str]:
         """作品データ一式（本文、設定、プロット、JSONダンプ）をZIPパッケージ化する"""
         book = await self.repo.get_book(book_id)
         if not book:

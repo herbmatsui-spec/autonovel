@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, Literal, Optional, Tuple
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
-from src.infrastructure.database.models.base_orm import Base
 
 from src.core.exceptions import EngineError  # noqa: F401 - backward compat re-export
 
@@ -14,22 +14,22 @@ from src.core.exceptions import EngineError  # noqa: F401 - backward compat re-e
 class LLMRequestOptions:
     model_name: str
     prompt: str
-    system_instruction: Optional[str] = None
+    system_instruction: str | None = None
     response_schema: Any = None
     temp: float = 0.7
     max_retries: int = 5
-    stream_callback: Optional[Callable[[str], None]] = None
-    reporter: Optional[Any] = None
+    stream_callback: Callable[[str], None] | None = None
+    reporter: Any | None = None
     use_cache: bool = False
     use_semantic_cache: bool = False
     task_type: str = "general"
     genre: str = "general"
     difficulty: int = 50
     current_tension: int = 0
-    expected_ep_num: Optional[int] = None
-    cached_content: Optional[str] = None
+    expected_ep_num: int | None = None
+    cached_content: str | None = None
     threshold: float = 0.95
-    extra_kwargs: Dict[str, Any] = field(default_factory=dict)
+    extra_kwargs: dict[str, Any] = field(default_factory=dict)
 
 
 # ==========================================
@@ -64,15 +64,15 @@ class GenerateResult(BaseModel):
     """AI生成結果を保持するコンテナ"""
 
     success: bool
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
     story_content: str = ""
-    error_type: Optional[str] = None
-    error_message: Optional[str] = None
-    token_usage: Optional[Dict[str, Any]] = None
+    error_type: str | None = None
+    error_message: str | None = None
+    token_usage: dict[str, Any] | None = None
 
     def unwrap_or(
-        self, default_meta: Dict[str, Any], default_story: str
-    ) -> Tuple[Dict[str, Any], str]:
+        self, default_meta: dict[str, Any], default_story: str
+    ) -> tuple[dict[str, Any], str]:
         """成功時は結果を、失敗時はデフォルト値を返す便利メソッド"""
         if self.success:
             return self.metadata, self.story_content
@@ -245,7 +245,7 @@ try:
                 return [self._clean_schema(item) for item in obj]  # type: ignore
             return obj  # type: ignore
 
-    def get_gemini_schema(model_class: Any) -> Dict[str, Any]:
+    def get_gemini_schema(model_class: Any) -> dict[str, Any]:
         """指定したPydanticモデルクラスのGemini用JSONスキーマを取得する"""
         if hasattr(model_class, "model_json_schema"):
             return model_class.model_json_schema(schema_generator=GeminiSchemaGenerator)  # type: ignore
@@ -253,7 +253,7 @@ try:
 
 except ImportError:
     # フォールバック (Pydantic v1互換やインポートエラー対策)
-    def get_gemini_schema(model_class: Any) -> Dict[str, Any]:
+    def get_gemini_schema(model_class: Any) -> dict[str, Any]:
         if hasattr(model_class, "model_json_schema"):
             return model_class.model_json_schema()  # type: ignore
         return {}

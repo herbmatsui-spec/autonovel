@@ -12,7 +12,7 @@ import zipfile
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 from src.easy_mode.phase3.ebook_export import create_ebook_exporter
 from src.easy_mode.phase3.if_routes import IFRouteGenerator, IFRouteGraph
@@ -38,15 +38,15 @@ class AssetPackMetadata:
     source_series_id: str = ""
     episode_count: int = 0
     total_words: int = 0
-    formats: Dict[str, Any] = field(default_factory=dict)  # 含まれるフォーマット
+    formats: dict[str, Any] = field(default_factory=dict)  # 含まれるフォーマット
     if_routes: bool = False
-    media_mix: List[str] = field(default_factory=list)
-    ebook_formats: List[str] = field(default_factory=list)
-    checksums: Dict[str, str] = field(default_factory=dict)
-    manifest: Dict[str, str] = field(default_factory=dict)  # ファイルパス -> 説明
-    licensing: Dict[str, Any] = field(default_factory=dict)
+    media_mix: list[str] = field(default_factory=list)
+    ebook_formats: list[str] = field(default_factory=list)
+    checksums: dict[str, str] = field(default_factory=dict)
+    manifest: dict[str, str] = field(default_factory=dict)  # ファイルパス -> 説明
+    licensing: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "pack_id": self.pack_id,
             "title": self.title,
@@ -70,7 +70,7 @@ class AssetPackMetadata:
 class AssetPackGenerator:
     """資産化パック生成器"""
 
-    def __init__(self, genre: str, preset: Dict[str, Any]):
+    def __init__(self, genre: str, preset: dict[str, Any]):
         self.genre = genre
         self.preset = preset
         self.if_generator = None  # 遅延初期化
@@ -94,8 +94,8 @@ class AssetPackGenerator:
         include_if_routes: bool = True,
         include_media_mix: bool = True,
         include_ebook: bool = True,
-        media_formats: List[str] = None,
-        ebook_formats: List[str] = None,
+        media_formats: list[str] = None,
+        ebook_formats: list[str] = None,
         **kwargs,
     ) -> Path:
         """資産化パック生成"""
@@ -196,7 +196,7 @@ class AssetPackGenerator:
         logger.info(f"Asset pack generated: {zip_path}")
         return zip_path
 
-    def _save_original_novel(self, series: SeriesResult, output_dir: Path) -> Dict[str, str]:
+    def _save_original_novel(self, series: SeriesResult, output_dir: Path) -> dict[str, str]:
         """オリジナル小説保存"""
         files = {}
 
@@ -266,7 +266,7 @@ class AssetPackGenerator:
 
         return files
 
-    def _generate_if_routes(self, series: SeriesResult, output_dir: Path) -> Dict[str, str]:
+    def _generate_if_routes(self, series: SeriesResult, output_dir: Path) -> dict[str, str]:
         """IFルート生成"""
         files = {}
 
@@ -369,7 +369,7 @@ class AssetPackGenerator:
         lines.append("}")
         return "\n".join(lines)
 
-    def _extract_main_routes(self, graph: IFRouteGraph) -> Dict[str, List]:
+    def _extract_main_routes(self, graph: IFRouteGraph) -> dict[str, list]:
         """主要ルート抽出"""
         routes = {}
 
@@ -396,8 +396,8 @@ class AssetPackGenerator:
         return routes
 
     def _generate_media_mix(
-        self, series: SeriesResult, output_dir: Path, media_formats: List[str] = None
-    ) -> Dict[str, str]:
+        self, series: SeriesResult, output_dir: Path, media_formats: list[str] = None
+    ) -> dict[str, str]:
         """メディアミックス生成"""
         files = {}
 
@@ -437,8 +437,8 @@ class AssetPackGenerator:
         return files
 
     def _generate_ebooks(
-        self, series: SeriesResult, output_dir: Path, ebook_formats: List[str] = None, **kwargs
-    ) -> Dict[str, str]:
+        self, series: SeriesResult, output_dir: Path, ebook_formats: list[str] = None, **kwargs
+    ) -> dict[str, str]:
         """電子書籍生成"""
         files = {}
 
@@ -477,7 +477,7 @@ class AssetPackGenerator:
 
         return files
 
-    def _generate_promo_materials(self, series: SeriesResult, output_dir: Path) -> Dict[str, str]:
+    def _generate_promo_materials(self, series: SeriesResult, output_dir: Path) -> dict[str, str]:
         """プロモーション素材生成"""
         files = {}
 
@@ -560,7 +560,7 @@ class AssetPackGenerator:
 
         return "\n".join(lines)
 
-    def _generate_catchphrases(self, series: SeriesResult) -> List[str]:
+    def _generate_catchphrases(self, series: SeriesResult) -> list[str]:
         """キャッチコピー生成"""
         base = self.preset.get("marketing", {}).get("catchphrase_templates", [])
 
@@ -626,7 +626,7 @@ class AssetPackGenerator:
 
         return "\n".join(lines)
 
-    def _generate_keywords(self, series: SeriesResult) -> List[str]:
+    def _generate_keywords(self, series: SeriesResult) -> list[str]:
         """キーワード生成"""
         keywords = [
             series.title,
@@ -668,7 +668,7 @@ class AssetPackGenerator:
 
         return keywords[:50]  # 最大50個
 
-    def _generate_sns_posts(self, series: SeriesResult) -> Dict[str, Any]:
+    def _generate_sns_posts(self, series: SeriesResult) -> dict[str, Any]:
         """SNS投稿文生成"""
         return {
             "twitter": [
@@ -745,7 +745,7 @@ Email: ai-novel-engine@example.com
         }
         return features.get(self.genre, "- ジャンル特化の自動生成パイプライン")
 
-    def _calculate_checksums(self, directory: Path) -> Dict[str, str]:
+    def _calculate_checksums(self, directory: Path) -> dict[str, str]:
         """チェックサム計算"""
         import hashlib
 
@@ -768,6 +768,6 @@ Email: ai-novel-engine@example.com
         logger.info(f"Created zip: {zip_path} ({zip_path.stat().st_size / 1024 / 1024:.2f} MB)")
 
 
-def create_asset_pack_generator(genre: str, preset: Dict[str, Any]) -> AssetPackGenerator:
+def create_asset_pack_generator(genre: str, preset: dict[str, Any]) -> AssetPackGenerator:
     """資産化パック生成器作成"""
     return AssetPackGenerator(genre, preset)

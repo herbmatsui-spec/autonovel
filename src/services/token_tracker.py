@@ -3,7 +3,7 @@ src/services/token_tracker.py — トークン使用量追跡サービス
 """
 
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from src.models.report import TokenUsageReport
 
@@ -17,15 +17,15 @@ class TokenTracker:
         self.input_tokens = 0
         self.output_tokens = 0
         self.episode_count = 0
-        self.episode_usages: List[Dict[str, Any]] = []
-        self.start_time: Optional[float] = None
-        self.end_time: Optional[float] = None
+        self.episode_usages: list[dict[str, Any]] = []
+        self.start_time: float | None = None
+        self.end_time: float | None = None
 
     def start(self):
         """追跡を開始"""
         self.start_time = time.time()
 
-    def add_usage(self, input_tokens: int, output_tokens: int, ep_num: Optional[int] = None):
+    def add_usage(self, input_tokens: int, output_tokens: int, ep_num: int | None = None):
         """使用量を加算
 
         Args:
@@ -75,7 +75,7 @@ class TokenTracker:
             generation_time_seconds=generation_time,
         )
 
-    def get_episode_usages(self) -> List[Dict[str, Any]]:
+    def get_episode_usages(self) -> list[dict[str, Any]]:
         """エピソード毎の使用量を取得
 
         Returns:

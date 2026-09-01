@@ -1,5 +1,5 @@
 import json
-from typing import Any, Dict, List
+from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,8 +14,8 @@ class ChromaOutboxService:
     async def flush(
         self,
         session: AsyncSession,
-        additions: List[Dict[str, Any]],
-        deletions: List[Dict[str, Any]],
+        additions: list[dict[str, Any]],
+        deletions: list[dict[str, Any]],
     ):
         """
         ステージングされた追加および削除のイベントを Outbox テーブルに追加する。

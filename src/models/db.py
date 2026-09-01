@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from pydantic import BaseModel, ValidationInfo, field_validator
 
@@ -12,20 +12,20 @@ from src.models.base import MODEL_CONFIG_DEFAULTS, ChainPhase
 class BookDbModel(BaseModel):
     id: int
     title: str
-    genre: Optional[str] = None
-    concept: Optional[str] = None
-    synopsis: Optional[str] = None
-    catchcopy: Optional[str] = None
-    target_eps: Optional[int] = None
-    style_dna: Optional[Union[dict, str]] = None
-    status: Optional[str] = None
-    created_at: Optional[datetime] = None
-    marketing_data: Optional[Union[dict, str]] = None
-    cumulative_tension: Optional[int] = 0
-    cumulative_qol: Optional[int] = 0
-    cumulative_cost: Optional[float] = 0.0
-    sanctuary_integrity: Optional[int] = 100
-    current_branch_id: Optional[int] = None
+    genre: str | None = None
+    concept: str | None = None
+    synopsis: str | None = None
+    catchcopy: str | None = None
+    target_eps: int | None = None
+    style_dna: dict | str | None = None
+    status: str | None = None
+    created_at: datetime | None = None
+    marketing_data: dict | str | None = None
+    cumulative_tension: int | None = 0
+    cumulative_qol: int | None = 0
+    cumulative_cost: float | None = 0.0
+    sanctuary_integrity: int | None = 100
+    current_branch_id: int | None = None
 
     @property
     def style_key(self) -> str:
@@ -46,10 +46,10 @@ class BookDbModel(BaseModel):
 class BibleDbModel(BaseModel):
     id: int
     book_id: int
-    settings: Optional[Union[dict, str]] = None
-    revealed: Optional[str] = None
-    version: Optional[int] = None
-    last_updated: Optional[str] = None
+    settings: dict | str | None = None
+    revealed: str | None = None
+    version: int | None = None
+    last_updated: str | None = None
 
     @property
     def world_settings(self) -> Any:
@@ -72,9 +72,9 @@ class BranchDbModel(BaseModel):
     id: int
     book_id: int
     name: str
-    parent_id: Optional[int] = None
-    fork_ep_num: Optional[int] = 0
-    created_at: Optional[datetime] = None
+    parent_id: int | None = None
+    fork_ep_num: int | None = 0
+    created_at: datetime | None = None
 
     model_config = MODEL_CONFIG_DEFAULTS
 
@@ -84,42 +84,42 @@ class PlotDbModel(BaseModel):
     erotic_intensity: int = 0
     branch_id: int = 1
     ep_num: int
-    thought_process: Optional[str] = ""
-    title: Optional[str] = None
-    summary: Optional[str] = None
-    detailed_blueprint: Optional[str] = None
-    tension: Optional[int] = 50
-    tension_delta: Optional[int] = 0
-    catharsis: Optional[int] = 0
-    status: Optional[str] = None
-    scenes: Optional[List[Dict[str, Any]]] = None
-    is_catharsis: Optional[bool] = False
-    catharsis_type: Optional[str] = None
-    love_meter: Optional[int] = 0
-    next_hook: Optional[Dict[str, Any]] = None
-    misunderstanding_gap: Optional[str] = None
-    lite_model_director_notes: Optional[str] = None
-    script_content: Optional[str] = None
-    current_chain_phase: Optional[ChainPhase] = "Friction"
-    resolution_style: Optional[str] = "Cheat"
-    burned_cost_or_loot: Optional[str] = "なし"
-    antagonist_status: Optional[str] = "現状維持"
-    thematic_milestone: Optional[str] = "なし"
-    state_integrity_score: Optional[int] = 100
-    healed_fields: Optional[List[str]] = None
-    is_micro_catharsis: Optional[bool] = False
-    information_asymmetry_level: Optional[float] = 0.0
-    cost_score: Optional[float] = 0.0
-    qol_delta: Optional[int] = 0
-    discovery_item: Optional[str] = None
-    sanctuary_event: Optional[str] = None
-    is_locked: Optional[bool] = False
-    emotional_resonance_score: Optional[int] = 0
-    thematic_depth_score: Optional[int] = 0
-    literary_beauty_score: Optional[int] = 0
-    emotional_hook_json: Optional[str] = None
-    sharp_edges_json: Optional[str] = None
-    quality_polish_status: Optional[str] = None
+    thought_process: str | None = ""
+    title: str | None = None
+    summary: str | None = None
+    detailed_blueprint: str | None = None
+    tension: int | None = 50
+    tension_delta: int | None = 0
+    catharsis: int | None = 0
+    status: str | None = None
+    scenes: list[dict[str, Any]] | None = None
+    is_catharsis: bool | None = False
+    catharsis_type: str | None = None
+    love_meter: int | None = 0
+    next_hook: dict[str, Any] | None = None
+    misunderstanding_gap: str | None = None
+    lite_model_director_notes: str | None = None
+    script_content: str | None = None
+    current_chain_phase: ChainPhase | None = "Friction"
+    resolution_style: str | None = "Cheat"
+    burned_cost_or_loot: str | None = "なし"
+    antagonist_status: str | None = "現状維持"
+    thematic_milestone: str | None = "なし"
+    state_integrity_score: int | None = 100
+    healed_fields: list[str] | None = None
+    is_micro_catharsis: bool | None = False
+    information_asymmetry_level: float | None = 0.0
+    cost_score: float | None = 0.0
+    qol_delta: int | None = 0
+    discovery_item: str | None = None
+    sanctuary_event: str | None = None
+    is_locked: bool | None = False
+    emotional_resonance_score: int | None = 0
+    thematic_depth_score: int | None = 0
+    literary_beauty_score: int | None = 0
+    emotional_hook_json: str | None = None
+    sharp_edges_json: str | None = None
+    quality_polish_status: str | None = None
 
     @field_validator("next_hook", "scenes", mode="before")
     @classmethod
@@ -153,17 +153,17 @@ class ChapterDbModel(BaseModel):
     book_id: int
     branch_id: int = 1
     ep_num: int
-    title: Optional[str] = None
-    content: Optional[str] = None
-    score_story: Optional[int] = None
-    killer_phrase: Optional[str] = None
-    summary: Optional[str] = None
-    world_state: Optional[Union[dict, str]] = None
-    trinity_review_log: Optional[Union[dict, str]] = None
-    ai_insight: Optional[str] = None
-    created_at: Optional[datetime] = None
-    tension_delta: Optional[int] = 0
-    qol_delta: Optional[int] = 0
+    title: str | None = None
+    content: str | None = None
+    score_story: int | None = None
+    killer_phrase: str | None = None
+    summary: str | None = None
+    world_state: dict | str | None = None
+    trinity_review_log: dict | str | None = None
+    ai_insight: str | None = None
+    created_at: datetime | None = None
+    tension_delta: int | None = 0
+    qol_delta: int | None = 0
 
     @field_validator("world_state", "trinity_review_log", mode="before")
     @classmethod
@@ -185,11 +185,11 @@ class ChapterDbModel(BaseModel):
 class CharacterDbModel(BaseModel):
     id: int
     book_id: int
-    name: Optional[str] = None
-    role: Optional[str] = None
-    registry_data: Optional[Union[dict, str]] = None
+    name: str | None = None
+    role: str | None = None
+    registry_data: dict | str | None = None
 
-    def to_safe_dict(self) -> Dict[str, Any]:
+    def to_safe_dict(self) -> dict[str, Any]:
         """registry_data を辞書として安全に取得する。文字列の場合は JSON パースを行う。"""
         if isinstance(self.registry_data, dict):
             return self.registry_data

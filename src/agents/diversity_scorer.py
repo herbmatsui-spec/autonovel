@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict
+from typing import Any
 
 from src.agents.base import BaseAgent
 
@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 class DiversityScorer(BaseAgent):
     """コンテンツの多様性スコアを算出するエージェント。"""
 
-    async def score(self, content: str) -> Dict[str, Any]:
+    async def score(self, content: str) -> dict[str, Any]:
         words = content.split()
         unique = set(words)
         diversity = len(unique) / len(words) if words else 0.0

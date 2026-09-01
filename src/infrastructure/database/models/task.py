@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from typing import Any
+
 from sqlalchemy import Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 

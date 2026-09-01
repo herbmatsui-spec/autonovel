@@ -4,17 +4,12 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections.abc import AsyncGenerator, AsyncIterator, Callable, Coroutine
 from dataclasses import dataclass
 from typing import (
     Any,
-    AsyncGenerator,
-    AsyncIterator,
-    Callable,
-    Coroutine,
     Generic,
-    Optional,
     TypeVar,
-    Union,
 )
 
 # Import local modules
@@ -40,8 +35,8 @@ class AsyncExecutorConfig:
     max_delay: float = 30.0
     jitter: bool = True
     exponential_backoff: bool = True
-    timeout_seconds: Optional[float] = None
-    circuit_breaker_config: Optional[CircuitBreakerConfig] = None
+    timeout_seconds: float | None = None
+    circuit_breaker_config: CircuitBreakerConfig | None = None
     retryable_status_codes: tuple[int, ...] = (429, 500, 502, 503, 504)
     max_concurrency: int = 1  # Semaphore limit
 
@@ -60,9 +55,9 @@ class AsyncExecutorConfig:
 class AsyncExecutionError(Exception):
     """Unified exception for async execution failures."""
 
-    original_exception: Optional[Exception]
+    original_exception: Exception | None
 
-    def __init__(self, message: str, original_exception: Optional[Exception] = None):
+    def __init__(self, message: str, original_exception: Exception | None = None):
         super().__init__(message)
         self.original_exception = original_exception
 
@@ -79,7 +74,7 @@ class AsyncExecutor(Generic[T]):
         )
         self.retry_policy = config.get_retry_policy()
         self.active_tasks: set[asyncio.Task] = set()
-        self.original_result: Optional[T] = None
+        self.original_result: T | None = None
         self.errors: list[Exception] = []
 
     async def __aenter__(self) -> AsyncExecutor[T]:
@@ -128,14 +123,14 @@ class AsyncExecutor(Generic[T]):
         if self.config.timeout_seconds is not None:
             try:
                 return await asyncio.wait_for(coro, timeout=self.config.timeout_seconds)
-            except asyncio.TimeoutError as e:
+            except TimeoutError as e:
                 raise AsyncExecutionError(
                     f"Async execution timed out after {self.config.timeout_seconds}s", e
                 ) from None
         return await coro
 
     async def run(
-        self, coro_or_func: Union[Coroutine[Any, Any, T], Callable[[], Coroutine[Any, Any, T]]]
+        self, coro_or_func: Coroutine[Any, Any, T] | Callable[[], Coroutine[Any, Any, T]]
     ) -> T:
         """Execute async coroutine with unified resilience patterns.
 

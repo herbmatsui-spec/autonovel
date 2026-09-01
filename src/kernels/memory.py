@@ -5,7 +5,7 @@ kernels/memory.py - メモリ管理
 import time
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 class MemoryType(Enum):
@@ -40,8 +40,8 @@ class MemoryManager:
 
     def __init__(self, storage_capacity: int = 1000):
         self.storage_capacity = storage_capacity
-        self.store: Dict[str, MemoryEntry] = {}
-        self.phys_store: Dict[str, list] = {}
+        self.store: dict[str, MemoryEntry] = {}
+        self.phys_store: dict[str, list] = {}
 
     def store_short_term(self, key: str, value: Any, category: str = "general") -> None:
         """短期記憶に保存"""
@@ -63,7 +63,7 @@ class MemoryManager:
         """作業記憶に保存"""
         self.store[key] = MemoryEntry(key, value, MemoryType.WORKING)
 
-    def retrieve(self, key: str) -> Optional[Any]:
+    def retrieve(self, key: str) -> Any | None:
         """値を取得"""
         entry = self.store.get(key)
         if entry and not entry.is_expired():

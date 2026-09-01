@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 class ZamaaAuditResult(BaseModel):
     is_valid: bool
     score: int  # 0-100
-    issues: List[str]
+    issues: list[str]
     suggestion: str
 
 
@@ -29,7 +29,7 @@ class ZamaaStressCatharsisValidator:
         self.catharsis_threshold = catharsis_threshold
 
     async def validate_plot_arc(
-        self, plot_data: Dict[str, Any], engine_key: str
+        self, plot_data: dict[str, Any], engine_key: str
     ) -> ZamaaAuditResult:
         if engine_key != "zamaa":
             return ZamaaAuditResult(

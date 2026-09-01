@@ -49,8 +49,15 @@ def real_db_manager() -> Generator[Session, None, None]:
     try:
         yield session
     finally:
+        import gc
+
+        try:
+            session.rollback()
+        except Exception:
+            pass
         session.close()
         test_engine.dispose()
+        gc.collect()
         # 元の状態に戻す
         db_module.engine = engine
         db_module.SessionLocal = SessionLocal  # type: ignore[assignment]

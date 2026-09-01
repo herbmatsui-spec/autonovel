@@ -1,8 +1,9 @@
 import asyncio
 import logging
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
-from typing import Any, Callable
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +19,7 @@ class ExecutorManager:
 
     def __new__(cls):
         if cls._instance is None:
-            cls._instance = super(ExecutorManager, cls).__new__(cls)
+            cls._instance = super().__new__(cls)
             # I/Oバウンド処理用: 待機時間が長いため、多めのスレッドを確保
             cls._instance.io_executor = ThreadPoolExecutor(
                 max_workers=32, thread_name_prefix="LLM_IO_Pool"

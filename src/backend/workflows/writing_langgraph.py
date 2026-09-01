@@ -14,7 +14,7 @@ import asyncio
 import logging
 import random
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 try:
     from langgraph.checkpoint.memory import MemorySaver
@@ -39,7 +39,7 @@ RETRY_BACKOFF_FACTOR = 2.0  # 指数バックオフ係数
 QUALITY_THRESHOLD_EARLY_EXIT = 0.95  # 早期終了の品質閾値
 
 
-class WritingGraphState(Dict[str, Any]):
+class WritingGraphState(dict[str, Any]):
     """LangGraph State for the Writing Actor-Critic Loop"""
 
     ep_num: int
@@ -54,13 +54,13 @@ class WritingGraphState(Dict[str, Any]):
     max_ac_iter: int
     gen_ctx: Any  # WritingGenerationContext
     draft_content: str
-    final_meta: Dict[str, Any]
+    final_meta: dict[str, Any]
 
     # Audit results
     is_integrity_ok: bool
     is_causal_ok: bool
     causal_reason: str
-    failures: List[Dict[str, Any]]
+    failures: list[dict[str, Any]]
 
     # Status
     status: str
@@ -70,7 +70,7 @@ class WritingGraphManager:
     """商用化対応LangGraphマネージャー - パフォーマンス最適化版"""
 
     # クラスレベルでgen_ctxをキャッシュして再利用
-    _gen_ctx_cache: Dict[str, Any] = {}
+    _gen_ctx_cache: dict[str, Any] = {}
     _cache_ttl = 300  # キャッシュTTL（秒）
 
     def __init__(self, manager):
@@ -81,13 +81,13 @@ class WritingGraphManager:
         if HAS_LANGGRAPH and MemorySaver is not None:
             self.checkpointer = MemorySaver()
         # メタデータ保持用
-        self._checkpoint_metadata: Dict[str, Any] = {}
+        self._checkpoint_metadata: dict[str, Any] = {}
         # 品質メトリクス収集（ジャンル別トレンド分析用）
         from .quality_metrics import QualityMetricsCollector
 
         self.metrics_collector = QualityMetricsCollector()
         # StreamingPlotScheduler 統合（依存関係管理用、None=未注入）
-        self._scheduler: Optional[Any] = None
+        self._scheduler: Any | None = None
 
     def _build_graph(self):
         if not HAS_LANGGRAPH or StateGraph is None:
@@ -131,7 +131,7 @@ class WritingGraphManager:
         return workflow.compile()
 
     @classmethod
-    def _get_cached_gen_ctx(cls, cache_key: str) -> Optional[Any]:
+    def _get_cached_gen_ctx(cls, cache_key: str) -> Any | None:
         """gen_ctxをキャッシュから取得"""
         if cache_key in cls._gen_ctx_cache:
             entry = cls._gen_ctx_cache[cache_key]
@@ -159,7 +159,7 @@ class WritingGraphManager:
         logger.info(f"gen_ctx cache cleared: {count} entries removed")
         return count
 
-    async def node_prepare(self, state: Dict[str, Any]):
+    async def node_prepare(self, state: dict[str, Any]):
         logger.info(f"LangGraph: Preparing context for Ep.{state.get('ep_num', 'unknown')}")
 
         # キャッシュキーの生成
@@ -234,7 +234,7 @@ class WritingGraphManager:
             "ac_iter": 0,
         }
 
-    async def node_drafting(self, state: Dict[str, Any]):
+    async def node_drafting(self, state: dict[str, Any]):
         logger.info(f"LangGraph: Drafting Ep.{state['ep_num']} Iter {state['ac_iter']}")
         temp = 0.7 + (state["passion"] - 0.5) * 0.2 + (state["ac_iter"] * 0.1)
         blueprint = state["context"]["plot"].detailed_blueprint or ""
@@ -275,7 +275,7 @@ class WritingGraphManager:
         logger.error(f"Drafting failed after 3 attempts for Ep.{state['ep_num']}: {last_error}")
         return {"draft_content": "", "final_meta": {}}
 
-    async def node_audit(self, state: Dict[str, Any]):
+    async def node_audit(self, state: dict[str, Any]):
         """監査ノード - リトライロジックと早期終了対応"""
         logger.info(f"LangGraph: Auditing Ep.{state['ep_num']}")
 
@@ -367,7 +367,7 @@ class WritingGraphManager:
             "rate": 0.0,
         }
 
-    def route_after_audit(self, state: Dict[str, Any]) -> str:
+    def route_after_audit(self, state: dict[str, Any]) -> str:
         """監査後のルート分岐 - 早期終了条件を積極的に適用"""
         # easy_mode は即座に終了
         if state.get("is_easy_mode", False):
@@ -407,7 +407,7 @@ class WritingGraphManager:
 
         return "finish"
 
-    async def node_critic(self, state: Dict[str, Any]):
+    async def node_critic(self, state: dict[str, Any]):
         """批評ノード - リトライロジック付き"""
         logger.info(f"LangGraph: Critic Ep.{state['ep_num']}")
         blueprint = state["context"]["plot"].detailed_blueprint
@@ -438,7 +438,7 @@ class WritingGraphManager:
         logger.error(f"Critic failed after 3 attempts for Ep.{state['ep_num']}: {last_error}")
         return {"critic_triggered": False}
 
-    def route_after_critic(self, state: Dict[str, Any]) -> str:
+    def route_after_critic(self, state: dict[str, Any]) -> str:
         """批評後のルート分岐"""
         if state.get("critic_triggered"):
             # 最大反復回数に達していない場合のみリトライ
@@ -603,7 +603,7 @@ class WritingGraphManager:
         fw_prompt: str,
         passion: float,
         is_easy_mode: bool,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """初期状態を生成（フォールバック・LangGraph共通）"""
         from config.project_context import ProjectContext
 
@@ -638,7 +638,7 @@ class WritingGraphManager:
         fw_prompt: str,
         passion: float,
         is_easy_mode: bool,
-    ) -> Tuple[str, Dict[str, Any], bool]:
+    ) -> tuple[str, dict[str, Any], bool]:
         """実行メソッド - チェックポイント対応"""
         logger.info(f"Starting LangGraph execution for Ep.{ep_num} (easy_mode={is_easy_mode})")
         initial_state = self._create_initial_state(
@@ -647,7 +647,7 @@ class WritingGraphManager:
 
         if self.workflow is None:
             # LangGraph 非依存のフォールバック: ノードを順次実行
-            state: Dict[str, Any] = dict(initial_state)
+            state: dict[str, Any] = dict(initial_state)
             state.update(await self.node_prepare(state))
             state.update(await self.node_drafting(state))
             state.update(await self.node_audit(state))
@@ -686,11 +686,11 @@ class WritingGraphManager:
             logger.error(f"LangGraph execution failed for Ep.{ep_num}: {e}")
             raise
 
-    def get_checkpoint_metadata(self, ep_num: int) -> Optional[Dict[str, Any]]:
+    def get_checkpoint_metadata(self, ep_num: int) -> dict[str, Any] | None:
         """チェックポイントメタデータを取得"""
         return self._checkpoint_metadata.get(ep_num)
 
-    def get_all_checkpoint_metadata(self) -> Dict[int, Dict[str, Any]]:
+    def get_all_checkpoint_metadata(self) -> dict[int, dict[str, Any]]:
         """全チェックポイントメタデータを取得"""
         return self._checkpoint_metadata.copy()
 
@@ -707,7 +707,7 @@ class WritingGraphManager:
         """指定エピソードの品質メトリクスを取得"""
         return self.metrics_collector.get(ep_num)
 
-    def get_quality_report(self, genre: Optional[str] = None) -> Dict[str, Any]:
+    def get_quality_report(self, genre: str | None = None) -> dict[str, Any]:
         """全体の品質レポートを生成"""
         trend = self.metrics_collector.get_quality_trend(genre)
         all_metrics = list(self.metrics_collector.episode_metrics.values())
@@ -764,8 +764,8 @@ class WritingGraphManager:
         fw_prompt: str,
         passion: float,
         is_easy_mode: bool,
-        depends_on: Optional[int] = None,
-    ) -> Tuple[str, Dict[str, Any], bool]:
+        depends_on: int | None = None,
+    ) -> tuple[str, dict[str, Any], bool]:
         """依存関係付き実行"""
         if depends_on is not None:
             quality_ok = await self._check_dependency(ep_num, depends_on)

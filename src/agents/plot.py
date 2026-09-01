@@ -1,5 +1,6 @@
 import logging
-from typing import TYPE_CHECKING, Any, Awaitable, Callable, Dict, List, Optional
+from collections.abc import Awaitable, Callable
+from typing import TYPE_CHECKING, Any, Optional
 
 from src.agents.base import BaseAgent
 
@@ -24,8 +25,8 @@ class PlotAgent(BaseAgent):
         pm: "IPromptManager",
         generate_json: Callable[..., Awaitable[Any]],
         plot_expander: Optional["IPlotExpander"] = None,
-        auditor: Optional[Any] = None,
-        uow_factory: Optional[Callable[[], Any]] = None,
+        auditor: Any | None = None,
+        uow_factory: Callable[[], Any] | None = None,
     ):
         super().__init__()
         self.repo = repo
@@ -39,12 +40,12 @@ class PlotAgent(BaseAgent):
         self,
         book_title: str,
         ep_num: int,
-        arc_metadata: Dict[str, Any],
+        arc_metadata: dict[str, Any],
         past_context: str,
         world_settings: str,
         reporter: Optional["IReporter"] = None,
-        expected_ep_num: Optional[int] = None,
-        system_overrides: Optional[Dict[str, Any]] = None,
+        expected_ep_num: int | None = None,
+        system_overrides: dict[str, Any] | None = None,
     ) -> "PlotEpisode":
         """単一エピソードのプロットを展開する.
 
@@ -114,7 +115,7 @@ class PlotAgent(BaseAgent):
         past_context: str,
         reporter: Optional["IReporter"] = None,
         max_retries: int = 3,
-        system_overrides: Optional[Dict[str, Any]] = None,
+        system_overrides: dict[str, Any] | None = None,
     ) -> "PlotEpisode":
         """監査ループを適用してプロットを生成する.
 
@@ -240,7 +241,7 @@ class PlotAgent(BaseAgent):
         try:
             monitor = PlotIntegrityMonitor(pm=self.pm, llm=self._get_llm_client())
 
-            def extract_keywords(self, blueprint: str) -> List[str]:
+            def extract_keywords(self, blueprint: str) -> list[str]:
                 return []
 
             monitor.extract_keywords = extract_keywords.__get__(monitor, PlotIntegrityMonitor)
@@ -270,9 +271,9 @@ class PlotAgent(BaseAgent):
         branch_id: int,
         start_ep: int,
         new_total: int,
-        new_plots: List["PlotEpisode"],
+        new_plots: list["PlotEpisode"],
         reporter: Optional["IReporter"] = None,
-    ) -> List["PlotEpisode"]:
+    ) -> list["PlotEpisode"]:
         """古いプロットをアーカイブし、新しいプロットを保存する.
 
         Args:
@@ -400,12 +401,12 @@ class PlotAgent(BaseAgent):
     async def expand_plots(
         self,
         book_id: int,
-        ep_nums: List[int],
-        arcs: List["Arc"],
+        ep_nums: list[int],
+        arcs: list["Arc"],
         reporter: Optional["IReporter"] = None,
         force: bool = False,
-        branch_id: Optional[int] = None,
-    ) -> List["PlotDetail"]:
+        branch_id: int | None = None,
+    ) -> list["PlotDetail"]:
         """各エピソードのプロット詳細を展開する（実際のLLM呼び出し）"""
         self._ensure_services()
 

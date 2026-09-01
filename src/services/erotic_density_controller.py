@@ -3,7 +3,6 @@ src/services/erotic_density_controller.py
 螳倩・蟇・ｺｦ繧ｳ繝ｳ繝医Ο繝ｼ繝ｩ 窶・Book蜈ｨ菴薙・繝舌Λ繝ｳ繧ｹ繧堤ｮ｡逅・☆繧九・"""
 
 import logging
-from typing import List
 
 from config.erotic_thresholds import MAX_CONSECUTIVE_PEAK_EPISODES
 
@@ -13,7 +12,7 @@ logger = logging.getLogger(__name__)
 class EroticDensityController:
     """Book蜈ｨ菴薙・螳倩・繧ｷ繝ｼ繝ｳ蟇・ｺｦ縺ｨ髢馴囈繧堤ｮ｡逅・☆繧九・"""
 
-    def should_allow_peak(self, recent_intensities: List[int]) -> bool:
+    def should_allow_peak(self, recent_intensities: list[int]) -> bool:
         """逶ｴ霑代お繝斐た繝ｼ繝峨・蠑ｷ蠎ｦ繝ｪ繧ｹ繝医°繧峨√ヴ繝ｼ繧ｯ繧ｷ繝ｼ繝ｳ繧定ｨｱ蜿ｯ縺吶ｋ縺九ｒ蛻､螳壹☆繧九・"""
         if len(recent_intensities) < MAX_CONSECUTIVE_PEAK_EPISODES:
             return True
@@ -29,7 +28,7 @@ class EroticDensityController:
             return max(1, min(base_intensity + 1, 5))
         return max(1, base_intensity)
 
-    def suggest_next_intensity(self, recent_intensities: List[int], base_intensity: int) -> int:
+    def suggest_next_intensity(self, recent_intensities: list[int], base_intensity: int) -> int:
         """
         逶ｴ霑題ｩｱ謨ｰ縺ｮ蠑ｷ蠎ｦ繝ｪ繧ｹ繝医°繧峨∵ｬ｡隧ｱ縺ｮ謗ｨ螂ｨ蠑ｷ蠎ｦ繧呈署譯医☆繧九・
         騾｣邯壹ヴ繝ｼ繧ｯ縺檎ｶ壹＞縺ｦ縺・ｋ蝣ｴ蜷医・1谿ｵ髫惹ｸ九￡繧九・
@@ -46,7 +45,7 @@ class EroticDensityController:
 
         return base_intensity
 
-    def compute_avg_intensity(self, intensities: List[int]) -> float:
+    def compute_avg_intensity(self, intensities: list[int]) -> float:
         """Book蜈ｨ菴薙・蟷ｳ蝮・ｼｷ蠎ｦ繧堤ｮ怜・縺吶ｋ縲・"""
         if not intensities:
             return 0.0

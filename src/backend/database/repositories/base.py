@@ -1,4 +1,4 @@
-from typing import Generic, List, Optional, Type, TypeVar
+from typing import Generic, TypeVar
 
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,16 +14,16 @@ class BaseRepository(Generic[T]):
         self.session = session
 
     @property
-    def model_class(self) -> Type[T]:
+    def model_class(self) -> type[T]:
         raise NotImplementedError
 
-    async def get(self, id: int) -> Optional[T]:
+    async def get(self, id: int) -> T | None:
         result = await self.session.execute(
             select(self.model_class).where(self.model_class.id == id)
         )  # type: ignore
         return result.scalar_one_or_none()
 
-    async def get_all(self) -> List[T]:
+    async def get_all(self) -> list[T]:
         result = await self.session.execute(select(self.model_class))
         return list(result.scalars().all())
 

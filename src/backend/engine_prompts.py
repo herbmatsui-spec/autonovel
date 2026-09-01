@@ -1,25 +1,25 @@
-from typing import Any, Dict, List
+from typing import Any
 
 
 class FastPlotScreenResult:
-    def __init__(self, plot_data: Dict[str, Any]) -> None:
+    def __init__(self, plot_data: dict[str, Any]) -> None:
         self.plot_data = plot_data
 
 
 class AbilityAuditResult:
-    def __init__(self, strengths: List[str], weaknesses: List[str]) -> None:
+    def __init__(self, strengths: list[str], weaknesses: list[str]) -> None:
         self.strengths = strengths
         self.weaknesses = weaknesses
 
 
 class DeAIAuditResult:
-    def __init__(self, issues: List[str], proposed_rules: List[str]) -> None:
+    def __init__(self, issues: list[str], proposed_rules: list[str]) -> None:
         self.issues = issues
         self.proposed_rules = proposed_rules
 
 
 class DeAIProposedRules:
-    def __init__(self, rules: List[str]) -> None:
+    def __init__(self, rules: list[str]) -> None:
         self.rules = rules
 
 

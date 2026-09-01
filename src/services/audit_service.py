@@ -1,5 +1,5 @@
 import logging
-from typing import Any, List, Tuple
+from typing import Any
 
 from src.agents.audit import AbilityConsistencyChecker, DeAIAuditor, FastPlotScreener
 
@@ -14,22 +14,22 @@ class AuditService:
         self.ability_checker = AbilityConsistencyChecker(llm=llm, prompt_manager=prompt_manager)
         self.deai_auditor = DeAIAuditor(llm=llm, prompt_manager=prompt_manager)
 
-    async def screen_plot(self, blueprint: str) -> Tuple[bool, str]:
+    async def screen_plot(self, blueprint: str) -> tuple[bool, str]:
         return await self.fast_screener.screen_plot(blueprint)
 
     async def audit_ability(
         self, blueprint: str, settings_json: str, characters_json: str
-    ) -> Tuple[bool, str, str]:
+    ) -> tuple[bool, str, str]:
         return await self.ability_checker.audit_ability_consistency(
             blueprint, settings_json, characters_json
         )
 
-    async def audit_deai(self, content: str) -> Tuple[bool, str]:
+    async def audit_deai(self, content: str) -> tuple[bool, str]:
         return await self.deai_auditor.audit(content)
 
     def get_erotic_advice(
-        self, intensities: List[int], current_ep: int, total_eps: int
-    ) -> List[str]:
+        self, intensities: list[int], current_ep: int, total_eps: int
+    ) -> list[str]:
         """官能シーンのタイミングに関するAIアドバイスを返す。"""
         from src.services.erotic_density_controller import EroticDensityController
 

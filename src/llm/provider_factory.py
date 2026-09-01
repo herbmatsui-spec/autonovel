@@ -1,4 +1,3 @@
-from typing import Dict
 
 from google import genai
 
@@ -17,7 +16,7 @@ class LLMProviderFactory:
 
     def __init__(self, genai_client: genai.Client, cooldown: AdaptiveCooldown):
         # プロバイダーのインスタンス化
-        self._providers: Dict[str, LLMProvider] = {
+        self._providers: dict[str, LLMProvider] = {
             "gemini": GeminiProvider(genai_client, cooldown),
             "openai": OpenAIProvider(cooldown),
         }
@@ -33,5 +32,5 @@ class LLMProviderFactory:
         # デフォルトは Gemini
         return self._providers["gemini"]
 
-    def get_all_providers(self) -> Dict[str, LLMProvider]:
+    def get_all_providers(self) -> dict[str, LLMProvider]:
         return self._providers

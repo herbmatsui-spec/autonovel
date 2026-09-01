@@ -6,7 +6,7 @@ import asyncio
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 class KernelState(Enum):
@@ -25,7 +25,7 @@ class KernelContext:
 
     session_id: str
     user_id: str
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
     created_at: float = 0.0
 
 
@@ -34,7 +34,7 @@ class KernelBase(ABC):
     全てのカーネルクラスの基底クラス
     """
 
-    def __init__(self, context: Optional[KernelContext] = None):
+    def __init__(self, context: KernelContext | None = None):
         self.context = context or KernelContext(
             session_id="default", user_id="anonymous", metadata={}
         )

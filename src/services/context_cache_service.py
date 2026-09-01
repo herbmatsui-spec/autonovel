@@ -11,7 +11,7 @@ from __future__ import annotations
 import hashlib
 import logging
 import time
-from typing import Any, Dict, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +38,7 @@ class ContextCacheManager:
     def __init__(self, client: Any, model_name: str):
         self.client = client
         self.model_name = model_name
-        self._cache_registry: Dict[str, CacheEntry] = {}
+        self._cache_registry: dict[str, CacheEntry] = {}
 
     def _content_hash(self, content: str) -> str:
         """コンテンツのハッシュを生成（キャッシュキーの一部として使用）"""
@@ -48,9 +48,9 @@ class ContextCacheManager:
         self,
         cache_key: str,
         contents: list,
-        system_instruction: Optional[str] = None,
+        system_instruction: str | None = None,
         ttl_minutes: int = 60,
-    ) -> Optional[str]:
+    ) -> str | None:
         """
         キャッシュを取得。存在しなければ作成する。
 
@@ -109,7 +109,7 @@ class ContextCacheManager:
         self._cache_registry.clear()
         logger.info(f"[CACHE CLEARED] {count} entries invalidated")
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """キャッシュの統計情報を返す"""
         now = time.time()
         active = sum(1 for e in self._cache_registry.values() if not e.is_expired())

@@ -6,7 +6,7 @@
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 import yaml
 
@@ -61,7 +61,7 @@ def load_j2_template(filepath: Path) -> str:
         return ""
 
 
-def load_yaml(filepath: Path) -> Dict[str, Any]:
+def load_yaml(filepath: Path) -> dict[str, Any]:
     """YAMLファイルを辞書として読み込み"""
     try:
         return yaml.safe_load(filepath.read_text(encoding="utf-8")) or {}
@@ -73,7 +73,7 @@ def load_yaml(filepath: Path) -> Dict[str, Any]:
         return {}
 
 
-def load_json(filepath: Path) -> Dict[str, Any]:
+def load_json(filepath: Path) -> dict[str, Any]:
     """JSONファイルを辞書として読み込み"""
     try:
         return json.loads(filepath.read_text(encoding="utf-8"))
@@ -85,7 +85,7 @@ def load_json(filepath: Path) -> Dict[str, Any]:
         return {}
 
 
-def load_preset(genre: str) -> Dict[str, Any]:
+def load_preset(genre: str) -> dict[str, Any]:
     """
     指定ジャンルの全プリセットを読み込み、統合辞書として返却。
 
@@ -133,7 +133,7 @@ def load_preset(genre: str) -> Dict[str, Any]:
     return preset
 
 
-def get_preset_value(preset: Dict[str, Any], key: str, default: Any = None) -> Any:
+def get_preset_value(preset: dict[str, Any], key: str, default: Any = None) -> Any:
     """プリセット辞書から安全に値を取得"""
     return preset.get(key, default)
 
@@ -143,7 +143,7 @@ def list_available_genres() -> list:
     return SUPPORTED_GENRES.copy()
 
 
-def validate_preset(preset: Dict[str, Any]) -> Dict[str, Any]:
+def validate_preset(preset: dict[str, Any]) -> dict[str, Any]:
     """
     プリセットの完全性を検証し、不足キーを報告。
 

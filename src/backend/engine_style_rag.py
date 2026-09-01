@@ -1,7 +1,7 @@
 import json
 import logging
 import random
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
@@ -22,9 +22,9 @@ class StyleRagManager:
         self.repo = repo
         self.embedding_model = "gemini-embedding-2"  # 業界標準の高性能モデルに固定
         # キャッシュ用辞書（Embeddingの再計算を避ける）
-        self._embedding_cache: Dict[str, List[float]] = {}
+        self._embedding_cache: dict[str, list[float]] = {}
 
-    async def _get_embedding(self, text: str) -> List[float]:
+    async def _get_embedding(self, text: str) -> list[float]:
         """Gemini APIを使用してテキストのベクトルを生成 (メモリキャッシュ付き)"""
         if text in self._embedding_cache:
             return self._embedding_cache[text]
@@ -58,9 +58,9 @@ class StyleRagManager:
         self,
         scene_description: str,
         phase: str = "Hate",
-        tag_hint: Optional[str] = None,
+        tag_hint: str | None = None,
         top_k: int = 2,
-    ) -> List[str]:
+    ) -> list[str]:
         """
         WritingAgentとのインターフェース用。
         """
@@ -72,9 +72,9 @@ class StyleRagManager:
         self,
         scene_description: str,
         phase: str = "Hate",
-        trope_hint: Optional[str] = None,
+        trope_hint: str | None = None,
         top_k: int = 2,
-    ) -> List[str]:
+    ) -> list[str]:
         """
         現在のシーンに最も近い文章サンプルを検索。
         1. クエリの強化（トロープとフェーズ情報を付与）
@@ -148,7 +148,7 @@ class StyleRagManager:
         # キーがなければ Prep を返し、さらにランダム性を加味することも検討可能
         return fallbacks.get(phase) or random.choice(list(fallbacks.values()))
 
-    def format_as_prompt(self, samples: List[str]) -> str:
+    def format_as_prompt(self, samples: list[str]) -> str:
         """プロンプトに注入する形式に整形"""
         if not samples:
             return ""

@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from src.shared.utils import StatusReporter
 
@@ -9,7 +9,7 @@ from .base_workflow import BaseWorkflow
 class RetryFailedEpisodesWorkflow(BaseWorkflow):
     """失敗したエピソードをスキャンし、自動で再試行・修復するバックグラウンドジョブ"""
 
-    async def execute(self, reporter: StatusReporter, **kwargs) -> Dict[str, Any]:
+    async def execute(self, reporter: StatusReporter, **kwargs) -> dict[str, Any]:
         book_id = kwargs["book_id"]
         passion = kwargs["passion"]
         word_count = kwargs["word_count"]

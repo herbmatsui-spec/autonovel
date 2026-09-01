@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import Any, Dict, List, Literal, Optional
+from typing import Annotated, Any, Literal
 
 from pydantic import (
     AliasChoices,
@@ -12,7 +12,6 @@ from pydantic import (
     model_serializer,
     model_validator,
 )
-from typing_extensions import Annotated
 
 from src.models.base import (
     MODEL_CONFIG_DEFAULTS,
@@ -61,7 +60,7 @@ class SceneBeat(BaseModel):
 
     beat_num: int = Field(..., description="ビート番号")
     physical_action: str = Field(..., description="肉体的な動作描写")
-    sensory_tags: List[str] = Field(
+    sensory_tags: list[str] = Field(
         default_factory=list, description="五感タグ: smell, sound, touch, taste, sight"
     )
     emotion_phase: str = Field(
@@ -73,7 +72,7 @@ class SceneBeat(BaseModel):
 
 
 class SceneBeatList(BaseModel):
-    beats: List[SceneBeat] = Field(default_factory=list)
+    beats: list[SceneBeat] = Field(default_factory=list)
 
     @model_validator(mode="before")
     @classmethod
@@ -212,10 +211,10 @@ class SceneBeatBlock(BaseModel):
     action_description: str = Field(
         default="描写なし", description="具体的な行動描写。キャラが何をし、何が起きるか"
     )  # 必須→デフォルト値付き
-    sensory_keywords: List[str] = Field(
+    sensory_keywords: list[str] = Field(
         default_factory=list, description="描写必須の五感。例：焦げた匂い、冷たい風"
     )
-    psychology_keywords: List[str] = Field(
+    psychology_keywords: list[str] = Field(
         default_factory=list, description="描写必須の心理キーワード（2つ以上）"
     )
     target_words: int = Field(default=150, description="このビートの最低目標文字数")
@@ -235,7 +234,7 @@ class MasterSceneBlock(BaseModel):
     )
     dramatic_function: str = Field(default="")
     emotional_payoff: str = Field(default="")
-    beats: List[SceneBeatBlock] = Field(
+    beats: list[SceneBeatBlock] = Field(
         default_factory=list,
         description="インパクトスコアが高い場合のみ生成される詳細ビート（状況・内面葛藤・具体的行動・余韻）",
     )
@@ -302,13 +301,13 @@ class PlotBlueprintPhase1(BaseModel):
 class PlotBlueprintPhase1Batch(BaseModel):
     """複数話のPhase 1設計図を一括で保持するモデル"""
 
-    episodes: List[PlotBlueprintPhase1] = Field(default_factory=list)
+    episodes: list[PlotBlueprintPhase1] = Field(default_factory=list)
 
     model_config = MODEL_CONFIG_DEFAULTS
 
 
 class PlotBlueprintPhase2(BaseModel):
-    scenes: List[MasterSceneBlock] = Field(default_factory=list)
+    scenes: list[MasterSceneBlock] = Field(default_factory=list)
     script_content: str = Field(default="")
 
 
@@ -379,10 +378,10 @@ class PlotAnalytics(BaseEngine):
         validation_alias=AliasChoices("antagonist_status", "enemy_status", "villain_status"),
     )
     state_integrity_score: int = Field(default=100)
-    emotional_hook: Optional[EmotionalHookSpec] = Field(
+    emotional_hook: EmotionalHookSpec | None = Field(
         default=None, description="この話の感情設計仕様"
     )
-    sharp_edges: List[SharpEdgeSpec] = Field(default_factory=list, description="削ってはいけない角")
+    sharp_edges: list[SharpEdgeSpec] = Field(default_factory=list, description="削ってはいけない角")
     quality_polish_status: Literal["pending", "passed", "rejected_edge_loss"] = Field(
         default="pending", description="品質磨き上げステータス"
     )
@@ -394,12 +393,12 @@ class PlotForeshadowing(BaseEngine):
     EnigmaAnalytics のベースとして機能し、基本的な情報レイヤーと伏線管理を担う。
     """
 
-    information_layers: Dict[str, List[str]] = Field(
+    information_layers: dict[str, list[str]] = Field(
         default_factory=dict,
         description="陣営別（Protagonist, Antagonist, Public）の既知情報",
         validation_alias=AliasChoices("information_layers", "info_layers"),
     )
-    truth_ledger_updates: Dict[str, List[str]] = Field(
+    truth_ledger_updates: dict[str, list[str]] = Field(
         default_factory=dict,
         description="【V5.0】今回の話で各キャラクターが新たに知った事実のリスト",
         validation_alias=AliasChoices("truth_ledger_updates", "truth_updates"),
@@ -409,7 +408,7 @@ class PlotForeshadowing(BaseEngine):
         description="周囲との知識/知能格差のスコア (0.0-1.0)",
         validation_alias=AliasChoices("knowledge_delta", "intel_gap"),
     )
-    foreshadowing_refs: List[str] = Field(
+    foreshadowing_refs: list[str] = Field(
         default_factory=list,
         description="この回で設置/回収された伏線ID",
         validation_alias=AliasChoices("foreshadowing_refs", "refs"),
@@ -424,7 +423,7 @@ class PlotForeshadowing(BaseEngine):
         description="主人公の策が環境（インフラ、常識）に阻まれる指数 (0.0 - 1.0)",
         validation_alias=AliasChoices("knowledge_friction", "friction"),
     )
-    foreshadowing_ledger: List[Dict[str, Any]] = Field(
+    foreshadowing_ledger: list[dict[str, Any]] = Field(
         default_factory=list,
         description="未回収の伏線リスト",
         validation_alias=AliasChoices("foreshadowing_ledger", "ledger"),
@@ -437,7 +436,7 @@ class RedHerringItem(BaseModel):
     ep_num: int
     resolved: bool = False
     resolution: str = ""
-    resolve_ep_num: Optional[int] = None
+    resolve_ep_num: int | None = None
 
     model_config = MODEL_CONFIG_DEFAULTS
 
@@ -464,7 +463,7 @@ class EnigmaAnalytics(PlotForeshadowing):
         validation_alias=AliasChoices("knowledge_friction", "friction"),
     )
 
-    red_herrings: List[RedHerringItem] = Field(default_factory=list)
+    red_herrings: list[RedHerringItem] = Field(default_factory=list)
     unfairness_score: float = Field(default=0.0)
 
     def add_red_herring(self, clue: str, ep_num: int) -> int:
@@ -489,14 +488,14 @@ class ComfortAnalytics(BaseEngine):
     veneration_gain: Annotated[float, BeforeValidator(extract_float)] = Field(
         default=0.0, description="この話による崇拝度の上昇"
     )
-    fulfillment_delta: Dict[str, float] = Field(
+    fulfillment_delta: dict[str, float] = Field(
         default_factory=dict, description="各次元の充足向上"
     )
     is_miracle_occurrence: bool = Field(default=False, description="日常が奇跡として誤認されたか")
-    discovery_item: Optional[str] = Field(
+    discovery_item: str | None = Field(
         default=None, description="この話で新しく発見/発明されたもの"
     )
-    sanctuary_event: Optional[str] = Field(
+    sanctuary_event: str | None = Field(
         default=None, description="聖域の強化または対比イベントの記述"
     )
 
@@ -628,7 +627,7 @@ class PlotEpisodeBase(FlatModelMixin, CoreEngineMixin, Generic[T]):
     def antagonist_status(self, value: str):
         self.analytics.antagonist_status = value
 
-    extra_engines: Dict[str, Any] = Field(
+    extra_engines: dict[str, Any] = Field(
         default_factory=dict, description="未知・追加エンジンのデータスロット"
     )
 
@@ -694,7 +693,7 @@ class PlotEpisodeBase(FlatModelMixin, CoreEngineMixin, Generic[T]):
     misunderstanding_gap: str = Field(
         default="", validation_alias=AliasChoices("misunderstanding_gap", "gap", "irony")
     )
-    scenes: List[MasterSceneBlock] = Field(default_factory=list)
+    scenes: list[MasterSceneBlock] = Field(default_factory=list)
     script_content: str = Field(
         default="",
         validation_alias=AliasChoices(
@@ -711,7 +710,7 @@ class PlotEpisodeBase(FlatModelMixin, CoreEngineMixin, Generic[T]):
     thematic_milestone: str = Field(
         default="なし", validation_alias=AliasChoices("thematic_milestone", "milestone")
     )
-    healed_fields: List[str] = Field(default_factory=list)
+    healed_fields: list[str] = Field(default_factory=list)
     is_micro_catharsis: bool = Field(default=False, description="摩擦期間中の小規模な解放フラグ")
     information_asymmetry_level: Annotated[float, BeforeValidator(extract_float)] = Field(
         default=0.0, description="情報の非対称性（読者のみが知る優位性）の強度 0.0-1.0"
@@ -820,7 +819,7 @@ class PlotEpisodeBase(FlatModelMixin, CoreEngineMixin, Generic[T]):
         return data
 
     @model_serializer(mode="wrap")
-    def serialize_flat(self, handler) -> Dict[str, Any]:
+    def serialize_flat(self, handler) -> dict[str, Any]:
         dumped = handler(self)
         for sub_model in self.__class__._get_sub_model_names():
             if sub_model in dumped and isinstance(dumped[sub_model], dict):
@@ -865,7 +864,7 @@ class PlotEpisode(PlotEpisodeBase[CoreEngineMixin], EnigmaMixin, ComfortMixin):
     将来的にジャンル別特化モデルへ移行する。
     """
 
-    candidates: List[PlotEpisodeBase] = Field(
+    candidates: list[PlotEpisodeBase] = Field(
         default_factory=list, description="AIが提示した複数の候補案"
     )
 
@@ -1004,7 +1003,7 @@ class RoadmapItem(FlatModelMixin, BaseModel):
 
 
 class RoadmapList(BaseModel):
-    full_story_roadmap: List[RoadmapItem] = Field(default_factory=list)
+    full_story_roadmap: list[RoadmapItem] = Field(default_factory=list)
 
     model_config = MODEL_CONFIG_DEFAULTS
 
@@ -1075,7 +1074,7 @@ class ArcBlueprint(BaseModel):
 class ArcList(BaseModel):
     """アークリスト（章構成）の一括生成・検証用モデル"""
 
-    arcs: List[ArcBlueprint] = Field(default_factory=list)
+    arcs: list[ArcBlueprint] = Field(default_factory=list)
 
     @model_validator(mode="before")
     @classmethod
@@ -1096,7 +1095,7 @@ class ArcList(BaseModel):
 class UltraFastPlotBatch(BaseModel):
     """超高速・統合生成用のPydanticモデル。複数エピソードの詳細プロット設計図を一括バッチ生成する。"""
 
-    plots: List[PlotEpisode] = Field(
+    plots: list[PlotEpisode] = Field(
         ..., description="指定された初期話数分の詳細プロット設計図のリスト（通常は第1〜3話）"
     )
 
@@ -1119,10 +1118,10 @@ class CatharsisPattern(BaseModel):
     """ストレス蓄積とカタルシス解放の波パターンを定義するモデル"""
 
     cumulative_stress: int = Field(default=0, description="現在の累積ストレス値")
-    catharsis_points: List[int] = Field(
+    catharsis_points: list[int] = Field(
         default_factory=list, description="カタルシス発生話数のリスト"
     )
-    tension_wave: List[int] = Field(default_factory=list, description="各話のtension値の履歴")
+    tension_wave: list[int] = Field(default_factory=list, description="各話のtension値の履歴")
     pattern_type: str = Field(
         default="wave", description="波パターン種類: gradual/spike/wave/explosion"
     )

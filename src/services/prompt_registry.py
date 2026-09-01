@@ -2,7 +2,7 @@
 """Prompt Registry - Wrapper for PromptManager with metrics collection"""
 
 import time
-from typing import Any, Dict, Optional
+from typing import Any
 
 from prompts.manager import PromptManager
 
@@ -15,7 +15,7 @@ class PromptRegistry:
 
     def __init__(self, prompt_manager: PromptManager):
         self._pm = prompt_manager
-        self._metrics: Dict[str, Dict[str, Any]] = {}
+        self._metrics: dict[str, dict[str, Any]] = {}
         self._enabled = True
 
     def get(self, template_name: str, **variables) -> str:
@@ -75,13 +75,13 @@ class PromptRegistry:
 
             raise e
 
-    def get_metrics(self) -> Dict[str, Dict[str, Any]]:
+    def get_metrics(self) -> dict[str, dict[str, Any]]:
         """収集されたメトリクスを返す（コピー）."""
         import copy
 
         return copy.deepcopy(self._metrics)
 
-    def reset_metrics(self, template_name: Optional[str] = None) -> None:
+    def reset_metrics(self, template_name: str | None = None) -> None:
         """メトリクスをリセットする。
 
         Args:

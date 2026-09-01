@@ -1,4 +1,3 @@
-from typing import Optional
 
 
 class HegemonyError(Exception):
@@ -7,14 +6,14 @@ class HegemonyError(Exception):
     status_code: int = 500
     error_code: str = "INTERNAL_ERROR"
     message: str
-    original: Optional[Exception] = None
+    original: Exception | None = None
 
     def __init__(
         self,
         message: str = "",
         status_code: int = 500,
         error_code: str = "INTERNAL_ERROR",
-        original: Optional[Exception] = None,
+        original: Exception | None = None,
         **kwargs,
     ):
         self.message = message
@@ -32,7 +31,7 @@ class EngineError(HegemonyError):
         message: str = "",
         status_code: int = 500,
         error_code: str = "ENGINE_ERROR",
-        original: Optional[Exception] = None,
+        original: Exception | None = None,
         **kwargs,
     ):
         super().__init__(
@@ -52,7 +51,7 @@ class LLMError(HegemonyError):
         message: str = "",
         status_code: int = 502,
         error_code: str = "LLM_ERROR",
-        original: Optional[Exception] = None,
+        original: Exception | None = None,
         **kwargs,
     ):
         super().__init__(
@@ -72,7 +71,7 @@ class LLMTemporaryError(LLMError):
         message: str = "",
         status_code: int = 429,
         error_code: str = "LLM_TEMPORARY_ERROR",
-        original: Optional[Exception] = None,
+        original: Exception | None = None,
         **kwargs,
     ):
         super().__init__(
@@ -92,7 +91,7 @@ class LLMTokenLimitError(LLMError):
         message: str = "",
         status_code: int = 400,
         error_code: str = "LLM_TOKEN_LIMIT_ERROR",
-        original: Optional[Exception] = None,
+        original: Exception | None = None,
         **kwargs,
     ):
         super().__init__(
@@ -112,7 +111,7 @@ class LLMValidationError(LLMError):
         message: str = "",
         status_code: int = 422,
         error_code: str = "LLM_VALIDATION_ERROR",
-        original: Optional[Exception] = None,
+        original: Exception | None = None,
         **kwargs,
     ):
         super().__init__(
@@ -132,7 +131,7 @@ class LLMUnrecoverableError(LLMError):
         message: str = "",
         status_code: int = 502,
         error_code: str = "LLM_UNRECOVERABLE_ERROR",
-        original: Optional[Exception] = None,
+        original: Exception | None = None,
         **kwargs,
     ):
         super().__init__(
@@ -152,7 +151,7 @@ class APIError(HegemonyError):
         message: str = "",
         status_code: int = 502,
         error_code: str = "API_ERROR",
-        original: Optional[Exception] = None,
+        original: Exception | None = None,
         **kwargs,
     ):
         super().__init__(
@@ -172,7 +171,7 @@ class AppError(HegemonyError):
         message: str = "",
         status_code: int = 500,
         error_code: str = "APP_ERROR",
-        original: Optional[Exception] = None,
+        original: Exception | None = None,
         **kwargs,
     ):
         super().__init__(
@@ -192,7 +191,7 @@ class ValidationError(HegemonyError):
         message: str = "",
         status_code: int = 422,
         error_code: str = "VALIDATION_ERROR",
-        original: Optional[Exception] = None,
+        original: Exception | None = None,
         **kwargs,
     ):
         super().__init__(
@@ -212,7 +211,7 @@ class NotFoundError(HegemonyError):
         message: str = "",
         status_code: int = 404,
         error_code: str = "NOT_FOUND",
-        original: Optional[Exception] = None,
+        original: Exception | None = None,
         **kwargs,
     ):
         super().__init__(
@@ -236,7 +235,7 @@ class PipelineError(HegemonyError):
     def __init__(
         self,
         message: str,
-        original: Optional[Exception] = None,
+        original: Exception | None = None,
         status_code: int = 502,
         error_code: str = "COMMERCIAL_PIPELINE_ERROR",
         **kwargs,

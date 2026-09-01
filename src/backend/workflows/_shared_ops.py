@@ -1,5 +1,5 @@
 import logging
-from typing import Any, List, Tuple
+from typing import Any
 
 from src.shared.utils import StatusReporter
 
@@ -66,7 +66,7 @@ async def run_pipeline_with_retry(
     reporter,
     is_easy_mode: bool = True,
     max_retries: int = 1,
-) -> Tuple[int, List[Any]]:
+) -> tuple[int, list[Any]]:
     """エピソード生成パイプラインを実行し、必要に応じて自動リトライする"""
     total_chars, failed = await writer.generate_episodes_pipeline(
         book_id=book_id,

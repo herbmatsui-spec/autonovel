@@ -5,7 +5,7 @@ context_builder.py - ����� ��� ��� � ��� � � �
 from __future__ import annotations
 
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from src.agents.base import BaseAgent
 
@@ -26,8 +26,8 @@ class ContextBuilder:
         branch_id: int,
         ep_num: int,
         target_word_count: int,
-        style_tag: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        style_tag: str | None = None,
+    ) -> dict[str, Any]:
         """�������執�������筆に必要な完全なコンテキストを構�������築する。"""
         return await self._build_full_writing_context_internal(
             book_id, branch_id, ep_num, target_word_count, style_tag
@@ -39,8 +39,8 @@ class ContextBuilder:
         branch_id: int,
         ep_num: int,
         target_word_count: int,
-        style_tag: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        style_tag: str | None = None,
+    ) -> dict[str, Any]:
         """内部実装: ������ ���執�������筆に必要な完全なコンテキストを構�������築する。"""
         plot = await self._get_plot(book_id, branch_id, ep_num)
         if plot is None:
@@ -105,7 +105,7 @@ class ContextBuilder:
         }
 
     # デлегаートメソッド群（親エージェントのメソッドを呼び出す）
-    async def _get_plot(self, book_id: int, branch_id: int, ep_num: int) -> Optional[Any]:
+    async def _get_plot(self, book_id: int, branch_id: int, ep_num: int) -> Any | None:
         """プロットをDBから取得する。"""
         if getattr(self.agent, "repo", None) is None:
             return None
@@ -118,7 +118,7 @@ class ContextBuilder:
                 )
             return None
 
-    async def _get_book(self, book_id: int) -> Optional[Any]:
+    async def _get_book(self, book_id: int) -> Any | None:
         """作品情報をDBから取得する。"""
         if getattr(self.agent, "repo", None) is None:
             return None
@@ -129,7 +129,7 @@ class ContextBuilder:
                 self.agent.logger.debug(f"Book not found for book_id={book_id}: {e}")
             return None
 
-    async def _get_chars(self, book_id: int) -> List[Any]:
+    async def _get_chars(self, book_id: int) -> list[Any]:
         """作品に所属する全キャラクターを取得する。"""
         if getattr(self.agent, "repo", None) is None:
             return []
@@ -140,7 +140,7 @@ class ContextBuilder:
                 self.agent.logger.debug(f"Characters not found for book_id={book_id}: {e}")
             return []
 
-    async def _get_prev_chapter(self, book_id: int, branch_id: int, ep_num: int) -> Optional[Any]:
+    async def _get_prev_chapter(self, book_id: int, branch_id: int, ep_num: int) -> Any | None:
         """前話の章データを取得する。"""
         if getattr(self.agent, "repo", None) is None or ep_num <= 1:
             return None
@@ -153,7 +153,7 @@ class ContextBuilder:
                 )
             return None
 
-    async def _get_active_chars(self, chars: List[Any], plot: Any) -> List[Any]:
+    async def _get_active_chars(self, chars: list[Any], plot: Any) -> list[Any]:
         """プロットに登場するキャラクター名からアクティブなキャラクターを�������抽出する。"""
         if not plot or not chars:
             return chars
@@ -178,7 +178,7 @@ class ContextBuilder:
                 self.agent.logger.debug(f"Active char extraction failed: {e}")
             return chars
 
-    def _build_char_static_ctx(self, chars: List[Any]) -> str:
+    def _build_char_static_ctx(self, chars: list[Any]) -> str:
         """キャラクターの不変属性を整形する。"""
         if not chars:
             return ""
@@ -197,7 +197,7 @@ class ContextBuilder:
             lines.append("\n".join(parts))
         return "\n".join(lines)
 
-    def _build_char_dynamic_ctx(self, chars: List[Any], prev_chapter: Optional[Any]) -> str:
+    def _build_char_dynamic_ctx(self, chars: list[Any], prev_chapter: Any | None) -> str:
         """キャラクターの動的状態を整形する。"""
         if not chars:
             return ""
@@ -229,7 +229,7 @@ class ContextBuilder:
         return ctx
 
     def _build_prev_ctx(
-        self, prev_chapter: Optional[Any], book_id: int, branch_id: int, ep_num: int
+        self, prev_chapter: Any | None, book_id: int, branch_id: int, ep_num: int
     ) -> str:
         """前話までの文�������脈を整形する。"""
         if prev_chapter is None:
@@ -248,7 +248,7 @@ class ContextBuilder:
             return ""
         return "\n\n".join(parts)
 
-    def _build_dialogue_profiles(self, chars: List[Any]) -> Dict[str, str]:
+    def _build_dialogue_profiles(self, chars: list[Any]) -> dict[str, str]:
         """各キャラクターの会話プロファイルを構�������築する。"""
         profiles = {}
         for char in chars:
@@ -266,7 +266,7 @@ class ContextBuilder:
             profiles[name] = "; ".join(parts) if parts else name
         return profiles
 
-    async def _ensure_plot_exists(self, book_id: int, branch_id: int, ep_num: int) -> Optional[Any]:
+    async def _ensure_plot_exists(self, book_id: int, branch_id: int, ep_num: int) -> Any | None:
         """プロットが存在しない場合、生成を試みる。"""
         plot = await self._get_plot(book_id, branch_id, ep_num)
         if (
@@ -279,7 +279,7 @@ class ContextBuilder:
                     self.agent.logger.info(
                         f"Plot missing for Ep.{ep_num}, attempting on-demand generation..."
                     )
-                arcs: List[Any] = []
+                arcs: list[Any] = []
                 bible = await self._get_bible(book_id)
                 if bible and hasattr(bible, "arcs"):
                     arcs = bible.arcs
@@ -304,7 +304,7 @@ class ContextBuilder:
                     )
         return plot
 
-    async def _get_bible(self, book_id: int) -> Optional[Any]:
+    async def _get_bible(self, book_id: int) -> Any | None:
         """最新のバイブルを取得する。"""
         if getattr(self.agent, "repo", None) is None:
             return None

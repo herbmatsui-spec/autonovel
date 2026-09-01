@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from src.backend.workflows.base_workflow import BaseWorkflow
 from src.easy_mode.pipeline import EasyModePipeline, PipelineConfig
@@ -21,14 +21,14 @@ class EasyModeWorkflow(BaseWorkflow):
         self,
         reporter: StatusReporter,
         genre: str = "ファンタジー",
-        keywords: Optional[List[str]] = None,
+        keywords: list[str] | None = None,
         protagonist_type: str = "チート主人公",
         target_episodes: int = 10,
         words_per_episode: int = 2000,
         enable_audit: bool = True,
         max_rewrites: int = 2,
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         logger.info(
             f"EasyModeWorkflow started: genre={genre}, target_episodes={target_episodes}"
         )
