@@ -117,12 +117,12 @@ def main():
     ConfigState.init_defaults()
     cfg = load_config()
 
-    tab_models, tab_features, tab_safety, tab_costs = st.tabs(
+    tab_models, tab_features, tab_safety, tab_costs = st.tabs([
         "🤖 モデル設定",
         "🔧 機能开关",
         "🔒 安全設定",
         "💰 コスト管理",
-    ]
+    ])
 
     with tab_models:
         st.subheader("🤖 LLMモデル設定")

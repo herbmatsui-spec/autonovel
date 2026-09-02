@@ -372,7 +372,7 @@ def render_settings_tab():
 
     with tab4:
         st.markdown("### コスト管理")
-        st.caption("API使用コストを控制在"
+        st.caption("API使用コストを制御")
 
         cfg = load_config()
 
