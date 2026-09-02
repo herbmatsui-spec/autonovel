@@ -80,6 +80,10 @@ class TestUIStateStore:
 
     def test_update_runtime_invalid_attr(self):
         """Test update_runtime raises for invalid attribute."""
+        # Need to use a spec to prevent MagicMock from auto-creating attributes
+        from schemas.app_state import AppRuntimeState
+        self.mock_session.runtime = MagicMock(spec=AppRuntimeState)
+        
         with pytest.raises(AttributeError):
             UIStateStore.update_runtime("invalid_attr", "value")
 

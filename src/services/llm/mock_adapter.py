@@ -11,6 +11,13 @@ from src.services.llm.base import BaseLLMAdapter
 class MockLLMAdapter(BaseLLMAdapter):
     """モック用 LLM アダプタ。"""
 
+    def __init__(self) -> None:
+        self._cancelled = False
+
+    def cancel(self) -> None:
+        """ストリーム中断フラグを立てる。"""
+        self._cancelled = True
+
     async def generate_text(
         self,
         prompt: str,
@@ -53,6 +60,9 @@ class MockLLMAdapter(BaseLLMAdapter):
             "扉に刻まれた古代文字が突如として紅く輝き、",
             "守護獣が姿を現した。",
         ]
+        delay_ms = int(kwargs.get("stream_delay_ms", 10))
         for chunk in chunks:
-            await asyncio.sleep(0.01)
+            if self._cancelled:
+                raise asyncio.CancelledError("MockLLMAdapter cancelled")
+            await asyncio.sleep(delay_ms / 1000)
             yield chunk

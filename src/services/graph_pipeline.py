@@ -80,7 +80,7 @@ class GraphPipelineService:
 
         return created_count
 
-    def update_knowledge_graph(
+    def update_knowledge_graph(  # noqa: C901  # complex retry logic, intentional
         self,
         session: Session,
         chapter_id: int,
@@ -94,50 +94,82 @@ class GraphPipelineService:
         raw_extraction = extraction_service.extract_graph_from_text(chapter_text)
 
         # 既存エンティティ名との名寄せ（Entity Resolution）
-        existing_nodes = age_client.get_all_nodes(session) if settings.DATABASE_URL.startswith("postgresql") else []
+        # AgeClient.get_all_nodes は AGE 環境外では安全に空リストを返す
+        try:
+            existing_nodes = age_client.get_all_nodes(session)
+        except Exception as e:
+            logger.debug("existing_nodes fetch failed: %s", e)
+            existing_nodes = []
         existing_names = [n.get("name", "") for n in existing_nodes if isinstance(n, dict) and n.get("name")]
         extraction = extraction_service.resolve_entities(raw_extraction, existing_names)
 
         entities_count = 0
         relationships_count = 0
+        max_attempts = 3
 
-        # 2. ノードの UPSERT
+        # 2. ノードの UPSERT (ロールバック後リトライ)
         for entity in extraction.entities:
             props = dict(entity.properties)
             if entity.description:
                 props["description"] = entity.description
             props["last_chapter_id"] = chapter_id
 
-            success = age_client.upsert_node(
-                session=session,
-                label=entity.type,
-                name=entity.name,
-                properties=props,
-            )
-            if success:
-                entities_count += 1
+            for attempt in range(1, max_attempts + 1):
+                try:
+                    success = age_client.upsert_node(
+                        session=session,
+                        label=entity.type,
+                        name=entity.name,
+                        properties=props,
+                    )
+                    if success:
+                        entities_count += 1
+                    break
+                except Exception as e:
+                    logger.warning(
+                        "upsert_node retry %d/%d (%s): %s",
+                        attempt, max_attempts, entity.name, e,
+                    )
+                    try:
+                        session.rollback()
+                    except Exception:
+                        pass
+                    if attempt >= max_attempts:
+                        break
 
-        # 3. エッジの UPSERT
+        # 3. エッジの UPSERT (ロールバック後リトライ)
         for rel in extraction.relationships:
             props = {"detail": rel.detail, "chapter_id": chapter_id}
-            # ラベルの特定（見つからない場合は Generic な Entity とする）
             source_entity = next((e for e in extraction.entities if e.name == rel.source), None)
             target_entity = next((e for e in extraction.entities if e.name == rel.target), None)
-
             source_label = source_entity.type if source_entity else "Entity"
             target_label = target_entity.type if target_entity else "Entity"
 
-            success = age_client.upsert_edge(
-                session=session,
-                source_label=source_label,
-                source_name=rel.source,
-                target_label=target_label,
-                target_name=rel.target,
-                relation_type=rel.type,
-                properties=props,
-            )
-            if success:
-                relationships_count += 1
+            for attempt in range(1, max_attempts + 1):
+                try:
+                    success = age_client.upsert_edge(
+                        session=session,
+                        source_label=source_label,
+                        source_name=rel.source,
+                        target_label=target_label,
+                        target_name=rel.target,
+                        relation_type=rel.type,
+                        properties=props,
+                    )
+                    if success:
+                        relationships_count += 1
+                    break
+                except Exception as e:
+                    logger.warning(
+                        "upsert_edge retry %d/%d (%s-%s): %s",
+                        attempt, max_attempts, rel.source, rel.target, e,
+                    )
+                    try:
+                        session.rollback()
+                    except Exception:
+                        pass
+                    if attempt >= max_attempts:
+                        break
 
         try:
             session.commit()

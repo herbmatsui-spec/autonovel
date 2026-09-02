@@ -1,186 +1,66 @@
-import os
+"""
+FullAutoWorkflow - 統合パイプラインへ委譲
+既存インターフェース完全互換維持
+"""
+
+from __future__ import annotations
+
 from typing import Any
 
-from src.agents.illustration_agent import IllustrationAgent
-from src.backend.workflows.illustration_workflow import IllustrationWorkflow
-from src.services.image_service import ImageService
+from src.backend.workflows.base_workflow import BaseWorkflow
+from src.services.auto_workflow_pipeline import (
+    WorkflowContext,
+    create_full_auto_pipeline,
+)
 from src.shared.utils import StatusReporter
-
-from ._shared_ops import run_pipeline_with_retry
-from .base_workflow import BaseWorkflow
 
 
 class FullAutoWorkflow(BaseWorkflow):
-    """かんたんモード: 企画・執筆・パッケージングの一連のフローを実行"""
+    """かんたんモード: 企画・執筆・パッケージングの一連のフローを実行 (統合パイプライン版)"""
 
     async def execute(self, reporter: StatusReporter, **kwargs) -> dict[str, Any]:
-        genre = kwargs["genre"]
-        keywords = kwargs["keywords"]
-        archetype_key = kwargs["archetype_key"]
-        target_eps = kwargs["target_eps"]
-        initial_limit = kwargs["initial_limit"]
-        word_count = kwargs["word_count"]
-        concept = kwargs.get("concept", "")
-        tone_vibe = kwargs.get("tone_vibe", 0.6)
-
-        from config import STORY_ARCHETYPES, resolve_archetype_key
-
-        archetype_key = resolve_archetype_key(archetype_key)
-        p_settings = STORY_ARCHETYPES.get(
-            archetype_key, STORY_ARCHETYPES["王道ざまぁ（爽快感最大）"]
+        # 1. 統合パイプライン用 Context 構築
+        ctx = WorkflowContext(
+            genre=kwargs["genre"],
+            keywords=kwargs["keywords"],
+            archetype_key=kwargs["archetype_key"],
+            target_eps=kwargs["target_eps"],
+            initial_limit=kwargs["initial_limit"],
+            word_count=kwargs["word_count"],
+            concept=kwargs.get("concept", ""),
+            tone_vibe=kwargs.get("tone_vibe", 0.6),
+            user_prompt=kwargs.get("user_prompt", ""),
+            enable_illustration=bool(kwargs.get("illustration_settings", {}).get("enableIllustration", False)),
+            illustration_settings=kwargs.get("illustration_settings", {}),
+            enable_spice_guard=kwargs.get("enable_spice_guard", False),
+            enable_catharsis_analysis=True,
+            enable_marketing=True,
+            max_retries=1,
+            is_easy_mode=False,
         )
 
-        reporter.report("🚀 全自動モード開始！", "info")
+        # 2. パイプライン構築・実行
+        pipeline = create_full_auto_pipeline(
+            enable_spice_guard=ctx.enable_spice_guard,
+            enable_illustration=ctx.enable_illustration,
+            enable_catharsis_analysis=ctx.enable_catharsis_analysis,
+            enable_marketing=ctx.enable_marketing,
+            max_retries=ctx.max_retries,
+        )
 
-        # 1. 企画生成
-        try:
-            reporter.update_progress(0, 4, "STEP 1/4: 覇権企画を生成中...")
-            book_id, bible = await self.planner.create_hegemony_plan(
-                genre=genre,
-                keywords=keywords,
-                style_key=p_settings.get("style_key", "style_web_standard"),
-                concept=concept,
-                title="",
-                cheat_scale=p_settings.get("cheat_scale", 4),
-                growth_curve=p_settings.get("growth_curve", "最初からカンスト(無双)"),
-                system_assist=p_settings.get("system_assist", 70),
-                cost_severity=p_settings.get("cost_severity", 2),
-                target_eps=target_eps,
-                initial_plot_limit=3,
-                enable_erotic=kwargs.get("enable_erotic", False),
-                erotic_intensity=kwargs.get("erotic_intensity", 2),
-                reporter=reporter,
-            )
+        result = await pipeline.execute(ctx, self.engine, reporter)
 
-            # P1-15: カタルシスパターン自動生成
-            try:
-                from config.project_context import ProjectContext
-                from src.backend.engine_narrative import WavePatternAnalyzer
-
-                # tension履歴を取得（初期プロット用）
-                plots = await self.repo.plot.get_all_plots(book_id)
-                tension_history = [getattr(p, "tension", 50) for p in plots] if plots else [50] * 5
-
-                # WavePatternAnalyzerでパターン分析
-                wave_analyzer = WavePatternAnalyzer(
-                    threshold=ProjectContext.get_setting("catharsis_threshold", 65),
-                    reset_value=ProjectContext.get_setting("catharsis_reset_value", 0),
-                )
-                catharsis_pattern = wave_analyzer.analyze(tension_history)
-
-                # bibleにカタルシスパターン情報を追加（拡張フィールドとして保存）
-                if hasattr(bible, "model_dump"):
-                    bible_dict = bible.model_dump()
-                else:
-                    bible_dict = dict(bible) if not isinstance(bible, dict) else bible
-
-                bible_dict["catharsis_pattern"] = catharsis_pattern.model_dump()
-                bible_dict["catharsis_positions"] = catharsis_pattern.catharsis_points
-
-                # もしbibleがPydanticモデルなら更新、dictならそのまま使う
-                if hasattr(bible, "model_copy"):
-                    bible = bible.model_copy(update=bible_dict)
-                elif isinstance(bible, dict):
-                    bible.update(bible_dict)
-
-                reporter.report(
-                    f"📊 カタルシスパターン分析完了: {len(catharsis_pattern.catharsis_points)}個のカタルシス点を検出",
-                    "info",
-                )
-            except Exception as e:
-                reporter.report(
-                    f"⚠️ カタルシスパターン分析中にエラーが発生しましたが、処理を継続します: {e}",
-                    "warning",
-                )
-
-            # 健全性チェックの実行
-            if (
-                hasattr(self.planner, "plan_auditor")
-                and self.planner.plan_auditor
-                and not await self.planner.plan_auditor.audit_bible_completeness(
-                    bible, reporter=reporter
-                )
-            ):
-                return {"book_id": book_id, "status": "failed_integrity_check"}
-
-            if reporter.state.should_stop():
-                return {"book_id": book_id, "status": "stopped"}
-        except Exception as e:
-            reporter.report(
-                f"🚨 企画生成中にエラーが発生しました: {e}. APIキーや入力設定を確認してください。",
-                "error",
-            )
-            raise e
-
-        # 2. 並列執筆（プロット生成含む）
-        try:
-            reporter.update_progress(1, 4, "STEP 2/4: 本文を自動執筆中...")
-            chars_count, failed_episodes = await run_pipeline_with_retry(
-                writer=self.writing,
-                book_id=book_id,
-                start_ep=1,
-                end_ep=target_eps,
-                passion=tone_vibe,
-                word_count=word_count,
-                reporter=reporter,
-                is_easy_mode=True,
-                max_retries=1,
-            )
-
-            if reporter.state.should_stop():
-                return {"book_id": book_id, "status": "stopped"}
-        except Exception as e:
-            reporter.report(
-                f"🚨 本文執筆中にエラーが発生しました: {e}. プロットやキャラクター設定に問題がないか確認してください。",
-                "error",
-            )
-            raise e
-
-        # 3. 納品パッケージ作成
-        try:
-            reporter.update_progress(2, 4, "STEP 3/4: 納品パッケージを作成中...")
-            zip_data, zip_filename = None, f"export_{book_id}.zip"
-        except Exception as e:
-            reporter.report(
-                f"🚨 納品パッケージ作成中にエラーが発生しました: {e}. 作品データが破損している可能性があります。",
-                "error",
-            )
-            raise e
-
-        book = await self.repo.get_book(book_id)
-        actual_title = book.title if book else "名称未設定"
-
-        # 4. 挿絵生成
-        illustrations = []
-        illustration_settings = kwargs.get("illustration_settings")
-        if illustration_settings and illustration_settings.get("enableIllustration"):
-            try:
-                reporter.update_progress(3, 4, "STEP 4/4: 挿絵を生成中...")
-
-                ill_workflow = self.illustration_workflow or IllustrationWorkflow(
-                    illustration_agent=IllustrationAgent(
-                        image_service=ImageService(api_key=os.getenv("GOOGLE_GENAI_API_KEY", ""))
-                    ),
-                    repo=self.repo,
-                )
-
-                ill_res = await ill_workflow.execute(
-                    reporter=reporter, book_id=book_id, settings=illustration_settings
-                )
-                if ill_res["status"] == "success":
-                    illustrations = ill_res.get("illustrations", [])
-            except Exception as e:
-                reporter.report(
-                    f"⚠️ 挿絵生成中にエラーが発生しましたが、作品は完成しています: {e}", "warning"
-                )
-
-        reporter.update_progress(4, 4, "全行程完了！")
+        # 3. 既存インターフェース互換の dict に変換
         return {
-            "book_id": book_id,
-            "title": actual_title,
-            "chars_count": chars_count,
-            "failed_episodes": failed_episodes,
-            "zip_data": zip_data,
-            "zip_filename": zip_filename,
-            "illustrations": illustrations,
+            "book_id": result.book_id,
+            "title": result.title,
+            "chars_count": result.chars_count,
+            "failed_episodes": result.failed_episodes,
+            "zip_data": result.zip_data,
+            "zip_filename": result.zip_filename,
+            "illustrations": result.illustrations,
+            "status": result.status,
+            "easy_parameters": result.easy_parameters,
+            "average_audit_score": result.average_audit_score,
+            "episodes_detail": result.episodes_detail,
         }

@@ -155,6 +155,7 @@ class AppContainer(InfraContainer):
         llm=llm,
         cooldown=InfraContainer.cooldown,
         plot_service=plot_service,
+        illustration_agent=illustration_agent,
     )
     engine_facade: providers.Factory = providers.Factory(
         "src.backend.engine_facade.EngineFacade",

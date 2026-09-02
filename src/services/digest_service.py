@@ -4,7 +4,6 @@ from __future__ import annotations
 import asyncio
 import logging
 import uuid
-import warnings
 from typing import Any
 
 from src.domain.entities.easy_mode import (
@@ -12,12 +11,9 @@ from src.domain.entities.easy_mode import (
     DigestResponse,
     DigestStatus,
 )
-from src.services.gacha_service import _GACHA_CACHE
 from src.services.llm_service import LLMService
 
 logger = logging.getLogger("quick_digest")
-
-_BOOK_STORE: dict[str, dict[str, Any]] = {}
 
 CHAPTER_MAX_LENGTH = 1500
 
@@ -31,21 +27,11 @@ def process_chapter(chapter: str) -> str:
     )
 
 
-async def generate_suggestions(chapter: str) -> list[str]:
-    """章の文脈から意味的な提案を生成する。"""
-    if not chapter:
-        return ["続行: (空章のため先頭から再開)", "調査が必要な未確認な要素を指摘"]
-    return [
-        f"続行: {chapter[:100]}…",
-        "調査が必要な未確認な要素を指摘",
-    ]
-
-
 class DigestService:
     """ファスト・ダイジェスト生成サービス [Quick Digest]。
 
-    永続化対応: ``db`` に DatabaseManager を渡すと結果を DB に保存する。
-    ``db=None`` の場合は旧来のプロセスメモリを使う（テスト用フォールバック）。
+    永続化対応: ``db`` に DatabaseManager を渡して DB に保存する。
+    ``db=None`` は許可しない。
     """
 
     def __init__(
@@ -53,12 +39,14 @@ class DigestService:
         llm_service: LLMService | None = None,
         db: Any = None,
     ):
+        if db is None:
+            raise ValueError(
+                "DigestService requires db=DatabaseManager (in-memory store removed in v2)."
+            )
         self.llm_service = llm_service or LLMService()
         self._db = db
 
     async def _load_gacha_from_db(self, request_id: str) -> dict | None:
-        if self._db is None:
-            return None
         from src.backend.database.repositories import EasyModeDraftRepository
 
         async with self._db.get_session() as session:
@@ -67,8 +55,6 @@ class DigestService:
 
     async def _create_book_record(self, title: str) -> int | None:
         """新規 Book レコードを DB に作成し、整数 ID を返す。"""
-        if self._db is None:
-            return None
         from src.backend.database.models import Book
 
         async with self._db.get_session() as session:
@@ -89,8 +75,6 @@ class DigestService:
         digest_json: dict,
         db_book_id: int | None,
     ) -> None:
-        if self._db is None:
-            return
         from src.backend.database.repositories import EasyModeDraftRepository
 
         async with self._db.get_session() as session:
@@ -107,20 +91,7 @@ class DigestService:
 
     async def generate_digest(self, request: DigestRequest) -> DigestResponse:
         """選択された企画から高速でプロット・第1話・クライマックスプレビューを生成する"""
-        gacha_data: dict | None = None
-
-        if self._db is not None:
-            db_gacha = await self._load_gacha_from_db(request.request_id)
-            if db_gacha is not None:
-                gacha_data = db_gacha
-        else:
-            warnings.warn(
-                "[quick-digest] DigestService is using in-memory _GACHA_CACHE. "
-                "Pass db=DatabaseManager(...) to enable DB persistence.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-            gacha_data = _GACHA_CACHE.get(request.request_id)
+        gacha_data: dict | None = await self._load_gacha_from_db(request.request_id)
 
         selected_plan = None
 
@@ -200,17 +171,32 @@ class DigestService:
             digest_json = response.model_dump()
 
         finally:
-            _BOOK_STORE[draft_id] = {
-                "book_id": draft_id,
-                "db_book_id": db_book_id,
-                "title": title,
-                "selected_plan": selected_plan,
-                "digest": digest_json,
-                "mode": "easy",
-            }
             await self._save_digest_db(draft_id, request.request_id, digest_json, db_book_id)
 
         return response
 
+    async def generate_suggestions(self, chapter: str) -> list[str]:
+        """章本文から LLM で意味的な提案を生成する (実 LLM 呼び出し)。"""
+        if not chapter:
+            return ["続行: (空章のため先頭から再開)", "調査が必要な未確認な要素を指摘"]
 
-__all__ = ["process_chapter", "generate_suggestions", "DigestService"]
+        try:
+            prompt = (
+                "以下の章本文から、執筆を継続するための提案を 2-3 個、簡潔な日本語で"
+                "出力してください。各提案は 1 行 (40 文字以内) で。\n\n"
+                f"--- 章本文 ---\n{chapter[:800]}\n--- 提案 ---"
+            )
+            res = await self.llm_service.generate_text(
+                purpose="suggestions",
+                prompt=prompt,
+            )
+            lines = [ln.strip("- ・*").strip() for ln in (res or "").splitlines() if ln.strip()]
+            if not lines:
+                return [f"続行: {chapter[:100]}…", "調査が必要な未確認な要素を指摘"]
+            return lines[:3]
+        except Exception as e:  # noqa: BLE001
+            logger.warning("generate_suggestions LLM call failed: %s", e)
+            return [f"続行: {chapter[:100]}…", "調査が必要な未確認な要素を指摘"]
+
+
+__all__ = ["process_chapter", "DigestService"]

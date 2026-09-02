@@ -20,7 +20,7 @@ class HegemonyError(Exception):
         self.status_code = status_code
         self.error_code = error_code
         self.original = original
-        super().__init__(message, **kwargs)
+        super().__init__(message)
 
 
 class EngineError(HegemonyError):

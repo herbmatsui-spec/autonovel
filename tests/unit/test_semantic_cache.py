@@ -39,7 +39,11 @@ class TestSemanticCacheManager:
         mock_response = MagicMock()
         mock_response.embeddings = [MagicMock(values=[0.1, 0.2, 0.3])]
 
-        with patch.object(self.cache, '_call_embedding_api', new=AsyncMock(return_value=mock_response)):
+        # Mock the client's embed_content method
+        self.mock_client.models.embed_content = MagicMock(return_value=mock_response)
+
+        with patch("src.core.executor_manager.executor_manager") as mock_executor:
+            mock_executor.run_cpu = AsyncMock(return_value=mock_response)
             vec = await self.cache._get_embedding("test text")
 
         assert vec == [0.1, 0.2, 0.3]
@@ -63,7 +67,8 @@ class TestSemanticCacheManager:
     @pytest.mark.asyncio
     async def test_get_embedding_failure(self):
         """Test embedding generation failure."""
-        with patch.object(self.cache, '_call_embedding_api', new=AsyncMock(side_effect=Exception("API error"))):
+        with patch("src.core.executor_manager.executor_manager") as mock_executor:
+            mock_executor.run_cpu = AsyncMock(side_effect=Exception("API error"))
             vec = await self.cache._get_embedding("test text")
 
         assert vec == []
@@ -71,7 +76,9 @@ class TestSemanticCacheManager:
     @pytest.mark.asyncio
     async def test_search_l1_hit(self):
         """Test search with L1 cache hit."""
-        self.cache._l1_cache["test_key"] = "cached_response"
+        # Generate the correct L1 key
+        l1_key = self.cache._get_l1_key("test", "generation", "fantasy", 0.7)
+        self.cache._l1_cache[l1_key] = "cached_response"
 
         result = await self.cache.search(
             prompt="test",
@@ -109,13 +116,15 @@ class TestSemanticCacheManager:
             "metadata": {
                 "task_type": "generation",
                 "genre": "fantasy",
-                "input_length": 100,
+                "input_length": 12,  # Close to len("test prompt") = 11
                 "is_json": True,
                 "last_accessed": datetime.datetime.now().isoformat(),
             },
             "distance": 0.01,  # High similarity
         }
         self.mock_vector_store.search = AsyncMock(return_value=[mock_result])
+        self.mock_vector_store.get_collection = MagicMock()
+        self.mock_vector_store.add_documents = AsyncMock()
 
         result = await self.cache.search(
             prompt="test prompt",
@@ -259,7 +268,7 @@ class TestSemanticCacheManager:
     @pytest.mark.asyncio
     async def test_prefetch_next(self):
         """Test prefetching next episode prompts."""
-        with patch("src.services.semantic_cache.PromptManager") as mock_pm_class:
+        with patch("prompts.manager.PromptManager") as mock_pm_class:
             mock_pm = MagicMock()
             mock_pm.build_drafting_prompt = AsyncMock(return_value="drafting prompt")
             mock_pm.build_polishing_prompt = AsyncMock(return_value="polishing prompt")

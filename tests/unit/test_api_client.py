@@ -101,8 +101,7 @@ class TestSyncClient:
 class TestRequestRouting:
     """Tests for HTTP method routing logic."""
 
-    @pytest.mark.asyncio
-    async def test_request_get_uses_params(self):
+    def test_request_get_uses_params(self):
         """Test GET request uses params."""
         mock_client = MagicMock()
         mock_response = MagicMock()
@@ -112,15 +111,14 @@ class TestRequestRouting:
         api_client._resilient_client = mock_client
 
         with patch("src.infrastructure.api.api_client._resolve_if_coroutine", return_value=mock_response):
-            result = await _request("GET", "/test", param1="value1")
+            result = _request("GET", "/test", param1="value1")
 
         call_args = mock_client.request.call_args
         assert call_args[0][0] == "GET"
         assert call_args[1]["params"] == {"param1": "value1"}
         assert call_args[1]["json"] is None
 
-    @pytest.mark.asyncio
-    async def test_request_post_uses_json(self):
+    def test_request_post_uses_json(self):
         """Test POST request uses json."""
         mock_client = MagicMock()
         mock_response = MagicMock()
@@ -130,15 +128,14 @@ class TestRequestRouting:
         api_client._resilient_client = mock_client
 
         with patch("src.infrastructure.api.api_client._resolve_if_coroutine", return_value=mock_response):
-            result = await _request("POST", "/test", data1="value1")
+            result = _request("POST", "/test", data1="value1")
 
         call_args = mock_client.request.call_args
         assert call_args[0][0] == "POST"
         assert call_args[1]["json"] == {"data1": "value1"}
         assert call_args[1]["params"] is None
 
-    @pytest.mark.asyncio
-    async def test_request_delete_uses_params(self):
+    def test_request_delete_uses_params(self):
         """Test DELETE request uses params."""
         mock_client = MagicMock()
         mock_response = MagicMock()
@@ -148,14 +145,13 @@ class TestRequestRouting:
         api_client._resilient_client = mock_client
 
         with patch("src.infrastructure.api.api_client._resolve_if_coroutine", return_value=mock_response):
-            result = await _request("DELETE", "/test", id=123)
+            result = _request("DELETE", "/test", id=123)
 
         call_args = mock_client.request.call_args
         assert call_args[1]["params"] == {"id": 123}
         assert call_args[1]["json"] is None
 
-    @pytest.mark.asyncio
-    async def test_request_unknown_method_uses_params(self):
+    def test_request_unknown_method_uses_params(self):
         """Test unknown method defaults to params."""
         mock_client = MagicMock()
         mock_response = MagicMock()
@@ -165,7 +161,7 @@ class TestRequestRouting:
         api_client._resilient_client = mock_client
 
         with patch("src.infrastructure.api.api_client._resolve_if_coroutine", return_value=mock_response):
-            result = await _request("UNKNOWN", "/test", param="value")
+            result = _request("UNKNOWN", "/test", param="value")
 
         call_args = mock_client.request.call_args
         assert call_args[1]["params"] == {"param": "value"}
@@ -219,8 +215,7 @@ class TestAsyncRequest:
         import src.infrastructure.api.api_client as api_client
         api_client._async_client = mock_client
 
-        with patch("src.infrastructure.api.api_client.get_di_container", side_effect=Exception("No container")):
-            response = await _async_request("GET", "http://test/api/test")
+        response = await _async_request("GET", "http://test/api/test")
 
         assert response == mock_response
         mock_client.request.assert_called_once()
@@ -235,9 +230,8 @@ class TestAsyncRequest:
         import src.infrastructure.api.api_client as api_client
         api_client._async_client = mock_client
 
-        with patch("src.infrastructure.api.api_client.get_di_container", side_effect=Exception("No container")):
-            with pytest.raises(Exception) as exc_info:
-                await _async_request("GET", "http://test/api/test")
+        with pytest.raises(Exception) as exc_info:
+            await _async_request("GET", "http://test/api/test")
 
         assert "接続できません" in str(exc_info.value)
 
@@ -251,9 +245,8 @@ class TestAsyncRequest:
         import src.infrastructure.api.api_client as api_client
         api_client._async_client = mock_client
 
-        with patch("src.infrastructure.api.api_client.get_di_container", side_effect=Exception("No container")):
-            with pytest.raises(Exception) as exc_info:
-                await _async_request("GET", "http://test/api/test")
+        with pytest.raises(Exception) as exc_info:
+            await _async_request("GET", "http://test/api/test")
 
         assert "接続できません" in str(exc_info.value)
 
@@ -273,9 +266,8 @@ class TestAsyncRequest:
         import src.infrastructure.api.api_client as api_client
         api_client._async_client = mock_client
 
-        with patch("src.infrastructure.api.api_client.get_di_container", side_effect=Exception("No container")):
-            with pytest.raises(Exception) as exc_info:
-                await _async_request("GET", "http://test/api/test")
+        with pytest.raises(Exception) as exc_info:
+            await _async_request("GET", "http://test/api/test")
 
         assert "APIエラー" in str(exc_info.value)
 
@@ -290,10 +282,11 @@ class TestAPIMethods:
     @pytest.mark.asyncio
     async def test_list_books(self):
         """Test list_books."""
-        mock_response = AsyncMock()
+        mock_response = MagicMock()
         mock_response.json.return_value = [{"id": 1, "title": "Book 1"}]
 
-        with patch("src.infrastructure.api.api_client._async_request", return_value=mock_response):
+        with patch("src.infrastructure.api.api_client._async_request", new_callable=AsyncMock) as mock_async_request:
+            mock_async_request.return_value = mock_response
             result = await list_books()
 
         assert result == [{"id": 1, "title": "Book 1"}]
@@ -301,10 +294,11 @@ class TestAPIMethods:
     @pytest.mark.asyncio
     async def test_get_book(self):
         """Test get_book."""
-        mock_response = AsyncMock()
+        mock_response = MagicMock()
         mock_response.json.return_value = {"id": 1, "title": "Book 1"}
 
-        with patch("src.infrastructure.api.api_client._async_request", return_value=mock_response):
+        with patch("src.infrastructure.api.api_client._async_request", new_callable=AsyncMock) as mock_async_request:
+            mock_async_request.return_value = mock_response
             result = await get_book(1)
 
         assert result == {"id": 1, "title": "Book 1"}
@@ -312,9 +306,11 @@ class TestAPIMethods:
     @pytest.mark.asyncio
     async def test_delete_book(self):
         """Test delete_book."""
-        mock_response = AsyncMock()
+        mock_response = MagicMock()
+        mock_response.json.return_value = True
 
-        with patch("src.infrastructure.api.api_client._async_request", return_value=mock_response):
+        with patch("src.infrastructure.api.api_client._async_request", new_callable=AsyncMock) as mock_async_request:
+            mock_async_request.return_value = mock_response
             result = await delete_book(1)
 
         assert result is True
@@ -322,10 +318,11 @@ class TestAPIMethods:
     @pytest.mark.asyncio
     async def test_get_plots(self):
         """Test get_plots."""
-        mock_response = AsyncMock()
+        mock_response = MagicMock()
         mock_response.json.return_value = [{"id": 1, "title": "Plot 1"}]
 
-        with patch("src.infrastructure.api.api_client._async_request", return_value=mock_response):
+        with patch("src.infrastructure.api.api_client._async_request", new_callable=AsyncMock) as mock_async_request:
+            mock_async_request.return_value = mock_response
             result = await get_plots(1)
 
         assert result == [{"id": 1, "title": "Plot 1"}]
@@ -333,10 +330,11 @@ class TestAPIMethods:
     @pytest.mark.asyncio
     async def test_get_chapters(self):
         """Test get_chapters."""
-        mock_response = AsyncMock()
+        mock_response = MagicMock()
         mock_response.json.return_value = [{"id": 1, "title": "Chapter 1"}]
 
-        with patch("src.infrastructure.api.api_client._async_request", return_value=mock_response):
+        with patch("src.infrastructure.api.api_client._async_request", new_callable=AsyncMock) as mock_async_request:
+            mock_async_request.return_value = mock_response
             result = await get_chapters(1)
 
         assert result == [{"id": 1, "title": "Chapter 1"}]
@@ -344,10 +342,11 @@ class TestAPIMethods:
     @pytest.mark.asyncio
     async def test_get_bible(self):
         """Test get_bible."""
-        mock_response = AsyncMock()
+        mock_response = MagicMock()
         mock_response.json.return_value = {"settings": {}}
 
-        with patch("src.infrastructure.api.api_client._async_request", return_value=mock_response):
+        with patch("src.infrastructure.api.api_client._async_request", new_callable=AsyncMock) as mock_async_request:
+            mock_async_request.return_value = mock_response
             result = await get_bible(1)
 
         assert result == {"settings": {}}
@@ -355,10 +354,11 @@ class TestAPIMethods:
     @pytest.mark.asyncio
     async def test_get_opt_history(self):
         """Test get_opt_history."""
-        mock_response = AsyncMock()
+        mock_response = MagicMock()
         mock_response.json.return_value = [{"id": 1}]
 
-        with patch("src.infrastructure.api.api_client._async_request", return_value=mock_response):
+        with patch("src.infrastructure.api.api_client._async_request", new_callable=AsyncMock) as mock_async_request:
+            mock_async_request.return_value = mock_response
             result = await get_opt_history(1)
 
         assert result == [{"id": 1}]
@@ -366,10 +366,11 @@ class TestAPIMethods:
     @pytest.mark.asyncio
     async def test_get_task_status_success(self):
         """Test get_task_status success."""
-        mock_response = AsyncMock()
+        mock_response = MagicMock()
         mock_response.json.return_value = {"is_running": True, "progress": 50}
 
-        with patch("src.infrastructure.api.api_client._async_request", return_value=mock_response):
+        with patch("src.infrastructure.api.api_client._async_request", new_callable=AsyncMock) as mock_async_request:
+            mock_async_request.return_value = mock_response
             result = await get_task_status("task-123")
 
         assert result["is_running"] is True
@@ -387,9 +388,10 @@ class TestAPIMethods:
     @pytest.mark.asyncio
     async def test_stop_task(self):
         """Test stop_task."""
-        mock_response = AsyncMock()
+        mock_response = MagicMock()
 
-        with patch("src.infrastructure.api.api_client._async_request", return_value=mock_response):
+        with patch("src.infrastructure.api.api_client._async_request", new_callable=AsyncMock) as mock_async_request:
+            mock_async_request.return_value = mock_response
             result = await stop_task("task-123")
 
         assert result is True
@@ -397,10 +399,11 @@ class TestAPIMethods:
     @pytest.mark.asyncio
     async def test_generate_easy(self):
         """Test generate_easy."""
-        mock_response = AsyncMock()
+        mock_response = MagicMock()
         mock_response.json.return_value = {"task_id": "task-123"}
 
-        with patch("src.infrastructure.api.api_client._async_request", return_value=mock_response):
+        with patch("src.infrastructure.api.api_client._async_request", new_callable=AsyncMock) as mock_async_request:
+            mock_async_request.return_value = mock_response
             result = await generate_easy(
                 api_key="key", config={}, genre="fantasy", keywords="test",
                 archetype_key="hero", target_eps=10, initial_limit=5,
@@ -412,10 +415,11 @@ class TestAPIMethods:
     @pytest.mark.asyncio
     async def test_generate_episodes(self):
         """Test generate_episodes."""
-        mock_response = AsyncMock()
+        mock_response = MagicMock()
         mock_response.json.return_value = {"task_id": "task-123"}
 
-        with patch("src.infrastructure.api.api_client._async_request", return_value=mock_response):
+        with patch("src.infrastructure.api.api_client._async_request", new_callable=AsyncMock) as mock_async_request:
+            mock_async_request.return_value = mock_response
             result = await generate_episodes(
                 api_key="key", config={}, book_id=1, write_from=1, write_to=5,
                 passion=0.8, word_count=2000, do_refine=True,
@@ -427,10 +431,11 @@ class TestAPIMethods:
     @pytest.mark.asyncio
     async def test_plan_generation(self):
         """Test plan_generation."""
-        mock_response = AsyncMock()
+        mock_response = MagicMock()
         mock_response.json.return_value = {"task_id": "task-123"}
 
-        with patch("src.infrastructure.api.api_client._async_request", return_value=mock_response):
+        with patch("src.infrastructure.api.api_client._async_request", new_callable=AsyncMock) as mock_async_request:
+            mock_async_request.return_value = mock_response
             result = await plan_generation(api_key="key", config={}, params={})
 
         assert result == "task-123"
@@ -438,10 +443,11 @@ class TestAPIMethods:
     @pytest.mark.asyncio
     async def test_retry_failed_episodes(self):
         """Test retry_failed_episodes."""
-        mock_response = AsyncMock()
+        mock_response = MagicMock()
         mock_response.json.return_value = {"task_id": "task-123"}
 
-        with patch("src.infrastructure.api.api_client._async_request", return_value=mock_response):
+        with patch("src.infrastructure.api.api_client._async_request", new_callable=AsyncMock) as mock_async_request:
+            mock_async_request.return_value = mock_response
             result = await retry_failed_episodes(
                 api_key="key", config={}, book_id=1, passion=0.8, word_count=2000
             )
@@ -451,10 +457,11 @@ class TestAPIMethods:
     @pytest.mark.asyncio
     async def test_expand_plots(self):
         """Test expand_plots."""
-        mock_response = AsyncMock()
+        mock_response = MagicMock()
         mock_response.json.return_value = {"task_id": "task-123"}
 
-        with patch("src.infrastructure.api.api_client._async_request", return_value=mock_response):
+        with patch("src.infrastructure.api.api_client._async_request", new_callable=AsyncMock) as mock_async_request:
+            mock_async_request.return_value = mock_response
             result = await expand_plots(
                 api_key="key", config={}, book_id=1, gen_from=1, gen_to=10
             )
@@ -464,10 +471,11 @@ class TestAPIMethods:
     @pytest.mark.asyncio
     async def test_rebuild_plots(self):
         """Test rebuild_plots."""
-        mock_response = AsyncMock()
+        mock_response = MagicMock()
         mock_response.json.return_value = {"task_id": "task-123"}
 
-        with patch("src.infrastructure.api.api_client._async_request", return_value=mock_response):
+        with patch("src.infrastructure.api.api_client._async_request", new_callable=AsyncMock) as mock_async_request:
+            mock_async_request.return_value = mock_response
             result = await rebuild_plots(api_key="key", config={}, params={})
 
         assert result == "task-123"
@@ -475,10 +483,11 @@ class TestAPIMethods:
     @pytest.mark.asyncio
     async def test_critique_optimize(self):
         """Test critique_optimize."""
-        mock_response = AsyncMock()
+        mock_response = MagicMock()
         mock_response.json.return_value = {"task_id": "task-123"}
 
-        with patch("src.infrastructure.api.api_client._async_request", return_value=mock_response):
+        with patch("src.infrastructure.api.api_client._async_request", new_callable=AsyncMock) as mock_async_request:
+            mock_async_request.return_value = mock_response
             result = await critique_optimize(api_key="key", config={}, book_id=1)
 
         assert result == "task-123"
@@ -486,10 +495,11 @@ class TestAPIMethods:
     @pytest.mark.asyncio
     async def test_import_chapter(self):
         """Test import_chapter."""
-        mock_response = AsyncMock()
+        mock_response = MagicMock()
         mock_response.json.return_value = {"task_id": "task-123"}
 
-        with patch("src.infrastructure.api.api_client._async_request", return_value=mock_response):
+        with patch("src.infrastructure.api.api_client._async_request", new_callable=AsyncMock) as mock_async_request:
+            mock_async_request.return_value = mock_response
             result = await import_chapter(
                 api_key="key", book_id=1, ep_num=1, import_text="text", do_refine=True
             )
@@ -499,10 +509,11 @@ class TestAPIMethods:
     @pytest.mark.asyncio
     async def test_generate_marketing(self):
         """Test generate_marketing."""
-        mock_response = AsyncMock()
+        mock_response = MagicMock()
         mock_response.json.return_value = {"task_id": "task-123"}
 
-        with patch("src.infrastructure.api.api_client._async_request", return_value=mock_response):
+        with patch("src.infrastructure.api.api_client._async_request", new_callable=AsyncMock) as mock_async_request:
+            mock_async_request.return_value = mock_response
             result = await generate_marketing(api_key="key", book_id=1, latest_ep=5)
 
         assert result == "task-123"
@@ -510,10 +521,11 @@ class TestAPIMethods:
     @pytest.mark.asyncio
     async def test_analyze_style_dna(self):
         """Test analyze_style_dna."""
-        mock_response = AsyncMock()
+        mock_response = MagicMock()
         mock_response.json.return_value = {"style": "web"}
 
-        with patch("src.infrastructure.api.api_client._async_request", return_value=mock_response):
+        with patch("src.infrastructure.api.api_client._async_request", new_callable=AsyncMock) as mock_async_request:
+            mock_async_request.return_value = mock_response
             result = await analyze_style_dna(api_key="key", sample="sample text")
 
         assert result == {"style": "web"}
@@ -521,9 +533,10 @@ class TestAPIMethods:
     @pytest.mark.asyncio
     async def test_create_chapter(self):
         """Test create_chapter."""
-        mock_response = AsyncMock()
+        mock_response = MagicMock()
 
-        with patch("src.infrastructure.api.api_client._async_request", return_value=mock_response):
+        with patch("src.infrastructure.api.api_client._async_request", new_callable=AsyncMock) as mock_async_request:
+            mock_async_request.return_value = mock_response
             result = await create_chapter(
                 book_id=1, ep_num=1, title="Ch1", content="content",
                 summary="sum", killer_phrase="kp", ai_insight="ai",
@@ -535,9 +548,10 @@ class TestAPIMethods:
     @pytest.mark.asyncio
     async def test_delete_chapter(self):
         """Test delete_chapter."""
-        mock_response = AsyncMock()
+        mock_response = MagicMock()
 
-        with patch("src.infrastructure.api.api_client._async_request", return_value=mock_response):
+        with patch("src.infrastructure.api.api_client._async_request", new_callable=AsyncMock) as mock_async_request:
+            mock_async_request.return_value = mock_response
             result = await delete_chapter(1, 1)
 
         assert result is True
@@ -545,10 +559,11 @@ class TestAPIMethods:
     @pytest.mark.asyncio
     async def test_get_issues(self):
         """Test get_issues."""
-        mock_response = AsyncMock()
+        mock_response = MagicMock()
         mock_response.json.return_value = [{"id": 1}]
 
-        with patch("src.infrastructure.api.api_client._async_request", return_value=mock_response):
+        with patch("src.infrastructure.api.api_client._async_request", new_callable=AsyncMock) as mock_async_request:
+            mock_async_request.return_value = mock_response
             result = await get_issues(1)
 
         assert result == [{"id": 1}]
@@ -556,10 +571,11 @@ class TestAPIMethods:
     @pytest.mark.asyncio
     async def test_resolve_issue(self):
         """Test resolve_issue."""
-        mock_response = AsyncMock()
+        mock_response = MagicMock()
         mock_response.json.return_value = {"status": "resolved"}
 
-        with patch("src.infrastructure.api.api_client._async_request", return_value=mock_response):
+        with patch("src.infrastructure.api.api_client._async_request", new_callable=AsyncMock) as mock_async_request:
+            mock_async_request.return_value = mock_response
             result = await resolve_issue(1, "fix", "api_key")
 
         assert result == {"status": "resolved"}
@@ -567,10 +583,11 @@ class TestAPIMethods:
     @pytest.mark.asyncio
     async def test_save_pending_patch(self):
         """Test save_pending_patch."""
-        mock_response = AsyncMock()
+        mock_response = MagicMock()
         mock_response.json.return_value = {"success": True}
 
-        with patch("src.infrastructure.api.api_client._async_request", return_value=mock_response):
+        with patch("src.infrastructure.api.api_client._async_request", new_callable=AsyncMock) as mock_async_request:
+            mock_async_request.return_value = mock_response
             result = await save_pending_patch(1, "type", "content", {})
 
         assert result == {"success": True}
@@ -578,10 +595,11 @@ class TestAPIMethods:
     @pytest.mark.asyncio
     async def test_get_pending_patches(self):
         """Test get_pending_patches."""
-        mock_response = AsyncMock()
+        mock_response = MagicMock()
         mock_response.json.return_value = [{"id": 1}]
 
-        with patch("src.infrastructure.api.api_client._async_request", return_value=mock_response):
+        with patch("src.infrastructure.api.api_client._async_request", new_callable=AsyncMock) as mock_async_request:
+            mock_async_request.return_value = mock_response
             result = await get_pending_patches(1)
 
         assert result == [{"id": 1}]
@@ -589,9 +607,10 @@ class TestAPIMethods:
     @pytest.mark.asyncio
     async def test_approve_patch(self):
         """Test approve_patch."""
-        mock_response = AsyncMock()
+        mock_response = MagicMock()
 
-        with patch("src.infrastructure.api.api_client._async_request", return_value=mock_response):
+        with patch("src.infrastructure.api.api_client._async_request", new_callable=AsyncMock) as mock_async_request:
+            mock_async_request.return_value = mock_response
             result = await approve_patch(1)
 
         assert result == {"success": True}
@@ -599,9 +618,10 @@ class TestAPIMethods:
     @pytest.mark.asyncio
     async def test_reject_patch(self):
         """Test reject_patch."""
-        mock_response = AsyncMock()
+        mock_response = MagicMock()
 
-        with patch("src.infrastructure.api.api_client._async_request", return_value=mock_response):
+        with patch("src.infrastructure.api.api_client._async_request", new_callable=AsyncMock) as mock_async_request:
+            mock_async_request.return_value = mock_response
             result = await reject_patch(1)
 
         assert result == {"success": True}
@@ -609,10 +629,11 @@ class TestAPIMethods:
     @pytest.mark.asyncio
     async def test_get_prompt_versions(self):
         """Test get_prompt_versions."""
-        mock_response = AsyncMock()
+        mock_response = MagicMock()
         mock_response.json.return_value = [{"version": 1}]
 
-        with patch("src.infrastructure.api.api_client._async_request", return_value=mock_response):
+        with patch("src.infrastructure.api.api_client._async_request", new_callable=AsyncMock) as mock_async_request:
+            mock_async_request.return_value = mock_response
             result = await get_prompt_versions(1)
 
         assert result == [{"version": 1}]
@@ -620,10 +641,11 @@ class TestAPIMethods:
     @pytest.mark.asyncio
     async def test_rollback_prompt_version(self):
         """Test rollback_prompt_version."""
-        mock_response = AsyncMock()
+        mock_response = MagicMock()
         mock_response.json.return_value = {"success": True}
 
-        with patch("src.infrastructure.api.api_client._async_request", return_value=mock_response):
+        with patch("src.infrastructure.api.api_client._async_request", new_callable=AsyncMock) as mock_async_request:
+            mock_async_request.return_value = mock_response
             result = await rollback_prompt_version(1, 1)
 
         assert result == {"success": True}
@@ -631,10 +653,11 @@ class TestAPIMethods:
     @pytest.mark.asyncio
     async def test_audit_producer_plan(self):
         """Test audit_producer_plan."""
-        mock_response = AsyncMock()
+        mock_response = MagicMock()
         mock_response.json.return_value = {"score": 80}
 
-        with patch("src.infrastructure.api.api_client._async_request", return_value=mock_response):
+        with patch("src.infrastructure.api.api_client._async_request", new_callable=AsyncMock) as mock_async_request:
+            mock_async_request.return_value = mock_response
             result = await audit_producer_plan(
                 api_key="key", genre="fantasy", keywords="test",
                 trend_memo="memo", sanctuary="sanc", originality_score=50
@@ -645,9 +668,10 @@ class TestAPIMethods:
     @pytest.mark.asyncio
     async def test_export_package(self):
         """Test export_package."""
-        mock_response = AsyncMock()
+        mock_response = MagicMock()
 
-        with patch("src.infrastructure.api.api_client._async_request", return_value=mock_response):
+        with patch("src.infrastructure.api.api_client._async_request", new_callable=AsyncMock) as mock_async_request:
+            mock_async_request.return_value = mock_response
             result = await export_package(api_key="key", book_id=1)
 
         assert result == mock_response
@@ -663,11 +687,12 @@ class TestCloseClient:
         api_client._async_client = AsyncMock()
         api_client._async_client.is_closed = False
 
-        with patch("asyncio.run"):
-            close_client()
+        with patch("src.infrastructure.api.api_client.close_async_client") as mock_close_async:
+            with patch("asyncio.run"):
+                close_client()
 
         assert api_client._resilient_client is None
-        assert api_client._async_client is None
+        mock_close_async.assert_called_once()
 
 
 if __name__ == "__main__":

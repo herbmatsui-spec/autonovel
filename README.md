@@ -576,6 +576,9 @@ sequenceDiagram
 
 長編小説制作における最大の敵は「過去の設定を忘れること」です。AutoNovel は **GraphRAG（Graph + Retrieval-Augmented Generation）** により、この問題を根本から解決しています。
 
+> 詳細なセットアップ手順 (ChromaDB / pgvector / Reranker) は
+> [`docs/rag_setup.md`](docs/rag_setup.md) を参照してください。
+
 ```
 +-----------------------------------------------------------------------------------+
 |                         GraphRAG 統合記憶アーキテクチャ                            |

@@ -10,6 +10,8 @@ interface StudioWorkspaceProps {
   onOpenGraph?: () => void;
 }
 
+type StudioTab = "editor" | "multimedia";
+
 export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
   onMessage,
   onOpenGraph,
@@ -21,6 +23,7 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
     setCurrentChapterText,
     selectedBookId,
   } = useNovelContext();
+  const [tab, setTab] = useState<StudioTab>("editor");
 
   const [showLeftPane, setShowLeftPane] = useState(true);
   const [showRightPane, setShowRightPane] = useState(true);
@@ -135,7 +138,6 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
       </aside>
       ) : null}
 
-      {/* 中央ペイン: リッチエディタ + Next Beats */}
       <main className="studio-pane" style={{ minHeight: "600px" }}>
         {/* ペイン展開用ツールバー（折りたたみ時） */}
         {(!showLeftPane || !showRightPane) && (
@@ -172,19 +174,22 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
           onToast={handleToast}
         />
 
-        <NextBeatsPanel
-          currentText={currentChapterText}
-          genre={character.genre}
-          bookId={selectedBookId}
-          onApplyBeat={(content, mode) => {
-            if (mode === "replace_all") {
-              setCurrentChapterText(content);
-            } else {
-              setCurrentChapterText((prev) => (prev ? `${prev}\n\n${content}` : content));
-            }
-          }}
-          onToast={handleToast}
-        />
+            <NextBeatsPanel
+              currentText={currentChapterText}
+              genre={character.genre}
+              bookId={selectedBookId}
+              onApplyBeat={(content, mode) => {
+                if (mode === "replace_all") {
+                  setCurrentChapterText(content);
+                } else {
+                  setCurrentChapterText((prev) => (prev ? `${prev}\n\n${content}` : content));
+                }
+              }}
+              onToast={handleToast}
+            />
+          </>
+        )}
+        {tab === "multimedia" && <AssetPackPanel bookId={selectedBookId} />}
       </main>
 
       {/* 右ペイン: GraphRAG 専属AI編集者サイドバー */}

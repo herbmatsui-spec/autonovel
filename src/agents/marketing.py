@@ -18,18 +18,37 @@ class MarketingAgent(BaseAgent):
         self, repo: Any = None, llm: LLMService | None = None, prompt_manager: Any = None
     ):
         super().__init__(repo=repo, llm=llm)
+        if prompt_manager is None:
+            try:
+                from prompts.manager import PromptManager
+
+                prompt_manager = PromptManager()
+            except Exception as e:
+                logger.warning("PromptManager auto-init failed: %s", e)
+                prompt_manager = None
         self.prompt_manager = prompt_manager
 
     async def generate_pack(
         self, book_title: str, synopsis: str, latest_ep: int, **kwargs
     ) -> dict[str, Any]:
         if self.prompt_manager is None:
-            raise ValueError("PromptManager is required for MarketingAgent")
+            logger.warning("PromptManager unavailable — returning empty metadata fallback")
+            return {"title": book_title, "tags": [], "synopsis": synopsis, "latest_ep": latest_ep}
         prompt = self.prompt_manager.build_marketing_pack_prompt(
             book_title=book_title, synopsis=synopsis, latest_ep=latest_ep, **kwargs
         )
         result = await self.llm.generate_json(purpose="marketing", prompt=prompt)
-        return result.get("metadata", {})
+        if not isinstance(result, dict):
+            return {"title": book_title, "tags": [], "synopsis": synopsis, "latest_ep": latest_ep}
+        metadata = result.get("metadata")
+        if not isinstance(metadata, dict) or not metadata:
+            return {
+                "title": result.get("title", book_title),
+                "tags": result.get("tags", []) or [],
+                "synopsis": result.get("synopsis", synopsis),
+                "raw": result,
+            }
+        return metadata
 
     async def run(self, *args, **kwargs):
         logger.info("MarketingAgent run invoked")

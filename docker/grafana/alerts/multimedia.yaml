@@ -1,0 +1,22 @@
+groups:
+  - name: multimedia-alerts
+    interval: 1m
+    rules:
+      - alert: MultimediaHighErrorRate
+        expr: |
+          rate(multimedia_errors_total[5m]) /
+          rate(multimedia_requests_total[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Multimedia 5xx エラー率が 5% を超えました"
+          description: "直近 5 分で multimedia_errors_total / multimedia_requests_total > 5%"
+      - alert: MultimediaLatencyHigh
+        expr: |
+          histogram_quantile(0.95, rate(multimedia_latency_seconds_bucket[5m])) > 3
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Multimedia p95 レイテンシが 3 秒を超えました"

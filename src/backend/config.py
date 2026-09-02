@@ -73,6 +73,25 @@ class Settings(BaseSettings):
     AGE_GRAPH_NAME: str = "autonovel_graph"
     ENABLE_GRAPHRAG: bool = True
 
+    # Vector / RAG (Phase: ハード依存化 Opt-in) 設定
+    REQUIRE_PG: bool = False
+    REQUIRE_CHROMA: bool = False
+    RAG_FALLBACK_MODE: Literal["memory", "error"] = "memory"
+    RAG_BATCH_SIZE: int = 64
+    RERANKER_BACKEND: Literal["none", "simple", "cross_encoder"] = "none"
+    RERANKER_MODEL: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+    CHROMA_DB_PATH: str = Field(default_factory=lambda: str(STORAGE_DIR / "chroma_db"))
+    CHROMA_HOST: str = ""
+    CHROMA_PORT: int = 8000
+    AUTONOVEL_RAG_MODE: Literal["auto", "chroma", "memory"] = "auto"
+
+    # マルチメディア展開 (Phase 7: Asset Pack / Media Mix / IF Routes / eBook)
+    ENABLE_MULTIMEDIA: bool = False
+    ENABLE_AUDIO_SYNTH: bool = False
+    MULTIMEDIA_OUTPUT_DIR: str = Field(
+        default_factory=lambda: str(STORAGE_DIR / "multimedia")
+    )
+
     @property
     def cors_origin_list(self) -> list[str]:
         """CORS origins をリスト形式で取得する。"""

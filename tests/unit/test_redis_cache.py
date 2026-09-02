@@ -313,7 +313,7 @@ class TestPromptCacheService:
         self.mock_semantic.add = AsyncMock()
 
         with patch.object(self.cache, '_generate_cache_key', return_value="prompt:test:model:1.0:hash"):
-            with patch.object(self.cache, 'compute_prompt_hash', return_value="hash"):
+            with patch.object(PromptCacheService, 'compute_prompt_hash', return_value="hash"):
                 await self.cache.set(
                     template_name="test",
                     prompt="test prompt",

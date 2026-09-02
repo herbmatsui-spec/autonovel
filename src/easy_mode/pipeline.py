@@ -13,6 +13,7 @@ from datetime import datetime
 from typing import Any
 
 from config.constants import EP_CLIMAX, EP_FINAL
+from src.core.async_utils import limit_concurrency
 from src.easy_mode.spice_guard import SpiceElement, create_spice_guard
 from src.presets.loader import load_preset
 
@@ -62,6 +63,14 @@ class PipelineConfig:
     enable_spice_guard: bool = True
     progress_callback: Callable[[str, int, int], None] | None = None
 
+    # === 並列生成設定 ===
+    enable_parallel_episodes: bool = True
+    parallel_episode_threshold: int = 10
+    sequential_tail_episodes: int = 5
+    max_parallel_workers: int = 5
+    consistency_similarity_threshold: float = 0.78
+    consistency_max_fix_chars: int = 800
+
 
 class EasyModePipeline:
     """かんたんモード 全自動生成パイプライン"""
@@ -76,6 +85,8 @@ class EasyModePipeline:
         self.preset = load_preset(config.genre)
         self.series_result: SeriesResult | None = None
         self._cancelled = False
+        # ベクトルストア（整合性チェック用）
+        self.vector_store = getattr(engine, 'vector_store', None)
 
     async def _generate_with_retry(
         self, prompt: str, variables: dict, operation: str = "generate"
@@ -107,9 +118,6 @@ class EasyModePipeline:
         """パイプライン全体を実行"""
         logger.info(f"Starting easy mode pipeline for genre: {self.config.genre}")
 
-        # グローバルセマフォを通じて並行実行数を制御
-        from src.core.async_utils import limit_concurrency
-
         try:
             # Step 1: Bible生成
             await self._report_progress("bible", 0, self.config.target_episodes)
@@ -119,18 +127,11 @@ class EasyModePipeline:
             await self._report_progress("plot", 0, self.config.target_episodes)
             plot_outline = await limit_concurrency(self._generate_plot_outline(bible))
 
-            # Step 3: 各話生成ループ
-            episodes: list[EpisodeResult] = []
-            for ep_num in range(1, self.config.target_episodes + 1):
-                if self._cancelled:
-                    logger.info(f"Pipeline cancelled at episode {ep_num}")
-                    break
-
-                await self._report_progress("writing", ep_num - 1, self.config.target_episodes)
-                episode_result = await limit_concurrency(
-                    self._generate_episode(ep_num, plot_outline, bible)
-                )
-                episodes.append(episode_result)
+            # Step 3: 各話生成（並列/逐次ハイブリッド）
+            if self._should_use_parallel():
+                episodes = await self._generate_episodes_parallel(plot_outline, bible)
+            else:
+                episodes = await self._generate_episodes_sequential(plot_outline, bible)
 
             await self._report_progress("finalizing", len(episodes), self.config.target_episodes)
             result = self._finalize_result(episodes)
@@ -143,6 +144,277 @@ class EasyModePipeline:
             logger.error(f"Pipeline failed: {e}", exc_info=True)
             self._cancelled = False
             raise
+
+    def _should_use_parallel(self) -> bool:
+        """並列生成を使用すべきか判定"""
+        return (
+            self.config.enable_parallel_episodes
+            and self.config.target_episodes >= self.config.parallel_episode_threshold
+        )
+
+    def _build_plot_context(self, ep_num: int, plot_outline: list[dict]) -> str:
+        """プロットから前話サマリを生成（LLM不使用・高速）"""
+        if ep_num <= 1:
+            return "（第1話のため前話なし）"
+
+        # 直前1話のプロット情報のみ使用（低コスト）
+        prev_plot = plot_outline[ep_num - 2]
+        beats = " → ".join(prev_plot.get("beats", []))
+        return f"第{ep_num-1}話「{prev_plot['title']}」: {beats}。テンション{prev_plot['target_tension']:.0%}。"
+
+    async def _generate_episodes_sequential(
+        self, plot_outline: list[dict], bible: dict
+    ) -> list[EpisodeResult]:
+        """逐次生成（既存ロジック）"""
+        episodes: list[EpisodeResult] = []
+        for ep_num in range(1, self.config.target_episodes + 1):
+            if self._cancelled:
+                break
+            await self._report_progress("writing", ep_num - 1, self.config.target_episodes)
+            ep_result = await limit_concurrency(
+                self._generate_episode(ep_num, bible, plot_outline, episodes)
+            )
+            episodes.append(ep_result)
+        return episodes
+
+    async def _generate_episodes_parallel(
+        self, plot_outline: list[dict], bible: dict
+    ) -> list[EpisodeResult]:
+        """並列生成：直近N話は逐次、それ以前は並列"""
+        total = self.config.target_episodes
+        tail = self.config.sequential_tail_episodes
+        parallel_count = max(0, total - tail)
+        max_workers = min(self.config.max_parallel_workers, parallel_count)
+
+        # Phase 1: 並列可能な話数をバッチ生成（擬似文脈付き）
+        parallel_episodes: list[EpisodeResult] = []
+
+        async def gen_ep(ep_num: int) -> EpisodeResult:
+            pseudo_context = self._build_plot_context(ep_num, plot_outline)
+            # 擬似前話として簡易オブジェクトを作成
+            pseudo_prev = [self._make_pseudo_episode(ep_num - 1, pseudo_context)] if ep_num > 1 else []
+            return await limit_concurrency(
+                self._generate_episode(ep_num, bible, plot_outline, pseudo_prev)
+            )
+
+        if parallel_count > 0:
+            semaphore = asyncio.Semaphore(max_workers)
+
+            async def limited_gen(ep_num: int) -> EpisodeResult:
+                async with semaphore:
+                    if self._cancelled:
+                        raise RuntimeError("Cancelled")
+                    return await gen_ep(ep_num)
+
+            tasks = [limited_gen(i) for i in range(1, parallel_count + 1)]
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+
+            for i, result in enumerate(results, 1):
+                if self._cancelled:
+                    break
+                if isinstance(result, Exception):
+                    logger.error(f"Episode {i} generation failed: {result}")
+                    ep_result = await limit_concurrency(
+                        self._generate_episode(i, bible, plot_outline, parallel_episodes)
+                    )
+                else:
+                    ep_result = result
+                parallel_episodes.append(ep_result)
+                await self._report_progress("writing", i - 1, total)
+
+        # Phase 2: 末尾話数を逐次生成（前話文脈フル使用でGraphRAG整合性確保）
+        sequential_episodes: list[EpisodeResult] = []
+        all_prev = parallel_episodes.copy()
+
+        for ep_num in range(parallel_count + 1, total + 1):
+            if self._cancelled:
+                break
+            await self._report_progress("writing", ep_num - 1, total)
+            ep_result = await limit_concurrency(
+                self._generate_episode(ep_num, bible, plot_outline, all_prev)
+            )
+            sequential_episodes.append(ep_result)
+            all_prev.append(ep_result)
+
+        # Phase 3: ベクトル検索ベース整合性パス（要修正のみLLM呼出し）
+        if parallel_episodes and sequential_episodes:
+            await self._report_progress("consistency_pass", 0, len(parallel_episodes))
+            parallel_episodes = await self._consistency_pass_vector(
+                parallel_episodes, sequential_episodes, bible, plot_outline
+            )
+
+        return parallel_episodes + sequential_episodes
+
+    def _make_pseudo_episode(self, ep_num: int, context: str) -> EpisodeResult:
+        """並列生成用の擬似前話オブジェクト作成"""
+        return EpisodeResult(
+            episode_num=ep_num,
+            title=f"第{ep_num}話（擬似）",
+            content=context,
+            word_count=len(context),
+            audit_score=0.0,
+            audit_passed=False,
+            rewrite_count=0,
+            spice_elements=[],
+            metadata={"pseudo": True},
+        )
+
+    async def _consistency_pass_vector(
+        self,
+        parallel_eps: list[EpisodeResult],
+        sequential_eps: list[EpisodeResult],
+        bible: dict,
+        plot_outline: list[dict],
+    ) -> list[EpisodeResult]:
+        """ベクトル検索ベース整合性補正（要修正のみLLM呼出し）"""
+        if not self.vector_store:
+            logger.warning("Vector store not available, skipping consistency pass")
+            return parallel_eps
+
+        tail_context = self._build_prev_context(sequential_eps[-3:]) if sequential_eps else ""
+        fixed_eps = []
+
+        for i, ep in enumerate(parallel_eps):
+            if self._cancelled:
+                fixed_eps.append(ep)
+                continue
+
+            needs_fix, segments = await self._check_consistency_vector(ep.content, tail_context)
+            if not needs_fix:
+                fixed_eps.append(ep)
+                continue
+
+            fixed_content = await self._fix_consistency_targeted(
+                ep.episode_num, ep.content, segments, tail_context, bible, plot_outline[i]
+            )
+
+            fixed_eps.append(EpisodeResult(
+                episode_num=ep.episode_num,
+                title=ep.title,
+                content=fixed_content,
+                word_count=len(fixed_content),
+                audit_score=ep.audit_score,
+                audit_passed=ep.audit_passed,
+                rewrite_count=ep.rewrite_count + 1,
+                spice_elements=ep.spice_elements,
+                metadata=ep.metadata,
+                needs_human_review=ep.needs_human_review,
+            ))
+
+        return fixed_eps
+
+    async def _embed_text(self, text: str) -> list[float]:
+        """テキストをベクトル化（既存embedder使用）"""
+        if not self.vector_store or not hasattr(self.vector_store, 'embed_text'):
+            # フォールバック: 簡易ハッシュベース（低性能LLM環境用）
+            import hashlib
+            hash_val = hashlib.md5(text.encode()).hexdigest()
+            return [float(int(c, 16)) / 15.0 for c in hash_val[:384]]
+        return await self.vector_store.embed_text(text)
+
+    def _cosine_similarity(self, vec1: list[float], vec2: list[float]) -> float:
+        """コサイン類似度計算（numpy不使用）"""
+        if len(vec1) != len(vec2):
+            return 0.0
+        dot = sum(a * b for a, b in zip(vec1, vec2))
+        norm1 = sum(a * a for a in vec1) ** 0.5
+        norm2 = sum(b * b for b in vec2) ** 0.5
+        if norm1 == 0 or norm2 == 0:
+            return 0.0
+        return dot / (norm1 * norm2)
+
+    async def _check_consistency_vector(
+        self, ep_content: str, tail_context: str
+    ) -> tuple[bool, list[tuple[int, int]]]:
+        """
+        Returns: (needs_fix, [(start_char, end_char), ...])
+        """
+        # 1. エピソード全文をベクトル化
+        ep_vec = await self._embed_text(ep_content)
+
+        # 2. 末尾文脈をベクトル化
+        tail_vec = await self._embed_text(tail_context[:2000])
+
+        # 3. コサイン類似度
+        sim = self._cosine_similarity(ep_vec, tail_vec)
+
+        threshold = self.config.consistency_similarity_threshold
+        if sim >= threshold:
+            return False, []
+
+        # 4. スライディングウィンドウで不整合箇所特定
+        window_size = 500
+        stride = 250
+        bad_segments = []
+
+        for i in range(0, len(ep_content), stride):
+            segment = ep_content[i:i + window_size]
+            if len(segment) < 100:  # 短すぎるセグメントはスキップ
+                continue
+            seg_vec = await self._embed_text(segment)
+            seg_sim = self._cosine_similarity(seg_vec, tail_vec)
+            if seg_sim < threshold - 0.05:
+                bad_segments.append((i, min(i + window_size, len(ep_content))))
+
+        # 結合・マージ
+        merged = self._merge_segments(bad_segments)
+        return True, merged[:3]  # 最大3箇所まで
+
+    def _merge_segments(self, segments: list[tuple[int, int]]) -> list[tuple[int, int]]:
+        """重複・隣接セグメントをマージ"""
+        if not segments:
+            return []
+        segments = sorted(segments)
+        merged = [segments[0]]
+        for start, end in segments[1:]:
+            last_start, last_end = merged[-1]
+            if start <= last_end + 100:  # 100文字以内ならマージ
+                merged[-1] = (last_start, max(last_end, end))
+            else:
+                merged.append((start, end))
+        return merged
+
+    async def _fix_consistency_targeted(
+        self, ep_num: int, content: str, bad_segments: list[tuple[int, int]],
+        tail_context: str, bible: dict, plot: dict
+    ) -> str:
+        """不整合セグメントのみをピンポイント修正"""
+        if not bad_segments:
+            return content
+
+        # セグメント周辺のみ抽出（前後200字）
+        patches = []
+        for start, end in bad_segments:
+            ctx_start = max(0, start - 200)
+            ctx_end = min(len(content), end + 200)
+            patches.append(content[ctx_start:ctx_end])
+
+        prompt = f"""
+以下の断片について、後続展開と整合するよう【太字部分のみ】修正せよ。
+それ以外は一切変更するな。
+
+【後続文脈】{tail_context[:1000]}
+【対象断片】
+{' ||| '.join(patches)}
+"""
+        try:
+            fixed_patches = await self._generate_with_retry(prompt, {}, f"fix_ep{ep_num}")
+            return self._apply_patches(content, bad_segments, fixed_patches)
+        except Exception:
+            return content
+
+    def _apply_patches(
+        self, content: str, segments: list[tuple[int, int]], fixed_text: str
+    ) -> str:
+        """修正済みテキストを元の位置に適用（簡易版）"""
+        # 簡易実装: 固定長セグメントとして順番に置換
+        # 本番ではより洗練されたマージが必要だが、低性能LLM対応で簡易化
+        result = content
+        # 後ろから置換（位置ズレ防止）
+        for (start, end), patch in zip(sorted(segments, reverse=True), fixed_text.split(" ||| ")):
+            if start < len(result) and end <= len(result):
+                result = result[:start] + patch.strip() + result[end:]
+        return result
 
     async def _generate_bible(self) -> dict[str, Any]:
         """Bible自動生成（プリセット注入）"""

@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import math
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -13,11 +13,29 @@ from src.infrastructure.database.models.chunk import HAS_PGVECTOR, ChapterChunk
 from src.services.age_client import age_client
 from src.services.embedding_service import embedding_service
 
+if TYPE_CHECKING:
+    from src.services.reranker import Reranker
+
 logger = get_logger("rag_service")
 
 
 class GraphRAGService:
     """ベクトル検索とナレッジグラフ探索を組み合わせたハイブリッドRAGサービス (Reranking対応)."""
+
+    def __init__(self, reranker: "Reranker | None" = None) -> None:
+        self._reranker = reranker
+        self._last_call_stats: dict[str, Any] = {}
+
+    def get_reranker(self) -> "Reranker":
+        """遅延初期化で Reranker を返す."""
+        if self._reranker is None:
+            from src.services.reranker import build_default_reranker
+
+            self._reranker = build_default_reranker()
+        return self._reranker
+
+    def get_last_stats(self) -> dict[str, Any]:
+        return dict(self._last_call_stats)
 
     def search_similar_chunks(
         self,
@@ -25,15 +43,23 @@ class GraphRAGService:
         query: str,
         limit: int = 3,
     ) -> list[str]:
-        """クエリテキストに類似する過去の章チャンクを検索する."""
+        """クエリテキストに類似する過去の章チャンクを検索する.
+
+        環境に応じて下記を自動切替:
+          - PostgreSQL + pgvector: ``embedding <=> :query_vector`` 演算子
+          - SQLite フォールバック: 最新チャンクに対するブルートフォース・コサイン
+          - ``REQUIRE_PG=True`` かつ pgvector 不在: ``RuntimeError``
+        """
+        import time
+
         if not query or not query.strip():
             return []
 
+        start = time.perf_counter()
         try:
             # PostgreSQL + pgvector 環境
             if HAS_PGVECTOR and settings.DATABASE_URL.startswith("postgresql"):
                 query_vector = embedding_service.get_embedding(query)
-                # pgvector のコサイン距離演算子 (<=>) による順序づけ
                 stmt = text(
                     """
                     SELECT content FROM chapter_chunks
@@ -42,10 +68,24 @@ class GraphRAGService:
                     LIMIT :limit
                     """
                 )
-                result = session.execute(stmt, {"query_vector": str(query_vector), "limit": limit})
-                return [row[0] for row in result]
+                result = session.execute(
+                    stmt, {"query_vector": str(query_vector), "limit": limit}
+                )
+                rows = [row[0] for row in result]
+                self._last_call_stats = {
+                    "backend": "pgvector",
+                    "hits": len(rows),
+                    "limit": limit,
+                    "elapsed_ms": int((time.perf_counter() - start) * 1000),
+                }
+                return rows
+            elif settings.REQUIRE_PG:
+                raise RuntimeError(
+                    "REQUIRE_PG is True but pgvector is unavailable or DATABASE_URL "
+                    "is not PostgreSQL. Install pgvector or set REQUIRE_PG=false."
+                )
             else:
-                # SQLite またはフォールバック: 最新チャンクから類似度順に並べ替え
+                # SQLite フォールバック: 最新チャンクから類似度順に並べ替え
                 chunks = (
                     session.query(ChapterChunk)
                     .order_by(ChapterChunk.created_at.desc())
@@ -53,6 +93,12 @@ class GraphRAGService:
                     .all()
                 )
                 if not chunks:
+                    self._last_call_stats = {
+                        "backend": "sqlite_fallback",
+                        "hits": 0,
+                        "limit": limit,
+                        "elapsed_ms": int((time.perf_counter() - start) * 1000),
+                    }
                     return []
 
                 query_emb = embedding_service.get_embedding(query)
@@ -66,9 +112,21 @@ class GraphRAGService:
                     scored.append((sim, chunk_text))
 
                 scored.sort(key=lambda x: x[0], reverse=True)
-                return [content for _, content in scored[:limit]]
+                rows = [content for _, content in scored[:limit]]
+                self._last_call_stats = {
+                    "backend": "sqlite_fallback",
+                    "hits": len(rows),
+                    "limit": limit,
+                    "elapsed_ms": int((time.perf_counter() - start) * 1000),
+                }
+                return rows
         except Exception as e:
             logger.warning("Vector search failed, falling back: %s", e)
+            self._last_call_stats = {
+                "backend": "error",
+                "error": str(e),
+                "elapsed_ms": int((time.perf_counter() - start) * 1000),
+            }
             return []
 
     def get_graph_context(
@@ -191,8 +249,48 @@ class GraphRAGService:
 
         return graph_context, vector_context
 
+    async def rerank(
+        self,
+        query: str,
+        docs: list[str],
+        top_k: int = 5,
+    ) -> list[tuple[int, float]]:
+        """クエリと文書のリストを rerank して ``(index, score)`` のリストを返す."""
+        if not docs:
+            return []
+        reranker = self.get_reranker()
+        return await reranker.rerank(query, docs, top_k)
+
+    def retrieve_for_episode(
+        self,
+        session: Session,
+        *,
+        book_id: int | None = None,
+        episode_number: int | None = None,
+        character_name: str,
+        additional_entities: list[str] | None = None,
+        top_k: int = 3,
+    ) -> dict[str, Any]:
+        """エピソード執筆向けに ``(graph, vector, stats)`` を一括取得する公開 API."""
+        current_prompt = character_name
+        if episode_number is not None:
+            current_prompt = f"{character_name} ep{episode_number}"
+        graph_ctx, vector_ctx = self.build_rag_context(
+            session,
+            current_prompt=current_prompt,
+            character_name=character_name,
+            additional_entities=additional_entities,
+        )
+        return {
+            "graph": graph_ctx,
+            "vector": vector_ctx,
+            "stats": self.get_last_stats(),
+            "book_id": book_id,
+            "episode_number": episode_number,
+            "top_k": top_k,
+        }
 
 
 rag_service = GraphRAGService()
 
-__all__ = ["GraphRAGService", "rag_service"]
+__all__ = ["GraphRAGService", "rag_service", "Reranker"]

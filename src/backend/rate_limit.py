@@ -40,5 +40,6 @@ class RateLimiter:
 
 
 generate_limiter = RateLimiter(max_requests=10, window_seconds=60)
+stream_limiter = RateLimiter(max_requests=3, window_seconds=60)
 
-__all__ = ["RateLimiter", "generate_limiter"]
+__all__ = ["RateLimiter", "generate_limiter", "stream_limiter"]

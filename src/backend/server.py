@@ -64,13 +64,17 @@ restored_routers = [
     "src.backend.routers.novel",
     "src.backend.routers.commercial",
     "src.backend.routers.illustrations",
+    "src.backend.routers.multimedia",
 ]
 
 for mod_path in restored_routers:
     try:
         mod = importlib.import_module(mod_path)
         if hasattr(mod, "router"):
-            app.include_router(mod.router)
+            if mod_path == "src.backend.routers.multimedia":
+                app.include_router(mod.router, prefix="/multimedia", tags=["multimedia"])
+            else:
+                app.include_router(mod.router)
     except Exception as e:
         logger.warning(f"Could not load router {mod_path}: {e}")
 

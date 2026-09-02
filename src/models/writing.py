@@ -163,6 +163,13 @@ class FullAutoWorkflowResult(BaseModel):
     status: str = "success"
     easy_parameters: dict[str, Any] | None = None
 
+    # === EasyMode 由来結果フィールド ===
+    average_audit_score: float = 0.0
+    episodes_detail: list[dict[str, Any]] = Field(default_factory=list)
+    spice_guard_enabled: bool = False
+    illustrations: list[dict[str, Any]] = Field(default_factory=list)
+    marketing_pack: dict[str, Any] | None = None
+
     model_config = MODEL_CONFIG_DEFAULTS
 
 

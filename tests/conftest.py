@@ -10,6 +10,58 @@ from pathlib import Path
 import pytest
 from sqlalchemy.orm import Session
 
+CHROMADB_AVAILABLE = False
+try:
+    import chromadb
+    CHROMADB_AVAILABLE = True
+except Exception:
+    CHROMADB_AVAILABLE = False
+
+RANK_BM25_AVAILABLE = False
+try:
+    import rank_bm25
+    RANK_BM25_AVAILABLE = True
+except Exception:
+    RANK_BM25_AVAILABLE = False
+
+PGVECTOR_AVAILABLE = False
+try:
+    import importlib.util
+
+    if importlib.util.find_spec("pgvector") is not None:
+        PGVECTOR_AVAILABLE = True
+    if os.environ.get("AUTONOVEL_FORCE_PGVECTOR", "1") != "1":
+        PGVECTOR_AVAILABLE = False
+except Exception:
+    PGVECTOR_AVAILABLE = False
+
+REDIS_AVAILABLE = False
+try:
+    import redis.asyncio as redis
+
+    async def _check_redis():
+        try:
+            client = redis.Redis(host="localhost", port=6379, socket_connect_timeout=1)
+            await client.ping()
+            await client.close()
+            return True
+        except Exception:
+            return False
+
+    import asyncio
+
+    REDIS_AVAILABLE = asyncio.run(_check_redis())
+except Exception:
+    REDIS_AVAILABLE = False
+
+GEMINI_AVAILABLE = False
+try:
+    import google.generativeai
+
+    GEMINI_AVAILABLE = True
+except Exception:
+    GEMINI_AVAILABLE = False
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
@@ -76,6 +128,14 @@ def real_db_manager() -> Generator[Session, None, None]:
 def db_session(real_db_manager: Generator[Session, None, None]) -> Generator[Session, None, None]:
     """テスト用 DB セッションフィクスチャ (real_db_manager のエイリアス)."""
     return real_db_manager
+
+
+@pytest.fixture
+def tmp_chroma_path(tmp_path):
+    """Chromadb 用の一時ディレクトリパスを返す."""
+    p = tmp_path / "chroma"
+    p.mkdir()
+    return str(p)
 
 
 @pytest.fixture(autouse=True)

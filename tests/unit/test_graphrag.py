@@ -245,6 +245,35 @@ def test_age_client_methods(db_session):
     assert isinstance(neighbors, list)
 
 
+def test_age_client_init_graph_sqlstate_42p04(db_session):
+    """pgcode 42P04 (duplicate_graph) が出ても init_graph は True を返す."""
+    from unittest.mock import MagicMock, patch
+
+    from sqlalchemy.exc import IntegrityError
+
+    from src.services.age_client import AgeClient
+
+    fake_orig = MagicMock()
+    fake_orig.pgcode = "42P04"
+    err = IntegrityError("stmt", {}, fake_orig)
+
+    client = AgeClient(default_graph_name="dup_test")
+    with patch.object(db_session, "execute", side_effect=err), \
+         patch.object(db_session, "rollback"):
+        result = client.init_graph(db_session)
+    assert result is True
+
+
+def test_age_client_get_all_nodes_on_sqlite(db_session):
+    """SQLite 環境で get_all_nodes は例外ではなく空リストを返す."""
+    from src.services.age_client import AgeClient
+
+    client = AgeClient(default_graph_name="sqlite_test")
+    result = client.get_all_nodes(db_session)
+    assert result == []
+    assert isinstance(result, list)
+
+
 def test_rag_service_search_empty(db_session):
     """GraphRAGService が空クエリ時に空リストを返すことを検証."""
     service = GraphRAGService()

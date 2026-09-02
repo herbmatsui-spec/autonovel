@@ -51,7 +51,7 @@ class UIStateStore:
                 UIStateStore._notify(key, val)
 
     @staticmethod
-    def update_runtime(key: str, value: Any, notify: bool = True) -> None:
+    def update_runtime(key: str, value: Any, notify: bool = True, save: bool = True) -> None:
         """
         ランタイム状態の特定の属性を更新し、状態を保存する。
         """
@@ -60,7 +60,8 @@ class UIStateStore:
             setattr(state.runtime, key, value)
         else:
             raise AttributeError(f"AppRuntimeState has no attribute '{key}'")
-        SessionManager.save_state(state)
+        if save:
+            SessionManager.save_state(state)
         if notify:
             UIStateStore._notify(key, value)
 
@@ -289,7 +290,7 @@ class UIStateStore:
 
     @staticmethod
     def increment_rerun_count() -> None:
-        UIStateStore.update_runtime("rerun_count", UIStateStore.get_runtime().rerun_count + 1)
+        UIStateStore.update_runtime("rerun_count", UIStateStore.get_runtime().rerun_count + 1, save=False)
 
     @staticmethod
     def get_api_key_input() -> str:
