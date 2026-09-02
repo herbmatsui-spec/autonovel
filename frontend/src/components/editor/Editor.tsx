@@ -1,5 +1,6 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { InlineAiToolbar } from "./InlineAiToolbar";
+import { useNovelContext } from "../../context/NovelContext";
 
 interface EditorProps {
   content: string;
@@ -16,10 +17,34 @@ export const Editor: React.FC<EditorProps> = ({
   genre = "ハイファンタジー (R15)",
   onToast,
 }) => {
+  const { activeHighlight, setActiveHighlight } = useNovelContext();
   const [tab, setTab] = useState<"edit" | "preview">("edit");
   const [selectedText, setSelectedText] = useState("");
   const [selectionRange, setSelectionRange] = useState<{ start: number; end: number } | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // 矛盾診断ハイライトがアクティブになった際のフォーカス & 選択処理
+  useEffect(() => {
+    if (!activeHighlight?.conflictingText) return;
+
+    // プレビューモードならエディタタブへ自動切り替え
+    setTab("edit");
+
+    const target = activeHighlight.conflictingText;
+    const idx = content.indexOf(target);
+    if (idx !== -1 && textareaRef.current) {
+      const textarea = textareaRef.current;
+      textarea.focus();
+      textarea.setSelectionRange(idx, idx + target.length);
+      setSelectedText(target);
+      setSelectionRange({ start: idx, end: idx + target.length });
+
+      // スクロール位置の概算調整
+      const linesBefore = content.substring(0, idx).split("\n").length;
+      const lineHeight = 24;
+      textarea.scrollTop = Math.max(0, (linesBefore - 3) * lineHeight);
+    }
+  }, [activeHighlight, content]);
 
   // ルビ記法 ｜親文字《ルビ》 を HTML に変換する簡易パーサー
   const renderRuby = (text: string) => {
@@ -64,7 +89,43 @@ export const Editor: React.FC<EditorProps> = ({
     setSelectionRange(null);
   };
 
+  // ルビ記法挿入ヘルパー
+  const handleInsertRuby = () => {
+    if (!textareaRef.current) return;
+    const start = textareaRef.current.selectionStart;
+    const end = textareaRef.current.selectionEnd;
+    const selected = content.substring(start, end) || "親文字";
+    const rubySnippet = `｜${selected}《ルビ》`;
+    const before = content.substring(0, start);
+    const after = content.substring(end);
+    const updated = `${before}${rubySnippet}${after}`;
+    onChange(updated);
+    onToast?.("📖 ルビ記法（｜親文字《ルビ》）を挿入しました", "info");
+
+    // カーソル位置を《ルビ》の内部にフォーカス
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+        const cursorStart = start + 1 + selected.length + 1;
+        textareaRef.current.setSelectionRange(cursorStart, cursorStart + 2);
+      }
+    }, 50);
+  };
+
+  // キーボードショートカット (Ctrl+S / Ctrl+B)
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+      e.preventDefault();
+      onToast?.("💾 現在の内容を作業メモリに保持しました", "success");
+    } else if ((e.ctrlKey || e.metaKey) && e.key === "b") {
+      e.preventDefault();
+      handleInsertRuby();
+    }
+  };
+
   const charCount = content.replace(/\s/g, "").length;
+  const lineCount = content ? content.split("\n").length : 0;
+  const readingTimeMin = Math.ceil(charCount / 400); // 一般的な日本語読了速度: 400文字/分
 
   return (
     <div className="editor-container" style={{ display: "flex", flexDirection: "column", height: "100%" }}>
@@ -76,9 +137,11 @@ export const Editor: React.FC<EditorProps> = ({
           marginBottom: "8px",
           borderBottom: "1px solid var(--border-color)",
           paddingBottom: "8px",
+          flexWrap: "wrap",
+          gap: "8px",
         }}
       >
-        <div style={{ display: "flex", gap: "8px" }}>
+        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
           <button
             type="button"
             className={`btn-tab ${tab === "edit" ? "btn-tab--active" : ""}`}
@@ -95,14 +158,79 @@ export const Editor: React.FC<EditorProps> = ({
           >
             📖 ルビ・プレビュー
           </button>
+          {tab === "edit" && (
+            <button
+              type="button"
+              className="inline-ai-btn"
+              onClick={handleInsertRuby}
+              title="選択文字にルビ記法を挿入 (Ctrl+B)"
+              data-testid="btn-insert-ruby"
+            >
+              🏷️ ルビ挿入
+            </button>
+          )}
         </div>
-        <div style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
-          文字数: <strong>{charCount}</strong> 文字
+        <div style={{ fontSize: "0.82rem", color: "var(--text-muted)", display: "flex", gap: "12px" }}>
+          <span>行数: <strong>{lineCount}</strong> 行</span>
+          <span>文字数: <strong data-testid="editor-char-count">{charCount}</strong> 文字</span>
+          <span>読了目安: <strong>約{readingTimeMin || 1}</strong> 分</span>
         </div>
       </div>
 
+      {/* 矛盾フォーカス時の警告通知バー */}
+      {activeHighlight && (
+        <div
+          style={{
+            background: "rgba(239, 68, 68, 0.15)",
+            border: "1px solid rgba(239, 68, 68, 0.4)",
+            borderRadius: "6px",
+            padding: "8px 12px",
+            marginBottom: "8px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            fontSize: "0.85rem",
+          }}
+          data-testid="active-highlight-banner"
+        >
+          <div style={{ color: "#f87171" }}>
+            🚨 <strong>設定矛盾検出:</strong> 「{activeHighlight.conflictingText}」
+            {activeHighlight.suggestedFix && (
+              <span style={{ color: "var(--accent-cyan)", marginLeft: "8px" }}>
+                → 修正案: 「{activeHighlight.suggestedFix}」
+              </span>
+            )}
+          </div>
+          <div style={{ display: "flex", gap: "6px" }}>
+            {activeHighlight.suggestedFix && (
+              <button
+                type="button"
+                className="btn btn-primary"
+                style={{ padding: "3px 8px", fontSize: "0.75rem" }}
+                onClick={() => {
+                  if (content.includes(activeHighlight.conflictingText)) {
+                    onChange(content.replace(activeHighlight.conflictingText, activeHighlight.suggestedFix));
+                    setActiveHighlight(null);
+                    onToast?.("✨ 修正案を適用しました", "success");
+                  }
+                }}
+              >
+                1クリック修正
+              </button>
+            )}
+            <button
+              type="button"
+              style={{ background: "transparent", border: "none", color: "var(--text-muted)", cursor: "pointer" }}
+              onClick={() => setActiveHighlight(null)}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* テキスト選択時のインライン AI フローティングツールバー */}
-      {tab === "edit" && selectedText && selectionRange && (
+      {tab === "edit" && selectedText && selectionRange && !activeHighlight && (
         <InlineAiToolbar
           selectedText={selectedText}
           genre={genre}
@@ -125,6 +253,7 @@ export const Editor: React.FC<EditorProps> = ({
           value={content}
           onChange={(e) => onChange(e.target.value)}
           onSelect={handleSelect}
+          onKeyDown={handleKeyDown}
           readOnly={readOnly}
           placeholder="ここに本文を入力してください。文章を選択するとインラインAI推敲ツールバーが表示されます。"
           data-testid="editor-textarea"

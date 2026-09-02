@@ -8,7 +8,7 @@ from src.backend.database import UnitOfWork
 
 @pytest.mark.asyncio
 async def test_unit_of_work_commit():
-    from config.container import Container
+    from src.core.container import AppContainer as Container
 
     db = Container.db()
 
@@ -60,7 +60,7 @@ async def test_unit_of_work_commit():
 
 @pytest.mark.asyncio
 async def test_unit_of_work_rollback():
-    from config.container import Container
+    from src.core.container import AppContainer as Container
 
     db = Container.db()
 

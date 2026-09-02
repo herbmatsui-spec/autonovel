@@ -1,7 +1,5 @@
 """AutoNovel tasks package."""
 import logging
-import os
-from typing import Any, Optional
 
 from huey import crontab
 
@@ -72,10 +70,9 @@ def process_outbox_events():
 
 
 async def _process_outbox_events_async():
-    from config.container import get_container
     from src.backend.database.uow import UnitOfWork
-    container = get_container()
-    db = container.db()
+    from src.core.container import AppContainer
+    db = AppContainer.db()
 
     async with UnitOfWork(db=db) as uow:
         events = await uow.get_pending_outbox_events()
@@ -102,9 +99,8 @@ def _build_service_dict(container):
     """コンテナからワークフローに必要な全サービスを取得して辞書として返す。"""
     engine = container.engine()
     return {
-        "planner": container.planning_service(),
+        "planner": container.planner(),
         "writing": container.writer(),
-        "writing_service": container.writing_service(),
         "repo": container.repo(),
         "critique": container.critique(),
         "narrative": container.narrative(),
@@ -169,10 +165,9 @@ def execute_service_workflow(task_id: str, api_key: str, config_dict: dict, meth
 @with_trace_context
 def run_test_coro(task_id: str, message: str, trace_id: str | None = None):
     """テスト用のダミータスク"""
-    from config.container import get_container
     from src.backend.background import ProgressState
-    container = get_container()
-    db = container.db()
+    from src.core.container import AppContainer
+    db = AppContainer.db()
 
     class FakeEngine:
         def __init__(self):
@@ -190,21 +185,16 @@ def async_score_narrative_metrics(book_id: int, branch_id: int, ep_num: int, tra
     """エピソードのスコアリングをバックグラウンドで実行するタスク"""
     import asyncio
 
-    from config.container import get_container
-    from src.agents.audit import LogicalAuditor
     from src.backend.database.repositories.narrative_metrics_repo import NarrativeMetricRepository
     from src.services.narrative_scoring_service import NarrativeScoringService
 
     async def _run():
         try:
-            container = get_container()
-            async with container.async_session() as session:
-                auditor = LogicalAuditor(
-                    repo=container.repo_plot(),
-                    pm=container.prompt_manager(),
-                    generate_json=container.llm().generate_json,
-                    ctx_mgr=container.project_context()
-                )
+            from src.core.container import AppContainer
+            container = AppContainer()
+            db = container.db()
+            auditor = container.auditor()
+            async with db.get_session() as session:
                 metrics_repo = NarrativeMetricRepository(session)
                 service = NarrativeScoringService(session, auditor, metrics_repo)
                 success = await service.rescore_episode(book_id, branch_id, ep_num)
@@ -223,19 +213,13 @@ def enqueue_audit_after_write(book_id: int, write_from: int, write_to: int, trac
     """執筆完了後の論理監査 (Shadow Mode) をバックグラウンドで実行するタスク。"""
     import asyncio
 
-    from config.container import get_container
-    from src.agents.audit import LogicalAuditor
-
     async def _run():
         try:
-            container = get_container()
-            async with container.async_session() as session:
-                auditor = LogicalAuditor(
-                    repo=container.repo_plot(),
-                    pm=container.prompt_manager(),
-                    generate_json=container.llm().generate_json,
-                    ctx_mgr=container.project_context(),
-                )
+            from src.core.container import AppContainer
+            container = AppContainer()
+            db = container.db()
+            auditor = container.auditor()
+            async with db.get_session() as session:
                 for ep_num in range(write_from, write_to + 1):
                     await auditor.audit_episode(session, book_id, ep_num)
                 logger.info(

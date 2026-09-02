@@ -3,8 +3,11 @@ InfraContainer - インフラストラクチャ層のDIコンテナ
 config.container.Container の責務を引き継ぎ、DB・設定・ベクトルストア等を提供する。
 """
 
+from __future__ import annotations
+
 import asyncio
 import logging
+import os
 
 from dependency_injector import containers, providers
 
@@ -13,53 +16,59 @@ from config.project_context import GlobalConfig
 from schemas.config import GlobalConfigModel
 from src.backend.database.core import DatabaseManager
 
+# SPI ファクトリー
+from src.core.spi.llm.provider_factory import LLMProviderFactory
+from src.core.spi.vector_store.provider_factory import VectorStoreFactory
+from src.core.spi.image.provider_factory import ImageProviderFactory
+
 logger = logging.getLogger(__name__)
 
 
 class InfraContainer(containers.DeclarativeContainer):
     wiring_config = containers.WiringConfiguration(packages=["src", "src.kernels", "prompts"])
 
-    config = providers.Singleton(GlobalConfigModel.load)
+    config: providers.Singleton = providers.Singleton(GlobalConfigModel.load)
 
-    global_config = providers.Singleton(GlobalConfig)
+    global_config: providers.Singleton = providers.Singleton(GlobalConfig)
 
-    db = providers.Singleton(
+    db: providers.Singleton = providers.Singleton(
         DatabaseManager,
-        db_url=DATABASE_URL,
+        db_url=providers.Callable(lambda: os.getenv("DATABASE_URL") or DATABASE_URL),
     )
 
-    chroma_client_provider = providers.Singleton(
+    chroma_client_provider: providers.Singleton = providers.Singleton(
         "src.services.vector_store.ChromaClientProvider",
         db_path="./chroma_db",
     )
 
-    vector_store = providers.Singleton(
+    vector_store: providers.Singleton = providers.Singleton(
         "src.services.vector_store.ChromaVectorStore",
         client_provider=chroma_client_provider,
     )
 
-    audit_logger = providers.Singleton(lambda: None)
+    audit_logger: providers.Singleton = providers.Singleton(lambda: None)
 
-    cooldown = providers.Singleton(
+    cooldown: providers.Singleton = providers.Singleton(
         "src.backend.engine_utils.AdaptiveCooldown",
         base_sec=2.0,
         min_sec=0.5,
         max_sec=10.0,
     )
 
-    max_concurrent_api_calls = providers.Singleton(
+    max_concurrent_api_calls: providers.Singleton = providers.Singleton(
         lambda c: c.max_concurrent_api_calls,
         config,
     )
 
-    concurrency_semaphore = providers.Singleton(
+    concurrency_semaphore: providers.Singleton = providers.Singleton(
         asyncio.Semaphore,
         max_concurrent_api_calls,
     )
 
-# 後方互換エイリアス。
-# ref: tests/unit/test_infra_container.py および一部レガシーコードは
-#      infra 層のコンテナを `AppContainer` として参照する。
-#      アプリ層 (agents/engine) の DI は src.core.container.app.AppContainer2 を
-#      使うべきだが、infra 層だけを検証するテストのために infra.py にも
-#      同名を公開する。InfraContainer のプロバイダ群をそのまま解決する。
+    # SPI ファクトリーの登録
+    llm_provider_factory: providers.Singleton = providers.Singleton(LLMProviderFactory)
+    vector_store_provider_factory: providers.Singleton = providers.Singleton(VectorStoreFactory)
+    image_provider_factory: providers.Singleton = providers.Singleton(ImageProviderFactory)
+
+
+__all__ = ["InfraContainer"]

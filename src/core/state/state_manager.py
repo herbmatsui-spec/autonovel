@@ -8,7 +8,10 @@ import logging
 import pathlib
 from typing import Any, cast
 
-import streamlit as st
+try:
+    import streamlit as st
+except ImportError:
+    st = None
 from pydantic import BaseModel, Field
 
 # 外部スキーマ定義からインポート

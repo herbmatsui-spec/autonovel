@@ -1,6 +1,6 @@
-FROM postgres:16
+# Stage 1: Build Apache AGE extension
+FROM pgvector/pgvector:pg16 AS builder
 
-# Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     git \
@@ -10,20 +10,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Build and install pgvector
-RUN git clone --depth 1 --branch v0.8.0 https://github.com/pgvector/pgvector.git /tmp/pgvector \
-    && cd /tmp/pgvector \
-    && make \
-    && make install \
-    && rm -rf /tmp/pgvector
-
-# Build and install Apache AGE for PostgreSQL 16
-RUN git clone --depth 1 --branch master https://github.com/apache/age.git /tmp/age \
+RUN git clone --depth 1 --branch PG16 https://github.com/apache/age.git /tmp/age \
     && cd /tmp/age \
     && make \
-    && make install \
-    && rm -rf /tmp/age
+    && make install
 
-# Cleanup build packages
-RUN apt-get purge -y --auto-remove build-essential git postgresql-server-dev-16 flex bison \
-    && rm -rf /var/lib/apt/lists/*
+# Stage 2: Final lightweight image
+FROM pgvector/pgvector:pg16
+
+# Copy Apache AGE extension artifacts from builder
+COPY --from=builder /usr/lib/postgresql/16/lib/age.so /usr/lib/postgresql/16/lib/age.so
+COPY --from=builder /usr/share/postgresql/16/extension/age* /usr/share/postgresql/16/extension/
+COPY --from=builder /usr/lib/postgresql/16/lib/bitcode/age* /usr/lib/postgresql/16/lib/bitcode/

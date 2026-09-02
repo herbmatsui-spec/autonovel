@@ -103,8 +103,36 @@ Write-Host " Note: Press Ctrl+C in this window to stop all services." -Foregroun
 Write-Host "========================================================" -ForegroundColor Cyan
 Write-Host ""
 
-docker compose up --build
+# メモリ不足・BuildKitクラッシュを防ぐため、順次ビルドを実施
+Write-Host "[1/3] Building database (PostgreSQL + pgvector + Apache AGE)..." -ForegroundColor Yellow
+docker compose build db
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "[ERROR] Database image build failed." -ForegroundColor Red
+    Read-Host "Press Enter to exit..."
+    exit 1
+}
+
+Write-Host "[2/3] Building backend & worker..." -ForegroundColor Yellow
+docker compose build backend
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "[ERROR] Backend image build failed." -ForegroundColor Red
+    Read-Host "Press Enter to exit..."
+    exit 1
+}
+
+Write-Host "[3/3] Building frontend..." -ForegroundColor Yellow
+docker compose build frontend-dev
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "[ERROR] Frontend image build failed." -ForegroundColor Red
+    Read-Host "Press Enter to exit..."
+    exit 1
+}
+
+Write-Host ""
+Write-Host "[Docker] Starting all services..." -ForegroundColor Green
+docker compose up
 
 Write-Host ""
 Write-Host "[AutoNovel] Containers have stopped." -ForegroundColor Cyan
 Read-Host "Press Enter to exit..."
+

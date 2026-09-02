@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNovelContext } from "../context/NovelContext";
 import { useNovelGeneration } from "../hooks/useNovelGeneration";
+import { useStreamingWriter } from "../hooks/useStreamingWriter";
 import { ReversePlotBuilder } from "./ReversePlotBuilder";
 import { GeneratedPlotStructure } from "../types/reversePlot";
 import { GachaPlan, GachaResponse, DigestResponse } from "../types/easyMode";
@@ -19,6 +20,8 @@ export default function GeneratePanel({ onGenerated, onMessage }: GeneratePanelP
     setCurrentChapterText,
     generationState,
     setPlotStructure,
+    setChapters,
+    setCurrentEpNum,
     syncGenerationToEditor,
   } = useNovelContext();
 
@@ -31,6 +34,23 @@ export default function GeneratePanel({ onGenerated, onMessage }: GeneratePanelP
     (errMsg) => onMessage?.(errMsg)
   );
 
+  const {
+    isStreaming,
+    isPaused,
+    streamOutput,
+    startStreaming,
+    pauseStreaming,
+    resumeStreaming,
+    cancelStreaming,
+  } = useStreamingWriter({
+    onSuccess: (finalText) => {
+      syncGenerationToEditor(finalText);
+      onGenerated?.(finalText, []);
+    },
+    onMessage,
+    onError: (err) => onMessage?.(`❌ ${err}`),
+  });
+
   const [mode, setMode] = useState<'simple' | 'reverse'>('simple');
   const [showGachaModal, setShowGachaModal] = useState(false);
   const [gachaLoading, setGachaLoading] = useState(false);
@@ -40,13 +60,22 @@ export default function GeneratePanel({ onGenerated, onMessage }: GeneratePanelP
 
   const handleReversePlotComplete = (structure: GeneratedPlotStructure) => {
     setPlotStructure(structure);
-    const firstEp = structure.episodes?.[0];
-    if (firstEp) {
-      setCurrentChapterText(
-        `【第1話: ${firstEp.title}】\n${firstEp.one_line_summary}\n\n${currentChapterText || ""}`
-      );
+    if (structure.episodes && structure.episodes.length > 0) {
+      const mappedChapters = structure.episodes.map((ep) => ({
+        ep_num: ep.ep_num,
+        title: `第${ep.ep_num}話: ${ep.title}`,
+        summary: ep.one_line_summary,
+        content:
+          ep.ep_num === 1 && currentChapterText
+            ? currentChapterText
+            : `【第${ep.ep_num}話: ${ep.title}】\n${ep.one_line_summary}\n\n`,
+        is_catharsis: ep.is_catharsis,
+        status: (ep.ep_num === 1 ? "writing" : "draft") as "writing" | "draft",
+      }));
+      setChapters(mappedChapters);
+      setCurrentEpNum(1);
     }
-    onMessage?.(`✨ 逆算プロット構造を確定しました: ${structure.arcs.length}アーク, ${structure.episodes.length}話`);
+    onMessage?.(`✨ 逆算プロット構造を確定しました: ${structure.arcs.length}アーク, ${structure.episodes.length}話（章ツリーに反映完了）`);
     setMode('simple');
   };
 
@@ -102,6 +131,8 @@ export default function GeneratePanel({ onGenerated, onMessage }: GeneratePanelP
     }
   };
 
+  const isBusy = generationState.isGenerating || isStreaming;
+
   return (
     <section className="card" data-testid="generate-panel">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
@@ -114,7 +145,7 @@ export default function GeneratePanel({ onGenerated, onMessage }: GeneratePanelP
             className="btn btn-secondary"
             style={{ padding: "4px 8px", fontSize: "0.8rem" }}
             onClick={handleRunGacha}
-            disabled={generationState.isGenerating || gachaLoading}
+            disabled={isBusy || gachaLoading}
             title="AIが異なる3つの企画案を提案します"
             data-testid="btn-open-gacha"
           >
@@ -128,7 +159,7 @@ export default function GeneratePanel({ onGenerated, onMessage }: GeneratePanelP
           type="button"
           className={`btn ${mode === 'simple' ? 'btn-primary' : 'btn-secondary'}`}
           onClick={() => setMode('simple')}
-          disabled={generationState.isGenerating}
+          disabled={isBusy}
           data-testid="btn-submode-simple"
         >
           ⚙️ かんたんモード
@@ -137,7 +168,7 @@ export default function GeneratePanel({ onGenerated, onMessage }: GeneratePanelP
           type="button"
           className={`btn ${mode === 'reverse' ? 'btn-primary' : 'btn-secondary'}`}
           onClick={() => setMode('reverse')}
-          disabled={generationState.isGenerating}
+          disabled={isBusy}
           data-testid="btn-submode-reverse"
         >
           🔮 逆算プロットビルダー
@@ -146,93 +177,146 @@ export default function GeneratePanel({ onGenerated, onMessage }: GeneratePanelP
 
       {mode === 'simple' ? (
         <>
+          <div className="form-group">
+            <label className="label">作品ジャンル・レーティング</label>
+            <select
+              className="select"
+              value={character.genre}
+              onChange={(e) => setCharacter((prev) => ({ ...prev, genre: e.target.value }))}
+            >
+              <option value="ハイファンタジー (R15)">ハイファンタジー (R15)</option>
+              <option value="ダークファンタジー (R15)">ダークファンタジー (R15)</option>
+              <option value="異世界転生・バトル (R15)">異世界転生・バトル (R15)</option>
+            </select>
+          </div>
 
           <div className="form-group">
-        <label className="label">作品ジャンル・レーティング</label>
-        <select
-          className="select"
-          value={character.genre}
-          onChange={(e) => setCharacter((prev) => ({ ...prev, genre: e.target.value }))}
-        >
-          <option value="ファンタジー (R15)">ハイファンタジー (R15)</option>
-          <option value="ダークファンタジー (R15)">ダークファンタジー (R15)</option>
-          <option value="異世界転生 (R15)">異世界転生・バトル (R15)</option>
-        </select>
-      </div>
+            <label className="label">主人公の名前</label>
+            <input
+              className="input"
+              value={character.name}
+              onChange={(e) => setCharacter((prev) => ({ ...prev, name: e.target.value }))}
+            />
+          </div>
 
-      <div className="form-group">
-        <label className="label">主人公の名前</label>
-        <input
-          className="input"
-          value={character.name}
-          onChange={(e) => setCharacter((prev) => ({ ...prev, name: e.target.value }))}
+          <div className="form-group">
+            <label className="label">性格・特徴</label>
+            <input
+              className="input"
+              value={character.personality}
+              onChange={(e) => setCharacter((prev) => ({ ...prev, personality: e.target.value }))}
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="label">特殊能力・スキル</label>
+            <input
+              className="input"
+              value={character.ability}
+              onChange={(e) => setCharacter((prev) => ({ ...prev, ability: e.target.value }))}
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="label">執筆対象の冒頭 / 前話プロンプト</label>
+            <textarea
+              className="textarea"
+              rows={4}
+              value={currentChapterText}
+              onChange={(e) => setCurrentChapterText(e.target.value)}
+            />
+          </div>
+
+          {/* ストリーミング生成中のコントロールバー */}
+          {isStreaming && (
+            <div
+              style={{
+                background: "rgba(6, 182, 212, 0.15)",
+                border: "1px solid var(--accent-cyan)",
+                borderRadius: "8px",
+                padding: "10px 14px",
+                marginBottom: "14px",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+              data-testid="streaming-control-bar"
+            >
+              <div style={{ fontSize: "0.85rem", color: "var(--accent-cyan)", display: "flex", alignItems: "center", gap: "6px" }}>
+                <span>⚡ リアルタイム執筆中 ({streamOutput.length} 文字)</span>
+                {isPaused && <span style={{ color: "#fbbf24", fontWeight: 700 }}>(一時停止中)</span>}
+              </div>
+              <div style={{ display: "flex", gap: "6px" }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{ padding: "4px 8px", fontSize: "0.75rem" }}
+                  onClick={isPaused ? resumeStreaming : pauseStreaming}
+                  data-testid="btn-pause-stream"
+                >
+                  {isPaused ? "▶ 再開" : "⏸ 一時停止"}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-danger"
+                  style={{ padding: "4px 8px", fontSize: "0.75rem" }}
+                  onClick={cancelStreaming}
+                  data-testid="btn-cancel-stream"
+                >
+                  ⏹ 中止
+                </button>
+              </div>
+            </div>
+          )}
+
+          {generationState.statusText && !isStreaming && (
+            <div style={{ marginBottom: "12px", fontSize: "0.9rem", color: "var(--text-muted)" }}>
+              {generationState.statusText}
+            </div>
+          )}
+
+          <div style={{ display: "flex", gap: "8px" }}>
+            <button
+              className="btn btn-primary"
+              style={{ flex: 1.2, backgroundColor: "var(--accent-cyan)", borderColor: "var(--accent-cyan)", color: "#000", fontWeight: 700 }}
+              onClick={() => startStreaming()}
+              disabled={isBusy}
+              data-testid="btn-stream-generate"
+              title="SSEストリーミングで1文字ずつリアルタイム執筆"
+            >
+              {isStreaming ? "⚡ ストリーミング執筆中..." : "⚡ リアルタイム速筆 (SSE)"}
+            </button>
+
+            <button
+              className="btn btn-secondary"
+              style={{ flex: 1 }}
+              onClick={startGeneration}
+              disabled={isBusy}
+              data-testid="btn-standard-generate"
+            >
+              {generationState.isGenerating ? "🪄 執筆中..." : "🪄 かんたん執筆開始"}
+            </button>
+
+            {generationState.isGenerating && !isStreaming && (
+              <button
+                type="button"
+                className="btn btn-danger"
+                onClick={() => cancelGeneration(generationState.currentTaskId)}
+                title="生成タスクを中止します"
+              >
+                ⏹ 中止
+              </button>
+            )}
+          </div>
+        </>
+      ) : (
+        <ReversePlotBuilder
+          onComplete={handleReversePlotComplete}
+          onCancel={() => setMode('simple')}
+          targetEpisodes={10}
+          genre={character.genre}
         />
-      </div>
-
-      <div className="form-group">
-        <label className="label">性格・特徴</label>
-        <input
-          className="input"
-          value={character.personality}
-          onChange={(e) => setCharacter((prev) => ({ ...prev, personality: e.target.value }))}
-        />
-      </div>
-
-      <div className="form-group">
-        <label className="label">特殊能力・スキル</label>
-        <input
-          className="input"
-          value={character.ability}
-          onChange={(e) => setCharacter((prev) => ({ ...prev, ability: e.target.value }))}
-        />
-      </div>
-
-      <div className="form-group">
-        <label className="label">執筆対象の冒頭 / 前話プロンプト</label>
-        <textarea
-          className="textarea"
-          rows={4}
-          value={currentChapterText}
-          onChange={(e) => setCurrentChapterText(e.target.value)}
-        />
-      </div>
-
-      {generationState.statusText && (
-        <div style={{ marginBottom: "12px", fontSize: "0.9rem", color: "var(--text-muted)" }}>
-          {generationState.statusText}
-        </div>
       )}
-
-      <div style={{ display: "flex", gap: "8px" }}>
-        <button
-          className="btn btn-primary"
-          style={{ flex: 1 }}
-          onClick={startGeneration}
-          disabled={generationState.isGenerating}
-        >
-          {generationState.isGenerating ? "🪄 執筆中..." : "🪄 かんたん執筆開始"}
-        </button>
-
-        {generationState.isGenerating && (
-          <button
-            type="button"
-            className="btn btn-danger"
-            onClick={() => cancelGeneration(generationState.currentTaskId)}
-            title="生成タスクを中止します"
-          >
-            ⏹ 中止
-          </button>
-        )}
-      </div>
-    </>
-  ) : (
-    <ReversePlotBuilder
-      onComplete={handleReversePlotComplete}
-      onCancel={() => setMode('simple')}
-      targetEpisodes={10}
-      genre={character.genre}
-    />
-  )}
 
   {/* 3案企画ガチャモーダル */}
   {showGachaModal && (

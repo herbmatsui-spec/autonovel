@@ -35,13 +35,15 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: autonovel_worker
-    command: ["python", "-m", "huey.bin.huey_consumer", "src.backend.tasks.huey.huey", "-w", "2", "-k", "threadpool"]
+    command: ["python", "-m", "huey.bin.huey_consumer", "src.backend.tasks.huey.huey", "-w", "2", "-k", "thread"]
     environment:
       - PYTHONPATH=/app
       - DATABASE_URL=postgresql://autonovel:autonovel@db:5432/autonovel
       - REDIS_URL=redis://redis:6379/0
       - HUEY_BACKEND=redis
       - LOG_LEVEL=INFO
+    healthcheck:
+      disable: true
 #    volumes:
 #      - ./src:/app/src
     depends_on:

@@ -40,6 +40,14 @@ COPY --from=builder /root/.local /root/.local
 
 # アプリケーションソースをコピー
 COPY src/ ./src/
+COPY config/ ./config/
+COPY database/ ./database/
+COPY formatters/ ./formatters/
+COPY plugins/ ./plugins/
+COPY prompts/ ./prompts/
+COPY schemas/ ./schemas/
+COPY alembic/ ./alembic/
+COPY alembic.ini ./
 COPY pyproject.toml ./
 COPY requirements.txt ./
 

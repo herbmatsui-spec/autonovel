@@ -79,3 +79,22 @@ export async function generateNextBeats(input: NextBeatsRequest): Promise<NextBe
   });
   return handleResponse<NextBeatsResponse>(res);
 }
+
+/**
+ * 矛盾検出された課題の解決・伏線化・例外登録
+ */
+export async function resolveIssue(
+  issueId: string | number,
+  action: "Auto-Fix" | "Foreshadowing" | "Ignore",
+  apiKey: string = "default-key"
+): Promise<{ status: string; message: string }> {
+  const res = await fetch(`/api/issues/${issueId}/resolve`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+    },
+    body: JSON.stringify({ action }),
+  });
+  return handleResponse<{ status: string; message: string }>(res);
+}

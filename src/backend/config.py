@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     # サーバー基本設定
     APP_NAME: str = "AutoNovel"
     APP_VERSION: str = "4.0.0"
-    APP_ENV: Literal["development", "production", "testing"] = "development"
+    APP_ENV: Literal["development", "production", "testing", "local", "staging"] = "development"
     PORT: int = 8200
     HOST: str = "0.0.0.0"
 
@@ -57,7 +57,7 @@ class Settings(BaseSettings):
 
     # ロギング設定
     LOG_LEVEL: str = "INFO"
-    LOG_FORMAT: Literal["json", "console"] = "console"
+    LOG_FORMAT: Literal["json", "console", "text"] = "console"
 
     # LLM設定 (OpenAI / Gemini 互換)
     LLM_PROVIDER: Literal["openai", "gemini", "mock"] = "openai"

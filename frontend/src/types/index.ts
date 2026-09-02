@@ -19,6 +19,16 @@ export interface Chapter {
   content: string;
 }
 
+export interface ChapterItem {
+  id?: number;
+  ep_num: number;
+  title: string;
+  summary?: string;
+  content: string;
+  is_catharsis?: boolean;
+  status?: "draft" | "writing" | "completed";
+}
+
 export interface GenerationState {
   isGenerating: boolean;
   statusText: string;
@@ -30,3 +40,5 @@ export interface GenerationState {
 }
 
 export * from "./editor";
+export * from "./api.generated";
+
