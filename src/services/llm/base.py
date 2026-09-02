@@ -37,6 +37,10 @@ class BaseLLMAdapter(ABC):
         raise NotImplementedError
         yield ""  # generator 型ヒント用
 
+    def cancel(self) -> None:
+        """進行中のストリームをキャンセルするフック。既定は何もしない。"""
+        return None
+
     def generate(
         self,
         prompt: str,

@@ -10,12 +10,51 @@ import re
 from typing import Any
 
 from sqlalchemy import text
+from sqlalchemy.exc import DBAPIError, IntegrityError, ProgrammingError
 from sqlalchemy.orm import Session
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 
 from src.backend.config import settings
 from src.backend.logging_config import get_logger
 
 logger = get_logger("age_client")
+
+_RETRY_SQLSTATES = {
+    "40001",  # serialization_failure
+    "40P01",  # deadlock_detected
+    "08006",  # connection_failure
+    "57P03",  # cannot_connect_now
+    "42P04",  # duplicate_graph (idempotent init)
+    "23505",  # unique_violation
+}
+
+
+def _is_retryable_db_error(exc: BaseException) -> bool:
+    """SQLSTATE コードでリトライ可否を判定する."""
+    if isinstance(exc, (IntegrityError, ProgrammingError)):
+        pgcode = getattr(getattr(exc, "orig", None), "pgcode", None)
+        if pgcode in _RETRY_SQLSTATES:
+            return True
+    if isinstance(exc, DBAPIError):
+        pgcode = getattr(getattr(exc, "orig", None), "pgcode", None)
+        if pgcode in _RETRY_SQLSTATES:
+            return True
+    return False
+
+
+def _safe_retry(max_attempts: int = 3):
+    """tenacity ベースの SQLSTATE 駆動リトライデコレータを返す."""
+    return retry(
+        reraise=True,
+        stop=stop_after_attempt(max_attempts),
+        wait=wait_exponential(multiplier=0.5, min=0.5, max=4.0),
+        retry=retry_if_exception_type((DBAPIError, IntegrityError, ProgrammingError)),
+    )
 
 
 class AgeClient:
@@ -24,8 +63,9 @@ class AgeClient:
     def __init__(self, default_graph_name: str | None = None) -> None:
         self.default_graph_name = default_graph_name or settings.AGE_GRAPH_NAME
 
+    @_safe_retry(max_attempts=3)
     def init_graph(self, session: Session, graph_name: str | None = None) -> bool:
-        """グラフを作成・初期化する."""
+        """グラフを作成・初期化する (idempotent)."""
         gname = graph_name or self.default_graph_name
         try:
             # AGE 拡張をロード
@@ -35,12 +75,16 @@ class AgeClient:
             session.commit()
             logger.info("Graph '%s' created successfully.", gname)
             return True
+        except (IntegrityError, ProgrammingError) as e:
+            session.rollback()
+            pgcode = getattr(getattr(e, "orig", None), "pgcode", None)
+            if pgcode == "42P04":
+                logger.debug("Graph '%s' already exists (pgcode=42P04).", gname)
+                return True
+            logger.warning("Failed to create graph '%s' (pgcode=%s): %s", gname, pgcode, e)
+            return False
         except Exception as e:
             session.rollback()
-            # すでに存在している場合は正常
-            if "already exists" in str(e).lower():
-                logger.debug("Graph '%s' already exists.", gname)
-                return True
             logger.warning("Failed to create graph '%s': %s", gname, e)
             return False
 
@@ -62,6 +106,7 @@ class AgeClient:
             logger.error("Error executing Cypher query: %s | Query: %s", e, cypher_query)
             raise
 
+    @_safe_retry(max_attempts=3)
     def upsert_node(
         self,
         session: Session,
@@ -88,6 +133,7 @@ class AgeClient:
             logger.warning("Failed to upsert node (label=%s, name=%s): %s", label, name, e)
             return False
 
+    @_safe_retry(max_attempts=3)
     def upsert_edge(
         self,
         session: Session,
@@ -124,6 +170,41 @@ class AgeClient:
                 e,
             )
             return False
+
+    def get_all_nodes(
+        self, session: Session, graph_name: str | None = None, limit: int = 5000
+    ) -> list[dict[str, Any]]:
+        """グラフ内の全ノードの name と labels を取得する.
+
+        AGE 環境 (PostgreSQL) 以外では空リストを返す。
+        cypher クエリはパラメータ化できないので内部用限定。
+        """
+        gname = graph_name or self.default_graph_name
+        bind = session.get_bind()
+        try:
+            dialect = bind.dialect.name if bind is not None else ""
+        except Exception:
+            dialect = ""
+        if dialect != "postgresql":
+            return []
+        cypher = f"MATCH (n) RETURN n.name AS name, labels(n) AS labels LIMIT {int(limit)}"
+        sql = f"SELECT * FROM cypher('{gname}', $$ {cypher} $$) as (name agtype, labels agtype);"
+        try:
+            result = session.execute(text(sql))
+            rows = []
+            for row in result:
+                raw_name = row[0]
+                raw_labels = row[1]
+                name = str(raw_name).strip('"') if raw_name is not None else ""
+                rows.append({"name": name, "labels": str(raw_labels) if raw_labels else ""})
+            return rows
+        except Exception as e:
+            logger.debug("get_all_nodes unavailable (probably no AGE): %s", e)
+            try:
+                session.rollback()
+            except Exception:
+                pass
+            return []
 
     def get_neighbors(
         self,

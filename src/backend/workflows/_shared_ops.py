@@ -1,5 +1,5 @@
 import logging
-from typing import Any
+from typing import Any, Callable, Awaitable
 
 from src.shared.utils import StatusReporter
 
@@ -92,6 +92,35 @@ async def run_pipeline_with_retry(
             reporter=reporter,
             is_easy_mode=is_easy_mode,
         )
+        total_chars += retry_chars
+        failed = still_failed
+
+    return total_chars, failed
+
+
+async def execute_with_retry(
+    operation: Callable[..., Awaitable[tuple[int, list[Any]]]],
+    reporter: StatusReporter,
+    max_retries: int = 1,
+    failure_message: str = "不備を検知",
+    retry_message: str = "自動修復中...",
+) -> tuple[int, list[Any]]:
+    """
+    汎用リトライ実行関数
+    - operation: 実行する非同期関数 (chars_count, failed_list) を返す
+    - reporter: 進捗レポーター
+    - max_retries: 最大リトライ回数
+    - failure_message: 失敗時のメッセージプレフィックス
+    - retry_message: リトライ時のメッセージ
+    """
+    total_chars, failed = await operation()
+
+    for attempt in range(max_retries):
+        if not failed or reporter.state.should_stop():
+            break
+
+        reporter.report(f"🔄 {len(failed)}件の{failure_message}。{retry_message}", "warning")
+        retry_chars, still_failed = await operation()
         total_chars += retry_chars
         failed = still_failed
 

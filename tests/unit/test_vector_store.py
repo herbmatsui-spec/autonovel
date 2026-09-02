@@ -3,6 +3,7 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
+from tests.conftest import CHROMADB_AVAILABLE, RANK_BM25_AVAILABLE
 from src.services.vector_store import (
     BaseVectorStore,
     CollectionType,
@@ -10,6 +11,8 @@ from src.services.vector_store import (
     DEFAULT_COLLECTIONS,
     ChromaClientProvider,
     ChromaVectorStore,
+    HAS_CHROMA,
+    HAS_BM25,
 )
 
 
@@ -305,10 +308,11 @@ class TestChromaVectorStore:
         result = self.store.list_collections()
         assert set(result) == {"col1", "col2"}
 
+    @pytest.mark.skipif(not RANK_BM25_AVAILABLE, reason="rank_bm25 not available")
     def test_build_bm25_index(self):
         """Test BM25 index building."""
         with patch("src.services.vector_store.HAS_BM25", True):
-            with patch("src.services.vector_store.BM25Okapi") as mock_bm25:
+            with patch("rank_bm25.BM25Okapi") as mock_bm25:
                 mock_instance = MagicMock()
                 mock_bm25.return_value = mock_instance
 
@@ -317,12 +321,14 @@ class TestChromaVectorStore:
                 assert "test" in self.store._bm25_indexes
                 mock_bm25.assert_called_once()
 
+    @pytest.mark.skipif(not RANK_BM25_AVAILABLE, reason="rank_bm25 not available")
     def test_build_bm25_index_unavailable(self):
         """Test BM25 index building when BM25 unavailable."""
         with patch("src.services.vector_store.HAS_BM25", False):
             self.store._build_bm25_index("test", ["doc1"], ["1"])
             assert "test" not in self.store._bm25_indexes
 
+    @pytest.mark.skipif(not RANK_BM25_AVAILABLE, reason="rank_bm25 not available")
     @pytest.mark.asyncio
     async def test_add_documents_with_bm25_new(self):
         """Test adding documents with BM25 for new collection."""
@@ -336,6 +342,7 @@ class TestChromaVectorStore:
 
         self.store._build_bm25_index.assert_called_once()
 
+    @pytest.mark.skipif(not RANK_BM25_AVAILABLE, reason="rank_bm25 not available")
     @pytest.mark.asyncio
     async def test_add_documents_with_bm25_existing(self):
         """Test adding documents with BM25 for existing collection."""
@@ -350,6 +357,7 @@ class TestChromaVectorStore:
 
         self.store._build_bm25_index.assert_called_once()
 
+    @pytest.mark.skipif(not RANK_BM25_AVAILABLE, reason="rank_bm25 not available")
     @pytest.mark.asyncio
     async def test_hybrid_search(self):
         """Test hybrid vector + BM25 search."""

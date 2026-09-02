@@ -26,6 +26,7 @@ asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 markers = [
     "asyncio: pytest-asyncio で実行する非同期テスト",
+    "perf: パフォーマンステスト (CI では通常 skip)",
 ]
 
 [tool.coverage.report]
@@ -76,6 +77,12 @@ dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.23",
     "pytest-cov>=4.1",
+]
+rag = [
+    "chromadb>=1.5.0,<2.0.0",
+    "rank-bm25>=0.2.2",
+    "pgvector>=0.3.0",
+    "sentence-transformers>=2.6.0",
 ]
 
 [tool.setuptools]

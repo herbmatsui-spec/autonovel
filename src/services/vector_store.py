@@ -27,8 +27,12 @@ except Exception as e:
     )
     HAS_BM25 = False
 
+# InMemoryFallbackStore is always available (pure Python, no third-party deps).
+HAS_INMEM = True
+
 
 from abc import ABC, abstractmethod
+from typing import Protocol
 
 
 class BaseVectorStore(ABC):
@@ -62,6 +66,35 @@ class BaseVectorStore(ABC):
     @abstractmethod
     async def clear_collection(self, collection_name: str):
         pass
+
+
+class VectorStoreProtocol(Protocol):
+    """Duck-typed protocol mirroring BaseVectorStore.
+
+    Use this for type hints where accepting either the abstract base or a
+    runtime-compatible class is desired (e.g. tests injecting a stub).
+    """
+
+    async def add_documents(
+        self,
+        collection_name: str,
+        ids: list[str],
+        documents: list[str],
+        embeddings: list[list[float]],
+        metadatas: list[dict[str, Any]] | None = None,
+    ) -> None: ...
+
+    async def search(
+        self,
+        collection_name: str,
+        query_embedding: list[float],
+        top_k: int = 5,
+        where: dict[str, Any] | None = None,
+    ) -> list[dict[str, Any]]: ...
+
+    async def delete_by_id(self, collection_name: str, ids: list[str]) -> None: ...
+
+    async def clear_collection(self, collection_name: str) -> None: ...
 
 
 class CollectionType(Enum):
@@ -186,8 +219,16 @@ class ChromaClientProvider:
     シングルトンとして動作し、接続の再利用と遅延初期化を提供する。
     """
 
-    def __init__(self, db_path: str = "./chroma_db"):
+    def __init__(
+        self,
+        db_path: str = "./chroma_db",
+        *,
+        host: str | None = None,
+        port: int | None = None,
+    ) -> None:
         self.db_path = db_path
+        self.host = host
+        self.port = port
         self._client = None
 
     def get_client(self, retries: int = 3, base_delay: float = 0.5):
@@ -208,10 +249,16 @@ class ChromaClientProvider:
 
         for attempt in range(retries):
             try:
-                logger.info(
-                    f"[CHROMA PROVIDER] Initializing ChromaDB client at {self.db_path} (Attempt {attempt + 1}/{retries})"
-                )
-                self._client = chromadb.PersistentClient(path=self.db_path)
+                if self.host:
+                    logger.info(
+                        f"[CHROMA PROVIDER] Initializing ChromaDB HTTP client at {self.host}:{self.port} (Attempt {attempt + 1}/{retries})"
+                    )
+                    self._client = chromadb.HttpClient(host=self.host, port=self.port)
+                else:
+                    logger.info(
+                        f"[CHROMA PROVIDER] Initializing ChromaDB client at {self.db_path} (Attempt {attempt + 1}/{retries})"
+                    )
+                    self._client = chromadb.PersistentClient(path=self.db_path)
                 return self._client
             except Exception as e:
                 delay = base_delay * (2**attempt)
@@ -334,6 +381,12 @@ class ChromaVectorStore(BaseVectorStore):
         """コレクションタイプから設定を取得"""
         return DEFAULT_COLLECTIONS[collection_type]
 
+    _CHROMA_MAX_BATCH = 416
+
+    @staticmethod
+    def _chunks_of(items: list, size: int) -> list[list]:
+        return [items[i:i + size] for i in range(0, len(items), size)]
+
     async def add_documents(
         self,
         collection_name: str,
@@ -342,15 +395,34 @@ class ChromaVectorStore(BaseVectorStore):
         embeddings: list[list[float]],
         metadatas: list[dict[str, Any]] | None = None,
     ):
-        """ドキュメントをベクトルDBに追加する"""
+        """ドキュメントをベクトルDBに追加する (ChromaDB のバッチ上限を超える場合は分割)."""
         collection = self.get_collection(collection_name)
         if not collection:
             logger.warning(
                 f"[VECTOR STORE] Skipping add_documents: Collection '{collection_name}' not available."
             )
             return
-        collection.add(ids=ids, documents=documents, embeddings=embeddings, metadatas=metadatas)
-        logger.info(f"[VECTOR STORE] Added {len(ids)} documents to collection '{collection_name}'")
+        n = len(ids)
+        for start in range(0, n, self._CHROMA_MAX_BATCH):
+            end = start + self._CHROMA_MAX_BATCH
+            chunk_ids = ids[start:end]
+            chunk_docs = documents[start:end]
+            chunk_embs = embeddings[start:end]
+            chunk_metas = metadatas[start:end] if metadatas else None
+            if chunk_metas is not None:
+                collection.add(
+                    ids=chunk_ids,
+                    documents=chunk_docs,
+                    embeddings=chunk_embs,
+                    metadatas=chunk_metas,
+                )
+            else:
+                collection.add(
+                    ids=chunk_ids,
+                    documents=chunk_docs,
+                    embeddings=chunk_embs,
+                )
+        logger.info(f"[VECTOR STORE] Added {n} documents to collection '{collection_name}'")
 
     async def search(
         self,
@@ -441,12 +513,34 @@ class ChromaVectorStore(BaseVectorStore):
             count = collection.count()
             return {"count": count, "name": collection_name}
         except Exception as e:
-            logger.error(f"[VECTOR STORE] Failed to get stats for '{collection_name}': {e}")
-            return {"count": 0, "error": str(e)}
+            logger.debug(
+                f"[VECTOR STORE] collection.count() failed, falling back to peek: {e}"
+            )
+            try:
+                peeked = collection.peek(limit=1)
+                exists = bool(peeked and peeked.get("ids"))
+                return {"count": -1 if not exists else 1, "name": collection_name}
+            except Exception as e2:
+                logger.error(
+                    f"[VECTOR STORE] Failed to get stats for '{collection_name}': {e2}"
+                )
+                return {"count": 0, "error": str(e2)}
 
     def list_collections(self) -> list[str]:
         """初期化済みコレクションの一覧を取得"""
         return list(self._initialized_collections)
+
+    def audit_collection_coverage(
+        self, collection_types: list[CollectionType] | None = None
+    ) -> dict[str, bool]:
+        """すべてのデフォルト CollectionType を初期化し、成否を返す.
+
+        Returns:
+            {CollectionType.name: success_bool} のマップ
+        """
+        if collection_types is None:
+            collection_types = list(DEFAULT_COLLECTIONS.keys())
+        return self.initialize_collections(collection_types)
 
     def _build_bm25_index(self, collection_name: str, documents: list[str], doc_ids: list[str]):
         """BM25インデックスを構築または更新する"""
@@ -528,6 +622,12 @@ class ChromaVectorStore(BaseVectorStore):
         Returns:
             結合スコア順の検索結果リスト
         """
+        # alpha clamp with warning
+        if alpha < 0.0 or alpha > 1.0:
+            logger.warning(
+                f"[VECTOR STORE] hybrid_search alpha={alpha} out of [0,1], clamping."
+            )
+            alpha = max(0.0, min(1.0, alpha))
         # ベクトル検索（より多く取得して後でフィルタリング）
         vector_results = await self.search_with_score(
             collection_name, query_embedding, top_k * 3, where, min_score=0.0
@@ -653,3 +753,175 @@ class ChromaVectorStore(BaseVectorStore):
             logger.error(
                 f"[VECTOR STORE] Failed to rebuild BM25 index for '{collection_name}': {e}"
             )
+
+    async def rebuild_bm25_index_async(self, collection_name: str) -> None:
+        """``rebuild_bm25_index`` の非同期版. 内部で ``asyncio.to_thread`` を使用."""
+        import asyncio
+
+        await asyncio.to_thread(self.rebuild_bm25_index, collection_name)
+
+
+class InMemoryFallbackStore(BaseVectorStore):
+    """Pure-Python in-memory vector store. Used when chromadb is unavailable.
+
+    Suitable for small corpora (≤ a few thousand documents) and tests.
+    Each collection maintains a FIFO ring buffer capped at ``max_items_per_collection``.
+    """
+
+    def __init__(self, max_items_per_collection: int = 10000) -> None:
+        self._max = max(1, int(max_items_per_collection))
+        self._data: dict[str, list[tuple[str, str, list[float], dict[str, Any]]]] = {}
+
+    @staticmethod
+    def _cosine(a: list[float], b: list[float]) -> float:
+        if not a or not b or len(a) != len(b):
+            return 0.0
+        dot = sum(x * y for x, y in zip(a, b))
+        na = sum(x * x for x in a) ** 0.5
+        nb = sum(x * x for x in b) ** 0.5
+        if not na or not nb:
+            return 0.0
+        return dot / (na * nb)
+
+    async def add_documents(
+        self,
+        collection_name: str,
+        ids: list[str],
+        documents: list[str],
+        embeddings: list[list[float]],
+        metadatas: list[dict[str, Any]] | None = None,
+    ) -> None:
+        if not ids:
+            return
+        bucket = self._data.setdefault(collection_name, [])
+        for i, (doc_id, doc, emb) in enumerate(zip(ids, documents, embeddings)):
+            meta = metadatas[i] if metadatas and i < len(metadatas) else {}
+            bucket.append((doc_id, doc, list(emb), dict(meta)))
+        # Trim from head (FIFO).
+        if len(bucket) > self._max:
+            del bucket[: len(bucket) - self._max]
+
+    async def search(
+        self,
+        collection_name: str,
+        query_embedding: list[float],
+        top_k: int = 5,
+        where: dict[str, Any] | None = None,
+    ) -> list[dict[str, Any]]:
+        bucket = self._data.get(collection_name, [])
+        scored: list[tuple[float, str, str, dict[str, Any]]] = []
+        for doc_id, doc, emb, meta in bucket:
+            if where and not _metadata_matches(meta, where):
+                continue
+            sim = self._cosine(query_embedding, emb)
+            scored.append((sim, doc_id, doc, meta))
+        scored.sort(key=lambda x: x[0], reverse=True)
+        out = []
+        for sim, doc_id, doc, meta in scored[: max(0, top_k)]:
+            out.append(
+                {
+                    "id": doc_id,
+                    "content": doc,
+                    "metadata": meta,
+                    "distance": 1.0 - sim,
+                    "similarity": sim,
+                }
+            )
+        return out
+
+    async def delete_by_id(self, collection_name: str, ids: list[str]) -> None:
+        bucket = self._data.get(collection_name)
+        if not bucket:
+            return
+        target = set(ids)
+        self._data[collection_name] = [
+            (i, d, e, m) for (i, d, e, m) in bucket if i not in target
+        ]
+
+    async def clear_collection(self, collection_name: str) -> None:
+        self._data.pop(collection_name, None)
+
+    async def hybrid_search(
+        self,
+        collection_name: str,
+        query_text: str,
+        query_embedding: list[float],
+        top_k: int = 5,
+        where: dict[str, Any] | None = None,
+        alpha: float = 0.5,
+        min_score: float = 0.0,
+    ) -> list[dict[str, Any]]:
+        """Hybrid search that gracefully degrades to vector-only.
+
+        BM25 is not supported in the in-memory store; we just return vector results
+        with ``combined_score = vector_similarity`` for API compatibility.
+        """
+        results = await self.search(
+            collection_name, query_embedding, top_k=top_k, where=where
+        )
+        for r in results:
+            sim = r.get("similarity", 0.0)
+            r["vector_similarity"] = sim
+            r["bm25_score"] = 0.0
+            r["normalized_bm25"] = 0.0
+            r["combined_score"] = sim
+        return [r for r in results if r["combined_score"] >= min_score]
+
+
+def _metadata_matches(meta: dict[str, Any], where: dict[str, Any]) -> bool:
+    for k, v in (where or {}).items():
+        if meta.get(k) != v:
+            return False
+    return True
+
+
+def get_default_store(
+    db_path: str | None = None,
+    *,
+    max_items_per_collection: int = 10000,
+) -> BaseVectorStore:
+    """Construct a default vector store based on environment / availability.
+
+    Honors the ``AUTONOVEL_RAG_MODE`` env / settings:
+      - "chroma": always use ChromaVectorStore (raises if unavailable)
+      - "memory": always use InMemoryFallbackStore
+      - "auto"  : use ChromaVectorStore when chromadb is importable, else memory
+    """
+    import os
+
+    from src.backend.config import settings
+
+    mode = getattr(settings, "AUTONOVEL_RAG_MODE", "auto") or os.environ.get(
+        "AUTONOVEL_RAG_MODE", "auto"
+    )
+    if mode == "memory":
+        return InMemoryFallbackStore(max_items_per_collection=max_items_per_collection)
+    if mode == "chroma":
+        if not HAS_CHROMA:
+            raise RuntimeError(
+                "AUTONOVEL_RAG_MODE=chroma but chromadb is not installed"
+            )
+        provider = ChromaClientProvider(db_path or settings.CHROMA_DB_PATH)
+        return ChromaVectorStore(provider)
+    # auto
+    if HAS_CHROMA:
+        provider = ChromaClientProvider(db_path or settings.CHROMA_DB_PATH)
+        return ChromaVectorStore(provider)
+    return InMemoryFallbackStore(max_items_per_collection=max_items_per_collection)
+
+
+__all__ = [
+    "BaseVectorStore",
+    "ChromaClientProvider",
+    "ChromaVectorStore",
+    "InMemoryFallbackStore",
+    "CollectionType",
+    "CollectionConfig",
+    "DEFAULT_COLLECTIONS",
+    "HAS_CHROMA",
+    "HAS_BM25",
+    "HAS_INMEM",
+    "VectorStoreProtocol",
+    "get_default_store",
+    "audit_collection_coverage",
+]

@@ -1,13 +1,16 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNovelContext } from "../../context/NovelContext";
 import { Editor } from "../editor/Editor";
 import { NextBeatsPanel } from "../editor/NextBeatsPanel";
 import { EditorialSidebar } from "../editor/EditorialSidebar";
+import { AssetPackPanel } from "../AssetPackPanel";
 
 interface StudioWorkspaceProps {
   onMessage?: (msg: string) => void;
   onOpenGraph?: () => void;
 }
+
+type StudioTab = "editor" | "multimedia";
 
 export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
   onMessage,
@@ -20,6 +23,7 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
     setCurrentChapterText,
     selectedBookId,
   } = useNovelContext();
+  const [tab, setTab] = useState<StudioTab>("editor");
 
   const handleToast = (msg: string, type: "success" | "error" | "info") => {
     if (type === "error") {
@@ -33,7 +37,6 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
 
   return (
     <div className="studio-grid" data-testid="studio-workspace">
-      {/* 左ペイン: 作品・登場人物・設定概要 */}
       <aside className="studio-pane studio-sidebar-left" style={{ gap: "16px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <h2 style={{ fontSize: "1.05rem", color: "var(--accent-cyan)", fontWeight: 700 }}>
@@ -92,39 +95,62 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
           </select>
         </div>
 
+        <div style={{ marginTop: "auto", display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button
+            type="button"
+            className={tab === "editor" ? "inline-ai-btn active" : "inline-ai-btn"}
+            onClick={() => setTab("editor")}
+            data-testid="tab-editor"
+          >
+            ✍️ Editor
+          </button>
+          <button
+            type="button"
+            className={tab === "multimedia" ? "inline-ai-btn active" : "inline-ai-btn"}
+            onClick={() => setTab("multimedia")}
+            data-testid="tab-multimedia"
+          >
+            🎬 Multimedia
+          </button>
+        </div>
+
         <div style={{ marginTop: "auto", padding: "12px", background: "rgba(0,0,0,0.2)", borderRadius: "8px", fontSize: "0.8rem", color: "var(--text-muted)", lineHeight: "1.5" }}>
           💡 <strong>Studio モードのヒント</strong><br />
           ・本文のテキストを選択すると五感推敲ツールバーが出現<br />
           ・下部の Next Beats から 3 つの展開を選択可能<br />
-          ・右側の AI 編集者に設定を何でも質問できます
+          ・右側の AI 編集者に設定を何でも質問できます<br />
+          ・Multimedia タブから IF ルート・電子書籍・メディアミックスを生成
         </div>
       </aside>
 
-      {/* 中央ペイン: リッチエディタ + Next Beats */}
       <main className="studio-pane" style={{ minHeight: "600px" }}>
-        <Editor
-          content={currentChapterText}
-          onChange={setCurrentChapterText}
-          genre={character.genre}
-          onToast={handleToast}
-        />
+        {tab === "editor" && (
+          <>
+            <Editor
+              content={currentChapterText}
+              onChange={setCurrentChapterText}
+              genre={character.genre}
+              onToast={handleToast}
+            />
 
-        <NextBeatsPanel
-          currentText={currentChapterText}
-          genre={character.genre}
-          bookId={selectedBookId}
-          onApplyBeat={(content, mode) => {
-            if (mode === "replace_all") {
-              setCurrentChapterText(content);
-            } else {
-              setCurrentChapterText((prev) => (prev ? `${prev}\n\n${content}` : content));
-            }
-          }}
-          onToast={handleToast}
-        />
+            <NextBeatsPanel
+              currentText={currentChapterText}
+              genre={character.genre}
+              bookId={selectedBookId}
+              onApplyBeat={(content, mode) => {
+                if (mode === "replace_all") {
+                  setCurrentChapterText(content);
+                } else {
+                  setCurrentChapterText((prev) => (prev ? `${prev}\n\n${content}` : content));
+                }
+              }}
+              onToast={handleToast}
+            />
+          </>
+        )}
+        {tab === "multimedia" && <AssetPackPanel bookId={selectedBookId} />}
       </main>
 
-      {/* 右ペイン: GraphRAG 専属AI編集者サイドバー */}
       <aside className="studio-pane">
         <h2 style={{ fontSize: "1.05rem", color: "var(--accent-purple)", fontWeight: 700, marginBottom: "12px" }}>
           🧠 専属 AI 編集者 (GraphRAG)

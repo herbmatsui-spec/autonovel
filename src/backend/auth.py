@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 import os
+from typing import Any
 
 from fastapi import HTTPException, Request
 
@@ -86,3 +87,20 @@ def validate_api_key_or_raise(api_key: str) -> str:
     if not service.validate(api_key):
         raise AppError("API キーが無効です。", status_code=403, error_code="FORBIDDEN")
     return api_key
+
+
+_prompt_manager_instance: Any = None
+
+
+def get_prompt_manager() -> Any:
+    """PromptManager の Singleton を返す FastAPI Dependency.
+
+    Router から Depends(get_prompt_manager) で注入可能。
+    テスト時は app.dependency_overrides[get_prompt_manager] で差し替え可能。
+    """
+    global _prompt_manager_instance
+    if _prompt_manager_instance is None:
+        from prompts.manager import PromptManager
+
+        _prompt_manager_instance = PromptManager()
+    return _prompt_manager_instance

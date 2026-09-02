@@ -32,3 +32,9 @@ class ServiceException(AutoNovelException):
     """サービス層でのビジネスロジックエラー。"""
     def __init__(self, detail: str = "Service processing error"):
         super().__init__(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=detail)
+
+
+class MultimediaDisabledError(AutoNovelException):
+    """Multimedia 機能が無効な場合に発生する例外。"""
+    def __init__(self, detail: str = "Multimedia features are disabled"):
+        super().__init__(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=detail)

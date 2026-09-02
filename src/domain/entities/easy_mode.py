@@ -25,6 +25,38 @@ class EasyModeInput(BaseModel):
     content_length_limit: int = Field(default=2000, ge=1, le=10000)
 
 
+class StreamQueryInput(BaseModel):
+    """GET /easy_mode/generate/stream 用のクエリ互換入力。
+
+    全フィールド Optional。空文字・空リストは EasyModeInput のデフォルトとして扱う。
+    EventSource がクエリ文字列しか送れないため、本クラスで受け取った後に
+    EasyModeInput に詰め替える。
+    """
+
+    chapter_history: list[str] | None = None
+    current_chapter: str | None = None
+    character_name: str | None = None
+    character_personality: str | None = None
+    character_ability: str | None = None
+    character_genre: str | None = None
+    content_length_limit: int | None = Field(default=None, ge=1, le=10000)
+
+    def to_easy_mode_input(self) -> EasyModeInput:
+        """クエリ入力を EasyModeInput に変換する。"""
+        char = CharacterParams(
+            name=self.character_name or "",
+            personality=self.character_personality or "",
+            ability=self.character_ability or "",
+            genre=self.character_genre or "",
+        )
+        return EasyModeInput(
+            chapter_history=self.chapter_history or [],
+            current_chapter=self.current_chapter or "",
+            character_params=char,
+            content_length_limit=self.content_length_limit or 2000,
+        )
+
+
 class GenerationResponse(BaseModel):
     """かんたんモード生成レスポンス。"""
 
@@ -115,9 +147,22 @@ class ExportRequestPayload(BaseModel):
     plots: list[dict[str, Any]] = Field(default_factory=list, description="プロット概要リスト")
 
 
+class FullAutoRequest(BaseModel):
+    """全自動生成リクエスト（かんたんモード・完全自律）"""
+    api_key: str = Field(..., description="APIキー")
+    genre: str = Field(default="ファンタジー", description="ジャンル")
+    keywords: list[str] = Field(default_factory=list, description="キーワードリスト")
+    protagonist_type: str = Field(default="チート主人公", description="主人公タイプ")
+    target_episodes: int = Field(default=10, ge=1, le=50, description="目標話数")
+    words_per_episode: int = Field(default=2000, ge=500, le=10000, description="話あたりの目標文字数")
+    enable_audit: bool = Field(default=True, description="推敲監査を有効化")
+    max_rewrites: int = Field(default=2, ge=0, le=5, description="最大リライト回数")
+
+
 __all__ = [
     "CharacterParams",
     "EasyModeInput",
+    "StreamQueryInput",
     "GenerationResponse",
     "GachaPlanType",
     "DigestStatus",
@@ -130,5 +175,6 @@ __all__ = [
     "PromotionResponse",
     "ReversePlotGeneratePayload",
     "ExportRequestPayload",
+    "FullAutoRequest",
 ]
 

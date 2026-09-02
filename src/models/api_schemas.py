@@ -244,6 +244,12 @@ class MarketingGenerateRequest(BaseModel):
     latest_ep: int
 
 
+class MarketingExportRequest(BaseModel):
+    """マーケティングエクスポート (POST) リクエスト"""
+
+    api_key: str
+
+
 class RefineEroticRequest(AuthenticatedRequest):
     """官能研磨リクエスト"""
 

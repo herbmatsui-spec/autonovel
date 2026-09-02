@@ -49,7 +49,7 @@ def test_density_controller():
 
 
 def test_integrity_checker():
-    checker = EroticIntegrityChecker()
+    checker = EroticIntegrityChecker(db_path=":memory:")
     ok, issues, quality_report, continuity_report = checker.check_all(
         "二人は唇が触れる距離で、彼が求めて彼女が応じる"
     )
@@ -95,33 +95,33 @@ def test_diversity_check():
 
 # Step 19: 同意検証テスト
 def test_consent_explicit_detected():
-    checker = EroticIntegrityChecker()
+    checker = EroticIntegrityChecker(db_path=":memory:")
     ok, issues = checker.check_consent_state("彼が同意を求めて、彼女がOKと言った", "explicit")
     assert ok is True
 
 
 def test_consent_explicit_missing():
-    checker = EroticIntegrityChecker()
+    checker = EroticIntegrityChecker(db_path=":memory:")
     ok, issues = checker.check_consent_state("二人は黙って近づいた", "explicit")
     assert ok is False
     assert any("明示的同意" in i for i in issues)
 
 
 def test_consent_refusal_detected():
-    checker = EroticIntegrityChecker()
+    checker = EroticIntegrityChecker(db_path=":memory:")
     ok, issues = checker.check_consent_state("彼女は嫌だと言い、逃げた", "implicit")
     assert ok is False
     assert any("拒否表現" in i for i in issues)
 
 
 def test_consent_implicit_ok():
-    checker = EroticIntegrityChecker()
+    checker = EroticIntegrityChecker(db_path=":memory:")
     ok, issues = checker.check_consent_state("二人は唇が触れる距離で", "implicit")
     assert ok is True
 
 
 def test_check_all_with_consent():
-    checker = EroticIntegrityChecker()
+    checker = EroticIntegrityChecker(db_path=":memory:")
     text = "彼女は服を着ている"
     ok, issues, quality_report, continuity_report = checker.check_all(
         text, consent_state="explicit"

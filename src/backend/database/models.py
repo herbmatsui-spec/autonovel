@@ -568,6 +568,41 @@ class EasyModeDraft(Base):
     )
 
 
+class MultimediaArtifact(Base):
+    """Multimedia 機能 (Phase 7) で生成された成果物のメタデータ。"""
+
+    __tablename__ = "multimedia_artifacts"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    book_id = Column(Integer, nullable=False)
+    asset_type = Column(String(50), nullable=False)
+    format = Column(String(50), nullable=False)
+    file_path = Column(String(1024), nullable=False)
+    metadata_json = Column(Text, nullable=True)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        Index("ix_multimedia_artifacts_book_id", "book_id"),
+        Index("ix_multimedia_artifacts_asset_type", "asset_type"),
+    )
+
+
+class MultimediaTask(Base):
+    """Multimedia 系の非同期タスク状態。"""
+
+    __tablename__ = "multimedia_tasks"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    task_id = Column(String(64), nullable=False, unique=True)
+    asset_id = Column(Integer, nullable=True)
+    status = Column(String(32), nullable=False, server_default="pending")
+    started_at = Column(DateTime, server_default=func.now(), nullable=False)
+    finished_at = Column(DateTime, nullable=True)
+    error = Column(Text, nullable=True)
+
+    __table_args__ = (Index("ix_multimedia_tasks_task_id", "task_id"),)
+
+
 # 後方互換性用エイリアス
 BibleDbModel = Bible
 BookDbModel = Book

@@ -415,7 +415,7 @@ class PromptCacheService:
         cache_key = self._generate_cache_key(template_name, prompt_hash, model_id, template_version)
 
         # L1: インメモリキャッシュ
-        if self.l1:
+        if self.l1 is not None:
             l1_key = f"{cache_key}:{task_type}:{genre}:{temperature}"
             if l1_key in self.l1:
                 await self._record_hit("l1")
@@ -432,7 +432,7 @@ class PromptCacheService:
                         f"[PROMPT CACHE] L2 (Redis) HIT: {template_name} (task={task_type})"
                     )
                     # L1 にも格納して次回高速化
-                    if self.l1:
+                    if self.l1 is not None:
                         self.l1[l1_key] = cached
                     return cached
             except Exception as e:
@@ -460,7 +460,7 @@ class PromptCacheService:
                             await self.redis.set(cache_key, similar, ttl=self._get_ttl(task_type))
                         except Exception as e:
                             logger.warning(f"[PROMPT CACHE] L2 write-back error: {e}")
-                    if self.l1:
+                    if self.l1 is not None:
                         self.l1[l1_key] = similar
                     return similar
             except Exception as e:
@@ -491,7 +491,7 @@ class PromptCacheService:
         effective_ttl = self._get_ttl(task_type, ttl)
 
         # L1: インメモリ
-        if self.l1:
+        if self.l1 is not None:
             self.l1[l1_key] = response
 
         # L2: Redis

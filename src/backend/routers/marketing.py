@@ -1,20 +1,23 @@
 from typing import Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from fastapi.responses import Response
 
-from src.backend.auth import validate_api_key_or_raise
+from src.backend.auth import get_prompt_manager, validate_api_key_or_raise
 from src.backend.engine_helpers import get_engine
 from src.backend.task_helpers import create_task
 from src.backend.tasks import execute_service_workflow
 from src.core.observability import TraceContext
-from src.models.api_schemas import MarketingGenerateRequest
+from src.models.api_schemas import MarketingExportRequest, MarketingGenerateRequest
 
 router = APIRouter(tags=["marketing"])
 
 
 @router.post("/api/marketing/generate")
-async def generate_marketing(req: MarketingGenerateRequest):
+async def generate_marketing(
+    req: MarketingGenerateRequest,
+    prompt_manager: Any = Depends(get_prompt_manager),
+):
     validate_api_key_or_raise(req.api_key)
     import time
 
@@ -26,17 +29,27 @@ async def generate_marketing(req: MarketingGenerateRequest):
         api_key=req.api_key,
         config_dict={},
         method_name="marketing_generation_workflow",
-        kwargs={"book_id": req.book_id, "latest_ep": req.latest_ep},
+        kwargs={
+            "book_id": req.book_id,
+            "latest_ep": req.latest_ep,
+            "prompt_manager": prompt_manager,
+        },
         trace_id=TraceContext.get_trace_id(),
     )
     return {"task_id": task_id}
 
 
 @router.post("/api/marketing/export_package/{book_id}")
-async def export_package_post(book_id: int, api_key_req: Any):
-    # Original server.py had a pass here
-    # Keeping the endpoint for compatibility but as it was a no-op
-    return {"message": "Export package POST is not implemented"}
+async def export_package_post(book_id: int, req: MarketingExportRequest):
+    """作品データ一式 (本文 / 設定 / プロット / JSON) を ZIP で返す."""
+    validate_api_key_or_raise(req.api_key)
+    engine = get_engine(req.api_key)
+    zip_data, zip_filename = await engine.marketing.create_export_package(book_id)
+    return Response(
+        content=zip_data,
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{zip_filename}"'},
+    )
 
 
 @router.get("/api/marketing/export_package/{book_id}")

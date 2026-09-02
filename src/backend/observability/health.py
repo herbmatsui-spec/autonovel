@@ -19,12 +19,16 @@ class _Metrics:
             "exports_attempted": 0,
             "exports_succeeded": 0,
             "health_checks": 0,
+            "streaming_disconnects": 0,
+            "multimedia_requests_total": 0,
+            "multimedia_errors_total": 0,
         }
 
     def increment(self, name: str, amount: int = 1) -> None:
         with self._lock:
-            if name in self._counters:
-                self._counters[name] += amount
+            if name not in self._counters:
+                self._counters[name] = 0
+            self._counters[name] += amount
 
     def get(self, name: str) -> int:
         with self._lock:

@@ -2,6 +2,40 @@
 
 本プロジェクトの変更履歴。[Semantic Versioning](https://semver.org/lang/ja/) に準拠。
 
+## [Unreleased] - Multimedia (Phase 7)
+
+マルチメディア展開 (Asset Pack / Media Mix / IF Routes / eBook Export) の初回統合リリース。
+3,700 行の孤児コードを FastAPI ルータ + React UI から利用可能にし、機能フラグ `ENABLE_MULTIMEDIA` で段階ロールアウト可能化。
+
+### 追加
+- **機能フラグ**: `ENABLE_MULTIMEDIA` / `ENABLE_AUDIO_SYNTH` / `MULTIMEDIA_OUTPUT_DIR` を `config.py` に追加
+- **バックエンド**:
+  - `routers/multimedia.py` (8 エンドポイント: `/multimedia/media-mix`, `/ebook`, `/if-routes`, `/asset-pack`, `/artifacts/{id}`, `/artifacts/{id}/download`, `/tasks/{id}`, `/files/{filename}`)
+  - `multimedia_service.py` 統合サービス層
+  - `multimedia_storage.py` 出力ディレクトリ管理
+  - `feature_flags.py` フラグ判定ユーティリティ
+  - `tasks/multimedia_tasks.py` Huey 非同期タスク
+  - `schemas/multimedia.py` Pydantic スキーマ
+  - `MultimediaArtifact` / `MultimediaTask` テーブル (alembic 0011)
+  - `MultimediaDisabledError` (HTTP 503)
+  - `series_serializer.py` ユーティリティ
+- **フロントエンド**:
+  - `types/multimedia.ts` 型定義
+  - `api/multimedia.ts` API クライアント
+  - `hooks/useMultimedia.ts` React フック
+  - `components/AssetPackPanel.tsx` Studio 統合
+- **メトリクス**: `multimedia_requests_total` / `multimedia_errors_total` カウンタ追加
+- **ドキュメント**: `docs/multimedia.md`, `docs/multimedia_slo.md`, `docs/multimedia_security.md`, `docs/user/multimedia.md`
+- **アラート**: `docker/grafana/alerts/multimedia.yaml`
+
+### テスト (54 件)
+- `tests/unit/test_media_mix.py`, `test_ebook_export.py`, `test_asset_pack.py`, `test_multimedia_service.py`, `test_feature_flags.py`, `test_multimedia_storage.py`, `test_multimedia_schemas.py`, `test_series_serializer.py`, `test_multimedia_tasks.py`
+- `tests/integration/test_multimedia_router.py`, `test_multimedia_e2e.py`
+- `tests/unit/test_if_routes.py` 拡充 (BranchCondition.apply_effects, IFRouteGenerator minimum nodes, IFRouteGraph.validate)
+
+### マイグレーション
+- `alembic/versions/0011_multimedia_artifacts.py`: `multimedia_artifacts` / `multimedia_tasks` テーブル
+
 ## [4.0.0] - 2026-09-01
 
 大規模リファクタリング・健全化リリース。タスク実行基盤の修復、ID二重管理の解消、テストカバレッジ・品質保証を大幅強化。

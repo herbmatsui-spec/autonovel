@@ -1,11 +1,18 @@
-"""かんたんモード（小説完全自律生成）ワークフロー。"""
+"""
+EasyModeWorkflow - 統合パイプラインへ委譲
+既存インターフェース完全互換維持
+"""
+
 from __future__ import annotations
 
 import logging
 from typing import Any
 
 from src.backend.workflows.base_workflow import BaseWorkflow
-from src.easy_mode.pipeline import EasyModePipeline, PipelineConfig
+from src.services.auto_workflow_pipeline import (
+    WorkflowContext,
+    create_easy_mode_pipeline,
+)
 from src.shared.utils import StatusReporter
 
 logger = logging.getLogger(__name__)
@@ -14,7 +21,7 @@ logger = logging.getLogger(__name__)
 class EasyModeWorkflow(BaseWorkflow):
     """
     かんたんモードの全自動小説生成パイプラインを実行するワークフロー。
-    Bible生成 -> プロット生成 -> 本文執筆 -> 推敲監査 -> 完結処理を一貫してオーケストレーションする。
+    統合パイプライン (AutoWorkflowPipeline) に委譲。
     """
 
     async def execute(
@@ -33,16 +40,7 @@ class EasyModeWorkflow(BaseWorkflow):
             f"EasyModeWorkflow started: genre={genre}, target_episodes={target_episodes}"
         )
 
-        config = PipelineConfig(
-            genre=genre,
-            keywords=keywords or [],
-            protagonist_type=protagonist_type,
-            target_episodes=target_episodes,
-            words_per_episode=words_per_episode,
-            enable_audit=enable_audit,
-            max_rewrites=max_rewrites,
-        )
-
+        # 1. 進捗コールバックアダプタ (既存互換)
         def progress_callback(stage: str, current: int, total: int):
             stage_messages = {
                 "bible": ("Bible生成中", f"ジャンル設定反映中... ({current}/{total})"),
@@ -54,35 +52,62 @@ class EasyModeWorkflow(BaseWorkflow):
             msg, sub_msg = stage_messages.get(stage, (stage, ""))
             reporter.update_progress(current, total, msg, sub_msg)
 
-        config.progress_callback = progress_callback
+        # 2. 統合パイプライン用 Context 構築
+        ctx = WorkflowContext(
+            genre=genre,
+            keywords=", ".join(keywords) if keywords else "",
+            archetype_key=protagonist_type,
+            target_eps=target_episodes,
+            initial_limit=3,
+            word_count=words_per_episode,
+            concept=kwargs.get("concept", ""),
+            tone_vibe=kwargs.get("tone_vibe", 0.6),
+            user_prompt=kwargs.get("user_prompt", ""),
+            enable_spice_guard=enable_audit,
+            max_rewrite_iterations=max_rewrites,
+            target_audit_score=95.0,
+            enable_illustration=False,
+            enable_catharsis_analysis=False,
+            enable_marketing=True,
+            max_retries=0,
+            is_easy_mode=True,
+            preset_name=kwargs.get("preset_name", ""),
+        )
 
-        pipeline = EasyModePipeline(self.engine, config)
-        result = await pipeline.run()
+        # 3. パイプライン構築・実行
+        pipeline = create_easy_mode_pipeline(
+            genre=genre,
+            target_episodes=target_episodes,
+            enable_spice_guard=enable_audit,
+            max_rewrite_iterations=max_rewrites,
+            target_audit_score=95.0,
+            enable_marketing=True,
+        )
 
-        logger.info(f"EasyModeWorkflow completed: title={result.title}")
+        result = await pipeline.execute(ctx, self.engine, reporter)
+
+        # 4. 既存インターフェース互換の dict に変換
+        episodes_list = []
+        for ep in result.episodes_detail:
+            episodes_list.append({
+                "episode_num": ep.get("episode_num", 0),
+                "title": ep.get("title", f"第{ep.get('episode_num', 0)}話"),
+                "word_count": ep.get("word_count", 0),
+                "audit_score": ep.get("audit_score", 0.0),
+                "audit_passed": ep.get("audit_passed", False),
+                "rewrite_count": ep.get("rewrite_count", 0),
+                "needs_human_review": ep.get("needs_human_review", False),
+            })
+
         return {
             "title": result.title,
-            "concept": result.concept,
-            "total_episodes": result.total_episodes,
-            "total_words": sum(ep.word_count for ep in result.episodes),
-            "average_audit_score": (
-                round(sum(ep.audit_score for ep in result.episodes) / len(result.episodes), 1)
-                if result.episodes
-                else 0
-            ),
-            "genre": result.genre,
-            "episodes": [
-                {
-                    "episode_num": ep.episode_num,
-                    "title": ep.title,
-                    "word_count": ep.word_count,
-                    "audit_score": ep.audit_score,
-                    "audit_passed": ep.audit_passed,
-                    "rewrite_count": ep.rewrite_count,
-                    "needs_human_review": ep.needs_human_review,
-                }
-                for ep in result.episodes
-            ],
+            "concept": result.easy_parameters.get("concept", ""),
+            "total_episodes": result.easy_parameters.get("target_eps", target_episodes),
+            "total_words": result.chars_count,
+            "average_audit_score": result.average_audit_score,
+            "genre": genre,
+            "episodes": episodes_list,
+            "status": result.status,
         }
 
 
