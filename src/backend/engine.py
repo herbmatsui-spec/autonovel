@@ -112,6 +112,12 @@ class UltimateHegemonyEngine:
         return self._legacy_dep("style_rag")
 
     @property
+    def illustration_agent(self):
+        """IllustrationAgent (Lazy DI). 旧来は IllustrationStep 内で都度生成していたが、
+        AppContainer と二重管理になるため Engine 経由で 1 インスタンスに統一する。"""
+        return self._legacy_dep("illustration_agent")
+
+    @property
     def ai_api(self):
         import warnings
 

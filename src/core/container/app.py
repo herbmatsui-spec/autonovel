@@ -153,6 +153,21 @@ class AppContainer2(InfraContainer):
     formatter = providers.Singleton["TextFormatter"](
         "src.backend.sanitizer.TextFormatter",
     )
+
+    # --- 挿絵エージェント / ワークフロー (engine よりも先に宣言) ---
+    image_service = providers.Factory["ImageService"](
+        "src.services.image_service.ImageService",
+        api_key=api_key,
+    )
+    illustration_agent = providers.Factory["IllustrationAgent"](
+        "src.agents.illustration_agent.IllustrationAgent",
+        image_service=image_service,
+    )
+    illustration_workflow = providers.Factory["IllustrationWorkflow"](
+        "src.backend.workflows.illustration_workflow.IllustrationWorkflow",
+        illustration_agent=illustration_agent,
+    )
+
     engine = providers.Factory["UltimateHegemonyEngine"](
         "src.backend.engine.UltimateHegemonyEngine",
         api_key=api_key,
@@ -161,6 +176,7 @@ class AppContainer2(InfraContainer):
         llm=llm,
         cooldown=InfraContainer.cooldown,
         plot_service=plot_service,
+        illustration_agent=illustration_agent,
     )
     engine_facade = providers.Factory["EngineFacade"](
         "src.backend.engine_facade.EngineFacade",
@@ -179,17 +195,4 @@ class AppContainer2(InfraContainer):
         redis_cache=redis_cache,
         semantic_cache=None,
         l1_cache=None,
-    )
-
-    image_service = providers.Factory["ImageService"](
-        "src.services.image_service.ImageService",
-        api_key=api_key,
-    )
-    illustration_agent = providers.Factory["IllustrationAgent"](
-        "src.agents.illustration_agent.IllustrationAgent",
-        image_service=image_service,
-    )
-    illustration_workflow = providers.Factory["IllustrationWorkflow"](
-        "src.backend.workflows.illustration_workflow.IllustrationWorkflow",
-        illustration_agent=illustration_agent,
     )
