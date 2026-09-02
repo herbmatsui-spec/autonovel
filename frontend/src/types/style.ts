@@ -25,6 +25,7 @@ export interface StyleProfile {
   id: string;
   name: string;
   genre_hint: string;
+  category: string;
   tone_description: string;
   sentence_length: SentenceLengthModel;
   sentence_end_distribution: SentenceEndDistribution;
@@ -65,4 +66,22 @@ export interface CadenceStats {
 export interface ReformatResponse {
   reformatted_text: string;
   stats: CadenceStats;
+}
+
+export interface StyleEntry {
+  id: string;
+  name: string;
+  category: string;
+  instruction: string;
+  dialogue_ratio: string;
+  syntax_rhythm: string;
+  metaphor_dna: string;
+  noise_dna: string;
+  is_light: boolean;
+}
+
+export interface StyleCategory {
+  id: string;
+  label: string;
+  style_ids: string[];
 }

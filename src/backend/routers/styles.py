@@ -4,7 +4,9 @@
 
 from __future__ import annotations
 
+import json
 import logging
+from pathlib import Path
 from typing import Any
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
@@ -17,6 +19,8 @@ from src.services.style_distiller import style_distiller_service
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/styles", tags=["styles"])
+
+STYLES_JSON_PATH = Path(__file__).parent.parent.parent / "config" / "data" / "styles.json"
 
 
 class DistillRequest(BaseModel):
@@ -50,6 +54,104 @@ class StylePresetSummary(BaseModel):
     description: str
     tone: str
     profile: StyleProfile | None = None
+
+
+class StyleEntry(BaseModel):
+    """スタイル定義エントリ"""
+    id: str
+    name: str
+    category: str
+    instruction: str
+    dialogue_ratio: str
+    syntax_rhythm: str
+    metaphor_dna: str
+    noise_dna: str
+    is_light: bool
+
+
+class StyleCategory(BaseModel):
+    """カテゴリ情報"""
+    id: str
+    label: str
+    style_ids: list[str]
+
+
+def _load_styles_json() -> dict[str, Any]:
+    """styles.jsonをロード"""
+    try:
+        with open(STYLES_JSON_PATH, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception as e:
+        logger.error(f"Failed to load styles.json: {e}")
+        return {}
+
+
+@router.get("/all", response_model=list[StyleEntry])
+async def get_all_styles() -> list[StyleEntry]:
+    """全スタイル定義を取得（config/data/styles.jsonより）"""
+    data = _load_styles_json()
+    definitions = data.get("STYLE_DEFINITIONS", {})
+    entries = []
+    for style_id, style_def in definitions.items():
+        entries.append(StyleEntry(
+            id=style_id,
+            name=style_def.get("name", ""),
+            category=style_def.get("category", ""),
+            instruction=style_def.get("instruction", ""),
+            dialogue_ratio=style_def.get("dialogue_ratio", ""),
+            syntax_rhythm=style_def.get("syntax_rhythm", ""),
+            metaphor_dna=style_def.get("metaphor_dna", ""),
+            noise_dna=style_def.get("noise_dna", ""),
+            is_light=style_def.get("is_light", True)
+        ))
+    return entries
+
+
+@router.get("/categories", response_model=list[StyleCategory])
+async def get_style_categories() -> list[StyleCategory]:
+    """スタイルカテゴリ一覧を取得"""
+    data = _load_styles_json()
+    definitions = data.get("STYLE_DEFINITIONS", {})
+    categories: dict[str, list[str]] = {}
+    for style_id, style_def in definitions.items():
+        cat = style_def.get("category", "")
+        if cat:
+            categories.setdefault(cat, []).append(style_id)
+    category_labels = {
+        "tempo": "テンポ・爽快",
+        "heavy": "重厚・シリアス",
+        "dark": "暗黒・心理",
+        "elegant": "優美・日常・職人"
+    }
+    result = []
+    for cat_id, style_ids in categories.items():
+        result.append(StyleCategory(
+            id=cat_id,
+            label=category_labels.get(cat_id, cat_id),
+            style_ids=style_ids
+        ))
+    return result
+
+
+@router.get("/{style_id}/preview", response_model=StyleEntry)
+async def get_style_preview(style_id: str) -> StyleEntry:
+    """特定スタイルのプレビュー情報を取得"""
+    data = _load_styles_json()
+    definitions = data.get("STYLE_DEFINITIONS", {})
+    style_def = definitions.get(style_id)
+    if not style_def:
+        raise HTTPException(status_code=404, detail=f"Style not found: {style_id}")
+    return StyleEntry(
+        id=style_id,
+        name=style_def.get("name", ""),
+        category=style_def.get("category", ""),
+        instruction=style_def.get("instruction", ""),
+        dialogue_ratio=style_def.get("dialogue_ratio", ""),
+        syntax_rhythm=style_def.get("syntax_rhythm", ""),
+        metaphor_dna=style_def.get("metaphor_dna", ""),
+        noise_dna=style_def.get("noise_dna", ""),
+        is_light=style_def.get("is_light", True)
+    )
 
 
 # 代表的な日本語表示名マッピング
@@ -115,7 +217,6 @@ async def get_style_presets() -> list[StylePresetSummary]:
         try:
             preset_dict = load_preset(genre)
             style_data = preset_dict.get("style", {})
-            # プリセット辞書またはJinja文字列からStyleProfileを構築
             profile: StyleProfile | None = None
             if isinstance(style_data, dict) and style_data:
                 profile = StyleProfile(
