@@ -1,22 +1,39 @@
-import os
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
+from src.dependencies import get_illustration_workflow
 from src.models.illustration import (
     IllustrationModel,
     IllustrationRequest,
     IllustrationType,
     SafetyLevel,
 )
-from src.shared.utils import StatusReporter
 
 router = APIRouter()
 
 
-def get_illustration_workflow():
-    container = AppContainer(api_key=os.getenv("GOOGLE_GENAI_API_KEY", ""))
-    return container.illustration_workflow()
+class _ReporterShim:
+    """StatusReporter Protocol の軽量実装 (API 用ダミー)。"""
+
+    def __init__(self, id: str):
+        self.id = id
+
+    def report(self, message: str, level: str = "info") -> None:
+        pass
+
+    def update_progress(
+        self, current: int, total: int, message: str = "", sub_message: str = ""
+    ) -> None:
+        pass
+
+    @property
+    def state(self):
+        class _S:
+            def should_stop(self) -> bool:
+                return False
+
+        return _S()
 
 
 @router.post("/generate")
@@ -36,8 +53,8 @@ async def generate_illustration(
             else SafetyLevel.BLOCK_SOME,
         )
 
-        # 簡易的なレポート
-        _ = StatusReporter(id="api_gen")
+        # 簡易的なレポート (Protocol なのでダミー化)
+        _ = _ReporterShim(id="api_gen")
 
         # Agentを直接呼んで生成
         res = await workflow.illustration_agent.run(request=ill_request)
@@ -54,17 +71,52 @@ async def generate_illustration(
 async def batch_generate_illustrations(
     params: dict[str, Any], workflow=Depends(get_illustration_workflow)
 ):
-    """バッチで挿絵を生成する"""
+    """バッチで挿絵を生成する (Huey タスクキューに投入)。
+
+    レスポンスは即座に ``{task_id, status: "queued"}`` を返し、
+    進捗・結果は ``GET /api/illustrations/status/{task_id}`` で取得する。
+    """
+    import uuid
+
+    from src.backend.tasks.illustration_tasks import illustrate_batch_task
+
     try:
         book_id = params["book_id"]
         settings = params.get("settings", {})
+        task_id = f"illust_{uuid.uuid4().hex[:8]}"
 
-        # 実際にはStatusReporterを通じてフロントエンドに通知するが、
-        # API経由の場合は完了まで待つか、タスクIDを返す
-        reporter = StatusReporter(id=f"batch_{book_id}")
+        # タスクをキューに投入 (immediate=False のためワーカー側で実行)
+        illustrate_batch_task(book_id=book_id, settings=settings)
 
-        res = await workflow.execute(reporter=reporter, book_id=book_id, settings=settings)
-
-        return res
+        return {"task_id": task_id, "status": "queued"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/status/{task_id}")
+async def get_illustration_status(task_id: str):
+    """Huey タスクのステータス・結果を取得する。"""
+    from src.backend import database
+    from src.backend.database.repository import BookRepository
+
+    session = database.SessionLocal()
+    try:
+        repo = BookRepository(session)
+        task = repo.get_task(task_id)
+        if task is None:
+            raise HTTPException(status_code=404, detail=f"task {task_id} not found")
+        result = None
+        if task.status == "completed" and task.result:
+            try:
+                import json as _json
+
+                result = _json.loads(task.result)
+            except Exception:  # noqa: BLE001
+                result = task.result
+        return {
+            "task_id": task_id,
+            "status": task.status,
+            "result": result,
+        }
+    finally:
+        session.close()
