@@ -24,6 +24,11 @@ class ImageService:
         storage_dir: str = "static/illustrations",
         default_model: str = "fast",
     ):
+        if not api_key:
+            raise ValueError(
+                "ImageService requires a non-empty api_key. "
+                "Set GOOGLE_GENAI_API_KEY or pass api_key explicitly."
+            )
         self.client = genai.Client(api_key=api_key)
         self.storage_dir = storage_dir
         self.default_model = get_imagen_model_id(default_model)
