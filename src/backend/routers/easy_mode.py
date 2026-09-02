@@ -278,21 +278,33 @@ from src.services.promotion_service import PromotionService
 @router.post("/gacha", response_model=GachaResponse)
 async def gacha_endpoint(req: GachaRequest) -> GachaResponse:
     """3案ガチャ企画生成 [Gacha Pitch]"""
+    from fastapi import HTTPException
+
     from src.backend.database.core import get_db_manager
 
     db = get_db_manager()
     svc = GachaService(db=db)
-    return await svc.generate_plans(req)
+    try:
+        return await svc.generate_plans(req)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except TimeoutError as e:
+        raise HTTPException(status_code=504, detail=str(e))
 
 
 @router.post("/digest", response_model=DigestResponse)
 async def digest_endpoint(req: DigestRequest) -> DigestResponse:
     """ダイジェスト生成 [Quick Digest]"""
+    from fastapi import HTTPException
+
     from src.backend.database.core import get_db_manager
 
     db = get_db_manager()
     svc = DigestService(db=db)
-    return await svc.create_digest(req)
+    try:
+        return await svc.create_digest(req)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/promote", response_model=PromotionResponse)
