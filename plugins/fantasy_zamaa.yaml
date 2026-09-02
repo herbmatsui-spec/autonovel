@@ -1,0 +1,19 @@
+name: "王道ざまぁファンタジー"
+genre: "ファンタジー"
+plot_common_rules: |
+  【真・プロット設計黄金律】
+  1. [1話1シーンと高解像度化]: 時間スキップ・ダイジェストを禁ずる。
+  2. [Show, Don't Tell]: 感情は肉体動作に翻訳すること。
+style_presets:
+  - name: "なろう・カクヨム標準（テンポ重視）"
+    genre: "fantasy"
+    works: "web_novel"
+    description: "短文と改行を多用し、スマホでの読みやすさを最優先せよ。"
+    dna: "1文20文字以内、体言止め多用。"
+    tag: "style_web_standard"
+plot_structures:
+  exile_rise:
+    name: "追放→成り上がり（王道ざまぁ）"
+    hook: "不当な追放と屈辱"
+    climax_type: "圧倒的逆転と断罪"
+    ending: "社会的成功と完全な立場逆転"

@@ -5,8 +5,6 @@ import logging
 from collections.abc import AsyncIterator
 from typing import Any
 
-import google.generativeai as genai
-
 from src.backend.config import settings
 from src.services.llm.base import BaseLLMAdapter
 from src.services.llm.retry import with_retry
@@ -24,11 +22,18 @@ class GeminiAdapter(BaseLLMAdapter):
     ) -> None:
         self.api_key = api_key or settings.GEMINI_API_KEY or ""
         self.model_name = model_name or settings.GEMINI_MODEL
-        if self.api_key:
-            genai.configure(api_key=self.api_key)
-        self.model = genai.GenerativeModel(
-            model_name=self.model_name,
-        )
+        self._model: Any = None
+
+    def _get_model(self) -> Any:
+        """モデルを遅延初期化する。"""
+        if self._model is None:
+            import google.generativeai as genai
+            if self.api_key:
+                genai.configure(api_key=self.api_key)
+            self._model = genai.GenerativeModel(
+                model_name=self.model_name,
+            )
+        return self._model
 
     async def generate_text(
         self,
@@ -36,18 +41,25 @@ class GeminiAdapter(BaseLLMAdapter):
         system_prompt: str | None = None,
         max_tokens: int = 2000,
         temperature: float = 0.7,
+        response_format: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> str:
         """テキストを一括生成する。"""
+        import google.generativeai as genai
         full_prompt = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
+        model = self._get_model()
+
+        generation_config_dict: dict[str, Any] = {
+            "max_output_tokens": max_tokens,
+            "temperature": temperature,
+        }
+        if response_format and response_format.get("type") in ("json_object", "json_schema"):
+            generation_config_dict["response_mime_type"] = "application/json"
 
         async def _call() -> str:
-            response = await self.model.generate_content_async(
+            response = await model.generate_content_async(
                 full_prompt,
-                generation_config=genai.types.GenerationConfig(
-                    max_output_tokens=max_tokens,
-                    temperature=temperature,
-                ),
+                generation_config=genai.types.GenerationConfig(**generation_config_dict),
             )
             return response.text or ""
 
@@ -62,8 +74,11 @@ class GeminiAdapter(BaseLLMAdapter):
         **kwargs: Any,
     ) -> AsyncIterator[str]:
         """テキストをストリーミング生成する。"""
+        import google.generativeai as genai
         full_prompt = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
-        response = await self.model.generate_content_async(
+        model = self._get_model()
+
+        response = await model.generate_content_async(
             full_prompt,
             generation_config=genai.types.GenerationConfig(
                 max_output_tokens=max_tokens,

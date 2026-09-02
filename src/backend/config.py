@@ -51,6 +51,10 @@ class Settings(BaseSettings):
         "http://localhost:5173,http://localhost:8080,http://127.0.0.1:5173,http://127.0.0.1:8080"
     )
 
+    # 認証設定
+    AUTH_DISABLED: bool = False
+    ALLOWED_API_KEYS: str = ""
+
     # ロギング設定
     LOG_LEVEL: str = "INFO"
     LOG_FORMAT: Literal["json", "console"] = "console"
@@ -63,6 +67,11 @@ class Settings(BaseSettings):
 
     GEMINI_API_KEY: str | None = None
     GEMINI_MODEL: str = "gemini-1.5-flash"
+
+    # Embedding / GraphRAG (pgvector + Apache AGE) 設定
+    EMBEDDING_MODEL: str = "text-embedding-3-small"
+    AGE_GRAPH_NAME: str = "autonovel_graph"
+    ENABLE_GRAPHRAG: bool = True
 
     @property
     def cors_origin_list(self) -> list[str]:

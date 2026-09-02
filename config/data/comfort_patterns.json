@@ -1,0 +1,44 @@
+{
+    "comfort_patterns": [
+        {
+            "id": "validation",
+            "name": "精神的肯定 (Validation)",
+            "trigger_condition": "Character feels misunderstood, judged, or plagued by self-doubt.",
+            "emotional_goal": "A sense of being seen and accepted for who they truly are.",
+            "approach": "An external character provides an absolute affirmation of the target's worth or the correctness of their choices, dismantling the internal psychological barrier.",
+            "catharsis_type": "Psychological Release"
+        },
+        {
+            "id": "physical_salvation",
+            "name": "物理的救済 (Physical Salvation)",
+            "trigger_condition": "Character is in a dead-end situation, physically trapped, or facing an insurmountable external threat.",
+            "emotional_goal": "The immediate relief of surviving a crisis and the feeling of safety.",
+            "approach": "Intervention by an ally or a timely discovery of a tool/secret that clears the physical obstacle, transforming desperation into survival.",
+            "catharsis_type": "Tension Break"
+        },
+        {
+            "id": "fated_encounter",
+            "name": "運命的な邂逅 (Fated Encounter)",
+            "trigger_condition": "Character is experiencing profound loneliness or a sense of isolation from the world.",
+            "emotional_goal": "The feeling of 'finally being found' or meeting a kindred spirit.",
+            "approach": "A meeting with someone who shares the same hidden pain or possesses the exact empathy needed to bridge the isolation.",
+            "catharsis_type": "Connection Spark"
+        },
+        {
+            "id": "sublimation",
+            "name": "喪失の昇華 (Sublimation)",
+            "trigger_condition": "Character has suffered an irreversible loss or failure.",
+            "emotional_goal": "Finding meaning in the pain; transforming grief into a new strength or purpose.",
+            "approach": "Not restoring what was lost, but finding a way to integrate the loss into a higher sense of self or a new goal.",
+            "catharsis_type": "Spiritual Growth"
+        },
+        {
+            "id": "unexpected_kindness",
+            "name": "予期せぬ慈愛 (Unexpected Kindness)",
+            "trigger_condition": "Character expects only hostility or indifference from the world.",
+            "emotional_goal": "The shock and warmth of being cared for without reason or merit.",
+            "approach": "A small, selfless gesture from an unlikely source that breaks the character's cynical armor.",
+            "catharsis_type": "Emotional Melting"
+        }
+    ]
+}

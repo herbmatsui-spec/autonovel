@@ -1,0 +1,114 @@
+{
+    "REINFORCE": [
+        {
+            "pattern_id": "structural_suffocation",
+            "description": "構造的窒息: 地位や規則を盾に、相手の反論の余地を完全に奪う演出",
+            "triggers": [
+                "low_tension",
+                "high_gap"
+            ],
+            "guidelines": [
+                "相手の言葉を遮らず、最後まで聞いた上で『しかし、ルールでは』と構造的正論で塗りつぶす",
+                "物理的な空間支配（相手を見下ろす、机に物を置くなど）を併用する",
+                "感情的な怒りではなく、冷徹な『当然の権利』として振る舞う"
+            ],
+            "impact": {
+                "tension": 15,
+                "submission": 20,
+                "fragility_hidden": 10
+            }
+        },
+        {
+            "pattern_id": "calculated_mercy",
+            "description": "計算された慈悲: 圧倒的な権力者が一時的に見せる寛容さで、より深い依存を誘発する",
+            "triggers": [
+                "high_submission"
+            ],
+            "guidelines": [
+                "相手が完全に絶望したタイミングで、小さな譲歩や救済を与える",
+                "『お前だけには特別に』という特権意識を植え付ける",
+                "慈悲を与えることで、被支配者に『この人に縋るしかない』という心理的拘束を強める"
+            ],
+            "impact": {
+                "tension": -10,
+                "submission": 25,
+                "resonance": 5
+            }
+        }
+    ],
+    "SHAKE": [
+        {
+            "pattern_id": "mask_crack",
+            "description": "仮面の亀裂: 支配者の完璧な振る舞いに、一瞬だけ内面的脆弱性が漏れ出す演出",
+            "triggers": [
+                "high_tension",
+                "curiosity_spike"
+            ],
+            "guidelines": [
+                "会話の核心に触れられた瞬間、一瞬だけ視線を逸らす、または不自然な沈黙を作る",
+                "支配的な口調の中に、一言だけ感情的な（あるいは怯えた）ワードを混ぜる",
+                "直後に、過剰に支配的な態度に戻ることで、逆に『揺らいだこと』を強調する"
+            ],
+            "impact": {
+                "tension": 20,
+                "curiosity": 20,
+                "fragility_exposed": 15
+            }
+        },
+        {
+            "pattern_id": "unintentional_equality",
+            "description": "不意な対等化: 共通の弱点や記憶により、一時的に社会的地位が消失する瞬間",
+            "triggers": [
+                "resonance_increase",
+                "shared_trauma"
+            ],
+            "guidelines": [
+                "社会的肩書きを忘れるほどの衝撃的な事実や感情を共有する",
+                "言葉遣いが一時的に崩れ、生身の人間としての対話が行われる",
+                "相手が支配者の『人間としての脆さ』を認めたとき、権力のダイナミクスが反転し始める"
+            ],
+            "impact": {
+                "tension": 10,
+                "resonance": 20,
+                "structural_gap": -20
+            }
+        }
+    ],
+    "COLLAPSE": [
+        {
+            "pattern_id": "keystone_destruction",
+            "description": "急所の破壊: 権力の根源となっていた嘘や矜持が完全に崩壊する演出",
+            "triggers": [
+                "extreme_tension",
+                "vulnerability_exposed"
+            ],
+            "guidelines": [
+                "支配者が最も恐れていた『真実』を突きつけられ、反論不能な状態に追い込む",
+                "物理的・社会的な地位は維持していても、精神的な主導権が完全に被支配者に移る",
+                "支配者が初めて『お願い』や『謝罪』といった被支配的な言葉を発する"
+            ],
+            "impact": {
+                "tension": 30,
+                "submission": -40,
+                "fragility_exposed": 50
+            }
+        },
+        {
+            "pattern_id": "structural_inversion",
+            "description": "構造的逆転: 被支配者が新たな権力（情報・状況）を握り、立場が完全に逆転する",
+            "triggers": [
+                "information_asymmetry_flip"
+            ],
+            "guidelines": [
+                "それまで支配されていた側が、相手を破滅させうる決定的なカードを提示する",
+                "支配者がこれまでに行っていた支配の手法を、そのまま被支配者が模倣して返す",
+                "権力の移行に伴う、支配側の絶望と被支配者の残酷な覚醒を対比させる"
+            ],
+            "impact": {
+                "tension": 25,
+                "submission": -50,
+                "structural_gap": -100
+            }
+        }
+    ]
+}

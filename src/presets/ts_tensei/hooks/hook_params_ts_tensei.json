@@ -1,0 +1,41 @@
+{
+  "genre": "ts_tensei",
+  "description": "TS転生・性別反転・百合ジャンル専用フック戦略パラメータ",
+  "opening_patterns": [
+    {
+      "name": "mirror_shock",
+      "template": "鏡に映ったのは——見知らぬ、美少女だった。\n『{{previous_name}}』は、もういない。\nここに在るのは、『{{protagonist_name}}』——銀髪、碧眼、華奢な肢体、そして『{{cheat_ability}}』という、世界をねじ伏せる力だけ。\n「……悪くない。こっちの方が、断然、好みだ」",
+      "variables": ["previous_name", "protagonist_name", "cheat_ability"],
+      "effect": "鏡前での性別反転発見即提示。前世名と新名の対比。即座に『好み』と肯定する強い自我で読者の共感・憧れ誘導。"
+    },
+    {
+      "name": "reincarnation_goddess",
+      "template": "『{{protagonist_name}}よ。汝に、第二の人生を授けよう』\n女神の声が、意識の底に響く。\n目を開けば、そこは剣と魔法の世界。\nそして、股間には——何もない。\n『性別？　ああ、そっちの方が『面白い』から、少女にしといた。チート『{{cheat_ability}}』も、おまけでつけといたよ♥』\n\n「……女神、趣味悪いわね。でも、文句はない」",
+      "variables": ["protagonist_name", "cheat_ability"],
+      "effect": "女神との会話形式で転生理由・性別反転・チート付与を一括提示。主人公の即受容・余裕で『文句ない』と締めくくる。"
+    }
+  ],
+  "closing_patterns": [
+    {
+      "name": "yuri_confession",
+      "template": "「『{{protagonist_name}}様……私、貴女だけの『騎士』になります』\n{{heroine_name}}が、膝をつき、剣を捧げる。その瞳に宿るのは、忠誠でも主従でもなく——純粋な『恋』だ。\n{{protagonist_name}}は、彼女の顎に指をかけ、顔を上げさせる。\n「よし。なら、一生、離さないから」\n\n——次話、『{{next_ep_title}}』",
+      "variables": ["protagonist_name", "heroine_name", "next_ep_title"],
+      "effect": "騎士の献身・恋の告白を『剣を捧げる』儀式的行為で演出。主人公の『離さない』宣言で独占欲・愛情・支配力同時提示。"
+    },
+    {
+      "name": "identity_acceptance",
+      "template": "『{{previous_name}}』——その名前を、心の奥底に、静かにしまう。\nもう、戻らない。戻りたくもない。\n私は、『{{protagonist_name}}』。\n最強の魔女で、彼女たちの『主』で、世界一幸せな『少女』だ。\n\n——次話、『{{next_ep_title}}』",
+      "variables": ["previous_name", "protagonist_name", "next_ep_title"],
+      "effect": "前世名を『しまう』儀式的描写。新名・最強・主・少女・幸せのキーワードでアイデンティティ完全確立宣言。"
+    }
+  ],
+  "cliffhanger_templates": [
+    "——{{protagonist_name}}の『{{cheat_ability}}』に、新たな効果『{{new_effect}}』が追加された。\n『性別固定・永久少女化』——戻れなくなって、初めて、安心した。",
+    "——『{{rival_name}}』が、{{protagonist_name}}の前で『女装』を解いた。\n『私も……貴女と、同じよ』",
+    "——女神が、再び降臨した。\n『お帰り、{{protagonist_name}}。今度は、何を『望む』？』"
+  ],
+  "hook_intensity": 0.85,
+  "cliffhanger_frequency": 1.0,
+  "opening_hook_length_lines": 3,
+  "closing_hook_length_lines": 5
+}

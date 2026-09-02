@@ -1,8 +1,7 @@
 """Generation tasks ユニットテスト。"""
 from __future__ import annotations
 
-import pytest
-from src.backend.tasks.generation_tasks import _run_async, _generate, _update_task_in_db
+from src.backend.tasks.generation_tasks import _run_async, _update_task_in_db
 
 
 def test__run_async_basic():

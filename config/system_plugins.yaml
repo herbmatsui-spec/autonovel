@@ -1,0 +1,7 @@
+plugins:
+  debate_agent:
+    module: "src.agents.debate"
+    class: "NullDebateAgent"
+  audit_service:
+    module: "src.services.audit_service"
+    class: "ProducerAuditService"

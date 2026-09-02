@@ -1,8 +1,9 @@
 """OpenAI アダプタのユニットテスト。"""
 from __future__ import annotations
 
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, patch
 
 from src.services.llm.openai_adapter import OpenAIAdapter
 
@@ -58,27 +59,21 @@ async def test_openai_generate_text_with_system_prompt(mock_client):
 async def test_openai_stream_text(mock_client):
     """stream_text はストリームからチャンクをyieldする。"""
     adapter = OpenAIAdapter()
+
+    # チャンクオブジェクトのモック
+    mock_delta = MagicMock()
+    mock_delta.content = "Generated story text..."
+    mock_choice = MagicMock()
+    mock_choice.delta = mock_delta
+    mock_chunk = MagicMock()
+    mock_chunk.choices = [mock_choice]
+
+    async def mock_stream():
+        yield mock_chunk
+
+    adapter.client.chat.completions.create.return_value = mock_stream()
+
     chunks = []
-    # response を async iterable にするため、async for 用のモックを設定
-    adapter.client.chat.completions.create.return_value = mock_client
-    adapter.client.chat.completions.create.return_value.__aenter__ = AsyncMock(
-        return_value=mock_client
-    )
-    adapter.client.chat.completions.create.return_value.__aexit__ = AsyncMock(
-        return_value=None
-    )
-    # ストリーム用の非同期イテレータを設定
-    async def stream_chunks():
-        choice = mock_client.choices[0]
-        choice.delta.content = "Generated story text..."
-        yield choice.delta.content
-    adapter.client.chat.completions.create.return_value.__aiter__ = lambda self: stream_chunks()
-    adapter.client.chat.completions.create.return_value.__anext__ = (
-        lambda self: (
-            AsyncMock() if True
-            else StopAsyncIteration  # type: ignore[unreachable]
-        )
-    )
     async for chunk in adapter.stream_text(prompt="Hello"):
         chunks.append(chunk)
     assert chunks == ["Generated story text..."]

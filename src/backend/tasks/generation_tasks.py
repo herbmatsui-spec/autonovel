@@ -13,7 +13,7 @@ from typing import Any
 
 from src.backend import database
 from src.backend.database.repository import BookRepository
-from src.backend.observability import metrics
+from src.backend.observability.health import metrics
 from src.backend.tasks.huey import huey
 
 logger = logging.getLogger(__name__)
@@ -39,13 +39,30 @@ def _update_task_in_db(
     task_id: str,
     status: str,
     result_json: str | None = None,
+    payload: dict[str, Any] | None = None,
 ) -> None:
-    """DB 上の Task レコードを安全に更新する (rollback 保証付き)。"""
+    """DB 上の Task レコードおよび作品/章データを安全に更新する (rollback 保証付き)。"""
     session = database.SessionLocal()
     try:
         repo = BookRepository(session)
         if status == "completed" and result_json is not None:
             repo.set_task_result(task_id, result_json)
+            # 作品・章データの自動保存
+            if payload:
+                try:
+                    res_dict = json.loads(result_json)
+                    output_text = res_dict.get("output", "")
+                    char_params = payload.get("character", {})
+                    genre = char_params.get("genre", "ファンタジー (R15)") if isinstance(char_params, dict) else "ファンタジー (R15)"
+                    repo.save_or_update_book_with_chapter(
+                        book_id=1,
+                        title=f"{char_params.get('name', '主人公')}の冒険譚" if isinstance(char_params, dict) and char_params.get("name") else "R15ファンタジー作品",
+                        genre=genre,
+                        chapter_text=output_text,
+                        character_params=char_params if isinstance(char_params, dict) else None,
+                    )
+                except Exception as save_err:
+                    logger.warning("Auto saving generated book failed: %s", save_err)
         else:
             repo.update_task_status(task_id, status)
     except Exception:
@@ -73,6 +90,7 @@ def generate_chapter_task(payload: dict[str, Any]) -> dict[str, Any]:
                 str(task_id),
                 "completed",
                 json.dumps(result, ensure_ascii=False),
+                payload=payload,
             )
         return result
     except Exception as exc:

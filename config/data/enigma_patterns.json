@@ -1,0 +1,37 @@
+[
+    {
+        "pattern_id": "narrative_trick",
+        "name": "叙述トリック (Narrative Trickery)",
+        "description": "読者の前提条件（性別、時間軸、人間関係）を意図的に誤認させ、最後に反転させる",
+        "mechanism": "限定的な視点と曖昧な代名詞を用い、論理的に矛盾しない範囲で誤った印象を植え付ける",
+        "catharsis_type": "cognitive_flip"
+    },
+    {
+        "pattern_id": "red_herring",
+        "name": "赤いニシン (Red Herring / 誤導)",
+        "description": "極めて説得力のある「偽の正解」を提示し、真実から目を逸らさせる",
+        "mechanism": "真実の伏線と並行して、より刺激的で納得感のある偽の伏線を配置する",
+        "catharsis_type": "surprise_reversal"
+    },
+    {
+        "pattern_id": "invisible_clue",
+        "name": "不可視の証拠 (Invisible Evidence)",
+        "description": "目の前に提示していたが、その意味に気づかなかった情報を価値ある証拠に変換する",
+        "mechanism": "日常的な背景の一部として情報を配置し、後からその特異性を指摘する",
+        "catharsis_type": "aha_moment"
+    },
+    {
+        "pattern_id": "logical_paradox",
+        "name": "論理的パラドックス (Logical Paradox)",
+        "description": "一見して不可能な状況（密室など）を提示し、それを論理的なトリックで解決する",
+        "mechanism": "物理的・時間的制約を定義し、その制約を回避する唯一の論理的経路を提示する",
+        "catharsis_type": "intellectual_satisfaction"
+    },
+    {
+        "pattern_id": "delayed_payoff",
+        "name": "遅延回収 (Delayed Payoff)",
+        "description": "物語の極めて早い段階で提示した些細な違和感を、クライマックスで決定的な意味として回収する",
+        "mechanism": "提示から回収まで十分な時間を空け、読者に忘れかけた頃に再提示して衝撃を最大化する",
+        "catharsis_type": "structural_beauty"
+    }
+]

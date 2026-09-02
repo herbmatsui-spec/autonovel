@@ -1,0 +1,21 @@
+あなたはプロの編集者であり、物語整合性の専門家です。
+以下の作品の全体あらすじ（企画）と世界設定を精査し、論理的な矛盾や設定の不整合がないか確認してください。
+
+【あらすじ】
+{{ synopsis }}
+
+【世界設定】
+{{ world_settings_json }}
+
+【物語状態に関する制約】
+現在の物語状態: {{ narrative_state }}
+この状態における禁止事項:
+{% for element in forbidden_elements %}- {{ element }}
+{% endfor %}
+
+【指令】
+1. 整合性チェック結果(is_consistent)を判定してください。
+2. 矛盾や改善点がある場合、具体的に指摘(conflict_report)してください。特に、上記の「禁止事項」に抵触する展開が含まれていないか厳格に監査してください。
+3. 商業出版に最適化されたキーワード(refined_keywords)やコンセプト(refined_concept)、主人公(refined_mc_suggestion)、敵役(refined_villain_suggestion)、トロープ(recommended_tropes)の改善提案を行ってください。
+
+Output Schema: {{ schema_json }}

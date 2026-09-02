@@ -34,13 +34,18 @@ class OpenAIAdapter(BaseLLMAdapter):
         system_prompt: str | None = None,
         max_tokens: int = 2000,
         temperature: float = 0.7,
+        response_format: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> str:
-        """テキストを一括生成する (リトライ付き)。"""
+        """テキストを一括生成する (リトライ付き、Structured Outputs対応)。"""
         messages: list[dict[str, str]] = []
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
         messages.append({"role": "user", "content": prompt})
+
+        call_kwargs = dict(kwargs)
+        if response_format is not None:
+            call_kwargs["response_format"] = response_format
 
         async def _call() -> str:
             response = await self.client.chat.completions.create(
@@ -48,7 +53,7 @@ class OpenAIAdapter(BaseLLMAdapter):
                 messages=messages,  # type: ignore[arg-type]
                 max_tokens=max_tokens,
                 temperature=temperature,
-                **kwargs,
+                **call_kwargs,
             )
             choice = response.choices[0]
             return choice.message.content or ""
@@ -78,6 +83,7 @@ class OpenAIAdapter(BaseLLMAdapter):
             **kwargs,
         )
 
-        async for chunk in response:
+        # response is AsyncStream[ChatCompletionChunk] when stream=True
+        async for chunk in response:  # type: ignore[union-attr]
             if chunk.choices and chunk.choices[0].delta.content:
                 yield chunk.choices[0].delta.content

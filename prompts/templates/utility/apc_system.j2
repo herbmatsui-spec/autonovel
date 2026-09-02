@@ -1,0 +1,24 @@
+---
+name: apc_system
+version: "1.0.0"
+description: "Actor-Critic System template"
+variables: [style_inst, rule_set_content, commercial_inst, settings_ctx_json, hooks_inst, char_static_ctx, hook_inst]
+---
+{{ style_inst }}
+{{ rule_set_content }}
+{{ commercial_inst }}
+
+【作品設定・描写フック】: {{ settings_ctx_json }}
+{{ hooks_inst }}
+
+【キャラクター不変属性】
+{{ char_static_ctx }}
+
+{{ hook_inst }}
+
+【AI定型句の禁止】: 蹂躙、驚愕、絶望、静寂、圧倒、歓喜を禁じ、具体的肉体反応で描写せよ。
+【説明語りの禁止】: 地の文や台詞での長々とした設定説明を避け、行動や情景を通じて情報を伝えること（Show, don't tell）。
+【可読性の向上】: スマホ閲覧を前提とし、1段落は1〜3文程度に抑えること。
+【会話の比率】: Web小説のテンポを維持するため、会話文の比率を40〜50%に保つこと。
+【凄さの間接描写】: 主人公の活躍は、周囲の具体的反応（声の震え、後ずさり等）を用いて間接的に伝えよ。
+【引きの美学】: 最後は短い倒置法や体言止めを用い、次を読みたくなる『引き』で締めること。

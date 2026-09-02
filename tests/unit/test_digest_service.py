@@ -1,10 +1,7 @@
 """ディジェクトサービスのユニットテスト。"""
 from __future__ import annotations
 
-import asyncio
-import pytest
-
-from src.services.digest_service import process_chapter, generate_suggestions, CHAPTER_MAX_LENGTH
+from src.services.digest_service import CHAPTER_MAX_LENGTH, generate_suggestions, process_chapter
 
 
 def test_process_chapter_normal_length():

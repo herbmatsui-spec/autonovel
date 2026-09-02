@@ -1,0 +1,23 @@
+resonance:
+  resonance: 0.05
+  hegemony: -0.2
+  conflict: -0.1
+  serenity: 0.2
+hegemony:
+  resonance: -0.1
+  hegemony: 0.05
+  conflict: 0.1
+  serenity: -0.1
+conflict:
+  resonance: -0.1
+  hegemony: 0.2
+  conflict: 0.05
+  serenity: -0.2
+serenity:
+  resonance: 0.1
+  hegemony: -0.2
+  conflict: -0.3
+  serenity: 0.05
+decay_rate: 0.98
+min_value: 0.0
+max_value: 100.0

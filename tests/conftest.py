@@ -49,8 +49,15 @@ def real_db_manager() -> Generator[Session, None, None]:
     try:
         yield session
     finally:
+        import gc
+
+        try:
+            session.rollback()
+        except Exception:
+            pass
         session.close()
         test_engine.dispose()
+        gc.collect()
         # 元の状態に戻す
         db_module.engine = engine
         db_module.SessionLocal = SessionLocal  # type: ignore[assignment]
@@ -63,3 +70,35 @@ def real_db_manager() -> Generator[Session, None, None]:
                 db_path.unlink()
         except OSError:
             pass
+
+
+@pytest.fixture
+def db_session(real_db_manager: Generator[Session, None, None]) -> Generator[Session, None, None]:
+    """テスト用 DB セッションフィクスチャ (real_db_manager のエイリアス)."""
+    return real_db_manager
+
+
+@pytest.fixture(autouse=True)
+def reset_metrics():
+    """各テスト後に health.py のプロセスメトリクスをゼロリセットする。
+
+    pytest-xdist 並列実行時にメトリクスがリークするのを防止する。
+    """
+    from src.backend.observability.health import metrics
+
+    yield
+    metrics.reset_for_testing()
+
+
+@pytest.fixture
+def client(db_session: Session):
+    """FastAPI TestClient フィクスチャ."""
+    from fastapi.testclient import TestClient
+
+    from src.backend import database
+    from src.backend.server import app
+
+    app.dependency_overrides[database.get_db] = lambda: db_session
+    with TestClient(app) as test_client:
+        yield test_client
+    app.dependency_overrides.clear()

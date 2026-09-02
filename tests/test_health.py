@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from src.backend.observability import metrics
+from src.backend.observability.health import metrics
 from src.backend.server import app
 
 client = TestClient(app)

@@ -1,0 +1,48 @@
+{
+    "silence_qualities": {
+        "peaceful_silence": {
+            "id": "peaceful",
+            "description": "A warm, enveloping silence of absolute safety and trust.",
+            "sensory_bias": [
+                "warmth",
+                "soft light",
+                "synchronous breathing"
+            ],
+            "emotional_core": "Security",
+            "narrative_effect": "Deepens the bond; characters feel they can be their truest versions of themselves."
+        },
+        "lonely_silence": {
+            "id": "lonely",
+            "description": "A cold, hollow silence that emphasizes distance or an unsaid words.",
+            "sensory_bias": [
+                "cold air",
+                "distant sounds",
+                "sharp shadows"
+            ],
+            "emotional_core": "Isolation",
+            "narrative_effect": "Highlights the gap between characters or a character's internal solitude."
+        },
+        "expectant_silence": {
+            "id": "expectant",
+            "description": "A charged, vibrating silence where something is about to be realized or spoken.",
+            "sensory_bias": [
+                "held breath",
+                "hyper-awareness of small sounds",
+                "intense gaze"
+            ],
+            "emotional_core": "Anticipation",
+            "narrative_effect": "Builds a bridge toward a moment of connection or revelation."
+        },
+        "melancholic_silence": {
+            "id": "melancholic",
+            "description": "A heavy, soft silence layered with nostalgia or a gentle sadness.",
+            "sensory_bias": [
+                "autumnal colors",
+                "fading light",
+                "scent of old paper"
+            ],
+            "emotional_core": "Longing",
+            "narrative_effect": "Adds emotional depth and a sense of passing time or lost things."
+        }
+    }
+}

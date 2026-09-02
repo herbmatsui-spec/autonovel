@@ -120,13 +120,18 @@ class MarketingAgent:
             except Exception:
                 logger.warning("DB fetch failed, using fallback", exc_info=True)
 
-        if not chapters and book_data:
-            title = book_data.get("title", title)
-            genre = book_data.get("genre", genre)
-            chapters = book_data.get("chapters", [])
-            characters = book_data.get("characters", [])
-            plots = book_data.get("plots", [])
-            bible_settings = book_data.get("bible_settings", {})
+        if book_data:
+            title = book_data.get("title") or title
+            genre = book_data.get("genre") or genre
+            if book_data.get("chapters"):
+                chapters = book_data["chapters"]
+            if book_data.get("characters"):
+                characters = book_data["characters"]
+            if book_data.get("plots"):
+                plots = book_data["plots"]
+            if book_data.get("bible_settings"):
+                bible_settings = book_data["bible_settings"]
+
 
         # デフォルトフォールバックデータ（かんたんモード等の単体実行時）
         if not chapters:

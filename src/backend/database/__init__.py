@@ -1,45 +1,68 @@
-"""SQLAlchemy engine と SessionLocal を初期化するデータベース設定モジュール。"""
 from __future__ import annotations
 
-from collections.abc import Generator
+"""
+database/__init__.py - データベースパッケージのパブリックインターフェース（後方互換性保証用Facade）
+"""
+# 既存ファイルが database からモデルを間接インポートしているため、モデルも再エクスポートする
+from .core import (
+    DatabaseManager,
+    SessionLocal,
+    WorkspaceManager,
+    engine,
+    get_db_manager,
+    init_db,
+    retry_with_logging,
+    set_db_manager,
+)
+from .models import (
+    BibleDbModel,
+    BookDbModel,
+    BranchDbModel,
+    ChapterDbModel,
+    CharacterDbModel,
+    PlotDbModel,
+    PromptVersionDbModel,
+    WorldBible,
+)
+from .repository import DataRepository
+from .uow import UnitOfWork
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
 
-from src.backend.config import settings
-from src.models import Base
-
-# settings から DATABASE_URL を取得
-DATABASE_URL = settings.DATABASE_URL
-
-# SQLite の場合は check_same_thread=False が必要
-engine_args = {}
-if DATABASE_URL.startswith("sqlite"):
-    engine_args["connect_args"] = {"check_same_thread": False}
-
-engine = create_engine(DATABASE_URL, **engine_args)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-
-def get_db() -> Generator[Session, None, None]:
-    """FastAPI 依存注入用の DB セッションジェネレーター"""
-    db = SessionLocal()
+def get_db():
+    """FastAPI Depends 用の DB セッションプロバイダ。"""
+    session = SessionLocal()
     try:
-        yield db
+        yield session
     finally:
-        db.close()
+        session.close()
 
 
-def init_db() -> None:
-    """データベースのテーブルを初期化する"""
-    Base.metadata.create_all(bind=engine)
+async def get_uow():
+    """FastAPI Depends 用の UnitOfWork プロバイダ。"""
+    mgr = get_db_manager()
+    async with UnitOfWork(mgr) as uow:
+        yield uow
 
 
-__all__: list[str] = [
-    "Base",
-    "DATABASE_URL",
-    "SessionLocal",
-    "engine",
-    "get_db",
+
+__all__ = [
+    # Models
+    "BibleDbModel",
+    "BookDbModel",
+    "BranchDbModel",
+    "ChapterDbModel",
+    "CharacterDbModel",
+    "PlotDbModel",
+    "PromptVersionDbModel",
+    "WorldBible",
+    # Core
+    "DatabaseManager",
+    "WorkspaceManager",
+    "get_db_manager",
     "init_db",
+    "retry_with_logging",
+    "set_db_manager",
+    # Repository & UoW
+    "DataRepository",
+    "UnitOfWork",
 ]

@@ -3,6 +3,13 @@ import {
   GenerationResponse,
   ExportPackage,
   TaskStatusResponse,
+  GachaRequest,
+  GachaResponse,
+  DigestRequest,
+  DigestResponse,
+  PromotionRequest,
+  PromotionResponse,
+  ExportRequestPayload,
 } from "../types/easyMode";
 
 const BASE = "/easy_mode";
@@ -45,3 +52,55 @@ export async function exportPackage(bookId: number): Promise<ExportPackage> {
     `export_${bookId}.zip`;
   return { zipBlob: blob, filename };
 }
+
+export async function exportPackageWithData(
+  bookId: number,
+  payload?: ExportRequestPayload
+): Promise<ExportPackage> {
+  const res = await fetch(`${BASE}/export-with-data?book_id=${bookId}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload || {}),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  const blob = await res.blob();
+  const contentDisposition = res.headers.get("Content-Disposition");
+  const utf8Match = contentDisposition?.match(/filename\*=UTF-8''([^;]+)/i);
+  const asciiMatch = contentDisposition?.match(/filename="([^"]+)"/i);
+  const filename =
+    (utf8Match && decodeURIComponent(utf8Match[1])) ||
+    asciiMatch?.[1] ||
+    `export_${bookId}.zip`;
+  return { zipBlob: blob, filename };
+}
+
+export async function generateGachaPlans(req: GachaRequest): Promise<GachaResponse> {
+  const res = await fetch(`${BASE}/gacha`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(req),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+export async function generateDigest(req: DigestRequest): Promise<DigestResponse> {
+  const res = await fetch(`${BASE}/digest`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(req),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+export async function promoteToStudio(req: PromotionRequest): Promise<PromotionResponse> {
+  const res = await fetch(`${BASE}/promote`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(req),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+

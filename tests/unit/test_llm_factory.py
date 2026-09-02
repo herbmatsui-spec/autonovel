@@ -1,8 +1,6 @@
 """LLM ファクトリーモジュールのユニットテスト。"""
 from __future__ import annotations
 
-import pytest
-
 from src.services.llm.factory import get_llm_adapter
 from src.services.llm.mock_adapter import MockLLMAdapter
 

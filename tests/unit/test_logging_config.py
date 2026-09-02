@@ -1,19 +1,16 @@
 """ロギング設定のユニットテスト。"""
 from __future__ import annotations
 
-import os
-import sys
 import logging
+import os
 from unittest.mock import patch
 
-import pytest
-
 from src.backend.logging_config import (
-    configure,
-    _extra_attributes,
     _ContextFilter,
-    _logger_levels_from_env,
+    _extra_attributes,
     _is_text_mode,
+    _logger_levels_from_env,
+    configure,
 )
 
 
@@ -78,7 +75,7 @@ def test__logger_levels_from_env_with_valid():
 
 def test__logger_levels_from_env_invalid_value():
     """無効なログレベル値は文字列として保存される。
-    
+
     getLevelName は認識できない値を "Level <string>" として返すため、
     例外は発生しない。ここは振る舞いを確認するだけ。
     """

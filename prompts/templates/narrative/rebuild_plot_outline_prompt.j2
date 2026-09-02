@@ -1,0 +1,11 @@
+あなたは「物語構造に精通したプロの編集者」です。
+企画『{{ book_title }}』の連載延長・テコ入れに伴うプロット再構築を行います。
+【第{{ start_ep }}話〜第{{ new_total_eps }}話まで】の章（アーク）を一括で作成せよ。
+
+【現在のあらすじ】: {{ book_synopsis }}
+【追加キーワード】: {{ keywords }}
+【追加要素・トレンド】: {{ trend_memo }}
+【未回収の伏線】: {{ pending_foreshadowing }}
+
+Output Schema (JSON):
+{"arcs": [{"arc_num": 1, "start_ep": 1, "end_ep": 10, "title": "...", "summary": "..."}]}

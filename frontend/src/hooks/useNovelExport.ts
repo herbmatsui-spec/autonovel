@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
-import { exportPackage } from "../api/easyMode";
+import { exportPackageWithData } from "../api/easyMode";
+import { ExportRequestPayload } from "../types/easyMode";
 
 export function useNovelExport(
   onSuccess?: (msg: string) => void,
@@ -8,10 +9,10 @@ export function useNovelExport(
   const [exporting, setExporting] = useState(false);
 
   const downloadExportPackage = useCallback(
-    async (bookId: number) => {
+    async (bookId: number, customPayload?: ExportRequestPayload) => {
       setExporting(true);
       try {
-        const { zipBlob, filename } = await exportPackage(bookId);
+        const { zipBlob, filename } = await exportPackageWithData(bookId, customPayload);
         const url = window.URL.createObjectURL(zipBlob);
         const a = document.createElement("a");
         a.href = url;

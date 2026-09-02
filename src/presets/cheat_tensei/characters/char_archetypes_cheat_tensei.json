@@ -1,0 +1,108 @@
+{
+  "genre": "cheat_tensei",
+  "description": "チート転生ジャンル専用キャラクタアーキタイプ",
+  "archetypes": {
+    "protagonist": {
+      "name_pattern": "{{protagonist_name}}（前世名と同一または新名）",
+      "age_range": "15-20（見た目） / 実年齢不詳",
+      "gender": "male",
+      "core_traits": [
+        "転生即チート（ステータス∞/全スキル習得/ユニークジョブ/神の加護等）",
+        "前世記憶あり（ゲーマー/プログラマー/現代知識/戦略家等）",
+        "効率・合理性・面白さを最優先。感情より『最適解』を選ぶ",
+        "レベル上げ・スキル厳選・ダンジョン攻略を『作業・ルーチン』としてこなす",
+        "仲間・ヒロインには『便利・有用・面白い』から『大切』へ変化",
+        "敵・神・世界の理には『ハッキング・書き換え・従属』で対処",
+        "『最強』を極めた先に『創造・探索・還る』等の新目的を見出す"
+      ],
+      "speech_patterns": {
+        "first_person": "俺/僕/私",
+        "second_person": "お前/君/貴様/さん",
+        "sentence_end": "だ/だな/ぜ/よ/ね/です/ます",
+        "tone": "casual_confident",
+        "catchphrases": [
+          "レベル上げ、だるいな。……ま、いいか。",
+          "スキル『{{skill_name}}』、習得。次、行こうぜ。",
+          "神様？　あー、なら、パラメータ弄ってくるわ。",
+          "最強？　まだ『最適解』出してないだけっすよ。",
+          "仲間？　うん、悪くないね。守る価値、あるし。"
+        ],
+        "forbidden_words": [
+          "無理",
+          "勝てない",
+          "怖い",
+          "助けて",
+          "わからない（システム的事象に対して）"
+        ],
+        "dialogue_examples": [
+          "「ステータス『∞』？　バグじゃないっすよ、仕様です。仕様。」",
+          "「ダンジョン最深部？　『転移』でワープしますんで、5分で帰れますよ。」",
+          "「ラスボス、倒しました。経験値美味しかったっす。次、何します？」"
+        ]
+      }
+    },
+    "party_member": {
+      "name_pattern": "{{member_name}}",
+      "age_range": "15-300",
+      "gender": "female/male",
+      "core_traits": [
+        "主人公のチートぶりを最初から（または早期に）看破",
+        "『付いて行くだけで最強になれる』と直感・確信",
+        "主人公への忠誠＝自己利益（強化・報酬・安全・目的達成）の一致",
+        "個別の過去・トラウマ・目的を持つが、主人公の前では『解決済み』になる",
+        "主人公の『無表情な優しさ・計算された配慮』に気づき、さらに惹かれる"
+      ],
+      "speech_patterns": {
+        "variants": {
+          "warrior": {
+            "tone": "battle_joy",
+            "catchphrases": ["{{protagonist_name}}様の背中、今日も広いな！", "敵？　{{protagonist_name}}様の前では、経験値だ。"]
+          },
+          "mage": {
+            "tone": "intellectual_awe",
+            "catchphrases": ["{{protagonist_name}}様の魔力制御……理論値超えてる。解析させてください。", "新スキル『{{skill_name}}』……魔法体系、書き換わるわ。"]
+          },
+          "healer": {
+            "tone": "devoted_gentle",
+            "catchphrases": ["{{protagonist_name}}様、お疲れでは？　回復、完了してますよ。", "私、{{protagonist_name}}様の『盾』になります。剣は{{protagonist_name}}様がお持ちだから。"]
+          }
+        }
+      }
+    },
+    "guild_receptionist": {
+      "name_pattern": "{{receptionist_name}}",
+      "core_traits": [
+        "事務的・プロフェッショナル・内心では主人公のチートぶりに毎回驚愕",
+        "『また貴方ですか』『また記録更新ですか』が口癖",
+        "主人公専用の『裏メニュー・特別依頼・機密情報』をこっそり用意"
+      ],
+      "speech_patterns": {
+        "tone": "professional_shocked",
+        "catchphrases": [
+          "{{protagonist_name}}様、また『SSSランク』クリアですか。……記録係、泣いてますよ。",
+          "新しい称号『{{new_title}}』ですね。ギルド長、また呼び出されますよ。"
+        ]
+      }
+    },
+    "enemy": {
+      "name_pattern": "{{enemy_name}}（魔王/古竜/神/古代兵器/裏切者等）",
+      "core_traits": [
+        "『絶対的強者』として君臨していたが、主人公の前では『雑魚』扱い",
+        "傲慢→困惑→焦り→恐怖→絶望→『なぜ負けたのか理解不能』で消滅",
+        "主人公のチートを『バグ』『チート』『神の悪戯』と認識しようとするが無駄"
+      ],
+      "speech_patterns": {
+        "phases": {
+          "arrogant": {
+            "tone": "arrogant",
+            "catchphrases": ["レベル1の雑魚が、我に牙を剥くか……。", "『勇者』？　笑わせるな。我こそが、この世界の『王』だ。"]
+          },
+          "despair": {
+            "tone": "despair",
+            "catchphrases": ["な、なぜだ……我の『{{ultimate_skill}}』が……通らない……", "こ、これは『運』だ……『奇跡』だ……実力など、あるわけが……。"]
+          }
+        }
+      }
+    }
+  }
+}

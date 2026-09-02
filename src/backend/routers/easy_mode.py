@@ -8,35 +8,57 @@ from pydantic import ValidationError
 
 from src.backend import database
 from src.backend.database.repository import BookRepository
-from src.backend.observability import metrics
+from src.backend.observability.health import metrics
 from src.backend.rate_limit import generate_limiter
-from src.models.easy_mode_schemas import EasyModeInput, GenerationResponse
+from src.domain.entities.easy_mode import EasyModeInput, GenerationResponse
 from src.services.digest_service import process_chapter
+from src.services.graph_pipeline import graph_pipeline_service
 from src.services.llm.factory import get_llm_adapter
 from src.services.llm.prompts import (
     NOVEL_SYSTEM_PROMPT,
-    NOVEL_USER_PROMPT_TEMPLATE,
+    NOVEL_USER_PROMPT_WITH_GRAPHRAG_TEMPLATE,
     SUGGESTIONS_PROMPT_TEMPLATE,
 )
 from src.services.marketing import MarketingAgent
+from src.services.rag_service import rag_service
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
 async def execute_generation(payload: dict[str, Any]) -> dict[str, Any]:
-    """LLM アダプタを利用して非同期に小説本文と次話提案を生成する。"""
+    """LLM アダプタを利用して非同期に小説本文と次話提案を生成する (GraphRAG 統合済み)。"""
     start_time = time.time()
     current_chapter = payload.get("current_chapter", "")
     chapter_history = payload.get("chapter_history", [])
     character = payload.get("character", {})
+    chapter_id = payload.get("chapter_id", 1)
 
+    char_name = character.get("name", "主人公")
+    genre = character.get("genre", "ハイファンタジー (R15)")
+    personality = character.get("personality", "正義感が強い")
+    ability = character.get("ability", "剣術・魔導")
     history_context = "\n".join(chapter_history[:-1]) if len(chapter_history) > 1 else "なし"
-    user_prompt = NOVEL_USER_PROMPT_TEMPLATE.format(
-        genre=character.get("genre", "ハイファンタジー (R15)"),
-        char_name=character.get("name", "主人公"),
-        char_personality=character.get("personality", "正義感が強い"),
-        char_ability=character.get("ability", "剣術・魔導"),
+
+    # GraphRAG コンテキストの取得
+    session = database.SessionLocal()
+    try:
+        graph_context, vector_context = rag_service.build_rag_context(
+            session=session,
+            current_prompt=current_chapter,
+            character_name=char_name,
+        )
+    finally:
+        session.close()
+
+    # GraphRAG を反映したユーザープロンプトの構築
+    user_prompt = NOVEL_USER_PROMPT_WITH_GRAPHRAG_TEMPLATE.format(
+        genre=genre,
+        char_name=char_name,
+        char_personality=personality,
+        char_ability=ability,
+        graph_context=graph_context,
+        vector_context=vector_context,
         history_context=history_context,
         current_chapter=current_chapter,
     )
@@ -47,6 +69,19 @@ async def execute_generation(payload: dict[str, Any]) -> dict[str, Any]:
         system_prompt=NOVEL_SYSTEM_PROMPT,
         max_tokens=2000,
     )
+
+    # 生成完了後、バックグラウンド/同期でナレッジグラフとベクトルを更新
+    session = database.SessionLocal()
+    try:
+        graph_pipeline_service.process_chapter_knowledge(
+            session=session,
+            chapter_id=chapter_id,
+            chapter_text=generated_text,
+        )
+    except Exception as e:
+        logger.warning("Failed to process chapter knowledge in background: %s", e)
+    finally:
+        session.close()
 
     # 次話展開提案の生成
     suggestions_prompt = SUGGESTIONS_PROMPT_TEMPLATE.format(chapter_text=generated_text[:1000])
@@ -86,6 +121,7 @@ async def generate_content(
     request: Request,
     session=Depends(database.get_db),
 ) -> GenerationResponse:
+    """章単位の対話型自動生成 [Interactive Writer]"""
     generate_limiter.check(request)
     try:
         # 章の中身処理
@@ -203,9 +239,8 @@ async def get_task_status(task_id: str) -> dict[str, Any]:
     return {"task_id": task_id, "status": "completed", "result": result}
 
 
-# Task cancellation endpoint (Step 69)
 @router.delete("/task/{task_id}")
-async def cancel_task(task_id: str, session=Depends(database.get_db)) -> dict[str, str]:
+async def cancel_task(task_id: str) -> dict[str, str]:
     """タスクをキャンセルまたは削除する。"""
     from src.backend.tasks.huey import huey
 
@@ -216,7 +251,148 @@ async def cancel_task(task_id: str, session=Depends(database.get_db)) -> dict[st
         logger.warning("Failed to revoke huey task_id=%s", task_id)
 
     # DBタスクのステータス更新
-    repo = BookRepository(session)
+    repo = BookRepository()
     repo.update_task_status(task_id, "cancelled")
 
     return {"task_id": task_id, "status": "cancelled"}
+
+
+
+# --- ガチャ / ダイジェスト / 昇格 エンドポイント ---
+
+from src.domain.entities.easy_mode import (
+    DigestRequest,
+    DigestResponse,
+    ExportRequestPayload,
+    GachaRequest,
+    GachaResponse,
+    PromotionRequest,
+    PromotionResponse,
+    ReversePlotGeneratePayload,
+)
+from src.services.digest_service import DigestService
+from src.services.gacha_service import GachaService
+from src.services.promotion_service import PromotionService
+
+
+@router.post("/gacha", response_model=GachaResponse)
+async def gacha_endpoint(req: GachaRequest) -> GachaResponse:
+    """3案ガチャ企画生成 [Gacha Pitch]"""
+    from src.backend.database.core import get_db_manager
+
+    db = get_db_manager()
+    svc = GachaService(db=db)
+    return await svc.generate_plans(req)
+
+
+@router.post("/digest", response_model=DigestResponse)
+async def digest_endpoint(req: DigestRequest) -> DigestResponse:
+    """ダイジェスト生成 [Quick Digest]"""
+    from src.backend.database.core import get_db_manager
+
+    db = get_db_manager()
+    svc = DigestService(db=db)
+    return await svc.create_digest(req)
+
+
+@router.post("/promote", response_model=PromotionResponse)
+async def promote_endpoint(req: PromotionRequest) -> PromotionResponse:
+    """上級者モード昇格 [Producer Handoff]"""
+    from src.backend.database.core import get_db_manager
+    from fastapi import HTTPException
+
+    db = get_db_manager()
+    svc = PromotionService(db=db)
+    try:
+        return await svc.promote_book(req)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.post("/reverse-generate")
+async def reverse_generate_endpoint(
+    req: ReversePlotGeneratePayload,
+) -> dict[str, Any]:
+    """逆算プロットビルダー用同期生成エンドポイント [Reverse Plot Builder]"""
+    from src.backend.workflows.reverse_plot_workflow import ReversePlotGenerationWorkflow
+
+    workflow = ReversePlotGenerationWorkflow()
+    return await workflow.execute(
+        reporter=None,
+        answers=req.answers,
+        target_episodes=req.target_episodes,
+        genre=req.genre,
+    )
+
+
+@router.post("/export-with-data")
+async def export_with_data_endpoint(
+    payload: ExportRequestPayload,
+    book_id: int = 1,
+    session=Depends(database.get_db),
+) -> Response:
+    """クライアントの最新ステート（本文・設定）を反映して即座にZIPパッケージをエクスポートする"""
+    logger.info("Export with custom data requested: book_id=%s title=%s", book_id, payload.title)
+    metrics.increment("exports_attempted")
+
+    repo = BookRepository(session)
+    # DBにも永続化
+    try:
+        repo.save_or_update_book_with_chapter(
+            book_id=book_id,
+            title=payload.title,
+            genre=payload.genre,
+            chapter_text=payload.current_text,
+            character_params=payload.character,
+            plots=payload.plots,
+        )
+    except Exception as e:
+        logger.warning("Failed to auto-save book during export: %s", e)
+
+    agent = MarketingAgent(repo=repo)
+    book_data = {
+        "title": payload.title,
+        "genre": payload.genre,
+        "chapters": [
+            {
+                "ep_num": 1,
+                "title": "第1話 運命の覚醒",
+                "content": payload.current_text or "本文未入力",
+            }
+        ],
+        "characters": [
+            {
+                "name": payload.character.get("name", "主人公"),
+                "role": "主人公",
+                "personality": payload.character.get("personality", "設定なし"),
+                "ability": payload.character.get("ability", "設定なし"),
+            }
+        ] if payload.character else [],
+        "plots": payload.plots or [
+            {
+                "ep_num": 1,
+                "title": "第1話 運命の覚醒",
+                "one_line_summary": payload.current_text[:100] if payload.current_text else "冒険の始まり",
+            }
+        ],
+        "bible_settings": {},
+    }
+
+    zip_bytes, zip_filename = await agent.create_export_package(book_id, book_data=book_data)
+
+    encoded_filename = urllib.parse.quote(zip_filename)
+    ascii_filename = zip_filename.encode("ascii", "ignore").decode("ascii") or "export.zip"
+    metrics.increment("exports_succeeded")
+
+    return Response(
+        content=zip_bytes,
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": (
+                f"attachment; filename=\"{ascii_filename}\"; filename*=UTF-8''{encoded_filename}"
+            ),
+            "Cache-Control": "no-store",
+        },
+    )
+
+
