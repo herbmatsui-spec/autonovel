@@ -9,7 +9,15 @@ interface UseStreamingWriterOptions {
 }
 
 export function useStreamingWriter(options?: UseStreamingWriterOptions) {
-  const { character, currentChapterText, setCurrentChapterText, setGenerationState } = useNovelContext();
+  const {
+    character,
+    currentChapterText,
+    setCurrentChapterText,
+    setGenerationState,
+    contentLengthLimit,
+    targetEpisodes,
+    llmConfig,
+  } = useNovelContext();
   const [isStreaming, setIsStreaming] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [streamOutput, setStreamOutput] = useState("");
@@ -44,7 +52,9 @@ export function useStreamingWriter(options?: UseStreamingWriterOptions) {
             chapter_history: promptText ? [promptText] : [],
             current_chapter: promptText || "冒険のプロット",
             character_params: character,
-            content_length_limit: 2000,
+            content_length_limit: contentLengthLimit || 2000,
+            target_episodes: targetEpisodes || 1,
+            llm_config: (llmConfig && (llmConfig.api_key || llmConfig.provider)) ? llmConfig : undefined,
           },
           controller.signal
         );
@@ -142,7 +152,16 @@ export function useStreamingWriter(options?: UseStreamingWriterOptions) {
         }, 50);
       }
     },
-    [character, currentChapterText, setCurrentChapterText, setGenerationState, options]
+    [
+      character,
+      currentChapterText,
+      setCurrentChapterText,
+      setGenerationState,
+      options,
+      contentLengthLimit,
+      targetEpisodes,
+      llmConfig,
+    ]
   );
 
   const pauseStreaming = useCallback(() => {

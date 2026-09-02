@@ -1,17 +1,18 @@
 {
   "genre": "slow_life",
-  "description": "スローライフジャンル専用 文体DNAプリセット",
+  "preset_code": "slow_life_standard_v1.1",
+  "description": "スローライフジャンルの文体DNA。五感で味わう穏やかな時間と、守る者の静かな激しさを、温かい筆致で描く。",
   "sentence_length": {
     "avg": 35,
     "std_dev": 8,
     "min": 10,
     "max": 65,
-    "description": "平均文長35文字。会話・描写ともに穏やかなリズム。長文でも『読ませる』不思議な吸引力。"
+    "description": "平均35字。会話・描写ともに穏やかなリズム、長文でも『読ませる』吸引力。"
   },
   "vocab_diversity": {
     "type_token_ratio": 0.48,
     "rare_word_ratio": 0.12,
-    "description": "料理・農業・植物・動物・手仕事・季節・生活道具等の専門語を豊富に使用。美しい日本語・擬音語・擬態語多用。"
+    "description": "料理・農業・植物・手仕事・季節・生活道具の専門語が豊富、美しい日本語と拟音・擬態語多用。"
   },
   "sentence_end_distribution": {
     "desu_masu": 0.65,
@@ -19,7 +20,7 @@
     "nominal": 0.12,
     "exclamatory": 0.05,
     "interrogative": 0.03,
-    "description": "『です・ます』中心で優しい語り口。体言止めで情景描写・余韻演出。感嘆符は『発見・喜び』に限定。"
+    "description": "『です・ます』中心の優しい語り口、体言止めで情景・余韻を演出、感嘆符は発見・喜感に限定。"
   },
   "metaphor_frequency": {
     "per_1000_chars": 5.0,
@@ -30,32 +31,33 @@
       "auditory": 0.15,
       "gustatory": 0.10
     },
-    "description": "五感フル活用。特に嗅覚・味覚・触覚で『美味しさ・心地よさ・温もり』を直接伝達。"
+    "description": "五感フル活用。特に嗅覚・味覚・触覚で美味しさ・心地よさ・温もりを直接伝達。"
   },
   "pov_distance": {
     "level": "close_third",
+    "modifier": "gentle_observer",
     "internal_monologue_ratio": 0.25,
     "free_indirect_discourse": true,
-    "description": "密接な三人称。内心独白は『観察・気づき・感謝・工夫』中心。ネガティブ感情ほぼなし。"
+    "description": "密接三人称。観察・気づき・感謝・工夫の独白中心、ネガティブ感情はほぼなし。"
   },
   "narration_tone": {
     "base": "gentle_observant",
     "emotional_peaks": "warm_grateful",
     "catharsis_mode": "quiet_fierce",
-    "description": "平常時は優しい観察者。感情ピークでは温かい感謝・愛おしさ。カタルシス時は静かな激しさで『守る』意思示す。"
+    "description": "平常は優しい観察者、ピーク時は温かい感謝と愛おしさ、カタルシス時は静かな激しさで『守る』意思を示す。"
   },
   "dialogue_style": {
     "protagonist": "gentle_practical",
     "residents": "unique_heartwarming",
     "visitors": "polite_then_amazed",
     "threats": "calm_absolute",
-    "description": "主人公：優しく実用的・工夫好き。住人：種族・境遇ごとの個性的で心温まる口調。訪問者：礼儀正しい→驚嘆。脅威：冷静・絶対的・一言で制圧。"
+    "description": "主人公は優しく実用的で工夫好き、住人は種族・境遇ごとに個性的で温かい、訪問者は礼儀正しい→驚嘆、脅威は冷静・絶対・一言で制圧。"
   },
   "pacing": {
     "scene_transition_speed": "slow",
     "time_skip_frequency": "medium",
     "chapter_hook_density": 0.5,
-    "description": "季節・行事・収穫・祭り単位で緩やかに進行。時間経過を『美しく』描写。フックは『小さな発見・喜び・新たな出会い』で十分。"
+    "description": "季節・行事・収穫・祭り単位で緩やかに進行、時間経過を美しく描写、フックは小さな発見と喜感で十分。"
   },
   "forbidden_patterns": [
     "主人公が焦る・怒る・憎む（守護者モード除く）",
@@ -64,10 +66,10 @@
     "視点漏れ（主人公の知らない世界情勢・政治・陰謀の地の文記述）"
   ],
   "required_patterns": [
-    "料理・農業・クラフト工程を『レシピ風・手順書風』で美しく詳細に",
-    "季節の移ろい・天気・光・風・匂いを毎話冒頭で提示",
-    "住人たちの『小さな成長・変化・絆』を毎話1つ以上描写",
-    "チートスキルを『魔法』でなく『便利な道具・知恵』として自然に活用",
-    "『美味しい』『気持ちいい』『楽しい』『幸せ』を五感で伝える描写を徹底"
+    "料理・農業・クラフト工程を『レシピ風・手順書風』で美しく詳細に見せる。",
+    "季節の移ろい・天気・光・風・匂いを毎話冒頭で提示する。",
+    "住人たちの『小さな成長・変化・絆』を毎話1つ以上描写する。",
+    "チートスキルを『魔法』ではなく『便利な道具・知恵』として自然に活用する。",
+    "『美味しい』『気持ちいい』『楽しい』『幸せ』を五感で伝える描写を徹底する。"
   ]
 }

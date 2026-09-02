@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
 import { CharacterParams, GenerationState, ChapterItem, ActiveAuditHighlight } from "../types";
+import { LLMConfigOverride } from "../types/easyMode";
 import { GeneratedPlotStructure } from "../types/reversePlot";
 
 interface NovelContextType {
@@ -19,6 +20,12 @@ interface NovelContextType {
   setChapters: React.Dispatch<React.SetStateAction<ChapterItem[]>>;
   currentEpNum: number;
   setCurrentEpNum: React.Dispatch<React.SetStateAction<number>>;
+  contentLengthLimit: number;
+  setContentLengthLimit: React.Dispatch<React.SetStateAction<number>>;
+  targetEpisodes: number;
+  setTargetEpisodes: React.Dispatch<React.SetStateAction<number>>;
+  llmConfig: LLMConfigOverride;
+  setLlmConfig: React.Dispatch<React.SetStateAction<LLMConfigOverride>>;
   applySuggestion: (suggestion: string) => void;
   syncGenerationToEditor: (output: string) => void;
   updateActiveChapterText: (text: string) => void;
@@ -64,6 +71,30 @@ export const NovelProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [selectedBookId, setSelectedBookId] = useState<number>(1);
   const [plotStructure, setPlotStructure] = useState<GeneratedPlotStructure | null>(null);
   const [activeHighlight, setActiveHighlight] = useState<ActiveAuditHighlight | null>(null);
+
+  const [contentLengthLimit, setContentLengthLimit] = useState<number>(2000);
+  const [targetEpisodes, setTargetEpisodes] = useState<number>(10);
+  const [llmConfig, setLlmConfig] = useState<LLMConfigOverride>(() => {
+    try {
+      const saved = localStorage.getItem("autonovel_llm_config");
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  // llmConfig 変更時に localStorage へ同期
+  useEffect(() => {
+    try {
+      if (llmConfig && Object.keys(llmConfig).length > 0) {
+        localStorage.setItem("autonovel_llm_config", JSON.stringify(llmConfig));
+      } else {
+        localStorage.removeItem("autonovel_llm_config");
+      }
+    } catch {
+      // ignore storage error
+    }
+  }, [llmConfig]);
 
   const isSwitchingEpRef = useRef(false);
 
@@ -123,6 +154,12 @@ export const NovelProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         setChapters,
         currentEpNum,
         setCurrentEpNum,
+        contentLengthLimit,
+        setContentLengthLimit,
+        targetEpisodes,
+        setTargetEpisodes,
+        llmConfig,
+        setLlmConfig,
         applySuggestion,
         syncGenerationToEditor,
         updateActiveChapterText,

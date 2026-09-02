@@ -10,6 +10,8 @@ export interface CharacterParams {
   personality: string;
   ability: string;
   genre: string;
+  style_id?: string;
+  style_profile?: any;
 }
 
 export interface Chapter {

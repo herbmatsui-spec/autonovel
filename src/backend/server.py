@@ -51,6 +51,7 @@ app.include_router(editor.router)
 
 # 復元されたルーターの動的/静的登録
 restored_routers = [
+    "src.backend.routers.styles",
     "src.backend.routers.books",
     "src.backend.routers.plots",
     "src.backend.routers.episodes",

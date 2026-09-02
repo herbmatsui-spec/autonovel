@@ -51,23 +51,92 @@ async def execute_generation(payload: dict[str, Any]) -> dict[str, Any]:
     finally:
         session.close()
 
+    # 文体（Style DNA）の解決とプロンプト注入
+    from src.models.style_profile import StyleProfile
+    from src.presets.loader import load_preset
+    from src.services.cadence_reformatter import cadence_reformatter
+
+    style_override = payload.get("style_override")
+    style_id = character.get("style_id")
+
+    style_profile: StyleProfile | None = None
+    if isinstance(style_override, dict) and style_override:
+        try:
+            style_profile = StyleProfile(**style_override)
+        except Exception as e:
+            logger.warning("Failed to parse style_override: %s", e)
+
+    if style_profile is None and style_id:
+        try:
+            preset_dict = load_preset(style_id)
+            style_data = preset_dict.get("style", {})
+            if isinstance(style_data, dict) and style_data:
+                style_profile = StyleProfile(
+                    id=style_id,
+                    name=f"{style_id}調",
+                    genre_hint=style_id,
+                    **{k: v for k, v in style_data.items() if k in StyleProfile.model_fields},
+                )
+        except Exception:
+            pass
+
+    if style_profile is None:
+        # デフォルトはジャンルから推定
+        genre_key = "zarma" if "ざまぁ" in genre else "aku_reijo" if "令嬢" in genre else "cheat_tensei"
+        try:
+            preset_dict = load_preset(genre_key)
+            style_data = preset_dict.get("style", {})
+            if isinstance(style_data, dict) and style_data:
+                style_profile = StyleProfile(
+                    id=genre_key,
+                    name=f"{genre_key}標準調",
+                    genre_hint=genre_key,
+                    **{k: v for k, v in style_data.items() if k in StyleProfile.model_fields},
+                )
+        except Exception:
+            style_profile = StyleProfile(name=f"{genre}標準文体", genre_hint=genre)
+
+    style_bias_section = style_profile.to_prompt_instruction() if style_profile else ""
+
+    content_length_limit = int(payload.get("content_length_limit") or 2000)
+    target_episodes = int(payload.get("target_episodes") or 1)
+    llm_config = payload.get("llm_config") or {}
+
     # GraphRAG を反映したユーザープロンプトの構築
     user_prompt = NOVEL_USER_PROMPT_WITH_GRAPHRAG_TEMPLATE.format(
         genre=genre,
         char_name=char_name,
         char_personality=personality,
         char_ability=ability,
+        style_bias_section=style_bias_section,
         graph_context=graph_context,
         vector_context=vector_context,
         history_context=history_context,
         current_chapter=current_chapter,
     )
+    if content_length_limit:
+        user_prompt += f"\n\n【執筆指示】1話あたりの目標文字数は約{content_length_limit}文字（目安: {max(500, content_length_limit - 300)}〜{content_length_limit + 300}文字）で執筆してください。"
 
-    adapter = get_llm_adapter()
-    generated_text = await adapter.generate_text(
+    adapter = get_llm_adapter(
+        provider=llm_config.get("provider"),
+        api_key=llm_config.get("api_key"),
+        model_name=llm_config.get("model_name"),
+        base_url=llm_config.get("base_url"),
+    )
+    max_tokens = max(500, min(8000, int(content_length_limit * 1.5)))
+    raw_generated_text = await adapter.generate_text(
         prompt=user_prompt,
         system_prompt=NOVEL_SYSTEM_PROMPT,
-        max_tokens=2000,
+        max_tokens=max_tokens,
+    )
+
+    # ケイデンス・音律ポストプロセッサ（文末連続の自動排除・スマホ改行最適化）
+    generated_text, cadence_stats = cadence_reformatter.reformat_novel_text(raw_generated_text)
+    logger.info(
+        "Cadence reformatted: %d repeated endings fixed across %d sentences (avg len: %.1f)",
+        cadence_stats.repeated_endings_fixed,
+        cadence_stats.total_sentences,
+        cadence_stats.avg_sentence_length,
     )
 
     # 生成完了後、バックグラウンド/同期でナレッジグラフとベクトルを更新
@@ -139,6 +208,14 @@ async def generate_content(
             "chapter_history": input_data.chapter_history,
             "current_chapter": processed_chapter,
             "character": char_dict,
+            "content_length_limit": input_data.content_length_limit,
+            "target_episodes": input_data.target_episodes,
+            "style_override": input_data.style_override,
+            "llm_config": (
+                input_data.llm_config.model_dump()
+                if input_data.llm_config and hasattr(input_data.llm_config, "model_dump")
+                else input_data.llm_config
+            ),
         }
 
         # タスクをキューに投入 (Huey 非同期タスク呼び出し)
@@ -322,6 +399,7 @@ async def reverse_generate_endpoint(
         answers=req.answers,
         target_episodes=req.target_episodes,
         genre=req.genre,
+        llm_config=req.llm_config,
     )
 
 

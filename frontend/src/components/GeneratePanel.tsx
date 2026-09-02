@@ -6,6 +6,8 @@ import { ReversePlotBuilder } from "./ReversePlotBuilder";
 import { GeneratedPlotStructure } from "../types/reversePlot";
 import { GachaPlan, GachaResponse, DigestResponse } from "../types/easyMode";
 import { generateGachaPlans, generateDigest } from "../api/easyMode";
+import { StylePresetSummary, StyleProfile } from "../types/style";
+import { fetchStylePresets, distillStyleFromText } from "../api/styleApi";
 
 interface GeneratePanelProps {
   onGenerated?: (output: string, suggestions: string[]) => void;
@@ -23,6 +25,12 @@ export default function GeneratePanel({ onGenerated, onMessage }: GeneratePanelP
     setChapters,
     setCurrentEpNum,
     syncGenerationToEditor,
+    contentLengthLimit,
+    setContentLengthLimit,
+    targetEpisodes,
+    setTargetEpisodes,
+    llmConfig,
+    setLlmConfig,
   } = useNovelContext();
 
   const { startGeneration, cancelGeneration } = useNovelGeneration(
@@ -57,6 +65,77 @@ export default function GeneratePanel({ onGenerated, onMessage }: GeneratePanelP
   const [gachaResult, setGachaResult] = useState<GachaResponse | null>(null);
   const [digestLoading, setDigestLoading] = useState(false);
   const [digestResult, setDigestResult] = useState<DigestResponse | null>(null);
+
+  // オプトインAPI設定のアコーディオン・キー表示ステート
+  const [showApiSettings, setShowApiSettings] = useState(false);
+  const [showApiKey, setShowApiKey] = useState(false);
+
+  // 文体（Style DNA）関連のステート
+  const [stylePresets, setStylePresets] = useState<StylePresetSummary[]>([]);
+  const [selectedStyleId, setSelectedStyleId] = useState<string>("auto");
+  const [customStyleProfile, setCustomStyleProfile] = useState<StyleProfile | null>(null);
+  const [showStyleModal, setShowStyleModal] = useState(false);
+  const [styleSampleText, setStyleSampleText] = useState("");
+  const [distillLoading, setDistillLoading] = useState(false);
+  const [distillResult, setDistillResult] = useState<StyleProfile | null>(null);
+
+  React.useEffect(() => {
+    fetchStylePresets()
+      .then((presets) => setStylePresets(presets))
+      .catch((err) => console.warn("Failed to fetch style presets:", err));
+  }, []);
+
+  const handleStyleChange = (styleId: string) => {
+    setSelectedStyleId(styleId);
+    if (styleId === "custom_modal") {
+      setShowStyleModal(true);
+      return;
+    }
+    if (styleId === "auto") {
+      setCustomStyleProfile(null);
+      setCharacter((prev) => ({ ...prev, style_id: undefined, style_profile: undefined }));
+    } else {
+      setCustomStyleProfile(null);
+      setCharacter((prev) => ({ ...prev, style_id: styleId, style_profile: undefined }));
+      const found = stylePresets.find((p) => p.id === styleId);
+      if (found) {
+        onMessage?.(`🎨 文体スタイルを「${found.name}」に設定しました`);
+      }
+    }
+  };
+
+  const handleRunDistill = async () => {
+    if (!styleSampleText.trim() || styleSampleText.trim().length < 10) {
+      onMessage?.("💡 お手本となる文章を10文字以上入力してください");
+      return;
+    }
+    setDistillLoading(true);
+    try {
+      const res = await distillStyleFromText({
+        sample_text: styleSampleText,
+        name_hint: "カスタム抽出文体",
+      });
+      setDistillResult(res.profile);
+      onMessage?.("✨ サンプルテキストから作家性DNAを抽出しました！");
+    } catch (err: any) {
+      onMessage?.(`❌ 文体抽出エラー: ${err.message || err}`);
+    } finally {
+      setDistillLoading(false);
+    }
+  };
+
+  const handleApplyCustomStyle = () => {
+    if (!distillResult) return;
+    setCustomStyleProfile(distillResult);
+    setSelectedStyleId("custom_applied");
+    setCharacter((prev) => ({
+      ...prev,
+      style_id: undefined,
+      style_profile: distillResult,
+    }));
+    setShowStyleModal(false);
+    onMessage?.(`✨ 作家性DNA「${distillResult.name}」を適用しました！ケレン味強度: ${distillResult.kerenmi_intensity}`);
+  };
 
   const handleReversePlotComplete = (structure: GeneratedPlotStructure) => {
     setPlotStructure(structure);
@@ -187,7 +266,61 @@ export default function GeneratePanel({ onGenerated, onMessage }: GeneratePanelP
               <option value="ハイファンタジー (R15)">ハイファンタジー (R15)</option>
               <option value="ダークファンタジー (R15)">ダークファンタジー (R15)</option>
               <option value="異世界転生・バトル (R15)">異世界転生・バトル (R15)</option>
+              <option value="ざまぁ・追放・無双 (R15)">ざまぁ・追放・無双 (R15)</option>
+              <option value="悪役令嬢・婚約破棄">悪役令嬢・婚約破棄</option>
+              <option value="追放後スローライフ">追放後スローライフ</option>
+              <option value="VRMMO・ゲーム世界">VRMMO・ゲーム世界</option>
             </select>
+          </div>
+
+          <div className="form-group">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+              <label className="label" style={{ margin: 0 }}>🎨 作家性DNA・文体スタイル</label>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{ padding: "2px 8px", fontSize: "0.75rem", color: "var(--accent-cyan)" }}
+                onClick={() => setShowStyleModal(true)}
+                title="お手本の文章を貼り付けて作家性・文体を自動抽出"
+                data-testid="btn-open-style-modal"
+              >
+                ✨ お手本から文体を抽出
+              </button>
+            </div>
+            <select
+              className="select"
+              value={selectedStyleId}
+              onChange={(e) => handleStyleChange(e.target.value)}
+              data-testid="style-select"
+            >
+              <option value="auto">⚡ ジャンル標準文体（自動最適化）</option>
+              {customStyleProfile && (
+                <option value="custom_applied">
+                  ✨ {customStyleProfile.name} (抽出済みDNA)
+                </option>
+              )}
+              {stylePresets.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name} ({p.genre})
+                </option>
+              ))}
+            </select>
+            {customStyleProfile && selectedStyleId === "custom_applied" && (
+              <div
+                style={{
+                  marginTop: "6px",
+                  padding: "6px 10px",
+                  background: "rgba(168, 85, 247, 0.1)",
+                  border: "1px solid rgba(168, 85, 247, 0.3)",
+                  borderRadius: "6px",
+                  fontSize: "0.8rem",
+                  color: "#d8b4fe",
+                }}
+              >
+                <span>🎯 <strong>適用中:</strong> {customStyleProfile.tone_description}</span>
+                <span style={{ marginLeft: "10px", opacity: 0.8 }}>⚡ ケレン味: {customStyleProfile.kerenmi_intensity}</span>
+              </div>
+            )}
           </div>
 
           <div className="form-group">
@@ -215,6 +348,256 @@ export default function GeneratePanel({ onGenerated, onMessage }: GeneratePanelP
               value={character.ability}
               onChange={(e) => setCharacter((prev) => ({ ...prev, ability: e.target.value }))}
             />
+          </div>
+
+          {/* オプトイン: AIモデル & API接続設定 */}
+          <div
+            style={{
+              marginBottom: "16px",
+              padding: "12px 14px",
+              background: "rgba(255, 255, 255, 0.03)",
+              border: "1px solid var(--border-color, rgba(255, 255, 255, 0.1))",
+              borderRadius: "8px",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                cursor: "pointer",
+              }}
+              onClick={() => setShowApiSettings((prev) => !prev)}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span style={{ fontSize: "0.95rem", fontWeight: 600 }}>
+                  🔑 AIモデル & API接続設定
+                </span>
+                {llmConfig?.api_key ? (
+                  <span style={{ fontSize: "0.75rem", padding: "2px 6px", borderRadius: "4px", background: "rgba(34, 197, 94, 0.2)", color: "#4ade80", border: "1px solid rgba(34, 197, 94, 0.4)" }}>
+                    🔒 カスタムAPI設定中 ({llmConfig.provider || "gemini"})
+                  </span>
+                ) : (
+                  <span style={{ fontSize: "0.75rem", padding: "2px 6px", borderRadius: "4px", background: "rgba(148, 163, 184, 0.15)", color: "var(--text-muted)" }}>
+                    ⚡ サーバー既定 / オプトイン
+                  </span>
+                )}
+              </div>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{ padding: "2px 8px", fontSize: "0.75rem" }}
+              >
+                {showApiSettings ? "閉じる ▲" : "設定を開く ▼"}
+              </button>
+            </div>
+
+            {showApiSettings && (
+              <div style={{ marginTop: "14px", borderTop: "1px solid rgba(255, 255, 255, 0.08)", paddingTop: "12px" }}>
+                <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "12px", lineHeight: 1.4 }}>
+                  ※ ここにAPIキーを入力すると、サーバーの環境変数（.env）に依存せずブラウザから直接指定したAPIを使用できます（キーはブラウザにのみ保存されます）。
+                </p>
+
+                <div className="form-group" style={{ marginBottom: "10px" }}>
+                  <label className="label" style={{ fontSize: "0.85rem" }}>プロバイダ選択</label>
+                  <select
+                    className="select"
+                    value={llmConfig?.provider || "default"}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === "default") {
+                        setLlmConfig({});
+                      } else if (val === "gemini") {
+                        setLlmConfig((prev) => ({ ...prev, provider: "gemini", model_name: prev.model_name || "gemini-2.5-flash" }));
+                      } else if (val === "openai") {
+                        setLlmConfig((prev) => ({ ...prev, provider: "openai", model_name: prev.model_name || "gpt-4o-mini", base_url: undefined }));
+                      } else if (val === "openai_compatible") {
+                        setLlmConfig((prev) => ({ ...prev, provider: "openai", model_name: prev.model_name || "deepseek-chat", base_url: prev.base_url || "https://api.deepseek.com/v1" }));
+                      }
+                    }}
+                  >
+                    <option value="default">⚡ サーバー既定（.env / 自動フォールバック）</option>
+                    <option value="gemini">🔷 Google Gemini (推奨: 高速・長文特化)</option>
+                    <option value="openai">🟢 OpenAI (GPT-4o / GPT-4o-mini)</option>
+                    <option value="openai_compatible">🟣 OpenAI互換 / ローカル (DeepSeek, Ollama, vLLM等)</option>
+                  </select>
+                </div>
+
+                {llmConfig?.provider && llmConfig.provider !== "default" && (
+                  <>
+                    <div className="form-group" style={{ marginBottom: "10px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <label className="label" style={{ fontSize: "0.85rem", margin: 0 }}>
+                          {llmConfig.provider === "gemini" ? "Google Gemini API Key" : "API Key"}
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setShowApiKey((prev) => !prev)}
+                          style={{ background: "none", border: "none", color: "var(--accent-cyan)", fontSize: "0.75rem", cursor: "pointer" }}
+                        >
+                          {showApiKey ? "隠す 👁️" : "表示 👁️"}
+                        </button>
+                      </div>
+                      <input
+                        type={showApiKey ? "text" : "password"}
+                        className="input"
+                        placeholder={llmConfig.provider === "gemini" ? "AIzaSy..." : "sk-..."}
+                        value={llmConfig.api_key || ""}
+                        onChange={(e) => setLlmConfig((prev) => ({ ...prev, api_key: e.target.value }))}
+                      />
+                    </div>
+
+                    {llmConfig.base_url !== undefined && (
+                      <div className="form-group" style={{ marginBottom: "10px" }}>
+                        <label className="label" style={{ fontSize: "0.85rem" }}>Base URL (OpenAI互換エンドポイント)</label>
+                        <input
+                          type="text"
+                          className="input"
+                          placeholder="https://api.deepseek.com/v1 または http://localhost:11434/v1"
+                          value={llmConfig.base_url || ""}
+                          onChange={(e) => setLlmConfig((prev) => ({ ...prev, base_url: e.target.value }))}
+                        />
+                      </div>
+                    )}
+
+                    <div className="form-group" style={{ marginBottom: "10px" }}>
+                      <label className="label" style={{ fontSize: "0.85rem" }}>モデル名</label>
+                      <input
+                        type="text"
+                        className="input"
+                        placeholder={llmConfig.provider === "gemini" ? "gemini-2.5-flash" : "gpt-4o-mini"}
+                        value={llmConfig.model_name || ""}
+                        onChange={(e) => setLlmConfig((prev) => ({ ...prev, model_name: e.target.value }))}
+                      />
+                      <div style={{ display: "flex", gap: "6px", marginTop: "4px", flexWrap: "wrap" }}>
+                        {llmConfig.provider === "gemini" ? (
+                          ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-1.5-flash"].map((m) => (
+                            <button
+                              key={m}
+                              type="button"
+                              className="btn btn-secondary"
+                              style={{ padding: "2px 6px", fontSize: "0.7rem" }}
+                              onClick={() => setLlmConfig((prev) => ({ ...prev, model_name: m }))}
+                            >
+                              {m}
+                            </button>
+                          ))
+                        ) : (
+                          ["gpt-4o-mini", "gpt-4o", "deepseek-chat", "llama3.1"].map((m) => (
+                            <button
+                              key={m}
+                              type="button"
+                              className="btn btn-secondary"
+                              style={{ padding: "2px 6px", fontSize: "0.7rem" }}
+                              onClick={() => setLlmConfig((prev) => ({ ...prev, model_name: m }))}
+                            >
+                              {m}
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div>
+
+                    <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "8px" }}>
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        style={{ padding: "4px 10px", fontSize: "0.75rem", color: "var(--accent-danger, #ef4444)" }}
+                        onClick={() => {
+                          setLlmConfig({});
+                          onMessage?.("⚡ API設定をクリアし、サーバー既定に戻しました");
+                        }}
+                      >
+                        🗑️ 設定をリセット
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* ボリューム設定（字数 & 話数） */}
+          <div
+            style={{
+              marginBottom: "16px",
+              padding: "12px 14px",
+              background: "rgba(255, 255, 255, 0.03)",
+              border: "1px solid var(--border-color, rgba(255, 255, 255, 0.1))",
+              borderRadius: "8px",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+              <span style={{ fontSize: "0.95rem", fontWeight: 600 }}>📏 執筆ボリューム設定</span>
+              <span style={{ fontSize: "0.8rem", color: "var(--accent-cyan)", fontWeight: 700 }}>
+                1話あたり {contentLengthLimit.toLocaleString()} 字 / 全 {targetEpisodes} 話 構成
+              </span>
+            </div>
+
+            {/* 1話あたりの字数 */}
+            <div style={{ marginBottom: "12px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", marginBottom: "4px" }}>
+                <label className="label" style={{ margin: 0 }}>1話あたりの目標字数</label>
+                <span style={{ color: "#d8b4fe", fontWeight: 600 }}>{contentLengthLimit.toLocaleString()} 文字</span>
+              </div>
+              <input
+                type="range"
+                min={500}
+                max={8000}
+                step={250}
+                value={contentLengthLimit}
+                onChange={(e) => setContentLengthLimit(Number(e.target.value))}
+                style={{ width: "100%", cursor: "pointer" }}
+              />
+              <div style={{ display: "flex", gap: "6px", marginTop: "4px" }}>
+                {[
+                  { label: "短編 (1,500字)", val: 1500 },
+                  { label: "標準 (2,500字)", val: 2500 },
+                  { label: "長編 (4,000字)", val: 4000 },
+                  { label: "重厚 (6,000字)", val: 6000 },
+                ].map((p) => (
+                  <button
+                    key={p.val}
+                    type="button"
+                    className={`btn ${contentLengthLimit === p.val ? "btn-primary" : "btn-secondary"}`}
+                    style={{ flex: 1, padding: "3px 4px", fontSize: "0.72rem" }}
+                    onClick={() => setContentLengthLimit(p.val)}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 構成目標話数（最大50話） */}
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", marginBottom: "4px" }}>
+                <label className="label" style={{ margin: 0 }}>構成目標話数 (最大50話)</label>
+                <span style={{ color: "#38bdf8", fontWeight: 600 }}>全 {targetEpisodes} 話</span>
+              </div>
+              <input
+                type="range"
+                min={1}
+                max={50}
+                step={1}
+                value={targetEpisodes}
+                onChange={(e) => setTargetEpisodes(Number(e.target.value))}
+                style={{ width: "100%", cursor: "pointer" }}
+              />
+              <div style={{ display: "flex", gap: "6px", marginTop: "4px", flexWrap: "wrap" }}>
+                {[1, 3, 5, 10, 20, 30, 50].map((num) => (
+                  <button
+                    key={num}
+                    type="button"
+                    className={`btn ${targetEpisodes === num ? "btn-primary" : "btn-secondary"}`}
+                    style={{ flex: 1, minWidth: "40px", padding: "3px 4px", fontSize: "0.72rem" }}
+                    onClick={() => setTargetEpisodes(num)}
+                  >
+                    {num}話
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
           <div className="form-group">
@@ -313,8 +696,10 @@ export default function GeneratePanel({ onGenerated, onMessage }: GeneratePanelP
         <ReversePlotBuilder
           onComplete={handleReversePlotComplete}
           onCancel={() => setMode('simple')}
-          targetEpisodes={10}
+          targetEpisodes={targetEpisodes}
           genre={character.genre}
+          llmConfig={llmConfig}
+          onTargetEpisodesChange={setTargetEpisodes}
         />
       )}
 
@@ -436,7 +821,146 @@ export default function GeneratePanel({ onGenerated, onMessage }: GeneratePanelP
       </div>
     </div>
   )}
-</section>
+
+      {/* 作家性DNA（文体）抽出モーダル */}
+      {showStyleModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0,0,0,0.75)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            backdropFilter: "blur(4px)",
+          }}
+          data-testid="style-distiller-modal"
+        >
+          <div
+            style={{
+              background: "var(--card-bg, #18181b)",
+              border: "1px solid var(--border-color, #27272a)",
+              borderRadius: "12px",
+              width: "90%",
+              maxWidth: "700px",
+              padding: "20px",
+              maxHeight: "85vh",
+              overflowY: "auto",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+              <h3 style={{ margin: 0, fontSize: "1.1rem", color: "var(--accent-primary, #a78bfa)" }}>
+                ✨ お手本から作家性DNA（文体）を抽出
+              </h3>
+              <button
+                type="button"
+                style={{ background: "transparent", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: "1.2rem" }}
+                onClick={() => setShowStyleModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "12px", lineHeight: "1.4" }}>
+              真似したいプロ作家やWeb小説の文章サンプル（300〜1,000文字程度）を貼り付けてください。
+              AIが「文長リズム」「文末比率」「比喩の癖」「ケレン味（過剰演出強度）」を逆算抽出します。
+            </p>
+
+            <div className="form-group" style={{ marginBottom: "14px" }}>
+              <textarea
+                className="textarea"
+                rows={5}
+                placeholder="ここに真似したい小説の本文サンプルを貼り付けてください..."
+                value={styleSampleText}
+                onChange={(e) => setStyleSampleText(e.target.value)}
+                data-testid="style-sample-textarea"
+              />
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginBottom: "16px" }}>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleRunDistill}
+                disabled={distillLoading || !styleSampleText.trim()}
+                data-testid="btn-run-distill"
+              >
+                {distillLoading ? "⏳ AIが文体DNAを解析中..." : "🔍 文体DNAを抽出（蒸留）"}
+              </button>
+            </div>
+
+            {distillResult && (
+              <div
+                style={{
+                  background: "rgba(255,255,255,0.03)",
+                  border: "1px solid var(--border-color)",
+                  borderRadius: "8px",
+                  padding: "14px",
+                  marginBottom: "16px",
+                }}
+                data-testid="distill-result-card"
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                  <span style={{ fontWeight: 700, fontSize: "1rem", color: "var(--accent-primary, #a78bfa)" }}>
+                    🎯 {distillResult.name}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: "0.8rem",
+                      padding: "2px 8px",
+                      background: "rgba(16, 185, 129, 0.2)",
+                      color: "#34d399",
+                      borderRadius: "12px",
+                      fontWeight: 700,
+                    }}
+                  >
+                    ケレン味: {distillResult.kerenmi_intensity}
+                  </span>
+                </div>
+
+                <div style={{ fontSize: "0.85rem", marginBottom: "6px" }}>
+                  <strong>トーン:</strong> {distillResult.tone_description}
+                </div>
+                <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "8px" }}>
+                  <strong>文長分布:</strong> 平均{distillResult.sentence_length.avg}文字 / <strong>文末:</strong> だ・である({Math.round(distillResult.sentence_end_distribution.da_dearu * 100)}%), 体言止め({Math.round(distillResult.sentence_end_distribution.nominal * 100)}%)
+                </div>
+
+                {distillResult.few_shot_sample && (
+                  <div
+                    style={{
+                      background: "rgba(0,0,0,0.3)",
+                      padding: "8px 10px",
+                      borderRadius: "6px",
+                      fontSize: "0.8rem",
+                      fontStyle: "italic",
+                      color: "#e2e8f0",
+                      marginBottom: "12px",
+                      borderLeft: "3px solid var(--accent-primary, #a78bfa)",
+                    }}
+                  >
+                    "{distillResult.few_shot_sample}"
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  style={{ width: "100%", padding: "8px" }}
+                  onClick={handleApplyCustomStyle}
+                  data-testid="btn-apply-style"
+                >
+                  ✨ この文体スタイルを採用して執筆に適用
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </section>
   );
 }
 

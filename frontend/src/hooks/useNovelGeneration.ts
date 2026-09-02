@@ -10,7 +10,7 @@ export function useNovelGeneration(
   onMessage?: (msg: string) => void,
   onError?: (msg: string) => void
 ) {
-  const { character, currentChapterText, setGenerationState } = useNovelContext();
+  const { character, currentChapterText, setGenerationState, contentLengthLimit, targetEpisodes, llmConfig } = useNovelContext();
   const isCancelledRef = useRef<boolean>(false);
 
   const startGeneration = useCallback(async () => {
@@ -27,7 +27,9 @@ export function useNovelGeneration(
         chapter_history: [currentChapterText],
         current_chapter: currentChapterText,
         character_params: character,
-        content_length_limit: 2000,
+        content_length_limit: contentLengthLimit || 2000,
+        target_episodes: targetEpisodes || 1,
+        llm_config: (llmConfig && (llmConfig.api_key || llmConfig.provider)) ? llmConfig : undefined,
       });
 
       const taskId =
@@ -111,7 +113,17 @@ export function useNovelGeneration(
       }));
       onError?.(`❌ エラー: ${msg}`);
     }
-  }, [character, currentChapterText, setGenerationState, onSuccess, onMessage, onError]);
+  }, [
+    character,
+    currentChapterText,
+    setGenerationState,
+    onSuccess,
+    onMessage,
+    onError,
+    contentLengthLimit,
+    targetEpisodes,
+    llmConfig,
+  ]);
 
   const cancelGeneration = useCallback(
     async (taskId: string | null) => {

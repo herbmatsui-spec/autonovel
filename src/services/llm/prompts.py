@@ -59,6 +59,8 @@ NOVEL_USER_PROMPT_WITH_GRAPHRAG_TEMPLATE = """【ジャンル】: {genre}
 - 性格・特徴: {char_personality}
 - 特殊能力・スキル: {char_ability}
 
+{style_bias_section}
+
 【GraphRAG: 確定している世界観・人物相関・アイテム状態】:
 {graph_context}
 
@@ -71,5 +73,6 @@ NOVEL_USER_PROMPT_WITH_GRAPHRAG_TEMPLATE = """【ジャンル】: {genre}
 【直前のシーン】:
 {current_chapter}
 
-上記の確定事実と過去の文脈を決して矛盾させずに、続く魅力的な本文を執筆してください。
+上記の確定事実と過去の文脈を決して矛盾させず、指定された【作家性DNA・文体】を忠実に再現して、続く魅力的な本文を執筆してください。
 """
+

@@ -17,6 +17,15 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - HUEY_BACKEND=redis
       - LOG_LEVEL=INFO
+      - LLM_PROVIDER=${LLM_PROVIDER:-openai}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.5-flash}
+    env_file:
+      - path: .env
+        required: false
 #    volumes:
 #      - ./src:/app/src
     healthcheck:
@@ -42,6 +51,15 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - HUEY_BACKEND=redis
       - LOG_LEVEL=INFO
+      - LLM_PROVIDER=${LLM_PROVIDER:-openai}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.5-flash}
+    env_file:
+      - path: .env
+        required: false
     healthcheck:
       disable: true
 #    volumes:
