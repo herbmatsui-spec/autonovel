@@ -2,7 +2,6 @@ import asyncio
 import json
 import logging
 import uuid
-import warnings
 from typing import Any
 
 from pydantic import ValidationError
@@ -17,15 +16,12 @@ from src.services.llm_service import LLMService
 
 logger = logging.getLogger("gacha_pitch")
 
-_GACHA_CACHE: dict[str, dict[str, Any]] = {}
-
 
 class GachaService:
     """3案ガチャ企画生成サービス [Gacha Pitch]。
 
-    永続化対応: ``db`` に DatabaseManager を渡すと結果を DB に保存する。
-    ``db=None`` の場合は旧来のプロセスメモリ ``_GACHA_CACHE`` に保存
-    （テスト用フォールバック）。後者は将来削除予定。
+    永続化対応: ``db`` に DatabaseManager を渡して DB に保存する。
+    ``db=None`` は許可しない (テスト用フォールバック _GACHA_CACHE は削除済み)。
     """
 
     def __init__(
@@ -33,6 +29,10 @@ class GachaService:
         llm_service: LLMService | None = None,
         db: Any = None,
     ):
+        if db is None:
+            raise ValueError(
+                "GachaService requires db=DatabaseManager (in-memory cache removed in v2)."
+            )
         self.llm_service = llm_service or LLMService()
         self._db = db
 
@@ -127,12 +127,10 @@ JSONキー:
         if self._db is not None:
             await self._save_gacha_plans_db(request_id, plans_json)
         else:
-            warnings.warn(
-                "[gacha-pitch] GachaService is using in-memory _GACHA_CACHE. "
-                "Pass db=DatabaseManager(...) to enable DB persistence.",
-                DeprecationWarning,
-                stacklevel=2,
+            # このパスは __init__ の ValueError で防がれているが、
+            # 防御的に残して二重安全を確保する。
+            raise RuntimeError(
+                "GachaService._db is None; this should be unreachable."
             )
-            _GACHA_CACHE[request_id] = plans_json
 
         return response
