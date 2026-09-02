@@ -14,6 +14,16 @@ class CharacterParams(BaseModel):
     personality: str = Field(default="", max_length=500)
     ability: str = Field(default="", max_length=500)
     genre: str = Field(default="", max_length=100)
+    style_id: str | None = Field(default=None, description="適用する文体スタイルID")
+
+
+class LLMConfigOverride(BaseModel):
+    """オプトインでフロントエンドから渡されるLLM設定。"""
+
+    provider: str | None = Field(default=None, description="gemini / openai / mock")
+    api_key: str | None = Field(default=None, description="カスタムAPIキー")
+    model_name: str | None = Field(default=None, description="モデル名 (例: gemini-2.5-flash, gpt-4o-mini)")
+    base_url: str | None = Field(default=None, description="OpenAI互換 Base URL")
 
 
 class EasyModeInput(BaseModel):
@@ -23,6 +33,15 @@ class EasyModeInput(BaseModel):
     current_chapter: str = ""
     character_params: CharacterParams = Field(default_factory=CharacterParams)
     content_length_limit: int = Field(default=2000, ge=1, le=10000)
+    target_episodes: int = Field(default=1, ge=1, le=50, description="目標話数 (1〜50)")
+    style_override: dict[str, Any] | None = Field(
+        default=None, description="カスタムStyleProfileの辞書"
+    )
+    llm_config: LLMConfigOverride | None = Field(
+        default=None, description="オプトインのLLM設定"
+    )
+
+
 
 
 class StreamQueryInput(BaseModel):
@@ -134,6 +153,7 @@ class ReversePlotGeneratePayload(BaseModel):
     answers: dict[str, Any] = Field(default_factory=dict, description="4ステップ回答")
     target_episodes: int = Field(default=10, ge=1, le=50, alias="targetEpisodes", description="目標話数")
     genre: str = Field(default="ハイファンタジー (R15)", description="ジャンル")
+    llm_config: LLMConfigOverride | None = Field(default=None, description="オプトインのLLM設定")
 
     model_config = {"populate_by_name": True}
 
@@ -161,6 +181,7 @@ class FullAutoRequest(BaseModel):
 
 __all__ = [
     "CharacterParams",
+    "LLMConfigOverride",
     "EasyModeInput",
     "StreamQueryInput",
     "GenerationResponse",

@@ -43,25 +43,40 @@ async def _stream_generator(
         else dict(input_data.character_params)
     )
 
-    history_context = "\n".join(input_data.chapter_history[:-1]) if len(input_data.chapter_history) > 1 else "なし"
+    history_context = (
+        "\n".join(input_data.chapter_history[:-1])
+        if len(input_data.chapter_history) > 1
+        else (input_data.chapter_history[0] if input_data.chapter_history else "なし")
+    )
+
+    limit = input_data.content_length_limit or 2000
+    genre = char_dict.get("genre", "ハイファンタジー (R15)")
     user_prompt = NOVEL_USER_PROMPT_TEMPLATE.format(
-        genre=char_dict.get("genre", "ハイファンタジー (R15)"),
+        genre=genre,
         char_name=char_dict.get("name", "主人公"),
         char_personality=char_dict.get("personality", "正義感が強い"),
         char_ability=char_dict.get("ability", "剣術・魔導"),
         history_context=history_context,
         current_chapter=processed_chapter,
     )
+    user_prompt += f"\n\n【執筆指示】1話あたりの目標文字数は約{limit}文字（目安: {max(500, limit - 300)}〜{limit + 300}文字）で執筆してください。"
 
-    adapter = get_llm_adapter()
+    llm_cfg = input_data.llm_config
+    adapter = get_llm_adapter(
+        provider=llm_cfg.provider if llm_cfg else None,
+        api_key=llm_cfg.api_key if llm_cfg else None,
+        model_name=llm_cfg.model_name if llm_cfg else None,
+        base_url=llm_cfg.base_url if llm_cfg else None,
+    )
 
     yield f"data: {json.dumps({'type': 'start'}, ensure_ascii=False)}\n\n"
 
     try:
+        max_tokens = max(500, min(8000, int(limit * 1.5)))
         async for chunk in adapter.stream_text(
             prompt=user_prompt,
             system_prompt=NOVEL_SYSTEM_PROMPT,
-            max_tokens=input_data.content_length_limit,
+            max_tokens=max_tokens,
         ):
             if await _check_disconnect(request):
                 logger.info("SSE client disconnected; cancelling adapter")

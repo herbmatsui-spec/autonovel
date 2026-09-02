@@ -3,19 +3,22 @@ import {
   ReversePlotAnswers,
   ReversePlotGenerateRequest,
 } from "../types/reversePlot";
+import { LLMConfigOverride } from "../types/easyMode";
 
 const BASE = "/easy_mode";
 
 export async function generateReversePlot(
   answers: ReversePlotAnswers | Partial<ReversePlotAnswers>,
   targetEpisodes = 10,
-  genre = "ハイファンタジー (R15)"
+  genre = "ハイファンタジー (R15)",
+  llmConfig?: LLMConfigOverride
 ): Promise<GeneratedPlotStructure> {
   const payload: ReversePlotGenerateRequest = {
     answers,
     target_episodes: targetEpisodes,
     targetEpisodes,
     genre,
+    llm_config: (llmConfig && (llmConfig.api_key || llmConfig.provider)) ? llmConfig : undefined,
   };
 
   const res = await fetch(`${BASE}/reverse-generate`, {

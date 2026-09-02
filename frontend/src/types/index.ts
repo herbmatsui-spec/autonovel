@@ -10,6 +10,8 @@ export interface CharacterParams {
   personality: string;
   ability: string;
   genre: string;
+  style_id?: string;
+  style_profile?: any;
 }
 
 export interface Chapter {
@@ -17,6 +19,16 @@ export interface Chapter {
   ep_num: number;
   title: string;
   content: string;
+}
+
+export interface ChapterItem {
+  id?: number;
+  ep_num: number;
+  title: string;
+  summary?: string;
+  content: string;
+  is_catharsis?: boolean;
+  status?: "draft" | "writing" | "completed";
 }
 
 export interface GenerationState {
@@ -30,3 +42,5 @@ export interface GenerationState {
 }
 
 export * from "./editor";
+export * from "./api.generated";
+

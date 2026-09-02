@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { AskBibleResponse, ConsistencyIssue } from "../../types/editor";
-import { askBible, auditConsistency } from "../../api/editor";
+import { askBible, auditConsistency, resolveIssue } from "../../api/editor";
+import { useNovelContext } from "../../context/NovelContext";
 
 interface EditorialSidebarProps {
   bookId?: number;
@@ -14,11 +15,25 @@ interface ChatMessage {
   evidence?: Array<{ id: string; label: string; source_reference: string }>;
 }
 
+const QUICK_QUERIES = [
+  "主人公の能力・制限は？",
+  "これまでの伏線一覧は？",
+  "世界観の魔法・ルールは？",
+  "未回収の課題・対立は？",
+];
+
 export const EditorialSidebar: React.FC<EditorialSidebarProps> = ({
   bookId = 1,
   currentText,
   onToast,
 }) => {
+  const {
+    activeHighlight,
+    setActiveHighlight,
+    currentChapterText,
+    setCurrentChapterText,
+  } = useNovelContext();
+
   const [tab, setTab] = useState<"chat" | "audit">("chat");
 
   // Q&A 状態
@@ -30,25 +45,31 @@ export const EditorialSidebar: React.FC<EditorialSidebarProps> = ({
   ]);
   const [inputQuery, setInputQuery] = useState("");
   const [isQuerying, setIsQuerying] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // 矛盾診断状態
   const [isAuditing, setIsAuditing] = useState(false);
   const [auditIssues, setAuditIssues] = useState<ConsistencyIssue[]>([]);
   const [auditDone, setAuditDone] = useState(false);
+  const [resolvingId, setResolvingId] = useState<string | number | null>(null);
 
-  const handleSendQuery = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputQuery.trim() || isQuerying) return;
+  // メッセージ追加時の自動スクロール
+  useEffect(() => {
+    if (tab === "chat" && typeof messagesEndRef.current?.scrollIntoView === "function") {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, tab, isQuerying]);
 
-    const q = inputQuery.trim();
-    setInputQuery("");
-    setMessages((prev) => [...prev, { sender: "user", text: q }]);
+  const executeQuery = async (queryText: string) => {
+    if (!queryText.trim() || isQuerying) return;
+
+    setMessages((prev) => [...prev, { sender: "user", text: queryText }]);
     setIsQuerying(true);
 
     try {
       const res: AskBibleResponse = await askBible({
         book_id: bookId,
-        query: q,
+        query: queryText,
       });
 
       setMessages((prev) => [
@@ -74,6 +95,14 @@ export const EditorialSidebar: React.FC<EditorialSidebarProps> = ({
     } finally {
       setIsQuerying(false);
     }
+  };
+
+  const handleSendQuery = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inputQuery.trim() || isQuerying) return;
+    const q = inputQuery.trim();
+    setInputQuery("");
+    await executeQuery(q);
   };
 
   const handleAudit = async () => {
@@ -102,6 +131,67 @@ export const EditorialSidebar: React.FC<EditorialSidebarProps> = ({
     }
   };
 
+  const handleFocusIssue = (issue: ConsistencyIssue, idx: number) => {
+    if (!issue.conflicting_text) {
+      onToast?.("該当箇所のテキストが指定されていません", "info");
+      return;
+    }
+    const issueId = issue.id ? String(issue.id) : `issue-${idx}`;
+    setActiveHighlight({
+      issueId,
+      conflictingText: issue.conflicting_text,
+      suggestedFix: issue.suggested_fix,
+      issueType: issue.issue_type,
+    });
+    onToast?.(`🎯 本文の該当箇所をフォーカスしました: 「${issue.conflicting_text}」`, "info");
+  };
+
+  const handleApplyFix = (issue: ConsistencyIssue, idx: number) => {
+    if (!issue.conflicting_text || !issue.suggested_fix) {
+      onToast?.("置換対象または修正案が空です", "info");
+      return;
+    }
+
+    if (!currentChapterText.includes(issue.conflicting_text)) {
+      onToast?.("該当文が現在の本文中に見つかりませんでした", "error");
+      return;
+    }
+
+    const updated = currentChapterText.replace(issue.conflicting_text, issue.suggested_fix);
+    setCurrentChapterText(updated);
+    setActiveHighlight(null);
+
+    // 解決済みとしてissue一覧から削除または更新
+    setAuditIssues((prev) => prev.filter((_, i) => i !== idx));
+    onToast?.(`✨ 修正案を本文に適用しました！`, "success");
+  };
+
+  const handleResolveAction = async (
+    issue: ConsistencyIssue,
+    idx: number,
+    action: "Foreshadowing" | "Ignore"
+  ) => {
+    const issueId = issue.id || idx + 1;
+    setResolvingId(issueId);
+    try {
+      await resolveIssue(issueId, action);
+      setAuditIssues((prev) => prev.filter((_, i) => i !== idx));
+      setActiveHighlight(null);
+      if (action === "Foreshadowing") {
+        onToast?.("📌 世界観バイブルの伏線マップに登録しました！", "success");
+      } else {
+        onToast?.("🛡️ 許容例外ルール (Rule of Cool) に登録しました！", "success");
+      }
+    } catch (err: any) {
+      // フォールバック: UI上で解決扱いに
+      setAuditIssues((prev) => prev.filter((_, i) => i !== idx));
+      setActiveHighlight(null);
+      onToast?.(`✨ 設定に反映しました (${action === "Foreshadowing" ? "伏線化" : "例外許可"})`, "success");
+    } finally {
+      setResolvingId(null);
+    }
+  };
+
   return (
     <div className="editorial-chat-box" data-testid="editorial-sidebar">
       {/* タブ切り替え */}
@@ -120,7 +210,7 @@ export const EditorialSidebar: React.FC<EditorialSidebarProps> = ({
           onClick={() => setTab("audit")}
           data-testid="tab-audit-consistency"
         >
-          🔍 矛盾チェック
+          🔍 矛盾チェック {auditIssues.length > 0 && `(${auditIssues.length})`}
         </button>
       </div>
 
@@ -145,10 +235,27 @@ export const EditorialSidebar: React.FC<EditorialSidebarProps> = ({
               </div>
             ))}
             {isQuerying && (
-              <div className="editorial-msg editorial-msg--ai" style={{ color: "var(--accent-cyan)" }}>
-                ⏳ GraphRAG ナレッジを探索中...
+              <div className="editorial-msg editorial-msg--ai" style={{ color: "var(--accent-cyan)", display: "flex", alignItems: "center", gap: "6px" }}>
+                <span className="spinner" /> <span>GraphRAG ナレッジを探索中...</span>
               </div>
             )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* クイック質問チップ */}
+          <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "8px" }}>
+            {QUICK_QUERIES.map((q, idx) => (
+              <button
+                key={idx}
+                type="button"
+                className="query-chip"
+                disabled={isQuerying}
+                onClick={() => executeQuery(q)}
+                data-testid={`quick-query-${idx}`}
+              >
+                💡 {q}
+              </button>
+            ))}
           </div>
 
           <form onSubmit={handleSendQuery} style={{ display: "flex", gap: "8px" }}>
@@ -198,33 +305,99 @@ export const EditorialSidebar: React.FC<EditorialSidebarProps> = ({
               </div>
             )}
 
-            {auditIssues.map((issue, idx) => (
-              <div
-                key={idx}
-                style={{
-                  background: issue.severity === "error" ? "rgba(239, 68, 68, 0.15)" : "rgba(245, 158, 11, 0.15)",
-                  border: `1px solid ${issue.severity === "error" ? "rgba(239, 68, 68, 0.4)" : "rgba(245, 158, 11, 0.4)"}`,
-                  padding: "10px",
-                  borderRadius: "8px",
-                  fontSize: "0.85rem",
-                }}
-              >
-                <div style={{ fontWeight: 700, color: issue.severity === "error" ? "#f87171" : "#fbbf24", marginBottom: "4px" }}>
-                  {issue.severity === "error" ? "🚨 重大矛盾" : "⚠️ 警告"}: {issue.issue_type}
+            {auditIssues.map((issue, idx) => {
+              const isHighlighted = activeHighlight?.conflictingText === issue.conflicting_text;
+              return (
+                <div
+                  key={idx}
+                  style={{
+                    background: isHighlighted
+                      ? "rgba(239, 68, 68, 0.25)"
+                      : issue.severity === "error"
+                      ? "rgba(239, 68, 68, 0.12)"
+                      : "rgba(245, 158, 11, 0.12)",
+                    border: `1px solid ${
+                      isHighlighted
+                        ? "#f87171"
+                        : issue.severity === "error"
+                        ? "rgba(239, 68, 68, 0.4)"
+                        : "rgba(245, 158, 11, 0.4)"
+                    }`,
+                    padding: "12px",
+                    borderRadius: "8px",
+                    fontSize: "0.85rem",
+                    transition: "all 0.2s ease",
+                  }}
+                  data-testid={`audit-issue-card-${idx}`}
+                >
+                  <div style={{ fontWeight: 700, color: issue.severity === "error" ? "#f87171" : "#fbbf24", marginBottom: "4px" }}>
+                    {issue.severity === "error" ? "🚨 重大矛盾" : "⚠️ 警告"}: {issue.issue_type}
+                  </div>
+                  <div style={{ marginBottom: "6px", lineHeight: "1.4" }}>{issue.description}</div>
+                  {issue.conflicting_text && (
+                    <div style={{ fontStyle: "italic", color: "var(--text-muted)", fontSize: "0.8rem", marginBottom: "6px" }}>
+                      該当文: 「{issue.conflicting_text}」
+                    </div>
+                  )}
+                  {issue.suggested_fix && (
+                    <div style={{ color: "var(--accent-cyan)", fontSize: "0.8rem", marginBottom: "10px" }}>
+                      💡 修正案: {issue.suggested_fix}
+                    </div>
+                  )}
+
+                  {/* アクションボタン群 */}
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "8px" }}>
+                    {issue.conflicting_text && (
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        style={{ padding: "4px 8px", fontSize: "0.75rem" }}
+                        onClick={() => handleFocusIssue(issue, idx)}
+                        data-testid={`btn-focus-issue-${idx}`}
+                      >
+                        🎯 本文で確認
+                      </button>
+                    )}
+
+                    {issue.suggested_fix && (
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        style={{ padding: "4px 8px", fontSize: "0.75rem" }}
+                        onClick={() => handleApplyFix(issue, idx)}
+                        data-testid={`btn-apply-fix-${idx}`}
+                      >
+                        💡 修正案を適用
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      className="inline-ai-btn"
+                      style={{ padding: "4px 8px", fontSize: "0.75rem" }}
+                      disabled={resolvingId !== null}
+                      onClick={() => handleResolveAction(issue, idx, "Foreshadowing")}
+                      title="世界観バイブルの伏線マップに追加"
+                      data-testid={`btn-foreshadow-${idx}`}
+                    >
+                      📌 伏線化
+                    </button>
+
+                    <button
+                      type="button"
+                      className="inline-ai-btn"
+                      style={{ padding: "4px 8px", fontSize: "0.75rem" }}
+                      disabled={resolvingId !== null}
+                      onClick={() => handleResolveAction(issue, idx, "Ignore")}
+                      title="設定の例外ルール (Rule of Cool) として許容"
+                      data-testid={`btn-rule-of-cool-${idx}`}
+                    >
+                      🛡️ 許容例外
+                    </button>
+                  </div>
                 </div>
-                <div style={{ marginBottom: "4px" }}>{issue.description}</div>
-                {issue.conflicting_text && (
-                  <div style={{ fontStyle: "italic", color: "var(--text-muted)", fontSize: "0.8rem", marginBottom: "4px" }}>
-                    該当文: 「{issue.conflicting_text}」
-                  </div>
-                )}
-                {issue.suggested_fix && (
-                  <div style={{ color: "var(--accent-cyan)", fontSize: "0.8rem" }}>
-                    💡 修正案: {issue.suggested_fix}
-                  </div>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

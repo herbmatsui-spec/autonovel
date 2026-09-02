@@ -2,12 +2,15 @@ import React, { useState } from 'react';
 import { REVERSE_PLOT_STEPS } from '../data/reversePlotSteps';
 import { ReversePlotAnswers, GeneratedPlotStructure } from '../types/reversePlot';
 import { generateReversePlot } from '../api/reversePlot';
+import { LLMConfigOverride } from '../types/easyMode';
 
 interface ReversePlotBuilderProps {
   onComplete: (structure: GeneratedPlotStructure) => void;
   onCancel: () => void;
   targetEpisodes: number;
   genre: string;
+  llmConfig?: LLMConfigOverride;
+  onTargetEpisodesChange?: (episodes: number) => void;
 }
 
 const STEP_KEYS = ['emotionalGoal', 'sacrifice', 'coreConflict', 'openingHook'] as const;
@@ -15,14 +18,22 @@ const STEP_KEYS = ['emotionalGoal', 'sacrifice', 'coreConflict', 'openingHook'] 
 export const ReversePlotBuilder: React.FC<ReversePlotBuilderProps> = ({
   onComplete,
   onCancel,
-  targetEpisodes,
+  targetEpisodes: initialTargetEpisodes,
   genre,
+  llmConfig,
+  onTargetEpisodesChange,
 }) => {
   const [currentStep, setCurrentStep] = useState(1);
+  const [targetEpisodes, setTargetEpisodes] = useState(initialTargetEpisodes || 10);
   const [answers, setAnswers] = useState<Partial<ReversePlotAnswers>>({});
   const [generating, setGenerating] = useState(false);
   const [preview, setPreview] = useState<GeneratedPlotStructure | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const handleEpisodesChange = (num: number) => {
+    setTargetEpisodes(num);
+    onTargetEpisodesChange?.(num);
+  };
 
   const handleOptionSelect = (value: string) => {
     const key = STEP_KEYS[currentStep - 1];
@@ -46,7 +57,7 @@ export const ReversePlotBuilder: React.FC<ReversePlotBuilderProps> = ({
     setGenerating(true);
     setError(null);
     try {
-      const data = await generateReversePlot(answers, targetEpisodes, genre);
+      const data = await generateReversePlot(answers, targetEpisodes, genre, llmConfig);
       setPreview(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : '不明なエラー');
@@ -61,6 +72,50 @@ export const ReversePlotBuilder: React.FC<ReversePlotBuilderProps> = ({
 
   return (
     <div className="reverse-plot-builder card" data-testid="reverse-plot-builder">
+      {/* 構成目標話数セレクター */}
+      <div
+        style={{
+          marginBottom: '16px',
+          padding: '10px 12px',
+          background: 'rgba(56, 189, 248, 0.08)',
+          border: '1px solid rgba(56, 189, 248, 0.25)',
+          borderRadius: '8px',
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#38bdf8' }}>
+            📚 構成目標話数（1〜50話）
+          </span>
+          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#38bdf8' }}>
+            全 {targetEpisodes} 話 構成
+          </span>
+        </div>
+        <input
+          type="range"
+          min={1}
+          max={50}
+          step={1}
+          value={targetEpisodes}
+          onChange={(e) => handleEpisodesChange(Number(e.target.value))}
+          style={{ width: '100%', cursor: 'pointer' }}
+          disabled={generating}
+        />
+        <div style={{ display: 'flex', gap: '4px', marginTop: '4px', flexWrap: 'wrap' }}>
+          {[1, 3, 5, 10, 20, 30, 50].map((num) => (
+            <button
+              key={num}
+              type="button"
+              className={`btn ${targetEpisodes === num ? 'btn-primary' : 'btn-secondary'}`}
+              style={{ flex: 1, minWidth: '36px', padding: '2px 4px', fontSize: '0.7rem' }}
+              onClick={() => handleEpisodesChange(num)}
+              disabled={generating}
+            >
+              {num}話
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="progress-bar">
         {REVERSE_PLOT_STEPS.map((s, i) => (
           <div key={s.step} className={`step ${i + 1 <= currentStep ? 'active' : ''}`}>

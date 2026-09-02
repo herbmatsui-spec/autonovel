@@ -1,17 +1,18 @@
 {
   "genre": "aku_reijo",
-  "description": "悪役令嬢ジャンル専用 文体DNAプリセット",
+  "preset_code": "aku_reijo_standard_v1.1",
+  "description": "悪役令嬢ジャンルの文体DNA。優雅で計算高い令嬢の内心を、密接な三人称と自由間接話法で艶やかに描く。",
   "sentence_length": {
     "avg": 38,
     "std_dev": 10,
     "min": 12,
     "max": 75,
-    "description": "平均文長38文字。会話文多めでテンポ良く。描写・心理は中程度の長文で丁寧に。"
+    "description": "平均38字。会話文多めでテンポ良く、描写・心理は中長文で丁寧に。"
   },
   "vocab_diversity": {
     "type_token_ratio": 0.45,
     "rare_word_ratio": 0.10,
-    "description": "貴族・宮廷・魔法・ゲーム用語を適度に使用。難解語避け、読みやすさ優先。"
+    "description": "貴族・宮廷・魔法・ゲーム用語を適度に。難解語は避け読みやすさ優先。"
   },
   "sentence_end_distribution": {
     "desu_masu": 0.60,
@@ -19,7 +20,7 @@
     "nominal": 0.12,
     "exclamatory": 0.05,
     "interrogative": 0.03,
-    "description": "令嬢らしい「です・ます」中心。内心独白は「だ・である」。体言止めで優雅さ演出。"
+    "description": "令嬢らしい『です・ます』中心、内心は『だ・である』、体言止めで優雅さを演出。"
   },
   "metaphor_frequency": {
     "per_1000_chars": 4.0,
@@ -30,19 +31,20 @@
       "kinesthetic": 0.10,
       "abstract": 0.10
     },
-    "description": "視覚優位でドレス・宝石・魔法・宮廷の美しさ描写。抽象比喩で感情の機微表現。"
+    "description": "視覚優位でドレス・宝石・魔法・宮廷の美を描き、感情の機微は抽象比喩で。"
   },
   "pov_distance": {
     "level": "close_third",
+    "modifier": "aristocratic_calculation",
     "internal_monologue_ratio": 0.40,
     "free_indirect_discourse": true,
-    "description": "密接な三人称。令嬢の内心独白40%（前世知識・計算・本音のギャップ）。自由間接話法多用。"
+    "description": "密接三人称。令嬢の内心独白40%（前世知識・計算・本音のギャップ）、自由間接話法多用。"
   },
   "narration_tone": {
     "base": "elegant_calculating",
     "emotional_peaks": "vulnerable_determined",
     "catharsis_mode": "graceful_triumphant",
-    "description": "平常時は優雅・計算高い内心。感情ピークでは脆さと決意の共存。カタルシス時は優雅に勝利。"
+    "description": "平常は優雅で計算高い、感情ピークでは脆さと決意が共存、カタルシス時は優雅に勝利。"
   },
   "dialogue_style": {
     "protagonist": "elegant_sharp",
@@ -50,13 +52,13 @@
     "rival": "condescending_then_panicked",
     "prince": "arrogant_then_regretful",
     "mob": "gossipy_awestruck",
-    "description": "主人公：優雅で鋭い・本音は鋭利。恋愛対象：献身的だが不器用。ライバル：傲慢→焦り。王子：傲慢→後悔。モブ：噂好き・畏敬。"
+    "description": "主人公は優雅で鋭く本音は鋭利、恋愛対象は献身的だが不器用、ライバルは傲慢→焦り、王子は傲慢→後悔、モブは噂好き・畏敬。"
   },
   "pacing": {
     "scene_transition_speed": "medium",
     "time_skip_frequency": "medium",
     "chapter_hook_density": 1.0,
-    "description": "社交界イベント・授業・領地経営等でシーン転換。季節・行事単位の時間スキップ。各話末尾フック必須。"
+    "description": "社交界・授業・領地経営等で転換、季節・行事単位で時間スキップ、各話末尾にフック必須。"
   },
   "forbidden_patterns": [
     "主人公が卑屈・泣き言・弱音を吐く（内心は別）",
@@ -65,10 +67,10 @@
     "視点漏れ（令嬢が知り得ぬ政治・軍事機密の地の文記述）"
   ],
   "required_patterns": [
-    "ドレス・宝石・魔法・料理等の視覚描写を丁寧に",
-    "前世知識を『ふと気づいた』『なんとなく分かる』等で自然に活用",
-    "断罪回避・逆転の瞬間は『優雅に・余裕を持って』描写",
-    "恋愛対象との距離感変化を細やかな仕草・台詞で",
-    "ゲーム用語（フラグ・ルート・パラメータ）を世界観用語に翻訳"
+    "ドレス・宝石・魔法・料理の視覚描写を丁寧に1話に複数入れる。",
+    "前世知識を『ふと気づいた』『なんとなく分かる』等で自然に活用する。",
+    "断罪回避・逆転の瞬間は『優雅に・余裕を持って』描写する。",
+    "恋愛対象との距離感変化を細やかな仕草・台詞で見せる。",
+    "ゲーム用語（フラグ・ルート・パラメータ）は世界観用語に翻訳して使う。"
   ]
 }

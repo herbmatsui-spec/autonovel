@@ -46,12 +46,14 @@ services:
       context: .
       dockerfile: Dockerfile
     image: autonovel-backend:4.0.0
-    command: ["python", "-m", "huey.bin.huey_consumer", "src.backend.tasks.huey.huey", "-w", "2", "-k", "threadpool"]
+    command: ["python", "-m", "huey.bin.huey_consumer", "src.backend.tasks.huey.huey", "-w", "2", "-k", "thread"]
     environment:
       - DATABASE_URL=postgresql+psycopg2://autonovel:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/autonovel
       - REDIS_URL=redis://:${REDIS_PASSWORD:?REDIS_PASSWORD is required}@redis:6379/0
       - HUEY_BACKEND=redis
       - PYTHONUNBUFFERED=1
+    healthcheck:
+      disable: true
     depends_on:
       postgres:
         condition: service_healthy

@@ -101,7 +101,9 @@ def patch_dependencies(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_execute_generation():
+async def test_execute_generation(monkeypatch):
+    from src.services.llm.mock_adapter import MockLLMAdapter
+    monkeypatch.setattr(easy_mode, "get_llm_adapter", lambda **kwargs: MockLLMAdapter())
     payload = {
         "current_chapter": "テスト冒頭",
         "chapter_history": ["前話"],

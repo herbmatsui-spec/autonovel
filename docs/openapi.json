@@ -11,6 +11,7 @@
           "easy_mode"
         ],
         "summary": "Generate Content",
+        "description": "章単位の対話型自動生成 [Interactive Writer]",
         "operationId": "generate_content_easy_mode_generate_post",
         "requestBody": {
           "content": {
@@ -180,6 +181,626 @@
         }
       }
     },
+    "/easy_mode/gacha": {
+      "post": {
+        "tags": [
+          "easy_mode"
+        ],
+        "summary": "Gacha Endpoint",
+        "description": "3案ガチャ企画生成 [Gacha Pitch]",
+        "operationId": "gacha_endpoint_easy_mode_gacha_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GachaRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GachaResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/easy_mode/digest": {
+      "post": {
+        "tags": [
+          "easy_mode"
+        ],
+        "summary": "Digest Endpoint",
+        "description": "ダイジェスト生成 [Quick Digest]",
+        "operationId": "digest_endpoint_easy_mode_digest_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DigestRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DigestResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/easy_mode/promote": {
+      "post": {
+        "tags": [
+          "easy_mode"
+        ],
+        "summary": "Promote Endpoint",
+        "description": "上級者モード昇格 [Producer Handoff]",
+        "operationId": "promote_endpoint_easy_mode_promote_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PromotionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromotionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/easy_mode/reverse-generate": {
+      "post": {
+        "tags": [
+          "easy_mode"
+        ],
+        "summary": "Reverse Generate Endpoint",
+        "description": "逆算プロットビルダー用同期生成エンドポイント [Reverse Plot Builder]",
+        "operationId": "reverse_generate_endpoint_easy_mode_reverse_generate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReversePlotGeneratePayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Reverse Generate Endpoint Easy Mode Reverse Generate Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/easy_mode/export-with-data": {
+      "post": {
+        "tags": [
+          "easy_mode"
+        ],
+        "summary": "Export With Data Endpoint",
+        "description": "クライアントの最新ステート（本文・設定）を反映して即座にZIPパッケージをエクスポートする",
+        "operationId": "export_with_data_endpoint_easy_mode_export_with_data_post",
+        "parameters": [
+          {
+            "name": "book_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1,
+              "title": "Book Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExportRequestPayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/easy-mode/generate": {
+      "post": {
+        "tags": [
+          "easy-mode"
+        ],
+        "summary": "Generate Content",
+        "description": "章単位の対話型自動生成 [Interactive Writer]",
+        "operationId": "generate_content_api_easy_mode_generate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EasyModeInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/easy-mode/export/{book_id}": {
+      "get": {
+        "tags": [
+          "easy-mode"
+        ],
+        "summary": "Export Easy Mode Package",
+        "description": "かんたんモードで作成された作品の納品パッケージ (ZIP) をエクスポートする。\n\nbook_id に対応する作品が DB に存在しなくてもフォールバックデータで\nZIP を生成して返却する仕様 (TC-12 参照)。",
+        "operationId": "export_easy_mode_package_api_easy_mode_export__book_id__get",
+        "parameters": [
+          {
+            "name": "book_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "title": "Book Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/easy-mode/status/{task_id}": {
+      "get": {
+        "tags": [
+          "easy-mode"
+        ],
+        "summary": "Get Task Status",
+        "description": "Return the status of a generation task.\n\nReturns \"pending\" if not yet completed, \"failed\" if an error occurred,\notherwise \"completed\" with the result.",
+        "operationId": "get_task_status_api_easy_mode_status__task_id__get",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Task Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Task Status Api Easy Mode Status  Task Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/easy-mode/task/{task_id}": {
+      "delete": {
+        "tags": [
+          "easy-mode"
+        ],
+        "summary": "Cancel Task",
+        "description": "タスクをキャンセルまたは削除する。",
+        "operationId": "cancel_task_api_easy_mode_task__task_id__delete",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Task Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Cancel Task Api Easy Mode Task  Task Id  Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/easy-mode/gacha": {
+      "post": {
+        "tags": [
+          "easy-mode"
+        ],
+        "summary": "Gacha Endpoint",
+        "description": "3案ガチャ企画生成 [Gacha Pitch]",
+        "operationId": "gacha_endpoint_api_easy_mode_gacha_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GachaRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GachaResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/easy-mode/digest": {
+      "post": {
+        "tags": [
+          "easy-mode"
+        ],
+        "summary": "Digest Endpoint",
+        "description": "ダイジェスト生成 [Quick Digest]",
+        "operationId": "digest_endpoint_api_easy_mode_digest_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DigestRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DigestResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/easy-mode/promote": {
+      "post": {
+        "tags": [
+          "easy-mode"
+        ],
+        "summary": "Promote Endpoint",
+        "description": "上級者モード昇格 [Producer Handoff]",
+        "operationId": "promote_endpoint_api_easy_mode_promote_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PromotionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromotionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/easy-mode/reverse-generate": {
+      "post": {
+        "tags": [
+          "easy-mode"
+        ],
+        "summary": "Reverse Generate Endpoint",
+        "description": "逆算プロットビルダー用同期生成エンドポイント [Reverse Plot Builder]",
+        "operationId": "reverse_generate_endpoint_api_easy_mode_reverse_generate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReversePlotGeneratePayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Reverse Generate Endpoint Api Easy Mode Reverse Generate Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/easy-mode/export-with-data": {
+      "post": {
+        "tags": [
+          "easy-mode"
+        ],
+        "summary": "Export With Data Endpoint",
+        "description": "クライアントの最新ステート（本文・設定）を反映して即座にZIPパッケージをエクスポートする",
+        "operationId": "export_with_data_endpoint_api_easy_mode_export_with_data_post",
+        "parameters": [
+          {
+            "name": "book_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1,
+              "title": "Book Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExportRequestPayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/easy_mode/generate/stream": {
       "post": {
         "tags": [
@@ -193,6 +814,2036 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/EasyModeInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/graph": {
+      "get": {
+        "tags": [
+          "graph"
+        ],
+        "summary": "Get Graph Data",
+        "description": "フロントエンドの相関図可視化 (Force-Graph 等) 用にノードとエッジ一覧を取得する.",
+        "operationId": "get_graph_data_api_graph_get",
+        "parameters": [
+          {
+            "name": "graph_name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Graph Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Graph Data Api Graph Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/graph/chunks": {
+      "get": {
+        "tags": [
+          "graph"
+        ],
+        "summary": "List Chapter Chunks",
+        "description": "保存されているベクトルチャンク一覧を取得する.",
+        "operationId": "list_chapter_chunks_api_graph_chunks_get",
+        "parameters": [
+          {
+            "name": "chapter_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "章IDでフィルタ",
+              "title": "Chapter Id"
+            },
+            "description": "章IDでフィルタ"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "title": "Response List Chapter Chunks Api Graph Chunks Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/editor/assist": {
+      "post": {
+        "tags": [
+          "editor"
+        ],
+        "summary": "Assist Content",
+        "description": "選択テキストに対するインラインAI推敲・五感描写拡張・Show Don't Tell・トーン変換",
+        "operationId": "assist_content_api_editor_assist_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssistRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssistResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/editor/ask-bible": {
+      "post": {
+        "tags": [
+          "editor"
+        ],
+        "summary": "Ask Bible",
+        "description": "GraphRAG（ベクトル検索 + ナレッジグラフ）を活用した世界観設定資料・過去章 Q&A",
+        "operationId": "ask_bible_api_editor_ask_bible_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AskBibleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AskBibleResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/editor/audit-consistency": {
+      "post": {
+        "tags": [
+          "editor"
+        ],
+        "summary": "Audit Consistency",
+        "description": "執筆中の本文と GraphRAG 設定情報とのリアルタイム矛盾診断",
+        "operationId": "audit_consistency_api_editor_audit_consistency_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConsistencyAuditRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsistencyAuditResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/editor/next-beats": {
+      "post": {
+        "tags": [
+          "editor"
+        ],
+        "summary": "Generate Next Beats",
+        "description": "直前までの本文から、王道・サスペンス・心情の3つの展開バリエーションを並列生成",
+        "operationId": "generate_next_beats_api_editor_next_beats_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NextBeatsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NextBeatsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/books/": {
+      "get": {
+        "tags": [
+          "books"
+        ],
+        "summary": "List Books",
+        "operationId": "list_books_api_books__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/BookSchema"
+                  },
+                  "type": "array",
+                  "title": "Response List Books Api Books  Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/books": {
+      "get": {
+        "tags": [
+          "books"
+        ],
+        "summary": "List Books",
+        "operationId": "list_books_api_books_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/BookSchema"
+                  },
+                  "type": "array",
+                  "title": "Response List Books Api Books Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/books/{book_id}": {
+      "get": {
+        "tags": [
+          "books"
+        ],
+        "summary": "Get Book",
+        "operationId": "get_book_api_books__book_id__get",
+        "parameters": [
+          {
+            "name": "book_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Book Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookSchema"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "books"
+        ],
+        "summary": "Delete Book",
+        "operationId": "delete_book_api_books__book_id__delete",
+        "parameters": [
+          {
+            "name": "book_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Book Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/plots/{book_id}": {
+      "get": {
+        "tags": [
+          "plots"
+        ],
+        "summary": "Get Plots",
+        "operationId": "get_plots_api_plots__book_id__get",
+        "parameters": [
+          {
+            "name": "book_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Book Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/plots/plan_generation": {
+      "post": {
+        "tags": [
+          "plots"
+        ],
+        "summary": "Plan Generation",
+        "operationId": "plan_generation_api_plots_plan_generation_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlanGenerationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/plots/expand": {
+      "post": {
+        "tags": [
+          "plots"
+        ],
+        "summary": "Expand Plots",
+        "operationId": "expand_plots_api_plots_expand_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlotExpandRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/plots/expand_candidates": {
+      "post": {
+        "tags": [
+          "plots"
+        ],
+        "summary": "Expand Plots Candidates",
+        "operationId": "expand_plots_candidates_api_plots_expand_candidates_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlotExpandCandidatesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/plots/rebuild": {
+      "post": {
+        "tags": [
+          "plots"
+        ],
+        "summary": "Rebuild Plots",
+        "operationId": "rebuild_plots_api_plots_rebuild_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlotRebuildRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/plots/audit": {
+      "post": {
+        "tags": [
+          "plots"
+        ],
+        "summary": "Audit Plan",
+        "operationId": "audit_plan_api_plots_audit_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuditPlanRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/plots/reverse-generate": {
+      "post": {
+        "tags": [
+          "plots"
+        ],
+        "summary": "Reverse Generate Plot",
+        "description": "逆算プロットビルダーからの回答を受け、プロット構造を生成",
+        "operationId": "reverse_generate_plot_api_plots_reverse_generate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReversePlotGenerateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/episodes/chapters/{book_id}": {
+      "get": {
+        "tags": [
+          "episodes"
+        ],
+        "summary": "Get Chapters",
+        "operationId": "get_chapters_api_episodes_chapters__book_id__get",
+        "parameters": [
+          {
+            "name": "book_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Book Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/episodes/generate": {
+      "post": {
+        "tags": [
+          "episodes"
+        ],
+        "summary": "Generate Episodes",
+        "operationId": "generate_episodes_api_episodes_generate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EpisodeGenerateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/episodes/generate_candidates": {
+      "post": {
+        "tags": [
+          "episodes"
+        ],
+        "summary": "Generate Episodes Candidates",
+        "operationId": "generate_episodes_candidates_api_episodes_generate_candidates_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EpisodeGenerateCandidatesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/episodes/retry_failed": {
+      "post": {
+        "tags": [
+          "episodes"
+        ],
+        "summary": "Retry Failed Episodes",
+        "operationId": "retry_failed_episodes_api_episodes_retry_failed_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetryFailedRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/episodes/chapters/import": {
+      "post": {
+        "tags": [
+          "episodes"
+        ],
+        "summary": "Import Chapter",
+        "operationId": "import_chapter_api_episodes_chapters_import_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChapterImportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/{task_id}/status": {
+      "get": {
+        "tags": [
+          "tasks"
+        ],
+        "summary": "Get Task Status",
+        "operationId": "get_task_status_api_tasks__task_id__status_get",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Task Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/{task_id}/stream": {
+      "get": {
+        "tags": [
+          "tasks"
+        ],
+        "summary": "Stream Task Status",
+        "operationId": "stream_task_status_api_tasks__task_id__stream_get",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Task Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/{task_id}/stop": {
+      "post": {
+        "tags": [
+          "tasks"
+        ],
+        "summary": "Stop Task",
+        "operationId": "stop_task_api_tasks__task_id__stop_post",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Task Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/patches/{book_id}/pending": {
+      "get": {
+        "tags": [
+          "patches"
+        ],
+        "summary": "Get Pending Patches",
+        "operationId": "get_pending_patches_api_patches__book_id__pending_get",
+        "parameters": [
+          {
+            "name": "book_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Book Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/patches/{patch_id}/approve": {
+      "post": {
+        "tags": [
+          "patches"
+        ],
+        "summary": "Approve Patch",
+        "operationId": "approve_patch_api_patches__patch_id__approve_post",
+        "parameters": [
+          {
+            "name": "patch_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Patch Id"
+            }
+          },
+          {
+            "name": "req",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {},
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Req"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/patches/{patch_id}/reject": {
+      "post": {
+        "tags": [
+          "patches"
+        ],
+        "summary": "Reject Patch",
+        "operationId": "reject_patch_api_patches__patch_id__reject_post",
+        "parameters": [
+          {
+            "name": "patch_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Patch Id"
+            }
+          },
+          {
+            "name": "req",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {},
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Req"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/patches/{patch_id}/edit": {
+      "post": {
+        "tags": [
+          "patches"
+        ],
+        "summary": "Edit Patch",
+        "operationId": "edit_patch_api_patches__patch_id__edit_post",
+        "parameters": [
+          {
+            "name": "patch_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Patch Id"
+            }
+          },
+          {
+            "name": "req",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "title": "Req"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/issues/books/{book_id}": {
+      "get": {
+        "tags": [
+          "issues"
+        ],
+        "summary": "Get Issues",
+        "operationId": "get_issues_api_issues_books__book_id__get",
+        "parameters": [
+          {
+            "name": "book_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Book Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/issues/{issue_id}/resolve": {
+      "post": {
+        "tags": [
+          "issues"
+        ],
+        "summary": "Resolve Issue",
+        "operationId": "resolve_issue_api_issues__issue_id__resolve_post",
+        "parameters": [
+          {
+            "name": "issue_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Issue Id"
+            }
+          },
+          {
+            "name": "req",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "title": "Req"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/marketing/generate": {
+      "post": {
+        "tags": [
+          "marketing"
+        ],
+        "summary": "Generate Marketing",
+        "operationId": "generate_marketing_api_marketing_generate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarketingGenerateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/marketing/export_package/{book_id}": {
+      "post": {
+        "tags": [
+          "marketing"
+        ],
+        "summary": "Export Package Post",
+        "operationId": "export_package_post_api_marketing_export_package__book_id__post",
+        "parameters": [
+          {
+            "name": "book_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Book Id"
+            }
+          },
+          {
+            "name": "api_key_req",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "title": "Api Key Req"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "marketing"
+        ],
+        "summary": "Export Package Get",
+        "operationId": "export_package_get_api_marketing_export_package__book_id__get",
+        "parameters": [
+          {
+            "name": "book_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Book Id"
+            }
+          },
+          {
+            "name": "api_key",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Api Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/prompt_versions/{book_id}": {
+      "get": {
+        "tags": [
+          "prompt_versions"
+        ],
+        "summary": "Get Prompt Versions",
+        "operationId": "get_prompt_versions_api_prompt_versions__book_id__get",
+        "parameters": [
+          {
+            "name": "book_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Book Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/prompt_versions/{book_id}/rollback": {
+      "post": {
+        "tags": [
+          "prompt_versions"
+        ],
+        "summary": "Rollback Prompt Version",
+        "operationId": "rollback_prompt_version_api_prompt_versions__book_id__rollback_post",
+        "parameters": [
+          {
+            "name": "book_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Book Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RollbackRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/books/{book_id}/narrative_metrics": {
+      "get": {
+        "tags": [
+          "misc",
+          "metrics"
+        ],
+        "summary": "Get Narrative Metrics",
+        "description": "[非推奨] 新path版 /api/narrative_metrics/{book_id}/{branch_id} を使用してください。",
+        "operationId": "get_narrative_metrics_api_books__book_id__narrative_metrics_get",
+        "deprecated": true,
+        "parameters": [
+          {
+            "name": "book_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Book Id"
+            }
+          },
+          {
+            "name": "branch_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1,
+              "title": "Branch Id"
+            }
+          },
+          {
+            "name": "ep_num",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ep Num"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bibles/{book_id}": {
+      "get": {
+        "tags": [
+          "misc"
+        ],
+        "summary": "Get Bible",
+        "operationId": "get_bible_api_bibles__book_id__get",
+        "parameters": [
+          {
+            "name": "book_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Book Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/optimization_history/{book_id}": {
+      "get": {
+        "tags": [
+          "misc"
+        ],
+        "summary": "Get Opt History",
+        "operationId": "get_opt_history_api_optimization_history__book_id__get",
+        "parameters": [
+          {
+            "name": "book_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Book Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/narrative_metrics/{book_id}/{branch_id}": {
+      "get": {
+        "tags": [
+          "misc"
+        ],
+        "summary": "Get Narrative Metrics Trend",
+        "description": "書籍およびブランチごとの指標推移を取得する。",
+        "operationId": "get_narrative_metrics_trend_api_narrative_metrics__book_id___branch_id__get",
+        "parameters": [
+          {
+            "name": "book_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Book Id"
+            }
+          },
+          {
+            "name": "branch_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Branch Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/config/planning_options": {
+      "get": {
+        "tags": [
+          "misc"
+        ],
+        "summary": "Get Planning Options",
+        "description": "フロントエンド向けの企画立案用オプション（ジャンル、アーキタイプ、文体など）を返す。",
+        "operationId": "get_planning_options_api_config_planning_options_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/novel/produce": {
+      "post": {
+        "tags": [
+          "novel"
+        ],
+        "summary": "Produce Novel",
+        "description": "作品全話生成を開始するエンドポイント",
+        "operationId": "produce_novel_api_novel_produce_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProduceNovelRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProduceNovelResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/novel/{project_id}/status": {
+      "get": {
+        "tags": [
+          "novel"
+        ],
+        "summary": "Get Novel Status",
+        "description": "作品ステータス取得",
+        "operationId": "get_novel_status_api_novel__project_id__status_get",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NovelStatusResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/novel/{project_id}/episodes": {
+      "get": {
+        "tags": [
+          "novel"
+        ],
+        "summary": "List Episodes",
+        "description": "エピソード一覧取得",
+        "operationId": "list_episodes_api_novel__project_id__episodes_get",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EpisodeListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/novel/{project_id}/report": {
+      "get": {
+        "tags": [
+          "novel"
+        ],
+        "summary": "Get Report",
+        "description": "制作レポート取得",
+        "operationId": "get_report_api_novel__project_id__report_get",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NovelReportResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/commercial/run": {
+      "post": {
+        "tags": [
+          "commercial"
+        ],
+        "summary": "Run Commercial Pipeline",
+        "description": "Commercial Pipeline を実行するエンドポイント。\n\nArgs:\n    config: Commercial Config\n\nReturns:\n    Executed pipeline result",
+        "operationId": "run_commercial_pipeline_commercial_run_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommercialConfig"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Run Commercial Pipeline Commercial Run Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/generate": {
+      "post": {
+        "summary": "Generate Illustration",
+        "description": "単一の挿絵を生成する",
+        "operationId": "generate_illustration_generate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Request"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/batch": {
+      "post": {
+        "summary": "Batch Generate Illustrations",
+        "description": "バッチで挿絵を生成する",
+        "operationId": "batch_generate_illustrations_batch_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Params"
               }
             }
           },
@@ -267,6 +2918,390 @@
   },
   "components": {
     "schemas": {
+      "AskBibleRequest": {
+        "properties": {
+          "book_id": {
+            "type": "integer",
+            "title": "Book Id",
+            "description": "作品ID",
+            "default": 1
+          },
+          "query": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Query",
+            "description": "質問内容"
+          },
+          "current_chapter": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Chapter",
+            "description": "現在の執筆中話数"
+          }
+        },
+        "type": "object",
+        "required": [
+          "query"
+        ],
+        "title": "AskBibleRequest",
+        "description": "世界観バイブル・過去章 Q&A リクエスト"
+      },
+      "AskBibleResponse": {
+        "properties": {
+          "answer": {
+            "type": "string",
+            "title": "Answer",
+            "description": "AI編集者からの回答"
+          },
+          "evidence_nodes": {
+            "items": {
+              "$ref": "#/components/schemas/GraphEvidenceNode"
+            },
+            "type": "array",
+            "title": "Evidence Nodes",
+            "description": "回答の根拠となったグラフノード群"
+          },
+          "related_characters": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Related Characters",
+            "description": "関連キャラクター名一覧"
+          }
+        },
+        "type": "object",
+        "required": [
+          "answer"
+        ],
+        "title": "AskBibleResponse",
+        "description": "世界観バイブル・過去章 Q&A レスポンス"
+      },
+      "AssistAction": {
+        "type": "string",
+        "enum": [
+          "describe",
+          "show_dont_tell",
+          "rewrite",
+          "expand"
+        ],
+        "title": "AssistAction",
+        "description": "アシスト操作種別"
+      },
+      "AssistRequest": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Text",
+            "description": "選択・編集対象の本文テキスト"
+          },
+          "action": {
+            "$ref": "#/components/schemas/AssistAction",
+            "description": "実行するアクション",
+            "default": "describe"
+          },
+          "sensory_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SensoryType"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "五感拡張の種別（action=describe時）"
+          },
+          "tone_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ToneType"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "書き換えトーン種別（action=rewrite時）"
+          },
+          "genre": {
+            "type": "string",
+            "title": "Genre",
+            "description": "作品ジャンル",
+            "default": "ハイファンタジー (R15)"
+          },
+          "context_before": {
+            "type": "string",
+            "title": "Context Before",
+            "description": "選択箇所の直前の文脈",
+            "default": ""
+          },
+          "context_after": {
+            "type": "string",
+            "title": "Context After",
+            "description": "選択箇所の直後の文脈",
+            "default": ""
+          },
+          "custom_instruction": {
+            "type": "string",
+            "title": "Custom Instruction",
+            "description": "ユーザー独自の追加指示",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "AssistRequest",
+        "description": "インラインAIアシストリクエスト"
+      },
+      "AssistResponse": {
+        "properties": {
+          "original_text": {
+            "type": "string",
+            "title": "Original Text",
+            "description": "元のテキスト"
+          },
+          "result_text": {
+            "type": "string",
+            "title": "Result Text",
+            "description": "AIによって生成・拡張されたテキスト"
+          },
+          "action": {
+            "$ref": "#/components/schemas/AssistAction",
+            "description": "実行されたアクション"
+          },
+          "diff_summary": {
+            "type": "string",
+            "title": "Diff Summary",
+            "description": "変更内容の要約",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "original_text",
+          "result_text",
+          "action"
+        ],
+        "title": "AssistResponse",
+        "description": "インラインAIアシストレスポンス"
+      },
+      "AuditPlanRequest": {
+        "properties": {
+          "api_key": {
+            "type": "string",
+            "title": "Api Key"
+          },
+          "genre": {
+            "type": "string",
+            "title": "Genre"
+          },
+          "keywords": {
+            "type": "string",
+            "title": "Keywords"
+          },
+          "trend_memo": {
+            "type": "string",
+            "title": "Trend Memo"
+          },
+          "sanctuary": {
+            "type": "string",
+            "title": "Sanctuary",
+            "default": ""
+          },
+          "originality_score": {
+            "type": "integer",
+            "title": "Originality Score",
+            "default": 50
+          },
+          "platform": {
+            "type": "string",
+            "title": "Platform",
+            "default": "カクヨム/なろう"
+          }
+        },
+        "type": "object",
+        "required": [
+          "api_key",
+          "genre",
+          "keywords",
+          "trend_memo"
+        ],
+        "title": "AuditPlanRequest",
+        "description": "プラン監査リクエスト（configなし）"
+      },
+      "BeatCard": {
+        "properties": {
+          "card_id": {
+            "type": "string",
+            "title": "Card Id",
+            "description": "カード識別ID (card_a, card_b, card_c)"
+          },
+          "branch_type": {
+            "$ref": "#/components/schemas/BranchType",
+            "description": "分岐タイプ"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "description": "展開タイトル"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary",
+            "description": "展開のあらすじ・要約"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content",
+            "description": "生成された次シーンの本文抜粋 (300-600文字)"
+          },
+          "hook_text": {
+            "type": "string",
+            "title": "Hook Text",
+            "description": "次のエピソードへの引き・クリフハンガー",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "card_id",
+          "branch_type",
+          "title",
+          "summary",
+          "content"
+        ],
+        "title": "BeatCard",
+        "description": "1つの展開バリエーションカード"
+      },
+      "BookSchema": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "genre": {
+            "type": "string",
+            "title": "Genre"
+          },
+          "concept": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Concept",
+            "default": ""
+          },
+          "synopsis": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Synopsis",
+            "default": ""
+          },
+          "target_eps": {
+            "type": "integer",
+            "title": "Target Eps",
+            "default": 0
+          },
+          "cumulative_stress": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cumulative Stress",
+            "default": 0.0
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "genre"
+        ],
+        "title": "BookSchema",
+        "description": "作品情報スキーマ"
+      },
+      "BranchType": {
+        "type": "string",
+        "enum": [
+          "royal",
+          "twist",
+          "psychology"
+        ],
+        "title": "BranchType",
+        "description": "展開分岐タイプ"
+      },
+      "ChapterImportRequest": {
+        "properties": {
+          "api_key": {
+            "type": "string",
+            "title": "Api Key"
+          },
+          "book_id": {
+            "type": "integer",
+            "title": "Book Id"
+          },
+          "ep_num": {
+            "type": "integer",
+            "title": "Ep Num"
+          },
+          "import_text": {
+            "type": "string",
+            "title": "Import Text"
+          },
+          "do_refine": {
+            "type": "boolean",
+            "title": "Do Refine"
+          }
+        },
+        "type": "object",
+        "required": [
+          "api_key",
+          "book_id",
+          "ep_num",
+          "import_text",
+          "do_refine"
+        ],
+        "title": "ChapterImportRequest",
+        "description": "章インポートリクエスト"
+      },
       "CharacterParams": {
         "properties": {
           "name": {
@@ -298,6 +3333,205 @@
         "title": "CharacterParams",
         "description": "キャラクター設定パラメータ。"
       },
+      "CommercialConfig": {
+        "properties": {
+          "series_config": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Series Config",
+            "default": {}
+          },
+          "samples": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Samples",
+            "default": []
+          },
+          "platforms": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Platforms",
+            "default": [
+              "kakuyomu",
+              "naru"
+            ]
+          }
+        },
+        "type": "object",
+        "title": "CommercialConfig",
+        "description": "商用化パイプライン設定"
+      },
+      "ConsistencyAuditRequest": {
+        "properties": {
+          "book_id": {
+            "type": "integer",
+            "title": "Book Id",
+            "description": "作品ID",
+            "default": 1
+          },
+          "content": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Content",
+            "description": "診断対象の本文"
+          },
+          "current_chapter": {
+            "type": "integer",
+            "title": "Current Chapter",
+            "description": "現在の話数",
+            "default": 1
+          }
+        },
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "title": "ConsistencyAuditRequest",
+        "description": "リアルタイム設定矛盾診断リクエスト"
+      },
+      "ConsistencyAuditResponse": {
+        "properties": {
+          "has_issues": {
+            "type": "boolean",
+            "title": "Has Issues",
+            "description": "矛盾が検出されたかどうか",
+            "default": false
+          },
+          "issues": {
+            "items": {
+              "$ref": "#/components/schemas/ConsistencyIssue"
+            },
+            "type": "array",
+            "title": "Issues",
+            "description": "検出された矛盾リスト"
+          },
+          "confidence_score": {
+            "type": "number",
+            "title": "Confidence Score",
+            "description": "診断の信頼度 (0.0 - 1.0)",
+            "default": 1.0
+          }
+        },
+        "type": "object",
+        "title": "ConsistencyAuditResponse",
+        "description": "リアルタイム設定矛盾診断レスポンス"
+      },
+      "ConsistencyIssue": {
+        "properties": {
+          "issue_type": {
+            "type": "string",
+            "title": "Issue Type",
+            "description": "矛盾の種類 (attribute, relationship, timeline, death_status, location)"
+          },
+          "severity": {
+            "type": "string",
+            "title": "Severity",
+            "description": "重要度 (error, warning, info)",
+            "default": "warning"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "矛盾内容の解説"
+          },
+          "conflicting_text": {
+            "type": "string",
+            "title": "Conflicting Text",
+            "description": "本文中の該当箇所",
+            "default": ""
+          },
+          "suggested_fix": {
+            "type": "string",
+            "title": "Suggested Fix",
+            "description": "修正の提案",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "issue_type",
+          "description"
+        ],
+        "title": "ConsistencyIssue",
+        "description": "設定矛盾・不整合の検出項目"
+      },
+      "DigestRequest": {
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "title": "Request Id",
+            "description": "元のガチャリクエストID"
+          },
+          "selected_plan_id": {
+            "type": "string",
+            "title": "Selected Plan Id",
+            "description": "ユーザーが選択した企画ID"
+          }
+        },
+        "type": "object",
+        "required": [
+          "request_id",
+          "selected_plan_id"
+        ],
+        "title": "DigestRequest"
+      },
+      "DigestResponse": {
+        "properties": {
+          "book_id": {
+            "type": "string",
+            "title": "Book Id",
+            "description": "新規作成された作品ID"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "description": "タイトル",
+            "default": ""
+          },
+          "synopsis": {
+            "type": "string",
+            "title": "Synopsis",
+            "description": "全体あらすじ",
+            "default": ""
+          },
+          "episode_1_text": {
+            "type": "string",
+            "title": "Episode 1 Text",
+            "description": "第1話の本文テキスト",
+            "default": ""
+          },
+          "climax_preview_text": {
+            "type": "string",
+            "title": "Climax Preview Text",
+            "description": "クライマックス（見せ場）のプレビューテキスト",
+            "default": ""
+          },
+          "status": {
+            "$ref": "#/components/schemas/DigestStatus",
+            "description": "生成ステータス",
+            "default": "completed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "book_id"
+        ],
+        "title": "DigestResponse"
+      },
+      "DigestStatus": {
+        "type": "string",
+        "enum": [
+          "processing",
+          "completed",
+          "failed"
+        ],
+        "title": "DigestStatus"
+      },
       "EasyModeInput": {
         "properties": {
           "chapter_history": {
@@ -326,6 +3560,318 @@
         "type": "object",
         "title": "EasyModeInput",
         "description": "かんたんモード生成リクエスト入力。"
+      },
+      "EpisodeGenerateCandidatesRequest": {
+        "properties": {
+          "api_key": {
+            "type": "string",
+            "title": "Api Key"
+          },
+          "config": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Config"
+          },
+          "book_id": {
+            "type": "integer",
+            "title": "Book Id"
+          },
+          "write_from": {
+            "type": "integer",
+            "title": "Write From"
+          },
+          "write_to": {
+            "type": "integer",
+            "title": "Write To"
+          },
+          "passion": {
+            "type": "number",
+            "title": "Passion"
+          },
+          "word_count": {
+            "type": "integer",
+            "title": "Word Count"
+          },
+          "do_refine": {
+            "type": "boolean",
+            "title": "Do Refine"
+          },
+          "env_state": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Env State"
+          },
+          "pipeline_mode": {
+            "type": "boolean",
+            "title": "Pipeline Mode",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "api_key",
+          "book_id",
+          "write_from",
+          "write_to",
+          "passion",
+          "word_count",
+          "do_refine"
+        ],
+        "title": "EpisodeGenerateCandidatesRequest",
+        "description": "エピソード候補生成リクエスト"
+      },
+      "EpisodeGenerateRequest": {
+        "properties": {
+          "api_key": {
+            "type": "string",
+            "title": "Api Key"
+          },
+          "config": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Config"
+          },
+          "book_id": {
+            "type": "integer",
+            "title": "Book Id"
+          },
+          "write_from": {
+            "type": "integer",
+            "title": "Write From"
+          },
+          "write_to": {
+            "type": "integer",
+            "title": "Write To"
+          },
+          "passion": {
+            "type": "number",
+            "title": "Passion"
+          },
+          "word_count": {
+            "type": "integer",
+            "title": "Word Count"
+          },
+          "do_refine": {
+            "type": "boolean",
+            "title": "Do Refine"
+          },
+          "env_state": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Env State"
+          },
+          "pipeline_mode": {
+            "type": "boolean",
+            "title": "Pipeline Mode",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "api_key",
+          "book_id",
+          "write_from",
+          "write_to",
+          "passion",
+          "word_count",
+          "do_refine"
+        ],
+        "title": "EpisodeGenerateRequest",
+        "description": "エピソード生成リクエスト"
+      },
+      "EpisodeListResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "error_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Type"
+          },
+          "episodes": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Episodes"
+          }
+        },
+        "type": "object",
+        "title": "EpisodeListResponse",
+        "description": "エピソード一覧取得レスポンス"
+      },
+      "ExportRequestPayload": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "description": "タイトル",
+            "default": "R15ファンタジー作品"
+          },
+          "genre": {
+            "type": "string",
+            "title": "Genre",
+            "description": "ジャンル",
+            "default": "ファンタジー (R15)"
+          },
+          "current_text": {
+            "type": "string",
+            "title": "Current Text",
+            "description": "画面上の最新本文",
+            "default": ""
+          },
+          "character": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Character",
+            "description": "主人公設定"
+          },
+          "plots": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Plots",
+            "description": "プロット概要リスト"
+          }
+        },
+        "type": "object",
+        "title": "ExportRequestPayload",
+        "description": "エクスポート用即時反映ペイロード"
+      },
+      "GachaPlan": {
+        "properties": {
+          "plan_id": {
+            "type": "string",
+            "title": "Plan Id",
+            "description": "企画の一意のID"
+          },
+          "plan_type": {
+            "$ref": "#/components/schemas/GachaPlanType",
+            "description": "企画のタイプ"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "description": "タイトル案"
+          },
+          "logline": {
+            "type": "string",
+            "title": "Logline",
+            "description": "1行あらすじ"
+          },
+          "protagonist_summary": {
+            "type": "string",
+            "title": "Protagonist Summary",
+            "description": "主人公の簡単な説明"
+          },
+          "charm_point": {
+            "type": "string",
+            "title": "Charm Point",
+            "description": "この案の最大の魅力（アピールポイント）"
+          }
+        },
+        "type": "object",
+        "required": [
+          "plan_id",
+          "plan_type",
+          "title",
+          "logline",
+          "protagonist_summary",
+          "charm_point"
+        ],
+        "title": "GachaPlan"
+      },
+      "GachaPlanType": {
+        "type": "string",
+        "enum": [
+          "royal",
+          "curveball",
+          "dark"
+        ],
+        "title": "GachaPlanType"
+      },
+      "GachaRequest": {
+        "properties": {
+          "genre": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Genre",
+            "description": "対象ジャンル"
+          },
+          "keywords": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Keywords",
+            "description": "キーワードリスト"
+          },
+          "temperature": {
+            "type": "number",
+            "title": "Temperature",
+            "description": "生成の温度感",
+            "default": 0.7
+          }
+        },
+        "type": "object",
+        "required": [
+          "genre",
+          "keywords"
+        ],
+        "title": "GachaRequest"
+      },
+      "GachaResponse": {
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "title": "Request Id",
+            "description": "ガチャリクエスト全体のID"
+          },
+          "plans": {
+            "items": {
+              "$ref": "#/components/schemas/GachaPlan"
+            },
+            "type": "array",
+            "maxItems": 3,
+            "minItems": 3,
+            "title": "Plans",
+            "description": "生成された3つの企画案"
+          }
+        },
+        "type": "object",
+        "required": [
+          "request_id",
+          "plans"
+        ],
+        "title": "GachaResponse"
       },
       "GenerationResponse": {
         "properties": {
@@ -367,6 +3913,39 @@
         "title": "GenerationResponse",
         "description": "かんたんモード生成レスポンス。"
       },
+      "GraphEvidenceNode": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "ノードIDまたはエンティティ名"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "description": "ノードラベル (Character, Location, Item, Event)",
+            "default": "Entity"
+          },
+          "properties": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Properties",
+            "description": "ノード属性情報"
+          },
+          "source_reference": {
+            "type": "string",
+            "title": "Source Reference",
+            "description": "出展情報 (例: 第1章, 世界観バイブル)",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "title": "GraphEvidenceNode",
+        "description": "回答の根拠となったナレッジグラフのノード・事実情報"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -379,6 +3958,648 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "MarketingGenerateRequest": {
+        "properties": {
+          "api_key": {
+            "type": "string",
+            "title": "Api Key"
+          },
+          "book_id": {
+            "type": "integer",
+            "title": "Book Id"
+          },
+          "latest_ep": {
+            "type": "integer",
+            "title": "Latest Ep"
+          }
+        },
+        "type": "object",
+        "required": [
+          "api_key",
+          "book_id",
+          "latest_ep"
+        ],
+        "title": "MarketingGenerateRequest",
+        "description": "マーケティング生成リクエスト"
+      },
+      "NextBeatsRequest": {
+        "properties": {
+          "book_id": {
+            "type": "integer",
+            "title": "Book Id",
+            "description": "作品ID",
+            "default": 1
+          },
+          "current_text": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Current Text",
+            "description": "執筆済みの直前本文"
+          },
+          "genre": {
+            "type": "string",
+            "title": "Genre",
+            "description": "ジャンル",
+            "default": "ハイファンタジー (R15)"
+          },
+          "character_context": {
+            "type": "string",
+            "title": "Character Context",
+            "description": "主人公や登場人物の現在の状況",
+            "default": ""
+          },
+          "temperature": {
+            "type": "number",
+            "title": "Temperature",
+            "description": "生成の多様性パラメータ",
+            "default": 0.8
+          }
+        },
+        "type": "object",
+        "required": [
+          "current_text"
+        ],
+        "title": "NextBeatsRequest",
+        "description": "Next Beats 3バリエーション生成リクエスト"
+      },
+      "NextBeatsResponse": {
+        "properties": {
+          "beats": {
+            "items": {
+              "$ref": "#/components/schemas/BeatCard"
+            },
+            "type": "array",
+            "title": "Beats",
+            "description": "3つの展開カード"
+          },
+          "original_tail": {
+            "type": "string",
+            "title": "Original Tail",
+            "description": "参照した直前本文の末尾抜粋",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "title": "NextBeatsResponse",
+        "description": "Next Beats 3バリエーション生成レスポンス"
+      },
+      "NovelReportResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "error_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Type"
+          },
+          "report": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Report",
+            "description": "レポートデータ"
+          }
+        },
+        "type": "object",
+        "title": "NovelReportResponse",
+        "description": "制作レポート取得レスポンス"
+      },
+      "NovelStatusResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "error_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Type"
+          },
+          "project_id": {
+            "type": "integer",
+            "title": "Project Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "current_episode": {
+            "type": "integer",
+            "title": "Current Episode"
+          },
+          "total_episodes": {
+            "type": "integer",
+            "title": "Total Episodes"
+          },
+          "progress_percent": {
+            "type": "number",
+            "title": "Progress Percent"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "completed_episodes": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Completed Episodes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "project_id",
+          "status",
+          "current_episode",
+          "total_episodes",
+          "progress_percent",
+          "message"
+        ],
+        "title": "NovelStatusResponse",
+        "description": "作品ステータス取得レスポンス"
+      },
+      "PlanGenerationRequest": {
+        "properties": {
+          "api_key": {
+            "type": "string",
+            "title": "Api Key"
+          },
+          "config": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Config"
+          },
+          "params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Params"
+          }
+        },
+        "type": "object",
+        "required": [
+          "api_key",
+          "params"
+        ],
+        "title": "PlanGenerationRequest",
+        "description": "企画生成リクエスト"
+      },
+      "PlotExpandCandidatesRequest": {
+        "properties": {
+          "api_key": {
+            "type": "string",
+            "title": "Api Key"
+          },
+          "config": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Config"
+          },
+          "book_id": {
+            "type": "integer",
+            "title": "Book Id"
+          },
+          "gen_from": {
+            "type": "integer",
+            "title": "Gen From"
+          },
+          "gen_to": {
+            "type": "integer",
+            "title": "Gen To"
+          }
+        },
+        "type": "object",
+        "required": [
+          "api_key",
+          "book_id",
+          "gen_from",
+          "gen_to"
+        ],
+        "title": "PlotExpandCandidatesRequest",
+        "description": "プロット候補展開リクエスト"
+      },
+      "PlotExpandRequest": {
+        "properties": {
+          "api_key": {
+            "type": "string",
+            "title": "Api Key"
+          },
+          "config": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Config"
+          },
+          "book_id": {
+            "type": "integer",
+            "title": "Book Id"
+          },
+          "gen_from": {
+            "type": "integer",
+            "title": "Gen From"
+          },
+          "gen_to": {
+            "type": "integer",
+            "title": "Gen To"
+          }
+        },
+        "type": "object",
+        "required": [
+          "api_key",
+          "book_id",
+          "gen_from",
+          "gen_to"
+        ],
+        "title": "PlotExpandRequest",
+        "description": "プロット展開リクエスト"
+      },
+      "PlotRebuildRequest": {
+        "properties": {
+          "api_key": {
+            "type": "string",
+            "title": "Api Key"
+          },
+          "config": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Config"
+          },
+          "params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Params"
+          }
+        },
+        "type": "object",
+        "required": [
+          "api_key",
+          "params"
+        ],
+        "title": "PlotRebuildRequest",
+        "description": "プロット再構築リクエスト"
+      },
+      "ProduceNovelRequest": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "description": "作品タイトル"
+          },
+          "genre": {
+            "type": "string",
+            "title": "Genre",
+            "description": "ジャンル"
+          },
+          "synopsis": {
+            "type": "string",
+            "title": "Synopsis",
+            "description": "あらすじ",
+            "default": ""
+          },
+          "keywords": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Keywords",
+            "description": "キーワード"
+          },
+          "target_episodes": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Target Episodes",
+            "description": "目標話数",
+            "default": 10
+          },
+          "target_word_count": {
+            "type": "integer",
+            "maximum": 50000.0,
+            "minimum": 100.0,
+            "title": "Target Word Count",
+            "description": "1話目標文字数",
+            "default": 3000
+          },
+          "style_key": {
+            "type": "string",
+            "title": "Style Key",
+            "description": "スタイルキー",
+            "default": "default"
+          },
+          "engine_key": {
+            "type": "string",
+            "title": "Engine Key",
+            "description": "エンジンキー",
+            "default": "standard"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "genre"
+        ],
+        "title": "ProduceNovelRequest",
+        "description": "作品全話生成リクエスト"
+      },
+      "ProduceNovelResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "error_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Type"
+          },
+          "project_id": {
+            "type": "integer",
+            "title": "Project Id",
+            "description": "プロジェクトID"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "ステータス",
+            "default": "started"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "メッセージ",
+            "default": ""
+          },
+          "token_usage_estimate": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Token Usage Estimate",
+            "description": "推定トークン使用量"
+          }
+        },
+        "type": "object",
+        "required": [
+          "project_id"
+        ],
+        "title": "ProduceNovelResponse",
+        "description": "作品生成レスポンス"
+      },
+      "PromotionRequest": {
+        "properties": {
+          "book_id": {
+            "type": "string",
+            "title": "Book Id",
+            "description": "対象の作品ID"
+          }
+        },
+        "type": "object",
+        "required": [
+          "book_id"
+        ],
+        "title": "PromotionRequest"
+      },
+      "PromotionResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "description": "昇格処理の成功有無"
+          },
+          "redirect_url": {
+            "type": "string",
+            "title": "Redirect Url",
+            "description": "フロントエンドが遷移すべき上級者モードのURLパス"
+          },
+          "state_token": {
+            "type": "string",
+            "title": "State Token",
+            "description": "引き継ぎ用の状態トークン"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success",
+          "redirect_url",
+          "state_token"
+        ],
+        "title": "PromotionResponse"
+      },
+      "RetryFailedRequest": {
+        "properties": {
+          "api_key": {
+            "type": "string",
+            "title": "Api Key"
+          },
+          "config": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Config"
+          },
+          "book_id": {
+            "type": "integer",
+            "title": "Book Id"
+          },
+          "passion": {
+            "type": "number",
+            "title": "Passion"
+          },
+          "word_count": {
+            "type": "integer",
+            "title": "Word Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "api_key",
+          "book_id",
+          "passion",
+          "word_count"
+        ],
+        "title": "RetryFailedRequest",
+        "description": "失敗エピソード再試行リクエスト"
+      },
+      "ReversePlotGeneratePayload": {
+        "properties": {
+          "answers": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Answers",
+            "description": "4ステップ回答"
+          },
+          "targetEpisodes": {
+            "type": "integer",
+            "maximum": 50.0,
+            "minimum": 1.0,
+            "title": "Targetepisodes",
+            "description": "目標話数",
+            "default": 10
+          },
+          "genre": {
+            "type": "string",
+            "title": "Genre",
+            "description": "ジャンル",
+            "default": "ハイファンタジー (R15)"
+          }
+        },
+        "type": "object",
+        "title": "ReversePlotGeneratePayload",
+        "description": "逆算プロット生成リクエスト（APIキー不要のかんたんモード・UI用）"
+      },
+      "ReversePlotGenerateRequest": {
+        "properties": {
+          "api_key": {
+            "type": "string",
+            "title": "Api Key"
+          },
+          "config": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Config"
+          },
+          "answers": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Answers"
+          },
+          "target_episodes": {
+            "type": "integer",
+            "title": "Target Episodes"
+          },
+          "genre": {
+            "type": "string",
+            "title": "Genre"
+          }
+        },
+        "type": "object",
+        "required": [
+          "api_key",
+          "answers",
+          "target_episodes",
+          "genre"
+        ],
+        "title": "ReversePlotGenerateRequest",
+        "description": "逆算プロット生成リクエスト"
+      },
+      "RollbackRequest": {
+        "properties": {
+          "version_id": {
+            "type": "integer",
+            "title": "Version Id"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason",
+            "default": "手動ロールバック"
+          }
+        },
+        "type": "object",
+        "required": [
+          "version_id"
+        ],
+        "title": "RollbackRequest",
+        "description": "プロンプトロールバックリクエスト"
+      },
+      "SensoryType": {
+        "type": "string",
+        "enum": [
+          "visual",
+          "auditory",
+          "olfactory",
+          "tactile",
+          "gustatory",
+          "metaphor"
+        ],
+        "title": "SensoryType",
+        "description": "五感・描写拡張タイプ"
+      },
+      "ToneType": {
+        "type": "string",
+        "enum": [
+          "tension",
+          "erotic",
+          "fast_paced",
+          "formal",
+          "lyrical"
+        ],
+        "title": "ToneType",
+        "description": "トーン書き換えタイプ"
       },
       "ValidationError": {
         "properties": {

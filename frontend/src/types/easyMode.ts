@@ -3,6 +3,15 @@ export interface CharacterParams {
   personality: string;
   ability: string;
   genre: string;
+  style_id?: string;
+  style_profile?: any;
+}
+
+export interface LLMConfigOverride {
+  provider?: "gemini" | "openai" | "mock" | string;
+  api_key?: string;
+  model_name?: string;
+  base_url?: string;
 }
 
 export interface EasyModeInput {
@@ -10,6 +19,9 @@ export interface EasyModeInput {
   current_chapter: string;
   character_params: CharacterParams | Record<string, unknown>;
   content_length_limit: number;
+  target_episodes?: number;
+  style_override?: Record<string, unknown>;
+  llm_config?: LLMConfigOverride;
 }
 
 export interface GenerationResponse {
