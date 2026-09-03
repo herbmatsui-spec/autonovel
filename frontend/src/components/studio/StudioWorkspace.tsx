@@ -4,6 +4,7 @@ import { Editor } from "../editor/Editor";
 import { NextBeatsPanel } from "../editor/NextBeatsPanel";
 import { EditorialSidebar } from "../editor/EditorialSidebar";
 import { ChapterOutlineTree } from "./ChapterOutlineTree";
+import { AssetPackPanel } from "../AssetPackPanel";
 
 interface StudioWorkspaceProps {
   onMessage?: (msg: string) => void;
@@ -84,58 +85,58 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
             </div>
           </div>
 
-        <div className="form-group" style={{ marginBottom: "8px" }}>
-          <label className="label">主人公名</label>
-          <input
-            className="input"
-            value={character.name}
-            onChange={(e) => setCharacter((prev) => ({ ...prev, name: e.target.value }))}
-          />
-        </div>
+          <div className="form-group" style={{ marginBottom: "8px" }}>
+            <label className="label">主人公名</label>
+            <input
+              className="input"
+              value={character.name}
+              onChange={(e) => setCharacter((prev) => ({ ...prev, name: e.target.value }))}
+            />
+          </div>
 
-        <div className="form-group" style={{ marginBottom: "8px" }}>
-          <label className="label">性格・特徴</label>
-          <input
-            className="input"
-            value={character.personality}
-            onChange={(e) => setCharacter((prev) => ({ ...prev, personality: e.target.value }))}
-          />
-        </div>
+          <div className="form-group" style={{ marginBottom: "8px" }}>
+            <label className="label">性格・特徴</label>
+            <input
+              className="input"
+              value={character.personality}
+              onChange={(e) => setCharacter((prev) => ({ ...prev, personality: e.target.value }))}
+            />
+          </div>
 
-        <div className="form-group" style={{ marginBottom: "8px" }}>
-          <label className="label">特殊能力・スキル</label>
-          <input
-            className="input"
-            value={character.ability}
-            onChange={(e) => setCharacter((prev) => ({ ...prev, ability: e.target.value }))}
-          />
-        </div>
+          <div className="form-group" style={{ marginBottom: "8px" }}>
+            <label className="label">特殊能力・スキル</label>
+            <input
+              className="input"
+              value={character.ability}
+              onChange={(e) => setCharacter((prev) => ({ ...prev, ability: e.target.value }))}
+            />
+          </div>
 
-        <div className="form-group" style={{ marginBottom: "14px" }}>
-          <label className="label">ジャンル</label>
-          <select
-            className="select"
-            value={character.genre}
-            onChange={(e) => setCharacter((prev) => ({ ...prev, genre: e.target.value }))}
-          >
-            <option value="ハイファンタジー (R15)">ハイファンタジー (R15)</option>
-            <option value="ダークファンタジー (R15)">ダークファンタジー (R15)</option>
-            <option value="異世界転生・バトル (R15)">異世界転生・バトル (R15)</option>
-          </select>
-        </div>
+          <div className="form-group" style={{ marginBottom: "14px" }}>
+            <label className="label">ジャンル</label>
+            <select
+              className="select"
+              value={character.genre}
+              onChange={(e) => setCharacter((prev) => ({ ...prev, genre: e.target.value }))}
+            >
+              <option value="ハイファンタジー (R15)">ハイファンタジー (R15)</option>
+              <option value="ダークファンタジー (R15)">ダークファンタジー (R15)</option>
+              <option value="異世界転生・バトル (R15)">異世界転生・バトル (R15)</option>
+            </select>
+          </div>
 
-        {/* 章・プロットナビゲーター */}
-        <div style={{ borderTop: "1px solid var(--border-color)", paddingTop: "14px" }}>
-          <ChapterOutlineTree />
-        </div>
+          {/* 章・プロットナビゲーター */}
+          <div style={{ borderTop: "1px solid var(--border-color)", paddingTop: "14px" }}>
+            <ChapterOutlineTree />
+          </div>
 
-        <div style={{ marginTop: "auto", padding: "10px", background: "rgba(0,0,0,0.2)", borderRadius: "8px", fontSize: "0.75rem", color: "var(--text-muted)", lineHeight: "1.4" }}>
-          💡 <strong>Studio モードのヒント</strong><br />
-          ・左下で章を切り替えて複数話を執筆可能<br />
-          ・本文のテキスト選択で五感推敲ツールバー出現<br />
-          ・右側 AI 編集者に設定質問＆矛盾自動修正
-        </div>
-      </aside>
+          <div style={{ marginTop: "auto", padding: "10px", background: "rgba(0,0,0,0.2)", borderRadius: "8px", fontSize: "0.75rem", color: "var(--text-muted)", lineHeight: "1.4" }}>
+            💡 <strong>Studio モードのヒント</strong><br />
+            ・左下で章を切り替えて複数話を執筆可能<br />
+            ・本文のテキスト選択で五感推敲ツールバー出現<br />
+            ・右側 AI 編集者に設定質問＆矛盾自動修正
+          </div>
+        </aside>
       ) : null}
 
       <main className="studio-pane" style={{ minHeight: "600px" }}>
@@ -152,7 +153,9 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
               >
                 ▶ 設定 & 章一覧
               </button>
-            ) : <div />}
+            ) : (
+              <div />
+            )}
             {!showRightPane ? (
               <button
                 type="button"
@@ -163,16 +166,20 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
               >
                 🧠 AI編集者 ◀
               </button>
-            ) : <div />}
+            ) : (
+              <div />
+            )}
           </div>
         )}
 
-        <Editor
-          content={currentChapterText}
-          onChange={setCurrentChapterText}
-          genre={character.genre}
-          onToast={handleToast}
-        />
+        {tab === "editor" && (
+          <>
+            <Editor
+              content={currentChapterText}
+              onChange={setCurrentChapterText}
+              genre={character.genre}
+              onToast={handleToast}
+            />
 
             <NextBeatsPanel
               currentText={currentChapterText}

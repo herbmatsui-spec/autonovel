@@ -60,7 +60,9 @@ class Settings(BaseSettings):
     LOG_FORMAT: Literal["json", "console", "text"] = "console"
 
     # LLM設定 (OpenAI / Gemini 互換)
-    LLM_PROVIDER: Literal["openai", "gemini", "mock"] = "openai"
+    # 実装済み: openai, gemini, mock
+    # Ollama/vLLM/Claude は OpenAI 互換モードで利用可能 (OPENAI_BASE_URL 設定)
+    LLM_PROVIDER: Literal["openai", "gemini", "mock"] = "mock"
     OPENAI_API_KEY: str | None = None
     OPENAI_BASE_URL: str | None = None  # LocalLLM, Ollama, vLLM 等の差し替え用
     OPENAI_MODEL: str = "gpt-4o-mini"

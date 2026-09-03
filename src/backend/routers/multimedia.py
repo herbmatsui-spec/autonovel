@@ -7,13 +7,12 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Path as PathParam, Request
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import Path as PathParam
+from fastapi.responses import FileResponse
 
 from src.backend.auth import validate_api_key_or_raise
-from src.backend.exceptions import AutoNovelException
 from src.backend.feature_flags import is_multimedia_enabled
 from src.backend.multimedia_service import MultimediaService
 from src.backend.multimedia_storage import get_multimedia_dir
@@ -21,8 +20,11 @@ from src.backend.observability.health import metrics
 from src.backend.rate_limit import generate_limiter
 from src.backend.schemas.multimedia import (
     ArtifactMetaResponse,
+    AssetPackGenerateRequest,
+    AssetPackGenerateResponse,
     AssetPackRequest,
     AssetPackResponse,
+    AssetsByBookResponse,
     EbookExportRequest,
     EbookExportResponse,
     IFRouteGenerateRequest,
@@ -171,6 +173,56 @@ def generate_asset_pack(
         task_id=task_id,
         file_count=len(result.files),
         file_path=result.files[0] if result.files else None,
+    )
+
+
+@router.post(
+    "/generate",
+    response_model=AssetPackGenerateResponse,
+    responses={503: {"description": "Multimedia disabled"}},
+)
+def generate_asset_pack_alias(
+    payload: AssetPackGenerateRequest,
+    request: Request,
+    service: MultimediaService = Depends(get_multimedia_service),
+    _api_key: str = Depends(validate_api_key_or_raise),
+) -> AssetPackGenerateResponse:
+    """README 互換エイリアス: 統合アセットパック (ZIP) を生成 (`/asset-pack` と同等)。"""
+    _check_enabled()
+    generate_limiter.check(request)
+    logger.info("multimedia.generate (alias) book_id=%s", payload.book_id)
+    result, task_id = service.generate_asset_pack(
+        book_id=payload.book_id,
+        include_if_routes=payload.include_if_routes,
+        include_media_mix=payload.include_media_mix,
+        include_ebook=payload.include_ebook,
+        ebook_formats=payload.ebook_formats,
+        media_mix_formats=payload.media_mix_formats,
+    )
+    return AssetPackGenerateResponse(
+        asset_id=result.asset_id or 0,
+        task_id=task_id,
+        file_count=len(result.files),
+        file_path=result.files[0] if result.files else None,
+    )
+
+
+@router.get(
+    "/assets/{book_id}",
+    response_model=AssetsByBookResponse,
+    responses={503: {"description": "Multimedia disabled"}},
+)
+def get_assets_by_book(
+    book_id: int = PathParam(..., ge=1),
+    service: MultimediaService = Depends(get_multimedia_service),
+) -> AssetsByBookResponse:
+    """README 互換エイリアス: 指定 book_id の全アセットメタデータを取得。"""
+    if not is_multimedia_enabled():
+        raise HTTPException(status_code=503, detail="Multimedia disabled")
+    assets = service.get_artifacts_by_book(book_id)
+    return AssetsByBookResponse(
+        book_id=book_id,
+        assets=[ArtifactMetaResponse(**a) for a in assets],
     )
 
 

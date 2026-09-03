@@ -1,4 +1,5 @@
 import pytest
+from unittest.mock import AsyncMock, MagicMock
 from src.domain.entities.easy_mode import EasyModeInput, LLMConfigOverride
 from src.services.llm.factory import get_llm_adapter
 from src.services.llm.gemini_adapter import GeminiAdapter
@@ -98,8 +99,12 @@ async def test_streaming_generator_with_optin_config():
         ),
     )
 
+    # モック Request オブジェクトを作成（is_disconnected は常に False を返す）
+    mock_request = MagicMock()
+    mock_request.is_disconnected = AsyncMock(return_value=False)
+
     events = []
-    async for item in _stream_generator(inp):
+    async for item in _stream_generator(inp, mock_request):
         events.append(item)
 
     assert len(events) >= 2

@@ -129,3 +129,97 @@ def apply_safety_modifier(
         prompt
         + " Tasteful R15 artistic representation, intimate but not explicit, artistic lighting."
     )
+
+
+# ---- 4コマ風/6コマ要約漫画用のプロンプト -----------------------------
+# 6コマに固定 (起/承/転/結 + 余韻2コマ) することで、話の流れが一目で分かる構成にする。
+
+_YONKOMA_PANEL_BEATS: list[tuple[str, str]] = [
+    ("setup", "wide establishing shot, introduce the situation and place"),
+    ("develop", "medium shot, develop the conflict with a clear action"),
+    ("turn", "close-up reaction shot, dramatic turning point or revelation"),
+    ("climax", "dynamic action shot, emotional climax of the episode"),
+    ("resolve", "medium shot, brief aftermath or quiet resolution"),
+    ("aftertaste", "wide shot, lingering mood or hook for the next episode"),
+]
+
+
+def _yonkoma_camera_directives() -> list[str]:
+    """6コマ分のカメラ指示 (上段3コマ・下段3コマ) を返す。"""
+    return [
+        "Panel 1 (top-left): wide establishing shot, clear background, calm mood",
+        "Panel 2 (top-center): medium shot, character action, eye-level angle",
+        "Panel 3 (top-right): close-up reaction, expressive face, dramatic light",
+        "Panel 4 (bottom-left): dynamic low-angle, action or impact moment",
+        "Panel 5 (bottom-center): medium shot, aftermath, softer lighting",
+        "Panel 6 (bottom-right): wide or extreme wide shot, lingering atmosphere, hook for next",
+    ]
+
+
+def build_yonkoma_prompt(
+    episode_summaries: list[str],
+    book_context: dict[str, str],
+    panels: int = 6,
+) -> str:
+    """1話分の流れを N コマ漫画として可視化するプロンプトを構築する。
+
+    Args:
+        episode_summaries: 各コマに割り当てる短いシーン要約。
+                           長さは ``panels`` に揃うよう呼び出し側で調整する想定。
+        book_context: ``title`` / ``genre`` / ``character_name`` / ``character_description`` を含む dict。
+        panels: コマ数。3〜6 を許容 (6以外では簡略化されたコマ割りを出力)。
+
+    Returns:
+        Imagen に渡す英語プロンプト文字列。
+    """
+    panels = max(3, min(int(panels or 6), 6))
+    beats = _YONKOMA_PANEL_BEATS[:panels]
+    camera = _yonkoma_camera_directives()[:panels]
+
+    title = book_context.get("title", "Untitled")
+    genre = book_context.get("genre", "")
+    style = _genre_hint(genre)
+
+    # サマリ長を整える (過長プロンプト防止)
+    normalized: list[str] = []
+    for i in range(panels):
+        summary = episode_summaries[i] if i < len(episode_summaries) else ""
+        summary = (summary or "").strip()
+        if len(summary) > 220:
+            summary = summary[:220] + "..."
+        normalized.append(summary)
+
+    parts: list[str] = [
+        "Six-panel (or N-panel) storyboard illustration summarizing one episode.",
+        f"Work title: {title}.",
+        style,
+        "Manga / comic style, clean line art, panel grid layout (top row 3 panels, bottom row 3 panels).",
+        "Each panel must show a distinct beat of the story so the episode flow is readable at a glance.",
+        "Use speech bubbles sparingly only when essential; prefer visual storytelling.",
+        "Cinematic lighting, expressive faces, dynamic camera angles per panel.",
+        "No text or letters in image (titles, captions, sound effects are not rendered).",
+    ]
+
+    for i, (beat, beat_desc) in enumerate(beats):
+        cam = camera[i] if i < len(camera) else "medium shot"
+        summary = normalized[i] or "(implicit progression based on previous panel)"
+        parts.append(
+            f"Panel {i + 1} [{beat.upper()}] {cam}. Beat: {beat_desc}. Scene: {summary}."
+        )
+
+    return " ".join(parts)
+
+
+def apply_yonkoma_safety_modifier(prompt: str, safety_level: SafetyLevel) -> str:
+    """4コマ風プロンプト用の R15 修飾。``apply_safety_modifier`` と同じ調子を保つ。"""
+    try:
+        is_r15 = safety_level.value == SafetyLevel.R15_CONTENT.value
+    except AttributeError:
+        is_r15 = str(getattr(safety_level, "value", safety_level)) == "R15_CONTENT"
+    if not is_r15:
+        return prompt
+    return (
+        prompt
+        + " Tasteful R15 artistic representation, romantic atmosphere, "
+        "elegant and non-explicit in all panels."
+    )

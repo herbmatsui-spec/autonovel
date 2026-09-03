@@ -1,14 +1,14 @@
 """add ai_assistant_config to books and user_preferences table
 
-Revision ID: 0003_add_ai_assistant_config
-Revises: 0002_add_catchcopy
+Revision ID: 0004_add_ai_assistant_config
+Revises: 0003_pgvector_chapter_chunks
 """
 
 import sqlalchemy as sa
 from alembic import op
 
-revision = "0003_add_ai_assistant_config"
-down_revision = "0002_add_catchcopy"
+revision = "0004_add_ai_assistant_config"
+down_revision = "0003_pgvector_chapter_chunks"
 branch_labels = None
 depends_on = None
 

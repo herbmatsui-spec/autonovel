@@ -86,7 +86,83 @@ class IllustrationWorkflow(BaseWorkflow):
                     else:
                         logger.error(f"Episode {ep_num} generation failed: {res.get('message')}")
 
+                    # 各話の 6 コマ要約漫画も生成する (設定で有効な場合)
+                    if settings.get("generateYonkoma", False):
+                        await self._generate_episode_yonkoma(
+                            book_id=book_id,
+                            ep_num=ep_num,
+                            settings=settings,
+                            results=results,
+                            reporter=reporter,
+                        )
+
         return {"status": "success", "illustrations": results}
+
+    async def _generate_episode_yonkoma(
+        self,
+        *,
+        book_id: int,
+        ep_num: int,
+        settings: dict[str, Any],
+        results: list[Any],
+        reporter: Any,
+    ) -> None:
+        """1話分の本文を取得し、6 コマ要約漫画を生成する。"""
+        try:
+            chapter = await self.repo.get_chapter(book_id, ep_num)
+        except Exception as e:  # noqa: BLE001
+            logger.warning(f"Yonkoma: failed to load chapter {ep_num}: {e}")
+            return
+        if chapter is None or not getattr(chapter, "content", None):
+            return
+
+        book_ctx: dict[str, str] = {}
+        try:
+            book = await self.repo.get_book(book_id)
+            if book is not None:
+                book_ctx["title"] = getattr(book, "title", "") or ""
+                book_ctx["genre"] = getattr(book, "genre", "") or ""
+        except Exception:  # noqa: BLE001
+            pass
+
+        panels = max(3, min(int(settings.get("yonkomaPanels", 6) or 6), 6))
+        request = IllustrationRequest(
+            book_id=book_id,
+            illustration_type=IllustrationType.YONKOMA,
+            episode_number=ep_num,
+            scene_text=getattr(chapter, "content", ""),
+            book_context=book_ctx,
+            model=IllustrationModel(settings.get("illustrationModel", "auto").lower()),
+            safety_level=self._determine_safety_level(settings),
+            panels=panels,
+        )
+        reporter.update_progress(0, 1, f"第{ep_num}話の6コマ要約を生成中...")
+        result = await self.illustration_agent.generate_episode_yonkoma(
+            episode_text=getattr(chapter, "content", ""),
+            request=request,
+            panels=panels,
+        )
+        # DB へ永続化
+        illustration_id = None
+        if self.illustration_agent.repo is not None and hasattr(
+            self.illustration_agent.repo, "create_illustration"
+        ):
+            try:
+                illustration_id = await self.illustration_agent.repo.create_illustration(
+                    book_id=book_id,
+                    illustration_type=IllustrationType.YONKOMA.value,
+                    image_url=result.image_url,
+                    prompt=result.prompt,
+                    episode_number=ep_num,
+                    character_id=None,
+                    model=result.model_used,
+                    safety_level=request.safety_level.value,
+                    generation_time_ms=result.generation_time_ms,
+                )
+                result.illustration_id = illustration_id
+            except Exception as e:  # noqa: BLE001
+                logger.warning(f"Failed to persist yonkoma: {e}")
+        results.append(result)
 
     def _determine_safety_level(self, settings: dict[str, Any]) -> SafetyLevel:
         """設定に基づいてセーフティレベルを決定"""

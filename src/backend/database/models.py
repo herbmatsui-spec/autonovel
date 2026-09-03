@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-"""
-database/models.py - SQLAlchemy ORMモデル定義
-全テーブルの宣言的マッピングを集約。
-"""
+from datetime import datetime
+
 from sqlalchemy import (
+    JSON,
     Boolean,
     Column,
     DateTime,
@@ -18,11 +17,16 @@ from sqlalchemy import (
     event,
     func,
     text,
-    JSON,
 )
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.types import TypeDecorator
 
 from src.infrastructure.database.models.base_orm import Base
+
+"""
+database/models.py - SQLAlchemy ORMモデル定義
+全テーブルの宣言的マッピングを集約。
+"""
 
 
 # Engine event listener for SQLite WAL mode (applied in core.py via DatabaseManager)
@@ -85,11 +89,6 @@ class Branch(Base):
     parent_id = Column(Integer, nullable=True)
     fork_ep_num = Column(Integer, default=0)
     created_at = Column(DateTime, server_default=func.now())
-
-
-from datetime import datetime
-
-from sqlalchemy.types import TypeDecorator
 
 
 class SafeDateTime(TypeDecorator):

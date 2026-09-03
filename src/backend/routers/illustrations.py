@@ -67,6 +67,65 @@ async def generate_illustration(
         raise HTTPException(status_code=400, detail=str(e))
 
 
+@router.post("/yonkoma")
+async def generate_yonkoma(
+    request: dict[str, Any], workflow=Depends(get_illustration_workflow)
+):
+    """1話分の流れを 6 コマ (デフォルト) で要約した漫画プロンプト+画像を生成する。
+
+    Request:
+        {
+            "book_id": int,
+            "episode_text": str,        # 1話分の本文
+            "panels": int = 6,          # 3〜6 (省略時 6)
+            "model": str = "auto",      # fast/quality/ultra/auto
+            "enable_r15": bool = false,
+            "book_context": dict = {}   # title/genre/character_name 等
+        }
+
+    Response: IllustrationResult 互換の dict
+    """
+    try:
+        book_id = int(request["book_id"])
+        episode_text = str(request.get("episode_text") or "")
+        panels = max(3, min(int(request.get("panels") or 6), 6))
+        model = request.get("model", "auto")
+        enable_r15 = bool(request.get("enable_r15"))
+        book_context = dict(request.get("book_context") or {})
+
+        ill_request = IllustrationRequest(
+            book_id=book_id,
+            illustration_type=IllustrationType.YONKOMA,
+            episode_number=request.get("episode_number"),
+            scene_text=episode_text,
+            book_context=book_context,
+            model=IllustrationModel(model),
+            safety_level=(
+                SafetyLevel.R15_CONTENT if enable_r15 else SafetyLevel.BLOCK_SOME
+            ),
+            panels=panels,
+        )
+
+        # オフ設定でも、UI がプレビュー目的で叩く可能性があるため常にプロンプトは返す。
+        # 画像生成は settings.yonkoma_enabled=False ならスキップする (呼び出し側で分岐)。
+        yonkoma_enabled = bool(request.get("yonkoma_enabled", True))
+        if not yonkoma_enabled:
+            res = await workflow.illustration_agent.generate_prompt_only(request=ill_request)
+        else:
+            res = await workflow.illustration_agent.generate_episode_yonkoma(
+                episode_text=episode_text, request=ill_request, panels=panels
+            )
+            # 既存 run() の戻り値形式に揃える
+            res = {"status": "success", "result": res, "prompt": res.prompt}
+
+        if res.get("status") == "error":
+            raise HTTPException(status_code=500, detail=res.get("message"))
+
+        return res["result"]
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 @router.post("/batch")
 async def batch_generate_illustrations(
     params: dict[str, Any], workflow=Depends(get_illustration_workflow)

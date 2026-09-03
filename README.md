@@ -168,7 +168,7 @@ AutoNovel は、AI を活用して Web 小説を **企画から執筆、校正�
    - AutoNovelの解決策: **MarketingAgent** と **IllustrationAgent** が連動し、本文・設定集・プロット概要・JSONダンプ・挿絵プロンプトを一括でZIPアーカイブにパッケージングしてワンクリック納品。
 5. **プロバイダ依存とコスト管理 (Vendor Lock-in & Token Explosion)**:
    - 従来手法: 特定のLLM APIに密結合し、API利用料の急騰やサービス停止に脆弱。
-   - AutoNovelの解決策: **LLM Gateway / Provider Factory** による疎結合化（OpenAI, Gemini, Claude, Ollama, vLLM対応）、プロンプトキャッシング、セマンティックキャッシュ、トークン・コスト追跡を完備。
+   - AutoNovelの解決策: **LLM Gateway / Provider Factory** による疎結合化（OpenAI, Gemini, Mock実装済み / Claude, Ollama, vLLM は OpenAI 互換モードで利用可能）、プロンプトキャッシング、セマンティックキャッシュ、トークン・コスト追跡を完備。
 
 ### 1.3 コア設計原則
 
@@ -232,21 +232,25 @@ Web UI からわずか数項目のフォームを入力するだけで、プロ�
 
 長編Web小説のプロ作家・ディレクター向けの本格制作統合スタジオです。
 
-- **3カラム統合ワークスペース (`StudioWorkspace.tsx`)**:
+- **3カラム統合ワークスペース (`src/components/studio/StudioWorkspace.tsx`)**:
   - **左ペイン**: 主人公設定・世界観パラメータ・ジャンル設定のリアルタイム同期。
   - **中央ペイン**: ルビ記法（`｜親文字《ルビ》`）プレビュー対応リッチエディタ & 次の展開提案。
   - **右ペイン**: GraphRAG 専属 AI 編集者（設定Q&A & リアルタイム矛盾診断）。
-- **🪄 インライン五感推敲ツールバー (`InlineAiToolbar.tsx`)**:
+- **章構成ツリービュー (`src/components/studio/ChapterOutlineTree.tsx`)**:
+  作品全体の章・プロット構造をツリー形式で表示・編集。
+- **🪄 インライン五感推敲ツールバー (`src/components/editor/InlineAiToolbar.tsx`)**:
   本文中の任意のテキストを選択するとフローティングツールバーが出現。
   - **五感描写**: 👁️視覚（光影や細部）、👂聴覚（環境音・声）、👃嗅覚（大気の匂い）、✋触覚（肌触り・温度）、✨比喩（詩的表現）
   - **🎭 Show, Don't Tell**: 感情の説明を行動・情景描写へと自動昇華
   - **トーン変換**: ⚡緊迫感UP、⏩テンポ加速
   - **テキスト保護**: 提案プレビュー確認後、選択範囲のみの「置換」または「直後追記」を安全に実行。
-- **🔮 Next Beats (次の展開 3案生成 - `NextBeatsPanel.tsx`)**:
+- **🔮 Next Beats (次の展開 3案生成 - `src/components/editor/NextBeatsPanel.tsx`)**:
   現在の執筆文脈・ジャンルから、物語を加速させる3つの分岐展開（必殺の一撃、仲間の救援、衝撃の真実など）を緊張度スコア付きで提案。
-- **🧠 専属 AI 編集者 (Ask Bible & リアルタイム矛盾チェック - `EditorialSidebar.tsx`)**:
+- **🧠 専属 AI 編集者 (Ask Bible & リアルタイム矛盾チェック - `src/components/editor/EditorialSidebar.tsx`)**:
   - **Ask Bible**: 「古代魔導剣の弱点は？」などの疑問にGraphRAGナレッジから根拠（出典）付きで即答。
   - **矛盾診断**: 本文のキャラクター行動や世界観設定を自動照合し、設定ブレやタイムラインの破綻を検知。
+- **📦 アセットパックパネル (`src/components/AssetPackPanel.tsx`)**:
+  マルチメディア（シーン画像・立ち絵・表紙・ボイス・BGM）の生成進捗管理とZIPダウンロード。
 
 ---
 
@@ -297,7 +301,17 @@ Web UI からわずか数項目のフォームを入力するだけで、プロ�
   本文、設定集、プロット概要、JSONダンプを整理されたディレクトリ構造でZIP化し、即座にダウンロード可能。
 
 #### 2.7.1 マルチメディア生成 (`multimedia` router)
-`ENABLE_MULTIMEDIA=true` で有効化。`cover` / `character` / `scene` / `voice` / `bgm` の各アセットタイプに対し、`/multimedia/tasks` で非同期タスクを投入、`/multimedia/tasks/{id}` で進捗を確認、`/multimedia/assets/{book_id}` でダウンロードできます。アセットパックは納品 ZIP にも同梱されます（[`docs/multimedia.md`](docs/multimedia.md) 参照）。
+`ENABLE_MULTIMEDIA=true` で有効化。以下のエンドポイントで各種アセットを生成・管理します：
+
+- **統合アセットパック生成**: `POST /multimedia/generate` (README互換エイリアス) / `POST /multimedia/asset-pack` - IFルート、メディアミックス台本、eBook を含む統合ZIPを生成
+- **メディアミックス台本生成**: `POST /multimedia/media-mix` - `manga` / `audio_drama` / `video` / `light_novel` / `webtoon` 形式の台本を生成
+- **IFルートグラフ生成**: `POST /multimedia/if-routes` - 分岐プロットグラフを生成・永続化
+- **eBook エクスポート**: `POST /multimedia/ebook` (または `POST /api/export/ebook`) - EPUB 3 / PDF / MOBI 形式で出力
+- **タスク進捗確認**: `GET /multimedia/tasks/{task_id}` - 非同期生成タスクのステータス取得
+- **アセット一覧取得**: `GET /multimedia/assets/{book_id}` - 指定作品の全アセットメタデータを取得
+- **ファイルダウンロード**: `GET /multimedia/artifacts/{asset_id}/download` - 成果物ファイル本体をダウンロード
+
+アセットパックは納品 ZIP にも同梱されます（[`docs/multimedia.md`](docs/multimedia.md) 参照）。
 
 #### 2.7.2 共同編集とCRDT (`collab` router)
 `chapter_versions` テーブルに `vector_clock` (JSON) と `base_version_id` を保持し、複数執筆者による章単位の並行編集を CRDT 的にマージ。`POST /collab/versions` で保存、`GET /collab/versions/{book_id}/{ep}` で履歴・コメントツリーを取得できます。
@@ -361,8 +375,7 @@ graph TD
     subgraph "External AI Providers"
         OpenAI["OpenAI (GPT-4o / o1)"]
         Gemini["Google Gemini (1.5 Pro / Flash)"]
-        Claude["Anthropic Claude (3.5 Sonnet)"]
-        LocalLLM["Local LLM (Ollama / vLLM)"]
+        OpenAICompat["OpenAI-Compatible (Claude/Ollama/vLLM via OpenRouter等)"]
     end
 
     User -->|HTTP / SPA| Nginx
@@ -400,8 +413,7 @@ graph TD
 
     LLMFactory --> OpenAI
     LLMFactory --> Gemini
-    LLMFactory --> Claude
-    LLMFactory --> LocalLLM
+    LLMFactory --> OpenAICompat
 
     Worker -->|Update Status & Result| Repo
     Worker -->|Increment Metrics| Obs
@@ -439,7 +451,18 @@ graph TD
 - **`src/components/GeneratePanel.tsx`**: 作品基本設定、主人公プロファイル、冒頭入力フォーム、非同期ポーリング進行状況バーの制御。
 - **`src/components/ExportPanel.tsx`**: 生成された小説本文のプレビュー、次話展開サジェスチョン Chips、納品ZIPダウンロードトリガー。
 - **`src/components/GraphVisualization.tsx`**: ナレッジグラフ（登場人物相関・世界観ノード）の2Dフォースグラフ可視化。
-- **`src/components/editor/Editor.tsx`**: 本文編集用リッチエディタ、文字数カウンタ、リアルタイム保存。
+- **`src/components/ReversePlotBuilder.tsx`**: 逆算プロットビルダー (4ステップ逆算プロット)。
+- **`src/components/studio/`**: 上級者Studioコンポーネント群
+  - `StudioWorkspace.tsx`: 3カラム統合ワークスペース
+  - `ChapterOutlineTree.tsx`: 章構成ツリービュー
+- **`src/components/editor/`**: エディタ機能コンポーネント群
+  - `Editor.tsx`: 本文編集用リッチエディタ、文字数カウンタ、リアルタイム保存
+  - `InlineAiToolbar.tsx`: インライン五感推敲ツールバー
+  - `NextBeatsPanel.tsx`: 次の展開3案生成パネル
+  - `EditorialSidebar.tsx`: 専属AI編集者(Q&A/矛盾診断)
+  - `AiSuggestions.tsx`: AI提案ポップオーバー
+  - `ConflictModal.tsx`: 設定矛盾モーダル
+- **`src/components/AssetPackPanel.tsx`**: マルチメディアアセットパック進捗管理・ダウンロード
 - **`src/components/common/ToastContainer.tsx`**: 非同期処理の成功・エラー・警告を画面右下に通知するトーストUI。
 - **`src/api/easyMode.ts`**: バックエンドAPIとの通信層（生成リクエスト、ポーリング、ZIPダウンロード、企画ガチャ）。
 
@@ -450,15 +473,31 @@ graph TD
 FastAPI アプリケーション (`src/backend/server.py`) は、モジュールごとにルーターを分割し、依存性の注入 (`Depends`) を活用して疎結合を徹底しています。
 
 - **`routers/easy_mode.py`**: かんたんモードの全エンドポイント（執筆、ポーリング、ZIP納品、ガチャ、ダイジェスト、昇格、IF分岐昇格）。
-- **`routers/books.py`, `plots.py`, `episodes.py`**: 作品・章・プロットのCRUDおよびブランチ操作。
+- **`routers/books.py`**: 作品 CRUD およびメタデータ管理。
+- **`routers/plots.py`**: プロット CRUD およびプロットツリー操作。
+- **`routers/episodes.py`**: エピソード CRUD および話数管理。
 - **`routers/graph.py`**: ナレッジグラフのノード・エッジデータ取得およびエンティティ検索。
 - **`routers/illustrations.py`**: 挿絵プロンプト生成および画像生成ジョブ管理。
 - **`routers/marketing.py`**: マーケティング資料・あらすじ・キャッチコピー生成。
 - **`routers/multimedia.py`** (`ENABLE_MULTIMEDIA`): シーン画像 / 立ち絵 / 表紙 / ボイス / BGM のアセットパック管理。
 - **`routers/collab.py`**: コメントツリーと `ChapterVersion` (CRDT ベクタークロック) による共同編集 API。
-- **`routers/prompt_versions.py`, `prompt_compare.py`**: プロンプトのバージョン管理・A/B 比較。
+- **`routers/prompt_versions.py`**: プロンプトのバージョン管理。
+- **`routers/prompt_compare.py`**: プロンプト A/B 比較。
 - **`routers/streaming.py`**: SSE による長文生成のリアルタイム配信。
 - **`routers/export.py`**: eBook (EPUB) エクスポート・詳細エクスポート。
+- **`routers/cost.py`**: コスト分析・トークン使用量追踪 API。
+- **`routers/hooks.py`**: イベントフック(トリガー)管理 API。
+- **`routers/issues.py`**: 品質監査で検知された問題(Issue)管理 API。
+- **`routers/structure.py`**: 作品構造(章構成・プロットツリー)管理 API。
+- **`routers/commercial.py`**: 商用展開・収益化設定管理 API。
+- **`routers/patches.py`**: 自動修正パッチ(Patch)管理 API。
+- **`routers/tasks.py`**: タスク状態管理・一覧取得 API。
+- **`routers/misc.py`**: ユーティリティエンドポイント群。
+- **`routers/novel.py`**: 小説詳細・メタデータ管理 API。
+- **`routers/orchestrated.py`**: オーケストレーション統合 API。
+- **`routers/trace.py`**: 実行トレース・ログ取得 API。
+- **`routers/editor.py`**: 上級者Studioエディタ状態管理 API。
+- **`routers/styles.py`**: 文体プリセット・スタイル管理 API。
 - **`observability.py`**: `/health`（多段ヘルスチェック）および `/metrics`（プロセス内メトリクス）。
 - **`rate_limit.py`**: IP単位スライディングウィンドウ方式による過剰リクエスト制限 (HTTP 429)。
 
@@ -482,7 +521,7 @@ FastAPI アプリケーション (`src/backend/server.py`) は、モジュール
 - **SQLite WAL モード**: ローカル実行時、`PRAGMA journal_mode=WAL` および `PRAGMA foreign_keys=ON` を自動適用し、同時読み書き性能とデータ整合性を最大化。
 - **PostgreSQL 16 + Apache AGE + pgvector**: 本番環境において、リレーショナルデータ・ナレッジグラフ・ベクトル検索を単一インスタンスで統合（Docker イメージ `apache/age-postgresql:16-pgvector`）。
 - **ChromaDB (オプション)**: 大規模コレクションを独立プロセスで保持したい場合に切替可能（`CHROMA_HOST` / `CHROMA_PORT`）。
-- **マイグレーション**: スキーマ変更は Alembic で管理。`alembic.ini` の `script_location = src/backend/alembic`、実際のマイグレーションモジュールはルート `alembic/versions/` に配置（`00000000_initial_migration`, `0001_erotic_intensity`, `0002_add_catchcopy`, `0003_pgvector_chapter_chunks`, `0003_add_ai_assistant_config`, `0011_multimedia_artifacts`, `0012_age_graph_init`, `0013_graph_pipeline_idempotency`）。
+- **マイグレーション**: スキーマ変更は Alembic で管理。`alembic.ini` の `script_location = src/backend/alembic`、実際のマイグレーションモジュールは `src/backend/alembic/versions/` に配置（`0000_initial_migration`, `0001_erotic_intensity`, `0002_add_catchcopy`, `0003_pgvector_chapter_chunks`, `0004_add_ai_assistant_config`, `0011_multimedia_artifacts`, `0012_age_graph_init`, `0013_graph_pipeline_idempotency`）。
 
 ---
 
@@ -493,7 +532,11 @@ FastAPI アプリケーション (`src/backend/server.py`) は、モジュール
 ### 4.1 エージェント群の責務分担
 
 AutoNovel では、1つの巨大なプロンプトに全てを委ねるのではなく、専門化された複数のAIエージェントが協調して小説を制作します。
-エージェント間のルーティングは `src/agents/orchestrator.py` の `AgentName` / `AgentContext` / `AgentResult` ベースのグラフで表現され、各エージェントの実行は `src/agents/event_bus.py` の `EventBus`（in-process + Redis Pub/Sub）で観測できます。
+エージェント間のルーティングは `src/agents/orchestrator.py` の `AgentName` / `AgentContext` / `AgentResult` ベースのグラフで表現される。
+
+ EventBus は2種類存在する:
+ - **`src/agents/event_bus.py` EventBus**: エージェント間オーケストレーションイベント用 (in-process + Redis Pub/Sub)
+ - **`src/shared/event_bus.py` UIEventType**: Streamlit UI 向けイベント種別定義 (kernels/ → streamlit_app/ 間のbridge)
 
 ```
                       +--------------------+
@@ -529,7 +572,38 @@ AutoNovel では、1つの巨大なプロンプトに全てを委ねるのでは
                       +--------------------+                +--------------------+
 ```
 
-> **StreamPlotScheduler (`src/agents/writing_scheduler.py`) + `EpisodePipeline`**: 章単位の生成をストリーム配信・チェックポイント保存で進行させ、長文でも停止・再開可能。
+> **StreamPlotScheduler (`src/agents/writing_scheduler.py`) + `EpisodePipeline` (`src/agents/episode_pipeline.py`)**: 章単位の生成をストリーム配信・チェックポイント保存で進行させ、長文でも停止・再開可能。
+
+### 4.1.5 ワークフロー層 (Workflows Layer)
+
+`src/backend/workflows/` には、LangGraph ベースのステートグラフワークフローが19種類定義されている。
+これらは agents/ と services/ を繋ぐ 중재レイヤーとして機能し、複雑な 멀티エージェント協調を宣言的に定義する。
+
+| ワークフロー | ファイル | 用途 |
+|-------------|----------|------|
+| **Easy Mode Workflow** | `easy_mode_workflow.py` | かんたんモードの全体流程管理 |
+| **Full Auto Workflow** | `full_auto_workflow.py` | 完全自動執筆の全体流程管理 |
+| **Episode Writing Workflow** | `episode_writing_workflow.py` | 単一エピソード執筆流程 |
+| **Plot Expansion Workflow** | `plot_expansion_workflow.py` | プロット展開流程 |
+| **Plot Rebuild Workflow** | `plot_rebuild_workflow.py` | プロット大規模リビルド |
+| **Reverse Plot Workflow** | `reverse_plot_workflow.py` | 逆算プロット生成 |
+| **Critique Optimization Workflow** | `critique_optimization_workflow.py` | 批評ベース最適化 |
+| **Illustration Workflow** | `illustration_workflow.py` | 挿絵生成流程 |
+| **Marketing Generation Workflow** | `marketing_generation_workflow.py` | マーケティング資料生成 |
+| **Logical Audit Workflow** | `logical_audit_workflow.py` | 論理的整合性監査 |
+| **Refine Erotic Workflow** | `refine_erotic_workflow.py` | エロティック整合性調整 |
+| **Retry Failed Episodes Workflow** | `retry_failed_episodes_workflow.py` | 失敗エピソード再実行 |
+| **Commercial Pipeline** | `commercial_pipeline.py` | 商用展開統合パイプライン |
+| **Chapter Import Workflow** | `chapter_import_workflow.py` | 章インポート流程 |
+| **Plan Generation Workflow** | `plan_generation_workflow.py` | 企画生成流程 |
+| **Plot LangGraph** | `plot_langgraph.py` | LangGraph プロット状態グラフ |
+| **Writing LangGraph** | `writing_langgraph.py` | LangGraph 執筆状態グラフ (32KB) |
+| **Quality Metrics** | `quality_metrics.py` | 品質スコアリング算出 |
+| **Base Workflow** | `base_workflow.py` | ワークフロー抽象基底クラス |
+
+> **Graph State (`graph_state.py`)**: ワークフロー間の共有グラフ状態管理
+> **DAG Builder (`dag_builder.py`)**: ワークフロー DAG 動的構築ユーティリティ
+> **Shared Ops (`_shared_ops.py`)**: ワークフロー間共有演算ユーティリティ
 
 ---
 
@@ -573,42 +647,96 @@ AutoNovel では、1つの巨大なプロンプトに全てを委ねるのでは
 
 ### 4.3 マルチエージェント協調シーケンス
 
+8 つのエージェントが **Orchestrator**（`src/agents/orchestrator.py`）によって順序実行され、各エージェントの実行前後には **EventBus**（`src/agents/event_bus.py`）がイベントを発行します。
+
 ```mermaid
 sequenceDiagram
     autonumber
     actor User as ユーザー
+    participant Orch as Orchestrator
+    participant Bus as EventBus
     participant Planning as PlanningAgent
     participant Plot as PlotAgent
     participant Bible as BibleAgent
-    participant Context as ContextBuilder
+    participant Ctx as ContextBuilderAgent
     participant Writer as WritingAgent
     participant Audit as AuditAgent
+    participant Illust as IllustrationAgent
     participant Market as MarketingAgent
 
-    User->>Planning: 企画パラメータ入力 (ジャンル・世界観)
-    Planning-->>User: 3案企画プロポーザル提示
-    User->>Planning: 採用企画決定
-    Planning->>Plot: 全体プロットツリー生成指示
-    Plot->>Plot: テンション曲線・カタルシス計画策定
-    Plot->>Bible: 初期キャラクター・世界観Bible初期化
+    User->>Orch: 起動 (PLANNING から)
+    Orch->>Bus: planning.started
+    Orch->>Planning: run(ctx)
+    Planning-->>Orch: AgentResult(arcs, next=PLOT)
+    Orch->>Bus: planning.completed
 
-    loop 各エピソード執筆ループ
-        Plot->>Context: 第N話プロット要件伝達
-        Bible->>Context: 関連キャラ・設定抽出 (GraphRAG)
-        Context->>Writer: 最適化プロンプト投入
-        Writer->>Writer: 本文生成 (1500〜3000字)
-        Writer->>Audit: 本文品質監査リクエスト
-        alt 品質スコア合格
-            Audit->>Bible: 登場した新設定・状態変化を通知・更新
-        else 改善が必要
-            Audit->>Writer: 修正指示 (Patch) 送信・再執筆
-        end
+    Orch->>Bus: plot.started
+    Orch->>Plot: run(ctx)
+    Plot-->>Orch: AgentResult(plots, next=BIBLE)
+    Orch->>Bus: plot.completed
+
+    Orch->>Bus: bible.started
+    Orch->>Bible: run(ctx)
+    Bible-->>Orch: AgentResult(bible, next=CONTEXT_BUILDER)
+    Orch->>Bus: bible.completed
+
+    Orch->>Bus: context_builder.started
+    Orch->>Ctx: run(ctx)
+    Ctx-->>Orch: AgentResult(writing_context, next=WRITING)
+    Orch->>Bus: context_builder.completed
+
+    Orch->>Bus: writing.started
+    Orch->>Writer: run(ctx)
+    Writer-->>Orch: AgentResult(drafted_text, next=AUDIT)
+    Orch->>Bus: writing.completed
+
+    Orch->>Bus: audit.started
+    Orch->>Audit: run(ctx)
+    alt 監査合格
+        Audit-->>Orch: AgentResult(audit_report, next=ILLUSTRATION)
+        Orch->>Bus: audit.completed
+        Orch->>Bus: illustration.started
+        Orch->>Illust: run(ctx)
+        Illust-->>Orch: AgentResult(illustrations, next=MARKETING)
+        Orch->>Bus: illustration.completed
+    else 監査不合格 (should_retry)
+        Audit-->>Orch: AgentResult(should_retry=true, next=WRITING)
+        Orch->>Bus: audit.completed (failed)
+        Orch->>Writer: 再実行
     end
 
-    User->>Market: 納品パッケージエクスポート要求
-    Market->>Market: 全話統合・設定集・プロット・JSONをZIP化
-    Market-->>User: 納品パッケージ (ZIP) 返却
+    Orch->>Bus: marketing.started
+    Orch->>Market: run(ctx)
+    Market-->>Orch: AgentResult(zip_data, next=None)
+    Orch->>Bus: marketing.completed
+    Orch-->>User: 完了 (zip_data 返却)
 ```
+
+#### 制御フロー詳細
+
+各エージェントは `AgentResult(next_agent, artifacts, should_retry, error)` を返します。`Orchestrator` は以下のように動作します：
+
+1. `next_agent` が指定されていれば次のエージェントへ遷移
+2. `should_retry=True` なら同じエージェントを再実行（リトライループ）
+3. `error` が設定されていれば `RuntimeError` を送出
+4. `next_agent=None` で終了
+
+#### API エンドポイント
+
+| メソッド | パス | 説明 |
+|:---|:---|:---|
+| `POST` | `/orchestrated/generate` | オーケストレーション生成タスクをキュー投入 (Huey) |
+| `GET` | `/orchestrated/status/{task_id}` | タスクステータスポーリング |
+| `GET` | `/orchestrated/export/{book_id}` | ZIP エクスポート |
+| `DELETE` | `/orchestrated/task/{task_id}` | タスクキャンセル |
+
+#### 環境変数（Redis Streams 連携）
+
+| 変数 | デフォルト | 説明 |
+|:---|:---|:---|
+| `USE_REDIS_EVENTS` | `false` | `true` で EventBus が Redis Streams にイベント発行 |
+| `REDIS_URL` | `redis://localhost:6379/0` | Redis 接続文字列 |
+| `REDIS_MAX_CONNECTIONS` | `50` | 接続プール最大数 |
 
 ---
 
@@ -893,32 +1021,71 @@ erDiagram
 │   │   │   ├── models.py              # SQLAlchemy 2.0 ORM モデル定義 (35+ モデル)
 │   │   │   ├── repository.py          # BookRepository (トランザクション & クエリ集約)
 │   │   │   └── repositories/, uow.py  # リポジトリ & Unit of Work
-│   │   ├── alembic/                   # Alembic マイグレーション環境 (実体は alembic/versions/)
-│   │   ├── routers/                   # API ルーター群 (~30)
+│   │   ├── alembic/                   # Alembic マイグレーション環境 (versions/ 配下にマイグレーションファイル)
+│   │   ├── routers/                   # API ルーター群 (31)
 │   │   │   ├── easy_mode.py           # かんたんモード API (生成/ポーリング/ZIP納品/ガチャ/昇格)
-│   │   │   ├── books.py, plots.py, episodes.py
+│   │   │   ├── books.py               # 作品 CRUD
+│   │   │   ├── plots.py               # プロット CRUD
+│   │   │   ├── episodes.py            # エピソード CRUD
 │   │   │   ├── graph.py               # ナレッジグラフデータ提供 API
-│   │   │   ├── illustrations.py, marketing.py
+│   │   │   ├── illustrations.py       # 挿絵プロンプト生成
+│   │   │   ├── marketing.py           # マーケティング資料生成
 │   │   │   ├── multimedia.py          # マルチメディアアセットパック API (ENABLE_MULTIMEDIA)
 │   │   │   ├── collab.py              # 共同編集 (ChapterVersion / Comments)
-│   │   │   ├── prompt_versions.py, prompt_compare.py
+│   │   │   ├── prompt_versions.py     # プロンプトバージョン管理
+│   │   │   ├── prompt_compare.py      # プロンプト A/B 比較
 │   │   │   ├── export.py              # eBook (EPUB) エクスポート
 │   │   │   ├── streaming.py           # SSE リアルタイムストリーミング
-│   │   │   └── ...                    # novel, hooks, structure, patches, styles, etc.
+│   │   │   ├── cost.py               # コスト分析・トークン追跡
+│   │   │   ├── hooks.py              # イベントフック管理
+│   │   │   ├── issues.py            # 品質Issue管理
+│   │   │   ├── structure.py         # 作品構造管理
+│   │   │   ├── commercial.py         # 商用展開設定
+│   │   │   ├── patches.py          # 自動修正パッチ管理
+│   │   │   ├── tasks.py            # タスク状態管理
+│   │   │   ├── misc.py             # ユーティリティ群
+│   │   │   ├── novel.py           # 小説詳細・メタデータ
+│   │   │   ├── orchestrated.py    # オーケストレーション統合
+│   │   │   ├── trace.py           # 実行トレース取得
+│   │   │   ├── editor.py          # Studioエディタ状態管理
+│   │   │   ├── styles.py          # 文体プリセット管理
+│   │   │   ├── health.py          # ヘルスチェック
+│   │   │   └── __init__.py
 │   │   ├── tasks/                     # 非同期キューイング層
 │   │   │   ├── huey.py                # Huey インスタンス (Redis / SQLite 自動切替)
 │   │   │   ├── generation_tasks.py    # 非同期生成ワーカータスク
 │   │   │   ├── illustration_tasks.py, multimedia_tasks.py
-│   │   ├── workflows/                 # ステートグラフ / LangGraph ワークフロー
-│   │   │   ├── full_auto_workflow.py, easy_mode_workflow.py
-│   │   │   ├── episode_writing_workflow.py, plot_expansion_workflow.py
-│   │   │   └── illustration_workflow.py, marketing_generation_workflow.py
+│   │   ├── workflows/                 # LangGraph ワークフロー (19種類)
+│   │   │   ├── base_workflow.py       # ワークフロー抽象基底クラス
+│   │   │   ├── easy_mode_workflow.py  # かんたんモード統合ワークフロー
+│   │   │   ├── full_auto_workflow.py  # 完全自動執筆ワークフロー
+│   │   │   ├── episode_writing_workflow.py  # エピソード執筆ワークフロー
+│   │   │   ├── plot_expansion_workflow.py   # プロット展開ワークフロー
+│   │   │   ├── plot_rebuild_workflow.py     # プロットリビルドワークフロー
+│   │   │   ├── reverse_plot_workflow.py     # 逆算プロットワークフロー
+│   │   │   ├── critique_optimization_workflow.py  # 批評最適化ワークフロー
+│   │   │   ├── illustration_workflow.py     # 挿絵生成ワークフロー
+│   │   │   ├── marketing_generation_workflow.py  # マーケティング生成
+│   │   │   ├── logical_audit_workflow.py   # 論理的監査ワークフロー
+│   │   │   ├── refine_erotic_workflow.py   # エロティック整合性ワークフロー
+│   │   │   ├── retry_failed_episodes_workflow.py  # 失敗リトライ
+│   │   │   ├── commercial_pipeline.py  # 商用展開パイプライン
+│   │   │   ├── chapter_import_workflow.py  # 章インポートワークフロー
+│   │   │   ├── plan_generation_workflow.py  # 企画生成ワークフロー
+│   │   │   ├── plot_langgraph.py     # LangGraph プロット状態グラフ
+│   │   │   ├── writing_langgraph.py   # LangGraph 執筆状態グラフ
+│   │   │   ├── graph_state.py         # グラフ状態管理
+│   │   │   ├── dag_builder.py         # DAG ビルダー
+│   │   │   ├── quality_metrics.py     # 品質メトリクス計算
+│   │   │   ├── _shared_ops.py         # 共有演算ユーティリティ
+│   │   │   └── __init__.py
 │   │   └── engine*.py, tension_*.py   # エンジン / テンション制御
 │   │
 │   ├── agents/                        # マルチエージェント知能層
 │   │   ├── base.py                    # BaseAgent 抽象基底
 │   │   ├── orchestrator.py            # AgentName/AgentContext/AgentResult ルーター
-│   │   ├── event_bus.py               # in-process + Redis pub/sub イベントバス
+│   │   ├── event_bus.py               # エージェント間 EventBus (in-process + Redis pub/sub)
+│   │   ├── episode_pipeline.py        # エピソード執筆パイプライン (ストリーム配信/チェックポイント)
 │   │   ├── writing/                   # WritingAgent + episode_writer, bible_extractor, rewrite_orchestrator
 │   │   ├── planning.py                # 全体構成 & 企画エージェント
 │   │   ├── plot.py                    # プロット策定 & リビルドエージェント
@@ -959,6 +1126,7 @@ erDiagram
 │   ├── llm/                           # 統合 LLM クライアント (services.llm の代替エントリ)
 │   ├── models/                        # Pydantic 入出力スキーマ
 │   ├── shared/                        # 共有ユーティリティ (resilience / circuit_breaker / safe_replace)
+│   │   └── event_bus.py               # UIイベント型 (kernels → streamlit_app bridge)
 │   ├── cli/                           # CLI エントリ (illustration_cli, promptops)
 │   └── presets/                       # 文体・ジャンルプリセット
 │
@@ -975,7 +1143,18 @@ erDiagram
 │   │   │   ├── GeneratePanel.tsx      # 入力フォーム & ポーリング進行制御
 │   │   │   ├── ExportPanel.tsx        # プレビュー表示 & ZIP エクスポート
 │   │   │   ├── GraphVisualization.tsx # react-force-graph-2d ベース
-│   │   │   ├── editor/                # StudioWorkspace / InlineAiToolbar / NextBeatsPanel
+│   │   │   ├── ReversePlotBuilder.tsx # 逆算プロットビルダー
+│   │   │   ├── AssetPackPanel.tsx     # アセットパック進捗管理
+│   │   │   ├── studio/               # 上級者Studioコンポーネント群
+│   │   │   │   ├── StudioWorkspace.tsx  # 3カラム統合ワークスペース
+│   │   │   │   └── ChapterOutlineTree.tsx  # 章構成ツリービュー
+│   │   │   ├── editor/               # エディタ機能コンポーネント群
+│   │   │   │   ├── Editor.tsx        # 本文編集用リッチエディタ
+│   │   │   │   ├── InlineAiToolbar.tsx  # インライン五感推敲ツールバー
+│   │   │   │   ├── NextBeatsPanel.tsx   # 次の展開3案生成
+│   │   │   │   ├── EditorialSidebar.tsx # 専属AI編集者
+│   │   │   │   ├── AiSuggestions.tsx    # AI提案ポップオーバー
+│   │   │   │   └── ConflictModal.tsx   # 設定矛盾モーダル
 │   │   │   └── common/Toast.tsx
 │   │   └── types/easyMode.ts          # TypeScript 型定義
 │   ├── tests/                         # Vitest + React Testing Library + MSW
@@ -1216,15 +1395,25 @@ export_1.zip
 
 ### 12.1 サポートプロバイダと切り替え設定
 
-AutoNovel は、主要な商用LLMプロバイダおよびローカル推論エンジンを標準サポートしています。環境変数 `LLM_PROVIDER` によってシームレスに切り替え可能です。
+AutoNovel は、主要な商用LLMプロバイダを標準サポートしています。環境変数 `LLM_PROVIDER` によってシームレスに切り替え可能です。
+
+**実装済みプロバイダ:**
 
 | プロバイダ名 | `LLM_PROVIDER` 設定値 | 必要APIキー / エンドポイント | 特徴 |
 | :--- | :--- | :--- | :--- |
 | **OpenAI** | `openai` | `OPENAI_API_KEY` | GPT-4o, o1 による極めて高い文章力と構成力 |
 | **Google Gemini** | `gemini` | `GEMINI_API_KEY` | 巨大コンテキストウィンドウ、高速推論 |
-| **Anthropic Claude** | `claude` | `ANTHROPIC_API_KEY` | 繊細な感情描写、文学的な文体表現 |
-| **Local LLM (Ollama)** | `ollama` | `OLLAMA_BASE_URL` | 完全オフライン、APIコストゼロでの運用 |
 | **Mock / Test** | `mock` | なし (自動フォールバック) | CI/テスト環境用の高速モック生成 |
+
+**OpenAI 互換エンドポイント経由で利用可能（将来ネイティブ実装予定）:**
+
+| プロバイダ | 設定方法 | 備考 |
+| :--- | :--- | :--- |
+| **Anthropic Claude** | `LLM_PROVIDER=openai` + `OPENAI_BASE_URL=https://openrouter.ai/api/v1` | OpenRouter 経由で利用可能 |
+| **Local LLM (Ollama)** | `LLM_PROVIDER=openai` + `OPENAI_BASE_URL=http://localhost:11434/v1` | OpenAI 互換モードで利用可能 |
+| **vLLM** | `LLM_PROVIDER=openai` + `OPENAI_BASE_URL=http://localhost:8000/v1` | OpenAI 互換モードで利用可能 |
+
+> ⚠️ **注意**: `claude` または `ollama` を `LLM_PROVIDER` に直接指定すると、ERROR ログが出力され `MockLLMAdapter` にフォールバックします（本番で空の応答になる）。上記の通り `openai` 経由で設定してください。
 
 ---
 
@@ -1247,6 +1436,31 @@ class BaseLLMAdapter(ABC):
     ) -> str:
         """テキスト生成を実行して文字列を返す。"""
         pass
+```
+
+### OpenRouter / Ollama / vLLM を利用する場合
+
+これらは OpenAI 互換 API として提供されるため、`LLM_PROVIDER=openai` として設定し、
+`OPENAI_BASE_URL` と `OPENAI_API_KEY` でエンドポイントを指定してください。
+
+```bash
+# OpenRouter (Claude 等) 例
+LLM_PROVIDER=openai
+OPENAI_BASE_URL=https://openrouter.ai/api/v1
+OPENAI_API_KEY=sk-or-xxx
+OPENAI_MODEL=anthropic/claude-3.5-sonnet
+
+# Ollama 例
+LLM_PROVIDER=openai
+OPENAI_BASE_URL=http://localhost:11434/v1
+OPENAI_API_KEY=ollama
+OPENAI_MODEL=llama3.1
+
+# vLLM 例
+LLM_PROVIDER=openai
+OPENAI_BASE_URL=http://localhost:8000/v1
+OPENAI_API_KEY=dummy
+OPENAI_MODEL=meta-llama/Meta-Llama-3.1-8B-Instruct
 ```
 
 ---
@@ -1303,11 +1517,16 @@ Base URL: `http://localhost:8200`（Nginx本番時: `http://localhost:8080`）
 | `POST` | `/easy_mode/digest` | 前話テキストのダイジェスト要約作成 | なし |
 | `POST` | `/easy_mode/promote` | かんたん作品のアドバンスド昇格 | なし |
 | `GET` | `/graph/knowledge/{book_id}` | ナレッジグラフデータ (ノード/エッジ) 取得 | なし |
-| `POST` | `/multimedia/generate` | マルチメディアアセットパック生成 | `ENABLE_MULTIMEDIA=true` 必須 |
+| `POST` | `/multimedia/generate` | 統合アセットパック生成 (README互換) | `ENABLE_MULTIMEDIA=true` 必須 |
+| `POST` | `/multimedia/asset-pack` | 統合アセットパック生成 (標準) | `ENABLE_MULTIMEDIA=true` 必須 |
+| `POST` | `/multimedia/media-mix` | メディアミックス台本生成 | `ENABLE_MULTIMEDIA=true` 必須 |
+| `POST` | `/multimedia/if-routes` | IFルートグラフ生成 | `ENABLE_MULTIMEDIA=true` 必須 |
+| `POST` | `/multimedia/ebook` | eBook エクスポート (EPUB/PDF/MOBI) | `ENABLE_MULTIMEDIA=true` 必須 |
 | `GET` | `/multimedia/tasks/{id}` | マルチメディア生成タスクの進捗 | `ENABLE_MULTIMEDIA=true` |
+| `GET` | `/multimedia/assets/{book_id}` | 作品別アセット一覧取得 | `ENABLE_MULTIMEDIA=true` |
+| `POST` | `/api/export/ebook` | eBook エクスポート (README互換エイリアス) | `ENABLE_MULTIMEDIA=true` 必須 |
 | `POST` | `/collab/versions` | 共同編集 ChapterVersion 保存 (CRDT) | なし |
 | `GET` | `/collab/versions/{book_id}/{ep}` | 章のバージョン履歴取得 | なし |
-| `POST` | `/export/ebook` | EPUB 3 形式の eBook ファイル生成 | なし |
 | `GET` | `/health` | 総合多段ヘルスチェック (DB, Queue, Metrics) | なし |
 | `GET` | `/metrics` | プロセス内メトリクススナップショット取得 | なし |
 
@@ -1438,7 +1657,7 @@ Base URL: `http://localhost:8200`（Nginx本番時: `http://localhost:8080`）
 | `DATABASE_URL` | `sqlite:///./autonovel.db` | - | データベース接続URL (`postgresql+psycopg2://...`) |
 | `HUEY_BACKEND` | `sqlite` | - | タスクキュー種別 (`redis` または `sqlite`) |
 | `REDIS_URL` | `redis://localhost:6379/0` | - | Redis接続文字列 (`HUEY_BACKEND=redis` 時に使用) |
-| `LLM_PROVIDER` | `mock` (キー未設定時) | - | 使用する推論エンジン (`openai`, `gemini`, `claude`, `ollama`, `mock`) |
+| `LLM_PROVIDER` | `mock` (キー未設定時) | - | 使用する推論エンジン (`openai`, `gemini`, `mock`)。`claude`/`ollama` を直接指定すると ERROR ログ出力後 Mock にフォールバック。OpenAI 互換エンドポイント経由でアクセス可能。 |
 | `OPENAI_API_KEY` | (なし) | 条件付 | OpenAI APIキー (`LLM_PROVIDER=openai` 時に必須) |
 | `GEMINI_API_KEY` | (なし) | 条件付 | Google Gemini APIキー (`LLM_PROVIDER=gemini` 時に必須) |
 | `ANTHROPIC_API_KEY` | (なし) | 条件付 | Anthropic APIキー (`LLM_PROVIDER=claude` 時に必須) |
@@ -1529,7 +1748,7 @@ alembic upgrade head
 alembic downgrade -1
 ```
 
-> ⚠️ **マイグレーションファイルの配置に注意**: `alembic.ini` の `script_location = src/backend/alembic` ですが、実体のマイグレーションファイルは **リポジトリルートの `alembic/versions/`** に配置されています（`00000000_initial_migration` 〜 `0013_graph_pipeline_idempotency`）。カスタムマイグレーションを追加する際はルートの `alembic/versions/` に置いてください。
+> ⚠️ **マイグレーションファイルの配置**: `alembic.ini` の `script_location = src/backend/alembic` に従い、マイグレーションファイルは **`src/backend/alembic/versions/`** に配置されています（`0000_initial_migration` 〜 `0013_graph_pipeline_idempotency`）。カスタムマイグレーションを追加する際は `src/backend/alembic/versions/` に置いてください。
 
 ---
 

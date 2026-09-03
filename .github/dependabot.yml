@@ -1,0 +1,65 @@
+version: 2
+updates:
+  # Python 依存関係
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "herbmatsui"
+    assignees:
+      - "herbmatsui"
+    labels:
+      - "dependencies"
+      - "python"
+    commit-message:
+      prefix: "deps(pip)"
+      prefix-development: "deps(pip)[dev]"
+      include: "scope"
+    allow:
+      - dependency-type: "direct"
+      - dependency-type: "indirect"
+    ignore:
+      # メジャーバージョンアップは手動で確認
+      - dependency-name: "fastapi"
+        update-type: "version-update:semver-major"
+      - dependency-name: "pydantic"
+        update-type: "version-update:semver-major"
+      - dependency-name: "sqlalchemy"
+        update-type: "version-update:semver-major"
+      - dependency-name: "prometheus-client"
+        update-type: "version-update:semver-major"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "deps(actions)"
+      include: "scope"
+
+  # Docker
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "deps(docker)"
+      include: "scope"

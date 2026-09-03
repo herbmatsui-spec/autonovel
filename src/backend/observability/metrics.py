@@ -77,7 +77,7 @@ def record_http_metrics(method: str, path: str, status: int, duration: float):
     http_request_duration_seconds.labels(method=method, path=path).observe(duration)
 
 
-def record_generation_task(workflow_type: str, status: str, duration: float = None):
+def record_generation_task(workflow_type: str, status: str, duration: float | None = None):
     novel_generation_tasks_total.labels(workflow_type=workflow_type, status=status).inc()
     if duration is not None:
         novel_generation_duration_seconds.labels(workflow_type=workflow_type).observe(duration)
@@ -125,10 +125,8 @@ def track_llm_metrics(model: str):
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         async def wrapper(*args, **kwargs) -> Any:
-            start = time.perf_counter()
             try:
                 result = await func(*args, **kwargs)
-                duration = time.perf_counter() - start
                 record_llm_call(model, "success")
                 return result
             except Exception:

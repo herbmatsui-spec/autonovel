@@ -147,6 +147,14 @@ class AppContainer(InfraContainer):
     formatter: providers.Singleton = providers.Singleton(
         "src.backend.sanitizer.TextFormatter",
     )
+    image_service: providers.Factory = providers.Factory(
+        "src.services.image_service.ImageService",
+        api_key=api_key,
+    )
+    illustration_agent: providers.Factory = providers.Factory(
+        "src.agents.illustration_agent.IllustrationAgent",
+        image_service=image_service,
+    )
     engine: providers.Factory = providers.Factory(
         "src.backend.engine.UltimateHegemonyEngine",
         api_key=api_key,
@@ -176,14 +184,6 @@ class AppContainer(InfraContainer):
         l1_cache=None,
     )
 
-    image_service: providers.Factory = providers.Factory(
-        "src.services.image_service.ImageService",
-        api_key=api_key,
-    )
-    illustration_agent: providers.Factory = providers.Factory(
-        "src.agents.illustration_agent.IllustrationAgent",
-        image_service=image_service,
-    )
     illustration_workflow: providers.Factory = providers.Factory(
         "src.backend.workflows.illustration_workflow.IllustrationWorkflow",
         illustration_agent=illustration_agent,

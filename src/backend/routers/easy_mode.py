@@ -43,11 +43,13 @@ async def execute_generation(payload: dict[str, Any]) -> dict[str, Any]:
     # GraphRAG コンテキストの取得
     session = database.SessionLocal()
     try:
-        graph_context, vector_context = rag_service.build_rag_context(
+        rag_context = await rag_service.build_rag_context(
             session=session,
             current_prompt=current_chapter,
             character_name=char_name,
         )
+        graph_context = rag_context.graph_context
+        vector_context = rag_context.vector_context
     finally:
         session.close()
 

@@ -11,10 +11,11 @@ import json
 import logging
 import uuid
 import zipfile
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -33,7 +34,6 @@ from src.easy_mode.phase3.if_routes import (
 )
 from src.easy_mode.phase3.media_mix import (
     MediaFormat,
-    MediaScript,
     create_media_mix_exporter,
 )
 from src.easy_mode.pipeline import EpisodeResult, SeriesResult
@@ -455,3 +455,33 @@ class MultimediaService:
             metadata={"task_id": task_id, "item_count": len(bundle["items"])},
         )
         return result, task_id
+
+    def get_artifacts_by_book(self, book_id: int) -> list[dict[str, Any]]:
+        """特定の book_id に紐づく全アセットメタデータを取得。"""
+        with self._session() as s:
+            rows = s.execute(
+                text(
+                    """
+                    SELECT id, book_id, asset_type, format, file_path, metadata_json, created_at
+                    FROM multimedia_artifacts WHERE book_id = :book_id
+                    ORDER BY created_at DESC
+                    """
+                ),
+                {"book_id": book_id},
+            ).fetchall()
+        results = []
+        for row in rows:
+            try:
+                meta = json.loads(row[5]) if row[5] else {}
+            except (json.JSONDecodeError, TypeError):
+                meta = {}
+            results.append({
+                "asset_id": row[0],
+                "book_id": row[1],
+                "asset_type": row[2],
+                "format": row[3],
+                "file_path": row[4],
+                "metadata": meta,
+                "created_at": row[6].isoformat() if hasattr(row[6], "isoformat") else row[6],
+            })
+        return results

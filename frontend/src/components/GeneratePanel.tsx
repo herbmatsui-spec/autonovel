@@ -66,6 +66,20 @@ export default function GeneratePanel({ onGenerated, onMessage }: GeneratePanelP
   const [digestLoading, setDigestLoading] = useState(false);
   const [digestResult, setDigestResult] = useState<DigestResponse | null>(null);
 
+  // 6コマ要約漫画 (yonkoma) のオン/オフ。UI 側で即時プレビューできるよう localStorage に同期。
+  const [yonkomaEnabled, setYonkomaEnabled] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem("autonovel.yonkomaEnabled") === "1";
+  });
+  const toggleYonkoma = (next: boolean) => {
+    setYonkomaEnabled(next);
+    try {
+      window.localStorage.setItem("autonovel.yonkomaEnabled", next ? "1" : "0");
+    } catch {
+      // localStorage が使えない環境では無視
+    }
+  };
+
   // オプトインAPI設定のアコーディオン・キー表示ステート
   const [showApiSettings, setShowApiSettings] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
@@ -597,6 +611,41 @@ export default function GeneratePanel({ onGenerated, onMessage }: GeneratePanelP
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* 6コマ要約漫画 (yonkoma) のオン/オフ */}
+            <div
+              style={{
+                marginTop: "12px",
+                paddingTop: "10px",
+                borderTop: "1px dashed var(--border-color, rgba(255, 255, 255, 0.15))",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "8px",
+              }}
+            >
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  fontSize: "0.85rem",
+                  cursor: "pointer",
+                }}
+                data-testid="label-yonkoma-toggle"
+              >
+                <input
+                  type="checkbox"
+                  checked={yonkomaEnabled}
+                  onChange={(e) => toggleYonkoma(e.target.checked)}
+                  data-testid="checkbox-yonkoma"
+                />
+                <span>🎬 各話を6コマ要約漫画プロンプトで生成する</span>
+              </label>
+              <span style={{ fontSize: "0.7rem", color: "var(--text-muted, #94a3b8)" }}>
+                {yonkomaEnabled ? "ON: 1話=1枚のサマリー画像" : "OFF"}
+              </span>
             </div>
           </div>
 

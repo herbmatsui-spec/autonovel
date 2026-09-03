@@ -11,6 +11,9 @@ from src.services.llm.openai_adapter import OpenAIAdapter
 
 logger = logging.getLogger(__name__)
 
+# 実装済みプロバイダ（claude, ollama, vLLM 等は未実装）
+IMPLEMENTED_PROVIDERS = {"gemini", "openai", "mock"}
+
 
 def get_llm_adapter(
     provider: str | None = None,
@@ -18,8 +21,21 @@ def get_llm_adapter(
     model_name: str | None = None,
     base_url: str | None = None,
 ) -> BaseLLMAdapter:
-    """設定または引数に応じた LLM アダプタインスタンスを返す。"""
+    """設定または引数に応じた LLM アダプタインスタンスを返す。
+
+    未実装のプロバイダ (claude, ollama 等) が指定された場合は ERROR ログを出力し、
+    MockLLMAdapter にフォールバックする。本番環境では空の応答になるため注意。
+    """
     p = (provider or settings.LLM_PROVIDER).lower()
+
+    if p not in IMPLEMENTED_PROVIDERS:
+        logger.error(
+            "LLMプロバイダ '%s' は未実装です。利用可能: %s。"
+            "MockLLMAdapter にフォールバックします。本番環境では空の応答になります。",
+            p,
+            sorted(IMPLEMENTED_PROVIDERS),
+        )
+        return MockLLMAdapter()
 
     if p == "gemini":
         resolved_key = api_key or settings.GEMINI_API_KEY
@@ -36,5 +52,8 @@ def get_llm_adapter(
             return MockLLMAdapter()
         return OpenAIAdapter(api_key=resolved_key, base_url=resolved_url, model=model_name)
 
-    return MockLLMAdapter()
+    if p == "mock":
+        return MockLLMAdapter()
 
+    # フォールバック（到達しないはず）
+    return MockLLMAdapter()

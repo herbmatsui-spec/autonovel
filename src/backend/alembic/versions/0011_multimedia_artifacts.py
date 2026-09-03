@@ -1,7 +1,7 @@
 """multimedia artifacts and tasks
 
 Revision ID: 0011_multimedia_artifacts
-Revises: 0002_add_catchcopy
+Revises: 0004_add_ai_assistant_config
 """
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision = "0011_multimedia_artifacts"
-down_revision = "0002_add_catchcopy"
+down_revision = "0004_add_ai_assistant_config"
 branch_labels = None
 depends_on = None
 

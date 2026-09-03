@@ -1,7 +1,7 @@
 """add erotic_intensity to plot
 
 Revision ID: 0001_erotic_intensity
-Revises: 00000000_initial_migration
+Revises: 0000_initial_migration
 """
 
 import sqlalchemy as sa
@@ -9,7 +9,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision = "0001_erotic_intensity"
-down_revision = "00000000_initial_migration"
+down_revision = "0000_initial_migration"
 branch_labels = None
 depends_on = None
 

@@ -98,6 +98,71 @@
 - pytest: 9 passed (バックエンド)
 - フロントエンド: typecheck / lint / test:ci は CI 上で実行
 
+## [4.1.0] - マルチエージェントオーケストレーション正式対応
+
+8 エージェント (PlanningAgent / PlotAgent / BibleAgent / ContextBuilderAgent / WritingAgent / AuditAgent / IllustrationAgent / MarketingAgent) を **Orchestrator** パターンで統合。README の 8 エージェント構成を実装レベルで実現。
+
+### 追加
+- **コア基盤**:
+  - `src/agents/orchestrator.py` - 型付きステートマシンによるエージェント順序実行・リトライ制御
+  - `src/agents/event_bus.py` - インメモリ / Redis Streams 両対応の観測バス
+  - `src/agents/context_builder_agent.py` - `ContextBuilder` をファーストクラスエージェント化（後方互換ラッパは非推奨化）
+  - `src/agents/audit_agent.py` - 既存 6 監査クラスを統合したファサード
+- **エージェント層**:
+  - `PlanningAgent.run` / `PlotAgent.run` / `BibleAgent.run` / `WritingAgent.run` / `IllustrationAgent.run` / `MarketingAgent.run` のシグネチャを `AgentContext` 統一
+  - `BaseAgent.run` の型ヒント統一 (`(ctx: AgentContext) -> AgentResult`)
+- **バックエンド**:
+  - `src/backend/routers/orchestrated.py` - 新規ルータ (`/orchestrated/generate`, `/orchestrated/status/{task_id}`, `/orchestrated/export/{book_id}`, `/orchestrated/task/{task_id}`)
+  - `src/backend/server.py` - オーケストレーションルータ登録
+  - `src/backend/tasks/generation_tasks.py` - `generate_chapter_orchestrated_task` 追加 (Orchestrator 経由のフルパイプライン)
+- **Redis Streams 連携**:
+  - `src/shared/redis_pool.py` - 接続プール管理
+  - `scripts/consume_events.py` - コンシューマー雛形 (XREADGROUP)
+  - `docker-compose.prod.yml` - `USE_REDIS_EVENTS=true` 環境変数追加
+- **テスト**:
+  - `tests/mocks/__init__.py` - MockLLMAdapter / MockBookRepository / MockImageService / MockPlotAgent / MockWritingAgent / MockAuditAgent / MockMarketingAgent / MockIllustrationAgent / `create_mock_orchestrator()`
+  - `tests/integration/test_full_pipeline.py` - 5 シナリオ (正常系 / Auditリトライ / Illustrationエラー / EventBus統合 / artifacts 受け渡し)
+- **ドキュメント**:
+  - `docs/architecture.md` - クラス図・制御フロー・easy_mode 比較
+  - `README.md §4.3` - Mermaid シーケンス図を実装に合わせて更新 (Orchestrator/EventBus を反映)
+  - `IMPLEMENTATION_PLAN.md` / `IMPLEMENTATION_PLAN_PART2.md` - 実装計画
+
+### 変更
+- **README.md §3.2 / §12.1 / §12.2**:
+  - LLM プロバイダ誤認修正: claude/ollama/vLLM は OpenAI 互換モードでのみアクセス可能
+  - Mermaid 図の `Claude` / `LocalLLM` ノードを `OpenAICompat` に統合
+- **`src/services/llm/factory.py`**:
+  - `IMPLEMENTED_PROVIDERS = {"gemini", "openai", "mock"}` 制限
+  - 未実装プロバイダ指定時に ERROR ログ + MockLLMAdapter フォールバック
+- **`src/backend/config.py`**:
+  - `LLM_PROVIDER: Literal["openai", "gemini", "mock"]` 型制限
+  - デフォルトを `"mock"` に変更（本番事故防止）
+- **`src/agents/context_builder.py`**:
+  - `ContextBuilder` クラスに `DeprecationWarning` 付与（`ContextBuilderAgent` への移行推奨）
+
+### 修正
+- **Alembic マイグレーション統合**:
+  - ルート `alembic/` 削除、`src/backend/alembic/versions/` に全ファイル統合
+  - `0003_pgvector_chapter_chunks` / `0003_add_ai_assistant_config` のリビジョン重複解消（後者を `0004` にリネーム）
+  - リビジョンチェーン: `0000 → 0001 → 0002 → 0003 → 0004 → 0011 → 0012 → 0013`
+- **LLM プロバイダ誤認リスク**:
+  - `claude` / `ollama` 直接指定時の警告ログ追加
+  - README §3.2 の「5プロバイダ対応」記述を実装済み 3 プロバイダに修正
+
+### 受け入れ基準
+- [x] `Orchestrator.run()` が 8 エージェントを順に実行し `zip_data` を返却
+- [x] `AuditAgent` 失敗時 `should_retry=true` で `WritingAgent` へ自動遷移
+- [x] `EventBus` 経由で各エージェント start/completed イベントが発行
+- [x] Redis Streams 有効化 (`USE_REDIS_EVENTS=true`) で XADD 実行
+- [x] `LLM_PROVIDER=claude` 指定時に ERROR ログ出力 + Mock フォールバック
+- [x] Alembic マイグレーション重複解消 (0003 → 0003 + 0004)
+- [x] 既存 `tests/test_plan_workflow.py` / `tests/test_writing_workflow.py` 全パス
+- [x] 新規 `tests/integration/test_full_pipeline.py` 5 シナリオ全パス
+
+### 既知の制限
+- `src.core.container.AppContainer` 不在により一部既存ルーターの動的ロードがハング。`/orchestrated/*` エンドポイントの TestClient テストは別途対応要。
+- 並列エージェント実行は将来拡張（`AgentResult.next_agents: list[AgentName]`）。
+
 ## [0.1.0] - 初期リリース
 
 FastAPI + SQLAlchemy + Huey の最小構成。easy_mode ルータープロトタイプ、Book/Chapter/Character/Plot/Bible モデル定義。

@@ -6,6 +6,7 @@ class IllustrationType(Enum):
     COVER = "cover"  # 表紙
     EPISODE = "episode"  # 話数ごとの挿絵（シーン抽出）
     CHARACTER = "character"  # キャラクター立ち絵
+    YONKOMA = "yonkoma"  # 1エピソードを6コマで要約する4コマ風漫画プロンプト
 
 
 class IllustrationModel(Enum):
@@ -34,6 +35,7 @@ class IllustrationRequest:
     safety_level: SafetyLevel = SafetyLevel.BLOCK_SOME
     aspect_ratio: str = "3:4"
     prompt_override: str | None = None
+    panels: int = 6  # YONKOMA 用のコマ数 (3〜6)
 
 
 @dataclass

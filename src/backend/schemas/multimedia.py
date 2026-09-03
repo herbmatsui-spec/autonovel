@@ -92,3 +92,27 @@ class TaskStatusResponse(BaseModel):
     error: str | None = None
     started_at: str | None = None
     finished_at: str | None = None
+
+
+class AssetPackGenerateRequest(BaseModel):
+    """`/multimedia/generate` 用リクエスト (README 互換エイリアス)。"""
+    book_id: int = Field(..., ge=1)
+    include_if_routes: bool = True
+    include_media_mix: bool = True
+    include_ebook: bool = True
+    ebook_formats: list[EbookFormat] = Field(default_factory=lambda: ["epub", "pdf"])  # type: ignore[arg-type]
+    media_mix_formats: list[MediaMixFormat] = Field(default_factory=lambda: ["manga"])  # type: ignore[arg-type]
+
+
+class AssetPackGenerateResponse(BaseModel):
+    """`/multimedia/generate` 用レスポンス (README 互換エイリアス)。"""
+    asset_id: int
+    task_id: str
+    file_count: int = 0
+    file_path: str | None = None
+
+
+class AssetsByBookResponse(BaseModel):
+    """`/multimedia/assets/{book_id}` 用レスポンス (README 互換エイリアス)。"""
+    book_id: int
+    assets: list[ArtifactMetaResponse] = Field(default_factory=list)

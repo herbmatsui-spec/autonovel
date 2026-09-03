@@ -1,0 +1,28 @@
+{
+  "version": "1.0",
+  "updated": "2026-09-03",
+  "thresholds_ms": {
+    "age_upsert_1000_nodes_ms": 5000,
+    "age_upsert_10000_edges_ms": 10000,
+    "pgvector_ingest_1000_docs_ms": 3000,
+    "pgvector_search_1000_docs_ms": 100,
+    "rag_hybrid_search_ms": 200,
+    "pipeline_single_chapter_ms": 5000,
+    "embedding_generation_1000_texts_ms": 5000
+  },
+  "baseline_ms": {
+    "age_upsert_1000_nodes_ms": 1200,
+    "age_upsert_10000_edges_ms": 3500,
+    "pgvector_ingest_1000_docs_ms": 800,
+    "pgvector_search_1000_docs_ms": 25,
+    "rag_hybrid_search_ms": 80,
+    "pipeline_single_chapter_ms": 1500,
+    "embedding_generation_1000_texts_ms": 1200
+  },
+  "environment": {
+    "python": "3.12",
+    "postgresql": "16",
+    "age": "1.5.0",
+    "pgvector": "0.5.0"
+  }
+}

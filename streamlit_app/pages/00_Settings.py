@@ -71,18 +71,12 @@ def save_all_settings():
 
         model_keys = [
             "model_writing", "model_planning", "model_plot_expansion",
-            "model_climax", "model_ultra_stable"
+            "model_climax", "model_ultra_stable", "model_stable_fallback", "model_embedding"
         ]
         for key in model_keys:
             widget_key = f"cfg_{key}"
             if widget_key in st.session_state:
                 setattr(cfg, key, st.session_state[widget_key])
-
-        cfg.model_writing = st.session_state.get("cfg_model_writing", cfg.model_writing)
-        cfg.model_planning = st.session_state.get("cfg_model_planning", cfg.model_planning)
-        cfg.model_plot_expansion = st.session_state.get("cfg_model_plot_expansion", cfg.model_plot_expansion)
-        cfg.model_climax = st.session_state.get("cfg_model_climax", cfg.model_climax)
-        cfg.model_ultra_stable = st.session_state.get("cfg_model_ultra_stable", cfg.model_ultra_stable)
 
         cfg.openai_api_key = st.session_state.get("cfg_openai_api_key", cfg.openai_api_key)
         cfg.openai_base_url = st.session_state.get("cfg_openai_base_url", cfg.openai_base_url)
@@ -90,6 +84,7 @@ def save_all_settings():
         cfg.enable_nsfw = st.session_state.get("cfg_enable_nsfw", cfg.enable_nsfw)
         cfg.safety_filter_level = st.session_state.get("cfg_safety_filter_level", cfg.safety_filter_level)
         cfg.similarity_threshold = st.session_state.get("cfg_similarity_threshold", cfg.similarity_threshold)
+        cfg.min_immersion_score = st.session_state.get("cfg_min_immersion_score", cfg.min_immersion_score)
 
         cfg.cost_mode = st.session_state.get("cfg_cost_mode", cfg.cost_mode)
         cfg.auto_backup = st.session_state.get("cfg_auto_backup", cfg.auto_backup)
@@ -100,6 +95,13 @@ def save_all_settings():
         cfg.enable_heavy_audit = st.session_state.get("cfg_enable_heavy_audit", cfg.enable_heavy_audit)
         cfg.prefetch_enabled = st.session_state.get("cfg_prefetch_enabled", cfg.prefetch_enabled)
         cfg.context_trimming_enabled = st.session_state.get("cfg_context_trimming_enabled", cfg.context_trimming_enabled)
+        cfg.enable_semantic_edge_preservation = st.session_state.get("cfg_enable_semantic_edge_preservation", cfg.enable_semantic_edge_preservation)
+        cfg.enable_dogfeeding = st.session_state.get("cfg_enable_dogfeeding", cfg.enable_dogfeeding)
+        cfg.fail_fast_mode = st.session_state.get("cfg_fail_fast_mode", cfg.fail_fast_mode)
+        cfg.specialized_amplifier_enabled = st.session_state.get("cfg_specialized_amplifier_enabled", cfg.specialized_amplifier_enabled)
+
+        cfg.context_window_target_ratio = st.session_state.get("cfg_context_window_target_ratio", cfg.context_window_target_ratio)
+        cfg.prefetch_episode_count = st.session_state.get("cfg_prefetch_episode_count", cfg.prefetch_episode_count)
 
         set_config(cfg)
 
@@ -117,11 +119,12 @@ def main():
     ConfigState.init_defaults()
     cfg = load_config()
 
-    tab_models, tab_features, tab_safety, tab_costs = st.tabs([
+    tab_models, tab_features, tab_safety, tab_costs, tab_advanced = st.tabs([
         "🤖 モデル設定",
         "🔧 機能开关",
-        "🔒 安全設定",
-        "💰 コスト管理",
+        "🔒 安全・品質設定",
+        "💰 コスト・保存",
+        "🔬 詳細設定",
     ])
 
     with tab_models:
@@ -186,16 +189,44 @@ def main():
 
         with st.container(border=True):
             st.markdown("#### 🛡️ 安定性設定")
+            c1, c2 = st.columns(2)
+            with c1:
+                options = list(PRESET_MODELS)
+                current = cfg.model_ultra_stable or "gemini-3.5-flash-lite"
+                if current not in options:
+                    options.insert(0, current)
+                st.selectbox(
+                    "フォールバックモデル (ultra_stable)",
+                    options=options,
+                    index=options.index(current) if current in options else 0,
+                    key="cfg_model_ultra_stable",
+                    help="エラー時にフォールバックとして使用される安定指向のモデル",
+                )
+            with c2:
+                options = list(PRESET_MODELS)
+                current = getattr(cfg, "model_stable_fallback", "gemma-4-31b-it") or "gemma-4-31b-it"
+                if current not in options:
+                    options.insert(0, current)
+                st.selectbox(
+                    "安定フォールバックモデル",
+                    options=options,
+                    index=options.index(current) if current in options else 0,
+                    key="cfg_model_stable_fallback",
+                    help="エラー時の2段階目フォールバック（より安定重視）",
+                )
+
+        with st.container(border=True):
+            st.markdown("#### 🔍 埋め込みモデル")
             options = list(PRESET_MODELS)
-            current = cfg.model_ultra_stable or "gemini-3.5-flash-lite"
+            current = getattr(cfg, "model_embedding", "text-embedding-004") or "text-embedding-004"
             if current not in options:
                 options.insert(0, current)
             st.selectbox(
-                "フォールバックモデル",
+                "埋め込みモデル",
                 options=options,
                 index=options.index(current) if current in options else 0,
-                key="cfg_model_ultra_stable",
-                help="エラー時にフォールバックとして使用される安定指向のモデル",
+                key="cfg_model_embedding",
+                help="ベクトル検索・類似度計算に使用する埋め込みモデル",
             )
 
         with st.container(border=True):
@@ -253,6 +284,18 @@ def main():
                 key="cfg_enable_semantic_edge_preservation",
                 help="物語のエッジ（場面の繋ぎ目）を意味的に保全",
             )
+            st.toggle(
+                "🐕 ドッグフィーディング",
+                value=getattr(cfg, "enable_dogfeeding", True),
+                key="cfg_enable_dogfeeding",
+                help="生成結果を次回学習にフィードバック（自己改善ループ）",
+            )
+            st.toggle(
+                "🎯 専用アンプ",
+                value=getattr(cfg, "specialized_amplifier_enabled", True),
+                key="cfg_specialized_amplifier_enabled",
+                help="特定ジャンル向けの増幅処理を有効化",
+            )
 
         with st.container(border=True):
             st.markdown("#### ⚡ パフォーマンス")
@@ -269,8 +312,17 @@ def main():
                 help="コンテキスト長超過時に自動トリミング",
             )
 
+        with st.container(border=True):
+            st.markdown("#### 🚨 実行制御")
+            st.toggle(
+                "⚡ フェイルファストモード",
+                value=getattr(cfg, "fail_fast_mode", False),
+                key="cfg_fail_fast_mode",
+                help="エラー発生時に即座に停止（デバッグ用）",
+            )
+
     with tab_safety:
-        st.subheader("🔒 安全設定")
+        st.subheader("🔒 安全・品質設定")
         st.markdown("コンテンツフィルタと安全設定を管理")
 
         with st.container(border=True):
@@ -307,8 +359,21 @@ def main():
                 help="この値以上の類似度は重複とみなされる",
             )
 
+        with st.container(border=True):
+            st.markdown("#### 🎯 品質閾値")
+            st.caption("生成品質の最低ライン")
+            st.slider(
+                "最低没入スコア",
+                min_value=0.0,
+                max_value=100.0,
+                value=float(getattr(cfg, "min_immersion_score", 0.0)),
+                step=5.0,
+                key="cfg_min_immersion_score",
+                help="このスコア未満の生成はリトライ対象（0で無効）",
+            )
+
     with tab_costs:
-        st.subheader("💰 コスト管理")
+        st.subheader("💰 コスト・保存")
         st.markdown("API使用コストを制御")
 
         with st.container(border=True):
@@ -358,6 +423,38 @@ def main():
                 key="cfg_max_history_len",
                 help="メモリやコンテキストとして保持するエピソード履歴の最大数",
             )
+
+    with tab_advanced:
+        st.subheader("🔬 詳細設定")
+        st.markdown("上級者向けの詳細パラメータ（通常は変更不要）")
+        st.caption("⚠️ これらの設定は動作に大きく影響します。理解した上で変更してください。")
+
+        with st.container(border=True):
+            st.markdown("#### 🧠 コンテキストウィンドウ最適化")
+            st.caption("LLMコンテキスト使用率の目標値とプリフェッチ設定")
+
+            col1, col2 = st.columns(2)
+            with col1:
+                st.slider(
+                    "目標使用率",
+                    min_value=0.5,
+                    max_value=0.95,
+                    value=float(getattr(cfg, "context_window_target_ratio", 0.85)),
+                    step=0.05,
+                    key="cfg_context_window_target_ratio",
+                    help="コンテキストウィンドウの目標使用率（高いほど多くの履歴を保持、低いほど余裕を持たせる）",
+                )
+            with col2:
+                st.number_input(
+                    "プリフェッチ エピソード数",
+                    min_value=0,
+                    max_value=10,
+                    value=int(getattr(cfg, "prefetch_episode_count", 3)),
+                    key="cfg_prefetch_episode_count",
+                    help="事前に生成しておく後続エピソード数（0で無効）",
+                )
+
+            st.caption(f"最小予約トークン数: {getattr(cfg, 'context_window_min_reserve', 2000)} （環境変数 KAKU_CONTEXT_WINDOW_MIN_RESERVE で変更）")
 
     st.markdown("---")
 

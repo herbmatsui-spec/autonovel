@@ -12,6 +12,7 @@ from src.services.illustration import (
     CoverGenerator,
     SceneIllustrationService,
     SceneIllustrator,
+    YonkomaIllustrator,
 )
 from src.services.illustration.model_selector import _type_value, is_r15, resolve_request_model
 from src.services.image_service import ImageService
@@ -37,6 +38,7 @@ class IllustrationAgent(BaseAgent):
         self.character_illustrator = CharacterIllustrator(image_service)
         self.scene_illustrator = SceneIllustrator(image_service)
         self.scene_service = SceneIllustrationService(image_service, llm=self.llm)
+        self.yonkoma_illustrator = YonkomaIllustrator(image_service)
 
     def _coerce_request(self, request):
         """dict なら IllustrationRequest に、オブジェクトならそのまま返す。"""
@@ -69,6 +71,8 @@ class IllustrationAgent(BaseAgent):
                 prompt = await self._build_cover_prompt(request)
             elif kind == IllustrationType.CHARACTER.value:
                 prompt = await self._build_character_prompt(request)
+            elif kind == IllustrationType.YONKOMA.value:
+                prompt = await self._build_yonkoma_prompt(request)
             else:
                 prompt = await self._build_episode_prompt(request)
 
@@ -195,6 +199,63 @@ class IllustrationAgent(BaseAgent):
             parts.append("Tasteful R15 artistic representation, intimate but not explicit")
 
         return ", ".join(parts)
+
+    async def _build_yonkoma_prompt(self, request: IllustrationRequest) -> str:
+        """6コマ要約漫画用プロンプトを構築 (画像生成はせず文章のみ返す)。"""
+        from src.services.illustration.prompts import build_yonkoma_prompt
+
+        text = (getattr(request, "scene_text", "") or "").strip()
+        panels = getattr(request, "panels", 6) or 6
+        ctx = request.book_context or {}
+
+        if text:
+            from src.services.illustration.scene_service import YonkomaPlanner
+
+            planner = YonkomaPlanner()
+            if self.llm is not None:
+                try:
+                    summaries = await planner.plan_with_llm(text, self.llm, panels=panels)
+                except Exception as e:  # noqa: BLE001
+                    logger.warning("Yonkoma LLM planning failed in agent: %s", e)
+                    summaries = planner.plan_heuristic(text, panels=panels)
+            else:
+                summaries = planner.plan_heuristic(text, panels=panels)
+        else:
+            # シーン要約が無い場合は 6 個のプレースホルダで埋める (オンのとき UI で空でもエラーにしない)
+            summaries = ["(導入)", "(展開)", "(転換)", "(高潮)", "(余韻)", "(次回への引き)"]
+
+        prompt = build_yonkoma_prompt(summaries, ctx, panels=panels)
+        if is_r15(request.safety_level):
+            from src.services.illustration.prompts import apply_yonkoma_safety_modifier
+
+            prompt = apply_yonkoma_safety_modifier(prompt, request.safety_level)
+        return prompt
+
+    async def generate_episode_yonkoma(
+        self,
+        episode_text: str,
+        request: IllustrationRequest,
+        panels: int = 6,
+    ) -> IllustrationResult:
+        """本文から 6 コマ要約漫画を生成して 1 枚の画像を返す。"""
+        from src.services.illustration.scene_service import YonkomaPlanner
+
+        planner = YonkomaPlanner()
+        if self.llm is not None:
+            try:
+                summaries = await planner.plan_with_llm(episode_text, self.llm, panels=panels)
+            except Exception as e:  # noqa: BLE001
+                logger.warning("Yonkoma LLM planning failed: %s", e)
+                summaries = planner.plan_heuristic(episode_text, panels=panels)
+        else:
+            summaries = planner.plan_heuristic(episode_text, panels=panels)
+
+        return await self.yonkoma_illustrator.generate(
+            episode_text=episode_text,
+            request=request,
+            panels=panels,
+            summaries=summaries,
+        )
 
     async def generate_episode_scenes(
         self, request: IllustrationRequest

@@ -11,6 +11,19 @@ import {
   TaskStatusResponse,
 } from "../types/multimedia";
 
+export type {
+  AssetPackRequest,
+  AssetPackResponse,
+  ArtifactMetaResponse,
+  EbookExportRequest,
+  EbookExportResponse,
+  IFRouteGenerateRequest,
+  IFRouteResponse,
+  MediaMixRequest,
+  MediaMixResponse,
+  TaskStatusResponse,
+};
+
 const BASE = "/multimedia";
 
 async function postJson<T>(path: string, body: unknown): Promise<T> {
