@@ -1,5 +1,6 @@
 # agents/__init__.py
 from src.agents.audit import LogicalAuditor
+from src.agents.audit_agent import AuditAgent
 from src.agents.base import BaseAgent
 from src.agents.bible import BibleAgent
 from src.agents.context_builder_agent import ContextBuilderAgent
@@ -15,6 +16,7 @@ from src.agents.writing import WritingAgent
 __all__ = [
     "BaseAgent",
     "LogicalAuditor",
+    "AuditAgent",
     "BibleAgent",
     "ContextBuilderAgent",
     "PlotAgent",

@@ -242,12 +242,6 @@ class GraphRAGService:
                 )
                 for r in results
             ]
-                    score=r.get("similarity", 0.0),
-                    distance=r.get("distance"),
-                    similarity=r.get("similarity"),
-                )
-                for r in results
-            ]
         except Exception as e:
             logger.warning("Async vector search failed: %s", e)
             return []
