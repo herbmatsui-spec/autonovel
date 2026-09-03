@@ -1,17 +1,18 @@
 {
   "genre": "cheat_tensei",
-  "description": "チート転生ジャンル専用 文体DNAプリセット",
+  "preset_code": "cheat_tensei_standard_v1.1",
+  "description": "チート転生ジャンルの文体DNA。ステータスと数値で物語を駆動する神的プレイヤーの愉悦と無双感を演出する。",
   "sentence_length": {
     "avg": 40,
     "std_dev": 12,
     "min": 15,
     "max": 85,
-    "description": "平均文長40文字。システムメッセージ・ステータス表示は短文。バトル・描写は長文で濃密に。"
+    "description": "平均40字。システム表示は短文、バトル・描写は中長文で濃密に。"
   },
   "vocab_diversity": {
     "type_token_ratio": 0.43,
     "rare_word_ratio": 0.09,
-    "description": "ステータス・スキル・魔法・モンスター・ダンジョン・ギルド用語を高頻度使用。造語・独自設定も適度に。"
+    "description": "ステータス・スキル・魔法・モンスター・ダンジョン・ギルド用語を高頻度、独自設定も適度に。"
   },
   "sentence_end_distribution": {
     "desu_masu": 0.50,
@@ -19,7 +20,7 @@
     "nominal": 0.10,
     "exclamatory": 0.07,
     "interrogative": 0.03,
-    "description": "地の文は「だ・である」でテンポよく。会話・システムメッセージで「です・ます」。体言止めでスキル名・効果強調。"
+    "description": "地の文は『だ・である』でテンポ、会話・システム表示は『です・ます』、体言止めでスキル名・効果強調。"
   },
   "metaphor_frequency": {
     "per_1000_chars": 3.0,
@@ -30,19 +31,20 @@
       "kinesthetic": 0.15,
       "abstract": 0.10
     },
-    "description": "魔法エフェクト・スキル発動・モンスター描写で視覚・運動感覚優位。数値・効果の具体提示重視。"
+    "description": "魔法エフェクト・スキル発動・モンスター描写は視覚・運動感優位、数値・効果の具体提示重視。"
   },
   "pov_distance": {
     "level": "close_third",
+    "modifier": "system_player",
     "internal_monologue_ratio": 0.30,
     "free_indirect_discourse": true,
-    "description": "密接な三人称。内心独白30%（戦略・効率・面白さ評価）。システム的思考と感情の融合。"
+    "description": "密接三人称。戦略・効率・面白さ評価の内心独白30%、システム的思考と感情を融合。"
   },
   "narration_tone": {
     "base": "analytical_amused",
     "emotional_peaks": "battle_joy",
     "catharsis_mode": "godlike_casual",
-    "description": "平常時は分析的・愉悦・効率重視。バトル時は戦闘の喜び・実力確認の悦び。カタルシス時は神視点の余裕。"
+    "description": "平常は分析的・愉悦・効率重視、バトル時は戦闘の喜びと実力確認の悦び、カタルシス時は神視点の余裕。"
   },
   "dialogue_style": {
     "protagonist": "casual_confident",
@@ -50,25 +52,25 @@
     "guild_receptionist": "professional_shocked",
     "enemy": "arrogant_then_despair",
     "god_entity": "condescending_then_fearful",
-    "description": "主人公：カジュアル・自信・効率重視・たまに皮肉。パーティ：畏敬・忠誠・主人公絶対信頼。受付嬢：事務的・内心驚愕。敵：傲慢→絶望。神：上から目線→恐怖。"
+    "description": "主人公はカジュアル・自信・効率重視・皮肉、仲間は畏敬・忠誠・絶対信頼、受付嬢は事務的・内心驚愕、神は上から目線→恐怖。"
   },
   "pacing": {
     "scene_transition_speed": "very_fast",
     "time_skip_frequency": "very_high",
     "chapter_hook_density": 1.0,
-    "description": "レベルアップ・スキル習得・ダンジョン踏破・移動を高速スキップ。数ヶ年単位の時間経過も一文で。各話・各章に大型フック。"
+    "description": "レベルアップ・スキル習得・ダンジョン踏破・移動を高速スキップ、数ヶ年単位の経過も一文で、各話・各章に大型フック。"
   },
   "forbidden_patterns": [
-    "主人公が迷う・悩む・弱音（チート前提では原則NG）",
-    "レベル上げ・スキル習得の過程を冗長に描写（結果のみで可）",
+    "主人公が迷う・悩む・弱音を吐く（チート前提では原則NG）",
+    "レベル上げ・スキル習得の過程を冗長描写（結果のみで可）",
     "説明的な地の文（システムメッセージ・会話で自然に提示）",
     "視点漏れ（主人公が知り得ぬ世界設定・神の思惑等の地の文記述）"
   ],
   "required_patterns": [
-    "ステータス・スキル・レベル・数値の明示的・頻繁な提示",
-    "『〜した』『〜になる』等の結果先行・効率重視描写",
-    "読者の予想を上回る『実はもっと凄かった』展開",
-    "圧倒的実力差を具体的数値・現象・相手の反応で証明",
-    "システム・世界の理・神々を『利用・ハッキング・従属』させる展開"
+    "ステータス・スキル・レベル・数値を明示的かつ頻繁に見せる。",
+    "『〜した』『〜になる』等の結果先行・効率重視の描写でテンポを作る。",
+    "読者の予想を上回る『実はもっと凄かった』展開を各話に置く。",
+    "圧倒的実力差を具体的数値・現象・相手の反応で三段証明する。",
+    "システム・世界の理・神々を『利用・ハッキング・従属』させる展開を提示する。"
   ]
 }

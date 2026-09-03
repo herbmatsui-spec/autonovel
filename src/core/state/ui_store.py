@@ -5,7 +5,10 @@ src/core/state/ui_store.py — UI�層の状態アクセスをカプセル化�
 from collections.abc import Callable
 from typing import Any
 
-import streamlit as st
+try:
+    import streamlit as st
+except ImportError:
+    st = None
 
 from schemas.app_state import AppRuntimeState, AppStateModel
 from src.core.state.state_manager import SessionManager, get_session

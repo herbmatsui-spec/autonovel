@@ -12,7 +12,31 @@ logger = logging.getLogger(__name__)
 
 import hashlib
 
-from cachetools import LRUCache
+try:
+    from cachetools import LRUCache
+except ImportError:
+    from collections import OrderedDict
+
+    class LRUCache(OrderedDict):  # type: ignore[no-redef]
+        def __init__(self, maxsize: int = 1000, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.maxsize = maxsize
+
+        def __setitem__(self, key: Any, value: Any) -> None:
+            if len(self) >= self.maxsize and key not in self:
+                self.popitem(last=False)
+            super().__setitem__(key, value)
+
+        def __getitem__(self, key: Any) -> Any:
+            value = super().__getitem__(key)
+            self.move_to_end(key)
+            return value
+
+        def get(self, key: Any, default: Any = None) -> Any:
+            try:
+                return self[key]
+            except KeyError:
+                return default
 
 
 class SemanticCacheManager:

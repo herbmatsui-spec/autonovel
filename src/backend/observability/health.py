@@ -55,13 +55,15 @@ async def check_database(timeout: float = 5.0) -> dict[str, Any]:
     try:
         from sqlalchemy import text
 
+        from src.backend.config import settings
         from src.backend.database.core import DatabaseManager, get_db_manager
 
         mgr: DatabaseManager = get_db_manager()
         async with asyncio.timeout(timeout):
             async with mgr.get_session() as session:
                 await session.execute(text("SELECT 1"))
-        return {"status": "ok", "type": "sqlite"}
+        db_type = "postgresql" if "postgresql" in settings.DATABASE_URL else "sqlite"
+        return {"status": "ok", "type": db_type}
     except asyncio.TimeoutError:
         logger.warning("[health] Database ping timed out after %ss", timeout)
         return {"status": "error", "code": "DB_TIMEOUT"}
@@ -71,16 +73,24 @@ async def check_database(timeout: float = 5.0) -> dict[str, Any]:
 
 
 async def check_huey(timeout: float = 3.0) -> dict[str, Any]:
-    """Huey ワーカーの生存確認を行う。"""
+    """Huey ワーカー / Redis / SQLite キューの生存確認を行う。"""
     try:
-        import os
+        from huey import RedisHuey
 
         from src.backend.tasks.huey import huey
 
+        def _ping() -> bool:
+            if isinstance(huey, RedisHuey):
+                return bool(huey.storage.conn.ping())
+            if hasattr(huey, "ping"):
+                return bool(huey.ping())
+            return True
+
         async with asyncio.timeout(timeout):
-            result = await asyncio.to_thread(huey.ping)
-        if result is True:
-            return {"status": "ok", "backend": "sqlite"}
+            result = await asyncio.to_thread(_ping)
+        if result:
+            backend_name = "redis" if isinstance(huey, RedisHuey) else "sqlite"
+            return {"status": "ok", "backend": backend_name}
         return {"status": "error", "code": "HUEY_NO_RESPONSE"}
     except asyncio.TimeoutError:
         logger.warning("[health] Huey ping timed out after %ss", timeout)

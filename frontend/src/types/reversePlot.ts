@@ -1,3 +1,5 @@
+import { LLMConfigOverride } from "./easyMode";
+
 export interface ReversePlotStep {
   step: 1 | 2 | 3 | 4;
   title: string;
@@ -32,6 +34,7 @@ export interface ReversePlotGenerateRequest {
   target_episodes?: number;
   targetEpisodes?: number;
   genre: string;
+  llm_config?: LLMConfigOverride;
 }
 
 export interface ArcBlueprint {

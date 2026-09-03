@@ -16,8 +16,12 @@ try:
 except ImportError:
     OTLPLogExporter = None
 
-from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+try:
+    from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
+    from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+except ImportError:
+    OTLPMetricExporter = None
+    OTLPSpanExporter = None
 
 try:
     from opentelemetry.exporter.otlp.proto.http.log_exporter import (
@@ -26,12 +30,16 @@ try:
 except ImportError:
     OTLPLogExporterHTTP = None
 
-from opentelemetry.exporter.otlp.proto.http.metric_exporter import (
-    OTLPMetricExporter as OTLPMetricExporterHTTP,
-)
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
-    OTLPSpanExporter as OTLPSpanExporterHTTP,
-)
+try:
+    from opentelemetry.exporter.otlp.proto.http.metric_exporter import (
+        OTLPMetricExporter as OTLPMetricExporterHTTP,
+    )
+    from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
+        OTLPSpanExporter as OTLPSpanExporterHTTP,
+    )
+except ImportError:
+    OTLPMetricExporterHTTP = None
+    OTLPSpanExporterHTTP = None
 from opentelemetry.sdk._logs import LoggerProvider
 from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
 from opentelemetry.sdk.environment_variables import (

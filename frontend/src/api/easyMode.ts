@@ -24,6 +24,20 @@ export async function generateContent(input: EasyModeInput): Promise<GenerationR
   return res.json();
 }
 
+export async function generateContentStream(
+  input: EasyModeInput,
+  signal?: AbortSignal
+): Promise<Response> {
+  const res = await fetch(`/generate/stream`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+    signal,
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res;
+}
+
 export async function pollGenerationStatus(taskId: string): Promise<TaskStatusResponse> {
   const res = await fetch(`${BASE}/status/${taskId}`);
   if (!res.ok) throw new Error(await res.text());

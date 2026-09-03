@@ -7,6 +7,12 @@ import { NovelProvider } from "../../src/context/NovelContext";
 import GeneratePanel from "../../src/components/GeneratePanel";
 
 const server = setupServer(
+  http.get("/api/styles/presets", () => {
+    return HttpResponse.json([
+      { id: "cheat_tensei", name: "チート転生・痛快テンポ", genre: "異世界転生" },
+      { id: "zarma", name: "ざまぁ・スカッと展開", genre: "追放・ざまぁ" },
+    ]);
+  }),
   http.post("/easy_mode/generate", () => {
     return HttpResponse.json({ output: "AI出力", suggestions: ["提案1", "提案2"] });
   }),

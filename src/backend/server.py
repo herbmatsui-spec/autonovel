@@ -6,16 +6,15 @@ import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 
 from src.backend.config import settings
 from src.backend.database import init_db
-from src.backend.exceptions import AutoNovelException
+from src.backend.error_handlers import register_error_handlers
 from src.backend.logging_config import configure as configure_logging
 from src.backend.observability.health import build_health_payload, metrics
-from src.backend.routers import easy_mode, editor, graph, streaming
+from src.backend.routers import easy_mode, editor, graph, streaming, styles
 
 logger = logging.getLogger(__name__)
 
@@ -38,19 +37,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+register_error_handlers(app)
 
-@app.exception_handler(AutoNovelException)
-async def autonovel_exception_handler(request: Request, exc: AutoNovelException) -> JSONResponse:
-    """カスタム例外を一括で処理し、構造化されたJSONを返却するハンドラ"""
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={"error": exc.__class__.__name__, "detail": exc.detail},
-    )
+
 
 
 app.include_router(easy_mode.router, prefix="/easy_mode", tags=["easy_mode"])
 app.include_router(easy_mode.router, prefix="/api/easy-mode", tags=["easy-mode"])
 app.include_router(streaming.router, prefix="/easy_mode", tags=["streaming"])
+app.include_router(styles.router)
 app.include_router(graph.router)
 app.include_router(editor.router)
 

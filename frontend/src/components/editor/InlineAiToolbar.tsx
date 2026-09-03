@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { AssistAction, SensoryType, ToneType, AssistResponse } from "../../types/editor";
 import { assistContent } from "../../api/editor";
 
@@ -22,7 +22,32 @@ export const InlineAiToolbar: React.FC<InlineAiToolbarProps> = ({
   onToast,
 }) => {
   const [loading, setLoading] = useState(false);
+  const [activeAction, setActiveAction] = useState<string | null>(null);
   const [preview, setPreview] = useState<AssistResponse | null>(null);
+  const toolbarRef = useRef<HTMLDivElement>(null);
+
+  // Click Outside & Escape キー検知
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (toolbarRef.current && !toolbarRef.current.contains(e.target as Node)) {
+        onClose();
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [onClose]);
 
   const handleAction = async (
     action: AssistAction,
@@ -34,6 +59,8 @@ export const InlineAiToolbar: React.FC<InlineAiToolbarProps> = ({
       return;
     }
 
+    const actionKey = sensoryType || toneType || action;
+    setActiveAction(actionKey);
     setLoading(true);
     try {
       const res = await assistContent({
@@ -51,11 +78,12 @@ export const InlineAiToolbar: React.FC<InlineAiToolbarProps> = ({
       onToast?.(`❌ エラー: ${err.message || err}`, "error");
     } finally {
       setLoading(false);
+      setActiveAction(null);
     }
   };
 
   return (
-    <div className="inline-ai-toolbar" data-testid="inline-ai-toolbar">
+    <div ref={toolbarRef} className="inline-ai-toolbar" data-testid="inline-ai-toolbar">
       {!preview ? (
         <>
           <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.8rem", color: "var(--accent-purple)", fontWeight: 600 }}>
@@ -71,7 +99,7 @@ export const InlineAiToolbar: React.FC<InlineAiToolbarProps> = ({
             title="光影や細部の視覚描写を肉付け"
             data-testid="btn-sensory-visual"
           >
-            👁️ 視覚
+            {activeAction === "visual" ? <span className="spinner" /> : "👁️"} 視覚
           </button>
           <button
             type="button"
@@ -80,7 +108,7 @@ export const InlineAiToolbar: React.FC<InlineAiToolbarProps> = ({
             onClick={() => handleAction("describe", "auditory")}
             title="環境音や声の響きを肉付け"
           >
-            👂 聴覚
+            {activeAction === "auditory" ? <span className="spinner" /> : "👂"} 聴覚
           </button>
           <button
             type="button"
@@ -89,7 +117,7 @@ export const InlineAiToolbar: React.FC<InlineAiToolbarProps> = ({
             onClick={() => handleAction("describe", "olfactory")}
             title="大気の匂いや香りを肉付け"
           >
-            👃 嗅覚
+            {activeAction === "olfactory" ? <span className="spinner" /> : "👃"} 嗅覚
           </button>
           <button
             type="button"
@@ -98,7 +126,7 @@ export const InlineAiToolbar: React.FC<InlineAiToolbarProps> = ({
             onClick={() => handleAction("describe", "tactile")}
             title="肌触り・温度・身体感覚を肉付け"
           >
-            ✋ 触覚
+            {activeAction === "tactile" ? <span className="spinner" /> : "✋"} 触覚
           </button>
           <button
             type="button"
@@ -107,7 +135,7 @@ export const InlineAiToolbar: React.FC<InlineAiToolbarProps> = ({
             onClick={() => handleAction("describe", "metaphor")}
             title="美しい比喩・詩的表現に昇華"
           >
-            ✨ 比喩
+            {activeAction === "metaphor" ? <span className="spinner" /> : "✨"} 比喩
           </button>
 
           {/* Show, Don't Tell */}
@@ -119,7 +147,7 @@ export const InlineAiToolbar: React.FC<InlineAiToolbarProps> = ({
             title="感情の説明を行動・情景描写に変換"
             data-testid="btn-show-dont-tell"
           >
-            🎭 Show, Don't Tell
+            {activeAction === "show_dont_tell" ? <span className="spinner" /> : "🎭"} Show, Don't Tell
           </button>
 
           {/* トーン変換 */}
@@ -130,7 +158,7 @@ export const InlineAiToolbar: React.FC<InlineAiToolbarProps> = ({
             onClick={() => handleAction("rewrite", undefined, "tension")}
             title="息詰まる緊迫感・サスペンスに書き換え"
           >
-            ⚡ 緊迫感UP
+            {activeAction === "tension" ? <span className="spinner" /> : "⚡"} 緊迫感UP
           </button>
           <button
             type="button"
@@ -139,7 +167,7 @@ export const InlineAiToolbar: React.FC<InlineAiToolbarProps> = ({
             onClick={() => handleAction("rewrite", undefined, "fast_paced")}
             title="テンポ良く小気味よい文章に書き換え"
           >
-            ⏩ テンポ加速
+            {activeAction === "fast_paced" ? <span className="spinner" /> : "⏩"} テンポ加速
           </button>
 
           {loading && (

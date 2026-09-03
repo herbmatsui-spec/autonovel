@@ -20,6 +20,7 @@ from sqlalchemy import (
     text,
     JSON,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 
 from src.infrastructure.database.models.base_orm import Base
 
@@ -57,6 +58,22 @@ class Book(Base):
     cumulative_cost = Column(Float, default=0.0)
     sanctuary_integrity = Column(Integer, default=100)
     current_branch_id = Column(Integer, nullable=True)
+    ai_assistant_config = Column(JSONB, nullable=False, default={
+        "enabled": False,
+        "auto_suggest": False,
+        "trigger_mode": "manual",
+        "features": {"continue": True, "describe": True, "rewrite": True}
+    })
+
+
+class UserPreference(Base):
+    """ユーザー単位の AI アシスタント設定（オプトイン管理）"""
+    __tablename__ = "user_preferences"
+
+    user_id = Column(Integer, primary_key=True, nullable=False)
+    easy_mode_ai_enabled = Column(Boolean, default=False, nullable=False)
+    ai_features = Column(JSONB, nullable=False, default={})
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
 
 class Branch(Base):

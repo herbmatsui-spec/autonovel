@@ -69,11 +69,29 @@ export interface AskBibleResponse {
 }
 
 export interface ConsistencyIssue {
+  id?: string | number;
   issue_type: string;
   severity: "error" | "warning" | "info";
   description: string;
   conflicting_text: string;
   suggested_fix: string;
+}
+
+export interface ActiveAuditHighlight {
+  issueId: string;
+  conflictingText: string;
+  suggestedFix: string;
+  issueType?: string;
+}
+
+export interface ResolveIssueRequest {
+  action: "Auto-Fix" | "Foreshadowing" | "Ignore";
+  note?: string;
+}
+
+export interface ResolveIssueResponse {
+  status: string;
+  message: string;
 }
 
 export interface ConsistencyAuditRequest {
