@@ -8,6 +8,7 @@ from collections.abc import Generator
 from pathlib import Path
 
 import pytest
+from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 CHROMADB_AVAILABLE = False
@@ -62,6 +63,7 @@ try:
 except Exception:
     GEMINI_AVAILABLE = False
 
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
@@ -76,10 +78,10 @@ def real_db_manager() -> Generator[Session, None, None]:
     ``DATABASE_URL`` を一時ファイル経由で差し替え、``init_db()`` でスキーマ生成後に
     有効な ``Session`` を ``yield`` する。終了時にファイルを削除する。
     """
-    from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker
 
     import src.backend.database as db_module
+    import src.backend.database.core as db_core
     from src.backend.database import SessionLocal, engine, init_db
 
     tmp = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
@@ -90,12 +92,19 @@ def real_db_manager() -> Generator[Session, None, None]:
     previous_url = os.environ.get("DATABASE_URL")
     os.environ["DATABASE_URL"] = test_url
 
+    # core.py のグローバル変数も更新（プロキシが参照するため）
+    import sys
+    db_core.DATABASE_URL = test_url
+    db_core._sync_engine = None
+    db_core._sync_session_factory = None
+
     # 同一プロセス内で module の engine/SessionLocal を差し替える
     test_engine = create_engine(test_url, connect_args={"check_same_thread": False})
     TestSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
     db_module.engine = test_engine
     db_module.SessionLocal = TestSessionLocal  # type: ignore[assignment]
 
+    # モデル定義から全テーブル作成（最新スキーマ反映）
     init_db()
     session = TestSessionLocal()
     try:
@@ -113,6 +122,9 @@ def real_db_manager() -> Generator[Session, None, None]:
         # 元の状態に戻す
         db_module.engine = engine
         db_module.SessionLocal = SessionLocal  # type: ignore[assignment]
+        db_core.DATABASE_URL = previous_url or (db_core.settings.DATABASE_URL if hasattr(db_core, 'settings') else "sqlite:///storage/autonovel.db")
+        db_core._sync_engine = None
+        db_core._sync_session_factory = None
         if previous_url is None:
             os.environ.pop("DATABASE_URL", None)
         else:

@@ -1,21 +1,16 @@
 import pytest
-from fastapi.testclient import TestClient
 
-from src.backend.database import init_db
 from src.backend.server import app
 
-init_db()
-client = TestClient(app)
 
 
-
-def test_gacha_api_validation_error():
+def test_gacha_api_validation_error(client):
     """キーワードが空の場合に422バリデーションエラーを返すことを検証"""
     response = client.post("/api/easy-mode/gacha", json={"genre": "", "keywords": []})
     assert response.status_code == 422
 
 
-def test_gacha_api_success():
+def test_gacha_api_success(client):
     """正常に3案ガチャが生成されることを検証"""
     response = client.post(
         "/api/easy-mode/gacha",
@@ -31,7 +26,7 @@ def test_gacha_api_success():
     assert "dark" in plan_types
 
 
-def test_digest_api_success():
+def test_digest_api_success(client):
     """ダイジェスト生成APIが正常にレスポンスを返すことを検証"""
     response = client.post(
         "/api/easy-mode/digest",
@@ -46,7 +41,7 @@ def test_digest_api_success():
     assert data["status"] in ["completed", "failed"]
 
 
-def test_promote_api_success():
+def test_promote_api_success(client):
     """プロデューサー昇格APIが正常にレスポンスを返すことを検証"""
     # 1. ガチャ実行
     gacha_res = client.post(
@@ -75,7 +70,7 @@ def test_promote_api_success():
     assert "state_token" in data
 
 
-def test_reverse_generate_api():
+def test_reverse_generate_api(client):
     """逆算プロット生成APIが正常にレスポンスを返すことを検証"""
     response = client.post(
         "/easy_mode/reverse-generate",
@@ -100,7 +95,7 @@ def test_reverse_generate_api():
     assert "catharsisPattern" in data
 
 
-def test_export_with_data_api():
+def test_export_with_data_api(client):
     """カスタムデータ付きZIPエクスポートAPIが正常にZIPを返すことを検証"""
     response = client.post(
         "/easy_mode/export-with-data?book_id=99",

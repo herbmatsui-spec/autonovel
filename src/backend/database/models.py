@@ -18,7 +18,6 @@ from sqlalchemy import (
     func,
     text,
 )
-from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.types import TypeDecorator
 
 from src.infrastructure.database.models.base_orm import Base
@@ -62,7 +61,7 @@ class Book(Base):
     cumulative_cost = Column(Float, default=0.0)
     sanctuary_integrity = Column(Integer, default=100)
     current_branch_id = Column(Integer, nullable=True)
-    ai_assistant_config = Column(JSONB, nullable=False, default={
+    ai_assistant_config = Column(JSON, nullable=False, default={
         "enabled": False,
         "auto_suggest": False,
         "trigger_mode": "manual",
@@ -76,7 +75,7 @@ class UserPreference(Base):
 
     user_id = Column(Integer, primary_key=True, nullable=False)
     easy_mode_ai_enabled = Column(Boolean, default=False, nullable=False)
-    ai_features = Column(JSONB, nullable=False, default={})
+    ai_features = Column(JSON, nullable=False, default={})
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
 
