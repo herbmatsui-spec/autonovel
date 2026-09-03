@@ -2,7 +2,7 @@ import logging
 from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING, Any, Optional
 
-from src.agents.base import BaseAgent
+from src.agents.skill_base import SkillAgent
 from src.agents.orchestrator import AgentContext, AgentResult, AgentName
 
 if TYPE_CHECKING:
@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class PlotAgent(BaseAgent):
+class PlotAgent(SkillAgent):
     """プロット展開のオーケストレーションを担当。
 
     責務は ``PlotExpander`` を用いた各エピソードのプロット詳細展開
@@ -424,10 +424,8 @@ class PlotAgent(BaseAgent):
         )
         return results
 
-    async def run(self, ctx: AgentContext) -> AgentResult:
-        """Orchestrator 用エントリーポイント。
-        ctx.artifacts から必要な入力を取得し、プロットを生成して次のエージェントへ渡す。
-        """
+    async def execute(self, ctx: AgentContext) -> AgentResult:
+        """スキル実行エントリーポイント。"""
         # 既存の expand_plots メソッドを活用するため、artifacts から必要な情報を取得
         book_id = ctx.book_id
         branch_id = ctx.branch_id
@@ -457,3 +455,7 @@ class PlotAgent(BaseAgent):
                 artifacts={},
                 error=f"Plot generation failed: {e}",
             )
+
+    async def run(self, ctx: AgentContext) -> AgentResult:
+        """Orchestrator 用エントリーポイント。execute をラップする。"""
+        return await self.execute(ctx)

@@ -7,6 +7,18 @@ import tempfile
 from collections.abc import Generator
 from pathlib import Path
 
+def pytest_configure(config):
+    """Set environment variables before test collection."""
+    os.environ.setdefault("APP_ENV", "testing")
+    # Monkeypatch init_db to prevent premature table creation during app import
+    def dummy_init_db(*args, **kwargs):
+        pass
+    try:
+        import src.backend.server
+        src.backend.server.init_db = dummy_init_db
+    except Exception:
+        pass
+
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
@@ -68,9 +80,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
-
 @pytest.fixture
-def real_db_manager() -> Generator[Session, None, None]:
+def real_db_manager(monkeypatch) -> Generator[Session, None, None]:
     """
     実際の SQLite 一時データベース管理器を提供する。
     統合テスト・ワークフローテストに使用される。
@@ -91,7 +102,6 @@ def real_db_manager() -> Generator[Session, None, None]:
     test_url = f"sqlite:///{db_path}"
     previous_url = os.environ.get("DATABASE_URL")
     os.environ["DATABASE_URL"] = test_url
-    print(f"Setting DATABASE_URL to {test_url}", flush=True)
 
     # core.py のグローバル変数も更新（プロキシが参照するため）
     import sys
@@ -106,7 +116,17 @@ def real_db_manager() -> Generator[Session, None, None]:
     db_module.SessionLocal = TestSessionLocal  # type: ignore[assignment]
 
     # モデル定義から全テーブル作成（最新スキーマ反映）
-    init_db()
+    from src.backend.database.models import Base as BackendBase
+    from src.infrastructure.database.models import Base as InfraBase
+    InfraBase.metadata.create_all(test_engine)
+    BackendBase.metadata.create_all(test_engine)
+
+    # init_db をモンキーパッチして、二重初期化を防ぐ
+    def dummy_init_db(*args, **kwargs):
+        pass
+    monkeypatch.setattr(db_module, "init_db", dummy_init_db)
+    monkeypatch.setattr(db_core, "init_db", dummy_init_db)
+
     session = TestSessionLocal()
     try:
         yield session
@@ -118,6 +138,7 @@ def real_db_manager() -> Generator[Session, None, None]:
         except Exception:
             pass
         session.close()
+
         test_engine.dispose()
         gc.collect()
         # 元の状態に戻す
@@ -141,6 +162,19 @@ def real_db_manager() -> Generator[Session, None, None]:
 def db_session(real_db_manager: Generator[Session, None, None]) -> Generator[Session, None, None]:
     """テスト用 DB セッションフィクスチャ (real_db_manager のエイリアス)."""
     return real_db_manager
+
+
+@pytest.fixture
+def sqlite_db_url(tmp_path) -> str:
+    """SQLite テスト用の一時データベース URL を返す。"""
+    db_path = tmp_path / "test_migrations.db"
+    return f"sqlite:///{db_path}"
+
+
+@pytest.fixture
+def postgres_db_url() -> str | None:
+    """PostgreSQL テスト用のデータベース URL を返す（環境変数未設定なら None）。"""
+    return os.environ.get("POSTGRES_TEST_URL")
 
 
 @pytest.fixture

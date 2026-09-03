@@ -1,0 +1,51 @@
+# config/book_score_weights.yaml
+# BookScore の次元別重み設定
+# デフォルト重み（合計100）
+default:
+  structure: 25
+  coherency: 25
+  factual_grounding: 20
+  visual_textual_synergy: 15
+  reader_experience: 15
+
+# ジャンル別オーバーライド例
+genre_overrides:
+  literary:
+    structure: 30
+    coherency: 20
+    factual_grounding: 15
+    visual_textual_synergy: 10
+    reader_experience: 25
+  entertainment:
+    structure: 20
+    coherency: 20
+    factual_grounding: 15
+    visual_textual_synergy: 20
+    reader_experience: 25
+  educational:
+    structure: 20
+    coherency: 25
+    factual_grounding: 30
+    visual_textual_synergy: 10
+    reader_experience: 15
+
+# 制作フェーズ別オーバーライド例
+phase_overrides:
+  planning:
+    structure: 35
+    coherency: 10
+    factual_grounding: 10
+    visual_textual_synergy: 5
+    reader_experience: 40
+  writing:
+    structure: 20
+    coherency: 30
+    factual_grounding: 25
+    visual_textual_synergy: 10
+    reader_experience: 15
+  climax:
+    structure: 20
+    coherency: 20
+    factual_grounding: 15
+    visual_textual_synergy: 15
+    reader_experience: 30

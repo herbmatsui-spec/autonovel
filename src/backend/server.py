@@ -7,6 +7,8 @@ import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
+print("[server] module imported", flush=True)
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 

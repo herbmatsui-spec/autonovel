@@ -1,0 +1,78 @@
+# src/agents/skills/manifest.yaml
+skills:
+  - name: PlanningSkill
+    class: src.agents.skills.planning_skill.PlanningSkill
+    depends_on: []
+    runs_after: []
+    runs_before: [BibleSkill]
+    config:
+      enabled: true
+
+  - name: BibleSkill
+    class: src.agents.skills.bible_skill.BibleSkill
+    depends_on: [PlanningSkill]
+    runs_after: [PlanningSkill]
+    runs_before: [ContextBuilderSkill]
+    config:
+      enabled: true
+
+  - name: ContextBuilderSkill
+    class: src.agents.skills.context_builder_skill.ContextBuilderSkill
+    depends_on: [BibleSkill]
+    runs_after: [BibleSkill]
+    runs_before: [WritingSkill]
+    config:
+      enabled: true
+
+  - name: WritingSkill
+    class: src.agents.skills.writing_skill.WritingSkill
+    depends_on: [ContextBuilderSkill]
+    runs_after: [ContextBuilderSkill]
+    runs_before: [AuditSkill]
+    config:
+      enabled: true
+
+  - name: AuditSkill
+    class: src.agents.skills.audit_skill.AuditSkill
+    depends_on: [WritingSkill]
+    runs_after: [WritingSkill]
+    runs_before: [IllustrationSkill]
+    config:
+      enabled: true
+
+  - name: IllustrationSkill
+    class: src.agents.skills.illustration_skill.IllustrationSkill
+    depends_on: [AuditSkill]
+    runs_after: [AuditSkill]
+    runs_before: []
+    config:
+      enabled: true
+
+  # サンプル追加スキル（フェーズ1で実装）
+  - name: CulturalComplianceChecker
+    class: src.agents.skills.cultural_compliance.CulturalComplianceChecker
+    depends_on: [AuditSkill]
+    runs_after: [AuditSkill]
+    runs_before: []
+    config:
+      enabled: true
+      strict_mode: true
+      regions: [JP, US, KR]
+
+  - name: HistoricalAccuracyChecker
+    class: src.agents.skills.historical_accuracy.HistoricalAccuracyChecker
+    depends_on: [BibleSkill, ContextBuilderSkill]
+    runs_after: [ContextBuilderSkill]
+    runs_before: [WritingSkill]
+    config:
+      enabled: true
+      period: "medieval"
+
+  - name: MarketingCopySkill
+    class: src.agents.skills.marketing_copy.MarketingCopySkill
+    depends_on: [PlanningSkill]
+    runs_after: [PlanningSkill]
+    runs_before: []
+    config:
+      enabled: true
+      copy_types: [catchphrase, synopsis, tagline, blurb]

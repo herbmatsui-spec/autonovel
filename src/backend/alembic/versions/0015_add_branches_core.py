@@ -23,24 +23,31 @@ branch_labels = None
 depends_on = None
 
 
+def _table_exists(table_name: str) -> bool:
+    """Check if a table exists in the current database."""
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    return table_name in inspector.get_table_names()
+
+
 def upgrade() -> None:
-    op.create_table(
-        "branches",
-        sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True),
-        sa.Column(
-            "book_id", sa.Integer(), sa.ForeignKey("books.id", ondelete="CASCADE"), nullable=False
-        ),
-        sa.Column("name", sa.String(100), nullable=False),
-        sa.Column("parent_id", sa.Integer(), nullable=True),
-        sa.Column("fork_ep_num", sa.Integer(), nullable=True, server_default="0"),
-        sa.Column("graph_json", sa.JSON(), nullable=True),
-        sa.Column("created_at", sa.DateTime(), server_default=sa.func.now(), nullable=True),
-    )
-    op.create_index("idx_branches_book_id", "branches", ["book_id"])
-    op.create_index("idx_branches_parent_id", "branches", ["parent_id"])
+    if not _table_exists("branches"):
+        op.create_table(
+            "branches",
+            sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True),
+            sa.Column(
+                "book_id", sa.Integer(), sa.ForeignKey("books.id", ondelete="CASCADE"), nullable=False
+            ),
+            sa.Column("name", sa.String(100), nullable=False),
+            sa.Column("parent_id", sa.Integer(), nullable=True),
+            sa.Column("fork_ep_num", sa.Integer(), nullable=True, server_default="0"),
+            sa.Column("graph_json", sa.JSON(), nullable=True),
+            sa.Column("created_at", sa.DateTime(), server_default=sa.func.now(), nullable=True),
+        )
+        op.create_index("idx_branches_book_id", "branches", ["book_id"])
+        op.create_index("idx_branches_parent_id", "branches", ["parent_id"])
 
 
 def downgrade() -> None:
-    op.drop_index("idx_branches_parent_id", table_name="branches")
-    op.drop_index("idx_branches_book_id", table_name="branches")
-    op.drop_table("branches")
+    if _table_exists("branches"):
+        op.drop_table("branches")

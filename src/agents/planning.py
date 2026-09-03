@@ -2,7 +2,7 @@
 import logging
 from typing import Any
 
-from src.agents.base import BaseAgent
+from src.agents.skill_base import SkillAgent
 from src.agents.orchestrator import AgentContext, AgentResult, AgentName
 from src.models.plot import ArcList
 from src.services.llm_service import LLMService
@@ -10,7 +10,7 @@ from src.services.llm_service import LLMService
 logger = logging.getLogger(__name__)
 
 
-class PlanningAgent(BaseAgent):
+class PlanningAgent(SkillAgent):
     """企画・プロット立案を担当するエージェント。
     LLM にアーク生成プロンプトを投げ、JSON 形式でアーク案を受け取る。
     """
@@ -90,10 +90,8 @@ class PlanningAgent(BaseAgent):
                         arc[key] = arc[key] + (start_ep - 1)
         return metadata
 
-    async def run(self, ctx: AgentContext) -> AgentResult:
-        """Orchestrator 用エントリーポイント。
-        ctx.artifacts から必要な入力を取得し、arcs を生成して次のエージェントへ渡す。
-        """
+    async def execute(self, ctx: AgentContext) -> AgentResult:
+        """スキル実行エントリーポイント。run から呼ばれる。"""
         title = ctx.artifacts.get("title")
         synopsis = ctx.artifacts.get("synopsis", "")
         target_eps = ctx.artifacts.get("target_eps", 10)
@@ -116,3 +114,7 @@ class PlanningAgent(BaseAgent):
             next_agent=AgentName.PLOT,
             artifacts={"arcs": arcs.model_dump()},
         )
+
+    async def run(self, ctx: AgentContext) -> AgentResult:
+        """Orchestrator 用エントリーポイント。execute をラップする。"""
+        return await self.execute(ctx)

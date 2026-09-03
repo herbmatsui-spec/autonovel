@@ -70,6 +70,40 @@ chromadb_collections = Gauge("chromadb_collections", "Number of ChromaDB collect
 
 redis_connected_clients = Gauge("redis_connected_clients", "Number of connected Redis clients")
 
+# ===================== BookScore メトリクス =====================
+book_score_overall = Histogram(
+    "book_score_overall",
+    "BookScore overall score distribution",
+    ["genre", "phase"],
+    buckets=[10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
+)
+
+book_score_dimensions = Histogram(
+    "book_score_dimensions",
+    "BookScore dimension scores",
+    ["dimension"],  # structure, coherency, factual, visual_textual, reader_exp
+    buckets=[10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
+)
+
+book_score_regeneration_triggered = Counter(
+    "book_score_regeneration_triggered_total",
+    "Number of times BookScore triggered regeneration",
+    ["dimension"],
+)
+
+
+def record_book_score(score: dict, genre: str = "", phase: str = ""):
+    """BookScore メトリクスを記録"""
+    book_score_overall.labels(genre=genre or "unknown", phase=phase or "writing").observe(
+        score.get("overall_score", 0)
+    )
+    for dim in ["structure", "coherency", "factual_grounding", "visual_textual_synergy", "reader_experience"]:
+        val = score.get(f"{dim}_score", 0)
+        book_score_dimensions.labels(dimension=dim).observe(val)
+    if score.get("regeneration_triggered"):
+        for dim in score.get("low_dimensions", []):
+            book_score_regeneration_triggered.labels(dimension=dim).inc()
+
 
 # ===================== ユーティリティ関数 =====================
 def record_http_metrics(method: str, path: str, status: int, duration: float):

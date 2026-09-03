@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from src.agents.base import BaseAgent
+from src.agents.skill_base import SkillAgent
 from src.agents.orchestrator import AgentContext, AgentResult, AgentName
 from src.agents.audit import (
     LogicalAuditor,
@@ -15,7 +15,7 @@ from src.agents.audit import (
 from src.services.learning_data_service import LearningDataService
 
 
-class AuditAgent(BaseAgent):
+class AuditAgent(SkillAgent):
     """品質監査を担当するエージェント（ファサード）。
     既存の複数の監査クラスを統合し、統一インターフェースを提供する。
     学習データ（ネガティブサンプル）を活用して監査精度を動的に調整する。
@@ -98,11 +98,8 @@ class AuditAgent(BaseAgent):
             learning_metadata=learning_metadata,
         )
 
-    async def run(self, ctx: AgentContext) -> AgentResult:
-        """Orchestrator 用エントリーポイント。
-        書かれた本文を監査し、合格なら次へ、不合格なら PatchReview を作成してユーザー確認を要求する。
-        学習データに基づき、過去にユーザーが却下したパターンは warning 扱いに留める。
-        """
+    async def execute(self, ctx: AgentContext) -> AgentResult:
+        """スキル実行エントリーポイント。"""
         writing_context = ctx.artifacts.get("writing_context")
         drafted_text = ctx.artifacts.get("drafted_text")
 
@@ -305,3 +302,7 @@ class AuditAgent(BaseAgent):
                 artifacts={},
                 error=f"Audit failed with exception: {e}",
             )
+
+    async def run(self, ctx: AgentContext) -> AgentResult:
+        """Orchestrator 用エントリーポイント。execute をラップする。"""
+        return await self.execute(ctx)

@@ -1,8 +1,5 @@
-# agents/writing/__init__.py
-# WritingAgent と分割されたコンポーネントをエクスポート
-from .bible_extractor import BibleExtractor
-from .episode_writer import EpisodeWriter
-from .rewrite_orchestrator import RewriteOrchestrator
-from .writing import WritingAgent
+# src/agents/writing/__init__.py
+"""Writing Agent Package"""
+from src.agents.writing.agent import WritingAgent
 
-__all__ = ["WritingAgent", "EpisodeWriter", "RewriteOrchestrator", "BibleExtractor"]
+__all__ = ["WritingAgent"]

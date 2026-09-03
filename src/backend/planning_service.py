@@ -8,6 +8,7 @@ UltimateHegemonyEngine から分離したサービス。
 責任:
 - create_hegemony_plan: 企画生成 (WorldBibleGenerator へ委譲)
 - audit_bible_completeness: 整合性監査 (bible_generator.auditor へ委譲)
+- predict_book_score_from_outline: 企画アウトラインから BookScore 予測
 """
 
 from __future__ import annotations
@@ -25,12 +26,14 @@ class PlanningService:
         pm: Any,  # PromptManager
         ctx_mgr: Any,  # ContextManager
         reporter_factory: Any,  # StatusReporter 作成用 Callable
+        book_score_calculator: Any = None,  # BookScoreCalculator
     ) -> None:
         self.bible_generator = bible_generator
         self.repo = repo
         self.pm = pm
         self.ctx_mgr = ctx_mgr
         self.reporter_factory = reporter_factory
+        self.book_score_calculator = book_score_calculator
 
     async def create_hegemony_plan(
         self,
@@ -73,3 +76,76 @@ class PlanningService:
         if auditor is None or not hasattr(auditor, "audit_bible_completeness"):
             return True
         return await auditor.audit_bible_completeness(book_id, reporter=reporter)
+
+    async def predict_book_score_from_outline(
+        self,
+        arcs: list[Any],
+        genre: str = "",
+        target_eps: int = 10,
+    ) -> dict[str, float]:
+        """企画アウトラインから BookScore を予測する（構造スコア・読者体験スコア中心）。"""
+        if self.book_score_calculator is None:
+            return {"overall_score": 0.0, "structure_score": 0.0, "reader_experience_score": 0.0}
+
+        # 擬似的な AgentContext を作成して計算
+        from src.agents.orchestrator import AgentContext
+        ctx = AgentContext(book_id=0, branch_id=1, ep_num=1, artifacts={"arcs": arcs})
+
+        # 簡易実装: 構造スコアはアークの論理的流れから、読者体験は冒頭フックから推定
+        structure = await self._estimate_structure_score(arcs, target_eps)
+        reader_exp = await self._estimate_reader_experience(arcs)
+
+        # 他次元はデフォルト値
+        weights = self.book_score_calculator._get_weights(genre, "planning")
+        overall = (
+            structure * weights.get("structure", 25) / 100
+            + 50.0 * weights.get("coherency", 25) / 100
+            + 50.0 * weights.get("factual_grounding", 20) / 100
+            + 50.0 * weights.get("visual_textual_synergy", 15) / 100
+            + reader_exp * weights.get("reader_experience", 15) / 100
+        )
+
+        return {
+            "overall_score": round(overall, 2),
+            "structure_score": round(structure, 2),
+            "coherency_score": 50.0,
+            "factual_grounding_score": 50.0,
+            "visual_textual_synergy_score": 50.0,
+            "reader_experience_score": round(reader_exp, 2),
+        }
+
+    async def _estimate_structure_score(self, arcs: list[Any], target_eps: int) -> float:
+        """アーク構成から構造スコアを推定 (0-100)"""
+        if not arcs:
+            return 30.0
+        # アークの数、話数配分、クライマックス位置などから簡易評価
+        num_arcs = len(arcs)
+        ideal_arcs = max(1, target_eps // 8)  # 8話ごとに1アークが理想
+        arc_balance = min(100.0, (ideal_arcs / max(1, num_arcs)) * 100)
+        # クライマックスが適切な位置にあるかチェック
+        climax_score = 70.0
+        for arc in arcs:
+            end_ep = getattr(arc, "end_ep", None) or (arc.get("end_ep") if isinstance(arc, dict) else None)
+            if end_ep and end_ep in [target_eps // 2, target_eps * 3 // 4, target_eps]:
+                climax_score = 90.0
+                break
+        return (arc_balance + climax_score) / 2
+
+    async def _estimate_reader_experience(self, arcs: list[Any]) -> float:
+        """アーク構成から読者体験スコアを推定 (0-100)"""
+        if not arcs:
+            return 40.0
+        # 第1話のフック、最終話の決着感などから推定
+        first_arc = arcs[0]
+        last_arc = arcs[-1]
+        hook_score = 60.0
+        if isinstance(first_arc, dict) and first_arc.get("start_ep", 1) == 1:
+            hook_score = 80.0
+        elif hasattr(first_arc, "start_ep") and first_arc.start_ep == 1:
+            hook_score = 80.0
+        payoff_score = 70.0
+        if isinstance(last_arc, dict) and last_arc.get("end_ep", 0) > 0:
+            payoff_score = 85.0
+        elif hasattr(last_arc, "end_ep") and last_arc.end_ep > 0:
+            payoff_score = 85.0
+        return (hook_score + payoff_score) / 2

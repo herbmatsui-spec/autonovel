@@ -45,3 +45,13 @@ frontend/node_modules/
 frontend/dist/
 frontend/coverage/
 
+# generated migrations (alembic versions are committed, but auto-generated temp files)
+src/backend/alembic/versions/*_auto_*.py
+src/backend/alembic/versions/*_tmp_*.py
+
+# test artifacts
+tests/__pycache__/
+.pytest_cache/
+.coverage.*
+htmlcov/
+

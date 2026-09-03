@@ -440,7 +440,7 @@ def search_neighbors(
 ) -> dict[str, Any]:
     """指定ノードからNホップ以内の近傍ノードを取得する."""
     if not settings.ENABLE_GRAPHRAG or not settings.DATABASE_URL.startswith("postgresql"):
-        return {"neighbors": [], "graph_name": request.graph_name or settings.AGE_GRAPH_NAME}
+        return {"node_name": request.node_name, "neighbors": [], "count": 0}
 
     neighbors = age_client.get_neighbors(
         session=session,
@@ -594,7 +594,7 @@ def get_pipeline_status(
 
 
 @router.post("/rag/hybrid-search")
-def hybrid_search(
+async def hybrid_search(
     request: HybridSearchRequest,
     session: Session = Depends(database.get_db),
 ) -> dict[str, Any]:
@@ -604,7 +604,7 @@ def hybrid_search(
     start = time.perf_counter()
 
     try:
-        results = rag_service.hybrid_search(
+        results = await rag_service.hybrid_search(
             session=session,
             query=request.query,
             core_entities=request.core_entities,
@@ -635,13 +635,13 @@ def hybrid_search(
 
 
 @router.post("/rag/context")
-def build_rag_context(
+async def build_rag_context(
     request: RagContextRequest,
     session: Session = Depends(database.get_db),
 ) -> dict[str, Any]:
     """執筆用RAGコンテキスト (グラフ + ベクトル + 全文) を生成する."""
     try:
-        context = rag_service.build_rag_context(
+        context = await rag_service.build_rag_context(
             session=session,
             current_prompt=request.current_prompt,
             character_name=request.character_name,
@@ -659,7 +659,7 @@ def build_rag_context(
 
 
 @router.post("/rag/episode")
-def retrieve_for_episode(
+async def retrieve_for_episode(
     book_id: int | None = None,
     episode_number: int | None = None,
     character_name: str = Query(..., description="主人公名"),
@@ -669,7 +669,7 @@ def retrieve_for_episode(
 ) -> dict[str, Any]:
     """エピソード執筆向けのコンテキストを一括取得する."""
     try:
-        result = rag_service.retrieve_for_episode(
+        result = await rag_service.retrieve_for_episode(
             session=session,
             book_id=book_id,
             episode_number=episode_number,

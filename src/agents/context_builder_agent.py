@@ -6,7 +6,7 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from src.agents.base import BaseAgent
+from src.agents.skill_base import SkillAgent
 from src.agents.orchestrator import AgentContext, AgentResult, AgentName
 
 
@@ -20,13 +20,11 @@ class ContextBuilderOutput(BaseModel):
     full_context: dict[str, Any]
 
 
-class ContextBuilderAgent(BaseAgent):
+class ContextBuilderAgent(SkillAgent):
     """執筆に必要な完全なコンテキストを構築するエージェント。"""
 
-    async def run(self, ctx: AgentContext) -> AgentResult:
-        """Orchestrator 用エントリーポイント。
-        ctx.artifacts から必要な依存データを取得し、コンテキストを構築する。
-        """
+    async def execute(self, ctx: AgentContext) -> AgentResult:
+        """スキル実行エントリーポイント。"""
         repo = ctx.artifacts.get("repo")
         if repo is None:
             return AgentResult(
@@ -50,6 +48,10 @@ class ContextBuilderAgent(BaseAgent):
             next_agent=AgentName.WRITING,
             artifacts={"writing_context": full_context},
         )
+
+    async def run(self, ctx: AgentContext) -> AgentResult:
+        """Orchestrator 用エントリーポイント。execute をラップする。"""
+        return await self.execute(ctx)
 
     async def _build_full_writing_context_internal(
         self,

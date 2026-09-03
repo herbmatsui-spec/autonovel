@@ -340,6 +340,9 @@ def init_db(db_path: str = ""):
     import os
 
     sync_url = os.environ.get("DATABASE_URL") or DATABASE_URL
+    print(f"[init_db] DATABASE_URL env: {os.environ.get('DATABASE_URL')}", flush=True)
+    print(f"[init_db] DATABASE_URL module: {DATABASE_URL}", flush=True)
+    print(f"[init_db] sync_url: {sync_url}", flush=True)
     if "sqlite+aiosqlite" in sync_url:
         sync_url = sync_url.replace("sqlite+aiosqlite://", "sqlite://")
     elif "postgresql+asyncpg" in sync_url:
@@ -356,9 +359,7 @@ def init_db(db_path: str = ""):
 
 
 def get_db_manager() -> DatabaseManager:
-    """
-    DBマネージャーのファクトリ関数。DIコンテナによってシングルトン管理される。
-    """
+    print("[core] get_db_manager called - returning patched manager", flush=True)
     return DatabaseManager(DATABASE_URL)
 
 

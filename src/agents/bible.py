@@ -2,14 +2,14 @@
 import logging
 from typing import Any
 
-from src.agents.base import BaseAgent
+from src.agents.skill_base import SkillAgent
 from src.agents.orchestrator import AgentContext, AgentResult, AgentName
 from src.services.llm_service import LLMService
 
 logger = logging.getLogger(__name__)
 
 
-class BibleAgent(BaseAgent):
+class BibleAgent(SkillAgent):
     """世界観設定・キャラクター設定の生成を担当するエージェント。
     LLM とプロンプトマネージャを利用して設定情報を生成する。
     """
@@ -34,8 +34,8 @@ class BibleAgent(BaseAgent):
         world_data = world_result.get("metadata", {})
         return world_data
 
-    async def run(self, ctx: AgentContext) -> AgentResult:
-        """Orchestrator 用エントリーポイント。"""
+    async def execute(self, ctx: AgentContext) -> AgentResult:
+        """スキル実行エントリーポイント。"""
         title = ctx.artifacts.get("title")
         synopsis = ctx.artifacts.get("synopsis", "")
         target_eps = ctx.artifacts.get("target_eps", 10)
@@ -62,3 +62,7 @@ class BibleAgent(BaseAgent):
             next_agent=AgentName.CONTEXT_BUILDER,
             artifacts={"bible": bible_data},
         )
+
+    async def run(self, ctx: AgentContext) -> AgentResult:
+        """Orchestrator 用エントリーポイント。execute をラップする。"""
+        return await self.execute(ctx)

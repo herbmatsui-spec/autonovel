@@ -44,6 +44,7 @@ router = APIRouter(
 async def get_branch_session() -> AsyncSession:
     """FastAPI Depends 用の AsyncSession プロバイダ."""
     mgr = get_db_manager()
+    print(f"[router] manager session bind: {mgr.get_session().bind.url}", flush=True)
     session = mgr.get_session()
     try:
         yield session

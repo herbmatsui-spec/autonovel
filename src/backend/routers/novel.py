@@ -5,6 +5,7 @@ src/backend/routers/novel.py — 小説制作関連APIエンドポイント
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 
 from src.backend.auth import require_api_key
 from src.models.api_schemas import (
@@ -22,6 +23,18 @@ router = APIRouter(prefix="/api/novel", tags=["novel"])
 # シングルトンプロデューサー（簡易実装）
 producer = NovelProducer()
 report_generator = ReportGenerator()
+
+
+class BookScoreResponse(BaseModel):
+    book_id: int
+    chapter_number: int
+    overall_score: float
+    structure_score: float
+    coherency_score: float
+    factual_grounding_score: float
+    visual_textual_synergy_score: float
+    reader_experience_score: float
+    evaluated_at: str | None = None
 
 
 @router.post("/produce", response_model=ProduceNovelResponse)
@@ -100,3 +113,38 @@ async def get_report(project_id: int):
     # Report を dict に変換（簡易）
     report_dict = report.dict()
     return NovelReportResponse(report=report_dict)
+
+
+@router.get("/books/{book_id}/chapters/{chapter_number}/score", response_model=BookScoreResponse)
+async def get_chapter_book_score(book_id: int, chapter_number: int):
+    """指定章の BookScore を取得する"""
+    try:
+        from src.backend.database.repository import DataRepository
+        from src.services.book_score_service import BookScoreCalculator, BookScoreRepository
+        from sqlalchemy.ext.asyncio import AsyncSession
+
+        # 簡易実装: リポジトリ経由で取得
+        repo = DataRepository()
+        session = repo._session_factory()  # type: ignore
+        book_score_repo = BookScoreRepository(session)
+        calculator = BookScoreCalculator(repository=book_score_repo)
+        score_model = await calculator.get_latest_score(book_id, chapter_number)
+
+        if score_model is None:
+            raise HTTPException(status_code=404, detail="スコアが見つかりません")
+
+        return BookScoreResponse(
+            book_id=score_model.book_id,
+            chapter_number=score_model.chapter_number,
+            overall_score=score_model.overall_score,
+            structure_score=score_model.structure_score,
+            coherency_score=score_model.coherency_score,
+            factual_grounding_score=score_model.factual_grounding_score,
+            visual_textual_synergy_score=score_model.visual_textual_synergy_score,
+            reader_experience_score=score_model.reader_experience_score,
+            evaluated_at=score_model.evaluated_at.isoformat() if score_model.evaluated_at else None,
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

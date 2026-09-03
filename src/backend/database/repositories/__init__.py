@@ -2,6 +2,7 @@ from .audit import AuditRepository
 from .base import BaseRepository
 from .bible import BibleRepository
 from .book import BookRepository
+from .book_score import BookScoreRepository
 from .branch import BranchRepository
 from .chapter import ChapterRepository
 from .character import CharacterRepository
@@ -17,6 +18,7 @@ __all__ = [
     "BaseRepository",
     "BibleRepository",
     "BookRepository",
+    "BookScoreRepository",
     "BranchRepository",
     "ChapterRepository",
     "CharacterRepository",

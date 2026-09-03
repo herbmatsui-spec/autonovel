@@ -10,6 +10,7 @@ RefineEroticWorkflow 等) は WritingService を依存対象にし、EngineFacad
 - generate_episodes_pipeline: パイプライン執筆（WritingAgent へ委譲）
 - generate_episodes: 単発執筆（WritingAgent へ委譲）
 - analyze_and_import_chapter: 手書き原稿インポート（委譲先があれば）
+- calculate_book_score: 執筆後の BookScore 計算とフィードバックループ
 """
 
 from typing import Any
@@ -26,6 +27,8 @@ class WritingService:
         style_rag: Any,  # StyleRagManager
         ctx_mgr: Any,  # ContextManager
         reporter_factory: Any,  # StatusReporter 作成用 Callable
+        book_score_calculator: Any = None,  # BookScoreCalculator
+        score_threshold: float = 70.0,  # 再生成閾値
     ) -> None:
         self.writer = writer
         self.repo = repo
@@ -33,6 +36,8 @@ class WritingService:
         self.style_rag = style_rag
         self.ctx_mgr = ctx_mgr
         self.reporter_factory = reporter_factory
+        self.book_score_calculator = book_score_calculator
+        self.score_threshold = score_threshold
 
     async def generate_episodes_pipeline(
         self,
@@ -89,6 +94,68 @@ class WritingService:
             branch_id=branch_id,
             style_tag=style_tag,
         )
+
+    async def calculate_book_score(
+        self,
+        book_id: int,
+        chapter_number: int,
+        genre: str = "",
+        phase: str = "writing",
+    ) -> dict[str, float] | None:
+        """執筆完了後の章に対して BookScore を計算し、閾値未満なら再生成トリガーを返す"""
+        if self.book_score_calculator is None:
+            return None
+
+        from src.agents.orchestrator import AgentContext
+        ctx = AgentContext(book_id=book_id, branch_id=1, ep_num=chapter_number, artifacts={})
+
+        score = await self.book_score_calculator.calculate(
+            book_id=book_id,
+            chapter_number=chapter_number,
+            ctx=ctx,
+            genre=genre,
+            phase=phase,
+        )
+
+        result = {
+            "overall_score": score.overall_score,
+            "structure_score": score.structure_score,
+            "coherency_score": score.coherency_score,
+            "factual_grounding_score": score.factual_grounding_score,
+            "visual_textual_synergy_score": score.visual_textual_synergy_score,
+            "reader_experience_score": score.reader_experience_score,
+        }
+
+        # 閾値チェック
+        if score.overall_score < self.score_threshold:
+            result["regeneration_triggered"] = True
+            result["low_dimensions"] = self._identify_low_dimensions(score)
+        else:
+            result["regeneration_triggered"] = False
+
+        # メトリクス記録
+        try:
+            from src.backend.observability.metrics import record_book_score
+            record_book_score(result, genre, phase)
+        except Exception:
+            pass  # メトリクス失敗は無視
+
+        return result
+
+    def _identify_low_dimensions(self, score: Any) -> list[str]:
+        """閾値未満の次元を特定（簡易実装: 60点未満を低スコアとみなす）"""
+        low = []
+        if score.structure_score < 60:
+            low.append("structure")
+        if score.coherency_score < 60:
+            low.append("coherency")
+        if score.factual_grounding_score < 60:
+            low.append("factual_grounding")
+        if score.visual_textual_synergy_score < 60:
+            low.append("visual_textual_synergy")
+        if score.reader_experience_score < 60:
+            low.append("reader_experience")
+        return low
 
     async def analyze_and_import_chapter(
         self,

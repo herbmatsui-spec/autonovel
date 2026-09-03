@@ -5,9 +5,12 @@
 import pytest
 from fastapi.testclient import TestClient
 
+print("[test module] About to import app", flush=True)
 from src.backend.server import app
 
+print("[test module] Creating TestClient", flush=True)
 client = TestClient(app)
+print("[test module] TestClient created", flush=True)
 
 
 def test_graph_endpoint_response_shape():
@@ -49,16 +52,11 @@ def test_graph_endpoint_response_shape():
         assert isinstance(edge["properties"], dict)
 
 
-def test_graph_chunks_endpoint():
+def test_graph_chunks_endpoint(client):
     """/api/graph/chunks レスポンス形状"""
     import os
     from sqlalchemy import inspect
     from src.backend.database import SessionLocal
-    with open("/tmp/debug.txt", "w") as f:
-        f.write("DATABASE_URL: " + os.environ.get("DATABASE_URL", "") + "\n")
-        session = SessionLocal()
-        inspector = inspect(session.get_bind())
-        f.write("Tables: " + str(inspector.get_table_names()) + "\n")
     resp = client.get("/api/graph/chunks")
     assert resp.status_code == 200
     data = resp.json()
@@ -85,7 +83,7 @@ def test_rag_context_endpoint_response_shape():
             "additional_entities": ["聖剣"]
         }
     )
-    # GraphRAG 無効環境でも 200 返却
+# GraphRAG 無劫環境でも 200 返却
     assert resp.status_code == 200
     data = resp.json()
 

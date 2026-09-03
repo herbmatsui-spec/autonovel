@@ -618,7 +618,7 @@ class GraphRAGService:
                 faction_members.append(f"{name} ({rel})")
         return faction_members
 
-    def retrieve_for_episode(
+    async def retrieve_for_episode(
         self,
         session: Session,
         *,
@@ -633,7 +633,7 @@ class GraphRAGService:
         if episode_number is not None:
             current_prompt = f"{character_name} ep{episode_number}"
 
-        context = self.build_rag_context(
+        context = await self.build_rag_context(
             session,
             current_prompt=current_prompt,
             character_name=character_name,

@@ -1,7 +1,8 @@
 import logging
 from typing import Any
 
-from src.agents.base import BaseAgent
+from src.agents.skill_base import SkillAgent
+from src.agents.orchestrator import AgentContext, AgentResult
 from src.models.illustration import (
     IllustrationRequest,
     IllustrationResult,
@@ -20,7 +21,7 @@ from src.services.image_service import ImageService
 logger = logging.getLogger(__name__)
 
 
-class IllustrationAgent(BaseAgent):
+class IllustrationAgent(SkillAgent):
     """イラスト作成サブエージェント（表紙 / 挿絵 / キャラクター）。
 
     request は src / autonovel.src いずれの経路で生成された IllustrationRequest
@@ -39,6 +40,21 @@ class IllustrationAgent(BaseAgent):
         self.scene_illustrator = SceneIllustrator(image_service)
         self.scene_service = SceneIllustrationService(image_service, llm=self.llm)
         self.yonkoma_illustrator = YonkomaIllustrator(image_service)
+
+    async def execute(self, ctx: AgentContext) -> AgentResult:
+        """スキル実行エントリーポイント。"""
+        request = ctx.artifacts.get("request")
+        if request is None:
+            return AgentResult(
+                next_agent=None,
+                artifacts={},
+                error="request is required in artifacts",
+            )
+        result_dict = await self.generate_prompt_only(request=request)
+        return AgentResult(
+            next_agent=None,
+            artifacts={"illustration_result": result_dict},
+        )
 
     def _coerce_request(self, request):
         """dict なら IllustrationRequest に、オブジェクトならそのまま返す。"""
