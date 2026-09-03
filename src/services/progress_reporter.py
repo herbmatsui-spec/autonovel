@@ -5,7 +5,7 @@ FullAutoWorkflow と EasyModePipeline の異なる進捗APIを統一
 
 from __future__ import annotations
 
-from typing import Any, Callable, Protocol
+from typing import Any, Protocol
 
 
 class ProgressReporterProtocol(Protocol):
@@ -117,7 +117,9 @@ class StatusReporterAdapter:
     def __init__(self, reporter: ProgressReporterProtocol):
         self._reporter = reporter
 
-    def update_progress(self, current: int, total: int, message: str = "", sub_message: str = "") -> None:
+    def update_progress(
+        self, current: int, total: int, message: str = "", sub_message: str = ""
+    ) -> None:
         self._reporter.update_progress(current, total, message, sub_message)
 
     def report(self, message: str, level: str = "info") -> None:

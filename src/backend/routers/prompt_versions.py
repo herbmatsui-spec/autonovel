@@ -21,7 +21,7 @@ async def rollback_prompt_version(book_id: int, req: RollbackRequest):
     validate_api_key_or_raise(req.api_key)
     from src.backend.prompt_version_manager import PromptVersionManager
 
-    pvm = PromptVersionManager(AppContainer.db())
+    _ = PromptVersionManager(AppContainer.db())
 
     async with UnitOfWork(AppContainer.db()) as uow:
         # 指定バージョンの検証

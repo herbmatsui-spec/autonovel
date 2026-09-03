@@ -12,6 +12,7 @@ from dataclasses import dataclass
 @dataclass
 class CadenceStats:
     """文章の音律・ケイデンス統計情報"""
+
     total_sentences: int
     repeated_endings_fixed: int
     avg_sentence_length: float

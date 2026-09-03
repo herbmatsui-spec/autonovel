@@ -10,6 +10,7 @@ python-json-logger を用いた JSON ログ出力を既定とし、プレーン�
     APP_ENV    : デプロイ環境識別子 (local/staging/production 等。任意)
     LOG_LEVEL_<NAME> : 特定ロガー ``<NAME>`` のレベルを上書き (例: LOG_LEVEL_HUEY=DEBUG)
 """
+
 from __future__ import annotations
 
 import logging
@@ -88,16 +89,11 @@ def configure() -> None:
                 from pythonjsonlogger import jsonlogger  # type: ignore[import-not-found,no-redef]
         except ImportError:
             handler = logging.StreamHandler(sys.stdout)
-            formatter = logging.Formatter(
-                "%(asctime)s %(levelname)s %(name)s: %(message)s"
-            )
+            formatter = logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
         else:
             handler = logging.StreamHandler(sys.stdout)
             formatter = jsonlogger.JsonFormatter(
-                (
-                    "%(asctime)s %(levelname)s %(name)s %(message)s "
-                    "%(app)s %(version)s %(env)s"
-                ),
+                ("%(asctime)s %(levelname)s %(name)s %(message)s %(app)s %(version)s %(env)s"),
                 rename_fields={
                     "asctime": "timestamp",
                     "levelname": "level",

@@ -191,4 +191,6 @@ class UltimateHegemonyEngine:
         from src.backend.workflows.reverse_plot_workflow import ReversePlotGenerationWorkflow
 
         workflow = ReversePlotGenerationWorkflow(self.repo, self.pm, self.generate_json)
-        return await workflow.execute(reporter, answers=answers, target_episodes=target_episodes, genre=genre)
+        return await workflow.execute(
+            reporter, answers=answers, target_episodes=target_episodes, genre=genre
+        )

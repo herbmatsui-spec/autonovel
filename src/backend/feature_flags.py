@@ -2,6 +2,7 @@
 
 `ENABLE_MULTIMEDIA` が無効なとき、関連するエンドポイントは 503 を返す。
 """
+
 from __future__ import annotations
 
 from src.backend.config import settings

@@ -42,14 +42,12 @@ class AuditRepository(BaseRepository):
         await self.session.flush()
         return issue.id
 
-    async def get_issue(self, issue_id: int) -> AuditIssueDbModel | None:
+    async def get_issue(self, issue_id: int) -> AuditIssue | None:
         result = await self.session.execute(select(AuditIssue).where(AuditIssue.id == issue_id))
         row = result.scalar_one_or_none()
         return self._to_dict(row) if row else None
 
-    async def get_issues_by_book(
-        self, book_id: int, status: str | None = None
-    ) -> list[AuditIssueDbModel]:
+    async def get_issues_by_book(self, book_id: int, status: str | None = None) -> list[AuditIssue]:
         stmt = select(AuditIssue).where(AuditIssue.book_id == book_id)
         if status:
             stmt = stmt.where(AuditIssue.status == status)

@@ -1,4 +1,5 @@
 """上級者エディタ用 Next Beats 3バリエーション分岐生成サービスモジュール."""
+
 from __future__ import annotations
 
 import asyncio
@@ -29,7 +30,9 @@ class NextBeatsService:
 
     async def generate_three_beats(self, request: NextBeatsRequest) -> NextBeatsResponse:
         """王道・サスペンス・心情の3バリエーションを並列生成する"""
-        tail_text = request.current_text[-800:] if len(request.current_text) > 800 else request.current_text
+        tail_text = (
+            request.current_text[-800:] if len(request.current_text) > 800 else request.current_text
+        )
 
         branch_configs = [
             ("card_a", BranchType.ROYAL, "【王道】逆転の一撃"),

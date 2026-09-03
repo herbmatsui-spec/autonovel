@@ -10,7 +10,9 @@ def map_fullauto_kwargs_to_context(kwargs: dict[str, Any]) -> WorkflowContext:
     """FullAutoWorkflow の kwargs を WorkflowContext に変換"""
     return WorkflowContext(
         genre=kwargs["genre"],
-        keywords=kwargs["keywords"],
+        keywords=", ".join(kwargs["keywords"])
+        if isinstance(kwargs["keywords"], list)
+        else kwargs["keywords"],
         archetype_key=kwargs["archetype_key"],
         target_eps=kwargs["target_eps"],
         initial_limit=kwargs["initial_limit"],
@@ -18,14 +20,15 @@ def map_fullauto_kwargs_to_context(kwargs: dict[str, Any]) -> WorkflowContext:
         concept=kwargs.get("concept", ""),
         tone_vibe=kwargs.get("tone_vibe", 0.6),
         user_prompt=kwargs.get("user_prompt", ""),
-        enable_illustration=bool(kwargs.get("illustration_settings", {}).get("enableIllustration", False)),
+        enable_illustration=bool(
+            kwargs.get("illustration_settings", {}).get("enableIllustration", False)
+        ),
         illustration_settings=kwargs.get("illustration_settings", {}),
         enable_spice_guard=kwargs.get("enable_spice_guard", False),
         enable_catharsis_analysis=True,
         enable_marketing=True,
         max_retries=1,
         is_easy_mode=False,
-        preset_name="",
     )
 
 
@@ -87,20 +90,24 @@ def map_context_to_easymode_result(
     """WorkflowContext と FullAutoWorkflowResult を EasyMode 互換の dict に変換"""
     episodes_list: list[dict[str, Any]] = []
     for ep in result.episodes_detail:
-        episodes_list.append({
-            "episode_num": ep.get("episode_num", 0),
-            "title": ep.get("title", f"第{ep.get('episode_num', 0)}話"),
-            "word_count": ep.get("word_count", 0),
-            "audit_score": ep.get("audit_score", 0.0),
-            "audit_passed": ep.get("audit_passed", False),
-            "rewrite_count": ep.get("rewrite_count", 0),
-            "needs_human_review": ep.get("needs_human_review", False),
-        })
+        episodes_list.append(
+            {
+                "episode_num": ep.get("episode_num", 0),
+                "title": ep.get("title", f"第{ep.get('episode_num', 0)}話"),
+                "word_count": ep.get("word_count", 0),
+                "audit_score": ep.get("audit_score", 0.0),
+                "audit_passed": ep.get("audit_passed", False),
+                "rewrite_count": ep.get("rewrite_count", 0),
+                "needs_human_review": ep.get("needs_human_review", False),
+            }
+        )
 
     return {
         "title": result.title,
         "concept": result.easy_parameters.get("concept", "") if result.easy_parameters else "",
-        "total_episodes": result.easy_parameters.get("target_eps", ctx.target_eps) if result.easy_parameters else ctx.target_eps,
+        "total_episodes": result.easy_parameters.get("target_eps", ctx.target_eps)
+        if result.easy_parameters
+        else ctx.target_eps,
         "total_words": result.chars_count,
         "average_audit_score": result.average_audit_score,
         "genre": ctx.genre,

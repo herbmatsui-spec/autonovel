@@ -14,7 +14,9 @@ class MockVectorProvider(IVectorStoreProvider):
         self.config = kwargs
         self._storage: List[Dict[str, Any]] = []
 
-    def add_texts(self, texts: List[str], metadatas: Optional[List[Dict[str, Any]]] = None, **kwargs: Any) -> List[str]:
+    def add_texts(
+        self, texts: List[str], metadatas: Optional[List[Dict[str, Any]]] = None, **kwargs: Any
+    ) -> List[str]:
         ids = []
         for i, text in enumerate(texts):
             doc_id = f"mock_{len(self._storage)}"

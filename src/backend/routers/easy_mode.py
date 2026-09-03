@@ -84,7 +84,9 @@ async def execute_generation(payload: dict[str, Any]) -> dict[str, Any]:
 
     if style_profile is None:
         # デフォルトはジャンルから推定
-        genre_key = "zarma" if "ざまぁ" in genre else "aku_reijo" if "令嬢" in genre else "cheat_tensei"
+        genre_key = (
+            "zarma" if "ざまぁ" in genre else "aku_reijo" if "令嬢" in genre else "cheat_tensei"
+        )
         try:
             preset_dict = load_preset(genre_key)
             style_data = preset_dict.get("style", {})
@@ -101,7 +103,7 @@ async def execute_generation(payload: dict[str, Any]) -> dict[str, Any]:
     style_bias_section = style_profile.to_prompt_instruction() if style_profile else ""
 
     content_length_limit = int(payload.get("content_length_limit") or 2000)
-    target_episodes = int(payload.get("target_episodes") or 1)
+    _ = int(payload.get("target_episodes") or 1)
     llm_config = payload.get("llm_config") or {}
 
     # GraphRAG を反映したユーザープロンプトの構築
@@ -336,7 +338,6 @@ async def cancel_task(task_id: str) -> dict[str, str]:
     return {"task_id": task_id, "status": "cancelled"}
 
 
-
 # --- ガチャ / ダイジェスト / 昇格 エンドポイント ---
 
 from src.domain.entities.easy_mode import (
@@ -459,12 +460,17 @@ async def export_with_data_endpoint(
                 "personality": payload.character.get("personality", "設定なし"),
                 "ability": payload.character.get("ability", "設定なし"),
             }
-        ] if payload.character else [],
-        "plots": payload.plots or [
+        ]
+        if payload.character
+        else [],
+        "plots": payload.plots
+        or [
             {
                 "ep_num": 1,
                 "title": "第1話 運命の覚醒",
-                "one_line_summary": payload.current_text[:100] if payload.current_text else "冒険の始まり",
+                "one_line_summary": payload.current_text[:100]
+                if payload.current_text
+                else "冒険の始まり",
             }
         ],
         "bible_settings": {},
@@ -486,5 +492,3 @@ async def export_with_data_endpoint(
             "Cache-Control": "no-store",
         },
     )
-
-

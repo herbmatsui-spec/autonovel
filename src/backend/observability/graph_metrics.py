@@ -5,14 +5,17 @@ Prometheus クライアントライブラリを使用して、GraphRAG 操作の
 
 独自レジストリを使用してメインメトリクスとの重複登録を防止。
 """
+
 from prometheus_client import CollectorRegistry, Counter, Gauge, Histogram, Info
 
 # GraphRAG 専用レジストリ（メインメトリクスとの重複防止）
 _graphrag_registry = CollectorRegistry()
 
+
 def _get_registry() -> CollectorRegistry:
     """GraphRAG 専用レジストリを返す"""
     return _graphrag_registry
+
 
 # ============================================================
 # Graph 操作メトリクス
@@ -354,15 +357,15 @@ GRAPHRAG_INFO = Info(
     registry=_graphrag_registry,
 )
 
+
 def init_metrics():
     """メトリクス初期化（起動時呼び出し）"""
-    GRAPHRAG_INFO.info({
-        "version": "4.0.0",
-        "components": "age,pgvector,rag,pipeline,extraction"
-    })
+    GRAPHRAG_INFO.info({"version": "4.0.0", "components": "age,pgvector,rag,pipeline,extraction"})
 
 
-def update_graph_stats(graph_name: str, node_count: int, edge_count: int, labels: list[str], rel_types: list[str]):
+def update_graph_stats(
+    graph_name: str, node_count: int, edge_count: int, labels: list[str], rel_types: list[str]
+):
     """グラフ統計を更新"""
     GRAPH_GRAPHS_TOTAL.set(1)
     GRAPH_NODES_TOTAL.labels(graph_name=graph_name, label="all").set(node_count)
@@ -377,7 +380,9 @@ def update_graph_stats(graph_name: str, node_count: int, edge_count: int, labels
 
 def update_vector_store_stats(backend: str, collection_name: str, doc_count: int):
     """ベクトルストア統計を更新"""
-    VECTOR_STORE_DOCUMENTS_TOTAL.labels(backend=backend, collection_name=collection_name).set(doc_count)
+    VECTOR_STORE_DOCUMENTS_TOTAL.labels(backend=backend, collection_name=collection_name).set(
+        doc_count
+    )
 
 
 def record_llm_cost(provider: str, model: str, cost_usd: float):
@@ -394,6 +399,6 @@ def get_metrics_summary() -> dict:
     for registry in [REGISTRY, _graphrag_registry]:
         for metric in registry.collect():
             for sample in metric.samples:
-                key = f"{sample.name}{{{','.join(f'{k}={v}' for k,v in sample.labels.items())}}}"
+                key = f"{sample.name}{{{','.join(f'{k}={v}' for k, v in sample.labels.items())}}}"
                 summary[key] = sample.value
     return summary

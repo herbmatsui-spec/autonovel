@@ -4,6 +4,7 @@ erotic/curve.py - 官能カーブ生成モジュール
 
 from __future__ import annotations
 
+from config.erotic_parameters import EroticParameters
 from pydantic import BaseModel
 
 

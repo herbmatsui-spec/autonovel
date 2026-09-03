@@ -1,5 +1,3 @@
-
-
 class HegemonyError(Exception):
     """基底例外クラス。全サブクラスが status_code, error_code, message, original を提供する。"""
 
@@ -252,6 +250,7 @@ class PipelineError(HegemonyError):
 # ----------------------------------------------------------------------
 # LLM 系統固有例外（プロバイダー側でインポートされる）
 # ----------------------------------------------------------------------
+
 
 class LLMAuthenticationError(LLMError):
     """認証失敗（API キーが無効・期限切れなど）"""

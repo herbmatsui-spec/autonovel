@@ -1,17 +1,29 @@
 from typing import Any
 
 from fastapi import APIRouter, Depends
+from pydantic import BaseModel
 from sqlalchemy import select
 
 from config.project_context import GlobalConfig
 from src.backend.auth import require_api_key
-from src.backend.database.models import PendingPatch, PromptVersion
+from src.backend.database.models import PatchReview, PendingPatch, PromptVersion
 from src.backend.patch_validator import PatchValidator
 from src.backend.prompt_version_manager import PromptVersionManager
 from src.core.container import AppContainer
 from src.core.exceptions import NotFoundError, ValidationError
 
 router = APIRouter(prefix="/api/patches", tags=["patches"])
+
+
+class ReviewActionRequest(BaseModel):
+    reviewer_id: str | None = None
+    comment: str = ""
+
+
+class ReviseReviewRequest(BaseModel):
+    proposed_content: str
+    reviewer_id: str | None = None
+    comment: str = ""
 
 
 @router.get("/{book_id}/pending")
@@ -69,7 +81,7 @@ async def approve_patch(
             ver = ver_res.scalar_one_or_none()
 
             if ver:
-                pvm = PromptVersionManager(uow.db)
+                _ = PromptVersionManager(uow.db)
                 await uow.prompt_versions.set_active_prompt_version(
                     book_id=patch.book_id, prompt_key="optimized_prompt_patch", version_id=ver.id
                 )
@@ -151,3 +163,175 @@ async def edit_patch(patch_id: int, req: Any, api_key: str = Depends(require_api
                 ver.content = req.content
 
     return {"message": "Patch content updated successfully"}
+
+
+# ============================================================================
+# Patch Review Endpoints (Human-in-the-Loop Review Workflow)
+# ============================================================================
+
+
+@router.get("/{book_id}/reviews")
+async def get_pending_reviews(book_id: int):
+    """レビュー待ちパッチ一覧を取得"""
+    from src.backend.database.uow import UnitOfWork
+
+    async with UnitOfWork(AppContainer.db()) as uow:
+        reviews = await uow.misc.get_pending_reviews(book_id)
+    return reviews
+
+
+@router.get("/reviews/{review_id}")
+async def get_review_detail(review_id: int):
+    """レビュー詳細を取得"""
+    from src.backend.database.uow import UnitOfWork
+
+    async with UnitOfWork(AppContainer.db()) as uow:
+        review = await uow.misc.get_patch_review(review_id)
+    if not review:
+        raise NotFoundError(
+            "Review not found", resource_type="PatchReview", resource_id=str(review_id)
+        )
+    return review
+
+
+@router.post("/reviews/{review_id}/approve")
+async def approve_review(
+    review_id: int, req: ReviewActionRequest, api_key: str = Depends(require_api_key)
+):
+    """レビューを承認"""
+    from src.backend.database.uow import UnitOfWork
+
+    async with UnitOfWork(AppContainer.db()) as uow:
+        review = await uow.misc.get_patch_review(review_id)
+        if not review:
+            raise NotFoundError(
+                "Review not found", resource_type="PatchReview", resource_id=str(review_id)
+            )
+
+        if review.get("status") != "under_review":
+            raise ValidationError(f"Review is already {review.get('status')}")
+
+        await uow.misc.update_patch_review_status(
+            review_id, "approved", reviewer_id=req.reviewer_id, review_comment=req.comment
+        )
+
+        # 関連する AuditIssue のステータスも更新
+        from sqlalchemy import update
+        from src.backend.database.models import AuditIssue
+
+        audit_issue_ids = review.get("audit_issue_ids", [])
+        if audit_issue_ids:
+            await uow.session.execute(
+                update(AuditIssue)
+                .where(AuditIssue.id.in_(audit_issue_ids))
+                .values(status="resolved", resolved_note=f"Approved via review {review_id}")
+            )
+
+    return {"message": "Review approved successfully"}
+
+
+@router.post("/reviews/{review_id}/reject")
+async def reject_review(
+    review_id: int, req: ReviewActionRequest, api_key: str = Depends(require_api_key)
+):
+    """レビューを差し戻し"""
+    if not req.comment:
+        raise ValidationError("Comment is required when rejecting a review")
+
+    from src.backend.database.uow import UnitOfWork
+
+    async with UnitOfWork(AppContainer.db()) as uow:
+        review = await uow.misc.get_patch_review(review_id)
+        if not review:
+            raise NotFoundError(
+                "Review not found", resource_type="PatchReview", resource_id=str(review_id)
+            )
+
+        if review.get("status") != "under_review":
+            raise ValidationError(f"Review is already {review.get('status')}")
+
+        await uow.misc.update_patch_review_status(
+            review_id, "rejected", reviewer_id=req.reviewer_id, review_comment=req.comment
+        )
+
+        # 関連する AuditIssue のステータスも更新
+        from sqlalchemy import update
+        from src.backend.database.models import AuditIssue
+
+        audit_issue_ids = review.get("audit_issue_ids", [])
+        if audit_issue_ids:
+            await uow.session.execute(
+                update(AuditIssue)
+                .where(AuditIssue.id.in_(audit_issue_ids))
+                .values(
+                    status="rejected",
+                    resolved_note=f"Rejected via review {review_id}: {req.comment}",
+                )
+            )
+
+    return {"message": "Review rejected successfully"}
+
+
+@router.post("/reviews/{review_id}/revise")
+async def revise_review(
+    review_id: int, req: ReviseReviewRequest, api_key: str = Depends(require_api_key)
+):
+    """レビューに修正案を提示（再レビュー要求）"""
+    from src.backend.database.uow import UnitOfWork
+
+    async with UnitOfWork(AppContainer.db()) as uow:
+        review = await uow.misc.get_patch_review(review_id)
+        if not review:
+            raise NotFoundError(
+                "Review not found", resource_type="PatchReview", resource_id=str(review_id)
+            )
+
+        if review.get("status") not in ("under_review", "rejected"):
+            raise ValidationError(f"Cannot revise review in status: {review.get('status')}")
+
+        # 提案内容を更新
+        from sqlalchemy import update
+
+        await uow.session.execute(
+            update(PatchReview)
+            .where(PatchReview.id == review_id)
+            .values(
+                proposed_content=req.proposed_content,
+                status="under_review",
+                review_comment=req.comment,
+                reviewer_id=req.reviewer_id,
+            )
+        )
+
+    return {"message": "Review revised successfully, awaiting re-approval"}
+
+
+# ============================================================================
+# Setting Version Endpoints
+# ============================================================================
+
+
+@router.get("/{book_id}/setting-versions")
+async def get_setting_versions(book_id: int):
+    """設定バージョン履歴を取得"""
+    from src.backend.database.uow import UnitOfWork
+
+    async with UnitOfWork(AppContainer.db()) as uow:
+        versions = await uow.misc.get_setting_versions(book_id)
+    return versions
+
+
+@router.get("/{book_id}/setting-versions/{version_number}")
+async def get_setting_version(book_id: int, version_number: int):
+    """特定バージョンの設定を取得"""
+    from src.backend.database.uow import UnitOfWork
+
+    async with UnitOfWork(AppContainer.db()) as uow:
+        version = await uow.misc.get_setting_version(book_id, version_number)
+    if not version:
+        raise NotFoundError(
+            "Setting version not found",
+            resource_type="SettingVersion",
+            resource_id=str(version_number),
+        )
+    return version

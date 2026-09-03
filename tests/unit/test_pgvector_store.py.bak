@@ -1,0 +1,76 @@
+"""Unit tests for PgVectorStore."""
+
+import pytest
+from unittest.mock import AsyncMock, MagicMock, patch
+
+from src.services.vector_store import PgVectorStore, HAS_PGVECTOR
+
+
+@pytest.mark.skipif(not HAS_PGVECTOR, reason="pgvector not installed")
+class TestPgVectorStore:
+    """Tests for PgVectorStore."""
+
+    def test_init(self):
+        """Test initialization."""
+        with patch("src.services.vector_store.create_async_engine") as mock_engine, \
+             patch("src.services.vector_store.async_sessionmaker") as mock_session:
+            store = PgVectorStore(
+                database_url="postgresql+asyncpg://user:pass@localhost/db",
+                dimension=768,
+                pool_size=5,
+                max_overflow=10,
+            )
+            assert store.database_url == "postgresql+asyncpg://user:pass@localhost/db"
+            assert store.dimension == 768
+            mock_engine.assert_called_once()
+            mock_session.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_ensure_table(self):
+        """Test _ensure_table creates table and index."""
+        with patch("src.services.vector_store.create_async_engine"), \
+             patch("src.services.vector_store.async_sessionmaker"):
+            store = PgVectorStore(database_url="postgresql+asyncpg://")
+            mock_session = AsyncMock()
+            store._session = MagicMock(return_value=mock_session)
+            # Mock the async context manager
+            mock_session.__aenter__.return_value = mock_session
+            mock_session.__aexit__.return_value = None
+
+            result = await store._ensure_table("test_coll")
+            assert result is True
+            # Ensure CREATE EXTENSION vector was called
+            mock_session.execute.assert_any_call(
+                "CREATE EXTENSION IF NOT EXISTS vector;"
+            )
+            # Ensure table creation SQL executed
+            assert any("CREATE TABLE IF NOT EXISTS vec_test_coll" in str(call)
+                       for call in mock_session.execute.call_args_list)
+            # Ensure index creation
+            assert any("CREATE INDEX IF NOT EXISTS idx_vec_test_coll_embedding_hnsw" in str(call)
+                       for call in mock_session.execute.call_args_list)
+
+    @pytest.mark.asyncio
+    async def test_add_documents(self):
+        """Test add_documents inserts data."""
+        with patch("src.services.vector_store.create_async_engine"), \
+             patch("src.services.vector_store.async_sessionmaker"):
+            store = PgVectorStore(database_url="postgresql+asyncpg://")
+            mock_session = AsyncMock()
+            store._session = MagicMock(return_value=mock_session)
+            mock_session.__aenter__.return_value = mock_session
+            mock_session.__aexit__.return_value = None
+            # Mock _ensure_table to do nothing
+            store._ensure_table = AsyncMock(return_value=True)
+
+            await store.add_documents(
+                collection_name="test",
+                ids=["1", "2"],
+                documents=["doc1", "doc2"],
+                embeddings=[[0.1, 0.2], [0.3, 0.4]],
+                metadatas=[{"a": 1}, {"b": 2}],
+            )
+            # Ensure execute called with UPSERT
+            assert mock_session.execute.call_count >= 1
+            # Commit called
+            mock_session.commit.assert_awaited()

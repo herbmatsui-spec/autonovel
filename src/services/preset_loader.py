@@ -154,7 +154,9 @@ def get_tension_curve(preset: dict[str, Any]) -> dict[str, Any]:
 
     # FullAuto 形式なら変換
     return {
-        "curve_points": tension.get("curve_points", [[0.0, 0.3], [0.25, 0.6], [0.5, 0.8], [0.75, 0.9], [1.0, 1.0]]),
+        "curve_points": tension.get(
+            "curve_points", [[0.0, 0.3], [0.25, 0.6], [0.5, 0.8], [0.75, 0.9], [1.0, 1.0]]
+        ),
         "catharsis_spikes": tension.get("catharsis_spikes", [0.25, 0.5, 0.75, 1.0]),
     }
 

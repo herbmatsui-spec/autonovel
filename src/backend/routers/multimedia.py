@@ -3,6 +3,7 @@
 `/multimedia/...` 配下に Asset Pack / Media Mix / IF Routes / eBook エンドポイント群を公開する。
 `ENABLE_MULTIMEDIA` フラグが無効な場合は 503 を返す。
 """
+
 from __future__ import annotations
 
 import logging
@@ -49,7 +50,10 @@ def _check_enabled() -> None:
     if not is_multimedia_enabled():
         raise HTTPException(
             status_code=503,
-            detail={"error": "MultimediaDisabledError", "detail": "Multimedia features are disabled"},
+            detail={
+                "error": "MultimediaDisabledError",
+                "detail": "Multimedia features are disabled",
+            },
         )
 
 
@@ -131,10 +135,12 @@ def generate_if_routes(
     """IF ルートグラフ生成。"""
     _check_enabled()
     generate_limiter.check(request)
-    logger.info("multimedia.if_routes book_id=%s persist=%s", payload.book_id, payload.persist)
-    result, graph = service.generate_if_routes(
-        book_id=payload.book_id, persist=payload.persist
+    logger.info(
+        "multimedia.if_routes book_id=%s persist=%s (also accessible via /api/branches)",
+        payload.book_id,
+        payload.persist,
     )
+    result, graph = service.generate_if_routes(book_id=payload.book_id, persist=payload.persist)
     if graph is None:
         raise HTTPException(status_code=500, detail="Failed to generate graph")
     return IFRouteResponse(

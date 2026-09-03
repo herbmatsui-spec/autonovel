@@ -43,9 +43,7 @@ class PromotionService:
 
             db_book_id = draft_json.get("db_book_id")
             if db_book_id is not None:
-                result = await session.execute(
-                    Book.__table__.select().where(Book.id == db_book_id)
-                )
+                result = await session.execute(Book.__table__.select().where(Book.id == db_book_id))
                 book_row = result.fetchone()
                 if book_row is None:
                     raise ValueError(f"Book record not found for db_book_id={db_book_id}")

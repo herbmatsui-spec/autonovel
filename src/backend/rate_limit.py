@@ -1,4 +1,5 @@
 """最小限の IP ベースレートリミッター (プロセス内)."""
+
 from __future__ import annotations
 
 import threading
@@ -23,9 +24,7 @@ class RateLimiter:
         with self._lock:
             timestamps = self._requests[client_ip]
             # ウィンドウ外のタイムスタンプを除去
-            self._requests[client_ip] = [
-                t for t in timestamps if now - t < self._window
-            ]
+            self._requests[client_ip] = [t for t in timestamps if now - t < self._window]
             if len(self._requests[client_ip]) >= self._max:
                 raise HTTPException(
                     status_code=429,

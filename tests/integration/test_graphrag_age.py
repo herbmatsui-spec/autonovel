@@ -45,16 +45,28 @@ pytestmark = pytest.mark.skipif(
 
 @pytest.fixture(scope="module")
 def age_container():
-    """apache/age-postgresql:16-pgvector を起動し SQLAlchemy engine を返す."""
-    from sqlalchemy import create_engine
+    """Apache AGE イメージを起動し、pgvector エクステンションをインストールし SQLAlchemy engine を返す."""
+    from sqlalchemy import create_engine, text
 
-    container = PostgresContainer("apache/age-postgresql:16-pgvector")
+    container = PostgresContainer("apache/age:latest")
     container.start()
     url = container.get_connection_url()
     if url.startswith("postgresql://"):
         url = url.replace("postgresql://", "postgresql+psycopg2://", 1)
     engine = create_engine(url)
     try:
+        # Ensure age extension is available (should be in the image)
+        with engine.connect() as conn:
+            conn.execute(text("CREATE EXTENSION IF NOT EXISTS age;"))
+            conn.commit()
+        # Try to create vector extension; if it fails, we note that vector may not be available
+        with engine.connect() as conn:
+            try:
+                conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
+                conn.commit()
+            except Exception:
+                # Vector extension not available; tests requiring it should skip
+                pass
         yield engine
     finally:
         engine.dispose()

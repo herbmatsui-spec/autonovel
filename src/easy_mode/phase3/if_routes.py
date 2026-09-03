@@ -11,8 +11,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from typing import Any
-
-from src.easy_mode.pipeline import EpisodeResult, SeriesResult
+from src.easy_mode import EpisodeResult, SeriesResult
 
 logger = logging.getLogger(__name__)
 
@@ -171,6 +170,42 @@ class RouteNode:
             "parent_ids": self.parent_ids,
         }
 
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> RouteNode:
+        """dict から RouteNode を復元する."""
+        branch_type_raw = data.get("branch_type", "choice")
+        try:
+            branch_type = BranchType(branch_type_raw)
+        except ValueError:
+            branch_type = BranchType.CHOICE
+
+        choices_raw = data.get("choices", []) or []
+        choices: list[RouteChoice] = []
+        for c in choices_raw:
+            conditions_raw = c.get("conditions", []) or []
+            conditions = [BranchCondition.from_dict(cd) for cd in conditions_raw]
+            choices.append(
+                RouteChoice(
+                    id=c["id"],
+                    text=c.get("text", ""),
+                    conditions=conditions,
+                    target_node_id=c.get("target_node_id"),
+                    effects=c.get("effects") or {},
+                    priority=c.get("priority", 0),
+                )
+            )
+
+        return cls(
+            id=data["id"],
+            episode_num=int(data.get("episode_num", 0)),
+            content=data.get("content", ""),
+            branch_type=branch_type,
+            choices=choices,
+            merge_target=data.get("merge_target"),
+            metadata=data.get("metadata") or {},
+            parent_ids=list(data.get("parent_ids", []) or []),
+        )
+
 
 @dataclass
 class IFRouteGraph:
@@ -201,7 +236,7 @@ class IFRouteGraph:
             target = self.get_node(choice.target_node_id)
             if target:
                 # 副作用を適用した新しいコンテキストで評価
-                new_context = choice.apply_effects(context)
+                _ = choice.apply_effects(context)
                 next_nodes.append(target)
         return next_nodes
 
@@ -246,6 +281,25 @@ class IFRouteGraph:
                     )
 
         return errors
+
+    def to_dict(self) -> dict[str, Any]:
+        """グラフ全体を JSON シリアライズ可能な dict に変換."""
+        return {
+            "entry_node_id": self.entry_node_id,
+            "nodes": {nid: n.to_dict() for nid, n in self.nodes.items()},
+            "metadata": self.metadata,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> IFRouteGraph:
+        """dict から IFRouteGraph を復元する."""
+        graph = cls()
+        graph.entry_node_id = data.get("entry_node_id", "")
+        graph.metadata = data.get("metadata", {}) or {}
+        nodes_data = data.get("nodes", {}) or {}
+        for nid, ndata in nodes_data.items():
+            graph.nodes[nid] = RouteNode.from_dict(ndata)
+        return graph
 
 
 class IFRouteGenerator:

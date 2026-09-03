@@ -3,6 +3,7 @@
 Issue #6: バッチエンドポイントを非同期化し、進捗を
 ``/api/illustrations/status/{task_id}`` で取得できるようにする。
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -46,6 +47,7 @@ async def _run_illustration_batch(book_id: int, settings: dict) -> dict[str, Any
     from src.dependencies import get_illustration_workflow
 
     workflow = get_illustration_workflow()
+
     class _ReporterShim:
         def __init__(self, id: str):
             self.id = id
@@ -53,7 +55,9 @@ async def _run_illustration_batch(book_id: int, settings: dict) -> dict[str, Any
         def report(self, message: str, level: str = "info") -> None:
             pass
 
-        def update_progress(self, current: int, total: int, message: str = "", sub_message: str = "") -> None:
+        def update_progress(
+            self, current: int, total: int, message: str = "", sub_message: str = ""
+        ) -> None:
             pass
 
         @property

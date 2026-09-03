@@ -1,4 +1,5 @@
 """Multimedia 機能の Pydantic スキーマ定義。"""
+
 from __future__ import annotations
 
 from typing import Any, Literal
@@ -96,6 +97,7 @@ class TaskStatusResponse(BaseModel):
 
 class AssetPackGenerateRequest(BaseModel):
     """`/multimedia/generate` 用リクエスト (README 互換エイリアス)。"""
+
     book_id: int = Field(..., ge=1)
     include_if_routes: bool = True
     include_media_mix: bool = True
@@ -106,6 +108,7 @@ class AssetPackGenerateRequest(BaseModel):
 
 class AssetPackGenerateResponse(BaseModel):
     """`/multimedia/generate` 用レスポンス (README 互換エイリアス)。"""
+
     asset_id: int
     task_id: str
     file_count: int = 0
@@ -114,5 +117,6 @@ class AssetPackGenerateResponse(BaseModel):
 
 class AssetsByBookResponse(BaseModel):
     """`/multimedia/assets/{book_id}` 用レスポンス (README 互換エイリアス)。"""
+
     book_id: int
     assets: list[ArtifactMetaResponse] = Field(default_factory=list)

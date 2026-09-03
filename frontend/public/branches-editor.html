@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <title>IF 分岐エディタ (ベースライン)</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 0; padding: 16px; }
+      header { display: flex; gap: 8px; align-items: center; }
+      h1 { font-size: 1.2em; margin: 0 16px 0 0; }
+      main { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+      section { border: 1px solid #ddd; padding: 12px; border-radius: 6px; }
+      pre { background: #f6f8fa; padding: 8px; overflow: auto; max-height: 300px; }
+      ul { padding-left: 1.2em; }
+      button { padding: 4px 8px; cursor: pointer; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>IF 分岐エディタ</h1>
+      <label>Book ID <input id="bookId" type="number" value="1" /></label>
+      <label>Branch ID <input id="branchId" type="number" value="1" /></label>
+      <button id="reload">Reload</button>
+      <button id="validate">Validate</button>
+    </header>
+    <main>
+      <section>
+        <h2>ノード一覧</h2>
+        <ul id="nodeList"></ul>
+      </section>
+      <section>
+        <h2>検証結果</h2>
+        <pre id="validateResult"></pre>
+      </section>
+    </main>
+    <script>
+      const API = '/api/branches';
+      const bookIdEl = document.getElementById('bookId');
+      const branchIdEl = document.getElementById('branchId');
+      const nodeListEl = document.getElementById('nodeList');
+      const validateResultEl = document.getElementById('validateResult');
+
+      async function loadNodes() {
+        const bookId = bookIdEl.value;
+        const branchId = branchIdEl.value;
+        const r = await fetch(`${API}/${bookId}/nodes?branch_id=${branchId}`);
+        if (!r.ok) {
+          nodeListEl.innerHTML = '<li>(none)</li>';
+          return;
+        }
+        const data = await r.json();
+        nodeListEl.innerHTML = '';
+        for (const [nid, node] of Object.entries(data.nodes || {})) {
+          const li = document.createElement('li');
+          li.textContent = `${nid} — ${node.branch_type || 'choice'} (ep${node.episode_num ?? '?'})`;
+          nodeListEl.appendChild(li);
+        }
+      }
+
+      async function validate() {
+        const bookId = bookIdEl.value;
+        const branchId = branchIdEl.value;
+        const r = await fetch(`${API}/${bookId}/editor/validate?branch_id=${branchId}`, { method: 'POST' });
+        const data = await r.json();
+        validateResultEl.textContent = JSON.stringify(data, null, 2);
+      }
+
+      document.getElementById('reload').addEventListener('click', loadNodes);
+      document.getElementById('validate').addEventListener('click', validate);
+      loadNodes();
+    </script>
+  </body>
+</html>

@@ -65,7 +65,7 @@ class ContextBuilderAgent(BaseAgent):
         if plot is None:
             plot = await self._ensure_plot_exists(repo, book_id, branch_id, ep_num)
 
-        book = await self._get_book(repo, book_id)
+        _ = await self._get_book(repo, book_id)
         chars = await self._get_chars(repo, book_id)
         prev_chapter = await self._get_prev_chapter(repo, book_id, branch_id, ep_num)
 
@@ -159,7 +159,9 @@ class ContextBuilderAgent(BaseAgent):
                 self.logger.debug(f"Characters not found for book_id={book_id}: {e}")
             return []
 
-    async def _get_prev_chapter(self, repo: Any, book_id: int, branch_id: int, ep_num: int) -> Any | None:
+    async def _get_prev_chapter(
+        self, repo: Any, book_id: int, branch_id: int, ep_num: int
+    ) -> Any | None:
         """前話の章データを取得する。"""
         if repo is None or ep_num <= 1:
             return None
@@ -285,7 +287,9 @@ class ContextBuilderAgent(BaseAgent):
             profiles[name] = "; ".join(parts) if parts else name
         return profiles
 
-    async def _ensure_plot_exists(self, repo: Any, book_id: int, branch_id: int, ep_num: int) -> Any | None:
+    async def _ensure_plot_exists(
+        self, repo: Any, book_id: int, branch_id: int, ep_num: int
+    ) -> Any | None:
         """プロットが存在しない場合、生成を試みる。"""
         plot = await self._get_plot(repo, book_id, branch_id, ep_num)
         if (
@@ -318,9 +322,7 @@ class ContextBuilderAgent(BaseAgent):
                         self.logger.info(f"On-demand plot generated for Ep.{ep_num}")
             except Exception as e:
                 if hasattr(self, "logger"):
-                    self.logger.warning(
-                        f"On-demand plot generation failed for Ep.{ep_num}: {e}"
-                    )
+                    self.logger.warning(f"On-demand plot generation failed for Ep.{ep_num}: {e}")
         return plot
 
     async def _get_bible(self, repo: Any, book_id: int) -> Any | None:

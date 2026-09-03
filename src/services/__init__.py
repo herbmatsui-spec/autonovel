@@ -1,4 +1,5 @@
 """AutoNovel ビジネスロジック・サービスパッケージ."""
+
 from __future__ import annotations
 
 from src.services.editor_assist_service import EditorAssistService

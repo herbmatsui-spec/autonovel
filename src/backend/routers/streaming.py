@@ -1,4 +1,5 @@
 """Server-Sent Events (SSE) によるリアルタイム生成テキスト配信ルーター。"""
+
 from __future__ import annotations
 
 import asyncio
@@ -29,9 +30,7 @@ async def _check_disconnect(request: Request) -> bool:
         return False
 
 
-async def _stream_generator(
-    input_data: EasyModeInput, request: Request
-) -> AsyncIterator[str]:
+async def _stream_generator(input_data: EasyModeInput, request: Request) -> AsyncIterator[str]:
     """LLM ストリーミング出力を SSE 形式で逐次 yield する。
 
     クライアント切断時は ``adapter.cancel()`` を呼んで LLM への要求を停止する。

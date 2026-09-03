@@ -1,4 +1,5 @@
 """OpenAI および OpenAI 互換 API (Ollama, LocalAI, vLLM, DeepSeek等) のアダプタ。"""
+
 from __future__ import annotations
 
 import logging

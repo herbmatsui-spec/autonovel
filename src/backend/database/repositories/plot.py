@@ -332,9 +332,7 @@ class PlotRepository(BaseRepository):
             delete(Plot).where(Plot.branch_id == branch_id).where(Plot.ep_num >= start_ep)
         )
 
-    async def get_plots_before_limit_1(
-        self, branch_id: int, ep_num: int
-    ) -> PlotDbModel | None:
+    async def get_plots_before_limit_1(self, branch_id: int, ep_num: int) -> PlotDbModel | None:
         """ep_num より前の最新プロットを1件取得（直前プロットの状態参照用）"""
         result = await self.session.execute(
             select(Plot)

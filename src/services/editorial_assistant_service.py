@@ -1,4 +1,5 @@
 """上級者エディタ用 専属AI編集者（GraphRAG Q&A & 設定矛盾診断）サービスモジュール."""
+
 from __future__ import annotations
 
 import json
@@ -48,12 +49,12 @@ class EditorialAssistantService:
         if similar_chunks:
             evidence_text_parts.append("【過去章・設定抜粋】\n" + "\n---\n".join(similar_chunks))
         if evidence_nodes:
-            node_desc = "\n".join(
-                f"- [{n.label}] {n.id}: {n.properties}" for n in evidence_nodes
-            )
+            node_desc = "\n".join(f"- [{n.label}] {n.id}: {n.properties}" for n in evidence_nodes)
             evidence_text_parts.append("【ナレッジグラフ確定事実】\n" + node_desc)
 
-        evidence_text = "\n\n".join(evidence_text_parts) if evidence_text_parts else "（関連設定データなし）"
+        evidence_text = (
+            "\n\n".join(evidence_text_parts) if evidence_text_parts else "（関連設定データなし）"
+        )
         character_text = ", ".join(entities) if entities else "（特になし）"
 
         prompt = ASK_BIBLE_PROMPT_TEMPLATE.format(
@@ -87,11 +88,15 @@ class EditorialAssistantService:
     ) -> ConsistencyAuditResponse:
         """執筆テキストと GraphRAG 設定の矛盾・不整合をリアルタイム診断する"""
         entities = self._extract_entities(request.content)
-        evidence_nodes = self._retrieve_evidence(session, request.book_id, entities, request.content)
+        evidence_nodes = self._retrieve_evidence(
+            session, request.book_id, entities, request.content
+        )
 
-        node_desc = "\n".join(
-            f"- [{n.label}] {n.id}: {n.properties}" for n in evidence_nodes
-        ) if evidence_nodes else "（既知のキャラクター・設定データなし）"
+        node_desc = (
+            "\n".join(f"- [{n.label}] {n.id}: {n.properties}" for n in evidence_nodes)
+            if evidence_nodes
+            else "（既知のキャラクター・設定データなし）"
+        )
 
         prompt = CONSISTENCY_AUDIT_PROMPT_TEMPLATE.format(
             evidence_text=node_desc,

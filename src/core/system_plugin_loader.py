@@ -43,9 +43,7 @@ class SystemPluginLoader:
         return cls._config
 
     @classmethod
-    def get_plugin_class(
-        cls, plugin_name: str, default_class: type | None = None
-    ) -> type | None:
+    def get_plugin_class(cls, plugin_name: str, default_class: type | None = None) -> type | None:
         """
         指定されたプラグイン名に対応するクラスを動的にロードして返す。
         ロードに失敗した場合や設定が存在しない場合は、default_class を返す。

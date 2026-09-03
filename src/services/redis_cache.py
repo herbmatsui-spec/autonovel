@@ -747,18 +747,21 @@ async def get_prompt_cache(
     l1_cache: Any | None = None,
 ) -> PromptCacheService:
     from src.core.container import AppContainer
+
     container = AppContainer()
     return container.prompt_cache(semantic_cache=semantic_cache, l1_cache=l1_cache)
 
 
 def __get_app_container():
     from src.core.container import AppContainer
+
     return AppContainer()
 
 
 async def close_cache_services():
     """全キャッシュサービスをクローズ."""
     from src.core.container import AppContainer
+
     container = AppContainer()
     if container.redis_cache:
         await container.redis_cache().close()

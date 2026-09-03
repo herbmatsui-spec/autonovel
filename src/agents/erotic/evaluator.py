@@ -16,7 +16,9 @@ class EroticQualityReport(BaseModel):
     overall_score: float = Field(..., ge=0.0, le=100.0, description="総合スコア (0-100)")
     sensuality_score: float = Field(..., ge=0.0, le=100.0, description="感覚的要素スコア (0-100)")
     emotional_score: float = Field(..., ge=0.0, le=100.0, description="感情的要素スコア (0-100)")
-    psychological_score: float = Field(..., ge=0.0, le=100.0, description="心理的要素スコア (0-100)")
+    psychological_score: float = Field(
+        ..., ge=0.0, le=100.0, description="心理的要素スコア (0-100)"
+    )
     technical_score: float = Field(..., ge=0.0, le=100.0, description="技術的要素スコア (0-100)")
     details: dict[str, Any] = Field(default_factory=dict, description="詳細な評価項目・講評")
 
@@ -28,20 +30,97 @@ class EroticQualityScorer:
         # クリーンな日本語官能ボキャブラリ辞書
         self.quality_keywords = {
             "sensory": [
-                "熱", "温もり", "冷たさ", "柔らか", "硬さ", "滑らか", "ざらつき", "湿り", "渇き",
-                "甘い", "香り", "匂い", "味", "感触", "肌触り", "指先", "唇", "吐息", "息遣い",
-                "鼓動", "脈動", "震え", "痺れ", "電流", "火照り", "熱気", "汗", "摩擦", "体温",
-                "締めつけ", "疼き", "蠢き", "快感", "昂ぶり",
+                "熱",
+                "温もり",
+                "冷たさ",
+                "柔らか",
+                "硬さ",
+                "滑らか",
+                "ざらつき",
+                "湿り",
+                "渇き",
+                "甘い",
+                "香り",
+                "匂い",
+                "味",
+                "感触",
+                "肌触り",
+                "指先",
+                "唇",
+                "吐息",
+                "息遣い",
+                "鼓動",
+                "脈動",
+                "震え",
+                "痺れ",
+                "電流",
+                "火照り",
+                "熱気",
+                "汗",
+                "摩擦",
+                "体温",
+                "締めつけ",
+                "疼き",
+                "蠢き",
+                "快感",
+                "昂ぶり",
             ],
             "emotional": [
-                "愛おし", "愛し", "切な", "狂おし", "恋し", "愛おしい", "愛しい", "切ない", "狂おしい",
-                "恋しい", "幸せ", "恐ろしい", "不安", "安心", "信頼", "裏切り", "嫉妬", "独占欲",
-                "執着", "献身", "情熱", "許し", "受容", "共感", "同情", "憧れ", "崇拝", "慕情", "焦燥",
+                "愛おし",
+                "愛し",
+                "切な",
+                "狂おし",
+                "恋し",
+                "愛おしい",
+                "愛しい",
+                "切ない",
+                "狂おしい",
+                "恋しい",
+                "幸せ",
+                "恐ろしい",
+                "不安",
+                "安心",
+                "信頼",
+                "裏切り",
+                "嫉妬",
+                "独占欲",
+                "執着",
+                "献身",
+                "情熱",
+                "許し",
+                "受容",
+                "共感",
+                "同情",
+                "憧れ",
+                "崇拝",
+                "慕情",
+                "焦燥",
             ],
             "psychological": [
-                "支配", "服従", "従順", "反抗", "屈服", "解放", "束縛", "自由", "罪悪感", "背徳",
-                "禁断", "快楽", "羞恥", "清らか", "淫ら", "誇り", "プライド", "自尊心", "自我",
-                "自我崩壊", "自我喪失", "自我統合", "葛藤", "耽溺",
+                "支配",
+                "服従",
+                "従順",
+                "反抗",
+                "屈服",
+                "解放",
+                "束縛",
+                "自由",
+                "罪悪感",
+                "背徳",
+                "禁断",
+                "快楽",
+                "羞恥",
+                "清らか",
+                "淫ら",
+                "誇り",
+                "プライド",
+                "自尊心",
+                "自我",
+                "自我崩壊",
+                "自我喪失",
+                "自我統合",
+                "葛藤",
+                "耽溺",
             ],
         }
 
@@ -125,6 +204,7 @@ class EroticQualityScorer:
         if llm_adapter is None:
             try:
                 from src.services.llm.factory import get_llm_adapter
+
                 llm_adapter = get_llm_adapter()
             except Exception:
                 return self.score_quality(text)
@@ -164,7 +244,7 @@ class EroticQualityScorer:
                 cleaned = cleaned[3:]
             if cleaned.endswith("```"):
                 cleaned = cleaned[:-3]
-            
+
             data = json.loads(cleaned.strip())
             report = EroticQualityReport.model_validate(data)
             if "eval_method" not in report.details:

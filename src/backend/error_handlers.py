@@ -104,4 +104,3 @@ def register_error_handlers(app: FastAPI) -> None:
     app.add_exception_handler(HegemonyError, hegemony_error_handler)
     app.add_exception_handler(RequestValidationError, validation_error_handler)
     app.add_exception_handler(Exception, generic_error_handler)
-

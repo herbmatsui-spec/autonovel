@@ -3,7 +3,6 @@
 各関数は小さく、低性能なLLMでも1つずつ実装・テストできるよう分割している。
 """
 
-
 from src.models.illustration import IllustrationType, SafetyLevel
 
 # ジャンルごとの視覚スタイルのヒント
@@ -203,9 +202,7 @@ def build_yonkoma_prompt(
     for i, (beat, beat_desc) in enumerate(beats):
         cam = camera[i] if i < len(camera) else "medium shot"
         summary = normalized[i] or "(implicit progression based on previous panel)"
-        parts.append(
-            f"Panel {i + 1} [{beat.upper()}] {cam}. Beat: {beat_desc}. Scene: {summary}."
-        )
+        parts.append(f"Panel {i + 1} [{beat.upper()}] {cam}. Beat: {beat_desc}. Scene: {summary}.")
 
     return " ".join(parts)
 
@@ -219,7 +216,6 @@ def apply_yonkoma_safety_modifier(prompt: str, safety_level: SafetyLevel) -> str
     if not is_r15:
         return prompt
     return (
-        prompt
-        + " Tasteful R15 artistic representation, romantic atmosphere, "
+        prompt + " Tasteful R15 artistic representation, romantic atmosphere, "
         "elegant and non-explicit in all panels."
     )

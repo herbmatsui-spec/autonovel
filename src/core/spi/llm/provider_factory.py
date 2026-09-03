@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from src.core.spi.llm.gemini_adapter import GeminiLLMProvider
 from src.core.spi.llm.interface import ILLMProvider

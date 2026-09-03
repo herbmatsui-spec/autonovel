@@ -51,7 +51,11 @@ _api_key_service: APIKeyService | None = None
 def get_api_key_service() -> APIKeyService:
     global _api_key_service
     if _api_key_service is None:
-        disabled = settings.AUTH_DISABLED or os.environ.get("AUTH_DISABLED", "false").lower() in ("1", "true", "yes")
+        disabled = settings.AUTH_DISABLED or os.environ.get("AUTH_DISABLED", "false").lower() in (
+            "1",
+            "true",
+            "yes",
+        )
         keys_env = settings.ALLOWED_API_KEYS or os.environ.get("ALLOWED_API_KEYS", "")
         allowed_keys = [k.strip() for k in keys_env.split(",") if k.strip()]
         _api_key_service = APIKeyService(allowed_keys=allowed_keys, disabled=disabled)

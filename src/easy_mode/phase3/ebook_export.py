@@ -14,7 +14,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from src.easy_mode.pipeline import SeriesResult
+from src.easy_mode import EpisodeResult, SeriesResult
 
 logger = logging.getLogger(__name__)
 
@@ -251,6 +251,8 @@ class EpubGenerator:
 
     def generate(self, series: SeriesResult, output_path: Path) -> Path:
         """EPUB生成"""
+        import ebooklib.epub as epub
+
         book = epub.EpubBook()
 
         # メタデータ設定
@@ -361,6 +363,13 @@ class PdfGenerator:
 
     def generate(self, series: SeriesResult, output_path: Path) -> Path:
         """PDF生成"""
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.units import mm
+        from reportlab.platypus import SimpleDocTemplate, PageBreak
+        from reportlab.lib.styles import getSampleStyleSheet
+        from reportlab.pdfbase import pdfmetrics
+        from reportlab.pdfbase.ttfonts import TTFont
+
         output_path = Path(output_path)
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -408,6 +417,9 @@ class PdfGenerator:
 
     def _register_fonts(self):
         """日本語フォント登録"""
+        from reportlab.pdfbase import pdfmetrics
+        from reportlab.pdfbase.ttfonts import TTFont
+
         try:
             # システムフォントを試す
             import subprocess
@@ -434,6 +446,7 @@ class PdfGenerator:
         """カスタムスタイル設定"""
         from reportlab.lib.colors import HexColor
         from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY, TA_LEFT
+        from reportlab.lib.styles import ParagraphStyle
 
         styles.add(
             ParagraphStyle(
@@ -517,7 +530,7 @@ class PdfGenerator:
             )
         )
 
-    def _build_cover(self, series: SeriesResult) -> list:
+    def _build_cover(self, series: SeriesResult, styles) -> list:
         """表紙ページ構築"""
         from reportlab.lib.units import cm
         from reportlab.platypus import Paragraph, Spacer
@@ -552,8 +565,9 @@ class PdfGenerator:
 
         return story
 
-    def _build_toc(self, series: SeriesResult) -> list:
+    def _build_toc(self, series: SeriesResult, styles) -> list:
         """目次構築"""
+        from reportlab.lib.units import cm
         from reportlab.platypus import Paragraph, Spacer, TableOfContents
 
         story = []
@@ -575,6 +589,7 @@ class PdfGenerator:
 
     def _build_chapter(self, chapter: Chapter, styles) -> list:
         """チャプター構築"""
+        from reportlab.lib.units import cm
         from reportlab.platypus import Paragraph, Spacer
 
         story = []
@@ -613,6 +628,7 @@ class PdfGenerator:
 
     def _build_colophon(self, series: SeriesResult, styles) -> list:
         """奥付構築"""
+        from reportlab.lib.units import cm
         from reportlab.platypus import Paragraph, Spacer
 
         story = []

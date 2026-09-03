@@ -21,9 +21,7 @@ class AuditAdapter:
     def __init__(self, engine):
         self.engine = engine
 
-    async def audit_episode(
-        self, content: str, context: dict[str, Any]
-    ) -> dict[str, Any]:
+    async def audit_episode(self, content: str, context: dict[str, Any]) -> dict[str, Any]:
         """
         エピソード本文を監査
 
@@ -103,7 +101,9 @@ class AuditAdapter:
             reporter.report("⚠️ Bible監査をスキップしました (監査機能未対応)", "warning")
         return True
 
-    async def audit_plot(self, plots: list[dict[str, Any]], context: dict[str, Any]) -> dict[str, Any]:
+    async def audit_plot(
+        self, plots: list[dict[str, Any]], context: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         プロット構造監査 (将来拡張用)
         """

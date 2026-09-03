@@ -2,6 +2,7 @@ import json
 from typing import Any
 
 from config import MODEL_PLANNING
+from config.project_context import ProjectContext
 from src.backend.sharp_edge_preserver import SemanticEdgePreserver, check_edges_preserved
 from src.models import GenerateResult
 

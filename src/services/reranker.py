@@ -5,6 +5,7 @@
   - "simple"         : SimpleReranker (埋め込みコサイン類似度)
   - "cross_encoder"  : CrossEncoderReranker (sentence-transformers 必須)
 """
+
 from __future__ import annotations
 
 import logging
@@ -17,17 +18,13 @@ logger = logging.getLogger(__name__)
 
 
 class Reranker(Protocol):
-    async def rerank(
-        self, query: str, docs: list[str], top_k: int
-    ) -> list[tuple[int, float]]: ...
+    async def rerank(self, query: str, docs: list[str], top_k: int) -> list[tuple[int, float]]: ...
 
 
 class NoopReranker:
     """入力をそのまま返す."""
 
-    async def rerank(
-        self, query: str, docs: list[str], top_k: int
-    ) -> list[tuple[int, float]]:
+    async def rerank(self, query: str, docs: list[str], top_k: int) -> list[tuple[int, float]]:
         n = min(max(0, top_k), len(docs))
         return [(i, 0.0) for i in range(n)]
 
@@ -49,9 +46,7 @@ class SimpleReranker:
             return 0.0
         return dot / (na * nb)
 
-    async def rerank(
-        self, query: str, docs: list[str], top_k: int
-    ) -> list[tuple[int, float]]:
+    async def rerank(self, query: str, docs: list[str], top_k: int) -> list[tuple[int, float]]:
         if not docs:
             return []
         qv = self._emb.get_embedding(query)
@@ -91,9 +86,7 @@ class CrossEncoderReranker:
 
         self._model = CrossEncoder(model_name or settings.RERANKER_MODEL)
 
-    async def rerank(
-        self, query: str, docs: list[str], top_k: int
-    ) -> list[tuple[int, float]]:
+    async def rerank(self, query: str, docs: list[str], top_k: int) -> list[tuple[int, float]]:
         if not docs:
             return []
         pairs = [[query, d] for d in docs]

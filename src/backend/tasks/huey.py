@@ -1,4 +1,5 @@
 """Huey タスクキュー設定。環境変数で sqlite/redis を切り替える。"""
+
 from __future__ import annotations
 
 import logging

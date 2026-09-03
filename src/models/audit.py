@@ -474,3 +474,79 @@ class CriticFeedback(BaseModel):
         return data
 
     model_config = MODEL_CONFIG_DEFAULTS
+
+
+# ============================================================
+# 因果律監査モデル (PlotIntegrityMonitor 用)
+# ============================================================
+
+
+class CausalityLink(BaseModel):
+    """因果リンク: A → B (原因エンティティ/イベント → 結果エンティティ/イベント)"""
+
+    cause_entity: str = Field(..., description="原因側のエンティティ名")
+    cause_event: str = Field(..., description="原因イベントの記述")
+    effect_entity: str = Field(..., description="結果側のエンティティ名")
+    effect_event: str = Field(..., description="結果イベントの記述")
+    confidence: float = Field(default=1.0, ge=0.0, le=1.0, description="信頼度 0.0-1.0")
+    source: Literal["blueprint", "content"] = Field(
+        ..., description="由来: blueprint(計画) または content(本文)"
+    )
+
+    model_config = MODEL_CONFIG_DEFAULTS
+
+
+class ForeshadowingItem(BaseModel):
+    """伏線アイテム: 仕込まれたが未回収の要素"""
+
+    entity_name: str = Field(..., description="伏線に関わるエンティティ名")
+    setup_chapter: int = Field(..., description="仕込まれた話数")
+    setup_context: str = Field(..., description="仕込み時の文脈・記述")
+    expected_payoff: str = Field(..., description="期待される回収内容")
+    is_resolved: bool = Field(default=False, description="回収済みか")
+    resolved_chapter: int | None = Field(default=None, description="回収された話数")
+    importance: Literal["Critical", "Major", "Minor"] = Field(default="Major", description="重要度")
+
+    model_config = MODEL_CONFIG_DEFAULTS
+
+
+class GraphDiffResult(BaseModel):
+    """Blueprint と Content のグラフ差分結果"""
+
+    missing_entities: set[str] = Field(
+        default_factory=set, description="BlueprintにあってContentにないエンティティ"
+    )
+    extra_entities: set[str] = Field(
+        default_factory=set, description="Contentにだけあるエンティティ"
+    )
+    missing_relations: set[tuple[str, str, str]] = Field(
+        default_factory=set, description="BlueprintにあってContentにない関係 (source, target, type)"
+    )
+    extra_relations: set[tuple[str, str, str]] = Field(
+        default_factory=set, description="Contentにだけある関係 (source, target, type)"
+    )
+    property_conflicts: dict[str, dict[str, Any]] = Field(
+        default_factory=dict,
+        description="同一エンティティのプロパティ矛盾 {entity: {prop: {bp_val, ct_val}}}",
+    )
+
+    model_config = MODEL_CONFIG_DEFAULTS
+
+
+class CausalityAuditResult(BaseModel):
+    """因果律監査の総合結果"""
+
+    is_consistent: bool = Field(default=True, description="因果律的に整合しているか")
+    causality_links: list[CausalityLink] = Field(
+        default_factory=list, description="抽出された全因果リンク"
+    )
+    broken_chains: list[CausalityLink] = Field(default_factory=list, description="切れている因果鎖")
+    unresolved_foreshadowing: list[ForeshadowingItem] = Field(
+        default_factory=list, description="未回収伏線リスト"
+    )
+    contradictions: list[str] = Field(default_factory=list, description="検出された矛盾記述")
+    patches: list[PromptPatch] = Field(default_factory=list, description="生成された修正パッチ")
+    score: float = Field(default=1.0, ge=0.0, le=1.0, description="整合性スコア (0.0-1.0)")
+    graph_diff: GraphDiffResult | None = Field(default=None, description="グラフ差分詳細")
+
+    model_config = MODEL_CONFIG_DEFAULTS

@@ -1,5 +1,6 @@
 # src/backend/routers/orchestrated.py
 """マルチエージェントオーケストレーション API エンドポイント。"""
+
 from __future__ import annotations
 
 import logging
@@ -21,6 +22,7 @@ logger = logging.getLogger(__name__)
 
 class OrchestratedGenerateRequest(BaseModel):
     """オーケストレーション版生成リクエスト。"""
+
     book_id: int = Field(default=1, ge=1, description="作品ID")
     branch_id: int = Field(default=1, ge=1, description="ブランチID")
     ep_num: int = Field(default=1, ge=1, description="エピソード番号")
@@ -37,6 +39,7 @@ class OrchestratedGenerateRequest(BaseModel):
 
 class OrchestratedGenerateResponse(BaseModel):
     """生成起動レスポンス。"""
+
     task_id: str
     status: str
     message: str
@@ -86,7 +89,11 @@ async def get_orchestrated_task_status(task_id: str) -> dict[str, Any]:
         return {"task_id": task_id, "status": "pending"}
 
     if isinstance(result, dict) and result.get("error"):
-        logger.info("Orchestrated task status polled (failed): task_id=%s error=%s", task_id, result["error"])
+        logger.info(
+            "Orchestrated task status polled (failed): task_id=%s error=%s",
+            task_id,
+            result["error"],
+        )
         return {"task_id": task_id, "status": "failed", "error": result["error"], "result": result}
 
     logger.info("Orchestrated task status polled (completed): task_id=%s", task_id)

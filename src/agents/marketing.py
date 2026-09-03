@@ -14,9 +14,7 @@ logger = logging.getLogger(__name__)
 class MarketingAgent(BaseAgent):
     """マーケティング素材（表紙案、キャッチコピー、あらすじ）を生成するエージェント。"""
 
-    def __init__(
-        self, repo: Any = None, llm: LLMService | None = None, prompt_manager: Any = None
-    ):
+    def __init__(self, repo: Any = None, llm: LLMService | None = None, prompt_manager: Any = None):
         super().__init__(repo=repo, llm=llm)
         if prompt_manager is None:
             try:

@@ -106,6 +106,7 @@ AutoNovel は、AI を活用して Web 小説を **企画から執筆、校正�
   - [11.2 3案企画ガチャと上級者モード昇格](#112-3案企画ガチャと上級者モード昇格)
   - [11.3 ナレッジグラフ可視化ツールの活用](#113-ナレッジグラフ可視化ツールの活用)
   - [11.4 納品パッケージ (ZIP) の構造とフォーマット仕様](#114-納品パッケージ-zip-の構造とフォーマット仕様)
+- [11.5 商用出版API連携 (なろう/カクヨム/Kobo/Kindle)](#115-商用出版api連携-なろうカクヨムkobokindle)
 - [12. LLMプロバイダ設定 & ルーティング・拡張ガイド](#12-llmプロバイダ設定--ルーティング拡張ガイド)
   - [12.1 サポートプロバイダと切り替え設定](#121-サポートプロバイダと切り替え設定)
   - [12.2 プロバイダファクトリとアダプタアーキテクチャ](#122-プロバイダファクトリとアダプタアーキテクチャ)
@@ -1391,29 +1392,152 @@ export_1.zip
 
 ---
 
+### 11.5 商用出版API連携 (なろう/カクヨム/Kobo/Kindle)
+
+AutoNovelは生成した小説を、主要なWeb小説プラットフォームへ**直接投稿・更新**できます。
+
+#### 対応プラットフォーム
+
+| プラットフォーム | 方式 | 状態 | 必要認証 | レート制限 |
+|----------------|------|------|----------|------------|
+| **小説家になろう** | Selenium | ✅ 実装済み | Email/Password | 10 req/min |
+| **カクヨム** | 非公式REST API | ✅ 実装済み | API Token | 30 req/min |
+| **楽天Kobo** | 公式OAuth2 API | 🚧 実装済み/要審査 | Client ID/Secret | 60 req/min |
+| **Kindle (KDP)** | 公式OAuth2 API | 🚧 実装済み/要審査 | Client ID/Secret/Refresh Token | 30 req/min |
+
+> **注意**: KoboとKindleは公式API利用のため、それぞれのプラットフォームで開発者登録・審査が必要です。
+
+#### セットアップ
+
+`.env` に認証情報を設定：
+
+```env
+# 小説家になろう
+NAROU_EMAIL=your_email@example.com
+NAROU_PASSWORD=your_password
+
+# カクヨム (マイページ > 設定 > API設定で取得)
+KAKUYOMU_API_TOKEN=your_api_token
+KAKUYOMU_USER_ID=your_user_id
+
+# 楽天Kobo (開発者ポータルで取得)
+KOBO_CLIENT_ID=your_client_id
+KOBO_CLIENT_SECRET=your_client_secret
+
+# Amazon KDP (LWA認証フローで取得)
+KINDLE_CLIENT_ID=your_client_id
+KINDLE_CLIENT_SECRET=your_client_secret
+KINDLE_REFRESH_TOKEN=your_refresh_token
+KINDLE_MARKETPLACE_ID=A1VC38T7YXB528  # 日本
+```
+
+#### API経由での投稿
+
+**1. パイプライン実行時に投稿 (新規生成+投稿)**
+
+```bash
+curl -X POST http://localhost:8200/commercial/run \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "series_config": {
+      "keywords": "ファンタジー,冒険",
+      "target_eps": 10,
+      "platforms": ["narou", "kakuyomu"]
+    },
+    "samples": [],
+    "platforms": ["narou", "kakuyomu"],
+    "do_publish": true
+  }'
+```
+
+**2. 既存書籍の投稿**
+
+```bash
+curl -X POST http://localhost:8200/commercial/publish \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "book_id": 1,
+    "platforms": ["narou", "kakuyomu"],
+    "episode_range": [1, 5]
+  }'
+```
+
+**3. 投稿ステータス確認**
+
+```bash
+curl -X POST http://localhost:8200/commercial/publish/status \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "book_id": 1,
+    "platform": "kakuyomu",
+    "post_id": "work_123"
+  }'
+```
+
+**4. 投稿履歴取得**
+
+```bash
+curl -X GET http://localhost:8200/commercial/publish/records/1 \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+詳細な使い方は [docs/publishers.md](docs/publishers.md) を参照してください。
+
+---
+
 ## 12. LLMプロバイダ設定 & ルーティング・拡張ガイド
 
 ### 12.1 サポートプロバイダと切り替え設定
 
 AutoNovel は、主要な商用LLMプロバイダを標準サポートしています。環境変数 `LLM_PROVIDER` によってシームレスに切り替え可能です。
 
-**実装済みプロバイダ:**
+**実装済みプロバイダ (5種):**
 
 | プロバイダ名 | `LLM_PROVIDER` 設定値 | 必要APIキー / エンドポイント | 特徴 |
 | :--- | :--- | :--- | :--- |
 | **OpenAI** | `openai` | `OPENAI_API_KEY` | GPT-4o, o1 による極めて高い文章力と構成力 |
 | **Google Gemini** | `gemini` | `GEMINI_API_KEY` | 巨大コンテキストウィンドウ、高速推論 |
+| **Anthropic Claude** | `claude` | `ANTHROPIC_API_KEY` | 論理的思考と長文一貫性に優れる |
+| **Local LLM (Ollama)** | `ollama` | `OLLAMA_BASE_URL`, `OLLAMA_MODEL` | ローカル実行、プライバシー保護 |
+| **vLLM** | `vllm` | `VLLM_BASE_URL`, `VLLM_MODEL` | 高性能ローカル推論サーバー |
 | **Mock / Test** | `mock` | なし (自動フォールバック) | CI/テスト環境用の高速モック生成 |
 
-**OpenAI 互換エンドポイント経由で利用可能（将来ネイティブ実装予定）:**
+### 12.2 プロバイダ別設定例
 
-| プロバイダ | 設定方法 | 備考 |
-| :--- | :--- | :--- |
-| **Anthropic Claude** | `LLM_PROVIDER=openai` + `OPENAI_BASE_URL=https://openrouter.ai/api/v1` | OpenRouter 経由で利用可能 |
-| **Local LLM (Ollama)** | `LLM_PROVIDER=openai` + `OPENAI_BASE_URL=http://localhost:11434/v1` | OpenAI 互換モードで利用可能 |
-| **vLLM** | `LLM_PROVIDER=openai` + `OPENAI_BASE_URL=http://localhost:8000/v1` | OpenAI 互換モードで利用可能 |
+```bash
+# OpenAI の場合
+LLM_PROVIDER=openai
+OPENAI_API_KEY=sk-xxx
+OPENAI_MODEL=gpt-4o-mini
 
-> ⚠️ **注意**: `claude` または `ollama` を `LLM_PROVIDER` に直接指定すると、ERROR ログが出力され `MockLLMAdapter` にフォールバックします（本番で空の応答になる）。上記の通り `openai` 経由で設定してください。
+# Google Gemini の場合
+LLM_PROVIDER=gemini
+GEMINI_API_KEY=xxx
+GEMINI_MODEL=gemini-1.5-flash
+
+# Anthropic Claude の場合
+LLM_PROVIDER=claude
+ANTHROPIC_API_KEY=sk-ant-xxx
+ANTHROPIC_MODEL=claude-3-5-sonnet-20241022
+
+# Ollama の場合 (ローカル)
+LLM_PROVIDER=ollama
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=llama3.1
+
+# vLLM の場合 (ローカル推論サーバー)
+LLM_PROVIDER=vllm
+VLLM_BASE_URL=http://localhost:8000
+VLLM_MODEL=meta-llama/Llama-3.1-8B-Instruct
+
+# Mock (開発/テスト用)
+LLM_PROVIDER=mock
+```
+
+> **注意**: 未知のプロバイダが指定された場合は WARNING ログが出力され `MockLLMAdapter` にフォールバックします。
 
 ---
 
@@ -1437,33 +1561,6 @@ class BaseLLMAdapter(ABC):
         """テキスト生成を実行して文字列を返す。"""
         pass
 ```
-
-### OpenRouter / Ollama / vLLM を利用する場合
-
-これらは OpenAI 互換 API として提供されるため、`LLM_PROVIDER=openai` として設定し、
-`OPENAI_BASE_URL` と `OPENAI_API_KEY` でエンドポイントを指定してください。
-
-```bash
-# OpenRouter (Claude 等) 例
-LLM_PROVIDER=openai
-OPENAI_BASE_URL=https://openrouter.ai/api/v1
-OPENAI_API_KEY=sk-or-xxx
-OPENAI_MODEL=anthropic/claude-3.5-sonnet
-
-# Ollama 例
-LLM_PROVIDER=openai
-OPENAI_BASE_URL=http://localhost:11434/v1
-OPENAI_API_KEY=ollama
-OPENAI_MODEL=llama3.1
-
-# vLLM 例
-LLM_PROVIDER=openai
-OPENAI_BASE_URL=http://localhost:8000/v1
-OPENAI_API_KEY=dummy
-OPENAI_MODEL=meta-llama/Meta-Llama-3.1-8B-Instruct
-```
-
----
 
 ### 12.3 カスタムLLMアダプタの実装例
 

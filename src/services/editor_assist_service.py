@@ -1,7 +1,10 @@
-"""上級者エディタ支援（インラインAI・五感拡張）サービスモジュール."""
+"""上級者エディタ支援（インラインAI・五感拡張・設定修正提案）サービスモジュール."""
+
 from __future__ import annotations
 
+import json
 import logging
+from typing import Any
 
 from src.core.llm_gateway import LLMGateway
 from src.engine.prompts.editor_prompts import (
@@ -22,8 +25,28 @@ from src.models.editor import (
 logger = logging.getLogger(__name__)
 
 
+SETTING_FIX_PROMPT = """
+あなたは小説の設定管理アシスタントです。ユーザーが手動で修正しようとしている設定項目について、矛盾の文脈を考慮して適切な修正案を提示してください。
+
+【矛盾の文脈】
+{conflict_context}
+
+【対象フィールド】: {field_path}
+【現在の値】: {current_value}
+
+以下のJSON形式で回答してください：
+{{
+  "suggested_value": "推奨される新しい値",
+  "reasoning": "なぜこの値が適切かの理由（矛盾解消の観点から）",
+  "confidence": 0.0-1.0の信頼度,
+  "alternatives": ["代替案1", "代替案2"],
+  "impact_analysis": "この変更が他の設定・プロットに与える影響の分析"
+}}
+"""
+
+
 class EditorAssistService:
-    """インライン AI アシスト（五感描写拡張・Show Don't Tell・トーン書き換え）サービス"""
+    """インライン AI アシスト（五感描写拡張・Show Don't Tell・トーン書き換え・設定修正提案）サービス"""
 
     def __init__(self, llm_gateway: LLMGateway | None = None):
         self.llm = llm_gateway or LLMGateway()
@@ -137,6 +160,63 @@ class EditorAssistService:
         c_inst = f"追加指示: {custom_instruction}" if custom_instruction else ""
         prompt = EXPAND_GENERAL_PROMPT.format(text=text, custom_instruction=c_inst)
         return await self._call_llm(prompt, genre, context_before, context_after)
+
+    async def propose_setting_fix(
+        self,
+        field_path: str,
+        current_value: str,
+        conflict_context: str,
+        genre: str = "ハイファンタジー (R15)",
+    ) -> dict[str, Any]:
+        """設定項目の修正案を提案する
+
+        Args:
+            field_path: 設定のパス (例: "world_rules.magic_system.mana_cost")
+            current_value: 現在の値
+            conflict_context: 矛盾の文脈・説明
+            genre: 作品ジャンル
+
+        Returns:
+            dict: suggested_value, reasoning, confidence, alternatives, impact_analysis
+        """
+        prompt = SETTING_FIX_PROMPT.format(
+            field_path=field_path,
+            current_value=current_value,
+            conflict_context=conflict_context,
+        )
+
+        try:
+            res = await self.llm.generate_json(
+                purpose_or_request="audit",
+                prompt=prompt,
+                system_instruction=f"{EDITOR_SYSTEM_INSTRUCTION}\n作品ジャンル: {genre}",
+                temp=0.3,  # 設定修正は決定論的に
+            )
+
+            if hasattr(res, "metadata") and res.metadata:
+                data = res.metadata
+            elif isinstance(res, dict):
+                data = res
+            else:
+                data = {}
+
+            # 必須フィールドのデフォルト値
+            return {
+                "suggested_value": data.get("suggested_value", current_value),
+                "reasoning": data.get("reasoning", "自動生成された推奨値です。"),
+                "confidence": float(data.get("confidence", 0.7)),
+                "alternatives": data.get("alternatives", []),
+                "impact_analysis": data.get("impact_analysis", "影響分析は未実施です。"),
+            }
+        except Exception as e:
+            logger.error(f"Setting fix proposal failed: {e}")
+            return {
+                "suggested_value": current_value,
+                "reasoning": f"提案生成に失敗しました: {e}",
+                "confidence": 0.0,
+                "alternatives": [],
+                "impact_analysis": "エラーのため分析不可",
+            }
 
     async def _call_llm(
         self,

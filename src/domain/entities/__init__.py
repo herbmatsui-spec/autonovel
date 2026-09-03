@@ -1,4 +1,5 @@
 """Domain entities package."""
+
 from src.domain.entities.easy_mode import (
     CharacterParams,
     DigestRequest,

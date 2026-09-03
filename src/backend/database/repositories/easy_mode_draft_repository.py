@@ -1,4 +1,5 @@
 """EasyModeDraft リポジトリ — Gacha Pitch / Quick Digest の永続化."""
+
 from __future__ import annotations
 
 import json

@@ -8,6 +8,7 @@ Enhanced with:
 - Token budget management
 - Redis/local caching
 """
+
 from __future__ import annotations
 
 import math
@@ -34,6 +35,7 @@ logger = get_logger("rag_service")
 @dataclass
 class SearchResult:
     """統合検索結果."""
+
     id: str
     content: str
     metadata: dict[str, Any]
@@ -46,6 +48,7 @@ class SearchResult:
 @dataclass
 class RagContext:
     """RAGコンテキスト構築結果."""
+
     graph_context: str
     vector_context: str
     fulltext_context: str
@@ -86,6 +89,7 @@ class GraphRAGService:
     def _get_cache_key(self, *args: str) -> str:
         """キャッシュキー生成."""
         import hashlib
+
         return hashlib.md5("|".join(args).encode()).hexdigest()
 
     def _get_cached(self, key: str) -> RagContext | None:
@@ -138,15 +142,17 @@ class GraphRAGService:
                     distance = float(row.distance) if row.distance is not None else 1.0
                     similarity = 1.0 - distance
                     if similarity >= min_score:
-                        rows.append(SearchResult(
-                            id=str(row.id),
-                            content=row.content,
-                            metadata=row.chunk_metadata or {},
-                            source="vector",
-                            score=similarity,
-                            distance=distance,
-                            similarity=similarity,
-                        ))
+                        rows.append(
+                            SearchResult(
+                                id=str(row.id),
+                                content=row.content,
+                                metadata=row.chunk_metadata or {},
+                                source="vector",
+                                score=similarity,
+                                distance=distance,
+                                similarity=similarity,
+                            )
+                        )
 
                 self._last_call_stats = {
                     "backend": "pgvector",
@@ -187,15 +193,17 @@ class GraphRAGService:
                     c_emb = embedding_service.get_embedding(chunk_text)
                     sim = self._cosine_similarity(query_emb, c_emb)
                     if sim >= min_score:
-                        scored.append(SearchResult(
-                            id=str(c.id),
-                            content=chunk_text,
-                            metadata=dict(c.chunk_metadata) if c.chunk_metadata else {},
-                            source="vector",
-                            score=sim,
-                            distance=1.0 - sim,
-                            similarity=sim,
-                        ))
+                        scored.append(
+                            SearchResult(
+                                id=str(c.id),
+                                content=chunk_text,
+                                metadata=dict(c.chunk_metadata) if c.chunk_metadata else {},
+                                source="vector",
+                                score=sim,
+                                distance=1.0 - sim,
+                                similarity=sim,
+                            )
+                        )
 
                 scored.sort(key=lambda x: x.score, reverse=True)
                 rows = scored[:limit]
@@ -254,7 +262,7 @@ class GraphRAGService:
         core_entities: list[str] | None = None,
         top_k: int = 10,
         alpha: float = 0.5,  # Vector weight
-        beta: float = 0.3,   # Graph weight
+        beta: float = 0.3,  # Graph weight
         gamma: float = 0.2,  # Fulltext weight
     ) -> list[SearchResult]:
         """ハイブリッド検索: Vector + Graph + Fulltext の RRF 融合.
@@ -294,7 +302,11 @@ class GraphRAGService:
             )
 
         # 2. グラフ探索
-        if core_entities and settings.ENABLE_GRAPHRAG and settings.DATABASE_URL.startswith("postgresql"):
+        if (
+            core_entities
+            and settings.ENABLE_GRAPHRAG
+            and settings.DATABASE_URL.startswith("postgresql")
+        ):
             graph_results = self._search_graph(session, core_entities, query_embedding, top_k * 2)
             for i, r in enumerate(graph_results):
                 rrf_score = beta / (60 + i + 1)
@@ -357,19 +369,21 @@ class GraphRAGService:
                 # ユニークID生成
                 result_id = f"graph_{entity}_{name}_{rel}".replace(" ", "_")
 
-                results.append(SearchResult(
-                    id=result_id,
-                    content=f"[{rel}] {name}: {desc}" if desc else f"[{rel}] {name}",
-                    metadata={
-                        "entity": name,
-                        "relation": rel,
-                        "source_entity": entity,
-                        "properties": props,
-                    },
-                    source="graph",
-                    score=sim,
-                    similarity=sim,
-                ))
+                results.append(
+                    SearchResult(
+                        id=result_id,
+                        content=f"[{rel}] {name}: {desc}" if desc else f"[{rel}] {name}",
+                        metadata={
+                            "entity": name,
+                            "relation": rel,
+                            "source_entity": entity,
+                            "properties": props,
+                        },
+                        source="graph",
+                        score=sim,
+                        similarity=sim,
+                    )
+                )
 
         results.sort(key=lambda x: x.score, reverse=True)
         return results[:limit]
@@ -394,13 +408,15 @@ class GraphRAGService:
             result = session.execute(stmt, {"query": query, "limit": limit})
             rows = []
             for row in result:
-                rows.append(SearchResult(
-                    id=str(row.id),
-                    content=row.content,
-                    metadata=row.chunk_metadata or {},
-                    source="fulltext",
-                    score=float(row.rank) if row.rank else 0.0,
-                ))
+                rows.append(
+                    SearchResult(
+                        id=str(row.id),
+                        content=row.content,
+                        metadata=row.chunk_metadata or {},
+                        source="fulltext",
+                        score=float(row.rank) if row.rank else 0.0,
+                    )
+                )
             return rows
         except Exception as e:
             logger.debug("Fulltext search failed: %s", e)
@@ -492,7 +508,7 @@ class GraphRAGService:
                 remaining = budget - used
                 if remaining > 50:
                     # 日本語優先で切り詰め
-                    result.append(t[:int(remaining * 1.5)] + "...")
+                    result.append(t[: int(remaining * 1.5)] + "...")
                 break
             result.append(t)
             used += tokens
@@ -512,7 +528,9 @@ class GraphRAGService:
         Returns:
             RagContext: グラフ/ベクトル/全文コンテキストと統計
         """
-        cache_key = self._get_cache_key("rag_ctx", current_prompt, character_name, str(additional_entities))
+        cache_key = self._get_cache_key(
+            "rag_ctx", current_prompt, character_name, str(additional_entities)
+        )
         if use_cache:
             cached = self._get_cached(cache_key)
             if cached:
@@ -553,14 +571,18 @@ class GraphRAGService:
             vector_lines = []
             for i, r in enumerate(hybrid_results):
                 source_tag = f"[{r.source}]"
-                vector_lines.append(f"{source_tag} 参照{i+1}:\n{r.content}")
+                vector_lines.append(f"{source_tag} 参照{i + 1}:\n{r.content}")
             vector_context = "\n\n".join(vector_lines)
         else:
             vector_context = "なし（関連情報なし）"
 
         # 4. トークン予算内に調整
-        graph_context = "\n".join(self._truncate_to_budget(graph_context.split("\n"), self._token_budget // 3))
-        vector_context = "\n\n".join(self._truncate_to_budget(vector_context.split("\n\n"), self._token_budget * 2 // 3))
+        graph_context = "\n".join(
+            self._truncate_to_budget(graph_context.split("\n"), self._token_budget // 3)
+        )
+        vector_context = "\n\n".join(
+            self._truncate_to_budget(vector_context.split("\n\n"), self._token_budget * 2 // 3)
+        )
 
         stats = self.get_last_stats()
         stats["total_elapsed_ms"] = int((time.perf_counter() - start) * 1000)

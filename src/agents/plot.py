@@ -447,7 +447,9 @@ class PlotAgent(BaseAgent):
             )
             return AgentResult(
                 next_agent=AgentName.BIBLE,
-                artifacts={"plots": [p.model_dump() if hasattr(p, "model_dump") else p for p in plots]},
+                artifacts={
+                    "plots": [p.model_dump() if hasattr(p, "model_dump") else p for p in plots]
+                },
             )
         except Exception as e:
             return AgentResult(

@@ -6,13 +6,13 @@ from src.easy_mode.phase3.ebook_export import (
     PDF_AVAILABLE,
     create_ebook_exporter,
 )
-from src.easy_mode.pipeline import SeriesResult
+from src.easy_mode import SeriesResult
 from src.easy_mode.spice_guard import SpiceElement
 
 
 def _make_series(genre: str = "ハイファンタジー (R15)") -> SeriesResult:
     content = "テスト本文\n\n主人公は森へ行った。\n「行くぞ」\n"
-    from src.easy_mode.pipeline import EpisodeResult
+    from src.easy_mode import EpisodeResult
 
     return SeriesResult(
         genre=genre,

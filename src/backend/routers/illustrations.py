@@ -68,9 +68,7 @@ async def generate_illustration(
 
 
 @router.post("/yonkoma")
-async def generate_yonkoma(
-    request: dict[str, Any], workflow=Depends(get_illustration_workflow)
-):
+async def generate_yonkoma(request: dict[str, Any], workflow=Depends(get_illustration_workflow)):
     """1話分の流れを 6 コマ (デフォルト) で要約した漫画プロンプト+画像を生成する。
 
     Request:
@@ -100,9 +98,7 @@ async def generate_yonkoma(
             scene_text=episode_text,
             book_context=book_context,
             model=IllustrationModel(model),
-            safety_level=(
-                SafetyLevel.R15_CONTENT if enable_r15 else SafetyLevel.BLOCK_SOME
-            ),
+            safety_level=(SafetyLevel.R15_CONTENT if enable_r15 else SafetyLevel.BLOCK_SOME),
             panels=panels,
         )
 

@@ -7,6 +7,7 @@
   router 内で未 import だった AppContainer のバグを解消。
 - 将来他の DI もここに集約する。
 """
+
 from __future__ import annotations
 
 import os

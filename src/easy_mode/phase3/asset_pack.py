@@ -20,7 +20,7 @@ from src.easy_mode.phase3.media_mix import (
     MediaFormat,
     create_media_mix_exporter,
 )
-from src.easy_mode.pipeline import SeriesResult
+from src.easy_mode import EpisodeResult, SeriesResult
 
 logger = logging.getLogger(__name__)
 
@@ -455,15 +455,15 @@ class AssetPackGenerator:
             output_path = output_dir / f"{series.title}.{fmt}"
             try:
                 if fmt == "epub":
-                    result = self.ebook_exporter.export_epub(
+                    _ = self.ebook_exporter.export_epub(
                         series, output_path, cover_image_path=cover_path, **kwargs
                     )
                 elif fmt == "pdf":
-                    result = self.ebook_exporter.export_pdf(
+                    _ = self.ebook_exporter.export_pdf(
                         series, output_path, cover_image_path=cover_path, **kwargs
                     )
                 elif fmt == "mobi":
-                    result = self.ebook_exporter.export_mobi(
+                    _ = self.ebook_exporter.export_mobi(
                         series, output_path, cover_image_path=cover_path, **kwargs
                     )
                 else:

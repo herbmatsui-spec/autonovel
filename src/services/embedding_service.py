@@ -1,4 +1,5 @@
 """テキスト埋め込み (Embedding) 取得サービスモジュール."""
+
 from __future__ import annotations
 
 import hashlib
@@ -72,14 +73,10 @@ class RedisEmbeddingCache:
             try:
                 import redis  # type: ignore
 
-                self._client = redis.Redis.from_url(
-                    settings.REDIS_URL, socket_connect_timeout=1
-                )
+                self._client = redis.Redis.from_url(settings.REDIS_URL, socket_connect_timeout=1)
                 self._client.ping()
             except Exception as e:
-                logger.warning(
-                    "Redis cache unavailable, falling back to in-memory LRU: %s", e
-                )
+                logger.warning("Redis cache unavailable, falling back to in-memory LRU: %s", e)
                 self._client = None
         self._prefix = prefix
         self._fallback = LRUEmbeddingCache()
@@ -210,7 +207,7 @@ class EmbeddingService:
         client = self._get_client()
         if client is not None:
             for chunk_start in range(0, len(to_fetch), size):
-                chunk = to_fetch[chunk_start:chunk_start + size]
+                chunk = to_fetch[chunk_start : chunk_start + size]
                 api_inputs = [c[1] for c in chunk]
                 self._rate_limit_wait()
                 try:

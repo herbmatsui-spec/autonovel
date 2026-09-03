@@ -27,12 +27,16 @@ class EroticEnhancer:
 
         # 敵対・背徳的関係性 (HATES / ENEMY / RIVAL)
         if "HATES" in relationship_type or "敵対" in graph_context or "嫌悪" in graph_context:
-            params_override["psychology_depth"] = max(context.get("erotic_psychology_depth", 50), 85)
+            params_override["psychology_depth"] = max(
+                context.get("erotic_psychology_depth", 50), 85
+            )
             params_override["default_consent"] = "implicit"
             params_override["pace_ratios"] = {"intro": 0.4, "escalation": 0.4, "climax": 0.2}
         # 主従・支配関係 (MASTER_SERVANT / 支配)
         elif "MASTER" in relationship_type or "主従" in graph_context or "支配" in graph_context:
-            params_override["psychology_depth"] = max(context.get("erotic_psychology_depth", 50), 80)
+            params_override["psychology_depth"] = max(
+                context.get("erotic_psychology_depth", 50), 80
+            )
             params_override["metaphor_density"] = 65
         # 友愛・両想い (LOVES / ALLY_OF / 恋人)
         elif "LOVES" in relationship_type or "恋人" in graph_context or "愛" in graph_context:
@@ -75,10 +79,16 @@ class EroticEnhancer:
             # GraphRAG 由来のパラメータ自動補正
             overrides = self._resolve_graphrag_parameters(context)
 
-            sensory_weights = overrides.get("sensory_weights") or context.get("erotic_sensory_weights")
+            sensory_weights = overrides.get("sensory_weights") or context.get(
+                "erotic_sensory_weights"
+            )
             pace_ratios = overrides.get("pace_ratios") or context.get("erotic_pace_ratios")
-            metaphor_density = overrides.get("metaphor_density") or context.get("erotic_metaphor_density", 50)
-            psychology_depth = overrides.get("psychology_depth") or context.get("erotic_psychology_depth", 50)
+            metaphor_density = overrides.get("metaphor_density") or context.get(
+                "erotic_metaphor_density", 50
+            )
+            psychology_depth = overrides.get("psychology_depth") or context.get(
+                "erotic_psychology_depth", 50
+            )
             use_video_patterns = context.get("erotic_use_video_patterns", True)
 
             params = EroticParameters(
@@ -96,7 +106,7 @@ class EroticEnhancer:
             peak_beat = curve.get_peak_beat()
             default_consent = overrides.get("default_consent", "implicit")
             context["consent_state"] = peak_beat.consent_state if peak_beat else default_consent
-            
+
             erotic_prompt = specialist.build_scene_prompt(curve, context, params)
             prompt = prompt + "\n\n" + erotic_prompt
         except Exception as e:

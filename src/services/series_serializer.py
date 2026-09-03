@@ -3,11 +3,12 @@
 Router 層・タスク層から利用し、本文の全文をログや JSON レスポンスに展開しないよう
 要約フィールドへ変換する。
 """
+
 from __future__ import annotations
 
 from typing import Any
 
-from src.easy_mode.pipeline import EpisodeResult, SeriesResult
+from src.easy_mode import EpisodeResult, SeriesResult
 
 __all__ = ["series_to_dict", "episode_summary"]
 

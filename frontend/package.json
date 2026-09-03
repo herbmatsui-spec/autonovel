@@ -14,6 +14,7 @@
     "generate:api-types": "openapi-typescript ../docs/openapi.json -o src/types/api.generated.ts"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.102.8",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-force-graph-2d": "^1.29.1"

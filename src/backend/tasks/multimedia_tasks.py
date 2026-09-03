@@ -2,6 +2,7 @@
 
 `generate_asset_pack` を非同期に実行し、DB のタスク状態を更新する。
 """
+
 from __future__ import annotations
 
 import logging

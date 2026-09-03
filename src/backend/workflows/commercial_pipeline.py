@@ -10,6 +10,12 @@ from typing import Any
 
 from src.core.exceptions import PipelineError  # 新規カスタム例外
 from src.services.episode_writer import EpisodeWriter
+from src.services.publishers import (
+    get_publisher,
+    get_credential_store,
+    PublisherCredentials,
+    PublishResult,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -265,14 +271,128 @@ class CommercialPipeline:
             logger.exception("Failed to create schedule CSV")
             raise PipelineError(f"CSV creation failed: {e}") from e
 
-    async def run(self, series_config: dict, samples: list, platforms: list) -> dict[str, Any]:
+    async def _publish_to_platforms(
+        self,
+        novel: dict[str, Any],
+        episodes: list[dict[str, Any]],
+        platforms: list[str],
+        credentials: dict[str, PublisherCredentials] | None = None,
+    ) -> dict[str, list[PublishResult]]:
+        """
+        指定プラットフォームへ投稿を実行する。
+
+        Args:
+            novel: 小説メタデータ
+            episodes: エピソードリスト
+            platforms: 対象プラットフォームリスト
+            credentials: プラットフォーム別認証情報（Noneの場合はCredentialStoreから取得）
+
+        Returns:
+            プラットフォーム別投稿結果リスト
+        """
+        if credentials is None:
+            credential_store = get_credential_store()
+            credentials = {}
+            for platform in platforms:
+                credentials[platform] = credential_store.get(platform)
+
+        results: dict[str, list[PublishResult]] = {}
+
+        for platform in platforms:
+            platform_creds = credentials.get(platform)
+            if not platform_creds:
+                logger.warning(f"認証情報なし、スキップ: {platform}")
+                results[platform] = []
+                continue
+
+            try:
+                publisher = get_publisher(platform)
+
+                # 認証
+                auth_success = await publisher.authenticate(platform_creds)
+                if not auth_success:
+                    logger.error(f"認証失敗: {platform}")
+                    results[platform] = [
+                        PublishResult(success=False, platform=platform, error="認証失敗")
+                    ]
+                    continue
+
+                platform_results = []
+
+                # 第1話が成功した後のpost_idを保持（第2話以降で使用）
+                platform_post_id = None
+
+                for episode in episodes:
+                    try:
+                        # 既存投稿IDがあるかチェック（更新の場合）
+                        post_id = episode.get(f"{platform}_post_id") or platform_post_id
+
+                        if post_id:
+                            # 既存話の更新
+                            result = await publisher.update_chapter(
+                                post_id, episode, platform_creds
+                            )
+                        else:
+                            # 新規投稿（第1話の場合はpublish、それ以外はupdate_chapter）
+                            if episode.get("ep_num", 1) == 1:
+                                result = await publisher.publish(novel, episode, platform_creds)
+                            else:
+                                # 第2話以降でpost_idがない場合は小説IDが必要
+                                result = PublishResult(
+                                    success=False,
+                                    platform=platform,
+                                    error=f"第{episode.get('ep_num')}話の投稿には小説ID(post_id)が必要です",
+                                )
+
+                        platform_results.append(result)
+
+                        # 成功時はpost_idをepisodeに記録（次回更新用）
+                        if result.success and result.post_id:
+                            episode[f"{platform}_post_id"] = result.post_id
+                            episode[f"{platform}_post_url"] = result.url
+                            platform_post_id = result.post_id  # 共有用
+
+                        # レート制限対策で少し待機
+                        await publisher._apply_rate_limit()
+
+                    except Exception as e:
+                        logger.exception(
+                            f"Episode {episode.get('ep_num')} publish failed on {platform}"
+                        )
+                        platform_results.append(
+                            PublishResult(success=False, platform=platform, error=str(e))
+                        )
+
+                results[platform] = platform_results
+                logger.info(
+                    f"Platform {platform} publish completed: {len([r for r in platform_results if r.success])}/{len(platform_results)} success"
+                )
+
+            except Exception as e:
+                logger.exception(f"Platform {platform} publish failed entirely")
+                results[platform] = [
+                    PublishResult(success=False, platform=platform, error=f"Platform error: {e}")
+                ]
+
+        return results
+
+    async def run(
+        self,
+        series_config: dict,
+        samples: list,
+        platforms: list,
+        credentials: dict[str, PublisherCredentials] | None = None,
+        do_publish: bool = False,
+    ) -> dict[str, Any]:
         """
         パイプラインのエントリーポイント。
 
         Args:
             series_config: シリーズ設定パラメータ
-            samples: 生成サンプルリスト（実itel的に使用しないが将来拡張可能）
+            samples: 生成サンプルリスト（実質的に使用しないが将来拡張可能）
             platforms: 対象プラットフォームリスト
+            credentials: プラットフォーム別認証情報（Noneの場合はCredentialStoreから取得）
+            do_publish: 実際に投稿を実行するかどうか
 
         Returns:
             dict: パイプライン実行結果
@@ -288,11 +408,30 @@ class CommercialPipeline:
             # 3. CSV出力スケジュール作成
             schedule_csv = self._create_schedule_csv(exports)
 
+            # 4. 投稿実行（オプション）
+            publish_results = {}
+            if do_publish:
+                # novelデータ構築
+                novel_data = {
+                    "title": bible.get("concept", "無題"),
+                    "synopsis": bible.get("trend_analysis", ""),
+                    "genre": bible.get("genre", "general"),
+                    "tags": bible.get("keywords", []),
+                    "is_adult": False,
+                }
+                publish_results = await self._publish_to_platforms(
+                    novel=novel_data,
+                    episodes=selected,
+                    platforms=platforms,
+                    credentials=credentials,
+                )
+
             result = {
                 "bible": bible,
                 "selected": selected,
                 "exports": exports,
                 "schedule_csv": schedule_csv,
+                "publish_results": publish_results,
             }
             logger.info("CommercialPipeline.run completed successfully")
             return result
@@ -305,6 +444,7 @@ class CommercialPipeline:
                 "selected": [],
                 "exports": {},
                 "schedule_csv": None,
+                "publish_results": {},
             }
         except Exception as e:
             logger.exception("Unexpected error in CommercialPipeline.run")
@@ -314,4 +454,5 @@ class CommercialPipeline:
                 "selected": [],
                 "exports": {},
                 "schedule_csv": None,
+                "publish_results": {},
             }

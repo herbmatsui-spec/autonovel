@@ -10,7 +10,9 @@ class IVectorStoreProvider(ABC):
     """Interface for vector store providers."""
 
     @abstractmethod
-    def add_texts(self, texts: List[str], metadatas: Optional[List[Dict[str, Any]]] = None, **kwargs: Any) -> List[str]:
+    def add_texts(
+        self, texts: List[str], metadatas: Optional[List[Dict[str, Any]]] = None, **kwargs: Any
+    ) -> List[str]:
         """Add texts to the vector store."""
         ...
 

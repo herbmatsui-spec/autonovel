@@ -14,9 +14,7 @@ class BibleAgent(BaseAgent):
     LLM とプロンプトマネージャを利用して設定情報を生成する。
     """
 
-    def __init__(
-        self, repo: Any = None, llm: LLMService | None = None, prompt_manager: Any = None
-    ):
+    def __init__(self, repo: Any = None, llm: LLMService | None = None, prompt_manager: Any = None):
         super().__init__(repo=repo, llm=llm)
         self.prompt_manager = prompt_manager
 

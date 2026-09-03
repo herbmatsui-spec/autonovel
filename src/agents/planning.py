@@ -15,9 +15,7 @@ class PlanningAgent(BaseAgent):
     LLM にアーク生成プロンプトを投げ、JSON 形式でアーク案を受け取る。
     """
 
-    def __init__(
-        self, repo: Any = None, llm: LLMService | None = None, prompt_manager: Any = None
-    ):
+    def __init__(self, repo: Any = None, llm: LLMService | None = None, prompt_manager: Any = None):
         super().__init__(repo=repo, llm=llm)
         self.prompt_manager = prompt_manager
 

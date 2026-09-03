@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
-from pydantic import BaseModel, Field
 
 from src.models import FullAutoWorkflowResult
 from src.services.pipeline_base import WorkflowContext, WorkflowStep
@@ -113,6 +112,7 @@ class AutoWorkflowPipeline:
 # ============================================================================
 # パイプライン構築関数 (Step 18-19)
 # ============================================================================
+
 
 def create_full_auto_pipeline(
     enable_spice_guard: bool = False,

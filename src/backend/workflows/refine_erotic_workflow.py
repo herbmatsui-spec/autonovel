@@ -18,7 +18,7 @@ class RefineEroticWorkflow(BaseWorkflow):
         book_id = kwargs["book_id"]
         ep_num = kwargs["ep_num"]
         intensity = kwargs.get("intensity", 2)
-        platform_preset = kwargs.get("platform_preset", "kakuyomu_romance")
+        _ = kwargs.get("platform_preset", "kakuyomu_romance")
 
         if reporter:
             reporter.set_message("螳倩・遐皮｣ｨ繧帝幕蟋倶ｸｭ...")

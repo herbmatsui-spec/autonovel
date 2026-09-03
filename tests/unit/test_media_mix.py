@@ -11,7 +11,7 @@ from src.easy_mode.phase3.media_mix import (
     VoiceLine,
     create_media_mix_exporter,
 )
-from src.easy_mode.pipeline import EpisodeResult, SeriesResult
+from src.easy_mode import EpisodeResult, SeriesResult
 from src.easy_mode.spice_guard import SpiceElement
 
 

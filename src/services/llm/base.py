@@ -1,4 +1,5 @@
 """LLM アダプタの抽象基底クラス。"""
+
 from __future__ import annotations
 
 import asyncio

@@ -25,29 +25,34 @@ STYLES_JSON_PATH = Path(__file__).parent.parent.parent / "config" / "data" / "st
 
 class DistillRequest(BaseModel):
     """文体蒸留リクエスト"""
+
     sample_text: str = Field(..., min_length=10, description="お手本となる小説サンプルテキスト")
     name_hint: str | None = Field(default=None, description="スタイル名のヒント")
 
 
 class DistillResponse(BaseModel):
     """文体蒸留レスポンス"""
+
     success: bool = True
     profile: StyleProfile
 
 
 class ReformatRequest(BaseModel):
     """音律・リズム整形リクエスト"""
+
     text: str = Field(..., description="整形対象の小説本文")
 
 
 class ReformatResponse(BaseModel):
     """音律・リズム整形レスポンス"""
+
     reformatted_text: str
     stats: CadenceStats
 
 
 class StylePresetSummary(BaseModel):
     """文体プリセット概要"""
+
     id: str
     name: str
     genre: str
@@ -58,6 +63,7 @@ class StylePresetSummary(BaseModel):
 
 class StyleEntry(BaseModel):
     """スタイル定義エントリ"""
+
     id: str
     name: str
     category: str
@@ -71,6 +77,7 @@ class StyleEntry(BaseModel):
 
 class StyleCategory(BaseModel):
     """カテゴリ情報"""
+
     id: str
     label: str
     style_ids: list[str]
@@ -79,7 +86,7 @@ class StyleCategory(BaseModel):
 def _load_styles_json() -> dict[str, Any]:
     """styles.jsonをロード"""
     try:
-        with open(STYLES_JSON_PATH, 'r', encoding='utf-8') as f:
+        with open(STYLES_JSON_PATH, "r", encoding="utf-8") as f:
             return json.load(f)
     except Exception as e:
         logger.error(f"Failed to load styles.json: {e}")
@@ -93,17 +100,19 @@ async def get_all_styles() -> list[StyleEntry]:
     definitions = data.get("STYLE_DEFINITIONS", {})
     entries = []
     for style_id, style_def in definitions.items():
-        entries.append(StyleEntry(
-            id=style_id,
-            name=style_def.get("name", ""),
-            category=style_def.get("category", ""),
-            instruction=style_def.get("instruction", ""),
-            dialogue_ratio=style_def.get("dialogue_ratio", ""),
-            syntax_rhythm=style_def.get("syntax_rhythm", ""),
-            metaphor_dna=style_def.get("metaphor_dna", ""),
-            noise_dna=style_def.get("noise_dna", ""),
-            is_light=style_def.get("is_light", True)
-        ))
+        entries.append(
+            StyleEntry(
+                id=style_id,
+                name=style_def.get("name", ""),
+                category=style_def.get("category", ""),
+                instruction=style_def.get("instruction", ""),
+                dialogue_ratio=style_def.get("dialogue_ratio", ""),
+                syntax_rhythm=style_def.get("syntax_rhythm", ""),
+                metaphor_dna=style_def.get("metaphor_dna", ""),
+                noise_dna=style_def.get("noise_dna", ""),
+                is_light=style_def.get("is_light", True),
+            )
+        )
     return entries
 
 
@@ -121,15 +130,13 @@ async def get_style_categories() -> list[StyleCategory]:
         "tempo": "テンポ・爽快",
         "heavy": "重厚・シリアス",
         "dark": "暗黒・心理",
-        "elegant": "優美・日常・職人"
+        "elegant": "優美・日常・職人",
     }
     result = []
     for cat_id, style_ids in categories.items():
-        result.append(StyleCategory(
-            id=cat_id,
-            label=category_labels.get(cat_id, cat_id),
-            style_ids=style_ids
-        ))
+        result.append(
+            StyleCategory(id=cat_id, label=category_labels.get(cat_id, cat_id), style_ids=style_ids)
+        )
     return result
 
 
@@ -150,7 +157,7 @@ async def get_style_preview(style_id: str) -> StyleEntry:
         syntax_rhythm=style_def.get("syntax_rhythm", ""),
         metaphor_dna=style_def.get("metaphor_dna", ""),
         noise_dna=style_def.get("noise_dna", ""),
-        is_light=style_def.get("is_light", True)
+        is_light=style_def.get("is_light", True),
     )
 
 

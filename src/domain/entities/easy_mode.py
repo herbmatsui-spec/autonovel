@@ -1,4 +1,5 @@
 """かんたんモード用ドメインエンティティおよびスキーマ定義。"""
+
 from __future__ import annotations
 
 from enum import Enum
@@ -22,7 +23,9 @@ class LLMConfigOverride(BaseModel):
 
     provider: str | None = Field(default=None, description="gemini / openai / mock")
     api_key: str | None = Field(default=None, description="カスタムAPIキー")
-    model_name: str | None = Field(default=None, description="モデル名 (例: gemini-2.5-flash, gpt-4o-mini)")
+    model_name: str | None = Field(
+        default=None, description="モデル名 (例: gemini-2.5-flash, gpt-4o-mini)"
+    )
     base_url: str | None = Field(default=None, description="OpenAI互換 Base URL")
 
 
@@ -37,11 +40,7 @@ class EasyModeInput(BaseModel):
     style_override: dict[str, Any] | None = Field(
         default=None, description="カスタムStyleProfileの辞書"
     )
-    llm_config: LLMConfigOverride | None = Field(
-        default=None, description="オプトインのLLM設定"
-    )
-
-
+    llm_config: LLMConfigOverride | None = Field(default=None, description="オプトインのLLM設定")
 
 
 class StreamQueryInput(BaseModel):
@@ -87,6 +86,7 @@ class GenerationResponse(BaseModel):
 
 
 # --- ガチャ / ダイジェスト / 昇格 スキーマ ---
+
 
 class GachaPlanType(str, Enum):
     ROYAL = "royal"  # 王道案
@@ -150,8 +150,11 @@ class PromotionResponse(BaseModel):
 
 class ReversePlotGeneratePayload(BaseModel):
     """逆算プロット生成リクエスト（APIキー不要のかんたんモード・UI用）"""
+
     answers: dict[str, Any] = Field(default_factory=dict, description="4ステップ回答")
-    target_episodes: int = Field(default=10, ge=1, le=50, alias="targetEpisodes", description="目標話数")
+    target_episodes: int = Field(
+        default=10, ge=1, le=50, alias="targetEpisodes", description="目標話数"
+    )
     genre: str = Field(default="ハイファンタジー (R15)", description="ジャンル")
     llm_config: LLMConfigOverride | None = Field(default=None, description="オプトインのLLM設定")
 
@@ -160,6 +163,7 @@ class ReversePlotGeneratePayload(BaseModel):
 
 class ExportRequestPayload(BaseModel):
     """エクスポート用即時反映ペイロード"""
+
     title: str = Field(default="R15ファンタジー作品", description="タイトル")
     genre: str = Field(default="ファンタジー (R15)", description="ジャンル")
     current_text: str = Field(default="", description="画面上の最新本文")
@@ -169,12 +173,15 @@ class ExportRequestPayload(BaseModel):
 
 class FullAutoRequest(BaseModel):
     """全自動生成リクエスト（かんたんモード・完全自律）"""
+
     api_key: str = Field(..., description="APIキー")
     genre: str = Field(default="ファンタジー", description="ジャンル")
     keywords: list[str] = Field(default_factory=list, description="キーワードリスト")
     protagonist_type: str = Field(default="チート主人公", description="主人公タイプ")
     target_episodes: int = Field(default=10, ge=1, le=50, description="目標話数")
-    words_per_episode: int = Field(default=2000, ge=500, le=10000, description="話あたりの目標文字数")
+    words_per_episode: int = Field(
+        default=2000, ge=500, le=10000, description="話あたりの目標文字数"
+    )
     enable_audit: bool = Field(default=True, description="推敲監査を有効化")
     max_rewrites: int = Field(default=2, ge=0, le=5, description="最大リライト回数")
 
@@ -198,4 +205,3 @@ __all__ = [
     "ExportRequestPayload",
     "FullAutoRequest",
 ]
-

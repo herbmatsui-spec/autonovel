@@ -3,6 +3,7 @@ src/agents/erotic_integrity.py
 官能・シーン整合性チェックのエージェント (後方互換性用ファサード)。
 実体は src.agents.erotic パッケージに分割・配置されています。
 """
+
 from __future__ import annotations
 
 from src.agents.erotic import (

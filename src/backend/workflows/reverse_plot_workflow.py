@@ -1,4 +1,5 @@
 """逆算プロット生成ワークフロー"""
+
 from __future__ import annotations
 import logging
 import math
@@ -7,13 +8,14 @@ from typing import Any, List
 from .base_workflow import BaseWorkflow
 from src.shared.utils import StatusReporter
 from src.models.plot import ArcBlueprint, CatharsisPattern
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
 
 class PlotEpisodeInit(BaseModel):
     """初期プロット構造（逆算ビルダー出力用）"""
+
     ep_num: int
     title: str
     one_line_summary: str
@@ -101,19 +103,23 @@ class ReversePlotGenerationWorkflow(BaseWorkflow):
         for i in range(num_arcs):
             start = i * eps_per_arc + 1
             end = (i + 1) * eps_per_arc if i < num_arcs - 1 else target_episodes
-            arcs.append(ArcBlueprint(
-                arc_num=i + 1,
-                start_ep=start,
-                end_ep=end,
-                title=f"第{i+1}部",
-                summary=summaries[min(i, len(summaries) - 1)],
-            ))
+            arcs.append(
+                ArcBlueprint(
+                    arc_num=i + 1,
+                    start_ep=start,
+                    end_ep=end,
+                    title=f"第{i + 1}部",
+                    summary=summaries[min(i, len(summaries) - 1)],
+                )
+            )
         return arcs
 
-    def _design_episodes(self, answers: dict, arcs: List[ArcBlueprint], target_episodes: int, genre: str = "") -> List[PlotEpisodeInit]:
+    def _design_episodes(
+        self, answers: dict, arcs: List[ArcBlueprint], target_episodes: int, genre: str = ""
+    ) -> List[PlotEpisodeInit]:
         emotional_goal = answers.get("emotionalGoal", "triumph")
         sacrifice = answers.get("sacrifice", "peace")
-        hook = answers.get("openingHook", "isekai_awakening")
+        _ = answers.get("openingHook", "isekai_awakening")
 
         catharsis_map = EMOTIONAL_GOAL_TO_CATHARSIS[emotional_goal]
 
@@ -123,23 +129,25 @@ class ReversePlotGenerationWorkflow(BaseWorkflow):
             tension = self._calc_tension(progress, catharsis_map["pattern"])
             is_catharsis = self._is_catharsis_ep(ep, target_episodes, catharsis_map["pattern"])
 
-            episodes.append(PlotEpisodeInit(
-                ep_num=ep,
-                title=f"第{ep}話",
-                one_line_summary=self._ep_summary(ep, target_episodes, answers),
-                tension=int(tension),
-                catharsis=int(tension * 0.8) if is_catharsis else 0,
-                is_catharsis=is_catharsis,
-                thematic_milestone=self._milestone(ep, target_episodes, answers),
-                burned_cost_or_loot="なし" if ep < target_episodes else sacrifice,
-                antagonist_status="強化" if ep < target_episodes * 0.7 else "弱体化",
-                resolution_style="Cheat" if "ファンタジー" in genre else "Logic",
-            ))
+            episodes.append(
+                PlotEpisodeInit(
+                    ep_num=ep,
+                    title=f"第{ep}話",
+                    one_line_summary=self._ep_summary(ep, target_episodes, answers),
+                    tension=int(tension),
+                    catharsis=int(tension * 0.8) if is_catharsis else 0,
+                    is_catharsis=is_catharsis,
+                    thematic_milestone=self._milestone(ep, target_episodes, answers),
+                    burned_cost_or_loot="なし" if ep < target_episodes else sacrifice,
+                    antagonist_status="強化" if ep < target_episodes * 0.7 else "弱体化",
+                    resolution_style="Cheat" if "ファンタジー" in genre else "Logic",
+                )
+            )
         return episodes
 
     def _calc_tension(self, progress: float, pattern: str) -> float:
         if pattern == "explosion":
-            return 30 + 65 * (progress ** 2)
+            return 30 + 65 * (progress**2)
         elif pattern == "wave":
             return 40 + 40 * math.sin(progress * math.pi * 2.5)
         elif pattern == "spike":
@@ -174,8 +182,10 @@ class ReversePlotGenerationWorkflow(BaseWorkflow):
         return CatharsisPattern(
             pattern_type=catharsis_map["pattern"],
             catharsis_points=catharsis_points,
-            tension_wave=[int(self._calc_tension(i/target_episodes, catharsis_map["pattern"]))
-                         for i in range(1, target_episodes + 1)],
+            tension_wave=[
+                int(self._calc_tension(i / target_episodes, catharsis_map["pattern"]))
+                for i in range(1, target_episodes + 1)
+            ],
         )
 
     def _ep_summary(self, ep: int, total: int, answers: dict) -> str:

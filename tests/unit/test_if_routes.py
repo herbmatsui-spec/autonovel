@@ -5,7 +5,7 @@ from src.easy_mode.phase3.if_routes import (
     RouteChoice,
     create_if_route_system,
 )
-from src.easy_mode.pipeline import EpisodeResult, SeriesResult
+from src.easy_mode import EpisodeResult, SeriesResult
 from src.easy_mode.spice_guard import SpiceElement
 
 

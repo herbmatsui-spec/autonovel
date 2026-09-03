@@ -151,7 +151,9 @@ class AsyncExecutor(Generic[T]):
         try:
             async with self.semaphore:
                 if not self.circuit_breaker.allow_request():
-                    raise AsyncExecutionError(f"Circuit breaker '{self.circuit_breaker.name}' is OPEN")
+                    raise AsyncExecutionError(
+                        f"Circuit breaker '{self.circuit_breaker.name}' is OPEN"
+                    )
 
                 attempt = 0
                 while attempt < self.retry_policy.max_attempts:

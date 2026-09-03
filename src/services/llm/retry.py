@@ -1,4 +1,5 @@
 """LLM API 呼び出し用の指数バックオフリトライヘルパー。"""
+
 from __future__ import annotations
 
 import asyncio
@@ -7,6 +8,7 @@ from collections.abc import Callable, Coroutine
 from typing import Any
 
 logger = logging.getLogger(__name__)
+
 
 async def with_retry[T](
     async_func: Callable[[], Coroutine[Any, Any, T]],

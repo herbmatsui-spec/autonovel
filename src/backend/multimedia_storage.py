@@ -2,6 +2,7 @@
 
 `MULTIMEDIA_OUTPUT_DIR` を冪等に作成し、絶対 Path を返す。
 """
+
 from __future__ import annotations
 
 from pathlib import Path

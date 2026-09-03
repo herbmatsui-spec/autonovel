@@ -77,9 +77,7 @@ async def add_comment(book_id: int, chapter_ep: int, req: CommentRequest) -> dic
 
 
 @router.get("/books/{book_id}/comments")
-async def list_comments(
-    book_id: int, chapter_ep: int | None = Query(None)
-) -> list[dict[str, Any]]:
+async def list_comments(book_id: int, chapter_ep: int | None = Query(None)) -> list[dict[str, Any]]:
     async with UnitOfWork(AppContainer.db()) as uow:
         comments = await uow.collab.list_comments(book_id, chapter_ep)
     return [

@@ -1,4 +1,5 @@
 """FastAPI アプリケーションのエントリポイント。"""
+
 from __future__ import annotations
 
 import importlib
@@ -40,8 +41,6 @@ app.add_middleware(
 register_error_handlers(app)
 
 
-
-
 app.include_router(easy_mode.router, prefix="/easy_mode", tags=["easy_mode"])
 app.include_router(easy_mode.router, prefix="/api/easy-mode", tags=["easy-mode"])
 app.include_router(streaming.router, prefix="/easy_mode", tags=["streaming"])
@@ -65,6 +64,7 @@ restored_routers = [
     "src.backend.routers.commercial",
     "src.backend.routers.illustrations",
     "src.backend.routers.multimedia",
+    "src.backend.routers.branches",
 ]
 
 for mod_path in restored_routers:

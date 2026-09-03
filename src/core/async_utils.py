@@ -25,7 +25,6 @@ async def run_parallel(
     Returns:
         実行結果のリスト。
     """
-    results = []
     tasks = []
 
     async with asyncio.TaskGroup() as tg:
@@ -87,6 +86,7 @@ def get_concurrency_semaphore() -> asyncio.Semaphore:
     asyncio.Semaphore インスタンスを取得して返す。
     """
     from src.core.container import AppContainer
+
     return AppContainer.concurrency_semaphore()
 
 

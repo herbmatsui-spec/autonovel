@@ -83,6 +83,9 @@ async def apply_hook_fix(book_id: int, ep_num: int, payload: dict[str, Any]) -> 
         raise HTTPException(status_code=422, detail="content is required")
 
     async with UnitOfWork(AppContainer.db()) as uow:
-        # branch_id=1 を既定とする（単一ブランチ前提）
-        await uow.chapters.update_chapter_content(branch_id=1, ep_num=ep_num, content=new_tail)
-    return {"status": "success", "ep_num": ep_num}
+        # branch_id 未指定なら 1（単一ブランチ既定）。payload から上書き可能。
+        branch_id = int(payload.get("branch_id", 1) or 1)
+        await uow.chapters.update_chapter_content(
+            branch_id=branch_id, ep_num=ep_num, content=new_tail
+        )
+    return {"status": "success", "ep_num": ep_num, "branch_id": branch_id}

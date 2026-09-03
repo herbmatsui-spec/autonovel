@@ -39,7 +39,7 @@ class MiscRepository(BaseRepository):
         )
         self.session.add(opt)
 
-    async def get_optimization_history(self, book_id: int) -> list[OptimizationHistoryDbModel]:
+    async def get_optimization_history(self, book_id: int) -> list[OptimizationHistory]:
         result = await self.session.execute(
             select(OptimizationHistory)
             .where(OptimizationHistory.book_id == book_id)
@@ -62,9 +62,7 @@ class MiscRepository(BaseRepository):
         )
         self.session.add(frag)
 
-    async def get_all_style_fragments(
-        self, tag: str | None = None
-    ) -> list[StyleFragmentDbModel]:
+    async def get_all_style_fragments(self, tag: str | None = None) -> list[StyleFragment]:
         stmt = select(StyleFragment)
         if tag:
             stmt = stmt.where(StyleFragment.tag == tag)
@@ -72,9 +70,7 @@ class MiscRepository(BaseRepository):
         rows = result.scalars().all()
         return [self._to_dict(r) for r in rows]
 
-    async def search_style_fragments_by_tag(
-        self, tag: str, limit: int = 5
-    ) -> list[StyleFragmentDbModel]:
+    async def search_style_fragments_by_tag(self, tag: str, limit: int = 5) -> list[StyleFragment]:
         result = await self.session.execute(
             select(StyleFragment)
             .where(StyleFragment.tag == tag)
@@ -99,7 +95,7 @@ class MiscRepository(BaseRepository):
         style.analysis = analysis
         style.created_at = datetime.now()
 
-    async def get_all_custom_styles(self) -> list[CustomStyleDbModel]:
+    async def get_all_custom_styles(self) -> list[CustomStyle]:
         result = await self.session.execute(select(CustomStyle).order_by(CustomStyle.score.desc()))
         rows = result.scalars().all()
         return [self._to_dict(r) for r in rows]
@@ -156,7 +152,7 @@ class MiscRepository(BaseRepository):
         await self.session.flush()
         return patch.id
 
-    async def get_pending_patches(self, book_id: int) -> list[PendingPatchDbModel]:
+    async def get_pending_patches(self, book_id: int) -> list[PendingPatch]:
         """承認待ちパッチ一覧を取得"""
         result = await self.session.execute(
             select(PendingPatch)
@@ -176,7 +172,7 @@ class MiscRepository(BaseRepository):
             .values(status=status, reviewed_at=datetime.now())
         )
 
-    async def get_rejected_patches(self, book_id: int, limit: int = 5) -> list[PendingPatchDbModel]:
+    async def get_rejected_patches(self, book_id: int, limit: int = 5) -> list[PendingPatch]:
         """却下されたパッチの履歴を取得"""
         result = await self.session.execute(
             select(PendingPatch)
@@ -222,7 +218,7 @@ class MiscRepository(BaseRepository):
         )
         # updated_at will be set automatically on update or manually here if needed
 
-    async def get_background_task(self, task_id: str) -> BackgroundTaskDbModel | None:
+    async def get_background_task(self, task_id: str) -> BackgroundTask | None:
         """バックグラウンドタスクの状態をDBから取得する"""
         result = await self.session.execute(
             select(BackgroundTask).where(BackgroundTask.id == task_id)

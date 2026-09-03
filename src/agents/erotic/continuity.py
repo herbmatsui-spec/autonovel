@@ -31,7 +31,6 @@ from src.agents.erotic.vocabulary import (
     STAMINA_EXHAUSTED_KW,
     STAMINA_LEVELS,
     STAMINA_TIRED_KW,
-    TIME_KEYWORDS,
 )
 
 logger = logging.getLogger(__name__)
@@ -237,7 +236,18 @@ class SceneContinuityTracker:
         kw_map = {
             "hostile": ["拒絶", "怒り", "罵倒", "軽蔑", "激昂", "憎しみ", "突き放す", "敵意"],
             "tense": ["緊張", "気まずい", "沈黙", "警戒", "険しい", "冷ややか", "対立"],
-            "friendly": ["親密", "信頼", "微笑み", "微笑んだ", "微笑", "にこやか", "穏やか", "快諾", "共感", "温かい"],
+            "friendly": [
+                "親密",
+                "信頼",
+                "微笑み",
+                "微笑んだ",
+                "微笑",
+                "にこやか",
+                "穏やか",
+                "快諾",
+                "共感",
+                "温かい",
+            ],
         }
 
         for attitude, keywords in kw_map.items():
@@ -485,23 +495,6 @@ class SceneContinuityTracker:
         if any(kw in text for kw in first_person_kw):
             return "first_person"
         return "third_person"
-
-    def check_perspective_continuity(
-        self, current_ep: int, character_name: str, current_text: str
-    ) -> list[str]:
-        """視点の一貫性をチェックする。"""
-        issues = []
-        prev_snapshot = self.get_previous_snapshot(current_ep, character_name)
-        if not prev_snapshot or prev_snapshot.perspective == "standard":
-            return issues
-
-        current_perspective = self._detect_perspective(current_text)
-        if prev_snapshot.perspective != current_perspective:
-            issues.append(
-                f"【整合性警告】視点が変更されています（{prev_snapshot.perspective} → {current_perspective}）。"
-            )
-
-        return issues
 
     def _detect_foreshadowing(self, text: str) -> list[str]:
         """テキストから伏線と思われるキーワードを抽出する。"""
@@ -786,9 +779,7 @@ class ContinuityTracker:
         except Exception as e:
             logger.warning("Failed to save snapshot to SQLite: %s", e)
 
-    def get_snapshot(
-        self, episode_num: int, character_name: str
-    ) -> CharacterStateSnapshot | None:
+    def get_snapshot(self, episode_num: int, character_name: str) -> CharacterStateSnapshot | None:
         """指定エピソードのキャラクター状態を取得する。"""
         # メモリ内キャッシュを優先
         if episode_num in self._snapshots and character_name in self._snapshots[episode_num]:

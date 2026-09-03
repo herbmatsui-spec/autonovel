@@ -61,16 +61,21 @@ class Book(Base):
     cumulative_cost = Column(Float, default=0.0)
     sanctuary_integrity = Column(Integer, default=100)
     current_branch_id = Column(Integer, nullable=True)
-    ai_assistant_config = Column(JSON, nullable=False, default={
-        "enabled": False,
-        "auto_suggest": False,
-        "trigger_mode": "manual",
-        "features": {"continue": True, "describe": True, "rewrite": True}
-    })
+    ai_assistant_config = Column(
+        JSON,
+        nullable=False,
+        default={
+            "enabled": False,
+            "auto_suggest": False,
+            "trigger_mode": "manual",
+            "features": {"continue": True, "describe": True, "rewrite": True},
+        },
+    )
 
 
 class UserPreference(Base):
     """ユーザー単位の AI アシスタント設定（オプトイン管理）"""
+
     __tablename__ = "user_preferences"
 
     user_id = Column(Integer, primary_key=True, nullable=False)
@@ -87,11 +92,30 @@ class Branch(Base):
     name = Column(String(100), nullable=False)
     parent_id = Column(Integer, nullable=True)
     fork_ep_num = Column(Integer, default=0)
+    graph_json = Column(JSON, nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+
+
+class BranchPlaySession(Base):
+    """IF ルート分岐のプレイヤーセッション状態."""
+
+    __tablename__ = "branch_play_sessions"
+
+    id = Column(String(36), primary_key=True)
+    book_id = Column(Integer, nullable=False)
+    branch_id = Column(Integer, nullable=False)
+    current_node_id = Column(String(255), nullable=True)
+    context_json = Column(JSON, nullable=True)
+    save_points_json = Column(JSON, nullable=True)
+    status = Column(String(20), nullable=True, server_default=text("'active'"))
+    version = Column(Integer, nullable=False, server_default=text("1"))
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
     created_at = Column(DateTime, server_default=func.now())
 
 
 class SafeDateTime(TypeDecorator):
     """datetime または unix timestamp (int/float) の両方を受け付けるカラム型"""
+
     impl = DateTime
     cache_ok = True
 
@@ -357,6 +381,92 @@ class AuditIssue(Base):
     resolved_note = Column(Text, default="")
     created_at = Column(DateTime, server_default=func.now())
 
+    # Review linkage fields
+    patch_review_id = Column(Integer, ForeignKey("patch_reviews.id"), nullable=True)
+    user_resolution = Column(
+        String(50), nullable=True
+    )  # USER_ACCEPTED, USER_REJECTED, USER_MODIFIED
+    resolved_at = Column(DateTime, nullable=True)
+    resolved_by = Column(String(100), nullable=True)
+
+
+# ==========================================
+# Patch Review Workflow
+# ==========================================
+
+
+class PatchReviewStatus(str):
+    GENERATED = "generated"
+    UNDER_REVIEW = "under_review"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    NEEDS_REVISION = "needs_revision"
+    EXPIRED = "expired"
+
+
+class PatchReview(Base):
+    __tablename__ = "patch_reviews"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    book_id = Column(Integer, ForeignKey("books.id", ondelete="CASCADE"), nullable=False)
+    ep_num = Column(Integer, nullable=False)
+    patch_type = Column(String(50), nullable=False)  # config, prompt, setting
+    original_content = Column(Text, nullable=False)
+    proposed_content = Column(Text, nullable=False)
+    diff_json = Column(Text, default="{}")
+    status = Column(String(20), default=PatchReviewStatus.GENERATED, nullable=False)
+    reviewer_id = Column(String(100), nullable=True)
+    reviewed_at = Column(DateTime, nullable=True)
+    review_comment = Column(Text, default="")
+    audit_issue_ids = Column(JSON, default=[])
+    learning_metadata = Column(JSON, default={})  # negative_sample_flag, confidence, pattern_tags
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+    __table_args__ = (
+        Index("idx_patch_reviews_book_ep", "book_id", "ep_num"),
+        Index("idx_patch_reviews_status", "status"),
+    )
+
+
+class SettingDelta(Base):
+    __tablename__ = "setting_deltas"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    book_id = Column(Integer, ForeignKey("books.id", ondelete="CASCADE"), nullable=False)
+    field_path = Column(String(500), nullable=False)  # e.g., "world_rules.magic_system.mana_cost"
+    old_value = Column(Text, nullable=True)
+    new_value = Column(Text, nullable=True)
+    delta_type = Column(String(50), nullable=False)  # MANUAL, AUTO_REPAIR, USER_CORRECTION
+    source = Column(String(50), nullable=False)  # user, audit_agent, bible_service
+    merged_to_graphrag = Column(Boolean, default=False, nullable=False)
+    merged_at = Column(DateTime, nullable=True)
+    patch_review_id = Column(Integer, ForeignKey("patch_reviews.id"), nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+
+    __table_args__ = (
+        Index("idx_setting_deltas_book_field", "book_id", "field_path"),
+        Index("idx_setting_deltas_merged", "merged_to_graphrag"),
+    )
+
+
+class SettingVersion(Base):
+    __tablename__ = "setting_versions"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    book_id = Column(Integer, ForeignKey("books.id", ondelete="CASCADE"), nullable=False)
+    version_number = Column(Integer, nullable=False)
+    snapshot_json = Column(Text, nullable=False)  # Full settings snapshot
+    base_version_id = Column(Integer, ForeignKey("setting_versions.id"), nullable=True)
+    change_summary = Column(Text, default="")
+    created_by = Column(String(100), nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint("book_id", "version_number", name="uq_setting_versions_book_ver"),
+        Index("idx_setting_versions_book", "book_id"),
+    )
+
 
 # ==========================================
 # Misc / Utility tables
@@ -541,9 +651,7 @@ class ChapterVersion(Base):
     base_version_id = Column(Integer, ForeignKey("chapter_versions.id"), nullable=True)
     created_at = Column(DateTime, server_default=func.now())
 
-    __table_args__ = (
-        Index("idx_chv_book_chap", "book_id", "chapter_ep"),
-    )
+    __table_args__ = (Index("idx_chv_book_chap", "book_id", "chapter_ep"),)
 
 
 class Illustration(Base):
@@ -645,4 +753,3 @@ CharacterDbModel = Character
 PlotDbModel = Plot
 PromptVersionDbModel = PromptVersion
 WorldBible = Bible
-

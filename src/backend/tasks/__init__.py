@@ -1,4 +1,5 @@
 """AutoNovel tasks package."""
+
 import logging
 
 from huey import crontab
@@ -27,6 +28,7 @@ def _apply_config_overrides(config_dict: dict | None) -> None:
         return
     try:
         from config.project_context import ProjectContext
+
         for key in _CONFIG_OVERRIDE_KEYS:
             if key in config_dict and config_dict[key] not in (None, ""):
                 ProjectContext.set_setting(key, config_dict[key])
@@ -40,6 +42,7 @@ def process_vector_event(event_type: str, payload: dict, trace_id: str | None = 
     """非同期でChromaDBへの操作を実行するタスク"""
     logger.info(f"Processing vector event: {event_type}")
     from src.services.vector_store import DefaultVectorStore
+
     store = DefaultVectorStore()
 
     if event_type == "chroma_add":
@@ -48,21 +51,19 @@ def process_vector_event(event_type: str, payload: dict, trace_id: str | None = 
             ids=[payload["id"]],
             documents=[payload["content"]],
             embeddings=[payload["embedding"]],
-            metadatas=[payload["metadata"]] if payload["metadata"] else None
+            metadatas=[payload["metadata"]] if payload["metadata"] else None,
         )
     elif event_type == "chroma_delete":
-        return store.delete_by_id(
-            collection_name=payload["collection"],
-            ids=payload["ids"]
-        )
+        return store.delete_by_id(collection_name=payload["collection"], ids=payload["ids"])
     return None
 
 
-@huey.periodic_task(crontab(minute='*'))
+@huey.periodic_task(crontab(minute="*"))
 def process_outbox_events():
     """Huey periodic task for processing Outbox events."""
     logger.info("Running outbox processor task...")
     import asyncio
+
     try:
         asyncio.run(_process_outbox_events_async())
     except Exception as e:
@@ -72,6 +73,7 @@ def process_outbox_events():
 async def _process_outbox_events_async():
     from src.backend.database.uow import UnitOfWork
     from src.core.container import AppContainer
+
     db = AppContainer.db()
 
     async with UnitOfWork(db=db) as uow:
@@ -119,7 +121,14 @@ def _build_service_dict(container):
 
 @huey.task(retries=3, retry_delay=5)
 @with_trace_context
-def execute_service_workflow(task_id: str, api_key: str, config_dict: dict, method_name: str, kwargs: dict, trace_id: str | None = None):
+def execute_service_workflow(
+    task_id: str,
+    api_key: str,
+    config_dict: dict,
+    method_name: str,
+    kwargs: dict,
+    trace_id: str | None = None,
+):
     import asyncio
 
     from src.backend.background import BackgroundReporter, ProgressState
@@ -167,13 +176,16 @@ def run_test_coro(task_id: str, message: str, trace_id: str | None = None):
     """テスト用のダミータスク"""
     from src.backend.background import ProgressState
     from src.core.container import AppContainer
+
     db = AppContainer.db()
 
     class FakeEngine:
         def __init__(self):
             self.db = db
 
-    state = ProgressState(is_running=False, task_id=task_id, repo=FakeEngine(), skip_initial_save=True)
+    state = ProgressState(
+        is_running=False, task_id=task_id, repo=FakeEngine(), skip_initial_save=True
+    )
     state.result_data = "SuccessValue"
     state.logs = [message]
     state._save_to_db()
@@ -181,7 +193,9 @@ def run_test_coro(task_id: str, message: str, trace_id: str | None = None):
 
 @huey.task(retries=3, retry_delay=5)
 @with_trace_context
-def async_score_narrative_metrics(book_id: int, branch_id: int, ep_num: int, trace_id: str | None = None):
+def async_score_narrative_metrics(
+    book_id: int, branch_id: int, ep_num: int, trace_id: str | None = None
+):
     """エピソードのスコアリングをバックグラウンドで実行するタスク"""
     import asyncio
 
@@ -191,6 +205,7 @@ def async_score_narrative_metrics(book_id: int, branch_id: int, ep_num: int, tra
     async def _run():
         try:
             from src.core.container import AppContainer
+
             container = AppContainer()
             db = container.db()
             auditor = container.auditor()
@@ -209,13 +224,16 @@ def async_score_narrative_metrics(book_id: int, branch_id: int, ep_num: int, tra
 
 @huey.task(retries=3, retry_delay=5)
 @with_trace_context
-def enqueue_audit_after_write(book_id: int, write_from: int, write_to: int, trace_id: str | None = None):
+def enqueue_audit_after_write(
+    book_id: int, write_from: int, write_to: int, trace_id: str | None = None
+):
     """執筆完了後の論理監査 (Shadow Mode) をバックグラウンドで実行するタスク。"""
     import asyncio
 
     async def _run():
         try:
             from src.core.container import AppContainer
+
             container = AppContainer()
             db = container.db()
             auditor = container.auditor()

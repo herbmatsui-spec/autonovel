@@ -2,6 +2,7 @@
 
 PostgreSQL only: creates AGE graph, labels, and property indexes.
 """
+
 from __future__ import annotations
 
 from alembic import op

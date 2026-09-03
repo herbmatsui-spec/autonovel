@@ -1,5 +1,6 @@
 # src/shared/redis_pool.py
 """Redis 接続プール管理（シングルトン）。"""
+
 from __future__ import annotations
 
 import os

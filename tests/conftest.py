@@ -91,6 +91,7 @@ def real_db_manager() -> Generator[Session, None, None]:
     test_url = f"sqlite:///{db_path}"
     previous_url = os.environ.get("DATABASE_URL")
     os.environ["DATABASE_URL"] = test_url
+    print(f"Setting DATABASE_URL to {test_url}", flush=True)
 
     # core.py のグローバル変数も更新（プロキシが参照するため）
     import sys

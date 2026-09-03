@@ -1,4 +1,5 @@
 """小説執筆・設定生成用のプロンプトテンプレート。"""
+
 from __future__ import annotations
 
 NOVEL_SYSTEM_PROMPT = """あなたはプロのWeb小説家および編集者です。
@@ -75,4 +76,3 @@ NOVEL_USER_PROMPT_WITH_GRAPHRAG_TEMPLATE = """【ジャンル】: {genre}
 
 上記の確定事実と過去の文脈を決して矛盾させず、指定された【作家性DNA・文体】を忠実に再現して、続く魅力的な本文を執筆してください。
 """
-

@@ -150,13 +150,11 @@ class YonkomaPlanner:
     _PROMPT_TEMPLATE = (
         "以下の小説本文を、起承転結 + 余韻2 の合計 {panels} コマに分割し、"
         "各コマを 1〜2 文の日本語要約で表してください。\n"
-        "出力は JSON 配列のみ (例: [\"...\", \"...\", ...])。\n\n"
+        '出力は JSON 配列のみ (例: ["...", "...", ...])。\n\n'
         "{text}"
     )
 
-    async def plan_with_llm(
-        self, text: str, llm, panels: int = 6
-    ) -> list[str]:
+    async def plan_with_llm(self, text: str, llm, panels: int = 6) -> list[str]:
         """LLM を使って ``panels`` 個の要約を生成する。失敗時は ``plan_heuristic`` にフォールバック。"""
         panels = max(3, min(int(panels or 6), 6))
         prompt = self._PROMPT_TEMPLATE.format(panels=panels, text=text[:2400])

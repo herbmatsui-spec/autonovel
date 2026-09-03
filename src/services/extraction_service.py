@@ -7,6 +7,7 @@ Enhanced with:
 - Multi-pass extraction for complex texts
 - Japanese-specific entity recognition hints
 """
+
 from __future__ import annotations
 
 import json
@@ -85,7 +86,9 @@ class ExtractionService:
         self._llm = llm_adapter or get_llm_adapter()
         self._cache: dict[str, GraphExtractionResult] = {}
 
-    def extract_graph_from_text(self, text: str, *, use_cache: bool = True) -> GraphExtractionResult:
+    def extract_graph_from_text(
+        self, text: str, *, use_cache: bool = True
+    ) -> GraphExtractionResult:
         """テキストからエンティティとリレーションを高精度に抽出し、GraphExtractionResult を返す."""
         if not text or not text.strip():
             return GraphExtractionResult(entities=[], relationships=[], plot_summary="")
@@ -108,25 +111,29 @@ class ExtractionService:
             + "5. plot_summary は一文で要約（100文字以内）\n"
             + FEW_SHOT_EXAMPLES
             + "\n必ず以下のJSONフォーマットで回答してください（Markdownコードブロック不要）:\n"
-            + json.dumps({
-                "entities": [
-                    {
-                        "name": "アルス",
-                        "type": "Character",
-                        "description": "主人公。剣士。",
-                        "properties": {"is_alive": True}
-                    }
-                ],
-                "relationships": [
-                    {
-                        "source": "アルス",
-                        "target": "ルミナス王都",
-                        "type": "LOCATED_IN",
-                        "detail": "現在滞在中"
-                    }
-                ],
-                "plot_summary": "アルスが王都に到着し、新たな仲間と出会う。"
-            }, ensure_ascii=False, indent=2)
+            + json.dumps(
+                {
+                    "entities": [
+                        {
+                            "name": "アルス",
+                            "type": "Character",
+                            "description": "主人公。剣士。",
+                            "properties": {"is_alive": True},
+                        }
+                    ],
+                    "relationships": [
+                        {
+                            "source": "アルス",
+                            "target": "ルミナス王都",
+                            "type": "LOCATED_IN",
+                            "detail": "現在滞在中",
+                        }
+                    ],
+                    "plot_summary": "アルスが王都に到着し、新たな仲間と出会う。",
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
         )
 
         # Structured Outputs 用のスキーマ定義
@@ -183,7 +190,9 @@ class ExtractionService:
                 )
                 return self._heuristic_fallback(text)
 
-    def _post_process(self, result: GraphExtractionResult, original_text: str) -> GraphExtractionResult:
+    def _post_process(
+        self, result: GraphExtractionResult, original_text: str
+    ) -> GraphExtractionResult:
         """抽出結果の後処理: 正規化、重複除去、信頼度付与."""
         # エンティティ名の正規化（前後の空白除去）
         for ent in result.entities:
@@ -212,7 +221,8 @@ class ExtractionService:
         # 存在しないエンティティを参照する関係を除去
         entity_names = {ent.name for ent in result.entities}
         valid_relationships = [
-            rel for rel in result.relationships
+            rel
+            for rel in result.relationships
             if rel.source in entity_names and rel.target in entity_names
         ]
         result.relationships = valid_relationships
@@ -270,6 +280,7 @@ class ExtractionService:
     def _compute_cache_key(self, text: str) -> str:
         """テキストからキャッシュキーを生成（先頭500文字のハッシュ）."""
         import hashlib
+
         return hashlib.md5(text[:500].encode()).hexdigest()
 
     def resolve_entities(
@@ -286,7 +297,9 @@ class ExtractionService:
 
         # 既存エンティティ名のベクトル化キャッシュ
         existing_vecs = {
-            name: embedding_service.get_embedding(name) for name in existing_entity_names if name.strip()
+            name: embedding_service.get_embedding(name)
+            for name in existing_entity_names
+            if name.strip()
         }
 
         # 新規エンティティ名の置換マップ
@@ -316,7 +329,12 @@ class ExtractionService:
                     best_match = ex_name
 
             if best_match:
-                logger.info("Entity resolved: '%s' -> '%s' (similarity: %.2f)", entity.name, best_match, best_sim)
+                logger.info(
+                    "Entity resolved: '%s' -> '%s' (similarity: %.2f)",
+                    entity.name,
+                    best_match,
+                    best_sim,
+                )
                 name_map[entity.name] = best_match
 
         if not name_map:
@@ -362,29 +380,49 @@ class ExtractionService:
         relationships: list[Relationship] = []
 
         # キャラクター名らしきパターン（カタカナ・漢字の組み合わせ）
-        char_pattern = r"([ァ-ヶー][ァ-ヶー一-龯]{1,5}|[一-龯]{2,4})(?:は|が|を|に|と|の|へ|で|や|も)"
+        char_pattern = (
+            r"([ァ-ヶー][ァ-ヶー一-龯]{1,5}|[一-龯]{2,4})(?:は|が|を|に|と|の|へ|で|や|も)"
+        )
         for match in re.finditer(char_pattern, text[:1000]):
             name = match.group(1)
             if len(name) >= 2 and name not in ["主人公", "彼女", "彼", "自分", "みんな", "誰も"]:
-                entities.append(Entity(
-                    name=name,
-                    type="Character",
-                    description="ヒューリスティック抽出による推定キャラクター",
-                    properties={"is_alive": True, "heuristic": True}
-                ))
+                entities.append(
+                    Entity(
+                        name=name,
+                        type="Character",
+                        description="ヒューリスティック抽出による推定キャラクター",
+                        properties={"is_alive": True, "heuristic": True},
+                    )
+                )
                 if len(entities) >= 5:
                     break
 
         # キーワードベースのイベント抽出
-        event_keywords = ["戦闘", "戦い", "戦う", "魔法", "剣", "攻撃", "防御", "逃走", "追跡", "会話", "会議", "儀式", "召喚"]
+        event_keywords = [
+            "戦闘",
+            "戦い",
+            "戦う",
+            "魔法",
+            "剣",
+            "攻撃",
+            "防御",
+            "逃走",
+            "追跡",
+            "会話",
+            "会議",
+            "儀式",
+            "召喚",
+        ]
         for kw in event_keywords:
             if kw in text:
-                entities.append(Entity(
-                    name=kw,
-                    type="Event",
-                    description=f"{kw}が発生",
-                    properties={"heuristic": True}
-                ))
+                entities.append(
+                    Entity(
+                        name=kw,
+                        type="Event",
+                        description=f"{kw}が発生",
+                        properties={"heuristic": True},
+                    )
+                )
                 break
 
         plot_summary = text[:100] + "..." if len(text) > 100 else text

@@ -84,31 +84,31 @@ async def check_chromadb() -> HealthCheckResult:
             return HealthCheckResult(
                 status=HealthStatus.NOT_CONFIGURED, error="ChromaDB provider not initialized"
             )
-        
+
         # If it's a Singleton provider object, evaluate it (call it) to get the instance
         if hasattr(provider, "__call__") and not hasattr(provider, "get_client"):
             provider = provider()
-            
+
         client = provider.get_client() if hasattr(provider, "get_client") else provider
         if not client:
             return HealthCheckResult(
                 status=HealthStatus.NOT_CONFIGURED, error="ChromaDB client not initialized"
             )
-            
+
         # Safely call heartbeat
         try:
             if hasattr(client, "heartbeat"):
                 client.heartbeat()
         except AttributeError:
             pass
-            
+
         collections = []
         try:
             if hasattr(client, "list_collections"):
                 collections = client.list_collections()
         except AttributeError:
             pass
-            
+
         latency = (time.perf_counter() - start) * 1000
         return HealthCheckResult(
             status=HealthStatus.OK, latency_ms=latency, details=f"collections={len(collections)}"

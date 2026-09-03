@@ -2,7 +2,6 @@
 src/core/state/desires.py — Desire to emotional hook mapping
 """
 
-
 from src.models.emotional_hook import EmotionalHookSpec
 
 DESIRE_TO_HOOK_MAP = {

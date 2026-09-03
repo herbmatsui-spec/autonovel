@@ -188,5 +188,5 @@ class PathNormalizer:
 def reset():
     """テスト用リセット関数"""
     from src.backend.observability.health import metrics as h_metrics
-    h_metrics.reset()
 
+    h_metrics.reset()

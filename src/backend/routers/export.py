@@ -24,6 +24,7 @@ router = APIRouter(prefix="/api/export", tags=["export"])
 
 class EbookExportRequest(BaseModel):
     """eBook エクスポートリクエスト (README 互換: POST /export/ebook)。"""
+
     book_id: int = Field(..., ge=1)
     formats: list[str] = Field(default_factory=lambda: ["epub", "pdf"])
     author: str = "AI Novel Engine"
@@ -40,7 +41,10 @@ def _check_multimedia() -> None:
     if not is_multimedia_enabled():
         raise HTTPException(
             status_code=503,
-            detail={"error": "MultimediaDisabledError", "detail": "Multimedia features are disabled"},
+            detail={
+                "error": "MultimediaDisabledError",
+                "detail": "Multimedia features are disabled",
+            },
         )
 
 

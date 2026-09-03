@@ -3,6 +3,7 @@
 Revision ID: 0011_multimedia_artifacts
 Revises: 0004_add_ai_assistant_config
 """
+
 from __future__ import annotations
 
 import sqlalchemy as sa

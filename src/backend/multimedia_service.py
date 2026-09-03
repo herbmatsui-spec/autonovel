@@ -5,6 +5,7 @@
 - DB セッションはテスト容易性のためコンストラクタ注入
 - 成果物は `MULTIMEDIA_OUTPUT_DIR` 配下に保存し、メタデータを DB に永続化
 """
+
 from __future__ import annotations
 
 import json
@@ -36,7 +37,7 @@ from src.easy_mode.phase3.media_mix import (
     MediaFormat,
     create_media_mix_exporter,
 )
-from src.easy_mode.pipeline import EpisodeResult, SeriesResult
+from src.easy_mode import EpisodeResult, SeriesResult
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +59,9 @@ def _make_minimal_preset(genre: str) -> dict[str, Any]:
 
 def _make_minimal_episode(num: int = 1, title: str = "テスト話") -> EpisodeResult:
     """単体エピソードを組み立てるヘルパ。"""
-    content = f"第{num}話のテスト本文です。\n\n主人公は困難に立ち向かった。\n「行くぞ」と彼は言った。\n"
+    content = (
+        f"第{num}話のテスト本文です。\n\n主人公は困難に立ち向かった。\n「行くぞ」と彼は言った。\n"
+    )
     return EpisodeResult(
         episode_num=num,
         title=title,
@@ -269,7 +272,11 @@ class MultimediaService:
 
         with self._session() as s:
             asset_id = self._record_artifact(
-                s, book_id, "media_mix", fmt.value, out_dir / "index.json",
+                s,
+                book_id,
+                "media_mix",
+                fmt.value,
+                out_dir / "index.json",
                 {"file_count": len(files), "files": files},
             )
             s.commit()
@@ -304,7 +311,10 @@ class MultimediaService:
                     if not EPUB_AVAILABLE:
                         path = out_dir / f"{base}.epub.json"
                         path.write_text(
-                            json.dumps({"format": "epub", "title": series.title, "fallback": True}, ensure_ascii=False),
+                            json.dumps(
+                                {"format": "epub", "title": series.title, "fallback": True},
+                                ensure_ascii=False,
+                            ),
                             encoding="utf-8",
                         )
                     else:
@@ -313,7 +323,10 @@ class MultimediaService:
                     if not PDF_AVAILABLE:
                         path = out_dir / f"{base}.pdf.json"
                         path.write_text(
-                            json.dumps({"format": "pdf", "title": series.title, "fallback": True}, ensure_ascii=False),
+                            json.dumps(
+                                {"format": "pdf", "title": series.title, "fallback": True},
+                                ensure_ascii=False,
+                            ),
                             encoding="utf-8",
                         )
                     else:
@@ -328,14 +341,20 @@ class MultimediaService:
                 logger.error("Failed to export %s: %s", fmt, exc)
                 fb = out_dir / f"{base}.{fmt}.error.json"
                 fb.write_text(
-                    json.dumps({"format": fmt, "error": str(exc), "fallback": True}, ensure_ascii=False),
+                    json.dumps(
+                        {"format": fmt, "error": str(exc), "fallback": True}, ensure_ascii=False
+                    ),
                     encoding="utf-8",
                 )
                 results[fmt] = str(fb)
 
         with self._session() as s:
             asset_id = self._record_artifact(
-                s, book_id, "ebook", "+".join(formats), out_dir / "index.json",
+                s,
+                book_id,
+                "ebook",
+                "+".join(formats),
+                out_dir / "index.json",
                 {"formats": list(results.keys()), "files": list(results.values())},
             )
             s.commit()
@@ -384,7 +403,11 @@ class MultimediaService:
 
         with self._session() as s:
             asset_id = self._record_artifact(
-                s, book_id, "if_routes", "json", graph_file,
+                s,
+                book_id,
+                "if_routes",
+                "json",
+                graph_file,
                 {"entry_node_id": graph.entry_node_id, "node_count": len(graph.nodes)},
             )
             s.commit()
@@ -443,7 +466,11 @@ class MultimediaService:
 
         with self._session() as s:
             asset_id = self._record_artifact(
-                s, book_id, "asset_pack", "zip", zip_path,
+                s,
+                book_id,
+                "asset_pack",
+                "zip",
+                zip_path,
                 {"task_id": task_id, "item_count": len(bundle["items"])},
             )
             self._record_task(s, task_id, asset_id, status="completed")
@@ -475,13 +502,15 @@ class MultimediaService:
                 meta = json.loads(row[5]) if row[5] else {}
             except (json.JSONDecodeError, TypeError):
                 meta = {}
-            results.append({
-                "asset_id": row[0],
-                "book_id": row[1],
-                "asset_type": row[2],
-                "format": row[3],
-                "file_path": row[4],
-                "metadata": meta,
-                "created_at": row[6].isoformat() if hasattr(row[6], "isoformat") else row[6],
-            })
+            results.append(
+                {
+                    "asset_id": row[0],
+                    "book_id": row[1],
+                    "asset_type": row[2],
+                    "format": row[3],
+                    "file_path": row[4],
+                    "metadata": meta,
+                    "created_at": row[6].isoformat() if hasattr(row[6], "isoformat") else row[6],
+                }
+            )
         return results

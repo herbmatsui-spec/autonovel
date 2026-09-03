@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+from datetime import datetime
 from typing import Any
 
 from config import MODEL_PLANNING, MODEL_PLOT_EXPANSION
@@ -32,6 +33,196 @@ class WorldBibleGenerator:
         self.debate = debate
         self.marketing = marketing
         self.auditor = auditor
+
+    async def record_setting_delta(
+        self,
+        book_id: int,
+        field_path: str,
+        old_value: str | None,
+        new_value: str | None,
+        delta_type: str = "MANUAL",
+        source: str = "user",
+        patch_review_id: int | None = None,
+    ) -> int:
+        """設定変更差分を記録する
+
+        Args:
+            book_id: 書籍ID
+            field_path: 変更されたフィールドのパス (例: "world_rules.magic_system.mana_cost")
+            old_value: 変更前の値
+            new_value: 変更後の値
+            delta_type: 変更タイプ (MANUAL, AUTO_REPAIR, USER_CORRECTION)
+            source: 変更元 (user, audit_agent, bible_service)
+            patch_review_id: 関連するPatchReview ID
+
+        Returns:
+            作成されたSettingDeltaのID
+        """
+        if self.repo is None:
+            return 0
+
+        delta_id = await self.repo.misc.create_setting_delta(
+            book_id=book_id,
+            field_path=field_path,
+            old_value=old_value,
+            new_value=new_value,
+            delta_type=delta_type,
+            source=source,
+            patch_review_id=patch_review_id,
+        )
+        logger.info(
+            f"Recorded setting delta: {field_path} = {old_value} -> {new_value} (type={delta_type})"
+        )
+        return delta_id
+
+    async def create_setting_snapshot(
+        self,
+        book_id: int,
+        change_summary: str = "",
+        created_by: str | None = None,
+    ) -> int:
+        """現在の設定スナップショットを作成（バージョン管理用）"""
+        if self.repo is None:
+            return 0
+
+        # 現在のBibleを取得してシリアライズ
+        bible = await self.repo.bible.get_bible(book_id)
+        if not bible:
+            logger.warning(f"No bible found for book_id={book_id}")
+            return 0
+
+        snapshot = {
+            "bible": bible.model_dump() if hasattr(bible, "model_dump") else bible,
+            "timestamp": datetime.now().isoformat(),
+        }
+
+        # 親バージョンを取得
+        from sqlalchemy import func, select
+        from src.backend.database.models import SettingVersion
+
+        result = await self.repo.session.execute(
+            select(func.max(SettingVersion.version_number)).where(SettingVersion.book_id == book_id)
+        )
+        max_ver = result.scalar() or 0
+        base_version_id = None
+        if max_ver > 0:
+            result = await self.repo.session.execute(
+                select(SettingVersion.id).where(
+                    SettingVersion.book_id == book_id,
+                    SettingVersion.version_number == max_ver,
+                )
+            )
+            base_version_id = result.scalar()
+
+        version_id = await self.repo.misc.create_setting_version(
+            book_id=book_id,
+            snapshot_json=snapshot,
+            change_summary=change_summary,
+            created_by=created_by,
+            base_version_id=base_version_id,
+        )
+        logger.info(
+            f"Created setting version {max_ver + 1} for book_id={book_id}: {change_summary}"
+        )
+        return version_id
+
+    async def apply_manual_setting_change(
+        self,
+        book_id: int,
+        field_path: str,
+        new_value: Any,
+        user_id: str | None = None,
+        patch_review_id: int | None = None,
+    ) -> bool:
+        """ユーザーによる手動設定変更を適用し、差分とスナップショットを記録
+
+        Args:
+            book_id: 書籍ID
+            field_path: 変更するフィールドパス (ドット区切り)
+            new_value: 新しい値
+            user_id: 変更者ID
+            patch_review_id: 関連するPatchReview ID (レビュー承認経由の場合)
+
+        Returns:
+            成功したかどうか
+        """
+        # 現在のBibleを取得
+        bible = await self.repo.bible.get_bible(book_id)
+        if not bible:
+            logger.error(f"No bible found for book_id={book_id}")
+            return False
+
+        # ネストしたフィールドの現在値を取得
+        old_value = self._get_nested_value(bible, field_path)
+        if old_value == new_value:
+            logger.info(f"Value unchanged for {field_path}, skipping")
+            return True
+
+        # 値を設定
+        success = self._set_nested_value(bible, field_path, new_value)
+        if not success:
+            logger.error(f"Failed to set value for {field_path}")
+            return False
+
+        # Bibleを保存
+        await self.repo.save_full_world_bible(bible, book_id=book_id)
+
+        # 差分を記録
+        await self.record_setting_delta(
+            book_id=book_id,
+            field_path=field_path,
+            old_value=json.dumps(old_value, ensure_ascii=False) if old_value is not None else None,
+            new_value=json.dumps(new_value, ensure_ascii=False) if new_value is not None else None,
+            delta_type="USER_CORRECTION" if patch_review_id else "MANUAL",
+            source="user",
+            patch_review_id=patch_review_id,
+        )
+
+        # スナップショット作成
+        await self.create_setting_snapshot(
+            book_id=book_id,
+            change_summary=f"Manual change: {field_path}",
+            created_by=user_id,
+        )
+
+        return True
+
+    def _get_nested_value(self, obj: Any, field_path: str) -> Any:
+        """ドット区切りパスでネストした値を取得"""
+        parts = field_path.split(".")
+        current = obj
+        for part in parts:
+            if isinstance(current, dict):
+                current = current.get(part)
+            elif hasattr(current, part):
+                current = getattr(current, part)
+            else:
+                return None
+            if current is None:
+                return None
+        return current
+
+    def _set_nested_value(self, obj: Any, field_path: str, value: Any) -> bool:
+        """ドット区切りパスでネストした値を設定"""
+        parts = field_path.split(".")
+        current = obj
+        for i, part in enumerate(parts[:-1]):
+            if isinstance(current, dict):
+                if part not in current:
+                    current[part] = {}
+                current = current[part]
+            elif hasattr(current, part):
+                current = getattr(current, part)
+            else:
+                return False
+        last_part = parts[-1]
+        if isinstance(current, dict):
+            current[last_part] = value
+        elif hasattr(current, last_part):
+            setattr(current, last_part, value)
+        else:
+            return False
+        return True
 
     def _generate_fallback_synopsis(
         self, bible_core: WorldBibleCore, genre: str, keywords: str, engine_key: str
@@ -207,7 +398,7 @@ class WorldBibleGenerator:
                         await self.repo.save_plot(book_id, p.ep_num, p)
 
             async with asyncio.TaskGroup() as tg:
-                tasks = [tg.create_task(_process_batch_item([ep])) for ep in ep_list]
+                _ = [tg.create_task(_process_batch_item([ep])) for ep in ep_list]
             # Wait for all tasks to complete (TaskGroup does this automatically)
 
         return book_id, bible_obj

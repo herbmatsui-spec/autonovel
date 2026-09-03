@@ -44,7 +44,6 @@ async def get_uow():
         yield uow
 
 
-
 __all__ = [
     # Models
     "BibleDbModel",
@@ -58,6 +57,7 @@ __all__ = [
     # Core
     "DatabaseManager",
     "WorkspaceManager",
+    "engine",
     "get_db_manager",
     "init_db",
     "retry_with_logging",

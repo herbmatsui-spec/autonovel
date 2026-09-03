@@ -51,6 +51,14 @@ def test_graph_endpoint_response_shape():
 
 def test_graph_chunks_endpoint():
     """/api/graph/chunks レスポンス形状"""
+    import os
+    from sqlalchemy import inspect
+    from src.backend.database import SessionLocal
+    with open("/tmp/debug.txt", "w") as f:
+        f.write("DATABASE_URL: " + os.environ.get("DATABASE_URL", "") + "\n")
+        session = SessionLocal()
+        inspector = inspect(session.get_bind())
+        f.write("Tables: " + str(inspector.get_table_names()) + "\n")
     resp = client.get("/api/graph/chunks")
     assert resp.status_code == 200
     data = resp.json()

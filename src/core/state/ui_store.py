@@ -290,7 +290,9 @@ class UIStateStore:
 
     @staticmethod
     def increment_rerun_count() -> None:
-        UIStateStore.update_runtime("rerun_count", UIStateStore.get_runtime().rerun_count + 1, save=False)
+        UIStateStore.update_runtime(
+            "rerun_count", UIStateStore.get_runtime().rerun_count + 1, save=False
+        )
 
     @staticmethod
     def get_api_key_input() -> str:

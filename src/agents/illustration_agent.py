@@ -155,7 +155,9 @@ class IllustrationAgent(BaseAgent):
         ]
         if concept:
             parts.append(f"Concept: {concept}")
-        parts.append("Detailed, cinematic lighting, rich detail, professional book cover art, no text or letters in image")
+        parts.append(
+            "Detailed, cinematic lighting, rich detail, professional book cover art, no text or letters in image"
+        )
 
         if is_r15(request.safety_level):
             parts.append("Tasteful R15 artistic representation, intimate but not explicit")
@@ -175,7 +177,9 @@ class IllustrationAgent(BaseAgent):
         ]
         if character_desc:
             parts.append(f"Description: {character_desc}")
-        parts.append("Detailed character design, anime/manga style, clean lines, no text or letters in image")
+        parts.append(
+            "Detailed character design, anime/manga style, clean lines, no text or letters in image"
+        )
 
         if is_r15(request.safety_level):
             parts.append("Tasteful R15 artistic representation, intimate but not explicit")
@@ -193,7 +197,9 @@ class IllustrationAgent(BaseAgent):
             f"Scene illustration for episode {episode_num} of '{title}'",
             f"Genre: {genre}",
         ]
-        parts.append("Detailed background, cinematic lighting, rich detail, manga/anime style, no text or letters in image")
+        parts.append(
+            "Detailed background, cinematic lighting, rich detail, manga/anime style, no text or letters in image"
+        )
 
         if is_r15(request.safety_level):
             parts.append("Tasteful R15 artistic representation, intimate but not explicit")

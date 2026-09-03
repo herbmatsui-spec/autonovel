@@ -4,12 +4,12 @@
 
 from __future__ import annotations
 
-from typing import Any
 from pydantic import BaseModel, Field
 
 
 class SentenceLengthModel(BaseModel):
     """文長分布パラメータ"""
+
     avg: int = Field(default=40, description="平均文長（文字数）")
     std_dev: int = Field(default=12, description="標準偏差")
     min: int = Field(default=15, description="最小文長")
@@ -19,6 +19,7 @@ class SentenceLengthModel(BaseModel):
 
 class SentenceEndDistribution(BaseModel):
     """文末出現比率"""
+
     desu_masu: float = Field(default=0.10, description="です・ます調の割合")
     da_dearu: float = Field(default=0.60, description="だ・である調の割合")
     nominal: float = Field(default=0.20, description="体言止めの割合")
@@ -29,6 +30,7 @@ class SentenceEndDistribution(BaseModel):
 
 class MetaphorFrequency(BaseModel):
     """比喩表現の出現頻度と傾向"""
+
     per_1000_chars: float = Field(default=3.5, description="1000文字あたりの比喩数")
     types: dict[str, float] = Field(
         default_factory=lambda: {
@@ -55,7 +57,9 @@ class StyleProfile(BaseModel):
         description="語り口・トーンの概要",
     )
     sentence_length: SentenceLengthModel = Field(default_factory=SentenceLengthModel)
-    sentence_end_distribution: SentenceEndDistribution = Field(default_factory=SentenceEndDistribution)
+    sentence_end_distribution: SentenceEndDistribution = Field(
+        default_factory=SentenceEndDistribution
+    )
     metaphor_frequency: MetaphorFrequency = Field(default_factory=MetaphorFrequency)
     kerenmi_intensity: float = Field(
         default=0.8,
@@ -93,7 +97,7 @@ class StyleProfile(BaseModel):
             f"■ 作家性DNA（文体バイアス）: 【{self.name}】",
             f"- トーン: {self.tone_description}",
             f"- 文長リズム: 平均{self.sentence_length.avg}文字（短文でテンポを作り、長文で情緒を深める）",
-            f"- 文末比率: だ・である({int(self.sentence_end_distribution.da_dearu*100)}%), 体言止め({int(self.sentence_end_distribution.nominal*100)}%)",
+            f"- 文末比率: だ・である({int(self.sentence_end_distribution.da_dearu * 100)}%), 体言止め({int(self.sentence_end_distribution.nominal * 100)}%)",
             f"- ケレン味・演出強度: {self.kerenmi_intensity:.1f}/1.0（状況を控えめに書かず、迫力と感情のフックを強めて描写せよ）",
         ]
         if self.required_patterns:
@@ -103,5 +107,7 @@ class StyleProfile(BaseModel):
             forb_str = "、".join(self.forbidden_patterns[:3])
             lines.append(f"- 禁止表現: {forb_str}")
         if self.few_shot_sample:
-            lines.append(f"\n【お手本とする文体・リズム（Few-Shot）】:\n{self.few_shot_sample.strip()}")
+            lines.append(
+                f"\n【お手本とする文体・リズム（Few-Shot）】:\n{self.few_shot_sample.strip()}"
+            )
         return "\n".join(lines)

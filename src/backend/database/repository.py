@@ -72,7 +72,9 @@ class DataRepositoryFacade:
                         repo = getattr(temp_uow, repo_attr)
                         if hasattr(repo, name):
                             return await getattr(repo, name)(*args, **kwargs)
-                    raise AttributeError(f"DataRepositoryFacade (Auto mode) has no attribute '{name}'")
+                    raise AttributeError(
+                        f"DataRepositoryFacade (Auto mode) has no attribute '{name}'"
+                    )
 
         return wrapper
 
@@ -160,11 +162,14 @@ class BookRepository:
         """指定した ID の作品情報を取得する"""
         return self.session.get(Book, book_id)
 
-    def create_task(self, task_id: str | None = None, status: str = "pending", result: str | None = None) -> Task:
+    def create_task(
+        self, task_id: str | None = None, status: str = "pending", result: str | None = None
+    ) -> Task:
         """Create a new Task record and return it."""
         now = int(time.time())
         if not task_id:
             import uuid
+
             task_id = str(uuid.uuid4())
         task = Task(id=task_id, status=status, result=result, created_at=now, updated_at=now)
         self.session.add(task)
@@ -222,10 +227,7 @@ class BookRepository:
     def get_latest_bible(self, book_id: int) -> Bible | None:
         """指定した作品の最新の世界観設定（Bible）を取得する"""
         stmt = (
-            select(Bible)
-            .where(Bible.book_id == book_id)
-            .order_by(desc(Bible.created_at))
-            .limit(1)
+            select(Bible).where(Bible.book_id == book_id).order_by(desc(Bible.created_at)).limit(1)
         )
         result = self.session.execute(stmt)
         return result.scalar_one_or_none()
@@ -267,11 +269,7 @@ class BookRepository:
 
         # 第1話の更新または作成
         if chapter_text:
-            stmt = (
-                select(Chapter)
-                .where(Chapter.book_id == book_id)
-                .where(Chapter.ep_num == 1)
-            )
+            stmt = select(Chapter).where(Chapter.book_id == book_id).where(Chapter.ep_num == 1)
             chapter = self.session.execute(stmt).scalar_one_or_none()
             if chapter:
                 chapter.content = chapter_text
@@ -310,7 +308,6 @@ class BookRepository:
 
         self._safe_commit()
         return book
-
 
 
 # Re-export individual repositories for compatibility

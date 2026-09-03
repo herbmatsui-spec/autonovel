@@ -20,12 +20,14 @@ from sqlalchemy.orm import sessionmaker
 try:
     from src.backend.config import ROOT_DIR as BASE_DIR
     from src.backend.config import settings
+
     DATABASE_URL = settings.DATABASE_URL
 except ImportError:
     try:
         from config import BASE_DIR, DATABASE_URL
     except ImportError:
         from pathlib import Path
+
         BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
         DATABASE_URL = f"sqlite:///{BASE_DIR / 'storage' / 'autonovel.db'}"
 
@@ -123,6 +125,7 @@ class DatabaseConnectionWrapper:
     def fetchall(self):
         """全行を取得"""
         return self.dbapi_conn.fetchall()
+
     async def close(self) -> None:
         try:
             await self.dbapi_conn.rollback()
@@ -149,11 +152,13 @@ class DatabaseManager:
             "pool_pre_ping": True,
         }
         if not is_sqlite:
-            engine_kwargs.update({
-                "pool_size": pool_size,
-                "max_overflow": 20,
-                "pool_recycle": 1200,
-            })
+            engine_kwargs.update(
+                {
+                    "pool_size": pool_size,
+                    "max_overflow": 20,
+                    "pool_recycle": 1200,
+                }
+            )
 
         if db_url.startswith("sqlite:///"):
             async_url = db_url.replace("sqlite:///", "sqlite+aiosqlite:///")
@@ -168,7 +173,6 @@ class DatabaseManager:
             async_url,
             **engine_kwargs,
         )
-
 
         # Ensure is_plot_twist column exists in SQLite database
         # (Skipped: Schema updates should be handled by Alembic migrations)
@@ -351,10 +355,6 @@ def init_db(db_path: str = ""):
     BackendBase.metadata.create_all(engine_obj)
 
 
-
-
-
-
 def get_db_manager() -> DatabaseManager:
     """
     DBマネージャーのファクトリ関数。DIコンテナによってシングルトン管理される。
@@ -393,7 +393,6 @@ class _EngineProxy:
 
 SessionLocal = _SessionLocalProxy()
 engine = _EngineProxy()
-
 
 
 def set_db_manager(manager: DatabaseManager | None) -> None:

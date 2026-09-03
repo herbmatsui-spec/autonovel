@@ -1,4 +1,5 @@
 """かんたんモード用スキーマ（後方互換 re-export）."""
+
 from src.domain.entities.easy_mode import (
     CharacterParams,
     DigestRequest,

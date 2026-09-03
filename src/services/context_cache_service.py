@@ -111,7 +111,7 @@ class ContextCacheManager:
 
     def get_stats(self) -> dict[str, Any]:
         """キャッシュの統計情報を返す"""
-        now = time.time()
+        _ = time.time()
         active = sum(1 for e in self._cache_registry.values() if not e.is_expired())
         expired = len(self._cache_registry) - active
         return {

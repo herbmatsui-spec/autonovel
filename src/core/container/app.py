@@ -174,9 +174,7 @@ class AppContainer(InfraContainer):
         ),
         engine=engine,
     )
-    redis_cache: providers.Factory = providers.Factory(
-        "src.services.redis_cache.RedisCacheService"
-    )
+    redis_cache: providers.Factory = providers.Factory("src.services.redis_cache.RedisCacheService")
     prompt_cache: providers.Factory = providers.Factory(
         "src.services.redis_cache.PromptCacheService",
         redis_cache=redis_cache,
@@ -193,11 +191,13 @@ class AppContainer(InfraContainer):
     dag_pipeline: providers.Singleton = providers.Singleton(
         lambda: (
             # Builder を作成し、SPI ファクトリーを渡す
-            __import__('src.backend.workflows.dag_builder', fromlist=['DefaultAutoWorkflowBuilder']).DefaultAutoWorkflowBuilder(
+            __import__("src.backend.workflows.dag_builder", fromlist=["DefaultAutoWorkflowBuilder"])
+            .DefaultAutoWorkflowBuilder(
                 llm_factory=InfraContainer.llm_provider_factory,
                 vector_store_factory=InfraContainer.vector_store_provider_factory,
                 image_provider_factory=InfraContainer.image_provider_factory,
-            ).build()
+            )
+            .build()
         )
     )
 

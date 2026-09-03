@@ -1,4 +1,5 @@
 """AutoNovel ドメインモデル集約エクスポート."""
+
 from __future__ import annotations
 
 from src.models.audit import *
@@ -25,3 +26,14 @@ from src.models.world import *
 from src.models.writing import *
 from src.models.editor import *
 from src.backend.database.models import Bible, Book, Chapter, Character, Plot
+
+__all__ = [
+    "ChapterChunk",
+    "Vector",
+    "HAS_PGVECTOR",
+    "Bible",
+    "Book",
+    "Chapter",
+    "Character",
+    "Plot",
+]

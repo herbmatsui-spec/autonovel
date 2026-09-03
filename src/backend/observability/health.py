@@ -1,4 +1,5 @@
 """Health check payload builder and basic in-memory metrics."""
+
 from __future__ import annotations
 
 import asyncio

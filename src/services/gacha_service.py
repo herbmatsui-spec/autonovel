@@ -129,8 +129,6 @@ JSONキー:
         else:
             # このパスは __init__ の ValueError で防がれているが、
             # 防御的に残して二重安全を確保する。
-            raise RuntimeError(
-                "GachaService._db is None; this should be unreachable."
-            )
+            raise RuntimeError("GachaService._db is None; this should be unreachable.")
 
         return response

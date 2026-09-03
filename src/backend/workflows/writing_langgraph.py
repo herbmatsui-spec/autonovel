@@ -62,6 +62,11 @@ class WritingGraphState(dict[str, Any]):
     causal_reason: str
     failures: list[dict[str, Any]]
 
+    # Review workflow
+    patch_review_id: int | None
+    review_status: str | None
+    requires_user_review: bool
+
     # Status
     status: str
 
@@ -103,6 +108,7 @@ class WritingGraphManager:
         workflow.add_node("audit", self.node_audit)
         workflow.add_node("critic", self.node_critic)
         workflow.add_node("healing", self.node_healing)
+        workflow.add_node("review_wait", self.node_review_wait)
         workflow.add_node("dogfeed", self.node_dogfeed)
         workflow.add_node("finalize", self.node_finalize)
 
@@ -114,11 +120,27 @@ class WritingGraphManager:
         workflow.add_conditional_edges(
             "audit",
             self.route_after_audit,
-            {"finish": "dogfeed", "critic": "critic", "heal": "healing"},
+            {
+                "finish": "dogfeed",
+                "critic": "critic",
+                "heal": "healing",
+                "review_wait": "review_wait",
+            },
         )
 
         workflow.add_conditional_edges(
             "critic", self.route_after_critic, {"retry": "drafting", "finish": "dogfeed"}
+        )
+
+        workflow.add_conditional_edges(
+            "review_wait",
+            self.route_after_review_wait,
+            {
+                "approved": "dogfeed",
+                "rejected": "healing",
+                "revised": "drafting",
+                "timeout": "healing",
+            },
         )
 
         workflow.add_edge("healing", "dogfeed")
@@ -367,6 +389,65 @@ class WritingGraphManager:
             "rate": 0.0,
         }
 
+    async def node_review_wait(self, state: dict[str, Any]):
+        """ユーザーレビュー待機ノード - PatchReview のステータスをポーリング"""
+        logger.info(f"LangGraph: Waiting for user review for Ep.{state['ep_num']}")
+
+        patch_review_id = state.get("patch_review_id")
+        if not patch_review_id:
+            logger.warning(f"No patch_review_id for Ep.{state['ep_num']}, skipping review wait")
+            return {"review_status": "timeout"}
+
+        # タイムアウト設定 (デフォルト 24時間)
+        from config.project_context import ProjectContext
+
+        timeout_seconds = ProjectContext.get_setting("patch_review_timeout_seconds", 86400)
+        poll_interval = ProjectContext.get_setting("patch_review_poll_interval_seconds", 10)
+
+        start_time = time.time()
+        while time.time() - start_time < timeout_seconds:
+            try:
+                # PatchReview ステータスを取得
+                if self.manager.repo:
+                    review = await self.manager.repo.misc.get_patch_review(patch_review_id)
+                    if review:
+                        status = review.get("status")
+                        if status == "approved":
+                            logger.info(
+                                f"Patch review {patch_review_id} approved for Ep.{state['ep_num']}"
+                            )
+                            return {"review_status": "approved"}
+                        elif status == "rejected":
+                            logger.info(
+                                f"Patch review {patch_review_id} rejected for Ep.{state['ep_num']}"
+                            )
+                            return {"review_status": "rejected"}
+                        elif status == "needs_revision":
+                            logger.info(
+                                f"Patch review {patch_review_id} needs revision for Ep.{state['ep_num']}"
+                            )
+                            return {"review_status": "revised"}
+                        # under_review または generated の場合は継続
+            except Exception as e:
+                logger.warning(f"Error checking patch review status: {e}")
+
+            await asyncio.sleep(poll_interval)
+
+        logger.warning(f"Patch review {patch_review_id} timed out for Ep.{state['ep_num']}")
+        return {"review_status": "timeout"}
+
+    def route_after_review_wait(self, state: dict[str, Any]) -> str:
+        """レビュー待機後のルート分岐"""
+        review_status = state.get("review_status")
+        if review_status == "approved":
+            return "approved"
+        elif review_status == "rejected":
+            return "rejected"
+        elif review_status == "revised":
+            return "revised"
+        else:  # timeout
+            return "timeout"
+
     def route_after_audit(self, state: dict[str, Any]) -> str:
         """監査後のルート分岐 - 早期終了条件を積極的に適用"""
         # easy_mode は即座に終了
@@ -379,6 +460,15 @@ class WritingGraphManager:
                 f"Early exit triggered for Ep.{state.get('ep_num')} due to high quality (rate >= {QUALITY_THRESHOLD_EARLY_EXIT})"
             )
             return "finish"
+
+        # ユーザーレビューが必要な場合
+        if state.get("requires_user_review"):
+            patch_review_id = state.get("patch_review_id")
+            if patch_review_id:
+                logger.info(
+                    f"Routing to review_wait for Ep.{state.get('ep_num')} (patch_review_id={patch_review_id})"
+                )
+                return "review_wait"
 
         # 整合性・因果性双方がOKで、反復回数の上限に達していない場合
         if state.get("is_integrity_ok") and state.get("is_causal_ok"):
@@ -628,6 +718,9 @@ class WritingGraphManager:
             "causal_reason": "",
             "failures": [],
             "status": "pending",
+            "patch_review_id": None,
+            "review_status": None,
+            "requires_user_review": False,
         }
 
     async def run(
@@ -652,7 +745,7 @@ class WritingGraphManager:
             state.update(await self.node_drafting(state))
             state.update(await self.node_audit(state))
             route = self.route_after_audit(state)
-            while route in ("critic", "heal"):
+            while route in ("critic", "heal", "review_wait"):
                 if route == "critic":
                     state.update(await self.node_critic(state))
                     route = self.route_after_critic(state)
@@ -662,10 +755,25 @@ class WritingGraphManager:
                         route = self.route_after_audit(state)
                     else:
                         break
-                else:  # heal
+                elif route == "heal":
                     state.update(await self.node_healing(state))
                     state.update(await self.node_audit(state))
                     route = self.route_after_audit(state)
+                elif route == "review_wait":
+                    state.update(await self.node_review_wait(state))
+                    route = self.route_after_review_wait(state)
+                    if route == "approved":
+                        break  # dogfeed へ
+                    elif route == "rejected" or route == "timeout":
+                        # healing へ
+                        state.update(await self.node_healing(state))
+                        state.update(await self.node_audit(state))
+                        route = self.route_after_audit(state)
+                    elif route == "revised":
+                        # drafting へ戻る
+                        state.update(await self.node_drafting(state))
+                        state.update(await self.node_audit(state))
+                        route = self.route_after_audit(state)
             if not state.get("is_integrity_ok") or not state.get("is_causal_ok"):
                 state.update(await self.node_healing(state))
             state.update(await self.node_dogfeed(state))

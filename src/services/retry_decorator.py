@@ -143,7 +143,7 @@ def with_llm_retry():
                     # 成功時の後処理
                     if cooldown is not None:
                         cooldown.on_success()
-                    consecutive_5xx = getattr(self, "_consecutive_5xx", 0)
+                    _ = getattr(self, "_consecutive_5xx", 0)
                     if lock is not None:
                         with lock:
                             setattr(self, "_consecutive_5xx", 0)

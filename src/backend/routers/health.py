@@ -60,7 +60,7 @@ async def health_check():
         check_chromadb(),
         check_llm_gateway(cfg.openai_api_key),
         check_worker(),
-        return_exceptions=True
+        return_exceptions=True,
     )
 
     check_names = ["database", "redis", "chromadb", "llm_gateway", "worker"]
@@ -77,16 +77,18 @@ async def health_check():
                 status=result.status,
                 latency_ms=result.latency_ms,
                 details=result.details,
-                error=result.error
+                error=result.error,
             )
         else:
-            checks[name] = HealthCheckResult(status=HealthStatus.ERROR, error="Unexpected result type")
-            check_responses[name] = CheckResponse(status=HealthStatus.ERROR, error="Unexpected result type")
+            checks[name] = HealthCheckResult(
+                status=HealthStatus.ERROR, error="Unexpected result type"
+            )
+            check_responses[name] = CheckResponse(
+                status=HealthStatus.ERROR, error="Unexpected result type"
+            )
 
     overall = determine_overall_status(checks)
 
     return HealthResponse(
-        status=overall,
-        timestamp=datetime.now(UTC).isoformat(),
-        checks=check_responses
+        status=overall, timestamp=datetime.now(UTC).isoformat(), checks=check_responses
     )

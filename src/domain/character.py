@@ -1,4 +1,3 @@
-
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -26,9 +25,7 @@ class CharacterCreate(BaseModel):
 class Character(CharacterBase):
     """キャラクターエンティティ — 完全なデータモデル"""
 
-    current_emotion: str | None = Field(
-        default=None, max_length=100, description="現在の感情状態"
-    )
+    current_emotion: str | None = Field(default=None, max_length=100, description="現在の感情状態")
     tension_contribution: float = Field(default=0.0, ge=0.0, le=1.0, description="緊張への貢献度")
     emotional_resonance: float = Field(default=0.0, ge=0.0, le=1.0, description="感情的共鳴度")
     book_id: int = Field(default=0, ge=1, description="所属作品ID")

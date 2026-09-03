@@ -6,7 +6,7 @@ FullAutoWorkflow / EasyModePipeline から移植・統合
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from src.backend.background import StatusReporter
@@ -18,10 +18,8 @@ from src.services.preset_loader import (
     get_cheat_scale,
     get_cost_severity,
     get_growth_curve,
-    get_plot_pattern,
     get_style_key,
     get_system_assist,
-    get_tension_curve,
     load_preset_for_pipeline,
 )
 from src.services.spice_guard_adapter import create_spice_guard_adapter
@@ -58,6 +56,7 @@ def _emit_skip(
 # Step 10-11: PlanStep 拡張 (カタルシス分析・プリセット適用)
 # ============================================================================
 
+
 class PlanStep(WorkflowStep):
     """企画生成 Step (FullAutoWorkflow + EasyMode プリセット統合版)"""
 
@@ -82,8 +81,12 @@ class PlanStep(WorkflowStep):
                 cost_severity=get_cost_severity(preset),
                 target_eps=ctx.target_eps,
                 initial_plot_limit=3,
-                enable_erotic=ctx.easy_parameters.get("enable_erotic", False) if ctx.easy_parameters else False,
-                erotic_intensity=ctx.easy_parameters.get("erotic_intensity", 2) if ctx.easy_parameters else 2,
+                enable_erotic=ctx.easy_parameters.get("enable_erotic", False)
+                if ctx.easy_parameters
+                else False,
+                erotic_intensity=ctx.easy_parameters.get("erotic_intensity", 2)
+                if ctx.easy_parameters
+                else 2,
                 reporter=reporter,
             )
             ctx.book_id = book_id
@@ -110,7 +113,9 @@ class PlanStep(WorkflowStep):
                     from src.backend.engine_narrative import WavePatternAnalyzer
 
                     plots = await engine.repo.plot.get_all_plots(book_id)
-                    tension_history = [getattr(p, "tension", 50) for p in plots] if plots else [50] * 5
+                    tension_history = (
+                        [getattr(p, "tension", 50) for p in plots] if plots else [50] * 5
+                    )
 
                     wave_analyzer = WavePatternAnalyzer(
                         threshold=ProjectContext.get_setting("catharsis_threshold", 65),
@@ -145,7 +150,9 @@ class PlanStep(WorkflowStep):
             if (
                 hasattr(engine.planner, "plan_auditor")
                 and engine.planner.plan_auditor
-                and not await engine.planner.plan_auditor.audit_bible_completeness(bible, reporter=reporter)
+                and not await engine.planner.plan_auditor.audit_bible_completeness(
+                    bible, reporter=reporter
+                )
             ):
                 return False
 
@@ -163,6 +170,7 @@ class PlanStep(WorkflowStep):
 # ============================================================================
 # Step 12: WriteStep 拡張 (共通リトライロジック使用)
 # ============================================================================
+
 
 class WriteStep(WorkflowStep):
     """本文執筆 Step (共通リトライロジック使用版)"""
@@ -214,6 +222,7 @@ class WriteStep(WorkflowStep):
 # Step 13: CatharsisAnalysisStep (独立 Step 化)
 # ============================================================================
 
+
 class CatharsisAnalysisStep(WorkflowStep):
     """カタルシスパターン分析 Step (FullAuto 由来・独立化)"""
 
@@ -262,6 +271,7 @@ class CatharsisAnalysisStep(WorkflowStep):
 # Step 14: AuditRewriteStep (核心: EasyMode の監査リライト循環)
 # ============================================================================
 
+
 class AuditRewriteStep(WorkflowStep):
     """
     監査→リライト循環 Step (EasyModePipeline._generate_episode 由来)
@@ -289,7 +299,9 @@ class AuditRewriteStep(WorkflowStep):
             if reporter.state.should_stop():
                 return False
 
-            reporter.update_progress(2, 4, f"STEP 3/4: 第{ep_num}話 監査・リライト中... ({ep_num}/{ctx.target_eps})")
+            reporter.update_progress(
+                2, 4, f"STEP 3/4: 第{ep_num}話 監査・リライト中... ({ep_num}/{ctx.target_eps})"
+            )
 
             try:
                 # 1. エピソード本文取得
@@ -336,14 +348,18 @@ class AuditRewriteStep(WorkflowStep):
                     if not improvements:
                         break
 
-                    rewrite_prompt = spice_guard.build_rewrite_prompt(final_content, improvements, spice_elements)
+                    rewrite_prompt = spice_guard.build_rewrite_prompt(
+                        final_content, improvements, spice_elements
+                    )
 
                     try:
                         rewritten = await engine.llm.generate(rewrite_prompt, {})
                         if rewritten and rewritten.strip():
                             final_content = spice_guard.clean_markers(rewritten)
                             # 再監査
-                            audit_result = await audit_adapter.audit_episode(final_content, audit_context)
+                            audit_result = await audit_adapter.audit_episode(
+                                final_content, audit_context
+                            )
                             rewrite_count += 1
                         else:
                             break
@@ -357,25 +373,29 @@ class AuditRewriteStep(WorkflowStep):
 
                 # 6. 結果記録
                 total_score += audit_result["score"]
-                episode_details.append({
-                    "episode_num": ep_num,
-                    "audit_score": audit_result["score"],
-                    "audit_passed": audit_result["score"] >= ctx.target_audit_score,
-                    "rewrite_count": rewrite_count,
-                    "needs_human_review": audit_result.get("needs_human_review", False),
-                    "spice_count": len(spice_elements),
-                })
+                episode_details.append(
+                    {
+                        "episode_num": ep_num,
+                        "audit_score": audit_result["score"],
+                        "audit_passed": audit_result["score"] >= ctx.target_audit_score,
+                        "rewrite_count": rewrite_count,
+                        "needs_human_review": audit_result.get("needs_human_review", False),
+                        "spice_count": len(spice_elements),
+                    }
+                )
 
             except Exception as e:
                 logger.error(f"AuditRewrite failed for ep {ep_num}: {e}")
-                episode_details.append({
-                    "episode_num": ep_num,
-                    "audit_score": 0.0,
-                    "audit_passed": False,
-                    "rewrite_count": 0,
-                    "needs_human_review": True,
-                    "error": str(e),
-                })
+                episode_details.append(
+                    {
+                        "episode_num": ep_num,
+                        "audit_score": 0.0,
+                        "audit_passed": False,
+                        "rewrite_count": 0,
+                        "needs_human_review": True,
+                        "error": str(e),
+                    }
+                )
 
         # 平均スコア計算・保存
         if episode_details:
@@ -396,6 +416,7 @@ class AuditRewriteStep(WorkflowStep):
 # ============================================================================
 # Step 15: PackageStep 拡張
 # ============================================================================
+
 
 class PackageStep(WorkflowStep):
     """納品パッケージ準備 Step (結果集約拡張版)"""
@@ -445,6 +466,7 @@ class PackageStep(WorkflowStep):
 # Step 16: IllustrationStep (FullAuto 由来)
 # ============================================================================
 
+
 class IllustrationStep(WorkflowStep):
     """挿絵生成 Step (FullAutoWorkflow 由来)"""
 
@@ -455,7 +477,9 @@ class IllustrationStep(WorkflowStep):
             _emit_skip(reporter, ctx, "illustration", "enable_illustration=False")
             return True
         if not ctx.illustration_settings or not ctx.illustration_settings.get("enableIllustration"):
-            _emit_skip(reporter, ctx, "illustration", "illustration_settings.enableIllustration is not set")
+            _emit_skip(
+                reporter, ctx, "illustration", "illustration_settings.enableIllustration is not set"
+            )
             return True
         if ctx.book_id is None:
             _emit_skip(reporter, ctx, "illustration", "book_id is None")
@@ -494,13 +518,16 @@ class IllustrationStep(WorkflowStep):
 
             return True
         except Exception as e:
-            reporter.report(f"⚠️ 挿絵生成中にエラーが発生しましたが、作品は完成しています: {e}", "warning")
+            reporter.report(
+                f"⚠️ 挿絵生成中にエラーが発生しましたが、作品は完成しています: {e}", "warning"
+            )
             return True  # 挿絵失敗でも本編は継続
 
 
 # ============================================================================
 # Step 17: MarketingStep (EasyMode _finalize_series 由来)
 # ============================================================================
+
 
 class MarketingStep(WorkflowStep):
     """マーケティング情報生成 Step (タイトル・あらすじ・キャッチコピー)
@@ -569,11 +596,13 @@ class MarketingStep(WorkflowStep):
             }
 
             # easy_parameters にも反映 (フロントエンド表示用)
-            ctx.easy_parameters.update({
-                "title": ctx.title,
-                "catchphrase": ctx.marketing_pack["catchphrase"],
-                "tags": tags,
-            })
+            ctx.easy_parameters.update(
+                {
+                    "title": ctx.title,
+                    "catchphrase": ctx.marketing_pack["catchphrase"],
+                    "tags": tags,
+                }
+            )
 
             reporter.report(f"📢 マーケティング生成完了: タイトル『{ctx.title}』", "info")
             return True

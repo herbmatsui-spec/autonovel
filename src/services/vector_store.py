@@ -35,8 +35,7 @@ try:
     HAS_PGVECTOR = True
 except Exception as e:
     logger.warning(
-        f"[VECTOR STORE] Failed to import pgvector: {e}. "
-        "pgvector backend will be disabled."
+        f"[VECTOR STORE] Failed to import pgvector: {e}. pgvector backend will be disabled."
     )
     HAS_PGVECTOR = False
 
@@ -425,7 +424,7 @@ class ChromaVectorStore(BaseVectorStore):
 
     @staticmethod
     def _chunks_of(items: list, size: int) -> list[list]:
-        return [items[i:i + size] for i in range(0, len(items), size)]
+        return [items[i : i + size] for i in range(0, len(items), size)]
 
     async def add_documents(
         self,
@@ -553,17 +552,13 @@ class ChromaVectorStore(BaseVectorStore):
             count = collection.count()
             return {"count": count, "name": collection_name}
         except Exception as e:
-            logger.debug(
-                f"[VECTOR STORE] collection.count() failed, falling back to peek: {e}"
-            )
+            logger.debug(f"[VECTOR STORE] collection.count() failed, falling back to peek: {e}")
             try:
                 peeked = collection.peek(limit=1)
                 exists = bool(peeked and peeked.get("ids"))
                 return {"count": -1 if not exists else 1, "name": collection_name}
             except Exception as e2:
-                logger.error(
-                    f"[VECTOR STORE] Failed to get stats for '{collection_name}': {e2}"
-                )
+                logger.error(f"[VECTOR STORE] Failed to get stats for '{collection_name}': {e2}")
                 return {"count": 0, "error": str(e2)}
 
     def list_collections(self) -> list[str]:
@@ -664,9 +659,7 @@ class ChromaVectorStore(BaseVectorStore):
         """
         # alpha clamp with warning
         if alpha < 0.0 or alpha > 1.0:
-            logger.warning(
-                f"[VECTOR STORE] hybrid_search alpha={alpha} out of [0,1], clamping."
-            )
+            logger.warning(f"[VECTOR STORE] hybrid_search alpha={alpha} out of [0,1], clamping.")
             alpha = max(0.0, min(1.0, alpha))
         # ベクトル検索（より多く取得して後でフィルタリング）
         vector_results = await self.search_with_score(
@@ -878,10 +871,12 @@ class PgVectorStore(BaseVectorStore):
 
                 # メタデータ用GINインデックス
                 metadata_index = f"idx_{table_name}_metadata_gin"
-                await session.execute(text(f"""
+                await session.execute(
+                    text(f"""
                     CREATE INDEX IF NOT EXISTS {metadata_index}
                     ON {table_name} USING gin (metadata);
-                """))
+                """)
+                )
 
                 await session.commit()
                 self._initialized_tables.add(collection_name)
@@ -918,12 +913,16 @@ class PgVectorStore(BaseVectorStore):
                     batch_ids = ids[start:end]
                     batch_docs = documents[start:end]
                     batch_embs = embeddings[start:end]
-                    batch_metas = metadatas[start:end] if metadatas else [{} for _ in range(end - start)]
+                    batch_metas = (
+                        metadatas[start:end] if metadatas else [{} for _ in range(end - start)]
+                    )
 
                     # UPSERT (ON CONFLICT DO UPDATE)
                     values = []
                     params = {}
-                    for i, (doc_id, doc, emb, meta) in enumerate(zip(batch_ids, batch_docs, batch_embs, batch_metas)):
+                    for i, (doc_id, doc, emb, meta) in enumerate(
+                        zip(batch_ids, batch_docs, batch_embs, batch_metas)
+                    ):
                         param_prefix = f"doc{start + i}"
                         values.append(
                             f"(:{param_prefix}_id, :{param_prefix}_content, :{param_prefix}_emb, :{param_prefix}_meta)"
@@ -991,13 +990,15 @@ class PgVectorStore(BaseVectorStore):
                 for row in rows:
                     distance = float(row.distance) if row.distance is not None else 1.0
                     similarity = 1.0 - distance
-                    output.append({
-                        "id": row.id,
-                        "content": row.content,
-                        "metadata": row.metadata if isinstance(row.metadata, dict) else {},
-                        "distance": distance,
-                        "similarity": similarity,
-                    })
+                    output.append(
+                        {
+                            "id": row.id,
+                            "content": row.content,
+                            "metadata": row.metadata if isinstance(row.metadata, dict) else {},
+                            "distance": distance,
+                            "similarity": similarity,
+                        }
+                    )
                 return output
             except Exception as e:
                 logger.error(f"[PGVECTOR STORE] Search failed for '{table_name}': {e}")
@@ -1127,12 +1128,14 @@ class PgVectorStore(BaseVectorStore):
                 rows = result.fetchall()
 
                 for row in rows:
-                    text_results.append({
-                        "id": row.id,
-                        "content": row.content,
-                        "metadata": row.metadata if isinstance(row.metadata, dict) else {},
-                        "rank": float(row.rank) if row.rank else 0.0,
-                    })
+                    text_results.append(
+                        {
+                            "id": row.id,
+                            "content": row.content,
+                            "metadata": row.metadata if isinstance(row.metadata, dict) else {},
+                            "rank": float(row.rank) if row.rank else 0.0,
+                        }
+                    )
             except Exception as e:
                 logger.debug(f"[PGVECTOR STORE] Full-text search failed: {e}")
 
@@ -1176,14 +1179,18 @@ class PgVectorStore(BaseVectorStore):
                 if not metadata and t_result:
                     metadata = t_result.get("metadata", {})
 
-                combined.append({
-                    "id": doc_id,
-                    "content": v_result.get("content") if v_result else (t_result.get("content", "") if t_result else ""),
-                    "metadata": metadata,
-                    "vector_similarity": v_result.get("similarity", 0.0) if v_result else 0.0,
-                    "text_rank": t_result.get("rank", 0.0) if t_result else 0.0,
-                    "rrf_score": rrf_score,
-                })
+                combined.append(
+                    {
+                        "id": doc_id,
+                        "content": v_result.get("content")
+                        if v_result
+                        else (t_result.get("content", "") if t_result else ""),
+                        "metadata": metadata,
+                        "vector_similarity": v_result.get("similarity", 0.0) if v_result else 0.0,
+                        "text_rank": t_result.get("rank", 0.0) if t_result else 0.0,
+                        "rrf_score": rrf_score,
+                    }
+                )
 
         combined.sort(key=lambda x: x["rrf_score"], reverse=True)
         return combined[:top_k]
@@ -1267,9 +1274,7 @@ class InMemoryFallbackStore(BaseVectorStore):
         if not bucket:
             return
         target = set(ids)
-        self._data[collection_name] = [
-            (i, d, e, m) for (i, d, e, m) in bucket if i not in target
-        ]
+        self._data[collection_name] = [(i, d, e, m) for (i, d, e, m) in bucket if i not in target]
 
     async def clear_collection(self, collection_name: str) -> None:
         self._data.pop(collection_name, None)
@@ -1289,9 +1294,7 @@ class InMemoryFallbackStore(BaseVectorStore):
         BM25 is not supported in the in-memory store; we just return vector results
         with ``combined_score = vector_similarity`` for API compatibility.
         """
-        results = await self.search(
-            collection_name, query_embedding, top_k=top_k, where=where
-        )
+        results = await self.search(collection_name, query_embedding, top_k=top_k, where=where)
         for r in results:
             sim = r.get("similarity", 0.0)
             r["vector_similarity"] = sim
@@ -1337,7 +1340,9 @@ def get_default_store(
         else:
             database_url = settings.DATABASE_URL
             if database_url.startswith("sqlite"):
-                logger.warning("[VECTOR STORE] pgvector requires PostgreSQL, falling back to chroma/memory")
+                logger.warning(
+                    "[VECTOR STORE] pgvector requires PostgreSQL, falling back to chroma/memory"
+                )
             else:
                 return PgVectorStore(
                     database_url=database_url,

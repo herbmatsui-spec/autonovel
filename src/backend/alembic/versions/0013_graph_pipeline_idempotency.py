@@ -2,6 +2,7 @@
 
 PostgreSQL only: creates table for tracking processed chapters.
 """
+
 from __future__ import annotations
 
 from alembic import op
@@ -40,5 +41,7 @@ def downgrade() -> None:
     if not _is_postgres():
         return
 
-    op.drop_index("ix_graph_pipeline_idempotency_chapter_id", table_name="graph_pipeline_idempotency")
+    op.drop_index(
+        "ix_graph_pipeline_idempotency_chapter_id", table_name="graph_pipeline_idempotency"
+    )
     op.drop_table("graph_pipeline_idempotency")

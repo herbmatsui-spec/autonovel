@@ -1,4 +1,5 @@
 """Google Gemini API アダプタ。"""
+
 from __future__ import annotations
 
 import logging
@@ -28,6 +29,7 @@ class GeminiAdapter(BaseLLMAdapter):
         """モデルを遅延初期化する。"""
         if self._model is None:
             import google.generativeai as genai
+
             if self.api_key:
                 genai.configure(api_key=self.api_key)
             self._model = genai.GenerativeModel(
@@ -46,6 +48,7 @@ class GeminiAdapter(BaseLLMAdapter):
     ) -> str:
         """テキストを一括生成する。"""
         import google.generativeai as genai
+
         full_prompt = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
         model = self._get_model()
 
@@ -75,6 +78,7 @@ class GeminiAdapter(BaseLLMAdapter):
     ) -> AsyncIterator[str]:
         """テキストをストリーミング生成する。"""
         import google.generativeai as genai
+
         full_prompt = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
         model = self._get_model()
 

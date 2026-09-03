@@ -3,7 +3,6 @@ src/services/erotic_afterglow_evaluator.py
 afterglow フェーズ専用の品質評価サービス
 """
 
-
 from config.erotic_thresholds import AFTERGLOW_MIN_CHARS, AFTERGLOW_MIN_PARAGRAPHS
 
 

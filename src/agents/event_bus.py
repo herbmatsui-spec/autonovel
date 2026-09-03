@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Any, Awaitable, Callable, Optional
 import asyncio
 import json
+import redis.asyncio as redis
 
 
 @dataclass
@@ -48,6 +49,7 @@ class EventBus:
             return
         try:
             import redis.asyncio as redis
+
             self._redis = redis.from_url(self._redis_url, decode_responses=True)
             # コンシューマータスクは必要に応じて別途実装
         except ImportError:

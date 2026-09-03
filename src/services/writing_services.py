@@ -388,7 +388,7 @@ class GenerationLoopManager:
                 elif isinstance(item, CharacterStatusChange):
                     normalized_changes.append(item)
 
-            changes_obj = EpisodeStatusChanges(character_status_changes=normalized_changes)
+            _ = EpisodeStatusChanges(character_status_changes=normalized_changes)
             prev_ws = ctx.prev_world_state or {}
             StateValidator.validate_transitions(prev_ws, normalized_changes)
         except StateContradictionError as e:
@@ -435,7 +435,7 @@ class GenerationLoopManager:
         from src.agents.audit import LogicalAuditor
         from src.models.audit import AuditIssue, LogicalAuditIssueList
 
-        cfg = get_config()
+        _ = get_config()
         if not ProjectContext.get_setting("actor_critic_enabled", True):
             return False
 

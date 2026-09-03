@@ -8,6 +8,7 @@ Enhanced with:
 - Async support for embedding generation
 - Structured logging with metrics
 """
+
 from __future__ import annotations
 
 import time
@@ -34,6 +35,7 @@ logger = get_logger("graph_pipeline")
 @dataclass
 class PipelineStats:
     """パイプライン実行統計."""
+
     chapters_processed: int = 0
     chunks_created: int = 0
     entities_created: int = 0
@@ -60,6 +62,7 @@ class PipelineStats:
 @dataclass
 class ChapterProcessResult:
     """単一チャプター処理結果."""
+
     chapter_id: int
     success: bool
     chunks_created: int = 0
@@ -116,7 +119,8 @@ class GraphPipelineService:
             if existing:
                 logger.info(
                     "Skipping chapter_id=%s (idempotency_key=%s already processed)",
-                    chapter_id, idempotency_key
+                    chapter_id,
+                    idempotency_key,
                 )
                 return ChapterProcessResult(
                     chapter_id=chapter_id,
@@ -140,8 +144,11 @@ class GraphPipelineService:
             logger.info(
                 "GraphRAG pipeline completed for chapter_id=%s in %.2fms: "
                 "chunks=%d, entities=%d, relationships=%d",
-                chapter_id, elapsed_ms, chunks_count,
-                graph_stats.get("entities", 0), graph_stats.get("relationships", 0)
+                chapter_id,
+                elapsed_ms,
+                chunks_count,
+                graph_stats.get("entities", 0),
+                graph_stats.get("relationships", 0),
             )
 
             return ChapterProcessResult(
@@ -155,8 +162,7 @@ class GraphPipelineService:
 
         except Exception as e:
             logger.error(
-                "GraphRAG pipeline failed for chapter_id=%s: %s",
-                chapter_id, e, exc_info=True
+                "GraphRAG pipeline failed for chapter_id=%s: %s", chapter_id, e, exc_info=True
             )
             return ChapterProcessResult(
                 chapter_id=chapter_id,
@@ -244,13 +250,19 @@ class GraphPipelineService:
                 # ベクトルストア用データ準備
                 if self._vector_store:
                     chunk_id = f"ch_{chapter_id}_{idx}"
-                    chunks_to_store.append((
-                        chunk_id, para, emb,
-                        {"chapter_id": chapter_id, "chunk_index": idx, "length": len(para)}
-                    ))
+                    chunks_to_store.append(
+                        (
+                            chunk_id,
+                            para,
+                            emb,
+                            {"chapter_id": chapter_id, "chunk_index": idx, "length": len(para)},
+                        )
+                    )
 
             except Exception as e:
-                logger.warning("Failed to prepare chunk %d for chapter_id=%s: %s", idx, chapter_id, e)
+                logger.warning(
+                    "Failed to prepare chunk %d for chapter_id=%s: %s", idx, chapter_id, e
+                )
 
         # ベクトルストアへの非同期保存は別トランザクションで行う（ここでは同期的に実行）
         if self._vector_store and chunks_to_store:
@@ -317,7 +329,9 @@ class GraphPipelineService:
         except Exception as e:
             logger.debug("existing_nodes fetch failed: %s", e)
             existing_nodes = []
-        existing_names = [n.get("name", "") for n in existing_nodes if isinstance(n, dict) and n.get("name")]
+        existing_names = [
+            n.get("name", "") for n in existing_nodes if isinstance(n, dict) and n.get("name")
+        ]
         extraction = extraction_service.resolve_entities(raw_extraction, existing_names)
 
         # バッチ用データ準備
@@ -330,7 +344,9 @@ class GraphPipelineService:
 
         logger.debug(
             "Graph updated for chapter_id=%s: entities=%d, relationships=%d",
-            chapter_id, entities_count, relationships_count
+            chapter_id,
+            entities_count,
+            relationships_count,
         )
 
         return {"entities": entities_count, "relationships": relationships_count}
@@ -347,11 +363,13 @@ class GraphPipelineService:
             if entity.description:
                 props["description"] = entity.description
             props["last_chapter_id"] = chapter_id
-            nodes.append({
-                "label": entity.type,
-                "name": entity.name,
-                "properties": props,
-            })
+            nodes.append(
+                {
+                    "label": entity.type,
+                    "name": entity.name,
+                    "properties": props,
+                }
+            )
         return nodes
 
     def _prepare_edges(
@@ -367,14 +385,16 @@ class GraphPipelineService:
             target_entity = next((e for e in extraction.entities if e.name == rel.target), None)
             source_label = source_entity.type if source_entity else "Entity"
             target_label = target_entity.type if target_entity else "Entity"
-            edges.append({
-                "source_label": source_label,
-                "source_name": rel.source,
-                "target_label": target_label,
-                "target_name": rel.target,
-                "relation_type": rel.type,
-                "properties": props,
-            })
+            edges.append(
+                {
+                    "source_label": source_label,
+                    "source_name": rel.source,
+                    "target_label": target_label,
+                    "target_name": rel.target,
+                    "relation_type": rel.type,
+                    "properties": props,
+                }
+            )
         return edges
 
     def _upsert_nodes_with_fallback(
@@ -443,7 +463,7 @@ class GraphPipelineService:
         try:
             result = session.execute(
                 text("SELECT 1 FROM graph_pipeline_idempotency WHERE idempotency_key = :key"),
-                {"key": idempotency_key}
+                {"key": idempotency_key},
             )
             return result.fetchone() is not None
         except Exception:
@@ -459,7 +479,7 @@ class GraphPipelineService:
                     VALUES (:key, :chapter_id, NOW())
                     ON CONFLICT (idempotency_key) DO NOTHING
                 """),
-                {"key": idempotency_key, "chapter_id": chapter_id}
+                {"key": idempotency_key, "chapter_id": chapter_id},
             )
         except Exception as e:
             logger.debug("Idempotency recording failed (table may not exist): %s", e)
@@ -468,22 +488,26 @@ class GraphPipelineService:
         """パイプラインの状態を取得（監視用）."""
         try:
             # 最近の処理統計
-            result = session.execute(text("""
+            result = session.execute(
+                text("""
                 SELECT chapter_id, created_at
                 FROM graph_pipeline_idempotency
                 ORDER BY created_at DESC
                 LIMIT 10
-            """))
+            """)
+            )
             recent = [{"chapter_id": r[0], "created_at": str(r[1])} for r in result]
 
             # チャンク数統計
-            chunk_result = session.execute(text("""
+            chunk_result = session.execute(
+                text("""
                 SELECT chapter_id, COUNT(*) as count
                 FROM chapter_chunks
                 GROUP BY chapter_id
                 ORDER BY chapter_id DESC
                 LIMIT 10
-            """))
+            """)
+            )
             chunk_stats = [{"chapter_id": r[0], "chunks": r[1]} for r in chunk_result]
 
             return {

@@ -45,4 +45,3 @@ WORKFLOW_REGISTRY = {
     "refine_erotic_workflow": RefineEroticWorkflow,
     "reverse_plot_generation_workflow": ReversePlotGenerationWorkflow,
 }
-

@@ -2,6 +2,7 @@
 
 Pydantic BaseSettings により環境変数のバリデーションと一元管理を行う。
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -35,15 +36,11 @@ class Settings(BaseSettings):
     HOST: str = "0.0.0.0"
 
     # データベース設定
-    DATABASE_URL: str = Field(
-        default_factory=lambda: f"sqlite:///{STORAGE_DIR / 'autonovel.db'}"
-    )
+    DATABASE_URL: str = Field(default_factory=lambda: f"sqlite:///{STORAGE_DIR / 'autonovel.db'}")
 
     # Huey / Redis 設定
     HUEY_BACKEND: Literal["sqlite", "redis"] = "sqlite"
-    HUEY_SQLITE_PATH: str = Field(
-        default_factory=lambda: str(STORAGE_DIR / "huey.db")
-    )
+    HUEY_SQLITE_PATH: str = Field(default_factory=lambda: str(STORAGE_DIR / "huey.db"))
     REDIS_URL: str = "redis://localhost:6379/0"
 
     # CORS設定
@@ -59,16 +56,30 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
     LOG_FORMAT: Literal["json", "console", "text"] = "console"
 
-    # LLM設定 (OpenAI / Gemini 互換)
-    # 実装済み: openai, gemini, mock
-    # Ollama/vLLM/Claude は OpenAI 互換モードで利用可能 (OPENAI_BASE_URL 設定)
-    LLM_PROVIDER: Literal["openai", "gemini", "mock"] = "mock"
+    # LLM設定 (5プロバイダ対応)
+    # 実装済み: openai, gemini, mock, claude, ollama, vllm
+    LLM_PROVIDER: Literal["openai", "gemini", "mock", "claude", "ollama", "vllm"] = "mock"
+
+    # OpenAI 互換設定
     OPENAI_API_KEY: str | None = None
-    OPENAI_BASE_URL: str | None = None  # LocalLLM, Ollama, vLLM 等の差し替え用
+    OPENAI_BASE_URL: str | None = None
     OPENAI_MODEL: str = "gpt-4o-mini"
 
+    # Google Gemini 設定
     GEMINI_API_KEY: str | None = None
     GEMINI_MODEL: str = "gemini-1.5-flash"
+
+    # Anthropic Claude 設定
+    ANTHROPIC_API_KEY: str | None = None
+    ANTHROPIC_MODEL: str = "claude-3-5-sonnet-20241022"
+
+    # Ollama 設定 (デフォルト: localhost:11434)
+    OLLAMA_BASE_URL: str = "http://localhost:11434"
+    OLLAMA_MODEL: str = "llama3.1"
+
+    # vLLM 設定 (デフォルト: localhost:8000)
+    VLLM_BASE_URL: str = "http://localhost:8000"
+    VLLM_MODEL: str = "meta-llama/Llama-3.1-8B-Instruct"
 
     # Embedding / GraphRAG (pgvector + Apache AGE) 設定
     EMBEDDING_MODEL: str = "text-embedding-3-small"
@@ -90,18 +101,12 @@ class Settings(BaseSettings):
     # マルチメディア展開 (Phase 7: Asset Pack / Media Mix / IF Routes / eBook)
     ENABLE_MULTIMEDIA: bool = False
     ENABLE_AUDIO_SYNTH: bool = False
-    MULTIMEDIA_OUTPUT_DIR: str = Field(
-        default_factory=lambda: str(STORAGE_DIR / "multimedia")
-    )
+    MULTIMEDIA_OUTPUT_DIR: str = Field(default_factory=lambda: str(STORAGE_DIR / "multimedia"))
 
     @property
     def cors_origin_list(self) -> list[str]:
         """CORS origins をリスト形式で取得する。"""
-        return [
-            origin.strip()
-            for origin in self.CORS_ORIGINS.split(",")
-            if origin.strip()
-        ]
+        return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
 
 
 # グローバルな設定インスタンス

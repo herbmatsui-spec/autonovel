@@ -1,4 +1,5 @@
 """ナレッジグラフ可視化・クエリ・GraphRAG操作用 API ルーター."""
+
 from __future__ import annotations
 
 import logging
@@ -24,8 +25,10 @@ logger = logging.getLogger("graph_router")
 # Request/Response Models
 # ============================================================
 
+
 class CypherQueryRequest(BaseModel):
     """任意のCypherクエリ実行リクエスト."""
+
     query: str = Field(..., description="実行するCypherクエリ")
     graph_name: str | None = Field(None, description="対象グラフ名")
     parameters: dict[str, Any] | None = Field(None, description="クエリパラメータ")
@@ -34,6 +37,7 @@ class CypherQueryRequest(BaseModel):
 
 class CypherQueryResponse(BaseModel):
     """Cypherクエリ実行レスポンス."""
+
     records: list[dict[str, Any]]
     summary: dict[str, Any]
     execution_time_ms: float
@@ -41,6 +45,7 @@ class CypherQueryResponse(BaseModel):
 
 class NodeUpsertRequest(BaseModel):
     """ノードUPSERTリクエスト."""
+
     label: str = Field(..., description="ノードラベル")
     name: str = Field(..., description="ノード名（ユニークキー）")
     properties: dict[str, Any] | None = Field(None, description="追加プロパティ")
@@ -49,6 +54,7 @@ class NodeUpsertRequest(BaseModel):
 
 class EdgeUpsertRequest(BaseModel):
     """エッジUPSERTリクエスト."""
+
     source_label: str = Field(..., description="始点ノードラベル")
     source_name: str = Field(..., description="始点ノード名")
     target_label: str = Field(..., description="終点ノードラベル")
@@ -60,6 +66,7 @@ class EdgeUpsertRequest(BaseModel):
 
 class BatchUpsertRequest(BaseModel):
     """バッチUPSERTリクエスト."""
+
     nodes: list[NodeUpsertRequest] = Field(default_factory=list)
     edges: list[EdgeUpsertRequest] = Field(default_factory=list)
     graph_name: str | None = Field(None, description="対象グラフ名")
@@ -67,6 +74,7 @@ class BatchUpsertRequest(BaseModel):
 
 class BatchUpsertResponse(BaseModel):
     """バッチUPSERTレスポンス."""
+
     nodes_created: int
     edges_created: int
     errors: list[str] = Field(default_factory=list)
@@ -74,6 +82,7 @@ class BatchUpsertResponse(BaseModel):
 
 class GraphSearchRequest(BaseModel):
     """グラフ検索リクエスト."""
+
     node_name: str = Field(..., description="起点ノード名")
     max_depth: int = Field(2, ge=1, le=5, description="最大ホップ数")
     relationship_types: list[str] | None = Field(None, description="フィルタする関係タイプ")
@@ -84,6 +93,7 @@ class GraphSearchRequest(BaseModel):
 
 class GraphStatsResponse(BaseModel):
     """グラフ統計レスポンス."""
+
     node_count: int
     edge_count: int
     labels: list[str]
@@ -92,6 +102,7 @@ class GraphStatsResponse(BaseModel):
 
 class PipelineProcessRequest(BaseModel):
     """パイプライン処理リクエスト."""
+
     chapter_id: int = Field(..., description="チャプターID")
     chapter_text: str = Field(..., description="チャプターテキスト")
     idempotency_key: str | None = Field(None, description="冪等性キー")
@@ -99,12 +110,14 @@ class PipelineProcessRequest(BaseModel):
 
 class PipelineBatchRequest(BaseModel):
     """パイプラインバッチ処理リクエスト."""
+
     chapters: list[PipelineProcessRequest] = Field(..., min_items=1)
     continue_on_error: bool = Field(True, description="エラー時に継続")
 
 
 class HybridSearchRequest(BaseModel):
     """ハイブリッド検索リクエスト."""
+
     query: str = Field(..., description="検索クエリ")
     core_entities: list[str] | None = Field(None, description="グラフ探索の起点エンティティ")
     top_k: int = Field(10, ge=1, le=50, description="返却件数")
@@ -115,6 +128,7 @@ class HybridSearchRequest(BaseModel):
 
 class RagContextRequest(BaseModel):
     """RAGコンテキスト生成リクエスト."""
+
     current_prompt: str = Field(..., description="現在のプロンプト/クエリ")
     character_name: str = Field(..., description="主人公名")
     additional_entities: list[str] | None = Field(None, description="追加エンティティ")
@@ -123,6 +137,7 @@ class RagContextRequest(BaseModel):
 # ============================================================
 # Graph Visualization & Query Endpoints
 # ============================================================
+
 
 @router.get("")
 def get_graph_data(
@@ -137,13 +152,31 @@ def get_graph_data(
         return {
             "graph_name": gname,
             "nodes": [
-                {"id": "主人公", "label": "Character", "properties": {"description": "物語の主人公", "is_alive": True}},
-                {"id": "王都ルミナス", "label": "Location", "properties": {"description": "物語の舞台となる大都市"}},
+                {
+                    "id": "主人公",
+                    "label": "Character",
+                    "properties": {"description": "物語の主人公", "is_alive": True},
+                },
+                {
+                    "id": "王都ルミナス",
+                    "label": "Location",
+                    "properties": {"description": "物語の舞台となる大都市"},
+                },
                 {"id": "聖剣", "label": "Item", "properties": {"description": "伝説の武器"}},
             ],
             "edges": [
-                {"source": "主人公", "target": "王都ルミナス", "type": "LOCATED_IN", "properties": {"detail": "滞在中"}},
-                {"source": "主人公", "target": "聖剣", "type": "POSSESSES", "properties": {"detail": "所持"}},
+                {
+                    "source": "主人公",
+                    "target": "王都ルミナス",
+                    "type": "LOCATED_IN",
+                    "properties": {"detail": "滞在中"},
+                },
+                {
+                    "source": "主人公",
+                    "target": "聖剣",
+                    "type": "POSSESSES",
+                    "properties": {"detail": "所持"},
+                },
             ],
         }
 
@@ -160,11 +193,13 @@ def get_graph_data(
         nodes = []
         for row in node_rows:
             node_name = str(row[2]).strip('"') if row[2] else str(row[0])
-            nodes.append({
-                "id": node_name,
-                "label": row[1],
-                "properties": row[3],
-            })
+            nodes.append(
+                {
+                    "id": node_name,
+                    "label": row[1],
+                    "properties": row[3],
+                }
+            )
 
         # 全エッジの取得
         edge_query = "MATCH (a)-[r]->(b) RETURN a.name, type(r), b.name, r"
@@ -177,12 +212,14 @@ def get_graph_data(
 
         edges = []
         for row in edge_rows:
-            edges.append({
-                "source": str(row[0]).strip('"'),
-                "type": str(row[1]).strip('"'),
-                "target": str(row[2]).strip('"'),
-                "properties": row[3],
-            })
+            edges.append(
+                {
+                    "source": str(row[0]).strip('"'),
+                    "type": str(row[1]).strip('"'),
+                    "target": str(row[2]).strip('"'),
+                    "properties": row[3],
+                }
+            )
 
         return {
             "graph_name": gname,
@@ -227,6 +264,7 @@ def list_chapter_chunks(
 # Cypher Query Endpoint
 # ============================================================
 
+
 @router.post("/cypher", response_model=CypherQueryResponse)
 def execute_cypher(
     request: CypherQueryRequest,
@@ -257,6 +295,7 @@ def execute_cypher(
 # ============================================================
 # Graph Mutation Endpoints
 # ============================================================
+
 
 @router.post("/nodes", status_code=201)
 def upsert_node(
@@ -323,8 +362,7 @@ def upsert_batch(
     # ノードのバッチUPSERT
     if request.nodes:
         node_dicts = [
-            {"label": n.label, "name": n.name, "properties": n.properties}
-            for n in request.nodes
+            {"label": n.label, "name": n.name, "properties": n.properties} for n in request.nodes
         ]
         nodes_created = age_client.upsert_nodes_batch(
             session=session,
@@ -393,6 +431,7 @@ def delete_node(
 # ============================================================
 # Graph Search & Traversal Endpoints
 # ============================================================
+
 
 @router.post("/search/neighbors")
 def search_neighbors(
@@ -489,6 +528,7 @@ def get_labels(
 # GraphRAG Pipeline Endpoints
 # ============================================================
 
+
 @router.post("/pipeline/process", response_model=dict[str, Any])
 def process_chapter(
     request: PipelineProcessRequest,
@@ -552,6 +592,7 @@ def get_pipeline_status(
 # Hybrid Search & RAG Context Endpoints
 # ============================================================
 
+
 @router.post("/rag/hybrid-search")
 def hybrid_search(
     request: HybridSearchRequest,
@@ -559,6 +600,7 @@ def hybrid_search(
 ) -> dict[str, Any]:
     """ハイブリッド検索 (Vector + Graph + Fulltext) を実行する."""
     import time
+
     start = time.perf_counter()
 
     try:

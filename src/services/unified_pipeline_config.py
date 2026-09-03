@@ -88,7 +88,9 @@ class UnifiedPipelineConfig:
             concept=kwargs.get("concept", ""),
             tone_vibe=kwargs.get("tone_vibe", 0.6),
             user_prompt=kwargs.get("user_prompt", ""),
-            enable_illustration=bool(kwargs.get("illustration_settings", {}).get("enableIllustration", False)),
+            enable_illustration=bool(
+                kwargs.get("illustration_settings", {}).get("enableIllustration", False)
+            ),
             illustration_settings=kwargs.get("illustration_settings", {}),
             enable_spice_guard=kwargs.get("enable_spice_guard", False),
             is_easy_mode=False,
@@ -108,7 +110,9 @@ class UnifiedPipelineConfig:
         }
         return cls(
             genre=genre,
-            keywords=", ".join(kwargs.get("keywords", [])) if isinstance(kwargs.get("keywords"), list) else kwargs.get("keywords", ""),
+            keywords=", ".join(kwargs.get("keywords", []))
+            if isinstance(kwargs.get("keywords"), list)
+            else kwargs.get("keywords", ""),
             archetype_key=kwargs.get("protagonist_type", "チート主人公"),
             target_eps=kwargs.get("target_episodes", 10),
             word_count=kwargs.get("words_per_episode", 2000),

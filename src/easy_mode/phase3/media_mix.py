@@ -14,7 +14,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
-from src.easy_mode.pipeline import EpisodeResult, SeriesResult
+from src.easy_mode import EpisodeResult, SeriesResult
 
 logger = logging.getLogger(__name__)
 
@@ -240,7 +240,7 @@ class MangaScriptGenerator:
 
     def _classify_scene(self, text: str) -> str:
         """シーンタイプ分類"""
-        text_lower = text.lower()
+        _ = text.lower()
 
         # 会話重視
         dialogue_ratio = len(re.findall(r'「[^」]*」|『[^』]*』|"[^"]*"', text)) / max(

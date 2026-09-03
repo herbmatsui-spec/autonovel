@@ -6,7 +6,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Any
 
-from .base import KernelBase
+from .base import KernelBase, KernelState
 
 
 @dataclass
@@ -170,9 +170,7 @@ class HegemonyGenerator(KernelBase):
     ) -> str:
         """章を生成"""
         # プロンプト作成
-        prompt = self._build_chapter_prompt(
-            chapter_number, plot_point, characters, style_preferences
-        )
+        _ = self._build_chapter_prompt(chapter_number, plot_point, characters, style_preferences)
         # 実際の生成（ダミー実装）
         content = f"""
 第{chapter_number}章: {plot_point.description}

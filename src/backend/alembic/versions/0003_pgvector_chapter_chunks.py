@@ -2,6 +2,7 @@
 
 PostgreSQL でのみ実 DDL を実行し、SQLite では no-op。
 """
+
 from __future__ import annotations
 
 from alembic import op

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 from src.core.spi.llm.interface import ILLMProvider
 
@@ -13,7 +13,9 @@ logger = logging.getLogger(__name__)
 class GeminiLLMProvider(ILLMProvider):
     """Gemini LLM adapter implementation."""
 
-    def __init__(self, api_key: str = "", model_name: str = "gemini-2.5-flash", **kwargs: Any) -> None:
+    def __init__(
+        self, api_key: str = "", model_name: str = "gemini-2.5-flash", **kwargs: Any
+    ) -> None:
         self.api_key = api_key
         self.model_name = model_name
         self.extra_config = kwargs

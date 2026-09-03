@@ -92,6 +92,13 @@ class GlobalConfigModel(BaseModel):
     actor_critic_severity_threshold: str = "Major"
     specialized_amplifier_enabled: bool = True
 
+    # ===================== 因果律監査設定 =====================
+    causality_audit_enabled: bool = True
+    causality_threshold: float = Field(default=0.7, ge=0.0, le=1.0)
+    foreshadowing_max_gap_chapters: int = Field(default=5, ge=1, le=20)
+    causality_patch_auto_submit: bool = True
+    causality_llm_model: str = "gemma-4-31b-it"
+
     # ===================== NSFW/セーフティ設定 =====================
     enable_nsfw: bool = False
     safety_filter_level: str = "BLOCK_ONLY_HIGH"  # BLOCK_NONE, BLOCK_ONLY_HIGH, etc.
@@ -163,13 +170,19 @@ class GlobalConfigModel(BaseModel):
          "KAKU_ENABLE_HEAVY_AUDIT": "enable_heavy_audit",
          "KAKU_DRAFT_POLISH_ENABLED": "draft_polish_enabled",
          "KAKU_POLISHING_MIN_CONTENT_RATIO": "polishing_min_content_ratio",
-         "KAKU_ACTOR_CRITIC_ENABLED": "actor_critic_enabled",
-         "KAKU_ACTOR_CRITIC_MAX_ITERATIONS": "actor_critic_max_iterations",
-         "KAKU_ACTOR_CRITIC_SEVERITY_THRESHOLD": "actor_critic_severity_threshold",
-         "KAKU_SPECIALIZED_AMPLIFIER_ENABLED": "specialized_amplifier_enabled",
-         "KAKU_ENABLE_NSFW": "enable_nsfw",
-         "KAKU_SAFETY_FILTER_LEVEL": "safety_filter_level",
-         "KAKU_MAX_CONCURRENT_API_CALLS": "max_concurrent_api_calls",
+"KAKU_ACTOR_CRITIC_ENABLED": "actor_critic_enabled",
+        "KAKU_ACTOR_CRITIC_MAX_ITERATIONS": "actor_critic_max_iterations",
+        "KAKU_ACTOR_CRITIC_SEVERITY_THRESHOLD": "actor_critic_severity_threshold",
+        "KAKU_SPECIALIZED_AMPLIFIER_ENABLED": "specialized_amplifier_enabled",
+        "KAKU_ENABLE_NSFW": "enable_nsfw",
+        "KAKU_SAFETY_FILTER_LEVEL": "safety_filter_level",
+        "KAKU_MAX_CONCURRENT_API_CALLS": "max_concurrent_api_calls",
+        # 因果律監査設定
+        "KAKU_CAUSALITY_AUDIT_ENABLED": "causality_audit_enabled",
+        "KAKU_CAUSALITY_THRESHOLD": "causality_threshold",
+        "KAKU_FORSHADOWING_MAX_GAP_CHAPTERS": "foreshadowing_max_gap_chapters",
+        "KAKU_CAUSALITY_PATCH_AUTO_SUBMIT": "causality_patch_auto_submit",
+        "KAKU_CAUSALITY_LLM_MODEL": "causality_llm_model",
     }
 
     # ===================== ファクトリメソッド =====================
@@ -235,6 +248,10 @@ class GlobalConfigModel(BaseModel):
             errors.append(
                 f"prefetch_episode_count は 0 以上である必要があります: {self.prefetch_episode_count}"
             )
+        if not (0.0 <= self.causality_threshold <= 1.0):
+            errors.append(f"causality_threshold は 0.0-1.0 の範囲です: {self.causality_threshold}")
+        if self.foreshadowing_max_gap_chapters < 1:
+            errors.append(f"foreshadowing_max_gap_chapters は 1 以上である必要があります: {self.foreshadowing_max_gap_chapters}")
         return errors
 
     @classmethod

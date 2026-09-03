@@ -1,4 +1,5 @@
 """専属AI編集者（Ask Bible & 矛盾診断）用プロンプトテンプレート定義モジュール。"""
+
 from __future__ import annotations
 
 EDITORIAL_SYSTEM_INSTRUCTION = """あなたは作品専属のプロフェッショナル文芸編集者・設定考証アドバイザーです。

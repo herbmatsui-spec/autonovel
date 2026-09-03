@@ -55,9 +55,7 @@ class ProductionReport(BaseModel):
     genre: str = Field(description="ジャンル")
     target_word_count: int = Field(default=3000, description="目標文字数/話")
     token_usage: TokenUsageReport | None = Field(default=None, description="トークン使用量")
-    quality_metrics: QualityMetricsReport | None = Field(
-        default=None, description="品質メトリクス"
-    )
+    quality_metrics: QualityMetricsReport | None = Field(default=None, description="品質メトリクス")
     episode_summaries: list[EpisodeSummary] = Field(
         default_factory=list, description="エピソード一覧"
     )

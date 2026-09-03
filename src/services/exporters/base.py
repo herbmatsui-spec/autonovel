@@ -39,7 +39,7 @@ def process_image_placeholders(text: str, platform: str) -> str:
 
     def replace_image(match):
         alt_text = match.group(1)
-        url = match.group(2)
+        _ = match.group(2)
 
         if platform == "narou":
             # なろうでは画像はサポートされていないため、代替テキストを表示

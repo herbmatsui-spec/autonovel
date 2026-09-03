@@ -7,6 +7,7 @@
 外部依存 (Prometheus 等) を持たず、FastAPI lifespan / ヘルスチェック
 エンドポイントから参照できるプロセスローカルのメトリクスを提供する。
 """
+
 from __future__ import annotations
 
 import logging

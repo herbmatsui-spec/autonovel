@@ -3,7 +3,6 @@ kernels/interaction_formatter.py - インタラクションフォーマッタ
 """
 
 
-
 class InteractionFormatter:
     """
     インタラクション出力のフォーマット

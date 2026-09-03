@@ -1,10 +1,13 @@
 """小説本文のチャンク分割ユーティリティ."""
+
 from __future__ import annotations
 
 import re
 
 
-def split_into_paragraphs(text: str, max_chunk_chars: int = 500, overlap_chars: int = 50) -> list[str]:
+def split_into_paragraphs(
+    text: str, max_chunk_chars: int = 500, overlap_chars: int = 50
+) -> list[str]:
     """小説本文を自然な改行・段落区切りを保ちつつチャンクに分割する.
 
     Args:

@@ -4,6 +4,7 @@
 GraphRAG 専属AI編集者（Ask Bible・矛盾診断）、
 Next Beats 3バリエーション分岐生成エンドポイントを提供。
 """
+
 from __future__ import annotations
 
 import logging

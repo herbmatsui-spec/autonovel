@@ -6,6 +6,7 @@ DB 上の ``Task`` レコードへ結果を永続化する。
 
 また、マルチエージェントオーケストレーション用の ``generate_chapter_orchestrated_task`` も提供する。
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -100,7 +101,9 @@ async def _generate_orchestrated(payload: dict[str, Any]) -> dict[str, Any]:
             AgentName.CONTEXT_BUILDER: ContextBuilderAgent(repo=repo, llm=llm_adapter).run,
             AgentName.WRITING: WritingAgent(repo=repo, llm=llm_adapter).run,
             AgentName.AUDIT: AuditAgent(repo=repo, llm=llm_adapter).run,
-            AgentName.ILLUSTRATION: IllustrationAgent(image_service=image_service, repo=repo, llm=llm_adapter).run,
+            AgentName.ILLUSTRATION: IllustrationAgent(
+                image_service=image_service, repo=repo, llm=llm_adapter
+            ).run,
             AgentName.MARKETING: MarketingAgent(repo=repo, llm=llm_adapter).run,
         }
 
@@ -160,10 +163,16 @@ def _update_task_in_db(
                     res_dict = json.loads(result_json)
                     output_text = res_dict.get("output", "")
                     char_params = payload.get("character", {})
-                    genre = char_params.get("genre", "ファンタジー (R15)") if isinstance(char_params, dict) else "ファンタジー (R15)"
+                    genre = (
+                        char_params.get("genre", "ファンタジー (R15)")
+                        if isinstance(char_params, dict)
+                        else "ファンタジー (R15)"
+                    )
                     repo.save_or_update_book_with_chapter(
                         book_id=1,
-                        title=f"{char_params.get('name', '主人公')}の冒険譚" if isinstance(char_params, dict) and char_params.get("name") else "R15ファンタジー作品",
+                        title=f"{char_params.get('name', '主人公')}の冒険譚"
+                        if isinstance(char_params, dict) and char_params.get("name")
+                        else "R15ファンタジー作品",
                         genre=genre,
                         chapter_text=output_text,
                         character_params=char_params if isinstance(char_params, dict) else None,

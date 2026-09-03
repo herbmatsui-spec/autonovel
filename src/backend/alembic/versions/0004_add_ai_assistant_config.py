@@ -31,7 +31,9 @@ def upgrade() -> None:
         sa.Column("user_id", sa.Integer(), nullable=False),
         sa.Column("easy_mode_ai_enabled", sa.Boolean(), nullable=False, server_default="0"),
         sa.Column("ai_features", sa.JSON(), nullable=False, server_default="{}"),
-        sa.Column("updated_at", sa.DateTime(), server_default=sa.func.now(), onupdate=sa.func.now()),
+        sa.Column(
+            "updated_at", sa.DateTime(), server_default=sa.func.now(), onupdate=sa.func.now()
+        ),
         sa.PrimaryKeyConstraint("user_id"),
     )
 

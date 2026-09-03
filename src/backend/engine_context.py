@@ -110,10 +110,15 @@ class ContextManager:
         return "\n".join(lines) if lines else "キャラクター情報なし"
 
     async def build_past_context(
-        self, book_id: int, end_ep: int, active_char_names: list[str] | None = None
+        self,
+        book_id: int,
+        end_ep: int,
+        active_char_names: list[str] | None = None,
+        branch_id: int | None = None,
     ) -> str:
         book = await self.repo.get_book(book_id)
-        branch_id = book.current_branch_id if book and book.current_branch_id else 1
+        if branch_id is None:
+            branch_id = book.current_branch_id if book and book.current_branch_id else 1
         all_past = await self.repo.get_chapters_before(branch_id, end_ep)
         recent = all_past[:3]
         cumulative_summary = ""
@@ -192,10 +197,12 @@ class ContextManager:
         ep_num: int,
         plots: PlotDbModel | list[PlotDbModel],
         all_chars: list[CharacterDbModel],
+        branch_id: int | None = None,
     ) -> tuple[str, str]:
         """プロット生成時に最適な文体・過去文脈を構築する"""
         book = await self.repo.get_book(book_id)
-        branch_id = book.current_branch_id if book and book.current_branch_id else 1
+        if branch_id is None:
+            branch_id = book.current_branch_id if book and book.current_branch_id else 1
         all_past = await self.repo.get_chapters_before(branch_id, ep_num)
         char_states = {}
         if all_past:
@@ -238,11 +245,17 @@ class ContextManager:
         return char_ctx, prev_ctx
 
     async def get_optimal_context_split(
-        self, book_id: int, ep_num: int, plot: PlotDbModel, chars: list[CharacterRegistry]
+        self,
+        book_id: int,
+        ep_num: int,
+        plot: PlotDbModel,
+        chars: list[CharacterRegistry],
+        branch_id: int | None = None,
     ) -> tuple[str, str, str]:
         """不変設定と動的状態に分けてコンテキストを構築（提案3: 視点/シーンベースのフィルタリング適用）"""
         book = await self.repo.get_book(book_id)
-        branch_id = book.current_branch_id if book and book.current_branch_id else 1
+        if branch_id is None:
+            branch_id = book.current_branch_id if book and book.current_branch_id else 1
         all_past = await self.repo.get_chapters_before(branch_id, ep_num)
         char_states = {}
         if all_past:

@@ -1,0 +1,59 @@
+# Publisher Configuration
+# 出版社連携設定ファイル
+
+narou:
+  enabled: true
+  description: "小説家になろう (Selenium自動化)"
+  rate_limit:
+    per_minute: 10
+    per_hour: 100
+  selenium:
+    headless: true
+    timeout: 30
+    window_size: "1920,1080"
+
+kakuyomu:
+  enabled: true
+  description: "カクヨム (非公式REST API)"
+  api_base: "https://api.kakuyomu.jp/v1"
+  rate_limit:
+    per_minute: 30
+    per_hour: 500
+  timeout: 30
+
+kobo:
+  enabled: false
+  description: "楽天Kobo Writing Life (公式OAuth2 API)"
+  api_base: "https://api.kobowritinglife.com/v1"
+  auth_url: "https://auth.kobowritinglife.com/oauth/token"
+  rate_limit:
+    per_minute: 60
+    per_hour: 1000
+  timeout: 30
+
+kindle:
+  enabled: false
+  description: "Amazon KDP (公式OAuth2 API)"
+  api_base: "https://sellingpartnerapi-fe.amazon.com"
+  auth_url: "https://api.amazon.com/auth/o2/token"
+  scope: "kdp:publish kdp:catalog"
+  marketplace_id: "A1VC38T7YXB528"  # 日本
+  rate_limit:
+    per_minute: 30
+    per_hour: 500
+  timeout: 30
+
+# 共通設定
+common:
+  retry:
+    max_attempts: 3
+    base_delay: 2.0
+    max_delay: 60.0
+    exponential_base: 2.0
+    jitter: 0.1
+  credential_store:
+    use_keyring: true
+    use_env: true
+    use_encrypted_file: true
+    encrypted_file_path: "~/.autonovel/credentials.enc"
+    key_file_path: "~/.autonovel/credential.key"

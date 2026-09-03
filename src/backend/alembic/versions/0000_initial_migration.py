@@ -1,12 +1,11 @@
 """initial migration
 
 Revision ID: 0000_initial_migration
-Revises: 
+Revises:
 """
+
 from __future__ import annotations
 
-from alembic import op
-import sqlalchemy as sa
 
 revision = "0000_initial_migration"
 down_revision = None

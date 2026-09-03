@@ -132,7 +132,6 @@ class MarketingAgent:
             if book_data.get("bible_settings"):
                 bible_settings = book_data["bible_settings"]
 
-
         # デフォルトフォールバックデータ（かんたんモード等の単体実行時）
         if not chapters:
             chapters = DEFAULT_FALLBACK["chapters"]
