@@ -100,18 +100,79 @@ def _parse_agtype(value: Any) -> Any:
     """AGE agtype 値をPythonネイティブ型にパースする."""
     if value is None:
         return None
-    if isinstance(value, (str, int, float, bool, list, dict)):
+    if isinstance(value, (int, float, bool, list, dict)):
         return value
+    if isinstance(value, str):
+        # Handle agtype format: strip ::vertex or ::edge suffix
+        s = value.strip()
+        if s.endswith("::vertex"):
+            s = s[:-8].strip()  # Remove ::vertex (8 chars)
+        elif s.endswith("::edge"):
+            s = s[:-6].strip()  # Remove ::edge (6 chars)
+        try:
+            return json.loads(s)
+        except (json.JSONDecodeError, TypeError):
+            return value
     try:
         return json.loads(str(value))
     except (json.JSONDecodeError, TypeError):
         return str(value)
 
 
+def _interpolate_cypher_params(cypher_query: str, parameters: dict[str, Any] | None) -> str:
+    """Cypherクエリのパラメータを文字列補間で埋め込む（AGE 1.8.0はパラメータ未対応のため）.
+    
+    安全性: パラメータはアプリケーション内部からの信頼できる値のみ。
+    文字列値はエスケープしてシングルクォートで囲む。
+    """
+    if not parameters:
+        return cypher_query
+    
+    result = cypher_query
+    for key, value in parameters.items():
+        placeholder = f"${key}"
+        if isinstance(value, str):
+            # Escape single quotes and backslashes
+            escaped = value.replace("\\", "\\\\").replace("'", "''")
+            replacement = f"'{escaped}'"
+        elif isinstance(value, (int, float, bool)):
+            replacement = str(value).lower() if isinstance(value, bool) else str(value)
+        elif value is None:
+            replacement = "null"
+        elif isinstance(value, (dict, list)):
+            import json
+            replacement = json.dumps(value, ensure_ascii=False)
+        else:
+            replacement = str(value)
+        result = result.replace(placeholder, replacement)
+    return result
+
+
 def _ensure_age_session(session: Session) -> None:
     """セッションにAGE拡張をロードしsearch_pathを設定する."""
     session.execute(text("LOAD 'age';"))
     session.execute(text('SET search_path = ag_catalog, "$user", public;'))
+
+
+def _dict_to_cypher_map(d: dict) -> str:
+    """Python辞書をCypherマップリテラルに変換."""
+    parts = []
+    for k, v in d.items():
+        if isinstance(v, str):
+            escaped = v.replace("\\", "\\\\").replace("'", "''")
+            parts.append(f"{k}: '{escaped}'")
+        elif isinstance(v, bool):
+            parts.append(f"{k}: {str(v).lower()}")
+        elif v is None:
+            parts.append(f"{k}: null")
+        elif isinstance(v, (int, float)):
+            parts.append(f"{k}: {v}")
+        elif isinstance(v, (dict, list)):
+            import json
+            parts.append(f"{k}: {json.dumps(v, ensure_ascii=False)}")
+        else:
+            parts.append(f"{k}: '{str(v)}'")
+    return "{" + ", ".join(parts) + "}"
 
 
 class AgeClient:
@@ -196,20 +257,19 @@ class AgeClient:
         gname = graph_name or self.default_graph_name
         _ensure_age_session(session)
 
-        if parameters:
-            param_placeholders = ", ".join(f"${k} => :{k}" for k in parameters.keys())
-            sql = f"SELECT * FROM cypher('{gname}', $$ {cypher_query} $$, {param_placeholders}) as {column_definition};"
-        else:
-            sql = f"SELECT * FROM cypher('{gname}', $$ {cypher_query} $$) as {column_definition};"
+        # AGE 1.8.0 does not support parameterized queries, interpolate parameters
+        interpolated_query = _interpolate_cypher_params(cypher_query, parameters)
+        sql = f"SELECT * FROM cypher('{gname}', $$ {interpolated_query} $$) as {column_definition};"
 
         start_time = time.perf_counter()
         try:
-            result = session.execute(text(sql), parameters or {})
+            result = session.execute(text(sql))
             records = []
             for row in result:
                 parsed_row = {}
-                for idx, col in enumerate(row.keys()):
-                    parsed_row[col] = _parse_agtype(row[idx])
+                # Use _mapping for SQLAlchemy 2.0 compatibility
+                for col in row._mapping.keys():
+                    parsed_row[col] = _parse_agtype(row._mapping[col])
                 records.append(parsed_row)
 
             execution_time_ms = (time.perf_counter() - start_time) * 1000
@@ -245,8 +305,8 @@ class AgeClient:
         batch = []
         for row in result:
             parsed_row = {}
-            for idx, col in enumerate(row.keys()):
-                parsed_row[col] = _parse_agtype(row[idx])
+            for col in row._mapping.keys():
+                parsed_row[col] = _parse_agtype(row._mapping[col])
             batch.append(parsed_row)
             if len(batch) >= batch_size:
                 yield batch
@@ -263,30 +323,29 @@ class AgeClient:
         properties: dict[str, Any] | None = None,
         graph_name: str | None = None,
     ) -> bool:
-        """ノードを作成または更新 (MERGE) する.
-
-        パラメータ化クエリを使用してSQLインジェクションを防止。
-        """
+        """ノードを作成または更新 (MERGE) する."""
         gname = graph_name or self.default_graph_name
         _ensure_age_session(session)
 
         props = properties or {}
         props["name"] = name
 
+        safe_label = re.sub(r'[^a-zA-Z0-9_]', '', label)
+        if not safe_label:
+            raise ValueError(f"Invalid label: {label}")
+
+        safe_name = name.replace("'", "''")
+        props_map = _dict_to_cypher_map(props)
+
         cypher = (
-            "MERGE (n:$label {name: $name}) "
-            "SET n += $props "
+            f"MERGE (n:{safe_label} {{name: '{safe_name}'}}) "
+            f"SET n += {props_map} "
             "RETURN n"
         )
-        parameters = {
-            "label": label,
-            "name": name,
-            "props": json.dumps(props, ensure_ascii=False),
-        }
 
         try:
-            sql = f"SELECT * FROM cypher('{gname}', $$ {cypher} $$, $label => :label, $name => :name, $props => :props) as (n agtype);"
-            session.execute(text(sql), parameters)
+            sql = f"SELECT * FROM cypher('{gname}', $$ {cypher} $$) as (n agtype);"
+            session.execute(text(sql))
             return True
         except Exception as e:
             logger.warning("Failed to upsert node (label=%s, name=%s): %s", label, name, e)
@@ -324,20 +383,23 @@ class AgeClient:
             props = properties.copy()
             props["name"] = name
 
+            safe_label = re.sub(r'[^a-zA-Z0-9_]', '', label)
+            if not safe_label:
+                logger.warning("Skipping node with invalid label: %s", node)
+                continue
+
+            safe_name = name.replace("'", "''")
+            props_map = _dict_to_cypher_map(props)
+
             cypher = (
-                "MERGE (n:$label {name: $name}) "
-                "SET n += $props "
+                f"MERGE (n:{safe_label} {{name: '{safe_name}'}}) "
+                f"SET n += {props_map} "
                 "RETURN n"
             )
-            parameters = {
-                "label": label,
-                "name": name,
-                "props": json.dumps(props, ensure_ascii=False),
-            }
 
             try:
-                sql = f"SELECT * FROM cypher('{gname}', $$ {cypher} $$, $label => :label, $name => :name, $props => :props) as (n agtype);"
-                session.execute(text(sql), parameters)
+                sql = f"SELECT * FROM cypher('{gname}', $$ {cypher} $$) as (n agtype);"
+                session.execute(text(sql))
                 success_count += 1
             except Exception as e:
                 logger.warning("Failed to upsert node in batch (label=%s, name=%s): %s", label, name, e)
@@ -362,33 +424,27 @@ class AgeClient:
         _ensure_age_session(session)
 
         rel_type = re.sub(r"[^A-Za-z0-9_]", "_", relation_type).upper()
-        props = properties or {}
+        safe_source_label = re.sub(r'[^a-zA-Z0-9_]', '', source_label)
+        safe_target_label = re.sub(r'[^a-zA-Z0-9_]', '', target_label)
+        if not safe_source_label or not safe_target_label:
+            raise ValueError(f"Invalid label: source={source_label}, target={target_label}")
 
+        props = properties or {}
+        props_map = _dict_to_cypher_map(props)
+
+        escaped_source_name = source_name.replace("'", "''")
+        escaped_target_name = target_name.replace("'", "''")
         cypher = (
-            "MATCH (a:$source_label {name: $source_name}), (b:$target_label {name: $target_name}) "
-            "MERGE (a)-[r:$rel_type]->(b) "
-            "SET r += $props "
+            f"MATCH (a:{safe_source_label} {{name: '{escaped_source_name}'}}), "
+            f"(b:{safe_target_label} {{name: '{escaped_target_name}'}}) "
+            f"MERGE (a)-[r:{rel_type}]->(b) "
+            f"SET r += {props_map} "
             "RETURN r"
         )
-        parameters = {
-            "source_label": source_label,
-            "source_name": source_name,
-            "target_label": target_label,
-            "target_name": target_name,
-            "rel_type": rel_type,
-            "props": json.dumps(props, ensure_ascii=False),
-        }
 
         try:
-            sql = f"""SELECT * FROM cypher('{gname}', $$ {cypher} $$,
-                $source_label => :source_label,
-                $source_name => :source_name,
-                $target_label => :target_label,
-                $target_name => :target_name,
-                $rel_type => :rel_type,
-                $props => :props
-            ) as (r agtype);"""
-            session.execute(text(sql), parameters)
+            sql = f"SELECT * FROM cypher('{gname}', $$ {cypher} $$) as (r agtype);"
+            session.execute(text(sql))
             return True
         except Exception as e:
             logger.warning(
@@ -422,32 +478,28 @@ class AgeClient:
                 continue
 
             rel_type = re.sub(r"[^A-Za-z0-9_]", "_", relation_type).upper()
+            safe_source_label = re.sub(r'[^a-zA-Z0-9_]', '', source_label)
+            safe_target_label = re.sub(r'[^a-zA-Z0-9_]', '', target_label)
+            if not safe_source_label or not safe_target_label:
+                logger.warning("Skipping edge with invalid label: %s", edge)
+                continue
 
+            props = properties or {}
+            props_map = _dict_to_cypher_map(props)
+
+            escaped_source_name = source_name.replace("'", "''")
+            escaped_target_name = target_name.replace("'", "''")
             cypher = (
-                "MATCH (a:$source_label {name: $source_name}), (b:$target_label {name: $target_name}) "
-                "MERGE (a)-[r:$rel_type]->(b) "
-                "SET r += $props "
+                f"MATCH (a:{safe_source_label} {{name: '{escaped_source_name}'}}), "
+                f"(b:{safe_target_label} {{name: '{escaped_target_name}'}}) "
+                f"MERGE (a)-[r:{rel_type}]->(b) "
+                f"SET r += {props_map} "
                 "RETURN r"
             )
-            parameters = {
-                "source_label": source_label,
-                "source_name": source_name,
-                "target_label": target_label,
-                "target_name": target_name,
-                "rel_type": rel_type,
-                "props": json.dumps(properties, ensure_ascii=False),
-            }
 
             try:
-                sql = f"""SELECT * FROM cypher('{gname}', $$ {cypher} $$,
-                    $source_label => :source_label,
-                    $source_name => :source_name,
-                    $target_label => :target_label,
-                    $target_name => :target_name,
-                    $rel_type => :rel_type,
-                    $props => :props
-                ) as (r agtype);"""
-                session.execute(text(sql), parameters)
+                sql = f"SELECT * FROM cypher('{gname}', $$ {cypher} $$) as (r agtype);"
+                session.execute(text(sql))
                 success_count += 1
             except Exception as e:
                 logger.warning(
@@ -543,14 +595,15 @@ class AgeClient:
             rel_list = "|".join(rt.upper() for rt in relationship_types)
             rel_filter = f":{rel_list}"
 
+        escaped_node_name = node_name.replace("'", "''")
         cypher = (
-            f"MATCH (a {{name: $node_name}})-[r{rel_filter}*{depth_str}]{arrow}(b) "
+            f"MATCH (a {{name: '{escaped_node_name}'}})-[r{rel_filter}*{depth_str}]{arrow}(b) "
             f"RETURN DISTINCT b.name, labels(b), properties(b), type(last(r)) LIMIT {int(limit)}"
         )
 
         try:
-            sql = f"SELECT * FROM cypher('{gname}', $$ {cypher} $$, $node_name => :node_name) as (name agtype, labels agtype, props agtype, rel_type agtype);"
-            result = session.execute(text(sql), {"node_name": node_name})
+            sql = f"SELECT * FROM cypher('{gname}', $$ {cypher} $$) as (name agtype, labels agtype, props agtype, rel_type agtype);"
+            result = session.execute(text(sql))
             neighbors = []
             for row in result:
                 neighbors.append({
@@ -576,15 +629,18 @@ class AgeClient:
         gname = graph_name or self.default_graph_name
         _ensure_age_session(session)
 
+        src = source_name.replace("'", "''")
+        tgt = target_name.replace("'", "''")
+
         cypher = (
-            "MATCH (a {name: $source}), (b {name: $target}), "
+            f"MATCH (a {{name: '{src}'}}), (b {{name: '{tgt}'}}), "
             f"p = shortestPath((a)-[*1..{max_depth}]-(b)) "
             "RETURN p"
         )
 
         try:
-            sql = f"SELECT * FROM cypher('{gname}', $$ {cypher} $$, $source => :source, $target => :target) as (path agtype);"
-            result = session.execute(text(sql), {"source": source_name, "target": target_name})
+            sql = f"SELECT * FROM cypher('{gname}', $$ {cypher} $$) as (path agtype);"
+            result = session.execute(text(sql))
             row = result.fetchone()
             if row and row[0]:
                 path = _parse_agtype(row[0])
@@ -607,14 +663,20 @@ class AgeClient:
         gname = graph_name or self.default_graph_name
         _ensure_age_session(session)
 
+        safe_label = re.sub(r'[^a-zA-Z0-9_]', '', label)
+        if not safe_label:
+            raise ValueError(f"Invalid label: {label}")
+
+        safe_name = name.replace("'", "''")
+
         if detach:
-            cypher = "MATCH (n:$label {name: $name}) DETACH DELETE n"
+            cypher = f"MATCH (n:{safe_label} {{name: '{safe_name}'}}) DETACH DELETE n"
         else:
-            cypher = "MATCH (n:$label {name: $name}) DELETE n"
+            cypher = f"MATCH (n:{safe_label} {{name: '{safe_name}'}}) DELETE n"
 
         try:
-            sql = f"SELECT * FROM cypher('{gname}', $$ {cypher} $$, $label => :label, $name => :name) as (result agtype);"
-            session.execute(text(sql), {"label": label, "name": name})
+            sql = f"SELECT * FROM cypher('{gname}', $$ {cypher} $$) as (result agtype);"
+            session.execute(text(sql))
             return True
         except Exception as e:
             logger.warning("Failed to delete node (label=%s, name=%s): %s", label, name, e)
@@ -636,27 +698,23 @@ class AgeClient:
         _ensure_age_session(session)
 
         rel_type = re.sub(r"[^A-Za-z0-9_]", "_", relation_type).upper()
+        safe_source_label = re.sub(r'[^a-zA-Z0-9_]', '', source_label)
+        safe_target_label = re.sub(r'[^a-zA-Z0-9_]', '', target_label)
+        if not safe_source_label or not safe_target_label:
+            raise ValueError(f"Invalid label: source={source_label}, target={target_label}")
+
+        safe_source_name = source_name.replace("'", "''")
+        safe_target_name = target_name.replace("'", "''")
 
         cypher = (
-            "MATCH (a:$source_label {name: $source_name})-[r:$rel_type]->(b:$target_label {name: $target_name}) "
+            f"MATCH (a:{safe_source_label} {{name: '{safe_source_name}'}})-[r:{rel_type}]->"
+            f"(b:{safe_target_label} {{name: '{safe_target_name}'}}) "
             "DELETE r"
         )
 
         try:
-            sql = f"""SELECT * FROM cypher('{gname}', $$ {cypher} $$,
-                $source_label => :source_label,
-                $source_name => :source_name,
-                $target_label => :target_label,
-                $target_name => :target_name,
-                $rel_type => :rel_type
-            ) as (result agtype);"""
-            session.execute(text(sql), {
-                "source_label": source_label,
-                "source_name": source_name,
-                "target_label": target_label,
-                "target_name": target_name,
-                "rel_type": rel_type,
-            })
+            sql = f"""SELECT * FROM cypher('{gname}', $$ {cypher} $$) as (result agtype);"""
+            session.execute(text(sql))
             return True
         except Exception as e:
             logger.warning(
@@ -668,35 +726,67 @@ class AgeClient:
     def get_graph_stats(self, session: Session, graph_name: str | None = None) -> GraphStats:
         """グラフの統計情報を取得する."""
         gname = graph_name or self.default_graph_name
-        _ensure_age_session(session)
-
+        
+        # Use a completely independent psycopg2 connection to avoid SQLAlchemy transaction issues
+        import psycopg2
+        from sqlalchemy import text
+        
+        # Extract connection parameters from the session's bind
+        bind = session.get_bind()
+        if bind is None:
+            logger.warning("No bind available for session")
+            return GraphStats(node_count=0, edge_count=0, labels=[], relationship_types=[])
+        
+        # Get the connection URL from the engine
+        engine = bind if hasattr(bind, 'url') else (bind.engine if hasattr(bind, 'engine') else None)
+        if engine is None:
+            logger.warning("Could not get engine from bind")
+            return GraphStats(node_count=0, edge_count=0, labels=[], relationship_types=[])
+        
+        url = engine.url
+        conn_params = {
+            'host': url.host or 'localhost',
+            'port': url.port or 5432,
+            'database': url.database,
+            'user': url.username,
+            'password': url.password,
+        }
+        
         try:
-            # ノード数
-            node_sql = f"SELECT * FROM cypher('{gname}', $$ MATCH (n) RETURN count(n) $$) as (cnt agtype);"
-            node_result = session.execute(text(node_sql))
-            node_count = int(str(node_result.scalar()).strip('"')) if node_result.scalar() else 0
+            with psycopg2.connect(**conn_params) as conn:
+                conn.autocommit = True
+                with conn.cursor() as cur:
+                    cur.execute("LOAD 'age';")
+                    cur.execute('SET search_path = ag_catalog, "$user", public;')
+                    
+                    # ノード数
+                    node_sql = f"SELECT * FROM cypher('{gname}', $$ MATCH (n) RETURN count(n) $$) as (cnt agtype);"
+                    cur.execute(node_sql)
+                    node_row = cur.fetchone()
+                    node_count = int(str(node_row[0]).strip('"')) if node_row and node_row[0] else 0
 
-            # エッジ数
-            edge_sql = f"SELECT * FROM cypher('{gname}', $$ MATCH ()-[r]->() RETURN count(r) $$) as (cnt agtype);"
-            edge_result = session.execute(text(edge_sql))
-            edge_count = int(str(edge_result.scalar()).strip('"')) if edge_result.scalar() else 0
+                    # エッジ数
+                    edge_sql = f"SELECT * FROM cypher('{gname}', $$ MATCH ()-[r]->() RETURN count(r) $$) as (cnt agtype);"
+                    cur.execute(edge_sql)
+                    edge_row = cur.fetchone()
+                    edge_count = int(str(edge_row[0]).strip('"')) if edge_row and edge_row[0] else 0
 
-            # ラベル一覧
-            labels_sql = f"SELECT * FROM cypher('{gname}', $$ CALL ag_labels() YIELD name RETURN collect(name) $$) as (labels agtype);"
-            labels_result = session.execute(text(labels_sql))
-            labels = _parse_agtype(labels_result.scalar()) or []
+                    # ラベル一覧
+                    labels_sql = f"SELECT name FROM ag_catalog.ag_label WHERE graph = (SELECT graphid FROM ag_catalog.ag_graph WHERE name = '{gname}') AND kind = 'v';"
+                    cur.execute(labels_sql)
+                    labels = [row[0] for row in cur.fetchall()]
 
-            # 関係タイプ一覧
-            rel_sql = f"SELECT * FROM cypher('{gname}', $$ CALL ag_relationships() YIELD name RETURN collect(name) $$) as (rels agtype);"
-            rel_result = session.execute(text(rel_sql))
-            relationship_types = _parse_agtype(rel_result.scalar()) or []
+                    # 関係タイプ一覧
+                    rel_sql = f"SELECT name FROM ag_catalog.ag_label WHERE graph = (SELECT graphid FROM ag_catalog.ag_graph WHERE name = '{gname}') AND kind = 'e';"
+                    cur.execute(rel_sql)
+                    relationship_types = [row[0] for row in cur.fetchall()]
 
-            return GraphStats(
-                node_count=node_count,
-                edge_count=edge_count,
-                labels=labels,
-                relationship_types=relationship_types,
-            )
+                return GraphStats(
+                    node_count=node_count,
+                    edge_count=edge_count,
+                    labels=labels,
+                    relationship_types=relationship_types,
+                )
         except Exception as e:
             logger.warning("Failed to get graph stats: %s", e)
             return GraphStats(node_count=0, edge_count=0, labels=[], relationship_types=[])
@@ -757,19 +847,29 @@ class AgeClient:
         gname = graph_name or self.default_graph_name
         _ensure_age_session(session)
 
-        cypher = f"MATCH (n:$label) WHERE n.$prop = $value RETURN n.name, labels(n), properties(n) LIMIT {limit}"
+        safe_label = re.sub(r'[^a-zA-Z0-9_]', '', label)
+        if not safe_label:
+            raise ValueError(f"Invalid label: {label}")
+
+# Handle different property value types
+        if isinstance(property_value, str):
+            escaped_value = property_value.replace("'", "''")
+            safe_value = f"'{escaped_value}'"
+        elif isinstance(property_value, bool):
+            safe_value = str(property_value).lower()
+        elif property_value is None:
+            safe_value = "null"
+        elif isinstance(property_value, (int, float)):
+            safe_value = str(property_value)
+        else:
+            import json
+            safe_value = json.dumps(property_value, ensure_ascii=False)
+
+        cypher = f"MATCH (n:{safe_label}) WHERE n.{property_name} = {safe_value} RETURN n.name, labels(n), properties(n) LIMIT {limit}"
 
         try:
-            sql = f"""SELECT * FROM cypher('{gname}', $$ {cypher} $$,
-                $label => :label,
-                $prop => :prop,
-                $value => :value
-            ) as (name agtype, labels agtype, props agtype);"""
-            result = session.execute(text(sql), {
-                "label": label,
-                "prop": property_name,
-                "value": property_value,
-            })
+            sql = f"SELECT * FROM cypher('{gname}', $$ {cypher} $$) as (name agtype, labels agtype, props agtype);"
+            result = session.execute(text(sql))
             rows = []
             for row in result:
                 rows.append({

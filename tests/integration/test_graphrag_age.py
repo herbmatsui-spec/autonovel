@@ -45,44 +45,44 @@ pytestmark = pytest.mark.skipif(
 
 @pytest.fixture(scope="module")
 def age_container():
-    """Apache AGE イメージを起動し、pgvector エクステンションをインストールし SQLAlchemy engine を返す."""
+    """カスタム AGE+pgvector イメージを起動し SQLAlchemy engine を返す."""
     from sqlalchemy import create_engine, text
 
-    container = PostgresContainer("apache/age:latest")
+    container = PostgresContainer("autonovel/age-pgvector:test")
+    container.with_env("POSTGRES_HOST_AUTH_METHOD", "trust")
     container.start()
     url = container.get_connection_url()
     if url.startswith("postgresql://"):
         url = url.replace("postgresql://", "postgresql+psycopg2://", 1)
     engine = create_engine(url)
     try:
-        # Ensure age extension is available (should be in the image)
+        # Verify extensions are available (pre-installed in custom image)
         with engine.connect() as conn:
             conn.execute(text("CREATE EXTENSION IF NOT EXISTS age;"))
+            conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
             conn.commit()
-        # Try to create vector extension; if it fails, we note that vector may not be available
-        with engine.connect() as conn:
-            try:
-                conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
-                conn.commit()
-            except Exception:
-                # Vector extension not available; tests requiring it should skip
-                pass
         yield engine
     finally:
         engine.dispose()
         container.stop()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def age_session(age_container):
-    """セッションフィクスチャ."""
+    """セッションフィクスチャ - 各テストで独立したトランザクションを使用."""
     from sqlalchemy.orm import sessionmaker
 
     Session = sessionmaker(bind=age_container)
     session = Session()
+    transaction = session.begin()
     try:
         yield session
     finally:
+        try:
+            if transaction.is_active:
+                transaction.rollback()
+        except Exception:
+            pass
         session.close()
 
 
@@ -148,15 +148,17 @@ def test_age_upsert_node_with_properties(age_session):
     # 取得確認
     result = client.execute_cypher(
         age_session,
-        "MATCH (n:Character {name: $name}) RETURN n",
+        "MATCH (n:Character {name: $name}) RETURN n AS result",
         parameters={"name": "アルス"},
         graph_name="test_graph_props",
     )
     assert len(result.records) == 1
-    node = result.records[0]["n"]
-    assert node["name"] == "アルス"
-    assert node["age"] == 25
-    assert node["is_alive"] is True
+    node = result.records[0]["result"]
+    # agtype vertex has properties nested under "properties"
+    props = node.get("properties", node)
+    assert props["name"] == "アルス"
+    assert props["age"] == 25
+    assert props["is_alive"] is True
 
 
 def test_age_upsert_edge(age_session):
@@ -178,12 +180,14 @@ def test_age_upsert_edge(age_session):
     # 検証
     result = client.execute_cypher(
         age_session,
-        "MATCH (a:Character {name: 'アルス'})-[r:POSSESSES]->(b:Item {name: '聖剣'}) RETURN r",
+        "MATCH (a:Character {name: 'アルス'})-[r:POSSESSES]->(b:Item {name: '聖剣'}) RETURN r AS result",
         graph_name="test_graph_edge",
     )
     assert len(result.records) == 1
-    edge = result.records[0]["r"]
-    assert edge["since"] == "chapter_1"
+    edge = result.records[0]["result"]
+    # Edge has properties nested under "properties"
+    props = edge.get("properties", edge)
+    assert props["since"] == "chapter_1"
 
 
 def test_age_get_neighbors(age_session):
@@ -258,6 +262,7 @@ def test_age_cypher_parameters(age_session):
         "MATCH (n:Character {name: $name}) RETURN n.secret as secret",
         parameters={"name": "テスト"},
         graph_name="test_graph_param",
+        column_definition="(secret agtype)",
     )
     assert len(result.records) == 1
     assert result.records[0]["secret"] == "value"
@@ -273,23 +278,46 @@ def test_age_cypher_parameters(age_session):
     assert len(result.records) == 0
 
 
-def test_age_graph_stats(age_session):
+def test_age_graph_stats(age_container):
     """グラフ統計取得."""
+    from sqlalchemy.orm import sessionmaker
     from src.services.age_client import AgeClient
 
-    client = AgeClient(default_graph_name="test_graph_stats")
-    assert client.init_graph(age_session) is True
-
-    client.upsert_node(age_session, "Character", "A", {})
-    client.upsert_node(age_session, "Item", "B", {})
-    client.upsert_edge(age_session, "Character", "A", "Item", "B", "HAS")
-
-    stats = client.get_graph_stats(age_session)
-    assert stats.node_count >= 2
-    assert stats.edge_count >= 1
-    assert "Character" in stats.labels
-    assert "Item" in stats.labels
-    assert "HAS" in stats.relationship_types
+    Session = sessionmaker(bind=age_container)
+    session = Session()
+    # Don't start a transaction here - let AgeClient manage commits
+    # We'll manually commit after upserts
+    
+    try:
+        client = AgeClient(default_graph_name="test_graph_stats")
+        assert client.init_graph(session) is True
+        
+        # init_graph commits, so we need to start a new transaction for upserts
+        transaction = session.begin()
+        
+        client.upsert_node(session, "Character", "A", {})
+        client.upsert_node(session, "Item", "B", {})
+        client.upsert_edge(session, "Character", "A", "Item", "B", "HAS")
+        
+        # Commit the upserts
+        transaction.commit()
+        
+        # Start new transaction for stats query
+        transaction = session.begin()
+        
+        stats = client.get_graph_stats(session)
+        assert stats.node_count >= 2
+        assert stats.edge_count >= 1
+        assert "Character" in stats.labels
+        assert "Item" in stats.labels
+        assert "HAS" in stats.relationship_types
+    finally:
+        try:
+            if transaction.is_active:
+                transaction.rollback()
+        except Exception:
+            pass
+        session.close()
 
 
 # ============================================================
@@ -303,7 +331,11 @@ def test_pgvector_store_init(age_container):
     if not HAS_PGVECTOR:
         pytest.skip("pgvector not installed")
 
-    url = str(age_container.url).replace("postgresql+psycopg2://", "postgresql://")
+    # Use URL with password for asyncpg (trust authentication accepts any password)
+    import re
+    url = str(age_container.url)
+    # Keep the password for asyncpg
+    url = re.sub(r'postgresql\+psycopg2://', 'postgresql://', url)
     store = PgVectorStore(url, dimension=1536)
     import asyncio
     asyncio.run(store._ensure_table("test_collection"))
@@ -327,6 +359,7 @@ async def test_pgvector_store_add_search(age_container):
     if not HAS_PGVECTOR:
         pytest.skip("pgvector not installed")
 
+    # Use original URL with password for asyncpg (trust authentication accepts any password)
     url = str(age_container.url).replace("postgresql+psycopg2://", "postgresql://")
     store = PgVectorStore(url, dimension=4)  # 小さな次元でテスト
 
@@ -358,6 +391,7 @@ async def test_pgvector_store_hybrid_search(age_container):
     if not HAS_PGVECTOR:
         pytest.skip("pgvector not installed")
 
+    # Use original URL with password for asyncpg
     url = str(age_container.url).replace("postgresql+psycopg2://", "postgresql://")
     store = PgVectorStore(url, dimension=4)
 

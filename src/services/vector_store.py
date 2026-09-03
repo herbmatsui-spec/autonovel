@@ -2,6 +2,7 @@ import json
 import logging
 import re
 from abc import ABC, abstractmethod
+from contextlib import asynccontextmanager
 from enum import Enum
 from typing import Any, Protocol, TYPE_CHECKING
 
@@ -793,6 +794,11 @@ class ChromaVectorStore(BaseVectorStore):
         await asyncio.to_thread(self.rebuild_bm25_index, collection_name)
 
 
+def _embedding_to_pgvector(emb: list[float]) -> str:
+    """Convert embedding list to pgvector string format."""
+    return "[" + ", ".join(str(x) for x in emb) + "]"
+
+
 class PgVectorStore(BaseVectorStore):
     """
     PostgreSQL + pgvector を使用したベクトルデータベース管理クラス。
@@ -812,8 +818,15 @@ class PgVectorStore(BaseVectorStore):
 
         self.database_url = database_url
         self.dimension = dimension
+        
+        # Debug: print the URL being used
+        import sys
+        print(f"[DEBUG PgVectorStore] Input URL: {database_url}", file=sys.stderr)
+        async_url = database_url.replace("postgresql://", "postgresql+asyncpg://")
+        print(f"[DEBUG PgVectorStore] Async URL: {async_url}", file=sys.stderr)
+        
         self._engine = create_async_engine(
-            database_url.replace("postgresql://", "postgresql+asyncpg://"),
+            async_url,
             pool_size=pool_size,
             max_overflow=max_overflow,
             pool_pre_ping=True,
@@ -824,9 +837,10 @@ class PgVectorStore(BaseVectorStore):
         self._initialized_tables: set[str] = set()
 
     async def _get_session(self) -> AsyncSession:
-        """Create a new session. Use as: async with self._session() as session:"""
+        """Create a new session. Use as: session = await self._get_session()"""
         return self._session_factory()
 
+    @asynccontextmanager
     async def _session(self):
         """Context manager for session. Use as: async with self._session() as session:"""
         async with self._session_factory() as session:
@@ -929,7 +943,7 @@ class PgVectorStore(BaseVectorStore):
                         )
                         params[f"{param_prefix}_id"] = doc_id
                         params[f"{param_prefix}_content"] = doc
-                        params[f"{param_prefix}_emb"] = emb  # type: ignore[assignment]
+                        params[f"{param_prefix}_emb"] = _embedding_to_pgvector(emb)
                         params[f"{param_prefix}_meta"] = json.dumps(meta, ensure_ascii=False)
 
                     values_sql = ", ".join(values)
@@ -965,7 +979,7 @@ class PgVectorStore(BaseVectorStore):
             try:
                 # WHERE句の構築（メタデータフィルタ）
                 where_clause = ""
-                params: dict[str, Any] = {"query_emb": query_embedding, "limit": top_k}
+                params: dict[str, Any] = {"query_emb": _embedding_to_pgvector(query_embedding), "limit": top_k}
 
                 if where:
                     conditions = []
