@@ -5,8 +5,9 @@ FullAutoWorkflow と EasyModePipeline の設定を統合
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any
 
 
 @dataclass
@@ -48,7 +49,7 @@ class UnifiedPipelineConfig:
     catharsis_pattern: dict[str, Any] = field(default_factory=dict)
     catharsis_positions: list = field(default_factory=list)
 
-    def to_workflow_context(self) -> "WorkflowContext":
+    def to_workflow_context(self) -> WorkflowContext:
         """WorkflowContext へ変換 (遅延インポートで循環回避)"""
         from src.services.auto_workflow_pipeline import WorkflowContext
 
@@ -75,7 +76,7 @@ class UnifiedPipelineConfig:
         )
 
     @classmethod
-    def from_full_auto_kwargs(cls, **kwargs) -> "UnifiedPipelineConfig":
+    def from_full_auto_kwargs(cls, **kwargs) -> UnifiedPipelineConfig:
         """FullAutoWorkflow の kwargs から生成"""
         return cls(
             genre=kwargs.get("genre", "ファンタジー"),
@@ -94,7 +95,7 @@ class UnifiedPipelineConfig:
         )
 
     @classmethod
-    def from_easy_mode_kwargs(cls, **kwargs) -> "UnifiedPipelineConfig":
+    def from_easy_mode_kwargs(cls, **kwargs) -> UnifiedPipelineConfig:
         """EasyModeWorkflow の kwargs から生成"""
         genre = kwargs.get("genre", "ファンタジー")
         # ジャンルからプリセット名を推定

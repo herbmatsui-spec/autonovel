@@ -247,3 +247,35 @@ class PipelineError(HegemonyError):
             original=original,
             **kwargs,
         )
+
+
+# ----------------------------------------------------------------------
+# LLM 系統固有例外（プロバイダー側でインポートされる）
+# ----------------------------------------------------------------------
+
+class LLMAuthenticationError(LLMError):
+    """認証失敗（API キーが無効・期限切れなど）"""
+
+
+class LLMContentFilterError(LLMError):
+    """コンテンツフィルタに引っかかった場合"""
+
+
+class LLMInvalidRequestError(LLMError):
+    """リクエストパラメータが不正なとき"""
+
+
+class LLMRateLimitError(LLMTemporaryError):
+    """レートリミット・クオータ超過（一時的エラー）"""
+
+
+class LLMServerError(LLMError):
+    """サーバ側エラー（5xx 系）"""
+
+
+class LLMTimeoutError(LLMError):
+    """API 呼び出しがタイムアウトしたとき"""
+
+
+class LLMUnknownError(LLMError):
+    """上記に該当しない未知のエラー"""

@@ -199,4 +199,43 @@ class DigestService:
             return [f"続行: {chapter[:100]}…", "調査が必要な未確認な要素を指摘"]
 
 
-__all__ = ["process_chapter", "DigestService"]
+# ----------------------------------------------------------------------
+# テスト互換のモジュールレベル関数
+# ----------------------------------------------------------------------
+
+class _DummyDB:
+    """DigestService が要求する最小限の DB インタフェース。
+    テストでは DB が実際に使用されないため，空の async コンテキストマネージャだけを提供する。
+    """
+
+    class _DummySession:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            pass
+
+        async def commit(self):  # pragma: no cover
+            pass
+
+        async def flush(self):  # pragma: no cover
+            pass
+
+        def add(self, *_):  # pragma: no cover
+            pass
+
+    async def get_session(self):
+        return self._DummySession()
+
+
+async def generate_suggestions(chapter: str) -> list[str]:
+    """テストが期待するモジュールレベル関数。
+    内部で最小限のダミー DB を用意し，DigestService のインスタンスを生成して
+    メソッドを委譲するだけ。
+    """
+    dummy_db = _DummyDB()
+    service = DigestService(llm_service=LLMService(), db=dummy_db)  # type: ignore[arg-type]
+    return await service.generate_suggestions(chapter)
+
+
+__all__ = ["process_chapter", "DigestService", "generate_suggestions"]

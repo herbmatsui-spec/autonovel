@@ -154,3 +154,33 @@ class OpenAIApiClient(BaseLLMClient):
             f"✅ OpenAI Success: model={current_model}, len={len(prompt)}, dur={duration:.2f}s"
         )
         return metadata, story, usage
+
+    @with_llm_retry()
+    async def generate_text(
+        self,
+        model_name: str,
+        prompt: str,
+        system_instruction: str | None = None,
+        temp: float = 0.7,
+        max_retries: int = 5,
+        stream_callback: Callable[[str], None] | None = None,
+        retry_state: Any | None = None,
+        nsfw_mode: bool = False,
+    ) -> tuple[str, Any]:
+        """
+        OpenAI 互換エンドポイントでテキストだけを取得するラッパー。
+        generate_json の実装を流用し、response_schema を None にして
+        テキスト（story）と usage オブジェクトを返す。
+        """
+        metadata, story, usage = await self.generate_json(
+            model_name=model_name,
+            prompt=prompt,
+            system_instruction=system_instruction,
+            response_schema=None,
+            temp=temp,
+            max_retries=max_retries,
+            stream_callback=stream_callback,
+            retry_state=retry_state,
+            nsfw_mode=nsfw_mode,
+        )
+        return story, usage
