@@ -504,7 +504,7 @@ class GraphRAGService:
             used += tokens
         return result
 
-    def build_rag_context(
+    async def build_rag_context(
         self,
         session: Session,
         current_prompt: str,
@@ -551,7 +551,7 @@ class GraphRAGService:
 
         # 3. ハイブリッド検索 (ベクトル + グラフ + 全文)
         query_embedding = embedding_service.get_embedding(current_prompt)
-        hybrid_results = self.hybrid_search(
+        hybrid_results = await self.hybrid_search(
             session, current_prompt, query_embedding, entities_to_query, top_k=5
         )
 

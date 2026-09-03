@@ -7,6 +7,7 @@ from src.agents.base import BaseAgent
 from src.agents.context_builder import ContextBuilder
 from src.agents.episode_pipeline import EpisodePipeline
 from src.core.interfaces import IPromptManager
+from src.agents.orchestrator import AgentContext, AgentResult, AgentName
 from src.services.llm_service import LLMService
 
 from .bible_extractor import BibleExtractor
@@ -328,25 +329,30 @@ class WritingAgent(BaseAgent):
         # TODO: 新しいコンポーネントを使うように実装を更新
         return await self._bible_extractor.extract(book_id, content, reporter)
 
-    async def run(self, *args, **kwargs):
-        """エージェントのメインループ（簡易版）。
-        ここでは generate_episodes と連動して実行する。
+    async def run(self, ctx: AgentContext) -> AgentResult:
+        """Orchestrator 用エントリーポイント。
+        ctx.artifacts["writing_context"] からコンテキストを取得し、本文を生成する。
         """
-        book_id = kwargs.get("book_id")
-        start_ep = kwargs.get("start_ep")
-        end_ep = kwargs.get("end_ep")
-        if book_id is None or start_ep is None or end_ep is None:
-            raise ValueError("book_id, start_ep, end_ep are required for WritingAgent.run")
-        passion = kwargs.get("passion", 0.5)
-        target_word_count = kwargs.get("target_word_count", 2000)
-        return await self.generate_episodes(
-            book_id=book_id,
-            start_ep=start_ep,
-            end_ep=end_ep,
-            passion=passion,
-            target_word_count=target_word_count,
-            is_easy_mode=kwargs.get("is_easy_mode", False),
-            reporter=kwargs.get("reporter"),
-            branch_id=kwargs.get("branch_id", 1),
-            style_tag=kwargs.get("style_tag"),
-        )
+        writing_context = ctx.artifacts.get("writing_context")
+        if not writing_context:
+            return AgentResult(
+                next_agent=None,
+                artifacts={},
+                error="writing_context is required in artifacts",
+            )
+
+        book_id = ctx.book_id
+        ep_num = ctx.ep_num
+
+        try:
+            text = await self.write_episode(book_id, ep_num, writing_context)
+            return AgentResult(
+                next_agent=AgentName.AUDIT,
+                artifacts={"drafted_text": text},
+            )
+        except Exception as e:
+            return AgentResult(
+                next_agent=None,
+                artifacts={},
+                error=f"Writing failed: {e}",
+            )
