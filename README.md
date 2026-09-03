@@ -4,13 +4,15 @@
 
 **次世代AI小説執筆・マルチエージェント・GraphRAG・納品オーケストレーション基盤**
 
-*FastAPI + React 18/TypeScript + Huey Task Queue + SQLAlchemy 2.0 + GraphRAG (Apache AGE / VectorStore) + PostgreSQL 16 / Redis 7*
+*FastAPI + React 18/TypeScript + Huey Task Queue + SQLAlchemy 2.0 + GraphRAG (Apache AGE + pgvector) + PostgreSQL 16 / Redis 7 / ChromaDB*
 
 [![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue?logo=python&logoColor=white)](https://www.python.org/)
 [![React 18](https://img.shields.io/badge/react-18.3-61dafb?logo=react&logoColor=black)](https://react.dev/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.141-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Redis](https://img.shields.io/badge/Redis-7-DC382D?logo=redis&logoColor=white)](https://redis.io/)
+[![Apache AGE](https://img.shields.io/badge/Graph-Apache_AGE-D22128)](https://age.apache.org/)
+[![ChromaDB](https://img.shields.io/badge/Vector-ChromaDB-FF6F61)](https://www.trychroma.com/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 [![Type Checked: mypy](https://img.shields.io/badge/type%20checked-mypy-blue)](https://mypy-lang.org/)
@@ -23,7 +25,7 @@
   <img src="docs/demo.gif" alt="AutoNovel UI & Workflow Demo" width="900" style="border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
 </p>
 
-*▲ AutoNovel v4.0: 3案企画ガチャ・逆算プロット・上級者Studio・インライン五感推敲・GraphRAG相関図・ワンクリックZIP納品*
+*▲ AutoNovel v4.0: 3案企画ガチャ / 逆算プロット / 上級者Studio / インライン五感推敲 / GraphRAG相関図 / ワンクリックZIP納品 / マルチメディア・eBook / IF分岐・共同編集 (CRDT)*
 
 </div>
 
@@ -37,7 +39,10 @@ AutoNovel は、AI を活用して Web 小説を **企画から執筆、校正�
 - **かんたんモード**：ジャンル・主人公設定だけで数十秒で第1話を生成
 - **ワンクリック納品**：本文・設定・プロット・データを 1 つの ZIP にまとめて出力
 - **AI 挿絵自動生成**：重要シーンのイラストを自動で作成
-- **マルチモード**：初心者向け Easy Mode と、プロ向け Advanced Mode を切り替えて利用可能
+- **マルチメディア生成**：シーン画像・立ち絵・表紙・ボイス・BGM などのアセットパックを生成
+- **eBook エクスポート**：縦書き・EPUB 3 準拠の電子書籍ファイルを直接出力
+- **マルチモード**：初心者向け Easy Mode と、プロ向け Advanced Mode / 上級者 Studio を切り替えて利用可能
+- **共同編集 (CRDT)**：複数執筆者による `ChapterVersion` のベクタークロック同期マージ
 
 ### まずは試してみよう
 
@@ -63,6 +68,9 @@ AutoNovel は、AI を活用して Web 小説を **企画から執筆、校正�
   - [2.5 多角型品質監査 & 読者フック診断システム](#25-多角型品質監査--読者フック診断システム)
   - [2.6 AI挿絵プロンプト & ビジュアル生成エンジン](#26-ai挿絵プロンプト--ビジュアル生成エンジン)
   - [2.7 自動マーケティング & 納品パッケージング](#27-自動マーケティング--納品パッケージング)
+    - [2.7.1 マルチメディア生成 (`multimedia` router)](#271-マルチメディア生成-multimedia-router)
+    - [2.7.2 共同編集とCRDT (`collab` router)](#272-共同編集とcrdt-collab-router)
+    - [2.7.3 IFルート分岐](#273-ifルート分岐)
 - [3. システムアーキテクチャ & 技術スタック](#3-システムアーキテクチャ--技術スタック)
   - [3.1 全体アーキテクチャ図](#31-全体アーキテクチャ図)
   - [3.2 採用技術スタック一覧](#32-採用技術スタック一覧)
@@ -213,6 +221,10 @@ Web UI からわずか数項目のフォームを入力するだけで、プロ�
   画面上でユーザーが推敲・手動編集した最新の本文テキスト・キャラクター設定を完全同期し、瞬時に納品用ZIP（本文、設定集、プロット、JSONダンプ）として出力。
 - **🚀 上級者 Studio へワンクリック昇格 (`POST /api/easy-mode/promote`)**:
   かんたんモードで作成した設定・本文をGraphRAGナレッジグラフに自動登録し、Sudowrite × Notion AI 式の高度なエディタワークスペースへシームレスに移行。
+- **🎬 マルチメディアアセットパック生成 (`POST /multimedia/generate`)**:
+  `ENABLE_MULTIMEDIA` 有効時、シーン画像 / キャラクター立ち絵 / 表紙 / ボイス / BGM を一括ビルドし、ZIP 納品物へ同梱。
+- **📕 eBook エクスポート (`POST /export/ebook`)**:
+  縦書き・ルビ・目次・本文 XHTML を内包した EPUB 3 ファイルを即座に出力。`POST /easy_mode/export-with-data` でも同梱可能。
 
 ---
 
@@ -283,6 +295,15 @@ Web UI からわずか数項目のフォームを入力するだけで、プロ�
   作品タイトル案（トレンドキーワード入り）、キャッチコピー（10文字〜30文字）、あらすじ（300文字版 / 800文字版）、おすすめタグ一覧を自動生成。
 - **ワンクリック ZIP パッケージ出力 (`POST /easy_mode/export-with-data` & `GET /easy_mode/export/{book_id}`)**:
   本文、設定集、プロット概要、JSONダンプを整理されたディレクトリ構造でZIP化し、即座にダウンロード可能。
+
+#### 2.7.1 マルチメディア生成 (`multimedia` router)
+`ENABLE_MULTIMEDIA=true` で有効化。`cover` / `character` / `scene` / `voice` / `bgm` の各アセットタイプに対し、`/multimedia/tasks` で非同期タスクを投入、`/multimedia/tasks/{id}` で進捗を確認、`/multimedia/assets/{book_id}` でダウンロードできます。アセットパックは納品 ZIP にも同梱されます（[`docs/multimedia.md`](docs/multimedia.md) 参照）。
+
+#### 2.7.2 共同編集とCRDT (`collab` router)
+`chapter_versions` テーブルに `vector_clock` (JSON) と `base_version_id` を保持し、複数執筆者による章単位の並行編集を CRDT 的にマージ。`POST /collab/versions` で保存、`GET /collab/versions/{book_id}/{ep}` で履歴・コメントツリーを取得できます。
+
+#### 2.7.3 IFルート分岐
+`Branch` モデル + `routers/easy_mode.py` 経由で、main ルートから IF分岐をフォーク・合流可能。各分岐は独立した `plot` ツリー・テンション履歴を持つため、複数エンディングの並列執筆に対応します。
 
 
 ---
@@ -394,15 +415,19 @@ graph TD
 | :--- | :--- | :--- | :--- |
 | **Frontend** | React, TypeScript, Vite | React 18.3, Vite 5.x, TS 5.x | 高速なHMR開発体験、厳格な型安全性、モダンSPA設計 |
 | **Styling** | Vanilla CSS (CSS Variables) | Modern CSS3 | 外部CSSフレームワーク依存を排除した軽量・高速・完全カスタマイズ可能なデザインシステム |
-| **Graph UI** | Canvas / SVG Force Graph | Custom Component | キャラクター相関・知識グラフの物理シミュレーション可視化 |
-| **Backend API** | FastAPI, Uvicorn, Pydantic | FastAPI 0.115, Pydantic v2 | 高速な非同期I/O、OpenAPI 3.1自動生成、厳格なスキーマ検証 |
-| **Task Queue** | Huey | Huey 2.5+ | Celeryより軽量で設定がシンプル、SQLite/Redisのシームレス切替が可能 |
-| **Database** | PostgreSQL 16 / SQLite | SQLAlchemy 2.0, Alembic | 開発時のゼロコンフィグSQLite(WAL)と本番高負荷PostgreSQLの完全両立 |
-| **Graph / RAG** | Apache AGE / In-Memory VectorStore | Custom Graph Engine | エンティティ関係性グラフと意味的類似度検索のハイブリッド統合 |
-| **Caching** | Redis 7 / In-Memory Cache | redis-py 5.x | 分散タスクキュー、レート制限、セマンティックプロンプトキャッシュ |
-| **Logging / Obs** | python-json-logger | OpenTelemetry Ready | クラウドネイティブなJSON構造化ログ、統合ヘルスチェック、メトリクス収集 |
-| **Testing** | pytest, Vitest, RTL, MSW | pytest 8.x, Vitest 2.x | バックエンド/フロントエンド双方の網羅的単体・統合・モックテスト |
-| **Linter / Types**| Ruff, Mypy, ESLint | Ruff 0.6+, Mypy 1.11+ | 極限まで高速なPython静的解析・フォーマット・型検査 |
+| **Graph UI** | `react-force-graph-2d` + SVG | npm `react-force-graph-2d` | キャラクター相関・知識グラフの物理シミュレーション可視化 |
+| **Alt UI** | Streamlit | 1.x (`streamlit_app/`) | 設定/ダッシュボード用の軽量代替UI (Settings / Home ページ) |
+| **Backend API** | FastAPI, Uvicorn, Pydantic | FastAPI 0.141, Pydantic v2.13 | 高速な非同期I/O、OpenAPI 3.1自動生成、厳格なスキーマ検証 |
+| **DI / Container** | dependency-injector | 4.49 | サービス/ルーター/リポジトリのコンテナ化 |
+| **Task Queue** | Huey | Huey 3.3 | Celeryより軽量、`redis` / `sqlite` バックエンドのシームレス切替 |
+| **Database** | PostgreSQL 16 / SQLite | SQLAlchemy 2.0.52, Alembic 1.13+ | 開発時のゼロコンフィグSQLite(WAL)と本番高負荷PostgreSQLの完全両立 |
+| **Graph DB** | Apache AGE (openCypher) | `apache/age-postgresql:16-pgvector` | エンティティ関係性グラフをSQL内で透過的に操作 |
+| **Vector Store** | ChromaDB / pgvector / In-Memory | ChromaDB 1.5+, pgvector 0.5 | ベクトル検索バックエンドの選択可（環境変数 `CHROMA_HOST` / `REQUIRE_PG`） |
+| **BM25 / Reranker** | rank-bm25 / cross-encoder | extras `rag` | ハイブリッド検索の語彙一致・再ランキング |
+| **Caching** | Redis 7 / In-Memory | redis-py 8.x | 分散タスクキュー、レート制限、セマンティックプロンプトキャッシュ |
+| **Observability** | OpenTelemetry, Prometheus, python-json-logger | OTel 1.44, prom-client 0.26 | 構造化JSONログ、統合ヘルスチェック、メトリクス収集 |
+| **Testing** | pytest, Vitest, RTL, MSW | pytest 8.x, Vitest 1.6 | バックエンド/フロントエンド双方の網羅的単体・統合・モックテスト（カバレッジ 80% ゲート） |
+| **Linter / Types**| Ruff, Mypy, ESLint | Ruff 0.16, Mypy 2.3 | 高速なPython静的解析・フォーマット・型検査 |
 
 ---
 
@@ -424,11 +449,16 @@ graph TD
 
 FastAPI アプリケーション (`src/backend/server.py`) は、モジュールごとにルーターを分割し、依存性の注入 (`Depends`) を活用して疎結合を徹底しています。
 
-- **`routers/easy_mode.py`**: かんたんモードの全エンドポイント（執筆、ポーリング、ZIP納品、ガチャ、ダイジェスト、昇格）。
+- **`routers/easy_mode.py`**: かんたんモードの全エンドポイント（執筆、ポーリング、ZIP納品、ガチャ、ダイジェスト、昇格、IF分岐昇格）。
 - **`routers/books.py`, `plots.py`, `episodes.py`**: 作品・章・プロットのCRUDおよびブランチ操作。
 - **`routers/graph.py`**: ナレッジグラフのノード・エッジデータ取得およびエンティティ検索。
 - **`routers/illustrations.py`**: 挿絵プロンプト生成および画像生成ジョブ管理。
 - **`routers/marketing.py`**: マーケティング資料・あらすじ・キャッチコピー生成。
+- **`routers/multimedia.py`** (`ENABLE_MULTIMEDIA`): シーン画像 / 立ち絵 / 表紙 / ボイス / BGM のアセットパック管理。
+- **`routers/collab.py`**: コメントツリーと `ChapterVersion` (CRDT ベクタークロック) による共同編集 API。
+- **`routers/prompt_versions.py`, `prompt_compare.py`**: プロンプトのバージョン管理・A/B 比較。
+- **`routers/streaming.py`**: SSE による長文生成のリアルタイム配信。
+- **`routers/export.py`**: eBook (EPUB) エクスポート・詳細エクスポート。
 - **`observability.py`**: `/health`（多段ヘルスチェック）および `/metrics`（プロセス内メトリクス）。
 - **`rate_limit.py`**: IP単位スライディングウィンドウ方式による過剰リクエスト制限 (HTTP 429)。
 
@@ -450,49 +480,56 @@ FastAPI アプリケーション (`src/backend/server.py`) は、モジュール
 
 - **SQLAlchemy 2.0 ORM**: 全てのテーブル定義は型安全な宣言的マッピングで統一。
 - **SQLite WAL モード**: ローカル実行時、`PRAGMA journal_mode=WAL` および `PRAGMA foreign_keys=ON` を自動適用し、同時読み書き性能とデータ整合性を最大化。
-- **PostgreSQL 16**: 本番環境において、膨大なエピソードデータとナレッジグラフを高速に処理。
+- **PostgreSQL 16 + Apache AGE + pgvector**: 本番環境において、リレーショナルデータ・ナレッジグラフ・ベクトル検索を単一インスタンスで統合（Docker イメージ `apache/age-postgresql:16-pgvector`）。
+- **ChromaDB (オプション)**: 大規模コレクションを独立プロセスで保持したい場合に切替可能（`CHROMA_HOST` / `CHROMA_PORT`）。
+- **マイグレーション**: スキーマ変更は Alembic で管理。`alembic.ini` の `script_location = src/backend/alembic`、実際のマイグレーションモジュールはルート `alembic/versions/` に配置（`00000000_initial_migration`, `0001_erotic_intensity`, `0002_add_catchcopy`, `0003_pgvector_chapter_chunks`, `0003_add_ai_assistant_config`, `0011_multimedia_artifacts`, `0012_age_graph_init`, `0013_graph_pipeline_idempotency`）。
 
 ---
 
 ## 4. マルチエージェント・オーケストレーション詳細
 
+> 詳細設計: [`docs/UNIFIED_PIPELINE_IMPLEMENTATION_PLAN.md`](UNIFIED_PIPELINE_IMPLEMENTATION_PLAN.md) / [`docs/collab-hybrid-implementation-plan.md`](docs/collab-hybrid-implementation-plan.md)
+
 ### 4.1 エージェント群の責務分担
 
 AutoNovel では、1つの巨大なプロンプトに全てを委ねるのではなく、専門化された複数のAIエージェントが協調して小説を制作します。
+エージェント間のルーティングは `src/agents/orchestrator.py` の `AgentName` / `AgentContext` / `AgentResult` ベースのグラフで表現され、各エージェントの実行は `src/agents/event_bus.py` の `EventBus`（in-process + Redis Pub/Sub）で観測できます。
 
 ```
-                     +--------------------+
-                     |   PlanningAgent    | <── 企画・コンセプト・ターゲット読者選定
-                     +--------------------+
-                               │
-                               ▼
-                     +--------------------+
-                     |     PlotAgent      | <── 章別プロットツリー・テンション設計
-                     +--------------------+
-                               │
-            ┌──────────────────┴──────────────────┐
-            ▼                                     ▼
-  +--------------------+                +--------------------+
-  |     BibleAgent     |                |   ContextBuilder   | <── 過去ログ・グラフから文脈抽出
-  | (世界観/キャラ管理)  |                +--------------------+
-  +--------------------+                          │
-            │                                     ▼
-            │                           +--------------------+
-            └──────────────────────────>|    WritingAgent    | <── 本文執筆・描写展開
-                                        +--------------------+
-                                                  │
-                                                  ▼
-                                        +--------------------+
-                                        |     AuditAgent     | <── 伏線・口調・カタルシス監査
-                                        +--------------------+
-                                                  │
-                               ┌──────────────────┴──────────────────┐
-                               ▼                                     ▼
-                     +--------------------+                +--------------------+
-                     | IllustrationAgent  |                |   MarketingAgent   |
-                     |  (挿絵プロンプト)   |                | (納品ZIP/あらすじ)  |
-                     +--------------------+                +--------------------+
+                      +--------------------+
+                      |   PlanningAgent    | <── 企画・コンセプト・ターゲット読者選定
+                      +--------------------+
+                                │
+                                ▼
+                      +--------------------+
+                      |     PlotAgent      | <── 章別プロットツリー・テンション設計
+                      +--------------------+
+                                │
+             ┌──────────────────┴──────────────────┐
+             ▼                                     ▼
+   +--------------------+                +--------------------+
+   |     BibleAgent     |                | ContextBuilderAgent| <── GraphRAG+履歴から文脈抽出
+   | (世界観/キャラ管理)  |                +--------------------+
+   +--------------------+                          │
+             │                                     ▼
+             │                           +--------------------+
+             └──────────────────────────>|    WritingAgent    | <── 本文執筆・描写展開
+                                         +--------------------+
+                                                   │
+                                                   ▼
+                                         +--------------------+
+                                         |     AuditAgent     | <── 伏線・口調・カタルシス監査
+                                         +--------------------+
+                                                   │
+                                ┌──────────────────┴──────────────────┐
+                                ▼                                     ▼
+                      +--------------------+                +--------------------+
+                      | IllustrationAgent  |                |   MarketingAgent   |
+                      |  (挿絵プロンプト)   |                | (納品ZIP/あらすじ)  |
+                      +--------------------+                +--------------------+
 ```
+
+> **StreamPlotScheduler (`src/agents/writing_scheduler.py`) + `EpisodePipeline`**: 章単位の生成をストリーム配信・チェックポイント保存で進行させ、長文でも停止・再開可能。
 
 ---
 
@@ -510,17 +547,20 @@ AutoNovel では、1つの巨大なプロンプトに全てを委ねるのでは
 - **役割**: 作品の世界観設定、地理・魔法体系・勢力図、登場人物プロファイルを一元管理。
 - **機能**: 本文からの新設定・新登場人物の自動検出、設定変更の差分マージと矛盾警告。
 
-#### 4. `ContextBuilder` (`src/agents/context_builder.py`)
+#### 4. `ContextBuilderAgent` (`src/agents/context_builder_agent.py`)
 - **役割**: 次の章を執筆するために必要な情報のみを厳選し、LLMのコンテキストウィンドウに最適化してプロンプトを合成。
-- **機能**: 直近のダイジェスト、関連する世界観ルール、関係するキャラクター情報、伏線ステータスの統合。
+- **機能**: 直近のダイジェスト、関連する世界観ルール、関係するキャラクター情報、伏線ステータスを GraphRAG 経由で統合。`ContextBuilder` (旧 `context_builder.py`) は互換ラッパとして非推奨化済み。
+- **関連**: `src/services/episode_context.py`（エピソード単位の軽量コンテキスト） / `src/agents/prompt_composer.py`（テンプレ合成）。
 
-#### 5. `WritingAgent` / `EpisodeWriter` (`src/services/episode_writer.py`, `writing_services.py`)
-- **役割**: コンテキストとプロットに基づき、臨場感あふれる情景描写、感情豊かな会話文、迫力ある戦闘シーンを執筆。
+#### 5. `WritingAgent` / `EpisodeWriter` (`src/agents/writing/writing.py`, `src/services/episode_writer.py`)
+- **役割**: コンテキストとプロットに基づき、臨場感ある情景描写・感情豊かな会話文・迫力ある戦闘シーンを執筆。
 - **機能**: 文体DNAの遵守、視点（一人称/三人称）の一貫性保持、指定文字数範囲での過不足ない着地。
+- **Orchestrator 連携**: `run(ctx: AgentContext) -> AgentResult` シグネチャで `next_agent=AgentName.AUDIT` へ自動遷移。
 
-#### 6. `AuditAgent` / `QualityScorer` (`src/agents/audit.py`, `src/services/quality_scorer.py`)
-- **役割**: 執筆された本文を厳格に検査し、品質スコアを算出。
+#### 6. `AuditAgent` (`src/agents/audit_agent.py`)
+- **役割**: 執筆された本文を厳格に検査し、品質スコアを算出。`LogicalAuditor`（論理整合性）+ `DeAIAuditor`（AI 臭除去）+ シャープエッジ監査を束ねたファサード。
 - **機能**: 伏線回収チェック、キャラクター口調崩れの検出、カタルシス達成度判定、自動修正パッチ提案。
+- **サブモジュール**: `src/agents/audit.py`（内部クラス群）、`src/agents/sharp_edge_preserver`、`src/agents/early_entertainment_checker`、`src/agents/diversity_scorer`。
 
 #### 7. `IllustrationAgent` (`src/agents/illustration_agent.py`)
 - **役割**: 本文中のハイライトシーンを特定し、AI画像生成用の精密な英語プロンプトを構築。
@@ -575,6 +615,7 @@ sequenceDiagram
 ## 5. GraphRAG & 長期記憶・コンテキストマネジメント
 
 長編小説制作における最大の敵は「過去の設定を忘れること」です。AutoNovel は **GraphRAG（Graph + Retrieval-Augmented Generation）** により、この問題を根本から解決しています。
+**PostgreSQL + Apache AGE + pgvector** を単一インスタンスで運用し、抽出・埋め込み・再ランキングを非同期パイプラインで束ねます。
 
 > 詳細なセットアップ手順 (ChromaDB / pgvector / Reranker) は
 > [`docs/rag_setup.md`](docs/rag_setup.md) を参照してください。
@@ -583,49 +624,48 @@ sequenceDiagram
 +-----------------------------------------------------------------------------------+
 |                         GraphRAG 統合記憶アーキテクチャ                            |
 |                                                                                   |
-|  [エピソード本文生成] ──> [エンティティ・関係性抽出 (NLP / LLM)]                  |
-|                                    │                                              |
-|                                    ├──> [知識グラフ (Apache AGE)]                 |
-|                                    │     - キャラクター相関 (好感度/敵対)          |
-|                                    │     - アイテム所持・能力獲得状態              |
-|                                    │     - 地理・所属組織の依存関係               |
-|                                    │                                              |
-|                                    └──> [ベクトルストア (VectorStore)]             |
-|                                          - 過去の名シーン・伏線テキスト埋め込み    |
+|  [エピソード本文生成] ──> [Chunk分割] ──> [埋め込み (Embedding Service)]           |
+|                                          │                                        |
+|                                          ├──> [pgvector / ChromaDB] (chunk)     |
+|                                          │     - 過去シーン・世界観テキスト       |
+|                                          │                                        |
+|                                          └──> [Apache AGE ナレッジグラフ]         |
+|                                                - キャラクター相関 (好感度/敵対)  |
+|                                                - アイテム所持・能力獲得状態        |
+|                                                - 地理・所属組織の依存関係         |
 |                                                                                   |
-|  [次話プロンプト生成時] <── [ハイブリッド検索 & コンテキスト注入] <────────────────┘
+|  [次話プロンプト生成時] <── [RRF ハイブリッド検索 (vector + tsvector + graph)      |
+|                            + cross-encoder reranker] <────────────────────────┘
 +-----------------------------------------------------------------------------------+
 ```
 
 ### 5.1 動的世界観Bible管理とエンティティ抽出
 
-エピソードが執筆されるたびに、`BibleService` と `graph_pipeline.py` が本文を解析し、以下の情報を自動抽出します：
+エピソードが執筆されるたびに、`graph_pipeline.py` がチャンク化 → 埋め込み → `extraction_service` でエンティティ・関係性を抽出し、**チャンク upsert と AGE への Cypher 適用を単一トランザクション**で実行します（`0013_graph_pipeline_idempotency` により冪等性キーを保証）。
+更新と同時に以下の情報が `BibleService` 経由で整理されます：
 
 - **登場人物のステータス変化**: HP/魔力、負傷状態、獲得した新スキル、装備品。
 - **人間関係の変動**: 「AがBを裏切った」「CがDに好意を抱いた」などの関係性エッジ更新。
 - **世界観設定の開示 (Revealed Settings)**: 作中で初めて明かされた伝承や地名をBibleの `revealed` フィールドへ追加。
 
----
-
 ### 5.2 ナレッジグラフとベクトルストアのハイブリッド検索
 
-次話の執筆時には、`rag_service.py` が2系統の検索を同時に実行します：
+次話の執筆時、`GraphRAGService.build_rag_context()` (`src/services/rag_service.py`) が3系統の検索を統合します：
 
-1. **グラフ走査 (Graph Traversal)**:
-   現在のシーンに登場するキャラクターを起点とし、深さ2ホップ以内の関係性（親しい仲間、宿敵、所属ギルドなど）をグラフから抽出。
-2. **意味的類似度検索 (Vector Similarity Search)**:
-   現在のプロット概要とコサイン類似度が高い過去のエピソード抜粋や世界観設定を検索。
+1. **ベクトル検索 (pgvector / ChromaDB)**: 現在のプロット概要とコサイン類似度が高いチャンクを `search_with_score(min_score=…)` で取得。
+2. **全文検索 (PostgreSQL `tsvector` / BM25)**: 固有名詞や口語表現の語彙一致を補強。
+3. **グラフ走査 (Apache AGE openCypher)**: 現在のシーンに登場するキャラクターを起点に深さ2ホップ以内の関係性エッジを抽出。
 
-両者の結果を合成し、`graph_context` および `vector_context` としてプロンプトへ注入することで、LLMは数十話前の設定を完璧に把握した状態で執筆を行うことができます。
-
----
+3系統のスコアを **Reciprocal Rank Fusion (RRF)** でマージし、`reranker.py`（cross-encoder もしくは simple）の `top_k` を通過させた結果をトークン予算に合わせて整形、`graph_context` / `vector_context` としてプロンプトへ注入します。
 
 ### 5.3 コンテキストウィンドウ管理 & セマンティックキャッシュ
 
-- **ContextWindowManager (`src/core/context_window_manager.py`)**:
-  LLMの最大トークン長（Context Window）を超過しないよう、重要度スコア（Recency, Relevance, Importance）に基づいて情報を動的にプルーニング（間引き）します。
-- **セマンティックキャッシュ (`src/services/semantic_cache.py`)**:
-  同一または類似の設定抽出クエリに対し、過去の推論結果を再利用することでAPIコストを最大40%削減します。
+- **`ContextWindowManager` (`src/core/context_window_manager.py`)**:
+  LLMの最大トークン長（Context Window）を超過しないよう、重要度スコア（Recency, Relevance, Importance）に基づいて情報を動的にプルーニング。
+- **セマンティックキャッシュ (`src/services/semantic_cache.py`, `prompt_caching.py`)**:
+  同一または類似の埋め込みクエリに対し、過去の推論結果を再利用することで API コストを最大 40% 削減。
+- **プロンプトバージョン管理 (`src/services/prompt_registry.py` + `routers/prompt_versions.py`)**:
+  本番投入中のプロンプトを版管理し、A/B 比較 (`prompt_compare.py`) で品質メトリクスを追跡。
 
 ---
 
@@ -725,6 +765,8 @@ erDiagram
     BOOK ||--o{ PLOT : "structured by plots"
     BOOK ||--o{ BIBLE : "defined by bible"
     BOOK ||--o{ ISSUE : "tracks issues"
+    BOOK ||--o{ CHAPTER_VERSION : "collab history (CRDT)"
+    CHAPTER_VERSION ||--o{ CHAPTER_VERSION : "base_version"
     BRANCH ||--o{ PLOT : "owns branch plots"
     ISSUE ||--o{ PATCH : "resolved by patches"
 
@@ -792,6 +834,17 @@ erDiagram
         int version "設定バージョン"
     }
 
+    CHAPTER_VERSION {
+        int id PK "バージョンID"
+        int book_id FK "作品ID"
+        int chapter_ep "対象話数"
+        string user_name "編集ユーザー名"
+        text content "本文"
+        json vector_clock "ベクタークロック (CRDT)"
+        int base_version_id FK "親バージョンID"
+        datetime created_at "作成日時"
+    }
+
     TASK {
         int id PK "タスクID (Huey UUID)"
         string status "pending / running / completed / failed"
@@ -813,6 +866,9 @@ erDiagram
 | **`Character`** | `characters` | 登場人物シート。名前、性格、能力、外見プロンプトDNAを保持。 |
 | **`Plot`** | `plots` | 各話の設計図。1行要約、目標テンション、カタルシス種別、読者フックを保持。 |
 | **`Bible`** | `bibles` | 世界観・魔法体系・歴史・地理などの設定辞書（JSON形式）と開示状況。 |
+| **`ChapterVersion`** | `chapter_versions` | 共同編集のための章リビジョン。`vector_clock` (JSON) と `base_version_id` で CRDT マージ。 |
+| **`Comment` / `ProjectMember`** | `comments`, `project_members` | 章単位のスレッドコメントとプロジェクトメンバー管理。 |
+| **`MultimediaArtifact` / `MultimediaTask`** | `multimedia_artifacts`, `multimedia_tasks` | シーン画像 / 立ち絵 / 表紙 / ボイス / BGM の生成結果と非同期タスク。 |
 | **`Task`** | `tasks` | 非同期執筆タスクのステータス追跡・結果保存。 |
 | **`Issue` / `Patch`** | `issues`, `patches` | 監査エージェントが検知した設定矛盾（Issue）と、その自動修正提案（Patch）。 |
 
@@ -823,7 +879,7 @@ erDiagram
 ### 8.1 全体ディレクトリツリー
 
 ```
-ssssda/
+.
 ├── src/                               # バックエンド Python ソースコード
 │   ├── backend/                       # FastAPI Web API レイヤー
 │   │   ├── server.py                  # FastAPI アプリケーション定義・ミドルウェア・ルーティング
@@ -834,48 +890,81 @@ ssssda/
 │   │   ├── config.py                  # 設定クラス (Pydantic Settings)
 │   │   ├── database/                  # DBアクセス層
 │   │   │   ├── __init__.py            # Engine, SessionLocal, get_db(), init_db()
-│   │   │   ├── models.py              # SQLAlchemy 2.0 ORM モデル定義
-│   │   │   └── repository.py          # BookRepository (トランザクション & クエリ集約)
-│   │   ├── routers/                   # API ルーター群
+│   │   │   ├── models.py              # SQLAlchemy 2.0 ORM モデル定義 (35+ モデル)
+│   │   │   ├── repository.py          # BookRepository (トランザクション & クエリ集約)
+│   │   │   └── repositories/, uow.py  # リポジトリ & Unit of Work
+│   │   ├── alembic/                   # Alembic マイグレーション環境 (実体は alembic/versions/)
+│   │   ├── routers/                   # API ルーター群 (~30)
 │   │   │   ├── easy_mode.py           # かんたんモード API (生成/ポーリング/ZIP納品/ガチャ/昇格)
-│   │   │   ├── books.py               # 作品 CRUD API
-│   │   │   ├── plots.py               # プロットツリー & テンション操作 API
-│   │   │   ├── episodes.py            # 本文執筆 & エピソード管理 API
+│   │   │   ├── books.py, plots.py, episodes.py
 │   │   │   ├── graph.py               # ナレッジグラフデータ提供 API
-│   │   │   ├── illustrations.py       # 挿絵プロンプト & 画像生成 API
-│   │   │   ├── marketing.py           # マーケティング & パッケージング API
-│   │   │   └── streaming.py           # SSE リアルタイムストリーミング API
-│   │   └── tasks/                     # 非同期キューイング層
-│   │       ├── huey.py                # Huey インスタンス (Redis / SQLite 自動切替)
-│   │       └── generation_tasks.py    # 非同期生成ワーカータスク
+│   │   │   ├── illustrations.py, marketing.py
+│   │   │   ├── multimedia.py          # マルチメディアアセットパック API (ENABLE_MULTIMEDIA)
+│   │   │   ├── collab.py              # 共同編集 (ChapterVersion / Comments)
+│   │   │   ├── prompt_versions.py, prompt_compare.py
+│   │   │   ├── export.py              # eBook (EPUB) エクスポート
+│   │   │   ├── streaming.py           # SSE リアルタイムストリーミング
+│   │   │   └── ...                    # novel, hooks, structure, patches, styles, etc.
+│   │   ├── tasks/                     # 非同期キューイング層
+│   │   │   ├── huey.py                # Huey インスタンス (Redis / SQLite 自動切替)
+│   │   │   ├── generation_tasks.py    # 非同期生成ワーカータスク
+│   │   │   ├── illustration_tasks.py, multimedia_tasks.py
+│   │   ├── workflows/                 # ステートグラフ / LangGraph ワークフロー
+│   │   │   ├── full_auto_workflow.py, easy_mode_workflow.py
+│   │   │   ├── episode_writing_workflow.py, plot_expansion_workflow.py
+│   │   │   └── illustration_workflow.py, marketing_generation_workflow.py
+│   │   └── engine*.py, tension_*.py   # エンジン / テンション制御
 │   │
 │   ├── agents/                        # マルチエージェント知能層
+│   │   ├── base.py                    # BaseAgent 抽象基底
+│   │   ├── orchestrator.py            # AgentName/AgentContext/AgentResult ルーター
+│   │   ├── event_bus.py               # in-process + Redis pub/sub イベントバス
+│   │   ├── writing/                   # WritingAgent + episode_writer, bible_extractor, rewrite_orchestrator
 │   │   ├── planning.py                # 全体構成 & 企画エージェント
 │   │   ├── plot.py                    # プロット策定 & リビルドエージェント
 │   │   ├── bible.py                   # 世界観設定エージェント
-│   │   ├── context_builder.py         # コンテキスト合成エージェント
-│   │   ├── audit.py                   # 品質 & 整合性監査エージェント
+│   │   ├── context_builder_agent.py   # 執筆コンテキスト合成（新）
+│   │   ├── context_builder.py         # 旧実装（互換ラッパ、非推奨）
+│   │   ├── audit_agent.py             # AuditAgent ファサード (logical + de-AI + sharp-edge)
+│   │   ├── audit.py                   # 内部監査クラス群
 │   │   ├── illustration_agent.py      # 挿絵プロンプト生成エージェント
-│   │   └── marketing.py               # マーケティング支援エージェント
+│   │   ├── marketing.py               # マーケティング支援エージェント
+│   │   ├── writing_scheduler.py       # StreamingPlotScheduler
+│   │   └── erotic/                    # エロティック整合性サブモジュール (vocabulary/curve/...)
 │   │
-│   ├── services/                      # ドメインサービス & 外部連携層
-│   │   ├── digest_service.py          # 本文ダイジェスト & サジェスチョン生成
+│   ├── services/                      # ドメインサービス & 外部連携層 (~80 モジュール)
+│   │   ├── llm_service.py             # LLM 呼び出しラッパ (Gemini / OpenAI 互換)
+│   │   ├── llm/                       # LLM アダプタ群 (base/factory/openai/gemini/mock/retry)
+│   │   ├── rag_service.py             # GraphRAGService (vector + graph + tsvector → RRF)
 │   │   ├── graph_pipeline.py          # Apache AGE ナレッジグラフ抽出パイプライン
-│   │   ├── rag_service.py             # VectorStore + GraphRAG ハイブリッド検索
-│   │   ├── vector_store.py            # テキスト埋め込みベクトルストア
-│   │   ├── quality_scorer.py          # 小説品質スコアリングエンジン
-│   │   ├── hook_diagnoser.py          # 読者フック診断サービス
-│   │   ├── semantic_cache.py          # プロンプト・推論セマンティックキャッシュ
-│   │   ├── marketing.py               # ZIP パッケージャ (MarketingAgent)
-│   │   └── llm/                       # LLM アダプタ & ファクトリ
-│   │       ├── factory.py             # プロバイダファクトリ (OpenAI/Gemini/Claude/Mock)
-│   │       ├── openai_adapter.py      # OpenAI GPT-4o アダプタ
-│   │       ├── gemini_adapter.py      # Google Gemini アダプタ
-│   │       └── prompts.py             # 執筆・サジェスチョン用システムプロンプト集
+│   │   ├── age_client.py              # Apache AGE クライアント (Cypher / agtype / プール)
+│   │   ├── vector_store.py            # ChromaDB / pgvector / In-Memory / BM25
+│   │   ├── embedding_service.py, reranker.py
+│   │   ├── extraction_service.py      # chapter→knowledge-graph 抽出 (few-shot / multi-pass)
+│   │   ├── digest_service.py, gacha_service.py
+│   │   ├── marketing.py, illustration/(character,cover,scene)
+│   │   ├── image_service.py           # Google GenAI Imagen
+│   │   ├── auto_workflow_pipeline.py, pipeline_base.py, pipeline_steps.py
+│   │   ├── pipeline_param_mapper.py, unified_pipeline_config.py
+│   │   ├── semantic_cache.py, prompt_caching.py, redis_cache.py
+│   │   ├── prompt_registry.py, prompt_version_service.py, prompt_comparison.py
+│   │   └── cost_analytics.py, token_tracker.py, audit_service.py, ...
 │   │
+│   ├── infrastructure/                # 横断インフラ (database models, kaku DI container, ...)
+│   ├── kernels/                       # 推論カーネル群 (enigma/hegemony/resonance/serenity/...)
 │   ├── core/                          # コア共通基盤 (コンテキスト管理, A/Bテスト, プラグイン)
 │   ├── domain/                        # 純粋ドメインエンティティ & 値オブジェクト
-│   └── models/                        # Pydantic 入出力スキーマ (easy_mode_schemas.py)
+│   ├── engine/                        # パイプライン制御のサブシステム
+│   ├── easy_mode/                     # かんたんモード補助モジュール
+│   ├── llm/                           # 統合 LLM クライアント (services.llm の代替エントリ)
+│   ├── models/                        # Pydantic 入出力スキーマ
+│   ├── shared/                        # 共有ユーティリティ (resilience / circuit_breaker / safe_replace)
+│   ├── cli/                           # CLI エントリ (illustration_cli, promptops)
+│   └── presets/                       # 文体・ジャンルプリセット
+│
+├── streamlit_app/                     # 代替 UI (Streamlit)
+│   ├── 00_Settings.py                 # 設定ページ
+│   └── 01_Home.py                     # ダッシュボード / ホーム
 │
 ├── frontend/                          # フロントエンド React アプリケーション
 │   ├── src/
@@ -885,36 +974,47 @@ ssssda/
 │   │   ├── components/
 │   │   │   ├── GeneratePanel.tsx      # 入力フォーム & ポーリング進行制御
 │   │   │   ├── ExportPanel.tsx        # プレビュー表示 & ZIP エクスポート
-│   │   │   ├── GraphVisualization.tsx # ナレッジグラフ可視化コンポーネント
-│   │   │   ├── common/Toast.tsx       # トースト通知コンポーネント
-│   │   │   └── editor/Editor.tsx      # 本文エディタコンポーネント
+│   │   │   ├── GraphVisualization.tsx # react-force-graph-2d ベース
+│   │   │   ├── editor/                # StudioWorkspace / InlineAiToolbar / NextBeatsPanel
+│   │   │   └── common/Toast.tsx
 │   │   └── types/easyMode.ts          # TypeScript 型定義
-│   ├── tests/                         # Vitest + React Testing Library テスト群
-│   ├── package.json                   # npm 依存パッケージ定義
+│   ├── tests/                         # Vitest + React Testing Library + MSW
+│   ├── package.json                   # npm 依存パッケージ定義 (v4.0.0)
 │   └── vite.config.ts                 # Vite 設定 & プロキシ設定
+│
+├── alembic/                           # ルート Alembic マイグレーション (実体)
+│   └── versions/                      # 00000000_initial / 0001_erotic / 0002 / 0003_pgvector / 0011_mm / 0012_age / 0013_idempotency
 │
 ├── tests/                             # バックエンドテストスイート (pytest)
 │   ├── conftest.py                    # 共通テストフィクスチャ (real_db_manager 等)
-│   ├── test_health.py                 # /health, /metrics テスト
-│   ├── unit/                          # ルーター・サービス単体テスト
-│   └── integration/                   # 非同期生成・エクスポート統合テスト
+│   ├── unit/                          # 単体テスト (~60 ファイル)
+│   ├── integration/                   # 統合テスト (graphrag_age, streaming, multimedia_e2e...)
+│   ├── perf/                          # パフォーマンステスト
+│   ├── fixtures/, mocks/, shared/     # フィクスチャ・モック
 │
 ├── scripts/                           # 自動化 & 運用スクリプト
-│   ├── verify_all.ps1                 # 全品質ゲート一括実行スクリプト
-│   ├── smoke_test.ps1                 # E2E スモークテストスクリプト
-│   └── generate_openapi.py            # docs/openapi.json 再生成スクリプト
+│   ├── verify_all.ps1                 # 全品質ゲート一括実行
+│   ├── smoke_test.ps1                 # E2E スモークテスト
+│   └── generate_openapi.py            # docs/openapi.json 再生成
 │
 ├── docs/                              # ドキュメント & 仕様書
-│   ├── api.md                         # REST API 仕様書
-│   └── openapi.json                   # OpenAPI 3.1 完全仕様書
+│   ├── api.md, openapi.json           # REST API 仕様
+│   ├── rag_setup.md                   # RAG セットアップ
+│   ├── multimedia.md, multimedia_security.md, multimedia_slo.md
+│   ├── collab-hybrid-implementation-plan.md
+│   ├── streaming-migration.md, streaming-sse-plan.md
+│   ├── term-mapping.md, easy_mode_suite.md, implementation_plan.md
+│   ├── user/                          # ユーザー向けガイド
+│   └── demo.gif
 │
 ├── docker-compose.yml                 # 開発用 Docker Compose (ホットリロード対応)
 ├── docker-compose.prod.yml            # 本番用 Docker Compose (Nginx + Postgres + Redis)
-├── Dockerfile                         # バックエンド用マルチステージ Dockerfile
+├── Dockerfile                         # バックエンド用マルチステージ Dockerfile (python:3.12-slim)
+├── frontend/Dockerfile                # Vite dev / Nginx production
 ├── Makefile                           # 開発コマンド集
-├── pyproject.toml                     # Python ツール設定 (ruff, mypy, pytest)
+├── pyproject.toml                     # Python ツール設定 (ruff 0.16, mypy 2.3, pytest, project v4.0.0)
 ├── requirements.txt                   # 本番 Python 依存パッケージ
-├── requirements-dev.txt               # 開発用 Python 依存パッケージ
+├── alembic.ini                        # script_location = src/backend/alembic
 ├── アプリ起動.bat                     # Windows ワンクリック起動バッチ (Docker版)
 └── アプリ起動_ローカル.bat            # Windows ワンクリック起動バッチ (ローカル版)
 ```
@@ -1203,6 +1303,11 @@ Base URL: `http://localhost:8200`（Nginx本番時: `http://localhost:8080`）
 | `POST` | `/easy_mode/digest` | 前話テキストのダイジェスト要約作成 | なし |
 | `POST` | `/easy_mode/promote` | かんたん作品のアドバンスド昇格 | なし |
 | `GET` | `/graph/knowledge/{book_id}` | ナレッジグラフデータ (ノード/エッジ) 取得 | なし |
+| `POST` | `/multimedia/generate` | マルチメディアアセットパック生成 | `ENABLE_MULTIMEDIA=true` 必須 |
+| `GET` | `/multimedia/tasks/{id}` | マルチメディア生成タスクの進捗 | `ENABLE_MULTIMEDIA=true` |
+| `POST` | `/collab/versions` | 共同編集 ChapterVersion 保存 (CRDT) | なし |
+| `GET` | `/collab/versions/{book_id}/{ep}` | 章のバージョン履歴取得 | なし |
+| `POST` | `/export/ebook` | EPUB 3 形式の eBook ファイル生成 | なし |
 | `GET` | `/health` | 総合多段ヘルスチェック (DB, Queue, Metrics) | なし |
 | `GET` | `/metrics` | プロセス内メトリクススナップショット取得 | なし |
 
@@ -1337,6 +1442,15 @@ Base URL: `http://localhost:8200`（Nginx本番時: `http://localhost:8080`）
 | `OPENAI_API_KEY` | (なし) | 条件付 | OpenAI APIキー (`LLM_PROVIDER=openai` 時に必須) |
 | `GEMINI_API_KEY` | (なし) | 条件付 | Google Gemini APIキー (`LLM_PROVIDER=gemini` 時に必須) |
 | `ANTHROPIC_API_KEY` | (なし) | 条件付 | Anthropic APIキー (`LLM_PROVIDER=claude` 時に必須) |
+| `ENABLE_GRAPHRAG` | `true` | - | AGE へのエンティティ反映・ハイブリッド検索の有効化 |
+| `AGE_GRAPH_NAME` | `autonovel_graph` | - | Apache AGE グラフ名 |
+| `AUTONOVEL_RAG_MODE` | `auto` | - | 検索バックエンドの選択 (`auto` / `chroma` / `pgvector` / `memory`) |
+| `RAG_FALLBACK_MODE` | `memory` | - | ベクトルストア障害時のフォールバック |
+| `RERANKER_BACKEND` | `simple` | - | リランカ実装 (`simple` / `cross-encoder` / `none`) |
+| `CHROMA_HOST` / `CHROMA_PORT` | - | - | スタンドアロン ChromaDB を使用する場合の接続先 |
+| `REQUIRE_PG` | `false` | - | 起動時に PostgreSQL 接続を必須化 |
+| `REQUIRE_CHROMA` | `false` | - | 起動時に ChromaDB 接続を必須化 |
+| `ENABLE_MULTIMEDIA` | `false` | - | `/multimedia/*` ルーターとマルチメディア生成を有効化 |
 | `CORS_ORIGINS` | `http://localhost:5173,...` | - | 許可するオリジンのカンマ区切りホワイトリスト |
 | `POSTGRES_PASSWORD` | (なし) | 本番 | 本番Docker構成におけるPostgreSQLパスワード |
 | `REDIS_PASSWORD` | (なし) | 本番 | 本番Docker構成におけるRedis認証パスワード |
@@ -1415,6 +1529,8 @@ alembic upgrade head
 alembic downgrade -1
 ```
 
+> ⚠️ **マイグレーションファイルの配置に注意**: `alembic.ini` の `script_location = src/backend/alembic` ですが、実体のマイグレーションファイルは **リポジトリルートの `alembic/versions/`** に配置されています（`00000000_initial_migration` 〜 `0013_graph_pipeline_idempotency`）。カスタムマイグレーションを追加する際はルートの `alembic/versions/` に置いてください。
+
 ---
 
 ## 18. テスト戦略 & 品質ゲート
@@ -1449,27 +1565,27 @@ graph LR
 
 ### テスト実行コマンド集
 
-```powershell
-# 1. バックエンド全テストの実行 (pytest)
-py -m pytest -q --tb=short
+```bash
+# 1. バックエンド全テストの実行 (pytest, 80% カバレッジゲート)
+py -m pytest -q --tb=short --cov=src --cov-fail-under=80
 
 # 2. Python 静的解析 (Ruff)
 py -m ruff check src tests
 
-# 3. Python 型検査 (Mypy)
+# 3. Python 型検査 (Mypy, 警告のみ)
 py -m mypy src
 
-# 4. フロントエンド単体・統合テスト (Vitest)
-cd frontend; npm run test:ci; cd ..
+# 4. フロントエンド単体・統合テスト (Vitest + MSW)
+cd frontend && npm run test:ci -- --coverage
 
 # 5. フロントエンド Lint & 型検査
-cd frontend; npm run lint; npm run typecheck; cd ..
+cd frontend && npm run lint && npm run typecheck
 
-# 6. 全品質ゲートの一括検証 (コミット・PR前推奨)
-.\scripts\verify_all.ps1
+# 6. 全品質ゲートの一括検証 (コミット・PR前必須)
+make verify
 
 # 7. 稼働中サーバーに対する E2E スモークテスト
-.\scripts\smoke_test.ps1
+./scripts/smoke_test.ps1
 ```
 
 ---
@@ -1514,14 +1630,20 @@ make clean         # キャッシュや一時DBファイルをクリーンアッ
 ```
 
 コントリビューションの詳細は [CONTRIBUTING.md](CONTRIBUTING.md) をご覧ください。
+品質計画・テスト網羅率プランは [TEST_COVERAGE_PLAN.md](TEST_COVERAGE_PLAN.md) を、パイプライン統合の将来計画は [PIPELINE_UNIFICATION_PLAN.md](PIPELINE_UNIFICATION_PLAN.md) / [UNIFIED_PIPELINE_IMPLEMENTATION_PLAN.md](UNIFIED_PIPELINE_IMPLEMENTATION_PLAN.md) を参照してください。
+
+> **現行バージョン**: v4.0.0 (`pyproject.toml`, `frontend/package.json`, Docker イメージ `autonovel-backend:4.0.0` / `autonovel-frontend:4.0.0`)。直近のリリースノートは [CHANGELOG.md](CHANGELOG.md)。
 
 ---
 
 ## 21. ロードマップ & ライセンス
 
 ### 21.1 今後のロードマップ
+- [x] **eBook エクスポート (EPUB 3)**: 縦書き・ルビ・目次対応 (v4.0 で実装済み)
+- [x] **マルチメディア生成 (Phase 7)**: シーン画像 / 立ち絵 / 表紙 / ボイス / BGM パック (v4.0 で実装済み)
+- [x] **共同編集 (CRDT)**: `ChapterVersion` ベクタークロックマージ (v4.0 で実装済み)
+- [x] **GraphRAG 高度化**: pgvector / ChromaDB / BM25 / cross-encoder rerank の RRF 統合 (v4.0 で実装済み)
 - [ ] **リアルタイム音声対話ブレインストーミング**: 音声認識/音声合成によるAIプロット会議機能。
-- [ ] **電子書籍 (EPUB) 直接出力**: 縦書き・ルビ・目次付きEPUBファイルのワンクリック生成。
 - [ ] **多言語自動ローカライズ**: 生成された日本語小説の英語・中国語圏向け高品質翻訳パイプライン。
 - [ ] **Web投稿サイト API 連携**: 小説家になろう・カクヨム等への自動下書き投稿機能。
 
