@@ -122,6 +122,15 @@ class VectorStoreProtocol(Protocol):
         where: dict[str, Any] | None = None,
     ) -> list[dict[str, Any]]: ...
 
+    async def search_with_score(
+        self,
+        collection_name: str,
+        query_embedding: list[float],
+        top_k: int = 5,
+        where: dict[str, Any] | None = None,
+        min_score: float = 0.0,
+    ) -> list[dict[str, Any]]: ...
+
     async def delete_by_id(self, collection_name: str, ids: list[str]) -> None: ...
 
     async def clear_collection(self, collection_name: str) -> None: ...
