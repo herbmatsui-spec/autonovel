@@ -3,6 +3,7 @@ import logging
 from typing import Any
 
 from src.agents.base import BaseAgent
+from src.agents.orchestrator import AgentContext, AgentResult, AgentName
 from src.services.llm_service import LLMService
 
 logger = logging.getLogger(__name__)
@@ -35,6 +36,31 @@ class BibleAgent(BaseAgent):
         world_data = world_result.get("metadata", {})
         return world_data
 
-    async def run(self, *args, **kwargs):
-        logger.info("BibleAgent run invoked")
-        return await self.generate_bible(**kwargs)
+    async def run(self, ctx: AgentContext) -> AgentResult:
+        """Orchestrator 用エントリーポイント。"""
+        title = ctx.artifacts.get("title")
+        synopsis = ctx.artifacts.get("synopsis", "")
+        target_eps = ctx.artifacts.get("target_eps", 10)
+        concept = ctx.artifacts.get("concept", "")
+        genre = ctx.artifacts.get("genre", "fantasy")
+        keywords = ctx.artifacts.get("keywords", "")
+
+        if not title:
+            return AgentResult(
+                next_agent=None,
+                artifacts={},
+                error="title is required in artifacts",
+            )
+
+        bible_data = await self.generate_bible(
+            title=title,
+            synopsis=synopsis,
+            target_eps=target_eps,
+            concept=concept,
+            genre=genre,
+            keywords=keywords,
+        )
+        return AgentResult(
+            next_agent=AgentName.CONTEXT_BUILDER,
+            artifacts={"bible": bible_data},
+        )

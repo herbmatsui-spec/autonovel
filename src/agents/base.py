@@ -1,7 +1,10 @@
 # agents/base.py
 import logging
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.agents.orchestrator import AgentContext, AgentResult
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +57,6 @@ class BaseAgent(ABC):
         return book.current_branch_id if book and book.current_branch_id else 1
 
     @abstractmethod
-    async def run(self, *args, **kwargs):
+    async def run(self, ctx: "AgentContext") -> "AgentResult":
         """エージェント固有のメインロジック。サブクラスで実装する。"""
         pass

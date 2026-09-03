@@ -3,6 +3,7 @@ import logging
 from typing import Any
 
 from src.agents.base import BaseAgent
+from src.agents.orchestrator import AgentContext, AgentResult, AgentName
 from src.models.plot import ArcList
 from src.services.llm_service import LLMService
 
@@ -91,6 +92,29 @@ class PlanningAgent(BaseAgent):
                         arc[key] = arc[key] + (start_ep - 1)
         return metadata
 
-    async def run(self, *args, **kwargs):
-        logger.info("PlanningAgent run invoked")
-        return await self.generate_arcs(**kwargs)
+    async def run(self, ctx: AgentContext) -> AgentResult:
+        """Orchestrator 用エントリーポイント。
+        ctx.artifacts から必要な入力を取得し、arcs を生成して次のエージェントへ渡す。
+        """
+        title = ctx.artifacts.get("title")
+        synopsis = ctx.artifacts.get("synopsis", "")
+        target_eps = ctx.artifacts.get("target_eps", 10)
+        start_ep = ctx.artifacts.get("start_ep", 1)
+
+        if not title:
+            return AgentResult(
+                next_agent=None,
+                artifacts={},
+                error="title is required in artifacts",
+            )
+
+        arcs = await self.generate_arcs(
+            title=title,
+            synopsis=synopsis,
+            target_eps=target_eps,
+            start_ep=start_ep,
+        )
+        return AgentResult(
+            next_agent=AgentName.PLOT,
+            artifacts={"arcs": arcs.model_dump()},
+        )

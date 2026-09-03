@@ -3,6 +3,7 @@ from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING, Any, Optional
 
 from src.agents.base import BaseAgent
+from src.agents.orchestrator import AgentContext, AgentResult, AgentName
 
 if TYPE_CHECKING:
     from src.core.interfaces import IPlotExpander, IPromptManager, IReporter, IRepository
@@ -423,6 +424,34 @@ class PlotAgent(BaseAgent):
         )
         return results
 
-    async def run(self, *args, **kwargs):
-        logger.info("PlotAgent run invoked")
-        return await self.expand_plots(**kwargs)
+    async def run(self, ctx: AgentContext) -> AgentResult:
+        """Orchestrator 用エントリーポイント。
+        ctx.artifacts から必要な入力を取得し、プロットを生成して次のエージェントへ渡す。
+        """
+        # 既存の expand_plots メソッドを活用するため、artifacts から必要な情報を取得
+        book_id = ctx.book_id
+        branch_id = ctx.branch_id
+        ep_num = ctx.ep_num
+        arcs = ctx.artifacts.get("arcs", [])
+
+        # ep_num 単体の場合はその話数のみ、リストの場合はリストを使用
+        target_eps = ctx.artifacts.get("target_ep_nums", [ep_num])
+
+        try:
+            plots = await self.expand_plots(
+                book_id=book_id,
+                ep_nums=target_eps,
+                arcs=arcs,
+                reporter=ctx.artifacts.get("reporter"),
+                branch_id=branch_id,
+            )
+            return AgentResult(
+                next_agent=AgentName.BIBLE,
+                artifacts={"plots": [p.model_dump() if hasattr(p, "model_dump") else p for p in plots]},
+            )
+        except Exception as e:
+            return AgentResult(
+                next_agent=None,
+                artifacts={},
+                error=f"Plot generation failed: {e}",
+            )

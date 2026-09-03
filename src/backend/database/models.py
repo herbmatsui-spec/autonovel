@@ -18,6 +18,7 @@ from sqlalchemy import (
     event,
     func,
     text,
+    JSON,
 )
 
 from src.infrastructure.database.models.base_orm import Base

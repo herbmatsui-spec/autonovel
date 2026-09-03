@@ -24,6 +24,7 @@ class IllustrationAgent(BaseAgent):
 
     request は src / autonovel.src いずれの経路で生成された IllustrationRequest
     でも受け付けられるよう、isinstance に依存せず属性で判定する。
+    現在はプロンプト生成のみ対応、画像生成は将来実装。
     """
 
     AGENT_NAME = "illustration"
@@ -46,7 +47,16 @@ class IllustrationAgent(BaseAgent):
         raise ValueError("Invalid or missing illustration request")
 
     async def run(self, **kwargs) -> dict[str, Any]:
-        """エージェントのメイン実行ロジック。
+        """エージェントのメイン実行ロジック (将来の画像生成用)。
+
+        kwargs:
+            - request: IllustrationRequest
+        """
+        # 現在は画像生成未実装。プロンプトのみ返す generate_prompt_only を使用
+        return await self.generate_prompt_only(**kwargs)
+
+    async def generate_prompt_only(self, **kwargs) -> dict[str, Any]:
+        """プロンプトのみ生成するメソッド (画像生成は将来実装)。
 
         kwargs:
             - request: IllustrationRequest
@@ -54,18 +64,28 @@ class IllustrationAgent(BaseAgent):
         try:
             request = self._coerce_request(kwargs.get("request"))
             kind = _type_value(request.illustration_type)
+
             if kind == IllustrationType.COVER.value:
-                result = await self._generate_cover(request)
+                prompt = await self._build_cover_prompt(request)
             elif kind == IllustrationType.CHARACTER.value:
-                result = await self._generate_character(request)
+                prompt = await self._build_character_prompt(request)
             else:
-                result = await self._generate_episode(request)
+                prompt = await self._build_episode_prompt(request)
+
+            # 画像生成は行わず、プロンプトとメタデータのみ返す
+            result = IllustrationResult(
+                request=request,
+                image_url="",  # 画像生成未実装のため空
+                prompt=prompt,
+                model_used=resolve_request_model(request),
+                generation_time_ms=0,
+            )
 
             illustration_id = await self._persist(request, result)
             result.illustration_id = illustration_id
-            return {"status": "success", "result": result}
+            return {"status": "success", "result": result, "prompt": prompt}
         except Exception as e:  # noqa: BLE001
-            logger.error(f"IllustrationAgent error: {str(e)}")
+            logger.error(f"IllustrationAgent prompt generation error: {str(e)}")
             return {"status": "error", "message": str(e)}
 
     async def _generate_cover(self, request: IllustrationRequest) -> IllustrationResult:
@@ -117,6 +137,64 @@ class IllustrationAgent(BaseAgent):
             model_used=resolve_request_model(request),
             generation_time_ms=elapsed,
         )
+
+    async def _build_cover_prompt(self, request: IllustrationRequest) -> str:
+        """表紙用プロンプトを構築 (将来の実装で使用)"""
+        ctx = request.book_context or {}
+        title = ctx.get("title", "無題")
+        genre = ctx.get("genre", "ファンタジー")
+        concept = ctx.get("concept", "")
+
+        parts = [
+            f"Book cover illustration for '{title}'",
+            f"Genre: {genre}",
+        ]
+        if concept:
+            parts.append(f"Concept: {concept}")
+        parts.append("Detailed, cinematic lighting, rich detail, professional book cover art, no text or letters in image")
+
+        if is_r15(request.safety_level):
+            parts.append("Tasteful R15 artistic representation, intimate but not explicit")
+
+        return ", ".join(parts)
+
+    async def _build_character_prompt(self, request: IllustrationRequest) -> str:
+        """キャラクター用プロンプトを構築 (将来の実装で使用)"""
+        ctx = request.book_context or {}
+        character_name = ctx.get("character_name", "主人公")
+        character_desc = ctx.get("character_description", "")
+        genre = ctx.get("genre", "ファンタジー")
+
+        parts = [
+            f"Character illustration of {character_name}",
+            f"Genre: {genre}",
+        ]
+        if character_desc:
+            parts.append(f"Description: {character_desc}")
+        parts.append("Detailed character design, anime/manga style, clean lines, no text or letters in image")
+
+        if is_r15(request.safety_level):
+            parts.append("Tasteful R15 artistic representation, intimate but not explicit")
+
+        return ", ".join(parts)
+
+    async def _build_episode_prompt(self, request: IllustrationRequest) -> str:
+        """エピソード用プロンプトを構築 (将来の実装で使用)"""
+        ctx = request.book_context or {}
+        title = ctx.get("title", "無題")
+        genre = ctx.get("genre", "ファンタジー")
+        episode_num = getattr(request, "episode_number", None)
+
+        parts = [
+            f"Scene illustration for episode {episode_num} of '{title}'",
+            f"Genre: {genre}",
+        ]
+        parts.append("Detailed background, cinematic lighting, rich detail, manga/anime style, no text or letters in image")
+
+        if is_r15(request.safety_level):
+            parts.append("Tasteful R15 artistic representation, intimate but not explicit")
+
+        return ", ".join(parts)
 
     async def generate_episode_scenes(
         self, request: IllustrationRequest
