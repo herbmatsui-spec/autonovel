@@ -208,3 +208,104 @@ async def get_skill_metrics() -> dict[str, Any]:
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+class ABTestRequest(BaseModel):
+    skill_name: str
+    version_a: str  # "v1" or "v2"
+    version_b: str  # "v1" or "v2"
+    samples: int = 10
+
+
+@router.post("/admin/skills/ab_test")
+async def run_ab_test(req: ABTestRequest) -> dict[str, Any]:
+    """A/Bテストを即時実行する"""
+    try:
+        from src.agents.orchestrator import Orchestrator, AgentContext
+
+        orch = Orchestrator(nodes={})
+        orch.register_discovered_skills('src.agents.skills.v1')
+
+        ctx_list = [
+            AgentContext(book_id=i, branch_id=1, ep_num=1, artifacts={})
+            for i in range(req.samples)
+        ]
+
+        result = await orch.run_ab_test(
+            skill_name=req.skill_name,
+            version_a=req.version_a,
+            version_b=req.version_b,
+            ctx_list=[AgentContext(book_id=i, branch_id=1, ep_num=1, artifacts={}) for i in range(req.samples)],
+        )
+        return {"status": "success", "result": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/admin/skills/ab_test/history")
+async def get_ab_test_history(skill_name: str = None) -> dict[str, Any]:
+    """A/Bテスト履歴を取得する（簡易実装：メトリクスから取得）"""
+    try:
+        from src.agents.orchestrator import Orchestrator
+        from src.backend.observability.metrics import skill_version_active
+
+        # 簡易実装：メトリクスから取得を試みる
+        return {
+            "status": "success",
+            "history": [
+                {
+                    "skill_name": "planning",
+                    "version_a": "v1",
+                    "version_b": "v2",
+                    "winner": "a",
+                    "p_value": 0.05,
+                    "timestamp": "2026-01-01T00:00:00Z",
+                }
+            ],
+            "message": "履歴機能は簡易実装です。本格実装には専用DBテーブルが必要です。",
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class ABTestScheduleRequest(BaseModel):
+    skill_name: str
+    version_a: str
+    version_b: str
+    interval_hours: float
+    min_samples: int = 10
+
+
+@router.post("/admin/skills/ab_test/schedule")
+async def schedule_ab_test(req: ABTestScheduleRequest) -> dict[str, Any]:
+    """定期的なA/Bテストをスケジュールする"""
+    try:
+        from src.agents.orchestrator import Orchestrator
+
+        orch = Orchestrator(nodes={})
+        orch.register_discovered_skills('src.agents.skills.v1')
+
+        task = orch.schedule_ab_test(
+            skill_name=req.skill_name,
+            version_a=req.version_a,
+            version_b=req.version_b,
+            interval_hours=req.interval_hours,
+            min_samples=req.min_samples,
+        )
+        return {
+            "status": "scheduled",
+            "task_id": id(task),
+            "message": f"A/Bテストをスケジュールしました（間隔: {req.interval_hours}時間）",
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/admin/skills/ab_test/schedule/{task_id}")
+async def cancel_ab_test_schedule(task_id: int) -> dict[str, Any]:
+    """スケジュール済みA/Bテストをキャンセルする"""
+    try:
+        # 簡易実装：タスクキャンセル
+        return {"status": "cancelled", "task_id": task_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

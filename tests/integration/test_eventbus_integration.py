@@ -88,8 +88,8 @@ async def test_orchestrator_emits_events():
     async def handler(event: AgentEvent):
         received.append(event)
 
-    bus.subscribe("test_agent", handler)
-    bus.subscribe("test_agent2", handler)
+    bus.subscribe("EventEmittingSkill", handler)
+    bus.subscribe("EventEmittingSkill2", handler)
 
     skill1 = EventEmittingSkill(event_bus=bus)
     skill2 = EventEmittingSkill(event_bus=bus)
@@ -116,9 +116,9 @@ async def test_orchestrator_emits_events():
     agents_seen = set(e.agent for e in received)
     assert "EventEmittingSkill" in agents_seen
 
-    statuses = set(e.payload.get("status") for e in received if "status" in e.payload)
-    assert "started" in statuses
-    assert "completed" in statuses
+    statuses = set(e.payload.get("event") for e in received if "event" in e.payload)
+    assert "skill.started" in statuses
+    assert "skill.completed" in statuses
 
 
 @pytest.mark.asyncio

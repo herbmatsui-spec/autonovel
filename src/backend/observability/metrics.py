@@ -115,6 +115,35 @@ book_score_improvement_priority = Gauge(
     ["book_id", "dimension"],
 )
 
+ab_test_result_total = Counter(
+    "ab_test_result_total",
+    "Total number of A/B tests executed",
+    ["skill_name", "winner"],  # winner: a, b, tie
+)
+
+ab_test_duration_seconds = Histogram(
+    "ab_test_duration_seconds",
+    "A/B test execution duration",
+    ["skill_name", "version"],
+    buckets=[0.1, 0.5, 1.0, 2.0, 5.0, 10.0, 30.0, 60.0],
+)
+
+ab_test_success_rate = Gauge(
+    "ab_test_success_rate",
+    "A/B test success rate per version",
+    ["skill_name", "version"],
+)
+
+
+def record_ab_test_result(skill_name: str, winner: str, version_a: str, version_b: str, 
+                          duration: float, success_rate_a: float, success_rate_b: float):
+    """A/Bテスト結果を記録"""
+    ab_test_result_total.labels(skill_name=skill_name, winner=winner).inc()
+    ab_test_duration_seconds.labels(skill_name=skill_name, version="a").observe(duration)
+    ab_test_duration_seconds.labels(skill_name=skill_name, version="b").observe(duration)
+    ab_test_success_rate.labels(skill_name=skill_name, version="a").set(success_rate_a)
+    ab_test_success_rate.labels(skill_name=skill_name, version="b").set(success_rate_b)
+
 
 def record_book_score(score: dict, genre: str = "", phase: str = ""):
     """BookScore メトリクスを記録"""

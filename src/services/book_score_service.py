@@ -755,3 +755,163 @@ class BookScoreCalculator:
         except Exception as e:
             logger.debug(f"Reader experience scoring failed: {e}")
             return 50.0
+
+    async def analyze_trend(self, book_id: int, window: int = 10) -> dict[str, Any]:
+        """スコアの時系列トレンドを分析する（線形回帰・移動平均・変化点検出）"""
+        if not self._repository:
+            return {"error": "Repository not configured"}
+
+        scores = await self._repository.get_all_for_book(book_id)
+        if len(scores) < 3:
+            return {
+                "book_id": book_id,
+                "error": "Insufficient data for trend analysis (need at least 3 chapters)",
+                "chapters_evaluated": len(scores),
+            }
+
+        # 直近ウィンドウ分のスコアを取得
+        recent = scores[-window:] if len(scores) >= window else scores
+        n = len(recent)
+        x_vals = list(range(n))
+        y_vals = [s.overall_score for s in recent]
+
+        # 線形回帰（最小二乗法）
+        x_mean = sum(x_vals) / n
+        y_mean = sum(y_vals) / n
+        
+        numerator = sum((x - x_mean) * (y - y_mean) for x, y in zip(x_vals, y_vals))
+        denominator = sum((x - x_mean) ** 2 for x in x_vals)
+        
+        slope = numerator / denominator if denominator != 0 else 0
+        intercept = y_mean - slope * x_mean
+        
+        # 決定係数 R^2
+        y_pred = [intercept + slope * x for x in x_vals]
+        ss_res = sum((y - yp) ** 2 for y, yp in zip(y_vals, y_pred))
+        ss_tot = sum((y - y_mean) ** 2 for y in y_vals)
+        r_squared = 1 - (ss_res / ss_tot) if ss_tot > 0 else 0
+
+        # 移動平均（3章）
+        ma_3 = []
+        for i in range(2, n):
+            ma_3.append(sum(y_vals[i-2:i+1]) / 3)
+
+        # 変化点検出（簡易版: スコア差分の閾値）
+        changepoints = []
+        for i in range(1, n):
+            diff = y_vals[i] - y_vals[i-1]
+            if abs(diff) > 10:  # 10点以上の変化
+                changepoints.append({
+                    "chapter_index": i,
+                    "prev_score": y_vals[i-1],
+                    "curr_score": y_vals[i],
+                    "change": diff,
+                })
+
+        # 予測（次章の予測値）
+        next_chapter_pred = intercept + slope * n
+
+        # トレンド判定
+        trend_direction = "improving" if slope > 1 else ("declining" if slope < -1 else "stable")
+        
+        return {
+            "book_id": book_id,
+            "chapters_evaluated": n,
+            "slope": round(slope, 4),
+            "intercept": round(intercept, 2),
+            "r_squared": round(r_squared, 4),
+            "trend_direction": trend_direction,
+            "moving_avg_3": [round(v, 2) for v in ma_3],
+            "changepoints": changepoints,
+            "next_chapter_prediction": round(next_chapter_pred, 2),
+            "latest_score": y_vals[-1],
+            "avg_score": round(sum(y_vals) / n, 2),
+        }
+
+    async def generate_pdca_report(self, book_id: int) -> dict[str, Any]:
+        """PDCA レポートを生成する（Plan-Do-Check-Act）"""
+        trend = await self.analyze_trend(book_id)
+        
+        if "error" in trend:
+            return {"error": trend["error"], "book_id": book_id}
+
+        # 目標スコア（設定可能にするべきだが、ここでは固定）
+        target_score = 80.0
+        current_avg = trend["avg_score"]
+        gap = target_score - current_avg
+
+        # Plan: 目標設定
+        plan = {
+            "target_score": target_score,
+            "current_average": trend["avg_score"],
+            "gap": round(gap, 2),
+            "priority_dimensions": [],
+        }
+
+        # 直近スコアから低次元を特定
+        if self._repository:
+            scores = await self._repository.get_all_for_book(trend["book_id"])
+            if scores:
+                latest = scores[-1]
+                dims = {
+                    "structure": latest.structure_score,
+                    "coherency": latest.coherency_score,
+                    "factual_grounding": latest.factual_grounding_score,
+                    "visual_textual_synergy": latest.visual_textual_synergy_score,
+                    "reader_experience": latest.reader_experience_score,
+                }
+                # 70点未満を優先順位として抽出
+                plan["priority_dimensions"] = [
+                    {"dimension": k, "score": v, "gap": 70 - v}
+                    for k, v in dims.items() if v < 70
+                ]
+                plan["priority_dimensions"].sort(key=lambda x: x["gap"], reverse=True)
+
+        # Do: 実行状況（直近3章の推移）
+        do = {
+            "recent_scores": trend.get("moving_avg_3", []),
+            "trend_direction": trend["trend_direction"],
+            "slope": trend["slope"],
+        }
+
+        # Check: 評価・検証
+        check = {
+            "target_achieved": trend["avg_score"] >= 80,
+            "trend_improving": trend["slope"] > 0,
+            "r_squared": trend["r_squared"],
+            "changepoints_detected": len(trend.get("changepoints", [])),
+        }
+
+        # Act: 次のアクション
+        act = {
+            "recommended_actions": [],
+            "next_chapter_prediction": trend["next_chapter_prediction"],
+        }
+
+        if trend["trend_direction"] == "declining":
+            act["recommended_actions"].append({
+                "action": "investigate_decline",
+                "reason": "スコアが低下傾向にあります",
+                "priority": "high",
+            })
+        if trend.get("changepoints"):
+            act["recommended_actions"].append({
+                "action": "review_changepoints",
+                "reason": f"{len(trend['changepoints'])}個の変化点が検出されました",
+                "priority": "medium",
+            })
+        for pd in plan.get("priority_dimensions", []):
+            act["recommended_actions"].append({
+                "action": f"improve_{pd['dimension']}",
+                "reason": f"{pd['dimension']}スコアが{pd['score']:.1f}点（目標70点未満）",
+                "priority": "high" if pd["gap"] > 20 else "medium",
+            })
+
+        return {
+            "book_id": trend["book_id"],
+            "generated_at": "now",  # 実装時は datetime.utcnow().isoformat()
+            "plan": plan,
+            "do": do,
+            "check": check,
+            "act": act,
+        }

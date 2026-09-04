@@ -138,6 +138,183 @@ class Orchestrator:
         """登録済みスキルのメトリクスを取得"""
         return SkillAgent.get_metrics()
 
+    async def run_ab_test(
+        self,
+        skill_name: str,
+        version_a: str,
+        version_b: str,
+        ctx_list: List[AgentContext],
+        metric_key: str = "avg_duration_sec",
+    ) -> dict[str, Any]:
+        """A/Bテストを実行し、2バージョンのメトリクスを比較する。
+        
+        Args:
+            skill_name: テスト対象スキル名
+            version_a: バージョンA (例: "v1")
+            version_b: バージョンB (例: "v2")
+            ctx_list: 同一入力コンテキストリスト
+            metric_key: 比較するメトリクスキー
+            
+        Returns:
+            {
+                "version_a": {"metrics": ..., "samples": N},
+                "version_b": {"metrics": ..., "samples": N},
+                "winner": "a" | "b" | "tie",
+                "p_value": float,
+                "metric_key": str,
+            }
+        """
+        if version_a not in ("v1", "v2") or version_b not in ("v1", "v2"):
+            raise ValueError("Versions must be 'v1' or 'v2'")
+        
+        from src.agents.skill_base import SkillAgent
+        import statistics
+        import random
+        
+        # 元のバージョンを保存
+        original_version = self._active_skill_version
+        
+        results = {"a": [], "b": []}
+        
+        try:
+            # バージョンAで実行
+            self.set_skill_version(version_a)
+            skill_cls_a = self.get_skill_class(skill_name)
+            if not skill_cls_a:
+                raise ValueError(f"Skill '{skill_name}' not found in version {version_a}")
+            
+            for ctx in ctx_list:
+                skill_instance = skill_cls_a()
+                ctx_copy = AgentContext(
+                    book_id=ctx.book_id,
+                    branch_id=ctx.branch_id,
+                    ep_num=ctx.ep_num,
+                    artifacts=ctx.artifacts.copy(),
+                )
+                try:
+                    result = await skill_instance.execute(ctx_copy)
+                    results["a"].append({
+                        "success": result.error is None,
+                        "duration": getattr(skill_instance, '_last_duration', 0),
+                    })
+                except Exception:
+                    results["a"].append({"success": False, "duration": 0})
+            
+            # バージョンBで実行
+            self.set_skill_version(version_b)
+            skill_cls_b = self.get_skill_class(skill_name)
+            if not skill_cls_b:
+                raise ValueError(f"Skill '{skill_name}' not found in version {version_b}")
+            
+            for ctx in ctx_list:
+                skill_instance = skill_cls_b()
+                ctx_copy = AgentContext(
+                    book_id=ctx.book_id,
+                    branch_id=ctx.branch_id,
+                    ep_num=ctx.ep_num,
+                    artifacts=ctx.artifacts.copy(),
+                )
+                try:
+                    result = await skill_instance.execute(ctx_copy)
+                    results["b"].append({
+                        "success": result.error is None,
+                        "duration": getattr(skill_instance, '_last_duration', 0),
+                    })
+                except Exception:
+                    results["b"].append({"success": False, "duration": 0})
+            
+            # 統計計算
+            def calc_stats(runs):
+                if not runs:
+                    return {"success_rate": 0, "avg_duration": 0, "samples": 0}
+                successful = [r for r in runs if r["success"]]
+                durations = [r["duration"] for r in successful] if successful else [0]
+                return {
+                    "success_rate": len(successful) / len(runs),
+                    "avg_duration": statistics.mean(durations) if durations else 0,
+                    "samples": len(runs),
+                }
+            
+            stats_a = calc_stats(results["a"])
+            stats_b = calc_stats(results["b"])
+            
+            # 勝者判定（成功率優先、同率なら平均時間）
+            if stats_a["success_rate"] > stats_b["success_rate"]:
+                winner = "a"
+            elif stats_b["success_rate"] > stats_a["success_rate"]:
+                winner = "b"
+            elif stats_a["avg_duration"] < stats_b["avg_duration"]:
+                winner = "a"
+            elif stats_b["avg_duration"] < stats_a["avg_duration"]:
+                winner = "b"
+            else:
+                winner = "tie"
+            
+            # 簡易p値計算（二項検定の近似）
+            import math
+            n = len(results["a"])
+            if n > 0:
+                p_a = stats_a["success_rate"]
+                p_b = stats_b["success_rate"]
+                p_pool = (p_a + p_b) / 2
+                if p_pool > 0 and p_pool < 1:
+                    se = math.sqrt(p_pool * (1 - p_pool) * (2 / n))
+                    z = abs(p_a - p_b) / se if se > 0 else 0
+                    p_value = 2 * (1 - 0.5 * (1 + math.erf(z / math.sqrt(2)))) if z > 0 else 1.0
+                else:
+                    p_value = 1.0
+            else:
+                p_value = 1.0
+            
+            return {
+                "version_a": {"version": version_a, "metrics": stats_a, "samples": len(results["a"])},
+                "version_b": {"version": version_b, "metrics": stats_b, "samples": len(results["b"])},
+                "winner": winner,
+                "p_value": p_value,
+                "metric_key": metric_key,
+            }
+            
+        finally:
+            # 元のバージョンに戻す
+            self.set_skill_version(original_version)
+            
+            # メトリクス記録
+            try:
+                from src.backend.observability.metrics import record_ab_test_result
+                record_ab_test_result(
+                    skill_name=skill_name,
+                    winner=winner,
+                    version_a=version_a,
+                    version_b=version_b,
+                    duration=0,  # 実装簡略化
+                    success_rate_a=stats_a["success_rate"],
+                    success_rate_b=stats_b["success_rate"],
+                )
+            except Exception:
+                pass
+
+    def schedule_ab_test(
+        self,
+        skill_name: str,
+        version_a: str,
+        version_b: str,
+        interval_hours: float,
+        min_samples: int = 10,
+    ) -> str:
+        """定期的なA/Bテストをスケジュールする（簡易実装：即時実行・結果返却）。
+        
+        実運用ではバックグラウンドタスクとして実装する必要があります。
+        """
+        import asyncio
+        # 簡易実装：指定サンプル数のコンテキストを生成して即時実行
+        ctx_list = [
+            AgentContext(book_id=i, branch_id=1, ep_num=1, artifacts={})
+            for i in range(min_samples)
+        ]
+        return asyncio.create_task(
+            self.run_ab_test(skill_name, version_a, version_b, ctx_list)
+        )
+
     async def run(self, ctx: AgentContext, start: AgentName) -> AgentContext:
         current = start
         while current:

@@ -25,6 +25,10 @@
   <img src="docs/demo.gif" alt="AutoNovel UI & Workflow Demo" width="900" style="border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
 </p>
 
+<p align="center">
+  <img src="docs/user/multimedia.md" alt="Multimedia Features" width="900" style="border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); display: none;">
+</p>
+
 *▲ AutoNovel v4.0: 3案企画ガチャ / 逆算プロット / 上級者Studio / インライン五感推敲 / GraphRAG相関図 / ワンクリックZIP納品 / マルチメディア・eBook / IF分岐・共同編集 (CRDT)*
 
 </div>
