@@ -55,7 +55,19 @@ class WritingAgent(SkillAgent):
         reporter = artifacts.get("reporter")
         style_tag = artifacts.get("style_tag")
 
+        # 再生成フォーカス取得（WritingService からの指示）
+        regeneration_focus = artifacts.get("regeneration_focus", [])
+        regeneration_action = artifacts.get("regeneration_action")
+        
+        if regeneration_focus:
+            ctx.artifacts["regeneration_mode"] = True
+            ctx.artifacts["regeneration_focus"] = regeneration_focus
+            if regeneration_action:
+                ctx.artifacts["writing_focus"] = regeneration_action.writing_focus
+            logger.info(f"WritingAgent: 再生成モード - focus={regeneration_focus}")
+
         # リポーターファクトリからレポーター作成（渡されていない場合）
+        reporter = artifacts.get("reporter")
         if reporter is None and self.reporter_factory:
             reporter = self.reporter_factory(book_id, branch_id)
 
@@ -73,6 +85,8 @@ class WritingAgent(SkillAgent):
                 reporter=reporter,
                 branch_id=branch_id,
                 style_tag=style_tag,
+                regeneration_focus=artifacts.get("regeneration_focus", []),
+                writing_focus=artifacts.get("writing_focus", []),
             )
 
             if failed_episodes:
@@ -147,6 +161,8 @@ class WritingAgent(SkillAgent):
             reporter=reporter,
             branch_id=branch_id,
             style_tag=style_tag,
+            regeneration_focus=regeneration_focus or [],
+            writing_focus=writing_focus or [],
         )
 
     async def generate_episodes(
@@ -160,6 +176,8 @@ class WritingAgent(SkillAgent):
         reporter: Any,
         branch_id: int = 1,
         style_tag: Any = None,
+        regeneration_focus: list[str] = None,
+        writing_focus: list[str] = None,
     ) -> int:
         """WritingService 互換: 単発執筆"""
         generator = self._get_generator()
@@ -173,6 +191,8 @@ class WritingAgent(SkillAgent):
             reporter=reporter,
             branch_id=branch_id,
             style_tag=style_tag,
+            regeneration_focus=regeneration_focus or [],
+            writing_focus=writing_focus or [],
         )
 
     async def analyze_and_import_chapter(

@@ -58,6 +58,8 @@ class WritingGenerator:
         reporter: Any,
         branch_id: int = 1,
         style_tag: Any = None,
+        regeneration_focus: list[str] = None,
+        writing_focus: list[str] = None,
     ) -> tuple[int, list[dict[str, Any]]]:
         """エピソード生成パイプラインを実行"""
         self.branch_id = branch_id
@@ -74,6 +76,8 @@ class WritingGenerator:
             reporter=reporter,
             branch_id=branch_id,
             style_tag=style_tag,
+            regeneration_focus=regeneration_focus or [],
+            writing_focus=writing_focus or [],
         )
 
     async def generate_episodes(
@@ -87,6 +91,8 @@ class WritingGenerator:
         reporter: Any,
         branch_id: int = 1,
         style_tag: Any = None,
+        regeneration_focus: list[str] = None,
+        writing_focus: list[str] = None,
     ) -> int:
         """単発エピソード生成（EpisodePipeline 経由）"""
         result = await self.generate_episodes_pipeline(
@@ -99,6 +105,8 @@ class WritingGenerator:
             reporter=reporter,
             branch_id=branch_id,
             style_tag=style_tag,
+            regeneration_focus=regeneration_focus or [],
+            writing_focus=writing_focus or [],
         )
         return result[0]  # total_chars
 

@@ -53,13 +53,24 @@ class IllustrationAgent(SkillAgent):
                 artifacts={},
                 error="request is required in artifacts",
             )
+        
+        # 再生成フォーカス取得（WritingService からの指示：visual_textual_synergy のみ対応）
+        regeneration_focus = ctx.artifacts.get("regeneration_focus", [])
+        regeneration_action = ctx.artifacts.get("regeneration_action")
+        
+        if "visual_textual_synergy" in regeneration_focus:
+            ctx.artifacts["illustration_regeneration"] = True
+            if regeneration_action:
+                ctx.artifacts["illustration_focus"] = regeneration_action.illustration_focus
+            logger.info(f"IllustrationAgent: 再生成モード - focus=visual_textual_synergy")
+        
         result_dict = await self.generate_prompt_only(request=request)
         
         self.emit_event("illustration.completed", {
             "illustration_type": getattr(request, "illustration_type", None),
             "book_id": getattr(request, "book_id", None),
         })
-
+        
         return AgentResult(
             next_agent=None,
             artifacts={"illustration_result": result_dict},

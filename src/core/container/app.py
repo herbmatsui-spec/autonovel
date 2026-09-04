@@ -142,10 +142,19 @@ class AppContainer(InfraContainer):
         repo=repo,
         llm=llm,
         style_rag=style_rag,
-        plot_expander=plot_expander,
+        pm=pm,
+        ctx_mgr=ctx_mgr,
     )
     formatter: providers.Singleton = providers.Singleton(
         "src.backend.sanitizer.TextFormatter",
+    )
+    context_builder_agent: providers.Singleton = providers.Singleton(
+        "src.agents.context_builder_agent.ContextBuilderAgent",
+        repo=repo,
+        llm=llm,
+        style_rag=style_rag,
+        rag_prefetch=providers.Self(),  # RAGPrefetchService が必要なら追加
+        event_bus=providers.Self(),  # EventBus が必要なら追加
     )
     image_service: providers.Factory = providers.Factory(
         "src.services.image_service.ImageService",
@@ -185,6 +194,22 @@ class AppContainer(InfraContainer):
     illustration_workflow: providers.Factory = providers.Factory(
         "src.backend.workflows.illustration_workflow.IllustrationWorkflow",
         illustration_agent=illustration_agent,
+    )
+
+    # BookScore & WritingService
+    book_score_calculator: providers.Singleton = providers.Singleton(
+        "src.services.book_score_service.BookScoreCalculator",
+        repository=providers.Self(),  # BookScoreRepository
+    )
+    writing_service: providers.Singleton = providers.Singleton(
+        "src.services.writing_service.WritingService",
+        writing_agent=writer,
+        book_score_calculator=book_score_calculator,
+        context_builder_agent=context_builder_agent,
+        illustration_agent=illustration_agent,
+        max_retries=3,
+        score_threshold=70.0,
+        backoff_base=2.0,
     )
 
     # DAG パイプラインのプロバイダー

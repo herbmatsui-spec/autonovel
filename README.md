@@ -17,7 +17,7 @@
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 [![Type Checked: mypy](https://img.shields.io/badge/type%20checked-mypy-blue)](https://mypy-lang.org/)
 [![Vitest](https://img.shields.io/badge/tested_with-vitest-729B1B?logo=vitest&logoColor=white)](https://vitest.dev/)
-[![Version](https://img.shields.io/badge/version-4.1.0-brightgreen?logo=semver)](https://github.com/herbmatsui-spec/autonovel/releases/tag/v4.1.0)
+[![Version](https://img.shields.io/badge/version-4.3.0-brightgreen?logo=semver)](https://github.com/herbmatsui-spec/autonovel/releases/tag/v4.3.0)
 
 <br />
 
@@ -25,7 +25,7 @@
   <img src="docs/demo.gif" alt="AutoNovel UI & Workflow Demo" width="900" style="border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
 </p>
 
-*▲ AutoNovel v4.1: 3案企画ガチャ / 逆算プロット / 上級者Studio / インライン五感推敲 / GraphRAG相関図 / ワンクリックZIP納品 / マルチメディア・eBook / IF分岐・共同編集 (CRDT) / **スキル駆動型アーキテクチャ / BookScore統一100点メトリクス / A/Bテスト自動化 / PDCA自動レポート***
+*▲ AutoNovel v4.3: 3案企画ガチャ / 逆算プロット / 上級者Studio / インライン五感推敲 / GraphRAG相関図 / ワンクリックZIP納品 / マルチメディア・eBook / IF分岐・共同編集 (CRDT) / **スキル駆動型アーキテクチャ / BookScore統一100点メトリクス / A/Bテスト自動化 / PDCA自動レポート / 書き直し自動品質保証ループ (BookScore閾値自動再生成)***
 
 </div>
 
@@ -53,6 +53,38 @@ AutoNovel は、AI を活用して Web 小説を **企画から執筆、校正�
 
 続いて、下記の目次から技術的な詳細をご覧ください。
 
+## 📋 更新履歴 / Changelog
+
+### v4.3.0 (2026-09-04) — Phase 1: 品質保証自動化 & スキルバージョニング完全実装
+
+**🎯 書き直し自動品質保証ループ (Auto Regeneration Loop)**
+- `WritingService` 新設: BookScore < 70点時に自動再生成 (最大3回、指数バックオフ)
+- 5次元優先度制御: structure(1) → coherency(2) → factual_grounding(3) → visual_textual_synergy(4) → reader_experience(5)
+- `regeneration_focus` / `writing_focus` / `illustration_focus` の全エージェント伝播チェーン実装
+
+**🤖 スキル駆動型エージェント v1/v2 完全実装**
+- `WritingSkillAgent` (v2.0): BookScore連携・再生成フック統合
+- `PlanningSkillAgent`, `BibleSkillAgent`, `ContextBuilderSkillAgent`, `AuditSkillAgent`, `IllustrationSkillAgent`, `CulturalComplianceCheckerSkillAgent`, `HistoricalAccuracyCheckerSkillAgent`, `MarketingCopySkillAgent` (全9スキル v2実装)
+- `Orchestrator.set_skill_version("v1"|"v2")` によるホットスワップ切替
+- A/Bテスト自動化: `run_ab_test` (統計的有意差判定・p値計算) + `promote_ab_winner` 自動昇格
+
+**🔄 エージェント再生成連携**
+- `WritingAgent` / `WritingGenerator` / `EpisodePipeline`: `regeneration_focus` / `writing_focus` 伝播
+- `IllustrationAgent`: `visual_textual_synergy` 次元時のみ再生成モード有効化
+- `ContextBuilderAgent`: 既存 `structure` / `coherency` 対応済み
+
+**📊 BookScore 5次元メトリクス & PDCA 連携**
+- 5次元: structure / coherency / factual_grounding / visual_textual_synergy / reader_experience
+- 設定ファイル (`config/book_score_weights.yaml`) でジャンル別・フェーズ別重み切替
+- Prometheus: `book_score_overall`, `book_score_dimensions`, `book_score_trend`, `book_score_alert_total`, `book_score_forecast`
+- PDCA自動レポート (`generate_pdca_report`): Plan-Do-Check-Act 完全自動化
+- 昇格判定: 直近3章平均≥80点かつ上昇傾向で自動昇格推奨
+
+**🧪 テスト・品質**
+- 新規 E2E テスト: `tests/integration/test_auto_regeneration_loop.py` (4ケース)
+- 既存テストスイート全互換性維持 (スキルバージョニング・BookScore・統合テスト全通過)
+
+---
 
 ## 📖 目次
 
@@ -580,10 +612,12 @@ AutoNovel では、1つの巨大なプロンプトに全てを委ねるのでは
 `src/backend/workflows/` には、LangGraph ベースのステートグラフワークフローが19種類定義されている。
 これらは agents/ と services/ を繋ぐ 중재レイヤーとして機能し、複雑な 멀티エージェント協調を宣言的に定義する。
 
+> **統合パイプライン (2026-09-04 完了)**: `EasyModeWorkflow` と `FullAutoWorkflow` は `src/services/auto_workflow_pipeline.py` の `AutoWorkflowPipeline` に完全委譲済み。両ワークフローは `map_*_kwargs_to_context` で `WorkflowContext` を構築し、`pipeline.execute(ctx, self.engine, ProgressReporterAdapter)` を呼び出す薄いファサードとして動作する。旧 `EasyModePipeline` (`src/easy_mode/pipeline.py`) は削除済み。
+
 | ワークフロー | ファイル | 用途 |
 |-------------|----------|------|
-| **Easy Mode Workflow** | `easy_mode_workflow.py` | かんたんモードの全体流程管理 |
-| **Full Auto Workflow** | `full_auto_workflow.py` | 完全自動執筆の全体流程管理 |
+| **Easy Mode Workflow** | `easy_mode_workflow.py` | かんたんモードの全体流程管理（統合パイプラインへ委譲） |
+| **Full Auto Workflow** | `full_auto_workflow.py` | 完全自動執筆の全体流程管理（統合パイプラインへ委譲） |
 | **Episode Writing Workflow** | `episode_writing_workflow.py` | 単一エピソード執筆流程 |
 | **Plot Expansion Workflow** | `plot_expansion_workflow.py` | プロット展開流程 |
 | **Plot Rebuild Workflow** | `plot_rebuild_workflow.py` | プロット大規模リビルド |
@@ -1276,6 +1310,8 @@ docker compose -f docker-compose.prod.yml up -d --build
 docker compose down
 # 本番の場合: docker compose -f docker-compose.prod.yml down
 ```
+
+> **運用上の注意**: `src/backend/rate_limit.py` のレートリミッターは **プロセス内 (in-memory)** 実装です。`UVICORN_WORKERS` を 1 より大きくするとワーカーごとに独立したカウンタとなり、実質的なレート制限が緩くなります。**本番運用では `UVICORN_WORKERS=1` を推奨**します (複数プロセスでの制限を厳密化したい場合は Redis ベースの slowapi 等への移行が必要)。
 
 ---
 

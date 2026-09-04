@@ -30,6 +30,8 @@ class EpisodePipeline:
         reporter: Any,
         branch_id: int = 1,
         style_tag: str | None = None,
+        regeneration_focus: list[str] = None,
+        writing_focus: list[str] = None,
     ) -> tuple[int, list[dict[str, Any]]]:
         """エピソード生成パイプラインを実行する。
 
@@ -59,6 +61,8 @@ class EpisodePipeline:
                     reporter=reporter,
                     branch_id=branch_id,
                     style_tag=style_tag,
+                    regeneration_focus=regeneration_focus or [],
+                    writing_focus=writing_focus or [],
                 )
                 if chars > 0:
                     total_chars += chars
