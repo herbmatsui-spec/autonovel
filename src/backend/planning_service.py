@@ -83,7 +83,10 @@ class PlanningService:
         genre: str = "",
         target_eps: int = 10,
     ) -> dict[str, float]:
-        """企画アウトラインから BookScore を予測する（構造スコア・読者体験スコア中心）。"""
+        """企画アウトラインから BookScore を予測する（構造スコア・読者体験スコア中心）。
+        
+        単一アーク構成の評価。3案比較時はこのメソッドを各案に対して呼び出す。
+        """
         if self.book_score_calculator is None:
             return {"overall_score": 0.0, "structure_score": 0.0, "reader_experience_score": 0.0}
 
@@ -113,6 +116,30 @@ class PlanningService:
             "visual_textual_synergy_score": 50.0,
             "reader_experience_score": round(reader_exp, 2),
         }
+
+    async def predict_book_score_for_proposals(
+        self,
+        proposals: list[list[Any]],  # 各案のアークリスト
+        genre: str = "",
+        target_eps: int = 10,
+    ) -> list[dict[str, Any]]:
+        """3案企画ガチャの各案について BookScore を予測・比較・推奨案を返す"""
+        results = []
+        for i, arcs in enumerate(proposals):
+            score_dict = await self.predict_book_score_from_outline(arcs, genre, target_eps)
+            score_dict["proposal_index"] = i
+            score_dict["proposal_name"] = f"案{i+1}"
+            results.append(score_dict)
+        
+        # 総合スコアでソート（降順）
+        results.sort(key=lambda x: x["overall_score"], reverse=True)
+        
+        # 推奨フラグ付与
+        for i, r in enumerate(results):
+            r["recommended"] = (i == 0)
+            r["rank"] = i + 1
+        
+        return results
 
     async def _estimate_structure_score(self, arcs: list[Any], target_eps: int) -> float:
         """アーク構成から構造スコアを推定 (0-100)"""

@@ -91,6 +91,30 @@ book_score_regeneration_triggered = Counter(
     ["dimension"],
 )
 
+book_score_trend = Gauge(
+    "book_score_trend",
+    "BookScore trend (3-chapter moving average and slope)",
+    ["book_id", "metric"],  # metric: avg_overall, slope
+)
+
+skill_version_active = Gauge(
+    "skill_version_active",
+    "Active skill version (1=v1, 2=v2)",
+    ["skill_name"],
+)
+
+book_score_promotion_eligible = Counter(
+    "book_score_promotion_eligible_total",
+    "Number of books eligible for promotion",
+    ["book_id"],
+)
+
+book_score_improvement_priority = Gauge(
+    "book_score_improvement_priority",
+    "BookScore improvement priority score (lower = higher priority)",
+    ["book_id", "dimension"],
+)
+
 
 def record_book_score(score: dict, genre: str = "", phase: str = ""):
     """BookScore メトリクスを記録"""
@@ -103,6 +127,40 @@ def record_book_score(score: dict, genre: str = "", phase: str = ""):
     if score.get("regeneration_triggered"):
         for dim in score.get("low_dimensions", []):
             book_score_regeneration_triggered.labels(dimension=dim).inc()
+    
+    # トレンドメトリクス（書籍IDが含まれている場合）
+    book_id = score.get("book_id")
+    if book_id and "trend_3ch" in score and score["trend_3ch"]:
+        trend = score["trend_3ch"]
+        book_score_trend.labels(book_id=str(book_id), metric="avg_overall").set(
+            trend.get("avg_overall_score", 0)
+        )
+        book_score_trend.labels(book_id=str(book_id), metric="slope").set(
+            trend.get("trend_slope", 0)
+        )
+
+    # 昇格判定メトリクス（昇格条件チェック時に呼び出す想定）
+    # ここでは記録しない（API呼び出し時に記録）
+
+    # 改善優先順位メトリクス
+    if book_id:
+        for dim in ["structure", "coherency", "factual_grounding", "visual_textual_synergy", "reader_experience"]:
+            val = score.get(f"{dim}_score", 0)
+            # 低スコアほど高い優先度（優先度 = 100 - score）
+            priority = 100 - val
+            book_score_improvement_priority.labels(book_id=str(book_id), dimension=dim).set(priority)
+
+
+def record_promotion_eligible(book_id: int, eligible: bool):
+    """昇格判定結果を記録"""
+    if eligible:
+        book_score_promotion_eligible.labels(book_id=str(book_id)).inc()
+
+
+def record_skill_version(skill_name: str, version: str):
+    """アクティブなスキルバージョンを記録"""
+    version_num = 1 if version == "v1" else (2 if version == "v2" else 0)
+    skill_version_active.labels(skill_name=skill_name).set(version_num)
 
 
 # ===================== ユーティリティ関数 =====================

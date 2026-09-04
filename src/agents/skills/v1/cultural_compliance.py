@@ -16,6 +16,11 @@ class CulturalComplianceChecker(SkillAgent):
 
     async def execute(self, ctx: AgentContext) -> AgentResult:
         """原稿の文化的適切性をチェック"""
+        self.emit_event("cultural_compliance.started", {
+            "book_id": ctx.book_id,
+            "ep_num": ctx.ep_num,
+        })
+        
         drafted_text = ctx.artifacts.get("drafted_text", "")
         issues = []
 
@@ -37,6 +42,11 @@ class CulturalComplianceChecker(SkillAgent):
                     })
 
         if issues:
+            self.emit_event("cultural_compliance.failed", {
+                "book_id": ctx.book_id,
+                "ep_num": ctx.ep_num,
+                "issues_count": len(issues),
+            })
             return AgentResult(
                 next_agent=None,
                 artifacts={
@@ -46,6 +56,12 @@ class CulturalComplianceChecker(SkillAgent):
                 error="Cultural compliance issues detected" if self.strict_mode else None,
             )
 
+        self.emit_event("cultural_compliance.completed", {
+            "book_id": ctx.book_id,
+            "ep_num": ctx.ep_num,
+            "result": "passed",
+        })
+        
         return AgentResult(
             next_agent=None,
             artifacts={"cultural_compliance": "passed"},

@@ -5,12 +5,20 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+from dataclasses import dataclass
 
 from src.backend.planning_service import PlanningService
 from src.backend.writing_service import WritingService
 from src.services.book_score_service import BookScoreCalculator
 from src.agents.orchestrator import AgentContext
-from src.models.plot import ArcList, Arc
+
+
+@dataclass
+class Arc:
+    start_ep: int
+    end_ep: int
+    title: str
+    summary: str
 
 
 @pytest.fixture

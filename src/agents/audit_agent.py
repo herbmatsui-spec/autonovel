@@ -100,10 +100,20 @@ class AuditAgent(SkillAgent):
 
     async def execute(self, ctx: AgentContext) -> AgentResult:
         """スキル実行エントリーポイント。"""
+        self.emit_event("audit.started", {
+            "book_id": ctx.book_id,
+            "ep_num": ctx.ep_num,
+        })
+        
         writing_context = ctx.artifacts.get("writing_context")
         drafted_text = ctx.artifacts.get("drafted_text")
 
         if not writing_context or not drafted_text:
+            self.emit_event("audit.error", {
+                "book_id": ctx.book_id,
+                "ep_num": ctx.ep_num,
+                "error": "writing_context and drafted_text are required in artifacts",
+            })
             return AgentResult(
                 next_agent=None,
                 artifacts={},
@@ -284,6 +294,11 @@ class AuditAgent(SkillAgent):
                 )
 
             # 全監査合格
+            self.emit_event("audit.completed", {
+                "book_id": book_id,
+                "ep_num": ep_num,
+                "result": "passed",
+            })
             return AgentResult(
                 next_agent=AgentName.ILLUSTRATION,
                 artifacts={
@@ -297,6 +312,11 @@ class AuditAgent(SkillAgent):
             )
 
         except Exception as e:
+            self.emit_event("audit.error", {
+                "book_id": ctx.book_id,
+                "ep_num": ctx.ep_num,
+                "error": str(e),
+            })
             return AgentResult(
                 next_agent=None,
                 artifacts={},

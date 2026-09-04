@@ -265,7 +265,218 @@ pytest --cov=src --cov-report=html
 
 ---
 
-## 5. 今後の拡張ポイント
+## 5. スキルバージョン管理・A/Bテスト
+
+### バージョン管理 (`src/agents/skills/v1/`, `v2/`)
+
+スキルはバージョン別にディレクトリで管理されます：
+
+```
+src/agents/skills/
+├── v1/                 # 現在の安定版
+│   ├── planning_skill.py
+│   ├── bible_skill.py
+│   └── ...
+├── v2/                 # 実験版・次期版
+│   └── (開発中)
+└── manifest.yaml       # 共通マニフェスト（クラスパスでバージョン指定）
+```
+
+### バージョン切替
+
+#### Python API
+```python
+from src.agents.orchestrator import Orchestrator
+
+orch = Orchestrator(nodes={})
+orch.register_discovered_skills('src.agents.skills.v1')
+
+# バージョン確認
+print(orch.get_active_version())  # "v1"
+
+# バージョン切替（ホットスワップ）
+orch.set_skill_version('v2')
+print(orch.get_active_version())  # "v2"
+```
+
+#### API エンドポイント
+```bash
+# 現在のバージョン取得
+curl -X GET /api/system/admin/skills/version
+
+# バージョン切替
+curl -X POST /api/system/admin/skills/switch_version \
+  -H "Content-Type: application/json" \
+  -d '{"version": "v2"}'
+```
+
+### A/B テスト
+
+同一入力で複数バージョンを並列実行し、メトリクス比較：
+
+```python
+from src.agents.orchestrator import Orchestrator
+from src.agents.skill_base import SkillAgent
+
+orch = Orchestrator(nodes={})
+
+# 両バージョンのスキルクラスを取得
+v1_skill = SkillAgent.discover_skills('src.agents.skills.v1')
+v2_skill = SkillAgent.discover_skills('src.agents.skills.v2')
+
+# A/B テスト実行
+results = orch.run_ab_test(
+    skill_name='planning',
+    version_a='v1',
+    version_b='v2',
+    ctx_list=[ctx1, ctx2, ctx3, ...]  # 同一入力コンテキストリスト
+)
+
+# 結果比較
+# results = {
+#   'v1': {'success_count': 10, 'avg_duration_sec': 1.23, ...},
+#   'v2': {'success_count': 10, 'avg_duration_sec': 1.15, ...},
+# }
+```
+
+### Prometheus メトリクス
+
+```prometheus
+# アクティブなスキルバージョン (1=v1, 2=v2)
+skill_version_active{skill_name="planning"}
+
+# BookScore トレンド
+book_score_trend{book_id="1",metric="avg_overall"}
+book_score_trend{book_id="1",metric="slope"}
+
+# BookScore 昇格判定
+book_score_promotion_eligible_total{book_id="1"}
+
+# BookScore 改善優先順位
+book_score_improvement_priority{book_id="1",dimension="structure"}
+```
+
+---
+
+## 8. BookScore 昇格・改善 API
+
+### 昇格判定取得
+
+```bash
+GET /api/novel/books/{book_id}/promotion
+```
+
+**レスポンス例**:
+```json
+{
+  "book_id": 1,
+  "eligible": true,
+  "avg_score": 85.67,
+  "trend_slope": 10.0,
+  "chapters_evaluated": 3,
+  "reason": null
+}
+```
+
+**判定基準**:
+- 直近3章の平均スコア ≥ 80.0
+- かつスコア傾向が上昇（最新章 - 3章前 > 0）
+
+### 改善優先順位取得（管理者用）
+
+```bash
+GET /api/system/admin/book_score/improvement_priorities?book_id=1
+```
+
+**レスポンス例**:
+```json
+{
+  "book_id": 1,
+  "priorities": [
+    {
+      "dimension": "structure",
+      "current_score": 65.0,
+      "suggested_action": "ContextBuilderAgent: アーク境界・テンポ・因果整合性の強化",
+      "expected_gain": "現在 65.0 → 目標 70+ (改善見込み 5pt)",
+      "target_agent": "ContextBuilderAgent"
+    },
+    {
+      "dimension": "coherency",
+      "current_score": 70.0,
+      "suggested_action": "ContextBuilderAgent: キャラ口調・世界観ルール・固有名詞統一の強化",
+      "expected_gain": "現在 70.0 → 目標 70+ (改善見込み 0pt)",
+      "target_agent": "ContextBuilderAgent"
+    }
+  ]
+}
+```
+
+### Prometheus メトリクス（追加）
+
+```prometheus
+# 昇格判定カウンター
+book_score_promotion_eligible_total{book_id="1"}
+
+# 改善優先順位ゲージ（低いほど高優先度）
+book_score_improvement_priority{book_id="1",dimension="structure"}
+```
+
+---
+
+## 11. フォールトトレラント・スキル実行メトリクス
+
+### フォールトトレラント実行 (`Orchestrator.run`)
+
+個別スキルの失敗が全体パイプラインを停止させないよう、エラーハンドリングを強化しました。
+
+**動作**:
+- スキル実行時の `AgentResult.error` があっても次のスキルへ継続
+- 予期しない例外も捕捉し、継続可能
+- エラー情報は `artifacts` に `{skill_name}_error` または `{skill_name}_exception` として保存
+- イベントバス経由でエラーイベントを発行
+
+**設定例**:
+```python
+# エラーがあっても継続（デフォルト動作）
+orch = Orchestrator(nodes={...})
+await orch.run(ctx, start=AgentName.PLANNING)
+
+# エラー情報確認
+if "PlanningAgent_error" in ctx.artifacts:
+    print("PlanningAgent でエラーが発生:", ctx.artifacts["PlanningAgent_error"])
+```
+
+### スキル実行メトリクス取得
+
+```bash
+GET /api/system/admin/skills/metrics
+```
+
+**レスポンス例**:
+```json
+{
+  "active_version": "v1",
+  "registered_skills": ["planning", "bible", "contextbuilder", "writing", "audit", "illustration"],
+  "metrics": {
+    "PlanningSkill": {
+      "success_count": 10,
+      "error_count": 0,
+      "total_executions": 10,
+      "avg_duration_sec": 0.123
+    },
+    "WritingSkill": {
+      "success_count": 8,
+      "error_count": 2,
+      "total_executions": 10,
+      "avg_duration_sec": 2.456
+    }
+  }
+}
+```
+
+---
+
+## 12. 今後の拡張ポイント
 
 ### スキル側
 - `execute()` 内で `ctx.artifacts` 経由で前段スキルの成果物を活用
@@ -279,7 +490,7 @@ pytest --cov=src --cov-report=html
 
 ---
 
-## 6. トラブルシューティング
+## 13. トラブルシューティング
 
 | 現象 | 原因 | 対処 |
 |------|------|------|
@@ -287,3 +498,6 @@ pytest --cov=src --cov-report=html
 | マニフェスト循環依存 | `depends_on`/`runs_after` 循環 | `build_execution_order()` で検出される |
 | BookScore が保存されない | repository 未指定 | `BookScoreCalculator(repository=repo)` |
 | メトリクスが出ない | Prometheus クライアント未インストール | `pip install prometheus-client` |
+| スキルバージョン切替失敗 | v2 ディレクトリ不在 | `src/agents/skills/v2/` 作成・スキル配置確認 |
+| 昇格判定APIが404 | ルート未登録 | `novel.py` に `/books/{book_id}/promotion` 追加確認 |
+| 改善優先順位が空 | スコアデータなし | 該当書籍で `calculate_book_score` 実行済みか確認 |

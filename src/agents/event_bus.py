@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Awaitable, Callable, Optional
+from typing import Any, Awaitable, Callable, Optional, List
 import asyncio
 import json
 import redis.asyncio as redis
@@ -26,22 +26,53 @@ class EventBus:
     def subscribe(self, agent: str, handler: Callable[[AgentEvent], Awaitable[None]]) -> None:
         self._subs.setdefault(agent, []).append(handler)
 
-    async def publish(self, event: AgentEvent) -> None:
+    def subscribe_async(self, agent: str, handler: Callable[[AgentEvent], Awaitable[None]]) -> None:
+        """非同期ハンドラ登録（subscribe のエイリアス）"""
+        self.subscribe(agent, handler)
+
+    async def publish(self, event: AgentEvent) -> List[asyncio.Task]:
         # ローカルハンドラ実行
+        tasks = []
         for handler in self._subs.get(event.agent, []):
-            asyncio.create_task(handler(event))
+            tasks.append(asyncio.create_task(handler(event)))
 
         # Redis Stream へ発行
         if self._use_redis and self._redis is not None:
             stream_name = f"agent_events:{event.correlation_id}"
-            await self._redis.xadd(
+            tasks.append(asyncio.create_task(self._redis.xadd(
                 stream_name,
                 {
                     "agent": event.agent,
                     "payload": json.dumps(event.payload, ensure_ascii=False),
                     "correlation_id": event.correlation_id,
                 },
-            )
+            )))
+
+        return tasks
+
+    async def publish_async(self, event: AgentEvent) -> None:
+        """非同期イベント発行（publish のエイリアス・戻り値無視）"""
+        await self.publish(event)
+
+    async def publish_sync(self, event: AgentEvent) -> None:
+        """同期的にイベント発行（全ハンドラ完了を待つ）"""
+        tasks = []
+        for handler in self._subs.get(event.agent, []):
+            tasks.append(asyncio.create_task(handler(event)))
+
+        if self._use_redis and self._redis is not None:
+            stream_name = f"agent_events:{event.correlation_id}"
+            tasks.append(asyncio.create_task(self._redis.xadd(
+                stream_name,
+                {
+                    "agent": event.agent,
+                    "payload": json.dumps(event.payload, ensure_ascii=False),
+                    "correlation_id": event.correlation_id,
+                },
+            )))
+
+        if tasks:
+            await asyncio.gather(*tasks)
 
     async def start_redis(self) -> None:
         """Redis 接続を初期化し、コンシューマータスクを開始。"""

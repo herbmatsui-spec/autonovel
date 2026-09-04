@@ -14,12 +14,21 @@ class MarketingCopySkill(SkillAgent):
 
     async def execute(self, ctx: AgentContext) -> AgentResult:
         """マーケティングコピーを生成"""
+        self.emit_event("marketing_copy.started", {
+            "book_id": ctx.book_id,
+            "title": ctx.artifacts.get("title", ""),
+        })
+        
         title = ctx.artifacts.get("title", "")
         synopsis = ctx.artifacts.get("synopsis", "")
         genre = ctx.artifacts.get("genre", "ファンタジー")
         concept = ctx.artifacts.get("concept", "")
 
         if not title:
+            self.emit_event("marketing_copy.error", {
+                "book_id": ctx.book_id,
+                "error": "title is required for marketing copy generation",
+            })
             return AgentResult(
                 next_agent=None,
                 artifacts={},
@@ -44,6 +53,11 @@ class MarketingCopySkill(SkillAgent):
         if "blurb" in self.copy_types:
             copies["blurb"] = self._generate_blurb(title, synopsis, genre)
 
+        self.emit_event("marketing_copy.completed", {
+            "book_id": ctx.book_id,
+            "copies_generated": list(copies.keys()),
+        })
+        
         return AgentResult(
             next_agent=None,
             artifacts={"marketing_copies": copies},

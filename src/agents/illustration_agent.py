@@ -45,12 +45,21 @@ class IllustrationAgent(SkillAgent):
         """スキル実行エントリーポイント。"""
         request = ctx.artifacts.get("request")
         if request is None:
+            self.emit_event("illustration.error", {
+                "error": "request is required in artifacts",
+            })
             return AgentResult(
                 next_agent=None,
                 artifacts={},
                 error="request is required in artifacts",
             )
         result_dict = await self.generate_prompt_only(request=request)
+        
+        self.emit_event("illustration.completed", {
+            "illustration_type": getattr(request, "illustration_type", None),
+            "book_id": getattr(request, "book_id", None),
+        })
+
         return AgentResult(
             next_agent=None,
             artifacts={"illustration_result": result_dict},
@@ -307,3 +316,66 @@ class IllustrationAgent(SkillAgent):
         except Exception as e:  # noqa: BLE001
             logger.warning(f"Failed to persist illustration: {e}")
             return None
+
+    async def regenerate_prompts(
+        self,
+        request: IllustrationRequest,
+        focus: str = "visual_textual_synergy",
+        params: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """プロンプト再生成（視覚×テキスト相乗効果改善用）。
+        
+        Args:
+            request: 元のリクエスト
+            focus: 再生成フォーカス ("visual_textual_synergy" 等)
+            params: 追加パラメータ
+                - refocus_on_text_entities: 本文エンティティに焦点合わせ
+                - match_emotional_tone: 感情トーン合わせ
+        """
+        params = params or {}
+        ctx = request.book_context or {}
+        
+        # 本文からエンティティ抽出
+        text_entities = []
+        if params.get("refocus_on_text_entities"):
+            scene_text = getattr(request, "scene_text", "") or ctx.get("scene_text", "")
+            if scene_text:
+                import re
+                text_entities = list(set(re.findall(r'[一-龯ァ-ヴー]{2,}', scene_text)))[:20]
+        
+        # 感情トーン抽出
+        emotional_tone = "neutral"
+        if params.get("match_emotional_tone"):
+            scene_text = getattr(request, "scene_text", "") or ctx.get("scene_text", "")
+            if scene_text:
+                positive = sum(scene_text.count(w) for w in ['喜', '笑', '幸', '楽', '愛', '希望', '輝', '明'])
+                negative = sum(scene_text.count(w) for w in ['悲', '泣', '苦', '痛', '憎', '絶望', '暗', '闇', '恐'])
+                if positive > negative:
+                    emotional_tone = "positive"
+                elif negative > positive:
+                    emotional_tone = "negative"
+        
+        # 既存のプロンプトを取得して強化
+        original_prompt = await self.generate_prompt_only(request=request)
+        original = original_prompt.get("prompt", "")
+        
+        # 強化プロンプト構築
+        enhancements = []
+        if text_entities:
+            enhancements.append(f"Key entities to include: {', '.join(text_entities[:10])}")
+        if emotional_tone != "neutral":
+            tone_desc = "bright and hopeful" if emotional_tone == "positive" else "dark and somber"
+            enhancements.append(f"Emotional tone: {tone_desc}")
+        
+        enhanced_prompt = original
+        if enhancements:
+            enhanced_prompt = original + " | ENHANCEMENTS: " + "; ".join(enhancements)
+        
+        # 結果返却
+        return {
+            "status": "success",
+            "original_prompt": original,
+            "enhanced_prompt": enhanced_prompt,
+            "enhancements_applied": enhancements,
+            "focus": focus,
+        }

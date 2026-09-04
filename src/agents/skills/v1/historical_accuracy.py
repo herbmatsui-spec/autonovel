@@ -15,6 +15,12 @@ class HistoricalAccuracyChecker(SkillAgent):
 
     async def execute(self, ctx: AgentContext) -> AgentResult:
         """原稿の時代考証をチェック"""
+        self.emit_event("historical_accuracy.started", {
+            "book_id": ctx.book_id,
+            "ep_num": ctx.ep_num,
+            "period": self.period,
+        })
+        
         drafted_text = ctx.artifacts.get("drafted_text", "")
         writing_context = ctx.artifacts.get("writing_context", {})
         world_settings = writing_context.get("world_settings", {})
@@ -45,6 +51,11 @@ class HistoricalAccuracyChecker(SkillAgent):
             })
 
         if issues:
+            self.emit_event("historical_accuracy.failed", {
+                "book_id": ctx.book_id,
+                "ep_num": ctx.ep_num,
+                "issues_count": len(issues),
+            })
             return AgentResult(
                 next_agent=None,
                 artifacts={
@@ -53,6 +64,12 @@ class HistoricalAccuracyChecker(SkillAgent):
                 },
             )
 
+        self.emit_event("historical_accuracy.completed", {
+            "book_id": ctx.book_id,
+            "ep_num": ctx.ep_num,
+            "result": "passed",
+        })
+        
         return AgentResult(
             next_agent=None,
             artifacts={"historical_accuracy": "passed"},

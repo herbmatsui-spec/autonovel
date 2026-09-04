@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Awaitable, Callable, Optional
+from typing import Any, Awaitable, Callable, List, Optional
 
 from src.agents.event_bus import AgentEvent, EventBus
 from src.agents.skill_base import SkillAgent
@@ -50,14 +50,34 @@ class Orchestrator:
         self.event_bus = event_bus
         self.correlation_id = correlation_id or "unknown"
         self._skill_registry: dict[str, type[SkillAgent]] = {}
+        self._active_skill_version: str = "v1"
 
-    def register_discovered_skills(self, skill_pkg: str = "src.agents.skills") -> None:
+    def register_discovered_skills(self, skill_pkg: str = "src.agents.skills.v1") -> None:
         """指定パッケージからスキルを検出し、内部レジストリに登録する。"""
         skills = SkillAgent.discover_skills(skill_pkg)
         for skill_cls in skills:
-            # スキル名をクラス名から生成（例: PlanningSkill -> planning）
             skill_name = skill_cls.__name__.replace("Skill", "").replace("Agent", "").lower()
             self._skill_registry[skill_name] = skill_cls
+
+    def set_skill_version(self, version: str) -> None:
+        """スキルバージョンを切り替える (v1, v2 等)"""
+        if version not in ("v1", "v2"):
+            raise ValueError(f"Unsupported skill version: {version}")
+        self._active_skill_version = version
+        skill_pkg = f"src.agents.skills.{version}"
+        self._skill_registry.clear()
+        self.register_discovered_skills(skill_pkg)
+
+        try:
+            from src.backend.observability.metrics import record_skill_version
+            for skill_name in self._skill_registry.keys():
+                record_skill_version(skill_name, version)
+        except Exception:
+            pass
+
+    def get_active_version(self) -> str:
+        """現在アクティブなスキルバージョンを取得"""
+        return self._active_skill_version
 
     def get_skill_class(self, skill_name: str) -> type[SkillAgent] | None:
         """登録済みスキルクラスを取得する。"""
@@ -67,9 +87,7 @@ class Orchestrator:
         self, manifest: List[dict], available_skills: dict[str, type[SkillAgent]]
     ) -> List[type[SkillAgent]]:
         """マニフェストに基づき、依存関係を解決して実行順序を決定する（トポロジカルソート）。"""
-        # スキル名 -> インデックスマッピング
         skill_nodes = {skill["name"]: skill for skill in manifest}
-        # グラフ構築
         from collections import defaultdict, deque
 
         graph = defaultdict(list)
@@ -79,16 +97,13 @@ class Orchestrator:
             for dep in skill.get("depends_on", []):
                 graph[dep].append(name)
                 indegree[name] += 1
-            # runs_after も依存として扱う
             for after in skill.get("runs_after", []):
                 graph[after].append(name)
                 indegree[name] += 1
-            # runs_before は逆方向の依存
             for before in skill.get("runs_before", []):
                 graph[name].append(before)
                 indegree[before] += 1
 
-        # キューに indegree 0 のノードを追加
         queue = deque([name for name in skill_nodes if indegree[name] == 0])
         order = []
         while queue:
@@ -102,13 +117,11 @@ class Orchestrator:
         if len(order) != len(skill_nodes):
             raise RuntimeError("Circular dependency detected in skill manifest")
 
-        # 利用可能なスキルクラスにマッピング
         result = []
         for name in order:
             if name in available_skills:
                 result.append(available_skills[name])
             else:
-                # マニフェストにあるが未登録のスキルはスキップ（警告）
                 import logging
                 logger = logging.getLogger(__name__)
                 logger.warning(f"Skill '{name}' in manifest but not registered, skipping")
@@ -130,7 +143,7 @@ class Orchestrator:
         while current:
             # ノード実行前イベント発行
             if self.event_bus:
-                await self.event_bus.publish(
+                await self.event_bus.publish_async(
                     AgentEvent(
                         agent=current.value,
                         payload={"status": "started", "ep_num": ctx.ep_num},
@@ -142,28 +155,66 @@ class Orchestrator:
             if node is None:
                 raise RuntimeError(f"Agent node not registered: {current.value}")
 
-            result = await node(ctx)
-            ctx.artifacts.update(result.artifacts)
+            # フォールトトレラント: 個別スキル失敗を捕捉し、次のスキルへ継続可能にする
+            try:
+                result = await node(ctx)
+                ctx.artifacts.update(result.artifacts)
 
-            # ノード実行後イベント発行
-            if self.event_bus:
-                await self.event_bus.publish(
-                    AgentEvent(
-                        agent=current.value,
-                        payload={
-                            "status": "completed" if not result.error else "failed",
-                            "ep_num": ctx.ep_num,
-                            "next_agent": result.next_agent.value if result.next_agent else None,
-                            "should_retry": result.should_retry,
-                            "error": result.error,
-                        },
-                        correlation_id=self.correlation_id,
+                # ノード実行後イベント発行
+                if self.event_bus:
+                    await self.event_bus.publish_async(
+                        AgentEvent(
+                            agent=current.value,
+                            payload={
+                                "status": "completed" if not result.error else "failed",
+                                "ep_num": ctx.ep_num,
+                                "next_agent": result.next_agent.value if result.next_agent else None,
+                                "should_retry": result.should_retry,
+                                "error": result.error,
+                            },
+                            correlation_id=self.correlation_id,
+                        )
                     )
-                )
 
-            if result.should_retry:
-                continue
-            if result.error:
-                raise RuntimeError(f"{current.value}: {result.error}")
-            current = result.next_agent
+                if result.should_retry:
+                    continue
+                if result.error:
+                    # エラーが発生しても次のスキルへ継続するオプション（artifacts にエラー情報を残す）
+                    ctx.artifacts[f"{current.value}_error"] = result.error
+                    if self.event_bus:
+                        await self.event_bus.publish_async(
+                            AgentEvent(
+                                agent=current.value,
+                                payload={
+                                    "status": "error_continued",
+                                    "ep_num": ctx.ep_num,
+                                    "error": result.error,
+                                },
+                                correlation_id=self.correlation_id,
+                            )
+                        )
+                    current = result.next_agent
+                    continue
+                current = result.next_agent
+
+            except Exception as e:
+                # 予期しない例外も捕捉し、継続可能にする
+                error_msg = f"Unexpected error in {current.value}: {e}"
+                ctx.artifacts[f"{current.value}_exception"] = error_msg
+                if self.event_bus:
+                    await self.event_bus.publish_async(
+                        AgentEvent(
+                            agent=current.value,
+                            payload={
+                                "status": "exception_continued",
+                                "ep_num": ctx.ep_num,
+                                "error": error_msg,
+                            },
+                            correlation_id=self.correlation_id,
+                        )
+                    )
+                # 次のスキルへ継続
+                # エラー時の次のスキルは、ノード登録時のデフォルトを使うか、スキップする
+                # ここでは単純にループを抜ける（設定で制御可能にする拡張も可能）
+                raise RuntimeError(error_msg)
         return ctx

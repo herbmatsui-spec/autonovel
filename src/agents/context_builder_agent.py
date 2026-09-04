@@ -25,8 +25,18 @@ class ContextBuilderAgent(SkillAgent):
 
     async def execute(self, ctx: AgentContext) -> AgentResult:
         """スキル実行エントリーポイント。"""
+        self.emit_event("context_builder.started", {
+            "book_id": ctx.book_id,
+            "ep_num": ctx.ep_num,
+        })
+        
         repo = ctx.artifacts.get("repo")
         if repo is None:
+            self.emit_event("context_builder.error", {
+                "book_id": ctx.book_id,
+                "ep_num": ctx.ep_num,
+                "error": "repo is required in artifacts",
+            })
             return AgentResult(
                 next_agent=None,
                 artifacts={},
@@ -38,12 +48,18 @@ class ContextBuilderAgent(SkillAgent):
         ep_num = ctx.ep_num
         target_word_count = ctx.artifacts.get("target_word_count", 3000)
         style_tag = ctx.artifacts.get("style_tag")
+        regeneration_focus = ctx.artifacts.get("regeneration_focus")  # 再生成フォーカス
 
         # 既存の内部実装ロジックを流用
         full_context = await self._build_full_writing_context_internal(
-            repo, book_id, branch_id, ep_num, target_word_count, style_tag
+            repo, book_id, branch_id, ep_num, target_word_count, style_tag, regeneration_focus
         )
 
+        self.emit_event("context_builder.completed", {
+            "book_id": book_id,
+            "ep_num": ep_num,
+        })
+        
         return AgentResult(
             next_agent=AgentName.WRITING,
             artifacts={"writing_context": full_context},
@@ -61,6 +77,7 @@ class ContextBuilderAgent(SkillAgent):
         ep_num: int,
         target_word_count: int,
         style_tag: str | None = None,
+        regeneration_focus: list[str] | None = None,
     ) -> dict[str, Any]:
         """内部実装: 執筆に必要な完全なコンテキストを構築する。"""
         plot = await self._get_plot(repo, book_id, branch_id, ep_num)
@@ -72,9 +89,22 @@ class ContextBuilderAgent(SkillAgent):
         prev_chapter = await self._get_prev_chapter(repo, book_id, branch_id, ep_num)
 
         active_chars = await self._get_active_chars(chars, plot)
-        char_static_ctx = self._build_char_static_ctx(active_chars)
-        char_dynamic_ctx = self._build_char_dynamic_ctx(active_chars, prev_chapter)
-        prev_ctx = self._build_prev_ctx(prev_chapter, book_id, branch_id, ep_num)
+        
+        # 再生成フォーカスに応じてキャラクター情報を強化
+        if regeneration_focus and "coherency" in regeneration_focus:
+            # 口調・世界観ルールをより詳細に含める
+            char_static_ctx = self._build_char_static_ctx(active_chars, detailed=True)
+            char_dynamic_ctx = self._build_char_dynamic_ctx(active_chars, prev_chapter, include_status_history=True)
+        else:
+            char_static_ctx = self._build_char_static_ctx(active_chars)
+            char_dynamic_ctx = self._build_char_dynamic_ctx(active_chars, prev_chapter)
+        
+        # 再生成フォーカスに応じて前話文脈を強化
+        if regeneration_focus and "structure" in regeneration_focus:
+            prev_ctx = self._build_prev_ctx(prev_chapter, book_id, branch_id, ep_num, include_arc_info=True)
+        else:
+            prev_ctx = self._build_prev_ctx(prev_chapter, book_id, branch_id, ep_num)
+        
         dialogue_profiles = self._build_dialogue_profiles(active_chars)
 
         plot_dict = {}
@@ -201,7 +231,7 @@ class ContextBuilderAgent(SkillAgent):
                 self.logger.debug(f"Active char extraction failed: {e}")
             return chars
 
-    def _build_char_static_ctx(self, chars: list[Any]) -> str:
+    def _build_char_static_ctx(self, chars: list[Any], detailed: bool = False) -> str:
         """キャラクターの不変属性を整形する。"""
         if not chars:
             return ""
@@ -217,10 +247,18 @@ class ContextBuilderAgent(SkillAgent):
                 parts.append(f"  表層: {surface}")
             if personality:
                 parts.append(f"  内面: {personality}")
+            if detailed:
+                # 詳細モード: 口調サンプル・語彙傾向も含める
+                speech_sample = reg.get("speech_sample", reg.get("口調サンプル", ""))
+                vocab_tendency = reg.get("vocab_tendency", reg.get("語彙傾向", ""))
+                if speech_sample:
+                    parts.append(f"  口調サンプル: {speech_sample}")
+                if vocab_tendency:
+                    parts.append(f"  語彙傾向: {vocab_tendency}")
             lines.append("\n".join(parts))
         return "\n".join(lines)
 
-    def _build_char_dynamic_ctx(self, chars: list[Any], prev_chapter: Any | None) -> str:
+    def _build_char_dynamic_ctx(self, chars: list[Any], prev_chapter: Any | None, include_status_history: bool = False) -> str:
         """キャラクターの動的状態を整形する。"""
         if not chars:
             return ""
@@ -252,7 +290,7 @@ class ContextBuilderAgent(SkillAgent):
         return ctx
 
     def _build_prev_ctx(
-        self, prev_chapter: Any | None, book_id: int, branch_id: int, ep_num: int
+        self, prev_chapter: Any | None, book_id: int, branch_id: int, ep_num: int, include_arc_info: bool = False
     ) -> str:
         """前話までの文脈を整形する。"""
         if prev_chapter is None:
@@ -267,6 +305,11 @@ class ContextBuilderAgent(SkillAgent):
         ai_insight = getattr(prev_chapter, "ai_insight", None)
         if ai_insight:
             parts.append(f"【前話の確定事実・伏線回収】\n{ai_insight}")
+        if include_arc_info:
+            # アーク情報を追加（構造フォーカス時）
+            arc_info = getattr(prev_chapter, "arc_info", None)
+            if arc_info:
+                parts.append(f"【アーク情報】\n{arc_info}")
         if not parts:
             return ""
         return "\n\n".join(parts)

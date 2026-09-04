@@ -35,6 +35,7 @@ class BookScoreResponse(BaseModel):
     visual_textual_synergy_score: float
     reader_experience_score: float
     evaluated_at: str | None = None
+    trend_3ch: dict | None = None  # 直近3章のトレンド
 
 
 @router.post("/produce", response_model=ProduceNovelResponse)
@@ -133,6 +134,23 @@ async def get_chapter_book_score(book_id: int, chapter_number: int):
         if score_model is None:
             raise HTTPException(status_code=404, detail="スコアが見つかりません")
 
+        # トレンド情報取得（直近3章）
+        trend_3ch = None
+        all_scores = await book_score_repo.get_all_for_book(book_id)
+        if all_scores:
+            # 直近3章
+            recent = all_scores[-3:] if len(all_scores) >= 3 else all_scores
+            if len(recent) >= 2:
+                avg_overall = sum(s.overall_score for s in recent) / len(recent)
+                # 傾向: 最新と3章前の差分
+                trend_slope = recent[-1].overall_score - recent[0].overall_score if len(recent) >= 2 else 0
+                trend_3ch = {
+                    "avg_overall_score": round(avg_overall, 2),
+                    "trend_slope": round(trend_slope, 2),  # 正なら向上、負なら低下
+                    "chapters_count": len(recent),
+                    "recent_scores": [{"chapter": s.chapter_number, "overall": s.overall_score} for s in recent],
+                }
+
         return BookScoreResponse(
             book_id=score_model.book_id,
             chapter_number=score_model.chapter_number,
@@ -143,6 +161,73 @@ async def get_chapter_book_score(book_id: int, chapter_number: int):
             visual_textual_synergy_score=score_model.visual_textual_synergy_score,
             reader_experience_score=score_model.reader_experience_score,
             evaluated_at=score_model.evaluated_at.isoformat() if score_model.evaluated_at else None,
+            trend_3ch=trend_3ch,
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class PromotionEligibilityResponse(BaseModel):
+    book_id: int
+    eligible: bool
+    avg_score: float
+    trend_slope: float
+    chapters_evaluated: int
+    reason: str | None = None
+
+
+@router.get("/books/{book_id}/promotion", response_model=PromotionEligibilityResponse)
+async def check_promotion_eligibility(book_id: int):
+    """かんたんモードから上級者Studioへの昇格判定を取得する"""
+    try:
+        from src.backend.database.repository import DataRepository
+        from src.services.book_score_service import BookScoreCalculator, BookScoreRepository
+        from sqlalchemy.ext.asyncio import AsyncSession
+
+        repo = DataRepository()
+        session = repo._session_factory()  # type: ignore
+        book_score_repo = BookScoreRepository(session)
+        calculator = BookScoreCalculator(repository=book_score_repo)
+        all_scores = await book_score_repo.get_all_for_book(book_id)
+
+        if len(all_scores) < 3:
+            return PromotionEligibilityResponse(
+                book_id=book_id,
+                eligible=False,
+                avg_score=0.0,
+                trend_slope=0.0,
+                chapters_evaluated=len(all_scores),
+                reason="3章以上の評価が必要です",
+            )
+
+        recent = all_scores[-3:]
+        avg_overall = sum(s.overall_score for s in recent) / 3
+        trend_slope = recent[-1].overall_score - recent[0].overall_score
+
+        eligible = avg_overall >= 80.0 and trend_slope > 0
+        reason = None
+        if not eligible:
+            if avg_overall < 80.0:
+                reason = f"平均スコア {avg_overall:.1f} が 80.0 未満です"
+            elif trend_slope <= 0:
+                reason = f"スコア傾向が上昇していません (傾斜: {trend_slope:.1f})"
+
+        # メトリクス記録
+        try:
+            from src.backend.observability.metrics import record_promotion_eligible
+            record_promotion_eligible(book_id, eligible)
+        except Exception:
+            pass  # メトリクス失敗は無視
+
+        return PromotionEligibilityResponse(
+            book_id=book_id,
+            eligible=eligible,
+            avg_score=round(avg_overall, 2),
+            trend_slope=round(trend_slope, 2),
+            chapters_evaluated=3,
+            reason=reason,
         )
     except HTTPException:
         raise

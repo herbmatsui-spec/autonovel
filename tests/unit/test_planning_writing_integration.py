@@ -5,11 +5,20 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+from dataclasses import dataclass
 
 from src.backend.planning_service import PlanningService
 from src.backend.writing_service import WritingService
 from src.services.book_score_service import BookScoreCalculator
 from src.agents.orchestrator import AgentContext
+
+
+@dataclass
+class Arc:
+    start_ep: int
+    end_ep: int
+    title: str
+    summary: str
 
 
 @pytest.fixture
@@ -67,7 +76,6 @@ async def test_planning_service_with_book_score(
     )
 
     # Arc オブジェクトを作成
-    from src.models.plot import Arc
     arcs = [
         Arc(start_ep=1, end_ep=3, title="導入", summary=""),
         Arc(start_ep=4, end_ep=7, title="展開", summary=""),
@@ -126,7 +134,7 @@ async def test_writing_service_regeneration_trigger(
         coherency_score=65.0,
         factual_grounding_score=70.0,
         visual_textual_synergy_score=55.0,
-        reader_experience_score=60.0,
+        reader_experience_score=59.0,  # 60未満で低スコア判定
     ))
     calc._get_weights = MagicMock(return_value={
         "structure": 25, "coherency": 25, "factual_grounding": 20,
@@ -150,3 +158,5 @@ async def test_writing_service_regeneration_trigger(
     assert "structure" in result["low_dimensions"]
     assert "visual_textual_synergy" in result["low_dimensions"]
     assert "reader_experience" in result["low_dimensions"]
+    assert "factual_grounding" not in result["low_dimensions"]  # 70.0 >= 60
+    assert "coherency" not in result["low_dimensions"]  # 65.0 >= 60

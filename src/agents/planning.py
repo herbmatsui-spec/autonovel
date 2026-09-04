@@ -92,12 +92,21 @@ class PlanningAgent(SkillAgent):
 
     async def execute(self, ctx: AgentContext) -> AgentResult:
         """スキル実行エントリーポイント。run から呼ばれる。"""
+        self.emit_event("planning.started", {
+            "book_id": ctx.book_id,
+            "title": ctx.artifacts.get("title"),
+        })
+        
         title = ctx.artifacts.get("title")
         synopsis = ctx.artifacts.get("synopsis", "")
         target_eps = ctx.artifacts.get("target_eps", 10)
         start_ep = ctx.artifacts.get("start_ep", 1)
 
         if not title:
+            self.emit_event("planning.error", {
+                "book_id": ctx.book_id,
+                "error": "title is required in artifacts",
+            })
             return AgentResult(
                 next_agent=None,
                 artifacts={},
@@ -110,6 +119,12 @@ class PlanningAgent(SkillAgent):
             target_eps=target_eps,
             start_ep=start_ep,
         )
+
+        self.emit_event("planning.completed", {
+            "book_id": ctx.book_id,
+            "arc_count": len(arcs.arcs) if arcs.arcs else 0,
+        })
+        
         return AgentResult(
             next_agent=AgentName.PLOT,
             artifacts={"arcs": arcs.model_dump()},

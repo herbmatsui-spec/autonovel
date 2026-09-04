@@ -1,7 +1,7 @@
 # src/agents/skills/manifest.yaml
 skills:
   - name: PlanningSkill
-    class: src.agents.skills.planning_skill.PlanningSkill
+    class: src.agents.skills.v1.planning_skill.PlanningSkill
     depends_on: []
     runs_after: []
     runs_before: [BibleSkill]
@@ -9,7 +9,7 @@ skills:
       enabled: true
 
   - name: BibleSkill
-    class: src.agents.skills.bible_skill.BibleSkill
+    class: src.agents.skills.v1.bible_skill.BibleSkill
     depends_on: [PlanningSkill]
     runs_after: [PlanningSkill]
     runs_before: [ContextBuilderSkill]
@@ -17,7 +17,7 @@ skills:
       enabled: true
 
   - name: ContextBuilderSkill
-    class: src.agents.skills.context_builder_skill.ContextBuilderSkill
+    class: src.agents.skills.v1.context_builder_skill.ContextBuilderSkill
     depends_on: [BibleSkill]
     runs_after: [BibleSkill]
     runs_before: [WritingSkill]
@@ -25,7 +25,7 @@ skills:
       enabled: true
 
   - name: WritingSkill
-    class: src.agents.skills.writing_skill.WritingSkill
+    class: src.agents.skills.v1.writing_skill.WritingSkill
     depends_on: [ContextBuilderSkill]
     runs_after: [ContextBuilderSkill]
     runs_before: [AuditSkill]
@@ -33,7 +33,7 @@ skills:
       enabled: true
 
   - name: AuditSkill
-    class: src.agents.skills.audit_skill.AuditSkill
+    class: src.agents.skills.v1.audit_skill.AuditSkill
     depends_on: [WritingSkill]
     runs_after: [WritingSkill]
     runs_before: [IllustrationSkill]
@@ -41,7 +41,7 @@ skills:
       enabled: true
 
   - name: IllustrationSkill
-    class: src.agents.skills.illustration_skill.IllustrationSkill
+    class: src.agents.skills.v1.illustration_skill.IllustrationSkill
     depends_on: [AuditSkill]
     runs_after: [AuditSkill]
     runs_before: []
@@ -50,7 +50,7 @@ skills:
 
   # サンプル追加スキル（フェーズ1で実装）
   - name: CulturalComplianceChecker
-    class: src.agents.skills.cultural_compliance.CulturalComplianceChecker
+    class: src.agents.skills.v1.cultural_compliance.CulturalComplianceChecker
     depends_on: [AuditSkill]
     runs_after: [AuditSkill]
     runs_before: []
@@ -60,7 +60,7 @@ skills:
       regions: [JP, US, KR]
 
   - name: HistoricalAccuracyChecker
-    class: src.agents.skills.historical_accuracy.HistoricalAccuracyChecker
+    class: src.agents.skills.v1.historical_accuracy.HistoricalAccuracyChecker
     depends_on: [BibleSkill, ContextBuilderSkill]
     runs_after: [ContextBuilderSkill]
     runs_before: [WritingSkill]
@@ -69,7 +69,7 @@ skills:
       period: "medieval"
 
   - name: MarketingCopySkill
-    class: src.agents.skills.marketing_copy.MarketingCopySkill
+    class: src.agents.skills.v1.marketing_copy.MarketingCopySkill
     depends_on: [PlanningSkill]
     runs_after: [PlanningSkill]
     runs_before: []

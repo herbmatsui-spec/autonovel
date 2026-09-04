@@ -2,10 +2,11 @@
 import logging
 import time
 from abc import ABC, abstractmethod
-from typing import Any, TYPE_CHECKING, List, Type
+from typing import Any, TYPE_CHECKING, List, Type, Optional
 
 if TYPE_CHECKING:
     from src.agents.orchestrator import AgentContext, AgentResult
+    from src.agents.event_bus import EventBus
 
 from src.agents.base import BaseAgent
 
@@ -22,11 +23,39 @@ class SkillAgent(BaseAgent):
     _metrics: dict[str, dict] = {}
 
     def __init__(
-        self, repo: Any = None, llm: Any = None, style_rag: Any = None, rag_prefetch: Any = None
+        self,
+        repo: Any = None,
+        llm: Any = None,
+        style_rag: Any = None,
+        rag_prefetch: Any = None,
+        event_bus: Optional["EventBus"] = None,
     ):
         # BaseAgentの初期化を呼び出す
         super().__init__(repo=repo, llm=llm, style_rag=style_rag, rag_prefetch=rag_prefetch)
         self._skill_name = self.__class__.__name__
+        self.event_bus = event_bus
+
+    def emit_event(self, event_name: str, payload: dict[str, Any]) -> None:
+        """イベント発行ヘルパー（EventBus が設定されている場合のみ発行・非同期）"""
+        if self.event_bus:
+            from src.agents.orchestrator import AgentEvent
+            event = AgentEvent(
+                agent=self._skill_name,
+                payload={"event": event_name, **payload},
+                correlation_id=payload.get("correlation_id", self._skill_name),
+            )
+            self.event_bus.publish_async(event)
+
+    async def emit_event_sync(self, event_name: str, payload: dict[str, Any]) -> None:
+        """イベント発行ヘルパー（EventBus が設定されている場合のみ発行・同期・全ハンドラ完了を待つ）"""
+        if self.event_bus:
+            from src.agents.orchestrator import AgentEvent
+            event = AgentEvent(
+                agent=self._skill_name,
+                payload={"event": event_name, **payload},
+                correlation_id=payload.get("correlation_id", self._skill_name),
+            )
+            await self.event_bus.publish_sync(event)
 
     @abstractmethod
     async def execute(self, ctx: "AgentContext") -> "AgentResult":
