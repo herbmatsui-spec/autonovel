@@ -6,6 +6,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 
 from config import get_config
+from src.backend.config import settings
 from src.backend.health.checks import (
     HealthCheckResult,
     HealthStatus,
@@ -31,7 +32,7 @@ class CheckResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     status: HealthStatus
-    version: str = "3.0.0"
+    version: str = settings.APP_VERSION
     timestamp: str
     checks: dict[str, CheckResponse]
 
@@ -58,7 +59,7 @@ async def health_check():
         check_database(db_manager),
         check_redis(cfg.redis_url),
         check_chromadb(),
-        check_llm_gateway(cfg.openai_api_key),
+        check_llm_gateway(settings.GEMINI_API_KEY),
         check_worker(),
         return_exceptions=True,
     )

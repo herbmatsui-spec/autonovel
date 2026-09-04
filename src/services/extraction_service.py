@@ -439,6 +439,23 @@ class ExtractionService:
         logger.debug("Extraction cache cleared")
 
 
-extraction_service = ExtractionService()
+_extraction_service_instance: ExtractionService | None = None
 
-__all__ = ["ExtractionService", "extraction_service"]
+
+def get_extraction_service() -> ExtractionService:
+    """遅延初期化で ExtractionService のシングルトンインスタンスを取得する。"""
+    global _extraction_service_instance
+    if _extraction_service_instance is None:
+        _extraction_service_instance = ExtractionService()
+    return _extraction_service_instance
+
+
+# 後方互換性のため、プロパティとして extraction_service を提供
+class _ExtractionServiceProxy:
+    def __getattr__(self, name: str):
+        return getattr(get_extraction_service(), name)
+
+
+extraction_service = _ExtractionServiceProxy()
+
+__all__ = ["ExtractionService", "extraction_service", "get_extraction_service"]

@@ -12,9 +12,12 @@ export function useNovelGeneration(
 ) {
   const { character, currentChapterText, setGenerationState, contentLengthLimit, targetEpisodes, llmConfig } = useNovelContext();
   const isCancelledRef = useRef<boolean>(false);
+  const abortRef = useRef<AbortController | null>(null);
 
   const startGeneration = useCallback(async () => {
     isCancelledRef.current = false;
+    abortRef.current = new AbortController();
+    const signal = abortRef.current.signal;
     setGenerationState((prev) => ({
       ...prev,
       isGenerating: true,
@@ -51,7 +54,7 @@ export function useNovelGeneration(
             throw new Error("生成がキャンセルされました");
           }
 
-          const status = await pollGenerationStatus(taskId);
+          const status = await pollGenerationStatus(taskId, signal);
           if (status.status === "completed") {
             const rawResult = status.result;
             const parsed =

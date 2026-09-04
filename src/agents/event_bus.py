@@ -15,6 +15,11 @@ class AgentEvent:
     correlation_id: str
 
 
+# Phase 2: Specialist audit event types
+AUDIT_SPECIALIST_STARTED = "audit.specialist.started"
+AUDIT_SPECIALIST_COMPLETED = "audit.specialist.completed"
+
+
 class EventBus:
     def __init__(self, use_redis: bool = False, redis_url: Optional[str] = None):
         self._subs: dict[str, list[Callable[[AgentEvent], Awaitable[None]]]] = {}
@@ -74,6 +79,22 @@ class EventBus:
         if tasks:
             await asyncio.gather(*tasks)
 
+    async def publish_blind(self, event: AgentEvent, gate: Any) -> List[asyncio.Task]:
+        """Blind peer review 対応発行。
+        
+        gate.scrub_payload() で参照禁止エージェントの出力をマスクしてから発行する。
+        """
+        from src.services.blind_review import BlindReviewGate
+        if isinstance(gate, BlindReviewGate):
+            scrubbed_payload = gate.scrub_payload(event.payload)
+            blind_event = AgentEvent(
+                agent=event.agent,
+                payload=scrubbed_payload,
+                correlation_id=event.correlation_id,
+            )
+            return await self.publish(blind_event)
+        return await self.publish(event)
+
     async def start_redis(self) -> None:
         """Redis 接続を初期化し、コンシューマータスクを開始。"""
         if not self._use_redis:
@@ -93,8 +114,16 @@ class EventBus:
             await self._redis.close()
             self._redis = None
         if self._consumer_task is not None:
-            self._consumer_task.cancel()
+            await self._consumer_task.cancel()
             try:
                 await self._consumer_task
             except asyncio.CancelledError:
                 pass
+
+
+__all__ = [
+    "AgentEvent",
+    "EventBus",
+    "AUDIT_SPECIALIST_STARTED",
+    "AUDIT_SPECIALIST_COMPLETED",
+]

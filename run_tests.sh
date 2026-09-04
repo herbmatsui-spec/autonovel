@@ -18,7 +18,7 @@ ruff check src tests
 
 # 型チェック（緩め）
 echo "Running mypy..."
-mypy src --ignore-missing-imports || true
+mypy src --ignore-missing-imports
 
 # フォーマットチェック
 echo "Running black check..."

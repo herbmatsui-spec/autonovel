@@ -18,6 +18,7 @@ from src.backend.error_handlers import register_error_handlers
 from src.backend.logging_config import configure as configure_logging
 from src.backend.observability.health import build_health_payload, metrics
 from src.backend.routers import easy_mode, editor, graph, streaming, styles
+from src.backend.api.admin_phase2 import router as admin_audit_router, rag_router as admin_rag_router
 
 logger = logging.getLogger(__name__)
 
@@ -44,11 +45,15 @@ register_error_handlers(app)
 
 
 app.include_router(easy_mode.router, prefix="/easy_mode", tags=["easy_mode"])
-app.include_router(easy_mode.router, prefix="/api/easy-mode", tags=["easy-mode"])
+if settings.APP_ENV == "development":
+    app.include_router(easy_mode.router, prefix="/api/easy-mode", tags=["easy-mode"])
 app.include_router(streaming.router, prefix="/easy_mode", tags=["streaming"])
 app.include_router(styles.router)
 app.include_router(graph.router)
 app.include_router(editor.router)
+
+app.include_router(admin_audit_router)
+app.include_router(admin_rag_router)
 
 
 # 復元されたルーターの動的/静的登録

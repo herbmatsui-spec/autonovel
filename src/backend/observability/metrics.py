@@ -341,6 +341,55 @@ class PathNormalizer:
         return path
 
 
+# ===================== Phase 2: Blind Review / Specialist Audit / Reflective RAG =====================
+# Blind Peer Review
+blind_review_blocked_keys_total = Counter(
+    "blind_review_blocked_keys_total",
+    "Total keys blocked by BlindReviewGate",
+    ["gate", "source_agent"],
+)
+
+# Specialist Audit
+specialist_audit_duration_seconds = Histogram(
+    "specialist_audit_duration_seconds",
+    "Specialist auditor execution duration",
+    ["specialist", "status"],
+    buckets=[0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0],
+)
+
+specialist_audit_score = Gauge(
+    "specialist_audit_score",
+    "Specialist auditor score (0-100)",
+    ["specialist", "book_id", "chapter"],
+)
+
+# Reflective RAG
+reflective_rag_iterations = Histogram(
+    "reflective_rag_iterations",
+    "Reflective RAG iterations per retrieval",
+    ["book_id"],
+    buckets=[1, 2, 3, 4, 5],
+)
+
+reflective_rag_convergence_total = Counter(
+    "reflective_rag_convergence_total",
+    "Reflective RAG convergence outcomes",
+    ["converged"],
+)
+
+reflective_rag_threshold_filtered_total = Counter(
+    "reflective_rag_threshold_filtered_total",
+    "Documents filtered by relevance threshold in Reflective RAG",
+    ["book_id"],
+)
+
+reflective_rag_query_refinements_total = Counter(
+    "reflective_rag_query_refinements_total",
+    "Total query refinements performed in Reflective RAG",
+    ["book_id"],
+)
+
+
 def reset():
     """テスト用リセット関数"""
     from src.backend.observability.health import metrics as h_metrics

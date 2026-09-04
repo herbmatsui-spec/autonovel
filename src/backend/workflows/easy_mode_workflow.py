@@ -10,15 +10,12 @@ import os
 from typing import Any
 
 from src.backend.workflows.base_workflow import BaseWorkflow
-from src.services.auto_workflow_pipeline import (
-    WorkflowContext,
-    create_easy_mode_pipeline,
-)
+from src.services.auto_workflow_pipeline import create_easy_mode_pipeline
 from src.services.pipeline_param_mapper import (
-    map_easymode_kwargs_to_context,
     map_context_to_easymode_result,
+    map_easymode_kwargs_to_context,
 )
-from src.services.progress_reporter import UnifiedProgressReporter
+from src.services.progress_reporter import ProgressReporterAdapter
 from src.shared.utils import StatusReporter
 
 USE_UNIFIED = os.getenv("USE_UNIFIED_PIPELINE", "1") == "1"
@@ -47,8 +44,10 @@ class EasyModeWorkflow(BaseWorkflow):
         logger.info(f"EasyModeWorkflow started: genre={genre}, target_episodes={target_episodes}")
 
         if not USE_UNIFIED:
-            logger.warning(
-                "USE_UNIFIED_PIPELINE=0 is set, but the old implementation is not available. Falling back to unified pipeline."
+            raise NotImplementedError(
+                "USE_UNIFIED_PIPELINE=0 is no longer supported. "
+                "The legacy implementation was removed in the pipeline unification. "
+                "Use USE_UNIFIED_PIPELINE=1 (default)."
             )
 
         # 1. 統合パイプライン用 Context 構築
@@ -73,7 +72,7 @@ class EasyModeWorkflow(BaseWorkflow):
             enable_marketing=True,
         )
 
-        adapter = UnifiedProgressReporter(reporter=reporter)
+        adapter = ProgressReporterAdapter(reporter, is_easy_mode=True)
         result = await pipeline.execute(ctx, self.engine, adapter)
 
         # 3. 既存インターフェース互換の dict に変換

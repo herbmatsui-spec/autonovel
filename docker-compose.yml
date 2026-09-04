@@ -17,7 +17,7 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - HUEY_BACKEND=redis
       - LOG_LEVEL=INFO
-      - LLM_PROVIDER=${LLM_PROVIDER:-openai}
+      - LLM_PROVIDER=${LLM_PROVIDER:?LLM_PROVIDER is required}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - OPENAI_BASE_URL=${OPENAI_BASE_URL:-}
       - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
@@ -32,8 +32,8 @@ services:
     env_file:
       - path: .env
         required: false
-#    volumes:
-#      - ./src:/app
+    volumes:
+      - ./storage:/app/storage
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8200/health')"]
       interval: 10s
@@ -50,6 +50,7 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: autonovel_worker
+    entrypoint: ["/usr/local/bin/entrypoint.sh", "--skip-migrations"]
     command: ["python", "-m", "huey.bin.huey_consumer", "src.backend.tasks.huey.huey", "-w", "2", "-k", "thread"]
     environment:
       - PYTHONPATH=/app
@@ -57,7 +58,7 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - HUEY_BACKEND=redis
       - LOG_LEVEL=INFO
-      - LLM_PROVIDER=${LLM_PROVIDER:-openai}
+      - LLM_PROVIDER=${LLM_PROVIDER:?LLM_PROVIDER is required}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - OPENAI_BASE_URL=${OPENAI_BASE_URL:-}
       - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
@@ -72,10 +73,10 @@ services:
     env_file:
       - path: .env
         required: false
+    volumes:
+      - ./storage:/app/storage
     healthcheck:
       disable: true
-#    volumes:
-#      - ./src:/app/src
     depends_on:
       db:
         condition: service_healthy

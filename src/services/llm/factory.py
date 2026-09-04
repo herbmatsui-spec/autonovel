@@ -1,8 +1,8 @@
 """LLM アダプタのファクトリモジュール。"""
-
 from __future__ import annotations
 
 import logging
+import os
 
 from src.backend.config import settings
 from src.services.llm.base import BaseLLMAdapter
@@ -29,6 +29,10 @@ def get_llm_adapter(
     未実装のプロバイダが指定された場合は WARNING ログを出力し、
     MockLLMAdapter にフォールバックする。
     """
+    # In testing environment, always return mock to avoid API key requirements
+    if os.environ.get("APP_ENV") == "testing":
+        return MockLLMAdapter()
+
     p = (provider or settings.LLM_PROVIDER).lower()
 
     if p not in IMPLEMENTED_PROVIDERS:
@@ -43,25 +47,27 @@ def get_llm_adapter(
     if p == "gemini":
         resolved_key = api_key or settings.GEMINI_API_KEY
         if not resolved_key:
-            logger.warning("GEMINI_API_KEY is not configured. Falling back to MockLLMAdapter.")
-            return MockLLMAdapter()
+            raise RuntimeError(
+                "GEMINI_API_KEY が未設定です。.env を確認してください。"
+            )
         return GeminiAdapter(api_key=resolved_key, model_name=model_name)
 
     if p == "openai":
         resolved_key = api_key or settings.OPENAI_API_KEY
         resolved_url = base_url or settings.OPENAI_BASE_URL
         if not resolved_key and not resolved_url:
-            logger.warning(
-                "OPENAI_API_KEY/BASE_URL is not configured. Falling back to MockLLMAdapter."
+            raise RuntimeError(
+                "OPENAI_API_KEY / OPENAI_BASE_URL が未設定です。"
+                ".env を確認してください。"
             )
-            return MockLLMAdapter()
         return OpenAIAdapter(api_key=resolved_key, base_url=resolved_url, model=model_name)
 
     if p == "claude":
         resolved_key = api_key or settings.ANTHROPIC_API_KEY
         if not resolved_key:
-            logger.warning("ANTHROPIC_API_KEY is not configured. Falling back to MockLLMAdapter.")
-            return MockLLMAdapter()
+            raise RuntimeError(
+                "ANTHROPIC_API_KEY が未設定です。.env を確認してください。"
+            )
         return ClaudeAdapter(api_key=resolved_key, model_name=model_name)
 
     if p == "ollama":

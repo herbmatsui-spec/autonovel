@@ -1,0 +1,92 @@
+# Phase 2: Multi-layer Specialist Audit Weights
+# 8 specialist auditors, weights must sum to 1.0 in EVERY section.
+# Loaded by src.config.audit_weights.load_weights(genre, phase).
+# Each mapping is a COMPLETE replacement for the default (missing keys NOT allowed).
+
+default:
+  consistency: 0.20
+  creativity: 0.15
+  reader_hook: 0.15
+  emotion_curve: 0.15
+  style: 0.10
+  factual: 0.10
+  structure: 0.10
+  multimodal: 0.05
+
+# Genre-specific COMPLETE overrides (must sum to 1.0)
+by_genre:
+  literary:
+    consistency: 0.20
+    creativity: 0.15
+    reader_hook: 0.15
+    emotion_curve: 0.15
+    style: 0.10
+    factual: 0.10
+    structure: 0.10
+    multimodal: 0.05
+  entertainment:
+    consistency: 0.15
+    creativity: 0.15
+    reader_hook: 0.25
+    emotion_curve: 0.15
+    style: 0.10
+    factual: 0.10
+    structure: 0.05
+    multimodal: 0.05
+  educational:
+    consistency: 0.20
+    creativity: 0.10
+    reader_hook: 0.15
+    emotion_curve: 0.15
+    style: 0.10
+    factual: 0.20
+    structure: 0.10
+    multimodal: 0.00
+  romance:
+    consistency: 0.15
+    creativity: 0.15
+    reader_hook: 0.10
+    emotion_curve: 0.25
+    style: 0.10
+    factual: 0.10
+    structure: 0.10
+    multimodal: 0.05
+  mystery:
+    consistency: 0.25
+    creativity: 0.10
+    reader_hook: 0.10
+    emotion_curve: 0.10
+    style: 0.05
+    factual: 0.05
+    structure: 0.25
+    multimodal: 0.10
+
+# Phase-specific COMPLETE overrides (must sum to 1.0)
+by_phase:
+  planning:
+    consistency: 0.15
+    creativity: 0.25
+    reader_hook: 0.05
+    emotion_curve: 0.15
+    style: 0.05
+    factual: 0.10
+    structure: 0.15
+    multimodal: 0.10
+  mid_writing:
+    consistency: 0.25
+    creativity: 0.05
+    reader_hook: 0.10
+    emotion_curve: 0.20
+    style: 0.05
+    factual: 0.20
+    structure: 0.10
+    multimodal: 0.05
+  climax:
+    consistency: 0.15
+    creativity: 0.10
+    reader_hook: 0.20
+    emotion_curve: 0.25
+    style: 0.05
+    factual: 0.15
+    structure: 0.05
+    multimodal: 0.05

@@ -32,7 +32,7 @@ RUN printf 'server {\n\
     try_files $uri /index.html;\n\
   }\n\
 \n\
-  location ~ ^/(easy_mode|api|editor|graph|health|metrics|plots|episodes|books|tasks) {\n\
+  location ~ ^/(easy_mode|api|editor|graph|health|metrics|plots|episodes|books|tasks|styles|multimedia|issues|patches|marketing|branches|prompt_versions|commercial|novel|illustrations|collab|export|hooks|prompt_compare|reverse_plot|orchestrated|structure|system|trace) {\n\
     proxy_pass http://backend:8200;\n\
     proxy_http_version 1.1;\n\
     proxy_set_header Upgrade $http_upgrade;\n\
@@ -43,6 +43,8 @@ RUN printf 'server {\n\
     proxy_set_header X-Forwarded-Proto $scheme;\n\
     proxy_read_timeout 86400s;\n\
     proxy_send_timeout 86400s;\n\
+    proxy_buffering off;\n\
+    proxy_cache off;\n\
   }\n\
 }\n' > /etc/nginx/conf.d/default.conf
 EXPOSE 80

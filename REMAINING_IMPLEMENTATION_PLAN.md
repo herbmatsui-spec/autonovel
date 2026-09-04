@@ -1,3 +1,16 @@
+# ⚠️ DEPRECATED (2026-09-04)
+
+このドキュメントは **完了済み** です。実装の現状は以下を参照：
+
+- **コード**: `src/backend/workflows/{full,easy_mode}_workflow.py` (両方とも `AutoWorkflowPipeline` に委譲済み)
+- **テスト**: `tests/test_unified_pipeline.py` (26 テスト) / `tests/test_easy_mode_workflow.py` (7 テスト) / `tests/test_full_auto_workflow.py` (5 テスト)
+- **実装計画**: `STEP_PLAN_DETAILED.md` (Step A-J すべて完了)
+- **統合計画書**: `PIPELINE_UNIFICATION_PLAN.md` (ステータス: 完了)
+
+このファイルは履歴保存のため残されています。新規実装は `STEP_PLAN_DETAILED.md` を参照してください。
+
+---
+
 # 残りの実装計画（Phase 3-4 統合パイプライン）
 
 現在の状況に基づき、UNIFIED_PIPELINE_IMPLEMENTATION_PLAN.md の 36 ステップのうち、未完了または不完全なステップを抜粋・再編しました。

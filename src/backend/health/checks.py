@@ -6,13 +6,12 @@ src/backend/health/checks.py - ヘルスチェック共通ロジック
 import logging
 import time
 from dataclasses import dataclass
-from enum import Enum
-from typing import Optional
+from enum import StrEnum
 
 logger = logging.getLogger(__name__)
 
 
-class HealthStatus(str, Enum):
+class HealthStatus(StrEnum):
     OK = "ok"
     DEGRADED = "degraded"
     ERROR = "error"
@@ -22,7 +21,7 @@ class HealthStatus(str, Enum):
 @dataclass
 class HealthCheckResult:
     status: HealthStatus
-    latency_ms: Optional[float] = None
+    latency_ms: float | None = None
     details: str = ""
     error: str = ""
 
@@ -47,7 +46,7 @@ async def check_database(db_manager) -> HealthCheckResult:
         return HealthCheckResult(status=HealthStatus.ERROR, error=str(e))
 
 
-async def check_redis(redis_url: Optional[str]) -> HealthCheckResult:
+async def check_redis(redis_url: str | None) -> HealthCheckResult:
     """Redis PING + INFO clients"""
     if not redis_url:
         return HealthCheckResult(
@@ -118,7 +117,7 @@ async def check_chromadb() -> HealthCheckResult:
         return HealthCheckResult(status=HealthStatus.ERROR, error=str(e))
 
 
-async def check_llm_gateway(api_key: Optional[str]) -> HealthCheckResult:
+async def check_llm_gateway(api_key: str | None) -> HealthCheckResult:
     """LLM Gateway 軽量呼び出し（モデル一覧 or 短い生成）"""
     import os
 
@@ -132,19 +131,24 @@ async def check_llm_gateway(api_key: Optional[str]) -> HealthCheckResult:
         return HealthCheckResult(status=HealthStatus.NOT_CONFIGURED, error="API key not configured")
     start = time.perf_counter()
     try:
+        from src.backend.config import settings
+        from src.backend.engine_utils import AdaptiveCooldown
         from src.core.llm_gateway import LLMProviderFactory, create_genai_client
 
         genai_client = create_genai_client(api_key=api_key)
-        factory = LLMProviderFactory(genai_client=genai_client)
-        # ごく短いテスト生成（1 token 程度）
+        factory = LLMProviderFactory(
+            genai_client=genai_client,
+            cooldown=AdaptiveCooldown(base_sec=60.0, min_sec=60.0, max_sec=60.0, name="healthcheck"),
+        )
+        model_name = settings.GEMINI_MODEL
         result = await factory.generate_text(
-            model="gemini-3.5-flash-lite", prompt="ping", max_tokens=1, temperature=0.0
+            model=model_name, prompt="ping", max_tokens=1, temperature=0.0
         )
         latency = (time.perf_counter() - start) * 1000
         return HealthCheckResult(
             status=HealthStatus.OK if result else HealthStatus.ERROR,
             latency_ms=latency,
-            details=f"model=gemini-3.5-flash-lite, response_len={len(result) if result else 0}",
+            details=f"model={model_name}, response_len={len(result) if result else 0}",
         )
     except Exception as e:
         logger.warning(f"LLM Gateway health check failed: {e}")

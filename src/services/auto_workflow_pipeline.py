@@ -3,11 +3,8 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-
 from src.models import FullAutoWorkflowResult
 from src.services.pipeline_base import WorkflowContext, WorkflowStep
-
-# 新規 Step 実装をインポート
 from src.services.pipeline_steps import (
     AuditRewriteStep,
     CatharsisAnalysisStep,
@@ -17,6 +14,7 @@ from src.services.pipeline_steps import (
     PlanStep,
     WriteStep,
 )
+from src.services.progress_reporter import ProgressReporterAdapter
 
 if TYPE_CHECKING:
     from src.backend.background import StatusReporter
@@ -70,13 +68,17 @@ class AutoWorkflowPipeline:
     async def execute(
         self, ctx: WorkflowContext, engine: UltimateHegemonyEngine, reporter: StatusReporter
     ) -> FullAutoWorkflowResult:
-        reporter.report("🚀 全自動モード開始！", "info")
+        if isinstance(reporter, ProgressReporterAdapter):
+            adapter = reporter
+        else:
+            adapter = ProgressReporterAdapter(reporter, ctx.is_easy_mode)
+        adapter.report("🚀 全自動モード開始！", "info")
 
         for step in self.steps:
-            success = await step.execute(ctx, engine, reporter)
+            success = await step.execute(ctx, engine, adapter)
             if not success:
-                status = "stopped" if reporter.state.should_stop() else "failed"
-                if isinstance(step, PlanStep) and not reporter.state.should_stop():
+                status = "stopped" if adapter.state.should_stop() else "failed"
+                if isinstance(step, PlanStep) and not adapter.state.should_stop():
                     status = "failed_integrity_check"
                 return FullAutoWorkflowResult(
                     book_id=ctx.book_id,

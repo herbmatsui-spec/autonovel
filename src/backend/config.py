@@ -30,7 +30,7 @@ class Settings(BaseSettings):
 
     # サーバー基本設定
     APP_NAME: str = "AutoNovel"
-    APP_VERSION: str = "4.0.0"
+    APP_VERSION: str = "4.2.0"
     APP_ENV: Literal["development", "production", "testing", "local", "staging"] = "development"
     PORT: int = 8200
     HOST: str = "0.0.0.0"

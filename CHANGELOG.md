@@ -2,6 +2,86 @@
 
 本プロジェクトの変更履歴。[Semantic Versioning](https://semver.org/lang/ja/) に準拠。
 
+## [Unreleased] - Phase 2: Blind Peer Review / Specialist Audit / Reflective RAG
+
+ガイドライン Phase 2 (Guidelines #1, #3, #7) を実装。創造性・品質・RAG精度を大幅向上。
+
+### 追加
+- **Blind Peer Review (Guideline #1)**: `src/services/blind_review.py` に `BlindReviewGate` 実装。3案企画ガチャ等で他案出力を参照せず独立採点可能。`EventBus.publish_blind()` で自動マスク適用。
+- **Multi-layer Specialist Audit (Guideline #3)**: 8名の専門オーディター (`src/agents/specialists/`) を並列実行。
+  - Consistency / Creativity / ReaderHook / EmotionCurve / Style / Factual / Structure / Multimodal
+  - `AuditAggregator` でジャンル・フェーズ別重み (`config/audit_weights.yaml`) による加重集約
+  - `v2` audit skill (`src/agents/skills/v2/audit_skill.py`) が並列起動・再生成フォーカス設定を自動化
+- **Reflective RAG Screening (Guideline #7)**: `src/services/reflective_rag.py` に反復クエリ精緻化ループ実装。
+  - BM25 キーワード抽出 (`rank-bm25` 既存依存流用)
+  - GraphRAG 文脈適合性チェック (is_forbidden 属性)
+  - 最大3回反復で収束判定、履歴を `rag_reflection_history` テーブルに保存
+- **DB 拡張**: `audit_specialist_results` / `rag_reflection_history` テーブル + Alembic migration
+- **EventBus 拡張**: `publish_blind()` / 専門オーディター用イベント型 (`audit.specialist.started/completed`)
+- **管理者 API**: `/admin/audit/*` (専門オーディター一覧・集約テスト) / `/admin/rag/*` (反射テスト・統計)
+- **Prometheus メトリクス**: blind_review_blocked_keys / specialist_audit_duration / specialist_audit_score / reflective_rag_iterations / reflective_rag_convergence 等
+- **設定**: `config/audit_weights.yaml` (デフォルト/ジャンル別/フェーズ別完全重みマップ)
+
+### 変更
+- `src/agents/skills/v2/audit_skill.py`: プレースホルダ実装を本物の並列監査に置換
+- `src/services/rag_service.py`: `retrieve_with_reflection()` メソッド追加 (機能フラグ `RAG_REFLECTION_ENABLED` 対応)
+
+### テスト
+- `tests/unit/test_blind_review.py` (11 テスト): スクラブ/ハッシュ/ネスト/性能
+- `tests/unit/test_specialist_auditors.py` (26 テスト): 8専門家のスコア/フィードバック/LLMフォールバック
+- `tests/unit/test_audit_aggregator.py` (14 テスト): 並列実行/重み集約/欠損処理/イベント発行
+- `tests/unit/test_reflective_rag.py` (8 テスト): 収束/閾値/履歴/空結果
+- `tests/e2e/phase2_full_flow.py`: 3案盲検 → 8専門家並列 → 反射RAG の完全フロー
+
+---
+
+## [Unreleased] - Pipeline Unification (Phase 3-4)
+
+統合パイプライン (AutoWorkflowPipeline) への完全委譲を完了。
+
+### 変更
+- **FullAutoWorkflow / EasyModeWorkflow → AutoWorkflowPipeline 委譲**: 両ワークフローが `pipeline.execute(ctx, self.engine, adapter)` 経由で統合パイプラインに完全委譲。インライン実装は削除済み
+- **Adapter 統一**: `EasyModeWorkflow` も `FullAutoWorkflow` と同様に `ProgressReporterAdapter` を使用 (`UnifiedProgressReporter` から切替)
+- **重複 wrap 解消**: `AutoWorkflowPipeline.execute()` が `ProgressReporterAdapter` インスタンスを既に受け取った場合は再 wrap をスキップ
+- **USE_UNIFIED_PIPELINE フラグ整理**: `=0` 指定時に `NotImplementedError` を送出。旧実装は削除済みのため明示的にエラー化
+
+### 削除
+- `src/services/progress_reporter.py` から `UnifiedProgressReporter` / `StatusReporterAdapter` / `create_progress_adapter` 関数を削除（未使用）
+- `src/services/progress_reporter.py` から `ProgressReporterProtocol` / `ProgressCallbackProtocol` を削除（未使用）
+
+### テスト
+- `tests/test_easy_mode_workflow.py` 新規 (7 テスト): 委譲 / Context 設定 / Adapter 初期化 / 戻り値形式 / デフォルト値 / フラグ伝搬を検証
+- `tests/test_full_auto_workflow.py` 新規 (5 テスト): 委譲 / Context 設定 / Adapter 初期化 / 戻り値形式 / エンジン直接呼び出ししないことを検証
+- 既存 `tests/test_unified_pipeline.py` (26 テスト) は pass を維持
+
+---
+
+## [4.2.0] - 2026-09-04
+
+### 修正（P0: 致命的バグ・リリースブロッカー）
+- **alembic パス整合**: 不要な `COPY alembic/ ./alembic/` を削除。`src/` 配下の `src/backend/alembic` が `alembic.ini` の `script_location` を満たす
+- **DATABASE_URL → ALEMBIC_DATABASE_URL ブリッジ**: `docker/backend/entrypoint.sh` で compose の `DATABASE_URL` を `ALEMBIC_DATABASE_URL` としてエクスポート。`localhost` への誤接続を解消
+- **worker entrypoint パス**: `docker-compose.yml` をリポジトリ相対パスから `/usr/local/bin/entrypoint.sh` に修正
+- **LLMProviderFactory cooldown 注入**: ヘルスチェックでの `TypeError` を解消。`AdaptiveCooldown` 経由で no-op cooldown を渡す
+- **ヘルスチェックのキー/モデル整合**: OpenAI キー → Gemini キー (`settings.GEMINI_API_KEY`) に統一
+- **HealthResponse.version ハードコード解消**: `"3.0.0"` → `settings.APP_VERSION` 連動
+
+### 変更
+- **APP_VERSION / pyproject バージョン**: 4.0.0 / 4.1.0 → 4.2.0 に揃え
+- **easy_mode ルタ二重登録の本番ガード**: `APP_ENV=development` のみで `/api/easy-mode` をマウント
+- **easyMode.ts のBASE 統一**: `/generate/stream` を `${BASE}/generate/stream` に統一
+- **nginx プロキシ経路拡張**: styles / multimedia / patches / issues / marketing / novel / illustrations / collab / export / hooks / branches / prompt_versions / commercial / system / trace / structure / orchestrated / reverse_plot / prompt_compare をロケーションに追加
+- **LLM ファクトリのフェイルファスト化**: 設定プロバイダのAPI キーが未設定なら `RuntimeError` を送出（Mock フォールバック廃止）
+
+### 削除
+- `src/backend/worker_config.py`: Huey 設定は `src/backend/tasks/huey.py` に統合済み
+
+### テスト
+- `tests/unit/test_llm_factory.py` を全面書き換え（Mock フォールバック前提をフェイルファスト前提に変更、OpenRouter 用の `BASE_URL` 単独設定ケースを追加）
+- `tests/unit/test_health_checks.py` を新規作成（cooldown 注入、disabled フラグ、factory 例外系の網羅）
+
+---
+
 ## [Unreleased] - Multimedia (Phase 7)
 
 マルチメディア展開 (Asset Pack / Media Mix / IF Routes / eBook Export) の初回統合リリース。

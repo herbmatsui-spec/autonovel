@@ -1,0 +1,41 @@
+# Context Compression Configuration
+# 4層コンテキスト圧縮機構の設定パラメータ
+
+compression:
+  enabled: true
+  
+  # 第1層: キーフレーズ抽出
+  layer1_keyphrase:
+    method: "tfidf"  # tfidf | keybert | bm25
+    top_k: 50
+    min_score: 0.01
+  
+  # 第2層: エンティティ関係サブグラフ抽出
+  layer2_subgraph:
+    max_hops: 2
+    relevance_threshold: 0.05
+    edge_pruning: true
+    max_nodes: 200
+  
+  # 第3層: 抽象化・カテゴリ化
+  layer3_abstraction:
+    model: "facebook/bart-large-cnn"
+    max_length: 128
+    abstraction_categories:
+      - "武術スキル"
+      - "統治システム"
+      - "魔法システム"
+      - "組織・派閥"
+      - "地理・地形"
+      - "歴史・年表"
+      - "アイテム・装備"
+      - "種族・血統"
+  
+  # 第4層: 重要度ベース動的トリミング
+  layer4_trimming:
+    importance_threshold: 0.4
+    max_tokens: 4000
+    preserve_categories:
+      - "主要キャラ"
+      - "核心設定"
+      - "伏線"

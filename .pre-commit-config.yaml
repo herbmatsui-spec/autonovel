@@ -5,17 +5,26 @@ repos:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
       - id: ruff-format
+  - repo: https://github.com/psf/black
+    rev: 24.10.0
+    hooks:
+      - id: black
+        language_version: python3.12
+        # pyproject.toml の [tool.black] (line-length=100) を尊重する
+        # black はフォーマッタ重複チェック用 ruff format --check と二重化するが
+        # black-check ジョブ (CI) との同一性を担保するため残す
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v2.3.1
     hooks:
       - id: mypy
         args: [--ignore-missing-imports, src/]
+        # Phase 3 で --strict を追加し CI と同じ閾値にする
         additional_dependencies: [pydantic, sqlalchemy, fastapi]
   - repo: local
     hooks:
       - id: pytest-unit
         name: pytest unit tests
-        entry: python -m pytest tests/unit/ -q --tb=short
+        entry: python -m pytest tests/unit/ -q --tb=short --cov-fail-under=40
         language: system
         pass_filenames: false
         stages: [pre-push]

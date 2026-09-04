@@ -17,7 +17,7 @@
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 [![Type Checked: mypy](https://img.shields.io/badge/type%20checked-mypy-blue)](https://mypy-lang.org/)
 [![Vitest](https://img.shields.io/badge/tested_with-vitest-729B1B?logo=vitest&logoColor=white)](https://vitest.dev/)
-[![Version](https://img.shields.io/badge/version-4.3.0-brightgreen?logo=semver)](https://github.com/herbmatsui-spec/autonovel/releases/tag/v4.3.0)
+[![Version](https://img.shields.io/badge/version-4.4.0-brightgreen?logo=semver)](https://github.com/herbmatsui-spec/autonovel/releases/tag/v4.4.0)
 
 <br />
 
@@ -25,7 +25,7 @@
   <img src="docs/demo.gif" alt="AutoNovel UI & Workflow Demo" width="900" style="border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
 </p>
 
-*▲ AutoNovel v4.3: 3案企画ガチャ / 逆算プロット / 上級者Studio / インライン五感推敲 / GraphRAG相関図 / ワンクリックZIP納品 / マルチメディア・eBook / IF分岐・共同編集 (CRDT) / **スキル駆動型アーキテクチャ / BookScore統一100点メトリクス / A/Bテスト自動化 / PDCA自動レポート / 書き直し自動品質保証ループ (BookScore閾値自動再生成)***
+*▲ AutoNovel v4.4: 3案企画ガチャ / 逆算プロット / 上級者Studio / インライン五感推敲 / GraphRAG相関図 / ワンクリックZIP納品 / マルチメディア・eBook / IF分岐・共同編集 (CRDT) / **スキル駆動型アーキテクチャ / BookScore統一100点メトリクス / A/Bテスト自動化 / PDCA自動レポート / 書き直し自動品質保証ループ / ブラインドピアレビュー / 8専門オーディター並列監査 / 反射的RAGスクリーニング***
 
 </div>
 
@@ -43,6 +43,9 @@ AutoNovel は、AI を活用して Web 小説を **企画から執筆、校正�
 - **eBook エクスポート**：縦書き・EPUB 3 準拠の電子書籍ファイルを直接出力
 - **マルチモード**：初心者向け Easy Mode と、プロ向け Advanced Mode / 上級者 Studio を切り替えて利用可能
 - **共同編集 (CRDT)**：複数執筆者による `ChapterVersion` のベクタークロック同期マージ
+- **ブラインドピアレビュー**：3案企画ガチャ等で他案を参照せず独立採点（創造的発散を維持）
+- **8専門オーディター並列監査**：一貫性・創造性・読者フック・感情曲線・文体・事実性・構造・マルチモーダル適合性を加重集約
+- **反射的RAGスクリーニング**：BM25キーワード抽出・文脈適合性チェック・最大3回反復でクエリ精緻化
 
 ### まずは試してみよう
 
@@ -54,6 +57,33 @@ AutoNovel は、AI を活用して Web 小説を **企画から執筆、校正�
 続いて、下記の目次から技術的な詳細をご覧ください。
 
 ## 📋 更新履歴 / Changelog
+
+### v4.4.0 (2026-09-04) — Phase 2: 創造性・品質・RAG精度向上 (Guidelines #1, #3, #7)
+
+**🛡️ ブラインドピアレビュー方式フィードバックループ (Guideline #1)**
+- `BlindReviewGate` (`src/services/blind_review.py`): 参照禁止フラグによるフィードバック隔離
+- `EventBus.publish_blind()`: 自動スクラブ発行で他エージェント出力をブロック
+- 3案企画ガチャ等で他案を参照せず独立採点実現 (創造的発散を維持)
+
+**🎭 8専門オーディター並列監査 (Guideline #3)**
+- 8専門家: Consistency / Creativity / ReaderHook / EmotionCurve / Style / Factual / Structure / Multimodal
+- `AuditAggregator` (`src/services/audit_aggregator.py`): 並列実行・加重集約 (`config/audit_weights.yaml`)
+- ジャンル別 (literary/entertainment/educational/romance/mystery) / フェーズ別 (planning/mid_writing/climax) 重み切替
+- `v2` AuditSkill (`src/agents/skills/v2/audit_skill.py`): BookScore連携・最低次元自動 `regeneration_focus` 設定
+
+**🔍 反射的スクリーニングによるRAG精度向上 (Guideline #7)**
+- `ReflectiveRAGService` (`src/services/reflective_rag.py`): BM25キーワード抽出 + GraphRAG文脈適合性チェック + 最大3回反復
+- `retrieve_with_reflection()` (`src/services/rag_service.py`): 機能フラグ `RAG_REFLECTION_ENABLED` 対応
+- 履歴保存 `rag_reflection_history` テーブル + Alembic移行
+
+**📊 共通基盤**
+- DB: `audit_specialist_results`, `rag_reflection_history` テーブル + Alembic移行 (`0019`, `0020`)
+- 管理者API: `/admin/audit/*` (専門家一覧・集約テスト・重み取得), `/admin/rag/*` (反射テスト・統計)
+- Prometheus: `blind_review_blocked_keys`, `specialist_audit_duration`, `specialist_audit_score`, `reflective_rag_iterations`, `reflective_rag_convergence` 等
+- 機能フラグ: `BLIND_REVIEW_ENABLED`, `MULTI_LAYER_AUDIT_ENABLED`, `RAG_REFLECTION_ENABLED`
+- 単体/結合/E2Eテスト計59ケース + E2E完全フロー (`tests/e2e/phase2_full_flow.py`)
+
+---
 
 ### v4.3.0 (2026-09-04) — Phase 1: 品質保証自動化 & スキルバージョニング完全実装
 

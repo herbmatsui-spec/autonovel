@@ -42,19 +42,19 @@ COPY --from=builder /root/.local /root/.local
 COPY src/ ./src/
 COPY config/ ./config/
 COPY database/ ./database/
+COPY docker/backend/entrypoint.sh /usr/local/bin/entrypoint.sh
 COPY formatters/ ./formatters/
 COPY plugins/ ./plugins/
 COPY prompts/ ./prompts/
 COPY schemas/ ./schemas/
-COPY alembic/ ./alembic/
 COPY alembic.ini ./
 COPY pyproject.toml ./
 COPY requirements.txt ./
 
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
 EXPOSE 8200
 
-# ヘルスチェック用
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD python -c "import urllib.request, sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8200/health').status == 200 else 1)"
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
 CMD ["uvicorn", "src.backend.server:app", "--host", "0.0.0.0", "--port", "8200"]
