@@ -17,6 +17,7 @@
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 [![Type Checked: mypy](https://img.shields.io/badge/type%20checked-mypy-blue)](https://mypy-lang.org/)
 [![Vitest](https://img.shields.io/badge/tested_with-vitest-729B1B?logo=vitest&logoColor=white)](https://vitest.dev/)
+[![Version](https://img.shields.io/badge/version-4.1.0-brightgreen?logo=semver)](https://github.com/herbmatsui-spec/autonovel/releases/tag/v4.1.0)
 
 <br />
 
