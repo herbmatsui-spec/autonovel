@@ -433,9 +433,17 @@ class GraphRAGService:
             return []
 
         all_neighbors: list[dict[str, Any]] = []
+        # Include the starting entities themselves in the context
         for name in core_entities:
             if not name or not name.strip():
                 continue
+            # Add the entity itself
+            all_neighbors.append({
+                "name": name.strip(),
+                "relation_type": "self",
+                "properties": {},
+            })
+            # Get neighbors
             neighbors = age_client.get_neighbors(session, name.strip(), max_depth=max_depth)
             all_neighbors.extend(neighbors)
 

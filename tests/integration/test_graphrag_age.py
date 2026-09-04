@@ -47,6 +47,9 @@ pytestmark = pytest.mark.skipif(
 def age_container():
     """カスタム AGE+pgvector イメージを起動し SQLAlchemy engine を返す."""
     from sqlalchemy import create_engine, text
+    from alembic.config import Config
+    from alembic import command
+    import os
 
     container = PostgresContainer("autonovel/age-pgvector:test")
     container.with_env("POSTGRES_HOST_AUTH_METHOD", "trust")
@@ -61,6 +64,16 @@ def age_container():
             conn.execute(text("CREATE EXTENSION IF NOT EXISTS age;"))
             conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
             conn.commit()
+        
+        # Create all tables from models
+        from src.infrastructure.database.models import Base
+        Base.metadata.create_all(engine)
+        
+        # Run alembic migrations up to 0011 (skip problematic 0012+)
+        alembic_cfg = Config(os.path.join(os.path.dirname(__file__), "..", "..", "alembic.ini"))
+        alembic_cfg.set_main_option("sqlalchemy.url", url)
+        command.upgrade(alembic_cfg, "0011")
+        
         yield engine
     finally:
         engine.dispose()
@@ -433,6 +446,10 @@ def test_graph_pipeline_process_chapter(age_session):
     # モックLLMを使用するため、extraction_serviceをパッチ
     from unittest.mock import patch, MagicMock
     from src.models.graph_schemas import GraphExtractionResult, Entity, Relationship
+    from src.services.age_client import age_client
+
+    # Ensure default graph exists for graph pipeline
+    age_client.init_graph(age_session)
 
     mock_extraction = GraphExtractionResult(
         entities=[
@@ -452,9 +469,9 @@ def test_graph_pipeline_process_chapter(age_session):
          patch("src.services.graph_pipeline.settings.ENABLE_GRAPHRAG", True):
         result = pipeline.process_chapter_knowledge(age_session, 1, text)
 
-    assert result["chunks_created"] >= 1
-    assert result["entities_created"] >= 2
-    assert result["relationships_created"] >= 1
+    assert result.chunks_created >= 1
+    assert result.entities_created >= 2
+    assert result.relationships_created >= 1
 
 
 def test_graph_pipeline_batch(age_session):
@@ -489,7 +506,8 @@ def test_graph_pipeline_batch(age_session):
 # rag_service Tests
 # ============================================================
 
-def test_rag_hybrid_search(age_session):
+@pytest.mark.asyncio
+async def test_rag_hybrid_search(age_session):
     """ハイブリッド検索 (Vector + Graph + Fulltext)."""
     from src.services.rag_service import GraphRAGService
     from unittest.mock import patch, MagicMock
@@ -497,10 +515,37 @@ def test_rag_hybrid_search(age_session):
 
     service = GraphRAGService()
 
+    # Create required parent records
+    from sqlalchemy import text
+    
+    # Create book if not exists (provide all required columns)
+    age_session.execute(text("""
+        INSERT INTO books (id, title, mode, ai_assistant_config, created_at) 
+        VALUES (1, 'Test Book', 'normal', '{}', NOW())
+        ON CONFLICT (id) DO NOTHING
+    """))
+    
+    # Create branch if not exists
+    age_session.execute(text("""
+        INSERT INTO branches (id, book_id, name) VALUES (1, 1, 'Main Branch')
+        ON CONFLICT (id) DO NOTHING
+    """))
+    
+    # Create chapter if not exists
+    age_session.execute(text("""
+        INSERT INTO chapters (id, book_id, branch_id, ep_num, title, content, 
+            score_story, killer_phrase, summary, world_state, 
+            trinity_review_log, ai_insight, tension_delta, qol_delta, is_anchor)
+        VALUES (1, 1, 1, 1, 'Test Chapter', 'Test Content',
+            0, '', '', '', '', '', 0.0, 0.0, false)
+        ON CONFLICT (id) DO NOTHING
+    """))
+    age_session.commit()
+
     # チャンクデータ準備
     from src.infrastructure.database.models.chunk import ChapterChunk
     chunk1 = ChapterChunk(chapter_id=1, chunk_index=0, content="アルスが聖剣を手に入れた", embedding=[1.0]*1536)
-    chunk2 = ChapterChunk(chapter_id=1, chunk_index=1, content="王都でセリアと出会った", embedding=[0.0]*1536 + [1.0]*1536)
+    chunk2 = ChapterChunk(chapter_id=1, chunk_index=1, content="王都でセリアと出会った", embedding=[0.0]*1536)
     age_session.add_all([chunk1, chunk2])
     age_session.commit()
 
@@ -513,13 +558,14 @@ def test_rag_hybrid_search(age_session):
 
     with patch.object(service, "get_reranker") as mock_reranker:
         mock_reranker.return_value.rerank.return_value = [(0, 0.9), (1, 0.5)]
-        results = service.hybrid_search(age_session, "聖剣", core_entities=["アルス"], top_k=5)
+        results = await service.hybrid_search(age_session, "聖剣", core_entities=["アルス"], top_k=5)
 
     assert len(results) > 0
     assert any(r.source in ("vector", "graph", "fulltext") for r in results)
 
 
-def test_rag_build_context(age_session):
+@pytest.mark.asyncio
+async def test_rag_build_context(age_session):
     """RAGコンテキスト構築."""
     from src.services.rag_service import GraphRAGService
     from unittest.mock import patch
@@ -527,12 +573,40 @@ def test_rag_build_context(age_session):
 
     service = GraphRAGService()
 
+    # Create required parent records
+    from sqlalchemy import text
+    
+    # Create book if not exists (provide all required columns)
+    age_session.execute(text("""
+        INSERT INTO books (id, title, mode, ai_assistant_config, created_at) 
+        VALUES (1, 'Test Book', 'normal', '{}', NOW())
+        ON CONFLICT (id) DO NOTHING
+    """))
+    
+    # Create branch if not exists
+    age_session.execute(text("""
+        INSERT INTO branches (id, book_id, name) VALUES (1, 1, 'Main Branch')
+        ON CONFLICT (id) DO NOTHING
+    """))
+    
+    # Create chapter if not exists
+    age_session.execute(text("""
+        INSERT INTO chapters (id, book_id, branch_id, ep_num, title, content, 
+            score_story, killer_phrase, summary, world_state, 
+            trinity_review_log, ai_insight, tension_delta, qol_delta, is_anchor)
+        VALUES (1, 1, 1, 1, 'Test Chapter', 'Test Content',
+            0, '', '', '', '', '', 0.0, 0.0, false)
+        ON CONFLICT (id) DO NOTHING
+    """))
+    age_session.commit()
+
     # グラフデータ
-    from src.services.age_client import AgeClient
-    client = AgeClient(default_graph_name="test_rag_ctx")
-    client.init_graph(age_session)
-    client.upsert_node(age_session, "Character", "アルス", {"description": "主人公"})
-    client.upsert_node(age_session, "Item", "聖剣", {"description": "伝説の剣"})
+    from src.services.age_client import age_client
+    age_client.init_graph(age_session)
+    age_client.upsert_node(age_session, "Character", "アルス", {"description": "主人公"})
+    age_client.upsert_node(age_session, "Item", "聖剣", {"description": "伝説の剣"})
+    # Add edge for graph traversal
+    age_client.upsert_edge(age_session, "Character", "アルス", "Item", "聖剣", "POSSESSES", {"description": "所持"})
 
     # チャンク
     from src.infrastructure.database.models.chunk import ChapterChunk
@@ -542,7 +616,7 @@ def test_rag_build_context(age_session):
 
     with patch("src.services.rag_service.settings.ENABLE_GRAPHRAG", True), \
          patch("src.services.rag_service.settings.DATABASE_URL", "postgresql://test"):
-        context = service.build_rag_context(
+        context = await service.build_rag_context(
             age_session,
             current_prompt="聖剣を構える",
             character_name="アルス",
@@ -627,14 +701,19 @@ def test_pgvector_performance_1000_docs(age_container):
     ids = [f"doc{i}" for i in range(1000)]
 
     import asyncio
-    start = time.perf_counter()
-    asyncio.run(store.add_documents("perf_test", ids, docs, embeddings))
-    ingest_elapsed = (time.perf_counter() - start) * 1000
 
-    query_emb = [0.5] * 128
-    start = time.perf_counter()
-    results = asyncio.run(store.search("perf_test", query_emb, top_k=10))
-    search_elapsed = (time.perf_counter() - start) * 1000
+    async def run_perf_test():
+        start = time.perf_counter()
+        await store.add_documents("perf_test", ids, docs, embeddings)
+        ingest_elapsed = (time.perf_counter() - start) * 1000
+
+        query_emb = [0.5] * 128
+        start = time.perf_counter()
+        results = await store.search("perf_test", query_emb, top_k=10)
+        search_elapsed = (time.perf_counter() - start) * 1000
+        return ingest_elapsed, search_elapsed, results
+
+    ingest_elapsed, search_elapsed, results = asyncio.run(run_perf_test())
 
     assert len(results) == 10
     print(f"1000 docs ingest: {ingest_elapsed:.2f}ms, search: {search_elapsed:.2f}ms")
@@ -677,7 +756,8 @@ def test_age_connection_retry(age_container):
 # Full E2E Test
 # ============================================================
 
-def test_graphrag_e2e(age_session):
+@pytest.mark.asyncio
+async def test_graphrag_e2e(age_session):
     """GraphRAG エンドツーエンドテスト:
     1. チャプターテキストを入力
     2. エンティティ抽出
@@ -688,7 +768,7 @@ def test_graphrag_e2e(age_session):
     """
     from src.services.graph_pipeline import GraphPipelineService
     from src.services.rag_service import GraphRAGService
-    from src.services.age_client import AgeClient
+    from src.services.age_client import age_client, AgeClient
     from unittest.mock import patch
     from src.models.graph_schemas import GraphExtractionResult, Entity, Relationship
     from src.infrastructure.database.models.chunk import ChapterChunk
@@ -717,6 +797,9 @@ def test_graphrag_e2e(age_session):
         plot_summary="アルスが聖剣を得て王都に帰還",
     )
 
+    # Ensure default graph exists
+    age_client.init_graph(age_session)
+
     # 3. パイプライン実行
     pipeline = GraphPipelineService()
     with patch("src.services.graph_pipeline.extraction_service.extract_graph_from_text", return_value=mock_extraction), \
@@ -724,9 +807,9 @@ def test_graphrag_e2e(age_session):
          patch("src.services.graph_pipeline.settings.ENABLE_GRAPHRAG", True):
         result = pipeline.process_chapter_knowledge(age_session, 1, chapter_text)
 
-    assert result["chunks_created"] >= 1
-    assert result["entities_created"] >= 4
-    assert result["relationships_created"] >= 3
+    assert result.chunks_created >= 1
+    assert result.entities_created >= 4
+    assert result.relationships_created >= 3
 
     # 4. ハイブリッド検索
     rag = GraphRAGService()
@@ -742,7 +825,7 @@ def test_graphrag_e2e(age_session):
     # 5. RAGコンテキスト生成
     with patch("src.services.rag_service.settings.ENABLE_GRAPHRAG", True), \
          patch("src.services.rag_service.settings.DATABASE_URL", "postgresql://test"):
-        context = rag.build_rag_context(
+        context = await rag.build_rag_context(
             age_session,
             current_prompt="聖剣を構えて戦闘の構えをとる",
             character_name="アルス",
