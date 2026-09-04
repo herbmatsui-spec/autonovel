@@ -233,3 +233,108 @@ async def check_promotion_eligibility(book_id: int):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+class PDCAReportResponse(BaseModel):
+    book_id: int
+    plan: dict[str, Any]
+    do: dict[str, Any]
+    check: dict[str, Any]
+    act: dict[str, Any]
+
+
+@router.get("/books/{book_id}/pdca", response_model=PDCAReportResponse)
+async def get_pdca_report(book_id: int):
+    """書籍の PDCA レポートを取得する"""
+    try:
+        from src.backend.database.repository import DataRepository
+        from src.services.book_score_service import BookScoreCalculator, BookScoreRepository
+
+        repo = DataRepository()
+        session = repo._session_factory()  # type: ignore
+        book_score_repo = BookScoreRepository(session)
+        calculator = BookScoreCalculator(repository=book_score_repo)
+        report = await calculator.generate_pdca_report(book_id)
+
+        if "error" in report:
+            raise HTTPException(status_code=404, detail=report["error"])
+
+        return report
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class AlertResponse(BaseModel):
+    book_id: int
+    alerts: list[dict[str, Any]]
+
+
+@router.get("/books/{book_id}/alerts", response_model=AlertResponse)
+async def get_book_alerts(book_id: int):
+    """書籍のスコアアラートを取得する"""
+    try:
+        from src.backend.database.repository import DataRepository
+        from src.services.book_score_service import BookScoreCalculator, BookScoreRepository
+
+        repo = DataRepository()
+        session = repo._session_factory()  # type: ignore
+        book_score_repo = BookScoreRepository(session)
+        calculator = BookScoreCalculator(repository=book_score_repo)
+
+        trend = await calculator.analyze_trend(book_id)
+
+        if "error" in trend:
+            return {"book_id": book_id, "alerts": []}
+
+        alerts = []
+
+        # スコア急落アラート（直近3章で15点以上低下）
+        if trend.get("changepoints"):
+            for cp in trend["changepoints"]:
+                if cp["change"] < -15:
+                    alerts.append({
+                        "type": "score_drop",
+                        "severity": "high",
+                        "message": f"第{cp['chapter_index']}章でスコアが {abs(cp['change']):.1f} 点急落",
+                        "chapter_index": cp["chapter_index"],
+                        "details": cp,
+                    })
+
+        # 停滞アラート（傾斜がほぼゼロかつ平均70未満）
+        if abs(trend.get("slope", 0)) < 0.5 and trend.get("avg_score", 0) < 70:
+            alerts.append({
+                "type": "stagnation",
+                "severity": "medium",
+                "message": f"スコアが停滞しています（平均: {trend['avg_score']:.1f}、傾斜: {trend['slope']:.2f}）",
+                "avg_score": trend["avg_score"],
+                "slope": trend["slope"],
+            })
+
+        # 異常値アラート（極端に低いスコア）
+        if trend.get("latest_score", 100) < 50:
+            alerts.append({
+                "type": "anomaly",
+                "severity": "critical",
+                "message": f"最新章のスコアが極端に低いです: {trend['latest_score']:.1f}",
+                "latest_score": trend["latest_score"],
+            })
+
+        # 改善停止アラート（5章以上改善なし）
+        if trend.get("slope", 0) <= 0 and trend.get("chapters_evaluated", 0) >= 5:
+            alerts.append({
+                "type": "no_improvement",
+                "severity": "medium",
+                "message": f"{trend['chapters_evaluated']}章以上改善が見られません",
+                "slope": trend["slope"],
+            })
+
+        return {"book_id": book_id, "alerts": alerts}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

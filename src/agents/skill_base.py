@@ -34,6 +34,7 @@ class SkillAgent(BaseAgent):
         super().__init__(repo=repo, llm=llm, style_rag=style_rag, rag_prefetch=rag_prefetch)
         self._skill_name = self.__class__.__name__
         self.event_bus = event_bus
+        self.ab_test_variant: Optional[str] = None  # A/Bテスト用バリアント ("a" or "b")
 
     def emit_event(self, event_name: str, payload: dict[str, Any]) -> None:
         """イベント発行ヘルパー（EventBus が設定されている場合のみ発行・非同期）"""

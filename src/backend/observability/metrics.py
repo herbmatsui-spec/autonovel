@@ -134,6 +134,24 @@ ab_test_success_rate = Gauge(
     ["skill_name", "version"],
 )
 
+book_score_alert_total = Counter(
+    "book_score_alert_total",
+    "Total number of BookScore alerts triggered",
+    ["book_id", "alert_type"],  # alert_type: score_drop, stagnation, anomaly, no_improvement
+)
+
+book_score_forecast = Gauge(
+    "book_score_forecast",
+    "BookScore forecast for next chapter",
+    ["book_id"],
+)
+
+skill_promotion_total = Counter(
+    "skill_promotion_total",
+    "Total number of skill promotions from A/B test",
+    ["skill_name", "promoted_version"],  # promoted_version: v1, v2
+)
+
 
 def record_ab_test_result(skill_name: str, winner: str, version_a: str, version_b: str, 
                           duration: float, success_rate_a: float, success_rate_b: float):
@@ -192,6 +210,13 @@ def record_skill_version(skill_name: str, version: str):
     skill_version_active.labels(skill_name=skill_name).set(version_num)
 
 
+def record_skill_promotion(skill_name: str, promoted_version: str):
+    """スキル昇格を記録"""
+    skill_promotion_total.labels(skill_name=skill_name, promoted_version=promoted_version).inc()
+    # バージョンも更新
+    record_skill_version(skill_name, promoted_version)
+
+
 # ===================== ユーティリティ関数 =====================
 def record_http_metrics(method: str, path: str, status: int, duration: float):
     http_requests_total.labels(method=method, path=path, status=str(status)).inc()
@@ -215,6 +240,16 @@ def record_llm_call(model: str, status: str, prompt_tokens: int = 0, completion_
 def update_db_pool_metrics(active: int, idle: int):
     db_pool_connections_active.set(active)
     db_pool_connections_idle.set(idle)
+
+
+def record_book_score_alert(book_id: int, alert_type: str):
+    """BookScore アラート発生を記録"""
+    book_score_alert_total.labels(book_id=str(book_id), alert_type=alert_type).inc()
+
+
+def record_book_score_forecast(book_id: int, forecast_score: float):
+    """BookScore 予測値を記録"""
+    book_score_forecast.labels(book_id=str(book_id)).set(forecast_score)
 
 
 def update_huey_queue_depth(depth: int):

@@ -170,9 +170,33 @@ BookScoreの算出方法は以下の通りです：
 
 これらの改善提案は、実装難易度と期待できる効果のバランスを考慮して、以下のような段階的なアプローチで実装することを推奨します：
 
-**フェーズ1（短期・高影響度）**
+**フェーズ1（短期・高影響度） ✅ 実装完了 (2026-09-04)**
 - 4. スキル駆動型エージェントアーキテクチャ（基盤となるため、他の改善の実装を容易にする）
-- 8. BookScoreに基づく統一100点尺度の成熟度評価メトリクス（客観的評価基盤の構築）
+  - `SkillAgent` 抽象基底クラス実装 (`src/agents/skill_base.py`)
+  - 既存6エージェントの `SkillAgent` 継承リファクタ完了
+  - スキル自動検出機構 (`discover_skills`) 実装
+  - スキルマニフェスト (`manifest.yaml`) 9スキル定義・依存関係解決
+  - EventBus 統合 (`publish_async`/`emit_event`/`emit_event_sync`)
+  - v1/v2 バージョン管理・ホットスワップ (`set_skill_version`/`promote_ab_winner`)
+  - A/Bテスト自動化 (`run_ab_test`・統計的有意差判定・p値計算)
+  - 管理者API: `/admin/skills/switch_version`, `/admin/skills/ab_test/*`, `/admin/skills/metrics`
+  - Prometheus メトリクス: `skill_version_active`, `ab_test_result_total`, `ab_test_duration_seconds`, `ab_test_success_rate`, `skill_promotion_total`
+  - フォールトトレラント実行 (`error_continued`/`exception_continued`)
+  - E2E テスト: EventBus統合・A/Bテスト・PDCAサイクル・自動昇格
+  
+- 8. BookScore 統一100点尺度メトリクス（客観的評価基盤の構築）✅
+  - 5次元実スコアリング実装（構造・一貫性・事実性・視覚×テキスト・読者体験）
+  - 設定ファイル (`book_score_weights.yaml`) デフォルト/ジャンル別/フェーズ別重み
+  - DBモデル・マイグレーション・リポジトリ完備
+  - PlanningService: `predict_book_score_for_proposals` (3案ガチャ比較・推奨)
+  - WritingService: 自動再生成ループ (閾値・リトライ・次元別アクション)
+  - ContextBuilder/Illustration/WritingAgent: 再生成フック (`regeneration_focus`)
+  - API: `/books/{id}/chapters/{num}/score`, `/books/{id}/promotion`, `/books/{id}/pdca`, `/books/{id}/alerts`, `/admin/book_score/improvement_priorities`, `/admin/book_score/recalc`
+  - Prometheus: `book_score_overall`, `book_score_dimensions`, `book_score_regeneration_triggered`, `book_score_trend`, `book_score_promotion_eligible`, `book_score_improvement_priority`, `book_score_alert_total`, `book_score_forecast`
+  - 時系列分析 (`analyze_trend`: 線形回帰・移動平均・変化点検出・予測)
+  - PDCA自動レポート (`generate_pdca_report`: Plan-Do-Check-Act)
+  - アラート種別: score_drop/stagnation/anomaly/no_improvement
+  - E2E テスト: フィードバックループ・3案比較・昇格判定・PDCA・アラート
 
 **フェーズ2（中期・創造性・品質向上）**
 - 1. ブラインドピアレビュー方式のフィードバックループ導入

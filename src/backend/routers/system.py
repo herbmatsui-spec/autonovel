@@ -12,6 +12,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from src.services import resilience
+from src.agents.orchestrator import AgentContext
 
 router = APIRouter(prefix="/api/system", tags=["system"])
 
@@ -307,5 +308,51 @@ async def cancel_ab_test_schedule(task_id: int) -> dict[str, Any]:
     try:
         # 簡易実装：タスクキャンセル
         return {"status": "cancelled", "task_id": task_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class ABTestAutoPromoteRequest(BaseModel):
+    skill_name: str
+    auto_promote: bool = True
+
+
+@router.post("/admin/skills/ab_test/auto_promote")
+async def auto_promote_ab_winner(req: ABTestAutoPromoteRequest) -> dict[str, Any]:
+    """A/Bテスト勝者バージョンを自動本番昇格する"""
+    try:
+        from src.agents.orchestrator import Orchestrator
+
+        orch = Orchestrator(nodes={})
+        orch.register_discovered_skills('src.agents.skills.v1')
+
+        # A/Bテスト実行して勝者決定
+        skill_name = req.skill_name
+        ctx_list = [
+            AgentContext(book_id=i, branch_id=1, ep_num=1, artifacts={})
+            for i in range(10)
+        ]
+        result = await orch.run_ab_test(
+            skill_name=skill_name,
+            version_a="v1",
+            version_b="v2",
+            ctx_list=[AgentContext(book_id=i, branch_id=1, ep_num=1, artifacts={}) for i in range(10)],
+        )
+
+        winner = result["winner"]
+        if winner == "tie":
+            return {"status": "no_winner", "message": "勝者なし（同点）", "result": result}
+
+        winner_version = "v1" if winner == "a" else "v2"
+
+        if req.auto_promote:
+            orch.promote_ab_winner(skill_name, winner_version)
+
+        return {
+            "status": "promoted" if req.auto_promote else "winner_only",
+            "skill_name": skill_name,
+            "winner_version": winner_version,
+            "result": result,
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

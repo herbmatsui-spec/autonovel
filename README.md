@@ -17,7 +17,6 @@
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 [![Type Checked: mypy](https://img.shields.io/badge/type%20checked-mypy-blue)](https://mypy-lang.org/)
 [![Vitest](https://img.shields.io/badge/tested_with-vitest-729B1B?logo=vitest&logoColor=white)](https://vitest.dev/)
-[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 <br />
 
@@ -25,11 +24,7 @@
   <img src="docs/demo.gif" alt="AutoNovel UI & Workflow Demo" width="900" style="border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
 </p>
 
-<p align="center">
-  <img src="docs/user/multimedia.md" alt="Multimedia Features" width="900" style="border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); display: none;">
-</p>
-
-*▲ AutoNovel v4.0: 3案企画ガチャ / 逆算プロット / 上級者Studio / インライン五感推敲 / GraphRAG相関図 / ワンクリックZIP納品 / マルチメディア・eBook / IF分岐・共同編集 (CRDT)*
+*▲ AutoNovel v4.1: 3案企画ガチャ / 逆算プロット / 上級者Studio / インライン五感推敲 / GraphRAG相関図 / ワンクリックZIP納品 / マルチメディア・eBook / IF分岐・共同編集 (CRDT) / **スキル駆動型アーキテクチャ / BookScore統一100点メトリクス / A/Bテスト自動化 / PDCA自動レポート***
 
 </div>
 
@@ -216,19 +211,19 @@ Web UI からわずか数項目のフォームを入力するだけで、プロ�
 [ワンクリック納品ZIP] <── [上級者Studioへ昇格] <── [次話サジェスト / 本文エディタ] <──────┘
 ```
 
-- **🎲 3案企画ガチャ (Gacha Pitch - `POST /api/easy-mode/gacha`)**:
+- **🎲 3案企画ガチャ (Gacha Pitch - `POST /easy_mode/gacha`)**:
   漠然としたキーワードやジャンルから、AIが方向性の異なる3案（⚔️王道、🌀変化球、🌑ダーク）の企画・タイトル・ログライン・主人公設定を即座に同時提案。
 - **🔮 逆算プロットビルダー (4-Step Reverse Engineering - `POST /easy_mode/reverse-generate`)**:
   「最終話で読者に残したい感情」「主人公が支払う代償」「核心の衝突」「第1話の開幕フック」の4ステップを選択するだけで、全10話・3アーク構成とカタルシス波形を同期型で瞬時に算出・第1話プロンプトへ自動展開。
-- **📝 インテリジェント・ダイジェスト生成 (`POST /api/easy-mode/digest`)**:
+- **📝 インテリジェント・ダイジェスト生成 (`POST /easy_mode/digest`)**:
   企画ガチャの選択案から、詳細なあらすじ・第1話草案・クライマックス予告テキストを自動創出。
 - **📦 最新本文連動 ZIP エクスポート (`POST /easy_mode/export-with-data`)**:
   画面上でユーザーが推敲・手動編集した最新の本文テキスト・キャラクター設定を完全同期し、瞬時に納品用ZIP（本文、設定集、プロット、JSONダンプ）として出力。
-- **🚀 上級者 Studio へワンクリック昇格 (`POST /api/easy-mode/promote`)**:
+- **🚀 上級者 Studio へワンクリック昇格 (`POST /easy_mode/promote`)**:
   かんたんモードで作成した設定・本文をGraphRAGナレッジグラフに自動登録し、Sudowrite × Notion AI 式の高度なエディタワークスペースへシームレスに移行。
 - **🎬 マルチメディアアセットパック生成 (`POST /multimedia/generate`)**:
   `ENABLE_MULTIMEDIA` 有効時、シーン画像 / キャラクター立ち絵 / 表紙 / ボイス / BGM を一括ビルドし、ZIP 納品物へ同梱。
-- **📕 eBook エクスポート (`POST /export/ebook`)**:
+- **📕 eBook エクスポート (`POST /api/export/ebook`)**:
   縦書き・ルビ・目次・本文 XHTML を内包した EPUB 3 ファイルを即座に出力。`POST /easy_mode/export-with-data` でも同梱可能。
 
 ---
@@ -319,7 +314,7 @@ Web UI からわずか数項目のフォームを入力するだけで、プロ�
 アセットパックは納品 ZIP にも同梱されます（[`docs/multimedia.md`](docs/multimedia.md) 参照）。
 
 #### 2.7.2 共同編集とCRDT (`collab` router)
-`chapter_versions` テーブルに `vector_clock` (JSON) と `base_version_id` を保持し、複数執筆者による章単位の並行編集を CRDT 的にマージ。`POST /collab/versions` で保存、`GET /collab/versions/{book_id}/{ep}` で履歴・コメントツリーを取得できます。
+`chapter_versions` テーブルに `vector_clock` (JSON) と `base_version_id` を保持し、複数執筆者による章単位の並行編集を CRDT 的にマージ。`POST /api/collab/versions` で保存、`GET /api/collab/versions/{book_id}/{ep}` で履歴・コメントツリーを取得できます。
 
 #### 2.7.3 IFルート分岐
 `Branch` モデル + `routers/easy_mode.py` 経由で、main ルートから IF分岐をフォーク・合流可能。各分岐は独立した `plot` ツリー・テンション履歴を持つため、複数エンディングの並列執筆に対応します。
@@ -526,13 +521,13 @@ FastAPI アプリケーション (`src/backend/server.py`) は、モジュール
 - **SQLite WAL モード**: ローカル実行時、`PRAGMA journal_mode=WAL` および `PRAGMA foreign_keys=ON` を自動適用し、同時読み書き性能とデータ整合性を最大化。
 - **PostgreSQL 16 + Apache AGE + pgvector**: 本番環境において、リレーショナルデータ・ナレッジグラフ・ベクトル検索を単一インスタンスで統合（Docker イメージ `apache/age-postgresql:16-pgvector`）。
 - **ChromaDB (オプション)**: 大規模コレクションを独立プロセスで保持したい場合に切替可能（`CHROMA_HOST` / `CHROMA_PORT`）。
-- **マイグレーション**: スキーマ変更は Alembic で管理。`alembic.ini` の `script_location = src/backend/alembic`、実際のマイグレーションモジュールは `src/backend/alembic/versions/` に配置（`0000_initial_migration`, `0001_erotic_intensity`, `0002_add_catchcopy`, `0003_pgvector_chapter_chunks`, `0004_add_ai_assistant_config`, `0011_multimedia_artifacts`, `0012_age_graph_init`, `0013_graph_pipeline_idempotency`）。
+- **マイグレーション**: スキーマ変更は Alembic で管理。`alembic.ini` の `script_location = src/backend/alembic`、実際のマイグレーションモジュールは `src/backend/alembic/versions/` に配置（`0000_initial_migration`, `0001_erotic_intensity`, `0002_add_catchcopy`, `0003_pgvector_chapter_chunks`, `0004_add_ai_assistant_config`, `0011_multimedia_artifacts`, `0012_age_graph_init`, `0013_graph_pipeline_idempotency`, `0014_add_patch_review_and_setting_version`, `0015_add_branches_core`, `0016_add_branch_play_sessions`, `0017_add_publish_records`, `0018_create_book_scores`）。
 
 ---
 
 ## 4. マルチエージェント・オーケストレーション詳細
 
-> 詳細設計: [`docs/UNIFIED_PIPELINE_IMPLEMENTATION_PLAN.md`](UNIFIED_PIPELINE_IMPLEMENTATION_PLAN.md) / [`docs/collab-hybrid-implementation-plan.md`](docs/collab-hybrid-implementation-plan.md)
+> 詳細設計: [`UNIFIED_PIPELINE_IMPLEMENTATION_PLAN.md`](UNIFIED_PIPELINE_IMPLEMENTATION_PLAN.md) / [`docs/collab-hybrid-implementation-plan.md`](docs/collab-hybrid-implementation-plan.md)
 
 ### 4.1 エージェント群の責務分担
 
@@ -1027,9 +1022,10 @@ erDiagram
 │   │   │   ├── repository.py          # BookRepository (トランザクション & クエリ集約)
 │   │   │   └── repositories/, uow.py  # リポジトリ & Unit of Work
 │   │   ├── alembic/                   # Alembic マイグレーション環境 (versions/ 配下にマイグレーションファイル)
-│   │   ├── routers/                   # API ルーター群 (31)
+│   │   ├── routers/                   # API ルーター群 (33)
 │   │   │   ├── easy_mode.py           # かんたんモード API (生成/ポーリング/ZIP納品/ガチャ/昇格)
 │   │   │   ├── books.py               # 作品 CRUD
+│   │   │   ├── branches.py            # ブランチ管理 (IF分岐・フォーク)
 │   │   │   ├── plots.py               # プロット CRUD
 │   │   │   ├── episodes.py            # エピソード CRUD
 │   │   │   ├── graph.py               # ナレッジグラフデータ提供 API
@@ -1055,6 +1051,7 @@ erDiagram
 │   │   │   ├── editor.py          # Studioエディタ状態管理
 │   │   │   ├── styles.py          # 文体プリセット管理
 │   │   │   ├── health.py          # ヘルスチェック
+│   │   │   ├── system.py          # システム状態・耐障害モード
 │   │   │   └── __init__.py
 │   │   ├── tasks/                     # 非同期キューイング層
 │   │   │   ├── huey.py                # Huey インスタンス (Redis / SQLite 自動切替)
@@ -1136,8 +1133,8 @@ erDiagram
 │   └── presets/                       # 文体・ジャンルプリセット
 │
 ├── streamlit_app/                     # 代替 UI (Streamlit)
-│   ├── 00_Settings.py                 # 設定ページ
-│   └── 01_Home.py                     # ダッシュボード / ホーム
+│   ├── pages/                         # マルチページ構成
+│   └── state.py                       # セッション状態管理
 │
 ├── frontend/                          # フロントエンド React アプリケーション
 │   ├── src/
@@ -1159,15 +1156,13 @@ erDiagram
 │   │   │   │   ├── NextBeatsPanel.tsx   # 次の展開3案生成
 │   │   │   │   ├── EditorialSidebar.tsx # 専属AI編集者
 │   │   │   │   ├── AiSuggestions.tsx    # AI提案ポップオーバー
-│   │   │   │   └── ConflictModal.tsx   # 設定矛盾モーダル
+│   │   │   │   ├── ConflictModal.tsx   # 設定矛盾モーダル
+│   │   │   │   └── ConflictReportPanel.tsx  # 競合レポートパネル
 │   │   │   └── common/Toast.tsx
 │   │   └── types/easyMode.ts          # TypeScript 型定義
 │   ├── tests/                         # Vitest + React Testing Library + MSW
-│   ├── package.json                   # npm 依存パッケージ定義 (v4.0.0)
+│   ├── package.json                   # npm 依存パッケージ定義 (v4.1.0)
 │   └── vite.config.ts                 # Vite 設定 & プロキシ設定
-│
-├── alembic/                           # ルート Alembic マイグレーション (実体)
-│   └── versions/                      # 00000000_initial / 0001_erotic / 0002 / 0003_pgvector / 0011_mm / 0012_age / 0013_idempotency
 │
 ├── tests/                             # バックエンドテストスイート (pytest)
 │   ├── conftest.py                    # 共通テストフィクスチャ (real_db_manager 等)
@@ -1196,7 +1191,7 @@ erDiagram
 ├── Dockerfile                         # バックエンド用マルチステージ Dockerfile (python:3.12-slim)
 ├── frontend/Dockerfile                # Vite dev / Nginx production
 ├── Makefile                           # 開発コマンド集
-├── pyproject.toml                     # Python ツール設定 (ruff 0.16, mypy 2.3, pytest, project v4.0.0)
+├── pyproject.toml                     # Python ツール設定 (ruff 0.16, mypy 2.3, pytest, project v4.1.0)
 ├── requirements.txt                   # 本番 Python 依存パッケージ
 ├── alembic.ini                        # script_location = src/backend/alembic
 ├── アプリ起動.bat                     # Windows ワンクリック起動バッチ (Docker版)
@@ -1626,8 +1621,8 @@ Base URL: `http://localhost:8200`（Nginx本番時: `http://localhost:8080`）
 | `GET` | `/multimedia/tasks/{id}` | マルチメディア生成タスクの進捗 | `ENABLE_MULTIMEDIA=true` |
 | `GET` | `/multimedia/assets/{book_id}` | 作品別アセット一覧取得 | `ENABLE_MULTIMEDIA=true` |
 | `POST` | `/api/export/ebook` | eBook エクスポート (README互換エイリアス) | `ENABLE_MULTIMEDIA=true` 必須 |
-| `POST` | `/collab/versions` | 共同編集 ChapterVersion 保存 (CRDT) | なし |
-| `GET` | `/collab/versions/{book_id}/{ep}` | 章のバージョン履歴取得 | なし |
+| `POST` | `/api/collab/versions` | 共同編集 ChapterVersion 保存 (CRDT) | なし |
+| `GET` | `/api/collab/versions/{book_id}/{ep}` | 章のバージョン履歴取得 | なし |
 | `GET` | `/health` | 総合多段ヘルスチェック (DB, Queue, Metrics) | なし |
 | `GET` | `/metrics` | プロセス内メトリクススナップショット取得 | なし |
 
@@ -1758,7 +1753,7 @@ Base URL: `http://localhost:8200`（Nginx本番時: `http://localhost:8080`）
 | `DATABASE_URL` | `sqlite:///./autonovel.db` | - | データベース接続URL (`postgresql+psycopg2://...`) |
 | `HUEY_BACKEND` | `sqlite` | - | タスクキュー種別 (`redis` または `sqlite`) |
 | `REDIS_URL` | `redis://localhost:6379/0` | - | Redis接続文字列 (`HUEY_BACKEND=redis` 時に使用) |
-| `LLM_PROVIDER` | `mock` (キー未設定時) | - | 使用する推論エンジン (`openai`, `gemini`, `mock`)。`claude`/`ollama` を直接指定すると ERROR ログ出力後 Mock にフォールバック。OpenAI 互換エンドポイント経由でアクセス可能。 |
+| `LLM_PROVIDER` | `mock` (キー未設定時) | - | 使用する推論エンジン (`openai`, `gemini`, `claude`, `ollama`, `vllm`, `mock`)。未知のプロバイダ指定時は WARNING ログ出力後 Mock にフォールバック。 |
 | `OPENAI_API_KEY` | (なし) | 条件付 | OpenAI APIキー (`LLM_PROVIDER=openai` 時に必須) |
 | `GEMINI_API_KEY` | (なし) | 条件付 | Google Gemini APIキー (`LLM_PROVIDER=gemini` 時に必須) |
 | `ANTHROPIC_API_KEY` | (なし) | 条件付 | Anthropic APIキー (`LLM_PROVIDER=claude` 時に必須) |
@@ -1849,7 +1844,7 @@ alembic upgrade head
 alembic downgrade -1
 ```
 
-> ⚠️ **マイグレーションファイルの配置**: `alembic.ini` の `script_location = src/backend/alembic` に従い、マイグレーションファイルは **`src/backend/alembic/versions/`** に配置されています（`0000_initial_migration` 〜 `0013_graph_pipeline_idempotency`）。カスタムマイグレーションを追加する際は `src/backend/alembic/versions/` に置いてください。
+> ⚠️ **マイグレーションファイルの配置**: `alembic.ini` の `script_location = src/backend/alembic` に従い、マイグレーションファイルは **`src/backend/alembic/versions/`** に配置されています（`0000_initial_migration` 〜 `0018_create_book_scores`）。カスタムマイグレーションを追加する際は `src/backend/alembic/versions/` に置いてください。
 
 ---
 
@@ -1952,24 +1947,24 @@ make clean         # キャッシュや一時DBファイルをクリーンアッ
 コントリビューションの詳細は [CONTRIBUTING.md](CONTRIBUTING.md) をご覧ください。
 品質計画・テスト網羅率プランは [TEST_COVERAGE_PLAN.md](TEST_COVERAGE_PLAN.md) を、パイプライン統合の将来計画は [PIPELINE_UNIFICATION_PLAN.md](PIPELINE_UNIFICATION_PLAN.md) / [UNIFIED_PIPELINE_IMPLEMENTATION_PLAN.md](UNIFIED_PIPELINE_IMPLEMENTATION_PLAN.md) を参照してください。
 
-> **現行バージョン**: v4.0.0 (`pyproject.toml`, `frontend/package.json`, Docker イメージ `autonovel-backend:4.0.0` / `autonovel-frontend:4.0.0`)。直近のリリースノートは [CHANGELOG.md](CHANGELOG.md)。
+> **現行バージョン**: v4.1.0 (`pyproject.toml`, `frontend/package.json`, Docker イメージ `autonovel-backend:4.1.0` / `autonovel-frontend:4.1.0`)。直近のリリースノートは [CHANGELOG.md](CHANGELOG.md)。
 
 ---
 
 ## 21. ロードマップ & ライセンス
 
 ### 21.1 今後のロードマップ
-- [x] **eBook エクスポート (EPUB 3)**: 縦書き・ルビ・目次対応 (v4.0 で実装済み)
-- [x] **マルチメディア生成 (Phase 7)**: シーン画像 / 立ち絵 / 表紙 / ボイス / BGM パック (v4.0 で実装済み)
-- [x] **共同編集 (CRDT)**: `ChapterVersion` ベクタークロックマージ (v4.0 で実装済み)
-- [x] **GraphRAG 高度化**: pgvector / ChromaDB / BM25 / cross-encoder rerank の RRF 統合 (v4.0 で実装済み)
+- [x] **eBook エクスポート (EPUB 3)**: 縦書き・ルビ・目次対応 (v4.1 で実装済み)
+- [x] **マルチメディア生成 (Phase 7)**: シーン画像 / 立ち絵 / 表紙 / ボイス / BGM パック (v4.1 で実装済み)
+- [x] **共同編集 (CRDT)**: `ChapterVersion` ベクタークロックマージ (v4.1 で実装済み)
+- [x] **GraphRAG 高度化**: pgvector / ChromaDB / BM25 / cross-encoder rerank の RRF 統合 (v4.1 で実装済み)
 - [ ] **リアルタイム音声対話ブレインストーミング**: 音声認識/音声合成によるAIプロット会議機能。
 - [ ] **多言語自動ローカライズ**: 生成された日本語小説の英語・中国語圏向け高品質翻訳パイプライン。
 - [ ] **Web投稿サイト API 連携**: 小説家になろう・カクヨム等への自動下書き投稿機能。
 
 ### 21.2 ライセンス & クレジット
 
-本プロジェクトは [MIT License](LICENSE) の下で公開されています。商用利用・改変・再配布が自由に認められています。
+本プロジェクトは MIT License の下で公開されています。商用利用・改変・再配布が自由に認められています。
 
 ---
 

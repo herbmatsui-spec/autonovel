@@ -315,6 +315,21 @@ class Orchestrator:
             self.run_ab_test(skill_name, version_a, version_b, ctx_list)
         )
 
+    def promote_ab_winner(self, skill_name: str, winner_version: str) -> None:
+        """A/Bテスト勝者バージョンを本番昇格する"""
+        if winner_version not in ("v1", "v2"):
+            raise ValueError(f"Invalid version: {winner_version}")
+        
+        # 勝者バージョンを本番（v1）として登録
+        self.set_skill_version(winner_version)
+        
+        # メトリクス記録
+        try:
+            from src.backend.observability.metrics import record_skill_promotion
+            record_skill_promotion(skill_name, winner_version)
+        except Exception:
+            pass
+
     async def run(self, ctx: AgentContext, start: AgentName) -> AgentContext:
         current = start
         while current:
