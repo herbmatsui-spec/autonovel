@@ -1,0 +1,31 @@
+{# マンガ台本テンプレート #}
+{
+  "format": "manga_script",
+  "title": "{{ scene_info.title or '無題' }}",
+  "scene_type": "{{ scene_info.scene_type }}",
+  "pages": [
+    {% for page in pages %}
+    {
+      "page_number": {{ loop.index }},
+      "panels": [
+        {% for panel in page.panels %}
+        {
+          "panel_number": {{ panel.panel_number }},
+          "visual": "{{ panel.visual | escape }}",
+          "dialogue": "{{ panel.dialogue | escape }}",
+          "sfx": "{{ panel.sfx | escape }}",
+          "camera": "{{ panel.camera | escape }}",
+          "character_focus": "{{ panel.character_focus | escape }}"
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+      ]
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ],
+  "metadata": {
+    "estimated_pages": {{ pages|length }},
+    "total_panels": {{ pages|map(attribute='panels')|map(attribute='length')|sum }},
+    "key_characters": {{ scene_info.characters | tojson }},
+    "tension_level": {{ scene_info.tension_level }}
+  }
+}

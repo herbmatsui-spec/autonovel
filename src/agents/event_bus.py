@@ -19,6 +19,12 @@ class AgentEvent:
 AUDIT_SPECIALIST_STARTED = "audit.specialist.started"
 AUDIT_SPECIALIST_COMPLETED = "audit.specialist.completed"
 
+# Phase 4: Enrichment event types
+ENRICHMENT_STARTED = "enrichment.started"
+ENRICHMENT_STEP_COMPLETED = "enrichment.step_completed"
+ENRICHMENT_COMPLETED = "enrichment.completed"
+ENRICHMENT_ERROR = "enrichment.error"
+
 
 class EventBus:
     def __init__(self, use_redis: bool = False, redis_url: Optional[str] = None):
@@ -126,4 +132,8 @@ __all__ = [
     "EventBus",
     "AUDIT_SPECIALIST_STARTED",
     "AUDIT_SPECIALIST_COMPLETED",
+    "ENRICHMENT_STARTED",
+    "ENRICHMENT_STEP_COMPLETED",
+    "ENRICHMENT_COMPLETED",
+    "ENRICHMENT_ERROR",
 ]

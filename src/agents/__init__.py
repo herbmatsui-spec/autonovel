@@ -4,6 +4,7 @@ from src.agents.audit_agent import AuditAgent
 from src.agents.base import BaseAgent
 from src.agents.bible import BibleAgent
 from src.agents.context_builder_agent import ContextBuilderAgent
+from src.agents.enrichment_agent import EnrichmentAgent
 from src.agents.marketing import MarketingAgent
 from src.agents.orchestrator import AgentContext, AgentName, AgentResult, Orchestrator
 from src.agents.event_bus import AgentEvent, EventBus
@@ -19,6 +20,7 @@ __all__ = [
     "AuditAgent",
     "BibleAgent",
     "ContextBuilderAgent",
+    "EnrichmentAgent",
     "PlotAgent",
     "PlanningAgent",
     "PlanAuditor",

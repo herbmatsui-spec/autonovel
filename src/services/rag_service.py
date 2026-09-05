@@ -659,6 +659,97 @@ class GraphRAGService:
             "top_k": top_k,
         }
 
+    async def index_bible_sources(
+        self,
+        session: Session,
+        book_id: int,
+    ) -> dict[str, list[dict[str, Any]]]:
+        """World Bible ソースを検索可能なインデックスとして構築.
+        
+        Returns:
+            claim_pattern -> list of source_refs マッピング
+        """
+        from src.infrastructure.database.models.chunk import ChapterChunk
+        
+        # World Bible 関連のチャンクを取得（book_id でフィルタ、メタデータでタイプ判定）
+        chunks = session.query(ChapterChunk).filter(
+            ChapterChunk.chunk_metadata.op('->>')('type').in_(['world_bible', 'setting', 'lore'])
+        ).all()
+        
+        # 簡易実装: キーワードベースの逆引き索引
+        index = {}
+        for chunk in chunks:
+            content = chunk.content or ""
+            meta = chunk.chunk_metadata or {}
+            source_ref = {
+                "source": meta.get("source", "世界観設定書"),
+                "page": meta.get("page", ""),
+                "category": meta.get("category", "general"),
+            }
+            
+            # キーワード抽出（簡易: 名詞っぽい単語）
+            import re
+            keywords = re.findall(r'[一-龯ァ-ヴー]{2,}|[a-zA-Z]{3,}', content)
+            for kw in set(keywords):
+                if len(kw) >= 2:
+                    index.setdefault(kw, []).append(source_ref)
+        
+        return index
+
+    async def query_trivia_candidates(
+        self,
+        session: Session,
+        scene_context: str,
+        entities: list[str],
+        limit: int = 20,
+    ) -> list[dict[str, Any]]:
+        """トリビア候補をハイブリッド検索で取得.
+        
+        世界観設定・歴史的事実・文化的雑学など、「トリビア価値ある」事実を検索.
+        """
+        if not scene_context or not scene_context.strip():
+            return []
+
+        # クエリ構築: シーン文脈 + エンティティ
+        query_parts = [scene_context]
+        if entities:
+            query_parts.append(" ".join(entities))
+        query = " ".join(query_parts)
+
+        # ハイブリッド検索で広く取得
+        results = await self.hybrid_search(
+            session,
+            query=query,
+            core_entities=entities,
+            top_k=limit * 2,
+            alpha=0.4,
+            beta=0.4,
+            gamma=0.2,
+        )
+
+        # トリビア向けにフィルタ・整形
+        trivia_candidates = []
+        for r in results[:limit]:
+            source_type = "unknown"
+            meta = r.metadata
+            if meta.get("source_entity"):
+                source_type = "world_bible"
+            elif "historical" in str(meta).lower() or "history" in str(meta).lower():
+                source_type = "historical_facts"
+            elif "cultural" in str(meta).lower() or "culture" in str(meta).lower():
+                source_type = "cultural_trivia"
+
+            trivia_candidates.append({
+                "fact": r.content,
+                "source": r.source,
+                "source_type": source_type,
+                "metadata": r.metadata,
+                "relevance_score": r.score,
+                "entity": meta.get("entity") or meta.get("source_entity"),
+            })
+
+        return trivia_candidates
+
     def clear_cache(self) -> None:
         """キャッシュクリア."""
         self._cache.clear()

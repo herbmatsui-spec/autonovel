@@ -15,6 +15,7 @@ class AgentName(str, Enum):
     BIBLE = "bible"
     CONTEXT_BUILDER = "context_builder"
     WRITING = "writing"
+    ENRICHMENT = "enrichment"
     AUDIT = "audit"
     ILLUSTRATION = "illustration"
     MARKETING = "marketing"

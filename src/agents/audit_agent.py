@@ -106,7 +106,9 @@ class AuditAgent(SkillAgent):
         })
         
         writing_context = ctx.artifacts.get("writing_context")
-        drafted_text = ctx.artifacts.get("drafted_text")
+        # エンリッチメント済みテキストを優先、なければ元のドラフトを使用
+        enriched_text = ctx.artifacts.get("enriched_text")
+        drafted_text = enriched_text or ctx.artifacts.get("drafted_text")
 
         if not writing_context or not drafted_text:
             self.emit_event("audit.error", {

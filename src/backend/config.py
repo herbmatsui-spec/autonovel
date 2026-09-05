@@ -103,6 +103,9 @@ class Settings(BaseSettings):
     ENABLE_AUDIO_SYNTH: bool = False
     MULTIMEDIA_OUTPUT_DIR: str = Field(default_factory=lambda: str(STORAGE_DIR / "multimedia"))
 
+    # Phase 4: Enrichment Agent
+    ENRICHMENT_ENABLED: bool = False
+
     @property
     def cors_origin_list(self) -> list[str]:
         """CORS origins をリスト形式で取得する。"""

@@ -28,14 +28,26 @@ skills:
     class: src.agents.skills.v1.writing_skill.WritingSkill
     depends_on: [ContextBuilderSkill]
     runs_after: [ContextBuilderSkill]
-    runs_before: [AuditSkill]
+    runs_before: [EnrichmentSkill]
     config:
       enabled: true
 
-  - name: AuditSkill
-    class: src.agents.skills.v1.audit_skill.AuditSkill
+  - name: EnrichmentSkill
+    class: src.agents.skills.v1.enrichment_skill.EnrichmentSkill
     depends_on: [WritingSkill]
     runs_after: [WritingSkill]
+    runs_before: [AuditSkill]
+    config:
+      enabled: true
+      trivia_enabled: true
+      citation_enabled: true
+      sensory_enabled: true
+      multimedia_enabled: true
+
+  - name: AuditSkill
+    class: src.agents.skills.v1.audit_skill.AuditSkill
+    depends_on: [EnrichmentSkill]
+    runs_after: [EnrichmentSkill]
     runs_before: [IllustrationSkill]
     config:
       enabled: true

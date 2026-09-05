@@ -23,6 +23,7 @@ from src.services.preset_loader import (
     load_preset_for_pipeline,
 )
 from src.services.spice_guard_adapter import create_spice_guard_adapter
+from src.models.illustration_point import IllustrationPoint
 from src.backend.observability.health import metrics
 
 logger = logging.getLogger(__name__)
@@ -609,3 +610,126 @@ class MarketingStep(WorkflowStep):
         except Exception as e:
             reporter.report(f"⚠️ マーケティング生成エラー (継続): {e}", "warning")
             return True
+
+# ============================================================================
+# Step 20: HookGenerationStep (骨格のみ)
+# ============================================================================
+
+
+class HookGenerationStep(WorkflowStep):
+    """フック生成 Step (骨格実装)"""
+
+    async def execute(
+        self, ctx: WorkflowContext, engine: UltimateHegemonyEngine, reporter: StatusReporter
+    ) -> bool:
+        # 骨格実装: 暫定的に常に成功を返す
+        # 実際の実装は後で行う
+        return True
+
+
+# ============================================================================
+# Step 22: IllustrationPointGenerationStep (詳細挿絵ポイント生成)
+# ============================================================================
+
+
+class IllustrationPointGenerationStep(WorkflowStep):
+    """挿絵ポイント詳細生成 Step (ストーリーとキャラクターから挿絵の指示を生成)"""
+
+    async def execute(
+        self, ctx: WorkflowContext, engine: UltimateHegemonyEngine, reporter: StatusReporter
+    ) -> bool:
+        if not ctx.enable_illustration:
+            _emit_skip(reporter, ctx, "illustration_point", "enable_illustration=False")
+            return True
+        if ctx.book_id is None:
+            _emit_skip(reporter, ctx, "illustration_point", "book_id is None")
+            return True
+
+        try:
+            reporter.update_progress(2, 4, "STEP 2.5/4: 挿絵ポイントを詳細設計中...")
+
+            # 1. Bible とプロットデータを取得
+            bible = await engine.repo.bible.get_by_book_id(ctx.book_id)
+            if not bible:
+                reporter.report("⚠️ Bible データが見つかりません", "warning")
+                return True
+
+            plots = await engine.repo.plot.get_all_plots(ctx.book_id)
+            episodes = await engine.repo.episode.get_all_by_book_id(ctx.book_id)
+
+            # 2. キャラクター情報を抽出
+            characters = {}
+            if hasattr(bible, 'characters') and bible.characters:
+                for char in bible.characters:
+                    if hasattr(char, 'name'):
+                        characters[char.name] = char
+                    elif isinstance(char, dict) and 'name' in char:
+                        characters[char['name']] = char
+
+            # 3. 重要なシーンを特定して挿絵ポイントを生成
+            illustration_points = []
+
+            # 口絵用の挿絵ポイント（第1話の重要シーン）
+            if episodes and len(episodes) > 0:
+                first_episode = episodes[0]
+                ip_id = f"IP-{len(illustration_points)+1:03d}"
+                illustration_point = IllustrationPoint(
+                    id=ip_id,
+                    page="口絵1",
+                    scene_description=f"{list(characters.keys())[0] if characters else '主人公'}が物語の世界に足を踏み入れる瞬間",
+                    composition="キャラクターが画面中央に立ち、背景に物語の世界観を示す風景や建造物",
+                    props="物語の象徴的なアイテムまたは武器",
+                    expressions={list(characters.keys())[0] if characters else "主人公": "決意と期待に満ちた表情"},
+                    background="物語の舞台となる世界の代表的な風景",
+                    notes="読者を物語の世界に引き込むためのオープニングイラスト"
+                )
+                illustration_points.append(illustration_point)
+
+            # クライマックスシーン用の挿絵ポイント
+            if len(episodes) >= 3:
+                climax_episode = episodes[len(episodes)//2]  # 中盤のエピソードをクライマックスとして扱う
+                ip_id = f"IP-{len(illustration_points)+1:03d}"
+                illustration_point = IllustrationPoint(
+                    id=ip_id,
+                    page=str((len(episodes)//2) * 10 + 5),  # 概算ページ番号
+                    scene_description=f"主人公と主要 antagonistic force の対峙シーン",
+                    composition="二人のキャラクターが画面中央で対角線上に配置され、緊張感を表現",
+                    props="それぞれのキャラクターが持つ象徴的なアイテムまたは武器",
+                    expressions={
+                        list(characters.keys())[0] if characters else "主人公": "真剣かつ焦点の定まった表情",
+                        list(characters.keys())[1] if len(characters) > 1 else "ライバル": "挑戦的かつ余裕のある表情"
+                    } if len(characters) >= 2 else {
+                        list(characters.keys())[0] if characters else "主人公": "真剣かつ焦点の定まった表情"
+                    },
+                    background="対峙に適したドラマチックな背景（廃墟、戦場、神殿など）",
+                    notes="物語の中盤クライマックスを視覚化する重要な挿絵"
+                )
+                illustration_points.append(illustration_point)
+
+            # エンディング用の挿絵ポイント
+            if episodes and len(episodes) > 0:
+                last_episode = episodes[-1]
+                ip_id = f"IP-{len(illustration_points)+1:03d}"
+                illustration_point = IllustrationPoint(
+                    id=ip_id,
+                    page="口絵2",
+                    scene_description=f"物語の旅路を終えたキャラクターたちの新たな始まりの瞬間",
+                    composition="キャラクターたちが画面左右に分かれて立ち、間に希望を象徴する要素（光、花など）",
+                    props="旅での経験を象徴するアイテムまたは記念品",
+                    expressions={list(characters.keys())[0] if characters else "主人公": "穏やかで満足感のある表情"},
+                    background="物語のテーマを表す美しい風景（昇る朝日、満開の桜、星空など）",
+                    notes="物語の余韻と希望を伝えるエンディングイラスト"
+                )
+                illustration_points.append(illustration_point)
+
+            # 5. 生成された挿絵ポイントをコンテキストに保存
+            ctx.illustration_points = illustration_points
+
+            reporter.report(
+                f"🎨 挿絵ポイント生成完了: {len(illustration_points)}点の挿絵指示を生成",
+                "info",
+            )
+            return True
+        except Exception as e:
+            reporter.report(f"⚠️ 挿絵ポイント生成エラー (継続): {e}", "warning")
+            return True  # 失敗してもパイプライン継続

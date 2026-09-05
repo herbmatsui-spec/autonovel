@@ -38,10 +38,11 @@ def test_discover_skills():
 def test_load_manifest():
     manifest = SkillAgent.load_manifest('src/agents/skills/manifest.yaml')
     assert isinstance(manifest, list)
-    assert len(manifest) == 9
+    assert len(manifest) == 10
     names = {m['name'] for m in manifest}
     assert 'PlanningSkill' in names
     assert 'BibleSkill' in names
+    assert 'EnrichmentSkill' in names
 
 
 def test_skill_cache():

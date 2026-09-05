@@ -15,6 +15,7 @@ from src.backend.health.checks import (
     check_llm_gateway,
     check_redis,
     check_worker,
+    check_enrichment_agent,
 )
 from src.core.container import AppContainer
 
@@ -61,10 +62,11 @@ async def health_check():
         check_chromadb(),
         check_llm_gateway(settings.GEMINI_API_KEY),
         check_worker(),
+        check_enrichment_agent(),
         return_exceptions=True,
     )
 
-    check_names = ["database", "redis", "chromadb", "llm_gateway", "worker"]
+    check_names = ["database", "redis", "chromadb", "llm_gateway", "worker", "enrichment_agent"]
     checks: dict[str, HealthCheckResult] = {}
     check_responses: dict[str, CheckResponse] = {}
 

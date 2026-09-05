@@ -1,0 +1,33 @@
+{# ラジオドラマ台本テンプレート #}
+{
+  "format": "radio_drama",
+  "title": "{{ scene_info.title or '無題' }}",
+  "scene_type": "{{ scene_info.scene_type }}",
+  "cues": [
+    {% for cue in cues %}
+    {
+      "cue_number": {{ cue.cue_number }},
+      "type": "{{ cue.type }}",
+      "sfx": "{{ cue.sfx | escape }}",
+      "bgm": "{{ cue.bgm | escape }}",
+      "narration": "{{ cue.narration | escape }}",
+      "dialogue": [
+        {% for line in cue.dialogue %}
+        {
+          "character": "{{ line.character | escape }}",
+          "line": "{{ line.line | escape }}",
+          "direction": "{{ line.direction | escape }}"
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+      ],
+      "duration_estimate_sec": {{ cue.duration_estimate_sec }}
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ],
+  "metadata": {
+    "total_duration_sec": {{ cues|map(attribute='duration_estimate_sec')|sum }},
+    "key_characters": {{ scene_info.characters | tojson }},
+    "tension_level": {{ scene_info.tension_level }},
+    "cast_count": {{ scene_info.characters|length }}
+  }
+}

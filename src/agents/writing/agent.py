@@ -116,7 +116,7 @@ class WritingAgent(SkillAgent):
             })
 
             return AgentResult(
-                next_agent=AgentName.ILLUSTRATION,
+                next_agent=AgentName.ENRICHMENT,
                 artifacts={
                     "drafted_text": drafted_text,
                     "word_count": total_chars,

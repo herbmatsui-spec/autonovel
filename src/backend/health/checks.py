@@ -176,3 +176,57 @@ async def check_worker() -> HealthCheckResult:
     except Exception as e:
         logger.warning(f"Worker health check failed: {e}")
         return HealthCheckResult(status=HealthStatus.ERROR, error=str(e))
+
+
+async def check_enrichment_agent() -> HealthCheckResult:
+    """EnrichmentAgent 依存関係チェック"""
+    start = time.perf_counter()
+    try:
+        from src.backend.config import settings
+        from src.agents.enrichment_agent import EnrichmentAgent
+        from src.services.rag_service import rag_service
+        
+        # 機能フラグチェック
+        if not settings.ENRICHMENT_ENABLED:
+            return HealthCheckResult(
+                status=HealthStatus.NOT_CONFIGURED, 
+                details="Enrichment disabled via ENRICHMENT_ENABLED=false"
+            )
+        
+        # 依存コンポーネントチェック
+        issues = []
+        
+        # LLM 可用性
+        from src.backend.config import settings as backend_settings
+        if not backend_settings.GEMINI_API_KEY or backend_settings.GEMINI_API_KEY == "DUMMY":
+            issues.append("GEMINI_API_KEY not configured")
+        
+        # RAG サービス可用性
+        try:
+            if rag_service is None:
+                issues.append("RAG service not initialized")
+            else:
+                # 簡易チェック: プロンプトテンプレート読み込み
+                from prompts.enrichment.trivia_insertion import TRIVIA_INSERTION_PROMPT
+                if not TRIVIA_INSERTION_PROMPT:
+                    issues.append("Trivia prompt template not loaded")
+        except Exception as e:
+            issues.append(f"Prompt template load failed: {e}")
+        
+        latency = (time.perf_counter() - start) * 1000
+        
+        if issues:
+            return HealthCheckResult(
+                status=HealthStatus.DEGRADED,
+                latency_ms=latency,
+                details="; ".join(issues),
+            )
+        
+        return HealthCheckResult(
+            status=HealthStatus.OK,
+            latency_ms=latency,
+            details="All dependencies available",
+        )
+    except Exception as e:
+        logger.warning(f"EnrichmentAgent health check failed: {e}")
+        return HealthCheckResult(status=HealthStatus.ERROR, error=str(e))

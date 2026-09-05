@@ -1,0 +1,62 @@
+# Phase 3 Common Configuration
+# 共通設定: Phase 3 の3コンポーネント共通で使用する設定
+
+# === Feature Flags ===
+features:
+  compression_enabled: true
+  dag_scheduler_enabled: true
+  social_interaction_enabled: true
+
+# === Common Resource Limits ===
+resources:
+  # CPU制限 (コア数)
+  max_cpu_cores: 8
+  # メモリ制限 (GB)
+  max_memory_gb: 16
+  # GPU メモリ制限 (GB)
+  max_gpu_memory_gb: 8
+  # GPU 数
+  max_gpu_count: 1
+
+# === Common Logging ===
+logging:
+  level: "INFO"
+  format: "json"
+  phase_prefix: "phase3"
+
+# === Common Metrics ===
+metrics:
+  prefix: "phase3"
+  default_buckets:
+    duration_seconds: [0.1, 0.5, 1.0, 2.0, 5.0, 10.0, 30.0, 60.0]
+    compression_ratio: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+    token_count: [100, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000]
+
+# === Cache Settings ===
+cache:
+  redis_url: "redis://localhost:6379/0"
+  default_ttl_seconds: 3600
+  compression_cache_prefix: "compress:v1"
+  dag_cache_prefix: "dag:v1"
+  social_cache_prefix: "social:v1"
+
+# === Timeouts ===
+timeouts:
+  default_task_timeout_seconds: 3600
+  dag_task_timeout_seconds: 7200
+  compression_timeout_seconds: 300
+  social_generation_timeout_seconds: 600
+  llm_request_timeout_seconds: 120
+
+# === Retry Policies ===
+retry:
+  max_retries: 3
+  base_delay_seconds: 2.0
+  max_delay_seconds: 60.0
+  exponential_base: 2.0
+
+# === Circuit Breaker ===
+circuit_breaker:
+  failure_threshold: 5
+  recovery_timeout_seconds: 60
+  half_open_max_calls: 3

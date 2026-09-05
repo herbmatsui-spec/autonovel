@@ -1,0 +1,30 @@
+{# 実写ショットリストテンプレート #}
+{
+  "format": "live_action_shots",
+  "title": "{{ scene_info.title or '無題' }}",
+  "scene_type": "{{ scene_info.scene_type }}",
+  "shots": [
+    {% for shot in shots %}
+    {
+      "shot_number": {{ shot.shot_number }},
+      "scene_slug": "{{ shot.scene_slug | escape }}",
+      "shot_type": "{{ shot.shot_type | escape }}",
+      "lens": "{{ shot.lens | escape }}",
+      "movement": "{{ shot.movement | escape }}",
+      "actors": {{ shot.actors | tojson }},
+      "vfx": "{{ shot.vfx | escape }}",
+      "dialogue": "{{ shot.dialogue | escape }}",
+      "lighting": "{{ shot.lighting | escape }}",
+      "duration_sec": {{ shot.duration_sec }},
+      "notes": "{{ shot.notes | escape }}"
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ],
+  "metadata": {
+    "total_shots": {{ shots|length }},
+    "total_duration_sec": {{ shots|map(attribute='duration_sec')|sum }},
+    "key_actors": {{ scene_info.characters | tojson }},
+    "tension_level": {{ scene_info.tension_level }},
+    "locations": {{ shots|map(attribute='scene_slug')|unique|list | tojson }}
+  }
+}

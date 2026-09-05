@@ -1,0 +1,24 @@
+enrichment:
+  enabled: false
+  trivia_insertion:
+    enabled: true
+    max_insertions_per_chapter: 5
+    relevance_threshold: 0.7
+    sources: ["world_bible", "historical_facts", "cultural_trivia"]
+  citation_attachment:
+    enabled: true
+    style: "footnote"
+    max_citations_per_chapter: 10
+    source_priority: ["world_bible", "canon_material", "historical_records"]
+  sensory_expansion:
+    enabled: true
+    target_emotions: ["sadness", "anger", "fear", "joy", "surprise", "disgust"]
+    expansion_ratio: 2.5
+    show_dont_tell: true
+  multimedia_scenarios:
+    enabled: true
+    formats: ["manga_script", "radio_drama", "anime_storyboard", "live_action_shots"]
+    trigger_scenes: ["climax", "battle", "emotional_peak", "revelation", "romance"]
+  token_budget:
+    max_enrichment_tokens: 1500
+    reserve_for_audit: 500

@@ -5,9 +5,13 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, List
 
 from pydantic import BaseModel, Field
+
+from src.models.foreshadowing import Foreshadowing
+from src.models.hook import Hook
+from src.models.illustration_point import IllustrationPoint
 
 if TYPE_CHECKING:
     from src.backend.background import StatusReporter
@@ -59,6 +63,12 @@ class WorkflowContext(BaseModel):
     catharsis_positions: list = Field(default_factory=list)
     average_audit_score: float = 0.0
     episodes_detail: list[dict[str, Any]] = Field(default_factory=list)
+    foreshadowings: List[Foreshadowing] = Field(default_factory=list)
+    current_volume: int = 1
+    current_episode: int = 0
+    hooks: List[Hook] = Field(default_factory=list)
+    hook_generation_index: int = 0
+    illustration_points: List[IllustrationPoint] = Field(default_factory=list)
 
     # === Skip/警告の観測用 ===
     # 各 Step がスキップした理由 (例: "illustration: book_id is None") を積む。
@@ -67,7 +77,7 @@ class WorkflowContext(BaseModel):
 
     # === 拡張出力 (Step が書き込む) ===
     illustrations: list[dict[str, Any]] = Field(default_factory=list)
-    marketing_pack: dict[str, Any] = Field(default_factory=dict)
+    marketing_pack: dict[str, Any] = Field(default_factory=list)
 
 
 class WorkflowStep:

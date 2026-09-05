@@ -48,6 +48,7 @@ async def _generate_orchestrated(payload: dict[str, Any]) -> dict[str, Any]:
     from src.agents.bible import BibleAgent
     from src.agents.context_builder_agent import ContextBuilderAgent
     from src.agents.writing import WritingAgent
+    from src.agents.enrichment_agent import EnrichmentAgent
     from src.agents.audit_agent import AuditAgent
     from src.agents.illustration_agent import IllustrationAgent
     from src.agents.marketing import MarketingAgent
@@ -87,12 +88,16 @@ async def _generate_orchestrated(payload: dict[str, Any]) -> dict[str, Any]:
     correlation_id = f"book_{book_id}_branch_{branch_id}_ep_{ep_num}"
 
     # EventBus 初期化（環境変数 USE_REDIS_EVENTS=true で Redis 使用）
+    from src.backend.config import settings
     use_redis = os.environ.get("USE_REDIS_EVENTS", "false").lower() == "true"
     event_bus = EventBus(use_redis=use_redis)
     if use_redis:
         await event_bus.start_redis()
 
     try:
+        # 機能フラグチェック（設定オブジェクト使用）
+        enrichment_enabled = settings.ENRICHMENT_ENABLED
+        
         # エージェントノード登録
         nodes = {
             AgentName.PLANNING: PlanningAgent(repo=repo, llm=llm_adapter).run,
@@ -100,12 +105,30 @@ async def _generate_orchestrated(payload: dict[str, Any]) -> dict[str, Any]:
             AgentName.BIBLE: BibleAgent(repo=repo, llm=llm_adapter).run,
             AgentName.CONTEXT_BUILDER: ContextBuilderAgent(repo=repo, llm=llm_adapter).run,
             AgentName.WRITING: WritingAgent(repo=repo, llm=llm_adapter).run,
-            AgentName.AUDIT: AuditAgent(repo=repo, llm=llm_adapter).run,
-            AgentName.ILLUSTRATION: IllustrationAgent(
-                image_service=image_service, repo=repo, llm=llm_adapter
-            ).run,
-            AgentName.MARKETING: MarketingAgent(repo=repo, llm=llm_adapter).run,
         }
+        
+        if enrichment_enabled:
+            nodes[AgentName.ENRICHMENT] = EnrichmentAgent(repo=repo, llm=llm_adapter).run
+            nodes[AgentName.AUDIT] = AuditAgent(repo=repo, llm=llm_adapter).run
+            nodes[AgentName.ILLUSTRATION] = IllustrationAgent(
+                image_service=image_service, repo=repo, llm=llm_adapter
+            ).run
+        else:
+            # 従来のパス: Writing -> Audit -> Illustration
+            # ENRICHMENT ノードをパススルーとして追加（WritingAgent が ENRICHMENT を返すため）
+            async def enrichment_passthrough(ctx: AgentContext) -> AgentContext:
+                from src.agents.orchestrator import AgentResult, AgentName
+                return AgentResult(
+                    next_agent=AgentName.AUDIT,
+                    artifacts=ctx.artifacts,
+                )
+            nodes[AgentName.ENRICHMENT] = enrichment_passthrough
+            nodes[AgentName.AUDIT] = AuditAgent(repo=repo, llm=llm_adapter).run
+            nodes[AgentName.ILLUSTRATION] = IllustrationAgent(
+                image_service=image_service, repo=repo, llm=llm_adapter
+            ).run
+        
+        nodes[AgentName.MARKETING] = MarketingAgent(repo=repo, llm=llm_adapter).run
 
         orchestrator = Orchestrator(nodes, event_bus=event_bus, correlation_id=correlation_id)
         ctx = AgentContext(

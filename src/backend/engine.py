@@ -1,5 +1,5 @@
 """
-engine.py - 覇権AIエンジンコアモジュール
+エンジン.py - 覇権AIエンジンコアモジュール
 Gemini API との対話、プロット生成、本文執筆の全ロジックを集約。
 UltimateHegemonyEngine が全機能を統合する。
 """
@@ -8,6 +8,9 @@ from __future__ import annotations
 
 import logging
 from typing import Any
+
+from src.domain.interfaces.foreshadowing_repository import ForeshadowingRepository
+from src.domain.interfaces.hook_repository import HookRepository
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +29,8 @@ class UltimateHegemonyEngine:
         llm=None,
         cooldown=None,
         plot_service=None,
+        foreshadowing_repository: ForeshadowingRepository = None,
+        hook_repository: HookRepository = None,
         **legacy,
     ):
         self.api_key = api_key
@@ -33,6 +38,8 @@ class UltimateHegemonyEngine:
         self.db = db
         self.llm = llm
         self.cooldown = cooldown
+        self.foreshadowing_repository = foreshadowing_repository
+        self.hook_repository = hook_repository
         self._legacy = legacy
         self.client = None
         self.current_ep_num = 0
@@ -194,3 +201,19 @@ class UltimateHegemonyEngine:
         return await workflow.execute(
             reporter, answers=answers, target_episodes=target_episodes, genre=genre
         )
+
+
+# ============================================================================
+# Step 39: HookGenerationStep (骨格のみ)
+# ============================================================================
+
+
+class HookGenerationStep(WorkflowStep):
+    """フック生成 Step (骨格実装)"""
+
+    async def execute(
+        self, ctx: WorkflowContext, engine: UltimateHegemonyEngine, reporter: StatusReporter
+    ) -> bool:
+        # 骨格実装: 暫定的に常に成功を返す
+        # 実際の実装は後で行う
+        return True

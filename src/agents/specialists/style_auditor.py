@@ -53,9 +53,17 @@ def _polite_ratio(tokens: list[str]) -> float:
 class StyleAuditor(SpecialistAuditor):
     specialist_name = "style"
 
-    def __init__(self, llm: Any = None, style_profile: dict | None = None) -> None:
+    def __init__(
+        self,
+        llm: Any = None,
+        style_profile: dict | None = None,
+        anti_ai_weight: float = 0.1,
+        enable_anti_ai: bool = True,
+    ) -> None:
         super().__init__(llm)
         self.style_profile = style_profile or {}
+        self.anti_ai_weight = anti_ai_weight
+        self.enable_anti_ai = enable_anti_ai
 
     async def audit(self, ctx: dict[str, Any]) -> SpecialistAuditResult:
         draft = ctx.get("draft_text", "") or ""
@@ -106,28 +114,50 @@ class StyleAuditor(SpecialistAuditor):
         polite_consistency = 1.0 - abs(polite_ratio - expected_polite)
 
         # Combined score
-        score = (
+        base_score = (
             0.5 * style_similarity
             + 0.25 * fp_consistency
             + 0.25 * polite_consistency
         ) * 100.0
 
+        anti_ai_score = None
+        if self.enable_anti_ai:
+            try:
+                from src.agents.specialists.anti_ai_detector import AntiAIDetector
+                anti_ai_detector = AntiAIDetector()
+                anti_ai_result = await anti_ai_detector.audit(ctx)
+                anti_ai_score = anti_ai_result.score
+                score = (1 - self.anti_ai_weight) * base_score + self.anti_ai_weight * anti_ai_score
+            except Exception:
+                score = base_score
+        else:
+            score = base_score
+
+        feedback = {
+            "tokens": len(tokens),
+            "style_similarity": round(style_similarity, 3),
+            "first_person_ratio": round(fp_ratio, 3),
+            "polite_ratio": round(polite_ratio, 3),
+            "fp_consistency": round(fp_consistency, 3),
+            "polite_consistency": round(polite_consistency, 3),
+            "base_style_score": round(base_score, 2),
+        }
+        if anti_ai_score is not None:
+            feedback["anti_ai_score"] = round(anti_ai_score, 2)
+
+        suggestions = [
+            "Align vocabulary with style DNA" if style_similarity < 0.5 else None,
+            "Check perspective consistency" if fp_consistency < 0.7 else None,
+            "Check politeness consistency" if polite_consistency < 0.7 else None,
+        ]
+        if anti_ai_score is not None and anti_ai_score < 70:
+            suggestions.append("Improve anti-AI score")
+
         return SpecialistAuditResult(
             "style",
             round(max(0.0, min(100.0, score)), 1),
-            feedback={
-                "tokens": len(tokens),
-                "style_similarity": round(style_similarity, 3),
-                "first_person_ratio": round(fp_ratio, 3),
-                "polite_ratio": round(polite_ratio, 3),
-                "fp_consistency": round(fp_consistency, 3),
-                "polite_consistency": round(polite_consistency, 3),
-            },
-            suggestions=[
-                "Align vocabulary with style DNA" if style_similarity < 0.5 else None,
-                "Check perspective consistency" if fp_consistency < 0.7 else None,
-                "Check politeness consistency" if polite_consistency < 0.7 else None,
-            ],
+            feedback=feedback,
+            suggestions=[s for s in suggestions if s],
         )
 
     def _fallback(self, ctx: dict[str, Any]) -> SpecialistAuditResult:

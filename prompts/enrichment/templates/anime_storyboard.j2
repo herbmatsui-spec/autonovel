@@ -1,0 +1,28 @@
+{# アニメ絵コンテテンプレート #}
+{
+  "format": "anime_storyboard",
+  "title": "{{ scene_info.title or '無題' }}",
+  "scene_type": "{{ scene_info.scene_type }}",
+  "cuts": [
+    {% for cut in cuts %}
+    {
+      "cut_number": {{ cut.cut_number }},
+      "duration_sec": {{ cut.duration_sec }},
+      "camera": "{{ cut.camera | escape }}",
+      "action": "{{ cut.action | escape }}",
+      "dialogue": "{{ cut.dialogue | escape }}",
+      "background": "{{ cut.background | escape }}",
+      "animation_note": "{{ cut.animation_note | escape }}",
+      "character_layout": "{{ cut.character_layout | escape }}",
+      "effect": "{{ cut.effect | escape }}"
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ],
+  "metadata": {
+    "total_duration_sec": {{ cuts|map(attribute='duration_sec')|sum }},
+    "total_cuts": {{ cuts|length }},
+    "key_characters": {{ scene_info.characters | tojson }},
+    "tension_level": {{ scene_info.tension_level }},
+    "backgrounds": {{ cuts|map(attribute='background')|unique|list | tojson }}
+  }
+}
