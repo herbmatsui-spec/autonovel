@@ -105,10 +105,15 @@ class AntiAILoopController:
 
             correction_result = self._corrector.correct(current_text, result.violations)
 
+            output_score = current_score
+            if correction_result.total_changes > 0:
+                after_result = self._detector.detect(correction_result.text)
+                output_score = after_result.total_score
+
             history.append(CorrectionHistory(
                 iteration=iteration,
                 input_score=current_score,
-                output_score=result.total_score,
+                output_score=output_score,
                 violations_found=len(result.violations),
                 violations_corrected=correction_result.total_changes,
                 corrected_text=correction_result.text,
