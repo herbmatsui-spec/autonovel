@@ -1,0 +1,69 @@
+# Phase: Anti-AI Detection & Correction Configuration
+# Loaded by src/config/anti_ai_config.py via Pydantic.
+#
+# High-level flow:
+#   1. detectors in src/services/anti_ai/rule_detector.py read the
+#      per-category thresholds from this file.
+#   2. AntiAILoopController reads `loop.*` to know how many times
+#      to run the detection/correction cycle and when to stop.
+#   3. ANTI_AI_LLM_ENABLED (env var) gates the optional LLM sanity
+#      step; the rule-based pipeline always runs regardless.
+
+# Master switch for the entire feature. Mirrors env var
+# ANTI_AI_LLM_ENABLED but defaults to false (cheap & deterministic).
+llm_sanity_check:
+  enabled: false
+  max_calls_per_chapter: 3
+  max_total_tokens: 1000
+  chunk_size_chars: 2000
+  # If set, only invoke the LLM when the rule-based score drops
+  # below this value. Set higher than the loop threshold to make
+  # the LLM a "second opinion" on the trickiest drafts only.
+  trigger_below_score: 60.0
+
+# Per-category detector tuning. ``enabled: false`` skips detection
+# entirely (useful when rolling out the feature incrementally).
+detectors:
+  TRANSITION_OVERUSE:
+    enabled: true
+    density_threshold: 0.33   # 1 transition per 3 sentences triggers
+    weight: 1.0
+  SAME_STRUCTURE:
+    enabled: true
+    consecutive_count: 3     # 3 same-tail sentences trigger
+    weight: 1.5
+  DIRECT_EMOTION:
+    enabled: true
+    per_paragraph_limit: 2   # 2+ direct emotions per paragraph trigger
+    weight: 1.0
+  HEDGING_PATTERNS:
+    enabled: true
+    density_threshold: 0.10  # 10% of sentences contain hedges
+    weight: 0.8
+  TEMPLATE_PHRASES:
+    enabled: true
+    min_matches: 1
+    weight: 1.2
+  UNIFORM_PARAGRAPH:
+    enabled: true
+    min_paragraphs: 3
+    length_tolerance: 5
+    weight: 0.6
+  GENERIC_VOCABULARY:
+    enabled: true
+    density_per_1000: 5.0
+    weight: 0.7
+
+# Correction loop parameters. The loop iterates detection ->
+# correction -> re-detection until one of the stop conditions hits.
+loop:
+  max_iterations: 2                # hard cap; the plan allows 3
+  stop_threshold: 70.0             # exit early if score >= this
+  min_improvement: 2.0             # exit if improvement < this
+  backoff_base_seconds: 0.0        # 0 = no backoff; CPU-bound code
+
+# Feature flag. Mirrors env var ENABLE_ANTI_AI_LOOP. When false
+# the entire pipeline is bypassed (WritingAgent never calls it).
+feature:
+  enabled: true
+  default_severity: medium         # low / medium / high / critical

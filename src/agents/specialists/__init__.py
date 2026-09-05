@@ -1,5 +1,6 @@
 """Phase 2: 8 Specialist Auditors package."""
 
+from src.agents.specialists.anti_ai_detector import AntiAIDetector
 from src.agents.specialists.consistency_auditor import ConsistencyAuditor
 from src.agents.specialists.creativity_auditor import CreativityAuditor
 from src.agents.specialists.reader_hook_auditor import ReaderHookAuditor
@@ -10,6 +11,7 @@ from src.agents.specialists.structure_auditor import StructureAuditor
 from src.agents.specialists.multimodal_auditor import MultimodalAuditor
 
 __all__ = [
+    "AntiAIDetector",
     "ConsistencyAuditor",
     "CreativityAuditor",
     "ReaderHookAuditor",

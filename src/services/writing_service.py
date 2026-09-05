@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Optional
 
 from src.agents.context_builder_agent import ContextBuilderAgent
@@ -13,17 +13,23 @@ from src.agents.orchestrator import AgentContext, AgentResult
 from src.agents.writing import WritingAgent
 from src.services.book_score_service import BookScoreCalculator
 
+try:
+    from src.services.anti_ai.loop_controller import AntiAILoopController
+except ImportError:
+    AntiAILoopController = None
+
 logger = logging.getLogger(__name__)
 
 
 @dataclass
 class RegenerationAction:
     """再生成アクション定義"""
-    focus_dimensions: list[str]           # 対象次元: structure, coherency, factual_grounding, visual_textual_synergy, reader_experience
+    focus_dimensions: list[str]           # 対象次元: structure, coherency, factual_grounding, visual_textual_synergy, reader_experience, anti_ai_correction
     context_builder_focus: list[str]      # ContextBuilderAgent への指示
     writing_focus: list[str]              # WritingAgent への指示
-    illustration_focus: list[str]         # IllustrationAgent への指示
+    illustration_focus: list[str]          # IllustrationAgent への指示
     priority: int                         # 実行優先度 (低いほど高優先度)
+    anti_ai_loop_result: dict = field(default_factory=dict)  # Anti-AI ループ結果
 
 
 DIMENSION_ACTIONS = {
@@ -62,12 +68,19 @@ DIMENSION_ACTIONS = {
         illustration_focus=[],
         priority=5,
     ),
+    "anti_ai_correction": RegenerationAction(
+        focus_dimensions=["anti_ai_correction"],
+        context_builder_focus=[],
+        writing_focus=[],
+        illustration_focus=[],
+        priority=0,
+    ),
 }
 
 
 class WritingService:
     """BookScore連携・自動再生成ループを持つ執筆サービス"""
-    
+
     def __init__(
         self,
         writing_agent: WritingAgent,
@@ -77,6 +90,9 @@ class WritingService:
         max_retries: int = 3,
         score_threshold: float = 70.0,
         backoff_base: float = 2.0,
+        anti_ai_controller: Optional[Any] = None,
+        enable_anti_ai_loop: bool = True,
+        anti_ai_threshold: float = 85.0,
     ):
         self.writing_agent = writing_agent
         self.book_score_calculator = book_score_calculator
@@ -85,6 +101,9 @@ class WritingService:
         self.max_retries = max_retries
         self.score_threshold = score_threshold
         self.backoff_base = backoff_base
+        self._anti_ai_controller = anti_ai_controller
+        self._enable_anti_ai_loop = enable_anti_ai_loop and AntiAILoopController is not None
+        self._anti_ai_threshold = anti_ai_threshold
     
     async def generate_with_quality_assurance(
         self,
@@ -98,19 +117,39 @@ class WritingService:
         retry_count = 0
         last_result = None
         regeneration_history = []
-        
+
         while retry_count <= self.max_retries:
             # 1. 通常執筆実行
             if reporter:
                 reporter.report(f"執筆実行 (試行 {retry_count + 1}/{self.max_retries + 1})", "info")
-            
+
             result = await self.writing_agent.execute(ctx)
-            
+
             if result.error:
                 logger.warning(f"WritingAgent エラー: {result.error}")
                 return result
-            
-            # 2. BookScore 計算
+
+            # 2. Anti-AI 修正ループ (オプション)
+            anti_ai_result = None
+            if self._enable_anti_ai_loop and hasattr(result, "draft_text") and result.draft_text:
+                if reporter:
+                    reporter.report("Anti-AI 修正実行中...", "info")
+
+                controller = self._anti_ai_controller or AntiAILoopController(
+                    max_loops=3,
+                    score_threshold=self._anti_ai_threshold,
+                )
+                anti_ai_result = await controller.run(result.draft_text)
+                result.draft_text = anti_ai_result.text
+
+                if reporter:
+                    reporter.report(
+                        f"Anti-AI 修正完了: スコア={anti_ai_result.final_score:.1f}, "
+                        f"イテレーション={anti_ai_result.iterations}",
+                        "info",
+                    )
+
+            # 3. BookScore 計算
             if reporter:
                 reporter.report("BookScore 計算中...", "info")
             
@@ -125,25 +164,25 @@ class WritingService:
             if reporter:
                 reporter.report(f"BookScore: {overall_score:.1f} 点 (閾値: {self.score_threshold})", "info")
             
-            # 3. 閾値チェック
+            # 4. 閾値チェック
             if overall_score >= self.score_threshold:
                 if reporter:
                     reporter.report(f"品質基準クリア ({overall_score:.1f} >= {self.score_threshold})", "success")
                 return result
-            
-            # 4. 再生成判定
+
+            # 5. 再生成判定
             retry_count += 1
             if retry_count > self.max_retries:
                 logger.warning(f"最大リトライ回数到達 ({self.max_retries})、品質基準未達のまま完了")
                 return result
             
-            # 5. 低スコア次元特定
+            # 6. 低スコア次元特定
             low_dimensions = self._identify_low_dimensions(book_score)
             if not low_dimensions:
                 logger.warning("低スコア次元が特定できません")
                 return result
             
-            # 6. 再生成アクション決定
+            # 7. 再生成アクション決定
             action = self._determine_regeneration_action(low_dimensions)
             regeneration_history.append({
                 "attempt": retry_count,
@@ -155,12 +194,14 @@ class WritingService:
             if reporter:
                 reporter.report(f"再生成実行: 対象次元={action.focus_dimensions}", "warning")
             
-            # 7. コンテキスト更新 (regeneration_focus 設定)
+            # 8. コンテキスト更新 (regeneration_focus 設定)
             ctx.artifacts["regeneration_focus"] = action.focus_dimensions
             ctx.artifacts["regeneration_action"] = action
             ctx.artifacts["regeneration_history"] = regeneration_history
-            
-            # 8. バックオフ待機
+            if anti_ai_result:
+                ctx.artifacts["anti_ai_loop_result"] = anti_ai_result.to_dict()
+
+            # 9. バックオフ待機
             wait_time = self.backoff_base ** retry_count
             if reporter:
                 reporter.report(f"{wait_time:.1f}秒待機後、再生成実行", "info")

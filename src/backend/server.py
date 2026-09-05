@@ -72,6 +72,7 @@ restored_routers = [
     "src.backend.routers.illustrations",
     "src.backend.routers.multimedia",
     "src.backend.routers.branches",
+    "src.backend.routers.anti_ai",
 ]
 
 for mod_path in restored_routers:
