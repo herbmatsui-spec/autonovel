@@ -48,7 +48,7 @@ class AntiAILoopController:
     Terminates early if:
         - Score reaches or exceeds ``score_threshold``
         - No violations remain
-        - No score improvement from previous iteration
+        - Score improvement is below threshold for consecutive iterations (with backoff)
     """
 
     def __init__(
@@ -58,12 +58,16 @@ class AntiAILoopController:
         max_loops: int = 5,
         score_threshold: float = 90.0,
         min_score_improvement: float = 1.0,
+        backoff_base: float = 2.0,
+        backoff_max: float = 10.0,
     ) -> None:
         self._detector = detector or RuleBasedAntiAIDetector()
         self._corrector = corrector or AntiAICorrector()
         self._max_loops = max_loops
         self._score_threshold = score_threshold
         self._min_score_improvement = min_score_improvement
+        self._backoff_base = backoff_base
+        self._backoff_max = backoff_max
 
     async def run(
         self,
@@ -86,8 +90,9 @@ class AntiAILoopController:
 
         current_text = text
         history: list[CorrectionHistory] = []
-        previous_score = 0.0
+        previous_output_score = 0.0
         converged = False
+        backoff_iterations = 0
 
         for iteration in range(1, max_loops + 1):
             result = self._detector.detect(current_text)
@@ -110,6 +115,8 @@ class AntiAILoopController:
                 after_result = self._detector.detect(correction_result.text)
                 output_score = after_result.total_score
 
+            score_improvement = output_score - previous_output_score
+
             history.append(CorrectionHistory(
                 iteration=iteration,
                 input_score=current_score,
@@ -119,12 +126,16 @@ class AntiAILoopController:
                 corrected_text=correction_result.text,
             ))
 
-            score_improvement = current_score - previous_score
             if iteration > 1 and score_improvement < self._min_score_improvement:
-                logger.info("Score improvement %.2f below threshold - stopping", score_improvement)
-                break
+                backoff_iterations += 1
+                if backoff_iterations >= 2:
+                    backoff_time = min(self._backoff_base ** (backoff_iterations - 1), self._backoff_max)
+                    logger.info("Score improvement %.2f below threshold - backing off for %.1f seconds", score_improvement, backoff_time)
+                    await asyncio.sleep(backoff_time)
+            else:
+                backoff_iterations = 0
 
-            previous_score = current_score
+            previous_output_score = output_score
             current_text = correction_result.text
 
             logger.debug(
