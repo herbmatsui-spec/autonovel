@@ -64,7 +64,8 @@ def test_foreshadowing_registration_step_create():
     assert isinstance(step, ForeshadowingRegistrationStep)
 
 
-def test_foreshadowing_registration_step_execute_with_no_book_id():
+@pytest.mark.asyncio
+async def test_foreshadowing_registration_step_execute_with_no_book_id():
     """book_id が None の場合のテスト"""
     step = ForeshadowingRegistrationStep()
     
@@ -82,7 +83,7 @@ def test_foreshadowing_registration_step_execute_with_no_book_id():
     reporter = MockStatusReporter()
     
     # execute メソッドを呼び出す
-    result = step.execute(ctx, engine, reporter)
+    result = await step.execute(ctx, engine, reporter)
     
     # 結果が True であることを確認（継続）
     assert result is True
@@ -93,7 +94,8 @@ def test_foreshadowing_registration_step_execute_with_no_book_id():
     # 実際には何か報告されるかもしれないが、重要なのはエラーにならないこと
 
 
-def test_foreshadowing_registration_step_execute_with_repository():
+@pytest.mark.asyncio
+async def test_foreshadowing_registration_step_execute_with_repository():
     """リポジトリがある場合のテスト"""
     step = ForeshadowingRegistrationStep()
     
@@ -110,7 +112,7 @@ def test_foreshadowing_registration_step_execute_with_repository():
     reporter = MockStatusReporter()
     
     # execute メソッドを呼び出す
-    result = step.execute(ctx, engine, reporter)
+    result = await step.execute(ctx, engine, reporter)
     
     # 結果が True であることを確認
     assert result is True
@@ -132,7 +134,8 @@ def test_foreshadowing_registration_step_execute_with_repository():
     assert any("ダミー伏線を登録しました" in msg for msg in report_messages)
 
 
-def test_foreshadowing_registration_step_execute_fallback_to_context():
+@pytest.mark.asyncio
+async def test_foreshadowing_registration_step_execute_fallback_to_context():
     """リポジトリがない場合のフォールバックテスト（コンテキストに追加）"""
     step = ForeshadowingRegistrationStep()
     
@@ -153,7 +156,7 @@ def test_foreshadowing_registration_step_execute_fallback_to_context():
     initial_length = len(ctx.foreshadowings)
     
     # execute メソッドを呼び出す
-    result = step.execute(ctx, engine, reporter)
+    result = await step.execute(ctx, engine, reporter)
     
     # 結果が True であることを確認
     assert result is True
@@ -175,7 +178,8 @@ def test_foreshadowing_registration_step_execute_fallback_to_context():
     assert any("ダミー伏線をコンテキストに追加しました" in msg for msg in report_messages)
 
 
-def test_foreshadowing_registration_step_execute_exception_handling():
+@pytest.mark.asyncio
+async def test_foreshadowing_registration_step_execute_exception_handling():
     """例外発生時のテスト"""
     step = ForeshadowingRegistrationStep()
     
@@ -202,7 +206,7 @@ def test_foreshadowing_registration_step_execute_exception_handling():
     
     # execute メソッドを呼び出す
     # 例外が発生しても True を返すはず（継続）
-    result = step.execute(ctx, engine, reporter)
+    result = await step.execute(ctx, engine, reporter)
     
     # 結果が True であることを確認（継続）
     assert result is True

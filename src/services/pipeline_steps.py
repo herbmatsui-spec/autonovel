@@ -24,6 +24,7 @@ from src.services.preset_loader import (
 )
 from src.services.spice_guard_adapter import create_spice_guard_adapter
 from src.models.illustration_point import IllustrationPoint
+from src.models.foreshadowing import Foreshadowing
 from src.backend.observability.health import metrics
 
 logger = logging.getLogger(__name__)
@@ -733,3 +734,103 @@ class IllustrationPointGenerationStep(WorkflowStep):
         except Exception as e:
             reporter.report(f"⚠️ 挿絵ポイント生成エラー (継続): {e}", "warning")
             return True  # 失敗してもパイプライン継続
+
+
+# ============================================================================
+# Step 21: ForeshadowingRegistrationStep (伏線登録)
+# ============================================================================
+
+
+class ForeshadowingRegistrationStep(WorkflowStep):
+    """伏線登録 Step (プロットから伏線を抽出しリポジトリまたはコンテキストに保存)"""
+
+    async def execute(
+        self, ctx: WorkflowContext, engine: UltimateHegemonyEngine, reporter: StatusReporter
+    ) -> bool:
+        if ctx.book_id is None:
+            _emit_skip(reporter, ctx, "foreshadowing_registration", "book_id is None")
+            return True
+
+        try:
+            # リポジトリがあれば優先使用、なければコンテキストフォールバック
+            repo = getattr(engine, "foreshadowing_repository", None)
+
+            # プロットから伏線を抽出
+            plots = await engine.repo.plot.get_all_plots(ctx.book_id)
+            if not plots:
+                reporter.report("⚠️ プロットが見つからないため伏線登録をスキップします", "warning")
+                return True
+
+            foreshadowings = self._extract_foreshadowings_from_plots(plots, ctx.book_id)
+
+            if not foreshadowings:
+                reporter.report("📌 抽出可能な伏線がありませんでした", "info")
+                return True
+
+            # 伏線を登録
+            for fs in foreshadowings:
+                if repo is not None:
+                    repo.add(fs)
+                else:
+                    ctx.foreshadowings.append(fs)
+
+            reporter.report(f"📌 {len(foreshadowings)}件の伏線を登録しました", "info")
+            return True
+        except Exception as e:
+            reporter.report(f"⚠️ 伏線登録中にエラーが発生しました: {e}", "warning")
+            return True  # 継続
+
+    def _extract_foreshadowings_from_plots(self, plots, book_id: int) -> list:
+        """プロットリストから伏線候補を抽出する"""
+        foreshadowings = []
+        fs_counter = 0
+
+        for plot in plots:
+            # プロットから伏線ヒントを抽出（属性名はいくつか想定して試行）
+            hint = None
+            for attr in ("foreshadowing_hint", "mystery_element", "cliffhanger", "foreshadowing"):
+                if hasattr(plot, attr) and getattr(plot, attr):
+                    hint = getattr(plot, attr)
+                    break
+            if not hint:
+                continue
+
+            fs_counter += 1
+            fs_id = f"FS-{fs_counter:03d}"
+
+            # 巻・話・チャプターを取得（デフォルト値あり）
+            volume = getattr(plot, "volume", 1)
+            episode = getattr(plot, "episode", 1)
+            chapter = getattr(plot, "chapter", 1)
+
+            # 重要度判定: キーワード数ベース
+            hint_str = str(hint)
+            keyword_count = len(hint_str.split("、")) + len(hint_str.split("、")) + hint_str.count("。")
+            if keyword_count >= 5:
+                importance = "★★★"
+            elif keyword_count >= 2:
+                importance = "★★"
+            else:
+                importance = "★"
+
+            # タイプ判定: キーワードベース
+            hint_lower = hint_str.lower()
+            if any(kw in hint_lower for kw in ["明確", "直接", "明示", "explicit"]):
+                hang_type = "explicit"
+            elif any(kw in hint_lower for kw in ["読者", "考察", "想像", "reader"]):
+                hang_type = "reader_task"
+            else:
+                hang_type = "implicit"
+
+            fs = Foreshadowing(
+                id=fs_id,
+                content=hint_str[:200],  # 長すぎる場合は切り詰め
+                hang_volume=volume,
+                hang_episode=episode,
+                hang_chapter=chapter,
+                hang_type=hang_type,
+                importance=importance
+            )
+            foreshadowings.append(fs)
+
+        return foreshadowings

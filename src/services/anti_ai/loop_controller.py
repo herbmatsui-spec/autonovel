@@ -9,21 +9,10 @@ from __future__ import annotations
 import asyncio
 import logging
 from dataclasses import dataclass, field
-from typing import Any
 
 from src.services.anti_ai.correction_pipeline import AntiAICorrector
 from src.services.anti_ai.models import CorrectionHistory, ViolationSpan
 from src.services.anti_ai.orchestrator import RuleBasedAntiAIDetector
-
-try:
-    from src.services.anti_ai.metrics import (
-        record_detection,
-        record_correction,
-        record_loop_iterations,
-        set_score,
-    )
-except ImportError:
-    record_detection = record_correction = record_loop_iterations = set_score = None
 
 logger = logging.getLogger(__name__)
 
@@ -124,10 +113,6 @@ class AntiAILoopController:
             result = self._detector.detect(current_text)
             current_score = result.total_score
 
-            if record_detection is not None:
-                for v in result.violations:
-                    record_detection(v.category.value, "rule_based")
-
             if current_score >= score_threshold:
                 logger.info("Score threshold reached: %.1f >= %.1f", current_score, score_threshold)
                 converged = True
@@ -139,11 +124,6 @@ class AntiAILoopController:
                 break
 
             correction_result = self._corrector.correct(current_text, result.violations)
-
-            if record_correction is not None:
-                for cat in correction_result.category_changes:
-                    for _ in range(correction_result.category_changes[cat]):
-                        record_correction(cat.value)
 
             output_score = current_score
             if correction_result.total_changes > 0:
@@ -182,11 +162,6 @@ class AntiAILoopController:
             )
 
         final_result = self._detector.detect(current_text)
-
-        if record_loop_iterations is not None:
-            record_loop_iterations(len(history))
-        if set_score is not None:
-            set_score(final_result.total_score)
 
         return LoopResult(
             text=current_text,
