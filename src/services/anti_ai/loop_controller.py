@@ -55,19 +55,34 @@ class AntiAILoopController:
         self,
         detector: RuleBasedAntiAIDetector | None = None,
         corrector: AntiAICorrector | None = None,
-        max_loops: int = 5,
-        score_threshold: float = 90.0,
-        min_score_improvement: float = 1.0,
-        backoff_base: float = 2.0,
-        backoff_max: float = 10.0,
+        max_loops: int | None = None,
+        score_threshold: float | None = None,
+        min_score_improvement: float | None = None,
+        backoff_base: float | None = None,
+        backoff_max: float | None = None,
+        config: Any = None,
     ) -> None:
         self._detector = detector or RuleBasedAntiAIDetector()
         self._corrector = corrector or AntiAICorrector()
-        self._max_loops = max_loops
-        self._score_threshold = score_threshold
-        self._min_score_improvement = min_score_improvement
-        self._backoff_base = backoff_base
-        self._backoff_max = backoff_max
+
+        if config is not None:
+            loop_cfg = getattr(config, "loop", None)
+            if loop_cfg:
+                self._max_loops = max_loops if max_loops is not None else getattr(loop_cfg, "max_iterations", 5)
+                self._score_threshold = score_threshold if score_threshold is not None else getattr(loop_cfg, "stop_threshold", 90.0)
+                self._min_score_improvement = min_score_improvement if min_score_improvement is not None else getattr(loop_cfg, "min_improvement", 2.0)
+                self._backoff_base = backoff_base if backoff_base is not None else getattr(loop_cfg, "backoff_base_seconds", 2.0)
+            else:
+                self._max_loops = max_loops if max_loops is not None else 5
+                self._score_threshold = score_threshold if score_threshold is not None else 90.0
+                self._min_score_improvement = min_score_improvement if min_score_improvement is not None else 2.0
+                self._backoff_base = backoff_base if backoff_base is not None else 2.0
+        else:
+            self._max_loops = max_loops if max_loops is not None else 5
+            self._score_threshold = score_threshold if score_threshold is not None else 90.0
+            self._min_score_improvement = min_score_improvement if min_score_improvement is not None else 2.0
+            self._backoff_base = backoff_base if backoff_base is not None else 2.0
+        self._backoff_max = backoff_max if backoff_max is not None else 10.0
 
     async def run(
         self,
