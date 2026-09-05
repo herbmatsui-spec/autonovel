@@ -58,4 +58,45 @@ describe("StudioWorkspace component", () => {
 
     expect(await screen.findByText(/300年前の王国滅亡時に失われた秘術/)).toBeInTheDocument();
   });
+
+  it("switches between editor and multimedia tabs", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <NovelProvider>
+        <StudioWorkspace />
+      </NovelProvider>
+    );
+
+    const editorTab = screen.getByTestId("tab-studio-editor");
+    const multimediaTab = screen.getByTestId("tab-studio-multimedia");
+    expect(editorTab).toHaveClass("btn-tab--active");
+
+    await user.click(multimediaTab);
+
+    expect(multimediaTab).toHaveClass("btn-tab--active");
+    expect(editorTab).not.toHaveClass("btn-tab--active");
+    expect(screen.getByTestId("multimedia-tab-info")).toBeInTheDocument();
+
+    await user.click(editorTab);
+
+    expect(editorTab).toHaveClass("btn-tab--active");
+    expect(multimediaTab).not.toHaveClass("btn-tab--active");
+    expect(screen.getByTestId("editor-textarea")).toBeInTheDocument();
+  });
+
+  it("persists active tab to localStorage", async () => {
+    const user = userEvent.setup();
+    window.localStorage.clear();
+
+    render(
+      <NovelProvider>
+        <StudioWorkspace />
+      </NovelProvider>
+    );
+
+    await user.click(screen.getByTestId("tab-studio-multimedia"));
+
+    expect(window.localStorage.getItem("autonovel.studioTab")).toBe("multimedia");
+  });
 });

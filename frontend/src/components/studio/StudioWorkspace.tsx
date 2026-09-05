@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNovelContext } from "../../context/NovelContext";
 import { Editor } from "../editor/Editor";
 import { NextBeatsPanel } from "../editor/NextBeatsPanel";
@@ -24,7 +24,24 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
     setCurrentChapterText,
     selectedBookId,
   } = useNovelContext();
-  const [tab, setTab] = useState<StudioTab>("editor");
+  const [tab, setTab] = useState<StudioTab>(() => {
+    if (typeof window === "undefined") return "editor";
+    try {
+      const saved = window.localStorage.getItem("autonovel.studioTab");
+      if (saved === "editor" || saved === "multimedia") return saved;
+    } catch {
+      // localStorage が使えない環境では無視
+    }
+    return "editor";
+  });
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("autonovel.studioTab", tab);
+    } catch {
+      // ignore storage error
+    }
+  }, [tab]);
 
   const [showLeftPane, setShowLeftPane] = useState(true);
   const [showRightPane, setShowRightPane] = useState(true);
@@ -172,6 +189,34 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
           </div>
         )}
 
+        <div
+          style={{
+            display: "flex",
+            gap: "8px",
+            marginBottom: "12px",
+            borderBottom: "1px solid var(--border-color)",
+            paddingBottom: "8px",
+          }}
+          data-testid="studio-tab-bar"
+        >
+          <button
+            type="button"
+            className={`btn-tab ${tab === "editor" ? "btn-tab--active" : ""}`}
+            onClick={() => setTab("editor")}
+            data-testid="tab-studio-editor"
+          >
+            ✏️ エディタ
+          </button>
+          <button
+            type="button"
+            className={`btn-tab ${tab === "multimedia" ? "btn-tab--active" : ""}`}
+            onClick={() => setTab("multimedia")}
+            data-testid="tab-studio-multimedia"
+          >
+            🖼️ マルチメディア
+          </button>
+        </div>
+
         {tab === "editor" && (
           <>
             <Editor
@@ -196,7 +241,26 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
             />
           </>
         )}
-        {tab === "multimedia" && <AssetPackPanel bookId={selectedBookId} />}
+        {tab === "multimedia" && (
+          <>
+            <div
+              style={{
+                background: "rgba(56, 189, 248, 0.08)",
+                border: "1px solid rgba(56, 189, 248, 0.25)",
+                borderRadius: "8px",
+                padding: "10px 14px",
+                marginBottom: "14px",
+                fontSize: "0.85rem",
+                color: "var(--accent-secondary, #38bdf8)",
+              }}
+              data-testid="multimedia-tab-info"
+            >
+              🖼️ <strong>マルチメディア生成</strong>:
+              このタブでは挿絵・電子書籍 (ePub/PDF)・マンガ/ショート動画サムネイルなどの二次創作物 ZIP を一括生成できます。
+            </div>
+            <AssetPackPanel bookId={selectedBookId} />
+          </>
+        )}
       </main>
 
       {/* 右ペイン: GraphRAG 専属AI編集者サイドバー */}

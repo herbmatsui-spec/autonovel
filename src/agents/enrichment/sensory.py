@@ -169,20 +169,69 @@ def generate_sensory_details(
             selected_senses.append(sense)
             if len(selected_senses) >= 3:
                 break
+
+    # Step 56: LLM を用いた文脈適合感覚描写の生成
+    if llm:
+        try:
+            from pathlib import Path
+            from jinja2 import Template
+
+            template_content = None
+            if prompt_manager:
+                try:
+                    t = prompt_manager.get_template("sensory_expansion.jinja2")
+                    template_content = getattr(t, "source", None) or str(t)
+                except Exception:
+                    pass
+
+            if not template_content:
+                tpl_path = Path("src/prompts/enrichment/sensory_expansion.jinja2")
+                if not tpl_path.exists():
+                    tpl_path = Path("prompts/enrichment/sensory_expansion.jinja2")
+                if tpl_path.exists():
+                    template_content = tpl_path.read_text(encoding="utf-8")
+
+            if template_content:
+                tpl = Template(template_content)
+                prompt = tpl.render(
+                    emotion=emotion,
+                    original_phrase=emotion_span.abstract_phrase,
+                    scene_context=scene_context,
+                    pov=pov,
+                    preferred_senses=selected_senses,
+                )
+            else:
+                prompt = (
+                    f"小説の地の文リライト: 抽象感情「{emotion_span.abstract_phrase}」(感情:{emotion})を、"
+                    f"文脈({scene_context})に合わせて五感を用いた自然な地の文(1〜2文)に展開してください。"
+                    f"デバッグタグ（[visual]等）は含めず、本文のみ出力してください。"
+                )
+
+            import inspect
+            raw_output = llm.generate(prompt) if hasattr(llm, "generate") else llm(prompt)
+            if inspect.isawaitable(raw_output):
+                import asyncio
+                raw_output = asyncio.get_event_loop().run_until_complete(raw_output)
+
+            cleaned = str(raw_output).strip()
+            # Step 57: 固定タグ・デバッグ風プレフィックス ([visual]等) の完全撤廃
+            cleaned = re.sub(r'\[[a-zA-Z0-9_]+\]\s*', '', cleaned)
+            cleaned = cleaned.strip('"\'')
+            if len(cleaned) >= 5:
+                return [cleaned]
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning("LLM sensory detail generation failed: %s", e)
     
-    # 感覚描写生成
+    # フォールバック: 辞書ベース感覚描写生成（内部タグ付きで生成し、置換時にクリーン化）
     sensory_details = []
     for sense in selected_senses:
         options = sensory_map[sense]
-        # 文脈に合いそうなものを選択（簡易: 最初のもの）
         detail = options[0]
         sensory_details.append(f"[{sense}] {detail}")
     
-    # LLM がある場合はより文脈に沿った生成を試みる（将来拡張用）
-    if llm and prompt_manager:
-        pass  # TODO: LLMベース生成
-    
     return sensory_details
+
 
 
 def replace_with_sensory_expansion(
@@ -190,7 +239,7 @@ def replace_with_sensory_expansion(
     emotion_spans: list[EmotionSpan],
     sensory_details_list: list[list[str]],
 ) -> tuple[str, list[dict]]:
-    """抽象フレーズを感覚展開版で置換"""
+    """抽象フレーズを感覚展開版で置換（Step 57: [visual]タグ完全撤廃）"""
     if not emotion_spans:
         return text, []
     
@@ -202,22 +251,17 @@ def replace_with_sensory_expansion(
     expansions_meta = []
     
     for span, details in sorted_spans:
-        # 元のフレーズ
         original = text[span.start:span.end]
         
-        # 感覚詳細を自然な文に組み立て
         if details:
-            # 視点に応じた主語調整
-            pov_subject = "彼" if "彼" in text[max(0, span.start-20):span.start] else \
-                          "彼女" if "彼女" in text[max(0, span.start-20):span.start] else \
-                          "私" if "私" in text[max(0, span.start-20):span.start] else "彼"
-            
             expanded_parts = []
             for d in details:
-                # [visual] 涙がこぼれる -> 視覚: 涙がこぼれる
-                sense_tag, desc = d.split("] ", 1) if "] " in d else (d, d)
-                sense = sense_tag.strip("[]")
-                expanded_parts.append(f"{desc}。")
+                # 万一残存する [sense] タグを確実に除去
+                clean_d = re.sub(r'\[[a-zA-Z0-9_]+\]\s*', '', d).strip()
+                if clean_d:
+                    if not clean_d.endswith("。"):
+                        clean_d += "。"
+                    expanded_parts.append(clean_d)
             
             expanded = "".join(expanded_parts)
         else:
@@ -226,11 +270,20 @@ def replace_with_sensory_expansion(
         # 置換実行
         enriched_text = enriched_text[:span.start] + expanded + enriched_text[span.end:]
         
+        # メタデータ
+        senses = []
+        for d in details:
+            match = re.search(r'\[([a-zA-Z0-9_]+)\]', d)
+            if match:
+                senses.append(match.group(1))
+        if not senses and details:
+            senses = ["sensory"]
+            
         expansions_meta.append({
             "original_phrase": original,
             "expanded_text": expanded,
             "emotion": span.emotion,
-            "senses_covered": [d.split("]")[0].strip("[") for d in details if "]" in d],
+            "senses_covered": senses,
             "position": span.start,
         })
     

@@ -1,0 +1,135 @@
+
+> autonovel-frontend@4.4.0 test
+> vitest --run --reporter=basic
+
+
+[7m[1m[36m RUN [39m[22m[27m [36mv1.6.1[39m [90mE:/sssssss/autonovel/frontend[39m
+
+ [32m✓[39m tests/api/easyMode.test.ts [2m ([22m[2m11 tests[22m[2m)[22m[90m 253[2mms[22m[39m
+ [33m❯[39m tests/components/GeneratePanel.test.tsx [2m ([22m[2m6 tests[22m [2m|[22m [31m2 failed[39m[2m)[22m[33m 1202[2mms[22m[39m
+[31m   [33m❯[31m tests/components/GeneratePanel.test.tsx[2m > [22mGeneratePanel[2m > [22mpolls task until completed when task_id is returned[39m
+[31m     → expected "spy" to be called with arguments: [ 'ポーリング完了本文', [ '次話提案' ] ][90m
+
+Received: 
+
+[31m[90m
+
+Number of calls: [1m0[22m
+[31m[39m
+[31m   [33m❯[31m tests/components/GeneratePanel.test.tsx[2m > [22mGeneratePanel[2m > [22mhandles failed polling status[39m
+[31m     → expected "spy" to be called with arguments: [ StringContaining{…} ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[2m  Array [[22m
+[32m-   StringContaining "LLM error occurred",[90m
+[31m+   "❌ エラー: RequestInit: Expected signal (\"AbortSignal {}\") to be an instance of AbortSignal.",[90m
+[2m  ][22m
+[31m[90m
+
+Number of calls: [1m1[22m
+[31m[39m
+stderr | tests/integration/studioModeFlow.test.tsx > Studio Mode Flow Integration Test > renders Studio mode by default and allows mode switching
+Failed to fetch style presets: TypeError: Failed to parse URL from /api/styles/presets
+    at node:internal/deps/undici/undici:15845:13
+    at Module.fetchStylePresets (E:\sssssss\autonovel\frontend\src\api\styleApi.ts:13:15) {
+  [cause]: TypeError: Invalid URL: /api/styles/presets
+      at new URLImpl (E:\sssssss\autonovel\frontend\node_modules\whatwg-url\lib\URL-impl.js:20:13)
+      at Object.exports.setup (E:\sssssss\autonovel\frontend\node_modules\whatwg-url\lib\URL.js:54:12)
+      at new URL (E:\sssssss\autonovel\frontend\node_modules\whatwg-url\lib\URL.js:115:22)
+      at new Request (node:internal/deps/undici/undici:10413:25)
+      at fetch (node:internal/deps/undici/undici:11325:25)
+      at fetch (node:internal/deps/undici/undici:15843:10)
+      at fetch (node:internal/bootstrap/web/exposed-window-or-worker:83:12)
+      at Module.fetchStylePresets (E:\sssssss\autonovel\frontend\src\api\styleApi.ts:13:21)
+      at E:\sssssss\autonovel\frontend\src\components\GeneratePanel.tsx:99:5
+      at commitHookEffectListMount (E:\sssssss\autonovel\frontend\node_modules\react-dom\cjs\react-dom.development.js:23189:26)
+}
+
+ [32m✓[39m tests/integration/studioModeFlow.test.tsx [2m ([22m[2m3 tests[22m[2m)[22m[33m 840[2mms[22m[39m
+ [32m✓[39m tests/components/StudioWorkspace.test.tsx [2m ([22m[2m3 tests[22m[2m)[22m[33m 1228[2mms[22m[39m
+ [32m✓[39m tests/components/GeneratePanel.reversePlotProtection.test.tsx [2m ([22m[2m2 tests[22m[2m)[22m[33m 658[2mms[22m[39m
+ [32m✓[39m tests/components/EditorRefinement.test.tsx [2m ([22m[2m4 tests[22m[2m)[22m[33m 987[2mms[22m[39m
+ [32m✓[39m tests/api/editor.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[90m 26[2mms[22m[39m
+ [32m✓[39m tests/components/ReversePlotBuilder.test.tsx [2m ([22m[2m1 test[22m[2m)[22m[33m 934[2mms[22m[39m
+ [32m✓[39m tests/hooks/useToast.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 87[2mms[22m[39m
+ [32m✓[39m tests/api/reversePlot.test.ts [2m ([22m[2m2 tests[22m[2m)[22m[90m 113[2mms[22m[39m
+stderr | tests/components/ExportPanel.test.tsx > ExportPanel component > exports package with current text and settings
+Error: Not implemented: navigation (except hash changes)
+    at module.exports (E:\sssssss\autonovel\frontend\node_modules\jsdom\lib\jsdom\browser\not-implemented.js:9:17)
+    at navigateFetch (E:\sssssss\autonovel\frontend\node_modules\jsdom\lib\jsdom\living\window\navigation.js:77:3)
+    at exports.navigate (E:\sssssss\autonovel\frontend\node_modules\jsdom\lib\jsdom\living\window\navigation.js:55:3)
+    at Timeout._onTimeout (E:\sssssss\autonovel\frontend\node_modules\jsdom\lib\jsdom\living\nodes\HTMLHyperlinkElementUtils-impl.js:81:7)
+    at listOnTimeout (node:internal/timers:608:17)
+    at processTimers (node:internal/timers:543:7) undefined
+
+ [32m✓[39m tests/components/ExportPanel.test.tsx [2m ([22m[2m2 tests[22m[2m)[22m[33m 606[2mms[22m[39m
+ [32m✓[39m tests/api/graph.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[90m 20[2mms[22m[39m
+ [32m✓[39m tests/components/Toast.test.tsx [2m ([22m[2m3 tests[22m[2m)[22m[90m 187[2mms[22m[39m
+stderr | tests/components/GraphVisualization.test.tsx > GraphVisualization component > renders graph modal, filters and responds to close
+Warning: Function components cannot be given refs. Attempts to access this ref will fail. Did you mean to use React.forwardRef()?
+
+Check the render method of `GraphVisualization`.
+    at default
+    at div
+    at div
+    at div
+    at div
+    at GraphVisualization (E:\sssssss\autonovel\frontend\src\components\GraphVisualization.tsx:23:31)
+
+ [32m✓[39m tests/components/GraphVisualization.test.tsx [2m ([22m[2m1 test[22m[2m)[22m[33m 460[2mms[22m[39m
+ [32m✓[39m tests/integration/easyModeFlow.test.tsx [2m ([22m[2m1 test[22m[2m)[22m[90m 248[2mms[22m[39m
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/components/GeneratePanel.test.tsx > GeneratePanel > polls task until completed when task_id is returned
+AssertionError: expected "spy" to be called with arguments: [ 'ポーリング完了本文', [ '次話提案' ] ]
+
+Received: 
+
+
+
+Number of calls: 0
+
+ ❯ tests/components/GeneratePanel.test.tsx:82:25
+     80|     const user = userEvent.setup();
+     81|     await user.click(screen.getByText(/かんたん執筆開始/));
+     82|     expect(onGenerated).toHaveBeenCalledWith(
+       |                         ^
+     83|       "ポーリング完了本文",
+     84|       ["次話提案"]
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  tests/components/GeneratePanel.test.tsx > GeneratePanel > handles failed polling status
+AssertionError: expected "spy" to be called with arguments: [ StringContaining{…} ]
+
+Received: 
+
+  1st spy call:
+
+  Array [
+-   StringContaining "LLM error occurred",
++   "❌ エラー: RequestInit: Expected signal (\"AbortSignal {}\") to be an instance of AbortSignal.",
+  ]
+
+
+Number of calls: 1
+
+ ❯ tests/components/GeneratePanel.test.tsx:108:23
+    106|     const user = userEvent.setup();
+    107|     await user.click(screen.getByText(/かんたん執筆開始/));
+    108|     expect(onMessage).toHaveBeenCalledWith(expect.stringContaining("LL…
+       |                       ^
+    109|   });
+    110| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m14 passed[39m[22m[90m (15)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m50 passed[39m[22m[90m (52)[39m
+[2m   Start at [22m 14:39:48
+[2m   Duration [22m 27.46s[2m (transform 1.34s, setup 6.20s, collect 18.46s, tests 7.85s, environment 30.77s, prepare 6.45s)[22m
+

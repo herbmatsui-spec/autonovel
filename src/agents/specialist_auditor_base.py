@@ -78,6 +78,8 @@ class SpecialistAuditor(ABC):
                 error=repr(e),
             )
 
+    safe_audit = _safe_audit
+
     def _fallback(self, ctx: dict[str, Any]) -> SpecialistAuditResult:
         """Rule-based fallback used when LLM is unavailable.
         Default: return a neutral 50 score. Specialists override this
@@ -91,9 +93,96 @@ class SpecialistAuditor(ABC):
             degraded=True,
         )
 
+    async def _judge_with_llm(
+        self,
+        prompt: str,
+        system_prompt: str | None = None,
+    ) -> tuple[float, str, list[str]]:
+        """Common LLM judge method for all specialist auditors (Step 63).
+
+        Forces structured evaluation and returns (score, critique, suggestions).
+        Raises LLMUnavailableError if LLM is missing or call fails.
+        """
+        if not self.llm:
+            raise LLMUnavailableError("LLM client is not configured on specialist")
+
+        full_prompt = prompt
+        if system_prompt:
+            full_prompt = f"【システム役割】\n{system_prompt}\n\n{prompt}"
+
+        # JSON 出力指示を付加
+        instruction_suffix = (
+            "\n\n必ず以下のJSON形式のみを出力してください（Markdownコードブロック可）:\n"
+            "{\n"
+            '  "score": 0〜100の数値,\n'
+            '  "critique": "詳細な講評・評価理由",\n'
+            '  "suggestions": ["具体的な改善提案1", "改善提案2"]\n'
+            "}"
+        )
+        if "必ず以下のJSON形式" not in full_prompt:
+            full_prompt += instruction_suffix
+
+        import inspect
+        import json
+        import re
+
+        try:
+            if hasattr(self.llm, "ainvoke"):
+                raw = self.llm.ainvoke(full_prompt)
+            elif hasattr(self.llm, "generate"):
+                raw = self.llm.generate(full_prompt)
+            elif hasattr(self.llm, "invoke"):
+                raw = self.llm.invoke(full_prompt)
+            elif callable(self.llm):
+                raw = self.llm(full_prompt)
+            else:
+                raise LLMUnavailableError(f"Unsupported LLM interface: {type(self.llm)}")
+
+            if inspect.isawaitable(raw):
+                raw = await raw
+
+            text_resp = str(getattr(raw, "content", raw)).strip()
+
+            # JSON 抽出試行
+            score = 50.0
+            critique = ""
+            suggestions = []
+
+            json_match = re.search(r"\{.*\}", text_resp, re.DOTALL)
+            if json_match:
+                try:
+                    data = json.loads(json_match.group(0))
+                    score = float(data.get("score", 50.0))
+                    critique = str(data.get("critique", ""))
+                    suggs = data.get("suggestions", [])
+                    if isinstance(suggs, list):
+                        suggestions = [str(s) for s in suggs]
+                    elif isinstance(suggs, str):
+                        suggestions = [suggs]
+                except Exception:
+                    pass
+
+            # JSONパース失敗時の正規表現フォールバック
+            if not critique:
+                score_match = re.search(r"(?:score|スコア|点数)[:：\s]*([0-9]+(?:\.[0-9]+)?)", text_resp, re.IGNORECASE)
+                if score_match:
+                    score = float(score_match.group(1))
+                critique = text_resp[:300]
+                suggestions = ["表現と構成の再確認"]
+
+            # スコア範囲クリップ (0.0〜100.0)
+            score = max(0.0, min(100.0, round(score, 1)))
+
+            return score, critique, suggestions
+
+        except Exception as e:
+            if isinstance(e, LLMUnavailableError):
+                raise
+            raise LLMUnavailableError(f"LLM execution error during audit: {e}") from e
+
 
 __all__ = [
     "SpecialistAuditor",
     "SpecialistAuditResult",
     "LLMUnavailableError",
-]
+]

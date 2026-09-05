@@ -35,7 +35,6 @@ export interface GenerationState {
   isGenerating: boolean;
   statusText: string;
   progressPercent?: number;
-  currentOutput: string;
   suggestions: string[];
   currentTaskId: string | null;
   error: string | null;

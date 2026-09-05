@@ -1,4 +1,22 @@
 """
+
+
+              st.markdown("#### 🔞 コンテンツ設定")
+              st.toggle(
+                  "NSFW/官能コンテンツ許可",
+                  value=getattr(cfg, "enable_nsfw", False),
+                  key="cfg_enable_nsfw",
+              )
+              st.slider(
+                  "官能强度 (1=ほのめかし 〜 5=濃密)",
+                  min_value=0,
+                  max_value=5,
+                  value=getattr(cfg, "erotic_intensity", 0),
+                  key="cfg_erotic_intensity",
+                  disabled=not st.session_state.get("cfg_enable_nsfw", getattr(cfg, "enable_nsfw", False)),
+                  help="NSFWをONにしている場合のみ有効です。",
+              
+"""
 streamlit_app/pages/00_Settings.py — 設定専用ページ
 
 このファイルで全ての設定を一元管理できます。
@@ -80,6 +98,7 @@ def save_all_settings():
 
         cfg.openai_api_key = st.session_state.get("cfg_openai_api_key", cfg.openai_api_key)
         cfg.openai_base_url = st.session_state.get("cfg_openai_base_url", cfg.openai_base_url)
+        cfg.erotic_intensity = st.session_state.get("cfg_erotic_intensity", cfg.erotic_intensity)
 
         cfg.enable_nsfw = st.session_state.get("cfg_enable_nsfw", cfg.enable_nsfw)
         cfg.safety_filter_level = st.session_state.get("cfg_safety_filter_level", cfg.safety_filter_level)
@@ -331,6 +350,15 @@ def main():
                 "NSFW/官能コンテンツ許可",
                 value=getattr(cfg, "enable_nsfw", False),
                 key="cfg_enable_nsfw",
+            st.slider(
+                "官能强度 (1=ほのめかし 〜 5=濃密)",
+                min_value=0,
+                max_value=5,
+                value=getattr(cfg, "erotic_intensity", 0),
+                key="cfg_erotic_intensity",
+                disabled=not st.session_state.get("cfg_enable_nsfw", getattr(cfg, "enable_nsfw", False)),
+                help="NSFWをONにしている場合のみ有効です。",
+            )
                 help="官能的な描写を含むコンテンツを許可します",
             )
 
@@ -482,3 +510,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+

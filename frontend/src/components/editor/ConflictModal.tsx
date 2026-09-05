@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ConflictSection } from "../../hooks/useCollabSync";
+import { ConflictSection } from "../../hooks/_unused/useCollabSync";
 
 interface ConflictModalProps {
   conflicts: ConflictSection[];

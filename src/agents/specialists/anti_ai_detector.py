@@ -10,7 +10,6 @@ from typing import Any
 
 from src.agents.specialist_auditor_base import SpecialistAuditor, SpecialistAuditResult
 from src.services.anti_ai.orchestrator import RuleBasedAntiAIDetector
-from src.services.anti_ai.models import AICategory
 
 
 class AntiAIDetector(SpecialistAuditor):

@@ -26,6 +26,33 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
+# UI 上のジャンル文字列 → preset key マッピング
+# 優先度順に評価 (最初に hit した preset を採用)
+GENRE_TO_PRESET: list[tuple[str, str]] = [
+    ("ざまぁ", "zarma"),
+    ("令嬢", "aku_reijo"),
+    ("VRMMO", "vrmmo"),
+    ("ダンジョン", "dungeon_admin"),
+    ("スローライフ", "slow_life"),
+    ("追放", "slow_life"),
+    ("ループ", "loop"),
+    ("テンセイ", "cheat_tensei"),
+    ("現代チート", "modern_cheat"),
+    ("異世界転生", "cheat_tensei"),
+    ("ダークファンタジー", "cheat_tensei"),
+]
+
+
+def resolve_genre_to_preset(genre: str) -> str | None:
+    """UI ジャンル文字列から preset key を解決する。"""
+    if not genre:
+        return None
+    for keyword, preset_key in GENRE_TO_PRESET:
+        if keyword in genre:
+            return preset_key
+    return None
+
+
 async def execute_generation(payload: dict[str, Any]) -> dict[str, Any]:
     """LLM アダプタを利用して非同期に小説本文と次話提案を生成する (GraphRAG 統合済み)。"""
     start_time = time.time()
@@ -83,21 +110,23 @@ async def execute_generation(payload: dict[str, Any]) -> dict[str, Any]:
             pass
 
     if style_profile is None:
-        # デフォルトはジャンルから推定
-        genre_key = (
-            "zarma" if "ざまぁ" in genre else "aku_reijo" if "令嬢" in genre else "cheat_tensei"
-        )
-        try:
-            preset_dict = load_preset(genre_key)
-            style_data = preset_dict.get("style", {})
-            if isinstance(style_data, dict) and style_data:
-                style_profile = StyleProfile(
-                    id=genre_key,
-                    name=f"{genre_key}標準調",
-                    genre_hint=genre_key,
-                    **{k: v for k, v in style_data.items() if k in StyleProfile.model_fields},
-                )
-        except Exception:
+        # ジャンルから preset を解決 (マッピング辞書 GENRE_TO_PRESET を参照)
+        genre_key = resolve_genre_to_preset(genre)
+        if genre_key:
+            try:
+                preset_dict = load_preset(genre_key)
+                style_data = preset_dict.get("style", {})
+                if isinstance(style_data, dict) and style_data:
+                    style_profile = StyleProfile(
+                        id=genre_key,
+                        name=f"{genre_key}標準調",
+                        genre_hint=genre_key,
+                        **{k: v for k, v in style_data.items() if k in StyleProfile.model_fields},
+                    )
+            except Exception:
+                pass
+        if style_profile is None:
+            logger.warning("Unknown genre, using empty StyleProfile: %s", genre)
             style_profile = StyleProfile(name=f"{genre}標準文体", genre_hint=genre)
 
     style_bias_section = style_profile.to_prompt_instruction() if style_profile else ""

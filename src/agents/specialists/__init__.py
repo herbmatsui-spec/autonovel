@@ -10,6 +10,8 @@ from src.agents.specialists.factual_auditor import FactualAuditor
 from src.agents.specialists.structure_auditor import StructureAuditor
 from src.agents.specialists.multimodal_auditor import MultimodalAuditor
 
+from src.agents.specialists.adapter import AuditAggregatorNode
+
 __all__ = [
     "AntiAIDetector",
     "ConsistencyAuditor",
@@ -20,4 +22,5 @@ __all__ = [
     "FactualAuditor",
     "StructureAuditor",
     "MultimodalAuditor",
-]
+    "AuditAggregatorNode",
+]

@@ -190,7 +190,6 @@ class CommercialPipeline:
                         "ep_num": ep_num,
                     },
                     "script": "",  # 将来的に脚本データを投入
-                    "target_word_count": bible.get("target_word_count_per_episode", 3000),
                     "continuation": True,  # 続き執筆フラグ
                     "build_platform": "streamlit_demo",
                 }

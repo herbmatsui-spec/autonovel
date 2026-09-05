@@ -21,12 +21,11 @@ def test_migrations_up_down(sqlite_db_url):
     alembic_cfg.set_main_option("sqlalchemy.url", sqlite_db_url)
 
     # SQLAlchemy モデルからテーブルを作成（初期スキーマ）
+    from src.infrastructure.database.models.base_orm import Base
     import src.backend.database.models  # noqa
     import src.infrastructure.database.models  # noqa
-    from src.backend.database.models import Base as BackendBase
-    from src.infrastructure.database.models import Base as InfraBase
-    InfraBase.metadata.create_all(engine)
-    BackendBase.metadata.create_all(engine)
+
+    Base.metadata.create_all(engine)
 
     # ヘッドまで適用
     command.upgrade(alembic_cfg, "head")

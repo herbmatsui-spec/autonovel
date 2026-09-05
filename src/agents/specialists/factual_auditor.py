@@ -1,4 +1,4 @@
-"""Factual Specialist Auditor.
+"""Factual Specialist Auditor (Step 64).
 
 Phase 2 / Guideline #3-⑥: GraphRAG reference consistency, historical/cultural
 accuracy, terminology appropriateness. LLM-based with rule-based fallback.
@@ -14,20 +14,21 @@ from src.agents.specialist_auditor_base import (
     LLMUnavailableError,
 )
 
+FACTUAL_SYSTEM_PROMPT = """あなたは歴史考証・文化設定・世界観事実整合性（Factual Accuracy）を審査する専門オーディターです。
+与えられた「World Bible設定」と「本文」を照合し、以下の観点を評価してください:
+1. 世界観用語・固有名詞の誤用や混同
+2. 中世ファンタジー等の時代設定にそぐわない現代語・文明利器の無自覚な混入（アクロニズム）
+3. 地理・組織・階級秩序の事実関係の逸脱
+"""
 
-FACTUAL_PROMPT = """以下の本文が、与えられた世界観設定と矛盾していないか確認してください。
-
-【世界観設定】
+FACTUAL_USER_PROMPT = """【World Bible 設定】
 {world_bible}
 
-【本文】
+【執筆本文】
 {draft_text}
 
-矛盾する箇所があれば、具体的に「エンティティ名: 矛盾内容」の形式で列挙してください。
-矛盾がなければ「矛盾なし」と答えてください。
-
-出力形式（JSON）:
-{{"contradictions": ["エンティティ: 内容", ...], "summary": "全体の判定"}}
+設定用語・事実関係・時代考証の整合性を評価し、0〜100で採点してください。
+重大な事実誤認や設定違反がある場合は低スコア（50点未満）としてください。
 """
 
 
@@ -45,44 +46,28 @@ class FactualAuditor(SpecialistAuditor):
             )
 
         if self.llm is None:
-            raise LLMUnavailableError("No LLM available")
+            raise LLMUnavailableError("No LLM available for FactualAuditor")
 
         bible_summary = self._summarize_bible(bible)
-
-        prompt = FACTUAL_PROMPT.format(
-            world_bible=bible_summary,
-            draft_text=draft[:3000],
+        prompt = FACTUAL_USER_PROMPT.format(
+            world_bible=bible_summary or "特になし",
+            draft_text=draft[:4000],
         )
 
-        try:
-            response = await self.llm.agenerate([prompt])
-            text = response.generations[0][0].text
-        except Exception as e:
-            raise LLMUnavailableError(f"LLM call failed: {e}") from e
-
-        import json
-        try:
-            data = json.loads(text)
-            contradictions = data.get("contradictions", [])
-            summary = data.get("summary", "")
-        except Exception:
-            contradictions = [line.strip() for line in text.split("\n") if ":" in line]
-            summary = "parsed from text"
-
-        num_contradictions = len(contradictions)
-        score = max(0.0, 100.0 - num_contradictions * 15.0)
+        score, critique, suggestions = await self._judge_with_llm(
+            prompt=prompt,
+            system_prompt=FACTUAL_SYSTEM_PROMPT,
+        )
 
         return SpecialistAuditResult(
-            "factual",
-            round(score, 1),
+            specialist_name="factual",
+            score=score,
             feedback={
-                "contradictions": contradictions[:10],
-                "summary": summary,
-                "contradiction_count": num_contradictions,
+                "critique": critique,
+                "bible_summary": bible_summary[:200] if bible_summary else "",
             },
-            suggestions=[
-                f"Fix contradiction: {c}" for c in contradictions[:3]
-            ] if contradictions else [],
+            suggestions=suggestions,
+            degraded=False,
         )
 
     def _summarize_bible(self, bible: dict) -> str:
@@ -102,8 +87,15 @@ class FactualAuditor(SpecialistAuditor):
         return "\n".join(parts) if parts else "（設定なし）"
 
     def _fallback(self, ctx: dict[str, Any]) -> SpecialistAuditResult:
+        """Rule-based fallback for factual auditor (modern terms + entity coverage)."""
         draft = ctx.get("draft_text", "") or ""
         bible = ctx.get("world_bible_snapshot") or {}
+        if not draft:
+            return SpecialistAuditResult("factual", 0.0, feedback={"error": "no draft"}, degraded=True)
+
+        modern_words = ["スマホ", "インターネット", "電車", "コンビニ", "エレベーター", "コンクリート"]
+        found_modern = [w for w in modern_words if w in draft]
+
         ref_entities = set()
         for key in ("characters", "locations", "items", "factions", "terms"):
             val = bible.get(key)
@@ -113,27 +105,21 @@ class FactualAuditor(SpecialistAuditor):
                         ref_entities.add(item.get("name", ""))
                     elif isinstance(item, str):
                         ref_entities.add(item)
-        if not ref_entities:
-            return SpecialistAuditResult(
-                "factual", 50.0,
-                feedback={"fallback": "no bible entities", "bible_entities": 0},
-                suggestions=["Populate World Bible for factual checks"],
-            )
-        found = sum(1 for e in ref_entities if e in draft)
-        coverage = found / len(ref_entities)
-        score = coverage * 100.0
+
+        coverage = sum(1 for e in ref_entities if e in draft) / len(ref_entities) if ref_entities else 0.8
+        score = max(20.0, min(100.0, coverage * 70.0 + 30.0 - len(found_modern) * 25.0))
+
         return SpecialistAuditResult(
-            "factual",
-            round(score, 1),
+            specialist_name="factual",
+            score=round(score, 1),
             feedback={
-                "fallback": "rule-based entity coverage",
-                "bible_entities": len(ref_entities),
-                "found_in_draft": found,
-                "coverage": round(coverage, 3),
+                "fallback": "rule-based",
+                "modern_terms_found": found_modern,
+                "coverage": round(coverage, 2),
             },
+            suggestions=[f"Remove modern term: {w}" for w in found_modern],
             degraded=True,
-            suggestions=["Add missing entities to draft"] if found < len(ref_entities) else [],
         )
 
 
-__all__ = ["FactualAuditor"]
+__all__ = ["FactualAuditor"]

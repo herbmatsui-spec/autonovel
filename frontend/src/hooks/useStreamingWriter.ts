@@ -112,7 +112,6 @@ export function useStreamingWriter(options?: UseStreamingWriterOptions) {
           ...prev,
           isGenerating: false,
           statusText: "",
-          currentOutput: finalText,
         }));
 
         setIsStreaming(false);
@@ -131,25 +130,19 @@ export function useStreamingWriter(options?: UseStreamingWriterOptions) {
           return;
         }
 
-        // フォールバック（オフライン・モック時）: タイピングシミュレーション
-        const fallbackText = `【第1章 展開】\n${character.name}は古代の魔導剣を構え、ダンジョンの深淵へと踏み出した。剣先から放たれる微かな蒼い光が、古代文字が刻まれた石壁を照らし出す。\n「ここで引き返すわけにはいかない――」\n胸に秘めた正義感と決意を新たに、若き冒険者は運命の扉を開いた。`;
-
-        let currentIdx = 0;
-        const interval = setInterval(() => {
-          if (controller.signal.aborted || currentIdx >= fallbackText.length) {
-            clearInterval(interval);
-            setIsStreaming(false);
-            const res = fallbackText.substring(0, currentIdx);
-            setCurrentChapterText((prev) => (prev ? `${prev}\n\n${res}` : res));
-            setGenerationState((prev) => ({ ...prev, isGenerating: false, statusText: "" }));
-            options?.onSuccess?.(res);
-            options?.onMessage?.("✨ 執筆が完了しました！");
-            return;
-          }
-          currentIdx += 3;
-          accumulatedTextRef.current = fallbackText.substring(0, currentIdx);
-          setStreamOutput(accumulatedTextRef.current);
-        }, 50);
+        // 接続エラー時はフォールバックせず明示エラーで停止する
+        const message = err?.message || "不明なエラー";
+        setIsStreaming(false);
+        setStreamOutput("");
+        accumulatedTextRef.current = "";
+        setGenerationState((prev) => ({
+          ...prev,
+          isGenerating: false,
+          statusText: `接続エラー: ${message}`,
+          error: message,
+        }));
+        options?.onError?.(`❌ 接続エラー: ${message}`);
+        options?.onMessage?.(`❌ 接続エラー: ${message}`);
       }
     },
     [

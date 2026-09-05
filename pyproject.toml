@@ -49,3 +49,9 @@ package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+norecursedirs = [".git", "scripts", "node_modules", "storage"]
+addopts = "-p no:cacheprovider --tb=short"
+asyncio_mode = "auto"

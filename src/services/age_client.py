@@ -879,8 +879,37 @@ class AgeClient:
                 })
             return rows
         except Exception as e:
-            logger.warning("Failed to search nodes by property: %s", e)
+            logger.warning(f"Error querying nodes by property in {gname}: {e}")
             return []
+
+    def check_entity_validity(
+        self, session: Session, graph_name: str, entity_name: str
+    ) -> dict[str, Any]:
+        """エンティティの禁止・引退・ステータスを検証する（Step 17）。"""
+        gname = graph_name or self.graph_name
+        if not gname or not entity_name:
+            return {"valid": True, "is_forbidden": False, "is_retired": False}
+
+        safe_name = entity_name.replace("'", "\\'").replace('"', '\\"')
+        cypher = f"MATCH (n) WHERE n.name = '{safe_name}' RETURN n.is_forbidden, n.is_retired, n.status LIMIT 1"
+        try:
+            sql = f"SELECT * FROM cypher('{gname}', $$ {cypher} $$) as (is_forbidden agtype, is_retired agtype, status agtype);"
+            result = session.execute(text(sql))
+            row = result.first()
+            if row:
+                forbidden = bool(_parse_agtype(row[0])) if row[0] is not None else False
+                retired = bool(_parse_agtype(row[1])) if row[1] is not None else False
+                status = str(_parse_agtype(row[2])) if row[2] is not None else "active"
+                return {
+                    "valid": not (forbidden or retired),
+                    "is_forbidden": forbidden,
+                    "is_retired": retired,
+                    "status": status,
+                }
+            return {"valid": True, "is_forbidden": False, "is_retired": False, "status": "unknown"}
+        except Exception as e:
+            logger.debug("Failed to check entity validity for %s: %s", entity_name, e)
+            return {"valid": True, "is_forbidden": False, "is_retired": False, "status": "unknown"}
 
     @contextmanager
     def transaction(self, session: Session):

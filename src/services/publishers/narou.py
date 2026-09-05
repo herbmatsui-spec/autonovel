@@ -147,7 +147,7 @@ class NarouPublisher(PublisherAdapter):
                 try:
                     error_elem = driver.find_element(By.CSS_SELECTOR, ".error, .alert, .warning")
                     raise AuthError(f"ログイン失敗: {error_elem.text}", self.platform)
-                except:
+                except Exception:
                     raise AuthError(
                         "ログインに失敗しました（リダイレクトされませんでした）", self.platform
                     )
@@ -223,7 +223,7 @@ class NarouPublisher(PublisherAdapter):
                     r18_checkbox = driver.find_element(By.NAME, "isr18")
                     if not r18_checkbox.is_selected():
                         r18_checkbox.click()
-                except:
+                except Exception:
                     pass  # チェックボックスが見つからない場合はスキップ
 
             # 第1話本文入力

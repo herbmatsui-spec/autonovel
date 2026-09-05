@@ -9,12 +9,12 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Any
 
 from fastapi import HTTPException, Request
 
 from src.backend.config import settings
 from src.core.exceptions import AppError
+from src.dependencies import get_prompt_manager  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +38,9 @@ class APIKeyService:
             return True
         if not self.allowed_keys:
             return False
-        return api_key in self.allowed_keys
+        import hmac
+
+        return any(hmac.compare_digest(api_key, key) for key in self.allowed_keys)
 
     def get_rate_limit_key(self, api_key: str) -> str:
         """API key ベースのレート制限キーを返す"""
@@ -92,19 +94,11 @@ def validate_api_key_or_raise(api_key: str) -> str:
         raise AppError("API キーが無効です。", status_code=403, error_code="FORBIDDEN")
     return api_key
 
+__all__ = [
+    "APIKeyService",
+    "get_api_key_service",
+    "require_api_key",
+    "validate_api_key_or_raise",
+    "get_prompt_manager",
+]
 
-_prompt_manager_instance: Any = None
-
-
-def get_prompt_manager() -> Any:
-    """PromptManager の Singleton を返す FastAPI Dependency.
-
-    Router から Depends(get_prompt_manager) で注入可能。
-    テスト時は app.dependency_overrides[get_prompt_manager] で差し替え可能。
-    """
-    global _prompt_manager_instance
-    if _prompt_manager_instance is None:
-        from prompts.manager import PromptManager
-
-        _prompt_manager_instance = PromptManager()
-    return _prompt_manager_instance

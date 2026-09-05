@@ -4,9 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from sqlalchemy import Integer, String, Text, DateTime, UniqueConstraint, Index
-from sqlalchemy.orm import Mapped, mapped_column
-
+from sqlalchemy import Column, Integer, String, Text, UniqueConstraint, Index
 from src.infrastructure.database.models.base_orm import Base
 
 
@@ -15,16 +13,16 @@ class PublishRecord(Base):
 
     __tablename__ = "publish_records"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    book_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
-    episode_num: Mapped[int] = mapped_column(Integer, nullable=False)
-    platform: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
-    post_id: Mapped[str] = mapped_column(String(255), nullable=False)
-    post_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    status: Mapped[str] = mapped_column(String(20), nullable=False, default="published")
-    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
-    published_at: Mapped[int] = mapped_column(Integer, nullable=False)
-    updated_at: Mapped[int] = mapped_column(Integer, nullable=False)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    book_id = Column(Integer, nullable=False, index=True)
+    episode_num = Column(Integer, nullable=False)
+    platform = Column(String(50), nullable=False, index=True)
+    post_id = Column(String(255), nullable=False)
+    post_url = Column(String(500), nullable=True)
+    status = Column(String(20), nullable=False, default="published")
+    error_message = Column(Text, nullable=True)
+    published_at = Column(Integer, nullable=False)
+    updated_at = Column(Integer, nullable=False)
 
     # ユニーク制約：同一書籍・同一話・同一プラットフォームは1レコード
     __table_args__ = (

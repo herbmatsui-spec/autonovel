@@ -1,14 +1,15 @@
-"""Phase 2 Admin APIs for Audit and Reflective RAG."""
+"""Phase 2 & Phase 4 Admin APIs for Audit, Reflective RAG, and Enrichment."""
 
 from __future__ import annotations
 
-import asyncio
+import time
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.backend.auth import require_api_key
 from src.backend.config import settings
 from src.core.container import AppContainer
 from src.config.audit_weights import load_weights
@@ -25,16 +26,22 @@ from src.agents.specialists import (
     StructureAuditor,
     MultimodalAuditor,
 )
+from src.agents.enrichment_agent import EnrichmentAgent
+from src.agents.orchestrator import AgentContext
 
-router = APIRouter(prefix="/admin/audit", tags=["admin-audit"])
+router = APIRouter(
+    prefix="/admin/audit",
+    tags=["admin-audit"],
+    dependencies=[Depends(require_api_key)],
+)
 
 
 async def get_session():
     """Dependency to get DB session from AppContainer."""
-    from src.core.container import AppContainer
     db = AppContainer.db()
     async with db.get_session() as session:
         yield session
+
 
 class AuditAggregateTestRequest(BaseModel):
     book_id: int = Field(..., description="対象書籍ID")
@@ -65,6 +72,7 @@ class SpecialistInfo(BaseModel):
 
 # ---- Audit Admin Endpoints ----
 
+
 @router.get("/specialists", response_model=list[SpecialistInfo])
 async def list_specialists():
     """登録済みの専門オーディター一覧を取得"""
@@ -86,10 +94,8 @@ async def test_aggregate(
     session: AsyncSession = Depends(get_session),
 ):
     """任意の原稿で監査集約を実行（テスト用）"""
-    # Load weights
     weights = load_weights(genre=req.genre, phase=req.phase)
 
-    # Create specialists (no LLM for test)
     specialists = [
         ConsistencyAuditor(llm=None),
         CreativityAuditor(llm=None),
@@ -101,7 +107,6 @@ async def test_aggregate(
         MultimodalAuditor(llm=None),
     ]
 
-    # Run aggregator
     aggregator = AuditAggregator(
         specialists=specialists,
         weights=weights,
@@ -149,7 +154,11 @@ async def get_audit_weights(
 
 # ---- Reflective RAG Admin ----
 
-rag_router = APIRouter(prefix="/admin/rag", tags=["admin-rag"])
+rag_router = APIRouter(
+    prefix="/admin/rag",
+    tags=["admin-rag"],
+    dependencies=[Depends(require_api_key)],
+)
 
 
 class ReflectionTestRequest(BaseModel):
@@ -218,8 +227,6 @@ async def get_reflection_stats(
     book_id: int | None = Query(None, description="書籍ID（指定時はその書籍のみ）"),
 ):
     """反射スクリーニングの統計を取得（DB履歴から集計）"""
-    # TODO: 実際のDBクエリ実装
-    # ここではモックデータを返す
     return ReflectionStatsResponse(
         book_id=book_id,
         total_calls=0,
@@ -229,58 +236,32 @@ async def get_reflection_stats(
     )
 
 
-"""Phase 2 Admin APIs for Audit and Reflective RAG.
-Phase 4 Admin APIs for Enrichment Agent.
-"""
-from __future__ import annotations
+# ---- Phase 4: Enrichment Admin Router ----
 
-import asyncio
-import time
-from typing import Any
-
-from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, Field
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from src.backend.config import settings
-from src.core.container import AppContainer
-from src.config.audit_weights import load_weights
-from src.services.audit_aggregator import AuditAggregator
-from src.services.rag_service import rag_service
-from src.services.reflective_rag import ReflectiveRAGService
-from src.agents.specialists import (
-    ConsistencyAuditor,
-    CreativityAuditor,
-    ReaderHookAuditor,
-    EmotionCurveAuditor,
-    StyleAuditor,
-    FactualAuditor,
-    StructureAuditor,
-    MultimodalAuditor,
+enrichment_router = APIRouter(
+    prefix="/admin/enrichment",
+    tags=["admin-enrichment"],
+    dependencies=[Depends(require_api_key)],
 )
-from src.agents.enrichment_agent import EnrichmentAgent
 
-router = APIRouter(prefix="/admin/audit", tags=["admin-audit"])
-
-# Phase 4: Enrichment Admin Router
-enrichment_router = APIRouter(prefix="/admin/enrichment", tags=["admin-enrichment"])
-
-# ===================== Enrichment Admin Models =====================
 
 class EnrichmentTestRequest(BaseModel):
     draft_text: str = Field(..., description="エンリッチメント対象の原稿テキスト")
     writing_context: dict[str, Any] = Field(default_factory=dict, description="執筆コンテキスト")
     book_id: int | None = Field(None, description="書籍ID（省略可）")
 
+
 class EnrichmentTestResponse(BaseModel):
     enriched_text: str
     enrichment_metadata: dict[str, Any]
     elapsed_ms: float
 
+
 class EnrichmentStatusResponse(BaseModel):
     enabled: bool
     config: dict[str, Any]
     feature_flags: dict[str, bool]
+
 
 class EnrichmentMetricsSnapshot(BaseModel):
     enrichment_duration_seconds: float = 0
@@ -291,12 +272,10 @@ class EnrichmentMetricsSnapshot(BaseModel):
     token_usage_avg: float = 0
     errors_total: int = 0
 
-# ===================== Enrichment Admin Endpoints =====================
 
 @enrichment_router.get("/status", response_model=EnrichmentStatusResponse)
 async def get_enrichment_status():
     """EnrichmentAgent の設定・機能フラグ・ステータスを取得"""
-    from src.agents.enrichment_agent import EnrichmentAgent
     agent = EnrichmentAgent()
     return EnrichmentStatusResponse(
         enabled=settings.ENRICHMENT_ENABLED,
@@ -309,17 +288,15 @@ async def get_enrichment_status():
         },
     )
 
+
 @enrichment_router.post("/test", response_model=EnrichmentTestResponse)
 async def test_enrichment(
     req: EnrichmentTestRequest,
 ):
     """EnrichmentAgent をテスト実行（開発・デバッグ用）"""
-    from src.agents.orchestrator import AgentContext
-    from src.agents.enrichment_agent import EnrichmentAgent
-    
     agent = EnrichmentAgent()
     agent._config["enabled"] = True  # テスト時は強制有効化
-    
+
     ctx = AgentContext(
         book_id=req.book_id or 1,
         branch_id=1,
@@ -329,24 +306,22 @@ async def test_enrichment(
             "writing_context": req.writing_context,
         },
     )
-    
+
     start = time.perf_counter()
     result = await agent.execute(ctx)
     elapsed_ms = (time.perf_counter() - start) * 1000
-    
+
     return EnrichmentTestResponse(
         enriched_text=result.artifacts.get("enriched_text", ""),
         enrichment_metadata=result.artifacts.get("enrichment_metadata", {}),
         elapsed_ms=elapsed_ms,
     )
 
+
 @enrichment_router.get("/metrics", response_model=EnrichmentMetricsSnapshot)
 async def get_enrichment_metrics():
     """Prometheus メトリクスから Enrichment 関連のスナップショットを取得"""
-    # TODO: 実際の Prometheus クエリ実装
-    # ここではモックデータを返す
     return EnrichmentMetricsSnapshot()
 
-# 既存のエンドポイント以降に追加
 
 __all__ = ["router", "rag_router", "enrichment_router"]

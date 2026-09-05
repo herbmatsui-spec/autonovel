@@ -2,23 +2,47 @@
 
 from __future__ import annotations
 
-import importlib
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-print("[server] module imported", flush=True)
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from src.backend.api.admin_phase2 import (
+    enrichment_router as admin_enrichment_router,
+    rag_router as admin_rag_router,
+    router as admin_audit_router,
+)
 from src.backend.config import settings
 from src.backend.database import init_db
 from src.backend.error_handlers import register_error_handlers
 from src.backend.logging_config import configure as configure_logging
 from src.backend.observability.health import build_health_payload, metrics
-from src.backend.routers import easy_mode, editor, graph, streaming, styles
-from src.backend.api.admin_phase2 import router as admin_audit_router, rag_router as admin_rag_router
+from src.backend.routers import (
+    anti_ai,
+    books,
+    branches,
+    commercial,
+    easy_mode,
+    editor,
+    episodes,
+    export,
+    graph,
+    illustrations,
+    issues,
+    marketing,
+    misc,
+    multimedia,
+    novel,
+    patches,
+    plots,
+    prompt_versions,
+    streaming,
+    styles,
+    system,
+    tasks,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +68,7 @@ app.add_middleware(
 register_error_handlers(app)
 
 
+# コアルーター登録
 app.include_router(easy_mode.router, prefix="/easy_mode", tags=["easy_mode"])
 if settings.APP_ENV == "development":
     app.include_router(easy_mode.router, prefix="/api/easy-mode", tags=["easy-mode"])
@@ -51,40 +76,30 @@ app.include_router(streaming.router, prefix="/easy_mode", tags=["streaming"])
 app.include_router(styles.router)
 app.include_router(graph.router)
 app.include_router(editor.router)
+app.include_router(system.router)
+app.include_router(export.router)
 
+# 管理者・監査ルーター登録
 app.include_router(admin_audit_router)
 app.include_router(admin_rag_router)
+app.include_router(admin_enrichment_router)
 
-
-# 復元されたルーターの動的/静的登録
-restored_routers = [
-    "src.backend.routers.books",
-    "src.backend.routers.plots",
-    "src.backend.routers.episodes",
-    "src.backend.routers.tasks",
-    "src.backend.routers.patches",
-    "src.backend.routers.issues",
-    "src.backend.routers.marketing",
-    "src.backend.routers.prompt_versions",
-    "src.backend.routers.misc",
-    "src.backend.routers.novel",
-    "src.backend.routers.commercial",
-    "src.backend.routers.illustrations",
-    "src.backend.routers.multimedia",
-    "src.backend.routers.branches",
-    "src.backend.routers.anti_ai",
-]
-
-for mod_path in restored_routers:
-    try:
-        mod = importlib.import_module(mod_path)
-        if hasattr(mod, "router"):
-            if mod_path == "src.backend.routers.multimedia":
-                app.include_router(mod.router, prefix="/multimedia", tags=["multimedia"])
-            else:
-                app.include_router(mod.router)
-    except Exception as e:
-        logger.warning(f"Could not load router {mod_path}: {e}")
+# 各ドメインルーターの静的登録
+app.include_router(books.router)
+app.include_router(plots.router)
+app.include_router(episodes.router)
+app.include_router(tasks.router)
+app.include_router(patches.router)
+app.include_router(issues.router)
+app.include_router(marketing.router)
+app.include_router(prompt_versions.router)
+app.include_router(misc.router)
+app.include_router(novel.router)
+app.include_router(commercial.router)
+app.include_router(illustrations.router)
+app.include_router(multimedia.router, prefix="/multimedia", tags=["multimedia"])
+app.include_router(branches.router)
+app.include_router(anti_ai.router)
 
 
 @app.get("/health")

@@ -189,15 +189,17 @@ class EnrichmentAgent(SkillAgent):
                 "ep_num": ctx.ep_num,
                 "error": str(e),
             })
-            # フォールバック: 元のテキストを渡す
+            # フォールバック: 元のテキストを無傷で渡す
             return AgentResult(
                 next_agent=AgentName.AUDIT,
                 artifacts={
+                    "drafted_text": drafted_text,
                     "enriched_text": drafted_text,
                     "enrichment_metadata": enrichment_metadata,
                 },
                 error=f"Enrichment failed, using original: {e}",
             )
+
 
     # --- トリビア挿入関連 ---
 
@@ -213,14 +215,16 @@ class EnrichmentAgent(SkillAgent):
         # 2. トリビア候補取得
         trivia_candidates = []
         if self.rag_service and self.repo:
-            from src.infrastructure.database import get_session
             try:
-                with get_session() as session:
-                    trivia_candidates = await self.rag_service.query_trivia_candidates(
-                        session, scene_context, entities, limit=20
-                    )
+                session = getattr(self.repo, "session", None)
+                if not session and hasattr(self.repo, "db") and hasattr(self.repo.db, "get_session"):
+                    session = self.repo.db.get_session()
+                trivia_candidates = await self.rag_service.query_trivia_candidates(
+                    session, scene_context, entities, limit=20
+                )
             except Exception as e:
                 logger.warning(f"Trivia candidate query failed: {e}")
+
 
         if not trivia_candidates:
             return text, []
@@ -248,6 +252,11 @@ class EnrichmentAgent(SkillAgent):
         insertions_metadata = []
         offset = 0  # 文字位置オフセット調整用
 
+        # トークン予算上限（1トークン ≒ 2文字換算）
+        max_tokens = self._config.get("token_budget", {}).get("max_enrichment_tokens", 1500)
+        trivia_budget_chars = max(300, int(max_tokens * 0.8))  # トリビア用予算
+        accumulated_trivia_chars = 0
+
         for i, (trivia, insert_pos) in enumerate(zip(scored_trivia, insertion_points)):
             adjusted_pos = insert_pos + offset
             surrounding = enriched_text[max(0, adjusted_pos-200):adjusted_pos+200]
@@ -258,6 +267,14 @@ class EnrichmentAgent(SkillAgent):
             )
 
             if rewritten and rewritten != trivia["fact"]:
+                # トークン予算チェック（超過時は優先度の低いトリビアを自動切り捨て）
+                if accumulated_trivia_chars + len(rewritten) > trivia_budget_chars:
+                    logger.info(
+                        "Trivia token budget reached (%d / %d chars). Pruning remaining %d trivia candidates.",
+                        accumulated_trivia_chars, trivia_budget_chars, len(scored_trivia) - i
+                    )
+                    break
+
                 # 挿入実行
                 before = enriched_text[:adjusted_pos]
                 after = enriched_text[adjusted_pos:]
@@ -265,6 +282,7 @@ class EnrichmentAgent(SkillAgent):
 
                 inserted_len = len(rewritten)
                 offset += inserted_len
+                accumulated_trivia_chars += inserted_len
 
                 insertions_metadata.append({
                     "position": adjusted_pos,
@@ -420,12 +438,14 @@ class EnrichmentAgent(SkillAgent):
 
         # 1. Bible 索引取得・キャッシュ
         if not self._bible_index and self.rag_service and self.repo:
-            from src.infrastructure.database import get_session
             try:
-                with get_session() as session:
-                    self._bible_index = await self.rag_service.index_bible_sources(session, book_id)
+                session = getattr(self.repo, "session", None)
+                if not session and hasattr(self.repo, "db") and hasattr(self.repo.db, "get_session"):
+                    session = self.repo.db.get_session()
+                self._bible_index = await self.rag_service.index_bible_sources(session, book_id)
             except Exception as e:
                 logger.warning(f"Bible index build failed: {e}")
+
 
         if not self._bible_index:
             return text, []
@@ -633,5 +653,23 @@ class EnrichmentAgent(SkillAgent):
             return {}
 
     def _enforce_token_budget(self, original: str, enriched: str) -> str:
-        """トークン予算制限（Step 18 で実装）"""
-        return enriched
+        """Step 58: トークン予算制限。エンリッチメントによる肥大化を上限内に抑える。"""
+        max_enrichment_tokens = self._config.get("token_budget", {}).get("max_enrichment_tokens", 1500)
+        # 1トークン ≒ 約2文字換算
+        max_allowed_growth_chars = max_enrichment_tokens * 2
+        actual_growth = len(enriched) - len(original)
+
+        if actual_growth <= max_allowed_growth_chars:
+            return enriched
+
+        logger.warning(
+            "Enriched text growth (%d chars) exceeded token budget (%d chars). Enforcing fallback trimming.",
+            actual_growth, max_allowed_growth_chars
+        )
+        # 超過時は、安全に元のテキストに許容範囲内の増分を結合するか、文境界で切り詰める
+        allowed_len = len(original) + max_allowed_growth_chars
+        trimmed = enriched[:allowed_len]
+        last_period = trimmed.rfind("。")
+        if last_period > len(original):
+            return trimmed[:last_period + 1]
+        return original

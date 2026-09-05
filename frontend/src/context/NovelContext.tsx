@@ -41,7 +41,6 @@ const defaultCharacter: CharacterParams = {
 const defaultGenerationState: GenerationState = {
   isGenerating: false,
   statusText: "",
-  currentOutput: "",
   suggestions: [],
   currentTaskId: null,
   error: null,
@@ -131,7 +130,6 @@ export const NovelProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const syncGenerationToEditor = (output: string) => {
     if (output) {
       updateActiveChapterText(output);
-      setGenerationState((prev) => ({ ...prev, currentOutput: output }));
     }
   };
 

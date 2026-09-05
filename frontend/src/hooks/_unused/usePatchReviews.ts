@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient, UseQueryResult, UseMutationResult } from "@tanstack/react-query";
-import { patchReviewApi, PatchReview, ReviewActionRequest, ReviseReviewRequest } from "../api/patchReviewApi";
+import { patchReviewApi, PatchReview, ReviewActionRequest, ReviseReviewRequest } from "../../api/patchReviewApi";
 
 export function usePatchReviews(bookId: number | null, enabled = true): UseQueryResult<PatchReview[], Error> {
   return useQuery({

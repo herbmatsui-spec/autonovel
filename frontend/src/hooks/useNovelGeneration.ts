@@ -10,7 +10,15 @@ export function useNovelGeneration(
   onMessage?: (msg: string) => void,
   onError?: (msg: string) => void
 ) {
-  const { character, currentChapterText, setGenerationState, contentLengthLimit, targetEpisodes, llmConfig } = useNovelContext();
+  const {
+    character,
+    currentChapterText,
+    setCurrentChapterText,
+    setGenerationState,
+    contentLengthLimit,
+    targetEpisodes,
+    llmConfig,
+  } = useNovelContext();
   const isCancelledRef = useRef<boolean>(false);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -65,11 +73,12 @@ export function useNovelGeneration(
             const out = parsed.output || "生成が完了しました。";
             const sug = parsed.suggestions || [];
 
+            // 単一ソース化: currentChapterText に本文を反映、currentOutput は setter しない
+            setCurrentChapterText(out);
             setGenerationState((prev) => ({
               ...prev,
               isGenerating: false,
               statusText: "",
-              currentOutput: out,
               suggestions: sug,
               currentTaskId: null,
             }));
@@ -94,11 +103,11 @@ export function useNovelGeneration(
         // 即時レスポンス
         const out = response.output || "生成が完了しました。";
         const sug = response.suggestions || [];
+        setCurrentChapterText(out);
         setGenerationState((prev) => ({
           ...prev,
           isGenerating: false,
           statusText: "",
-          currentOutput: out,
           suggestions: sug,
           currentTaskId: null,
         }));
@@ -119,6 +128,7 @@ export function useNovelGeneration(
   }, [
     character,
     currentChapterText,
+    setCurrentChapterText,
     setGenerationState,
     onSuccess,
     onMessage,

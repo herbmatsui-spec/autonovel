@@ -1,5 +1,5 @@
 enrichment:
-  enabled: false
+  enabled: true
   trivia_insertion:
     enabled: true
     max_insertions_per_chapter: 5

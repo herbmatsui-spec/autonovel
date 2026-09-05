@@ -7,10 +7,14 @@ Pure rule-based (LLM-free). Uses Type-Token Ratio, n-gram repetition, POS divers
 from __future__ import annotations
 
 import re
-from collections import Counter
 from typing import Any
 
-from src.agents.specialist_auditor_base import SpecialistAuditor, SpecialistAuditResult
+from src.agents.specialist_auditor_base import (
+    SpecialistAuditor,
+    SpecialistAuditResult,
+    LLMUnavailableError,
+)
+
 
 
 # Simple POS tagger patterns for Japanese
@@ -54,6 +58,21 @@ def _pos_diversity(text: str) -> float:
     return min(1.0, (adj_count + adv_count) / max(1, len(tokens)) * 2.0)
 
 
+CREATIVITY_SYSTEM_PROMPT = """あなたは文学・エンタメ小説の独創性・表現力（Creativity）を審査する専門オーディターです。
+以下の観点で文章の創造性を厳格に評価してください:
+1. 比喩・メタファーの独創性と鮮烈さ（ありふれた常套句・陳腐なクリシェの乱用がないか）
+2. 語彙の豊かさと情景描写の多面性
+3. 予想を心地よく裏切る意外性やユニークな表現
+単調で紋切り型の表現ばかりの文章は低スコア（50点未満）、鮮烈で心に残る独創的な表現があれば高スコア（80点以上）としてください。
+"""
+
+CREATIVITY_USER_PROMPT = """【執筆ドラフト本文】
+{draft_text}
+
+上記文章の表現の独創性・比喩の新鮮さ・語彙の多様性を審査し、0〜100で採点してください。
+"""
+
+
 class CreativityAuditor(SpecialistAuditor):
     specialist_name = "creativity"
 
@@ -66,45 +85,54 @@ class CreativityAuditor(SpecialistAuditor):
                 suggestions=["Provide draft_text in context"],
             )
 
+        if not self.llm:
+            raise LLMUnavailableError("No LLM available for CreativityAuditor")
+
+        prompt = CREATIVITY_USER_PROMPT.format(draft_text=draft[:4000])
+        score, critique, suggestions = await self._judge_with_llm(
+            prompt=prompt,
+            system_prompt=CREATIVITY_SYSTEM_PROMPT,
+        )
+
+        return SpecialistAuditResult(
+            specialist_name="creativity",
+            score=score,
+            feedback={"critique": critique},
+            suggestions=suggestions,
+            degraded=False,
+        )
+
+    def _fallback(self, ctx: dict[str, Any]) -> SpecialistAuditResult:
+        """Rule-based fallback using Type-Token Ratio, n-gram repetition, and POS diversity."""
+        draft = ctx.get("draft_text", "") or ""
+        if not draft:
+            return SpecialistAuditResult("creativity", 0.0, feedback={"error": "no draft_text"}, degraded=True)
+
         tokens = _tokenize(draft)
         if not tokens:
-            return SpecialistAuditResult(
-                "creativity", 0.0,
-                feedback={"tokens": 0},
-                suggestions=["Text too short to evaluate"],
-            )
+            return SpecialistAuditResult("creativity", 50.0, feedback={"tokens": 0}, degraded=True)
 
         ttr = _type_token_ratio(tokens)
         rep4 = _ngram_repetition(tokens, 4)
         pos_div = _pos_diversity(draft)
 
-        # Weighted creativity score
-        # High TTR = good, Low repetition = good, High POS diversity = good
-        score = (
-            0.4 * ttr
-            + 0.3 * (1.0 - rep4)
-            + 0.3 * pos_div
-        ) * 100.0
+        score = (0.4 * ttr + 0.3 * (1.0 - rep4) + 0.3 * pos_div) * 100.0
+        score = max(0.0, min(100.0, round(score, 1)))
 
         return SpecialistAuditResult(
-            "creativity",
-            round(max(0.0, min(100.0, score)), 1),
+            specialist_name="creativity",
+            score=score,
             feedback={
+                "fallback": "rule-based",
                 "tokens": len(tokens),
                 "unique_tokens": len(set(tokens)),
                 "ttr": round(ttr, 3),
                 "rep_4gram": round(rep4, 3),
                 "pos_diversity": round(pos_div, 3),
             },
-            suggestions=[
-                "Vary vocabulary" if ttr < 0.4 else None,
-                "Avoid repetitive phrases" if rep4 > 0.3 else None,
-                "Use more descriptive adjectives/adverbs" if pos_div < 0.1 else None,
-            ],
+            suggestions=["Vary vocabulary and metaphors"] if ttr < 0.4 else [],
+            degraded=True,
         )
-
-    def _fallback(self, ctx: dict[str, Any]) -> SpecialistAuditResult:
-        return self.audit(ctx)
 
 
 __all__ = ["CreativityAuditor"]

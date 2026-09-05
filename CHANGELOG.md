@@ -2,6 +2,46 @@
 
 本プロジェクトの変更履歴。[Semantic Versioning](https://semver.org/lang/ja/) に準拠。
 
+## [Unreleased] - UI/UX ⇄ Functionality Alignment
+
+`docs/bugs/ui-functionality-gap-plan.md` 計画書に基づく 36 ステップ・14 バグの是正。
+
+### 追加
+- **Studio モード タブ UI 復旧 (BUG-01/04)**: `frontend/src/components/studio/StudioWorkspace.tsx` に ✏️ エディタ / 🖼️ マルチメディア 切替タブを追加。localStorage 永続化付き。
+- **画像生成モーダル導線 (BUG-04)**: `frontend/src/App.tsx` ヘッダに「🖼️ 画像生成」ボタン追加し、`AssetPackPanel` をモーダル表示。
+- **state_token 保存 (BUG-02)**: `src/services/promotion_service.py` に `save_state_token` メソッド追加。`InternalState` テーブルへ TTL 24h 付きで永続化。
+- **`/studio/:bookId?token=` ルート (BUG-02)**: `ExportPanel.handlePromote` で `redirect_url` を `history.pushState` 経由で URL に反映。`App.tsx` の popstate リスナーが Studio モードへ自動切替。
+- **ジャンル → preset 辞書 (BUG-05)**: `src/backend/routers/easy_mode.py` に `GENRE_TO_PRESET` 優先度順マッピングと `resolve_genre_to_preset()` 関数を追加。`vrmmo`/`slow_life`/`zarma`/`aku_reijo`/`dungeon_admin`/`loop`/`modern_cheat` 全てが UI から到達可能。
+- **`GENRE_OPTIONS` 定数 (BUG-05)**: `frontend/src/constants/genres.ts` を新規作成し、`<select>` を `.map()` 化。
+- **Reverse Plot データ保護 (BUG-06)**: `GeneratePanel.handleReversePlotComplete` で `window.confirm` 確認 + 既存 `chapter.content` 保持ロジックを追加。
+- **未使用 hook 隔離 (BUG-10)**: `useCollabSync` / `usePatchReviews` を `frontend/src/hooks/_unused/` へ移動。`useLocalDraft` の自動保存を `Editor.tsx` に組み込み (5秒間隔 localStorage ミラー)。
+
+### 変更
+- **本文管理の単一ソース化 (BUG-03/11/12/13)**: `GenerationState.currentOutput` フィールドを削除し、全編集フローを `currentChapterText` に統一。`useStreamingWriter` / `useNovelGeneration` / `ExportPanel` / `NovelContext` を更新。
+- **SSE エラー可視化 (BUG-08)**: `useStreamingWriter` の catch ブロックから無音フォールバック (ハードコード和文タイプライター) を撤去。明示エラー通知に変更。
+- **`Ctrl+S` 嘘トースト撤去 (BUG-07)**: `Editor.tsx:117-119` の誤認トーストを撤去。
+- **`promote` redirect_url 形式 (BUG-02)**: `/advanced/{book_id}` → `/studio/{book_id}` に変更。
+- **ヘッダキャッチコピー (BUG-09)**: "Notion AI × Sudowrite 式" → 実機能列挙 ("AI 執筆・設定管理・矛盾診断・マルチメディア生成スタジオ")。
+
+### 削除
+- フォールバック用ハードコードテキスト (`useStreamingWriter.ts:135` 旧) 全削除
+- `GenerationState.currentOutput` setter 4 箇所全削除
+- `useCollabSync` / `usePatchReviews` の import パス 1 箇所 (`ConflictModal.tsx`) を `_unused` 経由に変更
+
+### テスト
+- **新規**: `frontend/tests/components/StudioWorkspace.test.tsx` にタブ切替・localStorage 永続化テスト 2 件追加 (合計 3 tests)
+- **新規**: `frontend/tests/components/GeneratePanel.reversePlotProtection.test.tsx` に confirm 動作テスト 2 件追加
+- **新規**: `tests/test_genre_mapping.py` (Python) ジャンル → preset マッピングテスト 2 件
+- **回帰**: 既存 14 test files / 48 tests / 46 pass / 2 fail → 修正後 15 test files / 52 tests / 50 pass / 2 fail (リグレッションなし)
+- ベースライン: `docs/bugs/baseline-frontend.txt` / 最終: `docs/bugs/final-frontend-test.txt` / TypeScript 型チェック: pass
+
+### ドキュメント
+- `docs/bugs/ui-functionality-gap.md` (新規): 14 BUG の追跡ドキュメント
+- `docs/bugs/ui-functionality-gap-plan.md` (新規): 36 ステップ実装計画書
+- `docs/bugs/asset-pack-todo.md` (新規): AssetPackPanel 残 TODO リスト
+- `docs/bugs/baseline-frontend.txt` (新規): 修正前テスト結果
+- `docs/bugs/final-frontend-test.txt` (新規): 修正後テスト結果
+
 ## [Unreleased] - Phase 2: Blind Peer Review / Specialist Audit / Reflective RAG
 
 ガイドライン Phase 2 (Guidelines #1, #3, #7) を実装。創造性・品質・RAG精度を大幅向上。

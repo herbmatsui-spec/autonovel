@@ -38,6 +38,8 @@ class WorkflowContext(BaseModel):
     zip_filename: str | None = None
     title: str = ""
     easy_parameters: dict[str, Any] = Field(default_factory=dict)
+    is_nsfw_enabled: bool = False
+    erotic_intensity: int = 0   # 1-5, 0は無効
 
     # === EasyMode 由来設定 (SpiceGuard・監査リライト) ===
     enable_spice_guard: bool = True

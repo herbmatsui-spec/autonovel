@@ -8,6 +8,7 @@ import { GachaPlan, GachaResponse, DigestResponse } from "../types/easyMode";
 import { generateGachaPlans, generateDigest } from "../api/easyMode";
 import { StylePresetSummary, StyleProfile } from "../types/style";
 import { fetchStylePresets, distillStyleFromText } from "../api/styleApi";
+import { GENRE_OPTIONS } from "../constants/genres";
 
 interface GeneratePanelProps {
   onGenerated?: (output: string, suggestions: string[]) => void;
@@ -22,6 +23,7 @@ export default function GeneratePanel({ onGenerated, onMessage }: GeneratePanelP
     setCurrentChapterText,
     generationState,
     setPlotStructure,
+    chapters,
     setChapters,
     setCurrentEpNum,
     syncGenerationToEditor,
@@ -154,17 +156,39 @@ export default function GeneratePanel({ onGenerated, onMessage }: GeneratePanelP
   const handleReversePlotComplete = (structure: GeneratedPlotStructure) => {
     setPlotStructure(structure);
     if (structure.episodes && structure.episodes.length > 0) {
-      const mappedChapters = structure.episodes.map((ep) => ({
-        ep_num: ep.ep_num,
-        title: `第${ep.ep_num}話: ${ep.title}`,
-        summary: ep.one_line_summary,
-        content:
-          ep.ep_num === 1 && currentChapterText
-            ? currentChapterText
-            : `【第${ep.ep_num}話: ${ep.title}】\n${ep.one_line_summary}\n\n`,
-        is_catharsis: ep.is_catharsis,
-        status: (ep.ep_num === 1 ? "writing" : "draft") as "writing" | "draft",
-      }));
+      // 既存章にユーザーが記述した本文がある場合は警告 (上書き前に確認)
+      const hasUserContent = chapters.some((c) => {
+        const userText = (c.content || "").replace(/^【第\d+話[^\n]*】\n?/, "").trim();
+        return userText.length > 0;
+      });
+
+      if (hasUserContent && typeof window !== "undefined") {
+        const confirmed = window.confirm(
+          "既存の章に記述済みの本文があります。逆算プロットで上書きすると既存本文が消えます。続行しますか？",
+        );
+        if (!confirmed) {
+          onMessage?.("⚠️ 既存本文を保護するため、逆算プロットの適用をキャンセルしました");
+          return;
+        }
+      }
+
+      const mappedChapters = structure.episodes.map((ep) => {
+        const existing = chapters.find((c) => c.ep_num === ep.ep_num);
+        // 既存章があり、ユーザーが何か書いていた場合は保持
+        const preserveExisting = existing && (existing.content || "").trim().length > 0;
+        return {
+          ep_num: ep.ep_num,
+          title: `第${ep.ep_num}話: ${ep.title}`,
+          summary: ep.one_line_summary,
+          content: preserveExisting
+            ? existing!.content
+            : ep.ep_num === 1 && currentChapterText
+              ? currentChapterText
+              : `【第${ep.ep_num}話: ${ep.title}】\n${ep.one_line_summary}\n\n`,
+          is_catharsis: ep.is_catharsis,
+          status: (ep.ep_num === 1 ? "writing" : "draft") as "writing" | "draft",
+        };
+      });
       setChapters(mappedChapters);
       setCurrentEpNum(1);
     }
@@ -277,13 +301,11 @@ export default function GeneratePanel({ onGenerated, onMessage }: GeneratePanelP
               value={character.genre}
               onChange={(e) => setCharacter((prev) => ({ ...prev, genre: e.target.value }))}
             >
-              <option value="ハイファンタジー (R15)">ハイファンタジー (R15)</option>
-              <option value="ダークファンタジー (R15)">ダークファンタジー (R15)</option>
-              <option value="異世界転生・バトル (R15)">異世界転生・バトル (R15)</option>
-              <option value="ざまぁ・追放・無双 (R15)">ざまぁ・追放・無双 (R15)</option>
-              <option value="悪役令嬢・婚約破棄">悪役令嬢・婚約破棄</option>
-              <option value="追放後スローライフ">追放後スローライフ</option>
-              <option value="VRMMO・ゲーム世界">VRMMO・ゲーム世界</option>
+              {GENRE_OPTIONS.map((g) => (
+                <option key={g.value} value={g.value}>
+                  {g.value}
+                </option>
+              ))}
             </select>
           </div>
 

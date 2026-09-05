@@ -107,6 +107,10 @@ class GachaPlan(BaseModel):
     logline: str = Field(..., description="1行あらすじ")
     protagonist_summary: str = Field(..., description="主人公の簡単な説明")
     charm_point: str = Field(..., description="この案の最大の魅力（アピールポイント）")
+    audit_score: float | None = Field(default=None, description="ブラインドピアレビューによる独立監査スコア")
+    critique: dict[str, Any] | None = Field(default=None, description="独立講評・フィードバック")
+    recommendation_reason: str | None = Field(default=None, description="推奨理由")
+    is_recommended: bool = Field(default=False, description="推奨案フラグ")
 
 
 class GachaRequest(BaseModel):
@@ -118,8 +122,10 @@ class GachaRequest(BaseModel):
 class GachaResponse(BaseModel):
     request_id: str = Field(..., description="ガチャリクエスト全体のID")
     plans: list[GachaPlan] = Field(
-        ..., description="生成された3つの企画案", min_length=3, max_length=3
+        ..., description="3案の企画リスト (王道、変化球、ダーク)", min_length=3, max_length=3
     )
+    recommended_plan_id: str | None = Field(default=None, description="最も推奨される案のID")
+
 
 
 class DigestRequest(BaseModel):

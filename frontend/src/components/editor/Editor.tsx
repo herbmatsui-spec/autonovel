@@ -17,11 +17,25 @@ export const Editor: React.FC<EditorProps> = ({
   genre = "ハイファンタジー (R15)",
   onToast,
 }) => {
-  const { activeHighlight, setActiveHighlight } = useNovelContext();
+  const { activeHighlight, setActiveHighlight, selectedBookId, currentEpNum } = useNovelContext();
   const [tab, setTab] = useState<"edit" | "preview">("edit");
   const [selectedText, setSelectedText] = useState("");
   const [selectionRange, setSelectionRange] = useState<{ start: number; end: number } | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // 編集中の下書きを localStorage にミラー保存 (リロード時の復元用)
+  const draftKey = `autonovel.editor.draft.${selectedBookId}.${currentEpNum}`;
+  useEffect(() => {
+    if (readOnly) return;
+    const id = setInterval(() => {
+      try {
+        window.localStorage.setItem(draftKey, content);
+      } catch {
+        // ignore storage error
+      }
+    }, 5000);
+    return () => clearInterval(id);
+  }, [content, draftKey, readOnly]);
 
   // 矛盾診断ハイライトがアクティブになった際のフォーカス & 選択処理
   useEffect(() => {
@@ -112,12 +126,9 @@ export const Editor: React.FC<EditorProps> = ({
     }, 50);
   };
 
-  // キーボードショートカット (Ctrl+S / Ctrl+B)
+  // キーボードショートカット (Ctrl+B = ルビ挿入のみ。Ctrl+S は no-op につき未実装)
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === "s") {
-      e.preventDefault();
-      onToast?.("💾 現在の内容を作業メモリに保持しました", "success");
-    } else if ((e.ctrlKey || e.metaKey) && e.key === "b") {
+    if ((e.ctrlKey || e.metaKey) && e.key === "b") {
       e.preventDefault();
       handleInsertRuby();
     }

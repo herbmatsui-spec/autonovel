@@ -40,6 +40,7 @@ class ConfigState:
         "enable_actor_critic": True,
         "enable_heavy_audit": True,
         "enable_nsfw": False,
+        "erotic_intensity": 0,
         "safety_filter_level": "BLOCK_ONLY_HIGH",
         "cost_mode": "balanced",
         "max_history_len": 30,
@@ -64,3 +65,4 @@ class ConfigState:
     def update(**kwargs) -> None:
         for key, value in kwargs.items():
             st.session_state[key] = value
+

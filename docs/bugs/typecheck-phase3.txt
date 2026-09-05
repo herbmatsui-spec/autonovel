@@ -1,0 +1,4 @@
+
+> autonovel-frontend@4.4.0 typecheck
+> tsc --noEmit
+

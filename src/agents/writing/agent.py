@@ -1,8 +1,11 @@
 # src/agents/writing/agent.py
 """WritingAgent - 本文生成を担当するスキルエージェント"""
+import logging
 from typing import Any
 from src.agents.skill_base import SkillAgent
 from src.agents.orchestrator import AgentContext, AgentResult, AgentName
+
+logger = logging.getLogger(__name__)
 
 
 class WritingAgent(SkillAgent):
@@ -148,6 +151,8 @@ class WritingAgent(SkillAgent):
         reporter: Any,
         branch_id: int = 1,
         style_tag: Any = None,
+        regeneration_focus: list[str] | None = None,
+        writing_focus: list[str] | None = None,
     ) -> tuple[int, list[dict[str, Any]]]:
         """WritingService 互換: パイプライン執筆"""
         generator = self._get_generator()

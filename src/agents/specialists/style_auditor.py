@@ -11,7 +11,11 @@ import re
 from collections import Counter
 from typing import Any
 
-from src.agents.specialist_auditor_base import SpecialistAuditor, SpecialistAuditResult
+from src.agents.specialist_auditor_base import (
+    SpecialistAuditor,
+    SpecialistAuditResult,
+    LLMUnavailableError,
+)
 
 try:
     from rank_bm25 import BM25Okapi
@@ -50,6 +54,24 @@ def _polite_ratio(tokens: list[str]) -> float:
     return polite / max(1, len(tokens))
 
 
+STYLE_SYSTEM_PROMPT = """あなたは小説の文体DNA・トーン＆マナー（Style & Tone）を審査する専門オーディターです。
+以下の観点で文章の文体を厳格に評価してください:
+1. 一人称（私／俺／僕等）や二人称、語尾口調（常体「だ・である」と敬体「です・ます」）の統一性・ブレの有無
+2. 指定されたジャンル・文体DNA（ハードボイルド、耽美、軽妙、シリアス等）の維持度
+3. 会話文と地の文のトーンバランス
+口調のブレや不自然な敬体・常体の混在がある場合は減点（60点未満）、一貫した格調高い文体が維持されていれば高スコア（80点以上）としてください。
+"""
+
+STYLE_USER_PROMPT = """【文体プロファイル / DNA設定】
+{style_info}
+
+【執筆ドラフト本文】
+{draft_text}
+
+上記文章の文体の一貫性・口調・トーン＆マナーを審査し、0〜100で採点してください。
+"""
+
+
 class StyleAuditor(SpecialistAuditor):
     specialist_name = "style"
 
@@ -75,93 +97,55 @@ class StyleAuditor(SpecialistAuditor):
                 suggestions=["Provide draft_text in context"],
             )
 
-        tokens = _tokenize(draft)
-        if not tokens:
-            return SpecialistAuditResult(
-                "style", 50.0,
-                feedback={"tokens": 0},
-                suggestions=["Text too short"],
-            )
+        if not self.llm:
+            raise LLMUnavailableError("No LLM available for StyleAuditor")
 
-        # Build BoW for draft
-        draft_bow = _bow(tokens)
+        style_info = str(style_dna) if style_dna else "標準エンタメ文体（常体・三人称寄り）"
+        prompt = STYLE_USER_PROMPT.format(style_info=style_info, draft_text=draft[:4000])
 
-        # Build BoW for style profile (if available)
-        style_tokens = _tokenize(style_dna.get("sample_text", "")) if isinstance(style_dna, dict) else []
-        style_bow = _bow(style_tokens) if style_tokens else draft_bow
-
-        # TF-IDF style cosine similarity
-        if BM25Okapi and style_tokens:
-            # Use BM25 as TF-IDF proxy
-            corpus = [style_tokens, tokens]
-            bm25 = BM25Okapi(corpus)
-            # Score draft against style corpus
-            scores = bm25.get_scores(tokens)
-            style_similarity = float(scores[0]) if len(scores) > 0 else 0.0
-            # Normalize to 0-1 (rough)
-            style_similarity = min(1.0, style_similarity / 10.0)
-        else:
-            style_similarity = _cosine_similarity(draft_bow, style_bow)
-
-        # Perspective consistency
-        fp_ratio = _first_person_ratio(tokens)
-        polite_ratio = _polite_ratio(tokens)
-
-        # Check if perspective matches style profile
-        expected_fp = style_dna.get("first_person", 0.5) if isinstance(style_dna, dict) else 0.5
-        expected_polite = style_dna.get("polite", 0.5) if isinstance(style_dna, dict) else 0.5
-        fp_consistency = 1.0 - abs(fp_ratio - expected_fp)
-        polite_consistency = 1.0 - abs(polite_ratio - expected_polite)
-
-        # Combined score
-        base_score = (
-            0.5 * style_similarity
-            + 0.25 * fp_consistency
-            + 0.25 * polite_consistency
-        ) * 100.0
-
-        anti_ai_score = None
-        if self.enable_anti_ai:
-            try:
-                from src.agents.specialists.anti_ai_detector import AntiAIDetector
-                anti_ai_detector = AntiAIDetector()
-                anti_ai_result = await anti_ai_detector.audit(ctx)
-                anti_ai_score = anti_ai_result.score
-                score = (1 - self.anti_ai_weight) * base_score + self.anti_ai_weight * anti_ai_score
-            except Exception:
-                score = base_score
-        else:
-            score = base_score
-
-        feedback = {
-            "tokens": len(tokens),
-            "style_similarity": round(style_similarity, 3),
-            "first_person_ratio": round(fp_ratio, 3),
-            "polite_ratio": round(polite_ratio, 3),
-            "fp_consistency": round(fp_consistency, 3),
-            "polite_consistency": round(polite_consistency, 3),
-            "base_style_score": round(base_score, 2),
-        }
-        if anti_ai_score is not None:
-            feedback["anti_ai_score"] = round(anti_ai_score, 2)
-
-        suggestions = [
-            "Align vocabulary with style DNA" if style_similarity < 0.5 else None,
-            "Check perspective consistency" if fp_consistency < 0.7 else None,
-            "Check politeness consistency" if polite_consistency < 0.7 else None,
-        ]
-        if anti_ai_score is not None and anti_ai_score < 70:
-            suggestions.append("Improve anti-AI score")
+        score, critique, suggestions = await self._judge_with_llm(
+            prompt=prompt,
+            system_prompt=STYLE_SYSTEM_PROMPT,
+        )
 
         return SpecialistAuditResult(
-            "style",
-            round(max(0.0, min(100.0, score)), 1),
-            feedback=feedback,
-            suggestions=[s for s in suggestions if s],
+            specialist_name="style",
+            score=score,
+            feedback={"critique": critique},
+            suggestions=suggestions,
+            degraded=False,
         )
 
     def _fallback(self, ctx: dict[str, Any]) -> SpecialistAuditResult:
-        return self.audit(ctx)
+        """Rule-based fallback: perspective ratio and BoW similarity."""
+        draft = ctx.get("draft_text", "") or ""
+        style_dna = ctx.get("style_dna") or self.style_profile or {}
+        if not draft:
+            return SpecialistAuditResult("style", 0.0, feedback={"error": "no draft_text"}, degraded=True)
+
+        tokens = _tokenize(draft)
+        if not tokens:
+            return SpecialistAuditResult("style", 50.0, feedback={"tokens": 0}, degraded=True)
+
+        fp_ratio = _first_person_ratio(tokens)
+        polite_ratio = _polite_ratio(tokens)
+
+        # 語尾の一貫性（常体か敬体のどちらかに統一されているか）
+        tone_consistency = max(polite_ratio, 1.0 - polite_ratio)
+        score = max(30.0, min(100.0, round(tone_consistency * 70.0 + 30.0, 1)))
+
+        return SpecialistAuditResult(
+            specialist_name="style",
+            score=score,
+            feedback={
+                "fallback": "rule-based",
+                "has_style_dna": bool(style_dna),
+                "polite_ratio": round(polite_ratio, 3),
+                "first_person_ratio": round(fp_ratio, 3),
+            },
+            suggestions=["Maintain consistent sentence endings (polite vs plain)"],
+            degraded=True,
+        )
 
 
 __all__ = ["StyleAuditor"]

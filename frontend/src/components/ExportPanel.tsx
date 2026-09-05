@@ -20,10 +20,11 @@ export default function ExportPanel({
 }: ExportPanelProps) {
   const {
     character,
-    generationState,
-    setGenerationState,
     selectedBookId,
     setSelectedBookId,
+    currentChapterText,
+    setCurrentChapterText,
+    generationState,
     applySuggestion,
     syncGenerationToEditor,
   } = useNovelContext();
@@ -36,7 +37,8 @@ export default function ExportPanel({
     (errMsg) => onExportMessage?.(errMsg)
   );
 
-  const displayOutput = output !== undefined ? output : generationState.currentOutput;
+  // 単一本文ソース化: 編集対象は currentChapterText に統一
+  const displayOutput = output !== undefined ? output : currentChapterText;
   const displaySuggestions = suggestions !== undefined ? suggestions : generationState.suggestions;
 
   const validateAndExport = async () => {
@@ -61,6 +63,12 @@ export default function ExportPanel({
       const res = await promoteToStudio({ book_id: selectedBookId.toString() });
       if (res.success) {
         onExportMessage?.("✨ 上級者 Studio へ昇格しました！世界観設定がナレッジグラフに統合されました。");
+        // redirect_url を URL バーに反映 (将来 router 追加時のフックポイント)
+        const target = `${res.redirect_url}?token=${encodeURIComponent(res.state_token)}`;
+        if (typeof window !== "undefined" && window.history?.pushState) {
+          window.history.pushState({ bookId: selectedBookId, token: res.state_token }, "", target);
+          window.dispatchEvent(new PopStateEvent("popstate"));
+        }
         onPromoteToStudio?.();
       }
     } catch (err: any) {
@@ -139,9 +147,7 @@ export default function ExportPanel({
       <div style={{ flex: 1, minHeight: "240px" }}>
         <Editor
           content={displayOutput}
-          onChange={(val) =>
-            setGenerationState((prev) => ({ ...prev, currentOutput: val }))
-          }
+          onChange={setCurrentChapterText}
         />
       </div>
 

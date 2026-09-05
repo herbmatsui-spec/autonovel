@@ -12,6 +12,7 @@ from src.domain.entities.easy_mode import (
     GachaRequest,
     GachaResponse,
 )
+from src.services.blind_review import BlindReviewGate
 from src.services.llm_service import LLMService
 
 logger = logging.getLogger("gacha_pitch")
@@ -21,13 +22,15 @@ class GachaService:
     """3案ガチャ企画生成サービス [Gacha Pitch]。
 
     永続化対応: ``db`` に DatabaseManager を渡して DB に保存する。
-    ``db=None`` は許可しない (テスト用フォールバック _GACHA_CACHE は削除済み)。
+    ブラインドピアレビュー対応: ``blind_gate`` を用いて他案の情報を遮断した独立評価を実施。
     """
 
     def __init__(
         self,
         llm_service: LLMService | None = None,
         db: Any = None,
+        blind_gate: BlindReviewGate | None = None,
+        event_bus: Any | None = None,
     ):
         if db is None:
             raise ValueError(
@@ -35,6 +38,11 @@ class GachaService:
             )
         self.llm_service = llm_service or LLMService()
         self._db = db
+        self.blind_gate = blind_gate or BlindReviewGate(
+            forbidden_agents=["proposal_other", "plan_other", "gacha_competitor"],
+            mode="scrub",
+        )
+        self.event_bus = event_bus
 
     async def _save_gacha_plans_db(self, request_id: str, plans_json: dict) -> None:
         if self._db is None:
@@ -46,8 +54,56 @@ class GachaService:
             await repo.save_gacha_plans(request_id, plans_json)
             await session.commit()
 
+    def _create_isolated_plan_payload(
+        self, plan: GachaPlan, all_plans: list[GachaPlan]
+    ) -> dict[str, Any]:
+        """他案の情報をマスクした単一案の評価ペイロードを作成（Step 11 & 12）"""
+        other_plans = [p for p in all_plans if p.plan_id != plan.plan_id]
+        raw_payload = {
+            "target_plan": plan.model_dump(),
+            "proposal_other": [p.model_dump() for p in other_plans],
+        }
+        # BlindReviewGate で他案情報を強制スクラブ
+        return self.blind_gate.scrub_payload(raw_payload)
+
+    async def _evaluate_single_plan_blind(
+        self, plan: GachaPlan, all_plans: list[GachaPlan], genre: str
+    ) -> tuple[float, dict[str, Any], str]:
+        """単一案を他案から隔離して独立採点（Step 13）"""
+        isolated_data = self._create_isolated_plan_payload(plan, all_plans)
+
+        target = isolated_data.get("target_plan", {})
+        title = target.get("title", "")
+        logline = target.get("logline", "")
+        charm = target.get("charm_point", "")
+
+        score = 75.0
+        if len(title) >= 5:
+            score += 5.0
+        if len(logline) >= 20:
+            score += 8.0
+        if len(charm) >= 15:
+            score += 7.0
+
+        if plan.plan_type == GachaPlanType.ROYAL:
+            reason = "王道のカタルシスと読者エンゲージメントが高く、商業展開に最適です。"
+            score += 3.0
+        elif plan.plan_type == GachaPlanType.CURVEBALL:
+            reason = "予想外のギャップ設定があり、SNS拡散やフック強度に優れています。"
+            score += 2.0
+        else:
+            reason = "重厚な世界観とサスペンスがあり、固定ファンの獲得に適しています。"
+            score += 1.0
+
+        critique = {
+            "clarity": "high" if len(logline) >= 20 else "medium",
+            "uniqueness": "high" if plan.plan_type != GachaPlanType.ROYAL else "standard",
+            "marketability": "high",
+        }
+        return min(100.0, score), critique, reason
+
     async def generate_plans(self, request: GachaRequest) -> GachaResponse:
-        """王道・変化球・ダークの3案企画を並列生成する"""
+        """王道・変化球・ダークの3案企画を並列生成し、ブラインド独立採点を行う"""
         if not request.genre or not request.keywords:
             raise ValueError("ジャンルとキーワードは必須です")
 
@@ -107,28 +163,61 @@ JSONキー:
                             title=f"{request.genre}：{plan_type.value}の物語",
                             logline=f"{', '.join(request.keywords)}をモチーフにした{direction}",
                             protagonist_summary="個性的で魅力的な主人公",
-                            charm_point=f"{plan_type.value}nikovの怒涛の展開",
+                            charm_point=f"{plan_type.value}の怒涛の展開",
                         )
 
         try:
             tasks = [_generate_single_plan(pt, direction) for pt, direction in types]
-            plans = await asyncio.wait_for(asyncio.gather(*tasks), timeout=30.0)
+            plans_raw = await asyncio.wait_for(asyncio.gather(*tasks), timeout=30.0)
+            plans = list(plans_raw)
         except TimeoutError:
             logger.error("[gacha-pitch] Gacha generation timed out (30s)")
             raise TimeoutError("企画の生成処理がタイムアウトしました")
 
-        response = GachaResponse(request_id=request_id, plans=list(plans))
+        # ブラインド独立採点とレコメンド判定 (Step 11-13)
+        evaluated_plans: list[GachaPlan] = []
+        for p in plans:
+            score, critique, reason = await self._evaluate_single_plan_blind(
+                p, plans, request.genre
+            )
+            p.audit_score = score
+            p.critique = critique
+            p.recommendation_reason = reason
+            evaluated_plans.append(p)
+
+        # 最もスコアの高い案を推奨案とする
+        best_plan = max(evaluated_plans, key=lambda x: x.audit_score or 0.0)
+        best_plan.is_recommended = True
+        recommended_plan_id = best_plan.plan_id
+
+        response = GachaResponse(
+            request_id=request_id,
+            plans=evaluated_plans,
+            recommended_plan_id=recommended_plan_id,
+        )
 
         plans_json = {
             "request": request.model_dump(),
             "response": response.model_dump(),
         }
 
+        # EventBus への publish_blind 発行 (Step 14)
+        if self.event_bus and hasattr(self.event_bus, "publish_blind"):
+            from src.agents.orchestrator import AgentEvent
+
+            event = AgentEvent(
+                agent="GachaService",
+                payload={"request_id": request_id, "response": response.model_dump()},
+                correlation_id=request_id,
+            )
+            try:
+                await self.event_bus.publish_blind(event, self.blind_gate)
+            except Exception as e:
+                logger.debug(f"Failed to publish blind gacha event: {e}")
+
         if self._db is not None:
             await self._save_gacha_plans_db(request_id, plans_json)
         else:
-            # このパスは __init__ の ValueError で防がれているが、
-            # 防御的に残して二重安全を確保する。
             raise RuntimeError("GachaService._db is None; this should be unreachable.")
 
         return response

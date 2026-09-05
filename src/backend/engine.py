@@ -9,8 +9,10 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from src.backend.background import StatusReporter
 from src.domain.interfaces.foreshadowing_repository import ForeshadowingRepository
 from src.domain.interfaces.hook_repository import HookRepository
+from src.services.pipeline_base import WorkflowContext, WorkflowStep
 
 logger = logging.getLogger(__name__)
 

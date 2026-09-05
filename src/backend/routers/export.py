@@ -12,7 +12,6 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
-from src.backend.database.models import Book, Chapter
 from src.backend.database.uow import UnitOfWork
 from src.backend.feature_flags import is_multimedia_enabled
 from src.backend.multimedia_service import MultimediaService
@@ -64,20 +63,15 @@ async def export_book(
     platform: str = Query("narou", description="narou | kakuyomu | nocturn"),
 ) -> dict[str, Any]:
     """作品を指定プラットフォーム用に整形して出力する。"""
-    from sqlalchemy import select
-
     async with UnitOfWork(AppContainer.db()) as uow:
-        book = await uow.session.execute(select(Book).where(Book.id == book_id))  # type: ignore[union-attr]
-        book_row = book.scalar_one_or_none()
+        book_row = await uow.books.get_book(book_id)
         if book_row is None:
             raise HTTPException(status_code=404, detail="Book not found")
 
-        chapters_result = await uow.session.execute(  # type: ignore[union-attr]
-            select(Chapter).where(Chapter.book_id == book_id).order_by(Chapter.ep_num)
-        )
+        chapters_list = await uow.chapters.get_all_non_anchor_chapters(book_id)
         chapters = [
             {"ep_num": c.ep_num, "title": c.title, "content": c.content or ""}
-            for c in chapters_result.scalars().all()
+            for c in chapters_list
         ]
 
         novel = {

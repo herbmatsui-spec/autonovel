@@ -8,9 +8,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
+from src.backend.auth import require_api_key
 from src.services import resilience
 from src.agents.orchestrator import AgentContext
 
@@ -36,7 +37,7 @@ class SkillVersionSwitchRequest(BaseModel):
     version: str  # "v1" or "v2"
 
 
-@router.post("/admin/skills/switch_version")
+@router.post("/admin/skills/switch_version", dependencies=[Depends(require_api_key)])
 async def switch_skill_version(req: SkillVersionSwitchRequest) -> dict[str, Any]:
     """スキルバージョンを切り替える (v1, v2)"""
     if req.version not in ("v1", "v2"):
@@ -55,7 +56,7 @@ async def switch_skill_version(req: SkillVersionSwitchRequest) -> dict[str, Any]
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/admin/skills/version")
+@router.get("/admin/skills/version", dependencies=[Depends(require_api_key)])
 async def get_skill_version() -> dict[str, Any]:
     """現在のスキルバージョンを取得"""
     from src.agents.orchestrator import Orchestrator

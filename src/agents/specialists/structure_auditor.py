@@ -1,11 +1,12 @@
 """Structure Specialist Auditor.
 
 Phase 2 / Guideline #3-⑦: Chapter structure, plot tree logical flow, pacing,
-Kishotenketsu appropriateness. LLM-based with rule-based fallback.
+Kishotenketsu appropriateness. Evaluated via LLM reasoning with rule-based fallback.
 """
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from src.agents.specialist_auditor_base import (
@@ -14,21 +15,21 @@ from src.agents.specialist_auditor_base import (
     LLMUnavailableError,
 )
 
+STRUCTURE_SYSTEM_PROMPT = """あなたは小説の構成・プロット展開・起承転結（Structure & Pacing）を審査する専門オーディターです。
+以下の観点で文章の構成とペース配分を厳格に評価してください:
+1. プロット目標の消化と論理的展開: 与えられたプロット要素（伏線・事件・解決）が無理なく消化・進展しているか。
+2. 起承転結または三幕構成のバランス: 導入・展開・転換・結びの配分が適切か（冗長な停滞や唐突すぎる飛躍がないか）。
+3. シーンのテンポとペース配分（Pacing）: 読者が飽きないリズム感が維持されているか。
+構成が破綻している、プロットが未消化のまま放置されている場合は低スコア（50点未満）、完成度が高く引き締まった構成であれば高スコア（80点以上）としてください。
+"""
 
-STRUCTURE_PROMPT = """以下の本文が、与えられたプロットツリーのどのノードを消化したか判定してください。
-
-【プロットツリー（簡易）】
+STRUCTURE_USER_PROMPT = """【プロットツリー / 予定展開】
 {plot_tree}
 
-【本文】
+【執筆ドラフト本文】
 {draft_text}
 
-以下をJSONで回答:
-{
-  "digested_nodes": ["ノードID", ...],
-  "undigested_nodes": ["ノードID", ...],
-  "summary": "全体の構造判定"
-}
+上記文章がプロットの要件を正しく満たし、起承転結・ペース配分が適切であるかを審査し、0〜100で採点してください。
 """
 
 
@@ -45,54 +46,35 @@ class StructureAuditor(SpecialistAuditor):
                 suggestions=["Provide draft_text in context"],
             )
 
-        if self.llm is None:
-            raise LLMUnavailableError("No LLM available")
+        if not self.llm:
+            raise LLMUnavailableError("No LLM available for StructureAuditor")
 
-        prompt = STRUCTURE_PROMPT.format(
-            plot_tree=str(plot_tree)[:2000],
-            draft_text=draft[:3000],
+        plot_info = str(plot_tree) if plot_tree else "標準起承転結プロット（導入→危機・葛藤→解決・余韻）"
+        prompt = STRUCTURE_USER_PROMPT.format(
+            plot_tree=plot_info[:2000],
+            draft_text=draft[:4000],
         )
 
-        try:
-            response = await self.llm.agenerate([prompt])
-            text = response.generations[0][0].text
-        except Exception as e:
-            raise LLMUnavailableError(f"LLM call failed: {e}") from e
-
-        import json
-        try:
-            data = json.loads(text)
-            digested = data.get("digested_nodes", [])
-            undigested = data.get("undigested_nodes", [])
-            summary = data.get("summary", "")
-        except Exception:
-            digested, undigested, summary = [], [], "parse failed"
-
-        total_nodes = len(digested) + len(undigested)
-        if total_nodes == 0:
-            score = 50.0
-        else:
-            score = (len(digested) / total_nodes) * 100.0
+        score, critique, suggestions = await self._judge_with_llm(
+            prompt=prompt,
+            system_prompt=STRUCTURE_SYSTEM_PROMPT,
+        )
 
         return SpecialistAuditResult(
-            "structure",
-            round(score, 1),
-            feedback={
-                "digested_nodes": digested,
-                "undigested_nodes": undigested,
-                "summary": summary,
-                "digested_count": len(digested),
-                "total_nodes": total_nodes,
-            },
-            suggestions=[
-                f"Address undigested node: {n}" for n in undigested[:3]
-            ] if undigested else [],
+            specialist_name="structure",
+            score=score,
+            feedback={"critique": critique},
+            suggestions=suggestions,
+            degraded=False,
         )
 
     def _fallback(self, ctx: dict[str, Any]) -> SpecialistAuditResult:
-        # Rule-based: check if plot keywords appear in draft
+        """Rule-based fallback using plot keyword coverage in draft."""
         draft = ctx.get("draft_text", "") or ""
         plot = ctx.get("plot_tree") or ctx.get("plot_summary") or ""
+        if not draft:
+            return SpecialistAuditResult("structure", 0.0, feedback={"error": "no draft_text"}, degraded=True)
+
         if not plot:
             return SpecialistAuditResult(
                 "structure", 50.0,
@@ -100,25 +82,26 @@ class StructureAuditor(SpecialistAuditor):
                 suggestions=["Provide plot tree for structure check"],
                 degraded=True,
             )
-        # Extract potential plot nodes (split on punctuation and common separators)
-        import re
-        plot_keywords = [w for w in re.split(r"[、。,\s\n・]+", plot) if len(w) > 1]
+
+        plot_keywords = [w for w in re.split(r"[、。,\s\n・]+", str(plot)) if len(w) > 1]
         if not plot_keywords:
             return SpecialistAuditResult("structure", 50.0, feedback={"fallback": "no keywords"}, degraded=True)
+
         found = sum(1 for k in plot_keywords if k in draft)
         coverage = found / len(plot_keywords)
-        score = coverage * 100.0
+        score = max(20.0, min(100.0, round(coverage * 80.0 + 20.0, 1)))
+
         return SpecialistAuditResult(
             "structure",
-            round(score, 1),
+            score,
             feedback={
                 "fallback": "rule-based keyword coverage",
                 "plot_keywords": len(plot_keywords),
                 "found_in_draft": found,
                 "coverage": round(coverage, 3),
             },
-            degraded=True,
             suggestions=["Cover more plot points"] if coverage < 0.5 else [],
+            degraded=True,
         )
 
 
