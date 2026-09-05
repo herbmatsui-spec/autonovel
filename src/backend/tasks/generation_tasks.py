@@ -54,6 +54,11 @@ async def _generate_orchestrated(payload: dict[str, Any]) -> dict[str, Any]:
     from src.agents.marketing import MarketingAgent
     from src.services.llm.factory import get_llm_adapter
     from src.services.image_service import ImageService
+    from src.services.reflective_rag import ReflectiveRAGService
+    from src.services.rag_service import rag_service
+    from src.services.compression.compressor import FourLayerCompressor
+    from src.services.compression.models import CompressionConfig
+    from src.agents.social.manager import SocialInteractionManager
     from src.backend.database.repository import BookRepository
 
     book_id = payload.get("book_id", 1)
@@ -84,6 +89,11 @@ async def _generate_orchestrated(payload: dict[str, Any]) -> dict[str, Any]:
     session = database.SessionLocal()
     repo = BookRepository(session)
 
+    # Phase 3/4 依存サービスのインスタンス化
+    reflective_rag = ReflectiveRAGService(rag_service=rag_service)
+    compressor = FourLayerCompressor(config=CompressionConfig())
+    social_manager = SocialInteractionManager(llm_adapter=llm_adapter)
+
     # 相関ID生成（ログ追跡用）
     correlation_id = f"book_{book_id}_branch_{branch_id}_ep_{ep_num}"
 
@@ -103,7 +113,13 @@ async def _generate_orchestrated(payload: dict[str, Any]) -> dict[str, Any]:
             AgentName.PLANNING: PlanningAgent(repo=repo, llm=llm_adapter).run,
             AgentName.PLOT: PlotAgent(repo=repo, llm=llm_adapter).run,
             AgentName.BIBLE: BibleAgent(repo=repo, llm=llm_adapter).run,
-            AgentName.CONTEXT_BUILDER: ContextBuilderAgent(repo=repo, llm=llm_adapter).run,
+            AgentName.CONTEXT_BUILDER: ContextBuilderAgent(
+                repo=repo,
+                llm=llm_adapter,
+                reflective_rag=reflective_rag,
+                compressor=compressor,
+                social_manager=social_manager,
+            ).run,
             AgentName.WRITING: WritingAgent(repo=repo, llm=llm_adapter).run,
         }
         

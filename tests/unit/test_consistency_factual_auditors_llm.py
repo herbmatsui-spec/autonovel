@@ -2,24 +2,38 @@
 from __future__ import annotations
 
 import pytest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, AsyncMock
 
 from src.agents.specialists.consistency_auditor import ConsistencyAuditor
 from src.agents.specialists.factual_auditor import FactualAuditor
 
 
+def _make_llm_mock(json_response: str) -> MagicMock:
+    """Create an LLM mock that returns the given JSON response for ainvoke/generate/invoke."""
+    mock = MagicMock()
+    # _judge_with_llm checks ainvoke first, then generate, then invoke
+    # Make all three return the JSON response
+    async def _ainvoke(*args, **kwargs):
+        return json_response
+    mock.ainvoke = _ainvoke
+    mock.generate = MagicMock(return_value=json_response)
+    mock.invoke = MagicMock(return_value=json_response)
+    # Also make it callable directly
+    mock.__call__ = MagicMock(return_value=json_response)
+    return mock
+
+
 @pytest.mark.asyncio
 async def test_consistency_auditor_with_llm_contradiction_detection():
     """Step 64: ConsistencyAuditor が LLM で死亡キャラの再登場などの論理矛盾を検知して低スコアを返すこと."""
-    mock_llm = MagicMock()
-    # LLMが矛盾を指摘して低スコアを返すモック
-    mock_llm.generate.return_value = """
+    json_resp = """
 {
   "score": 35.0,
   "critique": "第1章で戦死したはずのゼノンが何の説明もなく元気に酒場で会話しており、重大な論理矛盾が存在する。",
   "suggestions": ["ゼノンの登場を回想シーンにするか、蘇生の経緯を明記すること"]
 }
 """
+    mock_llm = _make_llm_mock(json_resp)
     auditor = ConsistencyAuditor(llm=mock_llm)
     ctx = {
         "draft_text": "酒場の扉を開けると、そこにはゼノンが笑って座っていた。「久しぶりだな」と彼は言った。",
@@ -61,14 +75,14 @@ async def test_consistency_auditor_fallback_without_llm():
 @pytest.mark.asyncio
 async def test_factual_auditor_with_llm():
     """Step 64: FactualAuditor が事実関係・時代考証をLLMで評価すること."""
-    mock_llm = MagicMock()
-    mock_llm.generate.return_value = """
+    json_resp = """
 {
   "score": 90.0,
   "critique": "中世初期の封建制度および神聖暦の年代記述に誤りはなく、世界観設定に極めて忠実である。",
   "suggestions": ["貨幣単位の記述をより詳細にすると世界観の深みが増す"]
 }
 """
+    mock_llm = _make_llm_mock(json_resp)
     auditor = FactualAuditor(llm=mock_llm)
     ctx = {
         "draft_text": "神聖暦七四二年、銀貨三枚を支払って馬車を借りた。",

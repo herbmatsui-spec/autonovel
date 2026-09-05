@@ -147,6 +147,12 @@ def test_get_exporter_and_list_platforms():
     exp_unknown = get_exporter("unknown_platform_xyz")
     assert isinstance(exp_unknown, NarouExporter)
 
+    exp_nocturne = get_exporter("nocturne")
+    assert isinstance(exp_nocturne, NocturneExporter)
+
+    exp_nocturn = get_exporter("nocturn")
+    assert isinstance(exp_nocturn, NocturneExporter)
+
 
 def test_template_filters(sample_novel, sample_chapters):
     exporter = NarouExporter()

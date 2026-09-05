@@ -134,8 +134,8 @@ class Layer4SceneTrimmer:
                 if f["entity"]:
                     retained_entities.add(f["entity"])
             else:
-                # 必須でも予算オーバーしたらブレーク
-                break
+                # 予算超過した事実はスキップし、後続の小さい事実を引き続き探索
+                continue
 
         # 自然なMarkdownテキスト整形
         concepts = list(abstraction_output.abstract_concepts)

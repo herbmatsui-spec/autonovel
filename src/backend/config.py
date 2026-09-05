@@ -106,6 +106,11 @@ class Settings(BaseSettings):
     # Phase 4: Enrichment Agent
     ENRICHMENT_ENABLED: bool = False
 
+    # Phase 2: Feature Flags
+    BLIND_REVIEW_ENABLED: bool = True
+    MULTI_LAYER_AUDIT_ENABLED: bool = True
+    RAG_REFLECTION_ENABLED: bool = True
+
     @property
     def cors_origin_list(self) -> list[str]:
         """CORS origins をリスト形式で取得する。"""

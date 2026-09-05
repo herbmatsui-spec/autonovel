@@ -37,7 +37,8 @@ class CompressionError(Phase3Error):
         error_code: str = "PHASE3_COMPRESSION_001",
         details: Optional[dict] = None,
     ):
-        super().__init__(message, f"PHASE3_COMPRESSION_{error_code}", details)
+        code = error_code.removeprefix("PHASE3_COMPRESSION_")
+        super().__init__(message, f"PHASE3_COMPRESSION_{code}", details)
 
 
 class CompressionConfigError(CompressionError):
@@ -79,7 +80,8 @@ class DAGSchedulerError(Phase3Error):
         error_code: str = "PHASE3_DAG_001",
         details: Optional[dict] = None,
     ):
-        super().__init__(message, f"PHASE3_DAG_{error_code}", details)
+        code = error_code.removeprefix("PHASE3_DAG_")
+        super().__init__(message, f"PHASE3_DAG_{code}", details)
 
 
 class DAGValidationError(DAGSchedulerError):
@@ -131,7 +133,8 @@ class SocialInteractionError(Phase3Error):
         error_code: str = "PHASE3_SOCIAL_001",
         details: Optional[dict] = None,
     ):
-        super().__init__(message, f"PHASE3_SOCIAL_{error_code}", details)
+        code = error_code.removeprefix("PHASE3_SOCIAL_")
+        super().__init__(message, f"PHASE3_SOCIAL_{code}", details)
 
 
 class SocialGenerationError(SocialInteractionError):
@@ -164,7 +167,8 @@ class ConfigurationError(Phase3Error):
         error_code: str = "PHASE3_CONFIG_001",
         details: Optional[dict] = None,
     ):
-        super().__init__(message, f"PHASE3_CONFIG_{error_code}", details)
+        code = error_code.removeprefix("PHASE3_CONFIG_")
+        super().__init__(message, f"PHASE3_CONFIG_{code}", details)
 
 
 class ResourceExhaustedError(Phase3Error):
@@ -176,4 +180,5 @@ class ResourceExhaustedError(Phase3Error):
         error_code: str = "PHASE3_RESOURCE_001",
         details: Optional[dict] = None,
     ):
-        super().__init__(message, f"PHASE3_RESOURCE_{error_code}", details)
+        code = error_code.removeprefix("PHASE3_RESOURCE_")
+        super().__init__(message, f"PHASE3_RESOURCE_{code}", details)

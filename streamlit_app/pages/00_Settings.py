@@ -1,22 +1,4 @@
 """
-
-
-              st.markdown("#### 🔞 コンテンツ設定")
-              st.toggle(
-                  "NSFW/官能コンテンツ許可",
-                  value=getattr(cfg, "enable_nsfw", False),
-                  key="cfg_enable_nsfw",
-              )
-              st.slider(
-                  "官能强度 (1=ほのめかし 〜 5=濃密)",
-                  min_value=0,
-                  max_value=5,
-                  value=getattr(cfg, "erotic_intensity", 0),
-                  key="cfg_erotic_intensity",
-                  disabled=not st.session_state.get("cfg_enable_nsfw", getattr(cfg, "enable_nsfw", False)),
-                  help="NSFWをONにしている場合のみ有効です。",
-              
-"""
 streamlit_app/pages/00_Settings.py — 設定専用ページ
 
 このファイルで全ての設定を一元管理できます。
@@ -70,7 +52,6 @@ SAFETY_OPTIONS = {
     "BLOCK_ALL": "🔒 全リスクブロック",
 }
 
-
 def load_config():
     try:
         from config.project_context import get_config
@@ -78,7 +59,6 @@ def load_config():
     except Exception:
         from config.models import GlobalConfigModel
         return GlobalConfigModel.default()
-
 
 def save_all_settings():
     """全設定を保存"""
@@ -133,7 +113,6 @@ def save_all_settings():
         st.error(f"❌ 設定の保存に失敗: {e}")
         return False
 
-
 def main():
     ConfigState.init_defaults()
     cfg = load_config()
@@ -155,7 +134,7 @@ def main():
             c1, c2 = st.columns(2)
             with c1:
                 options = list(PRESET_MODELS)
-                current = cfg.model_writing or "gemma-4-31b-it"
+                current = cfg.model_writing or "gemini-3.1-flash-lite"
                 if current not in options:
                     options.insert(0, current)
                 st.selectbox(
@@ -167,7 +146,7 @@ def main():
                 )
             with c2:
                 options = list(PRESET_MODELS)
-                current = cfg.model_climax or "gemma-4-31b-it"
+                current = cfg.model_climax or "gemini-3.1-pro"
                 if current not in options:
                     options.insert(0, current)
                 st.selectbox(
@@ -203,7 +182,7 @@ def main():
                     options=options,
                     index=options.index(current) if current in options else 0,
                     key="cfg_model_plot_expansion",
-                    help="各 эпизод の詳細を展開する際に使用するモデル",
+                    help="各 épisodes の詳細を展開する際に使用するモデル",
                 )
 
         with st.container(border=True):
@@ -346,20 +325,20 @@ def main():
 
         with st.container(border=True):
             st.markdown("#### 🔞 コンテンツ設定")
-            st.toggle(
+            enable_nsfw = st.toggle(
                 "NSFW/官能コンテンツ許可",
                 value=getattr(cfg, "enable_nsfw", False),
                 key="cfg_enable_nsfw",
+                help="官能的な描写を含むコンテンツを許可します",
+            )
             st.slider(
                 "官能强度 (1=ほのめかし 〜 5=濃密)",
                 min_value=0,
                 max_value=5,
                 value=getattr(cfg, "erotic_intensity", 0),
                 key="cfg_erotic_intensity",
-                disabled=not st.session_state.get("cfg_enable_nsfw", getattr(cfg, "enable_nsfw", False)),
+                disabled=not enable_nsfw,
                 help="NSFWをONにしている場合のみ有効です。",
-            )
-                help="官能的な描写を含むコンテンツを許可します",
             )
 
         with st.container(border=True):
@@ -507,9 +486,5 @@ def main():
         if st.button("📤 設定をエクスポート", use_container_width=True):
             st.info("設定のエクスポート機能は準備中です")
 
-
 if __name__ == "__main__":
     main()
-
-
-

@@ -56,66 +56,72 @@ class DAGScheduler:
         running_tasks: dict[str, asyncio.Task] = {}
         allocated_resources: dict[str, TaskResourceRequirement] = {}
 
-        while not graph.is_all_completed():
-            # 障害発生かつリカバリ不能な場合の早期中断チェック
-            if graph.has_failures():
-                logger.error(f"DAG {graph.dag_id} contains fatal task failures, halting.")
-                break
-
-            # 準備完了タスクの取得 (Step 39)
-            ready_tasks = graph.get_ready_tasks()
-
-            # アフィニティ並び替え (Step 40: 同一章タスクを優先)
-            ready_tasks = self._sort_by_affinity(ready_tasks)
-
-            for task_node in ready_tasks:
-                if len(running_tasks) >= effective_max:
+        try:
+            while not graph.is_all_completed():
+                # 障害発生かつリカバリ不能な場合の早期中断チェック
+                if graph.has_failures():
+                    logger.error(f"DAG {graph.dag_id} contains fatal task failures, halting.")
+                    await self._cancel_running_tasks(running_tasks, allocated_resources)
                     break
 
-                req = task_node.resources
-                if not self.resource_manager.can_schedule(req, self.active_allocations):
+                # 準備完了タスクの取得 (Step 39)
+                ready_tasks = graph.get_ready_tasks()
+
+                # アフィニティ並び替え (Step 40: 同一章タスクを優先)
+                ready_tasks = self._sort_by_affinity(ready_tasks)
+
+                for task_node in ready_tasks:
+                    if len(running_tasks) >= effective_max:
+                        break
+
+                    req = task_node.resources
+                    if not self.resource_manager.can_schedule(req, self.active_allocations):
+                        continue
+
+                    # リソース確保
+                    self._allocate_resources(task_node.task_id, req, allocated_resources)
+                    graph.mark_running(task_node.task_id)
+
+                    # 非同期タスクとして起動
+                    coro = self._execute_task_wrapper(graph, task_node)
+                    t = asyncio.create_task(coro)
+                    running_tasks[task_node.task_id] = t
+
+                if not running_tasks and not ready_tasks:
+                    # 依存待ちか完了
+                    if graph.is_all_completed() or graph.has_failures():
+                        break
+                    await asyncio.sleep(poll_interval)
                     continue
 
-                # リソース確保
-                self._allocate_resources(task_node.task_id, req, allocated_resources)
-                graph.mark_running(task_node.task_id)
+                # デッドロック防止: 実行中タスクが0件なのに ready_tasks がリソース制約で開始できない場合、最優先タスクを強制開始
+                if not running_tasks and ready_tasks:
+                    forced_node = ready_tasks[0]
+                    req = forced_node.resources
+                    self._allocate_resources(forced_node.task_id, req, allocated_resources)
+                    graph.mark_running(forced_node.task_id)
+                    coro = self._execute_task_wrapper(graph, forced_node)
+                    t = asyncio.create_task(coro)
+                    running_tasks[forced_node.task_id] = t
 
-                # 非同期タスクとして起動
-                coro = self._execute_task_wrapper(graph, task_node)
-                t = asyncio.create_task(coro)
-                running_tasks[task_node.task_id] = t
+                # 実行中タスクの完了を待機
+                if running_tasks:
+                    done, _ = await asyncio.wait(
+                        running_tasks.values(),
+                        return_when=asyncio.FIRST_COMPLETED,
+                        timeout=poll_interval,
+                    )
+                    # 完了タスクのクリーンアップ
+                    finished_ids = [
+                        tid for tid, task in running_tasks.items() if task in done
+                    ]
+                    for fid in finished_ids:
+                        running_tasks.pop(fid, None)
+                        self._release_resources(fid, allocated_resources)
 
-            if not running_tasks and not ready_tasks:
-                # 依存待ちか完了
-                if graph.is_all_completed() or graph.has_failures():
-                    break
-                await asyncio.sleep(poll_interval)
-                continue
-
-            # デッドロック防止: 実行中タスクが0件なのに ready_tasks がリソース制約で開始できない場合、最優先タスクを強制開始
-            if not running_tasks and ready_tasks:
-                forced_node = ready_tasks[0]
-                req = forced_node.resources
-                self._allocate_resources(forced_node.task_id, req, allocated_resources)
-                graph.mark_running(forced_node.task_id)
-                coro = self._execute_task_wrapper(graph, forced_node)
-                t = asyncio.create_task(coro)
-                running_tasks[forced_node.task_id] = t
-
-            # 実行中タスクの完了を待機
+        finally:
             if running_tasks:
-                done, _ = await asyncio.wait(
-                    running_tasks.values(),
-                    return_when=asyncio.FIRST_COMPLETED,
-                    timeout=poll_interval,
-                )
-                # 完了タスクのクリーンアップ
-                finished_ids = [
-                    tid for tid, task in running_tasks.items() if task in done
-                ]
-                for fid in finished_ids:
-                    running_tasks.pop(fid, None)
-                    self._release_resources(fid, allocated_resources)
+                await self._cancel_running_tasks(running_tasks, allocated_resources)
 
         return graph
 
@@ -207,6 +213,21 @@ class DAGScheduler:
             self.active_allocations.cpu_cores = max(0.0, self.active_allocations.cpu_cores - req.cpu_cores)
             self.active_allocations.ram_mb = max(0, self.active_allocations.ram_mb - req.ram_mb)
             self.active_allocations.gpu_mem_mb = max(0, self.active_allocations.gpu_mem_mb - req.gpu_mem_mb)
+
+    async def _cancel_running_tasks(
+        self,
+        running_tasks: dict[str, asyncio.Task],
+        allocated_resources: dict[str, TaskResourceRequirement],
+    ) -> None:
+        """Cancel all currently running asyncio tasks and release their allocated resources."""
+        for tid, task in list(running_tasks.items()):
+            if not task.done():
+                task.cancel()
+        if running_tasks:
+            await asyncio.gather(*running_tasks.values(), return_exceptions=True)
+            for tid in list(running_tasks.keys()):
+                self._release_resources(tid, allocated_resources)
+            running_tasks.clear()
 
 
 __all__ = ["DAGScheduler"]

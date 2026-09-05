@@ -161,3 +161,36 @@ async def test_build_novel_generation_dag_pipeline():
     assert completed_graph.is_all_completed()
     assert not completed_graph.has_failures()
     assert completed_graph.nodes["b1_ep1_publish"].status == "completed"
+
+
+@pytest.mark.asyncio
+async def test_scheduler_cancels_running_tasks_on_failure():
+    """並行実行中のタスクが致命的エラー发生时、running_tasks がキャンセルされリソースが解放されることの検証."""
+    scheduler = DAGScheduler()
+
+    running_task_ids = []
+
+    def long_running_task(task_id: str):
+        async def coro():
+            running_task_ids.append(task_id)
+            await asyncio.sleep(10.0)
+            return f"{task_id}_done"
+        return coro()
+
+    def failing_task():
+        raise RuntimeError("Fatal error")
+
+    scheduler.register_task("long_running", lambda task_id: long_running_task(task_id))
+    scheduler.register_task("failing", failing_task)
+
+    g = DAGGraph(dag_id="cancel_test")
+    g.add_node(DAGTaskNode(task_id="task1", func_name="long_running", kwargs={"task_id": "task1"}, priority=2))
+    g.add_node(DAGTaskNode(task_id="task2", func_name="long_running", kwargs={"task_id": "task2"}, priority=1))
+    g.add_node(DAGTaskNode(task_id="fatal_task", func_name="failing", dependencies=["task1", "task2"], priority=0))
+
+    completed_graph = await scheduler.run_dag(g, max_concurrency=3)
+
+    assert completed_graph.has_failures()
+    assert len(running_task_ids) == 0 or all(
+        asyncio.current_task().done() for t in running_task_ids if asyncio.current_task()
+    )

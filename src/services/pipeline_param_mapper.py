@@ -6,9 +6,21 @@ from src.services.pipeline_base import WorkflowContext
 from src.models.writing import FullAutoWorkflowResult
 
 
+def _resolve_erotic_gate(kwargs):
+    # Resolve erotic gate from kwargs. Returns (enable_erotic, erotic_intensity).
+    enable_erotic = bool(
+        kwargs.get("enable_erotic", False)
+        or kwargs.get("enable_nsfw", False)
+        or kwargs.get("nsfw_enabled", False)
+    )
+    erotic_intensity = int(kwargs.get("erotic_intensity", 0) or 0)
+    return enable_erotic, erotic_intensity
+
+
 def map_fullauto_kwargs_to_context(kwargs: dict[str, Any]) -> WorkflowContext:
     """FullAutoWorkflow の kwargs を WorkflowContext に変換"""
-    return WorkflowContext(
+    enable_erotic, erotic_intensity = _resolve_erotic_gate(kwargs)
+    ctx = WorkflowContext(
         genre=kwargs["genre"],
         keywords=", ".join(kwargs["keywords"])
         if isinstance(kwargs["keywords"], list)
@@ -30,6 +42,10 @@ def map_fullauto_kwargs_to_context(kwargs: dict[str, Any]) -> WorkflowContext:
         max_retries=1,
         is_easy_mode=False,
     )
+    ctx.easy_parameters["enable_erotic"] = enable_erotic
+    ctx.easy_parameters["erotic_intensity"] = erotic_intensity
+    ctx.easy_parameters["enable_nsfw"] = enable_erotic  # backward compatibility
+    return ctx
 
 
 def map_easymode_kwargs_to_context(
@@ -43,7 +59,8 @@ def map_easymode_kwargs_to_context(
     **kwargs: Any,
 ) -> WorkflowContext:
     """EasyModeWorkflow の kwargs を WorkflowContext に変換"""
-    return WorkflowContext(
+    enable_erotic, erotic_intensity = _resolve_erotic_gate(kwargs)
+    ctx = WorkflowContext(
         genre=genre,
         keywords=", ".join(keywords) if keywords else "",
         archetype_key=protagonist_type,
@@ -63,6 +80,10 @@ def map_easymode_kwargs_to_context(
         is_easy_mode=True,
         preset_name=kwargs.get("preset_name", ""),
     )
+    ctx.easy_parameters["enable_erotic"] = enable_erotic
+    ctx.easy_parameters["erotic_intensity"] = erotic_intensity
+    ctx.easy_parameters["enable_nsfw"] = enable_erotic  # backward compatibility
+    return ctx
 
 
 def map_context_to_fullauto_result(

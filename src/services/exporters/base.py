@@ -411,8 +411,8 @@ class NarouExporter(BaseExporter):
             # 警告がある場合はログに出力するか、特別な方法で処理
             # ここでは簡易的に最初のチャンクに警告を付加する（実際の実装では別の方法を検討）
             if i == 0 and warnings:
-                warning_text = "\\n".join([f"<!-- WARNING: {w} -->" for w in warnings])
-                yield warning_text + "\\n"
+                warning_text = "\n".join([f"<!-- WARNING: {w} -->" for w in warnings])
+                yield warning_text + "\n"
 
             # ルビ記法 |文字《ルビ》| を保持（なろうではこの形式を使用）
             title = ch.get("title") or f"第{ch.get('ep_num')}話"
@@ -449,8 +449,8 @@ class KakuyomuExporter(BaseExporter):
             body, warnings = process_content_for_platform(body_raw, self.platform)
             # 警告がある場合はログに出力するか、特別な方法で処理
             if i == 0 and warnings:
-                warning_text = "\\n".join([f"<!-- WARNING: {w} -->" for w in warnings])
-                yield warning_text + "\\n"
+                warning_text = "\n".join([f"<!-- WARNING: {w} -->" for w in warnings])
+                yield warning_text + "\n"
 
             # カクヨムでは見出しレベルを調整（小説の場合は見出しレベル3から開始）
             title = ch.get("title") or f"第{ch.get('ep_num')}話"
@@ -480,8 +480,8 @@ class NocturneExporter(BaseExporter):
             body, warnings = process_content_for_platform(body_raw, self.platform)
             # 警告がある場合はログに出力するか、特別な方法で処理
             if i == 0 and warnings:
-                warning_text = "\\n".join([f"<!-- WARNING: {w} -->" for w in warnings])
-                yield warning_text + "\\n"
+                warning_text = "\n".join([f"<!-- WARNING: {w} -->" for w in warnings])
+                yield warning_text + "\n"
 
             # Nocturneでは独自のタグ形式を使用可能
             title = ch.get("title") or f"第{ch.get('ep_num')}話"
@@ -516,8 +516,8 @@ class PlainTextExporter(BaseExporter):
             body, warnings = process_content_for_platform(body_raw, self.platform)
             # 警告がある場合はログに出力するか、特別な方法で処理
             if i == 0 and warnings:
-                warning_text = "\\n".join([f"<!-- WARNING: {w} -->" for w in warnings])
-                yield warning_text + "\\n"
+                warning_text = "\n".join([f"<!-- WARNING: {w} -->" for w in warnings])
+                yield warning_text + "\n"
 
             title = ch.get("title") or f"第{ch.get('ep_num')}話"
             if i > 0:
@@ -564,8 +564,8 @@ class MarkdownExporter(BaseExporter):
             body, warnings = process_content_for_platform(body_raw, self.platform)
             # 警告がある場合はログに出力するか、特別な方法で処理
             if i == 0 and warnings:
-                warning_text = "\\n".join([f"<!-- WARNING: {w} -->" for w in warnings])
-                yield warning_text + "\\n"
+                warning_text = "\n".join([f"<!-- WARNING: {w} -->" for w in warnings])
+                yield warning_text + "\n"
 
             title = ch.get("title") or f"第{ch.get('ep_num')}話"
             if i > 0:
@@ -618,8 +618,8 @@ class EpubExporter(BaseExporter):
             body, warnings = process_content_for_platform(body_raw, self.platform)
             # 警告がある場合はログに出力するか、特別な方法で処理
             if i == 0 and warnings:
-                warning_text = "\\n".join([f"<!-- WARNING: {w} -->" for w in warnings])
-                yield warning_text + "\\n"
+                warning_text = "\n".join([f"<!-- WARNING: {w} -->" for w in warnings])
+                yield warning_text + "\n"
 
             title = ch.get("title") or f"第{ch.get('ep_num')}話"
             if i > 0:
@@ -667,8 +667,8 @@ class PdfExporter(BaseExporter):
             body, warnings = process_content_for_platform(body_raw, self.platform)
             # 警告がある場合はログに出力するか、特別な方法で処理
             if i == 0 and warnings:
-                warning_text = "\\n".join([f"<!-- WARNING: {w} -->" for w in warnings])
-                yield warning_text + "\\n"
+                warning_text = "\n".join([f"<!-- WARNING: {w} -->" for w in warnings])
+                yield warning_text + "\n"
 
             title = ch.get("title") or f"第{ch.get('ep_num')}話"
             if i > 0:
@@ -685,6 +685,7 @@ _EXPORTERS = {
     NarouExporter.platform: NarouExporter,
     KakuyomuExporter.platform: KakuyomuExporter,
     NocturneExporter.platform: NocturneExporter,
+    "nocturne": NocturneExporter,  # エイリアス (e付き)
     PlainTextExporter.platform: PlainTextExporter,
     MarkdownExporter.platform: MarkdownExporter,
     EpubExporter.platform: EpubExporter,

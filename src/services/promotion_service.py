@@ -1,6 +1,7 @@
 import logging
 import secrets
 from datetime import datetime, timedelta, timezone
+from sqlalchemy import func
 
 from src.domain.entities.easy_mode import PromotionRequest, PromotionResponse
 

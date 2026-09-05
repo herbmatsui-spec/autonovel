@@ -41,12 +41,6 @@ FEELING_LAYERS = [
 class EroticSpecialist:
     """官能シーンを専門とするプロンプトエンジン。"""
 
-    def _get_erotic_config_value(self, yaml_preset: dict, key: str, default: Any) -> Any:
-        """Get a value from the erotic YAML preset with fallback to default."""
-        if yaml_preset and key in yaml_preset:
-            return yaml_preset[key]
-        return default
-
     def build_scene_prompt(
         self,
         curve: EroticCurve,
@@ -68,13 +62,11 @@ class EroticSpecialist:
         from config.erotic_vocabulary import get_vocabulary_for_tier
         from prompts.erotic.scene_templates import get_template_for_phase
 
-        # === Step 11 追加: YAMLプリセットがあれば優先使用 ===
-        yaml_preset = context.get("erotic_rules_yaml")
-        preset_name = yaml_preset.get("platform") if yaml_preset else context.get("platform_preset", "kakuyomu_romance")
-        preset = get_preset(preset_name) if not yaml_preset else None
-        # Use YAML preset values with fallback to preset file values
-        allowed_vocabulary_tier = yaml_preset.get("allowed_vocabulary_tier") if yaml_preset and yaml_preset.get("allowed_vocabulary_tier") else preset.get("allowed_vocabulary_tier", "mild") if preset else "mild"
-        vocab = get_vocabulary_for_tier(allowed_vocabulary_tier)
+        preset_name = context.get("platform_preset", "kakuyomu_romance")
+        preset = get_preset(preset_name)
+        intensity = curve.target_intensity
+
+        vocab = get_vocabulary_for_tier(preset.get("allowed_vocabulary_tier", "mild"))
 
         metaphor_sample_size = self._get_metaphor_sample_size(intensity, params)
         psychology_sample_size = self._get_psychology_sample_size(intensity, params)

@@ -103,8 +103,8 @@ class ResourceManager:
             return False
         if (active_allocations.ram_mb + task_req.ram_mb) > available.ram_mb:
             return False
-        if task_req.gpu_mem_mb > 0 and available.gpu_mem_mb > 0:
-            if (active_allocations.gpu_mem_mb + task_req.gpu_mem_mb) > available.gpu_mem_mb:
+        if task_req.gpu_mem_mb > 0:
+            if available.gpu_mem_mb == 0 or (active_allocations.gpu_mem_mb + task_req.gpu_mem_mb) > available.gpu_mem_mb:
                 return False
         return True
 

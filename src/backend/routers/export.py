@@ -60,7 +60,7 @@ async def get_platforms() -> list[dict[str, str]]:
 @router.get("/books/{book_id}")
 async def export_book(
     book_id: int,
-    platform: str = Query("narou", description="narou | kakuyomu | nocturn"),
+    platform: str = Query("narou", description="narou | kakuyomu | nocturne | nocturn"),
 ) -> dict[str, Any]:
     """作品を指定プラットフォーム用に整形して出力する。"""
     async with UnitOfWork(AppContainer.db()) as uow:

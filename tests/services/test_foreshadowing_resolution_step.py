@@ -213,7 +213,7 @@ async def test_foreshadowing_resolution_step_execute_with_repository_no_matches(
     info_reports = [msg for msg, level in reporter.reports if level == "info"]
     assert any("解決対象の伏線が見つかりませんでした" in msg for msg in info_reports)
     
-    // 伏線に変更がないことを確認
+    # 伏線に変更がないことを確認
     assert len(engine.foreshadowing_repository.updated_foreshadowings) == 0
 
 
@@ -236,8 +236,8 @@ async def test_foreshadowing_resolution_step_execute_with_repository_has_matches
     engine = MockEngineWithRepository()
     reporter = MockStatusReporter()
     
-    // 事前にいくつかの伏線を追加しておく
-    // 一致する伏線（未解決）
+    # 事前にいくつかの伏線を追加しておく
+    # 一致する伏線（未解決）
     fs1 = Foreshadowing(
         id="F-001",
         content="解決対象の伏線",
@@ -247,7 +247,7 @@ async def test_foreshadowing_resolution_step_execute_with_repository_has_matches
         hang_type="implicit",
         importance="★★"
     )
-    // 一致しない伏線（異なる巻話）
+    # 一致しない伏線（異なる巻話）
     fs2 = Foreshadowing(
         id="F-002",
         content="他の巻話の伏線",
@@ -257,7 +257,7 @@ async def test_foreshadowing_resolution_step_execute_with_repository_has_matches
         hang_type="reader_task",
         importance="★"
     )
-    // 既に解決済みの伏線
+    # 既に解決済みの伏線
     fs3 = Foreshadowing(
         id="F-003",
         content="既に解決済みの伏線",
@@ -274,18 +274,18 @@ async def test_foreshadowing_resolution_step_execute_with_repository_has_matches
     engine.foreshadowing_repository.add(fs2)
     engine.foreshadowing_repository.add(fs3)
     
-    // execute メソッドを呼び出す
+    # execute メソッドを呼び出す
     result = await step.execute(ctx, engine, reporter)
-    
-    // 結果が True であることを確認（継続）
+
+    # 結果が True であることを確認（継続）
     assert result is True
-    
-    // 情報レポートが含まれていることを確認
+
+    # 情報レポートが含まれていることを確認
     info_reports = [msg for msg, level in reporter.reports if level == "info"]
     assert any("1件の伏線を解決済みとしてマークしました" in msg for msg in info_reports)
     assert any("(巻3話2)" in msg for msg in info_reports)
-    
-    // 正しく1件の伏線が更新されていることを確認
+
+    # 正しく1件の伏線が更新されていることを確認
     assert len(engine.foreshadowing_repository.updated_foreshadowings) == 1
     updated_fs = engine.foreshadowing_repository.updated_foreshadowings[0]
     assert updated_fs.id == "F-001"
@@ -306,24 +306,24 @@ async def test_foreshadowing_resolution_step_execute_fallback_to_context_no_matc
         initial_limit=3,
         word_count=2000,
         book_id=123,
-        current_volume=5,  // 存在しない巻話
+        current_volume=5,  # 存在しない巻話
         current_episode=3,
-        foreshadowings=[]  // 空のリストで初期化
+        foreshadowings=[]  # 空のリストで初期化
     )
     engine = MockEngineWithoutRepository()
     reporter = MockStatusReporter()
     
-    // execute メソッドを呼び出す
+    # execute メソッドを呼び出す
     result = await step.execute(ctx, engine, reporter)
     
-    // 結果が True であることを確認（継続）
+    # 結果が True であることを確認（継続）
     assert result is True
     
-    // 情報レポートが含まれていることを確認
+    # 情報レポートが含まれていることを確認
     info_reports = [msg for msg, level in reporter.reports if level == "info"]
     assert any("解決対象の伏線が見つかりませんでした" in msg for msg in info_reports)
     
-    // コンテキストに変更がないことを確認
+    # コンテキストに変更がないことを確認
     assert len(ctx.foreshadowings) == 0
 
 
@@ -342,7 +342,7 @@ async def test_foreshadowing_resolution_step_execute_fallback_to_context_has_mat
         book_id=123,
         current_volume=2,
         current_episode=4,
-        foreshadowings=[  // 初期値としていくつかの伏線を設定
+        foreshadowings=[  # 初期値としていくつかの伏線を設定
             Foreshadowing(
                 id="F-001",
                 content="解決対象の伏線",
@@ -370,32 +370,32 @@ async def test_foreshadowing_resolution_step_execute_fallback_to_context_has_mat
                 hang_type="explicit",
                 importance="★★★",
                 resolution_volume=2,
-                resolution_episode=6  // 既に解決済み
+                resolution_episode=6  # 既に解決済み
             )
         ]
     )
     engine = MockEngineWithoutRepository()
     reporter = MockStatusReporter()
     
-    // 実行前の未解決伏線の数を確認
+    # 実行前の未解決伏線の数を確認
     initial_unresolved = [
         fs for fs in ctx.foreshadowings
         if fs.resolution_volume is None and fs.resolution_episode is None
     ]
-    assert len(initial_unresolved) == 2  // F-001 と F-002
+    assert len(initial_unresolved) == 2  # F-001 と F-002
     
-    // execute メソッドを呼び出す
+    # execute メソッドを呼び出す
     result = await step.execute(ctx, engine, reporter)
     
-    // 結果が True であることを確認（継続）
+    # 結果が True であることを確認（継続）
     assert result is True
     
-    // 情報レポートが含まれていることを確認
+    # 情報レポートが含まれていることを確認
     info_reports = [msg for msg, level in reporter.reports if level == "info"]
     assert any("1件の伏線を解決済みとしてマークしました" in msg for msg in info_reports)
     assert any("(巻2話4)" in msg for msg in info_reports)
     
-    // 正しく1件の伏線が更新されていることを確認
+    # 正しく1件の伏線が更新されていることを確認
     updated_count = [
         fs for fs in ctx.foreshadowings
         if fs.resolution_volume == 2 and fs.resolution_episode == 4
@@ -409,7 +409,7 @@ async def test_foreshadowing_resolution_step_execute_exception_handling():
     """例外発生時のテスト"""
     step = ForeshadowingResolutionStep()
     
-    // 例外を発生させるエンジンを作成
+    # 例外を発生させるエンジンを作成
     class MockEngineThatRaises:
         def __init__(self):
             self.foreshadowing_repository = MockFailingRepository()
@@ -432,14 +432,14 @@ async def test_foreshadowing_resolution_step_execute_exception_handling():
     engine = MockEngineThatRaises()
     reporter = MockStatusReporter()
     
-    // execute メソッドを呼び出す
-    // 例外が発生しても True を返すはず（継続）
+    # execute メソッドを呼び出す
+    # 例外が発生しても True を返すはず（継続）
     result = await step.execute(ctx, engine, reporter)
     
-    // 結果が True であることを確認（継続）
+    # 結果が True であることを確認（継続）
     assert result is True
     
-    // 警告レポートが含まれていることを確認
+    # 警告レポートが含まれていることを確認
     warning_reports = [msg for msg, level in reporter.reports if level == "warning"]
     assert any("伏線解決中にエラーが発生しました" in msg for msg in warning_reports)
 

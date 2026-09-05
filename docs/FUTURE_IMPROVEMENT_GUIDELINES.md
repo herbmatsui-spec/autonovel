@@ -209,7 +209,7 @@ BookScoreの算出方法は以下の通りです：
   - `v2` AuditSkill (`src/agents/skills/v2/audit_skill.py`) - 再生成フォーカス自動設定
 - 7. 反射的スクリーニングによるRAG精度向上
   - `ReflectiveRAGService` (`src/services/reflective_rag.py`) - BM25キーワード抽出 + 文脈適合性チェック + 最大3回反復
-  - `retrieve_with_reflection()` (`src/services/rag_service.py`) - 機能フラグ対応
+  - `retrieve_with_reflection()` (`src/services/reflective_rag.py`) - 機能フラグ対応
   - 履歴保存 `rag_reflection_history` テーブル
 
 実装詳細:

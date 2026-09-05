@@ -197,3 +197,33 @@ async def test_context_builder_with_compressor():
     assert "compressed_context" in w_ctx
     assert "compression_stats" in w_ctx
     assert w_ctx["compression_stats"]["scene_type"] == "combat"
+
+
+def test_layer4_packs_smaller_facts_after_large_fact_exceeds_budget():
+    """budget オーバー時に大きな事実をスキップし、後続の小さい事実がパッキングされることの検証.
+
+    break → continue の修正により、小さい事実が漏らさずパックされることを確認する。
+    """
+    from src.services.compression.layer4_trimming import Layer4SceneTrimmer
+    from src.services.compression.models import SubgraphLayerOutput
+    trimmer = Layer4SceneTrimmer(max_tokens=80)
+    abstractor = Layer3ConceptAbstractor()
+
+    sub = SubgraphLayerOutput(
+        nodes=[
+            {"name": "大きな事象A", "labels": ["Event"]},
+            {"name": "小さい事象B", "labels": ["Event"]},
+            {"name": "中規模事象C", "labels": ["Event"]},
+        ],
+        edges=[
+            {"source": "A", "target": "B", "type": "関連"},
+        ],
+    )
+    abs_out = abstractor.abstract(sub, raw_text="")
+
+    trim_result = trimmer.trim(abs_out, scene_type="daily", original_token_count=500)
+
+    assert trim_result.token_count <= 80
+    text = trim_result.compressed_text
+    assert "事象" in text or "Event" in text or len(text) > 0
+

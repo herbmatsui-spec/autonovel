@@ -1,0 +1,42 @@
+Final Implementation Status
+===========================
+
+COMPLETED STEPS:
+✓ Step 1: Baseline tests and fixtures created
+  - tests/unit/test_erotic_baseline.py
+  - tests/fixtures/erotic_pipeline/mock_preset.py
+  - tests/fixtures/erotic_pipeline/mock_engine.py
+
+✓ Step 2: EroticGate VO created
+  - src/domain/value_objects/erotic_gate.py
+
+✓ Step 3: Slider added to Settings.py
+  - streamlit_app/pages/00_Settings.py
+
+✓ Step 4: erotic_intensity added to ConfigState._defaults
+  - streamlit_app/state.py
+
+✓ Step 5: pipeline_param_mapper.py updated with erotic gate resolution
+  - Added _resolve_erotic_gate helper function
+  - Modified both mapping functions to use erotic gate values
+
+✓ Step 6: WorkflowContext fields added
+  - is_nsfw_enabled: bool = False
+  - erotic_intensity: int = 0   # 1-5, 0は無効
+
+✓ Step 10: EroticEnhancer updated to use EroticGate VO
+  - Added import: from src.domain.value_objects.erotic_gate import EroticGate
+  - Replaced gate check with EroticGate.from_context(context)
+
+PARTIALLY COMPLETED / CORRUPTED FILES:
+○ Step 7: PlanStep modification (file corrupted)
+○ Step 8: WriteStep context injection (file corrupted)
+
+NOT STARTED:
+○ Step 9: Inject erotic YAML preset into write context
+○ Step 11: Make EroticSpecialist consume YAML preset
+○ Steps 12-16: Remove dead code
+○ Step 17: Clarify SpiceGuard nomenclature (optional)
+○ Steps 18-22: Propagate erotic settings to planner, hooks, audit, publishers, metrics
+○ Step 23: Add end-to-end integration test
+○ Step 24: Update documentation (README.md, AGENTS.md)
