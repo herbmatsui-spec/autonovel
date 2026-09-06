@@ -249,14 +249,28 @@ class ContextBuilderAgent(SkillAgent):
         if compressor is not None:
             raw_corpus = f"{prev_ctx}\n{char_static_ctx}\n{plot_dict.get('summary', '')}"
             s_type = "general"
-            if hasattr(compressor, "detect_scene_type") and callable(compressor.detect_scene_type):
-                s_type = compressor.detect_scene_type(
-                    plot_dict.get("summary", ""), plot_dict.get("scenes", [])
-                )
+            scene_weights = None
+            
+            # Try to get multi-label detection from compressor or its layer4
+            detector = None
+            if hasattr(compressor, "detect_scene_type_multi") and callable(compressor.detect_scene_type_multi):
+                detector = compressor.detect_scene_type_multi
+            elif hasattr(getattr(compressor, "layer4", None), "detect_scene_type_multi"):
+                detector = compressor.layer4.detect_scene_type_multi
+            elif hasattr(compressor, "detect_scene_type") and callable(compressor.detect_scene_type):
+                detector = compressor.detect_scene_type
             elif hasattr(getattr(compressor, "layer4", None), "detect_scene_type"):
-                s_type = compressor.layer4.detect_scene_type(
-                    plot_dict.get("summary", ""), plot_dict.get("scenes", [])
-                )
+                detector = compressor.layer4.detect_scene_type
+            
+            if detector:
+                multi = detector(plot_dict.get("summary", ""), plot_dict.get("scenes", []))
+                if multi:
+                    # If multi-label (list of tuples), use first as primary and all as weights
+                    if isinstance(multi, list) and multi and isinstance(multi[0], tuple):
+                        s_type = multi[0][0]
+                        scene_weights = {st: conf for st, conf in multi}
+                    else:
+                        s_type = multi
 
             try:
                 import inspect
@@ -266,6 +280,7 @@ class ContextBuilderAgent(SkillAgent):
                     book_id=book_id,
                     ep_num=ep_num,
                     scene_type=s_type,
+                    scene_weights=scene_weights,
                 )
                 if inspect.iscoroutine(c_res):
                     c_res = await c_res
@@ -275,7 +290,8 @@ class ContextBuilderAgent(SkillAgent):
                         "reduction_ratio": getattr(c_res, "overall_reduction_ratio", 0.0),
                         "final_tokens": getattr(c_res, "final_token_count", 0),
                         "from_cache": getattr(c_res, "from_cache", False),
-                        "scene_type": s_type,
+                        "scene_type": getattr(c_res, "layer4", None).scene_type if getattr(c_res, "layer4", None) else s_type,
+                        "scene_weights": scene_weights,
                     }
             except Exception as e:
                 import logging

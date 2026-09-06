@@ -89,7 +89,7 @@ class CreativityAuditor(SpecialistAuditor):
             raise LLMUnavailableError("No LLM available for CreativityAuditor")
 
         prompt = CREATIVITY_USER_PROMPT.format(draft_text=draft[:4000])
-        score, critique, suggestions = await self._judge_with_llm(
+        score, critique, suggestions, confidence, reasoning, raw_resp = await self._judge_with_llm(
             prompt=prompt,
             system_prompt=CREATIVITY_SYSTEM_PROMPT,
         )
@@ -100,17 +100,20 @@ class CreativityAuditor(SpecialistAuditor):
             feedback={"critique": critique},
             suggestions=suggestions,
             degraded=False,
+            confidence=confidence,
+            reasoning_trace=reasoning,
+            llm_raw_response=raw_resp,
         )
 
     def _fallback(self, ctx: dict[str, Any]) -> SpecialistAuditResult:
         """Rule-based fallback using Type-Token Ratio, n-gram repetition, and POS diversity."""
         draft = ctx.get("draft_text", "") or ""
         if not draft:
-            return SpecialistAuditResult("creativity", 0.0, feedback={"error": "no draft_text"}, degraded=True)
+            return SpecialistAuditResult("creativity", 0.0, feedback={"error": "no draft_text", "fallback": "rule-based"}, degraded=True)
 
         tokens = _tokenize(draft)
         if not tokens:
-            return SpecialistAuditResult("creativity", 50.0, feedback={"tokens": 0}, degraded=True)
+            return SpecialistAuditResult("creativity", 50.0, feedback={"tokens": 0, "fallback": "rule-based"}, degraded=True)
 
         ttr = _type_token_ratio(tokens)
         rep4 = _ngram_repetition(tokens, 4)
@@ -118,6 +121,16 @@ class CreativityAuditor(SpecialistAuditor):
 
         score = (0.4 * ttr + 0.3 * (1.0 - rep4) + 0.3 * pos_div) * 100.0
         score = max(0.0, min(100.0, round(score, 1)))
+
+        suggestions = []
+        if ttr < 0.4:
+            suggestions.append("Vary vocabulary and metaphors")
+        if rep4 > 0.3:
+            suggestions.append("Reduce repetitive phrasing and n-grams")
+        if pos_div < 0.2:
+            suggestions.append("Increase adjective/adverb diversity")
+        if not suggestions:
+            suggestions = ["Expression diversity is good"]
 
         return SpecialistAuditResult(
             specialist_name="creativity",
@@ -130,7 +143,7 @@ class CreativityAuditor(SpecialistAuditor):
                 "rep_4gram": round(rep4, 3),
                 "pos_diversity": round(pos_div, 3),
             },
-            suggestions=["Vary vocabulary and metaphors"] if ttr < 0.4 else [],
+            suggestions=suggestions,
             degraded=True,
         )
 

@@ -26,23 +26,23 @@ class SpecialistDummyLLM:
 
         text = str(prompt)
         if "Consistency" in text or "矛盾" in text:
-            content = '{"score": 88.0, "critique": "設定矛盾はなく、登場人物の生存状態も整合しています。", "suggestions": []}'
+            content = '{"score": 88.0, "critique": "設定矛盾はなく、登場人物の生存状態も整合しています。", "suggestions": [], "confidence": 0.9, "reasoning": "World Bibleと本文のエンティティが整合"}'
         elif "Creativity" in text or "独創性" in text:
-            content = '{"score": 85.0, "critique": "比喩表現が鮮烈で、独創的な世界観が展開されています。", "suggestions": ["後半の語彙をさらに豊かに"]}'
+            content = '{"score": 85.0, "critique": "比喩表現が鮮烈で、独創的な世界観が展開されています。", "suggestions": ["後半の語彙をさらに豊かに"], "confidence": 0.85, "reasoning": "TTR高、n-gram反復低"}'
         elif "Reader Hook" in text or "引きの強さ" in text or "クリフハンガー" in text:
-            content = '{"score": 90.0, "critique": "冒頭の謎かけと末尾のクリフハンガーが読者を強く惹きつけます。", "suggestions": []}'
+            content = '{"score": 90.0, "critique": "冒頭の謎かけと末尾のクリフハンガーが読者を強く惹きつけます。", "suggestions": [], "confidence": 0.92, "reasoning": "冒頭に疑問、末尾に未解決"}'
         elif "Emotion Curve" in text or "感情曲線" in text or "カタルシス" in text:
-            content = '{"score": 82.0, "critique": "緊張の高まりと結末のカタルシスがバランスよく描かれています。", "suggestions": []}'
+            content = '{"score": 82.0, "critique": "緊張の高まりと結末のカタルシスがバランスよく描かれています。", "suggestions": [], "confidence": 0.88, "reasoning": "感情極性に起伏、カタルシス語検出"}'
         elif "Style" in text or "文体" in text or "トーン" in text:
-            content = '{"score": 89.0, "critique": "語尾と口調が一貫しており、格調高い文体が維持されています。", "suggestions": []}'
+            content = '{"score": 89.0, "critique": "語尾と口調が一貫しており、格調高い文体が維持されています。", "suggestions": [], "confidence": 0.9, "reasoning": "敬体/常体統一、一人称安定"}'
         elif "Factual" in text or "時代考証" in text or "事実関係" in text:
-            content = '{"score": 92.0, "critique": "時代考証および作中ルールの科学的・魔術的整合性が確認されました。", "suggestions": []}'
+            content = '{"score": 92.0, "critique": "時代考証および作中ルールの科学的・魔術的整合性が確認されました。", "suggestions": [], "confidence": 0.95, "reasoning": "アナクロニズムなし、用語整合"}'
         elif "Structure" in text or "起承転結" in text or "構成" in text:
-            content = '{"score": 86.0, "critique": "プロットの起承転結が綺麗に消化され、テンポも良好です。", "suggestions": []}'
+            content = '{"score": 86.0, "critique": "プロットの起承転結が綺麗に消化され、テンポも良好です。", "suggestions": [], "confidence": 0.87, "reasoning": "4フェーズキーワード網羅、ペース均等"}'
         elif "Multimodal" in text or "挿絵" in text:
-            content = '{"score": 94.0, "critique": "本文の決戦シーンと挿絵指示の構図・ライティングが完全に一致しています。", "suggestions": []}'
+            content = '{"score": 94.0, "critique": "本文の決戦シーンと挿絵指示の構図・ライティングが完全に一致しています。", "suggestions": [], "confidence": 0.93, "reasoning": "キャラ/小道具/感情の三層一致"}'
         else:
-            content = '{"score": 80.0, "critique": "良好な品質です。", "suggestions": []}'
+            content = '{"score": 80.0, "critique": "良好な品質です。", "suggestions": [], "confidence": 0.8, "reasoning": "デフォルト評価"}'
 
         # Simulate small async network latency to verify asyncio.gather concurrency
         await asyncio.sleep(0.01)
@@ -144,3 +144,43 @@ async def test_partial_llm_failure_graceful_degradation(standard_weights):
     # Aggregator successfully computes overall score
     book_score = aggregator.aggregate()
     assert 0.0 <= book_score.overall <= 100.0
+
+
+class LowConfidenceDummyLLM:
+    """Mock LLM that returns low confidence to test auto-fallback."""
+
+    async def ainvoke(self, prompt: str, **kwargs):
+        class Resp:
+            def __init__(self, content):
+                self.content = content
+
+        # Return low confidence (0.3) to trigger auto-fallback
+        content = '{"score": 85.0, "critique": "テスト用低信頼度", "suggestions": [], "confidence": 0.3, "reasoning": "自信なし"}'
+        await asyncio.sleep(0.01)
+        return Resp(content)
+
+
+@pytest.mark.asyncio
+async def test_low_confidence_triggers_fallback(standard_weights):
+    """If LLM returns low confidence, auditor should auto-fallback to rule-based."""
+    mock_llm = LowConfidenceDummyLLM()
+    auditor = ConsistencyAuditor(llm=mock_llm)
+
+    ctx = {
+        "draft_text": "アリスは東京で剣を振った。ボブも東京にいた。",
+        "world_bible_snapshot": {
+            "characters": [{"name": "アリス"}, {"name": "ボブ"}],
+            "locations": [{"name": "東京"}],
+            "items": [{"name": "剣"}],
+        }
+    }
+
+    result = await auditor._safe_audit(ctx)
+
+    # Should have fallen back due to low confidence
+    assert result.degraded is True
+    assert result.error is not None
+    assert "low_confidence" in result.error
+    assert result.feedback.get("llm_confidence") == 0.3
+    # Score should come from rule-based fallback (not the LLM's 85.0)
+    assert 30.0 <= result.score <= 95.0  # fallback range

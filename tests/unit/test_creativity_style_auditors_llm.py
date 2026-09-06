@@ -18,7 +18,7 @@ class DummyLLM:
 
 @pytest.mark.asyncio
 async def test_creativity_auditor_with_llm():
-    llm_json = '```json\n{"score": 88.5, "critique": "独創的で鮮烈な比喩表現が多数見られます。", "suggestions": ["後半の語彙をさらに豊かに"]}\n```'
+    llm_json = '```json\n{"score": 88.5, "critique": "独創的で鮮烈な比喩表現が多数見られます。", "suggestions": ["後半の語彙をさらに豊かに"], "confidence": 0.85, "reasoning": "比喩・語彙多様性が高い"}\n```'
     auditor = CreativityAuditor(llm=DummyLLM(llm_json))
     ctx = {"draft_text": "夜の帳が降りる頃、街のネオンは水銀のように冷たく光っていた。"}
 
@@ -43,7 +43,7 @@ async def test_creativity_auditor_fallback():
 
 @pytest.mark.asyncio
 async def test_style_auditor_with_llm():
-    llm_json = '{"score": 92.0, "critique": "格調高い常体で統一されており、ハードボイルドな世界観と完全に一致しています。", "suggestions": []}'
+    llm_json = '{"score": 92.0, "critique": "格調高い常体で統一されており、ハードボイルドな世界観と完全に一致しています。", "suggestions": [], "confidence": 0.9, "reasoning": "文体・一人称が設定と完全一致"}'
     auditor = StyleAuditor(llm=DummyLLM(llm_json))
     ctx = {
         "draft_text": "冷たい雨がトレンチコートを濡らす。俺はタバコに火をつけた。",

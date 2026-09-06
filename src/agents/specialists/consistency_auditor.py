@@ -14,6 +14,12 @@ from src.agents.specialist_auditor_base import (
     SpecialistAuditResult,
     LLMUnavailableError,
 )
+from src.agents.specialists.fallback_utils import (
+    extract_entities,
+    build_relation_graph,
+    check_semantic_consistency,
+    compute_coverage,
+)
 
 CONSISTENCY_SYSTEM_PROMPT = """あなたは小説の設定・論理一貫性（Consistency）を厳格に審査する専門編集オーディターです。
 与えられた「World Bible設定」と「執筆ドラフト本文」を照合し、以下の観点で論理矛盾を精査してください:
@@ -56,7 +62,7 @@ class ConsistencyAuditor(SpecialistAuditor):
             draft_text=draft[:4000],
         )
 
-        score, critique, suggestions = await self._judge_with_llm(
+        score, critique, suggestions, confidence, reasoning, raw_resp = await self._judge_with_llm(
             prompt=prompt,
             system_prompt=CONSISTENCY_SYSTEM_PROMPT,
         )
@@ -70,39 +76,53 @@ class ConsistencyAuditor(SpecialistAuditor):
             },
             suggestions=suggestions,
             degraded=False,
+            confidence=confidence,
+            reasoning_trace=reasoning,
+            llm_raw_response=raw_resp,
         )
 
     def _fallback(self, ctx: dict[str, Any]) -> SpecialistAuditResult:
-        """Rule-based fallback without death/life window regex heuristic."""
+        """Rule-based fallback using semantic consistency checking."""
         draft = ctx.get("draft_text", "") or ""
         bible = ctx.get("world_bible_snapshot") or {}
         if not draft:
-            return SpecialistAuditResult("consistency", 0.0, feedback={"error": "no draft_text"}, degraded=True)
+            return SpecialistAuditResult("consistency", 0.0, feedback={"error": "no draft_text", "fallback": "rule-based"}, degraded=True)
 
-        ref_nouns: set[str] = set()
-        for key in ("characters", "locations", "items", "factions", "terms"):
-            val = bible.get(key)
-            if isinstance(val, list):
-                for item in val:
-                    if isinstance(item, dict):
-                        name = item.get("name", "")
-                        if name:
-                            ref_nouns.add(name)
-                    elif isinstance(item, str):
-                        ref_nouns.add(item)
+        entities = extract_entities(draft, bible)
+        all_entities = set()
+        for ent_set in entities.values():
+            all_entities.update(ent_set)
 
-        if not ref_nouns:
-            return SpecialistAuditResult("consistency", 60.0, feedback={"coverage": "neutral"}, degraded=True)
+        if not all_entities:
+            return SpecialistAuditResult("consistency", 60.0, feedback={"coverage": "neutral", "fallback": "rule-based"}, degraded=True)
 
-        found = sum(1 for n in ref_nouns if n in draft)
-        coverage = found / len(ref_nouns) if ref_nouns else 0.5
-        score = max(40.0, min(90.0, round(coverage * 80.0 + 20.0, 1)))
+        graph = build_relation_graph(bible)
+        consistency_score = check_semantic_consistency(draft, graph)
+        coverage = compute_coverage(draft, all_entities)
+
+        # Weighted combination: 70% semantic consistency, 30% coverage
+        score = max(30.0, min(95.0, round((0.7 * consistency_score + 0.3 * coverage) * 100.0, 1)))
+
+        # Generate specific suggestions based on detected issues
+        suggestions = []
+        if consistency_score < 0.5:
+            suggestions.append("論理矛盾が検出されました。死亡キャラクターの登場や場所の整合性を確認してください。")
+        if coverage < 0.5:
+            suggestions.append("World Bibleの主要エンティティが本文で言及されていません。設定の反映を確認してください。")
+        if not suggestions:
+            suggestions = ["Populate World Bible for more thorough checks"]
 
         return SpecialistAuditResult(
             specialist_name="consistency",
             score=score,
-            feedback={"rule_coverage": round(coverage, 2), "found_entities": found},
-            suggestions=["Populate World Bible for more thorough checks"],
+            feedback={
+                "fallback": "rule-based",
+                "rule_consistency": round(consistency_score, 2),
+                "rule_coverage": round(coverage, 2),
+                "found_entities": sum(1 for e in all_entities if e in draft),
+                "total_entities": len(all_entities),
+            },
+            suggestions=suggestions,
             degraded=True,
         )
 

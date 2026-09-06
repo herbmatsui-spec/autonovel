@@ -686,10 +686,12 @@ class EasyModeDraft(Base):
     ``kind`` 区分:
     - ``gacha``: GachaService.generate_plans() の出力（3 案企画）
     - ``digest``: DigestService.generate_digest() の出力（第 1 話＋あらすじ等）
+    - ``review_session``: ブラインドピアレビューセッション（複数ラウンド管理）
 
     ``parent_draft_id``:
     - ``gacha``  Draft からは未設定
     - ``digest`` Draft からは対応する ``gacha`` Draft の ``draft_id`` を参照
+    - ``review_session`` からは対応する ``gacha`` Draft の ``draft_id`` を参照
     """
 
     __tablename__ = "easy_mode_drafts"
@@ -698,6 +700,7 @@ class EasyModeDraft(Base):
     draft_id = Column(String(64), unique=True, nullable=False, index=True)
     kind = Column(String(20), nullable=False)
     payload_json = Column(Text, nullable=False, default="{}")
+    review_session_json = Column(Text, nullable=True)  # ReviewSession シリアライズ用
     parent_draft_id = Column(String(64), nullable=True, index=True)
     book_id = Column(String(64), nullable=True, index=True)
     created_at = Column(DateTime, server_default=func.now())

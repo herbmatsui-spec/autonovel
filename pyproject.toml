@@ -43,6 +43,12 @@ rag = [
     "pgvector>=0.3.0",
     "sentence-transformers>=2.6.0",
 ]
+nlp = [
+    "sudachipy>=0.6.0,<0.7",
+    "sudachidict-core>=20230109",
+    "sudachidict-full>=20230109",
+    "sudachidict-small>=20230109",
+]
 
 [tool.setuptools]
 package-dir = {"" = "src"}
@@ -53,5 +59,33 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 norecursedirs = [".git", "scripts", "node_modules", "storage"]
-addopts = "-p no:cacheprovider --tb=short"
+addopts = "-p no:cacheprovider --tb=short --cov=src --cov-branch --cov-fail-under=25"
 asyncio_mode = "auto"
+
+[tool.coverage.run]
+source = ["src"]
+omit = [
+    "*/tests/*",
+    "*/migrations/*",
+    "*/alembic/*",
+    "*/conftest.py",
+    "*/__pycache__/*",
+]
+branch = true
+concurrency = ["multiprocessing", "thread"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]
+precision = 2
+show_missing = true
+skip_covered = false
+
+[tool.coverage.html]
+directory = "htmlcov"

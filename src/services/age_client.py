@@ -885,12 +885,14 @@ class AgeClient:
     def check_entity_validity(
         self, session: Session, graph_name: str, entity_name: str
     ) -> dict[str, Any]:
-        """エンティティの禁止・引退・ステータスを検証する（Step 17）。"""
+        """エンティティの禁止・引退・ステータス・矛盾を検証する（Step 17 拡張）。"""
         gname = graph_name or self.graph_name
         if not gname or not entity_name:
-            return {"valid": True, "is_forbidden": False, "is_retired": False}
+            return {"valid": True, "is_forbidden": False, "is_retired": False, "conflict_types": []}
 
         safe_name = entity_name.replace("'", "\\'").replace('"', '\\"')
+        
+        # Check basic validity flags
         cypher = f"MATCH (n) WHERE n.name = '{safe_name}' RETURN n.is_forbidden, n.is_retired, n.status LIMIT 1"
         try:
             sql = f"SELECT * FROM cypher('{gname}', $$ {cypher} $$) as (is_forbidden agtype, is_retired agtype, status agtype);"
@@ -900,16 +902,121 @@ class AgeClient:
                 forbidden = bool(_parse_agtype(row[0])) if row[0] is not None else False
                 retired = bool(_parse_agtype(row[1])) if row[1] is not None else False
                 status = str(_parse_agtype(row[2])) if row[2] is not None else "active"
-                return {
-                    "valid": not (forbidden or retired),
-                    "is_forbidden": forbidden,
-                    "is_retired": retired,
-                    "status": status,
-                }
-            return {"valid": True, "is_forbidden": False, "is_retired": False, "status": "unknown"}
+            else:
+                forbidden = False
+                retired = False
+                status = "unknown"
         except Exception as e:
             logger.debug("Failed to check entity validity for %s: %s", entity_name, e)
-            return {"valid": True, "is_forbidden": False, "is_retired": False, "status": "unknown"}
+            return {"valid": True, "is_forbidden": False, "is_retired": False, "status": "unknown", "conflict_types": []}
+
+        conflict_types = []
+        if forbidden:
+            conflict_types.append("forbidden")
+        if retired:
+            conflict_types.append("retired")
+        
+        # Check temporal conflicts: entity has inconsistent timeline
+        temporal_conflicts = self._check_temporal_conflicts(session, gname, safe_name)
+        if temporal_conflicts:
+            conflict_types.extend(temporal_conflicts)
+        
+        # Check causal conflicts: entity has contradictory causal relationships
+        causal_conflicts = self._check_causal_conflicts(session, gname, safe_name)
+        if causal_conflicts:
+            conflict_types.extend(causal_conflicts)
+        
+        # Check state conflicts: entity has inconsistent state properties
+        state_conflicts = self._check_state_conflicts(session, gname, safe_name)
+        if state_conflicts:
+            conflict_types.extend(state_conflicts)
+
+        valid = not (forbidden or retired)
+        
+        return {
+            "valid": valid,
+            "is_forbidden": forbidden,
+            "is_retired": retired,
+            "status": status,
+            "conflict_types": conflict_types,
+        }
+
+    def _check_temporal_conflicts(self, session: Session, graph_name: str, entity_name: str) -> list[str]:
+        """時間的整合性の矛盾をチェック（例: 死亡後に活動、時系列逆転など）."""
+        conflicts = []
+        try:
+            # Check for timeline inconsistencies - events before birth or after death
+            cypher = f"""
+                MATCH (n {{name: '{entity_name}'}})-[:OCCURRED_AT*]->(e:Event)
+                WHERE e.timestamp IS NOT NULL
+                WITH collect(e.timestamp) as timestamps
+                WHERE size(timestamps) > 1
+                UNWIND timestamps as ts
+                WITH min(ts) as min_ts, max(ts) as max_ts
+                RETURN min_ts, max_ts
+            """
+            sql = f"SELECT * FROM cypher('{graph_name}', $$ {cypher} $$) as (min_ts agtype, max_ts agtype);"
+            result = session.execute(text(sql))
+            row = result.first()
+            if row and row[0] and row[1]:
+                min_ts = _parse_agtype(row[0])
+                max_ts = _parse_agtype(row[1])
+                # Check for reversed timeline (simplified check)
+                if isinstance(min_ts, (int, float)) and isinstance(max_ts, (int, float)):
+                    if min_ts > max_ts:
+                        conflicts.append("temporal_reversed")
+        except Exception:
+            pass
+        
+        return conflicts
+
+    def _check_causal_conflicts(self, session: Session, graph_name: str, entity_name: str) -> list[str]:
+        """因果関係の矛盾をチェック（例: AがBを引き起こす AND BがAを引き起こす）."""
+        conflicts = []
+        try:
+            # Check for circular causality
+            cypher = f"""
+                MATCH (n {{name: '{entity_name}'}})-[:CAUSES*]->(n)
+                RETURN count(*) as cycles
+            """
+            sql = f"SELECT * FROM cypher('{graph_name}', $$ {cypher} $$) as (cycles agtype);"
+            result = session.execute(text(sql))
+            row = result.first()
+            if row and row[0]:
+                cycles = int(str(_parse_agtype(row[0])).strip('"'))
+                if cycles > 0:
+                    conflicts.append("causal_circular")
+        except Exception:
+            pass
+        
+        return conflicts
+
+    def _check_state_conflicts(self, session: Session, graph_name: str, entity_name: str) -> list[str]:
+        """状態の矛盾をチェック（例: 生存 AND 死亡、所持 AND 非所持）."""
+        conflicts = []
+        try:
+            # Check for contradictory state properties
+            cypher = f"""
+                MATCH (n {{name: '{entity_name}'}})
+                RETURN n.is_alive, n.is_dead, n.has_artifact, n.lost_artifact
+            """
+            sql = f"SELECT * FROM cypher('{graph_name}', $$ {cypher} $$) as (is_alive agtype, is_dead agtype, has_artifact agtype, lost_artifact agtype);"
+            result = session.execute(text(sql))
+            row = result.first()
+            if row:
+                is_alive = bool(_parse_agtype(row[0])) if row[0] is not None else False
+                is_dead = bool(_parse_agtype(row[1])) if row[1] is not None else False
+                has_artifact = bool(_parse_agtype(row[2])) if row[2] is not None else False
+                lost_artifact = bool(_parse_agtype(row[3])) if row[3] is not None else False
+                
+                if is_alive and is_dead:
+                    conflicts.append("state_alive_dead")
+                if has_artifact and lost_artifact:
+                    conflicts.append("state_has_lost")
+        except Exception:
+            pass
+        
+        return conflicts
 
     @contextmanager
     def transaction(self, session: Session):

@@ -223,6 +223,9 @@ class AuditAggregator:
         try:
             from src.agents.event_bus import AgentEvent
 
+            # Extract weight variant from context or result feedback
+            weight_variant = ctx.get("weight_variant") or result.feedback.get("weight_variant", "unknown")
+
             await self.event_bus.publish_async(
                 AgentEvent(
                     agent=f"audit.specialist.{name}",
@@ -234,6 +237,48 @@ class AuditAggregator:
                         "score": result.score,
                         "degraded": result.degraded,
                         "error": result.error,
+                        "confidence": result.confidence,
+                        "reasoning_trace": result.reasoning_trace,
+                        "weight_variant": weight_variant,
+                    },
+                    correlation_id=str(ctx.get("correlation_id", "unknown")),
+                )
+            )
+        except Exception:
+            pass
+
+    async def publish_aggregated_metrics(
+        self,
+        book_score: BookScoreResult,
+        ctx: dict[str, Any],
+        min_pass_score: float = 70.0,
+    ) -> None:
+        """Publish aggregated audit metrics for A/B test analysis."""
+        if not self.event_bus:
+            return
+        try:
+            from src.agents.event_bus import AgentEvent
+
+            weight_variant = ctx.get("weight_variant", "unknown")
+            genre = ctx.get("genre", "unknown")
+            phase = ctx.get("phase", "unknown")
+
+            await self.event_bus.publish_async(
+                AgentEvent(
+                    agent="audit.aggregated",
+                    payload={
+                        "event": "audit.aggregated",
+                        "book_id": ctx.get("book_id"),
+                        "chapter_number": ctx.get("chapter_number"),
+                        "weight_variant": weight_variant,
+                        "genre": genre,
+                        "phase": phase,
+                        "overall_score": book_score.overall,
+                        "specialist_scores": book_score.by_specialist,
+                        "missing_specialists": book_score.missing,
+                        "weights_used": book_score.weights_used,
+                        "regeneration_triggered": book_score.overall < min_pass_score,
+                        "lowest_dimension": book_score.lowest_dimension(),
                     },
                     correlation_id=str(ctx.get("correlation_id", "unknown")),
                 )

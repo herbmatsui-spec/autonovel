@@ -135,8 +135,8 @@ class TestEmotionCurveAuditor:
     async def test_flat_text(self, auditor):
         ctx = {"draft_text": "アリスは歩いた。鳥が鳴いた。風が吹いた。"}
         result = await auditor._safe_audit(ctx)
-        # Fallback minimum score is 20.0
-        assert result.score == 20.0
+        # Fallback minimum score is now 35.0 (improved from 20.0)
+        assert result.score == 35.0
         assert result.degraded is True
 
     @pytest.mark.asyncio

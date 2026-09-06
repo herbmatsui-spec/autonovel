@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import io
+from src.backend.database.repositories.chapter import ChapterRepository
 import logging
+import difflib
 import uuid
 import zipfile
 from datetime import datetime
@@ -16,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.backend.auth import validate_api_key_or_raise
 from src.backend.database.core import get_db_manager
 from src.backend.database.repositories.branch import BranchRepository
+from src.backend.database.repositories.chapter import ChapterRepository
 from src.backend.schemas.branch import (
     BranchForkRequest,
     BranchGraphResponse,
@@ -103,6 +106,128 @@ async def list_branches(
     return [_to_response(b) for b in branches]
 
 
+
+@router.get("/{book_id}/tree", response_model=dict)
+async def get_branch_tree(
+    book_id: int,
+    session: AsyncSession = Depends(get_branch_session),
+) -> dict[str, Any]:
+    """書籍の全ブランチをツリー構造（ノードとエッジ）で取得."""
+    repo = BranchRepository(session)
+    branches = await repo.get_branch_tree(book_id)
+    
+    # ノードとエッジに変換
+    nodes: list[dict] = []
+    edges: list[dict] = []
+    
+    for branch in branches:
+        # ノードデータ
+        nodes.append({
+            "id": branch.id,
+            "data": {
+                "label": branch.name,
+                "bookId": branch.book_id,
+                "parentId": branch.parent_id,
+                "forkEpNum": branch.fork_ep_num,
+                "createdAt": branch.created_at.isoformat() if branch.created_at else None
+            },
+            "position": { "x": 0, "y": 0 }  # レイアウトはフロントエンドで計算
+        })
+        
+        # エッジデータ（親が存在する場合）
+        if branch.parent_id is not None:
+            edges.append({
+                "id": f"edge-{branch.parent_id}-{branch.id}",
+                "source": branch.parent_id,
+                "target": branch.id,
+                "type": "smoothstep"
+            })
+    
+    return {
+        "nodes": nodes,
+        "edges": edges
+    }
+@router.get("/{book_id}/diff", response_model=dict)
+async def get_branch_diff(
+    book_id: int,
+    branchA: int,
+    branchB: int,
+    chapter: int,
+    session: AsyncSession = Depends(get_branch_session),
+) -> dict[str, Any]:
+    """二つのブランチの指定章の差分を取得."""
+    branch_repo = BranchRepository(session)
+    chapter_repo = ChapterRepository(session)
+    
+    # 各ブランチの章内容を取得
+    chapter_a = await chapter_repo.get_chapter(branchA, chapter)
+    chapter_b = await chapter_repo.get_chapter(branchB, chapter)
+    
+    if not chapter_a or not chapter_b:
+        raise HTTPException(status_code=404, detail="Chapter not found")
+    
+    content_a = chapter_a.content or ""
+    content_b = chapter_b.content or ""
+    
+    # 差分を計算（簡易的な実装）
+    diff_unified = _compute_unified_diff(content_a, content_b)
+    diff_side_by_side = _compute_side_by_side_diff(content_a, content_b)
+    
+    return {
+        "chapter_number": chapter,
+        "branch_a_name": (await branch_repo.get_branch(branchA)).name,
+        "branch_b_name": (await branch_repo.get_branch(branchB)).name,
+        "content_a": content_a,
+        "content_b": content_b,
+        "diff_unified": diff_unified,
+        "diff_side_by_side": {
+            "left": diff_side_by_side.left,
+            "right": diff_side_by_side.right
+        }
+    }
+    """二つのブランチの指定章の差分を取得."""
+    branch_repo = BranchRepository(session)
+    chapter_repo = ChapterRepository(session)
+    
+    # 各ブランチの章内容を取得
+    chapter_a = await chapter_repo.get_chapter(branchA, chapter)
+    chapter_b = await chapter_repo.get_chapter(branchB, chapter)
+    
+    if not chapter_a or not chapter_b:
+        raise HTTPException(status_code=404, detail="Chapter not found")
+    
+    content_a = chapter_a.content or ""
+    content_b = chapter_b.content or ""
+    
+    # 差分を計算（簡易的な実装）
+    diff_unified = _compute_unified_diff(content_a, content_b)
+    diff_side_by_side = _compute_side_by_side_diff(content_a, content_b)
+    
+    return {
+        "chapter_number": chapter,
+        "branch_a_name": (await branch_repo.get_branch(branchA)).name,
+        "branch_b_name": (await branch_repo.get_branch(branchB)).name,
+        "content_a": content_a,
+        "content_b": content_b,
+        "diff_unified": diff_unified,
+        "diff_side_by_side": {
+            "left": diff_side_by_side.left,
+            "right": diff_side_by_side.right
+        }
+    }
+    return {
+        "chapter_number": chapter,
+        "branch_a_name": (await repo.get_branch(branchA)).name,
+        "branch_b_name": (await repo.get_branch(branchB)).name,
+        "content_a": content_a,
+        "content_b": content_b,
+        "diff_unified": diff_unified,
+        "diff_side_by_side": {
+            "left": diff_side_by_side.left,
+            "right": diff_side_by_side.right
+        }
+    }
+
 @router.get("/{book_id}/graph", response_model=BranchGraphResponse)
 async def get_branch_graph(
     book_id: int,
@@ -172,6 +297,74 @@ async def merge_branches(
     if branch is None:
         raise HTTPException(status_code=500, detail="Merge failed")
     await session.commit()
+
+
+@router.post("/{book_id}/merge/preview", response_model=dict)
+async def preview_merge(
+    book_id: int,
+    payload: BranchMergeRequest,
+    session: AsyncSession = Depends(get_branch_session),
+) -> dict[str, Any]:
+    """マージのプレビューとコンフリクト検知."""
+    branch_repo = BranchRepository(session)
+    chapter_repo = ChapterRepository(session)
+    
+    # ソースブランチとターゲットブランチを取得
+    source_branch = await branch_repo.get_branch(payload.source_branch_id)
+    target_branch = await branch_repo.get_branch(payload.target_branch_id)
+    
+    if not source_branch or not target_branch:
+        raise HTTPException(status_code=404, detail="Branch not found")
+    
+    # マージポイントの章内容を取得
+    source_chapter = await chapter_repo.get_chapter(payload.source_branch_id, payload.merge_ep_num)
+    target_chapter = await chapter_repo.get_chapter(payload.target_branch_id, payload.merge_ep_num)
+    
+    # ベースブランチ（共通祖先）の内容を取得（簡易実装：ターゲットブランチの親）
+    base_chapter_content = ""
+    if target_branch.parent_id is not None:
+        base_chapter = await chapter_repo.get_chapter(target_branch.parent_id, payload.merge_ep_num)
+        if base_chapter:
+            base_chapter_content = base_chapter.content or ""
+    
+    source_content = source_chapter.content or "" if source_chapter else ""
+    target_content = target_chapter.content or "" if target_chapter else ""
+    
+    # 簡易的なコンフリクト検知
+    has_conflict = False
+    conflict_chunks = []
+    
+    if source_content != target_content and source_content != base_chapter_content and target_content != base_chapter_content:
+        # 三方向の変更が異なる場合はコンフリクト
+        has_conflict = True
+        conflict_chunks.append({
+            "id": f"conflict-{payload.source_branch_id}-{payload.target_branch_id}-{payload.merge_ep_num}",
+            "base": base_chapter_content,
+            "source": source_content,
+            "target": target_content,
+        })
+    elif source_content != target_content:
+        # ソースとターゲットのみが異なる場合もコンフリクトとして扱う（簡易）
+        has_conflict = True
+        conflict_chunks.append({
+            "id": f"conflict-{payload.source_branch_id}-{payload.target_branch_id}-{payload.merge_ep_num}",
+            "base": base_chapter_content,
+            "source": source_content,
+            "target": target_content,
+        })
+    
+    # マージ後の内容をシミュレート（簡易：ソースを優先）
+    merged_content = source_content if source_content else target_content
+    
+    return {
+        "can_merge": not has_conflict,
+        "has_conflict": has_conflict,
+        "conflict_chunks": conflict_chunks,
+        "merged_content": merged_content if not has_conflict else None,
+        "source_branch_id": payload.source_branch_id,
+        "target_branch_id": payload.target_branch_id,
+        "base_branch_id": target_branch.parent_id or None,
+    }
     return _to_response(branch)
 
 
@@ -904,6 +1097,38 @@ async def get_branch_stats(
         "total_choices": total_choices,
         "unique_paths": len(unique_paths),
     }
+
+
+def _compute_unified_diff(content_a: str, content_b: str) -> str:
+    """二つのコンテンツの統一フォーマット差分を計算（簡易実装）"""
+    lines_a = content_a.splitlines(keepends=True)
+    lines_b = content_b.splitlines(keepends=True)
+    diff = difflib.unified_diff(lines_a, lines_b, lineterm="")
+    return "\n".join(diff)
+
+
+def _compute_side_by_side_diff(content_a: str, content_b: str) -> dict[str, list[str]]:
+    """二つのコンテンツのサイドバイサイド差分を計算（簡易実装）"""
+    import difflib
+    lines_a = content_a.splitlines(keepends=True)
+    lines_b = content_b.splitlines(keepends=True)
+    diff = difflib.unified_diff(lines_a, lines_b, lineterm="")
+    
+    left = []
+    right = []
+    for line in diff:
+        if line.startswith("- ") and not line.startswith("---"):
+            left.append(line[2:])
+            right.append("")
+        elif line.startswith("+ ") and not line.startswith("+++"):
+            left.append("")
+            right.append(line[2:])
+        elif line.startswith(" "):
+            left.append(line[2:] if len(line) > 2 else "")
+            right.append(line[2:] if len(line) > 2 else "")
+        # @@ 行などは無視
+    
+    return {"left": left, "right": right}
 
 
 @router.get("/{book_id}/choices", response_model=dict)

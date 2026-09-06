@@ -17,7 +17,9 @@ from src.agents.specialists import (
     StructureAuditor,
     StyleAuditor,
 )
+from src.config.weight_variants import load_variants_from_yaml, merge_genre_phase_variants
 from src.services.audit_aggregator import AuditAggregator, BookScoreResult
+from src.services.experiment_allocator import ExperimentAllocator, DEFAULT_ALLOCATOR
 
 logger = logging.getLogger(__name__)
 
@@ -60,8 +62,8 @@ def load_audit_weights(
             data = yaml.safe_load(f) or {}
 
         weights = dict(data.get("default", default_weights))
-        genre_overrides = data.get("genre_overrides", {})
-        phase_overrides = data.get("phase_overrides", {})
+        genre_overrides = data.get("by_genre", {})
+        phase_overrides = data.get("by_phase", {})
 
         if genre and genre in genre_overrides:
             weights.update(genre_overrides[genre])
@@ -88,25 +90,43 @@ class AuditAggregatorNode:
         event_bus: Any | None = None,
         repo: Any | None = None,
         llm: Any | None = None,
+        experiment_allocator: Optional[ExperimentAllocator] = None,
+        traffic_fraction: float = 0.01,
     ) -> None:
         self.weights_path = weights_path
         self.event_bus = event_bus
         self.repo = repo
         self.llm = llm
         self._aggregator = aggregator
+        self._experiment_allocator = experiment_allocator or DEFAULT_ALLOCATOR
+        # Allow runtime traffic fraction override
+        if traffic_fraction != 0.01:
+            self._experiment_allocator = ExperimentAllocator(traffic_fraction=traffic_fraction)
+        # Load weight variants from YAML on init
+        try:
+            load_variants_from_yaml(weights_path)
+        except Exception as e:
+            logger.warning(f"Could not load weight variants from {weights_path}: {e}")
 
-    def get_aggregator(self, genre: str = "", phase: str = "") -> AuditAggregator:
-        """Get or build AuditAggregator with appropriate weights."""
+    def get_aggregator(self, genre: str = "", phase: str = "", book_id: int = 0) -> AuditAggregator:
+        """Get or build AuditAggregator with appropriate weights (including A/B variant)."""
         if self._aggregator is not None:
             return self._aggregator
 
-        weights = load_audit_weights(self.weights_path, genre=genre, phase=phase)
+        # Use experiment allocator for A/B variant selection
+        variant_name = self._experiment_allocator.allocate(book_id, genre)
+        from src.config.weight_variants import get_variant
+        weights = get_variant(variant_name)
+
         specialists = create_default_specialists()
-        return AuditAggregator(
+        agg = AuditAggregator(
             specialists=specialists,
             weights=weights,
             event_bus=self.event_bus,
         )
+        # Store variant name for metrics
+        agg._weight_variant = variant_name
+        return agg
 
     def build_specialist_input(self, ctx: AgentContext) -> dict[str, Any]:
         """Convert AgentContext into input dict required by specialist auditors."""
@@ -272,20 +292,37 @@ class AuditAggregatorNode:
         try:
             genre = ctx.artifacts.get("genre", "")
             phase = ctx.artifacts.get("phase", "writing")
-            aggregator = self.get_aggregator(genre=genre, phase=phase)
+            book_id = ctx.book_id
+            aggregator = self.get_aggregator(genre=genre, phase=phase, book_id=book_id)
 
             specialist_input = self.build_specialist_input(ctx)
             await aggregator.run_all(specialist_input)
             score_result = aggregator.aggregate()
 
+            # Include weight variant in score result for metrics
+            variant_name = getattr(aggregator, "_weight_variant", "default_v1")
+            if not hasattr(score_result, "weight_variant"):
+                # Add variant info to raw results for metrics collection
+                for res in score_result.raw.values():
+                    res.feedback["weight_variant"] = variant_name
+
+            # Pass weight variant to context for event publishing
+            specialist_input["weight_variant"] = variant_name
+
             # Persist specialist results to DB if session is available
             session = ctx.artifacts.get("session") or ctx.artifacts.get("db_session")
             self.save_specialist_results(
-                book_id=ctx.book_id,
+                book_id=book_id,
                 chapter_number=ctx.ep_num,
                 raw_results=score_result.raw,
                 session=session,
             )
+
+            # Publish aggregated metrics for A/B test analysis
+            try:
+                await aggregator.publish_aggregated_metrics(score_result, specialist_input)
+            except Exception as e:
+                logger.debug(f"Failed to publish aggregated metrics: {e}")
 
             return self.to_agent_result(score_result, ctx)
         except Exception as e:

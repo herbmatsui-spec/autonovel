@@ -1,10 +1,12 @@
 # src/agents/event_bus.py
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Awaitable, Callable, Optional, List
 import asyncio
 import json
+from collections.abc import Awaitable, Callable
+from dataclasses import dataclass, field
+from typing import Any
+
 import redis.asyncio as redis
 
 
@@ -13,6 +15,8 @@ class AgentEvent:
     agent: str
     payload: dict[str, Any]
     correlation_id: str
+    round_id: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 # Phase 2: Specialist audit event types
@@ -25,14 +29,18 @@ ENRICHMENT_STEP_COMPLETED = "enrichment.step_completed"
 ENRICHMENT_COMPLETED = "enrichment.completed"
 ENRICHMENT_ERROR = "enrichment.error"
 
+# Phase 7: Blind Peer Review event types
+BLIND_REVIEW_ROUND_COMPLETED = "blind_review.round_completed"
+BLIND_REVIEW_SESSION_COMPLETED = "blind_review.session_completed"
+
 
 class EventBus:
-    def __init__(self, use_redis: bool = False, redis_url: Optional[str] = None):
+    def __init__(self, use_redis: bool = False, redis_url: str | None = None):
         self._subs: dict[str, list[Callable[[AgentEvent], Awaitable[None]]]] = {}
-        self._redis: Optional["redis.asyncio.Redis"] = None
+        self._redis: redis.asyncio.Redis | None = None
         self._use_redis = use_redis
         self._redis_url = redis_url or "redis://localhost:6379/0"
-        self._consumer_task: Optional[asyncio.Task] = None
+        self._consumer_task: asyncio.Task | None = None
 
     def subscribe(self, agent: str, handler: Callable[[AgentEvent], Awaitable[None]]) -> None:
         self._subs.setdefault(agent, []).append(handler)
@@ -41,7 +49,7 @@ class EventBus:
         """非同期ハンドラ登録（subscribe のエイリアス）"""
         self.subscribe(agent, handler)
 
-    async def publish(self, event: AgentEvent) -> List[asyncio.Task]:
+    async def publish(self, event: AgentEvent) -> list[asyncio.Task]:
         # ローカルハンドラ実行
         tasks = []
         for handler in self._subs.get(event.agent, []):
@@ -85,18 +93,41 @@ class EventBus:
         if tasks:
             await asyncio.gather(*tasks)
 
-    async def publish_blind(self, event: AgentEvent, gate: Any) -> List[asyncio.Task]:
+    async def publish_blind(
+        self,
+        event: AgentEvent,
+        gate: Any,
+        round_id: str | None = None,
+    ) -> list[asyncio.Task]:
         """Blind peer review 対応発行。
-        
+
         gate.scrub_payload() で参照禁止エージェントの出力をマスクしてから発行する。
+
+        Args:
+            event: 発行するイベント
+            gate: BlindReviewGate インスタンス
+            round_id: 現在のレビューラウンドID（クロスラウンド汚染防止用）
         """
         from src.services.blind_review import BlindReviewGate
         if isinstance(gate, BlindReviewGate):
             scrubbed_payload = gate.scrub_payload(event.payload)
+
+            # メタデータにラウンド情報を埋め込み（クロスラウンド汚染検知用）
+            blind_payload = {
+                **scrubbed_payload,
+                "_blind_meta": {
+                    "round_id": round_id or event.round_id,
+                    "gate_config_hash": getattr(gate, "config_hash", None),
+                    "scrubbed_at": __import__("datetime").datetime.now().isoformat(),
+                }
+            }
+
             blind_event = AgentEvent(
                 agent=event.agent,
-                payload=scrubbed_payload,
+                payload=blind_payload,
                 correlation_id=event.correlation_id,
+                round_id=round_id or event.round_id,
+                metadata={"blind_review": True, **(event.metadata or {})},
             )
             return await self.publish(blind_event)
         return await self.publish(event)
@@ -128,12 +159,14 @@ class EventBus:
 
 
 __all__ = [
-    "AgentEvent",
-    "EventBus",
-    "AUDIT_SPECIALIST_STARTED",
     "AUDIT_SPECIALIST_COMPLETED",
-    "ENRICHMENT_STARTED",
-    "ENRICHMENT_STEP_COMPLETED",
+    "AUDIT_SPECIALIST_STARTED",
+    "BLIND_REVIEW_ROUND_COMPLETED",
+    "BLIND_REVIEW_SESSION_COMPLETED",
     "ENRICHMENT_COMPLETED",
     "ENRICHMENT_ERROR",
+    "ENRICHMENT_STARTED",
+    "ENRICHMENT_STEP_COMPLETED",
+    "AgentEvent",
+    "EventBus",
 ]

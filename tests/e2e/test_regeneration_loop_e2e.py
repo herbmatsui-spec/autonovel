@@ -35,11 +35,11 @@ class LowQualityMockLLM:
         text = str(prompt)
         if "Consistency" in text or "矛盾" in text:
             # Low consistency score
-            content = '{"score": 45.0, "critique": "死んだはずの仲間が説明なしに現れており重大な論理矛盾があります。", "suggestions": ["死亡キャラの登場理由を修正するか別キャラに置換"]}'
+            content = '{"score": 45.0, "critique": "死んだはずの仲間が説明なしに現れており重大な論理矛盾があります。", "suggestions": ["死亡キャラの登場理由を修正するか別キャラに置換"], "confidence": 0.85, "reasoning": "死亡キャラの生存描写と設定の直接矛盾"}'
         elif "Reader Hook" in text or "引き" in text:
-            content = '{"score": 52.0, "critique": "冒頭に引きがなく、結末も平坦でクリフハンガーがありません。", "suggestions": ["末尾に謎を提示"]}'
+            content = '{"score": 52.0, "critique": "冒頭に引きがなく、結末も平坦でクリフハンガーがありません。", "suggestions": ["末尾に謎を提示"], "confidence": 0.85, "reasoning": "冒頭フックとクリフハンガーが欠如"}'
         else:
-            content = '{"score": 60.0, "critique": "平均以下の品質です。", "suggestions": ["表現の推敲"]}'
+            content = '{"score": 60.0, "critique": "平均以下の品質です。", "suggestions": ["表現の推敲"], "confidence": 0.8, "reasoning": "総合的に品質が低い"}'
 
         return Resp(content)
 
@@ -54,11 +54,11 @@ class HighQualityMockLLM:
 
         text = str(prompt)
         if "Consistency" in text or "矛盾" in text:
-            content = '{"score": 92.0, "critique": "設定矛盾が完全に解消され、論理的一貫性が保たれています。", "suggestions": []}'
+            content = '{"score": 92.0, "critique": "設定矛盾が完全に解消され、論理的一貫性が保たれています。", "suggestions": [], "confidence": 0.9, "reasoning": "矛盾が解消され論理的一貫性が回復"}'
         elif "Reader Hook" in text or "引き" in text:
-            content = '{"score": 88.0, "critique": "鮮烈なクリフハンガーが追加され読者牽引力が大幅に向上しました。", "suggestions": []}'
+            content = '{"score": 88.0, "critique": "鮮烈なクリフハンガーが追加され読者牽引力が大幅に向上しました。", "suggestions": [], "confidence": 0.9, "reasoning": "クリフハンガー追加で読者牽引力が向上"}'
         else:
-            content = '{"score": 86.0, "critique": "高品質な仕上がりです。", "suggestions": []}'
+            content = '{"score": 86.0, "critique": "高品質な仕上がりです。", "suggestions": [], "confidence": 0.9, "reasoning": "総合的に高品質"}'
 
         return Resp(content)
 

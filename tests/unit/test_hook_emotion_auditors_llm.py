@@ -18,7 +18,7 @@ class DummyLLM:
 
 @pytest.mark.asyncio
 async def test_reader_hook_with_llm():
-    llm_json = '{"score": 85.0, "critique": "冒頭の謎提示が鮮烈で、ラストのクリフハンガーも読者を強く惹きつけます。", "suggestions": ["第2パラグラフのテンポをさらにアップ"]}'
+    llm_json = '{"score": 85.0, "critique": "冒頭の謎提示が鮮烈で、ラストのクリフハンガーも読者を強く惹きつけます。", "suggestions": ["第2パラグラフのテンポをさらにアップ"], "confidence": 0.85, "reasoning": "冒頭フックと末尾クリフハンガーが機能"}'
     auditor = ReaderHookAuditor(llm=DummyLLM(llm_json))
     ctx = {"draft_text": "なぜ彼女は死ななければならなかったのか？その謎を追う僕の前に、突如怪しい影が現れた……！"}
 
@@ -43,7 +43,7 @@ async def test_reader_hook_fallback():
 
 @pytest.mark.asyncio
 async def test_emotion_curve_with_llm():
-    llm_json = '{"score": 90.0, "critique": "絶望的な危機からの劇的なカタルシスが見事に描かれています。", "suggestions": []}'
+    llm_json = '{"score": 90.0, "critique": "絶望的な危機からの劇的なカタルシスが見事に描かれています。", "suggestions": [], "confidence": 0.9, "reasoning": "感情の起伏とカタルシスが明確"}'
     auditor = EmotionCurveAuditor(llm=DummyLLM(llm_json))
     ctx = {"draft_text": "絶望の淵で剣を振り上げた。一筋の光が差し込み、勝利の歓喜が仲間たちを包んだ。"}
 

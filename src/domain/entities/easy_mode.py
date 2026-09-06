@@ -117,6 +117,7 @@ class GachaRequest(BaseModel):
     genre: str = Field(..., description="対象ジャンル", min_length=1)
     keywords: list[str] = Field(..., description="キーワードリスト", min_length=1)
     temperature: float = Field(0.7, description="生成の温度感")
+    review_session_id: str | None = Field(default=None, description="既存レビューセッションID（再開用）")
 
 
 class GachaResponse(BaseModel):
@@ -125,6 +126,7 @@ class GachaResponse(BaseModel):
         ..., description="3案の企画リスト (王道、変化球、ダーク)", min_length=3, max_length=3
     )
     recommended_plan_id: str | None = Field(default=None, description="最も推奨される案のID")
+    review_session_id: str | None = Field(default=None, description="レビューセッションID")
 
 
 

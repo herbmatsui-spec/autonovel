@@ -9,6 +9,13 @@ compression:
     method: "tfidf"  # tfidf | keybert | bm25
     top_k: 50
     min_score: 0.01
+    # SudachiPy形態素解析器設定（日本語トークナイズ用）
+    sudachi:
+      split_mode: "C"        # A=短単位, B=中単位, C=長単位（デフォルト推奨）
+      dict_type: "core"      # core | full | small（辞書サイズ: core≒50MB, full≒120MB, small≒15MB）
+      min_length: 2          # 最小トークン長（1以上）
+      include_proper: true   # 固有名詞を含める
+      include_compound: true # 複合名詞を含める
   
   # 第2層: エンティティ関係サブグラフ抽出
   layer2_subgraph:

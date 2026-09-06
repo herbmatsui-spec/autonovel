@@ -6,11 +6,13 @@ from collections import Counter
 from typing import List, Tuple
 
 from src.services.compression.models import RawTextLayerOutput
+from src.services.compression.japanese_tokenizer import create_japanese_tokenizer
 
 try:
     from rank_bm25 import BM25Okapi
 except Exception:
     BM25Okapi = None
+
 
 STOP_WORDS = {
     "の", "は", "が", "を", "に", "で", "と", "も", "や", "な", "た", "だ", "する",
@@ -32,20 +34,42 @@ def count_tokens(text: str) -> int:
         return max(1, int(len(text) * 1.5))
 
 
+# Module-level tokenizer instance (created on first use)
+_japanese_tokenizer = None
+
+
+def _get_japanese_tokenizer():
+    """Get or create the Japanese tokenizer instance."""
+    global _japanese_tokenizer
+    if _japanese_tokenizer is None:
+        _japanese_tokenizer = create_japanese_tokenizer()
+    return _japanese_tokenizer
+
+
 def tokenize_japanese_words(text: str) -> list[str]:
     """Tokenize Japanese text into meaningful candidate tokens (nouns, kanji words, katakana compounds)."""
-    # 2文字以上の漢字語、カタカナ語、英単語を抽出
-    pattern = r"[一-龯]{2,}|[ァ-ンヴー]{2,}|[a-zA-Z]{3,}"
-    tokens = re.findall(pattern, text)
-    return [t for t in tokens if t not in STOP_WORDS]
+    tokenizer = _get_japanese_tokenizer()
+    return tokenizer.extract_nouns(text)
 
 
 class Layer1KeywordExtractor:
     """Extracts top salient keyphrases from raw text using BM25 / TF-IDF / Frequency scoring."""
 
-    def __init__(self, top_n: int = 20, min_score: float = 0.01) -> None:
+    def __init__(
+        self,
+        top_n: int = 20,
+        min_score: float = 0.01,
+        tokenizer_config: "SudachiConfig | None" = None,
+    ) -> None:
         self.top_n = top_n
         self.min_score = min_score
+        self._tokenizer_config = tokenizer_config
+
+    def _get_tokenizer(self):
+        """Get tokenizer instance, creating new one if config provided."""
+        if self._tokenizer_config:
+            return create_japanese_tokenizer(self._tokenizer_config)
+        return _get_japanese_tokenizer()
 
     def extract(self, text: str, top_n: int | None = None) -> RawTextLayerOutput:
         """Extract salient keyphrases and return RawTextLayerOutput."""
@@ -61,7 +85,11 @@ class Layer1KeywordExtractor:
         char_count = len(text)
         token_count = count_tokens(text)
 
-        tokens = tokenize_japanese_words(text)
+        tokenizer = self._get_tokenizer()
+        tokens = tokenizer.extract_nouns(
+            text,
+            min_length=self._tokenizer_config.min_length if self._tokenizer_config else 2,
+        )
         if not tokens:
             return RawTextLayerOutput(
                 extracted_keywords=[],
@@ -74,7 +102,7 @@ class Layer1KeywordExtractor:
 
         # 文単位に分割して BM25 スコアリング
         sentences = [s.strip() for s in re.split(r"[。\n!?！？]+", text) if s.strip()]
-        tokenized_corpus = [tokenize_japanese_words(s) for s in sentences if s]
+        tokenized_corpus = [tokenizer.extract_nouns(s) for s in sentences if s]
         tokenized_corpus = [c for c in tokenized_corpus if c]
 
         freq = Counter(tokens)

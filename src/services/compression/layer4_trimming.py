@@ -2,7 +2,8 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, List, Dict
+import math
+from typing import Any, List, Dict, Tuple
 
 from src.services.compression.models import (
     AbstractionLayerOutput,
@@ -56,6 +57,54 @@ SCENE_CATEGORY_WEIGHTS: dict[SceneType, dict[str, float]] = {
     },
 }
 
+# キーワード重み付け辞書（シーンタイプ検出用）
+SCENE_KEYWORDS_WEIGHTED: dict[SceneType, dict[str, float]] = {
+    "combat": {
+        "戦闘": 1.0, "決闘": 1.0, "討伐": 1.0, "撃破": 1.0, "襲撃": 1.0,
+        "激突": 0.9, "交戦": 0.9, "斬": 0.8, "剣": 0.7, "魔王": 0.9,
+        "抜刀": 0.8, "迅雷": 0.7, "武術": 0.6, "必殺": 0.8, "一撃": 0.7,
+    },
+    "daily": {
+        "日常": 1.0, "宴": 0.9, "酒場": 0.9, "休息": 0.9, "街歩き": 0.8,
+        "料理": 0.7, "雑談": 0.8, "市場": 0.7, "買い物": 0.7, "会話": 0.6,
+        "食事": 0.7, "睡眠": 0.6, "朝": 0.5, "夜": 0.5, "穏やか": 0.6,
+    },
+    "psychological": {
+        "心理": 1.0, "葛藤": 1.0, "苦悩": 0.9, "トラウマ": 0.9, "独白": 0.9,
+        "疑念": 0.8, "迷い": 0.8, "回想": 0.8, "記憶": 0.7, "内面": 0.8,
+        "不安": 0.7, "恐怖": 0.7, "後悔": 0.7, "決意": 0.6, "覚悟": 0.7,
+    },
+    "political": {
+        "会議": 1.0, "議会": 1.0, "政略": 1.0, "関税": 0.9, "条約": 0.9,
+        "宣戦": 0.9, "同盟": 0.9, "陰謀": 0.9, "外交": 0.8, "交渉": 0.8,
+        "宰相": 0.8, "ギルド": 0.7, "領地": 0.7, "同盟": 0.8, "謀略": 0.9,
+    },
+}
+
+
+def _softmax(scores: Dict[str, float]) -> Dict[str, float]:
+    """Apply softmax to normalize scores to probabilities."""
+    if not scores:
+        return {}
+    max_score = max(scores.values())
+    exp_scores = {k: math.exp(v - max_score) for k, v in scores.items()}
+    sum_exp = sum(exp_scores.values())
+    return {k: v / sum_exp for k, v in exp_scores.items()}
+
+
+def _blend_category_weights(
+    scene_weights: Dict[SceneType, float],
+) -> Dict[str, float]:
+    """Blend category weights from multiple scene types based on their confidence scores."""
+    blended: Dict[str, float] = {}
+    for scene_type, weight in scene_weights.items():
+        if weight <= 0:
+            continue
+        cat_weights = SCENE_CATEGORY_WEIGHTS.get(scene_type, SCENE_CATEGORY_WEIGHTS["general"])
+        for cat, cat_weight in cat_weights.items():
+            blended[cat] = blended.get(cat, 0.0) + cat_weight * weight
+    return blended
+
 
 class Layer4SceneTrimmer:
     """Trims facts dynamically according to scene intent and token budget."""
@@ -68,18 +117,36 @@ class Layer4SceneTrimmer:
         self.max_tokens = max_tokens
         self.preserve_categories = preserve_categories or ["主要キャラ", "核心設定", "伏線"]
 
-    def detect_scene_type(self, plot_summary: str, scenes: list[str] | None = None) -> SceneType:
-        """Infer scene narrative type from plot summary and scenes."""
+    def detect_scene_type(
+        self, plot_summary: str, scenes: list[str] | None = None
+    ) -> SceneType:
+        """Infer scene narrative type from plot summary and scenes (legacy single-label)."""
+        multi = self.detect_scene_type_multi(plot_summary, scenes)
+        return multi[0][0] if multi else "general"
+
+    def detect_scene_type_multi(
+        self, plot_summary: str, scenes: list[str] | None = None
+    ) -> List[Tuple[SceneType, float]]:
+        """Infer scene narrative type with confidence scores (multi-label)."""
         combined = f"{plot_summary} {' '.join(scenes or [])}".lower()
-        if any(w in combined for w in ["戦闘", "決闘", "討伐", "撃破", "襲撃", "激突", "交戦", "斬", "剣", "魔王"]):
-            return "combat"
-        elif any(w in combined for w in ["会議", "議会", "政略", "関税", "条約", "宣戦", "同盟", "陰謀", "外交"]):
-            return "political"
-        elif any(w in combined for w in ["心理", "葛藤", "苦悩", "トラウマ", "独白", "疑念", "迷い"]):
-            return "psychological"
-        elif any(w in combined for w in ["日常", "宴", "酒場", "休息", "街歩き", "料理", "雑談"]):
-            return "daily"
-        return "general"
+        
+        scores = {}
+        for scene_type, keywords in SCENE_KEYWORDS_WEIGHTED.items():
+            score = 0.0
+            for kw, kw_weight in keywords.items():
+                if kw in combined:
+                    score += kw_weight
+            if score > 0:
+                scores[scene_type] = score
+        
+        if not scores:
+            return [("general", 1.0)]
+        
+        # Apply softmax to get confidence scores
+        probs = _softmax(scores)
+        # Sort by confidence descending
+        sorted_probs = sorted(probs.items(), key=lambda x: x[1], reverse=True)
+        return sorted_probs
 
     def trim(
         self,
@@ -88,11 +155,29 @@ class Layer4SceneTrimmer:
         max_tokens: int | None = None,
         keywords: list[str] | None = None,
         original_token_count: int = 0,
+        scene_weights: Dict[SceneType, float] | None = None,
     ) -> TrimmedContextOutput:
-        """Trim facts down to token budget based on scene type importance."""
+        """Trim facts down to token budget based on scene type importance.
+        
+        Args:
+            abstraction_output: Output from Layer 3
+            scene_type: Single scene type (legacy, used if scene_weights not provided)
+            max_tokens: Token budget override
+            keywords: Keywords for bonus scoring
+            original_token_count: Original token count for reduction calculation
+            scene_weights: Dict of scene_type -> confidence weight for multi-label blending
+        """
         budget = max_tokens or self.max_tokens
-        weights = SCENE_CATEGORY_WEIGHTS.get(scene_type, SCENE_CATEGORY_WEIGHTS["general"])
         kws = [k.lower() for k in (keywords or [])]
+
+        # Determine category weights: use blended weights if scene_weights provided
+        if scene_weights:
+            weights = _blend_category_weights(scene_weights)
+            # Determine primary scene type for output metadata
+            primary_scene = max(scene_weights.items(), key=lambda x: x[1])[0] if scene_weights else scene_type
+        else:
+            weights = SCENE_CATEGORY_WEIGHTS.get(scene_type, SCENE_CATEGORY_WEIGHTS["general"])
+            primary_scene = scene_type
 
         all_scored_facts = []
         for cat, facts in abstraction_output.categorized_facts.items():
@@ -165,7 +250,7 @@ class Layer4SceneTrimmer:
             token_count=final_tokens,
             retained_entities=sorted(list(retained_entities)),
             reduction_ratio=round(reduction, 3),
-            scene_type=scene_type,
+            scene_type=primary_scene,
         )
 
     def _format_markdown(self, facts: list[dict[str, Any]], concepts: list[str]) -> str:
@@ -188,4 +273,10 @@ class Layer4SceneTrimmer:
         return "\n\n".join(sections).strip()
 
 
-__all__ = ["Layer4SceneTrimmer", "SCENE_CATEGORY_WEIGHTS"]
+__all__ = [
+    "Layer4SceneTrimmer",
+    "SCENE_CATEGORY_WEIGHTS",
+    "SCENE_KEYWORDS_WEIGHTED",
+    "_softmax",
+    "_blend_category_weights",
+]

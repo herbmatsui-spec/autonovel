@@ -1,4 +1,4 @@
-"""EasyModeDraft リポジトリ — Gacha Pitch / Quick Digest の永続化."""
+"""EasyModeDraft リポジトリ — Gacha Pitch / Quick Digest / Review Session の永続化."""
 
 from __future__ import annotations
 
@@ -10,6 +10,7 @@ from sqlalchemy import select
 
 from src.backend.database.models import EasyModeDraft
 from src.backend.database.repositories.base import BaseRepository
+from src.domain.entities.review_session import ReviewSession
 from src.services.errors import retry_on_lock
 
 logger = logging.getLogger("easy_mode_draft_repo")
@@ -130,3 +131,78 @@ class EasyModeDraftRepository(BaseRepository[EasyModeDraft]):
         if digest_draft is None or digest_draft.parent_draft_id is None:
             return None
         return await self.load_gacha_plans(digest_draft.parent_draft_id)
+
+    # --- Review Session Methods ---
+
+    @retry_on_lock()
+    async def save_review_session(self, session: ReviewSession) -> None:
+        """ReviewSession を永続化。
+
+        Args:
+            session: 保存する ReviewSession インスタンス
+        """
+        draft = EasyModeDraft(
+            draft_id=session.session_id,
+            kind="review_session",
+            payload_json=json.dumps(session.to_dict(), ensure_ascii=False),
+            review_session_json=json.dumps(session.to_dict(), ensure_ascii=False),
+            parent_draft_id=session.request_id,
+            created_at=session.created_at,
+            updated_at=session.updated_at,
+        )
+        self.session.add(draft)
+        logger.debug(
+            "[easy-mode-draft-repo] Saved review session: session_id=%s, request_id=%s",
+            session.session_id,
+            session.request_id,
+        )
+
+    async def load_review_session(self, session_id: str) -> ReviewSession | None:
+        """session_id で ReviewSession を読み込み。
+
+        Returns:
+            ReviewSession インスタンス。存在しない場合は None。
+        """
+        result = await self.session.execute(
+            select(EasyModeDraft).where(
+                EasyModeDraft.draft_id == session_id,
+                EasyModeDraft.kind == "review_session",
+            )
+        )
+        draft = result.scalar_one_or_none()
+        if draft is None:
+            return None
+        try:
+            data = json.loads(draft.review_session_json or draft.payload_json)
+            return ReviewSession.from_dict(data)
+        except json.JSONDecodeError:
+            logger.warning(
+                "[easy-mode-draft-repo] Failed to parse review_session_json for session_id=%s",
+                session_id,
+            )
+            return None
+
+    async def load_review_session_by_request(self, request_id: str) -> ReviewSession | None:
+        """request_id から最新の ReviewSession を読み込み。
+
+        Returns:
+            最新の ReviewSession インスタンス。存在しない場合は None。
+        """
+        result = await self.session.execute(
+            select(EasyModeDraft).where(
+                EasyModeDraft.parent_draft_id == request_id,
+                EasyModeDraft.kind == "review_session",
+            ).order_by(EasyModeDraft.created_at.desc())
+        )
+        draft = result.scalars().first()
+        if draft is None:
+            return None
+        try:
+            data = json.loads(draft.review_session_json or draft.payload_json)
+            return ReviewSession.from_dict(data)
+        except json.JSONDecodeError:
+            logger.warning(
+                "[easy-mode-draft-repo] Failed to parse review_session_json for request_id=%s",
+                request_id,
+            )
+            return None

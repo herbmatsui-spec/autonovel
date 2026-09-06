@@ -31,23 +31,23 @@ class PipelineMockLLM:
 
         text = str(prompt)
         if "Consistency" in text or "矛盾" in text:
-            content = '{"score": 90.0, "critique": "設定矛盾はなく、生存状態と行動が論理的です。", "suggestions": []}'
+            content = '{"score": 90.0, "critique": "設定矛盾はなく、生存状態と行動が論理的です。", "suggestions": [], "confidence": 0.9, "reasoning": "生存状態と行動が整合"}'
         elif "Creativity" in text or "独創性" in text:
-            content = '{"score": 88.0, "critique": "比喩表現が鮮烈で、独創的な世界観が展開されています。", "suggestions": []}'
+            content = '{"score": 88.0, "critique": "比喩表現が鮮烈で、独創的な世界観が展開されています。", "suggestions": [], "confidence": 0.9, "reasoning": "比喩・語彙が多様"}'
         elif "Reader Hook" in text or "引きの強さ" in text or "クリフハンガー" in text:
-            content = '{"score": 92.0, "critique": "冒頭の謎提示とラストのクリフハンガーが強力です。", "suggestions": []}'
+            content = '{"score": 92.0, "critique": "冒頭の謎提示とラストのクリフハンガーが強力です。", "suggestions": [], "confidence": 0.9, "reasoning": "冒頭フックとクリフハンガーが機能"}'
         elif "Emotion Curve" in text or "感情曲線" in text or "カタルシス" in text:
-            content = '{"score": 85.0, "critique": "緊張の高まりと結末のカタルシスが秀逸です。", "suggestions": []}'
+            content = '{"score": 85.0, "critique": "緊張の高まりと結末のカタルシスが秀逸です。", "suggestions": [], "confidence": 0.9, "reasoning": "感情の起伏とカタルシスが明確"}'
         elif "Style" in text or "文体" in text or "トーン" in text:
-            content = '{"score": 89.0, "critique": "格調高い文体が維持されており、ブレがありません。", "suggestions": []}'
+            content = '{"score": 89.0, "critique": "格調高い文体が維持されており、ブレがありません。", "suggestions": [], "confidence": 0.9, "reasoning": "文体・トーンが一貫"}'
         elif "Factual" in text or "時代考証" in text or "事実関係" in text:
-            content = '{"score": 91.0, "critique": "世界観の法則と時代考証が整合しています。", "suggestions": []}'
+            content = '{"score": 91.0, "critique": "世界観の法則と時代考証が整合しています。", "suggestions": [], "confidence": 0.9, "reasoning": "時代考証・事実関係が整合"}'
         elif "Structure" in text or "起承転結" in text or "構成" in text:
-            content = '{"score": 87.0, "critique": "プロットの起承転結が綺麗に消化されています。", "suggestions": []}'
+            content = '{"score": 87.0, "critique": "プロットの起承転結が綺麗に消化されています。", "suggestions": [], "confidence": 0.9, "reasoning": "プロット消化率とテンポが良好"}'
         elif "Multimodal" in text or "挿絵" in text:
-            content = '{"score": 93.0, "critique": "本文の決戦シーンと挿絵指示の焦点が完璧に一致しています。", "suggestions": []}'
+            content = '{"score": 93.0, "critique": "本文の決戦シーンと挿絵指示の焦点が完璧に一致しています。", "suggestions": [], "confidence": 0.9, "reasoning": "構図・ライティングが完全一致"}'
         else:
-            content = '{"score": 85.0, "critique": "良好です。", "suggestions": []}'
+            content = '{"score": 85.0, "critique": "良好です。", "suggestions": [], "confidence": 0.9, "reasoning": "総合的に良好"}'
 
         return Resp(content)
 

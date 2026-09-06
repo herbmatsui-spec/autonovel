@@ -37,6 +37,7 @@ class FourLayerCompressor:
         self.layer1 = Layer1KeywordExtractor(
             top_n=self.config.top_keywords,
             min_score=0.01,
+            tokenizer_config=self.config.sudachi,
         )
         self.layer2 = Layer2SubgraphExtractor(
             max_hops=self.config.max_hops,
@@ -66,6 +67,7 @@ class FourLayerCompressor:
         scene_type: SceneType | None = None,
         max_tokens: int | None = None,
         bypass_cache: bool = False,
+        scene_weights: dict[SceneType, float] | None = None,
     ) -> CompressedContextResult:
         """Execute the full 4-layer compression pipeline."""
         start_time = time.perf_counter()
@@ -77,6 +79,7 @@ class FourLayerCompressor:
                 self.layer3.abstract(self.layer2.extract_from_memory([], [], [])),
                 scene_type=target_scene,
                 max_tokens=budget,
+                scene_weights=scene_weights,
             )
             return CompressedContextResult(
                 layer4=empty_trim,
@@ -134,6 +137,7 @@ class FourLayerCompressor:
             max_tokens=budget,
             keywords=seeds,
             original_token_count=layer1_out.original_token_count,
+            scene_weights=scene_weights,
         )
 
         elapsed_ms = (time.perf_counter() - start_time) * 1000

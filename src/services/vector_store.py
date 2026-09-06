@@ -1293,6 +1293,37 @@ class InMemoryFallbackStore(BaseVectorStore):
     async def clear_collection(self, collection_name: str) -> None:
         self._data.pop(collection_name, None)
 
+    async def search_with_score(
+        self,
+        collection_name: str,
+        query_embedding: list[float],
+        top_k: int = 5,
+        where: dict[str, Any] | None = None,
+        min_score: float = 0.0,
+    ) -> list[dict[str, Any]]:
+        bucket = self._data.get(collection_name, [])
+        scored: list[tuple[float, str, str, dict[str, Any]]] = []
+        for doc_id, doc, emb, meta in bucket:
+            if where and not _metadata_matches(meta, where):
+                continue
+            sim = self._cosine(query_embedding, emb)
+            if sim < min_score:
+                continue
+            scored.append((sim, doc_id, doc, meta))
+        scored.sort(key=lambda x: x[0], reverse=True)
+        out = []
+        for sim, doc_id, doc, meta in scored[: max(0, top_k)]:
+            out.append(
+                {
+                    "id": doc_id,
+                    "content": doc,
+                    "metadata": meta,
+                    "distance": 1.0 - sim,
+                    "similarity": sim,
+                }
+            )
+        return out
+
     async def hybrid_search(
         self,
         collection_name: str,

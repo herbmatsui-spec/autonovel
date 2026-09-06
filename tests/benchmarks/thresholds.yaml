@@ -1,0 +1,40 @@
+# Regression Thresholds for 4-Layer Context Compression Benchmarks
+# All values are per-episode unless otherwise noted
+
+# Maximum acceptable latency (p95) per episode in milliseconds
+max_latency_ms_per_ep: 5000
+
+# Minimum acceptable compression ratio (mean across episodes)
+# 0.6 = 60% reduction (i.e., output is 40% of input)
+min_compression_ratio: 0.60
+
+# Maximum acceptable peak memory per episode in MB
+max_memory_mb: 100
+
+# Minimum acceptable cache hit rate (for runs > 1)
+min_cache_hit_rate: 0.5
+
+# Maximum acceptable latency scaling factor (ms per episode)
+# Negative or near-zero is ideal (caching helps)
+max_latency_scaling_ms_per_ep: 100
+
+# Maximum acceptable memory scaling factor (MB per episode)
+max_memory_scaling_mb_per_ep: 0.5
+
+# Scene-type specific thresholds (optional overrides)
+scene_thresholds:
+  combat:
+    min_compression_ratio: 0.55
+    max_latency_ms_per_ep: 3000
+  daily:
+    min_compression_ratio: 0.65
+    max_latency_ms_per_ep: 2000
+  psychological:
+    min_compression_ratio: 0.60
+    max_latency_ms_per_ep: 4000
+  political:
+    min_compression_ratio: 0.55
+    max_latency_ms_per_ep: 3000
+  general:
+    min_compression_ratio: 0.60
+    max_latency_ms_per_ep: 2500

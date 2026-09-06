@@ -103,7 +103,7 @@ class StyleAuditor(SpecialistAuditor):
         style_info = str(style_dna) if style_dna else "標準エンタメ文体（常体・三人称寄り）"
         prompt = STYLE_USER_PROMPT.format(style_info=style_info, draft_text=draft[:4000])
 
-        score, critique, suggestions = await self._judge_with_llm(
+        score, critique, suggestions, confidence, reasoning, raw_resp = await self._judge_with_llm(
             prompt=prompt,
             system_prompt=STYLE_SYSTEM_PROMPT,
         )
@@ -114,10 +114,13 @@ class StyleAuditor(SpecialistAuditor):
             feedback={"critique": critique},
             suggestions=suggestions,
             degraded=False,
+            confidence=confidence,
+            reasoning_trace=reasoning,
+            llm_raw_response=raw_resp,
         )
 
     def _fallback(self, ctx: dict[str, Any]) -> SpecialistAuditResult:
-        """Rule-based fallback: perspective ratio and BoW similarity."""
+        """Rule-based fallback: perspective ratio, BoW similarity, and BM25 against style DNA."""
         draft = ctx.get("draft_text", "") or ""
         style_dna = ctx.get("style_dna") or self.style_profile or {}
         if not draft:
@@ -132,7 +135,31 @@ class StyleAuditor(SpecialistAuditor):
 
         # 語尾の一貫性（常体か敬体のどちらかに統一されているか）
         tone_consistency = max(polite_ratio, 1.0 - polite_ratio)
-        score = max(30.0, min(100.0, round(tone_consistency * 70.0 + 30.0, 1)))
+
+        # BM25 similarity against style_dna sample_text if available
+        bm25_score = 0.0
+        sample_text = style_dna.get("sample_text") if isinstance(style_dna, dict) else None
+        if sample_text and BM25Okapi is not None:
+            sample_tokens = _tokenize(sample_text)
+            if sample_tokens:
+                bm25 = BM25Okapi([sample_tokens])
+                bm25_score = bm25.get_scores(tokens)[0] if tokens else 0.0
+                # Normalize BM25 score (typically 0-10 range, cap at 1.0)
+                bm25_score = min(1.0, bm25_score / 10.0)
+
+        # Combined score: 70% tone consistency, 30% BM25 similarity
+        # Raise threshold: tone_consistency >= 0.8 for high score
+        base_score = tone_consistency * 65.0 + 30.0  # Max 95 when tone_consistency=1.0
+        if bm25_score > 0:
+            base_score = 0.7 * base_score + 0.3 * (bm25_score * 100.0)
+
+        score = max(30.0, min(95.0, round(base_score, 1)))
+
+        suggestions = ["Maintain consistent sentence endings (polite vs plain)"]
+        if tone_consistency < 0.8:
+            suggestions.append("Unify sentence endings to either polite (desu/masu) or plain (da/dearu) form")
+        if bm25_score > 0 and bm25_score < 0.3:
+            suggestions.append("Vocabulary/style diverges from style_dna sample_text")
 
         return SpecialistAuditResult(
             specialist_name="style",
@@ -142,8 +169,10 @@ class StyleAuditor(SpecialistAuditor):
                 "has_style_dna": bool(style_dna),
                 "polite_ratio": round(polite_ratio, 3),
                 "first_person_ratio": round(fp_ratio, 3),
+                "tone_consistency": round(tone_consistency, 3),
+                "bm25_similarity": round(bm25_score, 3) if bm25_score > 0 else None,
             },
-            suggestions=["Maintain consistent sentence endings (polite vs plain)"],
+            suggestions=suggestions,
             degraded=True,
         )
 

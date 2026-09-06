@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from src.services.compression.models import (
     SceneType,
+    SudachiConfig,
     CompressionConfig,
     RawTextLayerOutput,
     SubgraphLayerOutput,
@@ -33,6 +34,7 @@ from src.services.compression.compressor import FourLayerCompressor
 
 __all__ = [
     "SceneType",
+    "SudachiConfig",
     "CompressionConfig",
     "RawTextLayerOutput",
     "SubgraphLayerOutput",

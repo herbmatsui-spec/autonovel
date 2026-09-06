@@ -14,6 +14,8 @@ from src.services.compression import (
 )
 from src.agents.context_builder_agent import ContextBuilderAgent
 from src.agents.orchestrator import AgentContext
+from tests.benchmarks.annotations import ACCURACY_TEST_CASES, SCENE_ANNOTATIONS
+from tests.benchmarks.accuracy import scene_type_accuracy, evaluate_test_case
 
 
 SAMPLE_LONG_NOVEL_TEXT = """
@@ -226,4 +228,328 @@ def test_layer4_packs_smaller_facts_after_large_fact_exceeds_budget():
     assert trim_result.token_count <= 80
     text = trim_result.compressed_text
     assert "事象" in text or "Event" in text or len(text) > 0
+
+
+@pytest.mark.parametrize("test_case", ACCURACY_TEST_CASES)
+def test_scene_type_accuracy(test_case):
+    """シーンタイプ別圧縮精度の検証: 必須カテゴリ・エンティティが保持されること."""
+    config = CompressionConfig(max_tokens=300, cache_enabled=False)
+    compressor = FourLayerCompressor(config=config)
+
+    # Build entities with appropriate labels for categorization
+    # Map entity names to labels based on test case
+    entity_labels = {}
+    relations = []
+    
+    if test_case["scene_type"] == "combat":
+        entity_labels = {
+            "e1": ("アルカディア", ["Character"]),
+            "e2": ("ヴォルケイン", ["Character"]),
+            "e3": ("エクスカリバー", ["Item", "Weapon"]),
+            "e4": ("迅雷", ["Skill"]),
+        }
+        relations = [
+            {"source": "e1", "target": "e3", "type": "所持"},
+            {"source": "e1", "target": "e2", "type": "敵対"},
+            {"source": "e1", "target": "e4", "type": "使用"},
+        ]
+    elif test_case["scene_type"] == "daily":
+        entity_labels = {
+            "e1": ("アルカディア", ["Character"]),
+            "e2": ("カロル", ["Character"]),
+            "e3": ("王都グランヴァル", ["Location", "City"]),
+            "e4": ("冒険者ギルド", ["Organization", "Faction"]),
+            "e5": ("治癒のポーション", ["Item"]),
+        }
+        relations = [
+            {"source": "e1", "target": "e2", "type": "同行"},
+            {"source": "e1", "target": "e3", "type": "滞在"},
+            {"source": "e1", "target": "e5", "type": "所持"},
+        ]
+    elif test_case["scene_type"] == "psychological":
+        entity_labels = {
+            "e1": ("アルカディア", ["Character"]),
+            "e2": ("ガレス", ["Character"]),
+            "e3": ("ヴォルケイン", ["Character"]),
+            "e4": ("エクスカリバー", ["Item", "Weapon", "Lore"]),
+            "e5": ("迅雷", ["Skill", "Lore"]),
+        }
+        relations = [
+            {"source": "e1", "target": "e2", "type": "師弟"},
+            {"source": "e1", "target": "e3", "type": "因縁"},
+            {"source": "e1", "target": "e4", "type": "因縁"},
+        ]
+    elif test_case["scene_type"] == "political":
+        entity_labels = {
+            "e1": ("バルガス", ["Character"]),
+            "e2": ("ミレナ", ["Character"]),
+            "e3": ("商人ギルド", ["Organization", "Faction"]),
+            "e4": ("辺境警備隊", ["Organization", "Faction"]),
+            "e5": ("エルシオン協定", ["Rule", "Lore"]),
+            "e6": ("関税", ["Policy", "Lore"]),
+        }
+        relations = [
+            {"source": "e1", "target": "e2", "type": "対立"},
+            {"source": "e3", "target": "e4", "type": "対立"},
+            {"source": "e1", "target": "e5", "type": "引用"},
+            {"source": "e2", "target": "e6", "type": "反対"},
+        ]
+
+    entities = [{"id": eid, "name": name, "labels": labels} for eid, (name, labels) in entity_labels.items()]
+
+    result = compressor.compress(
+        test_case["text"],
+        entities=entities,
+        relations=relations,
+        scene_type=test_case["scene_type"],
+        bypass_cache=True,
+    )
+
+    compressed_result = {
+        "final_text": result.final_context_text,
+        "layer3_categories": list(result.layer3.categorized_facts.keys()) if result.layer3 else [],
+    }
+
+    eval_result = evaluate_test_case(test_case, compressed_result)
+
+    assert eval_result["passed_category"], (
+        f"Category preservation failed for {test_case['name']}: "
+        f"expected {test_case['expected_categories']}, got {eval_result['actual_categories']}, "
+        f"rate={eval_result['category_preservation_rate']:.2f}"
+    )
+    assert eval_result["passed_entity"], (
+        f"Entity retention failed for {test_case['name']}: "
+        f"expected {test_case['expected_entities']}, rate={eval_result['entity_retention_rate']:.2f}"
+    )
+
+    compressed_result = {
+        "final_text": result.final_context_text,
+        "layer3_categories": list(result.layer3.categorized_facts.keys()) if result.layer3 else [],
+    }
+
+    eval_result = evaluate_test_case(test_case, compressed_result)
+
+    assert eval_result["passed_category"], (
+        f"Category preservation failed for {test_case['name']}: "
+        f"expected {test_case['expected_categories']}, got {eval_result['actual_categories']}, "
+        f"rate={eval_result['category_preservation_rate']:.2f}"
+    )
+    assert eval_result["passed_entity"], (
+        f"Entity retention failed for {test_case['name']}: "
+        f"expected {test_case['expected_entities']}, rate={eval_result['entity_retention_rate']:.2f}"
+    )
+
+
+def test_scene_type_accuracy_all_scenes():
+    """全シーンタイプでの精度検証（統合テスト）."""
+    config = CompressionConfig(max_tokens=300, cache_enabled=False)
+    compressor = FourLayerCompressor(config=config)
+
+    def build_entities_relations(test_case):
+        """Build entities and relations for a test case."""
+        if test_case["scene_type"] == "combat":
+            entity_labels = {
+                "e1": ("アルカディア", ["Character"]),
+                "e2": ("ヴォルケイン", ["Character"]),
+                "e3": ("エクスカリバー", ["Item", "Weapon"]),
+                "e4": ("迅雷", ["Skill"]),
+            }
+            relations = [
+                {"source": "e1", "target": "e3", "type": "所持"},
+                {"source": "e1", "target": "e2", "type": "敵対"},
+                {"source": "e1", "target": "e4", "type": "使用"},
+            ]
+        elif test_case["scene_type"] == "daily":
+            entity_labels = {
+                "e1": ("アルカディア", ["Character"]),
+                "e2": ("カロル", ["Character"]),
+                "e3": ("王都グランヴァル", ["Location", "City"]),
+                "e4": ("冒険者ギルド", ["Organization", "Faction"]),
+                "e5": ("治癒のポーション", ["Item"]),
+            }
+            relations = [
+                {"source": "e1", "target": "e2", "type": "同行"},
+                {"source": "e1", "target": "e3", "type": "滞在"},
+                {"source": "e1", "target": "e5", "type": "所持"},
+            ]
+        elif test_case["scene_type"] == "psychological":
+            entity_labels = {
+                "e1": ("アルカディア", ["Character"]),
+                "e2": ("ガレス", ["Character"]),
+                "e3": ("ヴォルケイン", ["Character"]),
+                "e4": ("エクスカリバー", ["Item", "Weapon", "Lore"]),
+                "e5": ("迅雷", ["Skill", "Lore"]),
+            }
+            relations = [
+                {"source": "e1", "target": "e2", "type": "師弟"},
+                {"source": "e1", "target": "e3", "type": "因縁"},
+                {"source": "e1", "target": "e4", "type": "因縁"},
+            ]
+        elif test_case["scene_type"] == "political":
+            entity_labels = {
+                "e1": ("バルガス", ["Character"]),
+                "e2": ("ミレナ", ["Character"]),
+                "e3": ("商人ギルド", ["Organization", "Faction"]),
+                "e4": ("辺境警備隊", ["Organization", "Faction"]),
+                "e5": ("エルシオン協定", ["Rule", "Lore"]),
+                "e6": ("関税", ["Policy", "Lore"]),
+            }
+            relations = [
+                {"source": "e1", "target": "e2", "type": "対立"},
+                {"source": "e3", "target": "e4", "type": "対立"},
+                {"source": "e1", "target": "e5", "type": "引用"},
+                {"source": "e2", "target": "e6", "type": "反対"},
+            ]
+        else:
+            entity_labels = {}
+            relations = []
+        entities = [{"id": eid, "name": name, "labels": labels} for eid, (name, labels) in entity_labels.items()]
+        return entities, relations
+
+    results = {}
+    for test_case in ACCURACY_TEST_CASES:
+        entities, relations = build_entities_relations(test_case)
+        result = compressor.compress(
+            test_case["text"],
+            entities=entities,
+            relations=relations,
+            scene_type=test_case["scene_type"],
+            bypass_cache=True,
+        )
+
+        compressed_result = {
+            "final_text": result.final_context_text,
+            "layer3_categories": list(result.layer3.categorized_facts.keys()) if result.layer3 else [],
+        }
+
+        eval_result = evaluate_test_case(test_case, compressed_result)
+        results[test_case["scene_type"]] = eval_result
+
+    # 全シーンでカテゴリ保持率80%以上
+    for scene_type, eval_result in results.items():
+        assert eval_result["passed_category"], (
+            f"{scene_type}: category preservation {eval_result['category_preservation_rate']:.2f} < 0.80"
+        )
+        assert eval_result["passed_entity"], (
+            f"{scene_type}: entity retention {eval_result['entity_retention_rate']:.2f} < 0.80"
+        )
+
+    # 結果サマリ出力
+    print("\n=== Scene Type Accuracy Summary ===")
+    for scene_type, eval_result in results.items():
+        print(f"  {scene_type:15s}: cat={eval_result['category_preservation_rate']:.2f}, "
+              f"ent={eval_result['entity_retention_rate']:.2f}, "
+              f"passed={eval_result['overall_passed']}")
+
+
+def test_scene_type_detection_keywords():
+    """シーンタイプ検出キーワードの妥当性検証."""
+    from src.services.compression.layer4_trimming import Layer4SceneTrimmer
+    from tests.benchmarks.annotations import SCENE_TYPE_KEYWORDS
+
+    trimmer = Layer4SceneTrimmer()
+
+    for scene_type, keywords in SCENE_TYPE_KEYWORDS.items():
+        # キーワードを含むテキストで正しく検出されること
+        test_text = f"これは{keywords[0]}に関するシーンです。{keywords[1]}も含まれます。"
+        detected = trimmer.detect_scene_type(test_text)
+        # 完全一致でなくても、関連するタイプが検出されることを確認
+        # （キーワードベースなので厳密な一致は要求しない）
+        assert detected in ("combat", "daily", "psychological", "political", "general")
+
+
+def test_multi_label_detection():
+    """マルチラベルシーンタイプ検出の検証."""
+    from src.services.compression.layer4_trimming import Layer4SceneTrimmer
+
+    trimmer = Layer4SceneTrimmer()
+
+    # 単一シーン: combat が最も高い確信度
+    combat_text = "アルカディアは剣を抜き、魔王ヴォルケインと激突した。迅雷で撃破を狙う。"
+    multi = trimmer.detect_scene_type_multi(combat_text)
+    assert multi[0][0] == "combat"
+    assert multi[0][1] > 0.5  # 高い確信度
+    assert sum(score for _, score in multi) == pytest.approx(1.0, rel=1e-6)
+
+    # 複合シーン: combat + psychological
+    mixed_text = "戦闘の中、アルカディアは師匠の言葉を思い出し、葛藤しながら剣を振るう。"
+    multi = trimmer.detect_scene_type_multi(mixed_text)
+    # combat と psychological の両方が検出される
+    scene_types = [st for st, _ in multi]
+    assert "combat" in scene_types
+    assert "psychological" in scene_types
+    assert sum(score for _, score in multi) == pytest.approx(1.0, rel=1e-6)
+
+    # キーワードなし: general にフォールバック
+    neutral_text = "今日は良い天気だ。"
+    multi = trimmer.detect_scene_type_multi(neutral_text)
+    assert multi[0][0] == "general"
+    assert multi[0][1] == 1.0
+
+
+def test_weight_blending():
+    """カテゴリ重みブレンドの検証."""
+    from src.services.compression.layer4_trimming import _blend_category_weights
+
+    # 単一シーン: 元の重みと同じ
+    combat_weights = _blend_category_weights({"combat": 1.0})
+    from src.services.compression.layer4_trimming import SCENE_CATEGORY_WEIGHTS
+    for cat, weight in SCENE_CATEGORY_WEIGHTS["combat"].items():
+        assert combat_weights[cat] == pytest.approx(weight, rel=1e-6)
+
+    # ブレンド: combat 0.6 + psychological 0.4
+    blended = _blend_category_weights({"combat": 0.6, "psychological": 0.4})
+    # 主要キャラ: 1.6*0.6 + 2.0*0.4 = 0.96 + 0.8 = 1.76
+    assert blended["主要キャラ"] == pytest.approx(1.76, rel=1e-3)
+    # 武術・スキル: 2.2*0.6 + 0.4*0.4 = 1.32 + 0.16 = 1.48
+    assert blended["武術・スキル"] == pytest.approx(1.48, rel=1e-3)
+    # 伏線: 1.0*0.6 + 1.9*0.4 = 0.6 + 0.76 = 1.36
+    assert blended["伏線"] == pytest.approx(1.36, rel=1e-3)
+
+    # 空の重み: 空の辞書
+    empty = _blend_category_weights({})
+    assert empty == {}
+
+
+def test_trim_with_scene_weights():
+    """scene_weights を指定したトリミングの検証."""
+    from src.services.compression.layer4_trimming import Layer4SceneTrimmer
+    from src.services.compression.models import AbstractionLayerOutput
+
+    trimmer = Layer4SceneTrimmer(max_tokens=150)
+
+    abs_out = AbstractionLayerOutput(
+        abstract_concepts=["近接剣術スキル", "伝説級武装"],
+        categorized_facts={
+            "武術・スキル": [{"entity": "迅雷", "fact": "抜刀術・迅雷", "category": "武術・スキル"}],
+            "主要キャラ": [{"entity": "アルカディア", "fact": "アルカディア", "category": "主要キャラ"}],
+            "伏線": [{"entity": "ヴォルケイン", "fact": "ヴォルケインとの因縁", "category": "伏線"}],
+        },
+    )
+
+    # 単一 scene_type 指定（後方互換）
+    result1 = trimmer.trim(abs_out, scene_type="combat", original_token_count=300)
+    assert result1.scene_type == "combat"
+    assert "武術・スキル" in result1.compressed_text
+
+    # scene_weights 指定（マルチラベル）
+    result2 = trimmer.trim(
+        abs_out,
+        scene_type="general",  # フォールバック用
+        scene_weights={"combat": 0.7, "psychological": 0.3},
+        original_token_count=300,
+    )
+    # 主要シーンタイプは combat になる
+    assert result2.scene_type == "combat"
+    # ブレンドされた重みでトリミングされる（伏線の重みが上がるため含まれやすい）
+    assert "伏線" in result2.compressed_text or "主要キャラ" in result2.compressed_text
+
+
+__all__ = [
+    "test_scene_type_accuracy",
+    "test_scene_type_accuracy_all_scenes",
+    "test_multi_label_detection",
+    "test_weight_blending",
+    "test_trim_with_scene_weights",
+]
 

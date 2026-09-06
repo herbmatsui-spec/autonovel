@@ -14,6 +14,7 @@ from src.domain.entities.easy_mode import (
     PromotionRequest,
     PromotionResponse,
 )
+from src.domain.entities.review_session import ReviewRound, ReviewSession
 
 __all__ = [
     "CharacterParams",
@@ -28,4 +29,6 @@ __all__ = [
     "DigestResponse",
     "PromotionRequest",
     "PromotionResponse",
+    "ReviewRound",
+    "ReviewSession",
 ]

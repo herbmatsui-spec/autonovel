@@ -3,9 +3,10 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from src.backend.tasks.dag_models import TaskResourceRequirement
+from src.backend.tasks.numa_topology import NUMATopology, detect_numa_topology, detect_gpu_numa_py3nvml
 
 logger = logging.getLogger(__name__)
 
@@ -28,10 +29,18 @@ class ResourceManager:
         max_cpu_ratio: float = 0.8,
         max_ram_ratio: float = 0.8,
         default_gpu_vram_mb: int = 4096,
+        numa_topology: NUMATopology | None = None,
     ) -> None:
         self.max_cpu_ratio = max_cpu_ratio
         self.max_ram_ratio = max_ram_ratio
         self.default_gpu_vram_mb = default_gpu_vram_mb
+
+        # NUMA topology (Step 5)
+        self.numa_topology = numa_topology or detect_numa_topology()
+        # py3nvml で GPU 補完
+        if not self.numa_topology.gpu_to_numa:
+            gpu_numa = detect_gpu_numa_py3nvml()
+            self.numa_topology.gpu_to_numa.update(gpu_numa)
 
     def get_cpu_cores(self) -> float:
         """Get total available CPU cores."""
@@ -107,6 +116,30 @@ class ResourceManager:
             if available.gpu_mem_mb == 0 or (active_allocations.gpu_mem_mb + task_req.gpu_mem_mb) > available.gpu_mem_mb:
                 return False
         return True
+
+    def get_worker_numa_affinity(self, worker_index: int, is_gpu_worker: bool = False) -> Optional[int]:
+        """ワーカーインデックスから推奨 NUMA ノード取得。"""
+        if is_gpu_worker:
+            gpu_idx = worker_index % max(1, len(self.numa_topology.gpu_to_numa))
+            return self.numa_topology.get_numa_for_gpu(gpu_idx)
+        else:
+            # CPU ワーカー: ラウンドロビンで NUMA 分散
+            numa_nodes = self.numa_topology.numa_nodes
+            if not numa_nodes:
+                return None
+            return numa_nodes[worker_index % len(numa_nodes)]
+
+    def get_gpu_worker_env(self, gpu_index: int) -> Dict[str, str]:
+        """GPU ワーカー用環境変数 (CUDA_VISIBLE_DEVICES + NUMA) 生成。"""
+        env = os.environ.copy()
+        env["CUDA_VISIBLE_DEVICES"] = str(gpu_index)
+        
+        numa = self.numa_topology.get_numa_for_gpu(gpu_index)
+        if numa is not None:
+            # numactl でメモリ割当制御
+            env["NUMACTL_ARGS"] = f"--membind={numa} --cpunodebind={numa}"
+        
+        return env
 
 
 __all__ = ["ResourceManager"]

@@ -1,0 +1,15 @@
+# LLM Bias Correction Factors
+# Post-hoc multiplicative correction factors for each specialist
+# Derived from historical log analysis: factor = target_median / observed_median
+# Target median: 75.0 (reasonable quality baseline)
+# Apply as: corrected_score = min(100, raw_score * factor)
+
+bias_correction:
+  consistency: 1.02      # Tends slightly lenient -> correct up
+  creativity: 0.98       # Tends slightly harsh -> correct down
+  reader_hook: 1.00      # Well calibrated
+  emotion_curve: 1.01    # Slightly lenient
+  style: 0.99            # Slightly harsh
+  factual: 1.00          # Well calibrated
+  structure: 1.03        # Tends lenient
+  multimodal: 0.97       # Tends harsh

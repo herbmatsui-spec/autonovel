@@ -9,11 +9,22 @@ from pathlib import Path
 
 
 @dataclass
+class SudachiConfig:
+    """SudachiPy形態素解析器設定"""
+    split_mode: Literal["A", "B", "C"] = "C"
+    dict_type: Literal["core", "full", "small"] = "core"
+    min_length: int = 2
+    include_proper: bool = True
+    include_compound: bool = True
+
+
+@dataclass
 class Layer1Config:
     """第1層: キーフレーズ抽出設定"""
     method: Literal["tfidf", "keybert", "bm25"]
     top_k: int
     min_score: float
+    sudachi: SudachiConfig = None  # type: ignore[assignment]
 
 
 @dataclass
@@ -64,9 +75,15 @@ def load_compression_config(path: str = "config/context_compression.yaml") -> Co
     
     comp = raw["compression"]
     
+    # Sudachi設定のデフォルト値処理
+    layer1_dict = comp["layer1_keyphrase"]
+    sudachi_dict = layer1_dict.get("sudachi", {})
+    sudachi_config = SudachiConfig(**sudachi_dict) if sudachi_dict else SudachiConfig()
+    layer1_dict = {k: v for k, v in layer1_dict.items() if k != "sudachi"}
+    
     return CompressionConfig(
         enabled=comp["enabled"],
-        layer1=Layer1Config(**comp["layer1_keyphrase"]),
+        layer1=Layer1Config(sudachi=sudachi_config, **layer1_dict),
         layer2=Layer2Config(**comp["layer2_subgraph"]),
         layer3=Layer3Config(**comp["layer3_abstraction"]),
         layer4=Layer4Config(**comp["layer4_trimming"]),

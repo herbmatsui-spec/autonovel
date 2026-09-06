@@ -9,7 +9,7 @@ from src.backend.tasks.dag_models import (
     DAGTaskNode,
     TaskResourceRequirement,
 )
-from src.backend.tasks.dag_scheduler import DAGScheduler
+from src.backend.tasks.dag_scheduler import DAGScheduler, _ResourceSemaphores
 from src.backend.tasks.resource_manager import ResourceManager
 from src.backend.tasks.generation_tasks import build_novel_generation_dag
 
@@ -194,3 +194,81 @@ async def test_scheduler_cancels_running_tasks_on_failure():
     assert len(running_task_ids) == 0 or all(
         asyncio.current_task().done() for t in running_task_ids if asyncio.current_task()
     )
+
+
+@pytest.mark.asyncio
+async def test_backpressure_semaphore_blocks_when_exhausted():
+    """セマフォ上限超過時にタスクがブロックされ、スロット空くと実行されること."""
+    scheduler = DAGScheduler()
+    scheduler._semaphores = _ResourceSemaphores(
+        cpu=asyncio.Semaphore(1),  # 1 スロットのみ
+        ram=asyncio.Semaphore(10),
+        gpu=asyncio.Semaphore(10),
+    )
+
+    started = asyncio.Event()
+    completed = asyncio.Event()
+
+    async def blocking_task():
+        started.set()
+        await completed.wait()  # 外部から解放まで待機
+        return "done"
+
+    def quick_task():
+        return "quick"
+
+    scheduler.register_task("blocking", blocking_task)
+    scheduler.register_task("quick", quick_task)
+
+    g = DAGGraph(dag_id="bp_test")
+    g.add_node(DAGTaskNode(task_id="t1", func_name="blocking"))
+    g.add_node(DAGTaskNode(task_id="t2", func_name="quick"))
+
+    # t1 起動→セマフォ占有→t2 は待機
+    run_task = asyncio.create_task(scheduler.run_dag(g, max_concurrency=2))
+    await started.wait()  # t1 開始確認
+
+    # t2 はまだ開始されていない（セマフォ待ち）
+    assert g.nodes["t2"].status in ("pending", "ready")
+
+    # t1 完了許可
+    completed.set()
+    await run_task
+
+    assert g.is_all_completed()
+
+
+@pytest.mark.asyncio
+async def test_taskgroup_cancels_on_fatal_failure():
+    """致命的失敗時に TaskGroup が他タスクを自動キャンセルすること."""
+    scheduler = DAGScheduler()
+
+    running = set()
+
+    async def long_task(task_id: str):
+        running.add(task_id)
+        try:
+            await asyncio.sleep(10)
+        finally:
+            running.discard(task_id)
+        return task_id
+
+    def fail_task():
+        raise RuntimeError("fatal")
+
+    scheduler.register_task("long", long_task)
+    scheduler.register_task("fail", fail_task)
+
+    g = DAGGraph(dag_id="cancel_test")
+    # 独立タスクを並列実行、失敗タスクも即実行（依存なし）
+    g.add_node(DAGTaskNode(task_id="t1", func_name="long", kwargs={"task_id": "t1"}))
+    g.add_node(DAGTaskNode(task_id="t2", func_name="long", kwargs={"task_id": "t2"}))
+    g.add_node(DAGTaskNode(task_id="fail", func_name="fail"))  # 依存なし＝即実行
+
+    completed_graph = await scheduler.run_dag(g, max_concurrency=3)
+
+    # 失敗検知でループ脱出→TaskGroup が実行中タスクをキャンセル
+    assert completed_graph.has_failures()
+    assert completed_graph.nodes["fail"].status == "failed"
+    # 実行中だった t1, t2 がキャンセル済み
+    assert len(running) == 0

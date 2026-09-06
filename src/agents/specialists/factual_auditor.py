@@ -13,6 +13,11 @@ from src.agents.specialist_auditor_base import (
     SpecialistAuditResult,
     LLMUnavailableError,
 )
+from src.agents.specialists.fallback_utils import (
+    extract_entities,
+    compute_coverage,
+    detect_anachronisms,
+)
 
 FACTUAL_SYSTEM_PROMPT = """あなたは歴史考証・文化設定・世界観事実整合性（Factual Accuracy）を審査する専門オーディターです。
 与えられた「World Bible設定」と「本文」を照合し、以下の観点を評価してください:
@@ -54,7 +59,7 @@ class FactualAuditor(SpecialistAuditor):
             draft_text=draft[:4000],
         )
 
-        score, critique, suggestions = await self._judge_with_llm(
+        score, critique, suggestions, confidence, reasoning, raw_resp = await self._judge_with_llm(
             prompt=prompt,
             system_prompt=FACTUAL_SYSTEM_PROMPT,
         )
@@ -68,6 +73,9 @@ class FactualAuditor(SpecialistAuditor):
             },
             suggestions=suggestions,
             degraded=False,
+            confidence=confidence,
+            reasoning_trace=reasoning,
+            llm_raw_response=raw_resp,
         )
 
     def _summarize_bible(self, bible: dict) -> str:
@@ -87,37 +95,41 @@ class FactualAuditor(SpecialistAuditor):
         return "\n".join(parts) if parts else "（設定なし）"
 
     def _fallback(self, ctx: dict[str, Any]) -> SpecialistAuditResult:
-        """Rule-based fallback for factual auditor (modern terms + entity coverage)."""
+        """Rule-based fallback for factual auditor (anachronisms + entity coverage)."""
         draft = ctx.get("draft_text", "") or ""
         bible = ctx.get("world_bible_snapshot") or {}
         if not draft:
             return SpecialistAuditResult("factual", 0.0, feedback={"error": "no draft"}, degraded=True)
 
-        modern_words = ["スマホ", "インターネット", "電車", "コンビニ", "エレベーター", "コンクリート"]
-        found_modern = [w for w in modern_words if w in draft]
+        # Detect anachronisms using era from bible meta or default to medieval
+        era = bible.get("meta", {}).get("era", "medieval")
+        found_modern = detect_anachronisms(draft, era)
 
-        ref_entities = set()
-        for key in ("characters", "locations", "items", "factions", "terms"):
-            val = bible.get(key)
-            if isinstance(val, list):
-                for item in val:
-                    if isinstance(item, dict):
-                        ref_entities.add(item.get("name", ""))
-                    elif isinstance(item, str):
-                        ref_entities.add(item)
+        entities = extract_entities(draft, bible)
+        all_entities = set()
+        for ent_set in entities.values():
+            all_entities.update(ent_set)
 
-        coverage = sum(1 for e in ref_entities if e in draft) / len(ref_entities) if ref_entities else 0.8
-        score = max(20.0, min(100.0, coverage * 70.0 + 30.0 - len(found_modern) * 25.0))
+        coverage = compute_coverage(draft, all_entities) if all_entities else 0.8
+        anachronism_penalty = len(found_modern) * 15.0
+        score = max(20.0, min(100.0, coverage * 80.0 + 20.0 - anachronism_penalty))
+
+        suggestions = [f"Remove anachronistic term: {w}" for w in found_modern]
+        if coverage < 0.5:
+            suggestions.append("World Bibleの主要用語が本文で言及されていません。設定の反映を確認してください。")
+        if not suggestions:
+            suggestions = ["No anachronisms detected"]
 
         return SpecialistAuditResult(
             specialist_name="factual",
             score=round(score, 1),
             feedback={
                 "fallback": "rule-based",
-                "modern_terms_found": found_modern,
+                "era": era,
+                "anachronisms_found": found_modern,
                 "coverage": round(coverage, 2),
             },
-            suggestions=[f"Remove modern term: {w}" for w in found_modern],
+            suggestions=suggestions,
             degraded=True,
         )
 

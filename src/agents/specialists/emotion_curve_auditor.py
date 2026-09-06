@@ -29,6 +29,9 @@ except Exception:
     TENSION_WORDS = {"緊張", "不安", "焦", "追い詰め", "危機", "ピンチ", "戦", "闘", "衝突", "対立"}
     CATHARSIS_WORDS = {"解放", "安堵", "救い", "光", "希望", "勝利", "和解", "癒", "涙", "感動"}
 
+# Negation words that flip catharsis/positive meaning
+NEGATION_WORDS = {"ない", "なく", "ぬ", "ず", "ね", "ません", "ませんでした", "なかった", "なく", "ずに", "ずとも"}
+
 
 def _count_emotion(text: str, word_set: set[str]) -> int:
     count = 0
@@ -68,7 +71,7 @@ class EmotionCurveAuditor(SpecialistAuditor):
             raise LLMUnavailableError("No LLM available for EmotionCurveAuditor")
 
         prompt = EMOTION_CURVE_USER_PROMPT.format(draft_text=draft[:4000])
-        score, critique, suggestions = await self._judge_with_llm(
+        score, critique, suggestions, confidence, reasoning, raw_resp = await self._judge_with_llm(
             prompt=prompt,
             system_prompt=EMOTION_CURVE_SYSTEM_PROMPT,
         )
@@ -79,22 +82,25 @@ class EmotionCurveAuditor(SpecialistAuditor):
             feedback={"critique": critique},
             suggestions=suggestions,
             degraded=False,
+            confidence=confidence,
+            reasoning_trace=reasoning,
+            llm_raw_response=raw_resp,
         )
 
     def _fallback(self, ctx: dict[str, Any]) -> SpecialistAuditResult:
-        """Rule-based fallback using emotional vocabulary and polarity curve."""
+        """Rule-based fallback using emotional vocabulary and polarity curve with improved segmentation."""
         draft = ctx.get("draft_text", "") or ""
         if not draft:
             return SpecialistAuditResult("emotion_curve", 0.0, feedback={"error": "no draft_text"}, degraded=True)
 
-        # Split into segments (by paragraph or every 200 chars)
-        segments = [s.strip() for s in re.split(r"\n\n+|。\s*", draft) if s.strip()]
+        # Split into segments by emotional density change points (paragraph boundaries + emotional word density shifts)
+        segments = self._split_by_emotional_shifts(draft)
         if len(segments) < 2:
             segments = [draft[i:i+200] for i in range(0, len(draft), 200)]
 
         if len(segments) < 2:
             return SpecialistAuditResult(
-                "emotion_curve", 30.0,
+                "emotion_curve", 35.0,
                 feedback={"fallback": "rule-based", "segments": len(segments), "note": "too short for curve"},
                 suggestions=["Need at least 2 segments for emotion curve"],
                 degraded=True,
@@ -102,20 +108,23 @@ class EmotionCurveAuditor(SpecialistAuditor):
 
         # Compute emotional polarity per segment
         polarities = []
+        catharsis_counts = []
         for seg in segments:
             pos = _count_emotion(seg, POSITIVE_EMOTIONS)
             neg = _count_emotion(seg, NEGATIVE_EMOTIONS)
             tens = _count_emotion(seg, TENSION_WORDS)
-            cath = _count_emotion(seg, CATHARSIS_WORDS)
+            # Catharsis with negation check
+            cath = self._count_catharsis_with_negation(seg)
+            catharsis_counts.append(cath)
             polarity = (pos - neg) * 0.5 + tens * 0.3 + cath * 0.2
             polarities.append(polarity)
 
         if len(polarities) < 2:
-            return SpecialistAuditResult("emotion_curve", 30.0, feedback={"fallback": "rule-based"}, suggestions=[], degraded=True)
+            return SpecialistAuditResult("emotion_curve", 35.0, feedback={"fallback": "rule-based"}, suggestions=[], degraded=True)
 
         variance = sum((p - sum(polarities)/len(polarities))**2 for p in polarities) / len(polarities)
         amplitude = max(polarities) - min(polarities)
-        final_catharsis = _count_emotion(segments[-1], CATHARSIS_WORDS)
+        final_catharsis = catharsis_counts[-1] if catharsis_counts else 0
         start_to_end_shift = polarities[-1] - polarities[0] if polarities else 0
 
         variance_score = min(100, variance * 10)
@@ -142,9 +151,9 @@ class EmotionCurveAuditor(SpecialistAuditor):
 
         return SpecialistAuditResult(
             specialist_name="emotion_curve",
-            score=round(max(20.0, min(100.0, total)), 1),
+            score=round(max(35.0, min(100.0, total)), 1),
             feedback={
-                "fallback": "rule-based",
+                "fallback": "rule-based improved segmentation + negation-aware catharsis",
                 "segments": len(segments),
                 "polarities": [round(p, 2) for p in polarities],
                 "variance": round(variance, 3),
@@ -155,6 +164,64 @@ class EmotionCurveAuditor(SpecialistAuditor):
             suggestions=suggs,
             degraded=True,
         )
+
+    def _split_by_emotional_shifts(self, text: str) -> list[str]:
+        """Split text by paragraph boundaries and emotional density shifts."""
+        # First split by paragraphs
+        paragraphs = [p.strip() for p in re.split(r"\n\n+", text) if p.strip()]
+        if len(paragraphs) >= 3:
+            return paragraphs
+
+        # If too few paragraphs, split by sentence and group by emotional density
+        sentences = [s.strip() for s in re.split(r"[。！？]", text) if s.strip()]
+        if len(sentences) < 4:
+            return [text[i:i+200] for i in range(0, len(text), 200)]
+
+        # Compute emotional density per sentence
+        densities = []
+        for sent in sentences:
+            density = (
+                _count_emotion(sent, POSITIVE_EMOTIONS) +
+                _count_emotion(sent, NEGATIVE_EMOTIONS) +
+                _count_emotion(sent, TENSION_WORDS) +
+                _count_emotion(sent, CATHARSIS_WORDS)
+            )
+            densities.append(density)
+
+        # Find shift points (where density changes significantly)
+        segments = []
+        current_segment = [sentences[0]]
+        current_density = densities[0]
+
+        for i in range(1, len(sentences)):
+            density = densities[i]
+            # If density change > 50% of max density, start new segment
+            max_density = max(densities) if max(densities) > 0 else 1
+            if abs(density - current_density) > max_density * 0.5:
+                segments.append("。".join(current_segment) + "。")
+                current_segment = [sentences[i]]
+                current_density = density
+            else:
+                current_segment.append(sentences[i])
+                current_density = (current_density * len(current_segment) + density) / (len(current_segment) + 1)
+
+        if current_segment:
+            segments.append("。".join(current_segment) + "。")
+
+        return segments if len(segments) >= 2 else [text[i:i+200] for i in range(0, len(text), 200)]
+
+    def _count_catharsis_with_negation(self, text: str) -> int:
+        """Count catharsis words, excluding those preceded by negation within 3 chars."""
+        count = 0
+        for word in CATHARSIS_WORDS:
+            for match in re.finditer(re.escape(word), text):
+                start = match.start()
+                # Check for negation before the word
+                context_start = max(0, start - 3)
+                context = text[context_start:start]
+                if not any(neg in context for neg in NEGATION_WORDS):
+                    count += 1
+        return count
 
 
 __all__ = ["EmotionCurveAuditor"]

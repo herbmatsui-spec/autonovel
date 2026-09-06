@@ -30,7 +30,9 @@ async def test_consistency_auditor_with_llm_contradiction_detection():
 {
   "score": 35.0,
   "critique": "第1章で戦死したはずのゼノンが何の説明もなく元気に酒場で会話しており、重大な論理矛盾が存在する。",
-  "suggestions": ["ゼノンの登場を回想シーンにするか、蘇生の経緯を明記すること"]
+  "suggestions": ["ゼノンの登場を回想シーンにするか、蘇生の経緯を明記すること"],
+  "confidence": 0.85,
+  "reasoning": "死亡設定と生存描写の直接矛盾を検出"
 }
 """
     mock_llm = _make_llm_mock(json_resp)
@@ -79,7 +81,9 @@ async def test_factual_auditor_with_llm():
 {
   "score": 90.0,
   "critique": "中世初期の封建制度および神聖暦の年代記述に誤りはなく、世界観設定に極めて忠実である。",
-  "suggestions": ["貨幣単位の記述をより詳細にすると世界観の深みが増す"]
+  "suggestions": ["貨幣単位の記述をより詳細にすると世界観の深みが増す"],
+  "confidence": 0.9,
+  "reasoning": "時代考証用語が設定と整合"
 }
 """
     mock_llm = _make_llm_mock(json_resp)
@@ -111,4 +115,4 @@ async def test_factual_auditor_fallback_modern_terms():
     assert result.degraded is True
     # スマホとエレベーターの2語検知で減点
     assert result.score < 60.0
-    assert "スマホ" in result.feedback["modern_terms_found"]
+    assert "スマホ" in result.feedback["anachronisms_found"]

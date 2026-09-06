@@ -18,7 +18,7 @@ class DummyLLM:
 
 @pytest.mark.asyncio
 async def test_structure_auditor_with_llm():
-    llm_json = '{"score": 87.0, "critique": "起承転結のテンポが良好で、プロットの重要ポイントを漏れなく消化しています。", "suggestions": ["転の部分の緊迫感をさらに高める"]}'
+    llm_json = '{"score": 87.0, "critique": "起承転結のテンポが良好で、プロットの重要ポイントを漏れなく消化しています。", "suggestions": ["転の部分の緊迫感をさらに高める"], "confidence": 0.85, "reasoning": "プロット消化率とテンポが良好"}'
     auditor = StructureAuditor(llm=DummyLLM(llm_json))
     ctx = {
         "draft_text": "城門が開いた。勇者は深呼吸をして足を踏み入れた。罠が発動し、矢が降り注ぐ。彼は盾で防ぎ、奥の玉座へと進んだ。",
@@ -48,7 +48,7 @@ async def test_structure_auditor_fallback():
 
 @pytest.mark.asyncio
 async def test_multimodal_auditor_with_llm():
-    llm_json = '{"score": 93.0, "critique": "本文の決戦シーンと挿絵指示の構図・雷光のライティングが完璧に一致しています。", "suggestions": []}'
+    llm_json = '{"score": 93.0, "critique": "本文の決戦シーンと挿絵指示の構図・雷光のライティングが完璧に一致しています。", "suggestions": [], "confidence": 0.9, "reasoning": "構図・ライティングが完全一致"}'
     auditor = MultimodalAuditor(llm=DummyLLM(llm_json))
     ctx = {
         "draft_text": "雨の中、黒衣の剣士が抜刀した。刀身に紫の雷光が走る。",

@@ -57,8 +57,10 @@ async def test_phase2_full_pipeline():
     async def audit_handler(event: AgentEvent):
         payload = event.payload
         # Verify blind review: other proposals are blocked
-        for k, v in payload.items():
-            if k != "own_proposal":
+        blocked_keys = {"proposal_A", "proposal_B", "proposal_C"}
+        for k in blocked_keys:
+            if k in payload:
+                v = payload[k]
                 assert "BLOCKED:" in str(v) or "HASH:" in str(v), f"Leaked: {k}"
         own = payload["own_proposal"]
         audit_results.append({

@@ -2,6 +2,7 @@ import logging
 from typing import Any
 
 from src.agents.audit import AbilityConsistencyChecker, DeAIAuditor, FastPlotScreener
+from config.erotic_thresholds import MAX_CONSECUTIVE_PEAK_EPISODES
 
 logger = logging.getLogger(__name__)
 
@@ -31,20 +32,20 @@ class AuditService:
         self, intensities: list[int], current_ep: int, total_eps: int
     ) -> list[str]:
         """官能シーンのタイミングに関するAIアドバイスを返す。"""
-        from src.services.erotic_density_controller import EroticDensityController
-
-        controller = EroticDensityController()
         advice = []
 
-        if not controller.should_allow_peak(intensities):
-            advice.append(
-                "⚠️ 連続するピークシーンが多すぎます。読者疲労の可能性があります。次の1〜2話はクールダウンを推奨します。"
-            )
+        if len(intensities) >= MAX_CONSECUTIVE_PEAK_EPISODES:
+            recent = intensities[-MAX_CONSECUTIVE_PEAK_EPISODES:]
+            if all(i >= 4 for i in recent):
+                advice.append(
+                    "⚠️ 連続するピークシーンが多すぎます。読者疲労の可能性があります。次の1〜2話はクールダウンを推奨します。"
+                )
 
-        avg = controller.compute_avg_intensity(intensities)
-        if avg > 3.5:
-            advice.append(
-                "⚠️ 全体の官能強度の平均が高めです。情緒的な「溜め」の回を増やすことを検討してください。"
-            )
+        if intensities:
+            avg = sum(intensities) / len(intensities)
+            if avg > 3.5:
+                advice.append(
+                    "⚠️ 全体の官能強度の平均が高めです。情緒的な「溜め」の回を増やすことを検討してください。"
+                )
 
         return advice

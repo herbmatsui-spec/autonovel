@@ -8,6 +8,15 @@ from pydantic import BaseModel, Field
 SceneType = Literal["general", "combat", "daily", "psychological", "political"]
 
 
+class SudachiConfig(BaseModel):
+    """Configuration for SudachiPy tokenizer."""
+    split_mode: Literal["A", "B", "C"] = Field(default="C", description="Tokenization mode: A=short, B=medium, C=long")
+    include_proper: bool = Field(default=True, description="Include proper nouns")
+    include_compound: bool = Field(default=True, description="Include compound nouns")
+    min_length: int = Field(default=2, ge=1, description="Minimum token length")
+    dict_type: Literal["core", "full", "small"] = Field(default="core", description="Dictionary type")
+
+
 class CompressionConfig(BaseModel):
     """Configuration for 4-layer context compression."""
 
@@ -23,6 +32,7 @@ class CompressionConfig(BaseModel):
         default_factory=lambda: ["主要キャラ", "核心設定", "伏線"],
         description="Categories that must never be trimmed",
     )
+    sudachi: SudachiConfig = Field(default_factory=SudachiConfig, description="SudachiPy tokenizer configuration")
 
 
 class RawTextLayerOutput(BaseModel):
@@ -78,6 +88,7 @@ class CompressedContextResult(BaseModel):
 
 __all__ = [
     "SceneType",
+    "SudachiConfig",
     "CompressionConfig",
     "RawTextLayerOutput",
     "SubgraphLayerOutput",
