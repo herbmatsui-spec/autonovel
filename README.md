@@ -17,7 +17,7 @@
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 [![Type Checked: mypy](https://img.shields.io/badge/type%20checked-mypy-blue)](https://mypy-lang.org/)
 [![Vitest](https://img.shields.io/badge/tested_with-vitest-729B1B?logo=vitest&logoColor=white)](https://vitest.dev/)
-[![Version](https://img.shields.io/badge/version-4.4.0-brightgreen?logo=semver)](https://github.com/herbmatsui-spec/autonovel/releases/tag/v4.4.0)
+[![Version](https://img.shields.io/badge/version-4.5.0-brightgreen?logo=semver)](https://github.com/herbmatsui-spec/autonovel/releases/tag/v4.5.0)
 
 <br />
 
@@ -25,7 +25,7 @@
   <img src="docs/demo.gif" alt="AutoNovel UI & Workflow Demo" width="900" style="border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
 </p>
 
-*▲ AutoNovel v4.4: 3案企画ガチャ / 逆算プロット / 上級者Studio / インライン五感推敲 / GraphRAG相関図 / ワンクリックZIP納品 / マルチメディア・eBook / IF分岐・共同編集 (CRDT) / **スキル駆動型アーキテクチャ / BookScore統一100点メトリクス / A/Bテスト自動化 / PDCA自動レポート / 書き直し自動品質保証ループ / ブラインドピアレビュー / 8専門オーディター並列監査 / 反射的RAGスクリーニング***
+*▲ AutoNovel v4.5: 3案企画ガチャ / 逆算プロット / 上級者Studio / インライン五感推敲 / GraphRAG相関図 / ワンクリックZIP納品 / マルチメディア・eBook / IF分岐・共同編集 (CRDT) / **スキル駆動型アーキテクチャ / BookScore統一100点メトリクス / A/Bテスト自動化 / PDCA自動レポート / 書き直し自動品質保証ループ / ブラインドピアレビュー / 8専門オーディター並列監査 / 反射的RAGスクリーニング / 4層コンテキスト圧縮 / バイアス補正・DAGスケジューラ / リソース管理・NUMA最適化 / 19ワークフロー統合 / 設定駆動圧縮 / 日本語トークナイザー (SudachiPy) / 落下リトライ・回路遮断***
 
 </div>
 
@@ -57,6 +57,46 @@ AutoNovel は、AI を活用して Web 小説を **企画から執筆、校正�
 続いて、下記の目次から技術的な詳細をご覧ください。
 
 ## 📋 更新履歴 / Changelog
+
+### v4.5.0 (2026-09-06) — Phase 3: コンテキスト圧縮・スケジューラ高度化・耐障害性強化 (Guidelines #2, #4, #5, #6, #8)
+
+**📦 4層コンテキスト圧縮システム (Guideline #2)**
+- `CompressorService` (`src/services/compression/compressor.py`): Layer1(キーワード抽出/BM25/日本語SudachiPy) → Layer2(セマンティック重複除去/MinHash+埋め込み) → Layer3(重要度ランク付け/GraphRAG中心性+BookScore) → Layer4(トリミング/予算内収め)
+- 設定駆動: `config/context_compression.yaml` に全層パラメータを外部化、環境変数 `CONTEXT_COMPRESSION_ENABLED` で制御
+- `ContextCompressionConfig` (`src/utils/context_compression_config.py`): ジャンル別プロファイル (literary/entertainment/educational/romance/mystery) 対応
+- 日本語トークナイザー (`src/services/compression/japanese_tokenizer.py`): SudachiPy (分割モードA/B/C) 統合、ユーザー辞書対応
+- Prometheus: `compression_layer1_tokens_reduced`, `compression_layer2_duplicates_removed`, `compression_layer3_importance_scores`, `compression_layer4_tokens_trimmed`, `compression_total_ratio`, `compression_latency_ms`
+
+**⚡ DAGスケジューラ & リソース管理・NUMA最適化 (Guideline #4, #5)**
+- `DAGScheduler` (`src/backend/tasks/dag_scheduler.py`): 依存解決・トポロジカル順序・クリティカルパス計算・動的優先度・並列度制限・再試行バックオフ
+- `ResourceManager` (`src/backend/tasks/resource_manager.py`): CPU/メモリ/GPU/ネットワーク/ディスク監視、NUMAトポロジ認識 (`src/backend/tasks/numa_topology.py`)、OOM/スロットリング検知・回避
+- `SchedulingPolicies` (`src/backend/tasks/scheduling_policies.py`): `fifo` / `priority` / `fair_share` / `deadline_aware` / `numa_aware` 5種ポリシー、動的切替
+- `MetricsCollector` (`src/backend/tasks/metrics_collector.py`): タスク/リソース/スケジューラ/ワーカー/キュー/システムメトリクス収集、滑動ウィンドウ集計・アラート閾値
+- `DAGPersistence` (`src/backend/tasks/dag_persistence.py`): チェックポイント保存・リカバリ・状態履歴・クリーンアップ
+- Prometheus: `dag_tasks_total`, `dag_task_duration_seconds`, `resource_cpu_usage`, `resource_memory_usage`, `scheduler_queue_depth`, `worker_utilization`, `numa_node_affinity`
+
+**🛡️ 耐障害性強化: リトライ・回路遮断・フォールバック統一 (Guideline #6, #8)**
+- `FallbackUtils` (`src/agents/specialists/fallback_utils.py`): 指数バックオフ・ジッター・最大試行回数・回路遮断 (失敗率/遅延閾値) 統一実装
+- `ResilientHTTPClient` (`src/services/resilient_http.py`): HTTP専用リトライ・タイムアウト・回路遮断・フォールバック応答
+- `ExperimentAllocator` (`src/services/experiment_allocator.py`): A/Bテスト・多腕バンディット (Thompson Sampling/UCB) 割当、層別化ランダム化
+- `BiasCorrection` (`src/services/bias_correction.py`): 位置バイアス/アンカリング/新規性/確証/生存バイアス補正、IPW推定・感度分析
+- 設定: `config/llm_bias_correction.yaml`、機能フラグ `BIAS_CORRECTION_ENABLED`
+- 管理者API: `/admin/experiment/*` (実験作成・割当・結果・推定)、`/admin/bias/*` (補正統計・履歴)
+- Prometheus: `retry_attempts_total`, `circuit_breaker_state`, `fallback_triggered_total`, `experiment_allocations_total`, `bias_correction_applied_total`
+
+**🔄 19ワークフロー統合 & 設定ファイル整理**
+- `src/backend/workflows/` 全19ワークフローの `map_*_kwargs_to_context` 統一、`AutoWorkflowPipeline` 完全委譲確認
+- `config/weight_variants.py`: BookScore/監査/圧縮/スケジューラ重みのバリアント定義
+- `src/domain/entities/review_session.py`, `src/services/experiment_allocator.py`, `src/services/bias_correction.py` 新規ドメイン/サービス
+- フロントエンド: `branches/` コンポーネント・`useBranchTree.ts` 等の分岐管理フック追加
+
+**🧪 テスト・品質**
+- 新規単体テスト: `test_four_layer_compression.py`, `test_sudachi_tokenizer.py`, `test_weight_variants.py`, `test_dag_persistence.py`, `test_metrics_collector.py`, `test_numa_topology.py`, `test_scheduling_policies.py`, `test_bias_correction.py`, `test_experiment_allocator.py`, `test_fallback_unified.py`, `test_fallback_utils.py`, `test_result.py`, `test_review_session.py`, `test_layer1_sudachi_integration.py`, `test_blind_gacha_flow.py`
+- プロパティベーステスト導入 (`tests/property/`): Hypothesis による圧縮・スケジューラ・リソース管理不変条件検証
+- ベンチマーク: `tests/benchmarks/`, `benchmark_results.json`
+- 既存テストスイート全互換性維持
+
+---
 
 ### v4.4.0 (2026-09-04) — Phase 2: 創造性・品質・RAG精度向上 (Guidelines #1, #3, #7)
 
