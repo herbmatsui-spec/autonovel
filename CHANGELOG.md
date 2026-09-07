@@ -2,6 +2,20 @@
 
 本プロジェクトの変更履歴。[Semantic Versioning](https://semver.org/lang/ja/) に準拠。
 
+## [4.6.1] - 2026-09-07 - Code Review, P0 Plans & CI Stabilization
+
+### 追加
+- **コードレビュー報告書・P0実装計画書**:
+  - `plans/code_review_2026-09-07.md`: 8専門審査員・LLM抽象化・パフォーマンス等の詳細レビュー
+  - `plans/easy_mode_e2e_review_2026-09-07.md`: かんたんモード E2E 全体診断
+  - `plans/p0_implementation_plan_24steps.md`: 低性能LLMでも実装可能な24ステップのP0計画書
+  - `plans/p0_tradeoff_analysis.md`: トレードオフ分析
+- **CI/CD パイプラインの段階的品質ゲート運用 (Soft-Fail Quality Gate)**:
+  - 10重ゲートの段階的導入により、開発・ビルドのブロッキングを防止しつつ安全なレポートを出力
+
+### 変更
+- バージョンを 4.6.1 に統一 (`pyproject.toml`, `src/backend/config.py`, `frontend/package.json`, `README.md`)
+
 ## [Unreleased] - UI/UX ⇄ Functionality Alignment
 
 `docs/bugs/ui-functionality-gap-plan.md` 計画書に基づく 36 ステップ・14 バグの是正。
