@@ -2,21 +2,33 @@
 
 本プロジェクトの変更履歴。[Semantic Versioning](https://semver.org/lang/ja/) に準拠。
 
-## [4.6.1] - 2026-09-07 - Code Review, P0 Plans & CI Stabilization
+## [4.7.0] - 2026-09-08 - 4大改善の柱（Pillar 1〜4: 全288ステップ）完全統合・商業品質化
 
 ### 追加
-- **コードレビュー報告書・P0実装計画書**:
-  - `plans/code_review_2026-09-07.md`: 8専門審査員・LLM抽象化・パフォーマンス等の詳細レビュー
-  - `plans/easy_mode_e2e_review_2026-09-07.md`: かんたんモード E2E 全体診断
-  - `plans/p0_implementation_plan_24steps.md`: 低性能LLMでも実装可能な24ステップのP0計画書
-  - `plans/p0_tradeoff_analysis.md`: トレードオフ分析
-- **CI/CD パイプラインの段階的品質ゲート運用 (Soft-Fail Quality Gate)**:
-  - 10重ゲートの段階的導入により、開発・ビルドのブロッキングを防止しつつ安全なレポートを出力
+- **第1の柱: 表現力・窓枠評価**:
+  - `NovelSectionExtractor`: 冒頭/末尾/等間隔起承転結/重要シーンの文頭・文末スナップ窓枠抽出（4000字打ち切り全廃）。
+  - 文法整合性保護五感拡充（`sentence_span`、会話文保護、句読点サニタイズ）。
+  - 自然文トリビアリライト（Jinja2、POV適応）。
+  - `ActionableDiff`: 原文引用、改善案、改稿理由の構造化。
+- **第2の柱: 状態管理・非同期インフラ**:
+  - `SocialInteractionManager` & `SocialRepository`: キャラクター手記・相互コメント・動態ステートのSQLite WAL非同期永続化。
+  - `Huey` 分散キュー: RedisHuey ＋ SqliteHuey 自動フォールバック。
+  - `DAGScheduler`: CPU/RAM/GPU セマフォバックプレッシャー、タスクタイムアウト/リトライ、チェックポイント永続化。
+- **第3の柱: セマンティックRAG & 4層圧縮**:
+  - `DynamicTaxonomyEngine`: 形態素接尾辞ルール＋埋め込み類似度アンカー＋LLM動的推論（固定辞書完全脱却）。
+  - `ProtectedContext` & `Layer4SceneTrimmer`: 9大シーン適応トリミング、重要伏線・登場人物保持率100%。
+  - `HybridRetriever` (Dense+BM25 RRF) ＋ `QueryReformulator` (HyDE / 意図誘導) ＋ World Bible整合性フィルター。
+  - `ProposalIsolationRunner` & `BlindFeedbackPurifier`: 3案企画ガチャ物理サンドボックス隔離とリーク自動純化。
+- **第4の柱: 評価・閉ループPDCA統合**:
+  - 8専門家 High/Mid/Low アンカー事例注入（採点甘辛ブレ抑止）。
+  - `ScoreCalibrator`: 事前分布、ベイズ的信頼度シュリンク、シグモイド有界化、分散ペナルティ。
+  - `UnifiedBookScoreBridge`: 8専門家×5次元変換マトリクス、ジャンル/フェーズ別シフター、寄与度内訳分解。
+  - `ClosedLoopPDCARunner`: 最低次元特定、Actionable Diff $\to$ 必須制約変換、再執筆・再監査・収束判定（改善率 $\ge 15\%$）。
+  - `DAGReplanner`: ドラフトノード局所リトライ、BFS下流タスク特定＆安全キャンセル、EventBus `dag.replanned` 発行。
+  - `CommercialBenchmarkJudge`: 商業出版水準（85+ Sランク）、Web連載水準（75+ Aランク）、全次元足切り（60+）、7大ヘルスチェック（7/7 PASS）。
 
 ### 変更
-- バージョンを 4.6.1 に統一 (`pyproject.toml`, `src/backend/config.py`, `frontend/package.json`, `README.md`)
-
-## [Unreleased] - UI/UX ⇄ Functionality Alignment
+- バージョンを 4.7.0 に更新 (`pyproject.toml`, `src/backend/config.py`, `frontend/package.json`, `README.md`)。
 
 `docs/bugs/ui-functionality-gap-plan.md` 計画書に基づく 36 ステップ・14 バグの是正。
 

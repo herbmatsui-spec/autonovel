@@ -13,6 +13,7 @@ from src.agents.specialist_auditor_base import (
     SpecialistAuditor,
     SpecialistAuditResult,
     LLMUnavailableError,
+    ActionableDiff,
 )
 from src.agents.specialists.fallback_utils import (
     analyze_pacing,
@@ -25,6 +26,10 @@ STRUCTURE_SYSTEM_PROMPT = """あなたは小説の構成・プロット展開・
 2. 起承転結または三幕構成のバランス: 導入・展開・転換・結びの配分が適切か（冗長な停滞や唐突すぎる飛躍がないか）。
 3. シーンのテンポとペース配分（Pacing）: 読者が飽きないリズム感が維持されているか。
 構成が破綻している、プロットが未消化のまま放置されている場合は低スコア（50点未満）、完成度が高く引き締まった構成であれば高スコア（80点以上）としてください。
+
+【Actionable Diff の必須出力要件】
+起承転結の各セクション（特に起・承・転・結のいずれかで停滞や唐突感がある箇所）について、
+必ず「問題のある原文の抜粋」と「改善後の具体的な構成リライト案」を1〜3件 ActionableDiff に含めてください。
 """
 
 STRUCTURE_USER_PROMPT = """【プロットツリー / 予定展開】
@@ -34,6 +39,27 @@ STRUCTURE_USER_PROMPT = """【プロットツリー / 予定展開】
 {draft_text}
 
 上記文章がプロットの要件を正しく満たし、起承転結・ペース配分が適切であるかを審査し、0〜100で採点してください。
+起承転結の改善が必要な箇所について、具体的な Actionable Diff を必ず出力してください。
+"""
+
+STRUCTURE_WINDOWED_USER_PROMPT = """【プロットツリー / 予定展開】
+{plot_tree}
+
+【総文字数】{total_chars}文字
+【起（導入セクション）】
+{ki_text}
+
+【承（展開セクション）】
+{sho_text}
+
+【転（山場・転換セクション）】
+{ten_text}
+
+【結（結び・余韻セクション）】
+{ketsu_text}
+
+上記文章がプロットの要件を正しく満たし、起承転結の配分および展開のテンポ・ペース配分が適切であるかを審査し、0〜100で採点してください。
+起・承・転・結のバランスや展開速度の改善が必要な箇所について、具体的な Actionable Diff を必ず出力してください。
 """
 
 
@@ -54,25 +80,39 @@ class StructureAuditor(SpecialistAuditor):
             raise LLMUnavailableError("No LLM available for StructureAuditor")
 
         plot_info = str(plot_tree) if plot_tree else "標準起承転結プロット（導入→危機・葛藤→解決・余韻）"
-        prompt = STRUCTURE_USER_PROMPT.format(
+        sections = self.section_extractor.extract_four_sections(draft, section_chars=800)
+        sec_dict = {s.name: s.text for s in sections}
+
+        prompt = STRUCTURE_WINDOWED_USER_PROMPT.format(
             plot_tree=plot_info[:2000],
-            draft_text=draft[:4000],
+            total_chars=len(draft),
+            ki_text=sec_dict.get("ki", ""),
+            sho_text=sec_dict.get("sho", ""),
+            ten_text=sec_dict.get("ten", ""),
+            ketsu_text=sec_dict.get("ketsu", ""),
         )
 
-        score, critique, suggestions, confidence, reasoning, raw_resp = await self._judge_with_llm(
+        judge_res = await self._judge_with_llm(
             prompt=prompt,
             system_prompt=STRUCTURE_SYSTEM_PROMPT,
         )
+        score, critique, suggestions, confidence, reasoning, raw_resp = judge_res[:6]
+        actionable_diffs = judge_res[6] if len(judge_res) > 6 else []
 
         return SpecialistAuditResult(
             specialist_name="structure",
             score=score,
-            feedback={"critique": critique},
+            feedback={
+                "critique": critique,
+                "total_chars": len(draft),
+                "sections_extracted": {s.name: len(s.text) for s in sections},
+            },
             suggestions=suggestions,
             degraded=False,
             confidence=confidence,
             reasoning_trace=reasoning,
             llm_raw_response=raw_resp,
+            actionable_diffs=actionable_diffs,
         )
 
     def _fallback(self, ctx: dict[str, Any]) -> SpecialistAuditResult:
@@ -130,7 +170,31 @@ class StructureAuditor(SpecialistAuditor):
         score = max(20.0, min(100.0, round((coverage_weight * avg_coverage + pacing_weight * pacing_score) * 100.0, 1)))
 
         suggestions = []
-        if avg_coverage < 0.5:
+        actionable_diffs: list[ActionableDiff] = []
+
+        phase_labels = {
+            "intro": ("起（導入部）", "世界観や主人公の日常・初期状態を描写し、事件の発端への導入を明瞭にする"),
+            "conflict": ("承（展開部）", "主人公が直面する試練や葛藤、対立要素を段階的に深める展開を追加する"),
+            "climax": ("転（山場・転換部）", "決定的な事件の転換や最大のピンチ・驚きの展開を際立たせる"),
+            "resolution": ("結（結末・余韻）", "事件の決着と主人公の内面的変化、次章へのフックを丁寧に描く"),
+        }
+
+        for phase, cov in phase_scores.items():
+            if cov < 0.5:
+                label, suggestion_text = phase_labels.get(phase, (phase, "プロット要素の補強"))
+                suggestions.append(f"{label}のプロット消化・展開を補強してください")
+                # 原文抜粋の切り出し（テキスト長に応じた抜粋）
+                quote = draft[:60] if phase in ["intro", "conflict"] else draft[-60:]
+                actionable_diffs.append(
+                    ActionableDiff(
+                        location=label,
+                        original_quote=quote.strip() or "（該当セクションの記述不足）",
+                        improved_suggestion=f"{suggestion_text}。",
+                        rationale=f"{label}におけるプロットキーワード消化率が低く（{int(cov * 100)}%）、構成上の厚みが不足しているため。",
+                    )
+                )
+
+        if avg_coverage < 0.5 and not suggestions:
             suggestions.append("Cover more plot points across all phases")
         if pacing_score < 0.4 and len(draft) > 200:
             suggestions.append("Improve pacing balance between phases")
@@ -148,6 +212,7 @@ class StructureAuditor(SpecialistAuditor):
             },
             suggestions=suggestions,
             degraded=True,
+            actionable_diffs=actionable_diffs,
         )
 
 

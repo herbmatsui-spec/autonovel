@@ -5,6 +5,10 @@ enrichment:
     max_insertions_per_chapter: 5
     relevance_threshold: 0.7
     sources: ["world_bible", "historical_facts", "cultural_trivia"]
+    temperature: 0.5
+    max_rewrite_tokens: 120
+    timeout_seconds: 4.0
+
   citation_attachment:
     enabled: true
     style: "footnote"
@@ -15,6 +19,7 @@ enrichment:
     target_emotions: ["sadness", "anger", "fear", "joy", "surprise", "disgust"]
     expansion_ratio: 2.5
     show_dont_tell: true
+    timeout_seconds: 5.0
   multimedia_scenarios:
     enabled: true
     formats: ["manga_script", "radio_drama", "anime_storyboard", "live_action_shots"]

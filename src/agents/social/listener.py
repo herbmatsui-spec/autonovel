@@ -50,24 +50,38 @@ class SocialEventListener:
                     logger.warning("Failed to obtain DB session for social listener: %s", ex)
 
             try:
-                # Run sync/heavy process_scene safely in worker thread if in async loop
-                result = await asyncio.to_thread(
-                    self.manager.process_scene,
-                    book_id=book_id,
-                    ep_num=ep_num,
-                    scene_text=scene_text,
-                    characters=characters,
-                    session=session,
-                    graph_name=self.graph_name,
-                )
+                import inspect
+                async_fn = getattr(self.manager, "process_scene_async", None)
+                if async_fn is not None and inspect.iscoroutinefunction(async_fn):
+                    result = await async_fn(
+                        book_id=book_id,
+                        ep_num=ep_num,
+                        scene_text=scene_text,
+                        characters=characters,
+                        session=session,
+                        graph_name=self.graph_name,
+                    )
+                else:
+                    result = await asyncio.to_thread(
+                        self.manager.process_scene,
+                        book_id=book_id,
+                        ep_num=ep_num,
+                        scene_text=scene_text,
+                        characters=characters,
+                        session=session,
+                        graph_name=self.graph_name,
+                    )
                 logger.info(
                     "SocialEventListener: Successfully processed social scene. Generated %d journals, %d comments.",
                     len(result.get("journals", [])),
                     len(result.get("comments", [])),
                 )
             finally:
-                if session and hasattr(session, "close"):
-                    session.close()
+                if session:
+                    if hasattr(session, "close"):
+                        close_ret = session.close()
+                        if asyncio.iscoroutine(close_ret):
+                            await close_ret
 
         except Exception as e:
             logger.error("Error in SocialEventListener while handling writing.completed: %s", e, exc_info=True)

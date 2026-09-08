@@ -90,9 +90,11 @@ async def _generate_orchestrated(payload: dict[str, Any]) -> dict[str, Any]:
     repo = BookRepository(session)
 
     # Phase 3/4 依存サービスのインスタンス化
+    from src.backend.database.social_repository import SocialRepository
+    social_repo = SocialRepository(session)
     reflective_rag = ReflectiveRAGService(rag_service=rag_service)
     compressor = FourLayerCompressor(config=CompressionConfig())
-    social_manager = SocialInteractionManager(llm_adapter=llm_adapter)
+    social_manager = SocialInteractionManager(llm_adapter=llm_adapter, social_repo=social_repo)
 
     # 相関ID生成（ログ追跡用）
     correlation_id = f"book_{book_id}_branch_{branch_id}_ep_{ep_num}"
@@ -323,6 +325,8 @@ def build_novel_generation_dag(book_id: int, ep_num: int, branch_id: int = 1) ->
         kwargs={"book_id": book_id, "ep_num": ep_num, "branch_id": branch_id},
         priority=10,
         resources=TaskResourceRequirement(cpu_cores=1.0, ram_mb=512),
+        timeout_seconds=120.0,
+        retry_limit=2,
     )
     t_ctx = DAGTaskNode(
         task_id=f"{prefix}_context",
@@ -332,6 +336,8 @@ def build_novel_generation_dag(book_id: int, ep_num: int, branch_id: int = 1) ->
         dependencies=[t_plot.task_id],
         priority=9,
         resources=TaskResourceRequirement(cpu_cores=1.0, ram_mb=512),
+        timeout_seconds=60.0,
+        retry_limit=2,
     )
     t_write = DAGTaskNode(
         task_id=f"{prefix}_write",
@@ -341,6 +347,8 @@ def build_novel_generation_dag(book_id: int, ep_num: int, branch_id: int = 1) ->
         dependencies=[t_ctx.task_id],
         priority=8,
         resources=TaskResourceRequirement(cpu_cores=2.0, ram_mb=1024),
+        timeout_seconds=300.0,
+        retry_limit=2,
     )
     t_audit = DAGTaskNode(
         task_id=f"{prefix}_audit",
@@ -350,6 +358,8 @@ def build_novel_generation_dag(book_id: int, ep_num: int, branch_id: int = 1) ->
         dependencies=[t_write.task_id],
         priority=7,
         resources=TaskResourceRequirement(cpu_cores=1.5, ram_mb=1024),
+        timeout_seconds=180.0,
+        retry_limit=2,
     )
     t_illust = DAGTaskNode(
         task_id=f"{prefix}_illust",
@@ -359,6 +369,8 @@ def build_novel_generation_dag(book_id: int, ep_num: int, branch_id: int = 1) ->
         dependencies=[t_write.task_id],
         priority=6,
         resources=TaskResourceRequirement(cpu_cores=1.0, ram_mb=1024, gpu_mem_mb=2048),
+        timeout_seconds=120.0,
+        retry_limit=2,
     )
     t_publish = DAGTaskNode(
         task_id=f"{prefix}_publish",
@@ -368,9 +380,40 @@ def build_novel_generation_dag(book_id: int, ep_num: int, branch_id: int = 1) ->
         dependencies=[t_audit.task_id, t_illust.task_id],
         priority=5,
         resources=TaskResourceRequirement(cpu_cores=0.5, ram_mb=256),
+        timeout_seconds=30.0,
+        retry_limit=1,
     )
 
     for node in [t_plot, t_ctx, t_write, t_audit, t_illust, t_publish]:
         g.add_node(node)
 
     return g
+
+
+async def run_novel_dag_pipeline_async(
+    book_id: int,
+    ep_num: int,
+    branch_id: int = 1,
+    task_registry: dict[str, Any] | None = None,
+    use_huey: bool = False,
+) -> dict[str, Any]:
+    """Step 58: Execute the novel chapter generation DAG using DAGScheduler."""
+    from src.backend.tasks.dag_scheduler import DAGScheduler
+
+    graph = build_novel_generation_dag(book_id=book_id, ep_num=ep_num, branch_id=branch_id)
+    scheduler = DAGScheduler(
+        task_registry=task_registry or {},
+        huey_instance=huey if use_huey else None,
+        use_huey=use_huey,
+    )
+    executed_graph = await scheduler.run_dag(graph)
+    return scheduler.get_execution_summary(executed_graph)
+
+
+@huey.task()
+def run_novel_dag_pipeline_task(payload: dict[str, Any]) -> dict[str, Any]:
+    """Huey worker entrypoint to execute a novel chapter generation DAG pipeline."""
+    book_id = payload.get("book_id", 1)
+    ep_num = payload.get("ep_num", 1)
+    branch_id = payload.get("branch_id", 1)
+    return _run_async(run_novel_dag_pipeline_async(book_id=book_id, ep_num=ep_num, branch_id=branch_id))

@@ -52,6 +52,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """アプリケーション起動時にログ設定と DB 初期化を行う lifespan ハンドラ。"""
     configure_logging()
     init_db()
+    # Step 46: Huey タスクキュー接続確認
+    try:
+        from src.backend.tasks.huey import check_huey_health
+        health = check_huey_health()
+        logger.info("Huey task queue initialized: %s", health)
+    except Exception as e:
+        logger.warning("Failed to check Huey health during startup: %s", e)
     yield
 
 
@@ -62,7 +69,7 @@ app.add_middleware(
     allow_origins=settings.cors_origin_list,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["*"],
+    allow_headers=settings.cors_allow_headers_list,
 )
 
 register_error_handlers(app)

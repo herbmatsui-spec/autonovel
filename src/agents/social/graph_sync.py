@@ -195,7 +195,8 @@ class SocialGraphSyncer:
                     "trust_score": float(m.trust_score),
                     "tension_score": float(m.tension_score),
                     "affinity_score": float(m.affinity_score),
-                    "last_interaction_ep": int(m.last_interaction_ep),
+                    "last_ep": m.last_interaction_ep,
+                    "dynamics_state": getattr(m, "dynamics_state", "neutral"),
                 }
 
                 self.age_client.upsert_edge(
@@ -233,6 +234,26 @@ class SocialGraphSyncer:
             "synced_metrics": m_cnt,
             "success": True,
         }
+
+    async def sync_all_async(
+        self,
+        session: Any,
+        journals: list[JournalEntry] | None = None,
+        comments: list[SocialComment] | None = None,
+        metrics: list[RelationshipMetrics] | None = None,
+        graph_name: str | None = None,
+    ) -> dict[str, Any]:
+        """Asynchronously synchronize all social data elements into AGE (Step 23)."""
+        import asyncio
+
+        return await asyncio.to_thread(
+            self.sync_all,
+            session=session,
+            journals=journals,
+            comments=comments,
+            metrics=metrics,
+            graph_name=graph_name,
+        )
 
 
 __all__ = ["SocialGraphSyncer"]

@@ -30,7 +30,7 @@ class Settings(BaseSettings):
 
     # サーバー基本設定
     APP_NAME: str = "AutoNovel"
-    APP_VERSION: str = "4.6.1"
+    APP_VERSION: str = "4.7.0"
     APP_ENV: Literal["development", "production", "testing", "local", "staging"] = "development"
     PORT: int = 8200
     HOST: str = "0.0.0.0"
@@ -47,6 +47,7 @@ class Settings(BaseSettings):
     CORS_ORIGINS: str = (
         "http://localhost:5173,http://localhost:8080,http://127.0.0.1:5173,http://127.0.0.1:8080"
     )
+    CORS_ALLOW_HEADERS: str = "Content-Type,Authorization,X-API-Key,Accept,Origin,X-Requested-With"
 
     # 認証設定
     AUTH_DISABLED: bool = False
@@ -72,6 +73,20 @@ class Settings(BaseSettings):
     # Anthropic Claude 設定
     ANTHROPIC_API_KEY: str | None = None
     ANTHROPIC_MODEL: str = "claude-3-5-sonnet-20241022"
+
+    # OpenRouter 設定 (統一LLMゲートウェイ)
+    OPENROUTER_API_KEY: str | None = None
+    OPENROUTER_MODEL: str = "google/gemini-2.0-flash"
+    OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
+    # タスク別モデルルーティング (OpenRouter時に使用)
+    OPENROUTER_ROUTING: dict[str, str] = {
+        "planning": "google/gemini-2.0-flash",
+        "plot_expansion": "google/gemini-2.0-flash",
+        "writing": "anthropic/claude-3-5-sonnet-20241022",
+        "climax": "anthropic/claude-3-5-sonnet-20241022",
+        "audit": "google/gemini-2.0-flash",
+        "marketing": "google/gemini-2.0-flash",
+    }
 
     # Ollama 設定 (デフォルト: localhost:11434)
     OLLAMA_BASE_URL: str = "http://localhost:11434"
@@ -115,6 +130,11 @@ class Settings(BaseSettings):
     def cors_origin_list(self) -> list[str]:
         """CORS origins をリスト形式で取得する。"""
         return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
+
+    @property
+    def cors_allow_headers_list(self) -> list[str]:
+        """許可する CORS ヘッダーをリスト形式で取得する。"""
+        return [header.strip() for header in self.CORS_ALLOW_HEADERS.split(",") if header.strip()]
 
 
 # グローバルな設定インスタンス

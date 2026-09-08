@@ -120,15 +120,58 @@ class PlanningAgent(SkillAgent):
             start_ep=start_ep,
         )
 
+        artifacts = {"arcs": arcs.model_dump()}
+
+        # 企画ガチャ（3案並行生成）モードのサポート (Step 9)
+        if ctx.artifacts.get("proposal_gacha", False):
+            from src.services.proposal_isolation import ProposalIsolationRunner
+            proposals = await self.generate_proposals_isolated(
+                title=title,
+                synopsis=synopsis,
+                target_eps=target_eps,
+            )
+            artifacts["proposals"] = proposals
+
         self.emit_event("planning.completed", {
             "book_id": ctx.book_id,
             "arc_count": len(arcs.arcs) if arcs.arcs else 0,
+            "proposal_count": len(artifacts.get("proposals", {})),
         })
         
         return AgentResult(
             next_agent=AgentName.PLOT,
-            artifacts={"arcs": arcs.model_dump()},
+            artifacts=artifacts,
         )
+
+    async def generate_proposals_isolated(
+        self,
+        title: str,
+        synopsis: str,
+        target_eps: int = 10,
+        proposal_count: int = 3,
+    ) -> dict[str, Any]:
+        """Generate multiple proposal candidates using physical sandbox isolation (Step 9)."""
+        from src.services.proposal_isolation import ProposalIsolationRunner, ProposalSandboxContext
+
+        runner = ProposalIsolationRunner([f"proposal_{chr(ord('a') + i)}" for i in range(proposal_count)])
+
+        async def _isolated_worker(sandbox_ctx: ProposalSandboxContext) -> dict[str, Any]:
+            # 各案のシードやバリエーション指示
+            variant_seed = f"Variant {sandbox_ctx.proposal_id.upper()}"
+            sub_synopsis = f"{synopsis}\n【企画コンセプト変種: {variant_seed}】"
+            arcs = await self.generate_arcs(
+                title=f"{title} ({variant_seed})",
+                synopsis=sub_synopsis,
+                target_eps=target_eps,
+            )
+            sandbox_ctx.record_interaction("system", f"Generated for {sandbox_ctx.proposal_id}")
+            return {
+                "proposal_id": sandbox_ctx.proposal_id,
+                "title": f"{title} ({variant_seed})",
+                "arcs": arcs.model_dump(),
+            }
+
+        return await runner.execute_isolated_proposals(_isolated_worker)
 
     async def run(self, ctx: AgentContext) -> AgentResult:
         """Orchestrator 用エントリーポイント。execute をラップする。"""

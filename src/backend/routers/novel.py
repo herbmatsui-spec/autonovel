@@ -335,6 +335,79 @@ async def get_book_alerts(book_id: int):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==========================================
+# Social Dynamics & Narrative Log Endpoints (Phase 2 Pillar 2 - Step 35)
+# ==========================================
+
+
+@router.get("/{book_id}/social/relationships")
+async def get_novel_social_relationships(
+    book_id: int,
+    api_key: str = Depends(require_api_key),
+):
+    """作品のキャラクター間動的関係性一覧を取得"""
+    from src.backend.database.core import DatabaseManager
+    from src.backend.database.social_repository import SocialRepository
+    from src.backend.config import settings
+
+    db = DatabaseManager(settings.DATABASE_URL)
+    repo = SocialRepository(db)
+    rels = await repo.get_all_relationships(book_id)
+    return {
+        "book_id": book_id,
+        "relationships": [
+            {
+                "char_a": k[0],
+                "char_b": k[1],
+                "trust_score": v.trust_score,
+                "tension_score": v.tension_score,
+                "affinity_score": v.affinity_score,
+                "last_interaction_ep": v.last_interaction_ep,
+                "dynamics_state": getattr(v, "dynamics_state", "neutral"),
+            }
+            for k, v in rels.items()
+            if k[0] <= k[1]
+        ],
+    }
+
+
+@router.get("/{book_id}/social/journals")
+async def get_novel_social_journals(
+    book_id: int,
+    ep_num: int | None = None,
+    character_name: str | None = None,
+    limit: int = 20,
+    api_key: str = Depends(require_api_key),
+):
+    """作品の登場人物内面手記・日記一覧を取得"""
+    from src.backend.database.core import DatabaseManager
+    from src.backend.database.social_repository import SocialRepository
+    from src.backend.config import settings
+
+    db = DatabaseManager(settings.DATABASE_URL)
+    repo = SocialRepository(db)
+    journals = await repo.get_journals(
+        book_id=book_id,
+        episode_num=ep_num,
+        character_name=character_name,
+        limit=limit,
+    )
+    return {"book_id": book_id, "journals": journals}
+
+
+@router.get("/{book_id}/social/trends")
+async def get_novel_social_trends(
+    book_id: int,
+    api_key: str = Depends(require_api_key),
+):
+    """作品の動的関係性トレンド要約テキストを取得"""
+    from src.backend.database.core import DatabaseManager
+    from src.backend.database.social_repository import SocialRepository
+    from src.backend.config import settings
+
+    db = DatabaseManager(settings.DATABASE_URL)
+    repo = SocialRepository(db)
+    summary = await repo.get_relationship_trends_summary(book_id)
+    return {"book_id": book_id, "trends_summary": summary}

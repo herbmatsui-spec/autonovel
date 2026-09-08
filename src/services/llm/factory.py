@@ -15,7 +15,7 @@ from src.services.llm.vllm_adapter import VLLMAdapter
 
 logger = logging.getLogger(__name__)
 
-IMPLEMENTED_PROVIDERS = {"gemini", "openai", "mock", "claude", "ollama", "vllm"}
+IMPLEMENTED_PROVIDERS = {"gemini", "openai", "mock", "claude", "ollama", "vllm", "openrouter"}
 
 
 def get_llm_adapter(
@@ -61,6 +61,20 @@ def get_llm_adapter(
                 ".env を確認してください。"
             )
         return OpenAIAdapter(api_key=resolved_key, base_url=resolved_url, model=model_name)
+
+    if p == "openrouter":
+        resolved_key = api_key or settings.OPENROUTER_API_KEY or settings.OPENAI_API_KEY
+        if not resolved_key:
+            raise RuntimeError(
+                "OPENROUTER_API_KEY (or OPENAI_API_KEY) が未設定です。"
+                ".env を確認してください。"
+            )
+        resolved_model = model_name or settings.OPENROUTER_MODEL
+        return OpenAIAdapter(
+            api_key=resolved_key,
+            base_url=base_url or settings.OPENROUTER_BASE_URL,
+            model=resolved_model,
+        )
 
     if p == "claude":
         resolved_key = api_key or settings.ANTHROPIC_API_KEY

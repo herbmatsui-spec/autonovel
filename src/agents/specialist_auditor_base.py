@@ -22,6 +22,23 @@ class LLMUnavailableError(RuntimeError):
 
 
 @dataclass
+class ActionableDiff:
+    """Represents a concrete, actionable text improvement suggestion."""
+    location: str  # e.g., "第1段落 冒頭", "末尾2文"
+    original_quote: str  # 原文の問題箇所
+    improved_suggestion: str  # 改善後の具体的な文章
+    rationale: str  # 改善すべき理由・背景
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "location": self.location,
+            "original_quote": self.original_quote,
+            "improved_suggestion": self.improved_suggestion,
+            "rationale": self.rationale,
+        }
+
+
+@dataclass
 class SpecialistAuditResult:
     specialist_name: str
     score: float  # 0-100
@@ -32,6 +49,7 @@ class SpecialistAuditResult:
     confidence: float = 1.0  # 0-1, LLM self-assessed confidence
     reasoning_trace: str = ""  # Reasoning summary for debugging
     llm_raw_response: str = ""  # Raw LLM output for auditing
+    actionable_diffs: list[ActionableDiff] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -44,7 +62,158 @@ class SpecialistAuditResult:
             "confidence": self.confidence,
             "reasoning_trace": self.reasoning_trace,
             "llm_raw_response": self.llm_raw_response,
+            "actionable_diffs": [
+                d.to_dict() if hasattr(d, "to_dict") else d
+                for d in self.actionable_diffs
+            ],
         }
+
+
+def parse_actionable_diffs(raw_diffs: Any) -> list[ActionableDiff]:
+    """Robustly parse actionable diffs from various LLM response formats."""
+    diffs: list[ActionableDiff] = []
+    if not raw_diffs:
+        return diffs
+
+    if isinstance(raw_diffs, dict):
+        raw_diffs = [raw_diffs]
+    elif not isinstance(raw_diffs, list):
+        return diffs
+
+    for item in raw_diffs:
+        if not isinstance(item, dict):
+            continue
+
+        loc = (
+            item.get("location")
+            or item.get("target")
+            or item.get("section")
+            or item.get("part")
+            or item.get("箇所")
+            or ""
+        )
+        orig = (
+            item.get("original_quote")
+            or item.get("original")
+            or item.get("quote")
+            or item.get("before")
+            or item.get("原文")
+            or ""
+        )
+        impr = (
+            item.get("improved_suggestion")
+            or item.get("improved")
+            or item.get("suggestion")
+            or item.get("after")
+            or item.get("rewrite")
+            or item.get("改善案")
+            or ""
+        )
+        rat = (
+            item.get("rationale")
+            or item.get("reason")
+            or item.get("why")
+            or item.get("background")
+            or item.get("理由")
+            or ""
+        )
+
+        if str(orig).strip() or str(impr).strip():
+            diffs.append(
+                ActionableDiff(
+                    location=str(loc).strip(),
+                    original_quote=str(orig).strip(),
+                    improved_suggestion=str(impr).strip(),
+                    rationale=str(rat).strip(),
+                )
+            )
+    return diffs
+
+
+def parse_audit_response_json(text_resp: str) -> tuple[float, str, list[str], float, str, list[ActionableDiff]]:
+    """Robustly extract and parse audit fields from arbitrary LLM text."""
+    import json
+    import re
+
+    score = 50.0
+    critique = ""
+    suggestions: list[str] = []
+    confidence = 0.5
+    reasoning = ""
+    actionable_diffs: list[ActionableDiff] = []
+
+    # 1. Markdown コードブロック抽出 (```json ... ``` または ``` ... ```)
+    code_block_match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text_resp, re.DOTALL)
+    json_candidate = code_block_match.group(1) if code_block_match else None
+
+    # 2. コードブロックがない場合は最外郭の波括弧
+    if not json_candidate:
+        brace_match = re.search(r"\{.*\}", text_resp, re.DOTALL)
+        if brace_match:
+            json_candidate = brace_match.group(0)
+
+    parsed_dict: dict[str, Any] | None = None
+    if json_candidate:
+        # トレイリングカンマや制御文字の除去クリーンアップ
+        cleaned = re.sub(r",\s*([\]}])", r"\1", json_candidate)
+        try:
+            parsed_dict = json.loads(cleaned)
+        except Exception:
+            try:
+                # 二重引用符エスケープなど軽微な修正
+                parsed_dict = json.loads(json_candidate)
+            except Exception:
+                parsed_dict = None
+
+    if isinstance(parsed_dict, dict):
+        try:
+            score = float(parsed_dict.get("score", 50.0))
+        except (ValueError, TypeError):
+            score = 50.0
+
+        critique = str(parsed_dict.get("critique", parsed_dict.get("feedback", "")))
+
+        suggs = parsed_dict.get("suggestions", parsed_dict.get("suggestion", []))
+        if isinstance(suggs, list):
+            suggestions = [str(s) for s in suggs if s]
+        elif isinstance(suggs, str) and suggs.strip():
+            suggestions = [suggs.strip()]
+
+        try:
+            confidence = float(parsed_dict.get("confidence", 0.5))
+        except (ValueError, TypeError):
+            confidence = 0.5
+
+        reasoning = str(parsed_dict.get("reasoning", parsed_dict.get("rationale", "")))
+
+        # 揺らぎキーからの diffs 抽出
+        raw_diffs = (
+            parsed_dict.get("actionable_diffs")
+            or parsed_dict.get("diffs")
+            or parsed_dict.get("actionable_diff")
+            or parsed_dict.get("improvements")
+            or []
+        )
+        actionable_diffs = parse_actionable_diffs(raw_diffs)
+
+    # 3. JSON パース完全失敗時の正規表現フォールバック
+    if not critique:
+        score_match = re.search(r"(?:score|スコア|点数)[:：\s]*([0-9]+(?:\.[0-9]+)?)", text_resp, re.IGNORECASE)
+        if score_match:
+            try:
+                score = float(score_match.group(1))
+            except ValueError:
+                score = 50.0
+        critique = text_resp[:300].strip()
+        suggestions = ["表現と構成の再確認"]
+        confidence = 0.3
+        reasoning = "JSON parse failed, regex fallback"
+
+    # スコア範囲クリップ (0.0〜100.0)
+    score = max(0.0, min(100.0, round(score, 1)))
+    confidence = max(0.0, min(1.0, round(confidence, 2)))
+
+    return score, critique, suggestions, confidence, reasoning, actionable_diffs
 
 
 class SpecialistAuditor(ABC):
@@ -69,6 +238,8 @@ class SpecialistAuditor(ABC):
 
     def __init__(self, llm: Any | None = None) -> None:
         self.llm = llm
+        from src.agents.specialists.windowing import NovelSectionExtractor
+        self.section_extractor = NovelSectionExtractor()
         # Allow runtime override via environment variable
         import os
         samples = os.getenv("AUDIT_LLM_SAMPLES")
@@ -135,10 +306,11 @@ class SpecialistAuditor(ABC):
         self,
         prompt: str,
         system_prompt: str | None = None,
-    ) -> tuple[float, str, list[str], float, str, str]:
-        """Common LLM judge method for all specialist auditors (Step 63).
+        inject_anchors: bool = True,
+    ) -> tuple[float, str, list[str], float, str, str, list[ActionableDiff]]:
+        """Common LLM judge method for all specialist auditors (Step 63, enhanced in Phase 4).
 
-        Forces structured evaluation and returns (score, critique, suggestions, confidence, reasoning, raw).
+        Forces structured evaluation and returns (score, critique, suggestions, confidence, reasoning, raw, actionable_diffs).
         Raises LLMUnavailableError if LLM is missing or call fails.
         """
         if not self.llm:
@@ -148,7 +320,18 @@ class SpecialistAuditor(ABC):
         if system_prompt:
             full_prompt = f"【システム役割】\n{system_prompt}\n\n{prompt}"
 
-        # JSON 出力指示を付加（confidence, reasoning追加）
+        # Step 7: アンカープリセットの自動注入（未注入かつ有効な場合）
+        if inject_anchors and self.specialist_name:
+            try:
+                from src.agents.specialists.anchors import get_anchor_preset
+                anchor_preset = get_anchor_preset(self.specialist_name)
+                if anchor_preset and "【採点基準アンカー" not in full_prompt:
+                    anchor_text = anchor_preset.format_for_prompt()
+                    full_prompt = f"{full_prompt}\n\n{anchor_text}"
+            except Exception:
+                pass  # アンカー取得失敗時は元プロンプトを維持
+
+        # JSON 出力指示を付加（confidence, reasoning, actionable_diffs追加）
         instruction_suffix = (
             "\n\n必ず以下のJSON形式のみを出力してください（Markdownコードブロック可）:\n"
             "{\n"
@@ -156,7 +339,15 @@ class SpecialistAuditor(ABC):
             '  "critique": "詳細な講評・評価理由",\n'
             '  "suggestions": ["具体的な改善提案1", "改善提案2"],\n'
             '  "confidence": 0.0〜1.0の数値（自己評価の信頼度）,\n'
-            '  "reasoning": "判定根拠の要約（100字以内）"\n'
+            '  "reasoning": "判定根拠の要約（100字以内）",\n'
+            '  "actionable_diffs": [\n'
+            "    {\n"
+            '      "location": "指摘箇所の位置（例: 冒頭段落、末尾結末など）",\n'
+            '      "original_quote": "問題のある原文の抜粋",\n'
+            '      "improved_suggestion": "改善後の具体的なリライト提案文",\n'
+            '      "rationale": "書き換え理由"\n'
+            "    }\n"
+            "  ]\n"
             "}"
         )
         if "必ず以下のJSON形式" not in full_prompt:
@@ -167,7 +358,7 @@ class SpecialistAuditor(ABC):
         import re
         import statistics
 
-        async def _single_judge(p: str) -> tuple[float, str, list[str], float, str, str]:
+        async def _single_judge(p: str) -> tuple[float, str, list[str], float, str, str, list[ActionableDiff]]:
             """Single LLM call returning parsed result."""
             try:
                 if hasattr(self.llm, "ainvoke"):
@@ -185,71 +376,33 @@ class SpecialistAuditor(ABC):
                     raw = await raw
 
                 text_resp = str(getattr(raw, "content", raw)).strip()
+                score, critique, suggestions, confidence, reasoning, actionable_diffs = parse_audit_response_json(text_resp)
+                return score, critique, suggestions, confidence, reasoning, text_resp, actionable_diffs
 
-                # JSON 抽出試行
-                score = 50.0
-                critique = ""
-                suggestions = []
-                confidence = 0.5
-                reasoning = ""
-
-                json_match = re.search(r"\{.*\}", text_resp, re.DOTALL)
-                if json_match:
-                    try:
-                        data = json.loads(json_match.group(0))
-                        score = float(data.get("score", 50.0))
-                        critique = str(data.get("critique", ""))
-                        suggs = data.get("suggestions", [])
-                        if isinstance(suggs, list):
-                            suggestions = [str(s) for s in suggs]
-                        elif isinstance(suggs, str):
-                            suggestions = [suggs]
-                        confidence = float(data.get("confidence", 0.5))
-                        reasoning = str(data.get("reasoning", ""))
-                    except Exception:
-                        pass
-
-                # JSONパース失敗時の正規表現フォールバック
-                if not critique:
-                    score_match = re.search(r"(?:score|スコア|点数)[:：\s]*([0-9]+(?:\.[0-9]+)?)", text_resp, re.IGNORECASE)
-                    if score_match:
-                        score = float(score_match.group(1))
-                    critique = text_resp[:300]
-                    suggestions = ["表現と構成の再確認"]
-                    confidence = 0.3
-                    reasoning = "JSON parse failed, regex fallback"
-
-                # スコア範囲クリップ (0.0〜100.0)
-                score = max(0.0, min(100.0, round(score, 1)))
-                confidence = max(0.0, min(1.0, round(confidence, 2)))
-
-                return score, critique, suggestions, confidence, reasoning, text_resp
-
+            except LLMUnavailableError:
+                raise
             except Exception as e:
-                if isinstance(e, LLMUnavailableError):
-                    raise
-                raise LLMUnavailableError(f"LLM execution error during audit: {e}") from e
-
-        # Single sample mode (default)
-        if self.LLM_SAMPLE_COUNT <= 1:
-            return await _single_judge(full_prompt)
+                raise LLMUnavailableError(f"LLM call failed: {e}") from e
 
         # Multi-sample mode: run multiple times and check variance
-        scores = []
-        critiques = []
-        suggestions_list = []
-        confidences = []
-        reasonings = []
-        raw_responses = []
+        scores: list[float] = []
+        critiques: list[str] = []
+        suggestions_list: list[list[str]] = []
+        confidences: list[float] = []
+        reasonings: list[str] = []
+        raw_responses: list[str] = []
+        all_diffs: list[ActionableDiff] = []
 
         for _ in range(self.LLM_SAMPLE_COUNT):
-            s, c, sug, conf, reas, raw = await _single_judge(full_prompt)
-            scores.append(s)
-            critiques.append(c)
-            suggestions_list.append(sug)
-            confidences.append(conf)
+            sc, cr, sg, cf, reas, raw, diffs = await _single_judge(full_prompt)
+            scores.append(sc)
+            critiques.append(cr)
+            suggestions_list.append(sg)
+            confidences.append(cf)
             reasonings.append(reas)
             raw_responses.append(raw)
+            if diffs and not all_diffs:
+                all_diffs = diffs
 
         # Check variance
         if len(scores) >= 2:
@@ -273,11 +426,15 @@ class SpecialistAuditor(ABC):
             round(avg_confidence, 2),
             combined_reasoning,
             combined_raw,
+            all_diffs,
         )
 
 
 __all__ = [
     "SpecialistAuditor",
     "SpecialistAuditResult",
+    "ActionableDiff",
     "LLMUnavailableError",
+    "parse_actionable_diffs",
+    "parse_audit_response_json",
 ]

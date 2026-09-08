@@ -46,6 +46,7 @@ class RelationshipMetrics(BaseModel):
     tension_score: float = Field(default=50.0, ge=0.0, le=100.0, description="Tension (0-100)")
     affinity_score: float = Field(default=50.0, ge=0.0, le=100.0, description="Affinity (0-100)")
     last_interaction_ep: int = Field(default=1, description="Episode of last interaction")
+    dynamics_state: str = Field(default="neutral", description="Narrative relationship dynamics state")
 
 
 __all__ = [

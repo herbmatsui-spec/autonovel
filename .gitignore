@@ -55,3 +55,10 @@ tests/__pycache__/
 .coverage.*
 htmlcov/
 
+# Temporary and backup files
+temp_*.py
+*.bak
+*.bak_*
+*.backup*
+autonovel/
+chroma_db/

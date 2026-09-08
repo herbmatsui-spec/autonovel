@@ -11,11 +11,12 @@ import {
   PromotionResponse,
   ExportRequestPayload,
 } from "../types/easyMode";
+import { apiFetch } from "./client";
 
 const BASE = "/easy_mode";
 
 export async function generateContent(input: EasyModeInput): Promise<GenerationResponse> {
-  const res = await fetch(`${BASE}/generate`, {
+  const res = await apiFetch(`${BASE}/generate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
@@ -28,7 +29,7 @@ export async function generateContentStream(
   input: EasyModeInput,
   signal?: AbortSignal
 ): Promise<Response> {
-  const res = await fetch(`${BASE}/generate/stream`, {
+  const res = await apiFetch(`${BASE}/generate/stream`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
@@ -42,13 +43,13 @@ export async function pollGenerationStatus(
   taskId: string,
   signal?: AbortSignal
 ): Promise<TaskStatusResponse> {
-  const res = await fetch(`${BASE}/status/${taskId}`, { signal });
+  const res = await apiFetch(`${BASE}/status/${taskId}`, { signal });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
 
 export async function cancelTask(taskId: string): Promise<{ task_id: string; status: string }> {
-  const res = await fetch(`${BASE}/task/${taskId}`, {
+  const res = await apiFetch(`${BASE}/task/${taskId}`, {
     method: "DELETE",
   });
   if (!res.ok) throw new Error(await res.text());
@@ -56,7 +57,7 @@ export async function cancelTask(taskId: string): Promise<{ task_id: string; sta
 }
 
 export async function exportPackage(bookId: number): Promise<ExportPackage> {
-  const res = await fetch(`${BASE}/export/${bookId}`);
+  const res = await apiFetch(`${BASE}/export/${bookId}`);
   if (!res.ok) throw new Error(await res.text());
   const blob = await res.blob();
   const contentDisposition = res.headers.get("Content-Disposition");
@@ -74,7 +75,7 @@ export async function exportPackageWithData(
   bookId: number,
   payload?: ExportRequestPayload
 ): Promise<ExportPackage> {
-  const res = await fetch(`${BASE}/export-with-data?book_id=${bookId}`, {
+  const res = await apiFetch(`${BASE}/export-with-data?book_id=${bookId}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload || {}),
@@ -92,7 +93,7 @@ export async function exportPackageWithData(
 }
 
 export async function generateGachaPlans(req: GachaRequest): Promise<GachaResponse> {
-  const res = await fetch(`${BASE}/gacha`, {
+  const res = await apiFetch(`${BASE}/gacha`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(req),
@@ -102,7 +103,7 @@ export async function generateGachaPlans(req: GachaRequest): Promise<GachaRespon
 }
 
 export async function generateDigest(req: DigestRequest): Promise<DigestResponse> {
-  const res = await fetch(`${BASE}/digest`, {
+  const res = await apiFetch(`${BASE}/digest`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(req),
@@ -112,7 +113,7 @@ export async function generateDigest(req: DigestRequest): Promise<DigestResponse
 }
 
 export async function promoteToStudio(req: PromotionRequest): Promise<PromotionResponse> {
-  const res = await fetch(`${BASE}/promote`, {
+  const res = await apiFetch(`${BASE}/promote`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(req),

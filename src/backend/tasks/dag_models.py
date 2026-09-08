@@ -27,6 +27,7 @@ class DAGTaskNode(BaseModel):
     resources: TaskResourceRequirement = Field(default_factory=TaskResourceRequirement)
     priority: int = Field(default=0, description="Execution priority (higher executes earlier)")
     status: TaskStatus = Field(default="pending", description="Current execution state")
+    timeout_seconds: float | None = Field(default=None, description="Max execution time in seconds before timeout")
     retry_limit: int = Field(default=3, description="Max allowed retry attempts")
     retry_count: int = Field(default=0, description="Current retry attempt")
     result: Any = Field(default=None, description="Output returned by task execution")
@@ -59,12 +60,19 @@ class DAGGraph(BaseModel):
         ready = []
         for task in self.nodes.values():
             if task.status in ["pending", "ready"]:
+                # Check parents
                 parents_done = all(
                     self.nodes[p_id].status == "completed"
                     for p_id in task.dependencies
                     if p_id in self.nodes
                 )
-                if parents_done:
+                # If any parent is failed or cancelled, task cannot be ready (will be cancelled by cascade)
+                parents_failed = any(
+                    self.nodes[p_id].status in ["failed", "cancelled"]
+                    for p_id in task.dependencies
+                    if p_id in self.nodes
+                )
+                if parents_done and not parents_failed:
                     task.status = "ready"
                     ready.append(task)
         # 優先度順にソート
@@ -93,9 +101,35 @@ class DAGGraph(BaseModel):
             node.error = error
             node.completed_at = datetime.now()
 
+    def mark_cancelled(self, task_id: str, reason: str = "") -> None:
+        """Mark task as cancelled."""
+        if task_id in self.nodes:
+            node = self.nodes[task_id]
+            node.status = "cancelled"
+            node.error = reason or "Task cancelled"
+            node.completed_at = datetime.now()
+
+    def cascade_cancel_downstream(self, failed_task_id: str, reason: str = "Upstream dependency failed") -> list[str]:
+        """Recursively cancel all downstream tasks depending on failed_task_id."""
+        cancelled_ids: list[str] = []
+        queue = [failed_task_id]
+        while queue:
+            curr = queue.pop(0)
+            for tid, node in self.nodes.items():
+                if curr in node.dependencies and node.status in ["pending", "ready"]:
+                    self.mark_cancelled(tid, f"{reason}: {curr}")
+                    cancelled_ids.append(tid)
+                    queue.append(tid)
+        return cancelled_ids
+
     def is_all_completed(self) -> bool:
         """Check if all nodes have completed successfully."""
         return len(self.nodes) > 0 and all(n.status == "completed" for n in self.nodes.values())
+
+    def is_finished(self) -> bool:
+        """Check if all nodes have reached a terminal status (completed, failed, cancelled)."""
+        terminal_states = {"completed", "failed", "cancelled"}
+        return len(self.nodes) > 0 and all(n.status in terminal_states for n in self.nodes.values())
 
     def has_failures(self) -> bool:
         """Check if any node has failed without recovery."""

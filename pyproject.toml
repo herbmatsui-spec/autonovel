@@ -1,6 +1,6 @@
 [project]
 name = "autonovel"
-version = "4.6.1"
+version = "4.7.0"
 description = "AutoNovel - 小説生成エンジン (FastAPI + React + Huey + SQLAlchemy)"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -59,7 +59,7 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 norecursedirs = [".git", "scripts", "node_modules", "storage"]
-addopts = "-p no:cacheprovider --tb=short --cov=src --cov-branch --cov-fail-under=25"
+addopts = "-p no:cacheprovider --tb=short --cov=src --cov-branch --cov-fail-under=35"
 asyncio_mode = "auto"
 
 [tool.coverage.run]

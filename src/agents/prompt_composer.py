@@ -61,4 +61,15 @@ class PromptComposer:
             style_tag=context.get("style_tag"),
         )
 
+        regeneration_directive = context.get("regeneration_directive")
+        if regeneration_directive:
+            prompt = (
+                f"==================================================\n"
+                f"【最優先・再生成修正ディレクティブ】\n"
+                f"前回の審査で指摘された以下の問題点・Actionable Diffsを最優先で反映して執筆してください:\n\n"
+                f"{regeneration_directive}\n"
+                f"==================================================\n\n"
+                + prompt
+            )
+
         return prompt

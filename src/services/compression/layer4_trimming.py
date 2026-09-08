@@ -9,6 +9,7 @@ from src.services.compression.models import (
     AbstractionLayerOutput,
     TrimmedContextOutput,
     SceneType,
+    ProtectedContext,
 )
 from src.services.compression.layer1_keywords import count_tokens
 
@@ -47,6 +48,38 @@ SCENE_CATEGORY_WEIGHTS: dict[SceneType, dict[str, float]] = {
         "アイテム・装備": 0.8,
         "武術・スキル": 0.4,
     },
+    "romance": {
+        "主要キャラ": 2.4,
+        "伏線": 1.6,
+        "核心設定": 1.0,
+        "アイテム・装備": 0.9,
+        "地理・勢力": 0.6,
+        "武術・スキル": 0.2,
+    },
+    "mystery": {
+        "伏線": 2.3,
+        "アイテム・装備": 1.8,
+        "核心設定": 1.6,
+        "主要キャラ": 1.5,
+        "地理・勢力": 1.0,
+        "武術・スキル": 0.3,
+    },
+    "flashback": {
+        "核心設定": 2.2,
+        "伏線": 2.0,
+        "主要キャラ": 1.8,
+        "地理・勢力": 1.1,
+        "武術・スキル": 0.6,
+        "アイテム・装備": 0.5,
+    },
+    "survival": {
+        "アイテム・装備": 2.2,
+        "武術・スキル": 2.0,
+        "主要キャラ": 1.6,
+        "地理・勢力": 1.5,
+        "核心設定": 1.1,
+        "伏線": 0.8,
+    },
     "general": {
         "主要キャラ": 1.8,
         "核心設定": 1.6,
@@ -77,7 +110,25 @@ SCENE_KEYWORDS_WEIGHTED: dict[SceneType, dict[str, float]] = {
     "political": {
         "会議": 1.0, "議会": 1.0, "政略": 1.0, "関税": 0.9, "条約": 0.9,
         "宣戦": 0.9, "同盟": 0.9, "陰謀": 0.9, "外交": 0.8, "交渉": 0.8,
-        "宰相": 0.8, "ギルド": 0.7, "領地": 0.7, "同盟": 0.8, "謀略": 0.9,
+        "宰相": 0.8, "ギルド": 0.7, "領地": 0.7, "謀略": 0.9,
+    },
+    "romance": {
+        "告白": 1.0, "恋愛": 1.0, "照れ": 0.9, "デート": 0.9, "視線": 0.8,
+        "恋心": 0.9, "抱擁": 0.9, "キス": 0.9, "赤面": 0.8, "嫉妬": 0.8,
+        "想い": 0.7, "二人きり": 0.8, "鼓動": 0.8,
+    },
+    "mystery": {
+        "推理": 1.0, "証拠": 1.0, "密室": 1.0, "トリック": 1.0, "アリバイ": 1.0,
+        "犯人": 0.9, "謎": 0.9, "遺留品": 0.9, "動機": 0.9, "捜査": 0.8,
+        "痕跡": 0.8, "矛盾": 0.8,
+    },
+    "flashback": {
+        "回想": 1.0, "過去": 1.0, "幼少": 1.0, "あの頃": 0.9, "記憶": 0.9,
+        "昔": 0.8, "面影": 0.8, "追憶": 0.9, "かつて": 0.8, "懐かしい": 0.7,
+    },
+    "survival": {
+        "サバイバル": 1.0, "遭難": 1.0, "飢餓": 0.9, "野営": 0.9, "水分": 0.9,
+        "救難": 0.9, "脱出": 0.9, "極限": 0.8, "探索": 0.8, "拠点構築": 0.8,
     },
 }
 
@@ -156,8 +207,9 @@ class Layer4SceneTrimmer:
         keywords: list[str] | None = None,
         original_token_count: int = 0,
         scene_weights: Dict[SceneType, float] | None = None,
+        protected_context: ProtectedContext | None = None,
     ) -> TrimmedContextOutput:
-        """Trim facts down to token budget based on scene type importance.
+        """Trim facts down to token budget based on scene type importance with attention pinning (Steps 53-56).
         
         Args:
             abstraction_output: Output from Layer 3
@@ -166,6 +218,7 @@ class Layer4SceneTrimmer:
             keywords: Keywords for bonus scoring
             original_token_count: Original token count for reduction calculation
             scene_weights: Dict of scene_type -> confidence weight for multi-label blending
+            protected_context: Pinned characters and critical foreshadowings guaranteed retention
         """
         budget = max_tokens or self.max_tokens
         kws = [k.lower() for k in (keywords or [])]
@@ -173,11 +226,16 @@ class Layer4SceneTrimmer:
         # Determine category weights: use blended weights if scene_weights provided
         if scene_weights:
             weights = _blend_category_weights(scene_weights)
-            # Determine primary scene type for output metadata
             primary_scene = max(scene_weights.items(), key=lambda x: x[1])[0] if scene_weights else scene_type
         else:
             weights = SCENE_CATEGORY_WEIGHTS.get(scene_type, SCENE_CATEGORY_WEIGHTS["general"])
             primary_scene = scene_type
+
+        # Protected tokens setup
+        active_chars = set(protected_context.active_characters) if protected_context else set()
+        pending_ids = set(protected_context.pending_foreshadowing_ids) if protected_context else set()
+        crit_kws = set(protected_context.critical_keywords) if protected_context else set()
+        pinned_ents = set(protected_context.pinned_entities) if protected_context else set()
 
         all_scored_facts = []
         for cat, facts in abstraction_output.categorized_facts.items():
@@ -186,13 +244,29 @@ class Layer4SceneTrimmer:
                 content = fact_item.get("fact", "")
                 entity = fact_item.get("entity", "")
                 
+                # Check attention pinning (Step 55)
+                is_pinned = False
+                pin_reason = ""
+                if entity in active_chars or any(c in content for c in active_chars):
+                    is_pinned = True
+                    pin_reason = "active_character"
+                elif entity in pinned_ents or any(e in content for e in pinned_ents):
+                    is_pinned = True
+                    pin_reason = "pinned_entity"
+                elif any(fid in content or fid in entity for fid in pending_ids):
+                    is_pinned = True
+                    pin_reason = "pending_foreshadowing"
+                elif any(ck in content for ck in crit_kws):
+                    is_pinned = True
+                    pin_reason = "critical_keyword"
+
                 # キーワード一致ボーナス
                 kw_bonus = 1.0
                 if any(k in content.lower() or k in entity.lower() for k in kws):
                     kw_bonus = 1.4
 
-                score = cat_weight * kw_bonus
-                is_mandatory = cat in self.preserve_categories
+                score = (cat_weight * kw_bonus) + (100.0 if is_pinned else 0.0)
+                is_mandatory = is_pinned or (cat in self.preserve_categories)
 
                 all_scored_facts.append({
                     "category": cat,
@@ -200,11 +274,16 @@ class Layer4SceneTrimmer:
                     "entity": entity,
                     "score": round(score, 3),
                     "mandatory": is_mandatory,
+                    "pinned": is_pinned,
+                    "pin_reason": pin_reason,
                     "tokens": count_tokens(content),
                 })
 
-        # 優先度順にソート（必須項目優先、次にスコア降順）
-        all_scored_facts.sort(key=lambda x: (x["mandatory"], x["score"]), reverse=True)
+        # 優先度順にソート（ピン留め最優先、次に必須、次にスコア降順）
+        all_scored_facts.sort(
+            key=lambda x: (x.get("pinned", False), x["mandatory"], x["score"]),
+            reverse=True
+        )
 
         selected_facts = []
         retained_entities = set()
@@ -227,13 +306,24 @@ class Layer4SceneTrimmer:
         formatted_text = self._format_markdown(selected_facts, concepts)
         final_tokens = count_tokens(formatted_text)
 
-        # 厳密な予算超過防止: マークダウン装飾・ヘッダーで超過した場合、下位事実から順に削る
+        # 厳密な予算超過防止: マークダウン装飾・ヘッダーで超過した場合、非ピン留めの下位事実から順に削る (Step 56)
         while final_tokens > budget and selected_facts:
-            removed = selected_facts.pop()
-            if removed.get("entity") in retained_entities:
-                retained_entities.discard(removed["entity"])
-            formatted_text = self._format_markdown(selected_facts, concepts)
-            final_tokens = count_tokens(formatted_text)
+            # Find the last non-pinned item
+            non_pinned_idx = next(
+                (i for i in range(len(selected_facts) - 1, -1, -1) if not selected_facts[i].get("pinned")),
+                None
+            )
+            if non_pinned_idx is not None:
+                removed = selected_facts.pop(non_pinned_idx)
+                if removed.get("entity") in retained_entities:
+                    # Check if entity still exists in remaining
+                    if not any(sf.get("entity") == removed["entity"] for sf in selected_facts):
+                        retained_entities.discard(removed["entity"])
+                formatted_text = self._format_markdown(selected_facts, concepts)
+                final_tokens = count_tokens(formatted_text)
+            else:
+                # All remaining facts are strictly pinned, cannot trim further
+                break
 
         while final_tokens > budget and concepts:
             concepts.pop()
@@ -245,22 +335,41 @@ class Layer4SceneTrimmer:
         if original_token_count > 0:
             reduction = max(0.0, 1.0 - (final_tokens / original_token_count))
 
+        # 情報保持率および診断メトリクス計算 (Step 57)
+        total_facts_count = len(all_scored_facts)
+        retention_rate = (len(selected_facts) / total_facts_count) if total_facts_count > 0 else 1.0
+        pinned_count = sum(1 for f in selected_facts if f.get("pinned"))
+        retained_cats = {f["category"] for f in selected_facts}
+        dropped_cats = [cat for cat in abstraction_output.categorized_facts.keys() if cat not in retained_cats]
+
         return TrimmedContextOutput(
             compressed_text=formatted_text,
             token_count=final_tokens,
             retained_entities=sorted(list(retained_entities)),
             reduction_ratio=round(reduction, 3),
             scene_type=primary_scene,
+            retention_rate=round(retention_rate, 3),
+            pinned_count=pinned_count,
+            dropped_categories=dropped_cats,
         )
 
     def _format_markdown(self, facts: list[dict[str, Any]], concepts: list[str]) -> str:
-        """Format selected facts into structured Markdown sections."""
+        """Format selected facts into structured Markdown sections with pinned highlights (Step 59)."""
         if not facts and not concepts:
             return ""
 
         by_cat: dict[str, list[str]] = {}
         for f in facts:
-            by_cat.setdefault(f["category"], []).append(f["content"])
+            prefix = ""
+            if f.get("pinned"):
+                reason = f.get("pin_reason", "")
+                if reason == "active_character":
+                    prefix = "【現在同席】"
+                elif reason == "pending_foreshadowing":
+                    prefix = "【最重要伏線】"
+                else:
+                    prefix = "【必須注視】"
+            by_cat.setdefault(f["category"], []).append(f"{prefix}{f['content']}")
 
         sections = []
         if concepts:
@@ -273,8 +382,11 @@ class Layer4SceneTrimmer:
         return "\n\n".join(sections).strip()
 
 
+Layer4DynamicTrimmer = Layer4SceneTrimmer
+
 __all__ = [
     "Layer4SceneTrimmer",
+    "Layer4DynamicTrimmer",
     "SCENE_CATEGORY_WEIGHTS",
     "SCENE_KEYWORDS_WEIGHTED",
     "_softmax",

@@ -19,6 +19,18 @@ class BookScore:
     factual_grounding_score: float
     visual_textual_synergy_score: float
     reader_experience_score: float
+    specialist_breakdown: Optional[Dict[str, Any]] = None
+
+    def lowest_dimension(self) -> str:
+        """Return the lowest scoring dimension."""
+        dims = {
+            "structure_score": self.structure_score,
+            "coherency_score": self.coherency_score,
+            "factual_grounding_score": self.factual_grounding_score,
+            "visual_textual_synergy_score": self.visual_textual_synergy_score,
+            "reader_experience_score": self.reader_experience_score,
+        }
+        return min(dims, key=dims.get)
 
 
 class BookScoreRepository(Protocol):
@@ -32,20 +44,35 @@ class BookScoreRepository(Protocol):
 
 
 class BookScoreCalculator:
-    """統一100点尺度の成熟度評価メトリクスを計算する"""
+    """統一100点尺度の成熟度評価メトリクスを計算する（Phase 4 / UnifiedBookScoreBridge 委譲統合）"""
 
     def __init__(
         self,
         config_path: str = "config/book_score_weights.yaml",
         repository: Optional[BookScoreRepository] = None,
+        bridge: Optional[Any] = None,
     ):
-        import yaml
-        with open(config_path, "r", encoding="utf-8") as f:
-            config = yaml.safe_load(f)
-        self.default_weights = config.get("default", {})
-        self.genre_overrides = config.get("genre_overrides", {})
-        self.phase_overrides = config.get("phase_overrides", {})
+        try:
+            import yaml
+            with open(config_path, "r", encoding="utf-8") as f:
+                config = yaml.safe_load(f)
+            self.default_weights = config.get("default", {})
+            self.genre_overrides = config.get("genre_overrides", {})
+            self.phase_overrides = config.get("phase_overrides", {})
+        except Exception:
+            self.default_weights = {"structure": 25, "coherency": 25, "factual_grounding": 20, "visual_textual_synergy": 15, "reader_experience": 15}
+            self.genre_overrides = {}
+            self.phase_overrides = {}
+
         self._repository = repository
+        if bridge is None:
+            try:
+                from src.services.book_score_mapping import UnifiedBookScoreBridge
+                self.bridge = UnifiedBookScoreBridge()
+            except Exception:
+                self.bridge = None
+        else:
+            self.bridge = bridge
 
     def _get_weights(self, genre: str = "", phase: str = "") -> Dict[str, float]:
         """ジャンルとフェーズに基づく重みを取得"""
@@ -55,6 +82,102 @@ class BookScoreCalculator:
         if phase and phase in self.phase_overrides:
             weights.update(self.phase_overrides[phase])
         return weights
+
+    def calculate_from_specialists(
+        self,
+        specialist_scores: Mapping[str, float],
+        genre: str = "general",
+        phase: str = "draft",
+    ) -> BookScore:
+        """8専門家のスコアから UnifiedBookScoreBridge を介して 5次元 BookScore を算出する (Step 31)"""
+        if not self.bridge:
+            from src.services.book_score_mapping import UnifiedBookScoreBridge
+            self.bridge = UnifiedBookScoreBridge()
+
+        u5d = self.bridge.map_to_5d(specialist_scores, genre=genre, phase=phase)
+        return BookScore(
+            overall_score=u5d.overall_score,
+            structure_score=u5d.structure_score,
+            coherency_score=u5d.coherency_score,
+            factual_grounding_score=u5d.factual_grounding_score,
+            visual_textual_synergy_score=u5d.visual_textual_synergy_score,
+            reader_experience_score=u5d.reader_experience_score,
+            specialist_breakdown=u5d.to_dict(),
+        )
+
+    def get_score_contributions(
+        self,
+        specialist_scores: Mapping[str, float],
+        genre: str = "general",
+    ) -> Dict[str, Dict[str, float]]:
+        """5次元スコアに対する各専門家の詳細寄与度（獲得点数）を取得する (Step 32)"""
+        if not self.bridge:
+            from src.services.book_score_mapping import UnifiedBookScoreBridge
+            self.bridge = UnifiedBookScoreBridge()
+        u5d = self.bridge.map_to_5d(specialist_scores, genre=genre)
+        return u5d.contributions
+
+    def get_dimension_to_specialists_mapping(self, genre: str = "general") -> Dict[str, Dict[str, float]]:
+        """5次元から8専門家への依存度マトリクスを取得する (Step 34)"""
+        if not self.bridge:
+            from src.services.book_score_mapping import UnifiedBookScoreBridge
+            self.bridge = UnifiedBookScoreBridge()
+        return self.bridge.get_matrix_for_genre(genre)
+
+    def get_specialist_to_dimensions_mapping(self, genre: str = "general") -> Dict[str, Dict[str, float]]:
+        """8専門家から各5次元への逆引き影響度マトリクスを取得する (Step 34)"""
+        fwd = self.get_dimension_to_specialists_mapping(genre)
+        rev: Dict[str, Dict[str, float]] = {}
+        for dim, specs in fwd.items():
+            for spec, w in specs.items():
+                if spec not in rev:
+                    rev[spec] = {}
+                rev[spec][dim] = w
+        return rev
+
+    def generate_maturity_report(
+        self,
+        score: BookScore,
+        genre: str = "general",
+        phase: str = "draft",
+    ) -> Dict[str, Any]:
+        """統一成熟度評価レポートを生成する (Step 35)"""
+        overall = score.overall_score
+        if overall >= 85.0:
+            rank = "S"
+            assessment = "商業出版水準達成（極めて高い完成度）"
+        elif overall >= 75.0:
+            rank = "A"
+            assessment = "Web連載人気水準達成（商業化候補）"
+        elif overall >= 65.0:
+            rank = "B"
+            assessment = "標準的品質（プロット・表現の調整余地あり）"
+        elif overall >= 50.0:
+            rank = "C"
+            assessment = "要改善（主要な設定・構成に課題あり）"
+        else:
+            rank = "D"
+            assessment = "大幅な再執筆推奨（基礎構造の破綻）"
+
+        lowest_dim = score.lowest_dimension()
+        return {
+            "overall_score": overall,
+            "rank": rank,
+            "assessment": assessment,
+            "is_commercial_ready": overall >= 85.0,
+            "is_web_hit_ready": overall >= 75.0,
+            "dimensions": {
+                "structure_score": score.structure_score,
+                "coherency_score": score.coherency_score,
+                "factual_grounding_score": score.factual_grounding_score,
+                "visual_textual_synergy_score": score.visual_textual_synergy_score,
+                "reader_experience_score": score.reader_experience_score,
+            },
+            "lowest_dimension": lowest_dim,
+            "specialist_breakdown": score.specialist_breakdown,
+            "genre": genre,
+            "phase": phase,
+        }
 
     async def calculate(
         self,
@@ -118,6 +241,7 @@ class BookScoreCalculator:
             factual_grounding_score=score.factual_grounding_score,
             visual_textual_synergy_score=score.visual_textual_synergy_score,
             reader_experience_score=score.reader_experience_score,
+            specialist_breakdown=score.specialist_breakdown,
             evaluated_at=datetime.utcnow(),
             evaluator_version=evaluator_version,
         )

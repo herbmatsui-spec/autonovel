@@ -22,8 +22,29 @@ class EroticEnhancer:
 
     def _resolve_graphrag_parameters(self, context: dict[str, Any]) -> dict[str, Any]:
         """GraphRAGパラメータを解決して返す"""
-        # 実装は省略（元のコードを保持）
-        return {}
+        rel = context.get("relationship_type")
+        params: dict[str, Any] = {}
+        if rel == "HATES":
+            params = {
+                "psychology_depth": 90,
+                "default_consent": "implicit",
+                "pace_ratios": {"intro": 0.3, "development": 0.4, "climax": 0.3},
+            }
+        elif rel == "MASTER_SERVANT":
+            params = {
+                "psychology_depth": 85,
+                "metaphor_density": 65,
+                "default_consent": "implicit",
+                "pace_ratios": {"intro": 0.2, "development": 0.5, "climax": 0.3},
+            }
+        elif rel == "LOVES":
+            params = {
+                "psychology_depth": 75,
+                "default_consent": "mutual",
+                "sensory_weights": {"touch": 0.4, "sight": 0.3, "sound": 0.3},
+                "pace_ratios": {"intro": 0.3, "development": 0.4, "climax": 0.3},
+            }
+        return params
 
     def enhance_erotic_content(self, prompt: str, result: str, context: dict[str, Any]) -> str:
         """

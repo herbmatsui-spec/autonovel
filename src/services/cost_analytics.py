@@ -8,12 +8,23 @@ services/cost_analytics.py - 執筆コスト集計・予算アラート
 from __future__ import annotations
 
 import logging
+import os
 from typing import Any
 
 logger = logging.getLogger(__name__)
 
 # モデル別 単価 (USD / 1M tokens): (input, output)
+# OpenRouter モデル名 (provider/model) と内部名の両方をサポート
 DEFAULT_PRICING: dict[str, tuple] = {
+    # OpenRouter フォーマット
+    "google/gemini-2.0-flash": (0.10, 0.40),
+    "google/gemini-1.5-flash": (0.075, 0.30),
+    "google/gemini-1.5-pro": (1.25, 5.0),
+    "anthropic/claude-3-5-sonnet-20241022": (3.0, 15.0),
+    "anthropic/claude-3-5-haiku-20241022": (0.80, 4.0),
+    "openai/gpt-4o-mini": (0.15, 0.60),
+    "openai/gpt-4o": (3.0, 12.0),
+    # 内部名 (直接プロバイダ利用時)
     "gemini-1.5-flash": (0.075, 0.30),
     "gemini-1.5-pro": (1.25, 5.0),
     "gemini-2.0-flash": (0.10, 0.40),
@@ -21,22 +32,38 @@ DEFAULT_PRICING: dict[str, tuple] = {
 }
 
 
-def estimate_cost_usd(task_type: str, input_tokens: int, output_tokens: int) -> float:
+def estimate_cost_usd(
+    task_type: str, input_tokens: int, output_tokens: int, model: str | None = None
+) -> float:
     """タスク種別をモデル名にマッピングして推定コストを算出する。"""
-    model = _task_to_model(task_type)
-    in_price, out_price = DEFAULT_PRICING.get(model, DEFAULT_PRICING["default"])
-    return round((input_tokens / 1_000_000) * in_price + (output_tokens / 1_000_000) * out_price, 6)
+    effective_model = model or _task_to_model(task_type)
+    in_price, out_price = DEFAULT_PRICING.get(effective_model, DEFAULT_PRICING["default"])
+    return round(
+        (input_tokens / 1_000_000) * in_price + (output_tokens / 1_000_000) * out_price, 6
+    )
 
 
 def _task_to_model(task_type: str) -> str:
-    mapping = {
-        "planning": "gemini-1.5-flash",
-        "plot_expansion": "gemini-1.5-flash",
-        "writing": "gemini-1.5-pro",
-        "climax": "gemini-1.5-pro",
-        "audit": "gemini-1.5-flash",
-        "marketing": "gemini-1.5-flash",
-    }
+    provider = os.environ.get("LLM_PROVIDER", "").lower()
+
+    if provider == "openrouter":
+        mapping = {
+            "planning": "google/gemini-2.0-flash",
+            "plot_expansion": "google/gemini-2.0-flash",
+            "writing": "anthropic/claude-3-5-sonnet-20241022",
+            "climax": "anthropic/claude-3-5-sonnet-20241022",
+            "audit": "google/gemini-2.0-flash",
+            "marketing": "google/gemini-2.0-flash",
+        }
+    else:
+        mapping = {
+            "planning": "gemini-1.5-flash",
+            "plot_expansion": "gemini-1.5-flash",
+            "writing": "gemini-1.5-pro",
+            "climax": "gemini-1.5-pro",
+            "audit": "gemini-1.5-flash",
+            "marketing": "gemini-1.5-flash",
+        }
     return mapping.get(task_type, "default")
 
 

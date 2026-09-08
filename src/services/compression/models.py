@@ -5,7 +5,26 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 
-SceneType = Literal["general", "combat", "daily", "psychological", "political"]
+SceneType = Literal[
+    "general",
+    "combat",
+    "daily",
+    "psychological",
+    "political",
+    "romance",
+    "mystery",
+    "flashback",
+    "survival",
+]
+
+
+class ProtectedContext(BaseModel):
+    """Context elements strictly protected from pruning or compression (Step 52)."""
+
+    active_characters: list[str] = Field(default_factory=list, description="Characters physically present in current scene")
+    pending_foreshadowing_ids: list[str] = Field(default_factory=list, description="Foreshadowing IDs awaiting imminent resolution")
+    critical_keywords: list[str] = Field(default_factory=list, description="Essential scene intent keywords")
+    pinned_entities: set[str] = Field(default_factory=set, description="Entities guaranteed not to be trimmed")
 
 
 class SudachiConfig(BaseModel):
@@ -60,6 +79,7 @@ class AbstractionLayerOutput(BaseModel):
     abstract_concepts: list[str] = Field(default_factory=list)
     categorized_facts: dict[str, list[dict[str, Any]]] = Field(default_factory=dict)
     category_mappings: dict[str, list[str]] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class TrimmedContextOutput(BaseModel):
@@ -70,6 +90,9 @@ class TrimmedContextOutput(BaseModel):
     retained_entities: list[str] = Field(default_factory=list)
     reduction_ratio: float = 0.0
     scene_type: SceneType = "general"
+    retention_rate: float = 1.0
+    pinned_count: int = 0
+    dropped_categories: list[str] = Field(default_factory=list)
 
 
 class CompressedContextResult(BaseModel):
@@ -88,6 +111,7 @@ class CompressedContextResult(BaseModel):
 
 __all__ = [
     "SceneType",
+    "ProtectedContext",
     "SudachiConfig",
     "CompressionConfig",
     "RawTextLayerOutput",

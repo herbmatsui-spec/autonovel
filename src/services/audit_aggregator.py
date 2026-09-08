@@ -42,20 +42,49 @@ class BookScoreResult:
     missing: list[str] = field(default_factory=list)
     weights_used: dict[str, float] = field(default_factory=dict)
     raw: dict[str, SpecialistAuditResult] = field(default_factory=dict)
+    calibrated_overall: float | None = None
+    calibrated_by_specialist: dict[str, float] = field(default_factory=dict)
+    calibration_meta: dict[str, Any] = field(default_factory=dict)
+    outliers: list[str] = field(default_factory=list)
+    variance_penalty: float = 0.0
 
-    def lowest_dimension(self) -> str | None:
+    def lowest_dimension(self, use_calibrated: bool = True) -> str | None:
         """Return the specialist with the lowest score, or None if no data."""
-        if not self.by_specialist:
+        target_dict = (
+            self.calibrated_by_specialist
+            if (use_calibrated and self.calibrated_by_specialist)
+            else self.by_specialist
+        )
+        if not target_dict:
             return None
-        return min(self.by_specialist, key=self.by_specialist.get)
+        return min(target_dict, key=target_dict.get)
+
+    def get_actionable_diffs_for(self, dimension: str) -> list[Any]:
+        """Return actionable diffs from a specific specialist."""
+        if not dimension or dimension not in self.raw:
+            return []
+        res = self.raw[dimension]
+        return list(getattr(res, "actionable_diffs", []))
+
+    def all_actionable_diffs(self) -> list[Any]:
+        """Return all actionable diffs across all specialists."""
+        diffs = []
+        for res in self.raw.values():
+            diffs.extend(getattr(res, "actionable_diffs", []))
+        return diffs
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "overall": round(self.overall, 2),
+            "calibrated_overall": round(self.calibrated_overall, 2) if self.calibrated_overall is not None else None,
             "by_specialist": {k: round(v, 2) for k, v in self.by_specialist.items()},
+            "calibrated_by_specialist": {k: round(v, 2) for k, v in self.calibrated_by_specialist.items()},
             "missing": list(self.missing),
             "weights_used": {k: round(v, 4) for k, v in self.weights_used.items()},
             "lowest_dimension": self.lowest_dimension(),
+            "outliers": list(self.outliers),
+            "variance_penalty": round(self.variance_penalty, 2),
+            "actionable_diffs_count": len(self.all_actionable_diffs()),
         }
 
 
@@ -105,6 +134,7 @@ class AuditAggregator:
         specialists: Sequence[SpecialistAuditor],
         weights: Mapping[str, float],
         event_bus: Any | None = None,
+        calibrator: Any | None = None,
     ) -> None:
         self.weights: dict[str, float] = {n: float(weights.get(n, 0.0)) for n in SPECIALIST_NAMES}
         validate_weights(self.weights)
@@ -119,6 +149,14 @@ class AuditAggregator:
             )
         self.event_bus = event_bus
         self._results: dict[str, SpecialistAuditResult] = {}
+        if calibrator is None:
+            try:
+                from src.services.score_calibrator import ScoreCalibrator
+                self.calibrator = ScoreCalibrator()
+            except Exception:
+                self.calibrator = None
+        else:
+            self.calibrator = calibrator
 
     @classmethod
     def from_registry(
@@ -126,9 +164,10 @@ class AuditAggregator:
         registry: Mapping[str, SpecialistAuditor],
         weights: Mapping[str, float],
         event_bus: Any | None = None,
+        calibrator: Any | None = None,
     ) -> "AuditAggregator":
         specialists = list(registry.values())
-        return cls(specialists=specialists, weights=weights, event_bus=event_bus)
+        return cls(specialists=specialists, weights=weights, event_bus=event_bus, calibrator=calibrator)
 
     @property
     def results(self) -> dict[str, SpecialistAuditResult]:
@@ -159,8 +198,12 @@ class AuditAggregator:
             self._results[name] = result
         return self._results
 
-    def aggregate(self) -> BookScoreResult:
-        """Compute weighted overall score from the latest run_all results."""
+    def aggregate(
+        self,
+        genre: str = "general",
+        apply_calibration: bool = True,
+    ) -> BookScoreResult:
+        """Compute weighted overall score with calibration, outlier detection, and variance penalty."""
         present: list[str] = []
         missing: list[str] = []
         for n in SPECIALIST_NAMES:
@@ -186,12 +229,57 @@ class AuditAggregator:
         weights_used = renormalize(self.weights, present)
         overall = sum(self._results[n].score * weights_used[n] for n in present)
         by_specialist = {n: self._results[n].score for n in present}
+
+        calibrated_overall: float | None = overall
+        calibrated_by_specialist = dict(by_specialist)
+        calibration_meta: dict[str, Any] = {}
+        outliers: list[str] = []
+        variance_penalty: float = 0.0
+
+        # Step 19-22: スコアキャリブレーション・外れ値検出・分散ペナルティ
+        if apply_calibration and self.calibrator is not None:
+            cal_input = {}
+            for n in present:
+                res = self._results[n]
+                conf = getattr(res, "confidence", 1.0)
+                cal_input[n] = {"score": res.score, "confidence": conf}
+
+            cal_output = self.calibrator.calibrate_all(cal_input, genre=genre)
+            calibrated_by_specialist = cal_output.get("calibrated_scores", by_specialist)
+            calibration_meta = cal_output.get("metadata", {})
+            outliers = cal_output.get("outliers", [])
+
+            if outliers:
+                logger.warning(
+                    "AuditAggregator: detected score outliers for specialists %s (genre=%s)",
+                    outliers, genre,
+                )
+
+            # キャリブレーション後総合得点
+            calibrated_overall = sum(
+                calibrated_by_specialist.get(n, 50.0) * weights_used[n] for n in present
+            )
+
+            # Step 22: 専門家間スコアの分散ペナルティ計算
+            if len(present) >= 3:
+                import statistics
+                scores_list = [calibrated_by_specialist[n] for n in present]
+                stdev = statistics.stdev(scores_list)
+                if stdev > 18.0:
+                    variance_penalty = round((stdev - 18.0) * 0.5, 2)
+                    calibrated_overall = max(10.0, calibrated_overall - variance_penalty)
+
         return BookScoreResult(
-            overall=overall,
+            overall=round(overall, 2),
             by_specialist=by_specialist,
             missing=missing,
             weights_used=weights_used,
             raw=dict(self._results),
+            calibrated_overall=round(calibrated_overall, 2) if calibrated_overall is not None else None,
+            calibrated_by_specialist=calibrated_by_specialist,
+            calibration_meta=calibration_meta,
+            outliers=outliers,
+            variance_penalty=variance_penalty,
         )
 
     async def _publish_started(self, name: str, ctx: dict[str, Any]) -> None:
@@ -274,10 +362,17 @@ class AuditAggregator:
                         "genre": genre,
                         "phase": phase,
                         "overall_score": book_score.overall,
+                        "calibrated_overall_score": book_score.calibrated_overall,
                         "specialist_scores": book_score.by_specialist,
+                        "calibrated_specialist_scores": book_score.calibrated_by_specialist,
                         "missing_specialists": book_score.missing,
                         "weights_used": book_score.weights_used,
-                        "regeneration_triggered": book_score.overall < min_pass_score,
+                        "outliers": book_score.outliers,
+                        "variance_penalty": book_score.variance_penalty,
+                        "regeneration_triggered": (
+                            (book_score.calibrated_overall if book_score.calibrated_overall is not None else book_score.overall)
+                            < min_pass_score
+                        ),
                         "lowest_dimension": book_score.lowest_dimension(),
                     },
                     correlation_id=str(ctx.get("correlation_id", "unknown")),

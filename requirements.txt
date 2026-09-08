@@ -30,7 +30,7 @@ flatbuffers==25.12.19
 frozenlist==1.8.0
 fsspec==2026.7.0
 google-ai-generativelanguage==0.6.15
-google-api-core==2.25.1
+google-api-core==2.33.0
 google-api-python-client==2.200.0
 google-auth==2.57.0
 google-auth-httplib2==0.4.2

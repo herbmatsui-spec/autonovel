@@ -57,6 +57,9 @@ class RelationshipDynamicsCalculator:
             rel.tension_score = max(0.0, min(100.0, round(rel.tension_score + tension_d, 1)))
             rel.affinity_score = max(0.0, min(100.0, round(rel.affinity_score + affinity_d, 1)))
             rel.last_interaction_ep = ep_num
+            # 状態判定 (Step 22)
+            state = self.compute_dynamics_state(rel)
+            setattr(rel, "dynamics_state", state)
 
             record = RelationshipHistoryRecord(
                 ep_num=ep_num,
@@ -138,6 +141,26 @@ class RelationshipDynamicsCalculator:
         elif trust_diff <= -10.0:
             return "すれ違いによる距離感の拡大"
         return "安定的共存"
+
+    @staticmethod
+    def compute_dynamics_state(rel: RelationshipMetrics) -> str:
+        """メトリクス値から narrative な関係性状態（dynamics_state）を判定 (Step 22)"""
+        trust = rel.trust_score
+        tension = rel.tension_score
+        affinity = rel.affinity_score
+
+        if trust >= 70.0 and tension <= 30.0 and affinity >= 70.0:
+            return "allies"  # 盟友・親友
+        elif trust >= 60.0 and tension <= 40.0:
+            return "friends"  # 仲間
+        elif tension >= 65.0 and trust <= 35.0:
+            return "hostile"  # 敵対・反目
+        elif tension >= 60.0 and affinity >= 60.0:
+            return "rivals"  # 切磋琢磨の好敵手
+        elif trust <= 40.0 and tension <= 40.0 and affinity <= 40.0:
+            return "strangers"  # 疎遠・初対面
+        else:
+            return "neutral"  # 中立・通常
 
 
 __all__ = [

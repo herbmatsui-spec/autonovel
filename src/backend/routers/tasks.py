@@ -42,6 +42,40 @@ async def get_task_status(task_id: str):
     return json.loads(row.value)
 
 
+@router.get("/dag/{dag_id}")
+async def get_dag_status(dag_id: str):
+    """Step 57: Get DAG workflow status, progress, and node execution states."""
+    from src.backend.tasks.dag_persistence import FileSystemDAGPersistence
+    from src.backend.tasks.dag_scheduler import DAGScheduler
+
+    persistence = FileSystemDAGPersistence()
+    checkpoints = persistence.list_checkpoints(dag_id)
+    if checkpoints:
+        latest_cp = checkpoints[-1]
+        graph = persistence.load_checkpoint(latest_cp)
+        if graph:
+            scheduler = DAGScheduler(persistence=persistence)
+            summary = scheduler.get_execution_summary(graph)
+            summary["latest_checkpoint"] = latest_cp
+            return summary
+
+    # Check Redis
+    redis_client = get_redis_client()
+    if redis_client is not None:
+        try:
+            val = redis_client.get(f"dag_status:{dag_id}")
+            if val:
+                return json.loads(val)
+        except Exception as exc:
+            logger.warning("Redis dag_status error: %s", exc)
+
+    return {
+        "dag_id": dag_id,
+        "found": False,
+        "message": f"DAG workflow '{dag_id}' not found in checkpoints or cache",
+    }
+
+
 @router.get("/{task_id}/stream")
 async def stream_task_status(task_id: str):
     return StreamingResponse(

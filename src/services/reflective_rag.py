@@ -8,6 +8,7 @@ GraphRAG consistency checks.
 from __future__ import annotations
 
 import time
+from collections import Counter
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -15,6 +16,8 @@ from sqlalchemy.orm import Session
 
 from src.services.rag_service import GraphRAGService, SearchResult
 from src.services.vector_store import BaseVectorStore
+from src.services.nlp.japanese_tokenizer import JapaneseTokenizer
+from src.services.query_reformulator import QueryReformulator, QueryReformulationMode
 
 try:
     from rank_bm25 import BM25Okapi
@@ -121,9 +124,15 @@ class ReflectiveRAGService:
         initial_fetch_k: int = 10,
         timeout_seconds: float = 5.0,
         convergence_config: ConvergenceConfig | None = None,
+        tokenizer: JapaneseTokenizer | None = None,
+        hybrid_retriever: Any | None = None,
+        query_reformulator: QueryReformulator | None = None,
     ) -> None:
         self.rag_service = rag_service
         self.vector_store = vector_store
+        self.tokenizer = tokenizer or JapaneseTokenizer()
+        self.hybrid_retriever = hybrid_retriever
+        self.query_reformulator = query_reformulator or QueryReformulator()
         self.top_k = top_k
         self.max_iter = max_iter
         self.relevance_threshold = relevance_threshold
@@ -219,23 +228,26 @@ class ReflectiveRAGService:
             bm25_pos = BM25Okapi(pos_tokenized)
             
             term_scores: dict[str, float] = {}
-            # Positive scores
+            # Positive scores: TF weighted by effective IDF (floored to avoid 0 IDF on small corpora)
             for doc_tokens in pos_tokenized:
-                scores = bm25_pos.get_scores(doc_tokens)
-                for term, score in zip(doc_tokens, scores):
-                    term_scores[term] = term_scores.get(term, 0.0) + score
+                tf = Counter(doc_tokens)
+                for term, count in tf.items():
+                    raw_idf = bm25_pos.idf.get(term, 0.0)
+                    effective_idf = raw_idf if raw_idf > 0.1 else 0.5
+                    term_scores[term] = term_scores.get(term, 0.0) + count * effective_idf
             
             # Negative corpus (contrastive)
             if neg_documents:
                 neg_corpus = [d.content for d in neg_documents]
                 neg_tokenized = [self._tokenize(text) for text in neg_corpus]
                 neg_tokenized = [t for t in neg_tokenized if t]
-                if neg_tokenized:
-                    bm25_neg = BM25Okapi(neg_tokenized)
-                    for doc_tokens in neg_tokenized:
-                        scores = bm25_neg.get_scores(doc_tokens)
-                        for term, score in zip(doc_tokens, scores):
-                            term_scores[term] = term_scores.get(term, 0.0) - lambda_neg * score
+                for doc_tokens in neg_tokenized:
+                    tf = Counter(doc_tokens)
+                    for term, count in tf.items():
+                        if term in term_scores:
+                            raw_idf = bm25_pos.idf.get(term, 0.0)
+                            effective_idf = raw_idf if raw_idf > 0.1 else 0.5
+                            term_scores[term] -= lambda_neg * count * effective_idf
             
             sorted_terms = sorted(term_scores.items(), key=lambda x: x[1], reverse=True)
             stop = {"の", "は", "が", "を", "に", "で", "と", "も", "や", "な", "た", "だ", "する", "ある", "いる"}
@@ -243,7 +255,6 @@ class ReflectiveRAGService:
             return [t for t, s in sorted_terms if t not in stop and s > 0][:n]
         
         # Fallback: simple frequency-based (positive only)
-        from collections import Counter
         import re
         all_text = " ".join(d.content for d in pos_documents)
         words = [w for w in re.findall(r"[一-龯ぁ-んァ-ンa-zA-Z]{2,}", all_text)]
@@ -252,10 +263,13 @@ class ReflectiveRAGService:
         freq = Counter(words)
         stop = {"の", "は", "が", "を", "に", "で", "と", "も", "や", "な", "た", "だ", "する", "ある", "いる"}
         return [w for w, _ in freq.most_common(n * 2) if w not in stop][:n]
-        stop = {"の", "は", "が", "を", "に", "で", "と", "も", "や", "な", "た", "だ", "する", "ある", "いる"}
-        return [t for t, _ in sorted_terms if t not in stop][:n]
 
     def _tokenize(self, text: str) -> list[str]:
+        """Tokenize text using Japanese morphological analyzer (or fallback)."""
+        if hasattr(self, "tokenizer") and self.tokenizer is not None:
+            tokens = self.tokenizer.tokenize(text)
+            if tokens:
+                return tokens
         import re
         return [w for w in re.findall(r"[一-龯ぁ-んァ-ンa-zA-Z]{2,}", text)]
 
@@ -288,6 +302,20 @@ class ReflectiveRAGService:
             return float(doc.score)
         return 0.5
 
+    def _is_semantic_drift(
+        self, original_query: str, candidate_query: str, keywords: list[str]
+    ) -> bool:
+        """Check if candidate reformulated query drifted too far from the original intent (Step 29)."""
+        orig_tokens = set(self._tokenize(original_query))
+        if not orig_tokens:
+            return False
+        cand_tokens = set(self._tokenize(candidate_query))
+        # If none of the original content words remain in the new query, it has drifted
+        retained = orig_tokens & cand_tokens
+        if not retained:
+            return True
+        return False
+
     def _context_fit_check(self, session: Session, doc: SearchResult, graph_name: str = "") -> ContextFitResult:
         """Check if document contradicts current World Bible (GraphRAG).
 
@@ -298,7 +326,7 @@ class ReflectiveRAGService:
         meta = doc.metadata or {}
         
         # Check metadata flags first
-        if meta.get("is_forbidden"):
+        if meta.get("is_forbidden") or meta.get("status") in ("forbidden", "deprecated", "banned"):
             return ContextFitResult(
                 score=0.0,
                 is_forbidden=True,
@@ -306,13 +334,13 @@ class ReflectiveRAGService:
                 entity_valid=False,
                 details={"source": "metadata", "reason": "explicitly_forbidden"}
             )
-        if meta.get("is_retired"):
+        if meta.get("is_retired") or meta.get("status") in ("retired", "dead", "destroyed", "sealed"):
             return ContextFitResult(
                 score=0.0,
                 is_retired=True,
-                conflict_types=["retired"],
+                conflict_types=["retired", "state_inactive"],
                 entity_valid=False,
-                details={"source": "metadata", "reason": "explicitly_retired"}
+                details={"source": "metadata", "reason": f"entity_state_{meta.get('status', 'retired')}"}
             )
 
         # GraphRAG (Apache AGE) 実検証 (Step 18 & 19)
@@ -325,26 +353,29 @@ class ReflectiveRAGService:
                 age_client = self.rag_service.age_client
                 if hasattr(age_client, "check_entity_validity"):
                     v = age_client.check_entity_validity(session, graph_name, entity_name)
-                    is_forbidden = v.get("is_forbidden", False)
-                    is_retired = v.get("is_retired", False)
-                    valid = v.get("valid", True)
-                    status = v.get("status", "active")
-                    
-                    conflict_types = []
-                    if is_forbidden:
-                        conflict_types.append("forbidden")
-                    if is_retired:
-                        conflict_types.append("retired")
-                    if not valid and not is_forbidden and not is_retired:
-                        conflict_types.append("invalid")
-                    
-                    # Determine score based on severity
-                    if is_forbidden or is_retired:
-                        score = 0.0
-                    elif not valid:
-                        score = 0.2
-                    else:
-                        score = 1.0
+                    if isinstance(v, dict):
+                        is_forbidden = bool(v.get("is_forbidden", False))
+                        is_retired = bool(v.get("is_retired", False))
+                        status = str(v.get("status", "active"))
+                        if status in ("dead", "destroyed", "sealed", "forbidden", "retired", "deprecated"):
+                            is_retired = True
+                        valid = bool(v.get("valid", True)) and not is_forbidden and not is_retired
+                        
+                        conflict_types = []
+                        if is_forbidden:
+                            conflict_types.append("forbidden")
+                        if is_retired:
+                            conflict_types.append("retired")
+                        if not valid and not is_forbidden and not is_retired:
+                            conflict_types.append("invalid")
+                        
+                        # Determine score based on severity
+                        if is_forbidden or is_retired:
+                            score = 0.0
+                        elif not valid:
+                            score = 0.2
+                        else:
+                            score = 1.0
                     
                     return ContextFitResult(
                         score=score,
@@ -376,6 +407,8 @@ class ReflectiveRAGService:
         session: Session,
         *,
         query: str,
+        scene_intent: str = "",
+        reformulation_mode: QueryReformulationMode = "intent_guided",
         book_id: int | None = None,
         top_k: int | None = None,
         max_iter: int | None = None,
@@ -426,12 +459,18 @@ class ReflectiveRAGService:
                 iter_start = time.perf_counter()
 
                 try:
-                    candidates = self.rag_service.search_similar_chunks(
-                        session,
-                        query=current_query,
-                        limit=self.initial_fetch_k,
-                        min_score=0.0,
-                    )
+                    if self.hybrid_retriever is not None:
+                        candidates = self.hybrid_retriever.search(
+                            query=current_query,
+                            top_k=self.initial_fetch_k,
+                        )
+                    else:
+                        candidates = self.rag_service.search_similar_chunks(
+                            session,
+                            query=current_query,
+                            limit=self.initial_fetch_k,
+                            min_score=0.0,
+                        )
                 except Exception as search_err:
                     import logging
                     logging.getLogger(__name__).warning(f"search_similar_chunks error: {search_err}")
@@ -553,23 +592,29 @@ class ReflectiveRAGService:
                         all_history[-1]["reranked"] = False
                         all_history[-1]["rerank_error"] = str(e)
 
-                if filtered:
-                    keywords = self._bm25_keyword_extract(
-                        [d for d, _, _, _, _ in filtered], 
-                        neg_documents=neg_documents,
-                        n=5,
-                        lambda_neg=self.convergence_config.lambda_neg
-                    )
-                else:
-                    keywords = self._bm25_keyword_extract(
-                        [d for d, _, _, _, _ in scored[:top_k]], 
-                        neg_documents=neg_documents,
-                        n=5,
-                        lambda_neg=self.convergence_config.lambda_neg
-                    )
+                pos_docs = [d for d, _, _, _, _ in filtered] if filtered else [d for d, _, _, _, _ in scored[:top_k]]
+                pos_ids = {d.id for d in pos_docs}
+                contrastive_neg = [d for d in neg_documents if d.id not in pos_ids] if neg_documents else None
+                keywords = self._bm25_keyword_extract(
+                    pos_docs, 
+                    neg_documents=contrastive_neg,
+                    n=5,
+                    lambda_neg=self.convergence_config.lambda_neg
+                )
 
                 if keywords:
-                    current_query = f"{current_query} {' '.join(keywords)}"
+                    candidate_query = self.query_reformulator.reformulate_query(
+                        query=current_query,
+                        keywords=keywords,
+                        scene_intent=scene_intent,
+                        mode=reformulation_mode,
+                    )
+                    if self._is_semantic_drift(query, candidate_query, keywords):
+                        final_docs = [d for d, _, _, _, _ in filtered[:top_k]] if filtered else [d for d, _, _, _, _ in scored[:top_k]]
+                        converged = True
+                        convergence_reason = "drift_prevented"
+                        break
+                    current_query = candidate_query
                     refined_queries.append(current_query)
                 else:
                     final_docs = [d for d, _, _, _, _ in scored[:top_k]]
@@ -646,6 +691,55 @@ class ReflectiveRAGService:
             self.save_reflection_history(session, result, book_id=book_id)
 
         return result
+
+    async def retrieve_reflective_async(
+        self,
+        session: Session,
+        *,
+        query: str,
+        scene_intent: str = "",
+        reformulation_mode: QueryReformulationMode = "intent_guided",
+        book_id: int | None = None,
+        top_k: int | None = None,
+        max_iter: int | None = None,
+        relevance_threshold: float | None = None,
+        timeout_seconds: float | None = None,
+    ) -> ReflectiveRetrievalResult:
+        """Asynchronous API entry point for reflective retrieval (Step 34)."""
+        return await self.retrieve_with_reflection(
+            session=session,
+            query=query,
+            scene_intent=scene_intent,
+            reformulation_mode=reformulation_mode,
+            book_id=book_id,
+            top_k=top_k,
+            max_iter=max_iter,
+            relevance_threshold=relevance_threshold,
+            timeout_seconds=timeout_seconds,
+        )
+
+    def format_for_prompt(
+        self, result: ReflectiveRetrievalResult, max_chars: int = 3000
+    ) -> str:
+        """Format reflective retrieval results into a clean context prompt block (Step 35)."""
+        if not result.documents:
+            return "【参照世界観設定】：該当する設定記述はありませんでした。"
+
+        lines = ["【参照世界観設定（反射的整合性検証済）】:"]
+        curr_chars = len(lines[0])
+        for idx, r_doc in enumerate(result.documents, 1):
+            doc = r_doc.search_result
+            title = doc.metadata.get("title") or doc.metadata.get("name") or f"資料{idx}"
+            source = doc.source or "world_bible"
+            score_str = f"適合度: {r_doc.combined_score:.2f}"
+            entry = f"\n- [{title}] ({source} / {score_str})\n  {doc.content.strip()}\n"
+
+            if curr_chars + len(entry) > max_chars:
+                break
+            lines.append(entry)
+            curr_chars += len(entry)
+
+        return "\n".join(lines)
 
 
 __all__ = ["ReflectiveRAGService", "ReflectiveRetrievalResult", "ConvergenceConfig", "ContextFitResult", "ReflectiveDoc"]

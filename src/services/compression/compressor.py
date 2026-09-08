@@ -11,6 +11,7 @@ from src.services.compression.models import (
     CompressionConfig,
     CompressedContextResult,
     SceneType,
+    ProtectedContext,
 )
 from src.services.compression.layer1_keywords import Layer1KeywordExtractor, count_tokens
 from src.services.compression.layer2_subgraph import Layer2SubgraphExtractor
@@ -68,8 +69,9 @@ class FourLayerCompressor:
         max_tokens: int | None = None,
         bypass_cache: bool = False,
         scene_weights: dict[SceneType, float] | None = None,
+        protected_context: ProtectedContext | None = None,
     ) -> CompressedContextResult:
-        """Execute the full 4-layer compression pipeline."""
+        """Execute the full 4-layer compression pipeline with protected context pinning."""
         start_time = time.perf_counter()
         target_scene = scene_type or self.config.scene_type
         budget = max_tokens or self.config.max_tokens
@@ -80,6 +82,7 @@ class FourLayerCompressor:
                 scene_type=target_scene,
                 max_tokens=budget,
                 scene_weights=scene_weights,
+                protected_context=protected_context,
             )
             return CompressedContextResult(
                 layer4=empty_trim,
@@ -99,16 +102,27 @@ class FourLayerCompressor:
                 try:
                     result = CompressedContextResult.model_validate(cached)
                     result.from_cache = True
-                    result.elapsed_ms = (time.perf_counter() - start_time) * 1000
+                    result.elapsed_ms = round((time.perf_counter() - start_time) * 1000, 2)
                     return result
                 except Exception as e:
-                    logger.debug(f"Failed to deserialize cached context: {e}")
+                    logger.debug(f"Cache validation error: {e}")
 
         # Layer 1: キーフレーズ抽出
         layer1_out = self.layer1.extract(raw_text)
 
-        # Layer 2: 2-hopサブグラフ抽出 & 枝刈り
-        seeds = layer1_out.extracted_keywords
+        # Layer 2: 2-hopサブグラフ抽出 & 枝刈り (ProtectedContextをシードに確実に含める)
+        seeds = list(layer1_out.extracted_keywords)
+        if protected_context:
+            for c in protected_context.active_characters:
+                if c and c not in seeds:
+                    seeds.append(c)
+            for f in protected_context.pending_foreshadowing_ids:
+                if f and f not in seeds:
+                    seeds.append(f)
+            for p in protected_context.pinned_entities:
+                if p and p not in seeds:
+                    seeds.append(p)
+
         if session and graph_name and self.age_client:
             layer2_out = self.layer2.extract_from_age(
                 session=session,
@@ -130,7 +144,7 @@ class FourLayerCompressor:
             raw_text=raw_text,
         )
 
-        # Layer 4: シーン適応型動的トリミング
+        # Layer 4: シーン適応型動的トリミング (Step 58)
         layer4_out = self.layer4.trim(
             abstraction_output=layer3_out,
             scene_type=target_scene,
@@ -138,6 +152,7 @@ class FourLayerCompressor:
             keywords=seeds,
             original_token_count=layer1_out.original_token_count,
             scene_weights=scene_weights,
+            protected_context=protected_context,
         )
 
         elapsed_ms = (time.perf_counter() - start_time) * 1000

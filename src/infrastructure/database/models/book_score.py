@@ -1,6 +1,6 @@
 # src/infrastructure/database/models/book_score.py
 """BookScore ORM モデル"""
-from sqlalchemy import Column, Integer, Float, DateTime, ForeignKey, String
+from sqlalchemy import Column, Integer, Float, DateTime, ForeignKey, String, JSON
 from sqlalchemy.orm import relationship
 from src.infrastructure.database.models.base_orm import Base
 from datetime import datetime
@@ -18,6 +18,7 @@ class BookScore(Base):
     factual_grounding_score = Column(Float, nullable=False)
     visual_textual_synergy_score = Column(Float, nullable=False)
     reader_experience_score = Column(Float, nullable=False)
+    specialist_breakdown = Column(JSON, nullable=True)  # 8専門家スコア及び寄与度詳細
     evaluated_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     evaluator_version = Column(String(50), default="1.0", nullable=False)
 

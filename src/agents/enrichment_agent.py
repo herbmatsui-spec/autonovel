@@ -174,12 +174,13 @@ class EnrichmentAgent(SkillAgent):
                 },
             })
 
+            res_artifacts = dict(ctx.artifacts)
+            res_artifacts["enriched_text"] = enriched_text
+            res_artifacts["enrichment_metadata"] = enrichment_metadata
+
             return AgentResult(
                 next_agent=AgentName.AUDIT,
-                artifacts={
-                    "enriched_text": enriched_text,
-                    "enrichment_metadata": enrichment_metadata,
-                },
+                artifacts=res_artifacts,
             )
 
         except Exception as e:
@@ -252,10 +253,18 @@ class EnrichmentAgent(SkillAgent):
         insertions_metadata = []
         offset = 0  # 文字位置オフセット調整用
 
-        # トークン予算上限（1トークン ≒ 2文字換算）
+        # トークン予算上限（精緻なトークン計算）
+        try:
+            from src.services.compression.layer1_keywords import count_tokens
+        except Exception:
+            def count_tokens(s: str) -> int:
+                return max(1, len(s) // 2)
+
         max_tokens = self._config.get("token_budget", {}).get("max_enrichment_tokens", 1500)
-        trivia_budget_chars = max(300, int(max_tokens * 0.8))  # トリビア用予算
-        accumulated_trivia_chars = 0
+        # 最低保証枠（max(100, ...)）を設けて低予算時でも最初の優良候補が極端に弾かれないようにする
+        default_budget = max(100, int(max_tokens * 0.6))
+        trivia_budget_tokens = int(self._config.get("trivia_insertion", {}).get("token_budget", default_budget))
+        accumulated_trivia_tokens = 0
 
         for i, (trivia, insert_pos) in enumerate(zip(scored_trivia, insertion_points)):
             adjusted_pos = insert_pos + offset
@@ -266,12 +275,13 @@ class EnrichmentAgent(SkillAgent):
                 trivia["fact"], surrounding, pov, trivia.get("entity")
             )
 
-            if rewritten and rewritten != trivia["fact"]:
+            if rewritten:
+                insert_tokens = count_tokens(rewritten)
                 # トークン予算チェック（超過時は優先度の低いトリビアを自動切り捨て）
-                if accumulated_trivia_chars + len(rewritten) > trivia_budget_chars:
+                if accumulated_trivia_tokens + insert_tokens > trivia_budget_tokens:
                     logger.info(
-                        "Trivia token budget reached (%d / %d chars). Pruning remaining %d trivia candidates.",
-                        accumulated_trivia_chars, trivia_budget_chars, len(scored_trivia) - i
+                        "Trivia token budget reached (%d / %d tokens). Pruning remaining %d trivia candidates.",
+                        accumulated_trivia_tokens, trivia_budget_tokens, len(scored_trivia) - i
                     )
                     break
 
@@ -282,12 +292,13 @@ class EnrichmentAgent(SkillAgent):
 
                 inserted_len = len(rewritten)
                 offset += inserted_len
-                accumulated_trivia_chars += inserted_len
+                accumulated_trivia_tokens += insert_tokens
 
                 insertions_metadata.append({
                     "position": adjusted_pos,
-                    "original": "",
+                    "original": trivia.get("fact", ""),
                     "enriched": rewritten,
+                    "tokens": insert_tokens,
                     "trivia_source": trivia.get("source_type", "unknown"),
                     "entity": trivia.get("entity"),
                     "relevance": trivia.get("relevance_score", 0),
@@ -352,50 +363,76 @@ class EnrichmentAgent(SkillAgent):
         overlap = len(fact_keywords & context_keywords)
         union = len(fact_keywords | context_keywords)
         jaccard = overlap / union if union > 0 else 0.0
-        
-        # エンティティマッチボーナス（大幅増加）
+        # コンテキスト長による減衰を防ぐため、ファクト側の含有率(containment)も考慮
+        containment = overlap / len(fact_keywords) if fact_keywords else 0.0
+        base_score = (jaccard * 0.5 + containment * 0.5) * 1.5
+
+        # エンティティマッチボーナス（確実に関連エンティティが登場している場合）
         entity_bonus = 0.0
         if trivia.get("entity"):
             entity = trivia["entity"].lower()
             if entity in context_lower:
-                entity_bonus = 0.5
-        
+                entity_bonus = 0.6
+
         # ソースタイプ重み
         source_weight = {
             "world_bible": 1.0,
             "historical_facts": 0.8,
             "cultural_trivia": 0.7,
         }.get(trivia.get("source_type", "unknown"), 0.5)
-        
-        # ベーススコア + ボーナス
-        base_score = jaccard * 1.5
+
         return min(1.0, (base_score + entity_bonus) * source_weight)
 
+    def _is_inside_dialogue(self, text: str, pos: int) -> bool:
+        """指定位置がセリフ（「」『』等）の内部にあるか判定"""
+        open_c = 0
+        for i in range(min(pos, len(text))):
+            ch = text[i]
+            if ch in ("「", "『"):
+                open_c += 1
+            elif ch in ("」", "』"):
+                open_c = max(0, open_c - 1)
+        return open_c > 0
+
+    def _adjust_point_outside_dialogue(self, text: str, pos: int) -> int:
+        """セリフ内部にある位置を直後の閉じ括弧の直後へ補正"""
+        if not self._is_inside_dialogue(text, pos):
+            return pos
+        for i in range(pos, len(text)):
+            if text[i] in ("」", "』"):
+                next_pos = i + 1
+                while next_pos < len(text) and text[next_pos] in ("\n", " ", "\t", "。"):
+                    next_pos += 1
+                return next_pos
+        return pos
+
     def _find_insertion_points(self, text: str, max_points: int) -> list[int]:
-        """自然な挿入ポイント検出（Step 15）"""
+        """自然な挿入ポイント検出（Step 5: セリフ内誤挿入防止ガード付き）"""
         points = []
-        
-        # 先頭も候補に追加
-        if len(text) > 0:
+
+        # 先頭も候補に追加（セリフでなければ）
+        if len(text) > 0 and not text.startswith(("「", "『")):
             points.append(0)
-        
+
         # 段落区切り（\n\n）を優先
         for match in re.finditer(r'\n\n', text):
             pos = match.end()
+            pos = self._adjust_point_outside_dialogue(text, pos)
             if pos not in points:
                 points.append(pos)
             if len(points) >= max_points:
                 break
-        
+
         # 足りない場合は文末（。！？）
         if len(points) < max_points:
             for match in re.finditer(r'[。！？]["」』]*\s*', text):
                 pos = match.end()
+                pos = self._adjust_point_outside_dialogue(text, pos)
                 if not any(abs(pos - p) < 50 for p in points):
                     points.append(pos)
                     if len(points) >= max_points:
                         break
-        
+
         # それでも足りない場合は等間隔
         if len(points) < max_points and len(text) > 100:
             segment_len = len(text) // (max_points + 1)
@@ -404,30 +441,108 @@ class EnrichmentAgent(SkillAgent):
                 snap = text.rfind('。', max(0, pos-100), pos)
                 if snap != -1:
                     pos = snap + 1
+                pos = self._adjust_point_outside_dialogue(text, pos)
                 if not any(abs(pos - p) < 30 for p in points):
                     points.append(pos)
-        
-        return sorted(points)[:max_points]
+
+        # 最終フィルタリング: セリフ内部のポイントは確実に排除
+        safe_points = [p for p in points if not self._is_inside_dialogue(text, p)]
+        return sorted(list(dict.fromkeys(safe_points)))[:max_points]
+
 
     async def _rewrite_trivia_for_context(
         self, trivia_fact: str, surrounding_text: str, pov: str, entity: str | None
     ) -> str:
-        """トリビア文脈書き換え（Step 16）"""
-        if not self.llm or not self.prompt_manager:
+        """トリビア文脈書き換え（Step 3: スタブ解除と非同期LLMリライト）"""
+        if not self.llm:
             return trivia_fact
-        
+
         try:
-            from prompts.enrichment.trivia_insertion import TRIVIA_INSERTION_PROMPT
-            prompt = TRIVIA_INSERTION_PROMPT.format(
-                original_text=surrounding_text[:400],
-                trivia_candidates=trivia_fact,
-                max_insertions=1,
-                relevance_threshold=0.7,
-            )
-            return trivia_fact
+            import inspect
+            from pathlib import Path
+            from jinja2 import Template
+
+            template_content = None
+            if self.prompt_manager:
+                try:
+                    t = self.prompt_manager.get_template("trivia_rewrite.jinja2")
+                    template_content = getattr(t, "source", None) or str(t)
+                except Exception:
+                    pass
+
+            if not template_content:
+                tpl_path = Path("src/prompts/enrichment/trivia_rewrite.jinja2")
+                if not tpl_path.exists():
+                    tpl_path = Path("prompts/enrichment/trivia_rewrite.jinja2")
+                if tpl_path.exists():
+                    template_content = tpl_path.read_text(encoding="utf-8")
+
+            if template_content:
+                tpl = Template(template_content)
+                prompt = tpl.render(
+                    surrounding_text=surrounding_text[:400],
+                    trivia_fact=trivia_fact,
+                    pov=pov or "三人称",
+                    entity=entity or "世界観設定",
+                )
+            else:
+                from prompts.enrichment.trivia_insertion import TRIVIA_INLINE_REWRITE_PROMPT
+                prompt = TRIVIA_INLINE_REWRITE_PROMPT.format(
+                    surrounding_text=surrounding_text[:400],
+                    trivia_fact=trivia_fact,
+                    pov=pov or "三人称",
+                    entity=entity or "世界観設定",
+                )
+
+            async def _invoke_llm() -> Any:
+                if hasattr(self.llm, "ainvoke"):
+                    return await self.llm.ainvoke(prompt)
+                elif hasattr(self.llm, "generate"):
+                    res = self.llm.generate(prompt)
+                    return await res if inspect.isawaitable(res) else res
+                elif callable(self.llm):
+                    res = self.llm(prompt)
+                    return await res if inspect.isawaitable(res) else res
+                return None
+
+            import asyncio
+            timeout_sec = float(self._config.get("trivia_insertion", {}).get("timeout_seconds", 4.0))
+            try:
+                raw_res = await asyncio.wait_for(_invoke_llm(), timeout=timeout_sec)
+            except asyncio.TimeoutError:
+                logger.warning(f"Trivia rewrite timed out after {timeout_sec}s, using fallback")
+                return trivia_fact
+
+            if not raw_res:
+                return trivia_fact
+
+            rewritten = str(getattr(raw_res, "content", raw_res)).strip()
+            # マークダウンコードブロックや余計な引用符・ラベルを除去
+            rewritten = re.sub(r"^```[a-zA-Z]*\n?", "", rewritten)
+            rewritten = re.sub(r"\n?```$", "", rewritten)
+            rewritten = re.sub(r"^(?:リライト(?:案|後)?|本文)[:：\s]*", "", rewritten)
+            rewritten = rewritten.strip('"\'「」 \n')
+
+            if rewritten and len(rewritten) >= 5:
+                return self._adjust_pov_tone(rewritten, pov)
+            return self._adjust_pov_tone(trivia_fact, pov)
         except Exception as e:
             logger.warning(f"Trivia rewrite failed: {e}")
-            return trivia_fact
+            return self._adjust_pov_tone(trivia_fact, pov)
+
+    def _adjust_pov_tone(self, text: str, pov: str) -> str:
+        """一人称/三人称に応じた語尾トーンの自動調整（Step 6）"""
+        if not text:
+            return text
+        if pov in ("first_person", "一人称"):
+            # 三人称的な客観解説語尾を一人称的な認識語尾へ自然に軟化
+            text = re.sub(r'であった。$', 'だった。', text)
+            text = re.sub(r'である。$', 'だ。', text)
+            text = re.sub(r'とされている。$', 'と聞いたことがある。', text)
+            text = re.sub(r'と言われている。$', 'と耳にしたことがある。', text)
+            text = re.sub(r'のだ。$', 'んだ。', text)
+        return text
+
 
     # --- 引用付与関連 ---
 
@@ -621,13 +736,15 @@ class EnrichmentAgent(SkillAgent):
         scene_context = self._extract_scene_context(text, writing_context)
         pov = writing_context.get("pov", "third_person")
 
+        timeout_seconds = float(self._config.get("sensory_expansion", {}).get("timeout_seconds", 5.0))
         try:
-            enriched_text, expansions_meta = expand_sensory_details_pipeline(
+            enriched_text, expansions_meta = await expand_sensory_details_pipeline(
                 text=text,
                 scene_context=scene_context,
                 pov=pov,
                 llm=self.llm,
                 prompt_manager=self.prompt_manager,
+                timeout_seconds=timeout_seconds,
             )
             return enriched_text, expansions_meta
         except Exception as e:

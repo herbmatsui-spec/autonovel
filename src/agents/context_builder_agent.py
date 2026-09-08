@@ -8,6 +8,7 @@ from pydantic import BaseModel
 
 from src.agents.skill_base import SkillAgent
 from src.agents.orchestrator import AgentContext, AgentResult, AgentName
+from src.services.compression.models import ProtectedContext
 
 
 class ContextBuilderInput(BaseModel):
@@ -101,10 +102,31 @@ class ContextBuilderAgent(SkillAgent):
             "ep_num": ep_num,
         })
         
+        res_artifacts = dict(ctx.artifacts)
+        res_artifacts["writing_context"] = full_context
         return AgentResult(
             next_agent=AgentName.WRITING,
-            artifacts={"writing_context": full_context},
+            artifacts=res_artifacts,
         )
+
+    def allocate_token_budgets(self, total_budget: int = 4000, scene_type: str = "general") -> dict[str, int]:
+        """Automatically arbitrate token budgets between RAG and compression based on scene type (Step 63)."""
+        st = str(scene_type).lower()
+        if st in ("mystery", "political", "flashback"):
+            rag_ratio = 0.55
+        elif st in ("romance", "daily"):
+            rag_ratio = 0.25
+        elif st in ("combat", "survival"):
+            rag_ratio = 0.30
+        else:
+            rag_ratio = 0.40
+
+        rag_budget = int(total_budget * rag_ratio)
+        comp_budget = total_budget - rag_budget
+        return {
+            "rag_budget": rag_budget,
+            "compression_budget": comp_budget,
+        }
 
     async def run(self, ctx: AgentContext) -> AgentResult:
         """Orchestrator 用エントリーポイント。execute をラップする。"""
@@ -215,7 +237,7 @@ class ContextBuilderAgent(SkillAgent):
         elif tension_int >= 60:
             density_level = "High"
 
-        # Step 21: 反射的検索 (Reflective RAG) の実行
+        # Step 21 & 62: 反射的検索 (Reflective RAG) の実行（シーン意図の注入）
         rag_context = []
         if reflective_rag is not None:
             query = (
@@ -223,11 +245,13 @@ class ContextBuilderAgent(SkillAgent):
                 or plot_dict.get("title")
                 or f"episode {ep_num} context"
             )
+            scene_intent = plot_dict.get("summary", "")
             try:
                 import inspect
                 res = reflective_rag.retrieve_with_reflection(
                     session=session,
                     query=query,
+                    scene_intent=scene_intent,
                     book_id=book_id,
                 )
                 if inspect.iscoroutine(res):
@@ -243,7 +267,7 @@ class ContextBuilderAgent(SkillAgent):
                 import logging
                 logging.getLogger(__name__).warning(f"Reflective RAG retrieval failed: {e}")
 
-        # Step 33: 4階層コンテキスト圧縮 (FourLayerCompressor) の統合
+        # Step 33 & 61: 4階層コンテキスト圧縮 (FourLayerCompressor) の統合（ProtectedContext注入）
         compressed_context = ""
         compression_stats: dict[str, Any] = {}
         if compressor is not None:
@@ -265,12 +289,22 @@ class ContextBuilderAgent(SkillAgent):
             if detector:
                 multi = detector(plot_dict.get("summary", ""), plot_dict.get("scenes", []))
                 if multi:
-                    # If multi-label (list of tuples), use first as primary and all as weights
                     if isinstance(multi, list) and multi and isinstance(multi[0], tuple):
                         s_type = multi[0][0]
                         scene_weights = {st: conf for st, conf in multi}
                     else:
                         s_type = multi
+
+            # Build ProtectedContext for guaranteed retention of active characters & foreshadowings (Step 61)
+            active_char_names = [getattr(c, "name", str(c)) for c in (active_chars or []) if c]
+            foreshadowing_ids = [
+                str(fs.get("id")) for fs in plot_dict.get("foreshadowings", [])
+                if isinstance(fs, dict) and fs.get("id")
+            ]
+            protected_ctx = ProtectedContext(
+                active_characters=active_char_names,
+                pending_foreshadowing_ids=foreshadowing_ids,
+            )
 
             try:
                 import inspect
@@ -281,6 +315,7 @@ class ContextBuilderAgent(SkillAgent):
                     ep_num=ep_num,
                     scene_type=s_type,
                     scene_weights=scene_weights,
+                    protected_context=protected_ctx,
                 )
                 if inspect.iscoroutine(c_res):
                     c_res = await c_res
@@ -465,63 +500,108 @@ class ContextBuilderAgent(SkillAgent):
         book_id: int = 1,
         ep_num: int = 1,
         active_chars: list[Any] | None = None,
+        max_chars: int = 1200,
     ) -> str:
-        """Step 53: 直近エピソードのソーシャルジャーナルと動的関係性を取得・整形する。"""
-        parts = []
-        char_names = set()
-        if active_chars:
-            for c in active_chars:
-                name = getattr(c, "name", None)
-                if name:
-                    char_names.add(name)
+        """Step 53 & Steps 30-36: 直近エピソードのソーシャルジャーナルと動的関係性トレンドを取得・整形する（耐障害・文字数制限付き）。"""
+        import logging
+        logger = logging.getLogger(__name__)
 
-        # 1. AGE からの直前話ジャーナル取得試行
-        if age_client and session and ep_num > 1:
-            try:
-                prev_ep = ep_num - 1
-                cypher = (
-                    f"MATCH (j:journal_entry) "
-                    f"WHERE j.book_id = {book_id} AND j.ep_num = {prev_ep} "
-                    f"RETURN j.character_name as name, j.emotion as emotion, j.theme as theme, j.content as content "
-                    f"LIMIT 5"
-                )
-                res = age_client.execute_cypher(session, cypher)
-                if res and getattr(res, "records", None):
-                    j_lines = []
-                    for r in res.records:
-                        c_name = r.get("name", "登場人物")
-                        emo = r.get("emotion", "")
-                        cnt = r.get("content", "")
-                        j_lines.append(f"- {c_name}（感情: {emo}）: 「{cnt[:120]}」")
-                    if j_lines:
-                        parts.append("【直前話の登場人物内面手記・独白 (Apache AGE)】\n" + "\n".join(j_lines))
-            except Exception as e:
-                import logging
-                logging.getLogger(__name__).debug("Failed to retrieve journals from AGE: %s", e)
+        try:
+            parts = []
+            char_names = set()
+            if active_chars:
+                for c in active_chars:
+                    name = getattr(c, "name", None) or (c.get("name") if isinstance(c, dict) else None)
+                    if name:
+                        char_names.add(str(name).strip())
 
-        # 2. SocialInteractionManager からの関係性メトリクス取得
-        if social_manager:
-            try:
-                rel_lines = []
-                seen_pairs = set()
-                names_to_check = list(char_names) or ["主人公", "ライバル"]
-                for name in names_to_check:
-                    rels = social_manager.get_all_relationships_for_character(name)
-                    for r in rels:
-                        pair = tuple(sorted([r.char_a, r.char_b]))
-                        if pair in seen_pairs:
-                            continue
-                        seen_pairs.add(pair)
-                        rel_lines.append(
-                            f"- {r.char_a} ⇔ {r.char_b}: 信頼度={r.trust_score}, 緊張度={r.tension_score}, 好感度={r.affinity_score}"
+            social_repo = getattr(social_manager, "social_repo", None)
+
+            # 1. SocialRepository からの重要手記・動的関係性トレンド取得 (Step 30, 31, 33)
+            if social_repo is not None:
+                try:
+                    j_sum = await social_repo.get_important_journals_summary(
+                        book_id=book_id, current_ep=ep_num, lookback=5
+                    )
+                    if j_sum:
+                        parts.append(j_sum)
+
+                    # アクティブキャラクターが指定されている場合は関連ペアを優先抽出
+                    if char_names:
+                        active_rels = await social_repo.get_relationships_for_characters(
+                            book_id=book_id, char_names=list(char_names)
                         )
-                if rel_lines:
-                    parts.append("【登場人物間の動的心理関係性 (Social Dynamics)】\n" + "\n".join(rel_lines[:6]))
-            except Exception as e:
-                import logging
-                logging.getLogger(__name__).debug("Failed to retrieve relationships from social_manager: %s", e)
+                        if active_rels:
+                            rel_lines = []
+                            for r in active_rels[:6]:
+                                rel_lines.append(
+                                    f"- {r['char_a']} ⇔ {r['char_b']} [{r['dynamics_state']}]: "
+                                    f"信頼度={r['trust']:.0f}, 緊張度={r['tension']:.0f}, 好感度={r['affection']:.0f}"
+                                )
+                            parts.append("【登場キャラクター間の動的関係性 (Social Dynamics)】\n" + "\n".join(rel_lines))
+                    else:
+                        t_sum = await social_repo.get_relationship_trends_summary(book_id=book_id)
+                        if t_sum:
+                            parts.append(t_sum)
 
-        return "\n\n".join(parts)
+                except Exception as e:
+                    logger.debug("Failed to retrieve social summaries from repository: %s", e)
+
+            # 2. フォールバック: AGE からの直前話ジャーナル取得試行 (未取得時)
+            if not any("内面手記" in p for p in parts) and age_client and session and ep_num > 1:
+                try:
+                    prev_ep = ep_num - 1
+                    cypher = (
+                        f"MATCH (j:journal_entry) "
+                        f"WHERE j.book_id = {book_id} AND j.ep_num = {prev_ep} "
+                        f"RETURN j.character_name as name, j.emotion as emotion, j.theme as theme, j.content as content "
+                        f"LIMIT 5"
+                    )
+                    res = age_client.execute_cypher(session, cypher)
+                    if res and getattr(res, "records", None):
+                        j_lines = []
+                        for r in res.records:
+                            c_name = r.get("name", "登場人物")
+                            emo = r.get("emotion", "")
+                            cnt = r.get("content", "")
+                            j_lines.append(f"- {c_name}（感情: {emo}）: 「{cnt[:120]}」")
+                        if j_lines:
+                            parts.append("【直前話の登場人物内面手記・独白 (Apache AGE)】\n" + "\n".join(j_lines))
+                except Exception as e:
+                    logger.debug("Failed to retrieve journals from AGE: %s", e)
+
+            # 3. フォールバック: SocialInteractionManager からの関係性メトリクス取得 (未取得時)
+            if not any("動的関係性" in p or "動的心理関係性" in p for p in parts) and social_manager:
+                try:
+                    rel_lines = []
+                    seen_pairs = set()
+                    names_to_check = list(char_names) or ["主人公", "ライバル"]
+                    for name in names_to_check:
+                        rels = social_manager.get_all_relationships_for_character(name)
+                        for r in rels:
+                            pair = tuple(sorted([r.char_a, r.char_b]))
+                            if pair in seen_pairs:
+                                continue
+                            seen_pairs.add(pair)
+                            rel_lines.append(
+                                f"- {r.char_a} ⇔ {r.char_b}: 信頼度={r.trust_score}, 緊張度={r.tension_score}, 好感度={r.affinity_score}"
+                            )
+                    if rel_lines:
+                        parts.append("【登場人物間の動的心理関係性 (Social Dynamics)】\n" + "\n".join(rel_lines[:6]))
+                except Exception as e:
+                    logger.debug("Failed to retrieve relationships from social_manager: %s", e)
+
+            result_text = "\n\n".join(parts)
+            # Step 34: トークン予算（文字数上限）による安全トリミング
+            if len(result_text) > max_chars:
+                result_text = result_text[:max_chars - 3] + "..."
+
+            return result_text
+
+        except Exception as e:
+            # Step 36: 予期せぬ障害時でも小説生成フローを絶対に止めない
+            logger.warning("Unexpected error in _get_social_dynamic_context, falling back gracefully: %s", e)
+            return ""
 
     def _build_prev_ctx(
         self, prev_chapter: Any | None, book_id: int, branch_id: int, ep_num: int, include_arc_info: bool = False

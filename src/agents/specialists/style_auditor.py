@@ -15,6 +15,7 @@ from src.agents.specialist_auditor_base import (
     SpecialistAuditor,
     SpecialistAuditResult,
     LLMUnavailableError,
+    ActionableDiff,
 )
 
 try:
@@ -50,7 +51,7 @@ def _first_person_ratio(tokens: list[str]) -> float:
 
 
 def _polite_ratio(tokens: list[str]) -> float:
-    polite = sum(1 for t in tokens if t.endswith(("です", "ます", "でした", "まし")) )
+    polite = sum(1 for t in tokens if t.endswith(("です", "ます", "でした", "ました", "ません", "でしょうか")))
     return polite / max(1, len(tokens))
 
 
@@ -60,6 +61,10 @@ STYLE_SYSTEM_PROMPT = """あなたは小説の文体DNA・トーン＆マナー�
 2. 指定されたジャンル・文体DNA（ハードボイルド、耽美、軽妙、シリアス等）の維持度
 3. 会話文と地の文のトーンバランス
 口調のブレや不自然な敬体・常体の混在がある場合は減点（60点未満）、一貫した格調高い文体が維持されていれば高スコア（80点以上）としてください。
+
+【Actionable Diff の必須出力要件】
+文体のブレ（常体・敬体の混在、不自然な一人称のズレ、地の文と会話の違和感など）がある箇所について、
+問題のある原文の抜粋と、文体を統一・昇華させた具体的なリライト文（ActionableDiff）を1〜3件必ず含めてください。
 """
 
 STYLE_USER_PROMPT = """【文体プロファイル / DNA設定】
@@ -69,6 +74,7 @@ STYLE_USER_PROMPT = """【文体プロファイル / DNA設定】
 {draft_text}
 
 上記文章の文体の一貫性・口調・トーン＆マナーを審査し、0〜100で採点してください。
+文体ブレの修正箇所について、具体的な Actionable Diff を必ず含めてください。
 """
 
 
@@ -101,22 +107,39 @@ class StyleAuditor(SpecialistAuditor):
             raise LLMUnavailableError("No LLM available for StyleAuditor")
 
         style_info = str(style_dna) if style_dna else "標準エンタメ文体（常体・三人称寄り）"
-        prompt = STYLE_USER_PROMPT.format(style_info=style_info, draft_text=draft[:4000])
 
-        score, critique, suggestions, confidence, reasoning, raw_resp = await self._judge_with_llm(
+        if len(draft) <= 3500:
+            audited_text = draft
+        else:
+            sections = self.section_extractor.extract_four_sections(draft, section_chars=800)
+            audited_text = (
+                f"【総文字数】{len(draft)}文字（章全体からサンプリングした代表セクション群）\n\n"
+                + "\n\n---\n\n".join(f"【{s.name.upper()}セクション】\n{s.text}" for s in sections)
+            )
+
+        prompt = STYLE_USER_PROMPT.format(style_info=style_info, draft_text=audited_text)
+
+        judge_res = await self._judge_with_llm(
             prompt=prompt,
             system_prompt=STYLE_SYSTEM_PROMPT,
         )
+        score, critique, suggestions, confidence, reasoning, raw_resp = judge_res[:6]
+        actionable_diffs = judge_res[6] if len(judge_res) > 6 else []
 
         return SpecialistAuditResult(
             specialist_name="style",
             score=score,
-            feedback={"critique": critique},
+            feedback={
+                "critique": critique,
+                "total_chars": len(draft),
+                "audited_chars": len(audited_text),
+            },
             suggestions=suggestions,
             degraded=False,
             confidence=confidence,
             reasoning_trace=reasoning,
             llm_raw_response=raw_resp,
+            actionable_diffs=actionable_diffs,
         )
 
     def _fallback(self, ctx: dict[str, Any]) -> SpecialistAuditResult:
@@ -156,8 +179,54 @@ class StyleAuditor(SpecialistAuditor):
         score = max(30.0, min(95.0, round(base_score, 1)))
 
         suggestions = ["Maintain consistent sentence endings (polite vs plain)"]
-        if tone_consistency < 0.8:
+        diffs: list[ActionableDiff] = []
+
+        # 敬体・常体混在の検出とリライト提案
+        if tone_consistency < 0.85:
             suggestions.append("Unify sentence endings to either polite (desu/masu) or plain (da/dearu) form")
+            # 少数派の語尾を持つ文を抽出
+            sentences = [s.strip() for s in re.split(r"[。！？\n]+", draft) if s.strip()]
+            target_is_plain = polite_ratio < 0.5  # 常体に統一すべき
+            for sent in sentences:
+                if target_is_plain and sent.endswith(("です", "ます", "でした", "ました")):
+                    # 敬体を常体に変換する提案
+                    converted = re.sub(r"でした$", "だった", sent)
+                    converted = re.sub(r"ました$", "た", converted)
+                    converted = re.sub(r"です$", "だ", converted)
+                    converted = re.sub(r"ます$", "る", converted)
+                    diffs.append(
+                        ActionableDiff(
+                            location="文末語尾（常体主体の地の文）",
+                            original_quote=sent,
+                            improved_suggestion=converted,
+                            rationale="地の文は常体（だ・である）が基調ですが、敬体（です・ます）が混在しているため統一。",
+                        )
+                    )
+                    break
+                elif not target_is_plain and (sent.endswith(("だ", "である", "た", "いた", "った")) and not sent.endswith(("です", "ます", "でした", "ました"))):
+                    diffs.append(
+                        ActionableDiff(
+                            location="文末語尾（敬体主体の文）",
+                            original_quote=sent,
+                            improved_suggestion=f"{sent}です",
+                            rationale="敬体（です・ます）主体の文脈で常体が混在しているため統一。",
+                        )
+                    )
+                    break
+
+        # 一人称混在チェック
+        fps_found = [p for p in ("私", "俺", "僕", "あたし", "わし") if p in draft]
+        if len(fps_found) >= 2:
+            suggestions.append(f"Multiple first-person pronouns detected: {fps_found}")
+            diffs.append(
+                ActionableDiff(
+                    location="一人称代名詞",
+                    original_quote=" / ".join(fps_found),
+                    improved_suggestion=f"主人公の一人称を「{fps_found[0]}」に一本化する。",
+                    rationale=f"同一視点内で複数の異なる一人称（{', '.join(fps_found)}）が混在し視点ブレが発生しているため。",
+                )
+            )
+
         if bm25_score > 0 and bm25_score < 0.3:
             suggestions.append("Vocabulary/style diverges from style_dna sample_text")
 
@@ -174,6 +243,7 @@ class StyleAuditor(SpecialistAuditor):
             },
             suggestions=suggestions,
             degraded=True,
+            actionable_diffs=diffs,
         )
 
 

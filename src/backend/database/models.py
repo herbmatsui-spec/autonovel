@@ -747,12 +747,110 @@ class MultimediaTask(Base):
     __table_args__ = (Index("ix_multimedia_tasks_task_id", "task_id"),)
 
 
+# ==========================================
+# Social Simulation tables (Phase 2 Pillar 2)
+# ==========================================
+
+
+class CharacterRelationship(Base):
+    """キャラクター間関係性モデル（永続化対応）"""
+
+    __tablename__ = "character_relationships"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    book_id = Column(Integer, ForeignKey("books.id", ondelete="CASCADE"), nullable=False)
+    char_a = Column(String(100), nullable=False)
+    char_b = Column(String(100), nullable=False)
+    affection = Column(Float, default=0.0, nullable=False)
+    trust = Column(Float, default=0.0, nullable=False)
+    tension = Column(Float, default=0.0, nullable=False)
+    depth = Column(Float, default=0.0, nullable=False)
+    dynamics_state = Column(String(50), default="strangers", nullable=False)
+    last_interaction_ep = Column(Integer, default=0, nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+    __table_args__ = (
+        UniqueConstraint("book_id", "char_a", "char_b", name="uq_char_rel"),
+        Index("ix_char_rel_book", "book_id"),
+    )
+
+
+class CharacterJournal(Base):
+    """キャラクター日記モデル（多視点ログ永続化対応）"""
+
+    __tablename__ = "character_journals"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    book_id = Column(Integer, ForeignKey("books.id", ondelete="CASCADE"), nullable=False)
+    character_name = Column(String(100), nullable=False)
+    episode_num = Column(Integer, nullable=False)
+    entry_text = Column(Text, nullable=False)
+    emotional_state = Column(String(100), default="")
+    secret_thought = Column(Text, default="")
+    created_at = Column(DateTime, server_default=func.now())
+
+    __table_args__ = (
+        Index("ix_char_journal_book_char", "book_id", "character_name"),
+        Index("ix_char_journal_ep", "book_id", "episode_num"),
+    )
+
+
+class CharacterComment(Base):
+    """キャラクターコメントモデル（SNS風リアクション永続化対応）"""
+
+    __tablename__ = "character_comments"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    book_id = Column(Integer, ForeignKey("books.id", ondelete="CASCADE"), nullable=False)
+    character_name = Column(String(100), nullable=False)
+    episode_num = Column(Integer, nullable=False)
+    comment_text = Column(Text, nullable=False)
+    topic = Column(String(100), default="")
+    sentiment = Column(String(50), default="neutral")
+    created_at = Column(DateTime, server_default=func.now())
+
+    __table_args__ = (
+        Index("ix_char_comment_book_char", "book_id", "character_name"),
+        Index("ix_char_comment_ep", "book_id", "episode_num"),
+    )
+
+
+class RelationshipHistory(Base):
+    """キャラクター関係性履歴モデル（時系列推移ログ）"""
+
+    __tablename__ = "relationship_histories"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    relationship_id = Column(
+        Integer,
+        ForeignKey("character_relationships.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    episode_num = Column(Integer, nullable=False)
+    affection = Column(Float, nullable=False)
+    trust = Column(Float, nullable=False)
+    tension = Column(Float, nullable=False)
+    depth = Column(Float, nullable=False)
+    dynamics_state = Column(String(50), nullable=False)
+    trigger_event = Column(String(255), default="")
+    created_at = Column(DateTime, server_default=func.now())
+
+    __table_args__ = (
+        Index("ix_rel_history_rel_id", "relationship_id"),
+        Index("ix_rel_history_ep", "episode_num"),
+    )
+
+
 # 後方互換性用エイリアス
 BibleDbModel = Bible
 BookDbModel = Book
 BranchDbModel = Branch
 ChapterDbModel = Chapter
 CharacterDbModel = Character
+CharacterRelationshipDbModel = CharacterRelationship
+CharacterJournalDbModel = CharacterJournal
+CharacterCommentDbModel = CharacterComment
+RelationshipHistoryDbModel = RelationshipHistory
 PlotDbModel = Plot
 PromptVersionDbModel = PromptVersion
 WorldBible = Bible

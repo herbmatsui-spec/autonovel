@@ -17,7 +17,7 @@
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 [![Type Checked: mypy](https://img.shields.io/badge/type%20checked-mypy-blue)](https://mypy-lang.org/)
 [![Vitest](https://img.shields.io/badge/tested_with-vitest-729B1B?logo=vitest&logoColor=white)](https://vitest.dev/)
-[![Version](https://img.shields.io/badge/version-4.6.1-brightgreen?logo=semver)](https://github.com/herbmatsui-spec/autonovel/releases/tag/v4.6.1)
+[![Version](https://img.shields.io/badge/version-4.7.0-brightgreen?logo=semver)](https://github.com/herbmatsui-spec/autonovel/releases/tag/v4.7.0)
 
 <br />
 
@@ -25,7 +25,7 @@
   <img src="docs/demo.gif" alt="AutoNovel UI & Workflow Demo" width="900" style="border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
 </p>
 
-*▲ AutoNovel v4.5: 3案企画ガチャ / 逆算プロット / 上級者Studio / インライン五感推敲 / GraphRAG相関図 / ワンクリックZIP納品 / マルチメディア・eBook / IF分岐・共同編集 (CRDT) / **スキル駆動型アーキテクチャ / BookScore統一100点メトリクス / A/Bテスト自動化 / PDCA自動レポート / 書き直し自動品質保証ループ / ブラインドピアレビュー / 8専門オーディター並列監査 / 反射的RAGスクリーニング / 4層コンテキスト圧縮 / バイアス補正・DAGスケジューラ / リソース管理・NUMA最適化 / 19ワークフロー統合 / 設定駆動圧縮 / 日本語トークナイザー (SudachiPy) / 落下リトライ・回路遮断***
+*▲ AutoNovel v4.7: 3案企画ガチャ / 逆算プロット / 上級者Studio / インライン五感推敲 / GraphRAG相関図 / ワンクリックZIP納品 / マルチメディア・eBook / IF分岐・共同編集 (CRDT) / **【第1〜4の柱 統合】文構造保護五感拡充・長編窓枠抽出 (NovelSectionExtractor) / ソーシャル動態追跡 (SocialInteractionManager) / 4階層セマンティック圧縮 (DynamicTaxonomyEngine) / 反射的RAG (HybridRetriever + RRF) / 企画物理サンドボックス (BlindFeedbackPurifier) / 8専門家アンカー採点 (High/Mid/Low) / ベイズ的スコアキャリブレーション / 統一5D BookScore変換 / DAG局所リトライ & 閉ループPDCA再執筆 (CommercialBenchmark 85+ 商業品質達成)****
 
 </div>
 
@@ -57,6 +57,38 @@ AutoNovel は、AI を活用して Web 小説を **企画から執筆、校正�
 続いて、下記の目次から技術的な詳細をご覧ください。
 
 ## 📋 更新履歴 / Changelog
+
+### v4.7.0 (2026-09-08) — 商業品質化・4大改善の柱（Pillar 1〜4）完全統合リリース
+
+本バージョンは、`docs/FUTURE_IMPROVEMENT_GUIDELINES.md` に定義された課題（固定辞書依存、4000文字切り捨て脱落、非同期インフラ未結合、評価甘辛ブレと閉ループ不在）を根本解決し、全4大改善の柱（全288ステップ）を完全実装・統合したマイルストーンリリースです。
+
+**✒️ 第1の柱: 表現力・エンリッチメントの高度化と8専門オーディター窓枠評価**
+- `NovelSectionExtractor` (`src/agents/specialists/windowing.py`): 4,000文字ハードコード打ち切りを完全根絶。文末/文頭スナップ、等間隔起承転結サンプリング、重要シーンキーワード周辺段落抽出により、長編8,000字超でも脱落ゼロの正確な監査を実現。
+- 文法整合性保護五感拡充 (`src/agents/enrichment/sensory.py`): `sentence_span`、会話文保護ガード、句読点サニタイズ、非同期並列ディスパッチ（5秒タイムアウト自動フォールバック）完備。
+- 自然文トリビアリライト (`src/agents/enrichment/trivia_rewrite.py`): `[注: ...]` のタグ埋め込みを廃止し、POVや口調に調和した自然な描写文としてインライン統合。
+- `ActionableDiff` (`src/agents/specialist_auditor_base.py`): `location`, `original_quote`, `improved_suggestion`, `rationale` の具体的改稿差分を構造化。
+
+**⚡ 第2の柱: 状態管理・非同期インフラ本格強化**
+- `SocialInteractionManager` (`src/agents/social/manager.py`): キャラクター手記（Journals）、相互コメント（Comments）、動的ステート遷移（allies/rivals/hostile等）を多視点シミュレーション。
+- `SocialRepository` (`src/services/social_repository.py`): SQLite WAL モードでの非同期永続化、時系列履歴ローテーション（`cleanup_old_history`）、直近重要手記の自動集計。
+- `Huey` 分散キュー (`src/backend/tasks/huey_config.py`): RedisHuey を優先し、未接続時は SqliteHuey に透過的自動フォールバック。
+- `DAGScheduler` (`src/backend/tasks/dag_scheduler.py`): CPU/RAM/GPU セマフォバックプレッシャー制御、タイムアウト・自動リトライ、チェックポイント永続化（`FileSystemDAGPersistence`）。
+
+**🔍 第3の柱: RAG & 圧縮のセマンティック化**
+- `DynamicTaxonomyEngine` (`src/services/compression/dynamic_taxonomy.py`): 固定辞書を完全脱却。形態素接尾辞ルール＋埋め込み類似度アンカー＋LLM動的推論のハイブリッド階層抽象化。
+- `ProtectedContext` (`src/services/compression/models.py`): 9大シーン適応トリミング下でも、重要伏線・登場人物の保持率100%を数学的・物理的に保証。
+- `HybridRetriever` (`src/services/hybrid_retriever.py`): Dense＋BM25 RRF統合、`QueryReformulator`（HyDE / 意図誘導）、World Bible整合性フィルター（`dead`/`sealed` 除外）。
+- `ProposalIsolationRunner` & `BlindFeedbackPurifier` (`src/services/proposal_isolation.py`, `blind_feedback_purifier.py`): 3案企画ガチャの物理サンドボックス隔離と兄弟企画リーク情報の自動サニタイズ。
+
+**🔄 第4の柱: 評価・閉ループPDCAの統合**
+- 8専門家 High/Mid/Low アンカー事例 (`src/agents/specialists/anchors.py`): プロンプトへ基準事例を注入し、甘辛ブレ・採点ドリフトを抑止。
+- `ScoreCalibrator` (`src/services/score_calibrator.py`): 事前分布、ベイズ的信頼度シュリンク、シグモイド有界化、外れ値検出、分散ペナルティ（stdev > 18.0 時の減算）。
+- `UnifiedBookScoreBridge` (`src/services/book_score_mapping.py`): 8専門家×5次元変換マトリクス、ジャンル/フェーズ別シフター、寄与度内訳分解、S/A/B/C/Dランク判定。
+- `ClosedLoopPDCARunner` (`src/services/pdca_cycle.py`): 最低次元特定、Actionable Diff $\to$ 必須制約変換、再執筆・再監査・収束判定（改善率 $\ge 15\%$）。
+- `DAGReplanner` (`src/backend/tasks/dag_replanning.py`): 監査不合格ノードのみの局所リトライ、BFS下流タスク特定＆安全キャンセル、EventBus `dag.replanned` 発行。
+- `CommercialBenchmarkJudge` (`src/services/commercial_benchmarks.py`): 商業出版水準（85+ Sランク）、Web連載水準（75+ Aランク）、全次元足切り（60+）、7大ヘルスチェック（7/7 PASS）。
+
+---
 
 ### v4.5.0 (2026-09-06) — Phase 3: コンテキスト圧縮・スケジューラ高度化・耐障害性強化 (Guidelines #2, #4, #5, #6, #8)
 
@@ -2054,22 +2086,48 @@ make clean         # キャッシュや一時DBファイルをクリーンアッ
 コントリビューションの詳細は [CONTRIBUTING.md](CONTRIBUTING.md) をご覧ください。
 品質計画・テスト網羅率プランは [TEST_COVERAGE_PLAN.md](TEST_COVERAGE_PLAN.md) を、パイプライン統合の将来計画は [PIPELINE_UNIFICATION_PLAN.md](PIPELINE_UNIFICATION_PLAN.md) / [UNIFIED_PIPELINE_IMPLEMENTATION_PLAN.md](UNIFIED_PIPELINE_IMPLEMENTATION_PLAN.md) を参照してください。
 
-> **現行バージョン**: v4.1.0 (`pyproject.toml`, `frontend/package.json`, Docker イメージ `autonovel-backend:4.1.0` / `autonovel-frontend:4.1.0`)。直近のリリースノートは [CHANGELOG.md](CHANGELOG.md)。
+> **現行バージョン**: v4.7.0 (`pyproject.toml`, `frontend/package.json`, Docker イメージ `autonovel-backend:4.7.0` / `autonovel-frontend:4.7.0`)。直近のリリースノートは [CHANGELOG.md](CHANGELOG.md)。
 
 ---
 
-## 21. ロードマップ & ライセンス
+## 21. ロードマップ & 4大改善の柱
 
 ### 21.1 今後のロードマップ
 - [x] **eBook エクスポート (EPUB 3)**: 縦書き・ルビ・目次対応 (v4.1 で実装済み)
 - [x] **マルチメディア生成 (Phase 7)**: シーン画像 / 立ち絵 / 表紙 / ボイス / BGM パック (v4.1 で実装済み)
 - [x] **共同編集 (CRDT)**: `ChapterVersion` ベクタークロックマージ (v4.1 で実装済み)
 - [x] **GraphRAG 高度化**: pgvector / ChromaDB / BM25 / cross-encoder rerank の RRF 統合 (v4.1 で実装済み)
+- [x] **4大改善の柱（Pillar 1〜4）完全統合**: 表現・窓枠監査 / 状態管理・非同期 / セマンティックRAG・圧縮 / 閉ループPDCA・商業水準 (v4.7 で完全実装)
 - [ ] **リアルタイム音声対話ブレインストーミング**: 音声認識/音声合成によるAIプロット会議機能。
 - [ ] **多言語自動ローカライズ**: 生成された日本語小説の英語・中国語圏向け高品質翻訳パイプライン。
 - [ ] **Web投稿サイト API 連携**: 小説家になろう・カクヨム等への自動下書き投稿機能。
 
-### 21.2 ライセンス & クレジット
+### 21.2 4大改善の柱（Pillars 1〜4）運用 & 診断ガイド
+
+```bash
+# 1. 第1の柱: 表現力 & 窓枠評価テスト
+python -m pytest tests/unit/test_novel_section_extractor.py tests/unit/test_windowed_auditors.py --no-cov
+
+# 2. 第2の柱: 状態管理・非同期インフラ ヘルスチェック
+python scripts/health_check_pillar2.py
+
+# 3. 第3の柱: セマンティックRAG & 4層圧縮 ヘルスチェック
+python scripts/health_check_pillar3.py
+
+# 4. 第4の柱: 閉ループPDCA & 商業品質ベンチマーク ヘルスチェック
+python scripts/health_check_pillar4.py
+
+# 5. 第4の柱 全体回帰テスト（全13テストスイート 58テスト一括実行）
+python -m pytest tests/unit/test_audit_anchors.py tests/unit/test_specialist_actionable_diffs.py tests/unit/test_score_calibrator.py tests/unit/test_calibrated_aggregator.py tests/unit/test_book_score_mapping.py tests/unit/test_unified_book_score.py tests/unit/test_pdca_directive.py tests/unit/test_closed_loop_pdca.py tests/unit/test_dag_replanning.py tests/unit/test_dag_scheduler_replanning.py tests/unit/test_commercial_benchmarks.py tests/integration/test_dag_replanning_e2e.py tests/integration/test_pillar4_full_regression.py --no-cov
+```
+
+詳細なアーキテクチャ仕様書:
+- [第1の柱: 表現力・窓枠評価 仕様書](docs/features/pillar1_expression_and_windowing.md)
+- [第2の柱: 状態管理・非同期インフラ 仕様書](docs/ARCHITECTURE_PILLAR2.md)
+- [第3の柱: セマンティックRAG・圧縮 仕様書](docs/ARCHITECTURE_PILLAR3.md)
+- [第4の柱: 評価・閉ループPDCA統合 仕様書](docs/ARCHITECTURE_PILLAR4.md)
+
+### 21.3 ライセンス & クレジット
 
 本プロジェクトは MIT License の下で公開されています。商用利用・改変・再配布が自由に認められています。
 

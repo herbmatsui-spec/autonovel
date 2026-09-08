@@ -24,6 +24,13 @@ async def system_status() -> dict[str, Any]:
     return resilience.get_system_status()
 
 
+@router.get("/huey/health")
+async def get_huey_health_status() -> dict[str, Any]:
+    """Huey 分散タスクキューの健全性・接続状態を返す (Step 47)"""
+    from src.backend.tasks.huey import check_huey_health
+    return check_huey_health()
+
+
 @router.get("/offline")
 async def offline_flag() -> dict[str, Any]:
     """オフラインモード有効状態を返す。"""

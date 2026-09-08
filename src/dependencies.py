@@ -27,21 +27,14 @@ def get_illustration_workflow() -> Any:
     return container.illustration_workflow()
 
 
-_prompt_manager_instance: Any = None
-
-
 def get_prompt_manager() -> Any:
     """PromptManager の Singleton を返す FastAPI Dependency.
 
+    AppContainer の pm プロバイダを経由して取得する。
     Router から Depends(get_prompt_manager) で注入可能。
     テスト時は app.dependency_overrides[get_prompt_manager] で差し替え可能。
     """
-    global _prompt_manager_instance
-    if _prompt_manager_instance is None:
-        from prompts.manager import PromptManager
-
-        _prompt_manager_instance = PromptManager()
-    return _prompt_manager_instance
+    return AppContainer.pm()
 
 
 __all__ = ["get_illustration_workflow", "get_prompt_manager"]
