@@ -66,6 +66,43 @@ export const ReversePlotBuilder: React.FC<ReversePlotBuilderProps> = ({
     }
   };
 
+  const handleDownloadPlot = () => {
+    if (!preview) return;
+    const lines: string[] = [];
+    lines.push('【作品プロット】');
+    lines.push('');
+    preview.arcs.forEach(arc => {
+      lines.push(`■ 第${arc.arc_num}部: ${arc.title}`);
+      lines.push(`  範囲: 第${arc.start_ep}話〜第${arc.end_ep}話`);
+      lines.push(`  概要: ${arc.summary}`);
+      lines.push('');
+    });
+    preview.episodes.forEach(ep => {
+      lines.push(`第${ep.ep_num}話: ${ep.title}`);
+      lines.push(`  ${ep.one_line_summary}`);
+      if (ep.is_catharsis) {
+        lines.push('  ⭐ カタルシス');
+      }
+      lines.push('');
+    });
+    if (preview.catharsisPattern) {
+      lines.push('【カタルシスパターン】');
+      lines.push(`  パターン: ${preview.catharsisPattern.pattern_type}`);
+      lines.push(`  カタルシスポイント: ${preview.catharsisPattern.catharsis_points.join(', ')}話`);
+      lines.push('');
+    }
+    const text = lines.join('\n');
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `plot_${targetEpisodes}ep.txt`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  };
+
   const step = REVERSE_PLOT_STEPS[currentStep - 1];
   const currentKey = STEP_KEYS[currentStep - 1];
   const selectedValue = answers[currentKey];
@@ -204,9 +241,14 @@ export const ReversePlotBuilder: React.FC<ReversePlotBuilderProps> = ({
             ))}
           </div>
 
-          <button type="button" onClick={() => onComplete(preview)} className="btn btn-primary" style={{ width: '100%', padding: '10px' }} data-testid="btn-confirm-plot">
-            ✅ この構造を確定して執筆に反映
-          </button>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button type="button" onClick={handleDownloadPlot} className="btn btn-secondary" style={{ flex: 1 }} data-testid="btn-download-plot">
+              📥 プロットをダウンロード
+            </button>
+            <button type="button" onClick={() => onComplete(preview)} className="btn btn-primary" style={{ flex: 1 }} data-testid="btn-confirm-plot">
+              ✅ この構造を確定して執筆に反映
+            </button>
+          </div>
         </div>
       )}
     </div>
