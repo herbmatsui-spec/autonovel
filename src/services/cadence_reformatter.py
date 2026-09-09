@@ -105,40 +105,36 @@ class CadenceReformatter:
         return "".join(repaired), fixes, len(sentences), lengths
 
     def _break_ta_ending(self, sentence: str) -> str:
-        """〜た。で終わる文を体言止めや躍動感のある文末へ変換"""
+        """〜た。で終わる文を時制を維持しながら自然なリズムの文末へ安全に変換（時制混在・過剰ダッシュの根絶）"""
         s = sentence
 
-        # パターン1: 「〜ていた。」 -> 「〜ている。」または「〜ていた――」
-        if s.endswith("ていた。"):
-            return s[:-4] + "ていた――。"
+        # パターン1: 「〜ていた。」 -> 過去形を維持しつつ余韻を持たせる
         if s.endswith("思っていた。"):
-            return s[:-6] + "思う。"
+            return s[:-6] + "思っていたのだ。"
         if s.endswith("感じていた。"):
-            return s[:-6] + "感じる。"
+            return s[:-6] + "感じていたのだった。"
+        if s.endswith("見つめていた。"):
+            return s[:-7] + "見つめていたのだ。"
+        if s.endswith("ていた。"):
+            return s[:-4] + "ていたのだ。"
 
-        # パターン2: 「〜だった。」 -> 「〜だ。」または「〜である。」
+        # パターン2: 「〜だった。」 -> 「〜であった。」「〜のだ。」
         if s.endswith("だった。"):
-            return s[:-4] + "である。"
+            return s[:-4] + "であった。"
         if s.endswith("のだった。"):
             return s[:-5] + "のだ。"
 
-        # パターン3: 「〜した。」 -> 「〜する。」または省略
+        # パターン3: 「〜した。」 -> 完了・継続の過去形表現
         if s.endswith("確信した。"):
-            return s[:-5] + "確信――。"
+            return s[:-5] + "確信していた。"
         if s.endswith("決意した。"):
-            return s[:-5] + "決意を固める。"
-        if s.endswith("見つめていた。"):
-            return s[:-7] + "見つめる。"
+            return s[:-5] + "決意を固めていた。"
         if s.endswith("息を呑んだ。"):
-            return s[:-6] + "息を呑む。"
+            return s[:-6] + "息を呑んでいた。"
 
-        # パターン4: 「〜に満ちていた。」 -> 「〜に満ちる。」
+        # パターン4: 「〜に満ちていた。」
         if s.endswith("満ちていた。"):
             return s[:-6] + "満ちていたのだ。"
-
-        # パターン5: 一般的な「〜した。」を動詞終止形へ
-        if s.endswith("した。") and len(s) > 4:
-            return s[:-3] + "する。"
 
         return sentence
 

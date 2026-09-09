@@ -30,92 +30,49 @@ def upgrade() -> None:
     op.execute('SET search_path = ag_catalog, "$user", public;')
 
     # Create default graph (idempotent)
-    op.execute("SELECT create_graph('autonovel_graph');")
-
-    # Create label indexes for common entity types (improves MATCH performance)
     op.execute("""
-        SELECT create_label_index('autonovel_graph', 'Character');
-    """)
-    op.execute("""
-        SELECT create_label_index('autonovel_graph', 'Location');
-    """)
-    op.execute("""
-        SELECT create_label_index('autonovel_graph', 'Item');
-    """)
-    op.execute("""
-        SELECT create_label_index('autonovel_graph', 'Event');
-    """)
-    op.execute("""
-        SELECT create_label_index('autonovel_graph', 'Faction');
-    """)
-    op.execute("""
-        SELECT create_label_index('autonovel_graph', 'Concept');
+        DO '
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM ag_catalog.ag_graph WHERE name = ''autonovel_graph'') THEN
+                PERFORM ag_catalog.create_graph(''autonovel_graph'');
+            END IF;
+        END;';
     """)
 
-    # Create property index on 'name' for all labels (used by MERGE)
-    op.execute("""
-        SELECT create_property_index('autonovel_graph', 'Character', 'name');
-    """)
-    op.execute("""
-        SELECT create_property_index('autonovel_graph', 'Location', 'name');
-    """)
-    op.execute("""
-        SELECT create_property_index('autonovel_graph', 'Item', 'name');
-    """)
-    op.execute("""
-        SELECT create_property_index('autonovel_graph', 'Event', 'name');
-    """)
-    op.execute("""
-        SELECT create_property_index('autonovel_graph', 'Faction', 'name');
-    """)
-    op.execute("""
-        SELECT create_property_index('autonovel_graph', 'Concept', 'name');
-    """)
+    # Create vertex labels and property indexes for common entity types
+    labels = ["Character", "Location", "Item", "Event", "Faction", "Concept"]
+    for label in labels:
+        op.execute(f"""
+            DO '
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM ag_catalog.ag_label 
+                    WHERE name = ''{label}'' 
+                    AND graph = (SELECT graphid FROM ag_catalog.ag_graph WHERE name = ''autonovel_graph'')
+                ) THEN
+                    PERFORM ag_catalog.create_vlabel(''autonovel_graph'', ''{label}'');
+                END IF;
+            END;';
+        """)
+        op.execute(f"""
+            CREATE INDEX IF NOT EXISTS "ix_{label}_properties" 
+            ON autonovel_graph."{label}" USING gin (properties);
+        """)
 
 
 def downgrade() -> None:
     if not _is_postgres():
         return
 
-    # Drop property indexes
-    op.execute("""
-        SELECT drop_property_index('autonovel_graph', 'Character', 'name');
-    """)
-    op.execute("""
-        SELECT drop_property_index('autonovel_graph', 'Location', 'name');
-    """)
-    op.execute("""
-        SELECT drop_property_index('autonovel_graph', 'Item', 'name');
-    """)
-    op.execute("""
-        SELECT drop_property_index('autonovel_graph', 'Event', 'name');
-    """)
-    op.execute("""
-        SELECT drop_property_index('autonovel_graph', 'Faction', 'name');
-    """)
-    op.execute("""
-        SELECT drop_property_index('autonovel_graph', 'Concept', 'name');
-    """)
+    labels = ["Character", "Location", "Item", "Event", "Faction", "Concept"]
+    for label in labels:
+        op.execute(f'DROP INDEX IF EXISTS autonovel_graph."ix_{label}_properties";')
 
-    # Drop label indexes
     op.execute("""
-        SELECT drop_label_index('autonovel_graph', 'Character');
+        DO '
+        BEGIN
+            IF EXISTS (SELECT 1 FROM ag_catalog.ag_graph WHERE name = ''autonovel_graph'') THEN
+                PERFORM ag_catalog.drop_graph(''autonovel_graph'', true);
+            END IF;
+        END;';
     """)
-    op.execute("""
-        SELECT drop_label_index('autonovel_graph', 'Location');
-    """)
-    op.execute("""
-        SELECT drop_label_index('autonovel_graph', 'Item');
-    """)
-    op.execute("""
-        SELECT drop_label_index('autonovel_graph', 'Event');
-    """)
-    op.execute("""
-        SELECT drop_label_index('autonovel_graph', 'Faction');
-    """)
-    op.execute("""
-        SELECT drop_label_index('autonovel_graph', 'Concept');
-    """)
-
-    # Drop graph (cascade removes all data)
-    op.execute("SELECT drop_graph('autonovel_graph', true);")

@@ -9,8 +9,10 @@ def test_cadence_reformatter_repeated_endings():
 
     assert stats.total_sentences == 4
     assert stats.repeated_endings_fixed >= 1
-    # 「ていた――。」などに補正されているか
-    assert "ていた――。" in reformatted or "感じる。" in reformatted
+    # 時制を壊さずに過去形のまま補正されているか（ダッシュや現在形化の排除）
+    assert "感じていたのだった。" in reformatted or "確信していた。" in reformatted
+    assert "――" not in reformatted
+    assert "感じる。" not in reformatted
 
 
 def test_cadence_reformatter_preserves_dialogue():

@@ -1,7 +1,9 @@
 # src/services/book_score_service.py
 """BookScore 計算サービス"""
+from __future__ import annotations
+
 import logging
-from typing import Any, Dict, Optional, Protocol
+from typing import Any, Dict, Mapping, Optional, Protocol
 from dataclasses import dataclass
 from datetime import datetime
 

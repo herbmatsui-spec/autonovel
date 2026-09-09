@@ -1,42 +1,27 @@
-# AutoNovel Backend Dockerfile (マルチステージ builder→runtime slim)
-# Step 61: 依存インストールを builder ステージに分離し、runtime は最小構成。
-
+# AutoNovel Backend Dockerfile (単一ステージ構成)
 ARG PYTHON_VERSION=3.12-slim
 
-# ---- builder: 依存インストール ----
-FROM python:${PYTHON_VERSION} AS builder
-WORKDIR /app
-
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1
-
-# C拡張ビルドに必要な最小ツール
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
-    libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-COPY requirements.txt pyproject.toml ./
-RUN pip install --user --upgrade pip && \
-    pip install --user -r requirements.txt
-
-# ---- runtime: 実行環境 ----
-FROM python:${PYTHON_VERSION} AS runtime
+FROM python:${PYTHON_VERSION}
 WORKDIR /app
 
 ENV PYTHONPATH=/app \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PATH=/root/.local/bin:$PATH
+    PIP_NO_CACHE_DIR=1
 
-# ランタイムに必要な最小共有ライブラリ
+# 依存パッケージインストール（C拡張ビルドに必要な最小ツールを含む）
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    libpq-dev \
     libpq5 \
     && rm -rf /var/lib/apt/lists/*
 
-# builder から --user インストール成果物を複製
-COPY --from=builder /root/.local /root/.local
+COPY requirements.txt pyproject.toml ./
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt && \
+    apt-get purge -y gcc libpq-dev && \
+    apt-get autoremove -y && \
+    rm -rf /var/lib/apt/lists/* /root/.cache
 
 # アプリケーションソースをコピー
 COPY src/ ./src/
@@ -51,7 +36,7 @@ COPY alembic.ini ./
 COPY pyproject.toml ./
 COPY requirements.txt ./
 
-RUN chmod +x /usr/local/bin/entrypoint.sh
+RUN sed -i 's/\r$//' /usr/local/bin/entrypoint.sh && chmod +x /usr/local/bin/entrypoint.sh
 
 EXPOSE 8200
 

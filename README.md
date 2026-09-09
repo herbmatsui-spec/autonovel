@@ -17,7 +17,7 @@
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 [![Type Checked: mypy](https://img.shields.io/badge/type%20checked-mypy-blue)](https://mypy-lang.org/)
 [![Vitest](https://img.shields.io/badge/tested_with-vitest-729B1B?logo=vitest&logoColor=white)](https://vitest.dev/)
-[![Version](https://img.shields.io/badge/version-4.7.0-brightgreen?logo=semver)](https://github.com/herbmatsui-spec/autonovel/releases/tag/v4.7.0)
+[![Version](https://img.shields.io/badge/version-4.7.1-brightgreen?logo=semver)](https://github.com/herbmatsui-spec/autonovel/releases/tag/v4.7.1)
 
 <br />
 
@@ -25,7 +25,7 @@
   <img src="docs/demo.gif" alt="AutoNovel UI & Workflow Demo" width="900" style="border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
 </p>
 
-*▲ AutoNovel v4.7: 3案企画ガチャ / 逆算プロット / 上級者Studio / インライン五感推敲 / GraphRAG相関図 / ワンクリックZIP納品 / マルチメディア・eBook / IF分岐・共同編集 (CRDT) / **【第1〜4の柱 統合】文構造保護五感拡充・長編窓枠抽出 (NovelSectionExtractor) / ソーシャル動態追跡 (SocialInteractionManager) / 4階層セマンティック圧縮 (DynamicTaxonomyEngine) / 反射的RAG (HybridRetriever + RRF) / 企画物理サンドボックス (BlindFeedbackPurifier) / 8専門家アンカー採点 (High/Mid/Low) / ベイズ的スコアキャリブレーション / 統一5D BookScore変換 / DAG局所リトライ & 閉ループPDCA再執筆 (CommercialBenchmark 85+ 商業品質達成)****
+*▲ AutoNovel v4.7.1: 3案企画ガチャ / 逆算プロット / 上級者Studio / インライン五感推敲 / GraphRAG相関図 / ワンクリックZIP納品 / マルチメディア・eBook / IF分岐・共同編集 (CRDT) / **【第1〜4の柱 統合】文構造保護五感拡充・長編窓枠抽出 (NovelSectionExtractor) / ソーシャル動態追跡 (SocialInteractionManager) / 4階層セマンティック圧縮 (DynamicTaxonomyEngine) / 反射的RAG (HybridRetriever + RRF) / 企画物理サンドボックス (BlindFeedbackPurifier) / 8専門家アンカー採点 (High/Mid/Low) / ベイズ的スコアキャリブレーション / 統一5D BookScore変換 / DAG局所リトライ & 閉ループPDCA再執筆 (CommercialBenchmark 85+ 商業品質達成)****
 
 </div>
 

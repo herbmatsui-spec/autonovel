@@ -12,9 +12,12 @@ fi
 export ALEMBIC_DATABASE_URL
 
 skip_migrations=0
-if [ "${1:-}" = "--skip-migrations" ] || [ "${SKIP_ALEMBIC:-0}" = "1" ]; then
+if [ "${SKIP_ALEMBIC:-0}" = "1" ]; then
     skip_migrations=1
-    shift || true
+fi
+if [ "${1:-}" = "--skip-migrations" ]; then
+    skip_migrations=1
+    shift
 fi
 
 if [ "$skip_migrations" = "0" ]; then

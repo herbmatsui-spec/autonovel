@@ -31,14 +31,14 @@ COMPETITOR_PRICING_MONTHLY_USD = {
     "NovelAI_Tablet": 10.0,
     "NovelAI_Scroll": 15.0,
     "NovelAI_Opus": 25.0,
-    "AI_Naberisuto_Voyager": 9.0,   # ~¥1,160
-    "AI_Naberisuto_Bungo": 16.0,    # ~¥1,980
+    "AI_Naberisuto_Voyager": 9.0,   # ~JPY 1,160
+    "AI_Naberisuto_Bungo": 16.0,    # ~JPY 1,980
     "ChatGPT_Plus": 20.0,
 }
 
 # Average LLM cost per novel chapter (JP, ~3000 chars, premium model)
 LLM_COST_PER_CHAPTER_USD = 0.15  # using balanced quality/cost model
-LLM_COST_PER_CHAPTER_JPY = LLM_COST_PER_CHAPTER_USD * 155  # ~¥23/chapter
+LLM_COST_PER_CHAPTER_JPY = LLM_COST_PER_CHAPTER_USD * 155  # ~JPY 23/chapter
 
 # Average chapters generated per user per month by tier
 CHAPTERS_PER_USER = {
@@ -70,7 +70,7 @@ class RevenueModel:
     currency: str = "JPY"
     tax_rate: float = 0.10  # Japanese consumption tax
     platform_fee_rate: float = 0.0  # App Store/Google Play fee if applicable
-    stripe_fee_rate: float = 0.036 + 0.25  # 3.6% + ¥25 per transaction
+    stripe_fee_rate: float = 0.036 + 0.25  # 3.6% + JPY 25 per transaction
     tiers: list[PricingTier] = field(default_factory=list)
     freemium_conversion_rate: float = 0.05  # 5% free → paid
     starter_to_pro_upgrade_rate: float = 0.15  # 15% upgrade
@@ -194,7 +194,7 @@ class SaaSRevenueSimulator:
 
     def _get_tier(self, name: str) -> PricingTier | None:
         for t in self.model.tiers:
-            if t.name == name:
+            if t.name.startswith(name):
                 return t
         return None
 
@@ -216,14 +216,14 @@ class SaaSRevenueSimulator:
             multiplier = 1.0
             if tier_name in ("pro", "enterprise"):
                 multiplier = 2.5  # higher quality models
-            total_cost += chapters * LLM_COST_PER_CHAPTER_JPY * multiplier * count
+            total_cost += chapters * LLM_COST_PER_CHAPTER_JPY * multiplier
         return int(total_cost) + self.model.llm_api_monthly_base
 
     def _calculate_infrastructure_cost(self, total_users: int) -> int:
         """Calculate infrastructure cost (servers, DB, Redis, CDN, etc.)."""
         base = self.model.server_cost_per_1k_users * max(1, total_users // 1000)
         # Add fixed costs for DB/storage
-        storage = 20_000  # ~¥20k/month for managed PostgreSQL + ChromaDB
+        storage = 20_000  # ~JPY 20k/month for managed PostgreSQL + ChromaDB
         return base + storage
 
     def _calculate_effective_price(self, price: float) -> float:
@@ -376,20 +376,20 @@ class SaaSRevenueSimulator:
         print(f"    Pro:               {final.pro_users:,}")
         print(f"    Enterprise:        {final.enterprise_users:,}")
         print()
-        print(f"  MRR:                 ¥{final.mrr_jpy:,} (~${final.mrr_jpy / 155:.0f}/month)")
-        print(f"  ARR (MRR × 12):      ¥{final.mrr_jpy * 12:,} (~${final.mrr_jpy * 12 / 155:,.0f}/year)")
+        print(f"  MRR:                 JPY {final.mrr_jpy:,} (~${final.mrr_jpy / 155:.0f}/month)")
+        print(f"  ARR (MRR × 12):      JPY {final.mrr_jpy * 12:,} (~${final.mrr_jpy * 12 / 155:,.0f}/year)")
         print()
         print("--- MONTHLY COSTS (Final Month) ---")
-        print(f"  LLM API:             ¥{final.llm_cost_jpy:,}")
-        print(f"  Infrastructure:      ¥{final.infrastructure_cost_jpy:,}")
-        print(f"  Staff:               ¥{final.staff_cost_jpy:,}")
-        print(f"  Marketing:           ¥{final.marketing_cost_jpy:,}")
-        print(f"  Total Monthly Cost:  ¥{final.llm_cost_jpy + final.infrastructure_cost_jpy + final.staff_cost_jpy + final.marketing_cost_jpy:,}")
+        print(f"  LLM API:             JPY {final.llm_cost_jpy:,}")
+        print(f"  Infrastructure:      JPY {final.infrastructure_cost_jpy:,}")
+        print(f"  Staff:               JPY {final.staff_cost_jpy:,}")
+        print(f"  Marketing:           JPY {final.marketing_cost_jpy:,}")
+        print(f"  Total Monthly Cost:  JPY {final.llm_cost_jpy + final.infrastructure_cost_jpy + final.staff_cost_jpy + final.marketing_cost_jpy:,}")
         print()
         print("--- PROFITABILITY ---")
-        print(f"  Monthly Net Revenue: ¥{final.net_revenue_jpy:,}")
-        print(f"  Peak Monthly Loss:   ¥{peak_loss:,}")
-        print(f"  3-Year Cumulative:   ¥{cumulative:,}")
+        print(f"  Monthly Net Revenue: JPY {final.net_revenue_jpy:,}")
+        print(f"  Peak Monthly Loss:   JPY {peak_loss:,}")
+        print(f"  3-Year Cumulative:   JPY {cumulative:,}")
         print()
 
         # Break-even analysis
@@ -436,9 +436,9 @@ class SaaSRevenueSimulator:
             )
             print(
                 f"  {name:<20} {final.total_users:>10,} "
-                f"¥{final.mrr_jpy:>12,} "
-                f"¥{final.mrr_jpy * 12:>15,} "
-                f"¥{final.net_revenue_jpy:>12,} "
+                f"JPY {final.mrr_jpy:>12,} "
+                f"JPY {final.mrr_jpy * 12:>15,} "
+                f"JPY {final.net_revenue_jpy:>12,} "
                 f"{be:>10}"
             )
 
@@ -579,7 +579,7 @@ def print_detailed_monthly_table(simulator: SaaSRevenueSimulator) -> None:
         print(
             f"{s.month:>6} {s.total_users:>8,} {s.free_users:>7,} "
             f"{s.starter_users:>8,} {s.pro_users:>7,} {s.enterprise_users:>5,} "
-            f"¥{s.mrr_jpy:>10,} ¥{s.llm_cost_jpy:>8,} ¥{s.net_revenue_jpy:>10,}"
+            f"JPY {s.mrr_jpy:>10,} JPY {s.llm_cost_jpy:>8,} JPY {s.net_revenue_jpy:>10,}"
         )
 
 
@@ -587,7 +587,7 @@ def main():
     """Run all simulation scenarios."""
     print("=" * 80)
     print("AutoNovel SaaS Revenue Simulation")
-    print("Japanese AI Novel Writing Platform — Financial Model v1.0")
+    print("Japanese AI Novel Writing Platform - Financial Model v1.0")
     print("=" * 80)
     print()
 
@@ -628,20 +628,20 @@ def main():
    - Base case penetration at 3 years: {final_base.total_users:,} users ({final_base.total_users / MARKET_TOTAL_AUTHORS_JP * 100:.1f}% of TAM)
 
 2. UNIT ECONOMICS (Base Case, Month 36)
-   - ARPCM (Avg Revenue Per Converting User): ¥{final_base.mrr_jpy / max(1, final_base.starter_users + final_base.pro_users + final_base.enterprise_users):,.0f}/month
-   - LLM cost per paying user: ¥{final_base.llm_cost_jpy / max(1, final_base.starter_users + final_base.pro_users + final_base.enterprise_users):,.0f}/month
+   - ARPCM (Avg Revenue Per Converting User): JPY {final_base.mrr_jpy / max(1, final_base.starter_users + final_base.pro_users + final_base.enterprise_users):,.0f}/month
+   - LLM cost per paying user: JPY {final_base.llm_cost_jpy / max(1, final_base.starter_users + final_base.pro_users + final_base.enterprise_users):,.0f}/month
    - Gross margin: ~{(1 - final_base.llm_cost_jpy / max(1, final_base.mrr_jpy)) * 100:.0f}% (before staff/infra)
 
 3. COMPARABLE TOOLS
-   - Sudowrite Pro: $22/month (~¥3,400) — AutoNovel Pro at ¥4,980 is priced ~47% higher
-   - NovelAI Opus: $25/month (~¥3,900) — AutoNovel Pro is ~28% higher
+   - Sudowrite Pro: $22/month (~JPY 3,400) - AutoNovel Pro at JPY 4,980 is priced ~47% higher
+   - NovelAI Opus: $25/month (~JPY 3,900) - AutoNovel Pro is ~28% higher
    - Justification: AutoNovel offers significantly more features (GraphRAG, multi-modal,
      collaborative editing, commercial publishing integration, quality audit pipeline)
 
 4. REVENUE POTENTIAL SUMMARY (3-Year ARR, Base Case)
-   - Year 1 ARR: ¥{base.snapshots[11].mrr_jpy * 12:,} (~${base.snapshots[11].mrr_jpy * 12 / 155:,.0f})
-   - Year 2 ARR: ¥{base.snapshots[23].mrr_jpy * 12:,} (~${base.snapshots[23].mrr_jpy * 12 / 155:,.0f})
-   - Year 3 ARR: ¥{final_base.mrr_jpy * 12:,} (~${final_base.mrr_jpy * 12 / 155:,.0f})
+   - Year 1 ARR: JPY {base.snapshots[11].mrr_jpy * 12:,} (~${base.snapshots[11].mrr_jpy * 12 / 155:,.0f})
+   - Year 2 ARR: JPY {base.snapshots[23].mrr_jpy * 12:,} (~${base.snapshots[23].mrr_jpy * 12 / 155:,.0f})
+   - Year 3 ARR: JPY {final_base.mrr_jpy * 12:,} (~${final_base.mrr_jpy * 12 / 155:,.0f})
 
 5. RISK FACTORS
    - LLM API cost volatility: ±30% possible with model pricing changes
@@ -651,7 +651,7 @@ def main():
    - Need for Japanese-market-specific LLM fine-tuning
 
 6. UPSIDE CATALYSTS
-   - Enterprise publishing contracts (¥19,800/month × 50 studios = ¥11.9M MRR)
+   - Enterprise publishing contracts (JPY 19,800/month × 50 studios = JPY 11.9M MRR)
    - API access tier for agencies/bots (additional revenue stream)
    - Print-on-demand integration with Amazon KDP / 光文社
    - Vertical video / TikTok novel format export (growing trend)

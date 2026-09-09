@@ -5,6 +5,7 @@ PostgreSQL でのみ実 DDL を実行し、SQLite では no-op。
 
 from __future__ import annotations
 
+import sqlalchemy as sa
 from alembic import op
 
 
@@ -20,11 +21,19 @@ def _is_postgres() -> bool:
     return bind.dialect.name == "postgresql"
 
 
+def _table_exists(table_name: str) -> bool:
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    return table_name in inspector.get_table_names()
+
+
 def upgrade() -> None:
     if not _is_postgres():
         # SQLite fallback: column already exists as JSON; nothing to do.
         return
     op.execute("CREATE EXTENSION IF NOT EXISTS vector;")
+    if not _table_exists("chapter_chunks"):
+        return
     op.execute(
         "ALTER TABLE chapter_chunks "
         "ALTER COLUMN embedding TYPE vector(1536) USING embedding::vector;"
@@ -38,6 +47,7 @@ def upgrade() -> None:
 def downgrade() -> None:
     if not _is_postgres():
         return
-    op.execute("DROP INDEX IF EXISTS ix_chapter_chunks_embedding;")
+    if _table_exists("chapter_chunks"):
+        op.execute("DROP INDEX IF EXISTS ix_chapter_chunks_embedding;")
     # We do not drop the extension or revert the column type to JSON because
     # other tables may rely on it.

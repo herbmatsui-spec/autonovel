@@ -78,7 +78,7 @@ async def get_planning_options():
     """
     from config.archetypes_new import EASY_GENRES, STORY_ARCHETYPES
     from config.constants import PLANNING_PRESETS
-    from config.styles import STYLE_DEFINITIONS
+    from src.config import STYLE_DEFINITIONS
 
     # STYLE_DEFINITIONSから必要な部分のみ抽出
     styles = {

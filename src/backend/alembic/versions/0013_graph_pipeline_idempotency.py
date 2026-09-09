@@ -20,21 +20,30 @@ def _is_postgres() -> bool:
     return bind.dialect.name == "postgresql"
 
 
+def _table_exists(table_name: str) -> bool:
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    return table_name in inspector.get_table_names()
+
+
 def upgrade() -> None:
     if not _is_postgres():
         return
 
-    op.create_table(
-        "graph_pipeline_idempotency",
-        sa.Column("idempotency_key", sa.String(128), primary_key=True),
-        sa.Column("chapter_id", sa.Integer, nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
-    )
-    op.create_index(
-        "ix_graph_pipeline_idempotency_chapter_id",
-        "graph_pipeline_idempotency",
-        ["chapter_id"],
-    )
+    op.execute("ALTER TABLE alembic_version ALTER COLUMN version_num TYPE VARCHAR(64);")
+
+    if not _table_exists("graph_pipeline_idempotency"):
+        op.create_table(
+            "graph_pipeline_idempotency",
+            sa.Column("idempotency_key", sa.String(128), primary_key=True),
+            sa.Column("chapter_id", sa.Integer, nullable=False),
+            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
+        )
+        op.create_index(
+            "ix_graph_pipeline_idempotency_chapter_id",
+            "graph_pipeline_idempotency",
+            ["chapter_id"],
+        )
 
 
 def downgrade() -> None:

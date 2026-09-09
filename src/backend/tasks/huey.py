@@ -19,7 +19,6 @@ if settings.HUEY_BACKEND == "redis":
             "autonovel",
             url=settings.REDIS_URL,
             results=True,
-            result_store=True,
         )
     except Exception as e:
         logger.warning("Failed to initialize RedisHuey, falling back to SqliteHuey: %s", e)

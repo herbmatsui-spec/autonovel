@@ -7,8 +7,8 @@ from pathlib import Path
 from alembic import context
 from sqlalchemy import create_engine, pool
 
-# Add src to path for model imports
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+# Add project root to path for model imports
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
 # Import models to register them with Base.metadata
 from src.backend.database.models import Base  # noqa: E402

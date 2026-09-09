@@ -1,0 +1,12 @@
+# Intelligent Cadence & Rhythm Reformation Configuration
+cadence_intelligent:
+  mode: "hybrid"                  # rule_safe | compound_merge | local_llm | hybrid
+  max_consecutive_ta: 3           # 許容する最大連続『〜た』数
+  enable_llm_refine: true         # 局所LLM推敲の有効化
+  enable_verifier: true           # Do No Harmベリファイアの有効化
+  llm_model_name: "gemini-1.5-flash"
+  llm_temperature: 0.3
+  llm_timeout_seconds: 2.0
+  max_compound_chars: 60          # 複文結合時の文字数上限
+  min_content_ratio: 0.6
+  max_content_ratio: 1.4

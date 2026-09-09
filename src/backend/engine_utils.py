@@ -3,7 +3,7 @@ import math
 import re
 from typing import Any
 
-from config import STYLE_DEFINITIONS
+from src.config import STYLE_DEFINITIONS
 
 try:
     from pydantic.errors import PydanticUserError

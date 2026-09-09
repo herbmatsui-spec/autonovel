@@ -3,6 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    image: autonovel-backend:latest
     container_name: autonovel_backend
     ports:
       - "8200:8200"
@@ -91,7 +92,10 @@ services:
         max-file: "3"
 
   db:
-    image: apache/age-postgresql:16-pgvector
+    build:
+      context: ./docker/postgres
+      dockerfile: Dockerfile
+    image: autonovel-db:latest
     container_name: autonovel_db
     environment:
       - POSTGRES_USER=autonovel
@@ -120,6 +124,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       target: dev
+    image: autonovel-frontend-dev:latest
     container_name: autonovel_frontend_dev
     ports:
       - "5173:5173"

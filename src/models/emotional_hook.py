@@ -11,7 +11,7 @@ import logging
 
 from pydantic import BaseModel, Field, field_validator
 
-from config.emotional_hook_vocabulary import validate_hook
+from src.config.emotional_hook_vocabulary import validate_hook
 
 logger = logging.getLogger(__name__)
 

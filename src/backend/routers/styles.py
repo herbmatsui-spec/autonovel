@@ -4,9 +4,7 @@
 
 from __future__ import annotations
 
-import json
 import logging
-from pathlib import Path
 from typing import Any
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
@@ -20,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/styles", tags=["styles"])
 
-STYLES_JSON_PATH = Path(__file__).parent.parent.parent / "config" / "data" / "styles.json"
+from src.config import STYLE_DEFINITIONS
 
 
 class DistillRequest(BaseModel):
@@ -83,23 +81,11 @@ class StyleCategory(BaseModel):
     style_ids: list[str]
 
 
-def _load_styles_json() -> dict[str, Any]:
-    """styles.jsonをロード"""
-    try:
-        with open(STYLES_JSON_PATH, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except Exception as e:
-        logger.error(f"Failed to load styles.json: {e}")
-        return {}
-
-
 @router.get("/all", response_model=list[StyleEntry])
 async def get_all_styles() -> list[StyleEntry]:
     """全スタイル定義を取得（config/data/styles.jsonより）"""
-    data = _load_styles_json()
-    definitions = data.get("STYLE_DEFINITIONS", {})
     entries = []
-    for style_id, style_def in definitions.items():
+    for style_id, style_def in STYLE_DEFINITIONS.items():
         entries.append(
             StyleEntry(
                 id=style_id,
@@ -119,10 +105,8 @@ async def get_all_styles() -> list[StyleEntry]:
 @router.get("/categories", response_model=list[StyleCategory])
 async def get_style_categories() -> list[StyleCategory]:
     """スタイルカテゴリ一覧を取得"""
-    data = _load_styles_json()
-    definitions = data.get("STYLE_DEFINITIONS", {})
     categories: dict[str, list[str]] = {}
-    for style_id, style_def in definitions.items():
+    for style_id, style_def in STYLE_DEFINITIONS.items():
         cat = style_def.get("category", "")
         if cat:
             categories.setdefault(cat, []).append(style_id)
@@ -143,9 +127,7 @@ async def get_style_categories() -> list[StyleCategory]:
 @router.get("/{style_id}/preview", response_model=StyleEntry)
 async def get_style_preview(style_id: str) -> StyleEntry:
     """特定スタイルのプレビュー情報を取得"""
-    data = _load_styles_json()
-    definitions = data.get("STYLE_DEFINITIONS", {})
-    style_def = definitions.get(style_id)
+    style_def = STYLE_DEFINITIONS.get(style_id)
     if not style_def:
         raise HTTPException(status_code=404, detail=f"Style not found: {style_id}")
     return StyleEntry(
