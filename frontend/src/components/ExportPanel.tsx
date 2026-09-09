@@ -4,6 +4,8 @@ import { useNovelExport } from "../hooks/useNovelExport";
 import { Editor } from "./editor/Editor";
 import { AiSuggestions } from "./editor/AiSuggestions";
 import { promoteToStudio } from "../api/easyMode";
+import { BookItem } from "../types";
+import { BookShowcaseModal } from "../showcase/BookShowcaseModal";
 
 interface ExportPanelProps {
   output?: string;
@@ -22,6 +24,7 @@ export default function ExportPanel({
     character,
     selectedBookId,
     setSelectedBookId,
+    selectedBook,
     currentChapterText,
     setCurrentChapterText,
     generationState,
@@ -29,10 +32,11 @@ export default function ExportPanel({
     syncGenerationToEditor,
   } = useNovelContext();
 
-  const [validationError, setValidationError] = useState("");
-  const [promoting, setPromoting] = useState(false);
+const [validationError, setValidationError] = useState("");
+   const [promoting, setPromoting] = useState(false);
+   const [showBookShowcase, setShowBookShowcase] = useState(false);
 
-  const { exporting, downloadExportPackage } = useNovelExport(
+   const { exporting, downloadExportPackage } = useNovelExport(
     (msg) => onExportMessage?.(msg),
     (errMsg) => onExportMessage?.(errMsg)
   );
@@ -42,13 +46,13 @@ export default function ExportPanel({
   const displaySuggestions = suggestions !== undefined ? suggestions : generationState.suggestions;
 
   const validateAndExport = async () => {
-    if (selectedBookId < 1 || !Number.isInteger(selectedBookId)) {
-      setValidationError("1以上の整数を入力してください");
+    if (!selectedBook) {
+      setValidationError("作品が選択されていません");
       return;
     }
     setValidationError("");
-    await downloadExportPackage(selectedBookId, {
-      title: `${character.name}の冒険譚`,
+    await downloadExportPackage(selectedBook.id, {
+      title: selectedBook.title,
       genre: character.genre,
       current_text: displayOutput,
       character: character,
@@ -78,8 +82,16 @@ export default function ExportPanel({
     }
   };
 
+const handleShowBookShowcase = () => {
+     if (!selectedBook) {
+       onExportMessage?.("作品が選択されていません");
+       return;
+     }
+     setShowBookShowcase(true);
+   };
 
-  return (
+
+return (
     <section className="card" style={{ display: "flex", flexDirection: "column" }}>
       <div
         style={{
@@ -94,55 +106,97 @@ export default function ExportPanel({
         </h2>
       </div>
 
-      <div className="form-group" style={{ marginBottom: "16px" }}>
-        <label className="label">作品 ID (book_id)</label>
-        <input
-          className="input"
-          type="number"
-          min={1}
-          value={selectedBookId}
-          onChange={(e) => {
-            const val = Number.parseInt(e.target.value, 10);
-            if (val > 0) {
-              setSelectedBookId(val);
-              setValidationError("");
-            } else {
-              setValidationError("1以上の整数を入力してください");
-            }
+      {selectedBook ? (
+        <div
+          className="export-panel__book-badge"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "12px",
+            padding: "12px 16px",
+            backgroundColor: "var(--bg-card, #18181b)",
+            border: "1px solid var(--border-color, #27272a)",
+            borderRadius: "12px",
+            marginBottom: "16px",
           }}
-          placeholder="1以上の整数"
-        />
-        {validationError && (
-          <span style={{ color: "var(--accent-danger, #ef4444)", fontSize: "0.85rem" }}>
-            {validationError}
-          </span>
-        )}
-      </div>
-
-      <div style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
-        <button
-          type="button"
-          className="btn btn-export"
-          style={{ flex: 1 }}
-          onClick={validateAndExport}
-          disabled={exporting}
-          data-testid="btn-export-zip"
         >
-          {exporting ? "📦 パッケージ生成中..." : "📦 納品パッケージ (ZIP) ダウンロード"}
-        </button>
-
-        <button
-          type="button"
-          className="btn btn-primary"
-          style={{ padding: "8px 14px", fontSize: "0.85rem", whiteSpace: "nowrap" }}
-          onClick={handlePromote}
-          disabled={promoting}
-          title="設定をGraphRAGナレッジ化し、Studioモードへ引き継ぎます"
-          data-testid="btn-promote-studio"
+          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <span style={{ fontSize: "1.25rem", fontWeight: 600, color: "var(--text-main)" }}>
+                {selectedBook.title}
+              </span>
+              <span
+                style={{
+                  fontSize: "0.7rem",
+                  padding: "2px 8px",
+                  borderRadius: "9999px",
+                  backgroundColor: "var(--accent-primary, #a78bfa)",
+                  color: "white",
+                  fontWeight: 600,
+                }}
+              >
+                ID: {selectedBook.id}
+              </span>
+            </div>
+            <div style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
+              ジャンル: {selectedBook.genre} | 目標: {selectedBook.target_eps}話 | 作成: {new Date(selectedBook.created_at).toLocaleDateString("ja-JP")}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "8px",
+            padding: "12px 16px",
+            backgroundColor: "var(--bg-card, #18181b)",
+            border: "1px dashed var(--border-color, #27272a)",
+            borderRadius: "12px",
+            marginBottom: "16px",
+            color: "var(--text-muted)",
+          }}
         >
-          {promoting ? "⏳ 昇格中..." : "🚀 Studioへ昇格"}
-        </button>
-      </div>
+          ⚠️ 作品が選択されていません。ヘッダーの「本棚」から作品を選択または作成してください。
+        </div>
+      )}
+
+<div style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
+         <button
+           type="button"
+           className="btn btn-export"
+           style={{ flex: 1 }}
+           onClick={validateAndExport}
+           disabled={exporting || !selectedBook}
+           data-testid="btn-export-zip"
+         >
+           {exporting ? "📦 パッケージ生成中..." : "📦 納品パッケージ (ZIP) ダウンロード"}
+         </button>
+
+         <button
+           type="button"
+           className="btn btn-primary"
+           style={{ padding: "8px 14px", fontSize: "0.85rem", whiteSpace: "nowrap", marginLeft: "8px" }}
+           onClick={handleShowBookShowcase}
+           disabled={!selectedBook}
+           title="縦書き装丁プレビューと宣伝カードを表示"
+           data-testid="btn-show-book-showcase"
+         >
+           📖 縦書き装丁プレビュー & 宣伝カード
+         </button>
+
+         <button
+           type="button"
+           className="btn btn-primary"
+           style={{ padding: "8px 14px", fontSize: "0.85rem", whiteSpace: "nowrap" }}
+           onClick={handlePromote}
+           disabled={promoting}
+           title="設定をGraphRAGナレッジ化し、Studioモードへ引き継ぎます"
+           data-testid="btn-promote-studio"
+         >
+           {promoting ? "⏳ 昇格中..." : "🚀 Studioへ昇格"}
+         </button>
+       </div>
 
       <div style={{ flex: 1, minHeight: "240px" }}>
         <Editor
@@ -151,10 +205,22 @@ export default function ExportPanel({
         />
       </div>
 
-      <AiSuggestions
-        suggestions={displaySuggestions}
-        onApplySuggestion={applySuggestion}
-      />
-    </section>
-  );
-}
+<AiSuggestions
+         suggestions={displaySuggestions}
+         onApplySuggestion={applySuggestion}
+       />
+       
+{/* 書籍ショーケースモーダル */}
+        {showBookShowcase && selectedBook && (
+          <BookShowcaseModal
+            onClose={() => setShowBookShowcase(false)}
+            bookData={{
+              title: selectedBook.title,
+              author: character.name || "不明な作者",
+              content: displayOutput
+            }}
+          />
+        )}
+     </section>
+   );
+ }

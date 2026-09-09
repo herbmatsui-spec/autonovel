@@ -20,16 +20,24 @@ class ImageService:
 
     def __init__(
         self,
-        api_key: str,
+        api_key: str | None = None,
         storage_dir: str = "static/illustrations",
         default_model: str = "fast",
     ):
-        if not api_key:
+        resolved_key = api_key
+        if not resolved_key:
+            try:
+                from src.backend.config import settings
+                resolved_key = settings.get_gemini_api_key()
+            except Exception:
+                resolved_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_GENAI_API_KEY") or ""
+
+        if not resolved_key:
             raise ValueError(
                 "ImageService requires a non-empty api_key. "
-                "Set GOOGLE_GENAI_API_KEY or pass api_key explicitly."
+                "Set GEMINI_API_KEY or GOOGLE_GENAI_API_KEY, or pass api_key explicitly."
             )
-        self.client = genai.Client(api_key=api_key)
+        self.client = genai.Client(api_key=resolved_key)
         self.storage_dir = storage_dir
         self.default_model = get_imagen_model_id(default_model)
 

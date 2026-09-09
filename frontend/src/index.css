@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&family=Shippori+Mincho:wght@400;500;600;700&display=swap');
 
 :root {
   --bg-primary: #0a0e17;
@@ -22,6 +22,15 @@
   padding: 0;
 }
 
+/* 縦書き専用スタイル */
+.vertical-book-viewport {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  font-family: 'Shippori Mincho', 'Noto Serif JP', serif;
+  line-height: 2.1;
+  letter-spacing: 0.08em;
+}
+
 body {
   background-color: var(--bg-primary);
   color: var(--text-main);
@@ -29,6 +38,21 @@ body {
   min-height: 100vh;
   padding: 24px;
 }
+
+/* Editor font utilities */
+.font-serif {
+  font-family: 'Shippori Mincho', 'Noto Serif JP', serif !important;
+}
+
+.font-sans {
+  font-family: 'Inter', sans-serif !important;
+}
+
+.editor-font-size-small { font-size: 15px; }
+.editor-font-size-medium { font-size: 17px; }
+.editor-font-size-large { font-size: 19px; }
+
+.editor-line-height { line-height: 1.9; }
 
 .container {
   max-width: 1100px;
@@ -715,5 +739,265 @@ select:focus-visible,
   border-color: rgba(139, 92, 246, 0.4);
   color: #c4b5fd;
   transform: translateY(-1px);
+}
+
+/* ==========================================
+ * BookshelfModal (本棚モーダル) スタイル
+ * ========================================== */
+
+.bookshelf-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 24px;
+  animation: fadeIn 0.2s ease;
+}
+
+.bookshelf-modal {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 900px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  animation: slideUp 0.25s ease;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.bookshelf-modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.bookshelf-modal__title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.bookshelf-modal__close {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.bookshelf-modal__close:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-main);
+}
+
+.bookshelf-modal__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.bookshelf-modal__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.bookshelf-modal__card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.bookshelf-modal__card:hover {
+  border-color: var(--accent-purple);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.bookshelf-modal__card.selected {
+  border: 2px solid var(--accent-purple);
+  background: rgba(139, 92, 246, 0.15);
+}
+
+.bookshelf-modal__card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bookshelf-modal__card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.bookshelf-modal__card-date {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: 8px;
+}
+
+.bookshelf-modal__card--add {
+  background: transparent;
+  border: 2px dashed var(--border-color);
+  display: flex;
+  flex-direction: column;
+}
+
+.bookshelf-modal__card--add:hover {
+  border-color: var(--accent-purple);
+  background: rgba(139, 92, 246, 0.05);
+}
+
+.bookshelf-modal__create-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bookshelf-modal__create-icon {
+  font-size: 2.5rem;
+  color: var(--accent-purple);
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.bookshelf-modal__create-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-main);
+  text-align: center;
+  margin: 0 0 8px 0;
+}
+
+.bookshelf-modal__form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bookshelf-modal__form-group label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.bookshelf-modal__form-group input,
+.bookshelf-modal__form-group textarea,
+.bookshelf-modal__form-group select {
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.bookshelf-modal__form-group input:focus,
+.bookshelf-modal__form-group textarea:focus,
+.bookshelf-modal__form-group select:focus {
+  outline: none;
+  border-color: var(--accent-purple);
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+.bookshelf-modal__form-group textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.bookshelf-modal__create-btn {
+  margin-top: 8px;
+}
+
+/* ==========================================
+ * BookSelector (ヘッダー用作品セレクター) スタイル
+ * ========================================== */
+
+.book-selector {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-main);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 200px;
+  justify-content: space-between;
+}
+
+.book-selector:hover {
+  border-color: var(--accent-purple);
+  background: rgba(139, 92, 246, 0.1);
+}
+
+.book-selector__icon {
+  font-size: 1.1rem;
+}
+
+.book-selector__title {
+  flex: 1;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.book-selector__chevron {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  transition: transform 0.2s ease;
+}
+
+.book-selector[aria-expanded="true"] .book-selector__chevron {
+  transform: rotate(180deg);
+}
+
+/* ==========================================
+ * ExportPanel 本情報バッジ
+ * ========================================== */
+
+.export-panel__book-badge {
+  animation: fadeIn 0.2s ease;
 }
 

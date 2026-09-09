@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { AssistAction, SensoryType, ToneType, AssistResponse } from "../../types/editor";
 import { assistContent } from "../../api/editor";
+import { useNovelContext } from "../../context/NovelContext";
+import { useSnapshotHistory } from "../../hooks/useSnapshotHistory";
 
 interface InlineAiToolbarProps {
   selectedText: string;
@@ -224,25 +226,27 @@ export const InlineAiToolbar: React.FC<InlineAiToolbarProps> = ({
           </div>
 
           <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
-            <button
-              type="button"
-              className="inline-ai-btn inline-ai-btn--active"
-              onClick={() => {
-                onApplyResult(preview.result_text, "replace");
-                onClose();
-              }}
-              data-testid="btn-apply-replace"
-            >
+<button
+               type="button"
+               className="inline-ai-btn inline-ai-btn--active"
+               onClick={() => {
+                 takeSnapshot("AI推敲前", currentChapterText, "ai_assist");
+                 onApplyResult(preview.result_text, "replace");
+                 onClose();
+               }}
+               data-testid="btn-apply-replace"
+             >
               ✅ 選択箇所を置換
             </button>
-            <button
-              type="button"
-              className="inline-ai-btn"
-              onClick={() => {
-                onApplyResult(preview.result_text, "append");
-                onClose();
-              }}
-            >
+<button
+               type="button"
+               className="inline-ai-btn"
+               onClick={() => {
+                 takeSnapshot("AI推敲前", currentChapterText, "ai_assist");
+                 onApplyResult(preview.result_text, "append");
+                 onClose();
+               }}
+             >
               ➕ 直後に追記
             </button>
             <button type="button" className="btn-tab" onClick={onClose}>

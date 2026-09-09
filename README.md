@@ -17,7 +17,7 @@
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 [![Type Checked: mypy](https://img.shields.io/badge/type%20checked-mypy-blue)](https://mypy-lang.org/)
 [![Vitest](https://img.shields.io/badge/tested_with-vitest-729B1B?logo=vitest&logoColor=white)](https://vitest.dev/)
-[![Version](https://img.shields.io/badge/version-4.7.1-brightgreen?logo=semver)](https://github.com/herbmatsui-spec/autonovel/releases/tag/v4.7.1)
+[![Version](https://img.shields.io/badge/version-4.7.2-brightgreen?logo=semver)](https://github.com/herbmatsui-spec/autonovel/releases/tag/v4.7.2)
 
 <br />
 
@@ -25,7 +25,7 @@
   <img src="docs/demo.gif" alt="AutoNovel UI & Workflow Demo" width="900" style="border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
 </p>
 
-*▲ AutoNovel v4.7.1: 3案企画ガチャ / 逆算プロット / 上級者Studio / インライン五感推敲 / GraphRAG相関図 / ワンクリックZIP納品 / マルチメディア・eBook / IF分岐・共同編集 (CRDT) / **【第1〜4の柱 統合】文構造保護五感拡充・長編窓枠抽出 (NovelSectionExtractor) / ソーシャル動態追跡 (SocialInteractionManager) / 4階層セマンティック圧縮 (DynamicTaxonomyEngine) / 反射的RAG (HybridRetriever + RRF) / 企画物理サンドボックス (BlindFeedbackPurifier) / 8専門家アンカー採点 (High/Mid/Low) / ベイズ的スコアキャリブレーション / 統一5D BookScore変換 / DAG局所リトライ & 閉ループPDCA再執筆 (CommercialBenchmark 85+ 商業品質達成)****
+*▲ AutoNovel v4.7.2: 3案企画ガチャ / 逆算プロット / 上級者Studio / インライン五感推敲 / GraphRAG相関図 / ワンクリックZIP納品 / マルチメディア・eBook / IFルート分岐 / **【第1〜4の柱 統合】文構造保護五感拡充・長編窓枠抽出 (NovelSectionExtractor) / ソーシャル動態追跡 (SocialInteractionManager) / 4階層セマンティック圧縮 (DynamicTaxonomyEngine) / 反射的RAG (HybridRetriever + RRF) / 企画物理サンドボックス (BlindFeedbackPurifier) / 8専門家アンカー採点 (High/Mid/Low) / ベイズ的スコアキャリブレーション / 統一5D BookScore変換 / DAG局所リトライ & 閉ループPDCA再執筆 (CommercialBenchmark 85+ 商業品質達成)****
 
 </div>
 
@@ -42,7 +42,7 @@ AutoNovel は、AI を活用して Web 小説を **企画から執筆、校正�
 - **マルチメディア生成**：シーン画像・立ち絵・表紙・ボイス・BGM などのアセットパックを生成
 - **eBook エクスポート**：縦書き・EPUB 3 準拠の電子書籍ファイルを直接出力
 - **マルチモード**：初心者向け Easy Mode と、プロ向け Advanced Mode / 上級者 Studio を切り替えて利用可能
-- **共同編集 (CRDT)**：複数執筆者による `ChapterVersion` のベクタークロック同期マージ
+- **共同執筆・レビュー**：章単位のコメントスレッド・メンバー権限管理（※CRDT同期マージはロードマップ予定）
 - **ブラインドピアレビュー**：3案企画ガチャ等で他案を参照せず独立採点（創造的発散を維持）
 - **8専門オーディター並列監査**：一貫性・創造性・読者フック・感情曲線・文体・事実性・構造・マルチモーダル適合性を加重集約
 - **反射的RAGスクリーニング**：BM25キーワード抽出・文脈適合性チェック・最大3回反復でクエリ精緻化
@@ -203,7 +203,7 @@ AutoNovel は、AI を活用して Web 小説を **企画から執筆、校正�
   - [2.6 AI挿絵プロンプト & ビジュアル生成エンジン](#26-ai挿絵プロンプト--ビジュアル生成エンジン)
   - [2.7 自動マーケティング & 納品パッケージング](#27-自動マーケティング--納品パッケージング)
     - [2.7.1 マルチメディア生成 (`multimedia` router)](#271-マルチメディア生成-multimedia-router)
-    - [2.7.2 共同編集とCRDT (`collab` router)](#272-共同編集とcrdt-collab-router)
+    - [2.7.2 共同執筆・コメント (`collab` router)](#272-共同執筆コメント-collab-router)
     - [2.7.3 IFルート分岐](#273-ifルート分岐)
 - [3. システムアーキテクチャ & 技術スタック](#3-システムアーキテクチャ--技術スタック)
   - [3.1 全体アーキテクチャ図](#31-全体アーキテクチャ図)
@@ -448,8 +448,8 @@ Web UI からわずか数項目のフォームを入力するだけで、プロ�
 
 アセットパックは納品 ZIP にも同梱されます（[`docs/multimedia.md`](docs/multimedia.md) 参照）。
 
-#### 2.7.2 共同編集とCRDT (`collab` router)
-`chapter_versions` テーブルに `vector_clock` (JSON) と `base_version_id` を保持し、複数執筆者による章単位の並行編集を CRDT 的にマージ。`POST /api/collab/versions` で保存、`GET /api/collab/versions/{book_id}/{ep}` で履歴・コメントツリーを取得できます。
+#### 2.7.2 共同執筆・コメント (`collab` router) 【CRDT同期マージはロードマップ予定】
+現在は `comments` テーブルおよび `project_members` による章単位のスレッドコメント投稿・メンバー権限管理（閲覧・編集）を提供。複数執筆者による `ChapterVersion` のベクタークロックを用いた並行編集・CRDT同期マージ機能は、今後のロードマップにて提供予定です。
 
 #### 2.7.3 IFルート分岐
 `Branch` モデル + `routers/easy_mode.py` 経由で、main ルートから IF分岐をフォーク・合流可能。各分岐は独立した `plot` ツリー・テンション履歴を持つため、複数エンディングの並列執筆に対応します。
@@ -615,7 +615,7 @@ FastAPI アプリケーション (`src/backend/server.py`) は、モジュール
 - **`routers/illustrations.py`**: 挿絵プロンプト生成および画像生成ジョブ管理。
 - **`routers/marketing.py`**: マーケティング資料・あらすじ・キャッチコピー生成。
 - **`routers/multimedia.py`** (`ENABLE_MULTIMEDIA`): シーン画像 / 立ち絵 / 表紙 / ボイス / BGM のアセットパック管理。
-- **`routers/collab.py`**: コメントツリーと `ChapterVersion` (CRDT ベクタークロック) による共同編集 API。
+- **`routers/collab.py`**: プロジェクトメンバー管理および章単位のコメントスレッド API（※CRDT同期マージはロードマップ予定）。
 - **`routers/prompt_versions.py`**: プロンプトのバージョン管理。
 - **`routers/prompt_compare.py`**: プロンプト A/B 比較。
 - **`routers/streaming.py`**: SSE による長文生成のリアルタイム配信。
@@ -1131,7 +1131,7 @@ erDiagram
 | **`Character`** | `characters` | 登場人物シート。名前、性格、能力、外見プロンプトDNAを保持。 |
 | **`Plot`** | `plots` | 各話の設計図。1行要約、目標テンション、カタルシス種別、読者フックを保持。 |
 | **`Bible`** | `bibles` | 世界観・魔法体系・歴史・地理などの設定辞書（JSON形式）と開示状況。 |
-| **`ChapterVersion`** | `chapter_versions` | 共同編集のための章リビジョン。`vector_clock` (JSON) と `base_version_id` で CRDT マージ。 |
+| **`ChapterVersion`** | `chapter_versions` | 【ロードマップ予定】共同編集のための章リビジョン。`vector_clock` (JSON) と `base_version_id` で CRDT マージ。 |
 | **`Comment` / `ProjectMember`** | `comments`, `project_members` | 章単位のスレッドコメントとプロジェクトメンバー管理。 |
 | **`MultimediaArtifact` / `MultimediaTask`** | `multimedia_artifacts`, `multimedia_tasks` | シーン画像 / 立ち絵 / 表紙 / ボイス / BGM の生成結果と非同期タスク。 |
 | **`Task`** | `tasks` | 非同期執筆タスクのステータス追跡・結果保存。 |
@@ -1760,8 +1760,9 @@ Base URL: `http://localhost:8200`（Nginx本番時: `http://localhost:8080`）
 | `GET` | `/multimedia/tasks/{id}` | マルチメディア生成タスクの進捗 | `ENABLE_MULTIMEDIA=true` |
 | `GET` | `/multimedia/assets/{book_id}` | 作品別アセット一覧取得 | `ENABLE_MULTIMEDIA=true` |
 | `POST` | `/api/export/ebook` | eBook エクスポート (README互換エイリアス) | `ENABLE_MULTIMEDIA=true` 必須 |
-| `POST` | `/api/collab/versions` | 共同編集 ChapterVersion 保存 (CRDT) | なし |
-| `GET` | `/api/collab/versions/{book_id}/{ep}` | 章のバージョン履歴取得 | なし |
+| `POST` | `/api/collab/books/{book_id}/comments` | 章へのコメント投稿 | なし |
+| `GET` | `/api/collab/books/{book_id}/comments` | 章のコメント一覧取得 | なし |
+| *(予定)* | `/api/collab/versions` | 【ロードマップ】共同編集 ChapterVersion 保存 (CRDT) | 将来提供予定 |
 | `GET` | `/health` | 総合多段ヘルスチェック (DB, Queue, Metrics) | なし |
 | `GET` | `/metrics` | プロセス内メトリクススナップショット取得 | なし |
 
@@ -2095,7 +2096,7 @@ make clean         # キャッシュや一時DBファイルをクリーンアッ
 ### 21.1 今後のロードマップ
 - [x] **eBook エクスポート (EPUB 3)**: 縦書き・ルビ・目次対応 (v4.1 で実装済み)
 - [x] **マルチメディア生成 (Phase 7)**: シーン画像 / 立ち絵 / 表紙 / ボイス / BGM パック (v4.1 で実装済み)
-- [x] **共同編集 (CRDT)**: `ChapterVersion` ベクタークロックマージ (v4.1 で実装済み)
+- [ ] **共同編集 (CRDT)**: `ChapterVersion` ベクタークロック同期マージによる複数人リアルタイム同時編集（ロードマップ予定 / 現在はコメント・メンバー管理のみ提供）。
 - [x] **GraphRAG 高度化**: pgvector / ChromaDB / BM25 / cross-encoder rerank の RRF 統合 (v4.1 で実装済み)
 - [x] **4大改善の柱（Pillar 1〜4）完全統合**: 表現・窓枠監査 / 状態管理・非同期 / セマンティックRAG・圧縮 / 閉ループPDCA・商業水準 (v4.7 で完全実装)
 - [ ] **リアルタイム音声対話ブレインストーミング**: 音声認識/音声合成によるAIプロット会議機能。

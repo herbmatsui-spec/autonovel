@@ -72,6 +72,12 @@ class AppContainer(InfraContainer):
         repo=repo,
     )
 
+    context_builder_agent: providers.Singleton = providers.Singleton(
+        "src.agents.context_builder_agent.ContextBuilderAgent",
+        repo=repo,
+        llm=llm,
+    )
+
     auditor: providers.Singleton = providers.Singleton(
         "src.agents.audit.LogicalAuditor",
         repo=repo,

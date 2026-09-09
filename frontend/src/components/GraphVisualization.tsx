@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import ForceGraph2D, { ForceGraphMethods } from "react-force-graph-2d";
 import { fetchGraphData } from "../api/graph";
+import { NodeInspector } from "./graph/NodeInspector";
+import { GraphNodeDetail } from "../types/graphInspector";
 
 export interface GraphNode {
   id: string;
@@ -64,7 +66,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onClose 
     updateDimensions();
     window.addEventListener("resize", updateDimensions);
     return () => window.removeEventListener("resize", updateDimensions);
-  }, [loading]);
+  }, [loading, selectedNode]);
 
   useEffect(() => {
     let isMounted = true;
@@ -175,6 +177,31 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onClose 
     }
   }, []);
 
+  const handleAddNewEntity = useCallback(() => {
+    const newId = `new_${Date.now()}`;
+    const newNode: GraphNode = {
+      id: newId,
+      label: "Character",
+      properties: {},
+    };
+    // Add to rawData
+    setRawData((prev) => {
+      if (!prev) {
+        return {
+          graph_name: "autonovel_graph",
+          nodes: [newNode],
+          edges: [],
+        };
+      }
+      return {
+        ...prev,
+        nodes: [...prev.nodes, newNode],
+      };
+    });
+    // Select the new node
+    setSelectedNode(newNode);
+  }, []);
+
   const nodeCanvasObject = useCallback(
     (node: GraphNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
       const isSelected = selectedNode?.id === node.id;
@@ -220,7 +247,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onClose 
     [selectedNode, hoveredNode, connectedNodeIds]
   );
 
-  return (
+return (
     <div
       data-testid="graph-modal"
       style={{
@@ -340,23 +367,38 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onClose 
             </button>
           ))}
 
-          <input
-            type="text"
-            placeholder="名前で検索..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={{
-              marginLeft: "auto",
-              padding: "4px 10px",
-              borderRadius: "6px",
-              border: "1px solid #3f3f46",
-              backgroundColor: "#27272a",
-              color: "#f4f4f5",
-              fontSize: "0.8rem",
-              outline: "none",
-              width: "160px",
-            }}
-          />
+<input
+             type="text"
+             placeholder="名前で検索..."
+             value={searchTerm}
+             onChange={(e) => setSearchTerm(e.target.value)}
+             style={{
+               marginLeft: "auto",
+               padding: "4px 10px",
+               borderRadius: "6px",
+               border: "1px solid #3f3f46",
+               backgroundColor: "#27272a",
+               color: "#f4f4f5",
+               fontSize: "0.8rem",
+               outline: "none",
+               width: "160px",
+             }}
+           />
+           <button
+             onClick={handleAddNewEntity}
+             style={{
+               marginLeft: "12px",
+               padding: "6px 12px",
+               backgroundColor: "#4fc3f7",
+               color: "white",
+               border: "none",
+               borderRadius: "4px",
+               cursor: "pointer",
+               fontSize: "0.8rem",
+             }}
+           >
+             + 新規エンティティ
+           </button>
         </div>
 
         {/* Main Content Area */}
@@ -427,79 +469,104 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onClose 
                 />
               </div>
 
-              {/* Sidebar Info Panel */}
+{/* Node Inspector Panel */}
+            {selectedNode && rawData && (
               <div
                 style={{
-                  width: "300px",
+                  width: "360px",
                   borderLeft: "1px solid #27272a",
-                  padding: "16px",
                   backgroundColor: "#18181b",
                   overflowY: "auto",
                   display: "flex",
                   flexDirection: "column",
-                  gap: "12px",
                 }}
               >
-                <h3 style={{ margin: 0, fontSize: "0.95rem", color: "#f4f4f5", fontWeight: 600 }}>
-                  📋 エンティティ詳細
-                </h3>
-                {selectedNode ? (
-                  <div style={{ fontSize: "0.85rem", color: "#e4e4e7" }}>
-                    <div
-                      style={{
-                        padding: "10px",
-                        backgroundColor: "#27272a",
-                        borderRadius: "8px",
-                        marginBottom: "10px",
-                      }}
-                    >
-                      <div style={{ fontSize: "1.1rem", fontWeight: "bold", color: "#f4f4f5" }}>
-                        {selectedNode.id}
-                      </div>
-                      <div style={{ marginTop: "4px" }}>
-                        <span
-                          style={{
-                            backgroundColor: LABEL_COLORS[selectedNode.label || ""] || "#64748b",
-                            padding: "2px 8px",
-                            borderRadius: "4px",
-                            fontSize: "0.7rem",
-                            color: "#fff",
-                            fontWeight: 600,
-                          }}
-                        >
-                          {selectedNode.label || "Entity"}
-                        </span>
-                      </div>
-                    </div>
+                {(() => {
+                  // Convert selected node to GraphNodeDetail
+                  const nodeDetail: GraphNodeDetail = {
+                    id: selectedNode.id,
+                    label: selectedNode.label || "Unknown",
+                    properties: Object.fromEntries(
+                      Object.entries(selectedNode.properties || {}).map(([key, value]) => [
+                        key,
+                        String(value),
+                      ])
+                    ),
+                  };
 
-                    <div style={{ marginTop: "8px" }}>
-                      <strong style={{ color: "#a1a1aa", fontSize: "0.75rem" }}>属性・プロパティ</strong>
-                      <pre
-                        style={{
-                          backgroundColor: "#09090b",
-                          padding: "10px",
-                          borderRadius: "6px",
-                          marginTop: "6px",
-                          fontSize: "0.75rem",
-                          color: "#38bdf8",
-                          whiteSpace: "pre-wrap",
-                          wordBreak: "break-all",
-                          border: "1px solid #27272a",
-                        }}
-                      >
-                        {JSON.stringify(selectedNode.properties || {}, null, 2)}
-                      </pre>
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{ color: "#71717a", fontSize: "0.85rem", lineHeight: 1.6 }}>
-                    <p style={{ margin: 0 }}>💡 ノードをクリックすると、その人物や場所の詳細属性、所持品、関係性がここに表示されます。</p>
-                    <p style={{ marginTop: "12px", fontSize: "0.75rem" }}>
-                      ドラッグでノードの移動、ホイールで拡大縮小・回転が可能です。
-                    </p>
-                  </div>
-                )}
+                  // Convert all nodes to GraphNodeDetail[]
+                  const nodesDetail: GraphNodeDetail[] = rawData.nodes.map((node) => ({
+                    id: node.id,
+                    label: node.label || "Unknown",
+                    properties: Object.fromEntries(
+                      Object.entries(node.properties || {}).map(([key, value]) => [key, String(value)])
+                    ),
+                  }));
+
+                  // Convert all edges to GraphEdge[] (with string source/target)
+                  const edgesDetail: GraphEdge[] = rawData.edges.map((edge) => ({
+                    source:
+                      typeof edge.source === "object"
+                        ? (edge.source as GraphNode).id
+                        : edge.source,
+                    target:
+                      typeof edge.target === "object"
+                        ? (edge.target as GraphNode).id
+                        : edge.target,
+                    type: edge.type,
+                    properties: edge.properties,
+                  }));
+
+                  return (
+                    <NodeInspector
+                      node={nodeDetail}
+                      edges={edgesDetail}
+                      nodes={nodesDetail}
+                      onClose={() => setSelectedNode(null)}
+                      onUpdate={(updatedNode) => {
+                        // Update the node in rawData
+                        if (!rawData) return;
+                        const nodeIndex = rawData.nodes.findIndex((n) => n.id === updatedNode.id);
+                        if (nodeIndex !== -1) {
+                          const updatedRawNode = {
+                            ...rawData.nodes[nodeIndex],
+                            label: updatedNode.label,
+                            properties: updatedNode.properties,
+                          };
+                          setRawData({
+                            ...rawData,
+                            nodes: [
+                              ...rawData.nodes.slice(0, nodeIndex),
+                              updatedRawNode,
+                              ...rawData.nodes.slice(nodeIndex + 1),
+                            ],
+                          });
+                        }
+                      }}
+                      onAddEdge={(newEdge) => {
+                        // Add the new edge to rawData
+                        if (!rawData) return;
+                        // Find the source and target nodes as GraphNode objects for the edge
+                        const sourceNode = rawData.nodes.find((n) => n.id === newEdge.source);
+                        const targetNode = rawData.nodes.find((n) => n.id === newEdge.target);
+                        if (sourceNode && targetNode) {
+                          const edgeToAdd: GraphEdge = {
+                            source: sourceNode,
+                            target: targetNode,
+                            type: newEdge.type,
+                            properties: newEdge.properties || {},
+                          };
+                          setRawData({
+                            ...rawData,
+                            edges: [...rawData.edges, edgeToAdd],
+                          });
+                        }
+                      }}
+                    />
+                  );
+                })()}
               </div>
+            )}
             </>
           )}
         </div>

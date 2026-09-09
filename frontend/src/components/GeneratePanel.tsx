@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNovelContext } from "../context/NovelContext";
 import { useNovelGeneration } from "../hooks/useNovelGeneration";
 import { useStreamingWriter } from "../hooks/useStreamingWriter";
+import { useSnapshotHistory } from "../hooks/useSnapshotHistory";
 import { ReversePlotBuilder } from "./ReversePlotBuilder";
 import { GeneratedPlotStructure } from "../types/reversePlot";
 import { GachaPlan, GachaResponse, DigestResponse } from "../types/easyMode";
@@ -9,6 +10,7 @@ import { generateGachaPlans, generateDigest } from "../api/easyMode";
 import { StylePresetSummary, StyleProfile } from "../types/style";
 import { fetchStylePresets, distillStyleFromText } from "../api/styleApi";
 import { GENRE_OPTIONS } from "../constants/genres";
+import { StyleComparisonModal } from "./style/StyleComparisonModal";
 
 interface GeneratePanelProps {
   onGenerated?: (output: string, suggestions: string[]) => void;
@@ -33,16 +35,22 @@ export default function GeneratePanel({ onGenerated, onMessage }: GeneratePanelP
     setTargetEpisodes,
     llmConfig,
     setLlmConfig,
+    selectedBookId,
+    currentEpNum,
   } = useNovelContext();
 
-  const { startGeneration, cancelGeneration } = useNovelGeneration(
-    (out, sug) => {
-      syncGenerationToEditor(out);
-      onGenerated?.(out, sug);
-    },
-    (msg) => onMessage?.(msg),
-    (errMsg) => onMessage?.(errMsg)
-  );
+  const { takeSnapshot } = useSnapshotHistory(selectedBookId, currentEpNum);
+  const [showStyleComparison, setShowStyleComparison] = useState(false);
+
+const { startGeneration, cancelGeneration } = useNovelGeneration(
+     (out, sug) => {
+       takeSnapshot("AI生成前", currentChapterText, "ai_generate");
+       syncGenerationToEditor(out);
+       onGenerated?.(out, sug);
+     },
+     (msg) => onMessage?.(msg),
+     (errMsg) => onMessage?.(errMsg)
+   );
 
   const {
     isStreaming,
@@ -52,14 +60,15 @@ export default function GeneratePanel({ onGenerated, onMessage }: GeneratePanelP
     pauseStreaming,
     resumeStreaming,
     cancelStreaming,
-  } = useStreamingWriter({
-    onSuccess: (finalText) => {
-      syncGenerationToEditor(finalText);
-      onGenerated?.(finalText, []);
-    },
-    onMessage,
-    onError: (err) => onMessage?.(`❌ ${err}`),
-  });
+} = useStreamingWriter({
+     onSuccess: (finalText) => {
+       takeSnapshot("AI生成前", currentChapterText, "ai_generate");
+       syncGenerationToEditor(finalText);
+       onGenerated?.(finalText, []);
+     },
+     onMessage,
+     onError: (err) => onMessage?.(`❌ ${err}`),
+   });
 
   const [mode, setMode] = useState<'simple' | 'reverse'>('simple');
   const [showGachaModal, setShowGachaModal] = useState(false);
@@ -153,8 +162,9 @@ export default function GeneratePanel({ onGenerated, onMessage }: GeneratePanelP
     onMessage?.(`✨ 作家性DNA「${distillResult.name}」を適用しました！ケレン味強度: ${distillResult.kerenmi_intensity}`);
   };
 
-  const handleReversePlotComplete = (structure: GeneratedPlotStructure) => {
-    setPlotStructure(structure);
+const handleReversePlotComplete = (structure: GeneratedPlotStructure) => {
+  takeSnapshot("逆算プロット反映前", currentChapterText, "ai_generate");
+  setPlotStructure(structure);
     if (structure.episodes && structure.episodes.length > 0) {
       // 既存章にユーザーが記述した本文がある場合は警告 (上書き前に確認)
       const hasUserContent = chapters.some((c) => {
@@ -309,20 +319,32 @@ export default function GeneratePanel({ onGenerated, onMessage }: GeneratePanelP
             </select>
           </div>
 
-          <div className="form-group">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-              <label className="label" style={{ margin: 0 }}>🎨 作家性DNA・文体スタイル</label>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                style={{ padding: "2px 8px", fontSize: "0.75rem", color: "var(--accent-cyan)" }}
-                onClick={() => setShowStyleModal(true)}
-                title="お手本の文章を貼り付けて作家性・文体を自動抽出"
-                data-testid="btn-open-style-modal"
-              >
-                ✨ お手本から文体を抽出
-              </button>
-            </div>
+<div className="form-group">
+             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+               <label className="label" style={{ margin: 0 }}>🎨 作家性DNA・文体スタイル</label>
+               <div style={{ display: "flex", gap: "8px" }}>
+                 <button
+                   type="button"
+                   className="btn btn-secondary"
+                   style={{ padding: "2px 8px", fontSize: "0.75rem", color: "var(--accent-cyan)" }}
+                   onClick={() => setShowStyleModal(true)}
+                   title="お手本の文章を貼り付けて作家性・文体を自動抽出"
+                   data-testid="btn-open-style-modal"
+                 >
+                   ✨ お手本から文体を抽出
+                 </button>
+                 <button
+                   type="button"
+                   className="btn btn-secondary"
+                   style={{ padding: "2px 8px", fontSize: "0.75rem", color: "var(--accent-purple)" }}
+                   onClick={() => setShowStyleComparison(true)}
+                   title="文体のBefore/Afterを比較・調整"
+                   data-testid="btn-open-style-comparison"
+                 >
+                   🔍 文体Before/Afterを比較
+                 </button>
+               </div>
+             </div>
             <select
               className="select"
               value={selectedStyleId}
@@ -464,7 +486,7 @@ export default function GeneratePanel({ onGenerated, onMessage }: GeneratePanelP
                     <div className="form-group" style={{ marginBottom: "10px" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <label className="label" style={{ fontSize: "0.85rem", margin: 0 }}>
-                          {llmConfig.provider === "gemini" ? "Google Gemini API Key" : "API Key"}
+                          {llmConfig.provider === "gemini" ? "Google Gemini APIキー" : "APIキー"}
                         </label>
                         <button
                           type="button"
@@ -483,18 +505,18 @@ export default function GeneratePanel({ onGenerated, onMessage }: GeneratePanelP
                       />
                     </div>
 
-                    {llmConfig.base_url !== undefined && (
-                      <div className="form-group" style={{ marginBottom: "10px" }}>
-                        <label className="label" style={{ fontSize: "0.85rem" }}>Base URL (OpenAI互換エンドポイント)</label>
-                        <input
-                          type="text"
-                          className="input"
-                          placeholder="https://api.deepseek.com/v1 または http://localhost:11434/v1"
-                          value={llmConfig.base_url || ""}
-                          onChange={(e) => setLlmConfig((prev) => ({ ...prev, base_url: e.target.value }))}
-                        />
-                      </div>
-                    )}
+{llmConfig.base_url !== undefined && (
+                       <div className="form-group" style={{ marginBottom: "10px" }}>
+                         <label className="label" style={{ fontSize: "0.85rem" }}>ベースURL (OpenAI互換エンドポイント)</label>
+                         <input
+                           type="text"
+                           className="input"
+                           placeholder="https://api.deepseek.com/v1 または http://localhost:11434/v1"
+                           value={llmConfig.base_url || ""}
+                           onChange={(e) => setLlmConfig((prev) => ({ ...prev, base_url: e.target.value }))}
+                         />
+                       </div>
+                     )}
 
                     <div className="form-group" style={{ marginBottom: "10px" }}>
                       <label className="label" style={{ fontSize: "0.85rem" }}>モデル名</label>
@@ -1000,38 +1022,59 @@ export default function GeneratePanel({ onGenerated, onMessage }: GeneratePanelP
                   <strong>文長分布:</strong> 平均{distillResult.sentence_length.avg}文字 / <strong>文末:</strong> だ・である({Math.round(distillResult.sentence_end_distribution.da_dearu * 100)}%), 体言止め({Math.round(distillResult.sentence_end_distribution.nominal * 100)}%)
                 </div>
 
-                {distillResult.few_shot_sample && (
-                  <div
-                    style={{
-                      background: "rgba(0,0,0,0.3)",
-                      padding: "8px 10px",
-                      borderRadius: "6px",
-                      fontSize: "0.8rem",
-                      fontStyle: "italic",
-                      color: "#e2e8f0",
-                      marginBottom: "12px",
-                      borderLeft: "3px solid var(--accent-primary, #a78bfa)",
-                    }}
-                  >
-                    "{distillResult.few_shot_sample}"
-                  </div>
-                )}
+{distillResult.few_shot_sample && (
+                   <div
+                     style={{
+                       background: "rgba(0,0,0,0.3)",
+                       padding: "8px 10px",
+                       borderRadius: "6px",
+                       fontSize: "0.8rem",
+                       fontStyle: "italic",
+                       color: "#e2e8f0",
+                       marginBottom: "12px",
+                       borderLeft: "3px solid var(--accent-primary, #a78bfa)",
+                     }}
+                   >
+                     "{distillResult.few_shot_sample}"
+                   </div>
+                 )}
 
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  style={{ width: "100%", padding: "8px" }}
-                  onClick={handleApplyCustomStyle}
-                  data-testid="btn-apply-style"
-                >
-                  ✨ この文体スタイルを採用して執筆に適用
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </section>
-  );
-}
+                 <button
+                   type="button"
+                   className="btn btn-primary"
+                   style={{ width: "100%", padding: "8px" }}
+                   onClick={handleApplyCustomStyle}
+                   data-testid="btn-apply-style"
+                 >
+                   ✨ この文体スタイルを採用して執筆に適用
+                 </button>
+               </div>
+             )}
+           </div>
+         </div>
+       )}
+       {/* 文体Before/After比較モーダル */}
+       {showStyleComparison && (
+         <div
+           style={{
+             position: "fixed",
+             top: 0,
+             left: 0,
+             right: 0,
+             bottom: 0,
+             background: "rgba(0,0,0,0.75)",
+             display: "flex",
+             alignItems: "center",
+             justifyContent: "center",
+             zIndex: 1000,
+             backdropFilter: "blur(4px)",
+           }}
+           data-testid="style-comparison-modal"
+         >
+           <StyleComparisonModal onClose={() => setShowStyleComparison(false)} />
+         </div>
+       )}
+     </section>
+   );
+ }
 

@@ -245,7 +245,7 @@ class BookRepository:
 
     def save_or_update_book_with_chapter(
         self,
-        book_id: int,
+        book_id: int | None,
         title: str = "R15ファンタジー作品",
         genre: str = "ファンタジー (R15)",
         chapter_text: str = "",
@@ -253,10 +253,9 @@ class BookRepository:
         plots: list | None = None,
     ) -> Book:
         """かんたんモード等のデータをDBに新規作成または更新保存する"""
-        book = self.get_book(book_id)
-        if not book:
+        if book_id is None or book_id == 0:
+            # Create a new book without specifying id (let DB assign)
             book = Book(
-                id=book_id,
                 title=title,
                 genre=genre,
                 concept="かんたんモード生成作品",
@@ -266,17 +265,32 @@ class BookRepository:
             self.session.add(book)
             self._safe_commit()
             self._safe_refresh(book)
+        else:
+            book = self.get_book(book_id)
+            if book is None:
+                # If the provided book_id does not exist, create a new book without specifying id
+                book = Book(
+                    title=title,
+                    genre=genre,
+                    concept="かんたんモード生成作品",
+                    synopsis=chapter_text[:200] if chapter_text else "",
+                    target_eps=10,
+                )
+                self.session.add(book)
+                self._safe_commit()
+                self._safe_refresh(book)
+            # else: book exists, we will update it
 
         # 第1話の更新または作成
         if chapter_text:
-            stmt = select(Chapter).where(Chapter.book_id == book_id).where(Chapter.ep_num == 1)
+            stmt = select(Chapter).where(Chapter.book_id == book.id).where(Chapter.ep_num == 1)
             chapter = self.session.execute(stmt).scalar_one_or_none()
             if chapter:
                 chapter.content = chapter_text
                 chapter.summary = chapter_text[:100]
             else:
                 chapter = Chapter(
-                    book_id=book_id,
+                    book_id=book.id,
                     ep_num=1,
                     title="第1話 運命の覚醒",
                     content=chapter_text,
@@ -289,7 +303,7 @@ class BookRepository:
             char_name = character_params["name"]
             stmt = (
                 select(Character)
-                .where(Character.book_id == book_id)
+                .where(Character.book_id == book.id)
                 .where(Character.name == char_name)
             )
             char = self.session.execute(stmt).scalar_one_or_none()
@@ -298,7 +312,7 @@ class BookRepository:
                 char.ability = character_params.get("ability", "")
             else:
                 char = Character(
-                    book_id=book_id,
+                    book_id=book.id,
                     name=char_name,
                     role="主人公",
                     personality=character_params.get("personality", ""),

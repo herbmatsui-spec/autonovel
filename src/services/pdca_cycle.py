@@ -113,6 +113,7 @@ class ClosedLoopPDCARunner:
             ctx_for_writer = dict(ctx)
             ctx_for_writer["draft_text"] = current_draft
             ctx_for_writer["pdca_directives"] = directive_prompt
+            ctx_for_writer["actionable_diffs"] = diffs
             ctx_for_writer["pdca_cycle"] = cycle
 
             new_draft = await self._generate_rewrite(ctx_for_writer)
@@ -179,7 +180,23 @@ class ClosedLoopPDCARunner:
 
     async def _generate_rewrite(self, ctx: dict[str, Any]) -> str:
         """Invoke writer agent or function with directives."""
-        if callable(self.writer):
+        if hasattr(self.writer, "rewrite_with_focus"):
+            # WritingAgent instance
+            res = self.writer.rewrite_with_focus(
+                book_id=ctx.get("book_id", 1),
+                ep_num=ctx.get("chapter_number") or ctx.get("ep_num", 1),
+                focus=ctx.get("focus", "pdca_improvement"),
+                params={
+                    "actionable_diffs": ctx.get("actionable_diffs", []),
+                    "pdca_directives": ctx.get("pdca_directives", ""),
+                },
+            )
+            if asyncio.iscoroutine(res):
+                res = await res
+            if isinstance(res, dict) and "rewritten_text" in res:
+                return str(res["rewritten_text"])
+            return str(ctx.get("draft_text", ""))
+        elif callable(self.writer):
             res = self.writer(ctx)
             if asyncio.iscoroutine(res):
                 res = await res

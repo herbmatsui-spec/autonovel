@@ -325,6 +325,37 @@ class AuditAgent(SkillAgent):
                 error=f"Audit failed with exception: {e}",
             )
 
+    async def run_specialist_audit(
+        self,
+        ctx: AgentContext,
+        genre: str = "general",
+        phase: str = "first_three_chapters",
+    ) -> dict[str, Any]:
+        """8専門家オーディター（AuditAggregator）を実行・集約するアダプタメソッド (Phase 6: Step 66)."""
+        try:
+            from src.services.audit_aggregator import AuditAggregator
+            from src.services.genre_audit_weights import get_genre_weights
+
+            weights = get_genre_weights(genre, phase)
+            aggregator = AuditAggregator.from_default_registry(weights=weights)
+            await aggregator.run_all(ctx)
+            result = aggregator.aggregate()
+            return result.to_dict()
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning(f"Specialist audit failed, fallback to empty: {e}")
+            return {
+                "overall": 0.0,
+                "by_specialist": {},
+                "missing": [],
+                "error": str(e),
+            }
+
     async def run(self, ctx: AgentContext) -> AgentResult:
         """Orchestrator 用エントリーポイント。execute をラップする。"""
         return await self.execute(ctx)
+
+
+# Step 68: スキル駆動パイプライン用のエイリアス
+AuditSkillAgent = AuditAgent
+

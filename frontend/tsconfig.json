@@ -10,7 +10,10 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "noEmit": true,
-    "types": ["vitest/globals", "@testing-library/jest-dom", "node"]
-  },
-  "include": ["src", "tests"]
+"types": ["vitest/globals", "@testing-library/jest-dom", "node"],
+     "paths": {
+       "@/*": ["./src/*"]
+     }
+   },
+   "include": ["src", "tests"]
 }

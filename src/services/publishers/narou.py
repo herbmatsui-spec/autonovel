@@ -106,67 +106,62 @@ class NarouPublisher(PublisherAdapter):
             self._logged_in = False
 
     async def authenticate(self, credentials: NarouCredentials) -> bool:
-        """なろうにログイン"""
+        """なろうにログイン（asyncio.to_thread で非ブロッキング実行 Step 52）"""
         if not credentials.email or not credentials.password:
             raise AuthError("メールアドレスとパスワードが必要です", self.platform)
 
-        driver = self._get_driver()
-
-        try:
-            # ログインページへ
-            driver.get(self.LOGIN_URL)
-            await asyncio.sleep(1)
-
-            # ログインフォーム入力
+        def _sync_auth() -> bool:
+            import time
             from selenium.webdriver.common.by import By
             from selenium.webdriver.support.ui import WebDriverWait
             from selenium.webdriver.support import expected_conditions as EC
 
-            wait = WebDriverWait(driver, self.timeout)
+            driver = self._get_driver()
+            try:
+                # ログインページへ
+                driver.get(self.LOGIN_URL)
+                time.sleep(1)
 
-            email_input = wait.until(EC.presence_of_element_located((By.NAME, "mail")))
-            email_input.clear()
-            email_input.send_keys(credentials.email)
+                wait = WebDriverWait(driver, self.timeout)
+                email_input = wait.until(EC.presence_of_element_located((By.NAME, "mail")))
+                email_input.clear()
+                email_input.send_keys(credentials.email)
 
-            password_input = driver.find_element(By.NAME, "password")
-            password_input.clear()
-            password_input.send_keys(credentials.password)
+                password_input = driver.find_element(By.NAME, "password")
+                password_input.clear()
+                password_input.send_keys(credentials.password)
 
-            # ログインボタンクリック
-            login_btn = driver.find_element(
-                By.CSS_SELECTOR, "input[type='submit'][value='ログイン']"
-            )
-            login_btn.click()
+                login_btn = driver.find_element(
+                    By.CSS_SELECTOR, "input[type='submit'][value='ログイン']"
+                )
+                login_btn.click()
+                time.sleep(2)
 
-            # ログイン完了待機
-            await asyncio.sleep(2)
+                if "mypage.syosetu.com" not in driver.current_url:
+                    try:
+                        error_elem = driver.find_element(By.CSS_SELECTOR, ".error, .alert, .warning")
+                        raise AuthError(f"ログイン失敗: {error_elem.text}", self.platform)
+                    except Exception:
+                        raise AuthError(
+                            "ログインに失敗しました（リダイレクトされませんでした）", self.platform
+                        )
 
-            # マイページにリダイレクトされることを確認
-            if "mypage.syosetu.com" not in driver.current_url:
-                # エラーメッセージ確認
-                try:
-                    error_elem = driver.find_element(By.CSS_SELECTOR, ".error, .alert, .warning")
-                    raise AuthError(f"ログイン失敗: {error_elem.text}", self.platform)
-                except Exception:
-                    raise AuthError(
-                        "ログインに失敗しました（リダイレクトされませんでした）", self.platform
-                    )
+                match = re.search(r"/(\d+)/", driver.current_url)
+                if match:
+                    credentials.user_id = match.group(1)
 
-            # ユーザーID取得（マイページURLから）
-            match = re.search(r"/(\d+)/", driver.current_url)
-            if match:
-                credentials.user_id = match.group(1)
+                self._logged_in = True
+                logger.info("なろうログイン成功", extra={"user_id": credentials.user_id})
+                return True
+            except AuthError:
+                self._close_driver()
+                raise
+            except Exception as e:
+                logger.exception("なろう認証エラー")
+                self._close_driver()
+                raise AuthError(f"認証中にエラーが発生しました: {e}", self.platform)
 
-            self._logged_in = True
-            logger.info("なろうログイン成功", extra={"user_id": credentials.user_id})
-            return True
-
-        except AuthError:
-            raise
-        except Exception as e:
-            logger.exception("なろう認証エラー")
-            self._close_driver()
-            raise AuthError(f"認証中にエラーが発生しました: {e}", self.platform)
+        return await asyncio.to_thread(_sync_auth)
 
     @async_retry(max_attempts=3, base_delay=5.0)
     async def publish(
@@ -176,119 +171,119 @@ class NarouPublisher(PublisherAdapter):
         if not self._logged_in:
             await self.authenticate(credentials)
 
-        driver = self._get_driver()
-
-        try:
+        def _sync_publish() -> PublishResult:
+            import time
             from selenium.webdriver.common.by import By
             from selenium.webdriver.support.ui import WebDriverWait, Select
             from selenium.webdriver.support import expected_conditions as EC
 
-            wait = WebDriverWait(driver, self.timeout)
+            driver = self._get_driver()
+            try:
+                wait = WebDriverWait(driver, self.timeout)
 
-            # 小説新規作成ページへ
-            driver.get(self.NOVEL_NEW_URL)
-            await asyncio.sleep(1)
+                # 小説新規作成ページへ
+                driver.get(self.NOVEL_NEW_URL)
+                time.sleep(1)
 
-            # タイトル入力
-            title_input = wait.until(EC.presence_of_element_located((By.NAME, "title")))
-            title_input.clear()
-            title_input.send_keys(novel.get("title", "無題")[:100])  # なろうは100文字制限
+                # タイトル入力
+                title_input = wait.until(EC.presence_of_element_located((By.NAME, "title")))
+                title_input.clear()
+                title_input.send_keys(novel.get("title", "無題")[:100])
 
-            # あらすじ入力
-            synopsis_area = driver.find_element(By.NAME, "story")
-            synopsis_area.clear()
-            synopsis_area.send_keys(novel.get("synopsis", "")[:2000])  # 2000文字制限
+                # あらすじ入力
+                synopsis_area = driver.find_element(By.NAME, "story")
+                synopsis_area.clear()
+                synopsis_area.send_keys(novel.get("synopsis", "")[:2000])
 
-            # ジャンル選択（デフォルト: 一般文芸）
-            genre_select = Select(driver.find_element(By.NAME, "genre"))
-            genre_map = {
-                "fantasy": "101",  # ファンタジー
-                "sf": "102",  # SF
-                "horror": "103",  # ホラー
-                "mystery": "104",  # ミステリー
-                "romance": "105",  # 恋愛
-                "general": "9901",  # 一般文芸
-            }
-            genre_value = genre_map.get(novel.get("genre", "general"), "9901")
-            genre_select.select_by_value(genre_value)
+                # ジャンル選択
+                genre_select = Select(driver.find_element(By.NAME, "genre"))
+                genre_map = {
+                    "fantasy": "101",
+                    "sf": "102",
+                    "horror": "103",
+                    "mystery": "104",
+                    "romance": "105",
+                    "general": "9901",
+                }
+                genre_value = genre_map.get(novel.get("genre", "general"), "9901")
+                genre_select.select_by_value(genre_value)
 
-            # キーワード設定
-            if novel.get("keywords"):
-                keyword_input = driver.find_element(By.NAME, "keyword")
-                keyword_input.send_keys(", ".join(novel["keywords"])[:200])
+                # キーワード設定
+                if novel.get("keywords"):
+                    keyword_input = driver.find_element(By.NAME, "keyword")
+                    keyword_input.send_keys(", ".join(novel["keywords"])[:200])
 
-            # R18設定
-            if novel.get("is_adult"):
-                try:
-                    r18_checkbox = driver.find_element(By.NAME, "isr18")
-                    if not r18_checkbox.is_selected():
-                        r18_checkbox.click()
-                except Exception:
-                    pass  # チェックボックスが見つからない場合はスキップ
+                # R18設定
+                if novel.get("is_adult"):
+                    try:
+                        r18_checkbox = driver.find_element(By.NAME, "isr18")
+                        if not r18_checkbox.is_selected():
+                            r18_checkbox.click()
+                    except Exception:
+                        pass
 
-            # 第1話本文入力
-            episode_title_input = driver.find_element(By.NAME, "episodetitle1")
-            episode_title_input.clear()
-            episode_title_input.send_keys(chapter.get("title", "第1話")[:100])
+                # 第1話本文入力
+                episode_title_input = driver.find_element(By.NAME, "episodetitle1")
+                episode_title_input.clear()
+                episode_title_input.send_keys(chapter.get("title", "第1話")[:100])
 
-            episode_body_area = driver.find_element(By.NAME, "episodebody1")
-            episode_body_area.clear()
-            episode_body_area.send_keys(self._format_for_narou(chapter.get("content", "")))
+                episode_body_area = driver.find_element(By.NAME, "episodebody1")
+                episode_body_area.clear()
+                episode_body_area.send_keys(self._format_for_narou(chapter.get("content", "")))
 
-            # 確認画面へ
-            confirm_btn = driver.find_element(
-                By.CSS_SELECTOR, "input[type='submit'][value='確認画面へ']"
-            )
-            confirm_btn.click()
-            await asyncio.sleep(1)
-
-            # 確認画面で「登録する」ボタンをクリック
-            register_btn = wait.until(
-                EC.element_to_be_clickable(
-                    (By.CSS_SELECTOR, "input[type='submit'][value='登録する']")
+                # 確認画面へ
+                confirm_btn = driver.find_element(
+                    By.CSS_SELECTOR, "input[type='submit'][value='確認画面へ']"
                 )
-            )
-            register_btn.click()
-            await asyncio.sleep(2)
+                confirm_btn.click()
+                time.sleep(1)
 
-            # 投稿完了後のURLから小説IDを抽出
-            current_url = driver.current_url
-            novel_id_match = re.search(r"/novel/(\d+)/", current_url)
-
-            if not novel_id_match:
-                # マイページに戻った場合、最新の小説IDを取得
-                driver.get(self.MY_PAGE_URL)
-                await asyncio.sleep(1)
-                # 「作品管理」リンクから最新作品を探す
-                novel_links = driver.find_elements(By.CSS_SELECTOR, "a[href*='/novelmanage/']")
-                if novel_links:
-                    novel_id_match = re.search(
-                        r"/novelmanage/(\d+)/", novel_links[0].get_attribute("href")
+                # 確認画面で「登録する」ボタンをクリック
+                register_btn = wait.until(
+                    EC.element_to_be_clickable(
+                        (By.CSS_SELECTOR, "input[type='submit'][value='登録する']")
                     )
-
-            if novel_id_match:
-                novel_id = novel_id_match.group(1)
-                post_url = f"https://ncode.syosetu.com/n{novel_id}/"
-                return PublishResult(
-                    success=True,
-                    platform=self.platform,
-                    post_id=novel_id,
-                    url=post_url,
-                    metadata={"novel_id": novel_id, "episode": 1},
                 )
-            else:
-                raise ValidationError("投稿後の小説IDを取得できませんでした", self.platform)
+                register_btn.click()
+                time.sleep(2)
 
-        except ValidationError:
-            raise
-        except Exception as e:
-            logger.exception("なろう投稿エラー")
-            # レート制限判定
-            if "アクセスが集中" in str(e) or "しばらく経ってから" in str(e):
-                raise RateLimitError(
-                    "アクセス集中のため投稿できません", self.platform, retry_after=300
-                )
-            raise NetworkError(f"投稿中にエラーが発生しました: {e}", self.platform)
+                # 投稿完了後のURLから小説IDを抽出
+                current_url = driver.current_url
+                novel_id_match = re.search(r"/novel/(\d+)/", current_url)
+
+                if not novel_id_match:
+                    driver.get(self.MY_PAGE_URL)
+                    time.sleep(1)
+                    novel_links = driver.find_elements(By.CSS_SELECTOR, "a[href*='/novelmanage/']")
+                    if novel_links:
+                        novel_id_match = re.search(
+                            r"/novelmanage/(\d+)/", novel_links[0].get_attribute("href")
+                        )
+
+                if novel_id_match:
+                    novel_id = novel_id_match.group(1)
+                    post_url = f"https://ncode.syosetu.com/n{novel_id}/"
+                    return PublishResult(
+                        success=True,
+                        platform=self.platform,
+                        post_id=novel_id,
+                        url=post_url,
+                        metadata={"novel_id": novel_id, "episode": 1},
+                    )
+                else:
+                    raise ValidationError("投稿後の小説IDを取得できませんでした", self.platform)
+
+            except ValidationError:
+                raise
+            except Exception as e:
+                logger.exception("なろう投稿エラー")
+                if "アクセスが集中" in str(e) or "しばらく経ってから" in str(e):
+                    raise RateLimitError(
+                        "アクセス集中のため投稿できません", self.platform, retry_after=300
+                    )
+                raise NetworkError(f"投稿中にエラーが発生しました: {e}", self.platform)
+
+        return await asyncio.to_thread(_sync_publish)
 
     @async_retry(max_attempts=3, base_delay=5.0)
     async def update_chapter(
@@ -298,76 +293,79 @@ class NarouPublisher(PublisherAdapter):
         if not self._logged_in:
             await self.authenticate(credentials)
 
-        driver = self._get_driver()
-
-        try:
+        def _sync_update() -> PublishResult:
+            import time
             from selenium.webdriver.common.by import By
             from selenium.webdriver.support.ui import WebDriverWait
             from selenium.webdriver.support import expected_conditions as EC
 
-            wait = WebDriverWait(driver, self.timeout)
+            driver = self._get_driver()
+            try:
+                wait = WebDriverWait(driver, self.timeout)
 
-            # 作品管理ページへ
-            manage_url = f"{self.EPISODE_POST_URL}{post_id}/"
-            driver.get(manage_url)
-            await asyncio.sleep(1)
+                # 作品管理ページへ
+                manage_url = f"{self.EPISODE_POST_URL}{post_id}/"
+                driver.get(manage_url)
+                time.sleep(1)
 
-            # 「新しい話を追加」ボタンを探してクリック
-            add_btn = wait.until(
-                EC.element_to_be_clickable(
-                    (By.CSS_SELECTOR, "a[href*='noveladd/'], input[value='新しい話を追加']")
+                # 「新しい話を追加」ボタンを探してクリック
+                add_btn = wait.until(
+                    EC.element_to_be_clickable(
+                        (By.CSS_SELECTOR, "a[href*='noveladd/'], input[value='新しい話を追加']")
+                    )
                 )
-            )
-            add_btn.click()
-            await asyncio.sleep(1)
+                add_btn.click()
+                time.sleep(1)
 
-            # 話数を特定（既存話数+1）
-            episode_num = chapter.get("ep_num", 1)
+                # 話数を特定（既存話数+1）
+                episode_num = chapter.get("ep_num", 1)
 
-            # タイトル入力
-            title_input = wait.until(
-                EC.presence_of_element_located((By.NAME, f"episodetitle{episode_num}"))
-            )
-            title_input.clear()
-            title_input.send_keys(chapter.get("title", f"第{episode_num}話")[:100])
-
-            # 本文入力
-            body_area = driver.find_element(By.NAME, f"episodebody{episode_num}")
-            body_area.clear()
-            body_area.send_keys(self._format_for_narou(chapter.get("content", "")))
-
-            # 確認画面へ
-            confirm_btn = driver.find_element(
-                By.CSS_SELECTOR, "input[type='submit'][value='確認画面へ']"
-            )
-            confirm_btn.click()
-            await asyncio.sleep(1)
-
-            # 登録
-            register_btn = wait.until(
-                EC.element_to_be_clickable(
-                    (By.CSS_SELECTOR, "input[type='submit'][value='登録する']")
+                # タイトル入力
+                title_input = wait.until(
+                    EC.presence_of_element_located((By.NAME, f"episodetitle{episode_num}"))
                 )
-            )
-            register_btn.click()
-            await asyncio.sleep(2)
+                title_input.clear()
+                title_input.send_keys(chapter.get("title", f"第{episode_num}話")[:100])
 
-            post_url = f"https://ncode.syosetu.com/n{post_id}/{episode_num}/"
-            return PublishResult(
-                success=True,
-                platform=self.platform,
-                post_id=post_id,
-                url=post_url,
-                metadata={"novel_id": post_id, "episode": episode_num},
-            )
+                # 本文入力
+                body_area = driver.find_element(By.NAME, f"episodebody{episode_num}")
+                body_area.clear()
+                body_area.send_keys(self._format_for_narou(chapter.get("content", "")))
 
-        except Exception as e:
-            logger.exception("なろう話追加エラー")
-            if "アクセスが集中" in str(e):
-                raise RateLimitError(
-                    "アクセス集中のため話追加できません", self.platform, retry_after=300
+                # 確認画面へ
+                confirm_btn = driver.find_element(
+                    By.CSS_SELECTOR, "input[type='submit'][value='確認画面へ']"
                 )
-            raise NetworkError(f"話追加中にエラーが発生しました: {e}", self.platform)
+                confirm_btn.click()
+                time.sleep(1)
+
+                # 登録
+                register_btn = wait.until(
+                    EC.element_to_be_clickable(
+                        (By.CSS_SELECTOR, "input[type='submit'][value='登録する']")
+                    )
+                )
+                register_btn.click()
+                time.sleep(2)
+
+                post_url = f"https://ncode.syosetu.com/n{post_id}/{episode_num}/"
+                return PublishResult(
+                    success=True,
+                    platform=self.platform,
+                    post_id=post_id,
+                    url=post_url,
+                    metadata={"novel_id": post_id, "episode": episode_num},
+                )
+
+            except Exception as e:
+                logger.exception("なろう話追加エラー")
+                if "アクセスが集中" in str(e):
+                    raise RateLimitError(
+                        "アクセス集中のため話追加できません", self.platform, retry_after=300
+                    )
+                raise NetworkError(f"話追加中にエラーが発生しました: {e}", self.platform)
+
+        return await asyncio.to_thread(_sync_update)
 
     async def get_post_status(self, post_id: str, credentials: NarouCredentials) -> dict[str, Any]:
         """投稿ステータス取得（公開状態、閲覧数等）"""

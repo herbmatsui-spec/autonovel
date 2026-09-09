@@ -39,6 +39,7 @@ class PublishRequest(BaseModel):
         default_factory=lambda: ["kakuyomu", "narou"], description="投稿先プラットフォーム"
     )
     episode_range: tuple[int, int] | None = Field(None, description="投稿対象話数範囲 (from, to)")
+    episode_ids: list[int] | None = Field(None, description="投稿対象エピソードIDリスト")
     schedule: dict[str, Any] | None = Field(None, description="定期投稿スケジュール設定")
     credentials: dict[str, dict[str, Any]] | None = Field(
         None, description="プラットフォーム別認証情報（環境変数優先）"
@@ -178,7 +179,40 @@ async def publish_commercial(request: PublishRequest, api_key: str = Depends(req
                 # ストアから取得
                 credentials[platform] = credential_store.get(platform)
 
-        # 4. パイプラインで投稿実行
+        # 4. 予約投稿または非同期タスク投入 (Step 50, 51)
+        serializable_credentials = {}
+        for p, cred in credentials.items():
+            if cred is not None:
+                if hasattr(cred, "__dict__"):
+                    serializable_credentials[p] = {
+                        k: v for k, v in cred.__dict__.items() if not k.startswith("_")
+                    }
+                elif isinstance(cred, dict):
+                    serializable_credentials[p] = cred
+
+        from src.backend.tasks.commercial_tasks import (
+            schedule_commercial_publish,
+            get_scheduled_commercial_tasks,
+            cancel_commercial_task,
+        )
+
+        if request.schedule:
+            # 予約投稿ジョブの登録 (Step 50, 51)
+            job_info = schedule_commercial_publish(
+                book_id=request.book_id,
+                platforms=request.platforms,
+                credentials=serializable_credentials,
+                episode_ids=request.episode_ids,
+                publish_at=request.schedule,
+            )
+            return {
+                "success": True,
+                "status": "scheduled",
+                "message": "Commercial publish scheduled successfully",
+                "data": job_info,
+            }
+
+        # 即時投稿パイプライン実行
         pipeline = CommercialPipeline()
         publish_results = await pipeline._publish_to_platforms(
             novel=novel_data,
@@ -189,11 +223,6 @@ async def publish_commercial(request: PublishRequest, api_key: str = Depends(req
 
         # 5. 結果をDBに保存
         await _save_publish_records(request.book_id, publish_results)
-
-        # 6. スケジュール設定がある場合はジョブ登録（将来実装）
-        if request.schedule:
-            # TODO: APSchedulerでジョブ登録
-            pass
 
         # レスポンス整形
         response_data = {
@@ -225,6 +254,30 @@ async def publish_commercial(request: PublishRequest, api_key: str = Depends(req
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Publish failed: {str(e)}")
+
+
+@router.get("/scheduled-tasks/{book_id}", response_model=dict[str, Any])
+async def get_scheduled_publish_tasks(
+    book_id: int, api_key: str = Depends(require_api_key)
+) -> dict[str, Any]:
+    """予約投稿ジョブの一覧を取得する (Step 56)."""
+    from src.backend.tasks.commercial_tasks import get_scheduled_commercial_tasks
+    tasks = get_scheduled_commercial_tasks(book_id)
+    return {"success": True, "data": tasks}
+
+
+@router.delete("/scheduled-tasks/{task_id}", response_model=dict[str, Any])
+async def cancel_scheduled_publish_task(
+    task_id: str, api_key: str = Depends(require_api_key)
+) -> dict[str, Any]:
+    """予約投稿ジョブを取り消す (Step 57)."""
+    from src.backend.tasks.commercial_tasks import cancel_commercial_task
+    cancelled = cancel_commercial_task(task_id)
+    return {
+        "success": cancelled,
+        "task_id": task_id,
+        "status": "cancelled" if cancelled else "not_found_or_already_run",
+    }
 
 
 @router.post("/publish/status", response_model=dict[str, Any])

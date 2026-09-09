@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends
 from src.backend.auth import require_api_key
 from src.backend.database.uow import UnitOfWork
 from src.core.container import AppContainer
-from src.models.api_schemas import BookSchema
+from src.models.api_schemas import BookSchema, BookCreateRequest
 
 router = APIRouter(prefix="/api/books", tags=["books"])
 
@@ -37,6 +37,33 @@ async def get_book(book_id: int):
         from src.core.exceptions import NotFoundError
 
         raise NotFoundError("Book not found", resource_type="Book", resource_id=str(book_id))
+
+    return {
+        "id": b.id,
+        "title": b.title,
+        "genre": b.genre,
+        "concept": b.concept,
+        "synopsis": b.synopsis,
+        "target_eps": b.target_eps,
+        "cumulative_stress": b.cumulative_tension or 0.0,
+        "created_at": b.created_at,
+    }
+
+
+@router.post("", response_model=BookSchema)
+@router.post("/", response_model=BookSchema)
+async def create_book(payload: BookCreateRequest, api_key: str = Depends(require_api_key)):
+    async with UnitOfWork(AppContainer.db()) as uow:
+        book_id = await uow.books.create_book(
+            title=payload.title,
+            genre=payload.genre,
+            concept=payload.concept,
+            synopsis=payload.synopsis,
+            target_eps=payload.target_eps,
+            style_dna={},
+            marketing_data={},
+        )
+        b = await uow.books.get_book(book_id)
 
     return {
         "id": b.id,

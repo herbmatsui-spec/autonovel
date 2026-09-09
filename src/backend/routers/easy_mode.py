@@ -249,6 +249,7 @@ async def generate_content(
                 if input_data.llm_config and hasattr(input_data.llm_config, "model_dump")
                 else input_data.llm_config
             ),
+            "book_id": input_data.book_id,
         }
 
         # タスクをキューに投入 (Huey 非同期タスク呼び出し)

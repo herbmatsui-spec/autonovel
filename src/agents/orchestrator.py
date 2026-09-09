@@ -9,6 +9,11 @@ from src.agents.event_bus import AgentEvent, EventBus
 from src.agents.skill_base import SkillAgent
 
 
+class CyclicDependencyError(ValueError):
+    """スキル間の循環依存が検出された場合に送出されるエラー"""
+    pass
+
+
 class AgentName(str, Enum):
     PLANNING = "planning"
     PLOT = "plot"
@@ -31,7 +36,7 @@ class AgentContext:
 
 @dataclass
 class AgentResult:
-    next_agent: AgentName | None
+    next_agent: AgentName | str | None
     artifacts: dict[str, Any]
     should_retry: bool = False
     error: str | None = None
@@ -40,10 +45,20 @@ class AgentResult:
 AgentNode = Callable[[AgentContext], Awaitable[AgentResult]]
 
 
+def _make_skill_node(inst: SkillAgent, nxt: str | None) -> AgentNode:
+    """トポロジカル順序の次ノードを自動設定するノードクロージャ"""
+    async def _node(ctx: AgentContext) -> AgentResult:
+        res = await inst.run(ctx)
+        if res.next_agent is None and nxt is not None and not res.error:
+            res.next_agent = nxt
+        return res
+    return _node
+
+
 class Orchestrator:
     def __init__(
         self,
-        nodes: dict[AgentName, AgentNode],
+        nodes: dict[AgentName | str, AgentNode],
         event_bus: Optional[EventBus] = None,
         correlation_id: Optional[str] = None,
     ):
@@ -52,6 +67,8 @@ class Orchestrator:
         self.correlation_id = correlation_id or "unknown"
         self._skill_registry: dict[str, type[SkillAgent]] = {}
         self._active_skill_version: str = "v1"
+        self._ordered_skill_names: list[str] = []
+        self._skill_instances: dict[str, SkillAgent] = {}
 
     def register_discovered_skills(self, skill_pkg: str = "src.agents.skills.v1") -> None:
         """指定パッケージからスキルを検出し、内部レジストリに登録する。"""
@@ -85,25 +102,36 @@ class Orchestrator:
         return self._skill_registry.get(skill_name)
 
     def build_execution_order(
-        self, manifest: List[dict], available_skills: dict[str, type[SkillAgent]]
+        self, manifest: List[dict] | Any, available_skills: dict[str, type[SkillAgent]] | None = None
     ) -> List[type[SkillAgent]]:
         """マニフェストに基づき、依存関係を解決して実行順序を決定する（トポロジカルソート）。"""
-        skill_nodes = {skill["name"]: skill for skill in manifest}
         from collections import defaultdict, deque
 
+        raw_list = manifest.skills if hasattr(manifest, "skills") else manifest
+        skills_data = []
+        for s in raw_list:
+            if hasattr(s, "model_dump"):
+                skills_data.append(s.model_dump(by_alias=True))
+            elif isinstance(s, dict):
+                skills_data.append(s)
+
+        skill_nodes = {s["name"]: s for s in skills_data}
         graph = defaultdict(list)
         indegree = defaultdict(int)
-        for skill in manifest:
+        for skill in skills_data:
             name = skill["name"]
             for dep in skill.get("depends_on", []):
-                graph[dep].append(name)
-                indegree[name] += 1
+                if dep in skill_nodes:
+                    graph[dep].append(name)
+                    indegree[name] += 1
             for after in skill.get("runs_after", []):
-                graph[after].append(name)
-                indegree[name] += 1
+                if after in skill_nodes:
+                    graph[after].append(name)
+                    indegree[name] += 1
             for before in skill.get("runs_before", []):
-                graph[name].append(before)
-                indegree[before] += 1
+                if before in skill_nodes:
+                    graph[name].append(before)
+                    indegree[before] += 1
 
         queue = deque([name for name in skill_nodes if indegree[name] == 0])
         order = []
@@ -116,7 +144,11 @@ class Orchestrator:
                     queue.append(neighbor)
 
         if len(order) != len(skill_nodes):
-            raise RuntimeError("Circular dependency detected in skill manifest")
+            remaining = set(skill_nodes.keys()) - set(order)
+            raise CyclicDependencyError(f"Circular dependency detected in skill manifest: {sorted(list(remaining))}")
+
+        if available_skills is None:
+            return order
 
         result = []
         for name in order:
@@ -127,6 +159,91 @@ class Orchestrator:
                 logger = logging.getLogger(__name__)
                 logger.warning(f"Skill '{name}' in manifest but not registered, skipping")
         return result
+
+    @classmethod
+    def from_manifest(
+        cls,
+        manifest_path: str,
+        dependencies: dict[str, Any] | None = None,
+        event_bus: Optional[EventBus] = None,
+        correlation_id: Optional[str] = None,
+    ) -> "Orchestrator":
+        """マニフェストYAMLからトポロジカル順序付きの実行Orchestratorインスタンスを構築する (Step 16, 20)"""
+        import logging
+        from src.agents.skill_base import validate_manifest, load_skill_from_spec, SkillManifestItem
+
+        logger = logging.getLogger(__name__)
+        manifest = validate_manifest(manifest_path)
+        deps = dependencies or {}
+
+        # 1. enabled なスキルのみを抽出 (Step 20)
+        active_items: list[SkillManifestItem] = []
+        for s in manifest.skills:
+            if s.config.get("enabled", True):
+                active_items.append(s)
+            else:
+                logger.info(f"Skill '{s.name}' is disabled in manifest config, skipping.")
+
+        # 2. トポロジカルソートで順序を決定 (Step 15)
+        item_dict = {item.name: item for item in active_items}
+        from collections import defaultdict, deque
+
+        graph = defaultdict(list)
+        indegree = defaultdict(int)
+        for item in active_items:
+            name = item.name
+            for dep in item.depends_on:
+                if dep in item_dict:
+                    graph[dep].append(name)
+                    indegree[name] += 1
+            for after in item.runs_after:
+                if after in item_dict:
+                    graph[after].append(name)
+                    indegree[name] += 1
+            for before in item.runs_before:
+                if before in item_dict:
+                    graph[name].append(before)
+                    indegree[before] += 1
+
+        queue = deque([name for name in item_dict if indegree[name] == 0])
+        ordered_names: list[str] = []
+        while queue:
+            node = queue.popleft()
+            ordered_names.append(node)
+            for neighbor in graph[node]:
+                indegree[neighbor] -= 1
+                if indegree[neighbor] == 0:
+                    queue.append(neighbor)
+
+        if len(ordered_names) != len(item_dict):
+            remaining = set(item_dict.keys()) - set(ordered_names)
+            raise CyclicDependencyError(f"Circular dependency detected in skill manifest: {sorted(list(remaining))}")
+
+        # 3. 各スキルをインスタンス化
+        skill_instances: dict[str, SkillAgent] = {}
+        for name in ordered_names:
+            item = item_dict[name]
+            skill_instances[name] = load_skill_from_spec(item, event_bus=event_bus, **deps)
+
+        # 4. ノード関数の構築
+        nodes: dict[AgentName | str, AgentNode] = {}
+        for idx, name in enumerate(ordered_names):
+            instance = skill_instances[name]
+            next_name = ordered_names[idx + 1] if idx + 1 < len(ordered_names) else None
+            nodes[name] = _make_skill_node(instance, next_name)
+            # 互換性のための小文字短縮名や AgentName キーも登録
+            short_name = name.replace("Skill", "").replace("Agent", "").lower()
+            nodes[short_name] = nodes[name]
+            try:
+                agent_enum = AgentName(short_name)
+                nodes[agent_enum] = nodes[name]
+            except ValueError:
+                pass
+
+        orch = cls(nodes=nodes, event_bus=event_bus, correlation_id=correlation_id)
+        orch._ordered_skill_names = ordered_names
+        orch._skill_instances = skill_instances
+        return orch
 
     def replace_skill(self, name: str, new_cls: type[SkillAgent]) -> None:
         """スキルをホットスワップで置き換える。"""
@@ -331,37 +448,53 @@ class Orchestrator:
         except Exception:
             pass
 
-    async def run(self, ctx: AgentContext, start: AgentName) -> AgentContext:
-        current = start
+    async def run(self, ctx: AgentContext, start: AgentName | str | None = None) -> AgentContext:
+        if start is None:
+            if self._ordered_skill_names:
+                current = self._ordered_skill_names[0]
+            elif self.nodes:
+                current = next(iter(self.nodes.keys()))
+            else:
+                raise ValueError("No registered nodes to execute in Orchestrator")
+        else:
+            current = start
+
         while current:
+            agent_key = current.value if hasattr(current, "value") else str(current)
             # ノード実行前イベント発行
             if self.event_bus:
                 await self.event_bus.publish_async(
                     AgentEvent(
-                        agent=current.value,
+                        agent=agent_key,
                         payload={"status": "started", "ep_num": ctx.ep_num},
                         correlation_id=self.correlation_id,
                     )
                 )
 
-            node = self.nodes.get(current)
+            node = self.nodes.get(current) or self.nodes.get(agent_key)
             if node is None:
-                raise RuntimeError(f"Agent node not registered: {current.value}")
+                raise RuntimeError(f"Agent node not registered: {agent_key}")
 
             # フォールトトレラント: 個別スキル失敗を捕捉し、次のスキルへ継続可能にする
             try:
                 result = await node(ctx)
                 ctx.artifacts.update(result.artifacts)
 
+                next_agent_val = (
+                    result.next_agent.value
+                    if hasattr(result.next_agent, "value")
+                    else (str(result.next_agent) if result.next_agent is not None else None)
+                )
+
                 # ノード実行後イベント発行
                 if self.event_bus:
                     await self.event_bus.publish_async(
                         AgentEvent(
-                            agent=current.value,
+                            agent=agent_key,
                             payload={
                                 "status": "completed" if not result.error else "failed",
                                 "ep_num": ctx.ep_num,
-                                "next_agent": result.next_agent.value if result.next_agent else None,
+                                "next_agent": next_agent_val,
                                 "should_retry": result.should_retry,
                                 "error": result.error,
                             },
@@ -373,11 +506,11 @@ class Orchestrator:
                     continue
                 if result.error:
                     # エラーが発生しても次のスキルへ継続するオプション（artifacts にエラー情報を残す）
-                    ctx.artifacts[f"{current.value}_error"] = result.error
+                    ctx.artifacts[f"{agent_key}_error"] = result.error
                     if self.event_bus:
                         await self.event_bus.publish_async(
                             AgentEvent(
-                                agent=current.value,
+                                agent=agent_key,
                                 payload={
                                     "status": "error_continued",
                                     "ep_num": ctx.ep_num,
@@ -392,12 +525,12 @@ class Orchestrator:
 
             except Exception as e:
                 # 予期しない例外も捕捉し、継続可能にする
-                error_msg = f"Unexpected error in {current.value}: {e}"
-                ctx.artifacts[f"{current.value}_exception"] = error_msg
+                error_msg = f"Unexpected error in {agent_key}: {e}"
+                ctx.artifacts[f"{agent_key}_exception"] = error_msg
                 if self.event_bus:
                     await self.event_bus.publish_async(
                         AgentEvent(
-                            agent=current.value,
+                            agent=agent_key,
                             payload={
                                 "status": "exception_continued",
                                 "ep_num": ctx.ep_num,
@@ -406,8 +539,5 @@ class Orchestrator:
                             correlation_id=self.correlation_id,
                         )
                     )
-                # 次のスキルへ継続
-                # エラー時の次のスキルは、ノード登録時のデフォルトを使うか、スキップする
-                # ここでは単純にループを抜ける（設定で制御可能にする拡張も可能）
                 raise RuntimeError(error_msg)
         return ctx

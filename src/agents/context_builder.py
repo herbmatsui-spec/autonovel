@@ -11,12 +11,13 @@ import warnings
 from typing import Any
 
 from src.agents.base import BaseAgent
+from src.agents.context_builder_agent import ContextBuilderAgent  # Step 63: 直接エクスポート
 
 
 class ContextBuilder:
     """@deprecated 執筆に必要な完全なコンテキストを構築するユーティリティクラス
 
-    新しいコードでは ContextBuilderAgent を使用してください。
+    新しいコードでは ContextBuilderAgent を使用してください。(Phase 6: Step 63)
     """
 
     def __init__(self, agent: BaseAgent):
@@ -30,6 +31,9 @@ class ContextBuilder:
             stacklevel=2,
         )
         self.agent = agent
+        repo = getattr(agent, "repo", None)
+        llm = getattr(agent, "llm", None)
+        self._delegate = ContextBuilderAgent(repo=repo, llm=llm)
 
     async def build_full_writing_context(
         self,
@@ -40,8 +44,15 @@ class ContextBuilder:
         style_tag: str | None = None,
     ) -> dict[str, Any]:
         """執筆に必要な完全なコンテキストを構築する。"""
-        return await self._build_full_writing_context_internal(
-            book_id, branch_id, ep_num, target_word_count, style_tag
+        # ContextBuilderAgent の内部実装へ透過的に委譲
+        repo = getattr(self.agent, "repo", None)
+        return await self._delegate._build_full_writing_context_internal(
+            repo=repo,
+            book_id=book_id,
+            branch_id=branch_id,
+            ep_num=ep_num,
+            target_word_count=target_word_count,
+            style_tag=style_tag,
         )
 
     async def _build_full_writing_context_internal(

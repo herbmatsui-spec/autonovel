@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
-import { CharacterParams, GenerationState, ChapterItem, ActiveAuditHighlight } from "../types";
+import { CharacterParams, GenerationState, ChapterItem, ActiveAuditHighlight, BookItem } from "../types";
 import { LLMConfigOverride } from "../types/easyMode";
 import { GeneratedPlotStructure } from "../types/reversePlot";
+import { fetchBooks, fetchBookById } from "../api/books";
 
 interface NovelContextType {
   character: CharacterParams;
@@ -29,6 +30,10 @@ interface NovelContextType {
   applySuggestion: (suggestion: string) => void;
   syncGenerationToEditor: (output: string) => void;
   updateActiveChapterText: (text: string) => void;
+  books: BookItem[];
+  selectedBook: BookItem | null;
+  isLoadingBooks: boolean;
+  refreshBooks: () => Promise<void>;
 }
 
 const defaultCharacter: CharacterParams = {
@@ -81,6 +86,40 @@ export const NovelProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       return {};
     }
   });
+
+  const [books, setBooks] = useState<BookItem[]>([]);
+  const [selectedBook, setSelectedBook] = useState<BookItem | null>(null);
+  const [isLoadingBooks, setIsLoadingBooks] = useState<boolean>(false);
+
+  const refreshBooks = async () => {
+    setIsLoadingBooks(true);
+    try {
+      const data = await fetchBooks();
+      setBooks(data);
+      const current = data.find((b) => b.id === selectedBookId);
+      setSelectedBook(current || null);
+    } finally {
+      setIsLoadingBooks(false);
+    }
+  };
+
+  // 作品切り替え時にその作品の章一覧を取得
+  useEffect(() => {
+    let cancelled = false;
+    const loadChapters = async () => {
+      setIsLoadingBooks(true);
+      try {
+        const book = await fetchBookById(selectedBookId);
+        setSelectedBook(book);
+        // バックエンドから章一覧を取得（存在する場合）
+        // TODO: 実装後に章APIを呼ぶ
+      } finally {
+        if (!cancelled) setIsLoadingBooks(false);
+      }
+    };
+    loadChapters();
+    return () => { cancelled = true; };
+  }, [selectedBookId]);
 
   // llmConfig 変更時に localStorage へ同期
   useEffect(() => {
@@ -161,6 +200,10 @@ export const NovelProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         applySuggestion,
         syncGenerationToEditor,
         updateActiveChapterText,
+        books,
+        selectedBook,
+        isLoadingBooks,
+        refreshBooks,
       }}
     >
       {children}

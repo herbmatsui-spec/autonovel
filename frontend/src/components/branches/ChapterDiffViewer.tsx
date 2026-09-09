@@ -5,6 +5,7 @@ type ChapterDiffViewerProps = {
   chapterNumber: number;
   branchAId: number;
   branchBId: number;
+  bookId: number;
   onClose: () => void;
 };
 
@@ -12,6 +13,7 @@ export const ChapterDiffViewer: React.FC<ChapterDiffViewerProps> = ({
   chapterNumber,
   branchAId,
   branchBId,
+  bookId,
   onClose
 }) => {
   const [diffData, setDiffData] = React.useState<ChapterDiffResponse | null>(null);
@@ -24,7 +26,7 @@ export const ChapterDiffViewer: React.FC<ChapterDiffViewerProps> = ({
       try {
         setIsLoading(true);
         const response = await fetch(
-          `/api/branches/diff?bookId=1&branchA=${branchAId}&branchB=${branchBId}&chapter=${chapterNumber}`
+          `/api/branches/diff?bookId=${bookId}&branchA=${branchAId}&branchB=${branchBId}&chapter=${chapterNumber}`
           // Note: In a real app, bookId would come from context or props
         );
         if (!response.ok) {

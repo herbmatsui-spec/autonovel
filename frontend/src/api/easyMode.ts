@@ -35,7 +35,20 @@ export async function generateContentStream(
     body: JSON.stringify(input),
     signal,
   });
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) {
+    let errorMessage = await res.text();
+    try {
+      const errorJson = await res.json();
+      if (errorJson.detail) {
+        errorMessage = errorJson.detail;
+      } else if (errorJson.message) {
+        errorMessage = errorJson.message;
+      }
+    } catch (e) {
+      // If not JSON, use the text we already have
+    }
+    throw new Error(errorMessage);
+  }
   return res;
 }
 

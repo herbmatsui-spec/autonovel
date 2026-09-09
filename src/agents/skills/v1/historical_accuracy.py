@@ -21,7 +21,12 @@ class HistoricalAccuracyChecker(SkillAgent):
             "period": self.period,
         })
         
-        drafted_text = ctx.artifacts.get("drafted_text", "")
+        drafted_text = (
+            ctx.artifacts.get("drafted_text")
+            or ctx.artifacts.get("content")
+            or ctx.artifacts.get("chapter_text")
+            or ""
+        )
         writing_context = ctx.artifacts.get("writing_context", {})
         world_settings = writing_context.get("world_settings", {})
 

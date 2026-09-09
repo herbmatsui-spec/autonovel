@@ -497,11 +497,9 @@ class IllustrationStep(WorkflowStep):
             if ill_agent is None:
                 # フォールバック: コンテナ未注入の古い Engine 互換 (テスト用)
                 from src.agents.illustration_agent import IllustrationAgent
-                from src.services.image_service import ImageService
-                import os
-
+                from src.backend.config import settings
                 ill_agent = IllustrationAgent(
-                    image_service=ImageService(api_key=os.getenv("GOOGLE_GENAI_API_KEY", ""))
+                    image_service=ImageService(api_key=settings.get_gemini_api_key())
                 )
 
             ill_workflow = IllustrationWorkflow(

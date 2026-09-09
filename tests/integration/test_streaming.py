@@ -54,6 +54,79 @@ def test_stream_emits_start_chunks_done(client: TestClient) -> None:
     assert len(chunks) >= 1
 
 
+def test_stream_post_emits_start_chunks_done(client: TestClient) -> None:
+    """POST /easy_mode/generate/stream 正常系: start → chunk* → done."""
+    payload = {
+        "current_chapter": "森の奥で主人公は剣を抜いた。",
+        "chapter_history": [],
+        "character_params": {},
+        "content_length_limit": 2000,
+    }
+    resp = client.post("/easy_mode/generate/stream", json=payload)
+    assert resp.status_code == 200
+    assert resp.headers["content-type"].startswith("text/event-stream")
+    assert resp.headers.get("x-accel-buffering") == "no"
+
+    events = _parse_sse_events(resp.text)
+    types = [e.get("type") for e in events]
+    assert types[0] == "start"
+    assert "chunk" in types
+    assert types[-1] == "done"
+    chunks = [e for e in events if e.get("type") == "chunk"]
+    assert len(chunks) >= 1
+
+
+def test_stream_post_validation_error(client: TestClient) -> None:
+    """POST /easy_mode/generate/stream バリデーションエラー: content_length_limit: -1 → 422"""
+    payload = {
+        "current_chapter": "テスト",
+        "chapter_history": [],
+        "character_params": {},
+        "content_length_limit": -1,  # 不正な値
+    }
+    resp = client.post("/easy_mode/generate/stream", json=payload)
+    assert resp.status_code == 422
+
+
+def test_stream_post_invokes_cancel_on_disconnect(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    """POST ストリーミング中にクライアント切断時に adapter.cancel() が呼ばれる。
+    GET 版と同様に、generator 内の disconnect_check をモンキーパッチする。
+    """
+    import src.backend.routers.streaming as streaming_module
+
+    async def _always_disconnected(_request: object) -> bool:
+        return True
+
+    monkeypatch.setattr(streaming_module, "_check_disconnect", _always_disconnected)
+
+    from src.services.llm.mock_adapter import MockLLMAdapter
+
+    cancel_called = {"n": 0}
+
+    class _SpyAdapter(MockLLMAdapter):
+        def cancel(self) -> None:
+            cancel_called["n"] += 1
+            super().cancel()
+
+    monkeypatch.setattr(streaming_module, "get_llm_adapter", lambda: _SpyAdapter())
+
+    from src.backend.rate_limit import stream_limiter
+
+    stream_limiter.reset()
+
+    payload = {
+        "current_chapter": "切断テスト",
+        "chapter_history": [],
+        "character_params": {},
+        "content_length_limit": 2000,
+    }
+
+    resp = client.post("/easy_mode/generate/stream", json=payload)
+    assert resp.status_code == 200
+
+    assert cancel_called["n"] >= 1
+
+
 def test_stream_invokes_cancel_on_disconnect(
     client: TestClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:

@@ -838,11 +838,21 @@ class InternalLogicValidator:
 
 
 class LogicalAuditor:
-    """ロジカル一貫性チェックエージェント"""
+    """@deprecated ロジカル一貫性チェックエージェント。
+    
+    このクラスは非推奨です。新規コードでは `src.services.audit_aggregator.AuditAggregator`
+    または `src.agents.audit_agent.AuditAgent` を使用してください。(Phase 6: Step 65)
+    """
 
     def __init__(
         self, repo: Any = None, llm: Any = None, ctx_mgr: Any = None, pm: Any = None, **kwargs
     ):
+        import warnings
+        warnings.warn(
+            "LogicalAuditor is deprecated, use AuditAggregator or AuditAgent instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         self.repo = repo
         self.ctx_mgr = ctx_mgr
         self.prompt_manager = pm
@@ -1087,3 +1097,8 @@ class LogicalAuditor:
             if reporter:
                 reporter.report(f"⚠️ スコアリング失敗: {type(e).__name__}: {e}", "warning")
             return default_scores
+
+
+# Step 65/66: 後方互換性エイリアス
+from src.agents.audit_agent import AuditAgent  # noqa: E402
+

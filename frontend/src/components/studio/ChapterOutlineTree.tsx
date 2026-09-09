@@ -1,15 +1,21 @@
 import React, { useState } from "react";
 import { useNovelContext } from "../../context/NovelContext";
 import { ChapterItem } from "../../types";
+import { ChapterProgressBar } from "../ChapterProgressBar";
+import { chapterStatusMap } from "../../constants/chapterStatus";
+import { reorderChapters } from "../../hooks/useChapterReorder";
 
 interface ChapterOutlineTreeProps {
   onSelectChapter?: (epNum: number) => void;
+   onMessage?: (msg: string, type: "success" | "error" | "info") => void;
 }
 
-export const ChapterOutlineTree: React.FC<ChapterOutlineTreeProps> = ({ onSelectChapter }) => {
+export const ChapterOutlineTree: React.FC<ChapterOutlineTreeProps> = ({ onSelectChapter, onMessage }) => {
   const { chapters, setChapters, currentEpNum, setCurrentEpNum } = useNovelContext();
-  const [editingEpNum, setEditingEpNum] = useState<number | null>(null);
-  const [editingTitle, setEditingTitle] = useState("");
+const [editingEpNum, setEditingEpNum] = useState<number | null>(null);
+   const [editingTitle, setEditingTitle] = useState("");
+   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   const handleSelect = (epNum: number) => {
     setCurrentEpNum(epNum);
@@ -56,14 +62,71 @@ export const ChapterOutlineTree: React.FC<ChapterOutlineTreeProps> = ({ onSelect
     }
   };
 
-  const handleToggleCatharsis = (epNum: number, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setChapters((prev) =>
-      prev.map((c) => (c.ep_num === epNum ? { ...c, is_catharsis: !c.is_catharsis } : c))
-    );
-  };
+const handleToggleCatharsis = (epNum: number, e: React.MouseEvent) => {
+     e.stopPropagation();
+     setChapters((prev) =>
+       prev.map((c) => (c.ep_num === epNum ? { ...c, is_catharsis: !c.is_catharsis } : c))
+     );
+   };
 
-  const activeChapter = chapters.find((c) => c.ep_num === currentEpNum);
+   const handleStatusChange = (epNum: number) => {
+     setChapters((prev) =>
+       prev.map((c) =>
+         c.ep_num === epNum
+           ? {
+               ...c,
+               status: (() => {
+                 const statusOrder = ["draft", "writing", "completed", "polished"] as const;
+                 const currentIndex = statusOrder.indexOf(c.status as typeof statusOrder[number]);
+                 const nextIndex = (currentIndex + 1) % statusOrder.length;
+                 return statusOrder[nextIndex];
+               })()
+             }
+           : c
+       )
+     );
+   };
+
+   const handleDragStart = (epNum: number) => {
+     setDraggedIndex(epNum - 1);
+   };
+
+   const handleDragOver = (e: React.DragEvent) => {
+     e.preventDefault();
+     const chapterElement = e.currentTarget as HTMLElement;
+     const indexStr = chapterElement.dataset.chapterIndex;
+     if (indexStr !== undefined) {
+       const index = parseInt(indexStr, 10);
+       if (!isNaN(index)) {
+         setDragOverIndex(index);
+       }
+     }
+   };
+
+const handleDrop = (epNum: number) => {
+      const targetIndex = epNum - 1;
+      if (draggedIndex !== null && draggedIndex !== targetIndex) {
+        const reordered = reorderChapters(chapters, draggedIndex, targetIndex);
+        // Find the chapter that was currently being edited (by its original ep_num)
+        const currentChapter = chapters.find(ch => ch.ep_num === currentEpNum);
+        if (currentChapter) {
+          // Find its new index in the reordered array
+          const newIndex = reordered.findIndex(ch => ch === currentChapter);
+          if (newIndex !== -1) {
+            setCurrentEpNum(newIndex + 1);
+          }
+        }
+        setChapters(reordered);
+        onMessage?.("✨ 章の順序を並び替え、話数番号を自動再整列しました", "success");
+      }
+      setDraggedIndex(null);
+      setDragOverIndex(null);
+};
+    const handleDragLeave = () => {
+      setDragOverIndex(null);
+    };
+
+    const activeChapter = chapters.find((c) => c.ep_num === currentEpNum);
 
   return (
     <div className="chapter-outline-tree" data-testid="chapter-outline-tree" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -83,7 +146,8 @@ export const ChapterOutlineTree: React.FC<ChapterOutlineTreeProps> = ({ onSelect
         </button>
       </div>
 
-      {/* 現在執筆中の章のプロット目標カード */}
+      <ChapterProgressBar />
+       {/* 現在執筆中の章のプロット目標カード */}
       {activeChapter && (
         <div
           style={{
@@ -122,19 +186,27 @@ export const ChapterOutlineTree: React.FC<ChapterOutlineTreeProps> = ({ onSelect
           const isEditing = editingEpNum === ch.ep_num;
 
           return (
-            <div
-              key={ch.ep_num}
-              onClick={() => handleSelect(ch.ep_num)}
-              style={{
-                background: isActive ? "rgba(139, 92, 246, 0.25)" : "rgba(255, 255, 255, 0.03)",
-                border: `1px solid ${isActive ? "var(--accent-purple, #8b5cf6)" : "rgba(255, 255, 255, 0.08)"}`,
-                borderRadius: "6px",
-                padding: "8px 10px",
-                cursor: "pointer",
-                transition: "all 0.15s ease",
-              }}
-              data-testid={`chapter-item-${ch.ep_num}`}
-            >
+<div
+               key={ch.ep_num}
+               onClick={() => handleSelect(ch.ep_num)}
+               onDragStart={() => handleDragStart(ch.ep_num)}
+               onDragOver={handleDragOver}
+               onDragLeave={handleDragLeave}
+               onDrop={() => handleDrop(ch.ep_num)}
+               draggable={true}
+               data-chapter-index={ch.ep_num - 1}
+style={{
+                  background: dragOverIndex === ch.ep_num - 1 ? "rgba(139, 92, 246, 0.1)" : isActive ? "rgba(139, 92, 246, 0.25)" : "rgba(255, 255, 255, 0.03)",
+                  border: `1px solid ${isActive ? "var(--accent-purple, #8b5cf6)" : "rgba(255, 255, 255, 0.08)"}`,
+                  borderLeft: `4px solid ${chapterStatusMap[ch.status as keyof typeof chapterStatusMap].color}`,
+                  borderRadius: "6px",
+                  padding: "8px 10px",
+                  cursor: "pointer",
+                  opacity: draggedIndex === ch.ep_num - 1 ? 0.5 : 1,
+                  transition: "all 0.15s ease",
+                }}
+               data-testid={`chapter-item-${ch.ep_num}`}
+             >
               {isEditing ? (
                 <form
                   onSubmit={(e) => handleSaveTitle(ch.ep_num, e)}
@@ -155,41 +227,102 @@ export const ChapterOutlineTree: React.FC<ChapterOutlineTreeProps> = ({ onSelect
                   </button>
                 </form>
               ) : (
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontWeight: isActive ? 700 : 500, fontSize: "0.82rem", color: isActive ? "#f3f4f6" : "var(--text-muted)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {ch.title}
-                  </span>
-                  <div style={{ display: "flex", gap: "4px", alignItems: "center", marginLeft: "4px" }}>
-                    <button
-                      type="button"
-                      style={{ background: "transparent", border: "none", color: ch.is_catharsis ? "#fbbf24" : "var(--text-muted)", cursor: "pointer", fontSize: "0.75rem", padding: "1px 3px" }}
-                      onClick={(e) => handleToggleCatharsis(ch.ep_num, e)}
-                      title={ch.is_catharsis ? "カタルシス解除" : "カタルシス回に設定"}
-                    >
-                      {ch.is_catharsis ? "⭐" : "☆"}
-                    </button>
-                    <button
-                      type="button"
-                      style={{ background: "transparent", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: "0.75rem", padding: "1px 3px" }}
-                      onClick={(e) => handleStartEdit(ch, e)}
-                      title="タイトル編集"
-                      data-testid={`btn-edit-title-${ch.ep_num}`}
-                    >
-                      ✏️
-                    </button>
-                    {chapters.length > 1 && (
+<div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                   <div style={{ display: "flex", alignItems: "center", gap: "4px", flex: 1 }}>
+                     <span style={{ fontWeight: isActive ? 700 : 500, fontSize: "0.82rem", color: isActive ? "#f3f4f6" : "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                       {ch.title}
+                     </span>
+<span style={{ backgroundColor: "var(--bg-muted)", color: "var(--text)", padding: "2px 6px", borderRadius: "4px", fontSize: "0.7rem", marginLeft: "8px" }}>
+                      {(ch.content?.length ?? 0) > 0 ? (ch.content?.length ?? 0).toLocaleString() + "字" : "未執筆"}
+                    </span>
+                   </div>
+<div style={{ display: "flex", gap: "4px", alignItems: "center", marginLeft: "4px" }}>
                       <button
                         type="button"
-                        style={{ background: "transparent", border: "none", color: "rgba(239, 68, 68, 0.7)", cursor: "pointer", fontSize: "0.75rem", padding: "1px 3px" }}
-                        onClick={(e) => handleDeleteChapter(ch.ep_num, e)}
-                        title="章を削除"
-                        data-testid={`btn-delete-chapter-${ch.ep_num}`}
+                        onClick={() => handleStatusChange(ch.ep_num)}
+                        style={{
+                          background: "transparent",
+                          border: "none",
+                          color: chapterStatusMap[ch.status as keyof typeof chapterStatusMap].color,
+                          cursor: "pointer",
+                          fontSize: "0.75rem",
+                          padding: "1px 3px",
+                        }}
+                        title={chapterStatusMap[ch.status as keyof typeof chapterStatusMap].label}
                       >
-                        🗑️
+                        {chapterStatusMap[ch.status as keyof typeof chapterStatusMap].icon}
                       </button>
-                    )}
-                  </div>
-                </div>
+                      {/* Up/Down buttons */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const index = ch.ep_num - 1;
+                          if (index > 0) {
+                            const reordered = reorderChapters(chapters, index, index - 1);
+                            setChapters(reordered);
+                            // Update currentEpNum if needed
+                            if (currentEpNum === ch.ep_num) {
+                              setCurrentEpNum(ch.ep_num - 1);
+                            } else if (currentEpNum === ch.ep_num - 1) {
+                              setCurrentEpNum(ch.ep_num);
+                            }
+                          }
+                        }}
+                        disabled={ch.ep_num <= 1}
+                        style={{ background: "transparent", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: "0.75rem", padding: "1px 3px" }}
+                      >
+                        ▲
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const index = ch.ep_num - 1;
+                          if (index < chapters.length - 1) {
+                            const reordered = reorderChapters(chapters, index, index + 1);
+                            setChapters(reordered);
+                            // Update currentEpNum if needed
+                            if (currentEpNum === ch.ep_num) {
+                              setCurrentEpNum(ch.ep_num + 1);
+                            } else if (currentEpNum === ch.ep_num + 1) {
+                              setCurrentEpNum(ch.ep_num);
+                            }
+                          }
+                        }}
+                        disabled={ch.ep_num >= chapters.length}
+                        style={{ background: "transparent", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: "0.75rem", padding: "1px 3px" }}
+                      >
+                        ▼
+                      </button>
+                      <button
+                        type="button"
+                        style={{ background: "transparent", border: "none", color: ch.is_catharsis ? "#fbbf24" : "var(--text-muted)", cursor: "pointer", fontSize: "0.75rem", padding: "1px 3px" }}
+                        onClick={(e) => handleToggleCatharsis(ch.ep_num, e)}
+                        title={ch.is_catharsis ? "カタルシス解除" : "カタルシス回に設定"}
+                      >
+                        {ch.is_catharsis ? "⭐" : "☆"}
+                      </button>
+                      <button
+                        type="button"
+                        style={{ background: "transparent", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: "0.75rem", padding: "1px 3px" }}
+                        onClick={(e) => handleStartEdit(ch, e)}
+                        title="タイトル編集"
+                        data-testid={`btn-edit-title-${ch.ep_num}`}
+                      >
+                        ✏️
+                      </button>
+                      {chapters.length > 1 && (
+                        <button
+                          type="button"
+                          style={{ background: "transparent", border: "none", color: "rgba(239, 68, 68, 0.7)", cursor: "pointer", fontSize: "0.75rem", padding: "1px 3px" }}
+                          onClick={(e) => handleDeleteChapter(ch.ep_num, e)}
+                          title="章を削除"
+                          data-testid={`btn-delete-chapter-${ch.ep_num}`}
+                        >
+                          🗑️
+                        </button>
+                      )}
+                    </div>
+                 </div>
               )}
 
               {ch.summary && (

@@ -59,6 +59,14 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         logger.info("Huey task queue initialized: %s", health)
     except Exception as e:
         logger.warning("Failed to check Huey health during startup: %s", e)
+
+    # Step 44: LLMプロバイダの認証キー設定検証
+    if settings.LLM_PROVIDER == "gemini" and not settings.get_gemini_api_key():
+        logger.warning("LLM_PROVIDER is 'gemini' but neither GEMINI_API_KEY nor GOOGLE_GENAI_API_KEY is configured.")
+    elif settings.LLM_PROVIDER == "openai" and not settings.OPENAI_API_KEY:
+        logger.warning("LLM_PROVIDER is 'openai' but OPENAI_API_KEY is not configured.")
+    elif settings.LLM_PROVIDER == "claude" and not settings.ANTHROPIC_API_KEY:
+        logger.warning("LLM_PROVIDER is 'claude' but ANTHROPIC_API_KEY is not configured.")
     yield
 
 

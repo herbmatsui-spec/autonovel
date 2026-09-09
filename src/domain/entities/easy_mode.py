@@ -41,6 +41,10 @@ class EasyModeInput(BaseModel):
         default=None, description="カスタムStyleProfileの辞書"
     )
     llm_config: LLMConfigOverride | None = Field(default=None, description="オプトインのLLM設定")
+    book_id: int | None = Field(
+        default=None,
+        description="既存作品に追加・更新する場合の作品ID。未指定時は新規採番して保存",
+    )
 
 
 class StreamQueryInput(BaseModel):

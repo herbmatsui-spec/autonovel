@@ -14,7 +14,7 @@ export const BranchEdge: React.FC<BranchEdgeProps> = ({
   const isMerge = edge.type === 'merge';
   
   const strokeWidth = selected ? 3 : 1.5;
-  const strokeColor = isMerge ? '#ff9f1c' : isParentChild ? '#2ec4b6' : '#6c757d';
+  const strokeColor = isMerge ? '#ffb74d' : isParentChild ? '#4dd0e1' : 'var(--text-muted)';
   const strokeDasharray = isMerge ? '5,5' : 'none';
   
   // Calculate midpoint for label

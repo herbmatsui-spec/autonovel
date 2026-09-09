@@ -5,7 +5,12 @@ const backendUrl = process.env.VITE_BACKEND_URL || process.env.BACKEND_URL || "h
 
 export default defineConfig({
   plugins: [react()],
-  server: {
+  resolve: {
+     alias: {
+       '@': '/src',
+     },
+   },
+   server: {
     host: true,
     port: 5173,
     proxy: {

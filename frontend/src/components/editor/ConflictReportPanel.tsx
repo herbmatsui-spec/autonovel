@@ -36,11 +36,11 @@ interface ConflictReportPanelProps {
 }
 
 const SEVERITY_COLORS = {
-  critical: "#ff4444",
-  high: "#ff8800",
-  medium: "#ffcc00",
-  low: "#88cc00",
-} as const;
+    critical: "#ff6b6b",
+    high: "#ffb74d",
+    medium: "#ffd54f",
+    low: "#cddc39",
+  } as const;
 
 const SEVERITY_LABELS = {
   critical: "緊急",
@@ -161,7 +161,7 @@ export const ConflictReportPanel: React.FC<ConflictReportPanelProps> = ({
                 className="conflict-card"
                 style={{
                   borderLeft: `4px solid ${SEVERITY_COLORS[conflict.severity]}`,
-                  background: selectedConflict === conflict ? "rgba(0,123,255,0.1)" : "transparent",
+                  background: selectedConflict === conflict ? "rgba(255, 213, 79, 0.1)" : "transparent",
                 }}
                 onClick={() => setSelectedConflict(conflict)}
               >

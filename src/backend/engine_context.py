@@ -1,5 +1,6 @@
 import json
 import logging
+import warnings
 from typing import Any
 
 from pydantic import BaseModel
@@ -35,10 +36,30 @@ class ContextData(BaseModel):
 
 
 class ContextManager:
-    """プロンプト用文脈（長期記憶）の構築"""
+    """@deprecated プロンプト用文脈（長期記憶）の構築クラス。
+    
+    このクラスは非推奨です。新規コードでは `src.agents.context_builder_agent.ContextBuilderAgent`
+    またはワークフロー内の統合コンテキストビルダークラスを使用してください。(Phase 6: Step 61)
+    """
 
     def __init__(self, repo: DataRepository):
+        warnings.warn(
+            "ContextManager is deprecated, use ContextBuilderAgent instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         self.repo = repo
+        # ContextBuilderAgent への委譲インスタンスを遅延初期化用に保持 (Step 62)
+        self._delegate_agent = None
+
+    def _get_delegate(self):
+        if self._delegate_agent is None:
+            try:
+                from src.agents.context_builder_agent import ContextBuilderAgent
+                self._delegate_agent = ContextBuilderAgent(repo=self.repo)
+            except Exception as e:
+                logger.warning(f"Could not initialize ContextBuilderAgent delegate: {e}")
+        return self._delegate_agent
 
     @staticmethod
     def _parse_character_registry(char) -> dict:

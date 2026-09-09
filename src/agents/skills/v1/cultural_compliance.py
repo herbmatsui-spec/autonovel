@@ -21,7 +21,12 @@ class CulturalComplianceChecker(SkillAgent):
             "ep_num": ctx.ep_num,
         })
         
-        drafted_text = ctx.artifacts.get("drafted_text", "")
+        drafted_text = (
+            ctx.artifacts.get("drafted_text")
+            or ctx.artifacts.get("content")
+            or ctx.artifacts.get("chapter_text")
+            or ""
+        )
         issues = []
 
         # 簡易実装: 地域別NGワードチェック

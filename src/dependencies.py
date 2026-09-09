@@ -17,7 +17,8 @@ from src.core.container import AppContainer
 
 
 def _get_api_key() -> str:
-    return os.getenv("GOOGLE_GENAI_API_KEY", "")
+    from src.backend.config import settings
+    return settings.get_gemini_api_key()
 
 
 def get_illustration_workflow() -> Any:

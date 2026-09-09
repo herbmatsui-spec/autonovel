@@ -86,6 +86,46 @@ class GraphRAGService:
     def get_last_stats(self) -> dict[str, Any]:
         return dict(self._last_call_stats)
 
+    @staticmethod
+    def _cosine_similarity(vec1: list[float] | Any, vec2: list[float] | Any) -> float:
+        """2つのベクトルのコサイン類似度を計算する (NumPy or 純Python) (Step 28)."""
+        try:
+            import numpy as np
+            v1 = np.asarray(vec1, dtype=np.float32)
+            v2 = np.asarray(vec2, dtype=np.float32)
+            norm1 = float(np.linalg.norm(v1))
+            norm2 = float(np.linalg.norm(v2))
+            if norm1 == 0 or norm2 == 0:
+                return 0.0
+            return float(np.dot(v1, v2) / (norm1 * norm2))
+        except Exception:
+            import math
+            dot = sum(a * b for a, b in zip(vec1, vec2))
+            norm1 = math.sqrt(sum(a * a for a in vec1))
+            norm2 = math.sqrt(sum(b * b for b in vec2))
+            if norm1 == 0 or norm2 == 0:
+                return 0.0
+            return dot / (norm1 * norm2)
+
+    @staticmethod
+    def _batch_cosine_similarity(query_vec: list[float], matrix: list[list[float]]) -> list[float]:
+        """NumPy 高速一括コサイン類似度計算 (Step 28)."""
+        if not matrix:
+            return []
+        try:
+            import numpy as np
+            q = np.asarray(query_vec, dtype=np.float32)
+            m = np.asarray(matrix, dtype=np.float32)
+            q_norm = float(np.linalg.norm(q))
+            if q_norm == 0:
+                return [0.0] * len(matrix)
+            m_norm = np.linalg.norm(m, axis=1)
+            m_norm[m_norm == 0] = 1e-9
+            sims = np.dot(m, q) / (m_norm * q_norm)
+            return sims.tolist()
+        except Exception:
+            return [GraphRAGService._cosine_similarity(query_vec, v) for v in matrix]
+
     def _get_cache_key(self, *args: str) -> str:
         """キャッシュキー生成."""
         import hashlib
@@ -168,48 +208,91 @@ class GraphRAGService:
                     "is not PostgreSQL. Install pgvector or set REQUIRE_PG=false."
                 )
             else:
-                # SQLite フォールバック
+                # SQLite 高速フォールバック検索 (Step 28-33)
+                # Step 29: limit * 3 制限撤廃 (最大1000件のスキャン)
+                query_limit = 1000
                 chunks = (
                     session.query(ChapterChunk)
                     .order_by(ChapterChunk.created_at.desc())
-                    .limit(limit * 3)
+                    .limit(query_limit)
                     .all()
                 )
                 if not chunks:
                     self._last_call_stats = {
-                        "backend": "sqlite_fallback",
+                        "backend": "sqlite_vector",
                         "hits": 0,
+                        "chunks_scanned": 0,
+                        "cached_embeddings_hits": 0,
                         "limit": limit,
                         "elapsed_ms": int((time.perf_counter() - start) * 1000),
                     }
                     return []
 
+                # クエリ埋め込みを1回だけ取得
                 query_emb = embedding_service.get_embedding(query)
-                scored: list[SearchResult] = []
+
+                # Step 30 & 31: 事前保存済み embedding の活用 & 欠損分のバッチ補完
+                valid_chunks: list[ChapterChunk] = []
+                vectors_to_compare: list[list[float]] = []
+                missing_chunks: list[ChapterChunk] = []
+                cached_hits = 0
+
                 for c in chunks:
                     chunk_text = str(c.content) if c.content is not None else ""
                     if not chunk_text:
                         continue
-                    c_emb = embedding_service.get_embedding(chunk_text)
-                    sim = self._cosine_similarity(query_emb, c_emb)
-                    if sim >= min_score:
+                    if c.embedding and isinstance(c.embedding, (list, tuple)) and len(c.embedding) > 0:
+                        valid_chunks.append(c)
+                        vectors_to_compare.append(list(c.embedding))
+                        cached_hits += 1
+                    else:
+                        missing_chunks.append(c)
+
+                # 欠損分のみオンデマンドで一括計算・保存 (Step 31)
+                if missing_chunks:
+                    missing_texts = [str(c.content) for c in missing_chunks]
+                    computed_vectors = embedding_service.embed_texts(missing_texts, batch_size=len(missing_texts))
+                    for c, vec in zip(missing_chunks, computed_vectors):
+                        c.embedding = vec
+                        valid_chunks.append(c)
+                        vectors_to_compare.append(vec)
+                    try:
+                        session.commit()
+                    except Exception:
+                        session.rollback()
+
+                # Step 28: 高速一括類似度計算
+                if not valid_chunks:
+                    return []
+
+                similarities = self._batch_cosine_similarity(query_emb, vectors_to_compare)
+
+                # Step 32: SearchResult 構築
+                scored: list[SearchResult] = []
+                for c, sim in zip(valid_chunks, similarities):
+                    sim_f = float(sim)
+                    if sim_f >= min_score:
                         scored.append(
                             SearchResult(
                                 id=str(c.id),
-                                content=chunk_text,
+                                content=str(c.content),
                                 metadata=dict(c.chunk_metadata) if c.chunk_metadata else {},
-                                source="vector",
-                                score=sim,
-                                distance=1.0 - sim,
-                                similarity=sim,
+                                source="sqlite_vector",
+                                score=sim_f,
+                                distance=max(0.0, 1.0 - sim_f),
+                                similarity=sim_f,
                             )
                         )
 
                 scored.sort(key=lambda x: x.score, reverse=True)
                 rows = scored[:limit]
+
+                # Step 33: レイテンシ・メトリクス記録
                 self._last_call_stats = {
-                    "backend": "sqlite_fallback",
+                    "backend": "sqlite_vector",
                     "hits": len(rows),
+                    "chunks_scanned": len(chunks),
+                    "cached_embeddings_hits": cached_hits,
                     "limit": limit,
                     "elapsed_ms": int((time.perf_counter() - start) * 1000),
                 }
@@ -222,6 +305,9 @@ class GraphRAGService:
                 "elapsed_ms": int((time.perf_counter() - start) * 1000),
             }
             return []
+
+    # search_similar_chunks のエイリアス
+    search_vectors = search_similar_chunks
 
     async def search_vectors_async(
         self,

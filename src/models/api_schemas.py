@@ -271,6 +271,16 @@ class PatchEditRequest(BaseModel):
     content: str
 
 
+class BookCreateRequest(BaseModel):
+    """新規作品作成リクエスト"""
+
+    title: str = Field(..., description="作品タイトル")
+    genre: str = Field(..., description="ジャンル")
+    concept: str = Field(default="", description="コンセプト")
+    synopsis: str = Field(default="", description="あらすじ")
+    target_eps: int = Field(default=10, ge=1, le=100, description="目標話数")
+
+
 # ==========================================
 # 小説制作パイプライン用リクエストモデル
 # ==========================================
@@ -372,6 +382,7 @@ __all__ = [
     "RefineEroticRequest",
     "PatchActionRequest",
     "PatchEditRequest",
+    "BookCreateRequest",
     "RollbackRequest",
     "ResolveIssueRequest",
     "ErrorResponse",
