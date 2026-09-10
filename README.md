@@ -17,7 +17,7 @@
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 [![Type Checked: mypy](https://img.shields.io/badge/type%20checked-mypy-blue)](https://mypy-lang.org/)
 [![Vitest](https://img.shields.io/badge/tested_with-vitest-729B1B?logo=vitest&logoColor=white)](https://vitest.dev/)
-[![Version](https://img.shields.io/badge/version-4.8.1-brightgreen?logo=semver)](https://github.com/herbmatsui-spec/autonovel/releases/tag/v4.8.1)
+[![Version](https://img.shields.io/badge/version-4.8.2-brightgreen?logo=semver)](https://github.com/herbmatsui-spec/autonovel/releases/tag/v4.8.2)
 
 <br />
 
@@ -25,7 +25,7 @@
   <img src="docs/demo.gif" alt="AutoNovel UI & Workflow Demo" width="900" style="border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
 </p>
 
-*▲ AutoNovel v4.8.1: 3案企画ガチャ / 逆算プロット / 上級者Studio / インライン五感推敲 / GraphRAG相関図 / ワンクリックZIP納品 / マルチメディア・eBook / IFルート分岐 / **【v4.8安定化】LLMレジリエントゲートウェイ (サーキットブレーカー/フォールバック/コスト制御) / 商業出版UI統合 (フロントエンド商業コンポーネント/型定義/テスト) / タスクリカバリ・ワーカー復旧 / 非同期DB並行性・WALログ強化 / イラスト生成基盤刷新 (ComfyUI/DALL-E/SD/Character LoRA統合) / CI/CD安定化・コスト分析ダッシュボード基盤 / 30+新規単体テスト全グリーン***
+*▲ AutoNovel v4.8.2: 3案企画ガチャ / 逆算プロット / 上級者Studio / インライン五感推敲 / GraphRAG相関図 / ワンクリックZIP納品 / マルチメディア・eBook / IFルート分岐 / **【v4.8.1品質向上】監査モデルルーター・コスト最適化 / PDCA履歴・品質ダッシュボード(レーダー/トレンド/指示カード) / 品質API・監査ルーティングテスト / BookScore監視統合 / 非同期エンジン・Redisユーティル強化 / 設定・依存関係整理 / 全テスト安定化・フレーキー撲滅***
 
 </div>
 
@@ -57,6 +57,49 @@ AutoNovel は、AI を活用して Web 小説を **企画から執筆、校正�
 続いて、下記の目次から技術的な詳細をご覧ください。
 
 ## 📋 更新履歴 / Changelog
+
+### v4.8.2 (2026-09-10) — 監査モデルルーター・PDCA品質ダッシュボード・テスト安定化
+
+v4.8.1の品質向上リリース。監査専用モデルルーティングによるコスト最適化、PDCA履歴永続化・品質ダッシュボード(レーダーチャート/トレンド/指示カード)実装、品質API・監査ルーティングテスト追加、非同期エンジン/Redisユーティリティ強化、設定・依存関係整理、全テスト安定化・フレーキー撲滅を実現。
+
+**🎯 監査モデルルーター・コスト最適化 (`src/agents/specialists/model_router.py`)**
+- `ModelRouter`: 監査専門家8種×タスク種別(planning/writing/audit/illustration)の最適モデル自動選択
+- タスク複雑度・予算・レイテンシ要件・品質閾値による動的ルーティング、フォールバックチェーン完備
+- `config/audit_models.yaml`: 専門家別推奨モデル・コスト上限・品質スコア閾値の設定外部化
+- `src/backend/routers/cost.py`: コスト監視・予算アラート・モデル使用統計API追加
+- 新規テスト: `tests/unit/test_auditor_model_router.py`, `test_audit_routing_cost.py` (ルーティング精度・コスト削減検証)
+
+**📊 PDCA履歴・品質ダッシュボード (`src/backend/database/repositories/pdca_history.py` 等)**
+- Alembic移行 `0022_pdca_history.py`: PDCAサイクル履歴・BookScore次元推移・改善指示の永続化
+- `PDCAHistoryRepository`: サイクル単位の履歴クエリ・トレンド集計・収束判定支援
+- フロントエンド新規コンポーネント:
+  - `QualityDashboardModal`: 品質概観モーダル・リアルタイムBookScore表示
+  - `BookScoreRadarChart`: 5次元BookScoreレーダーチャート・ジャンルベンチマーク比較
+  - `BookScoreTrendChart`: 章別スコア推移・改善率可視化・アラート閾値表示
+  - `PDCADiffViewer`: ActionableDiff前後比較・インライン修正プレビュー
+  - `PDCADirectiveCard`: 改善指示カード・優先度・担当エージェント・期限管理
+- `frontend/tests/components/QualityDashboard.test.tsx`: ダッシュボード統合テスト8ケース
+
+**🔍 品質API・監査ルーティングテスト**
+- `src/backend/routers/quality.ts` / `frontend/src/api/quality.ts`: BookScore取得・PDCA履歴・監査結果・トレンド分析エンドポイント
+- `tests/unit/test_cost_budget_guard.py`, `test_cost_budget_guard_import.py`: 予算ガード・インポート検証
+- `tests/unit/test_llm_resilient_gateway.py`: ゲートウェイ統合テスト・サーキットブレーカー動作確認
+
+**⚙️ 非同期エンジン・Redisユーティリティ強化・設定整理**
+- `src/backend/engine.py` / `src/backend/engine_context.py`: 非同期実行コンテキスト・タイムアウト制御・リソースクリーンアップ統一
+- `src/backend/redis_util.py`: 接続プールサイズ動的調整・ヘルスチェック間隔最適化・Pub/Sub再購読ロジック改善
+- `src/core/container/app.py`: 依存性注入コンテナ・ライフサイクルフック・設定検証強化
+- `pyproject.toml`: オプショナル依存グループ整理・バージョン固定・開発用依存分離
+- `config/audit_models.yaml`, `config/model_pricing.yaml`: 設定ファイル新規追加・環境変数対応
+
+**✅ テスト安定化・フレーキー撲滅・CI改善**
+- `.github/workflows/ci.yml`: 並列マトリクス最適化・キャッシュキー改善・タイムアウト調整・フレーキーテスト検知・再実行自動化
+- 既存テストスイート全互換性維持: `ruff`, `mypy --strict`, `pytest -x -q`, `vitest run` 全通過
+- フレーキーテスト修正: `test_repository_concurrency.py`, `test_security_patches.py`, `test_orchestrator_backtrack.py` 等の非決定性排除
+- E2Eテスト `tests/branches/test_e2e_ws.py` 完全安定化・実行時間短縮
+- カバレッジ 80%+ 維持、型検査 `--strict` モード全クリア
+
+---
 
 ### v4.8.1 (2026-09-10) — LLMレジリエントゲートウェイ・商業UI統合・イラスト基盤刷新・CI安定化
 
