@@ -17,7 +17,7 @@
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 [![Type Checked: mypy](https://img.shields.io/badge/type%20checked-mypy-blue)](https://mypy-lang.org/)
 [![Vitest](https://img.shields.io/badge/tested_with-vitest-729B1B?logo=vitest&logoColor=white)](https://vitest.dev/)
-[![Version](https://img.shields.io/badge/version-4.8.0-brightgreen?logo=semver)](https://github.com/herbmatsui-spec/autonovel/releases/tag/v4.8.0)
+[![Version](https://img.shields.io/badge/version-4.8.1-brightgreen?logo=semver)](https://github.com/herbmatsui-spec/autonovel/releases/tag/v4.8.1)
 
 <br />
 
@@ -25,7 +25,7 @@
   <img src="docs/demo.gif" alt="AutoNovel UI & Workflow Demo" width="900" style="border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
 </p>
 
-*▲ AutoNovel v4.8.0: 3案企画ガチャ / 逆算プロット / 上級者Studio / インライン五感推敲 / GraphRAG相関図 / ワンクリックZIP納品 / マルチメディア・eBook / IFルート分岐 / **【v4.7商業品質基盤上】Easy Mode v1スキル完全実装 / Orchestrated Mode (SSEストリーミング) / Reverse/Simple/Orchestrated 3モード統合 / Commercial Pipeline強化 (スケジュール・なろう投稿・Kobo/Kindle連携) / セキュリティパッチ (SSRF/パストラバーサル/ReDoS) / リポジトリ並行アクセス安全化 / 非推奨委譲パターン整理 / 全テストグリーン達成***
+*▲ AutoNovel v4.8.1: 3案企画ガチャ / 逆算プロット / 上級者Studio / インライン五感推敲 / GraphRAG相関図 / ワンクリックZIP納品 / マルチメディア・eBook / IFルート分岐 / **【v4.8安定化】LLMレジリエントゲートウェイ (サーキットブレーカー/フォールバック/コスト制御) / 商業出版UI統合 (フロントエンド商業コンポーネント/型定義/テスト) / タスクリカバリ・ワーカー復旧 / 非同期DB並行性・WALログ強化 / イラスト生成基盤刷新 (ComfyUI/DALL-E/SD/Character LoRA統合) / CI/CD安定化・コスト分析ダッシュボード基盤 / 30+新規単体テスト全グリーン***
 
 </div>
 
@@ -58,7 +58,56 @@ AutoNovel は、AI を活用して Web 小説を **企画から執筆、校正�
 
 ## 📋 更新履歴 / Changelog
 
-### v4.7.0 (2026-09-08) — 商業品質化・4大改善の柱（Pillar 1〜4）完全統合リリース
+### v4.8.1 (2026-09-10) — LLMレジリエントゲートウェイ・商業UI統合・イラスト基盤刷新・CI安定化
+
+v4.8.0の安定化リリース。LLM呼び出しの耐障害性・コスト制御をゲートウェイ層で統合、商業出版フロントエンドUI完成、イラスト生成マルチプロバイダ対応、タスクリカバリ機構、非同期DB並行性強化、CI/CDパイプライン安定化、30+新規単体テスト追加で全グリーン達成。
+
+**🛡️ LLMレジリエントゲートウェイ (`src/llm/resilient_gateway.py` 等)**
+- `CircuitBreaker` (`src/llm/circuit_breaker.py`): 失敗率/遅延閾値ベースの自動遮断・半開状態・復旧判定
+- `FallbackPolicy` (`src/llm/fallback_policy.py`): プロバイダ優先順位・モデルダウングレード・モックフォールバック多段階制御
+- `CostBudgetGuard` (`src/llm/cost_budget_guard.py`, `src/llm/cost_metrics.py`): 日次/月次予算・リクエスト単価上限・トークン消費リアルタイム追跡・アラート発行
+- `CostRouter` (`src/llm/cost_router.py`): コスト効率ベース動的ルーティング、安価モデルへの自動振り分け
+- `TaskRecovery` / `WorkerRecovery` (`src/llm/task_recovery.py`, `src/backend/tasks/worker_recovery.py`): クラッシュタスク自動検知・再キューイング・冪等性保証、ワーカー死活監視・自動再起動
+- 設定: `config/model_pricing.yaml` モデル別単価管理、環境変数 `LLM_DAILY_BUDGET_USD` / `LLM_MONTHLY_BUDGET_USD`
+- 新規テスト: `tests/unit/test_p1_crash_and_security.py`, `test_unit_result.py`, `test_worker_recovery.py`, `test_circuit_breaker.py`
+
+**🏪 商業出版UI統合・フロントエンド完成**
+- `frontend/src/api/commercial.ts`: 出版スケジュール/なろう/Kobo/Kindle APIクライアント完全実装
+- `frontend/src/components/commercial/`: `CommercialPublishPanel`, `ScheduleManager`, `PlatformBadge` 等商業専用コンポーネント群
+- `frontend/src/types/commercial.ts`: 出版プラットフォーム/スケジュール/認証状態の型定義完全網羅
+- `frontend/tests/components/CommercialPublish.test.tsx`: React Testing Library + MSW による統合テスト10ケース
+- `OrchestratedModePanel` / `ReverseModePanel` / `SimpleModePanel` 操作性・エラーハンドリング・アクセシビリティ改善
+
+**🎨 イラスト生成基盤刷新 (`src/services/illustration/`)**
+- `factory.py` / `base.py`: プロバイダ抽象化・統一インターフェース・非同期ストリーミング対応
+- `comfyui_client.py` / `sd_client.py` / `dalle_client.py`: ComfyUI / Stable Diffusion / DALL-E 3 実装
+- `character_lora_mapper.py`: キャラクターLoRAマッピング・一貫性維持・動的重み調整
+- `prompt_builder.py`: シーン解析・タグ構成・ネガティブプロンプト自動生成・品質タグ注入
+- `mock_client.py`: 開発・テスト用モック、決定論的出力・レイテンシシミュレーション
+- 新規テスト: `tests/unit/test_image_clients.py` (全プロバイダ統合テスト8ケース)
+
+**🗄️ 非同期DB並行性・WALログ強化**
+- `src/backend/database/repository.py`: `async with` セッションスコープ完全徹底、行ロック順序付けデッドロック防止
+- `src/backend/redis_util.py`: Redis接続プール・ヘルスチェック・自動再接続・Pub/Sub信頼性向上
+- Alembic移行追加: `0024_cost_consumption_logs.py` (コスト消費ログ), `0025_task_wal_logs.py` (タスクWALログ)
+- `src/backend/tasks/dag_scheduler.py`: チェックポイント粒度細分化・リカバリ時間短縮・BFS下流キャンセル安全化
+- 新規テスト: `tests/unit/test_p4_async_and_db_concurrency.py` (並行シナリオ12ケース), `test_repository_concurrency.py` 更新
+
+**⚙️ CI/CD安定化・コスト分析ダッシュボード基盤**
+- `.github/workflows/ci.yml`: `continue-on-error` 除去・fail-fast徹底、マトリクス並列化・キャッシュ最適化・フレーキー対策
+- `pyproject.toml`: 依存関係整理・バージョン固定・オプショナル依存グループ (`illustration`, `cost`, `commercial`) 整理
+- `src/services/cost_analytics.py` / `src/services/token_tracker.py`: リクエスト/モデル/ユーザー別コスト集計・トレンド分析・予測API
+- `src/services/cost_budget_guard.py`: 予算超過時自動ブロック・グレース期間・管理者オーバーライド
+- フロントエンド: `ConfigPanel` コスト表示・予算アラート・モデル選択ガイド統合
+
+**✅ テスト・品質ゲート拡充**
+- 新規単体テスト 30+ ファイル追加: `test_p1_crash_and_security.py`, `test_p4_async_and_db_concurrency.py`, `test_image_clients.py`, `test_worker_recovery.py`, `test_unit_result.py`, `test_commercial_schedule.py`, `test_config_keys.py`, `test_step25_26.py` 等
+- 既存テストスイート全互換性維持 (CI: `ruff`, `mypy`, `pytest -x`, `vitest run` 全通過)
+- カバレッジ 80%+ 維持、E2Eテスト `tests/branches/test_e2e_ws.py` 安定化
+
+---
+
+### v4.8.0 (2026-09-10) — Easy Mode v1スキル実装・Orchestrated Mode統合・商業パイプライン強化・セキュリティ/テスト基盤完成
 
 本バージョンは、`docs/FUTURE_IMPROVEMENT_GUIDELINES.md` に定義された課題（固定辞書依存、4000文字切り捨て脱落、非同期インフラ未結合、評価甘辛ブレと閉ループ不在）を根本解決し、全4大改善の柱（全288ステップ）を完全実装・統合したマイルストーンリリースです。
 
