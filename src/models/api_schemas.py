@@ -334,18 +334,17 @@ class NovelReportResponse(BaseResponse):
     report: dict[str, Any] | None = Field(default=None, description="レポートデータ")
 
 
-class RollbackRequest(BaseModel):
+class RollbackRequest(AuthenticatedRequest):
     """プロンプトロールバックリクエスト"""
 
     version_id: int
     reason: str | None = "手動ロールバック"
 
 
-class ResolveIssueRequest(BaseModel):
+class ResolveIssueRequest(AuthenticatedRequest):
     """課題解決リクエスト"""
 
     action: str  # 'Auto-Fix', 'Foreshadowing', 'Ignore'
-    api_key: str
 
 
 class ErrorResponse(BaseResponse):

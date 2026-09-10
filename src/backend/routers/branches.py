@@ -9,7 +9,7 @@ import difflib
 import uuid
 import zipfile
 from datetime import datetime
-from typing import Any
+from typing import Any, AsyncGenerator
 
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import Response
@@ -44,11 +44,14 @@ router = APIRouter(
 )
 
 
-async def get_branch_session() -> AsyncSession:
+async def get_branch_session() -> AsyncGenerator[AsyncSession, None]:
     """FastAPI Depends 用の AsyncSession プロバイダ."""
     mgr = get_db_manager()
-    print(f"[router] manager session bind: {mgr.get_session().bind.url}", flush=True)
     session = mgr.get_session()
+    # bind.url access can be problematic if bind is AsyncConnection
+    bind = session.bind
+    url = getattr(bind, "url", "unknown")
+    print(f"[router] manager session bind: {url}", flush=True)
     try:
         yield session
     finally:
@@ -57,11 +60,11 @@ async def get_branch_session() -> AsyncSession:
 
 def _to_response(model: Any) -> BranchResponse:
     return BranchResponse(
-        id=model.id,
-        book_id=model.book_id,
-        name=model.name,
-        parent_id=model.parent_id,
-        fork_ep_num=model.fork_ep_num,
+        id=int(model.id),
+        book_id=int(model.book_id),
+        name=str(model.name) if model.name else None,
+        parent_id=int(model.parent_id) if model.parent_id else None,
+        fork_ep_num=int(model.fork_ep_num) if model.fork_ep_num is not None else 0,
         created_at=model.created_at,
     )
 
@@ -123,12 +126,12 @@ async def get_branch_tree(
     for branch in branches:
         # ノードデータ
         nodes.append({
-            "id": branch.id,
+            "id": int(branch.id),
             "data": {
-                "label": branch.name,
-                "bookId": branch.book_id,
-                "parentId": branch.parent_id,
-                "forkEpNum": branch.fork_ep_num,
+                "label": str(branch.name) if branch.name else None,
+                "bookId": int(branch.book_id),
+                "parentId": int(branch.parent_id) if branch.parent_id else None,
+                "forkEpNum": int(branch.fork_ep_num) if branch.fork_ep_num is not None else 0,
                 "createdAt": branch.created_at.isoformat() if branch.created_at else None
             },
             "position": { "x": 0, "y": 0 }  # レイアウトはフロントエンドで計算
@@ -147,6 +150,19 @@ async def get_branch_tree(
         "nodes": nodes,
         "edges": edges
     }
+def _compute_unified_diff(content_a: str, content_b: str) -> str:
+    lines_a = content_a.splitlines(keepends=True)
+    lines_b = content_b.splitlines(keepends=True)
+    return "".join(difflib.unified_diff(lines_a, lines_b, fromfile="Branch A", tofile="Branch B"))
+
+
+def _compute_side_by_side_diff(content_a: str, content_b: str) -> dict[str, list[str]]:
+    return {
+        "left": content_a.splitlines(),
+        "right": content_b.splitlines(),
+    }
+
+
 @router.get("/{book_id}/diff", response_model=dict)
 async def get_branch_diff(
     book_id: int,
@@ -158,74 +174,34 @@ async def get_branch_diff(
     """二つのブランチの指定章の差分を取得."""
     branch_repo = BranchRepository(session)
     chapter_repo = ChapterRepository(session)
-    
+
+    # 各ブランチの存在確認
+    branch_a = await branch_repo.get_branch(branchA)
+    branch_b = await branch_repo.get_branch(branchB)
+    if not branch_a or not branch_b:
+        raise HTTPException(status_code=404, detail="Branch not found")
+
     # 各ブランチの章内容を取得
     chapter_a = await chapter_repo.get_chapter(branchA, chapter)
     chapter_b = await chapter_repo.get_chapter(branchB, chapter)
-    
+
     if not chapter_a or not chapter_b:
         raise HTTPException(status_code=404, detail="Chapter not found")
-    
+
     content_a = chapter_a.content or ""
     content_b = chapter_b.content or ""
-    
-    # 差分を計算（簡易的な実装）
+
     diff_unified = _compute_unified_diff(content_a, content_b)
     diff_side_by_side = _compute_side_by_side_diff(content_a, content_b)
-    
+
     return {
         "chapter_number": chapter,
-        "branch_a_name": (await branch_repo.get_branch(branchA)).name,
-        "branch_b_name": (await branch_repo.get_branch(branchB)).name,
+        "branch_a_name": str(branch_a.name) if branch_a.name else f"Branch {branchA}",
+        "branch_b_name": str(branch_b.name) if branch_b.name else f"Branch {branchB}",
         "content_a": content_a,
         "content_b": content_b,
         "diff_unified": diff_unified,
-        "diff_side_by_side": {
-            "left": diff_side_by_side.left,
-            "right": diff_side_by_side.right
-        }
-    }
-    """二つのブランチの指定章の差分を取得."""
-    branch_repo = BranchRepository(session)
-    chapter_repo = ChapterRepository(session)
-    
-    # 各ブランチの章内容を取得
-    chapter_a = await chapter_repo.get_chapter(branchA, chapter)
-    chapter_b = await chapter_repo.get_chapter(branchB, chapter)
-    
-    if not chapter_a or not chapter_b:
-        raise HTTPException(status_code=404, detail="Chapter not found")
-    
-    content_a = chapter_a.content or ""
-    content_b = chapter_b.content or ""
-    
-    # 差分を計算（簡易的な実装）
-    diff_unified = _compute_unified_diff(content_a, content_b)
-    diff_side_by_side = _compute_side_by_side_diff(content_a, content_b)
-    
-    return {
-        "chapter_number": chapter,
-        "branch_a_name": (await branch_repo.get_branch(branchA)).name,
-        "branch_b_name": (await branch_repo.get_branch(branchB)).name,
-        "content_a": content_a,
-        "content_b": content_b,
-        "diff_unified": diff_unified,
-        "diff_side_by_side": {
-            "left": diff_side_by_side.left,
-            "right": diff_side_by_side.right
-        }
-    }
-    return {
-        "chapter_number": chapter,
-        "branch_a_name": (await repo.get_branch(branchA)).name,
-        "branch_b_name": (await repo.get_branch(branchB)).name,
-        "content_a": content_a,
-        "content_b": content_b,
-        "diff_unified": diff_unified,
-        "diff_side_by_side": {
-            "left": diff_side_by_side.left,
-            "right": diff_side_by_side.right
-        }
+        "diff_side_by_side": diff_side_by_side,
     }
 
 @router.get("/{book_id}/graph", response_model=BranchGraphResponse)
@@ -297,6 +273,7 @@ async def merge_branches(
     if branch is None:
         raise HTTPException(status_code=500, detail="Merge failed")
     await session.commit()
+    return _to_response(branch)
 
 
 @router.post("/{book_id}/merge/preview", response_model=dict)
@@ -365,7 +342,6 @@ async def preview_merge(
         "target_branch_id": payload.target_branch_id,
         "base_branch_id": target_branch.parent_id or None,
     }
-    return _to_response(branch)
 
 
 @router.put("/{book_id}/graph", response_model=BranchGraphResponse)
@@ -434,22 +410,22 @@ async def get_play_state(
     if sess is None:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    graph = await repo.load_branch_graph(sess.branch_id) or {}
+    graph = await repo.load_branch_graph(int(sess.branch_id)) or {}
     nodes = graph.get("nodes", {}) or {}
     current = nodes.get(sess.current_node_id or "") or {}
     available_choices = current.get("choices", []) or []
 
     return BranchPlayStateResponse(
         session_id=session_id,
-        book_id=sess.book_id,
-        branch_id=sess.branch_id,
+        book_id=int(sess.book_id),
+        branch_id=int(sess.branch_id),
         current_node=current,
-        current_node_id=sess.current_node_id,
-        context=sess.context_json or {},
+        current_node_id=str(sess.current_node_id) if sess.current_node_id else None,
+        context=dict(sess.context_json) if sess.context_json else {},
         available_choices=available_choices,
         save_points_count=len(sess.save_points_json or []),
-        status=sess.status or "active",
-        updated_at=sess.updated_at or datetime.utcnow(),
+        status=str(sess.status) if sess.status else "active",
+        updated_at=sess.updated_at if isinstance(sess.updated_at, datetime) else datetime.utcnow(),
     )
 
 
@@ -468,7 +444,7 @@ async def play_choose(
     if sess.status and sess.status != "active":
         raise HTTPException(status_code=409, detail=f"Session not active (status={sess.status})")
 
-    graph = await repo.load_branch_graph(sess.branch_id) or {}
+    graph = await repo.load_branch_graph(int(sess.branch_id)) or {}
     nodes = graph.get("nodes", {}) or {}
     current = nodes.get(sess.current_node_id or "") or {}
     choices = current.get("choices", []) or []
@@ -485,11 +461,11 @@ async def play_choose(
         {"from": sess.current_node_id, "choice_id": payload.choice_id, "to": new_node_id}
     )
 
-    expected_version = sess.version or 1
+    expected_version = int(sess.version or 1)
     ok = await repo.update_play_session_state_optimistic(
         session_id=session_id,
         expected_version=expected_version,
-        current_node_id=new_node_id,
+        current_node_id=str(new_node_id) if new_node_id else None,
         context_json=context,
         save_points_json=list(sess.save_points_json or []),
     )
@@ -522,8 +498,8 @@ async def play_save(
     )
     await repo.update_play_session_state(
         session_id=session_id,
-        current_node_id=sess.current_node_id,
-        context_json=sess.context_json or {},
+        current_node_id=str(sess.current_node_id) if sess.current_node_id else None,
+        context_json=dict(sess.context_json) if sess.context_json else {},
         save_points_json=save_points,
     )
     await session.commit()
@@ -579,9 +555,9 @@ async def play_end(
 
     return BranchPlaySessionResponse(
         session_id=session_id,
-        book_id=sess.book_id,
-        branch_id=sess.branch_id,
-        current_node_id=sess.current_node_id,
+        book_id=int(sess.book_id),
+        branch_id=int(sess.branch_id),
+        current_node_id=str(sess.current_node_id) if sess.current_node_id else None,
         status=new_status,
         updated_at=datetime.utcnow(),
     )
@@ -599,11 +575,11 @@ async def get_playthrough(
     if sess is None:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    ctx = sess.context_json or {}
+    ctx: dict[str, Any] = dict(sess.context_json) if sess.context_json else {}
     return BranchPlayPlaythroughResponse(
         session_id=session_id,
-        book_id=sess.book_id,
-        branch_id=sess.branch_id,
+        book_id=int(sess.book_id),
+        branch_id=int(sess.branch_id),
         history=ctx.get("history", []),
         flags=ctx.get("flags", {}),
         variables=ctx.get("variables", {}),
@@ -794,6 +770,8 @@ async def play_ws(websocket: WebSocket, session_id: str) -> None:
         await websocket.send_json(await _load_state_dict(repo, sess))
 
         while True:
+            if sess is None:
+                break
             data = await websocket.receive_json()
             action = (data or {}).get("action")
 
@@ -809,7 +787,7 @@ async def play_ws(websocket: WebSocket, session_id: str) -> None:
                     )
                     continue
 
-                graph = await repo.load_branch_graph(sess.branch_id) or {}
+                graph = await repo.load_branch_graph(int(sess.branch_id)) or {}
                 nodes = graph.get("nodes", {}) or {}
                 current = nodes.get(sess.current_node_id or "") or {}
                 choices = current.get("choices", []) or []
@@ -828,11 +806,11 @@ async def play_ws(websocket: WebSocket, session_id: str) -> None:
                     {"from": sess.current_node_id, "choice_id": choice_id, "to": new_node_id}
                 )
 
-                expected_version = sess.version or 1
+                expected_version = int(sess.version or 1)
                 ok = await repo.update_play_session_state_optimistic(
                     session_id=session_id,
                     expected_version=expected_version,
-                    current_node_id=new_node_id,
+                    current_node_id=str(new_node_id) if new_node_id else None,
                     context_json=context,
                     save_points_json=list(sess.save_points_json or []),
                 )
@@ -845,6 +823,8 @@ async def play_ws(websocket: WebSocket, session_id: str) -> None:
 
                 # reload
                 sess = await repo.get_play_session(session_id)
+                if sess is None:
+                    break
                 await websocket.send_json(await _load_state_dict(repo, sess))
 
             elif action == "save":
@@ -858,16 +838,18 @@ async def play_ws(websocket: WebSocket, session_id: str) -> None:
                 )
                 await repo.update_play_session_state(
                     session_id=session_id,
-                    current_node_id=sess.current_node_id,
-                    context_json=sess.context_json or {},
+                    current_node_id=str(sess.current_node_id) if sess.current_node_id else None,
+                    context_json=dict(sess.context_json) if sess.context_json else {},
                     save_points_json=save_points,
                 )
                 await session.commit()
                 sess = await repo.get_play_session(session_id)
+                if sess is None:
+                    break
                 await websocket.send_json(await _load_state_dict(repo, sess))
 
             elif action == "load":
-                index = int(data.get("index", 0))
+                index = int((data or {}).get("index", 0))
                 save_points = list(sess.save_points_json or [])
                 if not (0 <= index < len(save_points)):
                     await websocket.send_json(
@@ -883,6 +865,8 @@ async def play_ws(websocket: WebSocket, session_id: str) -> None:
                 )
                 await session.commit()
                 sess = await repo.get_play_session(session_id)
+                if sess is None:
+                    break
                 await websocket.send_json(await _load_state_dict(repo, sess))
 
             elif action == "end":
@@ -1082,7 +1066,7 @@ async def get_branch_stats(
     total_choices = 0
     unique_paths: set[tuple[str, ...]] = set()
     for s in sessions:
-        ctx = s.context_json or {}
+        ctx: dict[str, Any] = dict(s.context_json) if s.context_json else {}
         history = ctx.get("history", [])
         total_choices += len(history)
         unique_paths.add(tuple(h.get("to", "") for h in history))
@@ -1099,38 +1083,6 @@ async def get_branch_stats(
     }
 
 
-def _compute_unified_diff(content_a: str, content_b: str) -> str:
-    """二つのコンテンツの統一フォーマット差分を計算（簡易実装）"""
-    lines_a = content_a.splitlines(keepends=True)
-    lines_b = content_b.splitlines(keepends=True)
-    diff = difflib.unified_diff(lines_a, lines_b, lineterm="")
-    return "\n".join(diff)
-
-
-def _compute_side_by_side_diff(content_a: str, content_b: str) -> dict[str, list[str]]:
-    """二つのコンテンツのサイドバイサイド差分を計算（簡易実装）"""
-    import difflib
-    lines_a = content_a.splitlines(keepends=True)
-    lines_b = content_b.splitlines(keepends=True)
-    diff = difflib.unified_diff(lines_a, lines_b, lineterm="")
-    
-    left = []
-    right = []
-    for line in diff:
-        if line.startswith("- ") and not line.startswith("---"):
-            left.append(line[2:])
-            right.append("")
-        elif line.startswith("+ ") and not line.startswith("+++"):
-            left.append("")
-            right.append(line[2:])
-        elif line.startswith(" "):
-            left.append(line[2:] if len(line) > 2 else "")
-            right.append(line[2:] if len(line) > 2 else "")
-        # @@ 行などは無視
-    
-    return {"left": left, "right": right}
-
-
 @router.get("/{book_id}/choices", response_model=dict)
 async def get_branch_choice_stats(
     book_id: int,
@@ -1142,7 +1094,7 @@ async def get_branch_choice_stats(
 
     counts: dict[str, int] = {}
     for s in sessions:
-        ctx = s.context_json or {}
+        ctx: dict[str, Any] = dict(s.context_json) if s.context_json else {}
         for entry in ctx.get("history", []):
             cid = entry.get("choice_id")
             if cid:

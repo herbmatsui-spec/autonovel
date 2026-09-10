@@ -45,23 +45,30 @@ class WritingAgent(SkillAgent):
     async def execute(self, ctx: AgentContext) -> AgentResult:
         """スキル実行エントリーポイント"""
         # 必要なパラメータを artifacts から取得
-        book_id = ctx.book_id
-        branch_id = ctx.branch_id
-        ep_num = ctx.ep_num
-        artifacts = ctx.artifacts
+        book_id: int = ctx.book_id
+        branch_id: int = ctx.branch_id
+        ep_num: int = ctx.ep_num
+        artifacts: dict[str, Any] = ctx.artifacts
 
-        start_ep = artifacts.get("start_ep", ep_num)
-        end_ep = artifacts.get("end_ep", ep_num)
-        passion = artifacts.get("passion", 0.8)
-        target_word_count = artifacts.get("target_word_count", 3000)
-        is_easy_mode = artifacts.get("is_easy_mode", False)
-        reporter = artifacts.get("reporter")
-        style_tag = artifacts.get("style_tag")
+        start_ep: int = artifacts.get("start_ep", ep_num)
+        end_ep: int = artifacts.get("end_ep", ep_num)
+        passion: float = artifacts.get("passion", 0.8)
+        target_word_count: int = artifacts.get("target_word_count", 3000)
+        is_easy_mode: bool = artifacts.get("is_easy_mode", False)
+        reporter: Any = artifacts.get("reporter")
+        style_tag: Any = artifacts.get("style_tag")
 
         # 再生成フォーカス取得（WritingService からの指示）
-        regeneration_focus = artifacts.get("regeneration_focus", [])
-        regeneration_action = artifacts.get("regeneration_action")
-        
+        regeneration_focus: list[str] = artifacts.get("regeneration_focus", [])
+        regeneration_action: Any = artifacts.get("regeneration_action")
+         
+        # 検出: AuditAggregatorNode からの再生成ディレクティブ (regeneration_directive)
+        regeneration_directive: Any = artifacts.get("regeneration_directive")
+        if regeneration_directive:
+            ctx.artifacts["regeneration_mode"] = True
+            ctx.artifacts["regeneration_directive"] = regeneration_directive
+            logger.info(f"WritingAgent: 再生成モード検出 - directive found, length={len(regeneration_directive)}")
+
         if regeneration_focus:
             ctx.artifacts["regeneration_mode"] = True
             ctx.artifacts["regeneration_focus"] = regeneration_focus
@@ -90,6 +97,7 @@ class WritingAgent(SkillAgent):
                 style_tag=style_tag,
                 regeneration_focus=artifacts.get("regeneration_focus", []),
                 writing_focus=artifacts.get("writing_focus", []),
+                regeneration_directive=artifacts.get("regeneration_directive"),
             )
 
             if failed_episodes:
@@ -110,7 +118,7 @@ class WritingAgent(SkillAgent):
 
             # 最後の生成テキストを取得（簡易実装）
             chapter = await self.repo.get_chapter(branch_id, end_ep) if self.repo else None
-            drafted_text = chapter.content if chapter else ""
+            drafted_text: str = chapter.content if chapter else ""
 
             self.emit_event("writing.completed", {
                 "book_id": book_id,
@@ -125,8 +133,8 @@ class WritingAgent(SkillAgent):
                     "word_count": total_chars,
                     "failed_episodes": [],
                 },
-            )
-
+)
+        
         except Exception as e:
             self.emit_event("writing.error", {
                 "book_id": book_id,
@@ -139,7 +147,7 @@ class WritingAgent(SkillAgent):
                 error=f"WritingAgent execution failed: {e}",
             )
 
-    # ---- WritingService 互換メソッド（委譲） ----
+    # ---- WritingService 互換メソッド（委託） ----
     async def generate_episodes_pipeline(
         self,
         book_id: int,
@@ -153,7 +161,7 @@ class WritingAgent(SkillAgent):
         style_tag: Any = None,
         regeneration_focus: list[str] | None = None,
         writing_focus: list[str] | None = None,
-    ) -> tuple[int, list[dict[str, Any]]]:
+) -> tuple[int, list[dict[str, Any]]]:
         """WritingService 互換: パイプライン執筆"""
         generator = self._get_generator()
         return await generator.generate_episodes_pipeline(
@@ -181,8 +189,8 @@ class WritingAgent(SkillAgent):
         reporter: Any,
         branch_id: int = 1,
         style_tag: Any = None,
-        regeneration_focus: list[str] = None,
-        writing_focus: list[str] = None,
+        regeneration_focus: list[str] | None = None,
+        writing_focus: list[str] | None = None,
     ) -> int:
         """WritingService 互換: 単発執筆"""
         generator = self._get_generator()
@@ -206,7 +214,7 @@ class WritingAgent(SkillAgent):
         ep_num: int,
         import_text: str,
         do_refine: bool = True,
-    ) -> Any:
+    ) -> int:
         """WritingService 互換: 原稿インポート（未実装）"""
         raise NotImplementedError("analyze_and_import_chapter is not implemented yet")
 

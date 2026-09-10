@@ -1,4 +1,4 @@
-import { ChapterItem } from "../../types";
+import { ChapterItem } from "../types";
 
 export const reorderChapters = (chapters: ChapterItem[], fromIndex: number, toIndex: number): ChapterItem[] => {
   if (fromIndex < 0 || fromIndex >= chapters.length || toIndex < 0 || toIndex >= chapters.length) {

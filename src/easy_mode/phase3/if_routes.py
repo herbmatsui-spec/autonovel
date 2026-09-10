@@ -51,7 +51,7 @@ class BranchCondition:
     def evaluate(self, context: dict[str, Any]) -> bool:
         """条件判定（ネストしたキー対応）"""
         # ネストしたキーを取得（ドット区切り対応）
-        var_value = context
+        var_value: Any = context
         for key in self.variable.split("."):
             if isinstance(var_value, dict) and key in var_value:
                 var_value = var_value[key]
@@ -251,7 +251,7 @@ class IFRouteGraph:
         # 孤立ノードチェック
         reachable = set()
 
-        def traverse(node_id: str, visited: set[str] = None):
+        def traverse(node_id: str, visited: set[str] | None = None):
             if visited is None:
                 visited = set()
             if node_id in visited or node_id not in self.nodes:
@@ -676,9 +676,9 @@ class IFRouteGenerator:
 
             # 不足ノードを作成
             for node_id in missing_ids:
-                node = self._create_target_node(node_id, series)
-                if node:
-                    self.graph.add_node(node)
+                new_node = self._create_target_node(node_id, series)
+                if new_node:
+                    self.graph.add_node(new_node)
                     changed = True
 
     def _create_target_node(self, node_id: str, series: SeriesResult) -> RouteNode | None:
@@ -969,34 +969,6 @@ class IFRouteGenerator:
                 )
             ],
             metadata={"type": "prologue_variant", "variant": variant},
-        )
-
-    def _create_hidden_continuation_node(self, node_id: str) -> RouteNode:
-        ep_part = node_id.split("_hidden")[0]
-
-        return RouteNode(
-            id=node_id,
-            episode_num=0,
-            content="[隠しルート継続] 秘められた真実の続き。\nメインルートでは見えなかった世界の裏側——",
-            branch_type=BranchType.CONDITIONAL,
-            choices=[
-                RouteChoice(
-                    id=f"{node_id}_continue",
-                    text="隠しルートを進む",
-                    target_node_id=f"{ep_part}_hidden",
-                    conditions=[
-                        BranchCondition("flags.hidden_unlocked", ConditionOperator.EQUALS, True)
-                    ],
-                    priority=1,
-                ),
-                RouteChoice(
-                    id=f"{node_id}_return",
-                    text="メインに戻る",
-                    target_node_id=f"{ep_part}_main",
-                    priority=5,
-                ),
-            ],
-            metadata={"route": "hidden_continuation"},
         )
 
     def _create_bad_ending_node(self, node_id: str) -> RouteNode:

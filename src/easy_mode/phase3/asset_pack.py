@@ -14,10 +14,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from src.easy_mode.phase3.ebook_export import create_ebook_exporter
+from src.easy_mode.phase3.ebook_export import EbookExporter, create_ebook_exporter
 from src.easy_mode.phase3.if_routes import IFRouteGenerator, IFRouteGraph
 from src.easy_mode.phase3.media_mix import (
     MediaFormat,
+    MediaMixExporter,
     create_media_mix_exporter,
 )
 from src.easy_mode import EpisodeResult, SeriesResult
@@ -73,9 +74,9 @@ class AssetPackGenerator:
     def __init__(self, genre: str, preset: dict[str, Any]):
         self.genre = genre
         self.preset = preset
-        self.if_generator = None  # 遅延初期化
-        self.media_exporter = None
-        self.ebook_exporter = None
+        self.if_generator: IFRouteGenerator | None = None  # 遅延初期化
+        self.media_exporter: MediaMixExporter | None = None
+        self.ebook_exporter: EbookExporter | None = None
 
     def _init_components(self, series: SeriesResult):
         """コンポーネント初期化"""
@@ -90,12 +91,12 @@ class AssetPackGenerator:
         self,
         series: SeriesResult,
         output_dir: Path,
-        pack_id: str = None,
+        pack_id: str | None = None,
         include_if_routes: bool = True,
         include_media_mix: bool = True,
         include_ebook: bool = True,
-        media_formats: list[str] = None,
-        ebook_formats: list[str] = None,
+        media_formats: list[str] | None = None,
+        ebook_formats: list[str] | None = None,
         **kwargs,
     ) -> Path:
         """資産化パック生成"""
@@ -270,6 +271,9 @@ class AssetPackGenerator:
         """IFルート生成"""
         files = {}
 
+        if self.if_generator is None:
+            self.if_generator = IFRouteGenerator(self.genre, self.preset)
+
         # IFルートグラフ生成
         graph = self.if_generator.generate_from_series(series)
 
@@ -311,7 +315,7 @@ class AssetPackGenerator:
             files[f"route_scenarios/{route_name}.json"] = f"ルートシナリオ: {route_name}"
 
         # プレイヤー用セーブデータテンプレート
-        save_template = {
+        save_template: dict[str, Any] = {
             "version": "1.0",
             "graph_id": list(graph.nodes.keys())[0] if graph.nodes else "",
             "save_slots": [],
@@ -396,10 +400,13 @@ class AssetPackGenerator:
         return routes
 
     def _generate_media_mix(
-        self, series: SeriesResult, output_dir: Path, media_formats: list[str] = None
+        self, series: SeriesResult, output_dir: Path, media_formats: list[str] | None = None
     ) -> dict[str, str]:
         """メディアミックス生成"""
         files = {}
+
+        if self.media_exporter is None:
+            self.media_exporter = create_media_mix_exporter(self.genre, self.preset)
 
         if media_formats is None:
             media_formats = ["manga", "audio_drama", "video"]
@@ -437,10 +444,13 @@ class AssetPackGenerator:
         return files
 
     def _generate_ebooks(
-        self, series: SeriesResult, output_dir: Path, ebook_formats: list[str] = None, **kwargs
+        self, series: SeriesResult, output_dir: Path, ebook_formats: list[str] | None = None, **kwargs
     ) -> dict[str, str]:
         """電子書籍生成"""
         files = {}
+
+        if self.ebook_exporter is None:
+            self.ebook_exporter = create_ebook_exporter(self.genre, self.preset)
 
         if ebook_formats is None:
             ebook_formats = ["epub", "pdf"]

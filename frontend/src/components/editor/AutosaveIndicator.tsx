@@ -1,4 +1,4 @@
-import { SaveStatus } from "../hooks/useAutosave";
+import { SaveStatus } from "../../hooks/useAutosave";
 
 interface AutosaveIndicatorProps {
   status: SaveStatus;

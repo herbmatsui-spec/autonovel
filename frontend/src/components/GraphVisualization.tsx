@@ -3,6 +3,7 @@ import ForceGraph2D, { ForceGraphMethods } from "react-force-graph-2d";
 import { fetchGraphData } from "../api/graph";
 import { NodeInspector } from "./graph/NodeInspector";
 import { GraphNodeDetail } from "../types/graphInspector";
+import { GraphEdge as InspectorGraphEdge } from "../types/graph";
 
 export interface GraphNode {
   id: string;
@@ -504,7 +505,7 @@ return (
                   }));
 
                   // Convert all edges to GraphEdge[] (with string source/target)
-                  const edgesDetail: GraphEdge[] = rawData.edges.map((edge) => ({
+                  const edgesDetail: InspectorGraphEdge[] = rawData.edges.map((edge) => ({
                     source:
                       typeof edge.source === "object"
                         ? (edge.source as GraphNode).id

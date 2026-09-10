@@ -393,11 +393,11 @@ class PdfGenerator:
         story = []
 
         # 表紙
-        story.extend(self._build_cover(series))
+        story.extend(self._build_cover(series, styles))
         story.append(PageBreak())
 
         # 目次
-        story.extend(self._build_toc(series))
+        story.extend(self._build_toc(series, styles))
         story.append(PageBreak())
 
         # 本文
@@ -420,6 +420,25 @@ class PdfGenerator:
         from reportlab.pdfbase import pdfmetrics
         from reportlab.pdfbase.ttfonts import TTFont
 
+        # 一般的なフォントパス（Windows, macOS, Linux）をチェック
+        font_candidates = [
+            "C:/Windows/Fonts/msgothic.ttc",
+            "C:/Windows/Fonts/meiryo.ttc",
+            "C:/Windows/Fonts/msmincho.ttc",
+            "/System/Library/Fonts/Hiragino Sans GB.ttc",
+            "/Library/Fonts/Arial Unicode.ttf",
+            "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+            "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
+        ]
+        for font_path in font_candidates:
+            if Path(font_path).exists():
+                try:
+                    pdfmetrics.registerFont(TTFont("Japanese", font_path))
+                    self.font_name = "Japanese"
+                    return
+                except Exception:
+                    pass
+
         try:
             # システムフォントを試す
             import subprocess
@@ -433,14 +452,16 @@ class PdfGenerator:
                         or "ipafont" in line.lower()
                     ):
                         font_path = line.split(":")[0].strip()
-                        if font_path:
+                        if font_path and Path(font_path).exists():
                             pdfmetrics.registerFont(TTFont("Japanese", font_path))
+                            self.font_name = "Japanese"
                             return
         except Exception:
             pass
 
         # フォールバック：デフォルトフォント使用
         logger.warning("Japanese font not found, using default")
+        self.font_name = "Helvetica"
 
     def _setup_custom_styles(self, styles):
         """カスタムスタイル設定"""
@@ -448,11 +469,13 @@ class PdfGenerator:
         from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY, TA_LEFT
         from reportlab.lib.styles import ParagraphStyle
 
+        font_name = getattr(self, "font_name", "Helvetica")
+
         styles.add(
             ParagraphStyle(
                 "JapaneseTitle",
                 parent=styles["Title"],
-                fontName="Japanese",
+                fontName=font_name,
                 fontSize=24,
                 leading=36,
                 alignment=TA_CENTER,
@@ -465,7 +488,7 @@ class PdfGenerator:
             ParagraphStyle(
                 "JapaneseHeading1",
                 parent=styles["Heading1"],
-                fontName="Japanese",
+                fontName=font_name,
                 fontSize=18,
                 leading=27,
                 spaceBefore=24,
@@ -478,7 +501,7 @@ class PdfGenerator:
             ParagraphStyle(
                 "JapaneseHeading2",
                 parent=styles["Heading2"],
-                fontName="Japanese",
+                fontName=font_name,
                 fontSize=15,
                 leading=22,
                 spaceBefore=18,
@@ -491,7 +514,7 @@ class PdfGenerator:
             ParagraphStyle(
                 "JapaneseBody",
                 parent=styles["Normal"],
-                fontName="Japanese",
+                fontName=font_name,
                 fontSize=11,
                 leading=19,
                 alignment=TA_JUSTIFY,
@@ -505,7 +528,7 @@ class PdfGenerator:
             ParagraphStyle(
                 "JapaneseDialogue",
                 parent=styles["Normal"],
-                fontName="Japanese",
+                fontName=font_name,
                 fontSize=11,
                 leading=19,
                 alignment=TA_LEFT,
@@ -519,14 +542,13 @@ class PdfGenerator:
             ParagraphStyle(
                 "JapaneseMonologue",
                 parent=styles["Normal"],
-                fontName="Japanese",
+                fontName=font_name,
                 fontSize=11,
                 leading=19,
                 alignment=TA_LEFT,
                 leftIndent=24,
                 spaceBefore=6,
                 spaceAfter=6,
-                fontStyle="italic",
             )
         )
 
@@ -568,21 +590,19 @@ class PdfGenerator:
     def _build_toc(self, series: SeriesResult, styles) -> list:
         """目次構築"""
         from reportlab.lib.units import cm
-        from reportlab.platypus import Paragraph, Spacer, TableOfContents
+        from reportlab.platypus import Paragraph, Spacer
 
         story = []
         story.append(Paragraph("目次", styles["JapaneseHeading1"]))
         story.append(Spacer(1, 1 * cm))
 
         chapters = self.processor.create_chapters(series)
-        toc = TableOfContents()
-        toc.levelStyles = [styles["JapaneseHeading2"], styles["JapaneseBody"]]
 
         # TOCエントリ手動追加
-        for i, ch in enumerate(chapters):
+        for ch in chapters:
             if ch.toc_entry:
                 story.append(
-                    Paragraph(f'<a href="#chap_{i}">{ch.title}</a>', styles["JapaneseBody"])
+                    Paragraph(f'<a href="#chap_{ch.episode_num}">{ch.title}</a>', styles["JapaneseBody"])
                 )
 
         return story
@@ -742,7 +762,7 @@ class EbookExporter:
         return generator.generate(series, output_path)
 
     def export_all(
-        self, series: SeriesResult, output_dir: Path, formats: list[str] = None, **kwargs
+        self, series: SeriesResult, output_dir: Path, formats: list[str] | None = None, **kwargs
     ) -> dict[str, Path]:
         """全フォーマット出力"""
         if formats is None:

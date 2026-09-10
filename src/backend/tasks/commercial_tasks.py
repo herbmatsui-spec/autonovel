@@ -34,7 +34,8 @@ def publish_to_platforms_task(
 
     async def _run() -> dict[str, Any]:
         from src.services.commercial_pipeline import CommercialPipeline
-        from src.backend.routers.commercial import _get_novel_data, _get_episodes_data, _save_publish_records, _get_credentials_class
+        from src.backend.services.commercial_helpers import _get_novel_data, _get_episodes_data
+        from src.backend.routers.commercial import _save_publish_records, _get_credentials_class
 
         # 1. 認証情報の復元
         typed_credentials = {}

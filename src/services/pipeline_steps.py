@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from src.backend.background import StatusReporter
-    from src.backend.engine import UltimateHegemonyEngine
+    from src.backend.orchestrator_engine_adapter import OrchestratorEngineAdapter as UltimateHegemonyEngine
 
 from src.services.pipeline_base import WorkflowContext, WorkflowStep
 from src.services.audit_adapter import create_audit_adapter

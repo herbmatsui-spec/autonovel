@@ -17,7 +17,7 @@
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 [![Type Checked: mypy](https://img.shields.io/badge/type%20checked-mypy-blue)](https://mypy-lang.org/)
 [![Vitest](https://img.shields.io/badge/tested_with-vitest-729B1B?logo=vitest&logoColor=white)](https://vitest.dev/)
-[![Version](https://img.shields.io/badge/version-4.7.4-brightgreen?logo=semver)](https://github.com/herbmatsui-spec/autonovel/releases/tag/v4.7.4)
+[![Version](https://img.shields.io/badge/version-4.8.0-brightgreen?logo=semver)](https://github.com/herbmatsui-spec/autonovel/releases/tag/v4.8.0)
 
 <br />
 
@@ -25,7 +25,7 @@
   <img src="docs/demo.gif" alt="AutoNovel UI & Workflow Demo" width="900" style="border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
 </p>
 
-*▲ AutoNovel v4.7.4: 3案企画ガチャ / 逆算プロット / 上級者Studio / インライン五感推敲 / GraphRAG相関図 / ワンクリックZIP納品 / マルチメディア・eBook / IFルート分岐 / **【第1〜4の柱 統合】文構造保護五感拡充・長編窓枠抽出 (NovelSectionExtractor) / ソーシャル動態追跡 (SocialInteractionManager) / 4階層セマンティック圧縮 (DynamicTaxonomyEngine) / 反射的RAG (HybridRetriever + RRF) / 企画物理サンドボックス (BlindFeedbackPurifier) / 8専門家アンカー採点 (High/Mid/Low) / ベイズ的スコアキャリブレーション / 統一5D BookScore変換 / DAG局所リトライ & 閉ループPDCA再執筆 (CommercialBenchmark 85+ 商業品質達成)****
+*▲ AutoNovel v4.8.0: 3案企画ガチャ / 逆算プロット / 上級者Studio / インライン五感推敲 / GraphRAG相関図 / ワンクリックZIP納品 / マルチメディア・eBook / IFルート分岐 / **【v4.7商業品質基盤上】Easy Mode v1スキル完全実装 / Orchestrated Mode (SSEストリーミング) / Reverse/Simple/Orchestrated 3モード統合 / Commercial Pipeline強化 (スケジュール・なろう投稿・Kobo/Kindle連携) / セキュリティパッチ (SSRF/パストラバーサル/ReDoS) / リポジトリ並行アクセス安全化 / 非推奨委譲パターン整理 / 全テストグリーン達成***
 
 </div>
 
@@ -87,6 +87,59 @@ AutoNovel は、AI を活用して Web 小説を **企画から執筆、校正�
 - `ClosedLoopPDCARunner` (`src/services/pdca_cycle.py`): 最低次元特定、Actionable Diff $\to$ 必須制約変換、再執筆・再監査・収束判定（改善率 $\ge 15\%$）。
 - `DAGReplanner` (`src/backend/tasks/dag_replanning.py`): 監査不合格ノードのみの局所リトライ、BFS下流タスク特定＆安全キャンセル、EventBus `dag.replanned` 発行。
 - `CommercialBenchmarkJudge` (`src/services/commercial_benchmarks.py`): 商業出版水準（85+ Sランク）、Web連載水準（75+ Aランク）、全次元足切り（60+）、7大ヘルスチェック（7/7 PASS）。
+
+---
+
+### v4.8.0 (2026-09-10) — Easy Mode v1スキル実装・Orchestrated Mode統合・商業パイプライン強化・セキュリティ/テスト基盤完成
+
+v4.7の商業品質基盤（4大改善の柱・CommercialBenchmark 85+）を土台に、実用フェーズへの完全移行を達成。Easy Modeのv1スキル全9種実装、Orchestrated Mode（SSEストリーミング）による3モード統合、商業出版パイプラインの実装強化、セキュリティ脆弱性の根治、並行アクセス安全化、非推奨コード整理、全テストグリーン化を一括実現。
+
+**🎯 Easy Mode v1スキル完全実装 (9スキル・`src/agents/skills/v1/`)**
+- `easy_mode_planning.py`: 3案企画ガチャ・逆算プロットのロジックをスキル化、v1/v2ホットスワップ対応
+- `easy_mode_bible.py`: 世界観Bible自動構築・GraphRAG登録をスキル化、設定ドリフト防止
+- `easy_mode_writing.py`: 本文生成・五感推敲・インライン編集連携をスキル化
+- `easy_mode_illustration.py`: シーン抽出・キャラ一貫性維持・プロンプト生成をスキル化
+- `easy_mode_marketing.py`: タイトル/キャッチ/あらすじ/タグ生成・SEO最適化をスキル化
+- `easy_mode_context_builder.py`: GraphRAGハイブリッド検索・コンテキスト圧縮統合をスキル化
+- `easy_mode_easy_mode.yaml`: 設定駆動化、ジャンル/フェーズ別パラメータ外部化
+- `Orchestrator.set_skill_version("v1"|"v2")` による完全ホットスワップ、A/Bテスト自動化対応
+
+**🌊 Orchestrated Mode (SSEストリーミング)・3モード統合**
+- `src/backend/routers/orchestrated.py`: SSEエンドポイント実装、リアルタイム進捗・中間成果物ストリーミング
+- `src/backend/orchestrator_engine_adapter.py`: オーケストレータエンジンとFastAPIのアダプタ層
+- `frontend/src/components/generate/`: `OrchestratedModePanel`, `ReverseModePanel`, `SimpleModePanel` 3モードUI統合
+- `frontend/src/hooks/useUnifiedStreaming.ts`: 統一ストリーミングフック、SSE/ポーリング透過的切替
+- `src/agents/orchestrator.py`: DAGベース実行・局所リトライ・EventBus連携をストリーミング対応に拡張
+
+**📚 Commercial Pipeline 強化・実装完成**
+- `src/backend/routers/commercial.py`: 出版スケジュール管理・なろう/カクヨム/Kobo/Kindle API連携エンドポイント
+- `src/backend/tasks/commercial_tasks.py`: Hueyタスク化、定期実行・リトライ・冪等性保証
+- `src/backend/services/commercial_helpers.py`: 共通ロジック抽出、認証・レート制限・エラーハンドリング統一
+- `src/services/publishers/narou.py`: 小説家になろう投稿API実装（2段階認証・下書き/公開制御）
+- Alembic移行 `0021_publication_schedules.py`: 出版スケジュールテーブル追加
+
+**🔒 セキュリティ脆弱性根治 (`src/backend/routers/security_patches.py` 等)**
+- SSRF対策: 内部ネットワークアドレスブロック、許可リストベースURL検証
+- パストラバーサル対策: `pathlib.Path.resolve()` + 許可ディレクトリ配下チェック
+- ReDoS対策: 危険な正規表現の排除・タイムアウト付きマッチング・入力長制限
+- 入力サニタイズ統一: 全APIエンドポイントでPydanticバリデーション強化
+- 新規テスト: `tests/unit/test_security_patches.py` (12ケース全パス)
+
+**🧵 リポジトリ並行アクセス安全化 (`src/backend/database/repository.py`)**
+- `async with` コンテキストマネージャによるセッションスコープ厳格化
+- `select_for_update` / `with_for_update` 行ロック統一、デッドロック防止順序付け
+- 接続プール設定最適化: `pool_pre_ping`, `pool_recycle`, `max_overflow` チューニング
+- 新規テスト: `tests/unit/test_repository_concurrency.py` (並行シナリオ8ケース全パス)
+
+**🧹 非推奨委譲パターン整理・レガシー分離**
+- `src/legacy/`: `engine_ultimate_hegemony.py`, `novel_producer.py`, `writing_agent_v1.py` を隔離
+- `src/agents/audit_agent.py`, `audit.py`: 重複実装統合、v2スキルベースへ完全移行
+- `@deprecated` 装飾子・移行ガイドドキュメント整備、型ヒント・mypyクリーン化
+
+**✅ テスト・品質ゲート全グリーン達成**
+- 新規単体テスト: `test_security_patches.py`, `test_repository_concurrency.py`, `test_deprecation_delegation.py`, `test_in_memory_fallback_enhanced.py`, `test_orchestrator_backtrack.py`, `test_step25_26.py`
+- 既存テストスイート全互換性維持 (CI: `ruff`, `mypy`, `pytest`, `vitest` 全通過)
+- カバレッジ 80%+ 維持、プロパティベーステスト (Hypothesis) 継続拡充
 
 ---
 

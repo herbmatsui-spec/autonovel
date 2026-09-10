@@ -1001,3 +1001,319 @@ select:focus-visible,
   animation: fadeIn 0.2s ease;
 }
 
+/* ==========================================
+ * EditorToolbar (エディタツールバー) スタイル
+ * ========================================== */
+
+.editor-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  flex-wrap: wrap;
+}
+
+.editor-toolbar__group {
+  display: flex;
+  gap: 4px;
+}
+
+.editor-toolbar__btn {
+  padding: 6px 12px;
+  border: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-main);
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 56px;
+}
+
+.editor-toolbar__btn:hover {
+  background: rgba(139, 92, 246, 0.2);
+  border-color: var(--accent-purple);
+  color: #c4b5fd;
+}
+
+.editor-toolbar__btn.active {
+  background: var(--accent-purple);
+  border-color: var(--accent-purple);
+  color: white;
+}
+
+.editor-toolbar__divider {
+  width: 1px;
+  height: 24px;
+  background: var(--border-color);
+  margin: 0 4px;
+}
+
+.editor-toolbar__manuscript {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  padding: 0 8px;
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  border-radius: 6px;
+}
+
+.editor-toolbar__btn--zen {
+  padding: 6px 14px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(56, 189, 248, 0.3));
+  border: 1px solid rgba(139, 92, 246, 0.5);
+  color: #c4b5fd;
+}
+
+.editor-toolbar__btn--zen:hover {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.5), rgba(56, 189, 248, 0.5));
+  color: white;
+}
+
+.editor-toolbar__btn--zen.active {
+  background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan));
+  color: white;
+}
+
+/* ==========================================
+ * Zen Mode (全画面集中執筆) スタイル
+ * ========================================== */
+
+.zen-mode-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--bg-primary);
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.3s ease;
+}
+
+.zen-mode-container {
+  width: 100%;
+  max-width: 820px;
+  height: 100%;
+  max-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+}
+
+.zen-mode__header {
+  display: flex;
+  justifyContent: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.zen-mode__title {
+  font-family: 'Shippori Mincho', serif;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-main);
+  letter-spacing: 0.05em;
+}
+
+.zen-mode__manuscript {
+  font-size: 0.85rem;
+  color: var(--accent-cyan);
+  background: rgba(6, 182, 212, 0.1);
+  padding: 4px 12px;
+  border-radius: 9999px;
+  border: 1px solid rgba(6, 182, 212, 0.3);
+}
+
+.zen-mode__exit {
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.zen-mode__exit:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: var(--accent-danger);
+  color: #f87171;
+}
+
+.zen-mode-container .textarea {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  color: var(--text-main);
+  font-family: 'Shippori Mincho', serif !important;
+  font-size: 17px !important;
+  line-height: 2.1 !important;
+  letter-spacing: 0.02em;
+  caret-color: var(--accent-purple);
+}
+
+.zen-mode-container .textarea::placeholder {
+  color: rgba(156, 163, 175, 0.4);
+}
+
+/* ==========================================
+ * AssetPackPanel (アセットパック) スタイル
+ * ========================================== */
+
+.asset-pack-panel {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.asset-pack-panel__header {
+  margin-bottom: 8px;
+}
+
+.asset-pack-panel__title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0 0 8px 0;
+}
+
+.asset-pack-panel__description {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.asset-pack-panel__section {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 16px;
+}
+
+.asset-pack-panel__section-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 12px 0;
+}
+
+.asset-pack-panel__toggles {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.asset-pack-panel__toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 6px;
+  transition: background 0.2s ease;
+}
+
+.asset-pack-panel__toggle:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.asset-pack-panel__toggle input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent-purple);
+  cursor: pointer;
+}
+
+.asset-pack-panel__toggle-label {
+  font-size: 0.95rem;
+  color: var(--text-main);
+}
+
+.asset-pack-panel__chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.asset-pack-panel__chip {
+  padding: 8px 16px;
+  border: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-muted);
+  border-radius: 9999px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.asset-pack-panel__chip:hover {
+  border-color: var(--accent-purple);
+  color: var(--text-main);
+  background: rgba(139, 92, 246, 0.1);
+}
+
+.asset-pack-panel__chip.active {
+  background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan));
+  border-color: transparent;
+  color: white;
+  box-shadow: 0 2px 8px var(--accent-glow);
+}
+
+.asset-pack-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.asset-pack-panel__btn-generate {
+  flex: 1;
+  min-width: 200px;
+}
+
+.asset-pack-panel__btn-download {
+  padding: 12px 24px;
+  font-weight: 600;
+}
+
+.asset-pack-panel__error {
+  color: var(--accent-danger);
+  font-size: 0.85rem;
+  margin: 8px 0 0 0;
+}
+
+.asset-pack-panel__task-id {
+  color: var(--text-muted);
+  font-family: monospace;
+  font-size: 0.75rem;
+  margin: 4px 0 0 0;
+}
+
+.btn-success {
+  background: var(--accent-success) !important;
+  color: white !important;
+  border: none !important;
+}
+
+.btn-success:hover {
+  background: #059669 !important;
+  transform: translateY(-1px);
+}
+

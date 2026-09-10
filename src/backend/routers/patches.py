@@ -31,6 +31,8 @@ async def get_pending_patches(book_id: int):
     from src.backend.database.uow import UnitOfWork
 
     async with UnitOfWork(AppContainer.db()) as uow:
+        if uow.session is None:
+            raise RuntimeError("Database session not initialized")
         patches = await uow.misc.get_pending_patches(book_id)
     return patches
 
@@ -42,6 +44,8 @@ async def approve_patch(
     from src.backend.database.uow import UnitOfWork
 
     async with UnitOfWork(AppContainer.db()) as uow:
+        if uow.session is None:
+            raise RuntimeError("Database session not initialized")
         # 該当パッチの取得
         result = await uow.session.execute(select(PendingPatch).where(PendingPatch.id == patch_id))
         patch = result.scalar_one_or_none()
@@ -55,18 +59,20 @@ async def approve_patch(
 
         # 検証
         if patch.patch_type == "config":
-            validation = PatchValidator.validate_config_patch(patch.patch_content)
+            validation = PatchValidator.validate_config_patch(str(patch.patch_content))
             if not validation.is_safe:
                 raise ValidationError(
                     f"Config patch validation failed: {', '.join(validation.errors)}"
                 )
 
             # GlobalConfigに即時適用
+            if validation.sanitized_patch is None:
+                raise ValidationError("Sanitized patch is missing despite being safe")
             for k, v in validation.sanitized_patch.items():
                 GlobalConfig().set(k, v)
 
         elif patch.patch_type == "prompt":
-            validation = PatchValidator.validate_prompt_patch(patch.patch_content)
+            validation = PatchValidator.validate_prompt_patch(str(patch.patch_content))
             if not validation.is_safe:
                 raise ValidationError(
                     f"Prompt patch validation failed: {', '.join(validation.errors)}"
@@ -102,6 +108,8 @@ async def reject_patch(
     from src.backend.database.uow import UnitOfWork
 
     async with UnitOfWork(AppContainer.db()) as uow:
+        if uow.session is None:
+            raise RuntimeError("Database session not initialized")
         # 該当パッチの取得
         result = await uow.session.execute(select(PendingPatch).where(PendingPatch.id == patch_id))
         patch = result.scalar_one_or_none()
@@ -124,6 +132,8 @@ async def edit_patch(patch_id: int, req: Any, api_key: str = Depends(require_api
     from src.backend.database.uow import UnitOfWork
 
     async with UnitOfWork(AppContainer.db()) as uow:
+        if uow.session is None:
+            raise RuntimeError("Database session not initialized")
         # 該当パッチの取得
         result = await uow.session.execute(select(PendingPatch).where(PendingPatch.id == patch_id))
         patch = result.scalar_one_or_none()
@@ -137,13 +147,13 @@ async def edit_patch(patch_id: int, req: Any, api_key: str = Depends(require_api
 
         # 検証
         if patch.patch_type == "config":
-            validation = PatchValidator.validate_config_patch(req.content)
+            validation = PatchValidator.validate_config_patch(str(req.content))
             if not validation.is_safe:
                 raise ValidationError(
                     f"Config patch validation failed: {', '.join(validation.errors)}"
                 )
         elif patch.patch_type == "prompt":
-            validation = PatchValidator.validate_prompt_patch(req.content)
+            validation = PatchValidator.validate_prompt_patch(str(req.content))
             if not validation.is_safe:
                 raise ValidationError(
                     f"Prompt patch validation failed: {', '.join(validation.errors)}"
@@ -176,6 +186,8 @@ async def get_pending_reviews(book_id: int):
     from src.backend.database.uow import UnitOfWork
 
     async with UnitOfWork(AppContainer.db()) as uow:
+        if uow.session is None:
+            raise RuntimeError("Database session not initialized")
         reviews = await uow.misc.get_pending_reviews(book_id)
     return reviews
 
@@ -186,6 +198,8 @@ async def get_review_detail(review_id: int):
     from src.backend.database.uow import UnitOfWork
 
     async with UnitOfWork(AppContainer.db()) as uow:
+        if uow.session is None:
+            raise RuntimeError("Database session not initialized")
         review = await uow.misc.get_patch_review(review_id)
     if not review:
         raise NotFoundError(
@@ -202,6 +216,8 @@ async def approve_review(
     from src.backend.database.uow import UnitOfWork
 
     async with UnitOfWork(AppContainer.db()) as uow:
+        if uow.session is None:
+            raise RuntimeError("Database session not initialized")
         review = await uow.misc.get_patch_review(review_id)
         if not review:
             raise NotFoundError(
@@ -241,6 +257,8 @@ async def reject_review(
     from src.backend.database.uow import UnitOfWork
 
     async with UnitOfWork(AppContainer.db()) as uow:
+        if uow.session is None:
+            raise RuntimeError("Database session not initialized")
         review = await uow.misc.get_patch_review(review_id)
         if not review:
             raise NotFoundError(
@@ -280,6 +298,8 @@ async def revise_review(
     from src.backend.database.uow import UnitOfWork
 
     async with UnitOfWork(AppContainer.db()) as uow:
+        if uow.session is None:
+            raise RuntimeError("Database session not initialized")
         review = await uow.misc.get_patch_review(review_id)
         if not review:
             raise NotFoundError(
@@ -317,6 +337,8 @@ async def get_setting_versions(book_id: int):
     from src.backend.database.uow import UnitOfWork
 
     async with UnitOfWork(AppContainer.db()) as uow:
+        if uow.session is None:
+            raise RuntimeError("Database session not initialized")
         versions = await uow.misc.get_setting_versions(book_id)
     return versions
 
@@ -327,6 +349,8 @@ async def get_setting_version(book_id: int, version_number: int):
     from src.backend.database.uow import UnitOfWork
 
     async with UnitOfWork(AppContainer.db()) as uow:
+        if uow.session is None:
+            raise RuntimeError("Database session not initialized")
         version = await uow.misc.get_setting_version(book_id, version_number)
     if not version:
         raise NotFoundError(

@@ -32,6 +32,7 @@ class AgentContext:
     branch_id: int
     ep_num: int
     artifacts: dict[str, Any] = field(default_factory=dict)
+    backtrack_history: list[dict] = field(default_factory=list)
 
 
 @dataclass
@@ -40,6 +41,7 @@ class AgentResult:
     artifacts: dict[str, Any]
     should_retry: bool = False
     error: str | None = None
+    is_backtrack: bool = False
 
 
 AgentNode = Callable[[AgentContext], Awaitable[AgentResult]]
@@ -61,14 +63,81 @@ class Orchestrator:
         nodes: dict[AgentName | str, AgentNode],
         event_bus: Optional[EventBus] = None,
         correlation_id: Optional[str] = None,
+        max_backtracks_per_node: int = 3,
+        dag_scheduler: "DAGScheduler | None" = None,  # type: ignore|        dag_scheduler: "DAGScheduler | None" = None,  # type: ignore|        dag_scheduler: "DAGScheduler | None" = None,  # type: ignore|        dag_scheduler: "DAGScheduler | None" = None,  # type: ignore
+        use_dag_scheduler: bool = False,
     ):
         self.nodes = nodes
         self.event_bus = event_bus
         self.correlation_id = correlation_id or "unknown"
+        self.max_backtracks_per_node = max_backtracks_per_node
+        self.dag_scheduler = dag_scheduler
+        self.use_dag_scheduler = use_dag_scheduler
         self._skill_registry: dict[str, type[SkillAgent]] = {}
         self._active_skill_version: str = "v1"
         self._ordered_skill_names: list[str] = []
         self._skill_instances: dict[str, SkillAgent] = {}
+        self.max_backtracks_per_node = max_backtracks_per_node
+        
+
+    def _build_dag_graph(self) -> "DAGGraph":
+        """Orchestrator のスキル順序に基づいて DAGGraph を構築する"""
+        from src.backend.tasks.dag_models import DAGGraph, DAGTaskNode, TaskResourceRequirement
+        
+        graph = DAGGraph(dag_id=f"orch_{self.correlation_id}")
+        
+        # 各スキルを DAGTaskNode に変換
+        for i, skill_name in enumerate(self._ordered_skill_names):
+            task_id = f"{self.correlation_id}_{skill_name}"
+            
+            # 依存関係：最初のスキル以外は前のスキルに依存
+            if i == 0:
+                dependencies = []
+                kwargs = {
+                    "task_id": task_id,
+                    # 最初のタスクには入力元がない
+                }
+            else:
+                prev_skill_name = self._ordered_skill_names[i-1]
+                prev_task_id = f"{self.correlation_id}_{prev_skill_name}"
+                dependencies = [prev_task_id]
+                kwargs = {
+                    "task_id": task_id,
+                    "input_from": prev_task_id,  # 前のタスクからデータを取得する
+                }
+            
+            # デフォルトのリソース要件（後で設定可能にする）
+            resources = TaskResourceRequirement(
+                cpu_cores=1.0,
+                ram_mb=512,
+                gpu_mem_mb=0
+            )
+            
+            # DAGTaskNode を作成
+            task_node = DAGTaskNode(
+                task_id=task_id,
+                name=skill_name,  # 人間が読めるラベル
+                func_name=skill_name,  # 登録された関数名と一致させる
+                kwargs=kwargs,  # タスク実行時に渡される引数
+                dependencies=dependencies,
+                priority=10 - i,  # 番号が若いほど高優先度（実行順序と同じ)
+                timeout_seconds=300.0,  # 5分のデフォルトタイムアウト
+                retry_limit=3,
+            )
+            
+            graph.add_node(task_node)
+        
+        return graph
+
+    def _register_skills_to_scheduler(self) -> None:
+        """スキルの実行関数を DAGScheduler のタスクレジストリに登録する"""
+        if not self.dag_scheduler or not self._skill_instances:
+            return
+        
+        # スキルインスタンスから run メソッドを取得して登録
+        for skill_name, skill_instance in self._skill_instances.items():
+            self.dag_scheduler.register_task(skill_name, skill_instance.run)
+
 
     def register_discovered_skills(self, skill_pkg: str = "src.agents.skills.v1") -> None:
         """指定パッケージからスキルを検出し、内部レジストリに登録する。"""
@@ -167,6 +236,8 @@ class Orchestrator:
         dependencies: dict[str, Any] | None = None,
         event_bus: Optional[EventBus] = None,
         correlation_id: Optional[str] = None,
+        dag_scheduler: "DAGScheduler | None" = None,  # type: ignore|        dag_scheduler: "DAGScheduler | None" = None,  # type: ignore|        dag_scheduler: "DAGScheduler | None" = None,  # type: ignore|        dag_scheduler: "DAGScheduler | None" = None,  # type: ignore
+        use_dag_scheduler: bool = False,
     ) -> "Orchestrator":
         """マニフェストYAMLからトポロジカル順序付きの実行Orchestratorインスタンスを構築する (Step 16, 20)"""
         import logging
@@ -240,9 +311,10 @@ class Orchestrator:
             except ValueError:
                 pass
 
-        orch = cls(nodes=nodes, event_bus=event_bus, correlation_id=correlation_id)
+        orch = cls(nodes=nodes, event_bus=event_bus, correlation_id=correlation_id, dag_scheduler=dag_scheduler, use_dag_scheduler=use_dag_scheduler)
         orch._ordered_skill_names = ordered_names
         orch._skill_instances = skill_instances
+        orch._register_skills_to_scheduler()
         return orch
 
     def replace_skill(self, name: str, new_cls: type[SkillAgent]) -> None:
@@ -459,6 +531,123 @@ class Orchestrator:
         else:
             current = start
 
+        # If not using DAG scheduler, run the original logic
+        if not self.use_dag_scheduler or not self.dag_scheduler:
+            backtrack_counts: dict[str, int] = {}
+        else:
+            # Use DAG scheduler for execution
+            # Task results cache: maps task_id to AgentResult (to access artifacts)
+            task_results: dict[str, AgentResult] = {}
+            
+            # Register skills to scheduler with wrappers
+            for skill_name, skill_instance in self._skill_instances.items():
+                # Create a wrapper function for this skill
+                def make_skill_wrapper(name: str, instance: SkillAgent):
+                    async def wrapper(**kwargs):
+                        # Extract task_id and input_from from kwargs
+                        task_id = kwargs.get("task_id")
+                        input_from = kwargs.get("input_from")
+                        
+                        # Publish start event
+                        if self.event_bus:
+                            await self.event_bus.publish_async(
+                                AgentEvent(
+                                    agent=name,
+                                    payload={
+                                        "status": "started",
+                                        "ep_num": ctx.ep_num,
+                                    },
+                                    correlation_id=self.correlation_id,
+                                )
+                            )
+                        
+                        try:
+                            # Determine input AgentContext
+                            if input_from and input_from in task_results:
+                                # Use previous task's output artifacts as input artifacts
+                                prev_result = task_results[input_from]
+                                input_artifacts = prev_result.artifacts.copy() if hasattr(prev_result, 'artifacts') else {}
+                            else:
+                                # First task or no input_from: use the original ctx's artifacts
+                                input_artifacts = ctx.artifacts.copy()
+                            
+                            # Create input AgentContext
+                            input_ctx = AgentContext(
+                                book_id=ctx.book_id,
+                                branch_id=ctx.branch_id,
+                                ep_num=ctx.ep_num,
+                                artifacts=input_artifacts,
+                                backtrack_history=ctx.backtrack_history.copy(),  # Preserve original backtrack history
+                            )
+                            
+                            # Execute the skill
+                            agent_result: AgentResult = await instance.run(input_ctx)
+                            
+                            # Publish completion event
+                            if self.event_bus:
+                                await self.event_bus.publish_async(
+                                    AgentEvent(
+                                        agent=name,
+                                        payload={
+                                            "status": "completed" if agent_result.error is None else "failed",
+                                            "ep_num": ctx.ep_num,
+                                            "should_retry": agent_result.should_retry,
+                                            "error": agent_result.error,
+                                        },
+                                        correlation_id=self.correlation_id,
+                                    )
+                                )
+                            
+                            # If the skill returned an error, treat it as a failure
+                            if agent_result.error is not None:
+                                raise RuntimeError(f"Skill {name} failed: {agent_result.error}")
+                            
+                            # Store the full result for potential use by subsequent tasks
+                            if task_id:
+                                task_results[task_id] = agent_result
+                            
+                            # For DAGScheduler, we return the artifacts to be merged into ctx.artifacts
+                            # In the original flow, ctx.artifacts.update(result.artifacts) is done
+                            return agent_result.artifacts
+                        except Exception as e:
+                            # Publish failure event for unexpected exceptions
+                            if self.event_bus:
+                                await self.event_bus.publish_async(
+                                    AgentEvent(
+                                        agent=name,
+                                        payload={
+                                            "status": "failed",
+                                            "ep_num": ctx.ep_num,
+                                            "should_retry": False,
+                                            "error": str(e),
+                                        },
+                                        correlation_id=self.correlation_id,
+                                    )
+                                )
+                            raise
+                    
+                    return wrapper
+                
+                wrapper = make_skill_wrapper(skill_name, skill_instance)
+                self.dag_scheduler.register_task(skill_name, wrapper)
+            
+            # Build DAG from ordered skills
+            graph = self._build_dag_graph()
+            
+            # Execute DAG using scheduler
+            executed_graph = await self.dag_scheduler.run_dag(graph)
+            
+            # Collect results from completed nodes and update ctx.artifacts
+            for task_id, node in executed_graph.nodes.items():
+                if node.status == "completed" and node.result is not None:
+                    # node.result is what our wrapper returned (artifacts dict)
+                    if isinstance(node.result, dict):
+                        ctx.artifacts.update(node.result)
+                    else:
+                        # If result is not a dict, store it with task_id as key
+                        ctx.artifacts[task_id] = node.result
+            
+            return ctx
         while current:
             agent_key = current.value if hasattr(current, "value") else str(current)
             # ノード実行前イベント発行
@@ -500,9 +689,54 @@ class Orchestrator:
                             },
                             correlation_id=self.correlation_id,
                         )
-                    )
+)
 
+                # Handle should_retry (backtrack or retry)
                 if result.should_retry:
+                    # Handle backtrack logic
+                    current_agent_name = agent_key
+                    # Increment backtrack count for this node
+                    backtrack_counts[current_agent_name] = backtrack_counts.get(current_agent_name, 0) + 1
+                    current_count = backtrack_counts[current_agent_name]
+
+                    # Check if we exceeded max backtracks
+                    if current_count > self.max_backtracks_per_node:
+                        # Handle max backtrack exceeded: proceed to next_agent without retrying
+                        # Record that we exceeded
+                        ctx.artifacts[f"{current_agent_name}_max_backtrack_exceeded"] = True
+                        # Publish an event for max backtrack exceeded? We'll just continue to next_agent
+                        current = result.next_agent
+                        continue
+                    # Update artifacts with backtrack info
+                    # Note: we are already updating artifacts with result.artifacts above, but we want to add specific backtrack info
+                    ctx.artifacts["audit_score"] = result.artifacts.get("audit_score")
+                    ctx.artifacts["audit_retry_count"] = current_count
+                    ctx.artifacts["regeneration_directive"] = result.artifacts.get("regeneration_directive")
+                    ctx.artifacts["audit_status"] = "rejected"
+                    # Add to backtrack history
+                    ctx.backtrack_history.append({
+                        "from_node": current_agent_name,
+                        "to_node": result.next_agent.value if hasattr(result.next_agent, "value") else str(result.next_agent),
+                        "reason": "audit_failed",
+                        "count": current_count
+                    })
+                    # Publish agent.backtracked event
+                    if self.event_bus:
+                        await self.event_bus.publish_async(
+                            AgentEvent(
+                                agent=current_agent_name,
+                                payload={
+                                    "status": "backtracked",
+                                    "ep_num": ctx.ep_num,
+                                    "from": current_agent_name,
+                                    "to": result.next_agent.value if hasattr(result.next_agent, "value") else str(result.next_agent),
+                                    "count": current_count
+                                },
+                                correlation_id=self.correlation_id,
+                            )
+                        )
+                    # Set current to the next_agent for backtrack
+                    current = result.next_agent
                     continue
                 if result.error:
                     # エラーが発生しても次のスキルへ継続するオプション（artifacts にエラー情報を残す）
@@ -541,3 +775,6 @@ class Orchestrator:
                     )
                 raise RuntimeError(error_msg)
         return ctx
+
+
+

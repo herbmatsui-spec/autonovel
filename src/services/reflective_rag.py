@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.services.rag_service import GraphRAGService, SearchResult
 from src.services.vector_store import BaseVectorStore
@@ -404,7 +405,7 @@ class ReflectiveRAGService:
 
     async def retrieve_with_reflection(
         self,
-        session: Session,
+        session: Session | AsyncSession,
         *,
         query: str,
         scene_intent: str = "",

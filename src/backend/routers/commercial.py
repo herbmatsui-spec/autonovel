@@ -2,6 +2,7 @@
 src/backend/routers/commercial.py — Commercial Pipeline API
 """
 
+from datetime import datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -89,7 +90,7 @@ async def run_commercial_pipeline(
         )
 
         # 結果を標準化して返却
-        return {"success": True, "data": result, "trace_id": f"comm_{hash(str(config))[:8]}"}
+        return {"success": True, "data": result, "trace_id": f"comm_{str(hash(str(config)))[:8]}"}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Pipeline execution failed: {str(e)}")
@@ -110,61 +111,39 @@ async def publish_commercial(request: PublishRequest, api_key: str = Depends(req
         投稿結果
     """
     try:
+        from src.backend.services.commercial_helpers import _get_novel_data, _get_episodes_data
         from sqlalchemy import select
-        from src.backend.database.models import Book, Chapter
+        from src.backend.database.models import Chapter
         from src.backend.database.uow import UnitOfWork
         from src.core.container import AppContainer
 
-        # 1. 書籍・エピソード取得
-        async with UnitOfWork(AppContainer.db()) as uow:
-            book = await uow.session.execute(select(Book).where(Book.id == request.book_id))
-            book_row = book.scalar_one_or_none()
-            if book_row is None:
-                raise HTTPException(status_code=404, detail=f"Book {request.book_id} not found")
+        # 1. 書籍・エピソード基本データ取得
+        novel_data = await _get_novel_data(request.book_id)
+        episodes_base_data = await _get_episodes_data(request.book_id, request.episode_ids)
+        
+        if not episodes_base_data:
+            raise HTTPException(status_code=404, detail="No episodes found for this book")
 
-            # エピソード取得
-            chapters_query = (
-                select(Chapter).where(Chapter.book_id == request.book_id).order_by(Chapter.ep_num)
-            )
-            if request.episode_range:
-                from_ep, to_ep = request.episode_range
-                chapters_query = chapters_query.where(
-                    Chapter.ep_num >= from_ep, Chapter.ep_num <= to_ep
-                )
-
-            chapters_result = await uow.session.execute(chapters_query)
-            chapters = chapters_result.scalars().all()
-
-            if not chapters:
-                raise HTTPException(status_code=404, detail="No episodes found for this book")
-
-        # 2. 小説データ構築
-        novel_data = {
-            "title": book_row.title,
-            "synopsis": book_row.synopsis or book_row.concept or "",
-            "genre": getattr(book_row, "genre", "general"),
-            "tags": getattr(book_row, "tags", []),
-            "is_adult": bool(getattr(book_row, "sanctuary_integrity", 100) < 100),
-        }
-
+        # 2. エピソード詳細の構築（DBから投稿ID等を付与）
         episodes_data = []
-        for ch in chapters:
-            episodes_data.append(
-                {
-                    "ep_num": ch.ep_num,
-                    "title": ch.title,
-                    "content": ch.content or "",
-                    "summary": getattr(ch, "summary", ""),
-                    # 既存投稿IDがある場合は含める
-                    **{
-                        f"{p}_post_id": getattr(ch, f"{p}_post_id", None) for p in request.platforms
-                    },
-                    **{
-                        f"{p}_post_url": getattr(ch, f"{p}_post_url", None)
-                        for p in request.platforms
-                    },
-                }
-            )
+        async with UnitOfWork(AppContainer.db()) as uow:
+            if uow.session is None:
+                raise HTTPException(status_code=500, detail="Database session not available")
+            
+            for ep_base in episodes_base_data:
+                res = await uow.session.execute(
+                    select(Chapter).where(Chapter.ep_num == ep_base["ep_num"], Chapter.book_id == request.book_id)
+                )
+                ch = res.scalar_one_or_none()
+                if ch:
+                    ep_info = {
+                        **ep_base,
+                        **{f"{p}_post_id": getattr(ch, f"{p}_post_id", None) for p in request.platforms},
+                        **{f"{p}_post_url": getattr(ch, f"{p}_post_url", None) for p in request.platforms},
+                    }
+                    episodes_data.append(ep_info)
+                else:
+                    episodes_data.append(ep_base)
 
         # 3. 認証情報準備
         credentials = {}
@@ -203,7 +182,7 @@ async def publish_commercial(request: PublishRequest, api_key: str = Depends(req
                 platforms=request.platforms,
                 credentials=serializable_credentials,
                 episode_ids=request.episode_ids,
-                publish_at=request.schedule,
+                publish_at=request.schedule if isinstance(request.schedule, (str, datetime)) else None,
             )
             return {
                 "success": True,
@@ -225,7 +204,7 @@ async def publish_commercial(request: PublishRequest, api_key: str = Depends(req
         await _save_publish_records(request.book_id, publish_results)
 
         # レスポンス整形
-        response_data = {
+        response_data: dict[str, Any] = {
             "book_id": request.book_id,
             "published_episodes": len(episodes_data),
             "platforms": {},
@@ -327,6 +306,8 @@ async def get_publish_records(book_id: int, api_key: str = Depends(require_api_k
         from src.core.container import AppContainer
 
         async with UnitOfWork(AppContainer.db()) as uow:
+            if uow.session is None:
+                raise HTTPException(status_code=500, detail="Database session not available")
             result = await uow.session.execute(
                 select(PublishRecord)
                 .where(PublishRecord.book_id == book_id)
@@ -366,11 +347,10 @@ async def list_publish_platforms():
 
 async def _save_publish_records(book_id: int, publish_results: dict[str, list]):
     """投稿結果をDBに保存"""
-    from sqlalchemy import insert
+    from sqlalchemy.dialects.postgresql import insert
     from src.backend.database.models import PublishRecord
     from src.backend.database.uow import UnitOfWork
     from src.core.container import AppContainer
-    from datetime import datetime
 
     now = int(datetime.utcnow().timestamp())
 
@@ -413,6 +393,8 @@ async def _save_publish_records(book_id: int, publish_results: dict[str, list]):
 
     if records_to_insert:
         async with UnitOfWork(AppContainer.db()) as uow:
+            if uow.session is None:
+                return
             # UPSERT（ON CONFLICT DO UPDATE）
             for record in records_to_insert:
                 stmt = insert(PublishRecord).values(**record)

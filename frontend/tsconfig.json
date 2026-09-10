@@ -3,17 +3,20 @@
     "target": "ES2022",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "module": "ESNext",
-    "moduleResolution": "Bundler",
+    "moduleResolution": "node",
     "jsx": "react-jsx",
     "strict": true,
+    "noUncheckedIndexedAccess": true,
     "skipLibCheck": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitAny": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "noEmit": true,
-"types": ["vitest/globals", "@testing-library/jest-dom", "node"],
-     "paths": {
-       "@/*": ["./src/*"]
-     }
-   },
-   "include": ["src", "tests"]
+  "types": ["vitest/globals", "@testing-library/jest-dom", "node"],
+      "paths": {
+        "@/*": ["./src/*"]
+      }
+    },
+    "include": ["src", "tests"]
 }

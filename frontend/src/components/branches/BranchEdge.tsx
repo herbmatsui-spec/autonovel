@@ -1,40 +1,56 @@
 import React from 'react';
-import { BranchTreeEdge } from '../../types/branches';
+import { EdgeProps, getBezierPath } from 'reactflow';
 
-type BranchEdgeProps = {
-  edge: BranchTreeEdge;
-  selected: boolean;
-};
-
-export const BranchEdge: React.FC<BranchEdgeProps> = ({
-  edge,
-  selected
+export const BranchEdge: React.FC<EdgeProps> = ({
+  id,
+  sourceX,
+  sourceY,
+  targetX,
+  targetY,
+  sourcePosition,
+  targetPosition,
+  style = {},
+  data,
+  selected,
 }) => {
-  const isParentChild = edge.type === 'parent_child';
-  const isMerge = edge.type === 'merge';
-  
+  const [edgePath, labelX, labelY] = getBezierPath({
+    sourceX,
+    sourceY,
+    sourcePosition,
+    targetX,
+    targetY,
+    targetPosition,
+  });
+
+  const edgeType = data?.type;
+  const isParentChild = edgeType === 'parent_child';
+  const isMerge = edgeType === 'merge';
+
   const strokeWidth = selected ? 3 : 1.5;
-  const strokeColor = isMerge ? '#ffb74d' : isParentChild ? '#4dd0e1' : 'var(--text-muted)';
-  const strokeDasharray = isMerge ? '5,5' : 'none';
-  
-  // Calculate midpoint for label
-  const midpointX = (Number(edge.source) + Number(edge.target)) / 2;
-  const midpointY = (Number(edge.source) + Number(edge.target)) / 2;
-  
+  const strokeColor = isMerge ? '#ffb74d' : isParentChild ? '#4dd0e1' : '#71717a';
+  const strokeDasharray = isMerge ? '5,5' : undefined;
+
   return (
-    <g>
-      {/* The actual edge line is drawn by React Flow, we're just adding a label */}
-      <text
-        x={midpointX}
-        y={midpointY - 10}
-        textAnchor="middle"
-        fill={strokeColor}
-        fontSize={10}
-        fontWeight="bold"
-        pointerEvents="none"
-      >
-        {isMerge ? 'MERGE' : isParentChild ? 'CHILD' : ''}
-      </text>
-    </g>
+    <>
+      <path
+        id={id}
+        style={{ ...style, strokeWidth, stroke: strokeColor, strokeDasharray }}
+        className="react-flow__edge-path"
+        d={edgePath}
+      />
+      {(isMerge || isParentChild) && (
+        <text
+          x={labelX}
+          y={labelY - 8}
+          textAnchor="middle"
+          fill={strokeColor}
+          fontSize={10}
+          fontWeight="bold"
+          pointerEvents="none"
+        >
+          {isMerge ? 'MERGE' : 'CHILD'}
+        </text>
+      )}
+    </>
   );
 };

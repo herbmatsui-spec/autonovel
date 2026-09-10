@@ -19,10 +19,10 @@ class PlanningPort(Protocol):
 
     async def create_hegemony_plan(
         self,
-        genre: str = None,
-        keywords: str = None,
-        style_key: str = None,
-        concept: str = None,
+        genre: str | None = None,
+        keywords: str | None = None,
+        style_key: str | None = None,
+        concept: str | None = None,
         title: str = "",
         cheat_scale: int = 4,
         growth_curve: str = "最初からカンスト(無双)",

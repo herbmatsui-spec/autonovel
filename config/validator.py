@@ -3,7 +3,12 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict
+
+try:
+    import tomllib
+except ModuleNotFoundError:
+    import tomli as tomllib  # type: ignore[no-redef]
 
 import yaml
 
@@ -44,10 +49,6 @@ class ConfigValidator:
             if not resolved_path.exists():
                 raise FileNotFoundError(f"設定ファイルが見つかりません: {resolved_path}")
             with open(resolved_path, "rb") as f:
-                try:
-                    import tomllib
-                except ModuleNotFoundError:
-                    import tomli as tomllib
                 data = tomllib.load(f)
             # [general] セクションを正しく抽出
             flat_data = data.get("general", {})

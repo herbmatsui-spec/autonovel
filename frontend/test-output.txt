@@ -1,0 +1,1978 @@
+
+> autonovel-frontend@4.7.0 test:ci
+> vitest run --coverage
+
+
+[7m[1m[36m RUN [39m[22m[27m [36mv1.6.1[39m [90mE:/hhh/frontend[39m
+[2m      Coverage enabled with [22m[33mv8[39m
+
+ [33m❯[39m tests/api/easyMode.test.ts [2m ([22m[2m11 tests[22m [2m|[22m [31m7 failed[39m[2m)[22m[33m 993[2mms[22m[39m
+[31m   [33m❯[31m tests/api/easyMode.test.ts[2m > [22measyMode API client[2m > [22mgenerateContent returns GenerationResponse on 200[39m
+[31m     → expected 'Generated text' to be 'output' // Object.is equality[39m
+[31m   [33m❯[31m tests/api/easyMode.test.ts[2m > [22measyMode API client[2m > [22mgenerateContent throws on 500[39m
+[31m     → promise resolved "{ task_id: 'mock-easy-task', …(4) }" instead of rejecting[39m
+[31m   [33m❯[31m tests/api/easyMode.test.ts[2m > [22measyMode API client[2m > [22mpollGenerationStatus returns status on 200[39m
+[31m     → expected undefined to be 't123' // Object.is equality[39m
+[31m   [33m❯[31m tests/api/easyMode.test.ts[2m > [22measyMode API client[2m > [22mpollGenerationStatus throws on 500[39m
+[31m     → promise resolved "{ status: 'pending' }" instead of rejecting[39m
+[31m   [33m❯[31m tests/api/easyMode.test.ts[2m > [22measyMode API client[2m > [22mexportPackageWithData sends payload and returns blob + filename[39m
+[31m     → expected 'export_1.zip' to be 'export_custom.zip' // Object.is equality[39m
+[31m   [33m❯[31m tests/api/easyMode.test.ts[2m > [22measyMode API client[2m > [22mgenerateGachaPlans returns GachaResponse on 200[39m
+[31m     → expected undefined to be 'gacha-req-1' // Object.is equality[39m
+[31m   [33m❯[31m tests/api/easyMode.test.ts[2m > [22measyMode API client[2m > [22mgenerateDigest returns DigestResponse on 200[39m
+[31m     → expected undefined to be 'book-100' // Object.is equality[39m
+ [33m❯[39m tests/components/GeneratePanel.test.tsx [2m ([22m[2m6 tests[22m [2m|[22m [31m3 failed[39m[2m)[22m[33m 1345[2mms[22m[39m
+[31m   [33m❯[31m tests/components/GeneratePanel.test.tsx[2m > [22mGeneratePanel[2m > [22msubmits generation and shows output + suggestions[39m
+[31m     → expected "spy" to be called with arguments: [ StringContaining "AI出力", …(1) ][90m
+
+Received: 
+
+[31m[90m
+
+Number of calls: [1m0[22m
+[31m[39m
+[31m   [33m❯[31m tests/components/GeneratePanel.test.tsx[2m > [22mGeneratePanel[2m > [22mpolls task until completed when task_id is returned[39m
+[31m     → expected "spy" to be called with arguments: [ 'ポーリング完了本文', [ '次話提案' ] ][90m
+
+Received: 
+
+[31m[90m
+
+Number of calls: [1m0[22m
+[31m[39m
+[31m   [33m❯[31m tests/components/GeneratePanel.test.tsx[2m > [22mGeneratePanel[2m > [22mhandles failed polling status[39m
+[31m     → expected "spy" to be called with arguments: [ StringContaining{…} ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[2m  Array [[22m
+[32m-   StringContaining "LLM error occurred",[90m
+[31m+   "❌ エラー: RequestInit: Expected signal (\"AbortSignal {}\") to be an instance of AbortSignal.",[90m
+[2m  ][22m
+[31m[90m
+
+Number of calls: [1m1[22m
+[31m[39m
+ [33m❯[39m tests/components/GeneratePanel.reversePlotProtection.test.tsx [2m ([22m[2m2 tests[22m [2m|[22m [31m2 failed[39m[2m)[22m[33m 392[2mms[22m[39m
+[31m   [33m❯[31m tests/components/GeneratePanel.reversePlotProtection.test.tsx[2m > [22mhandleReversePlotComplete - data protection[2m > [22m既存章が無い場合は confirm を出さずに上書き適用する[39m
+[31m     → Unable to find an element by: [data-testid="btn-submode-reverse"]
+
+Ignored nodes: comments, script, style
+[36m<body>[31m
+  [36m<div>[31m
+    [36m<div>[31m
+      [36m<div[31m
+        [33mclass[31m=[32m"form-group"[31m
+      [36m>[31m
+        [36m<label[31m
+          [33mclass[31m=[32m"label"[31m
+        [36m>[31m
+          [0m作品ジャンル・レーティング[0m
+        [36m</label>[31m
+        [36m<select[31m
+          [33mclass[31m=[32m"select"[31m
+        [36m>[31m
+          [36m<option[31m
+            [33mvalue[31m=[32m"fan"[31m
+          [36m>[31m
+            [0mファンタジー[0m
+          [36m</option>[31m
+          [36m<option[31m
+            [33mvalue[31m=[32m"sf"[31m
+          [36m>[31m
+            [0mSF[0m
+          [36m</option>[31m
+          [36m<option[31m
+            [33mvalue[31m=[32m"romance"[31m
+          [36m>[31m
+            [0m恋愛[0m
+          [36m</option>[31m
+          [36m<option[31m
+            [33mvalue[31m=[32m"mystery"[31m
+          [36m>[31m
+            [0mミステリー[0m
+          [36m</option>[31m
+          [36m<option[31m
+            [33mvalue[31m=[32m"horror"[31m
+          [36m>[31m
+            [0mホラー[0m
+          [36m</option>[31m
+          [36m<option[31m
+            [33mvalue[31m=[32m"other"[31m
+          [36m>[31m
+            [0mその他[0m
+          [36m</option>[31m
+        [36m</select>[31m
+      [36m</div>[31m
+      [36m<div[31m
+        [33mclass[31m=[32m"form-group"[31m
+      [36m>[31m
+        [36m<label[31m
+          [33mclass[31m=[32m"label"[31m
+        [36m>[31m
+          [0m主人公の名前[0m
+        [36m</label>[31m
+        [36m<input[31m
+          [33mclass[31m=[32m"input"[31m
+          [33mvalue[31m=[32m"アルト"[31m
+        [36m/>[31m
+      [36m</div>[31m
+      [36m<div[31m
+        [33mclass[31m=[32m"form-group"[31m
+      [36m>[31m
+        [36m<label[31m
+          [33mclass[31m=[32m"label"[31m
+        [36m>[31m
+          [0m性格・特徴[0m
+        [36m</label>[31m
+        [36m<input[31m
+          [33mclass[31m=[32m"input"[31m
+          [33mvalue[31m=[32m"熱血・正義感が強い"[31m
+        [36m/>[31m
+      [36m</div>[31m
+      [36m<div[31m
+        [33mclass[31m=[32m"form-group"[31m
+      [36m>[31m
+        [36m<label[31m
+          [33mclass[31m=[32m"label"[31m
+        [36m>[31m
+          [0m特殊能力・スキル[0m
+        [36m</label>[31m
+        [36m<input[31m
+          [33mclass[31m=[32m"input"[31m
+          [33mvalue[31m=[32m"古代魔導剣術"[31m
+        [36m/>[31m
+      [36m</div>[31m
+      [36m<div[31m
+        [33mclass[31m=[32m"form-group"[31m
+      [36m>[31m
+        [36m<label[31m
+          [33mclass[31m=[32m"label"[31m
+        [36m>[31m
+          [0m執筆対象の冒頭 / 前話プロンプト[0m
+        [36m</label>[31m
+        [36m<textarea[31m
+          [33mclass[31m=[32m"textarea"[31m
+          [33mrows[31m=[32m"4"[31m
+        [36m>[31m
+          [0m薄暗いダンジョンの中、15歳の青年アルトは古代の剣を手に取った。[0m
+        [36m</textarea>[31m
+      [36m</div>[31m
+      [36m<div[31m
+        [33mstyle[31m=[32m"display: flex; gap: 8px;"[31m
+      [36m>[31m
+        [36m<button[31m
+          [33mclass[31m=[32m"btn btn-primary"[31m
+          [33mstyle[31m=[32m"flex: 1.2 1 0%; background-color: var(--accent-cyan); border-color: var(--accent-cyan); color: rgb(0, 0, 0); font-weight: 700;"[31m
+        [36m>[31m
+          [0m⚡ リアルタイム速筆 (SSE)[0m
+        [36m</button>[31m
+        [36m<button[31m
+          [33mclass[31m=[32m"btn btn-secondary"[31m
+          [33mstyle[31m=[32m"flex: 1 1 0%;"[31m
+        [36m>[31m
+          [0m🪄 かんたん執筆開始[0m
+        [36m</button>[31m
+      [36m</div>[31m
+    [36m</div>[31m
+  [36m</div>[31m
+[36m</body>[31m[39m
+[31m   [33m❯[31m tests/components/GeneratePanel.reversePlotProtection.test.tsx[2m > [22mhandleReversePlotComplete - data protection[2m > [22m既存章に content がある状態で confirm をキャンセルすると適用されない[39m
+[31m     → Unable to find an element by: [data-testid="btn-submode-reverse"]
+
+Ignored nodes: comments, script, style
+[36m<body>[31m
+  [36m<div>[31m
+    [36m<div>[31m
+      [36m<div[31m
+        [33mclass[31m=[32m"form-group"[31m
+      [36m>[31m
+        [36m<label[31m
+          [33mclass[31m=[32m"label"[31m
+        [36m>[31m
+          [0m作品ジャンル・レーティング[0m
+        [36m</label>[31m
+        [36m<select[31m
+          [33mclass[31m=[32m"select"[31m
+        [36m>[31m
+          [36m<option[31m
+            [33mvalue[31m=[32m"fan"[31m
+          [36m>[31m
+            [0mファンタジー[0m
+          [36m</option>[31m
+          [36m<option[31m
+            [33mvalue[31m=[32m"sf"[31m
+          [36m>[31m
+            [0mSF[0m
+          [36m</option>[31m
+          [36m<option[31m
+            [33mvalue[31m=[32m"romance"[31m
+          [36m>[31m
+            [0m恋愛[0m
+          [36m</option>[31m
+          [36m<option[31m
+            [33mvalue[31m=[32m"mystery"[31m
+          [36m>[31m
+            [0mミステリー[0m
+          [36m</option>[31m
+          [36m<option[31m
+            [33mvalue[31m=[32m"horror"[31m
+          [36m>[31m
+            [0mホラー[0m
+          [36m</option>[31m
+          [36m<option[31m
+            [33mvalue[31m=[32m"other"[31m
+          [36m>[31m
+            [0mその他[0m
+          [36m</option>[31m
+        [36m</select>[31m
+      [36m</div>[31m
+      [36m<div[31m
+        [33mclass[31m=[32m"form-group"[31m
+      [36m>[31m
+        [36m<label[31m
+          [33mclass[31m=[32m"label"[31m
+        [36m>[31m
+          [0m主人公の名前[0m
+        [36m</label>[31m
+        [36m<input[31m
+          [33mclass[31m=[32m"input"[31m
+          [33mvalue[31m=[32m"アルト"[31m
+        [36m/>[31m
+      [36m</div>[31m
+      [36m<div[31m
+        [33mclass[31m=[32m"form-group"[31m
+      [36m>[31m
+        [36m<label[31m
+          [33mclass[31m=[32m"label"[31m
+        [36m>[31m
+          [0m性格・特徴[0m
+        [36m</label>[31m
+        [36m<input[31m
+          [33mclass[31m=[32m"input"[31m
+          [33mvalue[31m=[32m"熱血・正義感が強い"[31m
+        [36m/>[31m
+      [36m</div>[31m
+      [36m<div[31m
+        [33mclass[31m=[32m"form-group"[31m
+      [36m>[31m
+        [36m<label[31m
+          [33mclass[31m=[32m"label"[31m
+        [36m>[31m
+          [0m特殊能力・スキル[0m
+        [36m</label>[31m
+        [36m<input[31m
+          [33mclass[31m=[32m"input"[31m
+          [33mvalue[31m=[32m"古代魔導剣術"[31m
+        [36m/>[31m
+      [36m</div>[31m
+      [36m<div[31m
+        [33mclass[31m=[32m"form-group"[31m
+      [36m>[31m
+        [36m<label[31m
+          [33mclass[31m=[32m"label"[31m
+        [36m>[31m
+          [0m執筆対象の冒頭 / 前話プロンプト[0m
+        [36m</label>[31m
+        [36m<textarea[31m
+          [33mclass[31m=[32m"textarea"[31m
+          [33mrows[31m=[32m"4"[31m
+        [36m>[31m
+          [0m薄暗いダンジョンの中、15歳の青年アルトは古代の剣を手に取った。[0m
+        [36m</textarea>[31m
+      [36m</div>[31m
+      [36m<div[31m
+        [33mstyle[31m=[32m"display: flex; gap: 8px;"[31m
+      [36m>[31m
+        [36m<button[31m
+          [33mclass[31m=[32m"btn btn-primary"[31m
+          [33mstyle[31m=[32m"flex: 1.2 1 0%; background-color: var(--accent-cyan); border-color: var(--accent-cyan); color: rgb(0, 0, 0); font-weight: 700;"[31m
+        [36m>[31m
+          [0m⚡ リアルタイム速筆 (SSE)[0m
+        [36m</button>[31m
+        [36m<button[31m
+          [33mclass[31m=[32m"btn btn-secondary"[31m
+          [33mstyle[31m=[32m"flex: 1 1 0%;"[31m
+        [36m>[31m
+          [0m🪄 かんたん執筆開始[0m
+        [36m</button>[31m
+      [36m</div>[31m
+    [36m</div>[31m
+  [36m</div>[31m
+[36m</body>[31m[39m
+ [33m❯[39m tests/integration/studioModeFlow.test.tsx [2m ([22m[2m3 tests[22m [2m|[22m [31m1 failed[39m[2m)[22m[33m 1254[2mms[22m[39m
+[31m   [33m❯[31m tests/integration/studioModeFlow.test.tsx[2m > [22mStudio Mode Flow Integration Test[2m > [22mrenders Studio mode by default and allows mode switching[39m
+[31m     → Unable to find an element with the text: ⚙️ 制作設定 & プロンプト. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+[36m<body>[31m
+  [36m<div>[31m
+    [36m<div[31m
+      [33mclass[31m=[32m"container"[31m
+      [33mstyle[31m=[32m""[31m
+    [36m>[31m
+      [36m<header[31m
+        [33mclass[31m=[32m"header"[31m
+      [36m>[31m
+        [36m<div[31m
+          [33mstyle[31m=[32m"display: flex; align-items: center; gap: 16px; flex: 1 1 0%;"[31m
+        [36m>[31m
+          [36m<div>[31m
+            [36m<h1[31m
+              [33mclass[31m=[32m"brand-title"[31m
+            [36m>[31m
+              [0mAutoNovel Studio[0m
+            [36m</h1>[31m
+            [36m<p[31m
+              [33mstyle[31m=[32m"color: var(--text-muted); font-size: 0.9rem; margin-top: 4px;"[31m
+            [36m>[31m
+              [0mAI 執筆・設定管理・矛盾診断・マルチメディア生成スタジオ[0m
+            [36m</p>[31m
+          [36m</div>[31m
+          [36m<button[31m
+            [33maria-haspopup[31m=[32m"dialog"[31m
+            [33maria-label[31m=[32m"作品選択"[31m
+            [33mclass[31m=[32m"book-selector"[31m
+          [36m>[31m
+            [36m<span[31m
+              [33mclass[31m=[32m"book-selector__icon"[31m
+            [36m>[31m
+              [0m📖[0m
+            [36m</span>[31m
+            [36m<span[31m
+              [33mclass[31m=[32m"book-selector__title"[31m
+            [36m>[31m
+              [0m作品を選択[0m
+            [36m</span>[31m
+            [36m<span[31m
+              [33mclass[31m=[32m"book-selector__chevron"[31m
+            [36m>[31m
+              [0m▼[0m
+            [36m</span>[31m
+          [36m</button>[31m
+        [36m</div>[31m
+        [36m<div[31m
+          [33mstyle[31m=[32m"display: flex; gap: 12px; align-items: center;"[31m
+        [36m>[31m
+          [36m<div[31m
+            [33mclass[31m=[32m"mode-switcher"[31m
+            [33mdata-testid[31m=[32m"mode-switcher"[31m
+          [36m>[31m
+            [36m<button[31m
+              [33mclass[31m=[32m"mode-btn mode-btn--active"[31m
+              [33mdata-testid[31m=[32m"btn-mode-easy"[31m
+              [33mtype[31m=[32m"button"[31m
+            [36m>[31m
+              [0m⚡ かんたんモード[0m
+            [36m</button>[31m
+            [36m<button[31m
+              [33mclass[31m=[32m"mode-btn "[31m
+              [33mdata-testid[31m=[32m"btn-mode-studio"[31m
+              [33mtype[31m=[32m"button"[31m
+            [36m>[31m
+              [0m🚀 上級者 Studio[0m
+            [36m</button>[31m
+          [36m</div>[31m
+          [36m<button[31m
+            [33mdata-testid[31m=[32m"open-config-btn"[31m
+            [33mstyle[31m=[32m"padding: 6px 12px; border-radius: 8px; background-color: var(--accent-yellow, #f59e0b); color: white; cursor: pointer; font-size: 0.85rem; font-weight: 500; display: flex; align-items: center; gap: 4px;"[31m
+          [36m>[31m
+            [0m⚙️ LLM設定[0m
+          [36m</button>[31m
+          [36m<button[31m
+            [33mdata-testid[31m=[32m"open-media-btn"[31m
+            [33mstyle[31m=[32m"padding: 6px 12px; border-radius: 8px; background-color: var(--accent-cyan, #06b6d4); color: white; cursor: pointer; font-size: 0.85rem; font-weight: 500; display: flex; align-items: center; gap: 4px;"[31m
+          [36m>[31m
+            [0m🖼️ 画像生成[0m
+          [36m</button>[31m
+          [36m<button[31m
+            [33mdata-testid[31m=[32m"open-graph-btn"[31m
+            [33mstyle[31m=[32m"padding: 6px 12px; border-radius: 8px; background-color: var(--accent-purple, #8b5cf6); color: white; cursor: pointer; font-size: 0.85rem; font-weight: 500; display: flex; align-items: center; gap: 4px;"[31m
+          [36m>[31m
+            [0m📊 相関図[0m
+          [36m</button>[31m
+          [36m<span[31m
+            [33mstyle[31m=[32m"display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; background-color: rgba(167, 139, 250, 0.2); color: rgb(167, 139, 250); border: 1px solid rgb(167, 139, 250);"[31m
+          [36m>[31m
+            [36m<span>[31m
+              [0m🏰[0m
+            [36m</span>[31m
+            [36m<span>[31m
+              [0mハイファンタジー (R15)[0m
+            [36m</span>[31m
+          [36m</span>[31m
+        [36m</div>[31m
+      [36m</header>[31m
+      [36m<main[31m
+        [33mclass[31m=[32m"main-grid"[31m
+      [36m>[31m
+        [36m<div>[31m
+          [36m<div[31m
+            [33mclass[31m=[32m"form-group"[31m
+          [36m>[31m
+            [36m<label[31m
+              [33mclass[31m=[32m"label"[31m
+            [36m>[31m
+              [0m作品ジャンル・レーティング[0m
+            [36m</label>[31m
+            [36m<select[31m
+              [33mclass[31m=[32m"select"[31m
+            [36m>[31m
+              [36m<option[31m
+                [33mvalue[31m=[32m"fan"[31m
+              [36m>[31m
+                [0mファンタジー[0m
+              [36m</option>[31m
+              [36m<option[31m
+                [33mvalue[31m=[32m"sf"[31m
+              [36m>[31m
+                [0mSF[0m
+              [36m</option>[31m
+              [36m<option[31m
+                [33mvalue[31m=[32m"romance"[31m
+              [36m>[31m
+                [0m恋愛[0m
+              [36m</option>[31m
+              [36m<option[31m
+                [33mvalue[31m=[32m"mystery"[31m
+              [36m>[31m
+                [0mミステリー[0m
+              [36m</option>[31m
+              [36m<option[31m
+                [33mvalue[31m=[32m"horror"[31m
+              [36m>[31m
+                [0mホラー[0m
+              [36m</option>[31m
+              [36m<option[31m
+                [33mvalue[31m=[32m"other"[31m
+              [36m>[31m
+                [0mその他[0m
+              [36m</option>[31m
+            [36m</select>[31m
+          [36m</div>[31m
+          [36m<div[31m
+            [33mclass[31m=[32m"form-group"[31m
+          [36m>[31m
+            [36m<label[31m
+              [33mclass[31m=[32m"label"[31m
+            [36m>[31m
+              [0m主人公の名前[0m
+            [36m</label>[31m
+            [36m<input[31m
+              [33mclass[31m=[32m"input"[31m
+              [33mvalue[31m=[32m"アルト"[31m
+            [36m/>[31m
+          [36m</div>[31m
+          [36m<div[31m
+            [33mclass[31m=[32m"form-group"[31m
+          [36m>[31m
+            [36m<label[31m
+              [33mclass[31m=[32m"label"[31m
+            [36m>[31m
+              [0m性格・特徴[0m
+            [36m</label>[31m
+            [36m<input[31m
+              [33mclass[31m=[32m"input"[31m
+              [33mvalue[31m=[32m"熱血・正義感が強い"[31m
+            [36m/>[31m
+          [36m</div>[31m
+          [36m<div[31m
+            [33mclass[31m=[32m"form-group"[31m
+          [36m>[31m
+            [36m<label[31m
+              [33mclass[31m=[32m"label"[31m
+            [36m>[31m
+              [0m特殊能力・スキル[0m
+            [36m</label>[31m
+            [36m<input[31m
+              [33mclass[31m=[32m"input"[31m
+              [33mvalue[31m=[32m"古代魔導剣術"[31m
+            [36m/>[31m
+          [36m</div>[31m
+          [36m<div[31m
+            [33mclass[31m=[32m"form-group"[31m
+          [36m>[31m
+            [36m<label[31m
+              [33mclass[31m=[32m"label"[31m
+            [36m>[31m
+              [0m執筆対象の冒頭 / 前話プロンプト[0m
+            [36m</label>[31m
+            [36m<textarea[31m
+              [33mclass[31m=[32m"textarea"[31m
+              [33mrows[31m=[32m"4"[31m
+            [36m>[31m
+              [0m薄暗いダンジョンの中、15歳の青年アルトは古代の剣を手に取った。[0m
+            [36m</textarea>[31m
+          [36m</div>[31m
+          [36m<div[31m
+            [33mstyle[31m=[32m"display: flex; gap: 8px;"[31m
+          [36m>[31m
+            [36m<button[31m
+              [33mclass[31m=[32m"btn btn-primary"[31m
+              [33mstyle[31m=[32m"flex: 1.2 1 0%; background-color: var(--accent-cyan); border-color: var(--accent-cyan); color: rgb(0, 0, 0); font-weight: 700;"[31m
+            [36m>[31m
+              [0m⚡ リアルタイム速筆 (SSE)[0m
+            [36m</button>[31m
+            [36m<button[31m
+              [33mclass[31m=[32m"btn btn-secondary"[31m
+              [33mstyle[31m=[32m"flex: 1 1 0%;"[31m
+            [36m>[31m
+              [0m🪄 かんたん執筆開始[0m
+            [36m</button>[31m
+          [36m</div>[31m
+        [36m</div>[31m
+        [36m<section[31m
+          [33mclass[31m=[32m"card"[31m
+          [33mstyle[31m=[32m"display: flex; flex-direction: column;"[31m
+        [36m>[31m
+          [36m<div[31m
+            [33mstyle[31m=[32m"display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;"[31m
+          [36m>[31m
+            [36m<h2[31m
+              [33mstyle[31m=[32m"font-size: 1.2rem; color: var(--accent-secondary, #38bdf8);"[31m
+            [36m>[31m
+              [0m📖 執筆プレビュー & エディタ[0m
+            [36m</h2>[31m
+          [36m</div>[31m
+          [36m<div[31m
+            [33mstyle[31m=[32m"display: inline-flex; align-items: center; gap: 8px; padding: 12px 16px; background-color: var(--bg-card, #18181b); border: 1px dashed var(--border-color, #27272a); border-radius: 12px; margin-bottom: 16px; color: var(--text-muted);"[31m
+          [36m>[31m
+            [0m⚠️ 作品が選択されていません。ヘッダーの「本棚」から作品を選択または作成してください。[0m
+          [36m</div>[31m
+          [36m<div[31m
+            [33mstyle[31m=[32m"display: flex; gap: 8px; margin-bottom: 16px;"[31m
+          [36m>[31m
+            [36m<button[31m
+              [33mclass[31m=[32m"btn btn-export"[31m
+              [33mdata-testid[31m=[32m"btn-export-zip"[31m
+              [33mdisabled[31m=[32m""[31m
+              [33mstyle[31m=[32m"flex: 1 1 0%;"[31m
+              [33mtype[31m=[32m"button"[31m
+            [36m>[31m
+              [0m📦 納品パッケージ (ZIP) ダウンロード[0m
+            [36m</button>[31m
+            [36m<button[31m
+              [33mclass[31m=[32m"btn btn-primary"[31m
+              [33mdata-testid[31m=[32m"btn-show-book-showcase"[31m
+              [33mdisabled[31m=[32m""[31m
+              [33mstyle[31m=[32m"padding: 8px 14px; font-size: 0.85rem; white-space: nowrap; margin-left: 8px;"[31m
+              [33mtitle[31m=[32m"縦書き装丁プレビューと宣伝カードを表示"[31m
+              [33mtype[31m=[32m"button"[31m
+            [36m>[31m
+              [0m📖 縦書き装丁プレビュー & 宣伝カード[0m
+            [36m</button>[31m
+            [36m<button[31m
+              [33mclass[31m=[32m"btn btn-primary"[31m
+              [33mdata-testid[31m=[32m"btn-promote-studio"[31m
+              [33mstyle[31m=[32m"padding: 8px 14px; font-size: 0.85rem; white-space: nowrap;"[31m
+              [33mtitle[31m=[32m"設定をGraphRAGナレッジ化し、Studioモードへ引き継ぎます"[31m
+              [33mtype[31m=[32m"button"[31m
+            [36m>[31m
+              [0m🚀 Studioへ昇格[0m
+            [36m</button>[31m
+          [36m</div>[31m
+          [36m<div[31m
+            [33mstyle[31m=[32m"flex: 1 1 0%; min-height: 240px;"[31m
+          [36m>[31m
+            [36m<div[31m
+              [33mclass[31m=[32m"editor-container"[31m
+              [33mstyle[31m=[32m"display: flex; flex-direction: column; height: 100%;"[31m
+            [36m>[31m
+              [36m<div[31m
+                [33mstyle[31m=[32m"display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; flex-wrap: wrap; gap: 8px;"[31m
+              [36m>[31m
+                [36m<div[31m
+                  [33mstyle[31m=[32m"display: flex; gap: 8px; align-items: center;"[31m
+                [36m>[31m
+                  [36m<button[31m
+                    [33mclass[31m=[32m"btn-tab btn-tab--active"[31m
+                    [33mdata-testid[31m=[32m"tab-edit"[31m
+                    [33mtype[31m=[32m"button"[31m
+                  [36m>[31m
+                    [0m✏️ エディタ[0m
+                  [36m</button>[31m
+                  [36m<button[31m
+                    [33mclass[31m=[32m"btn-tab "[31m
+                    [33mdata-testid[31m=[32m"tab-preview"[31m
+                    [33mtype[31m=[32m"button"[31m
+                  [36m>[31m
+                    [0m📖 ルビ・プレビュー[0m
+                  [36m</button>[31m
+                  [36m<button[31m
+                    [33mclass[31m=[32m"inline-ai-btn"[31m
+                    [33mdata-testid[31m=[32m"btn-insert-ruby"[31m
+                    [33mtitle[31m=[32m"選択文字にルビ記法を挿入 (Ctrl+B)"[31m
+                    [33mtype[31m=[32m"button"[31m
+                  [36m>[31m
+                    [0m🏷️ ルビ挿入[0m
+                  [36m</button>[31m
+                [36m</div>[31m
+                [36m<div[31m
+                  [33mclass[31m=[32m"editor-toolbar"[31m
+                [36m>[31m
+                  [36m<div[31m
+                    [33mclass[31m=[32m"editor-toolbar__group"[31m
+                  [36m>[31m
+                    [36m<button[31m
+                      [33mclass[31m=[32m"editor-toolbar__btn active"[31m
+                      [33mtitle[31m=[32m"明朝体 (しっぽり明朝)"[31m
+                      [33mtype[31m=[32m"button"[31m
+                    [36m>[31m
+                      [0m明朝[0m
+                    [36m</button>[31m
+                    [36m<button[31m
+                      [33mclass[31m=[32m"editor-toolbar__btn "[31m
+                      [33mtitle[31m=[32m"ゴシック体"[31m
+                      [33mtype[31m=[32m"button"[31m
+                    [36m>[31m
+                      [0mゴシック[0m
+                    [36m</button>[31m
+                  [36m</div>[31m
+                  [36m<div[31m
+                    [33mclass[31m=[32m"editor-toolbar__divider"[31m
+                  [36m/>[31m
+                  [36m<div[31m
+                    [33mclass[31m=[32m"editor-toolbar__group"[31m
+                  [36m>[31m
+                    [36m<button[31m
+                      [33mclass[31m=[32m"editor-toolbar__btn"[31m
+                      [33mtitle[31m=[32m"小 (15px)"[31m
+                      [33mtype[31m=[32m"button"[31m
+                    [36m>[31m
+                      [0mA[0m
+                      [36m<sub>[31m
+                        [0m小[0m
+                      [36m</sub>[31m
+                    [36m</button>[31m
+                    [36m<button[31m
+                      [33mclass[31m=[32m"editor-toolbar__btn active"[31m
+                      [33mtitle[31m=[32m"中 (17px)"[31m
+                      [33mtype[31m=[32m"button"[31m
+                    [36m>[31m
+                      [0mA[0m
+                      [36m<sub>[31m
+                        [0m中[0m
+                      [36m</sub>[31m
+                    [36m</button>[31m
+                    [36m<button[31m
+                      [33mclass[31m=[32m"editor-toolbar__btn "[31m
+                      [33mtitle[31m=[32m"大 (19px)"[31m
+                      [33mtype[31m=[32m"button"[31m
+                    [36m>[31m
+                      [0mA[0m
+                      [36m<sub>[31m
+                        [0m大[0m
+                      [36m</sub>[31m
+                    [36m</button>[31m
+                  [36m</div>[31m
+                  [36m<div[31m
+                    [33mclass[31m=[32m"editor-toolbar__divider"[31m
+                  [36m/>[31m
+                  [36m<div[31m
+                    [33mclass[31m=[32m"editor-toolbar__manuscript"[31m
+                    [33mtitle[31m=[32m"原稿用紙換算"[31m
+                  [36m>[31m
+                    [0m📄 約[0m
+                    [0m1[0m
+                    [0m枚[0m
+                  [36m</div>[31m
+                  [36m<div[31m
+                    [33mclass[31m=[32m"editor-toolbar__divider"[31m
+                  [36m/>[31m
+                  [36m<button[31m
+                    [33mclass[31m=[32m"editor-toolbar__btn editor-toolbar__btn--zen "[31m
+                    [33mtitle[31m=[32m"Zenモードで集中執筆"[31m
+                    [33mtype[31m=[32m"button"[31m
+                  [36m>[31m
+                    [0m🧘 Zen[0m
+                  [36m</button>[31m
+                [36m</div>[31m
+              [36m</div>[31m
+              [36m<div[31m
+                [33mstyle[31m=[32m"font-size: 0.82rem; color: var(--text-muted); display: flex; gap: 12px; align-items: center; flex-wrap: wrap;"[31m
+              [36m>[31m
+                [36m<span>[31m
+                  [0m行数: [0m
+                  [36m<strong>[31m
+                    [0m1[0m
+                  [36m</strong>[31m
+                  [0m 行[0m
+                [36m</span>[31m
+                [36m<span>[31m
+                  [0m文字数: [0m
+                  [36m<strong[31m
+                    [33mdata-testid[31m=[32m"editor-char-count"[31m
+                  [36m>[31m
+                    [0m32[0m
+                  [36m</strong>[31m
+                  [0m 文字[0m
+                [36m</span>[31m
+                [36m<span>[31m
+                  [0m読了目安: [0m
+                  [36m<strong>[31m
+                    [0m約[0m
+                    [0m1[0m
+                  [36m</strong>[31m
+                  [0m 分[0m
+                [36m</span>[31m
+                [36m<span>[31m
+                  [0m原稿用紙: [0m
+                  [36m<strong>[31m
+                    [0m約[0m
+                    [0m1[0m
+                  [36m</strong>[31m
+                  [0m 枚[0m
+                [36m</span>[31m
+                [36m<span[31m
+                  [33mclass[31m=[32m"autosave-indicator autosave-indicator--unsaved"[31m
+                  [33mtitle[31m=[32m"未保存の変更があります"[31m
+                [36m>[31m
+                  [36m<span[31m
+                    [33mstyle[31m=[32m"color: rgb(245, 158, 11);"[31m
+                  [36m>[31m
+                    [0m●[0m
+                  [36m</span>[31m
+                  [36m<span>[31m
+                    [0m未保存[0m
+                  [36m</span>[31m
+                [36m</span>[31m
+              [36m</div>[31m
+              [36m<textarea[31m
+                [33mclass[31m=[32m"textarea font-serif editor-font-size-medium editor-line-height"[31m
+                [33mdata-testid[31m=[32m"editor-textarea"[31m
+                [33mplaceholder[31m=[32m"ここに本文を入力してください。文章を選択するとインラインAI推敲ツールバーが表示されます。"[31m
+                [33mstyle[31m=[32m"flex: 1 1 0%; min-height: 280px; font-family: inherit; resize: vertical; line-height: 1.9;"[31m
+              [36m>[31m
+                [0m薄暗いダンジョンの中、15歳の青年アルトは古代の剣を手に取った。[0m
+              [36m</textarea>[31m
+            [36m</div>[31m
+          [36m</div>[31m
+        [36m</section>[31m
+      [36m</main>[31m
+    [36m</div>[31m
+  [36m</div>[31m
+[36m</body>[31m[39m
+ [32m✓[39m tests/components/StudioWorkspace.test.tsx [2m ([22m[2m3 tests[22m[2m)[22m[33m 1740[2mms[22m[39m
+ [32m✓[39m tests/components/ReversePlotBuilder.test.tsx [2m ([22m[2m1 test[22m[2m)[22m[33m 1403[2mms[22m[39m
+ [32m✓[39m tests/components/EditorRefinement.test.tsx [2m ([22m[2m4 tests[22m[2m)[22m[33m 1661[2mms[22m[39m
+ [32m✓[39m tests/api/editor.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[90m 44[2mms[22m[39m
+ [32m✓[39m tests/hooks/useToast.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 149[2mms[22m[39m
+stderr | tests/components/ExportPanel.test.tsx > ExportPanel component > exports package with current text and settings
+Error: Not implemented: navigation (except hash changes)
+    at module.exports (E:\hhh\frontend\node_modules\jsdom\lib\jsdom\browser\not-implemented.js:9:17)
+    at navigateFetch (E:\hhh\frontend\node_modules\jsdom\lib\jsdom\living\window\navigation.js:77:3)
+    at exports.navigate (E:\hhh\frontend\node_modules\jsdom\lib\jsdom\living\window\navigation.js:55:3)
+    at Timeout._onTimeout (E:\hhh\frontend\node_modules\jsdom\lib\jsdom\living\nodes\HTMLHyperlinkElementUtils-impl.js:81:7)
+    at listOnTimeout (node:internal/timers:608:17)
+    at processTimers (node:internal/timers:543:7) undefined
+
+ [33m❯[39m tests/api/reversePlot.test.ts [2m ([22m[2m2 tests[22m [2m|[22m [31m2 failed[39m[2m)[22m[33m 464[2mms[22m[39m
+[31m   [33m❯[31m tests/api/reversePlot.test.ts[2m > [22mreversePlot API client[2m > [22mgenerateReversePlot returns GeneratedPlotStructure on 200[39m
+[31m     → expected [] to have a length of 1 but got +0[39m
+[31m   [33m❯[31m tests/api/reversePlot.test.ts[2m > [22mreversePlot API client[2m > [22mgenerateReversePlot throws on error response[39m
+[31m     → promise resolved "{ arcs: [], episodes: [], …(2) }" instead of rejecting[39m
+ [33m❯[39m tests/components/ExportPanel.test.tsx [2m ([22m[2m2 tests[22m [2m|[22m [31m1 failed[39m[2m)[22m[33m 890[2mms[22m[39m
+[31m   [33m❯[31m tests/components/ExportPanel.test.tsx[2m > [22mExportPanel component[2m > [22mexports package with current text and settings[39m
+[31m     → expected "spy" to be called with arguments: [ 1, ObjectContaining{…} ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[2m  Array [[22m
+[2m    1,[22m
+[32m-   ObjectContaining {[90m
+[32m-     "character": ObjectContaining {[90m
+[31m+   Object {[90m
+[31m+     "character": Object {[90m
+[31m+       "ability": "古代魔導剣術",[90m
+[31m+       "genre": "ハイファンタジー (R15)",[90m
+[2m        "name": "アルト",[22m
+[31m+       "personality": "熱血・正義感が強い",[90m
+[2m      },[22m
+[31m+     "current_text": "薄暗いダンジョンの中、15歳の青年アルトは古代の剣を手に取った。",[90m
+[2m      "genre": "ハイファンタジー (R15)",[22m
+[32m-     "title": StringContaining "アルト",[90m
+[31m+     "title": "Test Book 1",[90m
+[2m    },[22m
+[2m  ][22m
+[31m[90m
+
+Number of calls: [1m1[22m
+[31m[39m
+ [32m✓[39m tests/api/graph.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[90m 38[2mms[22m[39m
+ [32m✓[39m tests/components/Toast.test.tsx [2m ([22m[2m3 tests[22m[2m)[22m[90m 186[2mms[22m[39m
+stderr | tests/components/GraphVisualization.test.tsx > GraphVisualization component > renders graph modal, filters and responds to close
+Warning: Function components cannot be given refs. Attempts to access this ref will fail. Did you mean to use React.forwardRef()?
+
+Check the render method of `GraphVisualization`.
+    at default
+    at div
+    at div
+    at div
+    at div
+    at GraphVisualization (E:\hhh\frontend\src\components\GraphVisualization.tsx:25:31)
+
+ [32m✓[39m tests/components/GraphVisualization.test.tsx [2m ([22m[2m1 test[22m[2m)[22m[33m 607[2mms[22m[39m
+ [32m✓[39m tests/integration/easyModeFlow.test.tsx [2m ([22m[2m1 test[22m[2m)[22m[33m 643[2mms[22m[39m
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 16 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/api/easyMode.test.ts > easyMode API client > generateContent returns GenerationResponse on 200
+AssertionError: expected 'Generated text' to be 'output' // Object.is equality
+
+- Expected
++ Received
+
+- output
++ Generated text
+
+ ❯ tests/api/easyMode.test.ts:52:27
+     50|       content_length_limit: 2000,
+     51|     });
+     52|     expect(result.output).toBe("output");
+       |                           ^
+     53|     expect(result.completion_time_ms).toBe(0);
+     54|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/16]⎯
+
+ FAIL  tests/api/easyMode.test.ts > easyMode API client > generateContent throws on 500
+AssertionError: promise resolved "{ task_id: 'mock-easy-task', …(4) }" instead of rejecting
+
+- Expected
++ Received
+
+- [Error: rejected promise]
++ Object {
++   "completion_time_ms": 100,
++   "error": "",
++   "output": "Generated text",
++   "suggestions": Array [],
++   "task_id": "mock-easy-task",
++ }
+
+ ❯ tests/api/easyMode.test.ts:70:5
+     68|         content_length_limit: 2000,
+     69|       })
+     70|     ).rejects.toThrow();
+       |     ^
+     71|   });
+     72| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/16]⎯
+
+ FAIL  tests/api/easyMode.test.ts > easyMode API client > pollGenerationStatus returns status on 200
+AssertionError: expected undefined to be 't123' // Object.is equality
+
+- Expected: 
+"t123"
+
++ Received: 
+undefined
+
+ ❯ tests/api/easyMode.test.ts:75:28
+     73|   it("pollGenerationStatus returns status on 200", async () => {
+     74|     const result = await pollGenerationStatus("t123");
+     75|     expect(result.task_id).toBe("t123");
+       |                            ^
+     76|     expect(result.status).toBe("completed");
+     77|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/16]⎯
+
+ FAIL  tests/api/easyMode.test.ts > easyMode API client > pollGenerationStatus throws on 500
+AssertionError: promise resolved "{ status: 'pending' }" instead of rejecting
+
+- Expected
++ Received
+
+- [Error: rejected promise]
++ Object {
++   "status": "pending",
++ }
+
+ ❯ tests/api/easyMode.test.ts:85:46
+     83|       })
+     84|     );
+     85|     await expect(pollGenerationStatus("t123")).rejects.toThrow();
+       |                                              ^
+     86|   });
+     87| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/16]⎯
+
+ FAIL  tests/api/easyMode.test.ts > easyMode API client > exportPackageWithData sends payload and returns blob + filename
+AssertionError: expected 'export_1.zip' to be 'export_custom.zip' // Object.is equality
+
+- Expected
++ Received
+
+- export_custom.zip
++ export_1.zip
+
+ ❯ tests/api/easyMode.test.ts:120:29
+    118|     });
+    119|     expect(result.zipBlob).toBeInstanceOf(Blob);
+    120|     expect(result.filename).toBe("export_custom.zip");
+       |                             ^
+    121|   });
+    122| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/16]⎯
+
+ FAIL  tests/api/easyMode.test.ts > easyMode API client > generateGachaPlans returns GachaResponse on 200
+AssertionError: expected undefined to be 'gacha-req-1' // Object.is equality
+
+- Expected: 
+"gacha-req-1"
+
++ Received: 
+undefined
+
+ ❯ tests/api/easyMode.test.ts:143:28
+    141| 
+    142|     const res = await generateGachaPlans({ genre: "ファンタジー", keyw…
+    143|     expect(res.request_id).toBe("gacha-req-1");
+       |                            ^
+    144|     expect(res.plans[0].title).toBe("王道勇者譚");
+    145|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/16]⎯
+
+ FAIL  tests/api/easyMode.test.ts > easyMode API client > generateDigest returns DigestResponse on 200
+AssertionError: expected undefined to be 'book-100' // Object.is equality
+
+- Expected: 
+"book-100"
+
++ Received: 
+undefined
+
+ ❯ tests/api/easyMode.test.ts:162:25
+    160| 
+    161|     const res = await generateDigest({ request_id: "gacha-req-1", sele…
+    162|     expect(res.book_id).toBe("book-100");
+       |                         ^
+    163|     expect(res.episode_1_text).toBe("第1話本文");
+    164|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/16]⎯
+
+ FAIL  tests/api/reversePlot.test.ts > reversePlot API client > generateReversePlot returns GeneratedPlotStructure on 200
+AssertionError: expected [] to have a length of 1 but got +0
+
+- Expected
++ Received
+
+- 1
++ 0
+
+ ❯ tests/api/reversePlot.test.ts:62:25
+     60|     );
+     61| 
+     62|     expect(result.arcs).toHaveLength(1);
+       |                         ^
+     63|     expect(result.arcs[0].title).toBe("第1部");
+     64|     expect(result.episodes[0].ep_num).toBe(1);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/16]⎯
+
+ FAIL  tests/api/reversePlot.test.ts > reversePlot API client > generateReversePlot throws on error response
+AssertionError: promise resolved "{ arcs: [], episodes: [], …(2) }" instead of rejecting
+
+- Expected
++ Received
+
+- [Error: rejected promise]
++ Object {
++   "arcs": Array [],
++   "catharsisPattern": undefined,
++   "catharsis_pattern": undefined,
++   "episodes": Array [],
++ }
+
+ ❯ tests/api/reversePlot.test.ts:78:5
+     76|     await expect(
+     77|       generateReversePlot({ emotionalGoal: "triumph" }, 10, "ファンタ…
+     78|     ).rejects.toThrow("生成失敗");
+       |     ^
+     79|   });
+     80| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/16]⎯
+
+ FAIL  tests/components/ExportPanel.test.tsx > ExportPanel component > exports package with current text and settings
+AssertionError: expected "spy" to be called with arguments: [ 1, ObjectContaining{…} ]
+
+Received: 
+
+  1st spy call:
+
+  Array [
+    1,
+-   ObjectContaining {
+-     "character": ObjectContaining {
++   Object {
++     "character": Object {
++       "ability": "古代魔導剣術",
++       "genre": "ハイファンタジー (R15)",
+        "name": "アルト",
++       "personality": "熱血・正義感が強い",
+      },
++     "current_text": "薄暗いダンジョンの中、15歳の青年アルトは古代の剣を手に取った。",
+      "genre": "ハイファンタジー (R15)",
+-     "title": StringContaining "アルト",
++     "title": "Test Book 1",
+    },
+  ]
+
+
+Number of calls: 1
+
+ ❯ tests/components/ExportPanel.test.tsx:38:47
+     36|     await user.click(exportBtn);
+     37| 
+     38|     expect(easyModeApi.exportPackageWithData).toHaveBeenCalledWith(
+       |                                               ^
+     39|       1,
+     40|       expect.objectContaining({
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/16]⎯
+
+ FAIL  tests/components/GeneratePanel.reversePlotProtection.test.tsx > handleReversePlotComplete - data protection > 既存章が無い場合は confirm を出さずに上書き適用する
+TestingLibraryElementError: Unable to find an element by: [data-testid="btn-submode-reverse"]
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <div>
+      <div
+        class="form-group"
+      >
+        <label
+          class="label"
+        >
+          作品ジャンル・レーティング
+        </label>
+        <select
+          class="select"
+        >
+          <option
+            value="fan"
+          >
+            ファンタジー
+          </option>
+          <option
+            value="sf"
+          >
+            SF
+          </option>
+          <option
+            value="romance"
+          >
+            恋愛
+          </option>
+          <option
+            value="mystery"
+          >
+            ミステリー
+          </option>
+          <option
+            value="horror"
+          >
+            ホラー
+          </option>
+          <option
+            value="other"
+          >
+            その他
+          </option>
+        </select>
+      </div>
+      <div
+        class="form-group"
+      >
+        <label
+          class="label"
+        >
+          主人公の名前
+        </label>
+        <input
+          class="input"
+          value="アルト"
+        />
+      </div>
+      <div
+        class="form-group"
+      >
+        <label
+          class="label"
+        >
+          性格・特徴
+        </label>
+        <input
+          class="input"
+          value="熱血・正義感が強い"
+        />
+      </div>
+      <div
+        class="form-group"
+      >
+        <label
+          class="label"
+        >
+          特殊能力・スキル
+        </label>
+        <input
+          class="input"
+          value="古代魔導剣術"
+        />
+      </div>
+      <div
+        class="form-group"
+      >
+        <label
+          class="label"
+        >
+          執筆対象の冒頭 / 前話プロンプト
+        </label>
+        <textarea
+          class="textarea"
+          rows="4"
+        >
+          薄暗いダンジョンの中、15歳の青年アルトは古代の剣を手に取った。
+        </textarea>
+      </div>
+      <div
+        style="display: flex; gap: 8px;"
+      >
+        <button
+          class="btn btn-primary"
+          style="flex: 1.2 1 0%; background-color: var(--accent-cyan); border-color: var(--accent-cyan); color: rgb(0, 0, 0); font-weight: 700;"
+        >
+          ⚡ リアルタイム速筆 (SSE)
+        </button>
+        <button
+          class="btn btn-secondary"
+          style="flex: 1 1 0%;"
+        >
+          🪄 かんたん執筆開始
+        </button>
+      </div>
+    </div>
+  </div>
+</body>
+ ❯ Object.getElementError node_modules/@testing-library/dom/dist/config.js:37:19
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+ ❯ tests/components/GeneratePanel.reversePlotProtection.test.tsx:71:29
+     69| 
+     70|     // 逆算プロットビルダーへ切替
+     71|     await user.click(screen.getByTestId("btn-submode-reverse"));
+       |                             ^
+     72| 
+     73|     // 4 ステップ進めずに、直接 component の onComplete を呼ぶテストは…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/16]⎯
+
+ FAIL  tests/components/GeneratePanel.reversePlotProtection.test.tsx > handleReversePlotComplete - data protection > 既存章に content がある状態で confirm をキャンセルすると適用されない
+TestingLibraryElementError: Unable to find an element by: [data-testid="btn-submode-reverse"]
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <div>
+      <div
+        class="form-group"
+      >
+        <label
+          class="label"
+        >
+          作品ジャンル・レーティング
+        </label>
+        <select
+          class="select"
+        >
+          <option
+            value="fan"
+          >
+            ファンタジー
+          </option>
+          <option
+            value="sf"
+          >
+            SF
+          </option>
+          <option
+            value="romance"
+          >
+            恋愛
+          </option>
+          <option
+            value="mystery"
+          >
+            ミステリー
+          </option>
+          <option
+            value="horror"
+          >
+            ホラー
+          </option>
+          <option
+            value="other"
+          >
+            その他
+          </option>
+        </select>
+      </div>
+      <div
+        class="form-group"
+      >
+        <label
+          class="label"
+        >
+          主人公の名前
+        </label>
+        <input
+          class="input"
+          value="アルト"
+        />
+      </div>
+      <div
+        class="form-group"
+      >
+        <label
+          class="label"
+        >
+          性格・特徴
+        </label>
+        <input
+          class="input"
+          value="熱血・正義感が強い"
+        />
+      </div>
+      <div
+        class="form-group"
+      >
+        <label
+          class="label"
+        >
+          特殊能力・スキル
+        </label>
+        <input
+          class="input"
+          value="古代魔導剣術"
+        />
+      </div>
+      <div
+        class="form-group"
+      >
+        <label
+          class="label"
+        >
+          執筆対象の冒頭 / 前話プロンプト
+        </label>
+        <textarea
+          class="textarea"
+          rows="4"
+        >
+          薄暗いダンジョンの中、15歳の青年アルトは古代の剣を手に取った。
+        </textarea>
+      </div>
+      <div
+        style="display: flex; gap: 8px;"
+      >
+        <button
+          class="btn btn-primary"
+          style="flex: 1.2 1 0%; background-color: var(--accent-cyan); border-color: var(--accent-cyan); color: rgb(0, 0, 0); font-weight: 700;"
+        >
+          ⚡ リアルタイム速筆 (SSE)
+        </button>
+        <button
+          class="btn btn-secondary"
+          style="flex: 1 1 0%;"
+        >
+          🪄 かんたん執筆開始
+        </button>
+      </div>
+    </div>
+  </div>
+</body>
+ ❯ Object.getElementError node_modules/@testing-library/dom/dist/config.js:37:19
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+ ❯ tests/components/GeneratePanel.reversePlotProtection.test.tsx:92:29
+     90| 
+     91|     // 逆算プロットビルダーモードへ
+     92|     await user.click(screen.getByTestId("btn-submode-reverse"));
+       |                             ^
+     93| 
+     94|     // 既存章は空 (デフォルト初期 chapters[0].content はテンプレート).
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/16]⎯
+
+ FAIL  tests/components/GeneratePanel.test.tsx > GeneratePanel > submits generation and shows output + suggestions
+AssertionError: expected "spy" to be called with arguments: [ StringContaining "AI出力", …(1) ]
+
+Received: 
+
+
+
+Number of calls: 0
+
+ ❯ tests/components/GeneratePanel.test.tsx:62:25
+     60|     const user = userEvent.setup();
+     61|     await user.click(screen.getByText(/かんたん執筆開始/));
+     62|     expect(onGenerated).toHaveBeenCalledWith(
+       |                         ^
+     63|       expect.stringContaining("AI出力"),
+     64|       expect.arrayContaining([expect.stringContaining("提案1")])
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/16]⎯
+
+ FAIL  tests/components/GeneratePanel.test.tsx > GeneratePanel > polls task until completed when task_id is returned
+AssertionError: expected "spy" to be called with arguments: [ 'ポーリング完了本文', [ '次話提案' ] ]
+
+Received: 
+
+
+
+Number of calls: 0
+
+ ❯ tests/components/GeneratePanel.test.tsx:82:25
+     80|     const user = userEvent.setup();
+     81|     await user.click(screen.getByText(/かんたん執筆開始/));
+     82|     expect(onGenerated).toHaveBeenCalledWith(
+       |                         ^
+     83|       "ポーリング完了本文",
+     84|       ["次話提案"]
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/16]⎯
+
+ FAIL  tests/components/GeneratePanel.test.tsx > GeneratePanel > handles failed polling status
+AssertionError: expected "spy" to be called with arguments: [ StringContaining{…} ]
+
+Received: 
+
+  1st spy call:
+
+  Array [
+-   StringContaining "LLM error occurred",
++   "❌ エラー: RequestInit: Expected signal (\"AbortSignal {}\") to be an instance of AbortSignal.",
+  ]
+
+
+Number of calls: 1
+
+ ❯ tests/components/GeneratePanel.test.tsx:108:23
+    106|     const user = userEvent.setup();
+    107|     await user.click(screen.getByText(/かんたん執筆開始/));
+    108|     expect(onMessage).toHaveBeenCalledWith(expect.stringContaining("LL…
+       |                       ^
+    109|   });
+    110| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/16]⎯
+
+ FAIL  tests/integration/studioModeFlow.test.tsx > Studio Mode Flow Integration Test > renders Studio mode by default and allows mode switching
+TestingLibraryElementError: Unable to find an element with the text: ⚙️ 制作設定 & プロンプト. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <div
+      class="container"
+      style=""
+    >
+      <header
+        class="header"
+      >
+        <div
+          style="display: flex; align-items: center; gap: 16px; flex: 1 1 0%;"
+        >
+          <div>
+            <h1
+              class="brand-title"
+            >
+              AutoNovel Studio
+            </h1>
+            <p
+              style="color: var(--text-muted); font-size: 0.9rem; margin-top: 4px;"
+            >
+              AI 執筆・設定管理・矛盾診断・マルチメディア生成スタジオ
+            </p>
+          </div>
+          <button
+            aria-haspopup="dialog"
+            aria-label="作品選択"
+            class="book-selector"
+          >
+            <span
+              class="book-selector__icon"
+            >
+              📖
+            </span>
+            <span
+              class="book-selector__title"
+            >
+              作品を選択
+            </span>
+            <span
+              class="book-selector__chevron"
+            >
+              ▼
+            </span>
+          </button>
+        </div>
+        <div
+          style="display: flex; gap: 12px; align-items: center;"
+        >
+          <div
+            class="mode-switcher"
+            data-testid="mode-switcher"
+          >
+            <button
+              class="mode-btn mode-btn--active"
+              data-testid="btn-mode-easy"
+              type="button"
+            >
+              ⚡ かんたんモード
+            </button>
+            <button
+              class="mode-btn "
+              data-testid="btn-mode-studio"
+              type="button"
+            >
+              🚀 上級者 Studio
+            </button>
+          </div>
+          <button
+            data-testid="open-config-btn"
+            style="padding: 6px 12px; border-radius: 8px; background-color: var(--accent-yellow, #f59e0b); color: white; cursor: pointer; font-size: 0.85rem; font-weight: 500; display: flex; align-items: center; gap: 4px;"
+          >
+            ⚙️ LLM設定
+          </button>
+          <button
+            data-testid="open-media-btn"
+            style="padding: 6px 12px; border-radius: 8px; background-color: var(--accent-cyan, #06b6d4); color: white; cursor: pointer; font-size: 0.85rem; font-weight: 500; display: flex; align-items: center; gap: 4px;"
+          >
+            🖼️ 画像生成
+          </button>
+          <button
+            data-testid="open-graph-btn"
+            style="padding: 6px 12px; border-radius: 8px; background-color: var(--accent-purple, #8b5cf6); color: white; cursor: pointer; font-size: 0.85rem; font-weight: 500; display: flex; align-items: center; gap: 4px;"
+          >
+            📊 相関図
+          </button>
+          <span
+            style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; background-color: rgba(167, 139, 250, 0.2); color: rgb(167, 139, 250); border: 1px solid rgb(167, 139, 250);"
+          >
+            <span>
+              🏰
+            </span>
+            <span>
+              ハイファンタジー (R15)
+            </span>
+          </span>
+        </div>
+      </header>
+      <main
+        class="main-grid"
+      >
+        <div>
+          <div
+            class="form-group"
+          >
+            <label
+              class="label"
+            >
+              作品ジャンル・レーティング
+            </label>
+            <select
+              class="select"
+            >
+              <option
+                value="fan"
+              >
+                ファンタジー
+              </option>
+              <option
+                value="sf"
+              >
+                SF
+              </option>
+              <option
+                value="romance"
+              >
+                恋愛
+              </option>
+              <option
+                value="mystery"
+              >
+                ミステリー
+              </option>
+              <option
+                value="horror"
+              >
+                ホラー
+              </option>
+              <option
+                value="other"
+              >
+                その他
+              </option>
+            </select>
+          </div>
+          <div
+            class="form-group"
+          >
+            <label
+              class="label"
+            >
+              主人公の名前
+            </label>
+            <input
+              class="input"
+              value="アルト"
+            />
+          </div>
+          <div
+            class="form-group"
+          >
+            <label
+              class="label"
+            >
+              性格・特徴
+            </label>
+            <input
+              class="input"
+              value="熱血・正義感が強い"
+            />
+          </div>
+          <div
+            class="form-group"
+          >
+            <label
+              class="label"
+            >
+              特殊能力・スキル
+            </label>
+            <input
+              class="input"
+              value="古代魔導剣術"
+            />
+          </div>
+          <div
+            class="form-group"
+          >
+            <label
+              class="label"
+            >
+              執筆対象の冒頭 / 前話プロンプト
+            </label>
+            <textarea
+              class="textarea"
+              rows="4"
+            >
+              薄暗いダンジョンの中、15歳の青年アルトは古代の剣を手に取った。
+            </textarea>
+          </div>
+          <div
+            style="display: flex; gap: 8px;"
+          >
+            <button
+              class="btn btn-primary"
+              style="flex: 1.2 1 0%; background-color: var(--accent-cyan); border-color: var(--accent-cyan); color: rgb(0, 0, 0); font-weight: 700;"
+            >
+              ⚡ リアルタイム速筆 (SSE)
+            </button>
+            <button
+              class="btn btn-secondary"
+              style="flex: 1 1 0%;"
+            >
+              🪄 かんたん執筆開始
+            </button>
+          </div>
+        </div>
+        <section
+          class="card"
+          style="display: flex; flex-direction: column;"
+        >
+          <div
+            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;"
+          >
+            <h2
+              style="font-size: 1.2rem; color: var(--accent-secondary, #38bdf8);"
+            >
+              📖 執筆プレビュー & エディタ
+            </h2>
+          </div>
+          <div
+            style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 16px; background-color: var(--bg-card, #18181b); border: 1px dashed var(--border-color, #27272a); border-radius: 12px; margin-bottom: 16px; color: var(--text-muted);"
+          >
+            ⚠️ 作品が選択されていません。ヘッダーの「本棚」から作品を選択または作成してください。
+          </div>
+          <div
+            style="display: flex; gap: 8px; margin-bottom: 16px;"
+          >
+            <button
+              class="btn btn-export"
+              data-testid="btn-export-zip"
+              disabled=""
+              style="flex: 1 1 0%;"
+              type="button"
+            >
+              📦 納品パッケージ (ZIP) ダウンロード
+            </button>
+            <button
+              class="btn btn-primary"
+              data-testid="btn-show-book-showcase"
+              disabled=""
+              style="padding: 8px 14px; font-size: 0.85rem; white-space: nowrap; margin-left: 8px;"
+              title="縦書き装丁プレビューと宣伝カードを表示"
+              type="button"
+            >
+              📖 縦書き装丁プレビュー & 宣伝カード
+            </button>
+            <button
+              class="btn btn-primary"
+              data-testid="btn-promote-studio"
+              style="padding: 8px 14px; font-size: 0.85rem; white-space: nowrap;"
+              title="設定をGraphRAGナレッジ化し、Studioモードへ引き継ぎます"
+              type="button"
+            >
+              🚀 Studioへ昇格
+            </button>
+          </div>
+          <div
+            style="flex: 1 1 0%; min-height: 240px;"
+          >
+            <div
+              class="editor-container"
+              style="display: flex; flex-direction: column; height: 100%;"
+            >
+              <div
+                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; flex-wrap: wrap; gap: 8px;"
+              >
+                <div
+                  style="display: flex; gap: 8px; align-items: center;"
+                >
+                  <button
+                    class="btn-tab btn-tab--active"
+                    data-testid="tab-edit"
+                    type="button"
+                  >
+                    ✏️ エディタ
+                  </button>
+                  <button
+                    class="btn-tab "
+                    data-testid="tab-preview"
+                    type="button"
+                  >
+                    📖 ルビ・プレビュー
+                  </button>
+                  <button
+                    class="inline-ai-btn"
+                    data-testid="btn-insert-ruby"
+                    title="選択文字にルビ記法を挿入 (Ctrl+B)"
+                    type="button"
+                  >
+                    🏷️ ルビ挿入
+                  </button>
+                </div>
+                <div
+                  class="editor-toolbar"
+                >
+                  <div
+                    class="editor-toolbar__group"
+                  >
+                    <button
+                      class="editor-toolbar__btn active"
+                      title="明朝体 (しっぽり明朝)"
+                      type="button"
+                    >
+                      明朝
+                    </button>
+                    <button
+                      class="editor-toolbar__btn "
+                      title="ゴシック体"
+                      type="button"
+                    >
+                      ゴシック
+                    </button>
+                  </div>
+                  <div
+                    class="editor-toolbar__divider"
+                  />
+                  <div
+                    class="editor-toolbar__group"
+                  >
+                    <button
+                      class="editor-toolbar__btn"
+                      title="小 (15px)"
+                      type="button"
+                    >
+                      A
+                      <sub>
+                        小
+                      </sub>
+                    </button>
+                    <button
+                      class="editor-toolbar__btn active"
+                      title="中 (17px)"
+                      type="button"
+                    >
+                      A
+                      <sub>
+                        中
+                      </sub>
+                    </button>
+                    <button
+                      class="editor-toolbar__btn "
+                      title="大 (19px)"
+                      type="button"
+                    >
+                      A
+                      <sub>
+                        大
+                      </sub>
+                    </button>
+                  </div>
+                  <div
+                    class="editor-toolbar__divider"
+                  />
+                  <div
+                    class="editor-toolbar__manuscript"
+                    title="原稿用紙換算"
+                  >
+                    📄 約
+                    1
+                    枚
+                  </div>
+                  <div
+                    class="editor-toolbar__divider"
+                  />
+                  <button
+                    class="editor-toolbar__btn editor-toolbar__btn--zen "
+                    title="Zenモードで集中執筆"
+                    type="button"
+                  >
+                    🧘 Zen
+                  </button>
+                </div>
+              </div>
+              <div
+                style="font-size: 0.82rem; color: var(--text-muted); display: flex; gap: 12px; align-items: center; flex-wrap: wrap;"
+              >
+                <span>
+                  行数: 
+                  <strong>
+                    1
+                  </strong>
+                   行
+                </span>
+                <span>
+                  文字数: 
+                  <strong
+                    data-testid="editor-char-count"
+                  >
+                    32
+                  </strong>
+                   文字
+                </span>
+                <span>
+                  読了目安: 
+                  <strong>
+                    約
+                    1
+                  </strong>
+                   分
+                </span>
+                <span>
+                  原稿用紙: 
+                  <strong>
+                    約
+                    1
+                  </strong>
+                   枚
+                </span>
+                <span
+                  class="autosave-indicator autosave-indicator--unsaved"
+                  title="未保存の変更があります"
+                >
+                  <span
+                    style="color: rgb(245, 158, 11);"
+                  >
+                    ●
+                  </span>
+                  <span>
+                    未保存
+                  </span>
+                </span>
+              </div>
+              <textarea
+                class="textarea font-serif editor-font-size-medium editor-line-height"
+                data-testid="editor-textarea"
+                placeholder="ここに本文を入力してください。文章を選択するとインラインAI推敲ツールバーが表示されます。"
+                style="flex: 1 1 0%; min-height: 280px; font-family: inherit; resize: vertical; line-height: 1.9;"
+              >
+                薄暗いダンジョンの中、15歳の青年アルトは古代の剣を手に取った。
+              </textarea>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+</body>
+ ❯ Object.getElementError node_modules/@testing-library/dom/dist/config.js:37:19
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+ ❯ tests/integration/studioModeFlow.test.tsx:24:19
+     22| 
+     23|     // かんたんモードの UI が表示される
+     24|     expect(screen.getByText("⚙️ 制作設定 & プロンプト")).toBeInTheDocu…
+       |                   ^
+     25|     expect(screen.getByText(/納品パッケージ/)).toBeInTheDocument();
+     26| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/16]⎯
+
+[31m⎯⎯⎯⎯⎯⎯[1m[7m Unhandled Errors [27m[22m⎯⎯⎯⎯⎯⎯[39m
+[31m[1m
+Vitest caught 8 unhandled errors during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.[22m[39m
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: data.find is not a function
+ ❯ refreshBooks src/context/NovelContext.tsx:99:28
+     97|       const data = await fetchBooks();
+     98|       setBooks(data);
+     99|       const current = data.find((b) => b.id === selectedBookId);
+       |                            ^
+    100|       setSelectedBook(current || null);
+    101|     } finally {
+
+This error originated in "tests/integration/studioModeFlow.test.tsx" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "allows asking questions in EditorialSidebar (Ask Bible)". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: data.find is not a function
+ ❯ refreshBooks src/context/NovelContext.tsx:99:28
+     97|       const data = await fetchBooks();
+     98|       setBooks(data);
+     99|       const current = data.find((b) => b.id === selectedBookId);
+       |                            ^
+    100|       setSelectedBook(current || null);
+    101|     } finally {
+
+This error originated in "tests/integration/studioModeFlow.test.tsx" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "allows asking questions in EditorialSidebar (Ask Bible)". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: data.find is not a function
+ ❯ refreshBooks src/context/NovelContext.tsx:99:28
+     97|       const data = await fetchBooks();
+     98|       setBooks(data);
+     99|       const current = data.find((b) => b.id === selectedBookId);
+       |                            ^
+    100|       setSelectedBook(current || null);
+    101|     } finally {
+
+This error originated in "tests/integration/studioModeFlow.test.tsx" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "allows asking questions in EditorialSidebar (Ask Bible)". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: data.find is not a function
+ ❯ refreshBooks src/context/NovelContext.tsx:99:28
+     97|       const data = await fetchBooks();
+     98|       setBooks(data);
+     99|       const current = data.find((b) => b.id === selectedBookId);
+       |                            ^
+    100|       setSelectedBook(current || null);
+    101|     } finally {
+ ❯ runNextTicks node:internal/process/task_queues:65:5
+ ❯ processTimers node:internal/timers:540:9
+
+This error originated in "tests/integration/studioModeFlow.test.tsx" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "generates Next Beats and applies content to editor". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: data.find is not a function
+ ❯ refreshBooks src/context/NovelContext.tsx:99:28
+     97|       const data = await fetchBooks();
+     98|       setBooks(data);
+     99|       const current = data.find((b) => b.id === selectedBookId);
+       |                            ^
+    100|       setSelectedBook(current || null);
+    101|     } finally {
+ ❯ runNextTicks node:internal/process/task_queues:65:5
+ ❯ processTimers node:internal/timers:540:9
+
+This error originated in "tests/integration/studioModeFlow.test.tsx" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "generates Next Beats and applies content to editor". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: data.find is not a function
+ ❯ refreshBooks src/context/NovelContext.tsx:99:28
+     97|       const data = await fetchBooks();
+     98|       setBooks(data);
+     99|       const current = data.find((b) => b.id === selectedBookId);
+       |                            ^
+    100|       setSelectedBook(current || null);
+    101|     } finally {
+ ❯ runNextTicks node:internal/process/task_queues:65:5
+ ❯ processTimers node:internal/timers:540:9
+
+This error originated in "tests/integration/studioModeFlow.test.tsx" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "generates Next Beats and applies content to editor". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: data.find is not a function
+ ❯ refreshBooks src/context/NovelContext.tsx:99:28
+     97|       const data = await fetchBooks();
+     98|       setBooks(data);
+     99|       const current = data.find((b) => b.id === selectedBookId);
+       |                            ^
+    100|       setSelectedBook(current || null);
+    101|     } finally {
+
+This error originated in "tests/integration/studioModeFlow.test.tsx" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: data.find is not a function
+ ❯ refreshBooks src/context/NovelContext.tsx:99:28
+     97|       const data = await fetchBooks();
+     98|       setBooks(data);
+     99|       const current = data.find((b) => b.id === selectedBookId);
+       |                            ^
+    100|       setSelectedBook(current || null);
+    101|     } finally {
+
+This error originated in "tests/integration/studioModeFlow.test.tsx" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+[31m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[39m
+
+[2m Test Files [22m [1m[31m6 failed[39m[22m[2m | [22m[1m[32m9 passed[39m[22m[90m (15)[39m
+[2m      Tests [22m [1m[31m16 failed[39m[22m[2m | [22m[1m[32m36 passed[39m[22m[90m (52)[39m
+[2m     Errors [22m [1m[31m8 errors[39m[22m
+[2m   Start at [22m 09:03:03
+[2m   Duration [22m 46.52s[2m (transform 3.60s, setup 28.47s, collect 26.45s, tests 11.81s, environment 41.02s, prepare 8.37s)[22m
+

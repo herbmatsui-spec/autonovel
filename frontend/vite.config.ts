@@ -37,7 +37,24 @@ export default defineConfig({
     },
   },
   preview: { host: true, port: 3000 },
-  build: { outDir: "dist" },
+  build: { 
+    outDir: "dist",
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ["react", "react-dom", "react-router-dom"]
+        }
+      }
+    },
+    chunkSizeWarningLimit: 1000,
+    minify: "terser",
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true
+      }
+    }
+  },
   test: {
     environment: "jsdom",
     globals: true,

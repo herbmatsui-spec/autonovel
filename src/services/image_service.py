@@ -26,12 +26,8 @@ class ImageService:
     ):
         resolved_key = api_key
         if not resolved_key:
-            try:
-                from src.backend.config import settings
-                resolved_key = settings.get_gemini_api_key()
-            except Exception:
-                resolved_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_GENAI_API_KEY") or ""
-
+            from config.settings import settings
+            resolved_key = settings.get_gemini_api_key()
         if not resolved_key:
             raise ValueError(
                 "ImageService requires a non-empty api_key. "
@@ -96,7 +92,8 @@ class ImageService:
             SafetyLevel.BLOCK_FEW.value: "BLOCK_FEW",
             SafetyLevel.R15_CONTENT.value: "BLOCK_MOST",  # R15は露骨な表現を強く遮断
         }
-        threshold = threshold_map.get(getattr(level, "value", level), "BLOCK_SOME")
+        level_val = getattr(level, "value", level)
+        threshold = threshold_map.get(str(level_val), "BLOCK_SOME")
         return [
             types.SafetySetting(
                 category="HARM_CATEGORY_SEXUALLY_EXPLICIT",

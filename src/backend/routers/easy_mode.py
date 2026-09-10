@@ -253,9 +253,9 @@ async def generate_content(
         }
 
         # タスクをキューに投入 (Huey 非同期タスク呼び出し)
-        from src.backend.tasks.generation_tasks import generate_chapter_task
+        from src.backend.tasks.generation_tasks import generate_chapter_easy_mode_orchestrated_task
 
-        task_result = generate_chapter_task(params)
+        task_result = generate_chapter_easy_mode_orchestrated_task(params)
         huey_task_id = str(task_result.id)
         params["task_id"] = huey_task_id
 

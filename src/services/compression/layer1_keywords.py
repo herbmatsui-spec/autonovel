@@ -6,7 +6,7 @@ from collections import Counter
 from typing import List, Tuple
 
 from src.services.compression.models import RawTextLayerOutput
-from src.services.compression.japanese_tokenizer import create_japanese_tokenizer
+from src.services.compression.japanese_tokenizer import SudachiConfig, create_japanese_tokenizer
 
 try:
     from rank_bm25 import BM25Okapi

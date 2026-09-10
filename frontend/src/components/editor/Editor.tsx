@@ -10,32 +10,40 @@ import { useAutosave, SaveStatus } from "../../hooks/useAutosave";
 import { EditorFontFamily, EditorFontSize } from "../../types";
 
 interface EditorProps {
-  content: string;
-  onChange: (value: string) => void;
-  readOnly?: boolean;
-  genre?: string;
-  onToast?: (msg: string, type: "success" | "error" | "info") => void;
+   content: string;
+   onChange: (value: string) => void;
+   readOnly?: boolean;
+   genre?: string;
+   onToast?: (msg: string, type: "success" | "error" | "info") => void;
+   onCreateBranch?: () => void;
 }
 
 export const Editor: React.FC<EditorProps> = ({
-  content,
-  onChange,
-  readOnly = false,
-  genre = "ハイファンタジー (R15)",
-  onToast,
+   content,
+   onChange,
+   readOnly = false,
+   genre = "ハイファンタジー (R15)",
+   onToast,
+   onCreateBranch,
 }) => {
   const { activeHighlight, setActiveHighlight, selectedBookId, currentEpNum } = useNovelContext();
   const [tab, setTab] = useState<"edit" | "preview">("edit");
   const [selectedText, setSelectedText] = useState("");
-const [selectionRange, setSelectionRange] = useState<{ start: number; end: number } | null>(null);
-   const [isHistoryDrawerOpen, setIsHistoryDrawerOpen] = useState(false);
-   const [selectedSnapshotId, setSelectedSnapshotId] = useState<string | null>(null);
-   const { past, future, present, pushState, undo, redo, canUndo, canRedo } = useHistoryStack();
-   const { snapshots, takeSnapshot, restoreSnapshot } = useSnapshotHistory(
-     selectedBookId,
-     currentEpNum
-   );
-   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [selectionRange, setSelectionRange] = useState<{ start: number; end: number } | null>(null);
+  const [isHistoryDrawerOpen, setIsHistoryDrawerOpen] = useState(false);
+  const [selectedSnapshotId, setSelectedSnapshotId] = useState<string | null>(null);
+  const [isZenMode, setIsZenMode] = useState(false);
+  const [fontFamily, setFontFamily] = useState<EditorFontFamily>("serif");
+  const [fontSize, setFontSize] = useState<EditorFontSize>("medium");
+  const { past, future, present, pushState, undo, redo, canUndo, canRedo } = useHistoryStack();
+  const { snapshots, takeSnapshot, restoreSnapshot } = useSnapshotHistory(
+    selectedBookId,
+    currentEpNum
+  );
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Autosave hook
+  const { status, lastSavedAt, save: triggerSave } = useAutosave(content);
 
   // 編集中の下書きを localStorage にミラー保存 (リロード時の復元用)
   const draftKey = `autonovel.editor.draft.${selectedBookId}.${currentEpNum}`;
@@ -51,74 +59,69 @@ const [selectionRange, setSelectionRange] = useState<{ start: number; end: numbe
     return () => clearInterval(id);
   }, [content, draftKey, readOnly]);
 
-// 矛盾診断ハイライトがアクティブになった際のフォーカス & 選択処理
-   useEffect(() => {
-     if (!activeHighlight?.conflictingText) return;
- 
-     // プレビューモードならエディタタブへ自動切り替え
-     setTab("edit");
- 
-     const target = activeHighlight.conflictingText;
-     const idx = content.indexOf(target);
-     if (idx !== -1 && textareaRef.current) {
-       const textarea = textareaRef.current;
-       textarea.focus();
-       textarea.setSelectionRange(idx, idx + target.length);
-       setSelectedText(target);
-       setSelectionRange({ start: idx, end: idx + target.length });
- 
-       // スクロール位置の概算調整
-       const linesBefore = content.substring(0, idx).split("\n").length;
-       const lineHeight = 24;
-       textarea.scrollTop = Math.max(0, (linesBefore - 3) * lineHeight);
-     }
-   }, [activeHighlight, content]);
- 
-   const handleUndo = () => {
-     const previousText = undo();
-     if (previousText !== null) {
-       onChange(previousText);
-     }
-   };
- 
-   const handleRedo = () => {
-     const nextText = redo();
-     if (nextText !== null) {
-       onChange(nextText);
-     }
-   };
- 
-   const handleOpenHistoryDrawer = () => {
-     setIsHistoryDrawerOpen(true);
-   };
- 
-   const handleCloseHistoryDrawer = () => {
-     setIsHistoryDrawerOpen(false);
-   };
- 
-   const handleSelectSnapshot = (snapshotId: string | null) => {
-     setSelectedSnapshotId(snapshotId);
-   };
- 
-   const handleRestoreSnapshot = (snapshotId: string) => {
-     const restoredText = restoreSnapshot(snapshotId);
-     if (restoredText !== null) {
-       // Save current state to undo stack before restoring
-       pushState(content);
-       // Take a snapshot of the current state as "復元直前"
-       takeSnapshot("復元直前", content, "manual");
-       // Update content
-       onChange(restoredText);
-       // Show toast
-       const snapshot = snapshots.find((s) => s.id === snapshotId);
-       const timeStr = snapshot ? new Date(snapshot.timestamp).toLocaleTimeString() : "";
-       onToast?.(`✨ ${timeStr}のバージョンに復元しました`, "success");
-     }
-     // Close drawer after restore
-     setIsHistoryDrawerOpen(false);
-   };
- 
-   // ルビ記法 ｜親文字《ルビ》 を HTML に変換する簡易パーサー
+  // 矛盾診断ハイライトがアクティブになった際のフォーカス & 選択処理
+  useEffect(() => {
+    if (!activeHighlight?.conflictingText) return;
+
+    // プレビューモードならエディタタブへ自動切り替え
+    setTab("edit");
+
+    const target = activeHighlight.conflictingText;
+    const idx = content.indexOf(target);
+    if (idx !== -1 && textareaRef.current) {
+      const textarea = textareaRef.current;
+      textarea.focus();
+      textarea.setSelectionRange(idx, idx + target.length);
+      setSelectedText(target);
+      setSelectionRange({ start: idx, end: idx + target.length });
+
+      // スクロール位置の概算調整
+      const linesBefore = content.substring(0, idx).split("\n").length;
+      const lineHeight = 24;
+      textarea.scrollTop = Math.max(0, (linesBefore - 3) * lineHeight);
+    }
+  }, [activeHighlight, content]);
+
+  const handleUndo = () => {
+    const previousText = undo();
+    if (previousText !== null) {
+      onChange(previousText);
+    }
+  };
+
+  const handleRedo = () => {
+    const nextText = redo();
+    if (nextText !== null) {
+      onChange(nextText);
+    }
+  };
+
+  const handleOpenHistoryDrawer = () => {
+    setIsHistoryDrawerOpen(true);
+  };
+
+  const handleCloseHistoryDrawer = () => {
+    setIsHistoryDrawerOpen(false);
+  };
+
+  const handleSelectSnapshot = (snapshotId: string | null) => {
+    setSelectedSnapshotId(snapshotId);
+  };
+
+  const handleRestoreSnapshot = (snapshotId: string) => {
+    const restoredText = restoreSnapshot(snapshotId);
+    if (restoredText !== null) {
+      pushState(content);
+      takeSnapshot("復元直前", content, "manual");
+      onChange(restoredText);
+      const snapshot = snapshots.find((s) => s.id === snapshotId);
+      const timeStr = snapshot ? new Date(snapshot.timestamp).toLocaleTimeString() : "";
+      onToast?.(`✨ ${timeStr}のバージョンに復元しました`, "success");
+    }
+    setIsHistoryDrawerOpen(false);
+  };
+
+  // ルビ記法 ｜親文字《ルビ》 を HTML に変換する簡易パーサー
   const renderRuby = (text: string) => {
     const formatted = text
       .replace(/｜(.+?)《(.+?)》/g, "<ruby>$1<rt>$2</rt></ruby>")
@@ -141,7 +144,6 @@ const [selectionRange, setSelectionRange] = useState<{ start: number; end: numbe
 
   const handleApplyResult = (newText: string, mode: "replace" | "append") => {
     if (!selectionRange) {
-      // 選択範囲がない場合は末尾追記
       onChange(content ? `${content}\n\n${newText}` : newText);
       return;
     }
@@ -174,7 +176,6 @@ const [selectionRange, setSelectionRange] = useState<{ start: number; end: numbe
     onChange(updated);
     onToast?.("📖 ルビ記法（｜親文字《ルビ》）を挿入しました", "info");
 
-    // カーソル位置を《ルビ》の内部にフォーカス
     setTimeout(() => {
       if (textareaRef.current) {
         textareaRef.current.focus();
@@ -182,51 +183,102 @@ const [selectionRange, setSelectionRange] = useState<{ start: number; end: numbe
         textareaRef.current.setSelectionRange(cursorStart, cursorStart + 2);
       }
     }, 50);
-};
-   const handleCreateBranch = async () => {
+  };
+
+const handleCreateBranch = async () => {
      const branchName = window.prompt("新しいIFルートの名前を入力してください（例: 第○話のIFルート）", `IFルート_第${currentEpNum}話`);
-     if (!branchName) return; // user cancelled
+     if (!branchName) return;
      try {
        const response = await fetch(`/api/branches/${selectedBookId}/fork`, {
          method: 'POST',
-         headers: {
-           'Content-Type': 'application/json',
-         },
+         headers: { 'Content-Type': 'application/json' },
          body: JSON.stringify({
-           parent_id: 1, // TODO: we need to get the current branch id? We don't have it in context.
+           parent_id: 1,
            name: branchName,
            fork_ep_num: currentEpNum,
          }),
        });
-       if (!response.ok) {
-         throw new Error(`Failed to create branch: ${response.status}`);
-       }
+       if (!response.ok) throw new Error(`Failed to create branch: ${response.status}`);
        const result = await response.json();
        onToast?.(`✨ IFルート「${branchName}」を作成しました`, "success");
-     } catch (err) {
-       onToast?.(`❌ エラー: ${err.message || err}`, "error");
+       onCreateBranch?.();
+     } catch (err: unknown) {
+       const msg = err instanceof Error ? err.message : String(err);
+       onToast?.(`❌ エラー: ${msg}`, "error");
      }
    };
-   // キーボードショートカット (Ctrl+B = ルビ挿入のみ。Ctrl+S は no-op につき未実装)
-const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-  if ((e.ctrlKey || e.metaKey) && e.key === "b") {
-    e.preventDefault();
-    handleInsertRuby();
-  } else if ((e.ctrlKey || e.metaKey) && e.key === "z") {
-    e.preventDefault();
-    handleUndo();
-  } else if ((e.ctrlKey || e.metaKey) && e.key === "y") {
-    e.preventDefault();
-    handleRedo();
-  } else if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "Z") {
-    e.preventDefault();
-    handleRedo();
-  }
-};
+
+  // キーボードショートカット
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "b") {
+      e.preventDefault();
+      handleInsertRuby();
+    } else if ((e.ctrlKey || e.metaKey) && e.key === "z") {
+      e.preventDefault();
+      handleUndo();
+    } else if ((e.ctrlKey || e.metaKey) && e.key === "y") {
+      e.preventDefault();
+      handleRedo();
+    } else if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "Z") {
+      e.preventDefault();
+      handleRedo();
+    } else if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+      e.preventDefault();
+      triggerSave();
+      onToast?.("💾 手動保存しました", "success");
+    } else if (e.key === "Escape" && isZenMode) {
+      setIsZenMode(false);
+    }
+  };
 
   const charCount = content.replace(/\s/g, "").length;
   const lineCount = content ? content.split("\n").length : 0;
-  const readingTimeMin = Math.ceil(charCount / 400); // 一般的な日本語読了速度: 400文字/分
+  const manuscriptPages = Math.ceil(charCount / 400);
+  const readingTimeMin = Math.ceil(charCount / 400);
+
+  const editorClassName = [
+    "textarea",
+    fontFamily === "serif" ? "font-serif" : "font-sans",
+    `editor-font-size-${fontSize}`,
+    "editor-line-height",
+  ].join(" ");
+
+  // Zenモード用オーバーレイ
+  if (isZenMode) {
+    return (
+      <div className="zen-mode-overlay">
+        <div className="zen-mode-container">
+          <div className="zen-mode__header">
+            <span className="zen-mode__title">{genre}</span>
+            <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+              <AutosaveIndicator status={status} lastSavedAt={lastSavedAt} />
+              <span className="zen-mode__manuscript">📄 約{manuscriptPages}枚</span>
+              <button
+                type="button"
+                className="zen-mode__exit"
+                onClick={() => setIsZenMode(false)}
+                aria-label="Zenモードを終了"
+              >
+                Zenモード終了 (Esc)
+              </button>
+            </div>
+          </div>
+          <textarea
+            ref={textareaRef}
+            className={editorClassName}
+            style={{ flex: 1, minHeight: "0", fontFamily: "inherit", resize: "none", lineHeight: "1.9", outline: "none" }}
+            value={content}
+            onChange={(e) => onChange(e.target.value)}
+            onSelect={handleSelect}
+            onKeyDown={handleKeyDown}
+            readOnly={readOnly}
+            placeholder="ここに本文を入力してください..."
+            data-testid="editor-textarea-zen"
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="editor-container" style={{ display: "flex", flexDirection: "column", height: "100%" }}>
@@ -242,87 +294,54 @@ const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
           gap: "8px",
         }}
       >
-<div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-           <button
-             type="button"
-             className={`btn-tab ${tab === "edit" ? "btn-tab--active" : ""}`}
-             onClick={() => setTab("edit")}
-             data-testid="tab-edit"
-           >
-             ✏️ エディタ
-           </button>
-           <button
-             type="button"
-             className={`btn-tab ${tab === "preview" ? "btn-tab--active" : ""}`}
-             onClick={() => setTab("preview")}
-             data-testid="tab-preview"
-           >
-             📖 ルビ・プレビュー
-           </button>
-           {tab === "edit" && (
-             <button
-               type="button"
-               className="inline-ai-btn"
-               onClick={handleInsertRuby}
-               title="選択文字にルビ記法を挿入 (Ctrl+B)"
-               data-testid="btn-insert-ruby"
-             >
-               🏷️ ルビ挿入
-             </button>
-)}
-      {isHistoryDrawerOpen && (
-        <HistoryDrawer
-          isOpen={isHistoryDrawerOpen}
-          onClose={handleCloseHistoryDrawer}
-          snapshots={snapshots}
-          currentText={content}
-          onSnapshotSelect={handleSelectSnapshot}
-          onRestore={handleRestoreSnapshot}
-        />
-      )}
-           {/* History buttons */}
-           <button
-             type="button"
-             onClick={handleUndo}
-             disabled={!canUndo}
-             title="元に戻す (Ctrl+Z)"
-             data-testid="btn-undo"
-           >
-             ↩ 元に戻す
-           </button>
-           <button
-             type="button"
-             onClick={handleRedo}
-             disabled={!canRedo}
-             title="やり直す (Ctrl+Y)"
-             data-testid="btn-redo"
-           >
-             ↪ やり直す
-           </button>
-           <button
-             type="button"
-             onClick={handleOpenHistoryDrawer}
-             title="バージョン履歴"
-             data-testid="btn-history"
-           >
-             ⏱️ 履歴
-           </button>
-{isHistoryDrawerOpen && (
-        <HistoryDrawer
-          isOpen={isHistoryDrawerOpen}
-          onClose={handleCloseHistoryDrawer}
-          snapshots={snapshots}
-          currentText={content}
-          onSnapshotSelect={handleSelectSnapshot}
-          onRestore={handleRestoreSnapshot}
-        />
-      )}
-     </div>
-        <div style={{ fontSize: "0.82rem", color: "var(--text-muted)", display: "flex", gap: "12px" }}>
-          <span>行数: <strong>{lineCount}</strong> 行</span>
-          <span>文字数: <strong data-testid="editor-char-count">{charCount}</strong> 文字</span>
-          <span>読了目安: <strong>約{readingTimeMin || 1}</strong> 分</span>
+        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+          <button
+            type="button"
+            className={`btn-tab ${tab === "edit" ? "btn-tab--active" : ""}`}
+            onClick={() => setTab("edit")}
+            data-testid="tab-edit"
+          >
+            ✏️ エディタ
+          </button>
+          <button
+            type="button"
+            className={`btn-tab ${tab === "preview" ? "btn-tab--active" : ""}`}
+            onClick={() => setTab("preview")}
+            data-testid="tab-preview"
+          >
+            📖 ルビ・プレビュー
+          </button>
+          {tab === "edit" && (
+            <button
+              type="button"
+              className="inline-ai-btn"
+              onClick={handleInsertRuby}
+              title="選択文字にルビ記法を挿入 (Ctrl+B)"
+              data-testid="btn-insert-ruby"
+            >
+              🏷️ ルビ挿入
+            </button>
+          )}
         </div>
+
+        {/* EditorToolbar */}
+        <EditorToolbar
+          fontFamily={fontFamily}
+          onFontFamilyChange={setFontFamily}
+          fontSize={fontSize}
+          onFontSizeChange={setFontSize}
+          onZenModeToggle={() => setIsZenMode(true)}
+          isZenMode={isZenMode}
+          manuscriptPages={manuscriptPages}
+        />
+      </div>
+
+      <div style={{ fontSize: "0.82rem", color: "var(--text-muted)", display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
+        <span>行数: <strong>{lineCount}</strong> 行</span>
+        <span>文字数: <strong data-testid="editor-char-count">{charCount}</strong> 文字</span>
+        <span>読了目安: <strong>約{readingTimeMin || 1}</strong> 分</span>
+        <span>原稿用紙: <strong>約{manuscriptPages}</strong> 枚</span>
+        <AutosaveIndicator status={status} lastSavedAt={lastSavedAt} />
       </div>
 
       {/* 矛盾フォーカス時の警告通知バー */}
@@ -347,55 +366,35 @@ const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
               <span style={{ color: "var(--accent-cyan)", marginLeft: "8px" }}>
                 → 修正案: 「{activeHighlight.suggestedFix}」
               </span>
-)}
-      {isHistoryDrawerOpen && (
-        <HistoryDrawer
-          isOpen={isHistoryDrawerOpen}
-          onClose={handleCloseHistoryDrawer}
-          snapshots={snapshots}
-          currentText={content}
-          onSnapshotSelect={handleSelectSnapshot}
-          onRestore={handleRestoreSnapshot}
-        />
-      )}
-     </div>
+            )}
+          </div>
           <div style={{ display: "flex", gap: "6px" }}>
-{activeHighlight.suggestedFix && (
-               <>
-                 <button
-                   type="button"
-                   className="btn btn-primary"
-                   style={{ padding: "3px 8px", fontSize: "0.75rem" }}
-                   onClick={() => {
-                     if (content.includes(activeHighlight.conflictingText)) {
-                       onChange(content.replace(activeHighlight.conflictingText, activeHighlight.suggestedFix));
-                       setActiveHighlight(null);
-                       onToast?.("✨ 修正案を適用しました", "success");
-                     }
-                   }}
-                 >
-                   1クリック修正
-                 </button>
-                 <button
-                   type="button"
-                   onClick={handleCreateBranch}
-                   title="現在の話数からIFルートを分岐"
-                   data-testid="btn-create-branch"
-                 >
-                   🌿 IF分岐を作成
-                 </button>
-               </>
-             )}
-      {isHistoryDrawerOpen && (
-        <HistoryDrawer
-          isOpen={isHistoryDrawerOpen}
-          onClose={handleCloseHistoryDrawer}
-          snapshots={snapshots}
-          currentText={content}
-          onSnapshotSelect={handleSelectSnapshot}
-          onRestore={handleRestoreSnapshot}
-        />
-      )}
+            {activeHighlight.suggestedFix && (
+              <>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  style={{ padding: "3px 8px", fontSize: "0.75rem" }}
+                  onClick={() => {
+                    if (content.includes(activeHighlight.conflictingText)) {
+                      onChange(content.replace(activeHighlight.conflictingText, activeHighlight.suggestedFix));
+                      setActiveHighlight(null);
+                      onToast?.("✨ 修正案を適用しました", "success");
+                    }
+                  }}
+                >
+                  1クリック修正
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCreateBranch}
+                  title="現在の話数からIFルートを分岐"
+                  data-testid="btn-create-branch"
+                >
+                  🌿 IF分岐を作成
+                </button>
+              </>
+            )}
             <button
               type="button"
               style={{ background: "transparent", border: "none", color: "var(--text-muted)", cursor: "pointer" }}
@@ -403,17 +402,7 @@ const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
             >
               ✕
             </button>
-{isHistoryDrawerOpen && (
-        <HistoryDrawer
-          isOpen={isHistoryDrawerOpen}
-          onClose={handleCloseHistoryDrawer}
-          snapshots={snapshots}
-          currentText={content}
-          onSnapshotSelect={handleSelectSnapshot}
-          onRestore={handleRestoreSnapshot}
-        />
-      )}
-     </div>
+          </div>
         </div>
       )}
 
@@ -436,8 +425,8 @@ const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       {tab === "edit" ? (
         <textarea
           ref={textareaRef}
-          className="textarea"
-          style={{ flex: 1, minHeight: "280px", fontFamily: "inherit", resize: "vertical", lineHeight: "1.7" }}
+          className={editorClassName}
+          style={{ flex: 1, minHeight: "280px", fontFamily: "inherit", resize: "vertical", lineHeight: "1.9" }}
           value={content}
           onChange={(e) => onChange(e.target.value)}
           onSelect={handleSelect}
@@ -458,6 +447,17 @@ const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
           }}
           dangerouslySetInnerHTML={renderRuby(content || "本文がありません。")}
           data-testid="editor-preview"
+        />
+      )}
+
+      {isHistoryDrawerOpen && (
+        <HistoryDrawer
+          isOpen={isHistoryDrawerOpen}
+          onClose={handleCloseHistoryDrawer}
+          snapshots={snapshots}
+          currentText={content}
+          onSnapshotSelect={handleSelectSnapshot}
+          onRestore={handleRestoreSnapshot}
         />
       )}
     </div>

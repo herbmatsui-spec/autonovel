@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Any
 
 from src.backend.database import DataRepository
-from src.backend.engine import UltimateHegemonyEngine
+from src.backend.orchestrator_engine_adapter import OrchestratorEngineAdapter as UltimateHegemonyEngine
 from src.backend.planning_service import PlanningService
 from src.backend.protocols import BiblePort, CritiquePort, TensionPort, WritingPort
 from src.backend.writing_service import WritingService

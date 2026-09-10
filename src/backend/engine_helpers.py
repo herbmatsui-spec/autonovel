@@ -2,17 +2,18 @@
 
 from src.backend.engine_config import EngineConfig
 from src.backend.engine_facade import EngineFacade
+from src.backend.orchestrator_engine_adapter import OrchestratorEngineAdapter
+from src.agents.orchestrator import Orchestrator, AgentName
+from src.agents.skill_base import SkillAgent
 from src.core.container.app import AppContainer
 
 
 def get_engine(api_key: str) -> EngineFacade:
     """APIキーからエンジンインスタンスを生成する。
 
-    現時点では UltimateHegemonyEngine を内包した EngineFacade を返す。
+    Orchestrator を内包した OrchestratorEngineAdapter を EngineFacade でラップして返す。
     これにより呼び出し側 (routers / streamlit) は engine.* インターフェースを
-    そのまま利用でき、将来のサービス分解 (ADR-0004) も影響なしに進められる。
+    そのまま利用できる。
     """
-    container = AppContainer(api_key)
-    legacy_engine = container.engine()
-    config = EngineConfig.create(api_key=api_key, cooldown=legacy_engine.cooldown)
-    return EngineFacade(config=config, engine=legacy_engine)
+    container = AppContainer(api_key=api_key)
+    return container.engine_facade()

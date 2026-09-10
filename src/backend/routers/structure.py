@@ -34,6 +34,8 @@ async def validate_structure(
     from sqlalchemy import select
 
     async with UnitOfWork(AppContainer.db()) as uow:
+        if uow.session is None:
+            raise RuntimeError("Database session not initialized")
         result = await uow.session.execute(
             select(Plot).where(Plot.book_id == book_id).order_by(Plot.ep_num)
         )

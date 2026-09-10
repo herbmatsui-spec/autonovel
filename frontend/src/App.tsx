@@ -9,6 +9,7 @@ import { StudioWorkspace } from "./components/studio/StudioWorkspace";
 import { AssetPackPanel } from "./components/AssetPackPanel";
 import ConfigPanel from "./components/ConfigPanel";
 import { BookSelector } from "./components/common/BookSelector";
+import { getGenreBadgeConfig } from "./constants/genres";
 
 function AppContent() {
   const { toasts, addToast, removeToast } = useToast();
@@ -259,7 +260,28 @@ function AppContent() {
           >
             📊 相関図
           </button>
-          <GenreBadge genre={selectedBook?.genre || "ハイファンタジー (R15)"} />
+          {(() => {
+            const c = getGenreBadgeConfig(selectedBook?.genre || "ハイファンタジー (R15)");
+            return (
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "4px 12px",
+                  borderRadius: "9999px",
+                  fontSize: "0.75rem",
+                  fontWeight: 600,
+                  backgroundColor: c.bg,
+                  color: c.text,
+                  border: `1px solid ${c.border}`,
+                }}
+              >
+                <span>{c.emoji}</span>
+                <span>{selectedBook?.genre || "ハイファンタジー (R15)"}</span>
+              </span>
+            );
+          })()}
         </div>
       </header>
 
@@ -288,44 +310,3 @@ export default function App() {
     </NovelProvider>
   );
 }
-
-interface GenreBadgeProps {
-  genre: string;
-}
-
-const GenreBadge: React.FC<GenreBadgeProps> = ({ genre }) => {
-  const config: Record<string, { bg: string; text: string; border: string; emoji: string }> = {
-    "ハイファンタジー (R15)": { bg: "rgba(167, 139, 250, 0.2)", text: "#a78bfa", border: "#a78bfa", emoji: "🏰" },
-    "ダークファンタジー": { bg: "rgba(124, 58, 237, 0.2)", text: "#7c3aed", border: "#7c3aed", emoji: "🌑" },
-    "異世界転生・転移": { bg: "rgba(34, 197, 94, 0.2)", text: "#22c55e", border: "#22c55e", emoji: "🌀" },
-    "恋愛・ラブコメ": { bg: "rgba(236, 72, 153, 0.2)", text: "#ec4899", border: "#ec4899", emoji: "💕" },
-    "SF・近未来": { bg: "rgba(6, 182, 212, 0.2)", text: "#06b6d4", border: "#06b6d4", emoji: "🚀" },
-    "現代・日常": { bg: "rgba(234, 179, 8, 0.2)", text: "#eab308", border: "#eab308", emoji: "☕" },
-    "ミステリー・サスペンス": { bg: "rgba(100, 116, 139, 0.2)", text: "#64748b", border: "#64748b", emoji: "🔍" },
-    "ホラー・オカルト": { bg: "rgba(239, 68, 68, 0.2)", text: "#ef4444", border: "#ef4444", emoji: "👻" },
-    "歴史・時代": { bg: "rgba(168, 85, 247, 0.2)", text: "#a855f7", border: "#a855f7", emoji: "🏯" },
-    "その他": { bg: "rgba(161, 161, 170, 0.2)", text: "#a1a1aa", border: "#a1a1aa", emoji: "📚" },
-  };
-
-  const c = config[genre] || config["その他"];
-
-  return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: "6px",
-        padding: "4px 12px",
-        borderRadius: "9999px",
-        fontSize: "0.75rem",
-        fontWeight: 600,
-        backgroundColor: c.bg,
-        color: c.text,
-        border: `1px solid ${c.border}`,
-      }}
-    >
-      <span>{c.emoji}</span>
-      <span>{genre}</span>
-    </span>
-  );
-};

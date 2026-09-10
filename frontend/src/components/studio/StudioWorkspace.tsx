@@ -4,14 +4,14 @@ import { Editor } from "../editor/Editor";
 import { NextBeatsPanel } from "../editor/NextBeatsPanel";
 import { EditorialSidebar } from "../editor/EditorialSidebar";
 import { ChapterOutlineTree } from "./ChapterOutlineTree";
-   import { AssetPackPanel } from "../AssetPackPanel";
-   import { StyleComparisonModal } from "../style/StyleComparisonModal";
-   import { BookShowcaseModal } from "../showcase/BookShowcaseModal";
-   import { BranchManagement } from "./branches/BranchManagement";
-   import { ConflictReportPanel } from "../editor/ConflictReportPanel";
+import { AssetPackPanel } from "../AssetPackPanel";
+import { StyleComparisonModal } from "../style/StyleComparisonModal";
+import { BookShowcaseModal } from "../showcase/BookShowcaseModal";
+import { BranchManagement } from "../branches/BranchManagement";
+import { ConflictReportPanel } from "../editor/ConflictReportPanel";
 
 interface StudioWorkspaceProps {
-  onMessage?: (msg: string) => void;
+  onMessage?: (msg: string, type?: "success" | "error" | "info") => void;
   onOpenGraph?: () => void;
 }
 
@@ -27,7 +27,9 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
     currentChapterText,
     setCurrentChapterText,
     selectedBookId,
+    selectedBook,
   } = useNovelContext();
+
   const [tab, setTab] = useState<StudioTab>(() => {
     if (typeof window === "undefined") return "editor";
     try {
@@ -47,18 +49,28 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
     }
   }, [tab]);
 
-const [showLeftPane, setShowLeftPane] = useState(true);
-    const [showRightPane, setShowRightPane] = useState(true);
-    const [showStyleComparison, setShowStyleComparison] = useState(false);
-    const [showBookShowcase, setShowBookShowcase] = useState(false);
+  const [showLeftPane, setShowLeftPane] = useState(true);
+  const [showRightPane, setShowRightPane] = useState(true);
+  const [showStyleComparison, setShowStyleComparison] = useState(false);
+  const [showBookShowcase, setShowBookShowcase] = useState(false);
 
-    const handleToast = (msg: string, type: "success" | "error" | "info") => {
+  const handleCreateBranch = () => {
+    setTab("branches");
+    onMessage?.("🌿 IF分岐管理タブに切り替えました", "info");
+  };
+
+  const handleOpenAuditReport = () => {
+    setTab("audit");
+    onMessage?.("🧠 矛盾診断レポートタブに切り替えました", "info");
+  };
+
+  const handleToast = (msg: string, type: "success" | "error" | "info") => {
     if (type === "error") {
-      onMessage?.(`❌ ${msg}`);
+      onMessage?.(`❌ ${msg}`, "error");
     } else if (type === "success") {
-      onMessage?.(`✨ ${msg}`);
+      onMessage?.(`✨ ${msg}`, "success");
     } else {
-      onMessage?.(msg);
+      onMessage?.(msg, type);
     }
   };
 
@@ -80,65 +92,90 @@ const [showLeftPane, setShowLeftPane] = useState(true);
       {/* 左ペイン: 作品・登場人物・設定概要 & 章ツリー */}
       {showLeftPane ? (
         <aside className="studio-pane studio-sidebar-left" style={{ gap: "16px", display: "flex", flexDirection: "column" }}>
-<div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-             <h2 style={{ fontSize: "1.05rem", color: "var(--accent-cyan)", fontWeight: 700 }}>
-               📖 設定 & キャラクター
-             </h2>
-<div style={{ display: "flex", gap: "6px" }}>
-                {onOpenGraph && (
-                  <button
-                    type="button"
-                    className="inline-ai-btn"
-                    onClick={onOpenGraph}
-                    title="GraphRAG 相関図を開く"
-                    data-testid="btn-open-graph-studio"
-                  >
-                    📊
-                  </button>
-                )}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <h2 style={{ fontSize: "1.05rem", color: "var(--accent-cyan)", fontWeight: 700 }}>
+              📖 設定 & キャラクター
+            </h2>
+            <div style={{ display: "flex", gap: "6px" }}>
+              {onOpenGraph && (
                 <button
                   type="button"
-                  className="pane-toggle-btn"
-                  onClick={() => setShowLeftPane(false)}
-                  title="左サイドバーを折りたたむ"
-                  data-testid="btn-toggle-left-pane"
+                  className="inline-ai-btn"
+                  onClick={onOpenGraph}
+                  title="GraphRAG 相関図を開く"
+                  data-testid="btn-open-graph-studio"
                 >
-                  ◀
+                  📊
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setShowStyleComparison(true)}
-                  className="pane-toggle-btn"
-                  title="文体のBefore/Afterを比較"
-                  data-testid="btn-open-style-comparison-studio"
-                >
-                  🔍
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    // We'll open the branch management tab in the studio workspace
-                    // We need to set the tab to "branches" and maybe open a modal? 
-                    // For simplicity, we'll just set the tab to branches and show a toast.
-                    setTab("branches");
-                    onMessage?.("🌿 IF分岐管理タブを開きました", "info");
+              )}
+              <button
+                type="button"
+                className="pane-toggle-btn"
+                onClick={() => setShowLeftPane(false)}
+                title="左サイドバーを折りたたむ"
+                data-testid="btn-toggle-left-pane"
+              >
+                ◀
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowStyleComparison(true)}
+                className="pane-toggle-btn"
+                title="文体のBefore/Afterを比較"
+                data-testid="btn-open-style-comparison-studio"
+              >
+                🔍
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setTab("branches");
+                  handleToast("🌿 IF分岐管理タブを開きました", "info");
+                }}
+                className="pane-toggle-btn"
+                title="分岐管理を開く"
+                data-testid="btn-open-branch-management-studio"
+              >
+                🌿
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowBookShowcase(true)}
+                title="縦書き装丁プレビューと宣伝カードを表示"
+                data-testid="btn-open-book-showcase-studio"
+              >
+                📖
+              </button>
+              {/* 書籍ショーケースモーダル */}
+              {showBookShowcase && selectedBook && (
+                <div
+                  style={{
+                    position: "fixed",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: "rgba(0,0,0,0.75)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    zIndex: 1000,
+                    backdropFilter: "blur(4px)",
                   }}
-                  className="pane-toggle-btn"
-                  title="分岐管理を開く"
-                  data-testid="btn-open-branch-management-studio"
+                  data-testid="book-showcase-modal"
                 >
-                  🌿
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowBookShowcase(true)}
-                  title="縦書き装丁プレビューと宣伝カードを表示"
-                  data-testid="btn-open-book-showcase-studio"
-                >
-                  📖
-                </button>
-              </div>
-           </div>
+                  <BookShowcaseModal
+                    onClose={() => setShowBookShowcase(false)}
+                    bookData={{
+                      title: selectedBook.title,
+                      author: character.name || "不明な作者",
+                      content: currentChapterText
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
 
           <div className="form-group" style={{ marginBottom: "8px" }}>
             <label className="label">主人公名</label>
@@ -237,39 +274,39 @@ const [showLeftPane, setShowLeftPane] = useState(true);
           }}
           data-testid="studio-tab-bar"
         >
-<button
-             type="button"
-             className={`btn-tab ${tab === "editor" ? "btn-tab--active" : ""}`}
-             onClick={() => setTab("editor")}
-             data-testid="tab-studio-editor"
-           >
-             ✏️ エディタ
-           </button>
-           <button
-             type="button"
-             className={`btn-tab ${tab === "branches" ? "btn-tab--active" : ""}`}
-             onClick={() => setTab("branches")}
-             data-testid="tab-studio-branches"
-           >
-             🌿 IF分岐ルート
-           </button>
-           <button
-             type="button"
-             className={`btn-tab ${tab === "audit" ? "btn-tab--active" : ""}`}
-             onClick={() => setTab("audit")}
-             data-testid="tab-studio-audit"
-           >
-             🧠 矛盾診断レポート
-           </button>
-           <button
-             type="button"
-             className={`btn-tab ${tab === "multimedia" ? "btn-tab--active" : ""}`}
-             onClick={() => setTab("multimedia")}
-             data-testid="tab-studio-multimedia"
-           >
-             🖼️ マルチメディア
-           </button>
-         </div>
+          <button
+            type="button"
+            className={`btn-tab ${tab === "editor" ? "btn-tab--active" : ""}`}
+            onClick={() => setTab("editor")}
+            data-testid="tab-studio-editor"
+          >
+            ✏️ エディタ
+          </button>
+          <button
+            type="button"
+            className={`btn-tab ${tab === "branches" ? "btn-tab--active" : ""}`}
+            onClick={() => setTab("branches")}
+            data-testid="tab-studio-branches"
+          >
+            🌿 IF分岐ルート
+          </button>
+          <button
+            type="button"
+            className={`btn-tab ${tab === "audit" ? "btn-tab--active" : ""}`}
+            onClick={() => setTab("audit")}
+            data-testid="tab-studio-audit"
+          >
+            🧠 矛盾診断レポート
+          </button>
+          <button
+            type="button"
+            className={`btn-tab ${tab === "multimedia" ? "btn-tab--active" : ""}`}
+            onClick={() => setTab("multimedia")}
+            data-testid="tab-studio-multimedia"
+          >
+            🖼️ マルチメディア
+          </button>
+        </div>
 
         {tab === "editor" && (
           <>
@@ -278,6 +315,7 @@ const [showLeftPane, setShowLeftPane] = useState(true);
               onChange={setCurrentChapterText}
               genre={character.genre}
               onToast={handleToast}
+              onCreateBranch={handleCreateBranch}
             />
 
             <NextBeatsPanel
@@ -312,23 +350,23 @@ const [showLeftPane, setShowLeftPane] = useState(true);
               🖼️ <strong>マルチメディア生成</strong>:
               このタブでは挿絵・電子書籍 (ePub/PDF)・マンガ/ショート動画サムネイルなどの二次創作物 ZIP を一括生成できます。
             </div>
-<AssetPackPanel bookId={selectedBookId} />
-           </>
-         )}
-         {tab === "branches" && (
-           <>
-             <BranchManagement bookId={selectedBookId} />
-           </>
-         )}
-         {tab === "audit" && (
-           <>
-             <div style={{ padding: '20px', textAlign: 'center' }}>
-               <h2>🧠 矛盾診断レポート</h2>
-               <p>矛盾診断レポートを表示するには、まず矛盾診断を実行してください。</p>
-             </div>
-           </>
-         )}
-       </main>
+            <AssetPackPanel bookId={selectedBookId} />
+          </>
+        )}
+        {tab === "branches" && (
+          <>
+            <BranchManagement bookId={selectedBookId} />
+          </>
+        )}
+        {tab === "audit" && (
+          <>
+            <div style={{ padding: '20px', textAlign: 'center' }}>
+              <h2>🧠 矛盾診断レポート</h2>
+              <p>矛盾診断レポートを表示するには、まず矛盾診断を実行してください。</p>
+            </div>
+          </>
+        )}
+      </main>
 
       {/* 右ペイン: GraphRAG 専属AI編集者サイドバー */}
       {showRightPane ? (
@@ -351,6 +389,7 @@ const [showLeftPane, setShowLeftPane] = useState(true);
             bookId={selectedBookId}
             currentText={currentChapterText}
             onToast={handleToast}
+            onOpenAuditReport={handleOpenAuditReport}
           />
         </aside>
       ) : null}

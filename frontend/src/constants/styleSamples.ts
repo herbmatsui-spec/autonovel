@@ -1,3 +1,5 @@
+import { StyleComparisonScene } from "../types/styleComparison";
+
 export const styleSamples: StyleComparisonScene[] = [
   {
     id: "action",

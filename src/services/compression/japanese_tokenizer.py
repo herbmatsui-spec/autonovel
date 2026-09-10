@@ -48,7 +48,13 @@ class SudachiConfig:
 
 class JapaneseTokenizer(Protocol):
     """Protocol for Japanese tokenizer implementations."""
-    def extract_nouns(self, text: str, min_length: int = 2) -> List[str]:
+    def extract_nouns(
+        self,
+        text: str,
+        include_proper: bool = True,
+        include_compound: bool = True,
+        min_length: int | None = None,
+    ) -> List[str]:
         ...
 
 
@@ -146,11 +152,18 @@ class RegexJapaneseTokenizer:
     def __init__(self) -> None:
         self._pattern = re.compile(r"[一-龯]{2,}|[ァ-ンヴー]{2,}|[a-zA-Z]{3,}")
 
-    def extract_nouns(self, text: str, min_length: int = 2) -> List[str]:
+    def extract_nouns(
+        self,
+        text: str,
+        include_proper: bool = True,
+        include_compound: bool = True,
+        min_length: int | None = None,
+    ) -> List[str]:
         """Extract noun-like tokens using regex patterns."""
         if not text:
             return []
 
+        effective_min_length = min_length if min_length is not None else 2
         tokens = self._pattern.findall(text)
         filtered = []
         seen = set()
@@ -158,7 +171,7 @@ class RegexJapaneseTokenizer:
         for token in tokens:
             if token in STOP_WORDS:
                 continue
-            if len(token) < min_length:
+            if len(token) < effective_min_length:
                 continue
             if token in seen:
                 continue
@@ -221,7 +234,7 @@ class HybridJapaneseTokenizer:
         all_tokens = sudachi_nouns + regex_tokens
         all_tokens.sort(key=len, reverse=True)
 
-        merged = []
+        merged: list[str] = []
         for token in all_tokens:
             # Skip if this token is a substring of an already selected longer token
             is_substring = any(token in existing for existing in merged)

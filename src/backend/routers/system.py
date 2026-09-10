@@ -78,62 +78,59 @@ async def get_skill_version() -> dict[str, Any]:
 async def recalc_all_book_scores() -> dict[str, Any]:
     """全書籍の BookScore を再計算する（管理者用・並列化対応）"""
     try:
-        from src.backend.database.repository import DataRepository
-        from src.services.book_score_service import BookScoreCalculator, BookScoreRepository
-        from src.infrastructure.database.models.book_score import BookScore as BookScoreModel
-        from sqlalchemy import select
         import asyncio
-
-        repo = DataRepository()
-        session = repo._session_factory()  # type: ignore
-
-        # 全書籍IDを取得
+        from sqlalchemy import delete, select
+        from src.backend.database.core import get_db_manager
+        from src.backend.database.repositories.book_score import BookScoreRepository
         from src.infrastructure.database.models.book import Book as BookModel
-        books_result = await session.execute(select(BookModel.id))
-        book_ids = [row[0] for row in books_result.fetchall()]
+        from src.infrastructure.database.models.book_score import BookScore as BookScoreModel
+        from src.infrastructure.database.models.chapter import Chapter as ChapterModel
+        from src.services.book_score_service import BookScoreCalculator
 
-        book_score_repo = BookScoreRepository(session)
-        calculator = BookScoreCalculator(repository=book_score_repo)
+        db_manager = get_db_manager()
+        async with db_manager.get_session() as session:
+            # 全書籍IDを取得
+            books_result = await session.execute(select(BookModel.id))
+            book_ids = [row[0] for row in books_result.fetchall()]
 
-        # セマフォで同時実行数制限（DB負荷対策）
-        semaphore = asyncio.Semaphore(10)
-        
-        async def recalc_chapter(book_id: int, chapter_number: int):
-            async with semaphore:
-                # 既存スコアを削除
-                await session.execute(
-                    select(BookScoreModel).where(
-                        BookScoreModel.book_id == book_id,
-                        BookScoreModel.chapter_number == chapter_number,
-                    ).delete()
+            book_score_repo = BookScoreRepository(session)
+            calculator = BookScoreCalculator(repository=book_score_repo)
+
+            # セマフォで同時実行数制限（DB負荷対策）
+            semaphore = asyncio.Semaphore(10)
+
+            async def recalc_chapter(book_id: int, chapter_number: int):
+                async with semaphore:
+                    # 既存スコアを削除
+                    await session.execute(
+                        delete(BookScoreModel).where(
+                            BookScoreModel.book_id == book_id,
+                            BookScoreModel.chapter_number == chapter_number,
+                        )
+                    )
+                    # 再計算
+                    from src.agents.orchestrator import AgentContext
+                    ctx = AgentContext(book_id=book_id, branch_id=1, ep_num=chapter_number, artifacts={})
+                    await calculator.calculate(book_id=book_id, chapter_number=chapter_number, ctx=ctx)
+                    return 1
+
+            recalculated = 0
+            # 書籍ごとにタスク作成
+            for book_id in book_ids:
+                chapters_result = await session.execute(
+                    select(ChapterModel.ep_num).where(ChapterModel.book_id == book_id)
                 )
-                # 再計算
-                from src.agents.orchestrator import AgentContext
-                ctx = AgentContext(book_id=book_id, branch_id=1, ep_num=chapter_number, artifacts={})
-                await calculator.calculate(book_id=book_id, chapter_number=chapter_number, ctx=ctx)
-                return 1
+                chapter_numbers = [row[0] for row in chapters_result.fetchall()]
 
-        recalculated = 0
-        # 書籍ごとにタスク作成
-        for book_id in book_ids:
-            from src.infrastructure.database.models.chapter import Chapter as ChapterModel
-            chapters_result = await session.execute(
-                select(ChapterModel.ep_num).where(ChapterModel.book_id == book_id)
-            )
-            chapter_numbers = [row[0] for row in chapters_result.fetchall()]
+                # チャンプタスクを並列実行
+                tasks = [recalc_chapter(book_id, ch_num) for ch_num in chapter_numbers]
+                if tasks:
+                    results = await asyncio.gather(*tasks, return_exceptions=True)
+                    for r in results:
+                        if isinstance(r, (int, float)):
+                            recalculated += int(r)
 
-            # チャンプタスクを並列実行
-            tasks = [recalc_chapter(book_id, ch_num) for ch_num in chapter_numbers]
-            if tasks:
-                results = await asyncio.gather(*tasks, return_exceptions=True)
-                for r in results:
-                    if isinstance(r, Exception):
-                        # エラーはログのみ、継続
-                        pass
-                    else:
-                        recalculated += r
-
-        return {"status": "success", "recalculated_count": recalculated}
+            return {"status": "success", "recalculated_count": recalculated}
     except Exception as e:
         return {"status": "error", "detail": str(e)}
 
@@ -150,15 +147,15 @@ class ImprovementPriorityItem(BaseModel):
 async def get_improvement_priorities(book_id: int) -> dict[str, Any]:
     """書籍の改善優先順位を取得する（管理者用）"""
     try:
-        from src.backend.database.repository import DataRepository
-        from src.services.book_score_service import BookScoreCalculator, BookScoreRepository
-        from sqlalchemy.ext.asyncio import AsyncSession
+        from src.backend.database.core import get_db_manager
+        from src.backend.database.repositories.book_score import BookScoreRepository
+        from src.services.book_score_service import BookScoreCalculator
 
-        repo = DataRepository()
-        session = repo._session_factory()  # type: ignore
-        book_score_repo = BookScoreRepository(session)
-        calculator = BookScoreCalculator(repository=book_score_repo)
-        all_scores = await book_score_repo.get_all_for_book(book_id)
+        db_manager = get_db_manager()
+        async with db_manager.get_session() as session:
+            book_score_repo = BookScoreRepository(session)
+            calculator = BookScoreCalculator(repository=book_score_repo)
+            all_scores = await book_score_repo.get_all_for_book(book_id)
 
         if not all_scores:
             return {"book_id": book_id, "priorities": [], "message": "スコアデータがありません"}
@@ -252,7 +249,7 @@ async def run_ab_test(req: ABTestRequest) -> dict[str, Any]:
 
 
 @router.get("/admin/skills/ab_test/history")
-async def get_ab_test_history(skill_name: str = None) -> dict[str, Any]:
+async def get_ab_test_history(skill_name: str | None = None) -> dict[str, Any]:
     """A/Bテスト履歴を取得する（簡易実装：メトリクスから取得）"""
     try:
         from src.agents.orchestrator import Orchestrator

@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from typing import Any
 
 from src.backend.database.core import DatabaseManager
@@ -27,7 +28,7 @@ class PromptVersionManager:
         async with UnitOfWork(self.db) as uow:
             # 1. バージョンタグの決定 (v1, v2, v3, ...)
             versions = await uow.prompt_versions.get_prompt_versions(book_id, limit=100)
-            key_versions = [v for v in versions if v["prompt_key"] == prompt_key]
+            key_versions = [v for v in versions if v.prompt_key == prompt_key]
             next_num = len(key_versions) + 1
             version_tag = f"v{next_num}"
 
@@ -46,17 +47,19 @@ class PromptVersionManager:
             # 3. 古い無効なバージョンを掃除（最大MAX_HISTORY件）
             if len(key_versions) >= self.MAX_HISTORY:
                 # 日付順で古い順に取得し、上限を超える分を削除
-                sorted_versions = sorted(key_versions, key=lambda x: x["created_at"])
+                sorted_versions = sorted(key_versions, key=lambda x: x.created_at or datetime.min)
                 to_delete = sorted_versions[: (len(key_versions) - self.MAX_HISTORY + 1)]
                 for old_v in to_delete:
                     # アクティブなものは削除しない
-                    if not old_v["is_active"]:
+                    if not old_v.is_active:
                         from sqlalchemy import delete
 
                         from src.backend.database.models import PromptVersion
 
+                        if uow.session is None:
+                            raise RuntimeError("Database session not initialized")
                         await uow.session.execute(
-                            delete(PromptVersion).where(PromptVersion.id == old_v["id"])
+                            delete(PromptVersion).where(PromptVersion.id == old_v.id)
                         )
 
             return new_ver.id
@@ -71,8 +74,8 @@ class PromptVersionManager:
             if ver:
                 from config.project_context import GlobalConfig
 
-                GlobalConfig().set("optimized_prompt_patch", ver["content"])
-                logger.info(f"Activated prompt version {ver['version_tag']} for key {prompt_key}")
+                GlobalConfig().set("optimized_prompt_patch", ver.content)
+                logger.info(f"Activated prompt version {ver.version_tag} for key {prompt_key}")
 
     async def evaluate_and_rollback_if_needed(
         self, book_id: int, prompt_key: str, version_id: int, score_after: float
@@ -89,7 +92,7 @@ class PromptVersionManager:
             # スコア更新
             await uow.prompt_versions.update_score_after(version_id, score_after)
 
-            score_before = ver["score_before"]
+            score_before = ver.score_before
             if score_before is not None:
                 # 劣化（スコアが5%以上または10ポイント以上低下）しているかチェック
                 degradation_threshold = 5.0
@@ -97,7 +100,7 @@ class PromptVersionManager:
                     # ロールバック理由
                     reason = f"自動ロールバック: スコアが {score_before:.1f} から {score_after:.1f} へ劣化しました。"
                     logger.warning(
-                        f"🚨 Prompt performance degraded for version {ver['version_tag']} ({score_before} -> {score_after}). Rolling back..."
+                        f"🚨 Prompt performance degraded for version {ver.version_tag} ({score_before} -> {score_after}). Rolling back..."
                     )
 
                     # このバージョンを非アクティブにしてロールバック理由を記録
@@ -108,22 +111,22 @@ class PromptVersionManager:
                     previous_candidates = [
                         v
                         for v in versions
-                        if v["prompt_key"] == prompt_key
-                        and v["id"] != version_id
-                        and not v["rollback_reason"]
+                        if v.prompt_key == prompt_key
+                        and v.id != version_id
+                        and not v.rollback_reason
                     ]
 
                     if previous_candidates:
                         # 直近のロールバックされていない正常なバージョンをアクティブにする
                         fallback_ver = previous_candidates[0]
                         await uow.prompt_versions.set_active_prompt_version(
-                            book_id, prompt_key, fallback_ver["id"]
+                            book_id, prompt_key, fallback_ver.id
                         )
                         from config.project_context import GlobalConfig
 
-                        GlobalConfig().set("optimized_prompt_patch", fallback_ver["content"])
+                        GlobalConfig().set("optimized_prompt_patch", fallback_ver.content)
                         logger.info(
-                            f"Successfully rolled back to version {fallback_ver['version_tag']}"
+                            f"Successfully rolled back to version {fallback_ver.version_tag}"
                         )
                     else:
                         # 候補がない場合はデフォルト（空文字列）に戻す

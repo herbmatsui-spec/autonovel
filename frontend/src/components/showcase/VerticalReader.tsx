@@ -52,7 +52,7 @@ export const VerticalReader: React.FC<VerticalReaderProps> = ({
 
   // Handle keyboard navigation
   useEffect(() => {
-    const handleKeyDown = (e: React.KeyboardEvent) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "ArrowRight") {
         setCurrentPage((prev) => Math.min(prev + 1, pages.length - 1));
       } else if (e.key === "ArrowLeft") {

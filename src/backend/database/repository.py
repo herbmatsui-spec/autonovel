@@ -10,7 +10,7 @@ from typing import Any
 from sqlalchemy import desc, select
 
 from src.backend.database.core import DatabaseManager, SessionLocal
-from src.backend.database.models import Bible, Book, Chapter, Character, Plot
+from .models import Bible, Book, Chapter, Character, Plot
 from src.infrastructure.database.models.task import Task
 
 from .uow_context import current_uow

@@ -49,19 +49,19 @@ class GeminiProvider(LLMProvider):
             # 例外のマッピング
             err_msg = str(e).lower()
             if "429" in err_msg or "rate limit" in err_msg:
-                raise LLMRateLimitError(f"Gemini API Rate Limit: {e}", e) from e
+                raise LLMRateLimitError(f"Gemini API Rate Limit: {e}", original=e) from e
             if "401" in err_msg or "auth" in err_msg:
-                raise LLMAuthenticationError(f"Gemini API Auth Error: {e}", e) from e
+                raise LLMAuthenticationError(f"Gemini API Auth Error: {e}", original=e) from e
             if "400" in err_msg or "invalid" in err_msg:
-                raise LLMInvalidRequestError(f"Gemini API Invalid Request: {e}", e) from e
+                raise LLMInvalidRequestError(f"Gemini API Invalid Request: {e}", original=e) from e
             if "safety" in err_msg or "blocked" in err_msg:
-                raise LLMContentFilterError(f"Gemini Content Filter: {e}", e) from e
+                raise LLMContentFilterError(f"Gemini Content Filter: {e}", original=e) from e
             if "500" in err_msg or "internal" in err_msg:
-                raise LLMServerError(f"Gemini Server Error: {e}", e) from e
+                raise LLMServerError(f"Gemini Server Error: {e}", original=e) from e
             if "timeout" in err_msg:
-                raise LLMTimeoutError(f"Gemini Timeout: {e}", e) from e
+                raise LLMTimeoutError(f"Gemini Timeout: {e}", original=e) from e
 
-            raise LLMUnknownError(f"Unknown Gemini Error: {e}", e) from e
+            raise LLMUnknownError(f"Unknown Gemini Error: {e}", original=e) from e
 
     @track_llm_call
     async def generate_json(
@@ -90,19 +90,19 @@ class GeminiProvider(LLMProvider):
             # 例外のマッピング
             err_msg = str(e).lower()
             if "429" in err_msg or "rate limit" in err_msg:
-                raise LLMRateLimitError(f"Gemini API Rate Limit: {e}", e) from e
+                raise LLMRateLimitError(f"Gemini API Rate Limit: {e}", original=e) from e
             if "401" in err_msg or "auth" in err_msg:
-                raise LLMAuthenticationError(f"Gemini API Auth Error: {e}", e) from e
+                raise LLMAuthenticationError(f"Gemini API Auth Error: {e}", original=e) from e
             if "400" in err_msg or "invalid" in err_msg:
-                raise LLMInvalidRequestError(f"Gemini API Invalid Request: {e}", e) from e
+                raise LLMInvalidRequestError(f"Gemini API Invalid Request: {e}", original=e) from e
             if "safety" in err_msg or "blocked" in err_msg:
-                raise LLMContentFilterError(f"Gemini Content Filter: {e}", e) from e
+                raise LLMContentFilterError(f"Gemini Content Filter: {e}", original=e) from e
             if "500" in err_msg or "internal" in err_msg:
-                raise LLMServerError(f"Gemini Server Error: {e}", e) from e
+                raise LLMServerError(f"Gemini Server Error: {e}", original=e) from e
             if "timeout" in err_msg:
-                raise LLMTimeoutError(f"Gemini Timeout: {e}", e) from e
+                raise LLMTimeoutError(f"Gemini Timeout: {e}", original=e) from e
 
-            raise LLMUnknownError(f"Unknown Gemini Error: {e}", e) from e
+            raise LLMUnknownError(f"Unknown Gemini Error: {e}", original=e) from e
 
     def _parse_usage(self, usage_metadata: Any) -> dict[str, int]:
         """Gemini SDK の usage メタデータを共通形式に変換"""

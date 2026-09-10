@@ -7,7 +7,7 @@ DomainProfileService:  ドメイン固有のテキスト生成補助メソッド
 
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 # ランタイム上書き用レジストリ
 _domain_values: Dict[str, Any] = {}
@@ -349,7 +349,7 @@ class CommercialDataLoader:
     }
 
     # 市場トレンドデータ（簡易版）
-    MARKET_TREND_DATA: Dict[str, Dict[str, Any]] = {
+    MARKET_TREND_DATA: Dict[str, Any] = {
         "trending_tropes": {
             "2024_h2": [
                 "スラム・辺境からのはい上がり",

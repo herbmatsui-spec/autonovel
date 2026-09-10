@@ -60,6 +60,7 @@ class WritingGenerator:
         style_tag: Any = None,
         regeneration_focus: list[str] = None,
         writing_focus: list[str] = None,
+        regeneration_directive: str = None,
     ) -> tuple[int, list[dict[str, Any]]]:
         """エピソード生成パイプラインを実行"""
         self.branch_id = branch_id
@@ -78,6 +79,7 @@ class WritingGenerator:
             style_tag=style_tag,
             regeneration_focus=regeneration_focus or [],
             writing_focus=writing_focus or [],
+            regeneration_directive=regeneration_directive,
         )
 
     async def generate_episodes(
@@ -93,6 +95,7 @@ class WritingGenerator:
         style_tag: Any = None,
         regeneration_focus: list[str] = None,
         writing_focus: list[str] = None,
+        regeneration_directive: str = None,
     ) -> int:
         """単発エピソード生成（EpisodePipeline 経由）"""
         result = await self.generate_episodes_pipeline(
@@ -107,6 +110,7 @@ class WritingGenerator:
             style_tag=style_tag,
             regeneration_focus=regeneration_focus or [],
             writing_focus=writing_focus or [],
+            regeneration_directive=regeneration_directive,
         )
         return result[0]  # total_chars
 
@@ -163,6 +167,7 @@ class WritingAgent:
         reporter: Any,
         branch_id: int = 1,
         style_tag: Any = None,
+        regeneration_directive: str = None,
     ) -> tuple[int, list[dict[str, Any]]]:
         return await self.generator.generate_episodes_pipeline(
             book_id=book_id,
@@ -174,6 +179,7 @@ class WritingAgent:
             reporter=reporter,
             branch_id=branch_id,
             style_tag=style_tag,
+            regeneration_directive=regeneration_directive,
         )
 
     async def generate_episodes(
@@ -187,6 +193,7 @@ class WritingAgent:
         reporter: Any,
         branch_id: int = 1,
         style_tag: Any = None,
+        regeneration_directive: str = None,
     ) -> int:
         return await self.generator.generate_episodes(
             book_id=book_id,
@@ -198,6 +205,7 @@ class WritingAgent:
             reporter=reporter,
             branch_id=branch_id,
             style_tag=style_tag,
+            regeneration_directive=regeneration_directive,
         )
 
     async def analyze_and_import_chapter(

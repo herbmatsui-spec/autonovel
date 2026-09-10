@@ -15,7 +15,7 @@ from src.models.illustration_point import IllustrationPoint
 
 if TYPE_CHECKING:
     from src.backend.background import StatusReporter
-    from src.backend.engine import UltimateHegemonyEngine
+    from src.backend.orchestrator_engine_adapter import OrchestratorEngineAdapter as UltimateHegemonyEngine
 
 
 class WorkflowContext(BaseModel):

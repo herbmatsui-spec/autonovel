@@ -64,6 +64,10 @@ async def create_book(payload: BookCreateRequest, api_key: str = Depends(require
             marketing_data={},
         )
         b = await uow.books.get_book(book_id)
+    if not b:
+        from src.core.exceptions import NotFoundError
+
+        raise NotFoundError("Book not found after creation", resource_type="Book", resource_id=str(book_id))
 
     return {
         "id": b.id,

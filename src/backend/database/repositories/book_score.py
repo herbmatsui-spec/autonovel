@@ -20,6 +20,9 @@ class BookScoreRepository(BaseRepository[BookScore]):
         )
         return result.scalars().first()
 
+    async def save(self, score: BookScore) -> None:
+        self.add(score)
+
     async def get_all_for_book(self, book_id: int) -> list[BookScore]:
         result = await self.session.execute(
             select(BookScore)

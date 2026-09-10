@@ -5,7 +5,7 @@ import { Editor } from "./editor/Editor";
 import { AiSuggestions } from "./editor/AiSuggestions";
 import { promoteToStudio } from "../api/easyMode";
 import { BookItem } from "../types";
-import { BookShowcaseModal } from "../showcase/BookShowcaseModal";
+import { BookShowcaseModal } from "./showcase/BookShowcaseModal";
 
 interface ExportPanelProps {
   output?: string;

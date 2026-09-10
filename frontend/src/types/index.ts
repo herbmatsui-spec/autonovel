@@ -48,4 +48,5 @@ export * from "./styleComparison";
 export * from "./marketingShowcase";
 export * from "./books";
 export * from "./editorSettings";
+export * from "./orchestrated";
 

@@ -1,6 +1,16 @@
 import React, { useState } from "react";
 
-export const StyleTuningSliders: React.FC<{ onChange: (params: StyleTuningParams) => void }> = () => {
+export interface StyleTuningParams {
+  kemeritsu: number;
+  bodyStop: number;
+  metaphor: number;
+}
+
+interface StyleTuningSlidersProps {
+  onChange: (params: StyleTuningParams) => void;
+}
+
+export const StyleTuningSliders: React.FC<StyleTuningSlidersProps> = ({ onChange }) => {
   const [kemeritsu, setKemeritsu] = useState(3);
   const [bodyStop, setBodyStop] = useState(50);
   const [metaphor, setMetaphor] = useState(50);

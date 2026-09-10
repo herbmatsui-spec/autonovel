@@ -3,7 +3,10 @@
 
 from __future__ import annotations
 
+import asyncio
+import json
 import logging
+import os
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Request
@@ -15,6 +18,8 @@ from src.backend.observability.health import metrics
 from src.backend.rate_limit import generate_limiter
 from src.backend.tasks.generation_tasks import generate_chapter_orchestrated_task
 from src.backend.tasks.huey import huey
+from src.agents.event_bus import EventBus, AgentEvent
+from sse_starlette.sse import EventSourceResponse
 
 router = APIRouter(tags=["orchestrated"])
 logger = logging.getLogger(__name__)
@@ -156,3 +161,39 @@ async def export_orchestrated_package(
             "Cache-Control": "no-store",
         },
     )
+
+
+@router.get("/events/{correlation_id}")
+async def orchestrated_events(
+    correlation_id: str,
+    request: Request,
+) -> EventSourceResponse:
+    """オーケストレーション中のAgentEventをSSEでリアルタイム配信。"""
+    use_redis = os.environ.get("USE_REDIS_EVENTS", "false").lower() == "true"
+    event_bus = EventBus(use_redis=use_redis)
+    if use_redis:
+        await event_bus.start_redis()
+
+    queue: asyncio.Queue = asyncio.Queue()
+
+    def handler(event: AgentEvent) -> None:
+        queue.put_nowait(event)
+
+    event_bus.subscribe(correlation_id, lambda e: asyncio.create_task(asyncio.to_thread(handler, e)))
+
+    async def event_generator():
+        try:
+            while True:
+                if await request.is_disconnected():
+                    break
+                try:
+                    event = await asyncio.wait_for(queue.get(), timeout=30.0)
+                    yield {"event": "agent_event", "data": json.dumps(event.__dict__, ensure_ascii=False)}
+                except asyncio.TimeoutError:
+                    yield {"event": "heartbeat", "data": "{}"}
+        finally:
+            event_bus._subs.get(correlation_id, []).remove(handler)
+            if use_redis:
+                await event_bus.stop_redis()
+
+    return EventSourceResponse(event_generator())

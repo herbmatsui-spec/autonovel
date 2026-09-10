@@ -283,15 +283,29 @@ class AuditAgent(SkillAgent):
                     },
                 )
 
+                # Orchestratorのバックトラックメカニズムと統一するため、should_retry=Trueに設定
+                # 次のエージェントはWRITING（再執筆）とし、is_backtrackフラグを設定
+                regeneration_directive = ""
+                if failed_audits:
+                    # 失敗した監査から再生成指示を生成
+                    feedback_list = [audit["feedback"] for audit in failed_audits if audit.get("feedback")]
+                    if feedback_list:
+                        sugg_text = "、".join(feedback_list[:3])  # 上位3件のフィードバックを使用
+                        regeneration_directive = f"【再生成指示 - 品質改善項目】\nスコア向上のため以下を反映して書き直してください: {sugg_text}"
+
                 return AgentResult(
                     next_agent=AgentName.WRITING,
-                    should_retry=False,  # 自動リトライせず、ユーザー承認待ち
+                    should_retry=True,
+                    is_backtrack=True,
+                    error=None,
                     artifacts={
-                        "audit_feedback": "Audit failed - user review required",
+                        "audit_feedback": "Audit failed - retrying writing",
                         "requires_user_review": True,
                         "patch_review_id": patch_review_id,
                         "failed_audits": failed_audits,
                         "learning_adjusted_audits": learning_adjusted_audits,
+                        "audit_status": "rejected",
+                        "regeneration_directive": regeneration_directive,
                     },
                 )
 
@@ -303,13 +317,16 @@ class AuditAgent(SkillAgent):
             })
             return AgentResult(
                 next_agent=AgentName.ILLUSTRATION,
+                should_retry=False,
+                is_backtrack=False,
                 artifacts={
                     "audit_report": {
                         "logical": "passed",
                         "deai": "passed",
                         "ability": "passed",
                         "causal": "passed",
-                    }
+                    },
+                    "audit_status": "passed",
                 },
             )
 

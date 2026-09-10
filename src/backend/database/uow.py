@@ -55,6 +55,10 @@ class UnitOfWork:
         self._prompt_versions: PromptVersionRepository | None = None
         self._prompt_metrics: PromptMetricsRepository | None = None
         self._illustrations: IllustrationRepository | None = None
+        self._collab: CollabRepository | None = None
+        self._cost: CostRepository | None = None
+        self._narrative_metrics: NarrativeMetricRepository | None = None
+        self._trace: TraceRepository | None = None
 
         self.outbox_service = ChromaOutboxService()
         self._chroma_additions: list[dict[str, Any]] = []
@@ -155,6 +159,30 @@ class UnitOfWork:
             self._illustrations = IllustrationRepository(self.session)
         return self._illustrations
 
+    @property
+    def collab(self) -> CollabRepository:
+        if self._collab is None:
+            self._collab = CollabRepository(self.session)
+        return self._collab
+
+    @property
+    def cost(self) -> CostRepository:
+        if self._cost is None:
+            self._cost = CostRepository(self.session)
+        return self._cost
+
+    @property
+    def narrative_metrics(self) -> NarrativeMetricRepository:
+        if self._narrative_metrics is None:
+            self._narrative_metrics = NarrativeMetricRepository(self.session)
+        return self._narrative_metrics
+
+    @property
+    def trace(self) -> TraceRepository:
+        if self._trace is None:
+            self._trace = TraceRepository(self.session)
+        return self._trace
+
     async def __aenter__(self) -> UnitOfWork:
         self.session = self.db.get_session()
         if self.session is None:
@@ -234,5 +262,9 @@ class UnitOfWork:
             self._audit = None
             self._prompt_versions = None
             self._prompt_metrics = None
+            self._collab = None
+            self._cost = None
+            self._narrative_metrics = None
+            self._trace = None
             self._chroma_additions.clear()
             self._chroma_deletions.clear()

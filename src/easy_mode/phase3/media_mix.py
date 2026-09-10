@@ -902,13 +902,13 @@ class MediaMixExporter:
         self.video_gen = VideoScriptGenerator(genre, preset)
 
     def export_all(
-        self, episode: EpisodeResult, series: SeriesResult, formats: list[MediaFormat] = None
+        self, episode: EpisodeResult, series: SeriesResult, formats: list[MediaFormat] | None = None
     ) -> dict[MediaFormat, MediaScript]:
         """全フォーマット出力"""
         if formats is None:
             formats = [MediaFormat.MANGA, MediaFormat.AUDIO_DRAMA, MediaFormat.VIDEO]
 
-        results = {}
+        results: dict[MediaFormat, MediaScript] = {}
         for fmt in formats:
             if fmt == MediaFormat.MANGA:
                 results[fmt] = self.manga_gen.generate(episode, series)

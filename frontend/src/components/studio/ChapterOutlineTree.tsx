@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNovelContext } from "../../context/NovelContext";
 import { ChapterItem } from "../../types";
-import { ChapterProgressBar } from "../ChapterProgressBar";
+import { ChapterProgressBar } from "./ChapterProgressBar";
 import { chapterStatusMap } from "../../constants/chapterStatus";
 import { reorderChapters } from "../../hooks/useChapterReorder";
 
