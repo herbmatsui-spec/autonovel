@@ -60,7 +60,7 @@ class QualityMetricsCollector:
 
     def record(self, metrics: QualityMetrics) -> None:
         self.episode_metrics[metrics.ep_num] = metrics
-        if metrics.genre:
+        if metrics.genre is not None:
             self._update_genre_baseline(metrics)
 
     def get(self, ep_num: int) -> QualityMetrics | None:
@@ -68,6 +68,8 @@ class QualityMetricsCollector:
 
     def _update_genre_baseline(self, metrics: QualityMetrics) -> None:
         genre = metrics.genre
+        if genre is None:
+            return
         if genre not in self.genre_baselines:
             self.genre_baselines[genre] = {
                 "integrity_rate": 0.0,

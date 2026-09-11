@@ -1,0 +1,49 @@
+skills:
+  - name: "easy_mode_planning"
+    class: "src.agents.skills.v1.easy_mode_planning.EasyModePlanningSkill"
+    depends_on: []
+    runs_after: []
+    config:
+      enabled: true
+
+  - name: "easy_mode_plot"
+    class: "src.agents.skills.v1.easy_mode_plot.EasyModePlotSkill"
+    depends_on: ["easy_mode_planning"]
+    runs_after: []
+    config:
+      enabled: true
+
+  - name: "easy_mode_bible"
+    class: "src.agents.skills.v1.easy_mode_bible.EasyModeBibleSkill"
+    depends_on: ["easy_mode_planning"]
+    runs_after: []
+    config:
+      enabled: true
+
+  - name: "easy_mode_context_builder"
+    class: "src.agents.skills.v1.easy_mode_context_builder.EasyModeContextBuilderSkill"
+    depends_on: ["easy_mode_plot", "easy_mode_bible"]
+    runs_after: []
+    config:
+      enabled: true
+
+  - name: "easy_mode_writing"
+    class: "src.agents.skills.v1.easy_mode_writing.EasyModeWritingSkill"
+    depends_on: ["easy_mode_context_builder"]
+    runs_after: []
+    config:
+      enabled: true
+
+  - name: "easy_mode_illustration"
+    class: "src.agents.skills.v1.easy_mode_illustration.EasyModeIllustrationSkill"
+    depends_on: ["easy_mode_writing"]
+    runs_after: []
+    config:
+      enabled: true
+
+  - name: "easy_mode_marketing"
+    class: "src.agents.skills.v1.easy_mode_marketing.EasyModeMarketingSkill"
+    depends_on: ["easy_mode_writing"]
+    runs_after: []
+    config:
+      enabled: true

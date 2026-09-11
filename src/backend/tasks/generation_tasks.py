@@ -107,49 +107,63 @@ async def _generate_orchestrated(payload: dict[str, Any]) -> dict[str, Any]:
         await event_bus.start_redis()
 
     try:
-        # 機能フラグチェック（設定オブジェクト使用）
-        enrichment_enabled = settings.ENRICHMENT_ENABLED
-        
-        # エージェントノード登録
-        nodes = {
-            AgentName.PLANNING: PlanningAgent(repo=repo, llm=llm_adapter).run,
-            AgentName.PLOT: PlotAgent(repo=repo, llm=llm_adapter).run,
-            AgentName.BIBLE: BibleAgent(repo=repo, llm=llm_adapter).run,
-            AgentName.CONTEXT_BUILDER: ContextBuilderAgent(
-                repo=repo,
-                llm=llm_adapter,
-                reflective_rag=reflective_rag,
-                compressor=compressor,
-                social_manager=social_manager,
-            ).run,
-            AgentName.WRITING: WritingAgent(repo=repo, llm=llm_adapter).run,
+        # マニフェスト駆動パイプラインの動的構築 (Step 19)
+        manifest_path = os.environ.get("SKILL_MANIFEST_PATH", "src/agents/skills/manifest.yaml")
+        dependencies = {
+            "repo": repo,
+            "llm": llm_adapter,
+            "image_service": image_service,
+            "reflective_rag": reflective_rag,
+            "compressor": compressor,
+            "social_manager": social_manager,
         }
-        
-        audit_node = AuditAggregatorNode(event_bus=event_bus, repo=repo, llm=llm_adapter)
-        if enrichment_enabled:
-            nodes[AgentName.ENRICHMENT] = EnrichmentAgent(repo=repo, llm=llm_adapter).run
-            nodes[AgentName.AUDIT] = audit_node.run
-            nodes[AgentName.ILLUSTRATION] = IllustrationAgent(
-                image_service=image_service, repo=repo, llm=llm_adapter
-            ).run
-        else:
-            # 従来のパス: Writing -> Audit -> Illustration
-            # ENRICHMENT ノードをパススルーとして追加（WritingAgent が ENRICHMENT を返すため）
-            async def enrichment_passthrough(ctx: AgentContext) -> AgentContext:
-                from src.agents.orchestrator import AgentResult, AgentName
-                return AgentResult(
-                    next_agent=AgentName.AUDIT,
-                    artifacts=ctx.artifacts,
-                )
-            nodes[AgentName.ENRICHMENT] = enrichment_passthrough
-            nodes[AgentName.AUDIT] = audit_node.run
-            nodes[AgentName.ILLUSTRATION] = IllustrationAgent(
-                image_service=image_service, repo=repo, llm=llm_adapter
-            ).run
-        
-        nodes[AgentName.MARKETING] = MarketingAgent(repo=repo, llm=llm_adapter).run
 
-        orchestrator = Orchestrator(nodes, event_bus=event_bus, correlation_id=correlation_id)
+        if os.path.exists(manifest_path):
+            orchestrator = Orchestrator.from_manifest(
+                manifest_path=manifest_path,
+                dependencies=dependencies,
+                event_bus=event_bus,
+                correlation_id=correlation_id,
+            )
+            start_agent = None  # トポロジカル順序の先頭から自動開始
+        else:
+            # マニフェスト不在時のフォールバック登録
+            enrichment_enabled = settings.ENRICHMENT_ENABLED
+            nodes = {
+                AgentName.PLANNING: PlanningAgent(repo=repo, llm=llm_adapter).run,
+                AgentName.PLOT: PlotAgent(repo=repo, llm=llm_adapter).run,
+                AgentName.BIBLE: BibleAgent(repo=repo, llm=llm_adapter).run,
+                AgentName.CONTEXT_BUILDER: ContextBuilderAgent(
+                    repo=repo,
+                    llm=llm_adapter,
+                    reflective_rag=reflective_rag,
+                    compressor=compressor,
+                    social_manager=social_manager,
+                ).run,
+                AgentName.WRITING: WritingAgent(repo=repo, llm=llm_adapter).run,
+            }
+            audit_node = AuditAggregatorNode(event_bus=event_bus, repo=repo, llm=llm_adapter)
+            if enrichment_enabled:
+                nodes[AgentName.ENRICHMENT] = EnrichmentAgent(repo=repo, llm=llm_adapter).run
+                nodes[AgentName.AUDIT] = audit_node.run
+                nodes[AgentName.ILLUSTRATION] = IllustrationAgent(
+                    image_service=image_service, repo=repo, llm=llm_adapter
+                ).run
+            else:
+                async def enrichment_passthrough(ctx: AgentContext) -> AgentResult:
+                    return AgentResult(
+                        next_agent=AgentName.AUDIT,
+                        artifacts=ctx.artifacts,
+                    )
+                nodes[AgentName.ENRICHMENT] = enrichment_passthrough
+                nodes[AgentName.AUDIT] = audit_node.run
+                nodes[AgentName.ILLUSTRATION] = IllustrationAgent(
+                    image_service=image_service, repo=repo, llm=llm_adapter
+                ).run
+            nodes[AgentName.MARKETING] = MarketingAgent(repo=repo, llm=llm_adapter).run
+            orchestrator = Orchestrator(nodes, event_bus=event_bus, correlation_id=correlation_id)
+            start_agent = AgentName.PLANNING
+
         ctx = AgentContext(
             book_id=book_id,
             branch_id=branch_id,
@@ -169,7 +183,7 @@ async def _generate_orchestrated(payload: dict[str, Any]) -> dict[str, Any]:
             },
         )
 
-        final_ctx = await orchestrator.run(ctx, AgentName.PLANNING)
+        final_ctx = await orchestrator.run(ctx, start_agent)
 
         # 最終成果物を取得
         zip_data = final_ctx.artifacts.get("zip_data")
@@ -211,8 +225,12 @@ def _update_task_in_db(
                         if isinstance(char_params, dict)
                         else "ファンタジー (R15)"
                     )
-                    repo.save_or_update_book_with_chapter(
-                        book_id=1,
+                    # Extract book_id from payload, handle missing or invalid
+                    raw_book_id = payload.get("book_id") if payload else None
+                    target_book_id = int(raw_book_id) if raw_book_id is not None and str(raw_book_id).isdigit() and int(raw_book_id) > 0 else None
+                    
+                    saved_book = repo.save_or_update_book_with_chapter(
+                        book_id=target_book_id,
                         title=f"{char_params.get('name', '主人公')}の冒険譚"
                         if isinstance(char_params, dict) and char_params.get("name")
                         else "R15ファンタジー作品",
@@ -220,6 +238,11 @@ def _update_task_in_db(
                         chapter_text=output_text,
                         character_params=char_params if isinstance(char_params, dict) else None,
                     )
+                    # Inject the saved book_id into the result JSON
+                    res_dict["book_id"] = saved_book.id
+                    result_json = json.dumps(res_dict, ensure_ascii=False)
+                    # Update the task result with the injected book_id
+                    repo.set_task_result(task_id, result_json)
                 except Exception as save_err:
                     logger.warning("Auto saving generated book failed: %s", save_err)
         else:

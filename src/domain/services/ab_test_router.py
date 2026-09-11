@@ -19,10 +19,10 @@ class ABTestRouter:
     ensuring consistent assignment across sessions.
     """
 
-    def __init__(self, config: ABTestConfig = None):
+    def __init__(self, config: ABTestConfig | None = None):
         self.config = config or ABTestConfig()
 
-    def get_bucket(self, user_id: str, request_id: str = None) -> int:
+    def get_bucket(self, user_id: str, request_id: str | None = None) -> int:
         """Get bucket number for a user/request combination.
 
         Args:
@@ -37,13 +37,13 @@ class ABTestRouter:
         hash_value = int(hashlib.sha256(combined.encode()).hexdigest(), 16)
         return hash_value % self.config.bucket_count
 
-    def is_in_rollout(self, user_id: str, request_id: str = None) -> bool:
+    def is_in_rollout(self, user_id: str, request_id: str | None = None) -> bool:
         """Check if user/request is within the rollout percentage."""
         bucket = self.get_bucket(user_id, request_id)
         rollout_buckets = int(self.config.bucket_count * (self.config.rollout_percentage / 100.0))
         return bucket < rollout_buckets
 
-    def get_version_tag(self, user_id: str, version_tags: list[str], request_id: str = None) -> str:
+    def get_version_tag(self, user_id: str, version_tags: list[str], request_id: str | None = None) -> str:
         """Select a version tag based on user's bucket.
 
         Args:

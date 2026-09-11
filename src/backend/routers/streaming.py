@@ -8,8 +8,10 @@ import json
 import logging
 from collections.abc import AsyncIterator
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import StreamingResponse
+
+from src.backend.auth import require_api_key
 
 from src.backend.rate_limit import stream_limiter
 from src.domain.entities.easy_mode import EasyModeInput, StreamQueryInput
@@ -163,15 +165,20 @@ async def stream_generation(
     )
 
 
-@router.post("/generate/stream", deprecated=True)
-async def stream_generation_post(input_data: EasyModeInput) -> StreamingResponse:
-    """【非推奨】``GET /generate/stream`` を使用してください。
-
-    EventSource が GET 専用であるため、POST エンドポイントは互換性のためにのみ残す。
-    内部的には ``_stream_generator`` を直接再利用せず、GET ハンドラへの切替を推奨する。
-    """
-    from fastapi import Request as _Request  # noqa: F401
-
-    raise NotImplementedError(
-        "POST /easy_mode/generate/stream は廃止予定です。GET /easy_mode/generate/stream を使用してください。"
+@router.post("/generate/stream")
+async def stream_generation_post(
+    input_data: EasyModeInput,
+    request: Request,
+    api_key: str = Depends(require_api_key),
+) -> StreamingResponse:
+    """POST endpoint for SSE streaming (fully implemented)."""
+    stream_limiter.check(request)
+    return StreamingResponse(
+        _stream_generator(input_data, request),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
     )

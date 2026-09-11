@@ -594,6 +594,31 @@ class CostRecord(Base):
     )
 
 
+class CostLogModel(Base):
+    """個別トークン消費・コスト記録ログ。
+
+    どのエージェントがどのモデルで何トークン消費し、いくら費用が発生したかを記録する。
+    """
+
+    __tablename__ = "cost_consumption_logs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    book_id = Column(Integer, ForeignKey("books.id", ondelete="CASCADE"), nullable=False, index=True)
+    chapter_number = Column(Integer, nullable=True)
+    agent_name = Column(String(100), nullable=False)
+    model_name = Column(String(100), nullable=False)
+    input_tokens = Column(Integer, nullable=False, default=0)
+    output_tokens = Column(Integer, nullable=False, default=0)
+    cost_usd = Column(Float, nullable=False, default=0.0)
+    timestamp = Column(DateTime, server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        Index("idx_cost_log_book_id", "book_id"),
+        Index("idx_cost_log_agent_name", "agent_name"),
+        Index("idx_cost_log_timestamp", "timestamp"),
+    )
+
+
 class GenerationRun(Base):
     __tablename__ = "generation_runs"
 
@@ -612,6 +637,27 @@ class GenerationRun(Base):
     __table_args__ = (
         Index("idx_generation_run_book_id", "book_id"),
         Index("idx_generation_run_chapter_ep", "chapter_ep"),
+    )
+
+
+class TaskWALLogModel(Base):
+    __tablename__ = "task_wal_logs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    task_id = Column(String(64), nullable=False, index=True)
+    dag_id = Column(String(64), nullable=False, index=True)
+    node_id = Column(String(64), nullable=False, index=True)
+    state = Column(String(20), nullable=False)
+    input_json = Column(Text, nullable=True)
+    output_json = Column(Text, nullable=True)
+    heartbeat_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+
+    __table_args__ = (
+        Index("idx_task_wal_logs_dag_id", "dag_id"),
+        Index("idx_task_wal_logs_node_id", "node_id"),
+        Index("idx_task_wal_logs_task_id", "task_id"),
+        Index("idx_task_wal_logs_heartbeat", "heartbeat_at"),
     )
 
 
@@ -851,6 +897,69 @@ CharacterRelationshipDbModel = CharacterRelationship
 CharacterJournalDbModel = CharacterJournal
 CharacterCommentDbModel = CharacterComment
 RelationshipHistoryDbModel = RelationshipHistory
+
+# ==========================================
+# Commercial Publication
+# ==========================================
+
+
+class PublicationScheduleModel(Base):
+    __tablename__ = "publication_schedules"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    book_id = Column(Integer, ForeignKey("books.id"), nullable=False, index=True)
+    platform = Column(String(50), nullable=False)  # "narou", "kakuyomu", "kindle", "kobo"
+    episode_range_start = Column(Integer, nullable=False, default=1)
+    episode_range_end = Column(Integer, nullable=False, default=1)
+    scheduled_at = Column(DateTime, nullable=False)
+    status = Column(String(20), nullable=False, default="pending")  # pending, running, completed, failed, cancelled
+    post_id = Column(String(100), nullable=True)
+    error_message = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+PublicationScheduleDbModel = PublicationScheduleModel
 PlotDbModel = Plot
 PromptVersionDbModel = PromptVersion
 WorldBible = Bible
+
+class PDCAHistorySnapshot(Base):
+    __tablename__ = "pdca_history_snapshots"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    book_id = Column(Integer, ForeignKey("books.id", ondelete="CASCADE"), nullable=False, index=True)
+    chapter_number = Column(Integer, nullable=False)
+    cycle_number = Column(Integer, nullable=False)
+    initial_score = Column(Float, nullable=False)
+    final_score = Column(Float, nullable=False)
+    score_delta = Column(Float, nullable=False)
+    improved_percentage = Column(Float, nullable=False)
+    lowest_dimension = Column(String(100), nullable=False)
+    directives = Column(JSON, nullable=False, default=list)
+    history = Column(JSON, nullable=False, default=list)
+    converged = Column(Boolean, nullable=False, default=False)
+    created_at = Column(DateTime, server_default=func.now())
+
+    __table_args__ = (
+        Index("idx_pdca_history_book_chap", "book_id", "chapter_number"),
+    )
+
+PDCAHistorySnapshotDbModel = PDCAHistorySnapshot
+
+
+class AudioAssetModel(Base):
+    __tablename__ = "audio_assets"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    book_id = Column(Integer, ForeignKey("books.id", ondelete="CASCADE"), nullable=False, index=True)
+    episode_num = Column(Integer, nullable=False)
+    file_path = Column(String(500), nullable=False)
+    duration_seconds = Column(Float, nullable=False, default=0.0)
+    file_size_bytes = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        Index("idx_audio_assets_book_ep", "book_id", "episode_num"),
+    )
+
+AudioAssetDbModel = AudioAssetModel

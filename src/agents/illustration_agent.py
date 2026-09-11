@@ -223,24 +223,125 @@ class IllustrationAgent(SkillAgent):
         return ", ".join(parts)
 
     async def _build_episode_prompt(self, request: IllustrationRequest) -> str:
-        """エピソード用プロンプトを構築 (将来の実装で使用)"""
+        """エピソード用プロンプトを構築 (将来の実装で使用)。
+        シーンテキストから場所、時間帯、登場人物の表情・アクションを抽出して詳細プロンプトを構成。
+        """
         ctx = request.book_context or {}
         title = ctx.get("title", "無題")
         genre = ctx.get("genre", "ファンタジー")
         episode_num = getattr(request, "episode_number", None)
+        scene_text = getattr(request, "scene_text", "") or ""
+
+        # シーンから詳細情報を抽出
+        location, time_of_day, character_details, action = self._extract_scene_details(scene_text)
 
         parts = [
             f"Scene illustration for episode {episode_num} of '{title}'",
             f"Genre: {genre}",
         ]
-        parts.append(
+        
+        # 場所を追加
+        if location:
+            parts.append(f"Location: {location}")
+        
+        # 時間帯を追加
+        if time_of_day:
+            parts.append(f"Time of day: {time_of_day}")
+        
+        # 登場人物の詳細
+        if character_details:
+            parts.append(f"Character details: {character_details}")
+        
+        # アクション
+        if action:
+            parts.append(f"Action: {action}")
+        
+        # 基本的な画像品質指示
+        parts.extend([
             "Detailed background, cinematic lighting, rich detail, manga/anime style, no text or letters in image"
-        )
+        ])
 
         if is_r15(request.safety_level):
             parts.append("Tasteful R15 artistic representation, intimate but not explicit")
 
         return ", ".join(parts)
+
+    def _extract_scene_details(self, scene_text: str) -> tuple[str, str, str, str]:
+        """
+        シーンテキストから場所、時間帯、キャラクター詳細、アクションを抽出する。
+        将来的にはNLPエンティティ抽出に置き換えることができる。
+        """
+        if not scene_text:
+            return "", "", "", ""
+        
+        # 簡易的なキーワードベース抽出（実際の実装ではより高度なNLPを使用）
+        scene_lower = scene_text.lower()
+        
+        # 場所キーワード
+        locations = {
+            "city": ["都市", "街", "町", "downtown", "street", "avenue", "city"],
+            "forest": ["森", "林", "woods", "forest", "jungle"],
+            "school": ["学校", "教室", "school", "classroom", "campus"],
+            "home": ["家", "住宅", "home", "house", "apartment", "apato"],
+            "cafe": ["カフェ", "喫茶店", "cafe", "coffee", "restaurant", "レストラン"],
+            "mountain": ["山", "峠", "mountain", "hill", "peak"],
+            "ocean": ["海", "浜", "beach", "ocean", "sea", "shore"],
+        }
+        
+        location = ""
+        for loc, keywords in locations.items():
+            if any(keyword in scene_lower for keyword in keywords):
+                location = loc
+                break
+        
+        # 時間帯キーワード
+        time_keywords = {
+            "morning": ["朝", "午前", "morning", "dawn", "sunrise"],
+            "afternoon": ["昼", "午後", "afternoon", "noon"],
+            "evening": ["夕方", "夕暮れ", "evening", "dusk", "sunset"],
+            "night": ["夜", "深夜", "night", "midnight", "moonlight", "starlight"],
+            "golden_hour": ["魔法の時間", "golden hour", "twilight"],
+        }
+        
+        time_of_day = ""
+        for time, keywords in time_keywords.items():
+            if any(keyword in scene_lower for keyword in keywords):
+                time_of_day = time
+                break
+        
+        # キャラクター表情キーワード
+        expression_keywords = {
+            "happy": ["笑顔", "嬉し", "楽し", "happy", "smile", "grin"],
+            "sad": ["悲し", "泣", "sad", "tears", "crying", "frown"],
+            "angry": ["怒り", "激怒", "angry", "furious", "rage"],
+            "surprised": ["驚き", "びっくり", "surprised", "shocked", "amazed"],
+            "determined": ["決意", "決闘", "determined", "resolved", "focused"],
+            "calm": ["静か", "穏やか", "calm", "peaceful", "serene"],
+        }
+        
+        character_details = ""
+        for expr, keywords in expression_keywords.items():
+            if any(keyword in scene_lower for keyword in keywords):
+                character_details = expr
+                break
+        
+        # アクションキーワード
+        action_keywords = {
+            "running": ["走る", "sprint", "run", "dash", "駆け"],
+            "fighting": ["戦う", "闘う", "fight", "battle", "combat", "攻撃"],
+            "talking": ["話す", "話し", "talk", "speak", "conversation", "会話"],
+            "thinking": ["考える", "思う", "think", "ponder", "contemplate", "悩む"],
+            "standing": ["立つ", "stand", "pose", "姿勢"],
+            "sitting": ["座る", "sit", "座席"],
+        }
+        
+        action = ""
+        for act, keywords in action_keywords.items():
+            if any(keyword in scene_lower for keyword in keywords):
+                action = act
+                break
+        
+        return location, time_of_day, character_details, action
 
     async def _build_yonkoma_prompt(self, request: IllustrationRequest) -> str:
         """6コマ要約漫画用プロンプトを構築 (画像生成はせず文章のみ返す)。"""

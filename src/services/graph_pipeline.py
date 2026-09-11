@@ -11,6 +11,7 @@ Enhanced with:
 
 from __future__ import annotations
 
+import asyncio
 import time
 import uuid
 from dataclasses import dataclass, field
@@ -87,7 +88,7 @@ class GraphPipelineService:
         self.enable_vector_store = enable_vector_store
         self._vector_store = get_default_store() if enable_vector_store else None
 
-    def process_chapter_knowledge(
+    async def process_chapter_knowledge(
         self,
         session: Session,
         chapter_id: int,
@@ -133,7 +134,7 @@ class GraphPipelineService:
 
         try:
             # 単一トランザクションでチャンク保存とグラフ更新を原子的に実行
-            chunks_count = self._save_chapter_chunks_atomic(session, chapter_id, chapter_text)
+            chunks_count = await self._save_chapter_chunks_atomic(session, chapter_id, chapter_text)
             graph_stats = self._update_knowledge_graph_atomic(session, chapter_id, chapter_text)
 
             # 冪等性キー記録
@@ -171,7 +172,7 @@ class GraphPipelineService:
                 idempotency_key=idempotency_key,
             )
 
-    def process_chapters_batch(
+    async def process_chapters_batch(
         self,
         session: Session,
         chapters: list[tuple[int, str]],
@@ -194,7 +195,7 @@ class GraphPipelineService:
         for chapter_id, chapter_text in chapters:
             try:
                 idempotency_key = f"chapter_{chapter_id}_{uuid.uuid4().hex[:8]}"
-                result = self.process_chapter_knowledge(
+                result = await self.process_chapter_knowledge(
                     session, chapter_id, chapter_text, idempotency_key=idempotency_key
                 )
 
@@ -218,7 +219,7 @@ class GraphPipelineService:
         logger.info("Batch processing completed: %s", stats.to_dict())
         return stats
 
-    def _save_chapter_chunks_atomic(
+    async def _save_chapter_chunks_atomic(
         self,
         session: Session,
         chapter_id: int,
@@ -234,7 +235,7 @@ class GraphPipelineService:
 
         for idx, para in enumerate(paragraphs):
             try:
-                emb = embedding_service.get_embedding(para)
+                emb = await asyncio.to_thread(embedding_service.get_embedding, para)
 
                 # ChapterChunk ORM で保存（PostgreSQL + pgvector対応）
                 chunk = ChapterChunk(
@@ -310,7 +311,7 @@ class GraphPipelineService:
         except Exception as e:
             logger.warning("Vector store sync save failed: %s", e)
 
-    def _update_knowledge_graph_atomic(
+    async def _update_knowledge_graph_atomic(
         self,
         session: Session,
         chapter_id: int,
@@ -321,7 +322,7 @@ class GraphPipelineService:
             return {"entities": 0, "relationships": 0}
 
         # 1. LLM 抽出
-        raw_extraction = extraction_service.extract_graph_from_text(chapter_text)
+        raw_extraction = await extraction_service.extract_graph_from_text(chapter_text)
 
         # 既存エンティティ名との名寄せ（Entity Resolution）
         try:
@@ -332,7 +333,7 @@ class GraphPipelineService:
         existing_names = [
             n.get("name", "") for n in existing_nodes if isinstance(n, dict) and n.get("name")
         ]
-        extraction = extraction_service.resolve_entities(raw_extraction, existing_names)
+        extraction = await extraction_service.resolve_entities(raw_extraction, existing_names)
 
         # バッチ用データ準備
         nodes_to_upsert = self._prepare_nodes(extraction, chapter_id)

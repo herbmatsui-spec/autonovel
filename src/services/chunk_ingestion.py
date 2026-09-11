@@ -16,14 +16,16 @@ async def upsert_chunks(
     chunks: list["ChapterChunk"],
     collection: str,
     batch_size: int = 64,
+    session: Any | None = None,
 ) -> int:
-    """``ChapterChunk`` のリストを埋め込み計算 → ベクトルストアに一括 upsert.
+    """``ChapterChunk`` のリストを埋め込み計算 → ベクトルストア & DB embedding カラムに一括保存 (Step 26).
 
     Args:
         store: 任意の ``BaseVectorStore`` 実装 (Chroma / InMemory 等)
-        chunks: ``content`` が設定済みのチャンクラスト
+        chunks: ``content`` が設定済みのチャンクリスト
         collection: コレクション名
         batch_size: 埋め込みバッチサイズ
+        session: オプションの SQLAlchemy セッション（渡された場合は自動 commit）
 
     Returns:
         登録したドキュメント数
@@ -32,7 +34,18 @@ async def upsert_chunks(
         return 0
 
     texts = [str(c.content) for c in chunks]
-    vectors = embedding_service.embed_texts(texts, batch_size=batch_size)
+    vectors = await embedding_service.embed_texts_async(texts, batch_size=batch_size)
+
+    # Step 26: 各 ChapterChunk の embedding カラムに事前保存
+    for c, vec in zip(chunks, vectors):
+        c.embedding = vec
+
+    if session is not None:
+        try:
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
 
     ids = [str(c.id) for c in chunks]
     metadatas: list[dict[str, Any]] = []
@@ -55,4 +68,44 @@ async def upsert_chunks(
     return len(chunks)
 
 
-__all__ = ["upsert_chunks"]
+async def backfill_missing_embeddings(
+    session: Any,
+    store: "BaseVectorStore" | None = None,
+    collection: str | None = None,
+    batch_size: int = 64,
+) -> int:
+    """未計算 (embedding is None) の既存チャンクを検出し、一括で Embedding をバックフィルする (Step 27).
+
+    Args:
+        session: SQLAlchemy DB セッション
+        store: オプションのベクトルストア
+        collection: オプションのコレクション名
+        batch_size: 埋め込み計算バッチサイズ
+
+    Returns:
+        バックフィル完了件数
+    """
+    from src.infrastructure.database.models.chunk import ChapterChunk
+
+    all_chunks = session.query(ChapterChunk).all()
+    missing_chunks = [c for c in all_chunks if not c.embedding or not isinstance(c.embedding, (list, tuple)) or len(c.embedding) == 0]
+
+    if not missing_chunks:
+        return 0
+
+    total_backfilled = 0
+    for i in range(0, len(missing_chunks), batch_size):
+        batch = missing_chunks[i : i + batch_size]
+        texts = [str(c.content) for c in batch]
+        vectors = await embedding_service.embed_texts_async(texts, batch_size=len(texts))
+
+        for c, vec in zip(batch, vectors):
+            c.embedding = vec
+
+        total_backfilled += len(batch)
+
+    session.commit()
+    return total_backfilled
+
+
+__all__ = ["upsert_chunks", "backfill_missing_embeddings"]

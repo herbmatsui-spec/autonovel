@@ -22,7 +22,7 @@ class PipelineResult:
     """パイプライン結果"""
 
     status: PipelineStatus = PipelineStatus.PENDING
-    data: dict[str, Any] = None
+    data: dict[str, Any] | None = None
     error: str | None = None
     execution_time: float = 0.0
 
@@ -67,7 +67,9 @@ class PipelineManager:
         try:
             # ステージを順に実行
             for stage in self.stages:
-                result = await stage.execute(result.data)
+                if result.data is None:
+                    raise RuntimeError("Pipeline data is None during stage execution")
+                result.data = await stage.execute(result.data)
                 self._current_index += 1
 
             # 成功時：完了状態を設定

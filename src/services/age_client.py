@@ -10,6 +10,8 @@ Enhanced with:
 - agtype parsing and validation
 - Graph statistics and monitoring
 - Batch operations support
+- Hybrid backend support: delegates to HybridGraphFacade for automatic
+  fallback between AGE (PostgreSQL) and NetworkX (SQLite/standalone)
 """
 from __future__ import annotations
 
@@ -32,6 +34,7 @@ from tenacity import (
 
 from src.backend.config import settings
 from src.backend.logging_config import get_logger
+from src.services.graph.hybrid_graph_facade import HybridGraphFacade, get_hybrid_facade
 
 logger = get_logger("age_client")
 
@@ -54,6 +57,9 @@ class CypherResult:
     records: list[dict[str, Any]]
     summary: dict[str, Any]
     execution_time_ms: float
+
+    def __iter__(self):
+        return iter(self.records)
 
 
 @dataclass
@@ -175,6 +181,23 @@ def _dict_to_cypher_map(d: dict) -> str:
     return "{" + ", ".join(parts) + "}"
 
 
+def _sanitize_graph_name(gname: str) -> str:
+    """グラフ名が英数字およびアンダースコアのみで構成されているかを検証する."""
+    if not re.match(r"^[a-zA-Z0-9_]+$", gname):
+        raise ValueError(f"Invalid graph name: '{gname}'. Only alphanumeric characters and underscores are allowed.")
+    return gname
+
+
+def _validate_column_def(column_definition: str) -> str:
+    """戻り値カラム定義がSQLインジェクションを含まない安全な形式かを検証する."""
+    pattern = r"^\s*\(\s*[a-zA-Z0-9_]+(?:\s+[a-zA-Z0-9_]+)?(?:\s*,\s*[a-zA-Z0-9_]+(?:\s+[a-zA-Z0-9_]+)?)*\s*\)\s*$"
+    if not re.match(pattern, column_definition):
+        raise ValueError(f"Invalid column definition format: '{column_definition}'")
+    if any(char in column_definition for char in (";", "-", "/", "\\", "*", "$")):
+        raise ValueError(f"Prohibited characters in column definition: '{column_definition}'")
+    return column_definition
+
+
 class AgeClient:
     """Apache AGE クライアント - 本番グレード実装."""
 
@@ -254,12 +277,15 @@ class AgeClient:
         Returns:
             CypherResult: 構造化された実行結果
         """
-        gname = graph_name or self.default_graph_name
+        gname = _sanitize_graph_name(graph_name or self.default_graph_name)
+        col_def = _validate_column_def(column_definition)
         _ensure_age_session(session)
 
         # AGE 1.8.0 does not support parameterized queries, interpolate parameters
         interpolated_query = _interpolate_cypher_params(cypher_query, parameters)
-        sql = f"SELECT * FROM cypher('{gname}', $$ {interpolated_query} $$) as {column_definition};"
+        # Escape any accidental dollar quote termination
+        safe_query = interpolated_query.replace("$$", r"\$\$")
+        sql = f"SELECT * FROM cypher('{gname}', $$ {safe_query} $$) as {col_def};"
 
         start_time = time.perf_counter()
         try:
@@ -295,11 +321,12 @@ class AgeClient:
         graph_name: str | None = None,
         batch_size: int = 1000,
     ):
-        """大量結果用のストリーミング実行（ジェネレータ）."""
-        gname = graph_name or self.default_graph_name
+        gname = _sanitize_graph_name(graph_name or self.default_graph_name)
+        col_def = _validate_column_def(column_definition)
         _ensure_age_session(session)
 
-        sql = f"SELECT * FROM cypher('{gname}', $$ {cypher_query} $$) as {column_definition};"
+        safe_query = cypher_query.replace("$$", r"\$\$")
+        sql = f"SELECT * FROM cypher('{gname}', $$ {safe_query} $$) as {col_def};"
 
         result = session.execute(text(sql))
         batch = []

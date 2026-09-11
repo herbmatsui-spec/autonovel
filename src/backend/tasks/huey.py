@@ -20,6 +20,8 @@ if settings.HUEY_BACKEND == "redis":
             url=settings.REDIS_URL,
             results=True,
         )
+        # 接続確認 (遅延接続エラーを事前検知)
+        huey.storage.conn.ping()
     except Exception as e:
         logger.warning("Failed to initialize RedisHuey, falling back to SqliteHuey: %s", e)
         sqlite_path = Path(settings.HUEY_SQLITE_PATH)
@@ -92,7 +94,8 @@ async def async_wait_huey_result(
 
     start_time = time.monotonic()
     while time.monotonic() - start_time < timeout:
-        # non-blocking で取得試行 (None または 未解決値の確認)
+        if hasattr(result, "is_ready") and result.is_ready():
+            return result.get(blocking=False)
         val = result.get(blocking=False)
         if val is not None:
             return val

@@ -10,6 +10,7 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+from sqlalchemy import select
 
 from src.backend.database.uow import UnitOfWork
 from src.core.container import AppContainer
@@ -29,9 +30,10 @@ async def diagnose_hooks(book_id: int) -> dict[str, Any]:
     from src.backend.database.models import Chapter
 
     async with UnitOfWork(AppContainer.db()) as uow:
+        if uow.session is None:
+            raise RuntimeError("Database session not initialized")
         result = await uow.session.execute(
-            __import__("sqlalchemy")
-            .select(Chapter)
+            select(Chapter)
             .where(Chapter.book_id == book_id)
             .order_by(Chapter.ep_num)
         )
@@ -54,11 +56,11 @@ async def diagnose_hooks(book_id: int) -> dict[str, Any]:
 @router.post("/books/{book_id}/suggest")
 async def suggest_hook_fix(book_id: int, req: FixRequest) -> dict[str, Any]:
     """指定章のフック改善案を生成する。"""
-    from sqlalchemy import select
-
     from src.backend.database.models import Chapter
 
     async with UnitOfWork(AppContainer.db()) as uow:
+        if uow.session is None:
+            raise RuntimeError("Database session not initialized")
         result = await uow.session.execute(
             select(Chapter).where(Chapter.book_id == book_id).where(Chapter.ep_num == req.ep_num)
         )

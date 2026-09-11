@@ -5,34 +5,55 @@ const backendUrl = process.env.VITE_BACKEND_URL || process.env.BACKEND_URL || "h
 
 export default defineConfig({
   plugins: [react()],
-  server: {
+  resolve: {
+     alias: {
+       '@': '/src',
+     },
+   },
+   server: {
     host: true,
     port: 5173,
     proxy: {
-      "/api": {
-        target: backendUrl,
-        changeOrigin: true,
-      },
-      "/easy_mode": {
-        target: backendUrl,
-        changeOrigin: true,
-      },
-      "/editor": {
-        target: backendUrl,
-        changeOrigin: true,
-      },
-      "/graph": {
-        target: backendUrl,
-        changeOrigin: true,
-      },
-      "/health": {
-        target: backendUrl,
-        changeOrigin: true,
-      },
+      "/api": { target: backendUrl, changeOrigin: true },
+      "/easy_mode": { target: backendUrl, changeOrigin: true },
+      "/editor": { target: backendUrl, changeOrigin: true },
+      "/graph": { target: backendUrl, changeOrigin: true },
+      "/health": { target: backendUrl, changeOrigin: true },
+      "/metrics": { target: backendUrl, changeOrigin: true },
+      "/books": { target: backendUrl, changeOrigin: true },
+      "/plots": { target: backendUrl, changeOrigin: true },
+      "/episodes": { target: backendUrl, changeOrigin: true },
+      "/tasks": { target: backendUrl, changeOrigin: true },
+      "/styles": { target: backendUrl, changeOrigin: true },
+      "/multimedia": { target: backendUrl, changeOrigin: true },
+      "/commercial": { target: backendUrl, changeOrigin: true },
+      "/cost": { target: backendUrl, changeOrigin: true },
+      "/patches": { target: backendUrl, changeOrigin: true },
+      "/novel": { target: backendUrl, changeOrigin: true },
+      "/illustrations": { target: backendUrl, changeOrigin: true },
+      "/export": { target: backendUrl, changeOrigin: true },
+      "/system": { target: backendUrl, changeOrigin: true },
     },
   },
   preview: { host: true, port: 3000 },
-  build: { outDir: "dist" },
+  build: { 
+    outDir: "dist",
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ["react", "react-dom", "react-router-dom"]
+        }
+      }
+    },
+    chunkSizeWarningLimit: 1000,
+    minify: "terser",
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true
+      }
+    }
+  },
   test: {
     environment: "jsdom",
     globals: true,

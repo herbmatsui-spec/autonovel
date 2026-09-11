@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import math
 import threading
@@ -168,6 +169,14 @@ class EmbeddingService:
         vec = results[0]
         self._cache.set(key, vec)
         return vec
+
+    async def get_embedding_async(self, text: str) -> list[float]:
+        """非同期版get_embedding. IOブロッキングをワーカースレッドにオフロード."""
+        return await asyncio.to_thread(self.get_embedding, text)
+
+    async def embed_texts_async(self, texts: list[str], batch_size: int = 32) -> list[list[float]]:
+        """非同期版embed_texts. IOブロッキングをワーカースレッドにオフロード."""
+        return await asyncio.to_thread(self.embed_texts, texts, batch_size)
 
     def get_embeddings_batch(
         self,

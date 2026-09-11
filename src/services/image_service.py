@@ -20,16 +20,20 @@ class ImageService:
 
     def __init__(
         self,
-        api_key: str,
+        api_key: str | None = None,
         storage_dir: str = "static/illustrations",
         default_model: str = "fast",
     ):
-        if not api_key:
+        resolved_key = api_key
+        if not resolved_key:
+            from src.backend.config import settings
+            resolved_key = settings.get_gemini_api_key()
+        if not resolved_key:
             raise ValueError(
                 "ImageService requires a non-empty api_key. "
-                "Set GOOGLE_GENAI_API_KEY or pass api_key explicitly."
+                "Set GEMINI_API_KEY or GOOGLE_GENAI_API_KEY, or pass api_key explicitly."
             )
-        self.client = genai.Client(api_key=api_key)
+        self.client = genai.Client(api_key=resolved_key)
         self.storage_dir = storage_dir
         self.default_model = get_imagen_model_id(default_model)
 
@@ -88,7 +92,8 @@ class ImageService:
             SafetyLevel.BLOCK_FEW.value: "BLOCK_FEW",
             SafetyLevel.R15_CONTENT.value: "BLOCK_MOST",  # R15は露骨な表現を強く遮断
         }
-        threshold = threshold_map.get(getattr(level, "value", level), "BLOCK_SOME")
+        level_val = getattr(level, "value", level)
+        threshold = threshold_map.get(str(level_val), "BLOCK_SOME")
         return [
             types.SafetySetting(
                 category="HARM_CATEGORY_SEXUALLY_EXPLICIT",

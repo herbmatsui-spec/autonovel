@@ -22,13 +22,13 @@ export interface Chapter {
 }
 
 export interface ChapterItem {
-  id?: number;
-  ep_num: number;
-  title: string;
-  summary?: string;
-  content: string;
-  is_catharsis?: boolean;
-  status?: "draft" | "writing" | "completed";
+   id?: number;
+   ep_num: number;
+   title: string;
+   summary?: string;
+   content: string;
+   is_catharsis?: boolean;
+   status?: "draft" | "writing" | "completed" | "polished";
 }
 
 export interface GenerationState {
@@ -40,6 +40,23 @@ export interface GenerationState {
   error: string | null;
 }
 
+export interface UnifiedStreamingState {
+  mode: GenerationMode;
+  isActive: boolean;
+  output: string;
+  agentProgress: Record<string, any>;
+  error: string | undefined;
+}
+
+export type GenerationMode = "standard" | "orchestrated" | "reverse" | "simple" | "easy";
+
 export * from "./editor";
 export * from "./api.generated";
+export * from "./history";
+export * from "./graphInspector";
+export * from "./styleComparison";
+export * from "./marketingShowcase";
+export * from "./books";
+export * from "./editorSettings";
+export * from "./orchestrated";
 

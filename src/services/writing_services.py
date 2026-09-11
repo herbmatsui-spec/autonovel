@@ -32,7 +32,10 @@ else:
             pass
 
 
-from config.project_context import ProjectContext
+try:
+    from config.project_context import ProjectContext
+except ImportError:
+    from src.config.project_context import ProjectContext  # type: ignore
 from src.agents.audit import PlotIntegrityMonitor
 from src.models import WritingContext
 

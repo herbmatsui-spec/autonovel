@@ -65,6 +65,7 @@ class AssetPackRequest(BaseModel):
     include_if_routes: bool = True
     include_media_mix: bool = True
     include_ebook: bool = True
+    include_audio: bool = True
     ebook_formats: list[EbookFormat] = Field(default_factory=lambda: ["epub", "pdf"])  # type: ignore[arg-type]
     media_mix_formats: list[MediaMixFormat] = Field(default_factory=lambda: ["manga"])  # type: ignore[arg-type]
 

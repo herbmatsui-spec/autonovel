@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+import asyncio
+
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
+from src.backend.auth import require_api_key
 from src.services.anti_ai import (
     RuleBasedAntiAIDetector,
     AntiAICorrector,
@@ -12,7 +15,11 @@ from src.services.anti_ai import (
 )
 from src.services.anti_ai.models import AICategory
 
-router = APIRouter(prefix="/admin/anti_ai", tags=["admin", "anti_ai"])
+router = APIRouter(
+    prefix="/admin/anti_ai", 
+    tags=["admin", "anti_ai"], 
+    dependencies=[Depends(require_api_key)]
+)
 
 
 class DetectRequest(BaseModel):
@@ -83,7 +90,8 @@ async def correct(request: CorrectRequest):
             history=[],
         )
 
-    loop_result = _loop_controller.run_sync(
+    loop_result = await asyncio.to_thread(
+        _loop_controller.run_sync,
         request.text,
         max_loops=request.max_loops,
         score_threshold=request.score_threshold,

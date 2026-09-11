@@ -171,6 +171,7 @@ def generate_asset_pack(
         include_if_routes=payload.include_if_routes,
         include_media_mix=payload.include_media_mix,
         include_ebook=payload.include_ebook,
+        include_audio=getattr(payload, "include_audio", True),
         ebook_formats=payload.ebook_formats,
         media_mix_formats=payload.media_mix_formats,
     )
@@ -315,3 +316,112 @@ def serve_file(
         raise HTTPException(status_code=404, detail="file not found")
     media_type = "application/zip" if safe_path.suffix == ".zip" else "application/octet-stream"
     return FileResponse(safe_path, media_type=media_type, filename=safe_path.name)
+
+
+# ==========================================
+# Audio Endpoints (Steps 19, 20, 21)
+# ==========================================
+
+from pydantic import BaseModel, Field
+
+
+class AudioSynthesizeRequest(BaseModel):
+    book_id: int = Field(..., ge=1)
+    episode_num: int = Field(..., ge=1)
+    chapter_text: str | None = None
+    characters: list[str] | None = None
+
+
+@router.post("/audio/synthesize")
+async def trigger_audio_synthesis(
+    payload: AudioSynthesizeRequest,
+    service: MultimediaService = Depends(get_multimedia_service),
+    _api_key: str = Depends(validate_api_key_or_raise),
+) -> dict[str, Any]:
+    """指定章の音声合成ジョブを投入または実行する (Step 19)。"""
+    _check_enabled()
+    chapter_text = payload.chapter_text
+    if not chapter_text:
+        # DBからエピソード本文を取得
+        from src.backend.database.core import get_db_manager
+        from src.backend.database.models import Chapter
+        from sqlalchemy import select
+        db_mgr = get_db_manager()
+        async with db_mgr.session() as session:
+            result = await session.execute(
+                select(Chapter).where(Chapter.book_id == payload.book_id, Chapter.ep_num == payload.episode_num)
+            )
+            chap = result.scalar_one_or_none()
+            if chap:
+                chapter_text = chap.content or ""
+
+    if not chapter_text:
+        raise HTTPException(status_code=400, detail="Chapter text is empty")
+
+    from src.backend.tasks.multimedia_tasks import synthesize_chapter_audio_task
+    task = synthesize_chapter_audio_task(
+        book_id=payload.book_id,
+        episode_num=payload.episode_num,
+        chapter_text=chapter_text,
+        characters=payload.characters,
+    )
+    task_id = getattr(task, "id", str(payload.episode_num))
+    return {"status": "queued", "task_id": task_id, "book_id": payload.book_id, "episode_num": payload.episode_num}
+
+
+@router.get("/audio/{book_id}/{episode_num}")
+async def get_chapter_audio(
+    book_id: int = PathParam(..., ge=1),
+    episode_num: int = PathParam(..., ge=1),
+    _api_key: str = Depends(validate_api_key_or_raise),
+) -> dict[str, Any]:
+    """作品・章ごとの音声アセット情報を取得する (Step 21)。"""
+    _check_enabled()
+    from src.backend.database.core import get_db_manager
+    from src.backend.database.models import AudioAssetModel
+    from sqlalchemy import select
+    db_mgr = get_db_manager()
+    async with db_mgr.session() as session:
+        result = await session.execute(
+            select(AudioAssetModel)
+            .where(AudioAssetModel.book_id == book_id, AudioAssetModel.episode_num == episode_num)
+            .order_by(AudioAssetModel.created_at.desc())
+        )
+        audio = result.scalar_one_or_none()
+        if not audio:
+            raise HTTPException(status_code=404, detail="Audio not found for this chapter")
+
+        return {
+            "audio_id": audio.id,
+            "book_id": audio.book_id,
+            "episode_num": audio.episode_num,
+            "duration_seconds": audio.duration_seconds,
+            "file_size_bytes": audio.file_size_bytes,
+            "stream_url": f"/multimedia/audio/{audio.id}/stream",
+            "created_at": audio.created_at.isoformat() if audio.created_at else None,
+        }
+
+
+@router.get("/audio/{audio_id}/stream")
+async def stream_audio_file(
+    audio_id: int = PathParam(..., ge=1),
+) -> FileResponse:
+    """音声バイナリ (WAV) を配信する (Step 20)。"""
+    _check_enabled()
+    from src.backend.database.core import get_db_manager
+    from src.backend.database.models import AudioAssetModel
+    from sqlalchemy import select
+    db_mgr = get_db_manager()
+    async with db_mgr.session() as session:
+        result = await session.execute(
+            select(AudioAssetModel).where(AudioAssetModel.id == audio_id)
+        )
+        audio = result.scalar_one_or_none()
+        if not audio or not Path(audio.file_path).exists():
+            raise HTTPException(status_code=404, detail="Audio asset file not found")
+
+        return FileResponse(
+            Path(audio.file_path),
+            media_type="audio/wav",
+            filename=Path(audio.file_path).name,
+        )

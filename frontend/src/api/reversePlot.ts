@@ -13,12 +13,13 @@ export async function generateReversePlot(
   genre = "ハイファンタジー (R15)",
   llmConfig?: LLMConfigOverride
 ): Promise<GeneratedPlotStructure> {
+  const hasLlmConfig = llmConfig && (llmConfig.api_key || llmConfig.provider);
   const payload: ReversePlotGenerateRequest = {
     answers,
     target_episodes: targetEpisodes,
     targetEpisodes,
     genre,
-    llm_config: (llmConfig && (llmConfig.api_key || llmConfig.provider)) ? llmConfig : undefined,
+    ...(hasLlmConfig ? { llm_config: llmConfig } : {}),
   };
 
   const res = await fetch(`${BASE}/reverse-generate`, {

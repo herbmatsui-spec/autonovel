@@ -199,11 +199,13 @@ class AuditAggregatorNode:
             "missing_specialists": score_result.missing,
             "audit_retry_count": retry_count,
             "regeneration_directive": regeneration_directive,
+            "audit_status": "rejected" if score_result.overall < min_pass_score else "passed",
         }
 
         # Check if regeneration is required
         if score_result.overall < min_pass_score and retry_count < max_retries:
             artifacts["audit_retry_count"] = retry_count + 1
+            artifacts["audit_status"] = "rejected"
             logger.info(
                 "BookScore %.2f < %.2f (retry %d/%d). Triggering regeneration for %s.",
                 score_result.overall,
@@ -217,9 +219,11 @@ class AuditAggregatorNode:
                 artifacts=artifacts,
                 should_retry=True,
                 error=None,
+                is_backtrack=True,
             )
 
         # Passed audit or reached max retries -> proceed to ILLUSTRATION
+        artifacts["audit_status"] = "passed"
         return AgentResult(
             next_agent=AgentName.ILLUSTRATION,
             artifacts=artifacts,

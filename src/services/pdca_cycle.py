@@ -18,6 +18,8 @@ from src.services.pdca_directive import (
     PDCACycleResult,
     WritingDirective,
 )
+from src.backend.database.models import PDCAHistorySnapshot
+from src.backend.database.repositories.pdca_history import PDCAHistoryRepository
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +36,7 @@ class ClosedLoopPDCARunner:
         max_cycles: int = 3,
         min_improvement_delta: float = 1.5,
         event_bus: Any | None = None,
+        pdca_history_repo: PDCAHistoryRepository | None = None,
     ) -> None:
         self.aggregator = aggregator
         self.writer = writer
@@ -42,6 +45,7 @@ class ClosedLoopPDCARunner:
         self.max_cycles = max(1, max_cycles)
         self.min_improvement_delta = min_improvement_delta
         self.event_bus = event_bus
+        self.pdca_history_repo = pdca_history_repo
 
     async def run_pdca_cycle(
         self,
@@ -113,6 +117,7 @@ class ClosedLoopPDCARunner:
             ctx_for_writer = dict(ctx)
             ctx_for_writer["draft_text"] = current_draft
             ctx_for_writer["pdca_directives"] = directive_prompt
+            ctx_for_writer["actionable_diffs"] = diffs
             ctx_for_writer["pdca_cycle"] = cycle
 
             new_draft = await self._generate_rewrite(ctx_for_writer)
@@ -154,9 +159,17 @@ class ClosedLoopPDCARunner:
             if current_score >= self.target_score:
                 converged = True
                 break
-            elif delta < self.min_improvement_delta and cycle >= 2:
-                logger.info("PDCA stopping early due to plateau (delta %.1f < %.1f)", delta, self.min_improvement_delta)
-                break
+            elif cycle >= 2:
+                # Check improvement percentage (15% threshold for early retry/stop)
+                prev_score = current_score - delta
+                if prev_score > 0:
+                    improvement_pct = (delta / prev_score) * 100.0
+                    if improvement_pct < 15.0:
+                        logger.info(
+                            "PDCA stopping early due to low improvement rate (%.1f%% < 15%%)",
+                            improvement_pct,
+                        )
+                        break
 
         # Final metrics
         score_delta = round(best_score - initial_score, 2)
@@ -174,12 +187,45 @@ class ClosedLoopPDCARunner:
             converged=converged,
         )
 
+        await self._save_snapshot(result, ctx)
         await self._publish_pdca_finished(result, ctx)
         return best_draft, result
 
     async def _generate_rewrite(self, ctx: dict[str, Any]) -> str:
         """Invoke writer agent or function with directives."""
-        if callable(self.writer):
+        if hasattr(self.writer, "rewrite_for_dimension"):
+            # WritingAgent with PDCA dimension support
+            res = self.writer.rewrite_for_dimension(
+                book_id=ctx.get("book_id", 1),
+                branch_id=ctx.get("branch_id", 1),
+                ep_num=ctx.get("chapter_number") or ctx.get("ep_num", 1),
+                dimension=ctx.get("focus", "reader_experience"),
+                actionable_diffs=ctx.get("actionable_diffs", []),
+                reporter=ctx.get("reporter"),
+            )
+            if asyncio.iscoroutine(res):
+                res = await res
+            if isinstance(res, dict) and "rewritten_text" in res:
+                return str(res["rewritten_text"])
+            return str(ctx.get("draft_text", ""))
+        elif hasattr(self.writer, "rewrite_with_focus"):
+            # WritingAgent instance (legacy)
+            res = self.writer.rewrite_with_focus(
+                book_id=ctx.get("book_id", 1),
+                ep_num=ctx.get("chapter_number") or ctx.get("ep_num", 1),
+                focus=ctx.get("focus", "pdca_improvement"),
+                params={
+                    "actionable_diffs": ctx.get("actionable_diffs", []),
+                    "pdca_directives": ctx.get("pdca_directives", ""),
+                },
+                reporter=ctx.get("reporter"),
+            )
+            if asyncio.iscoroutine(res):
+                res = await res
+            if isinstance(res, dict) and "rewritten_text" in res:
+                return str(res["rewritten_text"])
+            return str(ctx.get("draft_text", ""))
+        elif callable(self.writer):
             res = self.writer(ctx)
             if asyncio.iscoroutine(res):
                 res = await res
@@ -195,6 +241,35 @@ class ClosedLoopPDCARunner:
                 res = await res
             return str(getattr(res, "content", res))
         return str(ctx.get("draft_text", ""))
+
+    async def _save_snapshot(self, result: PDCACycleResult, ctx: dict[str, Any]) -> None:
+        """Save the PDCA cycle result to the database."""
+        if not self.pdca_history_repo:
+            return
+
+        try:
+            snapshot = PDCAHistorySnapshot(
+                book_id=ctx.get("book_id"),
+                chapter_number=ctx.get("chapter_number") or ctx.get("ep_num"),
+                cycle_number=result.cycle_number,
+                initial_score=result.initial_score,
+                final_score=result.final_score,
+                score_delta=result.score_delta,
+                improved_percentage=result.improved_percentage,
+                lowest_dimension=result.lowest_dimension,
+                directives=[d.to_dict() for d in result.directives_applied],
+                history=result.history,
+                converged=result.converged,
+            )
+            self.pdca_history_repo.add(snapshot)
+            logger.info(
+                "PDCA snapshot saved for book %s, chapter %s (cycle %d)",
+                ctx.get("book_id"),
+                ctx.get("chapter_number") or ctx.get("ep_num"),
+                result.cycle_number,
+            )
+        except Exception as e:
+            logger.error("Failed to save PDCA snapshot: %s", e)
 
     async def _publish_pdca_finished(self, result: PDCACycleResult, ctx: dict[str, Any]) -> None:
         """Publish PDCA outcome to event_bus."""

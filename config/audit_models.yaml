@@ -1,0 +1,9 @@
+auditor_models:
+  factual: "google/gemini-1.5-flash"
+  consistency: "google/gemini-1.5-flash"
+  style: "google/gemini-1.5-flash"
+  multimodal: "google/gemini-1.5-flash"
+  creativity: "anthropic/claude-3-5-sonnet-20241022"
+  reader_hook: "openai/gpt-4o"
+  emotion_curve: "anthropic/claude-3-5-sonnet-20241022"
+  structure: "openai/gpt-4o"

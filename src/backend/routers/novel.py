@@ -8,6 +8,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from src.backend.auth import require_api_key
+from src.backend.database.uow import UnitOfWork
+from src.core.container import AppContainer
 from src.models.api_schemas import (
     EpisodeListResponse,
     NovelReportResponse,
@@ -15,7 +17,7 @@ from src.models.api_schemas import (
     ProduceNovelRequest,
     ProduceNovelResponse,
 )
-from src.services.novel_producer import NovelProducer
+from src.legacy.novel_producer import NovelProducer
 from src.services.report_generator import ReportGenerator
 
 router = APIRouter(prefix="/api/novel", tags=["novel"])
@@ -120,49 +122,44 @@ async def get_report(project_id: int):
 async def get_chapter_book_score(book_id: int, chapter_number: int):
     """指定章の BookScore を取得する"""
     try:
-        from src.backend.database.repository import DataRepository
-        from src.services.book_score_service import BookScoreCalculator, BookScoreRepository
-        from sqlalchemy.ext.asyncio import AsyncSession
+        from src.services.book_score_service import BookScoreCalculator
 
-        # 簡易実装: リポジトリ経由で取得
-        repo = DataRepository()
-        session = repo._session_factory()  # type: ignore
-        book_score_repo = BookScoreRepository(session)
-        calculator = BookScoreCalculator(repository=book_score_repo)
-        score_model = await calculator.get_latest_score(book_id, chapter_number)
+        async with UnitOfWork(AppContainer.db()) as uow:
+            calculator = BookScoreCalculator(repository=uow.book_scores)
+            score_model = await calculator.get_latest_score(book_id, chapter_number)
 
-        if score_model is None:
-            raise HTTPException(status_code=404, detail="スコアが見つかりません")
+            if score_model is None:
+                raise HTTPException(status_code=404, detail="スコアが見つかりません")
 
-        # トレンド情報取得（直近3章）
-        trend_3ch = None
-        all_scores = await book_score_repo.get_all_for_book(book_id)
-        if all_scores:
-            # 直近3章
-            recent = all_scores[-3:] if len(all_scores) >= 3 else all_scores
-            if len(recent) >= 2:
-                avg_overall = sum(s.overall_score for s in recent) / len(recent)
-                # 傾向: 最新と3章前の差分
-                trend_slope = recent[-1].overall_score - recent[0].overall_score if len(recent) >= 2 else 0
-                trend_3ch = {
-                    "avg_overall_score": round(avg_overall, 2),
-                    "trend_slope": round(trend_slope, 2),  # 正なら向上、負なら低下
-                    "chapters_count": len(recent),
-                    "recent_scores": [{"chapter": s.chapter_number, "overall": s.overall_score} for s in recent],
-                }
+            # トレンド情報取得（直近3章）
+            trend_3ch = None
+            all_scores = await uow.book_scores.get_all_for_book(book_id)
+            if all_scores:
+                # 直近3章
+                recent = all_scores[-3:] if len(all_scores) >= 3 else all_scores
+                if len(recent) >= 2:
+                    avg_overall = sum(float(s.overall_score) for s in recent) / len(recent)
+                    # 傾向: 最新と3章前の差分
+                    trend_slope = float(recent[-1].overall_score) - float(recent[0].overall_score)
+                    trend_3ch = {
+                        "avg_overall_score": round(avg_overall, 2),
+                        "trend_slope": round(trend_slope, 2),  # 正なら向上、負なら低下
+                        "chapters_count": len(recent),
+                        "recent_scores": [{"chapter": int(s.chapter_number), "overall": float(s.overall_score)} for s in recent],
+                    }
 
-        return BookScoreResponse(
-            book_id=score_model.book_id,
-            chapter_number=score_model.chapter_number,
-            overall_score=score_model.overall_score,
-            structure_score=score_model.structure_score,
-            coherency_score=score_model.coherency_score,
-            factual_grounding_score=score_model.factual_grounding_score,
-            visual_textual_synergy_score=score_model.visual_textual_synergy_score,
-            reader_experience_score=score_model.reader_experience_score,
-            evaluated_at=score_model.evaluated_at.isoformat() if score_model.evaluated_at else None,
-            trend_3ch=trend_3ch,
-        )
+            return BookScoreResponse(
+                book_id=int(score_model.book_id),
+                chapter_number=int(score_model.chapter_number),
+                overall_score=float(score_model.overall_score),
+                structure_score=float(score_model.structure_score),
+                coherency_score=float(score_model.coherency_score),
+                factual_grounding_score=float(score_model.factual_grounding_score),
+                visual_textual_synergy_score=float(score_model.visual_textual_synergy_score),
+                reader_experience_score=float(score_model.reader_experience_score),
+                evaluated_at=score_model.evaluated_at.isoformat() if score_model.evaluated_at else None,
+                trend_3ch=trend_3ch,
+            )
     except HTTPException:
         raise
     except Exception as e:
@@ -182,29 +179,22 @@ class PromotionEligibilityResponse(BaseModel):
 async def check_promotion_eligibility(book_id: int):
     """かんたんモードから上級者Studioへの昇格判定を取得する"""
     try:
-        from src.backend.database.repository import DataRepository
-        from src.services.book_score_service import BookScoreCalculator, BookScoreRepository
-        from sqlalchemy.ext.asyncio import AsyncSession
+        async with UnitOfWork(AppContainer.db()) as uow:
+            all_scores = await uow.book_scores.get_all_for_book(book_id)
 
-        repo = DataRepository()
-        session = repo._session_factory()  # type: ignore
-        book_score_repo = BookScoreRepository(session)
-        calculator = BookScoreCalculator(repository=book_score_repo)
-        all_scores = await book_score_repo.get_all_for_book(book_id)
+            if len(all_scores) < 3:
+                return PromotionEligibilityResponse(
+                    book_id=book_id,
+                    eligible=False,
+                    avg_score=0.0,
+                    trend_slope=0.0,
+                    chapters_evaluated=len(all_scores),
+                    reason="3章以上の評価が必要です",
+                )
 
-        if len(all_scores) < 3:
-            return PromotionEligibilityResponse(
-                book_id=book_id,
-                eligible=False,
-                avg_score=0.0,
-                trend_slope=0.0,
-                chapters_evaluated=len(all_scores),
-                reason="3章以上の評価が必要です",
-            )
-
-        recent = all_scores[-3:]
-        avg_overall = sum(s.overall_score for s in recent) / 3
-        trend_slope = recent[-1].overall_score - recent[0].overall_score
+            recent = all_scores[-3:]
+            avg_overall = sum(float(s.overall_score) for s in recent) / 3
+            trend_slope = float(recent[-1].overall_score) - float(recent[0].overall_score)
 
         eligible = avg_overall >= 80.0 and trend_slope > 0
         reason = None
@@ -247,14 +237,15 @@ class PDCAReportResponse(BaseModel):
 async def get_pdca_report(book_id: int):
     """書籍の PDCA レポートを取得する"""
     try:
-        from src.backend.database.repository import DataRepository
-        from src.services.book_score_service import BookScoreCalculator, BookScoreRepository
+        from src.backend.database.core import get_db_manager
+        from src.backend.database.repositories.book_score import BookScoreRepository
+        from src.services.book_score_service import BookScoreCalculator
 
-        repo = DataRepository()
-        session = repo._session_factory()  # type: ignore
-        book_score_repo = BookScoreRepository(session)
-        calculator = BookScoreCalculator(repository=book_score_repo)
-        report = await calculator.generate_pdca_report(book_id)
+        db_manager = get_db_manager()
+        async with db_manager.get_session() as session:
+            book_score_repo = BookScoreRepository(session)
+            calculator = BookScoreCalculator(repository=book_score_repo)
+            report = await calculator.generate_pdca_report(book_id)
 
         if "error" in report:
             raise HTTPException(status_code=404, detail=report["error"])
@@ -275,15 +266,15 @@ class AlertResponse(BaseModel):
 async def get_book_alerts(book_id: int):
     """書籍のスコアアラートを取得する"""
     try:
-        from src.backend.database.repository import DataRepository
-        from src.services.book_score_service import BookScoreCalculator, BookScoreRepository
+        from src.backend.database.core import get_db_manager
+        from src.backend.database.repositories.book_score import BookScoreRepository
+        from src.services.book_score_service import BookScoreCalculator
 
-        repo = DataRepository()
-        session = repo._session_factory()  # type: ignore
-        book_score_repo = BookScoreRepository(session)
-        calculator = BookScoreCalculator(repository=book_score_repo)
-
-        trend = await calculator.analyze_trend(book_id)
+        db_manager = get_db_manager()
+        async with db_manager.get_session() as session:
+            book_score_repo = BookScoreRepository(session)
+            calculator = BookScoreCalculator(repository=book_score_repo)
+            trend = await calculator.analyze_trend(book_id)
 
         if "error" in trend:
             return {"book_id": book_id, "alerts": []}

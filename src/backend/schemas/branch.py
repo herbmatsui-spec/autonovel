@@ -15,7 +15,7 @@ class BranchResponse(BaseModel):
 
     id: int
     book_id: int
-    name: str
+    name: str | None
     parent_id: int | None = None
     fork_ep_num: int | None = 0
     created_at: datetime | None = None

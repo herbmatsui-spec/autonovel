@@ -2,8 +2,9 @@
 from __future__ import annotations
 
 import pytest
-import schemathesis
-import schemathesis.openapi
+schemathesis = pytest.importorskip("schemathesis")
+if schemathesis is not None:
+    openapi = schemathesis.openapi
 
 
 def test_openapi_schema_available(contract_client):
@@ -57,7 +58,7 @@ def test_api_schema_with_schemathesis(contract_client):
     raw_schema = response.json()
     
     # スキーマから schemathesis オブジェクトを作成
-    schema = schemathesis.openapi.from_dict(raw_schema)
+    schema = openapi.from_dict(raw_schema)
     
     # スキーマオブジェクトが正しく作成されていることを確認
     assert schema is not None
@@ -74,7 +75,7 @@ def api_schema(contract_client):
     response = contract_client.get("/openapi.json")
     assert response.status_code == 200, f"OpenAPI スキーマを取得できませんでした: {response.status_code}"
     raw_schema = response.json()
-    return schemathesis.openapi.from_dict(raw_schema)
+    return openapi.from_dict(raw_schema)
 
 
 def test_api_schema_object_created(api_schema):

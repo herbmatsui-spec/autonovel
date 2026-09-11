@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { AssistAction, SensoryType, ToneType, AssistResponse } from "../../types/editor";
 import { assistContent } from "../../api/editor";
+import { useNovelContext } from "../../context/NovelContext";
+import { useSnapshotHistory } from "../../hooks/useSnapshotHistory";
 
 interface InlineAiToolbarProps {
   selectedText: string;
@@ -49,6 +51,9 @@ export const InlineAiToolbar: React.FC<InlineAiToolbarProps> = ({
     };
   }, [onClose]);
 
+  const { selectedBookId, currentEpNum, currentChapterText } = useNovelContext();
+  const { takeSnapshot } = useSnapshotHistory(selectedBookId, currentEpNum);
+
   const handleAction = async (
     action: AssistAction,
     sensoryType?: SensoryType,
@@ -66,8 +71,8 @@ export const InlineAiToolbar: React.FC<InlineAiToolbarProps> = ({
       const res = await assistContent({
         text: selectedText,
         action,
-        sensory_type: sensoryType,
-        tone_type: toneType,
+        sensory_type: sensoryType ?? null,
+        tone_type: toneType ?? null,
         genre,
         context_before: contextBefore,
         context_after: contextAfter,
@@ -228,6 +233,7 @@ export const InlineAiToolbar: React.FC<InlineAiToolbarProps> = ({
               type="button"
               className="inline-ai-btn inline-ai-btn--active"
               onClick={() => {
+                takeSnapshot("AI推敲前", currentChapterText, "ai_assist");
                 onApplyResult(preview.result_text, "replace");
                 onClose();
               }}
@@ -239,6 +245,7 @@ export const InlineAiToolbar: React.FC<InlineAiToolbarProps> = ({
               type="button"
               className="inline-ai-btn"
               onClick={() => {
+                takeSnapshot("AI推敲前", currentChapterText, "ai_assist");
                 onApplyResult(preview.result_text, "append");
                 onClose();
               }}

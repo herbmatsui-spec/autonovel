@@ -13,6 +13,7 @@ export const AssetPackPanel: React.FC<AssetPackPanelProps> = ({ bookId }) => {
   const [includeIF, setIncludeIF] = useState(true);
   const [includeMediaMix, setIncludeMediaMix] = useState(true);
   const [includeEbook, setIncludeEbook] = useState(true);
+  const [includeAudio, setIncludeAudio] = useState(true);
   const [ebookFmt, setEbookFmt] = useState<EbookFormat[]>(["epub", "pdf"]);
   const [mediaFmt, setMediaFmt] = useState<MediaMixFormat[]>(["manga"]);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
@@ -28,13 +29,14 @@ export const AssetPackPanel: React.FC<AssetPackPanelProps> = ({ bookId }) => {
       include_if_routes: includeIF,
       include_media_mix: includeMediaMix,
       include_ebook: includeEbook,
+      include_audio: includeAudio,
       ebook_formats: ebookFmt,
       media_mix_formats: mediaFmt,
     });
     if (res) {
-      addToast(`Asset pack generated (asset_id=${res.asset_id})`, "success");
+      addToast(`✨ アセットパックを生成しました (asset_id=${res.asset_id})`, "success");
     } else {
-      addToast("Failed to generate asset pack", "error");
+      addToast("❌ アセットパックの生成に失敗しました", "error");
     }
   };
 
@@ -44,9 +46,9 @@ export const AssetPackPanel: React.FC<AssetPackPanelProps> = ({ bookId }) => {
     if (blob) {
       const url = URL.createObjectURL(blob);
       setDownloadUrl(url);
-      addToast("Download ready — click the link to save the ZIP", "info");
+      addToast("✅ ダウンロードの準備ができました", "info");
     } else {
-      addToast("Download failed", "error");
+      addToast("❌ ダウンロードに失敗しました", "error");
     }
   };
 
@@ -61,92 +63,152 @@ export const AssetPackPanel: React.FC<AssetPackPanelProps> = ({ bookId }) => {
     );
   };
 
-  return (
-    <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
-      <h2 style={{ margin: 0 }}>Multimedia Asset Pack</h2>
-      <p style={{ color: "#666", margin: 0 }}>
-        Generate a unified ZIP of IF routes, media-mix scripts, and ebook files for book #{bookId}.
-      </p>
+  const ebookFormats: { value: EbookFormat; label: string }[] = [
+    { value: "epub", label: "EPUB" },
+    { value: "pdf", label: "PDF" },
+    { value: "mobi", label: "MOBI" },
+  ];
 
-      <fieldset style={{ border: "1px solid #ddd", padding: "8px 12px", borderRadius: 6 }}>
-        <legend>Include</legend>
-        <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <input
-            type="checkbox"
-            checked={includeIF}
-            onChange={(e) => setIncludeIF(e.target.checked)}
-          />
-          IF Routes
-        </label>
-        <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <input
-            type="checkbox"
-            checked={includeMediaMix}
-            onChange={(e) => setIncludeMediaMix(e.target.checked)}
-          />
-          Media Mix (台本生成)
-        </label>
-        <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <input
-            type="checkbox"
-            checked={includeEbook}
-            onChange={(e) => setIncludeEbook(e.target.checked)}
-          />
-          eBook (EPUB / PDF)
-        </label>
-      </fieldset>
+  const mediaFormats: { value: MediaMixFormat; label: string }[] = [
+    { value: "manga", label: "マンガ" },
+    { value: "audio_drama", label: "オーディオドラマ" },
+    { value: "video", label: "動画" },
+    { value: "light_novel", label: "ライトノベル" },
+    { value: "webtoon", label: "Webtoon" },
+  ];
+
+  return (
+    <div className="asset-pack-panel">
+      <header className="asset-pack-panel__header">
+        <h2 className="asset-pack-panel__title">📦 マルチメディア二次創作パッケージ</h2>
+        <p className="asset-pack-panel__description">
+          IFルート本文、メディアミックス用台本、電子書籍ファイル(EPUB/PDF)を一括生成・ZIP圧縮します。
+        </p>
+      </header>
+
+      <section className="asset-pack-panel__section">
+        <h3 className="asset-pack-panel__section-title">パッケージに含めるコンテンツ</h3>
+        <div className="asset-pack-panel__toggles">
+          <label className="asset-pack-panel__toggle">
+            <input
+              type="checkbox"
+              checked={includeIF}
+              onChange={(e) => setIncludeIF(e.target.checked)}
+            />
+            <span className="asset-pack-panel__toggle-label">IFルート</span>
+          </label>
+          <label className="asset-pack-panel__toggle">
+            <input
+              type="checkbox"
+              checked={includeMediaMix}
+              onChange={(e) => setIncludeMediaMix(e.target.checked)}
+            />
+            <span className="asset-pack-panel__toggle-label">メディアミックス展開</span>
+          </label>
+          <label className="asset-pack-panel__toggle">
+            <input
+              type="checkbox"
+              checked={includeEbook}
+              onChange={(e) => setIncludeEbook(e.target.checked)}
+            />
+            <span className="asset-pack-panel__toggle-label">電子書籍</span>
+          </label>
+          <label className="asset-pack-panel__toggle">
+            <input
+              type="checkbox"
+              checked={includeAudio}
+              onChange={(e) => setIncludeAudio(e.target.checked)}
+            />
+            <span className="asset-pack-panel__toggle-label">🔊 章朗読音声 (WAV)</span>
+          </label>
+        </div>
+      </section>
 
       {includeEbook && (
-        <fieldset style={{ border: "1px solid #ddd", padding: "8px 12px", borderRadius: 6 }}>
-          <legend>eBook formats</legend>
-          {(["epub", "pdf", "mobi"] as EbookFormat[]).map((f) => (
-            <label key={f} style={{ marginRight: 12 }}>
-              <input
-                type="checkbox"
-                checked={ebookFmt.includes(f)}
-                onChange={() => toggleEbookFmt(f)}
-              />
-              {f.toUpperCase()}
-            </label>
-          ))}
-        </fieldset>
+        <section className="asset-pack-panel__section">
+          <h3 className="asset-pack-panel__section-title">電子書籍フォーマット</h3>
+          <div className="asset-pack-panel__chip-group">
+            {ebookFormats.map(({ value, label }) => (
+              <button
+                key={value}
+                type="button"
+                className={`asset-pack-panel__chip ${ebookFmt.includes(value) ? "active" : ""}`}
+                onClick={() => toggleEbookFmt(value)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </section>
       )}
 
       {includeMediaMix && (
-        <fieldset style={{ border: "1px solid #ddd", padding: "8px 12px", borderRadius: 6 }}>
-          <legend>Media Mix formats</legend>
-          {(["manga", "audio_drama", "video", "light_novel", "webtoon"] as MediaMixFormat[]).map(
-            (f) => (
-              <label key={f} style={{ marginRight: 12 }}>
-                <input
-                  type="checkbox"
-                  checked={mediaFmt.includes(f)}
-                  onChange={() => toggleMediaFmt(f)}
-                />
-                {f}
-              </label>
-            ),
-          )}
-        </fieldset>
+        <section className="asset-pack-panel__section">
+          <h3 className="asset-pack-panel__section-title">メディアミックス展開</h3>
+          <div className="asset-pack-panel__chip-group">
+            {mediaFormats.map(({ value, label }) => (
+              <button
+                key={value}
+                type="button"
+                className={`asset-pack-panel__chip ${mediaFmt.includes(value) ? "active" : ""}`}
+                onClick={() => toggleMediaFmt(value)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </section>
       )}
 
-      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-        <button onClick={onGenerate} disabled={loading || bookId < 1}>
-          {loading ? "Generating..." : "Generate Asset Pack"}
+      <div className="asset-pack-panel__actions">
+        <button
+          type="button"
+          className="btn btn-primary asset-pack-panel__btn-generate"
+          onClick={onGenerate}
+          disabled={loading || bookId < 1}
+        >
+          {loading ? (
+            <>
+              <span className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} />
+              生成中...
+            </>
+          ) : (
+            "📦 アセットパックを生成"
+          )}
         </button>
-        <button onClick={onDownload} disabled={assetId == null}>
-          Prepare download
-        </button>
+
+        {assetId != null && !downloadUrl && (
+          <button
+            type="button"
+            className="btn btn-secondary asset-pack-panel__btn-download"
+            onClick={onDownload}
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <span className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} />
+                準備中...
+              </>
+            ) : (
+              "⬇ ZIPパッケージをダウンロード"
+            )}
+          </button>
+        )}
+
         {downloadUrl && (
-          <a href={downloadUrl} download={`asset_pack_${bookId}.zip`}>
-            ⬇ Download ZIP
+          <a
+            href={downloadUrl}
+            download={`asset_pack_${bookId}.zip`}
+            className="btn btn-success asset-pack-panel__btn-download"
+          >
+            ⬇ ZIPパッケージをダウンロード
           </a>
         )}
       </div>
 
-      {error && <p style={{ color: "crimson" }}>Error: {error}</p>}
+      {error && <p className="asset-pack-panel__error">Error: {error}</p>}
       {taskId && (
-        <p style={{ color: "#444", fontFamily: "monospace" }}>task_id: {taskId}</p>
+        <p className="asset-pack-panel__task-id">task_id: {taskId}</p>
       )}
     </div>
   );

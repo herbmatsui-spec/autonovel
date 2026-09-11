@@ -13,12 +13,8 @@ from src.services.safe_replace import SafeReplacer
 
 logger = logging.getLogger(__name__)
 
-try:
-    from config.erotic_parameters import EroticParameters
-    from config.erotic_video_patterns import VIDEO_PATTERNS, get_all_pattern_instructions
-except ImportError:
-    EroticParameters = None
-    get_all_pattern_instructions = None
+from config.erotic_parameters import EroticParameters
+from config.erotic_video_patterns import VIDEO_PATTERNS, get_all_pattern_instructions
 
 
 SENSORY_PRIORITY = {
@@ -76,6 +72,10 @@ class EroticSpecialist:
         allowed_vocabulary_tier = yaml_preset.get("allowed_vocabulary_tier") if yaml_preset and yaml_preset.get("allowed_vocabulary_tier") else preset.get("allowed_vocabulary_tier", "mild") if preset else "mild"
         vocab = get_vocabulary_for_tier(allowed_vocabulary_tier)
 
+        intensity = getattr(curve, "target_intensity", 2)
+        if params is not None and getattr(params, "base_intensity", None) is not None:
+            intensity = params.base_intensity
+
         metaphor_sample_size = self._get_metaphor_sample_size(intensity, params)
         psychology_sample_size = self._get_psychology_sample_size(intensity, params)
 
@@ -87,7 +87,7 @@ class EroticSpecialist:
         if intensity >= 3:
             parts.append(self._build_multi_layer_prompt(intensity, params))
 
-        if params and params.use_video_patterns and get_all_pattern_instructions:
+        if params and getattr(params, "use_video_patterns", False) and callable(get_all_pattern_instructions):
             parts.append(self._build_video_pattern_section(params, intensity))
 
         for beat in curve.beats:

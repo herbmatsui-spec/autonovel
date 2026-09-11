@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 import logging
+import re
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 
 from src.backend import database
+from src.backend.auth import require_api_key
 from src.backend.config import settings
 from src.infrastructure.database.models.chunk import ChapterChunk
 from src.services.age_client import age_client
@@ -26,6 +28,9 @@ logger = logging.getLogger("graph_router")
 # ============================================================
 
 
+ALLOWED_COLUMN_DEF_PATTERN = re.compile(r"^\s*\(\s*[a-zA-Z0-9_]+(?:\s+[a-zA-Z0-9_]+)?(?:\s*,\s*[a-zA-Z0-9_]+(?:\s+[a-zA-Z0-9_]+)?)*\s*\)\s*$")
+
+
 class CypherQueryRequest(BaseModel):
     """任意のCypherクエリ実行リクエスト."""
 
@@ -33,6 +38,13 @@ class CypherQueryRequest(BaseModel):
     graph_name: str | None = Field(None, description="対象グラフ名")
     parameters: dict[str, Any] | None = Field(None, description="クエリパラメータ")
     column_definition: str = Field("(result agtype)", description="戻り値カラム定義")
+
+    @field_validator("column_definition")
+    @classmethod
+    def validate_column_definition(cls, v: str) -> str:
+        if not ALLOWED_COLUMN_DEF_PATTERN.match(v) or any(char in v for char in (";", "-", "/", "\\", "*", "$")):
+            raise ValueError("Invalid column_definition format: must be in form '(col_name type, ...)' with no special SQL characters")
+        return v
 
 
 class CypherQueryResponse(BaseModel):
@@ -191,7 +203,7 @@ def get_graph_data(
         )
 
         nodes = []
-        for row in node_rows:
+        for row in getattr(node_rows, "records", node_rows):
             node_name = str(row[2]).strip('"') if row[2] else str(row[0])
             nodes.append(
                 {
@@ -211,7 +223,7 @@ def get_graph_data(
         )
 
         edges = []
-        for row in edge_rows:
+        for row in getattr(edge_rows, "records", edge_rows):
             edges.append(
                 {
                     "source": str(row[0]).strip('"'),
@@ -265,7 +277,7 @@ def list_chapter_chunks(
 # ============================================================
 
 
-@router.post("/cypher", response_model=CypherQueryResponse)
+@router.post("/cypher", response_model=CypherQueryResponse, dependencies=[Depends(require_api_key)])
 def execute_cypher(
     request: CypherQueryRequest,
     session: Session = Depends(database.get_db),

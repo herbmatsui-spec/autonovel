@@ -44,17 +44,15 @@ class AuditRepository(BaseRepository):
 
     async def get_issue(self, issue_id: int) -> AuditIssue | None:
         result = await self.session.execute(select(AuditIssue).where(AuditIssue.id == issue_id))
-        row = result.scalar_one_or_none()
-        return self._to_dict(row) if row else None
+        return result.scalar_one_or_none()
 
-    async def get_issues_by_book(self, book_id: int, status: str | None = None) -> list[AuditIssue]:
+    async def get_book_issues(self, book_id: int, status: str | None = None) -> list[AuditIssue]:
         stmt = select(AuditIssue).where(AuditIssue.book_id == book_id)
         if status:
             stmt = stmt.where(AuditIssue.status == status)
         stmt = stmt.order_by(AuditIssue.id.desc())
         result = await self.session.execute(stmt)
-        rows = result.scalars().all()
-        return [self._to_dict(r) for r in rows]
+        return list(result.scalars().all())
 
     async def update_issue_status(
         self, issue_id: int, status: str, resolved_note: str = ""

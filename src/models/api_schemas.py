@@ -271,6 +271,16 @@ class PatchEditRequest(BaseModel):
     content: str
 
 
+class BookCreateRequest(BaseModel):
+    """新規作品作成リクエスト"""
+
+    title: str = Field(..., description="作品タイトル")
+    genre: str = Field(..., description="ジャンル")
+    concept: str = Field(default="", description="コンセプト")
+    synopsis: str = Field(default="", description="あらすじ")
+    target_eps: int = Field(default=10, ge=1, le=100, description="目標話数")
+
+
 # ==========================================
 # 小説制作パイプライン用リクエストモデル
 # ==========================================
@@ -324,18 +334,17 @@ class NovelReportResponse(BaseResponse):
     report: dict[str, Any] | None = Field(default=None, description="レポートデータ")
 
 
-class RollbackRequest(BaseModel):
+class RollbackRequest(AuthenticatedRequest):
     """プロンプトロールバックリクエスト"""
 
     version_id: int
     reason: str | None = "手動ロールバック"
 
 
-class ResolveIssueRequest(BaseModel):
+class ResolveIssueRequest(AuthenticatedRequest):
     """課題解決リクエスト"""
 
     action: str  # 'Auto-Fix', 'Foreshadowing', 'Ignore'
-    api_key: str
 
 
 class ErrorResponse(BaseResponse):
@@ -346,6 +355,69 @@ class ErrorResponse(BaseResponse):
     error_message: str = ""
     detail: str | None = None
 
+
+# ==========================================
+# 品質・BookScore 関連
+# ==========================================
+
+
+class BookScoreHistoryItem(BaseModel):
+    """BookScore 履歴の1エントリ"""
+
+    chapter_number: int
+    overall_score: float
+    structure_score: float
+    coherency_score: float
+    factual_grounding_score: float
+    visual_textual_synergy_score: float
+    reader_experience_score: float
+    evaluated_at: datetime
+    evaluator_version: str | None = None
+
+
+class BookScoreHistoryResponse(BaseResponse):
+    """BookScore 時系列履歴レスポンス"""
+
+    book_id: int
+    history: list[BookScoreHistoryItem] = Field(default_factory=list)
+    benchmarks: dict[str, float] | None = Field(default=None, description="ジャンル平均ベンチマーク")
+
+
+class WritingDirectiveSchema(BaseModel):
+    """PDCA執筆指示のスキーマ"""
+    dimension: str
+    severity: str
+    target_location: str
+    current_issue: str
+    mandatory_instruction: str
+    rationale: str
+    specialist_name: str | None = ""
+
+class PDCAHistoryItem(BaseModel):
+    """PDCAサイクル内の一ステップ履歴"""
+    cycle: int
+    draft_chars: int
+    score: float
+    scores_by_specialist: dict[str, float] = Field(default_factory=dict)
+    calibrated_scores: dict[str, float] = Field(default_factory=dict)
+    lowest_dimension: str | None = None
+    directives_count: int
+    delta: float
+
+class PDCACycleSnapshot(BaseModel):
+    """PDCAサイクル実行結果のスナップショット"""
+    book_id: int
+    chapter_number: int
+    cycle_number: int
+    initial_score: float
+    final_score: float
+    score_delta: float
+    improved_percentage: float
+    lowest_dimension: str
+    directives: list[WritingDirectiveSchema] = Field(default_factory=list)
+    history: list[PDCAHistoryItem] = Field(default_factory=list)
+    converged: bool
+    created_at: datetime = Field(default_factory=datetime.now)
 
 __all__ = [
     "BaseResponse",
@@ -372,6 +444,7 @@ __all__ = [
     "RefineEroticRequest",
     "PatchActionRequest",
     "PatchEditRequest",
+    "BookCreateRequest",
     "RollbackRequest",
     "ResolveIssueRequest",
     "ErrorResponse",

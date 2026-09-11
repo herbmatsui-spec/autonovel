@@ -21,3 +21,6 @@ frontend/dist
 .kilo
 .env
 .env.*
+scripts
+docs
+*.md

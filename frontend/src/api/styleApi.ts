@@ -6,6 +6,7 @@ import {
   StyleEntry,
   StyleCategory,
 } from "../types/style";
+import { StyleTuningParams } from "../types/styleComparison";
 
 const BASE = "/api/styles";
 
@@ -31,6 +32,17 @@ export async function fetchStylePreview(styleId: string): Promise<StyleEntry> {
   const res = await fetch(`${BASE}/${styleId}/preview`);
   if (!res.ok) throw new Error(await res.text());
   return res.json();
+}
+
+export async function getStyleComparisonPreview(styleId: string, sceneId: string, params: StyleTuningParams): Promise<string> {
+  const query = new URLSearchParams();
+  query.append("scene_id", sceneId);
+  query.append("kemeritsu", params.kemeritsu.toString());
+  query.append("bodyStop", params.bodyStop.toString());
+  query.append("metaphor", params.metaphor.toString());
+  const res = await fetch(`${BASE}/${styleId}/preview?${query.toString()}`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.text();
 }
 
 export async function distillStyleFromText(request: DistillRequest): Promise<DistillResponse> {

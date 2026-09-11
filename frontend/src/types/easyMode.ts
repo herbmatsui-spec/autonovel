@@ -15,13 +15,14 @@ export interface LLMConfigOverride {
 }
 
 export interface EasyModeInput {
-  chapter_history: string[];
-  current_chapter: string;
-  character_params: CharacterParams | Record<string, unknown>;
-  content_length_limit: number;
-  target_episodes?: number;
-  style_override?: Record<string, unknown>;
-  llm_config?: LLMConfigOverride;
+    chapter_history: string[];
+    current_chapter: string;
+    character_params: CharacterParams | Record<string, unknown>;
+    content_length_limit: number;
+    target_episodes?: number;
+    style_override?: Record<string, unknown>;
+    llm_config?: LLMConfigOverride;
+    book_id?: number;
 }
 
 export interface GenerationResponse {

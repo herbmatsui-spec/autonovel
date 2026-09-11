@@ -17,7 +17,13 @@ from src.core.container import AppContainer
 
 
 def _get_api_key() -> str:
-    return os.getenv("GOOGLE_GENAI_API_KEY", "")
+    from src.backend.config import settings
+    # Use centralized settings for GEMINI_API_KEY or GOOGLE_GENAI_API_KEY
+    key = settings.GEMINI_API_KEY
+    if not key:
+        import os
+        key = os.getenv("GOOGLE_GENAI_API_KEY") or os.getenv("GEMINI_API_KEY")
+    return key or ""
 
 
 def get_illustration_workflow() -> Any:

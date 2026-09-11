@@ -308,17 +308,18 @@ class MultimediaService:
             path = out_dir / fname
             try:
                 if fmt == "epub":
-                    if not EPUB_AVAILABLE:
-                        path = out_dir / f"{base}.epub.json"
-                        path.write_text(
-                            json.dumps(
-                                {"format": "epub", "title": series.title, "fallback": True},
-                                ensure_ascii=False,
-                            ),
-                            encoding="utf-8",
-                        )
-                    else:
-                        exporter.export_epub(series, path)
+                    # Step 54: Pure Python 商用縦書きEPUB 3ビルダーへの切り替え
+                    from src.services.exporters.epub_commercial_builder import CommercialEpubBuilder
+                    builder = CommercialEpubBuilder()
+                    chap_list = [
+                        {"title": ep.title, "content": ep.content}
+                        for ep in series.episodes
+                    ]
+                    epub_bytes = builder.build_commercial_epub(
+                        novel_meta={"title": series.title},
+                        chapters=chap_list,
+                    )
+                    path.write_bytes(epub_bytes)
                 elif fmt == "pdf":
                     if not PDF_AVAILABLE:
                         path = out_dir / f"{base}.pdf.json"
@@ -427,6 +428,7 @@ class MultimediaService:
         include_if_routes: bool = True,
         include_media_mix: bool = True,
         include_ebook: bool = True,
+        include_audio: bool = True,
         ebook_formats: Sequence[str] = ("epub", "pdf"),
         media_mix_formats: Sequence[str] = ("manga",),
         series: SeriesResult | None = None,
@@ -452,6 +454,23 @@ class MultimediaService:
             mm = self.export_ebook(book_id, formats=ebook_formats, series=series)
             bundle["items"].append({"type": "ebook", "files": mm.files, "asset_id": mm.asset_id})
 
+        # Step 31: 音声ファイルの同梱
+        audio_files = []
+        if include_audio:
+            with self._session() as s:
+                try:
+                    audio_rows = s.execute(
+                        text("SELECT file_path FROM audio_assets WHERE book_id = :book_id"),
+                        {"book_id": book_id},
+                    ).fetchall()
+                    for r in audio_rows:
+                        if r[0] and Path(r[0]).exists():
+                            audio_files.append(str(r[0]))
+                except Exception:
+                    pass
+            if audio_files:
+                bundle["items"].append({"type": "audio", "files": audio_files})
+
         bundle_path = out_dir / "bundle.json"
         bundle_path.write_text(json.dumps(bundle, ensure_ascii=False, indent=2), encoding="utf-8")
 
@@ -459,10 +478,17 @@ class MultimediaService:
         with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
             zf.write(bundle_path, arcname="bundle.json")
             for item in bundle["items"]:
+                item_type = item.get("type", "other")
                 for f in item.get("files", []):
                     p = Path(f)
                     if p.exists():
-                        zf.write(p, arcname=p.name)
+                        if item_type == "audio":
+                            arcname = f"05_音声/{p.name}"
+                        elif item_type == "ebook":
+                            arcname = f"04_電子書籍/{p.name}"
+                        else:
+                            arcname = p.name
+                        zf.write(p, arcname=arcname)
 
         with self._session() as s:
             asset_id = self._record_artifact(
@@ -484,7 +510,8 @@ class MultimediaService:
         return result, task_id
 
     def get_artifacts_by_book(self, book_id: int) -> list[dict[str, Any]]:
-        """特定の book_id に紐づく全アセットメタデータを取得。"""
+        """特定の book_id に紐づく全アセットメタデータ（二次創作および音声アセット）を取得 (Step 22)。"""
+        results = []
         with self._session() as s:
             rows = s.execute(
                 text(
@@ -496,21 +523,53 @@ class MultimediaService:
                 ),
                 {"book_id": book_id},
             ).fetchall()
-        results = []
-        for row in rows:
+            for row in rows:
+                try:
+                    meta = json.loads(row[5]) if row[5] else {}
+                except (json.JSONDecodeError, TypeError):
+                    meta = {}
+                results.append(
+                    {
+                        "asset_id": row[0],
+                        "book_id": row[1],
+                        "asset_type": row[2],
+                        "format": row[3],
+                        "file_path": row[4],
+                        "metadata": meta,
+                        "created_at": row[6].isoformat() if hasattr(row[6], "isoformat") else row[6],
+                    }
+                )
+
+            # 音声アセットも含める
             try:
-                meta = json.loads(row[5]) if row[5] else {}
-            except (json.JSONDecodeError, TypeError):
-                meta = {}
-            results.append(
-                {
-                    "asset_id": row[0],
-                    "book_id": row[1],
-                    "asset_type": row[2],
-                    "format": row[3],
-                    "file_path": row[4],
-                    "metadata": meta,
-                    "created_at": row[6].isoformat() if hasattr(row[6], "isoformat") else row[6],
-                }
-            )
+                audio_rows = s.execute(
+                    text(
+                        """
+                        SELECT id, book_id, episode_num, file_path, duration_seconds, file_size_bytes, created_at
+                        FROM audio_assets WHERE book_id = :book_id
+                        ORDER BY created_at DESC
+                        """
+                    ),
+                    {"book_id": book_id},
+                ).fetchall()
+                for a in audio_rows:
+                    results.append(
+                        {
+                            "asset_id": a[0],
+                            "book_id": a[1],
+                            "asset_type": "audio",
+                            "format": "wav",
+                            "file_path": a[3],
+                            "metadata": {
+                                "episode_num": a[2],
+                                "duration_seconds": a[4],
+                                "file_size_bytes": a[5],
+                            },
+                            "created_at": a[6].isoformat() if hasattr(a[6], "isoformat") else a[6],
+                        }
+                    )
+            except Exception:
+                # audio_assetsテーブルが存在しない・マイグレーション未適用環境での耐障害性
+                pass
+
         return results

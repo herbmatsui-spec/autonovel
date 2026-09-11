@@ -33,6 +33,9 @@ ENRICHMENT_ERROR = "enrichment.error"
 BLIND_REVIEW_ROUND_COMPLETED = "blind_review.round_completed"
 BLIND_REVIEW_SESSION_COMPLETED = "blind_review.session_completed"
 
+# Orchestrator backtrack event
+AGENT_BACKTRACKED = "agent.backtracked"
+
 
 class EventBus:
     def __init__(self, use_redis: bool = False, redis_url: str | None = None):
@@ -167,6 +170,7 @@ __all__ = [
     "ENRICHMENT_ERROR",
     "ENRICHMENT_STARTED",
     "ENRICHMENT_STEP_COMPLETED",
+    "AGENT_BACKTRACKED",
     "AgentEvent",
     "EventBus",
 ]

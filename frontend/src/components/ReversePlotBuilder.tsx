@@ -35,8 +35,12 @@ export const ReversePlotBuilder: React.FC<ReversePlotBuilderProps> = ({
     onTargetEpisodesChange?.(num);
   };
 
-  const handleOptionSelect = (value: string) => {
-    const key = STEP_KEYS[currentStep - 1];
+const handleOptionSelect = (value: string) => {
+    const stepIndex = Math.floor(currentStep) - 1;
+    if (stepIndex < 0 || stepIndex >= STEP_KEYS.length) {
+      return;
+    }
+    const key = STEP_KEYS[stepIndex] as string;
     setAnswers(prev => ({ ...prev, [key]: value }));
     setError(null);
   };
@@ -103,13 +107,18 @@ export const ReversePlotBuilder: React.FC<ReversePlotBuilderProps> = ({
     window.URL.revokeObjectURL(url);
   };
 
-  const step = REVERSE_PLOT_STEPS[currentStep - 1];
-  const currentKey = STEP_KEYS[currentStep - 1];
-  const selectedValue = answers[currentKey];
+const stepIndex = Math.floor(currentStep) - 1;
+    if (stepIndex < 0 || stepIndex >= STEP_KEYS.length) {
+      return null;
+    }
+    const step = REVERSE_PLOT_STEPS[stepIndex];
+    if (!step) return null;
+    const currentKey = STEP_KEYS[stepIndex] as string;
+    const selectedValue = (answers as Record<string, string | undefined>)[currentKey];
 
-  return (
-    <div className="reverse-plot-builder card" data-testid="reverse-plot-builder">
-      {/* 構成目標話数セレクター */}
+   return (
+   <div className="reverse-plot-builder card" data-testid="reverse-plot-builder">
+   {/* 構成目標話数セレクター */}
       <div
         style={{
           marginBottom: '16px',

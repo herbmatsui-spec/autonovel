@@ -11,6 +11,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
+from src.backend.config import settings
 from src.backend.exceptions import AutoNovelException
 from src.core.exceptions import HegemonyError
 
@@ -86,11 +87,13 @@ async def validation_error_handler(request: Request, exc: RequestValidationError
 async def generic_error_handler(request: Request, exc: Exception) -> JSONResponse:
     """未捕捉例外ハンドラ (500)"""
     logger.error("Unhandled error at %s: %s", request.url.path, exc, exc_info=True)
+    is_prod = settings.APP_ENV in ("production", "staging")
+    detail_msg = "内部サーバーエラーが発生しました。" if is_prod else str(exc)
     content = ProblemDetailsResponse(
         type="urn:error:internal-server-error",
         title="Internal Server Error",
         status=500,
-        detail=str(exc),
+        detail=detail_msg,
         instance=str(request.url.path),
         error_code="INTERNAL_ERROR",
         error_message="内部エラーが発生しました",

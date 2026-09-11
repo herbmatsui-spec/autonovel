@@ -196,7 +196,10 @@ export function computeTreeLayout(nodes: BranchTreeNode[], edges: BranchTreeEdge
     // 同じレベル内のノードを水平に配置
     if (levelNodes.length === 1) {
       // 単一ノードの場合は中央に配置
-      levelNodes[0].position = { x: 400, y }; // 中央基準点
+      const singleNode = levelNodes[0];
+      if (singleNode) {
+        singleNode.position = { x: 400, y }; // 中央基準点
+      }
     } else {
       // 複数ノードの場合は均等に配置
       const totalWidth = (levelNodes.length - 1) * levelWidth;

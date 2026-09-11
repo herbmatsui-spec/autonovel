@@ -16,7 +16,7 @@ from src.services.book_score_service import BookScoreCalculator
 try:
     from src.services.anti_ai.loop_controller import AntiAILoopController
 except ImportError:
-    AntiAILoopController = None
+    AntiAILoopController: type[Any] | None = None
 
 logger = logging.getLogger(__name__)
 

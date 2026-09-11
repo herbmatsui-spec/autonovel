@@ -1,47 +1,58 @@
-"""Multimedia 系の Huey タスク。
-
-`generate_asset_pack` を非同期に実行し、DB のタスク状態を更新する。
-"""
-
+"""src/backend/tasks/multimedia_tasks.py - Huey tasks for Audio & Multimedia generation (Step 18)."""
 from __future__ import annotations
 
+import asyncio
 import logging
+from typing import Any
 
-from src.backend.multimedia_service import MultimediaService
 from src.backend.tasks.huey import huey
 
 logger = logging.getLogger(__name__)
 
 
-@huey.task()
-def generate_asset_pack_task(
-    task_id: str,
+@huey.task(retries=2, retry_delay=10)
+def synthesize_chapter_audio_task(
     book_id: int,
-    include_if_routes: bool = True,
-    include_media_mix: bool = True,
-    include_ebook: bool = True,
-    ebook_formats: list[str] | None = None,
-    media_mix_formats: list[str] | None = None,
-) -> dict[str, int | str | None]:
-    """`MultimediaService.generate_asset_pack` を非同期実行する。"""
-    service = MultimediaService()
-    try:
-        result, _ = service.generate_asset_pack(
+    episode_num: int,
+    chapter_text: str,
+    characters: list[str] | None = None,
+) -> dict[str, Any]:
+    """1話分の音声合成をバックグラウンド実行し、DBに永続化するタスク。"""
+    logger.info("synthesize_chapter_audio_task started for book_id=%d, episode_num=%d", book_id, episode_num)
+
+    async def _run() -> dict[str, Any]:
+        from src.services.audio.chapter_synthesizer import ChapterAudioSynthesizer
+        from src.backend.database.core import get_db_manager
+        from src.backend.database.models import AudioAssetModel
+
+        synth = ChapterAudioSynthesizer()
+        result = await synth.synthesize_chapter(
             book_id=book_id,
-            include_if_routes=include_if_routes,
-            include_media_mix=include_media_mix,
-            include_ebook=include_ebook,
-            ebook_formats=ebook_formats or ["epub", "pdf"],
-            media_mix_formats=media_mix_formats or ["manga"],
+            episode_num=episode_num,
+            chapter_text=chapter_text,
+            characters=characters,
         )
-        return {
-            "asset_id": result.asset_id or 0,
-            "file_count": len(result.files),
-            "file_path": result.files[0] if result.files else None,
-        }
-    except Exception as exc:  # noqa: BLE001
-        logger.error("generate_asset_pack_task failed: %s", exc)
-        with service._session() as s:  # type: ignore[attr-defined]
-            service.update_task(s, task_id, status="failed", error=str(exc))
-            s.commit()
-        return {"asset_id": 0, "file_count": 0, "file_path": None, "error": str(exc)}
+
+        file_path = result.get("file_path")
+        if file_path:
+            db_mgr = get_db_manager()
+            async with db_mgr.session() as session:
+                audio_asset = AudioAssetModel(
+                    book_id=book_id,
+                    episode_num=episode_num,
+                    file_path=file_path,
+                    duration_seconds=result.get("duration_seconds", 0.0),
+                    file_size_bytes=result.get("file_size_bytes", 0),
+                )
+                session.add(audio_asset)
+                await session.commit()
+                await session.refresh(audio_asset)
+                result["audio_id"] = audio_asset.id
+
+        return result
+
+    loop = asyncio.new_event_loop()
+    try:
+        return loop.run_until_complete(_run())
+    finally:
+        loop.close()

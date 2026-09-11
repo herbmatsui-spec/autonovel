@@ -101,6 +101,6 @@ describe("Editor API Client", () => {
     });
 
     expect(result.beats.length).toBe(1);
-    expect(result.beats[0].title).toBe("王道の一撃");
+    expect(result.beats[0]?.title).toBe("王道の一撃");
   });
 });

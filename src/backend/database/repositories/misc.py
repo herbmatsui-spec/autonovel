@@ -15,7 +15,9 @@ from src.backend.database.models import (
     CustomStyle,
     InternalState,
     OptimizationHistory,
+    PatchReview,
     PendingPatch,
+    SettingVersion,
     StyleFragment,
 )
 from src.services.errors import retry_on_lock
@@ -227,3 +229,60 @@ class MiscRepository(BaseRepository):
         if task:
             return self._parse_row(self._to_dict(task), ["logs", "result_data"])
         return None
+
+    # ---------- Patch Review (Human-in-the-Loop) ----------
+    async def get_pending_reviews(self, book_id: int) -> list[dict[str, Any]]:
+        """レビュー待ちのパッチ一覧を取得"""
+        result = await self.session.execute(
+            select(PatchReview)
+            .where(PatchReview.book_id == book_id)
+            .where(PatchReview.status == "under_review")
+            .order_by(PatchReview.created_at.desc())
+        )
+        rows = result.scalars().all()
+        return [self._to_dict(r) for r in rows]
+
+    async def get_patch_review(self, review_id: int) -> dict[str, Any] | None:
+        """レビュー詳細を取得"""
+        result = await self.session.execute(
+            select(PatchReview).where(PatchReview.id == review_id)
+        )
+        review = result.scalar_one_or_none()
+        return self._to_dict(review) if review else None
+
+    @retry_on_lock()
+    async def update_patch_review_status(
+        self, review_id: int, status: str, reviewer_id: str | None = None, review_comment: str | None = None
+    ) -> None:
+        """レビューステータスを更新"""
+        await self.session.execute(
+            update(PatchReview)
+            .where(PatchReview.id == review_id)
+            .values(
+                status=status,
+                reviewer_id=reviewer_id,
+                review_comment=review_comment,
+                updated_at=datetime.now(),
+            )
+        )
+
+    # ---------- Setting Versions ----------
+    async def get_setting_versions(self, book_id: int) -> list[dict[str, Any]]:
+        """設定バージョン履歴を取得"""
+        result = await self.session.execute(
+            select(SettingVersion)
+            .where(SettingVersion.book_id == book_id)
+            .order_by(SettingVersion.version_number.desc())
+        )
+        rows = result.scalars().all()
+        return [self._to_dict(r) for r in rows]
+
+    async def get_setting_version(self, book_id: int, version_number: int) -> dict[str, Any] | None:
+        """特定バージョンの設定を取得"""
+        result = await self.session.execute(
+            select(SettingVersion)
+            .where(SettingVersion.book_id == book_id)
+            .where(SettingVersion.version_number == version_number)
+        )
+        version = result.scalar_one_or_none()
+        return self._to_dict(version) if version else None

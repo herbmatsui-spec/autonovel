@@ -6,7 +6,7 @@ from collections import Counter
 from typing import List, Tuple
 
 from src.services.compression.models import RawTextLayerOutput
-from src.services.compression.japanese_tokenizer import create_japanese_tokenizer
+from src.services.compression.japanese_tokenizer import SudachiConfig, create_japanese_tokenizer
 
 try:
     from rank_bm25 import BM25Okapi
@@ -22,14 +22,20 @@ STOP_WORDS = {
 }
 
 
+# Module-level tokenizer instance for tiktoken (created on first use)
+_tiktoken_encoder = None
+
+
 def count_tokens(text: str) -> int:
     """Approximate token count using tiktoken or character multiplier."""
     if not text:
         return 0
     try:
         import tiktoken
-        tokenizer = tiktoken.get_encoding("cl100k_base")
-        return len(tokenizer.encode(text))
+        global _tiktoken_encoder
+        if _tiktoken_encoder is None:
+            _tiktoken_encoder = tiktoken.get_encoding("cl100k_base")
+        return len(_tiktoken_encoder.encode(text))
     except Exception:
         return max(1, int(len(text) * 1.5))
 

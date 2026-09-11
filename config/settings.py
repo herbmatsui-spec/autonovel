@@ -1,13 +1,12 @@
 from functools import lru_cache
 
-from pydantic_settings import BaseSettings
-from pydantic import ConfigDict
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from schemas.config import GlobalConfigModel
 
 
 class ConfigManager:
-    _instance: GlobalConfigModel = None
+    _instance: GlobalConfigModel | None = None
 
     @classmethod
     def get_config(cls) -> GlobalConfigModel:
@@ -29,7 +28,7 @@ class Settings(BaseSettings):
     # Logging
     log_level: str = "INFO"
 
-    model_config = ConfigDict(
+    model_config = SettingsConfigDict(
         env_file = ".env",
         env_file_encoding = "utf-8",
         case_sensitive = False,

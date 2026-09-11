@@ -41,6 +41,7 @@ temp/
 archive/
 
 # frontend
+node_modules/
 frontend/node_modules/
 frontend/dist/
 frontend/coverage/
@@ -62,3 +63,11 @@ temp_*.py
 *.backup*
 autonovel/
 chroma_db/
+*_out.txt
+*.log
+temp.txt
+error.txt
+test_output*.txt
+legacy_refs.txt
+fix_indent.py
+inspect_schema.py

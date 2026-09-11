@@ -24,6 +24,7 @@ from src.backend.routers import (
     books,
     branches,
     commercial,
+    cost,
     easy_mode,
     editor,
     episodes,
@@ -59,6 +60,28 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         logger.info("Huey task queue initialized: %s", health)
     except Exception as e:
         logger.warning("Failed to check Huey health during startup: %s", e)
+
+    # Step 44: LLMプロバイダの認証キー設定検証
+    # Image generation provider keys are also checked here.
+    if settings.LLM_PROVIDER == "gemini" and not settings.get_gemini_api_key():
+        logger.warning("LLM_PROVIDER is 'gemini' but neither GEMINI_API_KEY nor GOOGLE_GENAI_API_KEY is configured.")
+    elif settings.LLM_PROVIDER == "openai" and not settings.OPENAI_API_KEY:
+        logger.warning("LLM_PROVIDER is 'openai' but OPENAI_API_KEY is not configured.")
+    elif settings.LLM_PROVIDER == "claude" and not settings.ANTHROPIC_API_KEY:
+        logger.warning("LLM_PROVIDER is 'claude' but ANTHROPIC_API_KEY is not configured.")
+    elif settings.LLM_PROVIDER == "openrouter" and not settings.OPENROUTER_API_KEY:
+        logger.warning("LLM_PROVIDER is 'openrouter' but OPENROUTER_API_KEY is not configured.")
+    elif settings.LLM_PROVIDER == "ollama":
+        logger.info("LLM_PROVIDER is 'ollama' (local server). No API key required.")
+    elif settings.LLM_PROVIDER == "vllm":
+        logger.info("LLM_PROVIDER is 'vllm' (local server). No API key required.")
+
+    if settings.IMAGE_PROVIDER == "dalle3" and not settings.DALL_E_API_KEY:
+        logger.warning("IMAGE_PROVIDER is 'dalle3' but DALL_E_API_KEY is not configured.")
+    elif settings.IMAGE_PROVIDER == "sd_webui" and not settings.SD_WEBUI_URL:
+        logger.warning("IMAGE_PROVIDER is 'sd_webui' but SD_WEBUI_URL is not configured.")
+    elif settings.IMAGE_PROVIDER == "comfyui" and not settings.COMFYUI_URL:
+        logger.warning("IMAGE_PROVIDER is 'comfyui' but COMFYUI_URL is not configured.")
     yield
 
 
@@ -107,6 +130,7 @@ app.include_router(illustrations.router)
 app.include_router(multimedia.router, prefix="/multimedia", tags=["multimedia"])
 app.include_router(branches.router)
 app.include_router(anti_ai.router)
+app.include_router(cost.router)
 
 
 @app.get("/health")

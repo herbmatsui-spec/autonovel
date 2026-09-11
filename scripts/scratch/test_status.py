@@ -1,0 +1,1 @@
+from src.services.cost_budget_guard import CostBudgetGuard, BudgetStatus; calc = CostCalculator(); guard = CostBudgetGuard(calc, 10.0); status = guard.check_budget_status(1); print(f'Status: {status}')

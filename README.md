@@ -17,7 +17,7 @@
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 [![Type Checked: mypy](https://img.shields.io/badge/type%20checked-mypy-blue)](https://mypy-lang.org/)
 [![Vitest](https://img.shields.io/badge/tested_with-vitest-729B1B?logo=vitest&logoColor=white)](https://vitest.dev/)
-[![Version](https://img.shields.io/badge/version-4.7.1-brightgreen?logo=semver)](https://github.com/herbmatsui-spec/autonovel/releases/tag/v4.7.1)
+[![Version](https://img.shields.io/badge/version-4.8.4-brightgreen?logo=semver)](https://github.com/herbmatsui-spec/autonovel/releases/tag/v4.8.4)
 
 <br />
 
@@ -25,7 +25,7 @@
   <img src="docs/demo.gif" alt="AutoNovel UI & Workflow Demo" width="900" style="border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
 </p>
 
-*▲ AutoNovel v4.7.1: 3案企画ガチャ / 逆算プロット / 上級者Studio / インライン五感推敲 / GraphRAG相関図 / ワンクリックZIP納品 / マルチメディア・eBook / IF分岐・共同編集 (CRDT) / **【第1〜4の柱 統合】文構造保護五感拡充・長編窓枠抽出 (NovelSectionExtractor) / ソーシャル動態追跡 (SocialInteractionManager) / 4階層セマンティック圧縮 (DynamicTaxonomyEngine) / 反射的RAG (HybridRetriever + RRF) / 企画物理サンドボックス (BlindFeedbackPurifier) / 8専門家アンカー採点 (High/Mid/Low) / ベイズ的スコアキャリブレーション / 統一5D BookScore変換 / DAG局所リトライ & 閉ループPDCA再執筆 (CommercialBenchmark 85+ 商業品質達成)****
+*▲ AutoNovel v4.8.4: 商用縦書きEPUB 3組版刷新 / VOICEVOX音声合成基盤 / フロントエンド音声試聴 / 自律レジリエンス・カオス耐性統合 / 3案企画ガチャ / 逆算プロット / 上級者Studio / インライン五感推敲 / GraphRAG相関図 / ワンクリックZIP納品*
 
 </div>
 
@@ -42,7 +42,7 @@ AutoNovel は、AI を活用して Web 小説を **企画から執筆、校正�
 - **マルチメディア生成**：シーン画像・立ち絵・表紙・ボイス・BGM などのアセットパックを生成
 - **eBook エクスポート**：縦書き・EPUB 3 準拠の電子書籍ファイルを直接出力
 - **マルチモード**：初心者向け Easy Mode と、プロ向け Advanced Mode / 上級者 Studio を切り替えて利用可能
-- **共同編集 (CRDT)**：複数執筆者による `ChapterVersion` のベクタークロック同期マージ
+- **共同執筆・レビュー**：章単位のコメントスレッド・メンバー権限管理（※CRDT同期マージはロードマップ予定）
 - **ブラインドピアレビュー**：3案企画ガチャ等で他案を参照せず独立採点（創造的発散を維持）
 - **8専門オーディター並列監査**：一貫性・創造性・読者フック・感情曲線・文体・事実性・構造・マルチモーダル適合性を加重集約
 - **反射的RAGスクリーニング**：BM25キーワード抽出・文脈適合性チェック・最大3回反復でクエリ精緻化
@@ -58,7 +58,137 @@ AutoNovel は、AI を活用して Web 小説を **企画から執筆、校正�
 
 ## 📋 更新履歴 / Changelog
 
-### v4.7.0 (2026-09-08) — 商業品質化・4大改善の柱（Pillar 1〜4）完全統合リリース
+### v4.8.4 (2026-09-11) — 商用縦書きEPUB 3組版刷新・VOICEVOX音声合成基盤・自律レジリエンス統合
+
+全72ステップ詳細実装計画に基づき、EPUB 3組版エンジンの商用完全準拠刷新、VOICEVOX音声合成・章通し朗読基盤、フロントエンド音声プレイヤー・アセットパック統合、およびLLMサーキットブレーカー・カオス障害注入を含む自律レジリエンス検証を完備したメジャー機能リリース。
+
+**📚 商用縦書き EPUB 3 組版エンジンの完全刷新 (`src/services/exporters/`)**
+- `PureEpubPacker`: IDPF / W3C EPUB 3 仕様に完全準拠し、先頭非圧縮 `mimetype` を配置する Pure Python ZIP パッカー
+- `CommercialEpubBuilder`: Kindle / Apple Books / Kobo などの主要リーダーに対応した商用縦書き EPUB 3 生成器
+- 縦書き組版・パーサー群:
+  - `RubyParser`: `｜漢字《ルビ》` および傍点 `《《強調》》` の自動 XHTML 変換
+  - `TcyFormatter`: 1〜2桁の英数字・記号を自動で縦中横 (`<span class="tcy">`) に整形
+  - `TextSanitizer`: JIS X 4051 禁則処理（行頭・行末禁則、三点リーダー・ダッシュの偶数補正）
+  - `VerticalCssTemplates`: 縦書き商用 CSS テンプレート群（段落インデント、フォント指定、余白最適化）
+- 50話以上の大長編小説でも 0.1秒未満でパッキングを完了する超高速エクスポート性能
+
+**🎙️ VOICEVOX 音声合成パイプライン & 章通し朗読 (`src/services/audio/`)**
+- `AudioEngineBase` / `VoicevoxClient` / `MockAudioEngine`: VOICEVOX HTTP API およびモッククライアント抽象層
+- `DialogueExtractor`: 小説本文から地の文とセリフ（「」『』等）を自動判定・分割
+- `SpeakerMapper`: ナレーターおよび登場人物ごとの Voicevox Speaker ID 自動割り当て
+- `AudioCombiner`: Pure Python WAV 結合器（無音パディング付きで複数セリフクリップをシームレス連結）
+- `ChapterSynthesizer`: 章全体のテキストから一括して通し朗読 WAV を生成
+- `AudioAssetModel` & マイグレーション `0026_audio_assets.py`: 音声メタデータおよび保存先パスの DB 永続化
+- Huey 非同期合成タスク (`src/backend/tasks/multimedia_tasks.py`) & ストリーミング配信 API (`/api/multimedia/audio/...`)
+- ワンクリック納品 ZIP パッケージ（`05_音声/`）への章朗読 WAV 自動格納
+
+**🎧 フロントエンド音声試聴プレイヤー & エディタ統合 (`frontend/src/`)**
+- `AudioPlayer` コンポーネント: 再生/一時停止、プログレスバー、0.8x〜2.0x 再生速度変更、音量調整、WAV ダウンロード
+- `useChapterAudio` フック: 合成進捗の自動ポーリングとキャッシュ管理
+- `EditorToolbar` / `Editor`: エディタからワンクリックで音声合成をトリガーし、上部インラインプレイヤーで即座に試聴可能
+- `AssetPackPanel`: 音声アセット生成および ZIP パッケージ同梱オプションのトグル対応
+
+**🛡️ 自律レジリエンス・カオス耐性 & グラフエンジン強化**
+- `LLMCircuitBreaker`: 障害検知時のサーキットブレーカー、クールダウン管理、フォールバックチェーン自動切り替え
+- `NetworkXGraphStore`: BFS 探索および MultiDiGraph サブグラフ抽出ロジックの修正・安定化
+- `ChaosInjector`: 擬似レイテンシ・例外・障害注入フィクスチャによる E2E 回帰テスト自動化
+- 全5フェーズヘルスチェックスクリプト (`scripts/health_check_complete.py`) および利用ガイド (`docs/MULTIMODAL_AUDIO_EPUB_GUIDE.md`) 追加
+
+---
+
+### v4.8.2 (2026-09-10) — 監査モデルルーター・PDCA品質ダッシュボード・テスト安定化
+
+v4.8.1の品質向上リリース。監査専用モデルルーティングによるコスト最適化、PDCA履歴永続化・品質ダッシュボード(レーダーチャート/トレンド/指示カード)実装、品質API・監査ルーティングテスト追加、非同期エンジン/Redisユーティリティ強化、設定・依存関係整理、全テスト安定化・フレーキー撲滅を実現。
+
+**🎯 監査モデルルーター・コスト最適化 (`src/agents/specialists/model_router.py`)**
+- `ModelRouter`: 監査専門家8種×タスク種別(planning/writing/audit/illustration)の最適モデル自動選択
+- タスク複雑度・予算・レイテンシ要件・品質閾値による動的ルーティング、フォールバックチェーン完備
+- `config/audit_models.yaml`: 専門家別推奨モデル・コスト上限・品質スコア閾値の設定外部化
+- `src/backend/routers/cost.py`: コスト監視・予算アラート・モデル使用統計API追加
+- 新規テスト: `tests/unit/test_auditor_model_router.py`, `test_audit_routing_cost.py` (ルーティング精度・コスト削減検証)
+
+**📊 PDCA履歴・品質ダッシュボード (`src/backend/database/repositories/pdca_history.py` 等)**
+- Alembic移行 `0022_pdca_history.py`: PDCAサイクル履歴・BookScore次元推移・改善指示の永続化
+- `PDCAHistoryRepository`: サイクル単位の履歴クエリ・トレンド集計・収束判定支援
+- フロントエンド新規コンポーネント:
+  - `QualityDashboardModal`: 品質概観モーダル・リアルタイムBookScore表示
+  - `BookScoreRadarChart`: 5次元BookScoreレーダーチャート・ジャンルベンチマーク比較
+  - `BookScoreTrendChart`: 章別スコア推移・改善率可視化・アラート閾値表示
+  - `PDCADiffViewer`: ActionableDiff前後比較・インライン修正プレビュー
+  - `PDCADirectiveCard`: 改善指示カード・優先度・担当エージェント・期限管理
+- `frontend/tests/components/QualityDashboard.test.tsx`: ダッシュボード統合テスト8ケース
+
+**🔍 品質API・監査ルーティングテスト**
+- `src/backend/routers/quality.ts` / `frontend/src/api/quality.ts`: BookScore取得・PDCA履歴・監査結果・トレンド分析エンドポイント
+- `tests/unit/test_cost_budget_guard.py`, `test_cost_budget_guard_import.py`: 予算ガード・インポート検証
+- `tests/unit/test_llm_resilient_gateway.py`: ゲートウェイ統合テスト・サーキットブレーカー動作確認
+
+**⚙️ 非同期エンジン・Redisユーティリティ強化・設定整理**
+- `src/backend/engine.py` / `src/backend/engine_context.py`: 非同期実行コンテキスト・タイムアウト制御・リソースクリーンアップ統一
+- `src/backend/redis_util.py`: 接続プールサイズ動的調整・ヘルスチェック間隔最適化・Pub/Sub再購読ロジック改善
+- `src/core/container/app.py`: 依存性注入コンテナ・ライフサイクルフック・設定検証強化
+- `pyproject.toml`: オプショナル依存グループ整理・バージョン固定・開発用依存分離
+- `config/audit_models.yaml`, `config/model_pricing.yaml`: 設定ファイル新規追加・環境変数対応
+
+**✅ テスト安定化・フレーキー撲滅・CI改善**
+- `.github/workflows/ci.yml`: 並列マトリクス最適化・キャッシュキー改善・タイムアウト調整・フレーキーテスト検知・再実行自動化
+- 既存テストスイート全互換性維持: `ruff`, `mypy --strict`, `pytest -x -q`, `vitest run` 全通過
+- フレーキーテスト修正: `test_repository_concurrency.py`, `test_security_patches.py`, `test_orchestrator_backtrack.py` 等の非決定性排除
+- E2Eテスト `tests/branches/test_e2e_ws.py` 完全安定化・実行時間短縮
+- カバレッジ 80%+ 維持、型検査 `--strict` モード全クリア
+
+---
+
+### v4.8.1 (2026-09-10) — LLMレジリエントゲートウェイ・商業UI統合・イラスト基盤刷新・CI安定化
+
+v4.8.0の安定化リリース。LLM呼び出しの耐障害性・コスト制御をゲートウェイ層で統合、商業出版フロントエンドUI完成、イラスト生成マルチプロバイダ対応、タスクリカバリ機構、非同期DB並行性強化、CI/CDパイプライン安定化、30+新規単体テスト追加で全グリーン達成。
+
+**🛡️ LLMレジリエントゲートウェイ (`src/llm/resilient_gateway.py` 等)**
+- `CircuitBreaker` (`src/llm/circuit_breaker.py`): 失敗率/遅延閾値ベースの自動遮断・半開状態・復旧判定
+- `FallbackPolicy` (`src/llm/fallback_policy.py`): プロバイダ優先順位・モデルダウングレード・モックフォールバック多段階制御
+- `CostBudgetGuard` (`src/llm/cost_budget_guard.py`, `src/llm/cost_metrics.py`): 日次/月次予算・リクエスト単価上限・トークン消費リアルタイム追跡・アラート発行
+- `CostRouter` (`src/llm/cost_router.py`): コスト効率ベース動的ルーティング、安価モデルへの自動振り分け
+- `TaskRecovery` / `WorkerRecovery` (`src/llm/task_recovery.py`, `src/backend/tasks/worker_recovery.py`): クラッシュタスク自動検知・再キューイング・冪等性保証、ワーカー死活監視・自動再起動
+- 設定: `config/model_pricing.yaml` モデル別単価管理、環境変数 `LLM_DAILY_BUDGET_USD` / `LLM_MONTHLY_BUDGET_USD`
+- 新規テスト: `tests/unit/test_p1_crash_and_security.py`, `test_unit_result.py`, `test_worker_recovery.py`, `test_circuit_breaker.py`
+
+**🏪 商業出版UI統合・フロントエンド完成**
+- `frontend/src/api/commercial.ts`: 出版スケジュール/なろう/Kobo/Kindle APIクライアント完全実装
+- `frontend/src/components/commercial/`: `CommercialPublishPanel`, `ScheduleManager`, `PlatformBadge` 等商業専用コンポーネント群
+- `frontend/src/types/commercial.ts`: 出版プラットフォーム/スケジュール/認証状態の型定義完全網羅
+- `frontend/tests/components/CommercialPublish.test.tsx`: React Testing Library + MSW による統合テスト10ケース
+- `OrchestratedModePanel` / `ReverseModePanel` / `SimpleModePanel` 操作性・エラーハンドリング・アクセシビリティ改善
+
+**🎨 イラスト生成基盤刷新 (`src/services/illustration/`)**
+- `factory.py` / `base.py`: プロバイダ抽象化・統一インターフェース・非同期ストリーミング対応
+- `comfyui_client.py` / `sd_client.py` / `dalle_client.py`: ComfyUI / Stable Diffusion / DALL-E 3 実装
+- `character_lora_mapper.py`: キャラクターLoRAマッピング・一貫性維持・動的重み調整
+- `prompt_builder.py`: シーン解析・タグ構成・ネガティブプロンプト自動生成・品質タグ注入
+- `mock_client.py`: 開発・テスト用モック、決定論的出力・レイテンシシミュレーション
+- 新規テスト: `tests/unit/test_image_clients.py` (全プロバイダ統合テスト8ケース)
+
+**🗄️ 非同期DB並行性・WALログ強化**
+- `src/backend/database/repository.py`: `async with` セッションスコープ完全徹底、行ロック順序付けデッドロック防止
+- `src/backend/redis_util.py`: Redis接続プール・ヘルスチェック・自動再接続・Pub/Sub信頼性向上
+- Alembic移行追加: `0024_cost_consumption_logs.py` (コスト消費ログ), `0025_task_wal_logs.py` (タスクWALログ)
+- `src/backend/tasks/dag_scheduler.py`: チェックポイント粒度細分化・リカバリ時間短縮・BFS下流キャンセル安全化
+- 新規テスト: `tests/unit/test_p4_async_and_db_concurrency.py` (並行シナリオ12ケース), `test_repository_concurrency.py` 更新
+
+**⚙️ CI/CD安定化・コスト分析ダッシュボード基盤**
+- `.github/workflows/ci.yml`: `continue-on-error` 除去・fail-fast徹底、マトリクス並列化・キャッシュ最適化・フレーキー対策
+- `pyproject.toml`: 依存関係整理・バージョン固定・オプショナル依存グループ (`illustration`, `cost`, `commercial`) 整理
+- `src/services/cost_analytics.py` / `src/services/token_tracker.py`: リクエスト/モデル/ユーザー別コスト集計・トレンド分析・予測API
+- `src/services/cost_budget_guard.py`: 予算超過時自動ブロック・グレース期間・管理者オーバーライド
+- フロントエンド: `ConfigPanel` コスト表示・予算アラート・モデル選択ガイド統合
+
+**✅ テスト・品質ゲート拡充**
+- 新規単体テスト 30+ ファイル追加: `test_p1_crash_and_security.py`, `test_p4_async_and_db_concurrency.py`, `test_image_clients.py`, `test_worker_recovery.py`, `test_unit_result.py`, `test_commercial_schedule.py`, `test_config_keys.py`, `test_step25_26.py` 等
+- 既存テストスイート全互換性維持 (CI: `ruff`, `mypy`, `pytest -x`, `vitest run` 全通過)
+- カバレッジ 80%+ 維持、E2Eテスト `tests/branches/test_e2e_ws.py` 安定化
+
+---
+
+### v4.8.0 (2026-09-10) — Easy Mode v1スキル実装・Orchestrated Mode統合・商業パイプライン強化・セキュリティ/テスト基盤完成
 
 本バージョンは、`docs/FUTURE_IMPROVEMENT_GUIDELINES.md` に定義された課題（固定辞書依存、4000文字切り捨て脱落、非同期インフラ未結合、評価甘辛ブレと閉ループ不在）を根本解決し、全4大改善の柱（全288ステップ）を完全実装・統合したマイルストーンリリースです。
 
@@ -87,6 +217,59 @@ AutoNovel は、AI を活用して Web 小説を **企画から執筆、校正�
 - `ClosedLoopPDCARunner` (`src/services/pdca_cycle.py`): 最低次元特定、Actionable Diff $\to$ 必須制約変換、再執筆・再監査・収束判定（改善率 $\ge 15\%$）。
 - `DAGReplanner` (`src/backend/tasks/dag_replanning.py`): 監査不合格ノードのみの局所リトライ、BFS下流タスク特定＆安全キャンセル、EventBus `dag.replanned` 発行。
 - `CommercialBenchmarkJudge` (`src/services/commercial_benchmarks.py`): 商業出版水準（85+ Sランク）、Web連載水準（75+ Aランク）、全次元足切り（60+）、7大ヘルスチェック（7/7 PASS）。
+
+---
+
+### v4.8.0 (2026-09-10) — Easy Mode v1スキル実装・Orchestrated Mode統合・商業パイプライン強化・セキュリティ/テスト基盤完成
+
+v4.7の商業品質基盤（4大改善の柱・CommercialBenchmark 85+）を土台に、実用フェーズへの完全移行を達成。Easy Modeのv1スキル全9種実装、Orchestrated Mode（SSEストリーミング）による3モード統合、商業出版パイプラインの実装強化、セキュリティ脆弱性の根治、並行アクセス安全化、非推奨コード整理、全テストグリーン化を一括実現。
+
+**🎯 Easy Mode v1スキル完全実装 (9スキル・`src/agents/skills/v1/`)**
+- `easy_mode_planning.py`: 3案企画ガチャ・逆算プロットのロジックをスキル化、v1/v2ホットスワップ対応
+- `easy_mode_bible.py`: 世界観Bible自動構築・GraphRAG登録をスキル化、設定ドリフト防止
+- `easy_mode_writing.py`: 本文生成・五感推敲・インライン編集連携をスキル化
+- `easy_mode_illustration.py`: シーン抽出・キャラ一貫性維持・プロンプト生成をスキル化
+- `easy_mode_marketing.py`: タイトル/キャッチ/あらすじ/タグ生成・SEO最適化をスキル化
+- `easy_mode_context_builder.py`: GraphRAGハイブリッド検索・コンテキスト圧縮統合をスキル化
+- `easy_mode_easy_mode.yaml`: 設定駆動化、ジャンル/フェーズ別パラメータ外部化
+- `Orchestrator.set_skill_version("v1"|"v2")` による完全ホットスワップ、A/Bテスト自動化対応
+
+**🌊 Orchestrated Mode (SSEストリーミング)・3モード統合**
+- `src/backend/routers/orchestrated.py`: SSEエンドポイント実装、リアルタイム進捗・中間成果物ストリーミング
+- `src/backend/orchestrator_engine_adapter.py`: オーケストレータエンジンとFastAPIのアダプタ層
+- `frontend/src/components/generate/`: `OrchestratedModePanel`, `ReverseModePanel`, `SimpleModePanel` 3モードUI統合
+- `frontend/src/hooks/useUnifiedStreaming.ts`: 統一ストリーミングフック、SSE/ポーリング透過的切替
+- `src/agents/orchestrator.py`: DAGベース実行・局所リトライ・EventBus連携をストリーミング対応に拡張
+
+**📚 Commercial Pipeline 強化・実装完成**
+- `src/backend/routers/commercial.py`: 出版スケジュール管理・なろう/カクヨム/Kobo/Kindle API連携エンドポイント
+- `src/backend/tasks/commercial_tasks.py`: Hueyタスク化、定期実行・リトライ・冪等性保証
+- `src/backend/services/commercial_helpers.py`: 共通ロジック抽出、認証・レート制限・エラーハンドリング統一
+- `src/services/publishers/narou.py`: 小説家になろう投稿API実装（2段階認証・下書き/公開制御）
+- Alembic移行 `0021_publication_schedules.py`: 出版スケジュールテーブル追加
+
+**🔒 セキュリティ脆弱性根治 (`src/backend/routers/security_patches.py` 等)**
+- SSRF対策: 内部ネットワークアドレスブロック、許可リストベースURL検証
+- パストラバーサル対策: `pathlib.Path.resolve()` + 許可ディレクトリ配下チェック
+- ReDoS対策: 危険な正規表現の排除・タイムアウト付きマッチング・入力長制限
+- 入力サニタイズ統一: 全APIエンドポイントでPydanticバリデーション強化
+- 新規テスト: `tests/unit/test_security_patches.py` (12ケース全パス)
+
+**🧵 リポジトリ並行アクセス安全化 (`src/backend/database/repository.py`)**
+- `async with` コンテキストマネージャによるセッションスコープ厳格化
+- `select_for_update` / `with_for_update` 行ロック統一、デッドロック防止順序付け
+- 接続プール設定最適化: `pool_pre_ping`, `pool_recycle`, `max_overflow` チューニング
+- 新規テスト: `tests/unit/test_repository_concurrency.py` (並行シナリオ8ケース全パス)
+
+**🧹 非推奨委譲パターン整理・レガシー分離**
+- `src/legacy/`: `engine_ultimate_hegemony.py`, `novel_producer.py`, `writing_agent_v1.py` を隔離
+- `src/agents/audit_agent.py`, `audit.py`: 重複実装統合、v2スキルベースへ完全移行
+- `@deprecated` 装飾子・移行ガイドドキュメント整備、型ヒント・mypyクリーン化
+
+**✅ テスト・品質ゲート全グリーン達成**
+- 新規単体テスト: `test_security_patches.py`, `test_repository_concurrency.py`, `test_deprecation_delegation.py`, `test_in_memory_fallback_enhanced.py`, `test_orchestrator_backtrack.py`, `test_step25_26.py`
+- 既存テストスイート全互換性維持 (CI: `ruff`, `mypy`, `pytest`, `vitest` 全通過)
+- カバレッジ 80%+ 維持、プロパティベーステスト (Hypothesis) 継続拡充
 
 ---
 
@@ -203,7 +386,7 @@ AutoNovel は、AI を活用して Web 小説を **企画から執筆、校正�
   - [2.6 AI挿絵プロンプト & ビジュアル生成エンジン](#26-ai挿絵プロンプト--ビジュアル生成エンジン)
   - [2.7 自動マーケティング & 納品パッケージング](#27-自動マーケティング--納品パッケージング)
     - [2.7.1 マルチメディア生成 (`multimedia` router)](#271-マルチメディア生成-multimedia-router)
-    - [2.7.2 共同編集とCRDT (`collab` router)](#272-共同編集とcrdt-collab-router)
+    - [2.7.2 共同執筆・コメント (`collab` router)](#272-共同執筆コメント-collab-router)
     - [2.7.3 IFルート分岐](#273-ifルート分岐)
 - [3. システムアーキテクチャ & 技術スタック](#3-システムアーキテクチャ--技術スタック)
   - [3.1 全体アーキテクチャ図](#31-全体アーキテクチャ図)
@@ -448,8 +631,8 @@ Web UI からわずか数項目のフォームを入力するだけで、プロ�
 
 アセットパックは納品 ZIP にも同梱されます（[`docs/multimedia.md`](docs/multimedia.md) 参照）。
 
-#### 2.7.2 共同編集とCRDT (`collab` router)
-`chapter_versions` テーブルに `vector_clock` (JSON) と `base_version_id` を保持し、複数執筆者による章単位の並行編集を CRDT 的にマージ。`POST /api/collab/versions` で保存、`GET /api/collab/versions/{book_id}/{ep}` で履歴・コメントツリーを取得できます。
+#### 2.7.2 共同執筆・コメント (`collab` router) 【CRDT同期マージはロードマップ予定】
+現在は `comments` テーブルおよび `project_members` による章単位のスレッドコメント投稿・メンバー権限管理（閲覧・編集）を提供。複数執筆者による `ChapterVersion` のベクタークロックを用いた並行編集・CRDT同期マージ機能は、今後のロードマップにて提供予定です。
 
 #### 2.7.3 IFルート分岐
 `Branch` モデル + `routers/easy_mode.py` 経由で、main ルートから IF分岐をフォーク・合流可能。各分岐は独立した `plot` ツリー・テンション履歴を持つため、複数エンディングの並列執筆に対応します。
@@ -615,7 +798,7 @@ FastAPI アプリケーション (`src/backend/server.py`) は、モジュール
 - **`routers/illustrations.py`**: 挿絵プロンプト生成および画像生成ジョブ管理。
 - **`routers/marketing.py`**: マーケティング資料・あらすじ・キャッチコピー生成。
 - **`routers/multimedia.py`** (`ENABLE_MULTIMEDIA`): シーン画像 / 立ち絵 / 表紙 / ボイス / BGM のアセットパック管理。
-- **`routers/collab.py`**: コメントツリーと `ChapterVersion` (CRDT ベクタークロック) による共同編集 API。
+- **`routers/collab.py`**: プロジェクトメンバー管理および章単位のコメントスレッド API（※CRDT同期マージはロードマップ予定）。
 - **`routers/prompt_versions.py`**: プロンプトのバージョン管理。
 - **`routers/prompt_compare.py`**: プロンプト A/B 比較。
 - **`routers/streaming.py`**: SSE による長文生成のリアルタイム配信。
@@ -1131,7 +1314,7 @@ erDiagram
 | **`Character`** | `characters` | 登場人物シート。名前、性格、能力、外見プロンプトDNAを保持。 |
 | **`Plot`** | `plots` | 各話の設計図。1行要約、目標テンション、カタルシス種別、読者フックを保持。 |
 | **`Bible`** | `bibles` | 世界観・魔法体系・歴史・地理などの設定辞書（JSON形式）と開示状況。 |
-| **`ChapterVersion`** | `chapter_versions` | 共同編集のための章リビジョン。`vector_clock` (JSON) と `base_version_id` で CRDT マージ。 |
+| **`ChapterVersion`** | `chapter_versions` | 【ロードマップ予定】共同編集のための章リビジョン。`vector_clock` (JSON) と `base_version_id` で CRDT マージ。 |
 | **`Comment` / `ProjectMember`** | `comments`, `project_members` | 章単位のスレッドコメントとプロジェクトメンバー管理。 |
 | **`MultimediaArtifact` / `MultimediaTask`** | `multimedia_artifacts`, `multimedia_tasks` | シーン画像 / 立ち絵 / 表紙 / ボイス / BGM の生成結果と非同期タスク。 |
 | **`Task`** | `tasks` | 非同期執筆タスクのステータス追跡・結果保存。 |
@@ -1760,8 +1943,9 @@ Base URL: `http://localhost:8200`（Nginx本番時: `http://localhost:8080`）
 | `GET` | `/multimedia/tasks/{id}` | マルチメディア生成タスクの進捗 | `ENABLE_MULTIMEDIA=true` |
 | `GET` | `/multimedia/assets/{book_id}` | 作品別アセット一覧取得 | `ENABLE_MULTIMEDIA=true` |
 | `POST` | `/api/export/ebook` | eBook エクスポート (README互換エイリアス) | `ENABLE_MULTIMEDIA=true` 必須 |
-| `POST` | `/api/collab/versions` | 共同編集 ChapterVersion 保存 (CRDT) | なし |
-| `GET` | `/api/collab/versions/{book_id}/{ep}` | 章のバージョン履歴取得 | なし |
+| `POST` | `/api/collab/books/{book_id}/comments` | 章へのコメント投稿 | なし |
+| `GET` | `/api/collab/books/{book_id}/comments` | 章のコメント一覧取得 | なし |
+| *(予定)* | `/api/collab/versions` | 【ロードマップ】共同編集 ChapterVersion 保存 (CRDT) | 将来提供予定 |
 | `GET` | `/health` | 総合多段ヘルスチェック (DB, Queue, Metrics) | なし |
 | `GET` | `/metrics` | プロセス内メトリクススナップショット取得 | なし |
 
@@ -2095,7 +2279,7 @@ make clean         # キャッシュや一時DBファイルをクリーンアッ
 ### 21.1 今後のロードマップ
 - [x] **eBook エクスポート (EPUB 3)**: 縦書き・ルビ・目次対応 (v4.1 で実装済み)
 - [x] **マルチメディア生成 (Phase 7)**: シーン画像 / 立ち絵 / 表紙 / ボイス / BGM パック (v4.1 で実装済み)
-- [x] **共同編集 (CRDT)**: `ChapterVersion` ベクタークロックマージ (v4.1 で実装済み)
+- [ ] **共同編集 (CRDT)**: `ChapterVersion` ベクタークロック同期マージによる複数人リアルタイム同時編集（ロードマップ予定 / 現在はコメント・メンバー管理のみ提供）。
 - [x] **GraphRAG 高度化**: pgvector / ChromaDB / BM25 / cross-encoder rerank の RRF 統合 (v4.1 で実装済み)
 - [x] **4大改善の柱（Pillar 1〜4）完全統合**: 表現・窓枠監査 / 状態管理・非同期 / セマンティックRAG・圧縮 / 閉ループPDCA・商業水準 (v4.7 で完全実装)
 - [ ] **リアルタイム音声対話ブレインストーミング**: 音声認識/音声合成によるAIプロット会議機能。

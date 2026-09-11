@@ -60,8 +60,8 @@ describe("reversePlot API client", () => {
     );
 
     expect(result.arcs).toHaveLength(1);
-    expect(result.arcs[0].title).toBe("第1部");
-    expect(result.episodes[0].ep_num).toBe(1);
+    expect(result.arcs[0]?.title).toBe("第1部");
+    expect(result.episodes[0]?.ep_num).toBe(1);
     expect(result.catharsisPattern?.pattern_type).toBe("explosion");
     expect(result.catharsis_pattern?.pattern_type).toBe("explosion");
   });

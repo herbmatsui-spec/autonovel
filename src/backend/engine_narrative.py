@@ -116,7 +116,27 @@ class NarrativeController:
             if isinstance(arc, dict) and arc.get("end_ep") == ep_num:
                 return True
         # 黄金比ピークに該当する場合もクライマックス扱いとする
-        return ep_num in DEFAULT_GOLDEN_PEAKS
+        golden_peaks = settings.get("golden_peaks")
+        if isinstance(golden_peaks, (list, tuple, set)):
+            if ep_num in golden_peaks:
+                return True
+        elif isinstance(golden_peaks, int):
+            if ep_num == golden_peaks:
+                return True
+
+        if isinstance(DEFAULT_GOLDEN_PEAKS, (list, tuple, set)):
+            if ep_num in DEFAULT_GOLDEN_PEAKS:
+                return True
+        elif isinstance(DEFAULT_GOLDEN_PEAKS, int) and DEFAULT_GOLDEN_PEAKS > 1:
+            if ep_num == DEFAULT_GOLDEN_PEAKS:
+                return True
+
+        total_eps = settings.get("total_eps")
+        if total_eps and isinstance(total_eps, int):
+            golden_ep = int(total_eps * 0.618)
+            if ep_num == golden_ep:
+                return True
+        return False
 
     def get_dynamic_hate_gain(self, genre: str) -> int:
         modifiers = {
@@ -190,7 +210,7 @@ class NarrativeController:
             stress_val = 0
             for p in plots:
                 if p.ep_num == ch.ep_num:
-                    stress_val = p.stress or 0
+                    stress_val = getattr(p, "stress", None) or p.tension or 0
                     break
             stress_data.append({"話数": ch.ep_num, "ストレス蓄積値": stress_val})
         return stress_data

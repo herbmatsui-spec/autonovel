@@ -38,8 +38,14 @@ COPY requirements.txt ./
 
 RUN sed -i 's/\r$//' /usr/local/bin/entrypoint.sh && chmod +x /usr/local/bin/entrypoint.sh
 
+RUN useradd -m -u 1000 appuser && \
+    mkdir -p /app/storage && \
+    chown -R appuser:appuser /app
+USER appuser
+
 EXPOSE 8200
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
-CMD ["uvicorn", "src.backend.server:app", "--host", "0.0.0.0", "--port", "8200"]
+ENV UVICORN_WORKERS=1
+CMD ["sh", "-c", "uvicorn src.backend.server:app --host 0.0.0.0 --port 8200 --workers ${UVICORN_WORKERS}"]

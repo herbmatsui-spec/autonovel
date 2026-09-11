@@ -18,7 +18,7 @@ from src.services.progress_reporter import ProgressReporterAdapter
 
 if TYPE_CHECKING:
     from src.backend.background import StatusReporter
-    from src.backend.engine import UltimateHegemonyEngine
+    from src.backend.orchestrator_engine_adapter import OrchestratorEngineAdapter as UltimateHegemonyEngine
 
 logger = logging.getLogger(__name__)
 

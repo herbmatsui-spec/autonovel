@@ -10,22 +10,48 @@ from sqlalchemy.types import JSON, TypeDecorator
 
 from src.infrastructure.database.models.base_orm import Base
 
+import json
+
 try:
-    from pgvector.sqlalchemy import Vector
+    from pgvector.sqlalchemy import Vector as PGVector
 
     HAS_PGVECTOR = True
 except ImportError:
     HAS_PGVECTOR = False
+    PGVector = None
 
-    class Vector(TypeDecorator):  # type: ignore
-        impl = JSON
-        cache_ok = True
 
-        def process_bind_param(self, value: Any, dialect: Any) -> Any:
-            return value
+class Vector(TypeDecorator):
+    """PostgreSQL pgvector と SQLite JSON の透過的なハイブリッド型デコレータ"""
+    impl = JSON
+    cache_ok = True
 
-        def process_result_value(self, value: Any, dialect: Any) -> Any:
-            return value
+    def __init__(self, dim: int = 1536, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.dim = dim
+
+    def load_dialect_impl(self, dialect: Any) -> Any:
+        if dialect.name == "postgresql" and HAS_PGVECTOR and PGVector is not None:
+            return dialect.type_descriptor(PGVector(self.dim))
+        return dialect.type_descriptor(JSON())
+
+    def process_bind_param(self, value: Any, dialect: Any) -> Any:
+        if value is None:
+            return None
+        if isinstance(value, (list, tuple)):
+            return list(value)
+        return value
+
+    def process_result_value(self, value: Any, dialect: Any) -> Any:
+        if value is None or value == "null":
+            return None
+        if isinstance(value, str):
+            try:
+                parsed = json.loads(value)
+                return parsed if parsed is not None else None
+            except Exception:
+                return value
+        return value
 
 
 class ChapterChunk(Base):

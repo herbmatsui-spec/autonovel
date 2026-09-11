@@ -1,19 +1,22 @@
-from __future__ import annotations
-
 """
 database/repository.py - UoWコンテキストを自動解決する DataRepository ファサード
 """
+
+from __future__ import annotations
+
 import json
+import logging
 import time
 from typing import Any
 
 from sqlalchemy import desc, select
 
 from src.backend.database.core import DatabaseManager, SessionLocal
-from src.backend.database.models import Bible, Book, Chapter, Character, Plot
 from src.infrastructure.database.models.task import Task
-
+from .models import Bible, Book, Chapter, Character, Plot
 from .uow_context import current_uow
+
+logger = logging.getLogger(__name__)
 
 
 class DataRepositoryFacade:
@@ -81,8 +84,9 @@ class DataRepositoryFacade:
     async def get_state(self, key: str, default: Any = None) -> Any:
         from src.backend.database.models import InternalState
 
-        with self.db.get_session() as session:
-            state = session.query(InternalState).filter_by(key=key).one_or_none()
+        async with self.db.get_session() as session:
+            result = await session.execute(select(InternalState).filter_by(key=key))
+            state = result.scalars().one_or_none()
             if not state:
                 return default
             try:
@@ -91,18 +95,20 @@ class DataRepositoryFacade:
                 return state.value
 
     async def set_state(self, key: str, value: Any) -> None:
+        from datetime import datetime
         from src.backend.database.models import InternalState
 
-        with self.db.get_session() as session:
-            state = session.query(InternalState).filter_by(key=key).one_or_none()
+        async with self.db.get_session() as session:
+            result = await session.execute(select(InternalState).filter_by(key=key))
+            state = result.scalars().one_or_none()
             if not state:
                 state = InternalState(key=key)
                 session.add(state)
             state.value = (
                 json.dumps(value, ensure_ascii=False) if not isinstance(value, str) else value
             )
-            state.updated_at = time.strftime("%Y-%m-%dT%H:%M:%S")
-            session.commit()
+            state.updated_at = datetime.now()
+            await session.commit()
 
 
 # DataRepository をエイリアスとして公開
@@ -134,13 +140,17 @@ class BookRepository:
         res = self.session.commit()
         if inspect.isawaitable(res):
             try:
-                loop = asyncio.get_event_loop()
-                if loop.is_running():
-                    asyncio.create_task(res)
-                else:
-                    loop.run_until_complete(res)
-            except Exception:
-                pass
+                loop = asyncio.get_running_loop()
+                task = loop.create_task(res)
+
+                def _on_done(t):
+                    if not t.cancelled() and t.exception():
+                        logger.error(f"[BookRepository] Background commit failed: {t.exception()}")
+
+                task.add_done_callback(_on_done)
+            except RuntimeError:
+                # イベントループが実行中でない場合は同期的に完了
+                asyncio.run(res)
 
     def _safe_refresh(self, instance: Any) -> None:
         """同期・非同期どちらのセッションでも安全にリフレッシュする"""
@@ -150,13 +160,16 @@ class BookRepository:
         res = self.session.refresh(instance)
         if inspect.isawaitable(res):
             try:
-                loop = asyncio.get_event_loop()
-                if loop.is_running():
-                    asyncio.create_task(res)
-                else:
-                    loop.run_until_complete(res)
-            except Exception:
-                pass
+                loop = asyncio.get_running_loop()
+                task = loop.create_task(res)
+
+                def _on_done(t):
+                    if not t.cancelled() and t.exception():
+                        logger.error(f"[BookRepository] Background refresh failed: {t.exception()}")
+
+                task.add_done_callback(_on_done)
+            except RuntimeError:
+                asyncio.run(res)
 
     def get_book(self, book_id: int) -> Book | None:
         """指定した ID の作品情報を取得する"""
@@ -245,7 +258,7 @@ class BookRepository:
 
     def save_or_update_book_with_chapter(
         self,
-        book_id: int,
+        book_id: int | None,
         title: str = "R15ファンタジー作品",
         genre: str = "ファンタジー (R15)",
         chapter_text: str = "",
@@ -253,10 +266,9 @@ class BookRepository:
         plots: list | None = None,
     ) -> Book:
         """かんたんモード等のデータをDBに新規作成または更新保存する"""
-        book = self.get_book(book_id)
-        if not book:
+        if book_id is None or book_id == 0:
+            # Create a new book without specifying id (let DB assign)
             book = Book(
-                id=book_id,
                 title=title,
                 genre=genre,
                 concept="かんたんモード生成作品",
@@ -266,17 +278,32 @@ class BookRepository:
             self.session.add(book)
             self._safe_commit()
             self._safe_refresh(book)
+        else:
+            book = self.get_book(book_id)
+            if book is None:
+                # If the provided book_id does not exist, create a new book without specifying id
+                book = Book(
+                    title=title,
+                    genre=genre,
+                    concept="かんたんモード生成作品",
+                    synopsis=chapter_text[:200] if chapter_text else "",
+                    target_eps=10,
+                )
+                self.session.add(book)
+                self._safe_commit()
+                self._safe_refresh(book)
+            # else: book exists, we will update it
 
         # 第1話の更新または作成
         if chapter_text:
-            stmt = select(Chapter).where(Chapter.book_id == book_id).where(Chapter.ep_num == 1)
+            stmt = select(Chapter).where(Chapter.book_id == book.id).where(Chapter.ep_num == 1)
             chapter = self.session.execute(stmt).scalar_one_or_none()
             if chapter:
                 chapter.content = chapter_text
                 chapter.summary = chapter_text[:100]
             else:
                 chapter = Chapter(
-                    book_id=book_id,
+                    book_id=book.id,
                     ep_num=1,
                     title="第1話 運命の覚醒",
                     content=chapter_text,
@@ -289,7 +316,7 @@ class BookRepository:
             char_name = character_params["name"]
             stmt = (
                 select(Character)
-                .where(Character.book_id == book_id)
+                .where(Character.book_id == book.id)
                 .where(Character.name == char_name)
             )
             char = self.session.execute(stmt).scalar_one_or_none()
@@ -298,7 +325,7 @@ class BookRepository:
                 char.ability = character_params.get("ability", "")
             else:
                 char = Character(
-                    book_id=book_id,
+                    book_id=book.id,
                     name=char_name,
                     role="主人公",
                     personality=character_params.get("personality", ""),

@@ -18,6 +18,7 @@ from src.backend.database.repositories import (
     AuditRepository,
     BibleRepository,
     BookRepository,
+    BookScoreRepository,
     BranchRepository,
     ChapterRepository,
     CharacterRepository,
@@ -52,9 +53,15 @@ class UnitOfWork:
         self._plots: PlotRepository | None = None
         self._rules: RulesRepository | None = None
         self._audit: AuditRepository | None = None
+        self._book_scores: BookScoreRepository | None = None
         self._prompt_versions: PromptVersionRepository | None = None
         self._prompt_metrics: PromptMetricsRepository | None = None
+        self._pdca_history: PDCAHistoryRepository | None = None
         self._illustrations: IllustrationRepository | None = None
+        self._collab: CollabRepository | None = None
+        self._cost: CostRepository | None = None
+        self._narrative_metrics: NarrativeMetricRepository | None = None
+        self._trace: TraceRepository | None = None
 
         self.outbox_service = ChromaOutboxService()
         self._chroma_additions: list[dict[str, Any]] = []
@@ -138,6 +145,12 @@ class UnitOfWork:
         return self._audit
 
     @property
+    def book_scores(self) -> BookScoreRepository:
+        if self._book_scores is None:
+            self._book_scores = BookScoreRepository(self.session)
+        return self._book_scores
+
+    @property
     def prompt_versions(self) -> PromptVersionRepository:
         if self._prompt_versions is None:
             self._prompt_versions = PromptVersionRepository(self.session)
@@ -150,10 +163,40 @@ class UnitOfWork:
         return self._prompt_metrics
 
     @property
+    def pdca_history(self) -> PDCAHistoryRepository:
+        if self._pdca_history is None:
+            self._pdca_history = PDCAHistoryRepository(self.session)
+        return self._pdca_history
+
+    @property
     def illustrations(self) -> IllustrationRepository:
         if self._illustrations is None:
             self._illustrations = IllustrationRepository(self.session)
         return self._illustrations
+
+    @property
+    def collab(self) -> CollabRepository:
+        if self._collab is None:
+            self._collab = CollabRepository(self.session)
+        return self._collab
+
+    @property
+    def cost(self) -> CostRepository:
+        if self._cost is None:
+            self._cost = CostRepository(self.session)
+        return self._cost
+
+    @property
+    def narrative_metrics(self) -> NarrativeMetricRepository:
+        if self._narrative_metrics is None:
+            self._narrative_metrics = NarrativeMetricRepository(self.session)
+        return self._narrative_metrics
+
+    @property
+    def trace(self) -> TraceRepository:
+        if self._trace is None:
+            self._trace = TraceRepository(self.session)
+        return self._trace
 
     async def __aenter__(self) -> UnitOfWork:
         self.session = self.db.get_session()
@@ -232,7 +275,13 @@ class UnitOfWork:
             self._plots = None
             self._rules = None
             self._audit = None
+            self._book_scores = None
             self._prompt_versions = None
             self._prompt_metrics = None
+            self._pdca_history = None
+            self._collab = None
+            self._cost = None
+            self._narrative_metrics = None
+            self._trace = None
             self._chroma_additions.clear()
             self._chroma_deletions.clear()

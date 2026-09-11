@@ -84,9 +84,16 @@ def get_default_store(
             return ChromaVectorStore(provider)
 
     if mode == "memory":
-        return InMemoryFallbackStore(max_items_per_collection=max_items_per_collection)
+        return InMemoryFallbackStore(max_items_per_collection=max_items_per_collection, enable_graph=True)
 
-    return InMemoryFallbackStore(max_items_per_collection=max_items_per_collection)
+    return InMemoryFallbackStore(max_items_per_collection=max_items_per_collection, enable_graph=True)
+
+
+class DefaultVectorStore:
+    """Wrapper / factory for backwards compatibility with legacy callers."""
+
+    def __new__(cls, *args: Any, **kwargs: Any) -> BaseVectorStore:
+        return get_default_store(*args, **kwargs)
 
 
 # Backward compatibility and mock propagation module proxy
@@ -109,6 +116,7 @@ sys.modules[__name__].__class__ = _VectorStorePackage
 
 __all__ = [
     "BaseVectorStore",
+    "DefaultVectorStore",
     "ChromaClientProvider",
     "ChromaVectorStore",
     "PgVectorStore",

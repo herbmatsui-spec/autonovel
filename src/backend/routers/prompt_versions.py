@@ -26,7 +26,7 @@ async def rollback_prompt_version(book_id: int, req: RollbackRequest):
     async with UnitOfWork(AppContainer.db()) as uow:
         # 指定バージョンの検証
         ver = await uow.prompt_versions.get_prompt_version(req.version_id)
-        if not ver or ver["book_id"] != book_id:
+        if not ver or ver.book_id != book_id:
             from src.core.exceptions import NotFoundError
 
             raise NotFoundError(
@@ -43,18 +43,18 @@ async def rollback_prompt_version(book_id: int, req: RollbackRequest):
         previous_candidates = [
             v
             for v in versions
-            if v["prompt_key"] == "optimized_prompt_patch"
-            and v["id"] != req.version_id
-            and not v["rollback_reason"]
+            if v.prompt_key == "optimized_prompt_patch"
+            and v.id != req.version_id
+            and not v.rollback_reason
         ]
 
         if previous_candidates:
             fallback_ver = previous_candidates[0]
             await uow.prompt_versions.set_active_prompt_version(
-                book_id, "optimized_prompt_patch", fallback_ver["id"]
+                book_id, "optimized_prompt_patch", fallback_ver.id
             )
-            GlobalConfig().set("optimized_prompt_patch", fallback_ver["content"])
-            msg = f"Rollback successful. Reverted to version {fallback_ver['version_tag']}"
+            GlobalConfig().set("optimized_prompt_patch", fallback_ver.content)
+            msg = f"Rollback successful. Reverted to version {fallback_ver.version_tag}"
         else:
             GlobalConfig().set("optimized_prompt_patch", "")
             msg = "Rollback successful. Reverted to default empty prompt (no healthy history found)"

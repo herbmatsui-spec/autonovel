@@ -1,10 +1,10 @@
 """
 writing_service.py - WritingService: 本文執筆・研磨を担当するドメインサービス。
 
-UltimateHegemonyEngine の UltimateHegemonyEngine から分離したサービス。
-Workflows (EpisodeWritingWorkflow, ChapterImportWorkflow, RetryFailedEpisodesWorkflow,
-RefineEroticWorkflow 等) は WritingService を依存対象にし、EngineFacade 経由で
-インジェクトされる。
+注意:
+- 本モジュール (src/backend/writing_service.py) は執筆パイプラインとEngineFacade連携を担当します。
+- src/services/writing_service.py は BookScore 連携と自動再生成ループを担当します。
+- src/services/writing_services.py は状態バリデーションと ProjectContext 連携を担当します。
 
 主な責任:
 - generate_episodes_pipeline: パイプライン執筆（WritingAgent へ委譲）
@@ -131,15 +131,15 @@ class WritingService:
                         "warning",
                     )
 
-                # 再生成アクション実行（簡易版: ContextBuilderAgent 等への指示は将来実装）
-                # ここでは単純に再執筆をトリガー
-                if reporter:
-                    for action in actions:
-                        reporter.report(
-                            f"  再生成アクション: {action['target_agent']}.{action['action']} "
-                            f"(focus={action['focus']})",
-                            "info",
-                        )
+                # PDCA 閉ループ自動再執筆トリガー (Step 9)
+                if score_result["overall_score"] < self.score_threshold:
+                    await self._trigger_pdca_rewrite(
+                        book_id=book_id,
+                        ep_num=ep,
+                        low_dimensions=low_dims,
+                        actions=actions,
+                        reporter=reporter,
+                    )
 
                 # 再執筆
                 word_count = await self.writer.generate_episodes(
@@ -166,6 +166,61 @@ class WritingService:
                     )
 
         return word_count
+
+    async def _trigger_pdca_rewrite(
+        self,
+        book_id: int,
+        ep_num: int,
+        low_dimensions: list[str],
+        actions: list[dict[str, Any]],
+        reporter: Any = None,
+    ) -> None:
+        """BookScore < 閾値時に ClosedLoopPDCARunner を自動起動するフック (Step 9)."""
+        try:
+            from src.services.audit_aggregator import AuditAggregator
+            from src.services.pdca_cycle import ClosedLoopPDCARunner
+            from src.agents.orchestrator import AgentContext
+
+            aggregator = AuditAggregator(book_id=book_id)
+            runner = ClosedLoopPDCARunner(
+                aggregator=aggregator,
+                writer=self.writer,
+                target_score=self.score_threshold,
+                max_cycles=2,
+            )
+
+            ctx = AgentContext(book_id=book_id, branch_id=1, ep_num=ep_num, artifacts={})
+            initial_context = {
+                "draft_text": "",
+                "book_id": book_id,
+                "ep_num": ep_num,
+                "low_dimensions": low_dimensions,
+                "regeneration_actions": actions,
+            }
+
+            if reporter:
+                reporter.report(
+                    f"Ep.{ep_num}: PDCA 閉ループ再執筆ループを起動 (低次元: {low_dimensions})",
+                    "warning",
+                )
+
+            best_draft, pdca_result = await runner.run_pdca_cycle(
+                initial_context=initial_context,
+                phase="writing",
+            )
+
+            if reporter:
+                reporter.report(
+                    f"Ep.{ep_num}: PDCA 完了 (スコア {pdca_result.initial_score:.1f} → "
+                    f"{pdca_result.final_score:.1f}, 収束={pdca_result.converged})",
+                    "info",
+                )
+        except Exception as e:
+            if reporter:
+                reporter.report(
+                    f"Ep.{ep_num}: PDCA 自動再執筆の起動に失敗: {e}",
+                    "error",
+                )
 
     async def calculate_book_score(
         self,

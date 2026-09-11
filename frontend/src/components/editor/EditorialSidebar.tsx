@@ -4,9 +4,10 @@ import { askBible, auditConsistency, resolveIssue } from "../../api/editor";
 import { useNovelContext } from "../../context/NovelContext";
 
 interface EditorialSidebarProps {
-  bookId?: number;
-  currentText: string;
-  onToast?: (msg: string, type: "success" | "error" | "info") => void;
+   bookId?: number;
+   currentText: string;
+   onToast?: (msg: string, type: "success" | "error" | "info") => void;
+   onOpenAuditReport?: () => void;
 }
 
 interface ChatMessage {
@@ -23,9 +24,10 @@ const QUICK_QUERIES = [
 ];
 
 export const EditorialSidebar: React.FC<EditorialSidebarProps> = ({
-  bookId = 1,
-  currentText,
-  onToast,
+   bookId = 1,
+   currentText,
+   onToast,
+   onOpenAuditReport,
 }) => {
   const {
     activeHighlight,
@@ -282,21 +284,29 @@ export const EditorialSidebar: React.FC<EditorialSidebarProps> = ({
       ) : (
         /* 矛盾診断タブ */
         <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-          <div style={{ marginBottom: "12px" }}>
-            <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "12px" }}>
-              現在の執筆本文を、ナレッジグラフおよび世界観バイブルと照合して設定矛盾を検出します。
-            </p>
-            <button
-              type="button"
-              className="btn btn-primary"
-              style={{ width: "100%", padding: "8px" }}
-              onClick={handleAudit}
-              disabled={isAuditing}
-              data-testid="btn-run-audit"
-            >
-              {isAuditing ? "🔍 設定照合・診断中..." : "🔍 本文の設定矛盾を診断"}
-            </button>
-          </div>
+<div style={{ marginBottom: "12px" }}>
+             <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "12px" }}>
+               現在の執筆本文を、ナレッジグラフおよび世界観バイブルと照合して設定矛盾を検出します。
+             </p>
+             <div style={{ display: "flex", gap: "8px" }}>
+               <button
+                 onClick={() => onOpenAuditReport?.()}
+                 style={{ flex: 1, padding: "8px 12px", backgroundColor: "var(--accent-color)", color: "white", border: "none", borderRadius: "4px", cursor: "pointer" }}
+               >
+                 詳細レポートを開く
+               </button>
+               <button
+                 type="button"
+                 className="btn btn-primary"
+                 style={{ flex: 1, padding: "8px" }}
+                 onClick={handleAudit}
+                 disabled={isAuditing}
+                 data-testid="btn-run-audit"
+               >
+                 {isAuditing ? "🔍 設定照合・診断中..." : "🔍 本文の設定矛盾を診断"}
+               </button>
+             </div>
+           </div>
 
           <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "10px" }}>
             {auditDone && auditIssues.length === 0 && (

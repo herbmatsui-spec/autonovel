@@ -54,7 +54,7 @@ export function useStreamingWriter(options?: UseStreamingWriterOptions) {
             character_params: character,
             content_length_limit: contentLengthLimit || 2000,
             target_episodes: targetEpisodes || 1,
-            llm_config: (llmConfig && (llmConfig.api_key || llmConfig.provider)) ? llmConfig : undefined,
+            ...( (llmConfig && (llmConfig.api_key || llmConfig.provider)) ? { llm_config: llmConfig } : {} ),
           },
           controller.signal
         );

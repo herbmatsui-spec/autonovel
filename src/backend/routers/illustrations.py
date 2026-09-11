@@ -151,11 +151,11 @@ async def batch_generate_illustrations(
 @router.get("/status/{task_id}")
 async def get_illustration_status(task_id: str):
     """Huey タスクのステータス・結果を取得する。"""
-    from src.backend import database
+    from src.backend.database.core import get_db_manager
     from src.backend.database.repository import BookRepository
 
-    session = database.SessionLocal()
-    try:
+    db = get_db_manager()
+    async with db.get_session() as session:
         repo = BookRepository(session)
         task = repo.get_task(task_id)
         if task is None:
@@ -173,5 +173,3 @@ async def get_illustration_status(task_id: str):
             "status": task.status,
             "result": result,
         }
-    finally:
-        session.close()

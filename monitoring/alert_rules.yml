@@ -1,0 +1,29 @@
+groups:
+- name: autonovel.rules
+  rules:
+  - alert: BookScoreDrop
+    expr: avg_over_time(book_score_overall[1h]) < 75
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "BookScore平均点が75を下回っています"
+      description: "過去1時間のBookScore平均点が {{ $value }} です。"
+  - alert: AuditScoreAnomaly
+    expr: | 
+      (avg_over_time(audit_score_consistency[1h]) < 60) or
+      (avg_over_time(audit_score_creativity[1h]) < 60)
+    for: 10m
+    labels:
+      severity: critical
+    annotations:
+      summary: "監査スコアが異常に低下しています"
+      description: "一貫性または創造性のスコアが60を下回っています。"
+  - alert: ErrorRateSpike
+    expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.05
+    for: 2m
+    labels:
+      severity: critical
+    annotations:
+      summary: "5xx エラーレートが急上昇しています"
+      description: "5分間の5xxエラーレートが {{ $value }} を超えています。"

@@ -27,23 +27,36 @@ export async function generateContent(input: EasyModeInput): Promise<GenerationR
 
 export async function generateContentStream(
   input: EasyModeInput,
-  signal?: AbortSignal
+  signal?: AbortSignal | null
 ): Promise<Response> {
   const res = await apiFetch(`${BASE}/generate/stream`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
-    signal,
+    ...(signal ? { signal } : {}),
   });
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) {
+    let errorMessage = await res.text();
+    try {
+      const errorJson = await res.json();
+      if (errorJson.detail) {
+        errorMessage = errorJson.detail;
+      } else if (errorJson.message) {
+        errorMessage = errorJson.message;
+      }
+    } catch (e) {
+      // If not JSON, use the text we already have
+    }
+    throw new Error(errorMessage);
+  }
   return res;
 }
 
 export async function pollGenerationStatus(
   taskId: string,
-  signal?: AbortSignal
+  signal?: AbortSignal | null
 ): Promise<TaskStatusResponse> {
-  const res = await apiFetch(`${BASE}/status/${taskId}`, { signal });
+  const res = await apiFetch(`${BASE}/status/${taskId}`, { ...(signal ? { signal } : {}) });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
@@ -64,10 +77,9 @@ export async function exportPackage(bookId: number): Promise<ExportPackage> {
   // RFC6266 形式: filename="ascii.zip"; filename*=UTF-8''encoded.zip
   const utf8Match = contentDisposition?.match(/filename\*=UTF-8''([^;]+)/i);
   const asciiMatch = contentDisposition?.match(/filename="([^"]+)"/i);
-  const filename =
-    (utf8Match && decodeURIComponent(utf8Match[1])) ||
-    asciiMatch?.[1] ||
-    `export_${bookId}.zip`;
+  const utf8Filename = utf8Match ? decodeURIComponent(utf8Match[1] as string) : undefined;
+  const rawFilename = utf8Filename || asciiMatch?.[1] || `export_${bookId}.zip`;
+  const filename: string = rawFilename ?? `export_${bookId}.zip`;
   return { zipBlob: blob, filename };
 }
 
@@ -85,10 +97,9 @@ export async function exportPackageWithData(
   const contentDisposition = res.headers.get("Content-Disposition");
   const utf8Match = contentDisposition?.match(/filename\*=UTF-8''([^;]+)/i);
   const asciiMatch = contentDisposition?.match(/filename="([^"]+)"/i);
-  const filename =
-    (utf8Match && decodeURIComponent(utf8Match[1])) ||
-    asciiMatch?.[1] ||
-    `export_${bookId}.zip`;
+  const utf8Filename = utf8Match ? decodeURIComponent(utf8Match[1] as string) : undefined;
+  const rawFilename = utf8Filename || asciiMatch?.[1] || `export_${bookId}.zip`;
+  const filename: string = rawFilename ?? `export_${bookId}.zip`;
   return { zipBlob: blob, filename };
 }
 

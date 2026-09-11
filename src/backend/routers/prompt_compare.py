@@ -33,6 +33,8 @@ async def list_versions(book_id: int, prompt_key: str = Query(...)) -> list[dict
     async with UnitOfWork(AppContainer.db()) as uow:
         from sqlalchemy import select
 
+        if uow.session is None:
+            raise RuntimeError("Database session not initialized")
         result = await uow.session.execute(
             select(PromptVersion)
             .where(PromptVersion.book_id == book_id)
@@ -57,6 +59,8 @@ async def compare(book_id: int, req: CompareRequest) -> dict[str, Any]:
     async with UnitOfWork(AppContainer.db()) as uow:
         from sqlalchemy import select
 
+        if uow.session is None:
+            raise RuntimeError("Database session not initialized")
         result = await uow.session.execute(
             select(PromptVersion)
             .where(PromptVersion.book_id == book_id)
@@ -89,6 +93,8 @@ async def activate_version(book_id: int, version_id: int) -> dict[str, Any]:
         # prompt_key を取得してから正しくセット
         from sqlalchemy import select
 
+        if uow.session is None:
+            raise RuntimeError("Database session not initialized")
         row = (
             await uow.session.execute(select(PromptVersion).where(PromptVersion.id == version_id))
         ).scalar_one_or_none()
