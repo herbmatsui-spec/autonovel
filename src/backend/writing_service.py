@@ -1,10 +1,10 @@
 """
 writing_service.py - WritingService: 本文執筆・研磨を担当するドメインサービス。
 
-UltimateHegemonyEngine の UltimateHegemonyEngine から分離したサービス。
-Workflows (EpisodeWritingWorkflow, ChapterImportWorkflow, RetryFailedEpisodesWorkflow,
-RefineEroticWorkflow 等) は WritingService を依存対象にし、EngineFacade 経由で
-インジェクトされる。
+注意:
+- 本モジュール (src/backend/writing_service.py) は執筆パイプラインとEngineFacade連携を担当します。
+- src/services/writing_service.py は BookScore 連携と自動再生成ループを担当します。
+- src/services/writing_services.py は状態バリデーションと ProjectContext 連携を担当します。
 
 主な責任:
 - generate_episodes_pipeline: パイプライン執筆（WritingAgent へ委譲）

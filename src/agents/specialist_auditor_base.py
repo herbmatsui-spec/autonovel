@@ -21,6 +21,10 @@ class LLMUnavailableError(RuntimeError):
     """
 
 
+class ModelRouterUnavailableError(RuntimeError):
+    """Raised when the model router is not available for a specialist."""
+
+
 @dataclass
 class ActionableDiff:
     """Represents a concrete, actionable text improvement suggestion."""
@@ -236,8 +240,9 @@ class SpecialistAuditor(ABC):
     # Maximum allowed standard deviation across samples (0-100)
     LLM_MAX_SCORE_STDEV = 15.0
 
-    def __init__(self, llm: Any | None = None) -> None:
+    def __init__(self, llm: Any | None = None, model_router: Any | None = None) -> None:
         self.llm = llm
+        self._model_router = model_router
         from src.agents.specialists.windowing import NovelSectionExtractor
         self.section_extractor = NovelSectionExtractor()
         # Allow runtime override via environment variable
@@ -248,6 +253,18 @@ class SpecialistAuditor(ABC):
                 self.LLM_SAMPLE_COUNT = max(1, int(samples))
             except ValueError:
                 pass
+
+    def _get_or_create_model_router(self) -> Any:
+        """Ленивая загрузка model_router для избежания circular import."""
+        if self._model_router is None:
+            from src.agents.specialists.model_router import AuditorModelRouter
+            self._model_router = AuditorModelRouter()
+        return self._model_router
+
+    async def _resolve_llm(self) -> Any:
+        """Resolve LLM dynamically via model_router if not set."""
+        router = self._get_or_create_model_router()
+        return router.get_llm_for_auditor(self.specialist_name)
 
     @abstractmethod
     async def audit(self, ctx: dict[str, Any]) -> SpecialistAuditResult:
@@ -313,7 +330,10 @@ class SpecialistAuditor(ABC):
         Forces structured evaluation and returns (score, critique, suggestions, confidence, reasoning, raw, actionable_diffs).
         Raises LLMUnavailableError if LLM is missing or call fails.
         """
-        if not self.llm:
+        llm = self.llm
+        if llm is None:
+            llm = self._resolve_llm()
+        if llm is None:
             raise LLMUnavailableError("LLM client is not configured on specialist")
 
         full_prompt = prompt

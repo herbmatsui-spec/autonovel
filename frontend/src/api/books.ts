@@ -1,18 +1,16 @@
-import { apiFetch } from "./client";
+import { apiFetch, handleResponse } from "./client";
 import { BookItem, CreateBookInput } from "../types";
 
 const BASE_URL = "/api/books";
 
 export async function fetchBooks(): Promise<BookItem[]> {
   const res = await apiFetch(BASE_URL);
-  if (!res.ok) throw new Error("Failed to fetch books");
-  return res.json();
+  return handleResponse<BookItem[]>(res, "Failed to fetch books");
 }
 
 export async function fetchBookById(id: number): Promise<BookItem> {
   const res = await apiFetch(`${BASE_URL}/${id}`);
-  if (!res.ok) throw new Error("Failed to fetch book");
-  return res.json();
+  return handleResponse<BookItem>(res, "Failed to fetch book");
 }
 
 export async function createBook(payload: CreateBookInput): Promise<BookItem> {
@@ -21,11 +19,10 @@ export async function createBook(payload: CreateBookInput): Promise<BookItem> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
-  if (!res.ok) throw new Error("Failed to create book");
-  return res.json();
+  return handleResponse<BookItem>(res, "Failed to create book");
 }
 
 export async function deleteBook(id: number): Promise<void> {
   const res = await apiFetch(`${BASE_URL}/${id}`, { method: "DELETE" });
-  if (!res.ok) throw new Error("Failed to delete book");
+  await handleResponse<void>(res, "Failed to delete book");
 }

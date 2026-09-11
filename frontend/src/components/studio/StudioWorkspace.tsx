@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNovelContext } from "../../context/NovelContext";
+import { apiFetch, handleResponse } from "../../api/client";
 import { Editor } from "../editor/Editor";
 import { NextBeatsPanel } from "../editor/NextBeatsPanel";
 import { EditorialSidebar } from "../editor/EditorialSidebar";
@@ -9,13 +10,26 @@ import { StyleComparisonModal } from "../style/StyleComparisonModal";
 import { BookShowcaseModal } from "../showcase/BookShowcaseModal";
 import { BranchManagement } from "../branches/BranchManagement";
 import { ConflictReportPanel } from "../editor/ConflictReportPanel";
+import { CommercialPublishPanel } from "../commercial/CommercialPublishPanel";
+import { QualityDashboardModal } from "./QualityDashboardModal";
+import { fetchChapterBookScore } from "../../api/quality";
 
 interface StudioWorkspaceProps {
   onMessage?: (msg: string, type?: "success" | "error" | "info") => void;
   onOpenGraph?: () => void;
 }
 
-type StudioTab = "editor" | "branches" | "audit" | "multimedia";
+interface BudgetInfo {
+  book_id: number;
+  budget_usd: number;
+  current_cost_usd: number;
+  ratio: number;
+  status: "normal" | "warning" | "exceeded";
+  downgrade_active: boolean;
+  recommended_model: string;
+}
+
+type StudioTab = "editor" | "branches" | "audit" | "multimedia" | "commercial";
 
 export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
   onMessage,
@@ -28,13 +42,14 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
     setCurrentChapterText,
     selectedBookId,
     selectedBook,
+    currentEpNum,
   } = useNovelContext();
 
   const [tab, setTab] = useState<StudioTab>(() => {
     if (typeof window === "undefined") return "editor";
     try {
       const saved = window.localStorage.getItem("autonovel.studioTab");
-      if (saved === "editor" || saved === "multimedia" || saved === "branches" || saved === "audit") return saved;
+      if (saved === "editor" || saved === "multimedia" || saved === "branches" || saved === "audit" || saved === "commercial") return saved;
     } catch {
       // localStorage が使えない環境では無視
     }
@@ -53,6 +68,37 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
   const [showRightPane, setShowRightPane] = useState(true);
   const [showStyleComparison, setShowStyleComparison] = useState(false);
   const [showBookShowcase, setShowBookShowcase] = useState(false);
+  const [showQualityDashboard, setShowQualityDashboard] = useState(false);
+  const [chapterScore, setChapterScore] = useState<number | null>(null);
+  const [budgetInfo, setBudgetInfo] = useState<BudgetInfo | null>(null);
+
+  useEffect(() => {
+    const fetchBudget = async () => {
+      if (!selectedBookId) return;
+      try {
+        const res = await apiFetch(`/api/cost/budget/${selectedBookId}`);
+        const data = await handleResponse<BudgetInfo>(res, "Failed to fetch budget");
+        setBudgetInfo(data);
+      } catch {
+        setBudgetInfo(null);
+      }
+    };
+    void fetchBudget();
+  }, [selectedBookId]);
+
+  useEffect(() => {
+    const fetchScore = async () => {
+      if (!selectedBookId) return;
+      try {
+        const scoreData = await fetchChapterBookScore(selectedBookId, currentEpNum);
+        setChapterScore(scoreData.overall_score);
+      } catch (e) {
+        console.error("Failed to fetch chapter score", e);
+        setChapterScore(null);
+      }
+    };
+    void fetchScore();
+  }, [selectedBookId, currentEpNum]);
 
   const handleCreateBranch = () => {
     setTab("branches");
@@ -306,7 +352,45 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
           >
             🖼️ マルチメディア
           </button>
-        </div>
+          <button
+            type="button"
+            className={`btn-tab ${tab === "commercial" ? "btn-tab--active" : ""}`}
+            onClick={() => setTab("commercial")}
+            data-testid="tab-studio-commercial"
+          >
+          📢 商用投稿
+        </button>
+        {budgetInfo && (
+          <div
+            style={{
+              marginLeft: "auto",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "2px 10px",
+              borderRadius: "6px",
+              fontSize: "0.8rem",
+              fontWeight: 600,
+              background:
+                budgetInfo.status === "exceeded"
+                  ? "rgba(239, 68, 68, 0.15)"
+                  : budgetInfo.status === "warning"
+                    ? "rgba(245, 158, 11, 0.15)"
+                    : "rgba(34, 197, 94, 0.15)",
+              color:
+                budgetInfo.status === "exceeded"
+                  ? "#fca5a5"
+                  : budgetInfo.status === "warning"
+                    ? "#fbbf24"
+                    : "#86efac",
+            }}
+            data-testid="cost-indicator"
+            title={`Status: ${budgetInfo.status}${budgetInfo.downgrade_active ? " (downgrade active)" : ""}`}
+          >
+            💰 ${budgetInfo.current_cost_usd.toFixed(2)} / ${budgetInfo.budget_usd.toFixed(2)}
+          </div>
+        )}
+      </div>
 
         {tab === "editor" && (
           <>
@@ -366,15 +450,45 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
             </div>
           </>
         )}
+        {tab === "commercial" && (
+          <>
+            <CommercialPublishPanel
+              bookId={selectedBookId}
+              onToast={handleToast}
+            />
+          </>
+        )}
       </main>
 
       {/* 右ペイン: GraphRAG 専属AI編集者サイドバー */}
       {showRightPane ? (
         <aside className="studio-pane">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-            <h2 style={{ fontSize: "1.05rem", color: "var(--accent-purple)", fontWeight: 700, margin: 0 }}>
-              🧠 専属 AI 編集者 (GraphRAG)
-            </h2>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <h2 style={{ fontSize: "1.05rem", color: "var(--accent-purple)", fontWeight: 700, margin: 0 }}>
+                🧠 専属 AI 編集者 (GraphRAG)
+              </h2>
+              {chapterScore !== null && (
+                <button
+                  type="button"
+                  onClick={() => setShowQualityDashboard(true)}
+                  style={{
+                    padding: "2px 8px",
+                    borderRadius: "12px",
+                    fontSize: "0.75rem",
+                    fontWeight: "bold",
+                    cursor: "pointer",
+                    border: "1px solid var(--border-color)",
+                    background: chapterScore >= 70 ? "rgba(34, 197, 94, 0.2)" : "rgba(239, 68, 68, 0.2)",
+                    color: chapterScore >= 70 ? "#4ade80" : "#f87171",
+                    transition: "all 0.2s",
+                  }}
+                  title="品質ダッシュボードを開く"
+                >
+                  📈 Score: {chapterScore.toFixed(1)}
+                </button>
+              )}
+            </div>
             <button
               type="button"
               className="pane-toggle-btn"
@@ -393,6 +507,14 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
           />
         </aside>
       ) : null}
+
+      {showQualityDashboard && selectedBookId && (
+        <QualityDashboardModal
+          bookId={selectedBookId}
+          chapterNumber={currentEpNum}
+          onClose={() => setShowQualityDashboard(false)}
+        />
+      )}
     </div>
   );
 };

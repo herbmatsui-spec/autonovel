@@ -24,9 +24,10 @@ export const useHistoryStack = () => {
     setPresent(text);
   }, [present]);
 
-  const undo = useCallback(() => {
+  const undo = useCallback((): string | null => {
     if (past.length === 0) return null;
     const previous = past[past.length - 1];
+    if (previous === undefined) return null;
     const newPast = past.slice(0, past.length - 1);
     setPast(newPast);
     setFuture([present, ...future]);
@@ -34,9 +35,10 @@ export const useHistoryStack = () => {
     return previous;
   }, [past, present, future]);
 
-  const redo = useCallback(() => {
+  const redo = useCallback((): string | null => {
     if (future.length === 0) return null;
     const next = future[0];
+    if (next === undefined) return null;
     const newFuture = future.slice(1);
     setFuture(newFuture);
     setPast([...past, present]);

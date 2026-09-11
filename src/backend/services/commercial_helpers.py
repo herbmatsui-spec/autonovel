@@ -25,8 +25,10 @@ async def _get_novel_data(book_id: int) -> dict[str, Any]:
             "is_adult": bool(getattr(book_row, "sanctuary_integrity", 100) < 100),
         }
 
-async def _get_episodes_data(book_id: int, episode_ids: list[int] | None = None) -> list[dict[str, Any]]:
-    """書籍からエピソードデータを取得する"""
+async def _get_episodes_data(
+    book_id: int, episode_ids: list[int] | None = None, platforms: list[str] | None = None
+) -> list[dict[str, Any]]:
+    """書籍からエピソードデータを取得する（プラットフォーム投稿ID含む）"""
     async with UnitOfWork(AppContainer.db()) as uow:
         chapters_query = (
             select(Chapter).where(Chapter.book_id == book_id).order_by(Chapter.ep_num)
@@ -39,13 +41,18 @@ async def _get_episodes_data(book_id: int, episode_ids: list[int] | None = None)
         chapters_result = await uow.session.execute(chapters_query)
         chapters = chapters_result.scalars().all()
         
+        platforms_list = platforms or []
         episodes_data = []
         for ch in chapters:
-            episodes_data.append({
+            ep_info = {
+                "id": ch.id,
                 "ep_num": ch.ep_num,
                 "title": ch.title,
                 "content": ch.content or "",
                 "summary": getattr(ch, "summary", ""),
-                # 投稿IDなどは呼び出し側でプラットフォームに応じて処理するため、ここでは基本情報のみ
-            })
+            }
+            for p in platforms_list:
+                ep_info[f"{p}_post_id"] = getattr(ch, f"{p}_post_id", None)
+                ep_info[f"{p}_post_url"] = getattr(ch, f"{p}_post_url", None)
+            episodes_data.append(ep_info)
         return episodes_data

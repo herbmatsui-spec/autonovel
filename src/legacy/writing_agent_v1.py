@@ -4,13 +4,14 @@ import logging
 from typing import Any
 
 from src.agents.base import BaseAgent
+from src.agents.context_builder_agent import ContextBuilderAgent
+from src.agents.orchestrator import AgentContext
 from src.core.interfaces import IPromptManager
 from src.services.llm_service import LLMService
 
 logger = logging.getLogger(__name__)
 
 
-from src.agents.context_builder import ContextBuilder
 from src.agents.episode_pipeline import EpisodePipeline
 from src.agents.erotic_enhancer import EroticEnhancer
 from src.agents.prompt_composer import PromptComposer
@@ -233,11 +234,24 @@ class WritingAgent(BaseAgent):
         target_word_count: int,
         style_tag: str | None = None,
     ) -> dict[str, Any]:
-        """�執�筆に必要な完全なコンテキストを構�築する。"""
-        context_builder = ContextBuilder(self)
-        return await context_builder.build_full_writing_context(
-            book_id, branch_id, ep_num, target_word_count, style_tag
+        """執筆に必要な完全なコンテキストを構築する。"""
+        context_builder = ContextBuilderAgent(
+            repo=self.repo,
+            llm=self.llm,
+            style_rag=self.style_rag,
+            rag_prefetch=self.rag_prefetch,
         )
+        ctx = AgentContext(
+            book_id=book_id,
+            branch_id=branch_id,
+            ep_num=ep_num,
+            artifacts={
+                "target_word_count": target_word_count,
+                "style_tag": style_tag,
+            },
+        )
+        result = await context_builder.execute(ctx)
+        return result.artifacts.get("writing_context", {})
 
     async def write_episode(self, book_id: int, ep_num: int, context: dict[str, Any]) -> str:
         """
@@ -263,14 +277,12 @@ class WritingAgent(BaseAgent):
 
         # エロティックコンテンツを強化
         erotic_enhancer = EroticEnhancer(self)
-        result = await erotic_enhancer.enhance_erotic_content(prompt, result, context)
+        result = erotic_enhancer.enhance_erotic_content(prompt, result, context)
 
         return result
 
-    @property
-    def pm(self):
-        return self.prompt_manager
-
+def pm(self):
+    return self.prompt_manager
     @property
     def planner(self):
         return getattr(self, "_planner", None)

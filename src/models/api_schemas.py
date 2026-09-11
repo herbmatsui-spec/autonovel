@@ -356,6 +356,69 @@ class ErrorResponse(BaseResponse):
     detail: str | None = None
 
 
+# ==========================================
+# 品質・BookScore 関連
+# ==========================================
+
+
+class BookScoreHistoryItem(BaseModel):
+    """BookScore 履歴の1エントリ"""
+
+    chapter_number: int
+    overall_score: float
+    structure_score: float
+    coherency_score: float
+    factual_grounding_score: float
+    visual_textual_synergy_score: float
+    reader_experience_score: float
+    evaluated_at: datetime
+    evaluator_version: str | None = None
+
+
+class BookScoreHistoryResponse(BaseResponse):
+    """BookScore 時系列履歴レスポンス"""
+
+    book_id: int
+    history: list[BookScoreHistoryItem] = Field(default_factory=list)
+    benchmarks: dict[str, float] | None = Field(default=None, description="ジャンル平均ベンチマーク")
+
+
+class WritingDirectiveSchema(BaseModel):
+    """PDCA執筆指示のスキーマ"""
+    dimension: str
+    severity: str
+    target_location: str
+    current_issue: str
+    mandatory_instruction: str
+    rationale: str
+    specialist_name: str | None = ""
+
+class PDCAHistoryItem(BaseModel):
+    """PDCAサイクル内の一ステップ履歴"""
+    cycle: int
+    draft_chars: int
+    score: float
+    scores_by_specialist: dict[str, float] = Field(default_factory=dict)
+    calibrated_scores: dict[str, float] = Field(default_factory=dict)
+    lowest_dimension: str | None = None
+    directives_count: int
+    delta: float
+
+class PDCACycleSnapshot(BaseModel):
+    """PDCAサイクル実行結果のスナップショット"""
+    book_id: int
+    chapter_number: int
+    cycle_number: int
+    initial_score: float
+    final_score: float
+    score_delta: float
+    improved_percentage: float
+    lowest_dimension: str
+    directives: list[WritingDirectiveSchema] = Field(default_factory=list)
+    history: list[PDCAHistoryItem] = Field(default_factory=list)
+    converged: bool
+    created_at: datetime = Field(default_factory=datetime.now)
+
 __all__ = [
     "BaseResponse",
     "BookSchema",

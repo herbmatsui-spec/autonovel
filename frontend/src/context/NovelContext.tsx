@@ -68,9 +68,9 @@ export const NovelProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [character, setCharacter] = useState<CharacterParams>(defaultCharacter);
   const [chapters, setChapters] = useState<ChapterItem[]>(defaultInitialChapters);
   const [currentEpNum, setCurrentEpNum] = useState<number>(1);
-  const [currentChapterText, setCurrentChapterText] = useState<string>(
-    defaultInitialChapters[0].content
-  );
+const [currentChapterText, setCurrentChapterText] = useState<string>(
+     defaultInitialChapters[0]?.content ?? ""
+   );
   const [generationState, setGenerationState] = useState<GenerationState>(defaultGenerationState);
   const [selectedBookId, setSelectedBookId] = useState<number>(1);
   const [plotStructure, setPlotStructure] = useState<GeneratedPlotStructure | null>(null);

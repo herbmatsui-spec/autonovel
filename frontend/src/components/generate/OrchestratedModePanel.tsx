@@ -1,6 +1,6 @@
 import React from "react";
-import type { Character } from "../types/easyMode";
-import type { GenerationState } from "../hooks/useNovelGeneration";
+import type { CharacterParams as Character } from "../../types";
+import type { GenerationState } from "../../types";
 
 interface OrchestratedModePanelProps {
   character: Character;
@@ -106,7 +106,7 @@ export default function OrchestratedModePanel(props: OrchestratedModePanelProps)
               type="text"
               className="input"
               value={character.name || "主人公の冒険"}
-              onChange={(e) => setCharacter(prev => ({ ...prev, name: e.target.value }))}
+              onChange={(e) => setCharacter((prev: Character) => ({ ...prev, name: e.target.value }))}
             />
           </div>
           <div style={{ display: "flex", marginBottom: "8px" }}>
@@ -114,7 +114,7 @@ export default function OrchestratedModePanel(props: OrchestratedModePanelProps)
             <select
               className="select"
               value={character.genre}
-              onChange={(e) => setCharacter(prev => ({ ...prev, genre: e.target.value }))}
+              onChange={(e) => setCharacter((prev: Character) => ({ ...prev, genre: e.target.value }))}
             >
               <option value="fan">ファンタジー</option>
               <option value="sf">SF</option>

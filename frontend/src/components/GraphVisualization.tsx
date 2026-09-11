@@ -515,7 +515,7 @@ return (
                         ? (edge.target as GraphNode).id
                         : edge.target,
                     type: edge.type,
-                    properties: edge.properties,
+                    properties: edge.properties || {},
                   }));
 
                   return (
@@ -531,6 +531,7 @@ return (
                         if (nodeIndex !== -1) {
                           const updatedRawNode = {
                             ...rawData.nodes[nodeIndex],
+                            id: updatedNode.id,
                             label: updatedNode.label,
                             properties: updatedNode.properties,
                           };

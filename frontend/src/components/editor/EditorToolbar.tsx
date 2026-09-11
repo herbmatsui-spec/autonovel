@@ -8,6 +8,8 @@ interface EditorToolbarProps {
   onZenModeToggle: () => void;
   isZenMode: boolean;
   manuscriptPages: number;
+  onSynthesizeAudio?: () => void;
+  isSynthesizingAudio?: boolean;
 }
 
 export const EditorToolbar: React.FC<EditorToolbarProps> = ({
@@ -18,6 +20,8 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
   onZenModeToggle,
   isZenMode,
   manuscriptPages,
+  onSynthesizeAudio,
+  isSynthesizingAudio = false,
 }) => {
   return (
     <div className="editor-toolbar">
@@ -76,6 +80,18 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
       </div>
 
       <div className="editor-toolbar__divider" />
+
+      {onSynthesizeAudio && (
+        <button
+          type="button"
+          className="editor-toolbar__btn"
+          onClick={onSynthesizeAudio}
+          disabled={isSynthesizingAudio}
+          title="この章の音声を合成する"
+        >
+          {isSynthesizingAudio ? "⏳ 合成中..." : "🔊 音声朗読"}
+        </button>
+      )}
 
       <button
         type="button"

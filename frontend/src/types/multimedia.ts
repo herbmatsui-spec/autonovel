@@ -50,6 +50,7 @@ export interface AssetPackRequest {
   include_if_routes?: boolean;
   include_media_mix?: boolean;
   include_ebook?: boolean;
+  include_audio?: boolean;
   ebook_formats?: EbookFormat[];
   media_mix_formats?: MediaMixFormat[];
 }
@@ -78,4 +79,28 @@ export interface TaskStatusResponse {
   error: string | null;
   started_at: string | null;
   finished_at: string | null;
+}
+
+export interface AudioTrackInfo {
+  audio_id: number;
+  book_id: number;
+  episode_num: number;
+  duration_seconds: number;
+  file_size_bytes: number;
+  stream_url: string;
+  created_at: string | null;
+}
+
+export interface AudioSynthesizeRequest {
+  book_id: number;
+  episode_num: number;
+  chapter_text?: string | undefined;
+  characters?: string[] | undefined;
+}
+
+export interface AudioSynthesizeResponse {
+  status: string;
+  task_id: string;
+  book_id: number;
+  episode_num: number;
 }

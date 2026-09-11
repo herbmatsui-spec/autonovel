@@ -8,6 +8,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from src.backend.auth import require_api_key
+from src.backend.database.uow import UnitOfWork
+from src.core.container import AppContainer
 from src.models.api_schemas import (
     EpisodeListResponse,
     NovelReportResponse,
@@ -120,14 +122,10 @@ async def get_report(project_id: int):
 async def get_chapter_book_score(book_id: int, chapter_number: int):
     """指定章の BookScore を取得する"""
     try:
-        from src.backend.database.core import get_db_manager
-        from src.backend.database.repositories.book_score import BookScoreRepository
         from src.services.book_score_service import BookScoreCalculator
 
-        db_manager = get_db_manager()
-        async with db_manager.get_session() as session:
-            book_score_repo = BookScoreRepository(session)
-            calculator = BookScoreCalculator(repository=book_score_repo)
+        async with UnitOfWork(AppContainer.db()) as uow:
+            calculator = BookScoreCalculator(repository=uow.book_scores)
             score_model = await calculator.get_latest_score(book_id, chapter_number)
 
             if score_model is None:
@@ -135,7 +133,7 @@ async def get_chapter_book_score(book_id: int, chapter_number: int):
 
             # トレンド情報取得（直近3章）
             trend_3ch = None
-            all_scores = await book_score_repo.get_all_for_book(book_id)
+            all_scores = await uow.book_scores.get_all_for_book(book_id)
             if all_scores:
                 # 直近3章
                 recent = all_scores[-3:] if len(all_scores) >= 3 else all_scores
@@ -181,15 +179,8 @@ class PromotionEligibilityResponse(BaseModel):
 async def check_promotion_eligibility(book_id: int):
     """かんたんモードから上級者Studioへの昇格判定を取得する"""
     try:
-        from src.backend.database.core import get_db_manager
-        from src.backend.database.repositories.book_score import BookScoreRepository
-        from src.services.book_score_service import BookScoreCalculator
-
-        db_manager = get_db_manager()
-        async with db_manager.get_session() as session:
-            book_score_repo = BookScoreRepository(session)
-            calculator = BookScoreCalculator(repository=book_score_repo)
-            all_scores = await book_score_repo.get_all_for_book(book_id)
+        async with UnitOfWork(AppContainer.db()) as uow:
+            all_scores = await uow.book_scores.get_all_for_book(book_id)
 
             if len(all_scores) < 3:
                 return PromotionEligibilityResponse(

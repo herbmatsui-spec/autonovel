@@ -34,7 +34,7 @@ async def upsert_chunks(
         return 0
 
     texts = [str(c.content) for c in chunks]
-    vectors = embedding_service.embed_texts(texts, batch_size=batch_size)
+    vectors = await embedding_service.embed_texts_async(texts, batch_size=batch_size)
 
     # Step 26: 各 ChapterChunk の embedding カラムに事前保存
     for c, vec in zip(chunks, vectors):
@@ -68,7 +68,7 @@ async def upsert_chunks(
     return len(chunks)
 
 
-def backfill_missing_embeddings(
+async def backfill_missing_embeddings(
     session: Any,
     store: "BaseVectorStore" | None = None,
     collection: str | None = None,
@@ -97,7 +97,7 @@ def backfill_missing_embeddings(
     for i in range(0, len(missing_chunks), batch_size):
         batch = missing_chunks[i : i + batch_size]
         texts = [str(c.content) for c in batch]
-        vectors = embedding_service.embed_texts(texts, batch_size=len(texts))
+        vectors = await embedding_service.embed_texts_async(texts, batch_size=len(texts))
 
         for c, vec in zip(batch, vectors):
             c.embedding = vec

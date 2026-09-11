@@ -10,6 +10,7 @@ Enhanced with:
 
 from __future__ import annotations
 
+import asyncio
 import json
 import re
 
@@ -86,7 +87,7 @@ class ExtractionService:
         self._llm = llm_adapter or get_llm_adapter()
         self._cache: dict[str, GraphExtractionResult] = {}
 
-    def extract_graph_from_text(
+    async def extract_graph_from_text(
         self, text: str, *, use_cache: bool = True
     ) -> GraphExtractionResult:
         """テキストからエンティティとリレーションを高精度に抽出し、GraphExtractionResult を返す."""
@@ -283,7 +284,7 @@ class ExtractionService:
 
         return hashlib.md5(text[:500].encode()).hexdigest()
 
-    def resolve_entities(
+    async def resolve_entities(
         self,
         extracted: GraphExtractionResult,
         existing_entity_names: list[str],
@@ -296,11 +297,11 @@ class ExtractionService:
         from src.services.embedding_service import embedding_service
 
         # 既存エンティティ名のベクトル化キャッシュ
-        existing_vecs = {
-            name: embedding_service.get_embedding(name)
-            for name in existing_entity_names
-            if name.strip()
-        }
+        existing_vecs = {}
+        for name in existing_entity_names:
+            if name.strip():
+                vec = await asyncio.to_thread(embedding_service.get_embedding, name)
+                existing_vecs[name] = vec
 
         # 新規エンティティ名の置換マップ
         name_map: dict[str, str] = {}
@@ -308,7 +309,7 @@ class ExtractionService:
             if entity.name in existing_vecs:
                 continue  # 完全一致はそのまま
 
-            ent_vec = embedding_service.get_embedding(entity.name)
+            ent_vec = await asyncio.to_thread(embedding_service.get_embedding, entity.name)
             best_match: str | None = None
             best_sim = 0.0
 

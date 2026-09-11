@@ -1,6 +1,6 @@
 import React from "react";
 import { ReversePlotBuilder } from "../ReversePlotBuilder";
-import type { GeneratedPlotStructure } from "../types/reversePlot";
+import type { GeneratedPlotStructure } from "../../types/reversePlot";
 
 interface ReverseModePanelProps {
   targetEpisodes: number;

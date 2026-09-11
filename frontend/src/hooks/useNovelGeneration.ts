@@ -34,14 +34,14 @@ export function useNovelGeneration(
     }));
 
     try {
-      const response = await generateContent({
-        chapter_history: [currentChapterText],
-        current_chapter: currentChapterText,
-        character_params: character,
-        content_length_limit: contentLengthLimit || 2000,
-        target_episodes: targetEpisodes || 1,
-        llm_config: (llmConfig && (llmConfig.api_key || llmConfig.provider)) ? llmConfig : undefined,
-      });
+const response = await generateContent({
+         chapter_history: [currentChapterText],
+         current_chapter: currentChapterText,
+         character_params: character,
+         content_length_limit: contentLengthLimit || 2000,
+         target_episodes: targetEpisodes || 1,
+         ...( (llmConfig && (llmConfig.api_key || llmConfig.provider)) ? { llm_config: llmConfig } : {} ),
+       });
 
       const taskId =
         response.task_id ||

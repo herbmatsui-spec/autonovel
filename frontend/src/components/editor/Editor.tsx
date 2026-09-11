@@ -8,6 +8,8 @@ import { useSnapshotHistory } from "../../hooks/useSnapshotHistory";
 import { HistoryDrawer } from "./HistoryDrawer";
 import { useAutosave, SaveStatus } from "../../hooks/useAutosave";
 import { EditorFontFamily, EditorFontSize } from "../../types";
+import { AudioPlayer } from "../common/AudioPlayer";
+import { useChapterAudio } from "../../hooks/useChapterAudio";
 
 interface EditorProps {
    content: string;
@@ -40,7 +42,25 @@ export const Editor: React.FC<EditorProps> = ({
     selectedBookId,
     currentEpNum
   );
+  const { audioTrack, synthesizing: isSynthesizingAudio, synthesize: triggerSynthesizeAudio } = useChapterAudio(
+    selectedBookId,
+    currentEpNum
+  );
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const handleSynthesizeAudio = async () => {
+    if (!content.trim()) {
+      onToast?.("⚠️ 本文が入力されていません", "error");
+      return;
+    }
+    onToast?.("🎙️ 音声合成を開始しました...", "info");
+    const res = await triggerSynthesizeAudio(content);
+    if (res) {
+      onToast?.("✨ 音声合成が完了しました！", "success");
+    } else {
+      onToast?.("❌ 音声合成に失敗しました", "error");
+    }
+  };
 
   // Autosave hook
   const { status, lastSavedAt, save: triggerSave } = useAutosave(content);
@@ -333,6 +353,8 @@ const handleCreateBranch = async () => {
           onZenModeToggle={() => setIsZenMode(true)}
           isZenMode={isZenMode}
           manuscriptPages={manuscriptPages}
+          onSynthesizeAudio={handleSynthesizeAudio}
+          isSynthesizingAudio={isSynthesizingAudio}
         />
       </div>
 
@@ -418,7 +440,7 @@ const handleCreateBranch = async () => {
             setSelectedText("");
             setSelectionRange(null);
           }}
-          onToast={onToast}
+          {...(onToast ? { onToast } : {})}
         />
       )}
 
@@ -448,6 +470,17 @@ const handleCreateBranch = async () => {
           dangerouslySetInnerHTML={renderRuby(content || "本文がありません。")}
           data-testid="editor-preview"
         />
+      )}
+
+      {/* Step 33: インライン音声プレイヤー */}
+      {audioTrack && (
+        <div style={{ marginTop: "12px" }}>
+          <AudioPlayer
+            src={audioTrack.stream_url}
+            title={`第${currentEpNum || 1}話 朗読音声`}
+            duration={audioTrack.duration_seconds}
+          />
+        </div>
       )}
 
       {isHistoryDrawerOpen && (

@@ -3,10 +3,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Awaitable, Callable, List, Optional
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, List, Optional
 
 from src.agents.event_bus import AgentEvent, EventBus
 from src.agents.skill_base import SkillAgent
+
+if TYPE_CHECKING:
+    from src.backend.tasks.dag_models import DAGGraph
+    from src.backend.tasks.dag_scheduler import DAGScheduler
 
 
 class CyclicDependencyError(ValueError):
@@ -64,7 +68,7 @@ class Orchestrator:
         event_bus: Optional[EventBus] = None,
         correlation_id: Optional[str] = None,
         max_backtracks_per_node: int = 3,
-        dag_scheduler: "DAGScheduler | None" = None,  # type: ignore|        dag_scheduler: "DAGScheduler | None" = None,  # type: ignore|        dag_scheduler: "DAGScheduler | None" = None,  # type: ignore|        dag_scheduler: "DAGScheduler | None" = None,  # type: ignore
+        dag_scheduler: "DAGScheduler | None" = None,
         use_dag_scheduler: bool = False,
     ):
         self.nodes = nodes
@@ -77,7 +81,6 @@ class Orchestrator:
         self._active_skill_version: str = "v1"
         self._ordered_skill_names: list[str] = []
         self._skill_instances: dict[str, SkillAgent] = {}
-        self.max_backtracks_per_node = max_backtracks_per_node
         
 
     def _build_dag_graph(self) -> "DAGGraph":
@@ -120,6 +123,7 @@ class Orchestrator:
                 func_name=skill_name,  # 登録された関数名と一致させる
                 kwargs=kwargs,  # タスク実行時に渡される引数
                 dependencies=dependencies,
+                resources=resources,
                 priority=10 - i,  # 番号が若いほど高優先度（実行順序と同じ)
                 timeout_seconds=300.0,  # 5分のデフォルトタイムアウト
                 retry_limit=3,
@@ -236,7 +240,7 @@ class Orchestrator:
         dependencies: dict[str, Any] | None = None,
         event_bus: Optional[EventBus] = None,
         correlation_id: Optional[str] = None,
-        dag_scheduler: "DAGScheduler | None" = None,  # type: ignore|        dag_scheduler: "DAGScheduler | None" = None,  # type: ignore|        dag_scheduler: "DAGScheduler | None" = None,  # type: ignore|        dag_scheduler: "DAGScheduler | None" = None,  # type: ignore
+        dag_scheduler: "DAGScheduler | None" = None,
         use_dag_scheduler: bool = False,
     ) -> "Orchestrator":
         """マニフェストYAMLからトポロジカル順序付きの実行Orchestratorインスタンスを構築する (Step 16, 20)"""
@@ -357,9 +361,7 @@ class Orchestrator:
         if version_a not in ("v1", "v2") or version_b not in ("v1", "v2"):
             raise ValueError("Versions must be 'v1' or 'v2'")
         
-        from src.agents.skill_base import SkillAgent
         import statistics
-        import random
         
         # 元のバージョンを保存
         original_version = self._active_skill_version
@@ -689,7 +691,7 @@ class Orchestrator:
                             },
                             correlation_id=self.correlation_id,
                         )
-)
+                    )
 
                 # Handle should_retry (backtrack or retry)
                 if result.should_retry:
@@ -701,11 +703,17 @@ class Orchestrator:
 
                     # Check if we exceeded max backtracks
                     if current_count > self.max_backtracks_per_node:
-                        # Handle max backtrack exceeded: proceed to next_agent without retrying
-                        # Record that we exceeded
+                        # Handle max backtrack exceeded: proceed to next node in pipeline rather than backtracking
                         ctx.artifacts[f"{current_agent_name}_max_backtrack_exceeded"] = True
-                        # Publish an event for max backtrack exceeded? We'll just continue to next_agent
-                        current = result.next_agent
+                        node_keys = list(self.nodes.keys())
+                        next_node_after_current = None
+                        for idx, k in enumerate(node_keys):
+                            k_val = k.value if hasattr(k, "value") else str(k)
+                            if k == current or k_val == current_agent_name:
+                                if idx + 1 < len(node_keys):
+                                    next_node_after_current = node_keys[idx + 1]
+                                break
+                        current = next_node_after_current
                         continue
                     # Update artifacts with backtrack info
                     # Note: we are already updating artifacts with result.artifacts above, but we want to add specific backtrack info
@@ -720,6 +728,7 @@ class Orchestrator:
                         "reason": "audit_failed",
                         "count": current_count
                     })
+                    ctx.artifacts["backtrack_history"] = ctx.backtrack_history
                     # Publish agent.backtracked event
                     if self.event_bus:
                         await self.event_bus.publish_async(

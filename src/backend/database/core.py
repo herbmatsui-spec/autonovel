@@ -166,6 +166,10 @@ class DatabaseManager:
             async_url = db_url.replace("sqlite:", "sqlite+aiosqlite:")
         elif db_url.startswith("postgresql://"):
             async_url = db_url.replace("postgresql://", "postgresql+asyncpg://")
+        elif db_url.startswith("postgresql+psycopg2://"):
+            async_url = db_url.replace("postgresql+psycopg2://", "postgresql+asyncpg://")
+        elif db_url.startswith("postgresql+psycopg://"):
+            async_url = db_url.replace("postgresql+psycopg://", "postgresql+asyncpg://")
         else:
             async_url = db_url
 
@@ -348,12 +352,11 @@ def init_db(db_path: str = ""):
 
     import src.backend.database.models  # noqa
     import src.infrastructure.database.models  # noqa
-    from src.backend.database.models import Base as BackendBase
     from src.infrastructure.database.models import Base as InfraBase
 
     engine_obj = create_engine(sync_url)
+    # BackendBase と InfraBase は同一の基底メタデータを共有しているため 1 回で同期
     InfraBase.metadata.create_all(engine_obj)
-    BackendBase.metadata.create_all(engine_obj)
 
 
 def get_db_manager() -> DatabaseManager:

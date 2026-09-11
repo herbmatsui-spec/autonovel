@@ -1,0 +1,13 @@
+pricing:
+  anthropic/claude-3-5-sonnet:
+    input_per_1k: 0.003
+    output_per_1k: 0.015
+  openai/gpt-4o:
+    input_per_1k: 0.0025
+    output_per_1k: 0.010
+  openai/gpt-4o-mini:
+    input_per_1k: 0.00015
+    output_per_1k: 0.0006
+  google/gemini-1.5-flash:
+    input_per_1k: 0.000075
+    output_per_1k: 0.0003

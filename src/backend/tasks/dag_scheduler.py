@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import inspect
+import json
 import logging
 import os
 import time
@@ -12,6 +13,7 @@ from typing import Any, Callable, Dict, List, Optional, Set
 from src.backend.tasks.scheduling_policies import SchedulingPolicy, AffinityPriorityPolicy
 from src.backend.tasks.metrics_collector import MetricsCollector, NoOpMetricsCollector, TaskMetrics
 from src.backend.tasks.dag_persistence import DAGPersistence, FileSystemDAGPersistence
+from src.backend.tasks.worker_recovery import WorkerRecoveryManager, RecoveryConfig
 
 from src.backend.tasks.dag_models import (
     DAGGraph,
@@ -21,6 +23,7 @@ from src.backend.tasks.dag_models import (
 )
 from src.backend.tasks.dag_engine import DAGEngine, DAGCycleError
 from src.backend.tasks.resource_manager import ResourceManager
+from src.backend.database.core import DatabaseManager
 
 logger = logging.getLogger(__name__)
 
@@ -43,18 +46,22 @@ class DAGScheduler:
         scheduling_policy: SchedulingPolicy | None = None,
         metrics_collector: MetricsCollector | None = None,
         persistence: DAGPersistence | None = None,
-        checkpoint_interval: int = 5,  # N タスク完了ごと
+        checkpoint_interval: int = 5,
         use_huey: bool = False,
         event_bus: Any = None,
         replanner: Any = None,
+        db_manager: DatabaseManager | None = None,
+        worker_recovery: WorkerRecoveryManager | None = None,
     ) -> None:
         self.resource_manager = resource_manager or ResourceManager()
         self.huey_instance = huey_instance
         self.task_registry: dict[str, Callable] = task_registry or {}
-        self.worker_affinity_map: dict[str, str] = {}  # chapter_key -> worker_id (Step 40)
+        self.worker_affinity_map: dict[str, str] = {}
         self.active_allocations = TaskResourceRequirement(cpu_cores=0.0, ram_mb=0, gpu_mem_mb=0)
         self.use_huey = use_huey
         self.event_bus = event_bus
+        self.db_manager = db_manager
+        self.worker_recovery = worker_recovery
 
         # Dynamic replanning integration (Step 55)
         if replanner is None:
@@ -296,6 +303,15 @@ class DAGScheduler:
 
     async def _execute_task_wrapper(self, graph: DAGGraph, task_node: DAGTaskNode) -> None:
         """Wrapper to execute task function (locally or via Huey) and handle retries/timeouts/failures."""
+        # Log task start to WAL (Step 51)
+        if self.worker_recovery:
+            await self.worker_recovery.log_task_start(
+                task_id=task_node.task_id,
+                dag_id=graph.dag_id,
+                node_id=task_node.task_id,
+                input_data=task_node.kwargs,
+            )
+
         # アフィニティワーカーのバインド (Step 40)
         chapter_key = f"{task_node.kwargs.get('book_id', 0)}:{task_node.kwargs.get('ep_num', 0)}"
         worker_id = self.worker_affinity_map.get(chapter_key) or f"worker_{task_node.task_id}"
@@ -368,6 +384,13 @@ class DAGScheduler:
                 "worker_id": worker_id,
             })
             
+            # Log task completion to WAL (Step 51)
+            if self.worker_recovery:
+                await self.worker_recovery.log_task_completion(
+                    task_id=task_node.task_id,
+                    output_data=res if isinstance(res, dict) else {"result": str(res)},
+                )
+
             # Metrics: record task end (success)
             duration = time.monotonic() - start_time
             self.metrics.record_task_end(TaskMetrics(
@@ -404,6 +427,14 @@ class DAGScheduler:
                 cancelled = graph.cascade_cancel_downstream(task_node.task_id, reason=f"Dependency {task_node.task_id} failed")
                 if cancelled:
                     logger.info(f"Cascade cancelled downstream tasks of '{task_node.task_id}': {cancelled}")
+                
+                # Log task failure to WAL (Step 51)
+                if self.worker_recovery:
+                    await self.worker_recovery.log_task_completion(
+                        task_id=task_node.task_id,
+                        error=err_msg,
+                    )
+                
                 # Metrics: record task end (failure)
                 duration = time.monotonic() - start_time
                 self.metrics.record_task_end(TaskMetrics(
@@ -567,6 +598,80 @@ class DAGScheduler:
         if latest:
             return self.persistence.load_checkpoint(latest)
         return None
+
+    async def on_startup(self) -> list[str]:
+        """Startup hook: scan for and resume all active DAGs (Step 54).
+        
+        If WorkerRecoveryManager is configured, delegates to it for zombie detection
+        and recovery. Otherwise uses local checkpoint-based recovery.
+        
+        Returns list of DAG IDs that were resumed.
+        """
+        if self.worker_recovery:
+            logger.info("Running WorkerRecoveryManager startup recovery...")
+            recovered_tasks = await self.worker_recovery.recover_orphan_tasks()
+            if recovered_tasks:
+                logger.info(f"Recovered {len(recovered_tasks)} orphan tasks on startup")
+            return recovered_tasks
+        
+        # Fallback: local checkpoint-based recovery
+        logger.info("Running local checkpoint-based startup recovery...")
+        checkpoints_dir = self.persistence.base_dir
+        if not checkpoints_dir.exists():
+            return []
+        
+        resumed_dags = set()
+        for cp_file in checkpoints_dir.glob("*.json"):
+            dag_id = cp_file.stem.split("_cp_")[0]
+            if dag_id not in resumed_dags:
+                try:
+                    graph = self.auto_recover(dag_id)
+                    if graph:
+                        resumed_dags.add(dag_id)
+                        logger.info(f"Auto-recovered DAG {dag_id} from checkpoint")
+                except Exception as e:
+                    logger.warning(f"Failed to auto-recover DAG {dag_id}: {e}")
+        
+        return list(resumed_dags)
+
+    async def resume_from_checkpoint_with_wal(
+        self,
+        dag_id: str,
+        graph: DAGGraph,
+    ) -> DAGGraph:
+        """Resume DAG from checkpoint using WAL for idempotent intermediate state (Step 55).
+        
+        Finds completed nodes from WAL and restores their outputs to graph nodes,
+        allowing downstream nodes to execute without re-running completed work.
+        
+        Args:
+            dag_id: The DAG identifier
+            graph: The DAGGraph loaded from checkpoint
+            
+        Returns:
+            Updated graph with completed node outputs restored from WAL
+        """
+        if not self.worker_recovery or not self.db_manager:
+            logger.warning("WAL-based resume requires WorkerRecoveryManager and DatabaseManager")
+            return graph
+
+        completed_nodes = await self.worker_recovery.resume_dag_from_checkpoint(dag_id)
+        logger.info(f"Resuming DAG {dag_id}: found {len(completed_nodes)} completed nodes in WAL")
+        
+        for node_id in completed_nodes:
+            if node_id in graph.nodes:
+                wal_entry = await self.worker_recovery.get_latest_wal_for_node(dag_id, node_id)
+                if wal_entry and wal_entry.output_json:
+                    try:
+                        output_data = json.loads(wal_entry.output_json)
+                        graph.nodes[node_id].result = output_data
+                        graph.nodes[node_id].status = "completed"
+                        graph.nodes[node_id].completed_at = wal_entry.created_at
+                        logger.debug(f"Restored output for node {node_id} from WAL")
+                    except json.JSONDecodeError:
+                        logger.warning(f"Failed to parse WAL output for node {node_id}")
+        
+        return graph
 
     def _can_schedule_approx(self, req: TaskResourceRequirement) -> bool:
         """Fast approximate check using semaphore current values."""

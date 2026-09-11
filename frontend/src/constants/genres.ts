@@ -40,5 +40,5 @@ export const GENRE_BADGE_CONFIG: Record<string, GenreBadgeConfig> = {
 };
 
 export function getGenreBadgeConfig(genre: string): GenreBadgeConfig {
-  return GENRE_BADGE_CONFIG[genre] || GENRE_BADGE_CONFIG["デフォルト"];
-}
+   return GENRE_BADGE_CONFIG[genre] ?? GENRE_BADGE_CONFIG["デフォルト"]!;
+ }

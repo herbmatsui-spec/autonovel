@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, Path, Request, Response
 from pydantic import ValidationError
 
 from src.backend import database
+from src.backend.auth import require_api_key
 from src.backend.database.repository import BookRepository
 from src.backend.observability.health import metrics
 from src.backend.rate_limit import generate_limiter
@@ -68,8 +69,9 @@ async def execute_generation(payload: dict[str, Any]) -> dict[str, Any]:
     history_context = "\n".join(chapter_history[:-1]) if len(chapter_history) > 1 else "なし"
 
     # GraphRAG コンテキストの取得
-    session = database.SessionLocal()
-    try:
+    from src.backend.database.core import get_db_manager
+    db = get_db_manager()
+    async with db.get_session() as session:
         rag_context = await rag_service.build_rag_context(
             session=session,
             current_prompt=current_chapter,
@@ -77,8 +79,6 @@ async def execute_generation(payload: dict[str, Any]) -> dict[str, Any]:
         )
         graph_context = rag_context.graph_context
         vector_context = rag_context.vector_context
-    finally:
-        session.close()
 
     # 文体（Style DNA）の解決とプロンプト注入
     from src.models.style_profile import StyleProfile
@@ -173,17 +173,17 @@ async def execute_generation(payload: dict[str, Any]) -> dict[str, Any]:
     )
 
     # 生成完了後、バックグラウンド/同期でナレッジグラフとベクトルを更新
-    session = database.SessionLocal()
-    try:
-        graph_pipeline_service.process_chapter_knowledge(
-            session=session,
-            chapter_id=chapter_id,
-            chapter_text=generated_text,
-        )
-    except Exception as e:
-        logger.warning("Failed to process chapter knowledge in background: %s", e)
-    finally:
-        session.close()
+    from src.backend.database.core import get_db_manager
+    db = get_db_manager()
+    async with db.get_session() as session:
+        try:
+            graph_pipeline_service.process_chapter_knowledge(
+                session=session,
+                chapter_id=chapter_id,
+                chapter_text=generated_text,
+            )
+        except Exception as e:
+            logger.warning("Failed to process chapter knowledge in background: %s", e)
 
     # 次話展開提案の生成
     suggestions_prompt = SUGGESTIONS_PROMPT_TEMPLATE.format(chapter_text=generated_text[:1000])
@@ -222,6 +222,7 @@ async def generate_content(
     input_data: EasyModeInput,
     request: Request,
     session=Depends(database.get_db),
+    api_key: str = Depends(require_api_key),
 ) -> GenerationResponse:
     """章単位の対話型自動生成 [Interactive Writer]"""
     generate_limiter.check(request)

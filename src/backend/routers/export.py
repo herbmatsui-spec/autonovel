@@ -7,11 +7,13 @@ routers/export.py - 出版フォーマット自動整形エクスポーター AP
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
+from src.backend.auth import require_api_key
 from src.backend.database.uow import UnitOfWork
 from src.backend.feature_flags import is_multimedia_enabled
 from src.backend.multimedia_service import MultimediaService
@@ -57,7 +59,7 @@ async def get_platforms() -> list[dict[str, str]]:
     return list_platforms()
 
 
-@router.get("/books/{book_id}")
+@router.get("/books/{book_id}", dependencies=[Depends(require_api_key)])
 async def export_book(
     book_id: int,
     platform: str = Query("narou", description="narou | kakuyomu | nocturne | nocturn"),
@@ -89,14 +91,18 @@ async def export_book(
     "/ebook",
     response_model=EbookExportResponse,
     responses={503: {"description": "Multimedia disabled"}},
+    dependencies=[Depends(require_api_key)],
 )
-def export_ebook_alias(
+async def export_ebook_alias(
     payload: EbookExportRequest,
     service: MultimediaService = Depends(get_multimedia_service),
 ) -> EbookExportResponse:
-    """README 互換エイリアス: eBook エクスポート (EPUB/PDF/MOBI) - `/multimedia/ebook` に委譲。"""
+    """README 互換エイリアス: eBook エクスポート (EPUB/PDF/MOBI) - `/multimedia/ebook` に委譲。
+    
+    重い PDF/EPUB 生成をワーカースレッドにオフロードしてイベントループをブロックしない。
+    """
     _check_multimedia()
-    result = service.export_ebook(book_id=payload.book_id, formats=payload.formats)
+    result = await asyncio.to_thread(service.export_ebook, book_id=payload.book_id, formats=payload.formats)
     return EbookExportResponse(
         asset_id=result.asset_id or 0,
         files=result.files,

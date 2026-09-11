@@ -9,10 +9,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from src.backend.auth import require_api_key
+from src.backend.database import get_db
+from src.backend.database.models import PublicationScheduleDbModel
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.backend.workflows.commercial_pipeline import CommercialPipeline
 from src.services.publishers import (
     get_credential_store,
-    PublisherCredentials,
     NarouCredentials,
     KakuyomuCredentials,
     KoboCredentials,
@@ -53,6 +55,179 @@ class PublishStatusRequest(BaseModel):
     book_id: int = Field(..., ge=1)
     platform: str
     post_id: str
+
+
+class PublicationScheduleCreate(BaseModel):
+    book_id: int = Field(..., ge=1)
+    platform: str = Field(..., pattern="^(narou|kakuyomu|kindle|kobo)$")
+    episode_range: tuple[int, int]
+    scheduled_at: datetime
+    credentials_override: dict[str, Any] | None = None
+
+
+class PublicationScheduleResponse(BaseModel):
+    id: int
+    book_id: int
+    platform: str
+    episode_range: tuple[int, int]
+    scheduled_at: datetime
+    status: str
+    error_message: str | None = None
+    created_at: datetime
+
+
+@router.post("/schedules", response_model=PublicationScheduleResponse)
+async def create_schedule(
+    req: PublicationScheduleCreate,
+    db: AsyncSession = Depends(get_db),
+    api_key: str = Depends(require_api_key),
+):
+    """
+    投稿スケジュールを登録する。
+    """
+    try:
+        schedule = PublicationScheduleDbModel(
+            book_id=req.book_id,
+            platform=req.platform,
+            episode_range_start=req.episode_range[0],
+            episode_range_end=req.episode_range[1],
+            scheduled_at=req.scheduled_at,
+            status="pending",
+        )
+        db.add(schedule)
+        await db.commit()
+        await db.refresh(schedule)
+
+        return PublicationScheduleResponse(
+            id=schedule.id,
+            book_id=schedule.book_id,
+            platform=schedule.platform,
+            episode_range=(schedule.episode_range_start, schedule.episode_range_end),
+            scheduled_at=schedule.scheduled_at,
+            status=schedule.status,
+            error_message=schedule.error_message,
+            created_at=schedule.created_at,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create schedule: {str(e)}")
+
+
+@router.get("/schedules/{book_id}", response_model=list[PublicationScheduleResponse])
+async def get_schedules(
+    book_id: int,
+    db: AsyncSession = Depends(get_db),
+    api_key: str = Depends(require_api_key),
+):
+    """
+    書籍ごとの投稿スケジュール一覧を取得する。
+    """
+    try:
+        from sqlalchemy import select
+        stmt = (
+            select(PublicationScheduleDbModel)
+            .where(PublicationScheduleDbModel.book_id == book_id)
+            .order_by(PublicationScheduleDbModel.scheduled_at.desc())
+        )
+        result = await db.execute(stmt)
+        schedules = result.scalars().all()
+
+        return [
+            PublicationScheduleResponse(
+                id=s.id,
+                book_id=s.book_id,
+                platform=s.platform,
+                episode_range=(s.episode_range_start, s.episode_range_end),
+                scheduled_at=s.scheduled_at,
+                status=s.status,
+                error_message=s.error_message,
+                created_at=s.created_at,
+            )
+            for s in schedules
+        ]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch schedules: {str(e)}")
+
+
+@router.delete("/schedules/{schedule_id}", response_model=dict[str, Any])
+async def cancel_schedule(
+    schedule_id: int,
+    db: AsyncSession = Depends(get_db),
+    api_key: str = Depends(require_api_key)
+):
+    """
+    投稿スケジュールを取り消す。
+    ステータスが 'pending' の場合のみ取り消し可能。
+    """
+    try:
+        from sqlalchemy import select
+        
+        # スケジュールの取得
+        result = await db.execute(select(PublicationScheduleDbModel).where(PublicationScheduleDbModel.id == schedule_id))
+        schedule = result.scalar_one_or_none()
+        
+        if not schedule:
+            raise HTTPException(status_code=404, detail="Schedule not found")
+        
+        if schedule.status != "pending":
+            raise HTTPException(
+                status_code=400,
+                detail=f"Only pending schedules can be cancelled. Current status: {schedule.status}"
+            )
+        
+        # ステータスを cancelled に更新
+        schedule.status = "cancelled"
+        await db.commit()
+        await db.refresh(schedule)
+        
+        return {"success": True, "message": "Schedule cancelled successfully", "schedule_id": schedule_id}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Cancel schedule failed: {str(e)}")
+
+
+@router.post("/schedules/{schedule_id}/run-now", response_model=dict[str, Any])
+async def run_schedule_now(
+    schedule_id: int,
+    db: AsyncSession = Depends(get_db),
+    api_key: str = Depends(require_api_key)
+):
+    """
+    予約投稿を即時に実行する (Step 10).
+    """
+    try:
+        from sqlalchemy import select
+        from src.backend.tasks.commercial_tasks import execute_publication_task
+        
+        # スケジュールの存在確認
+        result = await db.execute(select(PublicationScheduleDbModel).where(PublicationScheduleDbModel.id == schedule_id))
+        schedule = result.scalar_one_or_none()
+        
+        if not schedule:
+            raise HTTPException(status_code=404, detail="Schedule not found")
+        
+        if schedule.status == "running":
+            raise HTTPException(status_code=400, detail="Schedule is already running")
+        
+        # Hueyタスクを即時投入
+        execute_publication_task(schedule_id)
+        
+        return {"success": True, "message": "Publication task triggered successfully", "schedule_id": schedule_id}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Trigger run-now failed: {str(e)}")
+        await db.commit()
+        await db.refresh(schedule)
+        
+        return {"success": True, "message": "Schedule cancelled successfully", "schedule_id": schedule_id}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Cancel schedule failed: {str(e)}")
 
 
 @router.post("/run", response_model=dict[str, Any])
@@ -112,38 +287,13 @@ async def publish_commercial(request: PublishRequest, api_key: str = Depends(req
     """
     try:
         from src.backend.services.commercial_helpers import _get_novel_data, _get_episodes_data
-        from sqlalchemy import select
-        from src.backend.database.models import Chapter
-        from src.backend.database.uow import UnitOfWork
-        from src.core.container import AppContainer
 
-        # 1. 書籍・エピソード基本データ取得
-        novel_data = await _get_novel_data(request.book_id)
-        episodes_base_data = await _get_episodes_data(request.book_id, request.episode_ids)
-        
-        if not episodes_base_data:
+        # 1. 書籍・エピソードデータ取得（プラットフォームIDもまとめて取得）
+        await _get_novel_data(request.book_id)
+        episodes_data = await _get_episodes_data(request.book_id, request.episode_ids, request.platforms)
+
+        if not episodes_data:
             raise HTTPException(status_code=404, detail="No episodes found for this book")
-
-        # 2. エピソード詳細の構築（DBから投稿ID等を付与）
-        episodes_data = []
-        async with UnitOfWork(AppContainer.db()) as uow:
-            if uow.session is None:
-                raise HTTPException(status_code=500, detail="Database session not available")
-            
-            for ep_base in episodes_base_data:
-                res = await uow.session.execute(
-                    select(Chapter).where(Chapter.ep_num == ep_base["ep_num"], Chapter.book_id == request.book_id)
-                )
-                ch = res.scalar_one_or_none()
-                if ch:
-                    ep_info = {
-                        **ep_base,
-                        **{f"{p}_post_id": getattr(ch, f"{p}_post_id", None) for p in request.platforms},
-                        **{f"{p}_post_url": getattr(ch, f"{p}_post_url", None) for p in request.platforms},
-                    }
-                    episodes_data.append(ep_info)
-                else:
-                    episodes_data.append(ep_base)
 
         # 3. 認証情報準備
         credentials = {}
@@ -169,20 +319,22 @@ async def publish_commercial(request: PublishRequest, api_key: str = Depends(req
                 elif isinstance(cred, dict):
                     serializable_credentials[p] = cred
 
-        from src.backend.tasks.commercial_tasks import (
-            schedule_commercial_publish,
-            get_scheduled_commercial_tasks,
-            cancel_commercial_task,
-        )
+        from src.backend.tasks.commercial_tasks import schedule_commercial_publish
 
         if request.schedule:
             # 予約投稿ジョブの登録 (Step 50, 51)
+            # request.schedule が dict 形式の場合に ISO 文字列または datetime オブジェクトへ正規化して渡す
+            publish_at = request.schedule
+            if isinstance(publish_at, dict):
+                # 辞書型（{"target_time": "..."} や {"publish_at": "..."}）の展開
+                publish_at = publish_at.get("target_time") or publish_at.get("publish_at") or publish_at.get("at")
+            
             job_info = schedule_commercial_publish(
                 book_id=request.book_id,
                 platforms=request.platforms,
                 credentials=serializable_credentials,
                 episode_ids=request.episode_ids,
-                publish_at=request.schedule if isinstance(request.schedule, (str, datetime)) else None,
+                publish_at=publish_at,
             )
             return {
                 "success": True,
@@ -191,43 +343,26 @@ async def publish_commercial(request: PublishRequest, api_key: str = Depends(req
                 "data": job_info,
             }
 
-        # 即時投稿パイプライン実行
-        pipeline = CommercialPipeline()
-        publish_results = await pipeline._publish_to_platforms(
-            novel=novel_data,
-            episodes=episodes_data,
+        # 即時投稿：Hueyタスクを直接キューイング (Step 51)
+        from src.backend.tasks.commercial_tasks import publish_to_platforms_task
+        task_result = publish_to_platforms_task(
+            book_id=request.book_id,
             platforms=request.platforms,
-            credentials=credentials,
+            credentials=serializable_credentials,
+            episode_ids=request.episode_ids,
         )
-
-        # 5. 結果をDBに保存
-        await _save_publish_records(request.book_id, publish_results)
-
-        # レスポンス整形
-        response_data: dict[str, Any] = {
-            "book_id": request.book_id,
-            "published_episodes": len(episodes_data),
-            "platforms": {},
+        task_id = str(task_result.id) if task_result else "mock-task-id"
+        return {
+            "success": True,
+            "status": "queued",
+            "message": "Commercial publish queued for immediate execution",
+            "data": {
+                "task_id": task_id,
+                "book_id": request.book_id,
+                "platforms": request.platforms,
+                "status": "queued",
+            },
         }
-
-        for platform, results in publish_results.items():
-            success_count = sum(1 for r in results if r.success)
-            response_data["platforms"][platform] = {
-                "success": success_count,
-                "failed": len(results) - success_count,
-                "details": [
-                    {
-                        "episode": ep.get("ep_num"),
-                        "success": r.success,
-                        "post_id": r.post_id,
-                        "url": r.url,
-                        "error": r.error,
-                    }
-                    for ep, r in zip(episodes_data, results)
-                ],
-            }
-
-        return {"success": True, "data": response_data}
 
     except HTTPException:
         raise
@@ -301,7 +436,7 @@ async def get_publish_records(book_id: int, api_key: str = Depends(require_api_k
     """
     try:
         from sqlalchemy import select
-        from src.backend.database.models import PublishRecord
+        from src.infrastructure.database.models.publish_record import PublishRecord
         from src.backend.database.uow import UnitOfWork
         from src.core.container import AppContainer
 
@@ -348,7 +483,7 @@ async def list_publish_platforms():
 async def _save_publish_records(book_id: int, publish_results: dict[str, list]):
     """投稿結果をDBに保存"""
     from sqlalchemy.dialects.postgresql import insert
-    from src.backend.database.models import PublishRecord
+    from src.infrastructure.database.models.publish_record import PublishRecord
     from src.backend.database.uow import UnitOfWork
     from src.core.container import AppContainer
 

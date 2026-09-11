@@ -7,9 +7,10 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 
 from src.backend.auth import require_api_key
-from src.backend.database.models import InternalState
-from src.backend.redis_util import get_redis_client
+from src.backend.database.models import InternalState, TaskWALLogModel
+from src.backend.redis_util import get_async_redis_client
 from src.backend.sse import task_event_generator
+from src.backend.tasks.worker_recovery import WorkerRecoveryManager, RecoveryConfig
 from src.core.container import AppContainer
 from src.core.exceptions import NotFoundError
 
@@ -20,10 +21,10 @@ router = APIRouter(prefix="/api/tasks", tags=["tasks"])
 
 @router.get("/{task_id}/status")
 async def get_task_status(task_id: str):
-    redis_client = get_redis_client()
+    redis_client = await get_async_redis_client()
     if redis_client is not None:
         try:
-            val = redis_client.get(f"task_status:{task_id}")
+            val = await redis_client.get(f"task_status:{task_id}")
             if val:
                 return json.loads(val)
         except Exception as exc:
@@ -60,10 +61,10 @@ async def get_dag_status(dag_id: str):
             return summary
 
     # Check Redis
-    redis_client = get_redis_client()
+    redis_client = await get_async_redis_client()
     if redis_client is not None:
         try:
-            val = redis_client.get(f"dag_status:{dag_id}")
+            val = await redis_client.get(f"dag_status:{dag_id}")
             if val:
                 return json.loads(val)
         except Exception as exc:
@@ -92,11 +93,11 @@ async def stream_task_status(task_id: str):
 @router.post("/{task_id}/stop")
 async def stop_task(task_id: str, api_key: str = Depends(require_api_key)):
     # Retrieve current task status, set stop event
-    redis_client = get_redis_client()
+    redis_client = await get_async_redis_client()
     state_dict = None
     if redis_client is not None:
         try:
-            val = redis_client.get(f"task_status:{task_id}")
+            val = await redis_client.get(f"task_status:{task_id}")
             if val:
                 state_dict = json.loads(val)
         except Exception as exc:
@@ -123,7 +124,7 @@ async def stop_task(task_id: str, api_key: str = Depends(require_api_key)):
     state_json = json.dumps(state_dict)
     if redis_client is not None:
         try:
-            redis_client.set(f"task_status:{task_id}", state_json, ex=86400)
+            await redis_client.set(f"task_status:{task_id}", state_json, ex=86400)
             return {"message": "Stop request registered via Redis"}
         except Exception as exc:
             logger.warning(
@@ -134,3 +135,81 @@ async def stop_task(task_id: str, api_key: str = Depends(require_api_key)):
         f"task_status:{task_id}", state_json, time.strftime("%Y-%m-%d %H:%M:%S")
     )
     return {"message": "Stop request registered"}
+
+
+@router.post("/admin/recover", dependencies=[Depends(require_api_key)])
+async def trigger_task_recovery():
+    """Step 58: Manual trigger for orphan task detection and recovery.
+    
+    Scans for zombie tasks (running with stale heartbeat) and resets them to pending
+    for re-scheduling. Returns count of recovered tasks.
+    """
+    db_manager = AppContainer.db()
+    recovery_manager = WorkerRecoveryManager(
+        db_manager=db_manager,
+        config=RecoveryConfig(),
+    )
+    
+    recovered_tasks = await recovery_manager.recover_orphan_tasks()
+    
+    return {
+        "recovered_count": len(recovered_tasks),
+        "recovered_task_ids": recovered_tasks,
+        "message": f"Recovered {len(recovered_tasks)} orphan tasks" if recovered_tasks else "No orphan tasks found",
+    }
+
+
+@router.get("/admin/recover/zombies")
+async def list_zombie_tasks():
+    """List current zombie tasks (running with stale heartbeat) without recovering them."""
+    db_manager = AppContainer.db()
+    recovery_manager = WorkerRecoveryManager(
+        db_manager=db_manager,
+        config=RecoveryConfig(),
+    )
+    
+    zombies = await recovery_manager.detect_zombie_tasks()
+    
+    return {
+        "zombie_count": len(zombies),
+        "zombies": [
+            {
+                "task_id": z.task_id,
+                "dag_id": z.dag_id,
+                "node_id": z.node_id,
+                "heartbeat_at": z.heartbeat_at.isoformat() if z.heartbeat_at else None,
+                "created_at": z.created_at.isoformat() if z.created_at else None,
+            }
+            for z in zombies
+        ],
+    }
+
+
+@router.get("/admin/wal/{dag_id}")
+async def get_wal_logs(dag_id: str):
+    """Get WAL logs for a specific DAG for debugging."""
+    db_manager = AppContainer.db()
+    
+    async with db_manager.get_session() as session:
+        stmt = select(TaskWALLogModel).where(
+            TaskWALLogModel.dag_id == dag_id
+        ).order_by(TaskWALLogModel.created_at.desc()).limit(100)
+        result = await session.execute(stmt)
+        logs = result.scalars().all()
+    
+    return {
+        "dag_id": dag_id,
+        "logs": [
+            {
+                "id": log.id,
+                "task_id": log.task_id,
+                "node_id": log.node_id,
+                "state": log.state,
+                "input_json": log.input_json,
+                "output_json": log.output_json,
+                "heartbeat_at": log.heartbeat_at.isoformat() if log.heartbeat_at else None,
+                "created_at": log.created_at.isoformat() if log.created_at else None,
+            }
+            for log in logs
+        ],
+    }

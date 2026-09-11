@@ -17,7 +17,7 @@
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 [![Type Checked: mypy](https://img.shields.io/badge/type%20checked-mypy-blue)](https://mypy-lang.org/)
 [![Vitest](https://img.shields.io/badge/tested_with-vitest-729B1B?logo=vitest&logoColor=white)](https://vitest.dev/)
-[![Version](https://img.shields.io/badge/version-4.8.2-brightgreen?logo=semver)](https://github.com/herbmatsui-spec/autonovel/releases/tag/v4.8.2)
+[![Version](https://img.shields.io/badge/version-4.8.4-brightgreen?logo=semver)](https://github.com/herbmatsui-spec/autonovel/releases/tag/v4.8.4)
 
 <br />
 
@@ -25,7 +25,7 @@
   <img src="docs/demo.gif" alt="AutoNovel UI & Workflow Demo" width="900" style="border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
 </p>
 
-*▲ AutoNovel v4.8.2: 3案企画ガチャ / 逆算プロット / 上級者Studio / インライン五感推敲 / GraphRAG相関図 / ワンクリックZIP納品 / マルチメディア・eBook / IFルート分岐 / **【v4.8.1品質向上】監査モデルルーター・コスト最適化 / PDCA履歴・品質ダッシュボード(レーダー/トレンド/指示カード) / 品質API・監査ルーティングテスト / BookScore監視統合 / 非同期エンジン・Redisユーティル強化 / 設定・依存関係整理 / 全テスト安定化・フレーキー撲滅***
+*▲ AutoNovel v4.8.4: 商用縦書きEPUB 3組版刷新 / VOICEVOX音声合成基盤 / フロントエンド音声試聴 / 自律レジリエンス・カオス耐性統合 / 3案企画ガチャ / 逆算プロット / 上級者Studio / インライン五感推敲 / GraphRAG相関図 / ワンクリックZIP納品*
 
 </div>
 
@@ -57,6 +57,44 @@ AutoNovel は、AI を活用して Web 小説を **企画から執筆、校正�
 続いて、下記の目次から技術的な詳細をご覧ください。
 
 ## 📋 更新履歴 / Changelog
+
+### v4.8.4 (2026-09-11) — 商用縦書きEPUB 3組版刷新・VOICEVOX音声合成基盤・自律レジリエンス統合
+
+全72ステップ詳細実装計画に基づき、EPUB 3組版エンジンの商用完全準拠刷新、VOICEVOX音声合成・章通し朗読基盤、フロントエンド音声プレイヤー・アセットパック統合、およびLLMサーキットブレーカー・カオス障害注入を含む自律レジリエンス検証を完備したメジャー機能リリース。
+
+**📚 商用縦書き EPUB 3 組版エンジンの完全刷新 (`src/services/exporters/`)**
+- `PureEpubPacker`: IDPF / W3C EPUB 3 仕様に完全準拠し、先頭非圧縮 `mimetype` を配置する Pure Python ZIP パッカー
+- `CommercialEpubBuilder`: Kindle / Apple Books / Kobo などの主要リーダーに対応した商用縦書き EPUB 3 生成器
+- 縦書き組版・パーサー群:
+  - `RubyParser`: `｜漢字《ルビ》` および傍点 `《《強調》》` の自動 XHTML 変換
+  - `TcyFormatter`: 1〜2桁の英数字・記号を自動で縦中横 (`<span class="tcy">`) に整形
+  - `TextSanitizer`: JIS X 4051 禁則処理（行頭・行末禁則、三点リーダー・ダッシュの偶数補正）
+  - `VerticalCssTemplates`: 縦書き商用 CSS テンプレート群（段落インデント、フォント指定、余白最適化）
+- 50話以上の大長編小説でも 0.1秒未満でパッキングを完了する超高速エクスポート性能
+
+**🎙️ VOICEVOX 音声合成パイプライン & 章通し朗読 (`src/services/audio/`)**
+- `AudioEngineBase` / `VoicevoxClient` / `MockAudioEngine`: VOICEVOX HTTP API およびモッククライアント抽象層
+- `DialogueExtractor`: 小説本文から地の文とセリフ（「」『』等）を自動判定・分割
+- `SpeakerMapper`: ナレーターおよび登場人物ごとの Voicevox Speaker ID 自動割り当て
+- `AudioCombiner`: Pure Python WAV 結合器（無音パディング付きで複数セリフクリップをシームレス連結）
+- `ChapterSynthesizer`: 章全体のテキストから一括して通し朗読 WAV を生成
+- `AudioAssetModel` & マイグレーション `0026_audio_assets.py`: 音声メタデータおよび保存先パスの DB 永続化
+- Huey 非同期合成タスク (`src/backend/tasks/multimedia_tasks.py`) & ストリーミング配信 API (`/api/multimedia/audio/...`)
+- ワンクリック納品 ZIP パッケージ（`05_音声/`）への章朗読 WAV 自動格納
+
+**🎧 フロントエンド音声試聴プレイヤー & エディタ統合 (`frontend/src/`)**
+- `AudioPlayer` コンポーネント: 再生/一時停止、プログレスバー、0.8x〜2.0x 再生速度変更、音量調整、WAV ダウンロード
+- `useChapterAudio` フック: 合成進捗の自動ポーリングとキャッシュ管理
+- `EditorToolbar` / `Editor`: エディタからワンクリックで音声合成をトリガーし、上部インラインプレイヤーで即座に試聴可能
+- `AssetPackPanel`: 音声アセット生成および ZIP パッケージ同梱オプションのトグル対応
+
+**🛡️ 自律レジリエンス・カオス耐性 & グラフエンジン強化**
+- `LLMCircuitBreaker`: 障害検知時のサーキットブレーカー、クールダウン管理、フォールバックチェーン自動切り替え
+- `NetworkXGraphStore`: BFS 探索および MultiDiGraph サブグラフ抽出ロジックの修正・安定化
+- `ChaosInjector`: 擬似レイテンシ・例外・障害注入フィクスチャによる E2E 回帰テスト自動化
+- 全5フェーズヘルスチェックスクリプト (`scripts/health_check_complete.py`) および利用ガイド (`docs/MULTIMODAL_AUDIO_EPUB_GUIDE.md`) 追加
+
+---
 
 ### v4.8.2 (2026-09-10) — 監査モデルルーター・PDCA品質ダッシュボード・テスト安定化
 

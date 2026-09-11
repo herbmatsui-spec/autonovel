@@ -71,8 +71,8 @@ export const InlineAiToolbar: React.FC<InlineAiToolbarProps> = ({
       const res = await assistContent({
         text: selectedText,
         action,
-        sensory_type: sensoryType,
-        tone_type: toneType,
+        sensory_type: sensoryType ?? null,
+        tone_type: toneType ?? null,
         genre,
         context_before: contextBefore,
         context_after: contextAfter,

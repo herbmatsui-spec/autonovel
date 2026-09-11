@@ -26,7 +26,7 @@ class ReviseReviewRequest(BaseModel):
     comment: str = ""
 
 
-@router.get("/{book_id}/pending")
+@router.get("/{book_id}/pending", dependencies=[Depends(require_api_key)])
 async def get_pending_patches(book_id: int):
     from src.backend.database.uow import UnitOfWork
 
@@ -192,7 +192,7 @@ async def get_pending_reviews(book_id: int):
     return reviews
 
 
-@router.get("/reviews/{review_id}")
+@router.get("/reviews/{review_id}", dependencies=[Depends(require_api_key)])
 async def get_review_detail(review_id: int):
     """レビュー詳細を取得"""
     from src.backend.database.uow import UnitOfWork

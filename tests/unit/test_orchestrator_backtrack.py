@@ -150,8 +150,6 @@ async def test_backtrack_max_limit_exceeded():
 @pytest.mark.asyncio
 async def test_backtrack_history_recorded():
     """Test that backtrack history is recorded in AgentContext."""
-    # TODO: Enable after Step 3 (backtrack_history field) and Step 10 (history recording) are implemented
-    pytest.skip("Depends on backtrack_history field and recording logic")
     writing_agent = MockWritingAgent()
     audit_agent = MockAuditAgent(fail_count=1)
     illustration_agent = MockIllustrationAgent()
@@ -179,8 +177,6 @@ async def test_backtrack_history_recorded():
 @pytest.mark.asyncio
 async def test_backtrack_event_published():
     """Test that agent.backtracked event is published on backtrack."""
-    # TODO: Enable after Step 6 (agent.backtracked event) and Step 12 (event publishing) are implemented
-    pytest.skip("Depends on agent.backtracked event and publishing logic")
     writing_agent = MockWritingAgent()
     audit_agent = MockAuditAgent(fail_count=1)
     illustration_agent = MockIllustrationAgent()
@@ -209,14 +205,12 @@ async def test_backtrack_event_published():
     
     event = backtrack_calls[0][0][0]
     assert event.agent == "audit"
-    assert event.payload["target"] == "writing"
+    assert event.payload["to"] == "writing"
 
 
 @pytest.mark.asyncio
 async def test_agent_result_is_backtrack_field():
     """Test that AgentResult has is_backtrack field."""
-    # TODO: Enable after Step 2 (is_backtrack field) is implemented
-    pytest.skip("Depends on is_backtrack field in AgentResult")
     result = AgentResult(
         next_agent=AgentName.WRITING,
         artifacts={},
@@ -233,8 +227,6 @@ async def test_agent_result_is_backtrack_field():
 @pytest.mark.asyncio
 async def test_agent_context_has_backtrack_history():
     """Test that AgentContext has backtrack_history field."""
-    # TODO: Enable after Step 3 (backtrack_history field) is implemented
-    pytest.skip("Depends on backtrack_history field in AgentContext")
     ctx = AgentContext(book_id=1, branch_id=1, ep_num=1, artifacts={})
     # Should be able to set and get backtrack_history
     ctx.artifacts["backtrack_history"] = [{"from": "audit", "to": "writing"}]

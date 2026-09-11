@@ -30,9 +30,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
       - name: ruff check
-        run: ruff check src tests || true
+        run: ruff check src tests
       - name: ruff format --check
-        run: ruff format --check src tests || true
+        run: ruff format --check src tests
 
   # ----------------------------------------------------------------------
   # 2. Type check (mypy)
@@ -53,7 +53,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
       - name: mypy
-        run: mypy src --ignore-missing-imports || true
+        run: mypy src --ignore-missing-imports
 
   # ----------------------------------------------------------------------
   # 3. black format check (pyproject.toml line-length=100 と一致)
@@ -73,7 +73,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install black
       - name: black --check
-        run: black --check src tests || true
+        run: black --check src tests
 
   # ----------------------------------------------------------------------
   # 4. Unit tests + coverage gate
@@ -95,7 +95,7 @@ jobs:
       - name: pytest tests/unit
         run: |
           pytest tests/unit \
-            --cov=src --cov-report=xml --cov-report=term-missing || true
+            --cov=src --cov-report=xml --cov-report=term-missing
           pytest tests/test_health.py -v -o "addopts="
       - name: Upload coverage XML
         uses: actions/upload-artifact@v4
@@ -147,11 +147,11 @@ jobs:
       - name: Run migrations
         run: |
           cd src/backend
-          alembic upgrade head || true
+          alembic upgrade head
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/autonovel_test
       - name: pytest tests/integration
-        run: pytest tests/integration -v --tb=short || true
+        run: pytest tests/integration -v --tb=short
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/autonovel_test
           REDIS_URL: redis://localhost:6379/0
@@ -188,7 +188,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
       - name: pytest tests/contract
-        run: pytest tests/contract -v --tb=short || true
+        run: pytest tests/contract -v --tb=short
 
   # ----------------------------------------------------------------------
   # 7. Migration integrity (alembic check + upgrade/downgrade 往復)
@@ -224,20 +224,20 @@ jobs:
       - name: alembic upgrade head
         run: |
           cd src/backend
-          alembic upgrade head || true
+          alembic upgrade head
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/autonovel_test
       - name: alembic check (model drift detection)
         run: |
           cd src/backend
-          alembic check || true
+          alembic check
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/autonovel_test
       - name: alembic round-trip
         run: |
           cd src/backend
-          alembic downgrade -1 || true
-          alembic upgrade head || true
+          alembic downgrade -1
+          alembic upgrade head
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/autonovel_test
 
@@ -277,7 +277,7 @@ jobs:
           pytest tests/perf -v --tb=short \
             --benchmark-only \
             --benchmark-columns=mean,stddev,median \
-            --benchmark-autosave || true
+            --benchmark-autosave
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/autonovel_test
 
@@ -301,11 +301,11 @@ jobs:
       - name: npm ci
         run: npm ci
       - name: npm run lint
-        run: npm run lint || true
+        run: npm run lint
       - name: npm run typecheck
-        run: npm run typecheck || true
+        run: npm run typecheck
       - name: npm run test:ci
-        run: npm run test:ci || true
+        run: npm run test:ci
 
   # ----------------------------------------------------------------------
   # 10. Build Docker image (main push のみ)

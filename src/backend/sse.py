@@ -3,7 +3,7 @@ import json
 import logging
 from collections.abc import AsyncGenerator
 
-from src.backend.redis_util import get_redis_client
+from src.backend.redis_util import get_async_redis_client
 
 logger = logging.getLogger(__name__)
 
@@ -14,12 +14,12 @@ async def task_event_generator(task_id: str) -> AsyncGenerator[str, None]:
     1. Redisが利用可能な場合: Redis Pub/Sub を使ってプッシュ配信。
     2. Redisが利用不可の場合: 1秒ポーリングでデータベースから状態を読み出すフォールバック。
     """
-    redis_client = get_redis_client()
+    redis_client = await get_async_redis_client()
 
     if redis_client is not None:
         try:
             # 既に保存されている現在のステータスを最初に送信
-            initial_state = redis_client.get(f"task_status:{task_id}")
+            initial_state = await redis_client.get(f"task_status:{task_id}")
             if not initial_state:
                 from sqlalchemy import select
 
@@ -51,13 +51,13 @@ async def task_event_generator(task_id: str) -> AsyncGenerator[str, None]:
                 return
 
             pubsub = redis_client.pubsub()
-            pubsub.subscribe(f"task_events:{task_id}")
+            await pubsub.subscribe(f"task_events:{task_id}")
             logger.info(f"[SSE] Subscribed to Redis channel task_events:{task_id}")
 
             try:
                 while True:
                     # Redisの非ブロッキング取得
-                    message = pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
+                    message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
                     if message and message["type"] == "message":
                         data = message["data"]
                         decoded_data = data.decode("utf-8") if isinstance(data, bytes) else data
@@ -70,8 +70,11 @@ async def task_event_generator(task_id: str) -> AsyncGenerator[str, None]:
                             break
                     await asyncio.sleep(0.1)
             finally:
-                pubsub.unsubscribe(f"task_events:{task_id}")
-                pubsub.close()
+                try:
+                    await pubsub.unsubscribe(f"task_events:{task_id}")
+                    await pubsub.close()
+                except Exception:
+                    pass
             return
         except Exception as e:
             logger.error(f"[SSE] Redis subscription failed ({e}). Falling back to SQLite polling.")

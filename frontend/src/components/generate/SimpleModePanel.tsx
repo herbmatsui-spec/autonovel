@@ -1,6 +1,6 @@
 import React from "react";
-import type { Character } from "../types/easyMode";
-import type { GenerationState } from "../hooks/useNovelGeneration";
+import type { CharacterParams as Character } from "../../types";
+import type { GenerationState } from "../../types";
 
 interface SimpleModePanelProps {
   character: Character;
@@ -80,7 +80,7 @@ export default function SimpleModePanel(props: SimpleModePanelProps) {
         <select
           className="select"
           value={character.genre}
-          onChange={(e) => setCharacter((prev) => ({ ...prev, genre: e.target.value }))}
+          onChange={(e) => setCharacter((prev: Character) => ({ ...prev, genre: e.target.value }))}
         >
           <option value="fan">ファンタジー</option>
           <option value="sf">SF</option>
@@ -96,7 +96,7 @@ export default function SimpleModePanel(props: SimpleModePanelProps) {
         <input
           className="input"
           value={character.name}
-          onChange={(e) => setCharacter((prev) => ({ ...prev, name: e.target.value }))}
+          onChange={(e) => setCharacter((prev: Character) => ({ ...prev, name: e.target.value }))}
         />
       </div>
 
@@ -105,7 +105,7 @@ export default function SimpleModePanel(props: SimpleModePanelProps) {
         <input
           className="input"
           value={character.personality}
-          onChange={(e) => setCharacter((prev) => ({ ...prev, personality: e.target.value }))}
+          onChange={(e) => setCharacter((prev: Character) => ({ ...prev, personality: e.target.value }))}
         />
       </div>
 
@@ -114,7 +114,7 @@ export default function SimpleModePanel(props: SimpleModePanelProps) {
         <input
           className="input"
           value={character.ability}
-          onChange={(e) => setCharacter((prev) => ({ ...prev, ability: e.target.value }))}
+          onChange={(e) => setCharacter((prev: Character) => ({ ...prev, ability: e.target.value }))}
         />
       </div>
 

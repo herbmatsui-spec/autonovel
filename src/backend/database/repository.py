@@ -1,19 +1,22 @@
-from __future__ import annotations
-
 """
 database/repository.py - UoWコンテキストを自動解決する DataRepository ファサード
 """
+
+from __future__ import annotations
+
 import json
+import logging
 import time
 from typing import Any
 
 from sqlalchemy import desc, select
 
 from src.backend.database.core import DatabaseManager, SessionLocal
-from .models import Bible, Book, Chapter, Character, Plot
 from src.infrastructure.database.models.task import Task
-
+from .models import Bible, Book, Chapter, Character, Plot
 from .uow_context import current_uow
+
+logger = logging.getLogger(__name__)
 
 
 class DataRepositoryFacade:
@@ -81,8 +84,9 @@ class DataRepositoryFacade:
     async def get_state(self, key: str, default: Any = None) -> Any:
         from src.backend.database.models import InternalState
 
-        with self.db.get_session() as session:
-            state = session.query(InternalState).filter_by(key=key).one_or_none()
+        async with self.db.get_session() as session:
+            result = await session.execute(select(InternalState).filter_by(key=key))
+            state = result.scalars().one_or_none()
             if not state:
                 return default
             try:
@@ -91,18 +95,20 @@ class DataRepositoryFacade:
                 return state.value
 
     async def set_state(self, key: str, value: Any) -> None:
+        from datetime import datetime
         from src.backend.database.models import InternalState
 
-        with self.db.get_session() as session:
-            state = session.query(InternalState).filter_by(key=key).one_or_none()
+        async with self.db.get_session() as session:
+            result = await session.execute(select(InternalState).filter_by(key=key))
+            state = result.scalars().one_or_none()
             if not state:
                 state = InternalState(key=key)
                 session.add(state)
             state.value = (
                 json.dumps(value, ensure_ascii=False) if not isinstance(value, str) else value
             )
-            state.updated_at = time.strftime("%Y-%m-%dT%H:%M:%S")
-            session.commit()
+            state.updated_at = datetime.now()
+            await session.commit()
 
 
 # DataRepository をエイリアスとして公開
@@ -134,13 +140,17 @@ class BookRepository:
         res = self.session.commit()
         if inspect.isawaitable(res):
             try:
-                loop = asyncio.get_event_loop()
-                if loop.is_running():
-                    asyncio.create_task(res)
-                else:
-                    loop.run_until_complete(res)
-            except Exception:
-                pass
+                loop = asyncio.get_running_loop()
+                task = loop.create_task(res)
+
+                def _on_done(t):
+                    if not t.cancelled() and t.exception():
+                        logger.error(f"[BookRepository] Background commit failed: {t.exception()}")
+
+                task.add_done_callback(_on_done)
+            except RuntimeError:
+                # イベントループが実行中でない場合は同期的に完了
+                asyncio.run(res)
 
     def _safe_refresh(self, instance: Any) -> None:
         """同期・非同期どちらのセッションでも安全にリフレッシュする"""
@@ -150,13 +160,16 @@ class BookRepository:
         res = self.session.refresh(instance)
         if inspect.isawaitable(res):
             try:
-                loop = asyncio.get_event_loop()
-                if loop.is_running():
-                    asyncio.create_task(res)
-                else:
-                    loop.run_until_complete(res)
-            except Exception:
-                pass
+                loop = asyncio.get_running_loop()
+                task = loop.create_task(res)
+
+                def _on_done(t):
+                    if not t.cancelled() and t.exception():
+                        logger.error(f"[BookRepository] Background refresh failed: {t.exception()}")
+
+                task.add_done_callback(_on_done)
+            except RuntimeError:
+                asyncio.run(res)
 
     def get_book(self, book_id: int) -> Book | None:
         """指定した ID の作品情報を取得する"""

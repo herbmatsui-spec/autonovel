@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNovelContext } from "../context/NovelContext";
 import { useNovelGeneration } from "../hooks/useNovelGeneration";
 import { useStreamingWriter } from "../hooks/useStreamingWriter";
@@ -8,6 +8,7 @@ import { ReversePlotBuilder } from "./ReversePlotBuilder";
 import { GeneratedPlotStructure } from "../types/reversePlot";
 import { GachaPlan, GachaResponse, DigestResponse } from "../types/easyMode";
 import { generateGachaPlans, generateDigest } from "../api/easyMode";
+import { fetchChapterBookScore } from "../api/quality";
 import { StylePresetSummary, StyleProfile } from "../types/style";
 import { fetchStylePresets, distillStyleFromText } from "../api/styleApi";
 import { GENRE_OPTIONS } from "../constants/genres";
@@ -43,7 +44,23 @@ export default function GeneratePanel({ onGenerated, onMessage }: GeneratePanelP
     currentEpNum,
   } = useNovelContext();
 
+  const [chapterScore, setChapterScore] = useState<number | null>(null);
+
   const { takeSnapshot } = useSnapshotHistory(selectedBookId, currentEpNum);
+
+  useEffect(() => {
+    const fetchScore = async () => {
+      if (!selectedBookId) return;
+      try {
+        const scoreData = await fetchChapterBookScore(selectedBookId, currentEpNum);
+        setChapterScore(scoreData.overall_score);
+      } catch (e) {
+        console.error("Failed to fetch chapter score in GeneratePanel", e);
+        setChapterScore(null);
+      }
+    };
+    void fetchScore();
+  }, [selectedBookId, currentEpNum]);
   const [showStyleComparison, setShowStyleComparison] = useState(false);
 
   const { startGeneration, cancelGeneration } = useNovelGeneration(
@@ -70,7 +87,7 @@ export default function GeneratePanel({ onGenerated, onMessage }: GeneratePanelP
       syncGenerationToEditor(finalText);
       onGenerated?.(finalText, []);
     },
-    onMessage,
+    onMessage: onMessage ?? (() => {}),
     onError: (err) => onMessage?.(`❌ ${err}`),
   });
 
@@ -151,9 +168,10 @@ export default function GeneratePanel({ onGenerated, onMessage }: GeneratePanelP
   const isBusy = generationState.isGenerating || isStreaming;
 
   // Early return pattern - clean conditional rendering
-  if (mode === 'simple') {
-    return (
-      <SimpleModePanel
+  const renderContent = () => {
+    if (mode === 'simple') {
+      return (
+        <SimpleModePanel
         character={character}
         setCharacter={setCharacter}
         llmConfig={llmConfig}
@@ -185,64 +203,135 @@ export default function GeneratePanel({ onGenerated, onMessage }: GeneratePanelP
         setContentLengthLimit={setContentLengthLimit}
         currentChapterText={currentChapterText}
         setCurrentChapterText={setCurrentChapterText}
-        onMessage={onMessage}
-      />
-    );
-  }
+onMessage={onMessage ?? (() => {})}
+        />
+      );
+    }
 
-  if (mode === 'reverse') {
+    if (mode === 'reverse') {
+      return (
+        <ReverseModePanel
+          targetEpisodes={targetEpisodes}
+          genre={character.genre}
+          llmConfig={llmConfig}
+          onTargetEpisodesChange={setTargetEpisodes}
+          onComplete={handleReversePlotComplete}
+          onCancel={() => setMode('simple')}
+        />
+      );
+    }
+
     return (
-      <ReverseModePanel
-        targetEpisodes={targetEpisodes}
-        genre={character.genre}
+      <OrchestratedModePanel
+        character={character}
+        setCharacter={setCharacter}
         llmConfig={llmConfig}
-        onTargetEpisodesChange={setTargetEpisodes}
-        onComplete={handleReversePlotComplete}
-        onCancel={() => setMode('simple')}
+        setLlmConfig={setLlmConfig}
+        selectedStyleId={selectedStyleId}
+        customStyleProfile={customStyleProfile}
+        showStyleModal={showStyleModal}
+        setShowStyleModal={setShowStyleModal}
+        showApiSettings={showApiSettings}
+        setShowApiSettings={setShowApiSettings}
+        showApiKey={showApiKey}
+        setShowApiKey={setShowApiKey}
+        yonkomaEnabled={yonkomaEnabled}
+        setYonkomaEnabled={setYonkomaEnabled}
+        generationState={generationState}
+        startGeneration={startGeneration}
+        cancelGeneration={cancelGeneration}
+        isStreaming={isStreaming}
+        startStreaming={startStreaming}
+        cancelStreaming={cancelStreaming}
+        isPaused={isPaused}
+        resumeStreaming={resumeStreaming}
+        pauseStreaming={pauseStreaming}
+        streamOutput={streamOutput}
+        isBusy={isBusy}
+        targetEpisodes={targetEpisodes}
+        setTargetEpisodes={setTargetEpisodes}
+        contentLengthLimit={contentLengthLimit}
+        setContentLengthLimit={setContentLengthLimit}
+        currentChapterText={currentChapterText}
+        setCurrentChapterText={setCurrentChapterText}
+        agentProgress={agentProgress}
+        output={output}
+        startUnified={() => startUnified('orchestrated')}
+        cancelUnified={cancelUnified}
+        isActive={isActive}
+        selectedBookId={selectedBookId}
+        {...(onMessage ? { onMessage } : {})}
       />
     );
-  }
+  };
 
   return (
-    <OrchestratedModePanel
-      character={character}
-      setCharacter={setCharacter}
-      llmConfig={llmConfig}
-      setLlmConfig={setLlmConfig}
-      selectedStyleId={selectedStyleId}
-      customStyleProfile={customStyleProfile}
-      showStyleModal={showStyleModal}
-      setShowStyleModal={setShowStyleModal}
-      showApiSettings={showApiSettings}
-      setShowApiSettings={setShowApiSettings}
-      showApiKey={showApiKey}
-      setShowApiKey={setShowApiKey}
-      yonkomaEnabled={yonkomaEnabled}
-      setYonkomaEnabled={setYonkomaEnabled}
-      generationState={generationState}
-      startGeneration={startGeneration}
-      cancelGeneration={cancelGeneration}
-      isStreaming={isStreaming}
-      startStreaming={startStreaming}
-      cancelStreaming={cancelStreaming}
-      isPaused={isPaused}
-      resumeStreaming={resumeStreaming}
-      pauseStreaming={pauseStreaming}
-      streamOutput={streamOutput}
-      isBusy={isBusy}
-      targetEpisodes={targetEpisodes}
-      setTargetEpisodes={setTargetEpisodes}
-      contentLengthLimit={contentLengthLimit}
-      setContentLengthLimit={setContentLengthLimit}
-      currentChapterText={currentChapterText}
-      setCurrentChapterText={setCurrentChapterText}
-      agentProgress={agentProgress}
-      output={output}
-      startUnified={startUnified}
-      cancelUnified={cancelUnified}
-      isActive={isActive}
-      selectedBookId={selectedBookId}
-      onMessage={onMessage}
-    />
+    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+      {chapterScore !== null && (
+        <div
+          style={{
+            background: "rgba(255, 255, 255, 0.05)",
+            border: `1px solid ${chapterScore >= 70 ? "rgba(34, 197, 94, 0.3)" : "rgba(239, 68, 68, 0.3)"}`,
+            borderRadius: "12px",
+            padding: "12px 16px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <div
+              style={{
+                width: "40px",
+                height: "40px",
+                borderRadius: "50%",
+                background: chapterScore >= 70 ? "rgba(34, 197, 94, 0.2)" : "rgba(239, 68, 68, 0.2)",
+                color: chapterScore >= 70 ? "#4ade80" : "#f87171",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontWeight: "bold",
+                fontSize: "1.1rem",
+                border: `1px solid ${chapterScore >= 70 ? "#4ade80" : "#f87171"}`,
+              }}
+            >
+              {chapterScore.toFixed(0)}
+            </div>
+            <div>
+              <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 600 }}>
+                Current Chapter Quality Score
+              </div>
+              <div style={{ fontSize: "0.9rem", fontWeight: 700, color: "var(--text-main)" }}>
+                {chapterScore >= 70 ? "✅ High Quality" : "⚠️ Needs Improvement"}
+              </div>
+            </div>
+          </div>
+
+          {chapterScore < 70 && (
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#f87171", fontSize: "0.8rem", fontWeight: 600 }}>
+              <div
+                className="spinner"
+                style={{
+                  width: "14px",
+                  height: "14px",
+                  border: "2px solid rgba(248, 113, 113, 0.3)",
+                  borderTopColor: "#f87171",
+                  borderRadius: "50%",
+                  animation: "spin 1s linear infinite",
+                }}
+              />
+              自動改善ループ実行中...
+              <style>{`
+                @keyframes spin {
+                  to { transform: rotate(360deg); }
+                }
+              `}</style>
+            </div>
+          )}
+        </div>
+      )}
+      {renderContent()}
+    </div>
   );
 }

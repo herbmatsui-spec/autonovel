@@ -22,14 +22,20 @@ STOP_WORDS = {
 }
 
 
+# Module-level tokenizer instance for tiktoken (created on first use)
+_tiktoken_encoder = None
+
+
 def count_tokens(text: str) -> int:
     """Approximate token count using tiktoken or character multiplier."""
     if not text:
         return 0
     try:
         import tiktoken
-        tokenizer = tiktoken.get_encoding("cl100k_base")
-        return len(tokenizer.encode(text))
+        global _tiktoken_encoder
+        if _tiktoken_encoder is None:
+            _tiktoken_encoder = tiktoken.get_encoding("cl100k_base")
+        return len(_tiktoken_encoder.encode(text))
     except Exception:
         return max(1, int(len(text) * 1.5))
 

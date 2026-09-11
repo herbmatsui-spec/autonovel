@@ -39,7 +39,10 @@ export default function ConfigPanel({ onClose }: ConfigPanelProps) {
             } else if (val === "gemini") {
               setLlmConfig((prev) => ({ ...prev, provider: "gemini", model_name: prev.model_name || "gemini-2.5-flash" }));
             } else if (val === "openai") {
-              setLlmConfig((prev) => ({ ...prev, provider: "openai", model_name: prev.model_name || "gpt-4o-mini", base_url: undefined }));
+              setLlmConfig((prev) => {
+                const { base_url, ...rest } = prev;
+                return { ...rest, provider: "openai", model_name: prev.model_name || "gpt-4o-mini" };
+              });
             } else if (val === "openai_compatible") {
               setLlmConfig((prev) => ({ ...prev, provider: "openai", model_name: prev.model_name || "deepseek-chat", base_url: prev.base_url || "https://api.deepseek.com/v1" }));
             }

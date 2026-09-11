@@ -59,7 +59,7 @@ class Settings(BaseSettings):
 
     # LLM設定 (5プロバイダ対応)
     # 実装済み: openai, gemini, mock, claude, ollama, vllm
-    LLM_PROVIDER: Literal["openai", "gemini", "mock", "claude", "ollama", "vllm"] = "mock"
+    LLM_PROVIDER: Literal["openai", "gemini", "mock", "claude", "ollama", "vllm", "vertex"] = "mock"
 
     # OpenAI 互換設定
     OPENAI_API_KEY: str | None = Field(
@@ -125,7 +125,16 @@ class Settings(BaseSettings):
     # マルチメディア展開 (Phase 7: Asset Pack / Media Mix / IF Routes / eBook)
     ENABLE_MULTIMEDIA: bool = False
     ENABLE_AUDIO_SYNTH: bool = False
+    VOICEVOX_URL: str = "http://localhost:50021"
+    VOICEVOX_DEFAULT_SPEAKER_ID: int = 3
+    VOICEVOX_TIMEOUT_SECONDS: float = 30.0
     MULTIMEDIA_OUTPUT_DIR: str = Field(default_factory=lambda: str(STORAGE_DIR / "multimedia"))
+
+    # 画像生成プロバイダ設定 (DALL-E 3 / Stable Diffusion WebUI / ComfyUI / Mock)
+    IMAGE_PROVIDER: Literal["mock", "dalle3", "sd_webui", "comfyui"] = "mock"
+    DALL_E_API_KEY: str | None = None
+    SD_WEBUI_URL: str | None = None
+    COMFYUI_URL: str | None = None
 
     # Phase 4: Enrichment Agent
     ENRICHMENT_ENABLED: bool = False

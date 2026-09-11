@@ -11,6 +11,7 @@ Enhanced with:
 
 from __future__ import annotations
 
+import asyncio
 import math
 import time
 from dataclasses import dataclass
@@ -149,7 +150,7 @@ class GraphRAGService:
         if self._enable_cache:
             self._cache[key] = (context, time.time())
 
-    def search_similar_chunks(
+    async def search_similar_chunks(
         self,
         session: Session,
         query: str,
@@ -164,7 +165,7 @@ class GraphRAGService:
         try:
             # PostgreSQL + pgvector 環境
             if HAS_PGVECTOR and settings.DATABASE_URL.startswith("postgresql"):
-                query_vector = embedding_service.get_embedding(query)
+                query_vector = await asyncio.to_thread(embedding_service.get_embedding, query)
                 stmt = text(
                     """
                     SELECT id, content, chunk_metadata, embedding <=> :query_vector AS distance
@@ -229,7 +230,7 @@ class GraphRAGService:
                     return []
 
                 # クエリ埋め込みを1回だけ取得
-                query_emb = embedding_service.get_embedding(query)
+                query_emb = await asyncio.to_thread(embedding_service.get_embedding, query)
 
                 # Step 30 & 31: 事前保存済み embedding の活用 & 欠損分のバッチ補完
                 valid_chunks: list[ChapterChunk] = []
@@ -251,7 +252,7 @@ class GraphRAGService:
                 # 欠損分のみオンデマンドで一括計算・保存 (Step 31)
                 if missing_chunks:
                     missing_texts = [str(c.content) for c in missing_chunks]
-                    computed_vectors = embedding_service.embed_texts(missing_texts, batch_size=len(missing_texts))
+                    computed_vectors = await asyncio.to_thread(embedding_service.embed_texts, missing_texts, batch_size=len(missing_texts))
                     for c, vec in zip(missing_chunks, computed_vectors):
                         c.embedding = vec
                         valid_chunks.append(c)
@@ -364,7 +365,7 @@ class GraphRAGService:
             gamma: 全文検索の重み
         """
         if query_embedding is None:
-            query_embedding = embedding_service.get_embedding(query)
+            query_embedding = await asyncio.to_thread(embedding_service.get_embedding, query)
 
         # 正規化
         total = alpha + beta + gamma
@@ -374,7 +375,7 @@ class GraphRAGService:
         all_results: dict[str, SearchResult] = {}
 
         # 1. ベクトル検索
-        vector_results = self.search_similar_chunks(session, query, limit=top_k * 2)
+        vector_results = await self.search_similar_chunks(session, query, limit=top_k * 2)
         for i, r in enumerate(vector_results):
             rrf_score = alpha / (60 + i + 1)  # RRF: k=60
             all_results[r.id] = SearchResult(
@@ -393,7 +394,7 @@ class GraphRAGService:
             and settings.ENABLE_GRAPHRAG
             and settings.DATABASE_URL.startswith("postgresql")
         ):
-            graph_results = self._search_graph(session, core_entities, query_embedding, top_k * 2)
+            graph_results = await self._search_graph(session, core_entities, query_embedding, top_k * 2)
             for i, r in enumerate(graph_results):
                 rrf_score = beta / (60 + i + 1)
                 if r.id in all_results:
@@ -429,7 +430,7 @@ class GraphRAGService:
 
         return sorted_results[:top_k]
 
-    def _search_graph(
+    async def _search_graph(
         self,
         session: Session,
         core_entities: list[str],
@@ -449,12 +450,10 @@ class GraphRAGService:
                 desc = props.get("description", "") if isinstance(props, dict) else ""
 
                 fact_text = f"{name} {rel} {desc}".strip()
-                item_emb = embedding_service.get_embedding(fact_text)
+                item_emb = await asyncio.to_thread(embedding_service.get_embedding, fact_text)
                 sim = self._cosine_similarity(query_embedding, item_emb)
-
                 # ユニークID生成
                 result_id = f"graph_{entity}_{name}_{rel}".replace(" ", "_")
-
                 results.append(
                     SearchResult(
                         id=result_id,
@@ -470,7 +469,6 @@ class GraphRAGService:
                         similarity=sim,
                     )
                 )
-
         results.sort(key=lambda x: x.score, reverse=True)
         return results[:limit]
 
@@ -535,7 +533,7 @@ class GraphRAGService:
 
         return all_neighbors
 
-    def rerank_graph_neighbors(
+    async def rerank_graph_neighbors(
         self,
         neighbors: list[dict[str, Any]],
         current_prompt: str,
@@ -545,7 +543,7 @@ class GraphRAGService:
         if not neighbors or not current_prompt.strip():
             return neighbors[:top_k]
 
-        prompt_emb = embedding_service.get_embedding(current_prompt)
+        prompt_emb = await asyncio.to_thread(embedding_service.get_embedding, current_prompt)
         scored_neighbors = []
 
         for item in neighbors:
@@ -553,9 +551,9 @@ class GraphRAGService:
             rel = item.get("relation_type", "")
             props = item.get("properties") or {}
             desc = props.get("description", "") if isinstance(props, dict) else ""
-
+            
             fact_text = f"{name} {rel} {desc}".strip()
-            item_emb = embedding_service.get_embedding(fact_text)
+            item_emb = await asyncio.to_thread(embedding_service.get_embedding, fact_text)
             sim = self._cosine_similarity(prompt_emb, item_emb)
             scored_neighbors.append((sim, item))
 
@@ -656,7 +654,7 @@ class GraphRAGService:
             graph_context = "- 確定された特記事項なし（初期状態）"
 
         # 3. ハイブリッド検索 (ベクトル + グラフ + 全文)
-        query_embedding = embedding_service.get_embedding(current_prompt)
+        query_embedding = await asyncio.to_thread(embedding_service.get_embedding, current_prompt)
         hybrid_results = await self.hybrid_search(
             session, current_prompt, query_embedding, entities_to_query, top_k=5
         )

@@ -15,40 +15,55 @@ from src.backend.database.models import Base, Book
 
 @pytest.fixture
 def client():
-    test_engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    import tempfile
+    from pathlib import Path
+    import os
+    from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+    from src.backend.database.core import get_db_manager
+    from src.backend.database.models import Base
 
-    class _Mgr:
-        def __init__(self):
-            self.session_factory = async_sessionmaker(test_engine, expire_on_commit=False, class_=AsyncSession)
+    tmp = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
+    tmp.close()
+    db_path = Path(tmp.name)
+    db_url = f"sqlite+aiosqlite:///{db_path}"
 
-        def get_session(self):
-            return self.session_factory()
+    test_engine = create_async_engine(db_url, connect_args={"check_same_thread": False})
+    test_session_factory = async_sessionmaker(test_engine, expire_on_commit=False, class_=AsyncSession)
 
     import src.backend.database.core as core_mod
-    core_mod.get_db_manager = lambda: _Mgr()
+    core_mod.DATABASE_URL = db_url
+
+    class TestMgr:
+        def __init__(self):
+            self.session_factory = test_session_factory
+            self.engine = test_engine
+        def get_session(self):
+            return self.session_factory()
+    core_mod.get_db_manager = lambda: TestMgr()
 
     async def _setup():
         async with test_engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
-        async with _Mgr().get_session() as s:
+        async with test_session_factory() as s:
             b = Book(title="t", genre="g", concept="c", current_branch_id=1)
             s.add(b)
             await s.commit()
 
+    import asyncio
     asyncio.run(_setup())
 
-    import src.backend.auth as auth_mod
-    auth_mod.validate_api_key_or_raise = lambda: None
-
+    from src.backend.auth import validate_api_key_or_raise
     from src.backend.routers import branches as bmod
 
     app = FastAPI()
+    app.dependency_overrides[validate_api_key_or_raise] = lambda: "testkey"
     app.include_router(bmod.router)
     return TestClient(app)
 
 
 def test_ws_flow(client):
     r = client.post("/api/branches/", json={"book_id": 1, "name": "main"})
+    assert r.status_code == 201, f"Status: {r.status_code}, Body: {r.text}"
     bid = r.json()["id"]
     graph = {
         "entry_node_id": "n1",

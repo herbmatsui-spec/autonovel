@@ -10,6 +10,8 @@ from src.models import CharacterRegistry
 
 logger = logging.getLogger(__name__)
 
+warnings.warn("src.backend.engine_context is deprecated, use src.agents.context_builder_agent instead", DeprecationWarning, stacklevel=2)
+
 
 class ImmutableInput(BaseModel):
     past_summary: str
@@ -99,8 +101,26 @@ class ContextManager:
         char_states: dict[str, str],
         recent_ctx: str = "",
     ) -> str:
+        delegate = self._get_delegate()
+        if delegate is not None:
+            try:
+                plot_list = plots if isinstance(plots, list) else [plots]
+                search_area = " ".join(
+                    [
+                        (p.detailed_blueprint or "")
+                        + " "
+                        + (p.summary or "")
+                        + " "
+                        + (p.script_content or "")
+                        for p in plot_list
+                    ]
+                )
+                active_chars = [c for c in all_chars if c.name and (c.name in search_area or c.name in recent_ctx or any(role in (c.role or "") for role in ["主人公", "ヒロイン", "悪役", "ライバル"]))]
+                return delegate._build_char_static_ctx(active_chars)
+            except Exception as e:
+                logger.warning(f"Delegation failed, using fallback: {e}")
+
         plot_list = plots if isinstance(plots, list) else [plots]
-        # 検索範囲を拡大：設計図だけでなく、あらすじや台本案からもキャラを検出
         search_area = " ".join(
             [
                 (p.detailed_blueprint or "")
@@ -116,7 +136,6 @@ class ContextManager:
         for c in all_chars:
             if not c.name:
                 continue
-            # 重要キャラクター（主人公・ヒロイン・ヴィラン・ライバル）は常に含めるか、登場が確認された場合のみに絞る
             is_important = any(
                 role in (c.role or "") for role in ["主人公", "ヒロイン", "悪役", "ライバル"]
             )
@@ -137,6 +156,39 @@ class ContextManager:
         active_char_names: list[str] | None = None,
         branch_id: int | None = None,
     ) -> str:
+        delegate = self._get_delegate()
+        if delegate is not None:
+            try:
+                all_past = await self.repo.get_chapters_before(branch_id or 1, end_ep)
+                target_word_count = 3000
+                style_tag = None
+                reflective_rag = None
+                compressor = None
+                social_manager = None
+                age_client = None
+                from src.agents.context_builder_agent import ContextBuilderAgent
+                full = await delegate._build_full_writing_context_internal(
+                    repo=self.repo,
+                    book_id=book_id,
+                    branch_id=branch_id or 1,
+                    ep_num=end_ep,
+                    target_word_count=target_word_count,
+                    style_tag=style_tag,
+                    regeneration_focus=None,
+                    reflective_rag=reflective_rag,
+                    session=None,
+                    compressor=compressor,
+                    social_manager=social_manager,
+                    age_client=age_client,
+                )
+                # Extract prev_ctx from the full context, similar to build_past_context output structure
+                ctx = full.get("prev_ctx", "")
+                if cumulative_summary := full.get("compressed_context", ""):
+                    ctx = f"【物語の全体像（マクロ因果）】\n{cumulative_summary}\n\n" + ctx
+                return ctx.strip()
+            except Exception as e:
+                logger.warning(f"Delegation failed, using fallback: {e}")
+
         book = await self.repo.get_book(book_id)
         if branch_id is None:
             branch_id = book.current_branch_id if book and book.current_branch_id else 1
@@ -147,8 +199,6 @@ class ContextManager:
         char_states = {}
         if all_past:
             try:
-                # 直近の数話から、有効なデータを遡って探索する（1話前のデータが壊れていても記憶を維持）
-                # all_past は ep_num 降順
                 for chap in all_past[:10]:
                     ws = (
                         json.loads(chap.world_state)
@@ -183,7 +233,6 @@ class ContextManager:
                         continue
                     desc = t.get("description", "未定義")
                     if active_char_names:
-                        # 伏線に関連するキャラがいずれか含まれているか、またはキャラ名への言及がない汎用伏線なら残す
                         has_active_char = any(name in desc for name in active_char_names)
                         if not has_active_char and any(
                             k in desc for k in char_states.keys() if k not in active_char_names
@@ -221,6 +270,41 @@ class ContextManager:
         branch_id: int | None = None,
     ) -> tuple[str, str]:
         """プロット生成時に最適な文体・過去文脈を構築する"""
+        delegate = self._get_delegate()
+        if delegate is not None:
+            try:
+                # Try to delegate to ContextBuilderAgent
+                target_word_count = 3000
+                style_tag = None
+                reflective_rag = None
+                compressor = None
+                social_manager = None
+                age_client = None
+                full = await delegate._build_full_writing_context_internal(
+                    repo=self.repo,
+                    book_id=book_id,
+                    branch_id=branch_id or 1,
+                    ep_num=ep_num,
+                    target_word_count=target_word_count,
+                    style_tag=style_tag,
+                    regeneration_focus=None,
+                    reflective_rag=reflective_rag,
+                    session=None,
+                    compressor=compressor,
+                    social_manager=social_manager,
+                    age_client=age_client,
+                )
+                # Extract components similar to original implementation
+                char_ctx = full.get("char_static_ctx", "")
+                prev_ctx = full.get("prev_ctx", "")
+                # Optionally add compressed_context as additional context if available
+                compressed = full.get("compressed_context", "")
+                if compressed:
+                    prev_ctx = f"{prev_ctx}\n{compressed}" if prev_ctx else compressed
+                return char_ctx, prev_ctx
+            except Exception as e:
+                logger.warning(f"Delegation failed for get_optimal_context, using fallback: {e}")
+
         book = await self.repo.get_book(book_id)
         if branch_id is None:
             branch_id = book.current_branch_id if book and book.current_branch_id else 1
@@ -274,6 +358,30 @@ class ContextManager:
         branch_id: int | None = None,
     ) -> tuple[str, str, str]:
         """不変設定と動的状態に分けてコンテキストを構築（提案3: 視点/シーンベースのフィルタリング適用）"""
+        delegate = self._get_delegate()
+        if delegate is not None:
+            try:
+                full = await delegate._build_full_writing_context_internal(
+                    repo=self.repo,
+                    book_id=book_id,
+                    branch_id=branch_id or 1,
+                    ep_num=ep_num,
+                    target_word_count=3000,
+                    style_tag=None,
+                    regeneration_focus=None,
+                    reflective_rag=None,
+                    session=None,
+                    compressor=None,
+                    social_manager=None,
+                    age_client=None,
+                )
+                char_static_ctx = full.get("char_static_ctx", "")
+                char_dynamic_ctx = full.get("char_dynamic_ctx", "")
+                prev_ctx = full.get("prev_ctx", "")
+                return char_static_ctx, char_dynamic_ctx, prev_ctx
+            except Exception as e:
+                logger.warning(f"Delegation failed for get_optimal_context_split, using fallback: {e}")
+
         book = await self.repo.get_book(book_id)
         if branch_id is None:
             branch_id = book.current_branch_id if book and book.current_branch_id else 1
@@ -342,6 +450,59 @@ class ContextManager:
         pacing_instruction: str = "",
     ) -> ContextData:
         """提案6: データの構造を不変入力、システム設定、状態出力に明確に分割したモデルを返す"""
+        delegate = self._get_delegate()
+        if delegate is not None:
+            try:
+                full = await delegate._build_full_writing_context_internal(
+                    repo=self.repo,
+                    book_id=book_id,
+                    branch_id=1,
+                    ep_num=ep_num,
+                    target_word_count=3000,
+                    style_tag=None,
+                    regeneration_focus=None,
+                    reflective_rag=None,
+                    session=None,
+                    compressor=None,
+                    social_manager=None,
+                    age_client=None,
+                )
+                static_str = full.get("char_static_ctx", "")
+                dyn_str = full.get("char_dynamic_ctx", "")
+                prev_ctx = full.get("prev_ctx", "")
+                
+                # Parse strings into dicts for structured model
+                static_profiles = {}
+                for line in static_str.split("\n"):
+                    if line.startswith("■"):
+                        parts = line.split(":", 1)
+                        if len(parts) == 2:
+                            static_profiles[parts[0].replace("■ ", "").strip()] = parts[1].strip()
+
+                char_states = {}
+                for line in dyn_str.split("\n"):
+                    if line.startswith("■"):
+                        parts = line.split(":", 1)
+                        if len(parts) == 2:
+                            char_states[parts[0].replace("■ ", "").strip()] = parts[1].strip()
+
+                return ContextData(
+                    immutable=ImmutableInput(
+                        past_summary=prev_ctx,
+                        active_subplots=[],
+                        locked_foreshadowings=[],
+                        static_character_profiles=static_profiles,
+                    ),
+                    config=SystemConfig(
+                        active_constraints=active_constraints or [], pacing_instruction=pacing_instruction
+                    ),
+                    dynamic=DynamicState(
+                        character_states=char_states, current_tension=50, unresolved_threads=[]
+                    ),
+                )
+            except Exception as e:
+                logger.warning(f"Delegation failed for get_structured_context_split, using fallback: {e}")
+
         static_str, dyn_str, prev_ctx = await self.get_optimal_context_split(
             book_id, ep_num, plot, chars
         )

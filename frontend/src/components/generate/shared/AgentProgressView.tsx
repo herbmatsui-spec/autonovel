@@ -1,5 +1,5 @@
 import React from "react";
-import type { AgentName } from "../types/orchestrated";
+import type { AgentName } from "../../../types/orchestrated";
 
 interface AgentProgressViewProps {
   agentProgress: Record<AgentName, { status: string; payload?: any }>;

@@ -1,162 +1,98 @@
-import time
+import asyncio
+import pytest
 
-from src.shared.circuit_breaker import (
-    CircuitBreaker,
-    CircuitBreakerConfig,
-    CircuitState,
-)
+from src.llm.circuit_breaker import LLMCircuitBreaker, CircuitState
 
 
-def test_circuit_breaker_initial_state():
-    """初期状態が CLOSED でありリクエストを許可することを確認。"""
-    cb = CircuitBreaker("test_service", CircuitBreakerConfig(failure_threshold=3, recovery_timeout=1.0))
-    assert cb.state == CircuitState.CLOSED
-    assert cb.allow_request() is True
+def test_circuit_breaker_basic():
+    """サーキットブレーカーの基本動作をテスト"""
+    breaker = LLMCircuitBreaker(failure_threshold=3, timeout_seconds=5)
+
+    # プロバイダの状態を取得
+    state = breaker.get_state("test_provider")
+    assert state.state == CircuitState.CLOSED
+
+    # 初期状態では実行可能
+    assert breaker.can_execute("test_provider") == True
+
+    # 連続失敗 -> Open状態に移行
+    breaker.record_failure("test_provider")
+    breaker.record_failure("test_provider")
+    breaker.record_failure("test_provider")  # 3 failures -> OPEN
+    assert breaker.can_execute("test_provider") == False
+
+    # 復旧後も実行不可
+    breaker.record_failure("test_provider")
+    assert breaker.can_execute("test_provider") == False
+
+    # 成功を記録すると復旧しない (OPEN -> still OPEN, success doesn't help)
+    breaker.record_success("test_provider")
+    assert breaker.can_execute("test_provider") == False
 
 
-def test_circuit_breaker_transition_to_open():
-    """連続失敗により OPEN に遷移しリクエストが拒否されることを確認。"""
-    cb = CircuitBreaker("test_service", CircuitBreakerConfig(failure_threshold=2, recovery_timeout=1.0))
+async def test_circuit_breaker_half_open():
+    """サーキットブレーカーのHALF_OPEN状態をテスト"""
+    breaker = LLMCircuitBreaker(failure_threshold=1, timeout_seconds=0.1)
 
-    # 1回目の失敗
-    cb.record_failure()
-    assert cb.state == CircuitState.CLOSED
-    assert cb.allow_request() is True
+    # 失敗でOpen状態に
+    breaker.record_failure("test_provider")
+    assert breaker.can_execute("test_provider") == False
 
-    # 2回目の失敗（閾値到達）
-    cb.record_failure()
-    assert cb.state == CircuitState.OPEN
-    assert cb.allow_request() is False
+    # タイムアウト後、HALF_OPEN状態になる
+    await asyncio.sleep(0.15)
 
+    # HALF_OPEN状態は1回の呼び出しまで可能
+    assert breaker.can_execute("test_provider") == True
 
-def test_circuit_breaker_recovery_to_half_open_and_closed():
-    """タイムアウト後に HALF_OPEN へ移行し、成功で CLOSED に復帰することを確認。"""
-    cb = CircuitBreaker(
-        "test_service",
-        CircuitBreakerConfig(failure_threshold=1, recovery_timeout=0.05, half_open_max_success=1),
-    )
-
-    cb.record_failure()
-    assert cb.state == CircuitState.OPEN
-    assert cb.allow_request() is False
-
-    # タイムアウト待機
-    time.sleep(0.06)
-
-    # HALF_OPEN への遷移
-    assert cb.allow_request() is True
-    assert cb.state == CircuitState.HALF_OPEN
-
-    # 成功を記録して CLOSED へ復帰
-    cb.record_success()
-    assert cb.state == CircuitState.CLOSED
-    assert cb.failure_count == 0
+    # HALF_OPEN の probe に成功すると CLOSED に復帰
+    breaker.record_success("test_provider")
+    assert breaker.get_state("test_provider").state == CircuitState.CLOSED
+    assert breaker.can_execute("test_provider") == True
 
 
-def test_circuit_breaker_half_open_failure_reopens():
-    """HALF_OPEN 状態で失敗した場合に即座に OPEN へ戻ることを確認。"""
-    cb = CircuitBreaker(
-        "test_service",
-        CircuitBreakerConfig(failure_threshold=1, recovery_timeout=0.05),
-    )
+def test_circuit_breaker_closed_success_count():
+    """サーキットブレーカーの成功カウントをテスト"""
+    breaker = LLMCircuitBreaker(failure_threshold=3)
 
-    cb.record_failure()
-    assert cb.state == CircuitState.OPEN
+    # 最初は成功カウントが0
+    state = breaker.get_state("test_provider")
+    assert state.success_count == 0
 
-    time.sleep(0.06)
-    assert cb.allow_request() is True
-    assert cb.state == CircuitState.HALF_OPEN
+    # 成功を記録
+    breaker.record_success("test_provider")
+    state = breaker.get_state("test_provider")
+    assert state.success_count == 1
 
-    # HALF_OPEN での失敗
-    cb.record_failure()
-    assert cb.state == CircuitState.OPEN
-    assert cb.allow_request() is False
-
-
-def test_circuit_breaker_half_open_multiple_successes_required():
-    """HALF_OPEN で複数回成功が必要な場合の確認。"""
-    cb = CircuitBreaker(
-        "test_service",
-        CircuitBreakerConfig(failure_threshold=1, recovery_timeout=0.05, half_open_max_success=3),
-    )
-
-    cb.record_failure()
-    time.sleep(0.06)
-
-    # 1回目の成功 - まだ HALF_OPEN
-    assert cb.allow_request() is True
-    assert cb.state == CircuitState.HALF_OPEN
-    cb.record_success()
-    assert cb.state == CircuitState.HALF_OPEN
-    assert cb.success_count == 1
-
-    # 2回目の成功 - まだ HALF_OPEN
-    cb.record_success()
-    assert cb.state == CircuitState.HALF_OPEN
-    assert cb.success_count == 2
-
-    # 3回目の成功 - CLOSED に復帰
-    cb.record_success()
-    assert cb.state == CircuitState.CLOSED
-    assert cb.failure_count == 0
-    assert cb.success_count == 0
+    # 複数回の成功
+    breaker.record_success("test_provider")
+    breaker.record_success("test_provider")
+    state = breaker.get_state("test_provider")
+    assert state.success_count == 3
 
 
-def test_circuit_breaker_closed_success_resets_failure_count():
-    """CLOSED 状態での成功は失敗カウントをリセットする。"""
-    cb = CircuitBreaker("test", CircuitBreakerConfig(failure_threshold=3, recovery_timeout=1.0))
+async def test_circuit_breaker_reset():
+    """サーキットブレーカーのリセット機能"""
+    breaker = LLMCircuitBreaker(failure_threshold=1, timeout_seconds=5)
+    breaker.record_failure("test_provider")
+    assert breaker.can_execute("test_provider") == False
 
-    # いくつか失敗を記録
-    cb.record_failure()
-    cb.record_failure()
-    assert cb.failure_count == 2
-
-    # 成功でリセット
-    cb.record_success()
-    assert cb.failure_count == 0
-    assert cb.state == CircuitState.CLOSED
+    breaker.reset("test_provider")
+    assert breaker.can_execute("test_provider") == True
 
 
-def test_circuit_breaker_open_state_returns_false_without_timeout():
-    """OPEN 状態でタイムアウト前は常に False を返す。"""
-    cb = CircuitBreaker("test", CircuitBreakerConfig(failure_threshold=1, recovery_timeout=60.0))
-    cb.record_failure()
-    assert cb.state == CircuitState.OPEN
-
-    # 即座に複数回呼んでも False
-    assert cb.allow_request() is False
-    assert cb.allow_request() is False
-    assert cb.allow_request() is False
-    assert cb.state == CircuitState.OPEN  # 状態変化なし
+async def test_circuit_breaker_snapshot():
+    """サーキットブレーカーのスナップショット取得"""
+    breaker = LLMCircuitBreaker(failure_threshold=1, timeout_seconds=5)
+    breaker.record_failure("test_provider")
+    state = breaker.snapshot()["test_provider"]
+    assert state["state"] == "open"
+    assert state["failure_count"] == 1
 
 
-def test_circuit_breaker_half_open_success_does_not_reset_on_failure():
-    """HALF_OPEN で成功後に失敗した場合、OPEN に戻る。"""
-    cb = CircuitBreaker(
-        "test",
-        CircuitBreakerConfig(failure_threshold=1, recovery_timeout=0.05, half_open_max_success=2),
-    )
-    cb.record_failure()
-    time.sleep(0.06)
-
-    assert cb.allow_request() is True
-    assert cb.state == CircuitState.HALF_OPEN
-
-    # 1回成功
-    cb.record_success()
-    assert cb.state == CircuitState.HALF_OPEN
-    assert cb.success_count == 1
-
-    # すぐに失敗 -> OPEN に戻る
-    cb.record_failure()
-    assert cb.state == CircuitState.OPEN
-    assert cb.success_count == 0
-    assert cb.allow_request() is False
-
-
-def test_circuit_breaker_config_defaults():
-    """デフォルト設定値の検証。"""
-    config = CircuitBreakerConfig()
-    assert config.failure_threshold == 5
-    assert config.recovery_timeout == 30.0
-    assert config.half_open_max_success == 1
+if __name__ == "__main__":
+    test_circuit_breaker_basic()
+    asyncio.run(test_circuit_breaker_half_open())
+    test_circuit_breaker_closed_success_count()
+    asyncio.run(test_circuit_breaker_reset())
+    asyncio.run(test_circuit_breaker_snapshot())
+    print("All tests passed!")

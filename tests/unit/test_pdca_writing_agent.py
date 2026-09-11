@@ -39,6 +39,77 @@ class DummyLLM:
 
 
 @pytest.mark.asyncio
+async def test_writing_agent_rewrite_for_dimension_calls_llm_and_updates_chapter():
+    """Step 10: WritingAgent.rewrite_for_dimension executes actual LLM rewrite and updates chapter."""
+    orig_text = "少年は立ち上がった。"
+    repo = DummyRepo(content=orig_text)
+    expected_rewrite = "少年は膝の痛みに耐え、歯を食いしばりながら立ち上がった。"
+    llm = DummyLLM(rewritten_output=expected_rewrite)
+
+    agent = WritingAgent(repo=repo, llm=llm)
+
+    diffs = [
+        {
+            "location": "冒頭",
+            "original_quote": "少年は立ち上がった。",
+            "improved_suggestion": "もっと痛みの描写を加えるべき",
+            "rationale": "切迫感を出すため",
+        }
+    ]
+
+    result = await agent.rewrite_for_dimension(
+        book_id=1,
+        branch_id=1,
+        ep_num=1,
+        dimension="reader_experience",
+        actionable_diffs=diffs,
+    )
+
+    assert result["status"] == "success"
+    assert result["original_length"] == len(orig_text)
+    assert result["rewritten_length"] == len(expected_rewrite)
+    assert result["rewritten_text"] == expected_rewrite
+    assert result["diff_ratio"] > 0
+    assert "execution_time_ms" in result
+    assert result["dimension"] == "reader_experience"
+    # DB repo updated
+    assert repo.updated_content == expected_rewrite
+    # Prompt contained instructions and actionable diff
+    assert "【修正箇所: 冒頭】" in agent._get_generator().llm.last_prompt
+
+
+@pytest.mark.asyncio
+async def test_writing_agent_rewrite_for_dimension_all_dimensions():
+    """Step 10: Test all dimension types produce valid output."""
+    orig_text = "暗い夜だった。"
+    repo = DummyRepo(content=orig_text)
+    expected_rewrite = "不気味な満月が雲間から覗く、凍てつくような夜だった。"
+    llm = DummyLLM(rewritten_output=expected_rewrite)
+
+    agent = WritingAgent(repo=repo, llm=llm)
+
+    dimensions = [
+        "reader_experience",
+        "catharsis",
+        "tension",
+        "hook",
+        "cliffhanger",
+        "emotional_arc",
+    ]
+
+    for dim in dimensions:
+        result = await agent.rewrite_for_dimension(
+            book_id=1,
+            branch_id=1,
+            ep_num=1,
+            dimension=dim,
+        )
+        assert result["status"] == "success"
+        assert result["dimension"] == dim
+        assert result["rewritten_text"] == expected_rewrite
+
+
+@pytest.mark.asyncio
 async def test_writing_agent_rewrite_with_focus_calls_llm_and_updates_chapter():
     """Step 10: WritingAgent.rewrite_with_focus executes actual LLM rewrite and updates chapter."""
     orig_text = "少年は立ち上がった。"

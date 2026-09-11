@@ -1041,3 +1041,7 @@ class BookScoreCalculator:
             "check": check,
             "act": act,
         }
+
+
+# Phase 1/3 互換エイリアス
+BookScoreService = BookScoreCalculator

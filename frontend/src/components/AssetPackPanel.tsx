@@ -13,6 +13,7 @@ export const AssetPackPanel: React.FC<AssetPackPanelProps> = ({ bookId }) => {
   const [includeIF, setIncludeIF] = useState(true);
   const [includeMediaMix, setIncludeMediaMix] = useState(true);
   const [includeEbook, setIncludeEbook] = useState(true);
+  const [includeAudio, setIncludeAudio] = useState(true);
   const [ebookFmt, setEbookFmt] = useState<EbookFormat[]>(["epub", "pdf"]);
   const [mediaFmt, setMediaFmt] = useState<MediaMixFormat[]>(["manga"]);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
@@ -28,6 +29,7 @@ export const AssetPackPanel: React.FC<AssetPackPanelProps> = ({ bookId }) => {
       include_if_routes: includeIF,
       include_media_mix: includeMediaMix,
       include_ebook: includeEbook,
+      include_audio: includeAudio,
       ebook_formats: ebookFmt,
       media_mix_formats: mediaFmt,
     });
@@ -110,6 +112,14 @@ export const AssetPackPanel: React.FC<AssetPackPanelProps> = ({ bookId }) => {
               onChange={(e) => setIncludeEbook(e.target.checked)}
             />
             <span className="asset-pack-panel__toggle-label">電子書籍</span>
+          </label>
+          <label className="asset-pack-panel__toggle">
+            <input
+              type="checkbox"
+              checked={includeAudio}
+              onChange={(e) => setIncludeAudio(e.target.checked)}
+            />
+            <span className="asset-pack-panel__toggle-label">🔊 章朗読音声 (WAV)</span>
           </label>
         </div>
       </section>

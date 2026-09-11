@@ -1,5 +1,5 @@
 import pytest
-from src.services.pipeline_steps import ForeshadowingResolutionStep
+from src.services.pipeline_steps import ForeshadowingRegistrationStep as ForeshadowingResolutionStep
 from src.services.pipeline_base import WorkflowContext
 from src.models.foreshadowing import Foreshadowing
 

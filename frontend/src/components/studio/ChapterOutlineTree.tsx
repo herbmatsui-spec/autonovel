@@ -58,7 +58,10 @@ const [editingEpNum, setEditingEpNum] = useState<number | null>(null);
     const nextChapters = chapters.filter((c) => c.ep_num !== epNum);
     setChapters(nextChapters);
     if (currentEpNum === epNum && nextChapters.length > 0) {
-      setCurrentEpNum(nextChapters[0].ep_num);
+      const nextChapter = nextChapters[0];
+      if (nextChapter) {
+        setCurrentEpNum(nextChapter.ep_num);
+      }
     }
   };
 
@@ -69,23 +72,20 @@ const handleToggleCatharsis = (epNum: number, e: React.MouseEvent) => {
      );
    };
 
-   const handleStatusChange = (epNum: number) => {
-     setChapters((prev) =>
-       prev.map((c) =>
-         c.ep_num === epNum
-           ? {
-               ...c,
-               status: (() => {
-                 const statusOrder = ["draft", "writing", "completed", "polished"] as const;
-                 const currentIndex = statusOrder.indexOf(c.status as typeof statusOrder[number]);
-                 const nextIndex = (currentIndex + 1) % statusOrder.length;
-                 return statusOrder[nextIndex];
-               })()
-             }
-           : c
-       )
-     );
-   };
+const handleStatusChange = (epNum: number) => {
+      setChapters((prev) =>
+        prev.map((c): ChapterItem => {
+          if (c.ep_num === epNum) {
+            const { status, ...rest } = c;
+            const statusOrder = ["draft", "writing", "completed", "polished"] as const;
+            const currentIndex = statusOrder.indexOf(status as typeof statusOrder[number]);
+            const nextIndex = (currentIndex + 1) % statusOrder.length;
+            return { ...rest, status: statusOrder[nextIndex] } as ChapterItem;
+          }
+          return c;
+        })
+      );
+    };
 
    const handleDragStart = (epNum: number) => {
      setDraggedIndex(epNum - 1);

@@ -141,7 +141,7 @@ describe("easyMode API client", () => {
 
     const res = await generateGachaPlans({ genre: "ファンタジー", keywords: ["剣", "魔法"] });
     expect(res.request_id).toBe("gacha-req-1");
-    expect(res.plans[0].title).toBe("王道勇者譚");
+    expect(res.plans[0]?.title).toBe("王道勇者譚");
   });
 
   it("generateDigest returns DigestResponse on 200", async () => {

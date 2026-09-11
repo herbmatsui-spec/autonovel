@@ -51,11 +51,10 @@ class EasyModeBibleSkill(SkillAgent):
                 auditor=None,
             )
 
-            bible = await bible_generator.generate(
-                book_id=book_id,
-                title=title,
+            _, bible = await bible_generator.create_hegemony_plan(
                 genre=genre,
                 keywords=keywords,
+                title=title,
                 reporter=ctx.artifacts.get("reporter"),
             )
 

@@ -72,12 +72,6 @@ class AppContainer(InfraContainer):
         repo=repo,
     )
 
-    context_builder_agent: providers.Singleton = providers.Singleton(
-        "src.agents.context_builder_agent.ContextBuilderAgent",
-        repo=repo,
-        llm=llm,
-    )
-
     auditor: providers.Singleton = providers.Singleton(
         "src.agents.audit.LogicalAuditor",
         repo=repo,
@@ -171,7 +165,7 @@ class AppContainer(InfraContainer):
         image_service=image_service,
     )
     engine: providers.Factory = providers.Factory(
-        "src.backend.engine.UltimateHegemonyEngine",
+        "src.backend.orchestrator_engine_adapter.OrchestratorEngineAdapter",
         api_key=api_key,
         repo=repo,
         db=InfraContainer.db,

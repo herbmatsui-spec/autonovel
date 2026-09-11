@@ -16,9 +16,9 @@ describe("useToast hook", () => {
       result.current.addToast("Test message", "success", 3000);
     });
     expect(result.current.toasts).toHaveLength(1);
-    expect(result.current.toasts[0].message).toBe("Test message");
-    expect(result.current.toasts[0].type).toBe("success");
-    expect(result.current.toasts[0].durationMs).toBe(3000);
+    expect(result.current.toasts[0]?.message).toBe("Test message");
+    expect(result.current.toasts[0]?.type).toBe("success");
+    expect(result.current.toasts[0]?.durationMs).toBe(3000);
   });
 
   it("removeToast removes a toast by id", () => {
@@ -29,12 +29,12 @@ describe("useToast hook", () => {
     });
     // State updates are async, so wait for re-render
     expect(result.current.toasts).toHaveLength(2);
-    const firstId = result.current.toasts[0].id;
+    const firstId = result.current.toasts[0]!.id;
     act(() => {
       result.current.removeToast(firstId);
     });
     expect(result.current.toasts).toHaveLength(1);
-    expect(result.current.toasts[0].message).toBe("msg2");
+    expect(result.current.toasts[0]?.message).toBe("msg2");
   });
 
   it("auto-dismisses after durationMs", () => {
@@ -60,12 +60,12 @@ describe("useToast hook", () => {
     });
     expect(result.current.toasts).toHaveLength(3);
     
-    // Remove middle one
+// Remove middle one
     act(() => {
-      result.current.removeToast(result.current.toasts[1].id);
+      result.current.removeToast(result.current.toasts[1]!.id);
     });
     expect(result.current.toasts).toHaveLength(2);
-    expect(result.current.toasts[0].message).toBe("First");
-    expect(result.current.toasts[1].message).toBe("Third");
+    expect(result.current.toasts[0]!.message).toBe("First");
+    expect(result.current.toasts[1]!.message).toBe("Third");
   });
 });

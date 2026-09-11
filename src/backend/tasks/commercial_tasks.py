@@ -19,13 +19,121 @@ _SCHEDULED_JOBS: dict[str, dict[str, Any]] = {}
 
 
 @huey.task(retries=2, retry_delay=15)
+def execute_publication_task(schedule_id: int) -> dict[str, Any]:
+    """
+    予約投稿スケジュールに基づき、実際の投稿処理を実行する (Step 7, 8).
+    DBステータスの遷移 (pending -> running -> completed/failed) を管理する。
+    """
+    logger.info("Execute publication task started for schedule_id=%d", schedule_id)
+
+    async def _run() -> dict[str, Any]:
+        from sqlalchemy import select
+        from src.backend.database.models import PublicationScheduleModel
+        from src.backend.database.uow import UnitOfWork
+        from src.core.container import AppContainer
+        from src.backend.services.commercial_helpers import _get_novel_data, _get_episodes_data
+        from src.backend.routers.commercial import _save_publish_records, _get_credentials_class
+        from src.services.commercial_pipeline import CommercialPipeline
+
+        async with UnitOfWork(AppContainer.db()) as uow:
+            if uow.session is None:
+                raise RuntimeError("Database session not initialized")
+
+            # 1. スケジュールの取得とステータス更新 (pending -> running)
+            result = await uow.session.execute(
+                select(PublicationScheduleModel).where(PublicationScheduleModel.id == schedule_id)
+            )
+            schedule = result.scalar_one_or_none()
+            if not schedule:
+                return {"status": "error", "error": f"Schedule {schedule_id} not found"}
+
+            if schedule.status != "pending":
+                return {"status": "error", "error": f"Schedule {schedule_id} is not pending (status: {schedule.status})"}
+
+            schedule.status = "running"
+            await uow.session.commit()
+            await uow.session.refresh(schedule)
+
+            try:
+                # 2. 投稿データの準備
+                book_id = schedule.book_id
+                platform = schedule.platform
+                
+                # エピソード範囲からIDリストを抽出
+                # 実際には Chapter モデルから ep_num の範囲で取得する
+                from src.backend.database.models import Chapter
+                ch_result = await uow.session.execute(
+                    select(Chapter.id)
+                    .where(Chapter.book_id == book_id)
+                    .where(Chapter.ep_num >= schedule.episode_range_start)
+                    .where(Chapter.ep_num <= schedule.episode_range_end)
+                    .order_by(Chapter.ep_num)
+                )
+                episode_ids = [r[0] for r in ch_result.all()]
+
+                # 認証情報の準備 (DBに保存されていない場合は環境変数等から取得される想定)
+                # ここでは簡易的に空の辞書を渡し、pipeline側でデフォルトを処理させる
+                credentials = {}
+                
+                # 3. 投稿実行
+                novel_data = await _get_novel_data(book_id)
+                episodes_data = await _get_episodes_data(book_id, episode_ids, platforms=[platform])
+                
+                pipeline = CommercialPipeline()
+                publish_results = await pipeline._publish_to_platforms(
+                    novel=novel_data,
+                    episodes=episodes_data,
+                    platforms=[platform],
+                    credentials=credentials,
+                )
+
+                # 4. 投稿結果の保存
+                await _save_publish_records(book_id, publish_results)
+
+                # 5. ステータス更新 (running -> completed)
+                # 全プラットフォームで成功したか判定
+                all_success = True
+                for p, results in publish_results.items():
+                    if any(not r.success for r in results):
+                        all_success = False
+                        break
+                
+                if all_success:
+                    schedule.status = "completed"
+                    error_msg = None
+                else:
+                    schedule.status = "failed"
+                    error_msg = "Some episodes failed to publish"
+
+                if error_msg:
+                    schedule.error_message = error_msg
+
+                await uow.session.commit()
+                return {"status": "success", "schedule_id": schedule_id, "final_status": schedule.status}
+
+            except Exception as e:
+                logger.exception("Publication execution failed for schedule_id=%d: %s", schedule_id, e)
+                schedule.status = "failed"
+                schedule.error_message = str(e)
+                await uow.session.commit()
+                return {"status": "error", "error": str(e)}
+
+    try:
+        result = asyncio.run(_run())
+        logger.info("Execute publication task completed: %s", result)
+        return result
+    except Exception as exc:
+        logger.exception("Execute publication task wrapper failed for schedule_id=%d: %s", schedule_id, exc)
+        return {"status": "error", "error": str(exc)}
+
+@huey.task(retries=2, retry_delay=15)
 def publish_to_platforms_task(
     book_id: int,
     platforms: list[str],
     credentials: dict[str, Any],
     episode_ids: list[int] | None = None,
 ) -> dict[str, Any]:
-    """Huey 分散ワーカー上で商用サイト（なろう・カクヨム等）への投稿を実行する (Step 49)."""
+    """Huey 分散ワーカー上で商用サイト（なろう・カクヨム等）への投稿を実行する (Legacy/Direct)."""
     logger.info(
         "Commercial publish task started for book_id=%d, platforms=%s",
         book_id,

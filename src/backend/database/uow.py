@@ -18,6 +18,7 @@ from src.backend.database.repositories import (
     AuditRepository,
     BibleRepository,
     BookRepository,
+    BookScoreRepository,
     BranchRepository,
     ChapterRepository,
     CharacterRepository,
@@ -52,8 +53,10 @@ class UnitOfWork:
         self._plots: PlotRepository | None = None
         self._rules: RulesRepository | None = None
         self._audit: AuditRepository | None = None
+        self._book_scores: BookScoreRepository | None = None
         self._prompt_versions: PromptVersionRepository | None = None
         self._prompt_metrics: PromptMetricsRepository | None = None
+        self._pdca_history: PDCAHistoryRepository | None = None
         self._illustrations: IllustrationRepository | None = None
         self._collab: CollabRepository | None = None
         self._cost: CostRepository | None = None
@@ -142,6 +145,12 @@ class UnitOfWork:
         return self._audit
 
     @property
+    def book_scores(self) -> BookScoreRepository:
+        if self._book_scores is None:
+            self._book_scores = BookScoreRepository(self.session)
+        return self._book_scores
+
+    @property
     def prompt_versions(self) -> PromptVersionRepository:
         if self._prompt_versions is None:
             self._prompt_versions = PromptVersionRepository(self.session)
@@ -152,6 +161,12 @@ class UnitOfWork:
         if self._prompt_metrics is None:
             self._prompt_metrics = PromptMetricsRepository(self.session)
         return self._prompt_metrics
+
+    @property
+    def pdca_history(self) -> PDCAHistoryRepository:
+        if self._pdca_history is None:
+            self._pdca_history = PDCAHistoryRepository(self.session)
+        return self._pdca_history
 
     @property
     def illustrations(self) -> IllustrationRepository:
@@ -260,8 +275,10 @@ class UnitOfWork:
             self._plots = None
             self._rules = None
             self._audit = None
+            self._book_scores = None
             self._prompt_versions = None
             self._prompt_metrics = None
+            self._pdca_history = None
             self._collab = None
             self._cost = None
             self._narrative_metrics = None

@@ -8,8 +8,10 @@ import json
 import logging
 from collections.abc import AsyncIterator
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import StreamingResponse
+
+from src.backend.auth import require_api_key
 
 from src.backend.rate_limit import stream_limiter
 from src.domain.entities.easy_mode import EasyModeInput, StreamQueryInput
@@ -167,6 +169,7 @@ async def stream_generation(
 async def stream_generation_post(
     input_data: EasyModeInput,
     request: Request,
+    api_key: str = Depends(require_api_key),
 ) -> StreamingResponse:
     """POST endpoint for SSE streaming (fully implemented)."""
     stream_limiter.check(request)

@@ -24,6 +24,40 @@ class OpenAIProvider(LLMProvider):
     def __init__(self, cooldown: AdaptiveCooldown):
         self.internal_client = OpenAIApiClient(cooldown)
 
+    def _map_exception(self, e: Exception) -> Exception:
+        """OpenAI SDK 例外および汎用例外をプロジェクトの LLM 例外にマッピングする。"""
+        try:
+            import openai
+
+            if isinstance(e, openai.RateLimitError):
+                return LLMRateLimitError(f"OpenAI API Rate Limit: {e}", original=e)
+            if isinstance(e, openai.AuthenticationError):
+                return LLMAuthenticationError(f"OpenAI API Auth Error: {e}", original=e)
+            if isinstance(e, openai.BadRequestError):
+                return LLMInvalidRequestError(f"OpenAI API Invalid Request: {e}", original=e)
+            if isinstance(e, openai.APITimeoutError):
+                return LLMTimeoutError(f"OpenAI Timeout: {e}", original=e)
+            if isinstance(e, openai.InternalServerError):
+                return LLMServerError(f"OpenAI Server Error: {e}", original=e)
+        except ImportError:
+            pass
+
+        err_msg = str(e).lower()
+        if "429" in err_msg or "rate limit" in err_msg:
+            return LLMRateLimitError(f"OpenAI API Rate Limit: {e}", original=e)
+        if "401" in err_msg or "auth" in err_msg:
+            return LLMAuthenticationError(f"OpenAI API Auth Error: {e}", original=e)
+        if "400" in err_msg or "invalid" in err_msg:
+            return LLMInvalidRequestError(f"OpenAI API Invalid Request: {e}", original=e)
+        if "filter" in err_msg or "blocked" in err_msg:
+            return LLMContentFilterError(f"OpenAI Content Filter: {e}", original=e)
+        if "500" in err_msg or "internal" in err_msg:
+            return LLMServerError(f"OpenAI Server Error: {e}", original=e)
+        if "timeout" in err_msg:
+            return LLMTimeoutError(f"OpenAI Timeout: {e}", original=e)
+
+        return LLMUnknownError(f"Unknown OpenAI Error: {e}", original=e)
+
     @track_llm_call
     async def generate_text(
         self,
@@ -44,22 +78,8 @@ class OpenAIProvider(LLMProvider):
             )
             return LLMResponse(content=content, usage=self._parse_usage(usage), success=True)
         except Exception as e:
-            # 例外のマッピング
-            err_msg = str(e).lower()
-            if "429" in err_msg or "rate limit" in err_msg:
-                raise LLMRateLimitError(f"OpenAI API Rate Limit: {e}", original=e) from e
-            if "401" in err_msg or "auth" in err_msg:
-                raise LLMAuthenticationError(f"OpenAI API Auth Error: {e}", original=e) from e
-            if "400" in err_msg or "invalid" in err_msg:
-                raise LLMInvalidRequestError(f"OpenAI API Invalid Request: {e}", original=e) from e
-            if "filter" in err_msg or "blocked" in err_msg:
-                raise LLMContentFilterError(f"OpenAI Content Filter: {e}", original=e) from e
-            if "500" in err_msg or "internal" in err_msg:
-                raise LLMServerError(f"OpenAI Server Error: {e}", original=e) from e
-            if "timeout" in err_msg:
-                raise LLMTimeoutError(f"OpenAI Timeout: {e}", original=e) from e
-
-            raise LLMUnknownError(f"Unknown OpenAI Error: {e}", original=e) from e
+            mapped = self._map_exception(e)
+            raise mapped from e
 
     @track_llm_call
     async def generate_json(
@@ -85,22 +105,8 @@ class OpenAIProvider(LLMProvider):
                 content=content, metadata=metadata, usage=self._parse_usage(usage), success=True
             )
         except Exception as e:
-            # 例外のマッピング
-            err_msg = str(e).lower()
-            if "429" in err_msg or "rate limit" in err_msg:
-                raise LLMRateLimitError(f"OpenAI API Rate Limit: {e}", original=e) from e
-            if "401" in err_msg or "auth" in err_msg:
-                raise LLMAuthenticationError(f"OpenAI API Auth Error: {e}", original=e) from e
-            if "400" in err_msg or "invalid" in err_msg:
-                raise LLMInvalidRequestError(f"OpenAI API Invalid Request: {e}", original=e) from e
-            if "filter" in err_msg or "blocked" in err_msg:
-                raise LLMContentFilterError(f"OpenAI Content Filter: {e}", original=e) from e
-            if "500" in err_msg or "internal" in err_msg:
-                raise LLMServerError(f"OpenAI Server Error: {e}", original=e) from e
-            if "timeout" in err_msg:
-                raise LLMTimeoutError(f"OpenAI Timeout: {e}", original=e) from e
-
-            raise LLMUnknownError(f"Unknown OpenAI Error: {e}", original=e) from e
+            mapped = self._map_exception(e)
+            raise mapped from e
 
     def _parse_usage(self, usage_metadata: Any) -> dict[str, int]:
         """OpenAI SDK の usage メタデータを共通形式に変換"""

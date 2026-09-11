@@ -11,6 +11,7 @@ export interface OrchestratedGenerateRequest {
   target_word_count: number;
   style_tag?: string;
   llm_config?: Record<string, unknown>;
+  correlation_id?: string;
 }
 
 export interface OrchestratedGenerateResponse {

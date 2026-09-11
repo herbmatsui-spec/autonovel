@@ -12,7 +12,7 @@ from src.models import GenerateResult
 
 
 class EngineLLMClient:
-    def __init__(self, ai_api: GeminiApiClient):
+    def __init__(self, ai_api: Any):
         self.ai_api = ai_api
         self._local = threading.local()
 

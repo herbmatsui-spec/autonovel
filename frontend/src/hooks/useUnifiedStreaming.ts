@@ -3,6 +3,7 @@ import { generateContentStream } from "../api/easyMode";
 import { generateOrchestrated, getOrchestratedStatus, subscribeToAgentEvents } from "../api/orchestratedApi";
 import type { EasyModeInput } from "../types/easyMode";
 import type { OrchestratedGenerateRequest, AgentEvent, AgentName } from "../types/orchestrated";
+import type { UnifiedStreamingState, GenerationMode, GenerationState } from "../types";
 import { useNovelContext } from "../context/NovelContext";
 
 export function useUnifiedStreaming() {
@@ -30,7 +31,7 @@ export function useUnifiedStreaming() {
     abortRef.current = new AbortController();
     esRef.current?.close();
     
-    setState(s => ({ ...s, mode, isActive: true, output: "", agentProgress: {} as any, error: undefined }));
+    setState((s: UnifiedStreamingState) => ({ ...s, mode, isActive: true, output: "", agentProgress: {} as any, error: undefined }));
     setGenerationState(p => ({ ...p, isGenerating: true, statusText: mode === "easy" ? "リアルタイム執筆中..." : "オーケストレーション開始...", error: null }));
     
     try {
@@ -42,20 +43,21 @@ export function useUnifiedStreaming() {
         const reader = response.body!.getReader();
         const decoder = new TextDecoder();
         let buffer = "";
-        for await (const { done, value } of reader) {
+        while (true) {
+          const { done, value } = await reader.read();
           if (done) break;
           buffer += decoder.decode(value, { stream: true });
           for (const line of buffer.split("\n")) {
             if (line.startsWith("data:")) {
               const data = JSON.parse(line.replace(/^data:\s*/, ""));
-              if (data.type === "chunk") setState(s => ({ ...s, output: s.output + data.text }));
+              if (data.type === "chunk") setState((s: UnifiedStreamingState) => ({ ...s, output: s.output + data.text }));
             }
           }
         }
       } else {
         const { task_id } = await generateOrchestrated(input!);
         esRef.current = subscribeToAgentEvents(input!.correlation_id || `book_${input!.book_id}_branch_${input!.branch_id}_ep_${input!.ep_num}`, (event) => {
-          setState(s => ({ ...s, agentProgress: { ...s.agentProgress, [event.agent]: { status: event.payload?.status, payload: event.payload } } }));
+          setState((s: UnifiedStreamingState) => ({ ...s, agentProgress: { ...s.agentProgress, [event.agent]: { status: event.payload?.status, payload: event.payload } } }));
         });
         // ポーリングで完了待ち（省略）
         const deadline = Date.now() + 300_000; // 5分タイムアウト
@@ -67,11 +69,11 @@ export function useUnifiedStreaming() {
             const result = status.result;
             if (result?.output) {
               setCurrentChapterText(result.output);
-              setState(s => ({ ...s, output: result.output }));
-              setGenerationState(p => ({ ...p, isGenerating: false, statusText: "", error: null }));
+              setState((s: UnifiedStreamingState) => ({ ...s, output: result.output }));
+              setGenerationState((p: GenerationState) => ({ ...p, isGenerating: false, statusText: "", error: null }));
             }
-            setState(s => ({ ...s, isActive: false }));
-            setGenerationState(p => ({ ...p, isGenerating: false, statusText: "" }));
+setState((s: UnifiedStreamingState) => ({ ...s, isActive: false }));
+            setGenerationState((p: GenerationState) => ({ ...p, isGenerating: false, statusText: "" }));
             return;
           }
           if (status.status === "failed") throw new Error(status.error || "生成失敗");
@@ -82,8 +84,8 @@ export function useUnifiedStreaming() {
       }
     } catch (e: any) {
       if (e.name !== "AbortError") {
-        setState(s => ({ ...s, isActive: false, error: e.message }));
-        setGenerationState(p => ({ ...p, isGenerating: false, error: e.message }));
+        setState((s: UnifiedStreamingState) => ({ ...s, isActive: false, error: e.message }));
+        setGenerationState((p: GenerationState) => ({ ...p, isGenerating: false, error: e.message }));
       }
     }
   },
@@ -102,8 +104,8 @@ export function useUnifiedStreaming() {
    const cancel = useCallback(() => {
     abortRef.current?.abort();
     esRef.current?.close();
-    setState(s => ({ ...s, isActive: false }));
+    setState((s: UnifiedStreamingState) => ({ ...s, isActive: false }));
   }, []);
 
-  return { ...state, start, cancel, setMode: (m: GenerationMode) => setState(s => ({ ...s, mode: m })) };
+  return { ...state, start, cancel, setMode: (m: GenerationMode) => setState((s: UnifiedStreamingState) => ({ ...s, mode: m })) };
 }

@@ -15,9 +15,9 @@ export const BookCoverPreview: React.FC<BookCoverPreviewProps> = ({
   const genre = "ファンタジー"; // This could be improved with actual genre detection
   
   // Generate a simple tagline from the content (first sentence or so)
-  const tagline = content
-    .split(/[。．\n]/)[0] // Split by Japanese period or newline
-    .slice(0, 50) + "..."; // Take first 50 characters and add ellipsis
+const tagline = content
+      ? (content.split(/[。．\n]/)[0] ?? "").slice(0, 50) + "..."
+      : "";
 
   return (
     <div className="book-cover-preview">

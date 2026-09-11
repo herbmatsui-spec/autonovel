@@ -115,26 +115,26 @@ class TestWorkspaceManager:
             assert result[1] == mock_path3  # mtime=1500
             assert result[2] == mock_path1  # mtime=1000
     
-def test_create_snapshot_creates_backup(self):
-        """create_snapshot がバックアップを作成することを確認"""
-        with patch('src.backend.database.core.BASE_DIR', Path('/tmp')):
-            with patch('pathlib.Path.exists', return_value=True):
-                with patch('shutil.copy2') as mock_copy:
-                    with patch('src.backend.database.core.logger') as mock_logger:
-                        with patch('time.time', return_value=1234567890):
-                            mock_src = Mock()
-                            mock_dst = Mock()
-                            mock_src.with_suffix.return_value = mock_dst
+    def test_create_snapshot_creates_backup(self):
+            """create_snapshot がバックアップを作成することを確認"""
+            with patch('src.backend.database.core.BASE_DIR', Path('/tmp')):
+                with patch('pathlib.Path.exists', return_value=True):
+                    with patch('shutil.copy2') as mock_copy:
+                        with patch('src.backend.database.core.logger') as mock_logger:
+                            with patch('time.time', return_value=1234567890):
+                                mock_src = Mock()
+                                mock_dst = Mock()
+                                mock_src.with_suffix.return_value = mock_dst
                             
-                            with patch('pathlib.Path', return_value=mock_src):
-                                result = WorkspaceManager.create_snapshot("/tmp/test.db")
+                                with patch('pathlib.Path', return_value=mock_src):
+                                    result = WorkspaceManager.create_snapshot("/tmp/test.db")
                                 
-                                assert result == "/tmp/test.db.bak_1234567890.db"
-                                mock_copy.assert_called_once_with(mock_src, mock_dst)
-                                mock_logger.info.assert_called_once_with(
-                                    "Snapshot created: test.db.bak_1234567890.db"
-                                )
-    
+                                    assert result == "/tmp/test.db.bak_1234567890.db"
+                                    mock_copy.assert_called_once_with(mock_src, mock_dst)
+                                    mock_logger.info.assert_called_once_with(
+                                        "Snapshot created: test.db.bak_1234567890.db"
+                                    )
+
     def test_create_snapshot_returns_empty_if_source_not_exists(self):
         """Test that create_snapshot returns empty string when source does not exist"""
         with patch('pathlib.Path.exists', return_value=False):

@@ -5,8 +5,10 @@ export const reorderChapters = (chapters: ChapterItem[], fromIndex: number, toIn
     return chapters;
   }
   const reordered = [...chapters];
-  const [moved] = reordered.splice(fromIndex, 1);
-  reordered.splice(toIndex, 0, moved);
+const movedArray = reordered.splice(fromIndex, 1);
+   const moved = movedArray[0];
+   if (!moved) return chapters; // Should not happen due to earlier bounds check
+   reordered.splice(toIndex, 0, moved);
 
   // Update ep_num and title
   return reordered.map((chapter, index) => {

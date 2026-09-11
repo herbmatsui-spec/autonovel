@@ -12,9 +12,8 @@ export const PromoCardGenerator: React.FC<PromoCardGeneratorProps> = ({
   content,
 }) => {
   // Extract a catchy tagline from the content (first meaningful sentence)
-  const tagline = content
-    .split(/[。．\n]/)[0] // Split by Japanese period or newline
-    .slice(0, 60) + (content.split(/[。．\n]/)[0].length > 60 ? "..." : "");
+  const firstSentence = content.split(/[。．\n]/)[0] ?? "";
+  const tagline = firstSentence.slice(0, 60) + (firstSentence.length > 60 ? "..." : "");
 
   // Generate a compelling catchcopy (marketing copy)
   const catchcopy = `「${title}」――${author}が贈る、心を揺さぶる物語。ページをめくるごとに、新たな発見と感動が待っています。`;
@@ -137,10 +136,10 @@ export const PromoCardGenerator: React.FC<PromoCardGeneratorProps> = ({
   const wrapText = (ctx: CanvasRenderingContext2D, text: string, maxWidth: number, lineHeight: number): string[] => {
     const words = text.split(' ');
     const lines: string[] = [];
-    let currentLine = words[0];
+    let currentLine = words[0] ?? "";
 
     for (let i = 1; i < words.length; i++) {
-      const word = words[i];
+      const word = words[i]!;
       const width = ctx.measureText(currentLine + " " + word).width;
       if (width < maxWidth) {
         currentLine += " " + word;
