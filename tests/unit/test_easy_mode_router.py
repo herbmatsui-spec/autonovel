@@ -132,6 +132,51 @@ async def test_generate_content_success(monkeypatch, dummy_session, dummy_reques
     assert "test-huey-id" in response.suggestions[0]
     assert "tasks_enqueued" in called_metrics
 
+@pytest.mark.asyncio
+async def test_generate_content_stream(monkeypatch, dummy_session, dummy_request):
+    # Mock LLM adapter for streaming
+    class MockStreamingAdapter:
+        async def generate_text_stream(self, prompt, system_prompt, max_tokens):
+            yield "Streaming "
+            yield "content..."
+
+    monkeypatch.setattr(easy_mode, "get_llm_adapter", lambda **kwargs: MockStreamingAdapter())
+    
+    valid_input = easy_mode.EasyModeInput(
+        chapter_history=["a"],
+        current_chapter="content",
+        character_params={},
+        content_length_limit=1000,
+    )
+    
+    # Since generate_content_stream returns a Response object (FastAPI),
+    # we test if it returns a response and doesn't raise an error.
+    # In a unit test, apiFetch is usually mocked or we test the router function directly.
+    # However, generate_content_stream in easy_mode.py calls apiFetch.
+    # We need to mock apiFetch to return a mock Response.
+    
+    class MockResponse:
+        def __init__(self):
+            self.ok = True
+            self.json = asyncio.coroutine(lambda: {})
+            self.text = asyncio.coroutine(lambda: "ok")
+
+    monkeypatch.setattr(easy_mode, "apiFetch", lambda *args, **kwargs: asyncio.Future().set_result(MockResponse()))
+    
+    # Since we are testing the router function, and it uses apiFetch,
+    # we just want to ensure the logic flows correctly.
+    # Actually, looking at src/backend/routers/easy_mode.py,
+    # generate_content_stream is a function that returns a Response.
+    
+    # Let's use a simpler mock for apiFetch
+    async def mock_api_fetch(*args, **kwargs):
+        return MockResponse()
+    
+    monkeypatch.setattr(easy_mode, "apiFetch", mock_api_fetch)
+    
+    response = await easy_mode.generate_content_stream(valid_input)
+    assert response.ok is True
+
 
 @pytest.mark.asyncio
 async def test_generate_content_validation_error_path(
@@ -355,4 +400,17 @@ async def test_export_with_data_endpoint(monkeypatch, dummy_session):
     )
     assert response.status_code == 200
     assert response.headers["Content-Type"] == "application/zip"
+
+@pytest.mark.asyncio
+async def test_cancel_task(monkeypatch):
+    class DummyRepo:
+        def update_task_status(self, task_id, status):
+            pass
+    
+    monkeypatch.setattr(easy_mode, "BookRepository", DummyRepo)
+    monkeypatch.setattr(huey_mod, "revoke_by_id", lambda tid: None)
+    
+    response = await easy_mode.cancel_task("task-123")
+    assert response["task_id"] == "task-123"
+    assert response["status"] == "cancelled"
 

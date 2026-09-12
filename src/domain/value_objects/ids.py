@@ -144,6 +144,66 @@ class SettingId:
 
 
 @dataclass(frozen=True, slots=True)
+class LoreId:
+    """Lore identifier."""
+    value: UUID
+
+    @classmethod
+    def generate(cls) -> LoreId:
+        return cls(uuid4())
+
+    @classmethod
+    def from_string(cls, value: str) -> LoreId:
+        return cls(UUID(value))
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    def __int__(self) -> int:
+        return int(self.value)
+
+
+@dataclass(frozen=True, slots=True)
+class PlotPointId:
+    """Plot point identifier."""
+    value: UUID
+
+    @classmethod
+    def generate(cls) -> PlotPointId:
+        return cls(uuid4())
+
+    @classmethod
+    def from_string(cls, value: str) -> PlotPointId:
+        return cls(UUID(value))
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    def __int__(self) -> int:
+        return int(self.value)
+
+
+@dataclass(frozen=True, slots=True)
+class ArcId:
+    """Arc identifier."""
+    value: UUID
+
+    @classmethod
+    def generate(cls) -> ArcId:
+        return cls(uuid4())
+
+    @classmethod
+    def from_string(cls, value: str) -> ArcId:
+        return cls(UUID(value))
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    def __int__(self) -> int:
+        return int(self.value)
+
+
+@dataclass(frozen=True, slots=True)
 class AuditId:
     """Audit identifier."""
     value: UUID
@@ -191,6 +251,9 @@ __all__ = [
     "BranchId",
     "PlotId",
     "SettingId",
+    "LoreId",
+    "PlotPointId",
+    "ArcId",
     "AuditId",
     "UserId",
 ]

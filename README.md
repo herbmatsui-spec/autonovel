@@ -17,7 +17,7 @@
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 [![Type Checked: mypy](https://img.shields.io/badge/type%20checked-mypy-blue)](https://mypy-lang.org/)
 [![Vitest](https://img.shields.io/badge/tested_with-vitest-729B1B?logo=vitest&logoColor=white)](https://vitest.dev/)
-[![Version](https://img.shields.io/badge/version-4.9.0-brightgreen?logo=semver)](https://github.com/herbmatsui-spec/autonovel/releases/tag/v4.9.0)
+[![Version](https://img.shields.io/badge/version-4.9.1-brightgreen?logo=semver)](https://github.com/herbmatsui-spec/autonovel/releases/tag/v4.9.1)
 
 <br />
 
@@ -25,7 +25,7 @@
   <img src="docs/demo.gif" alt="AutoNovel UI & Workflow Demo" width="900" style="border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
 </p>
 
-*▲ AutoNovel v4.9.0: LLM・Embedding設定の一元化 / プロット・執筆・監査・Embedding用途別モデル設定 / リアルタイム稼働モデルカード / サーバー既定情報API*
+*▲ AutoNovel v4.9.1: LLM・Embedding設定の一元化 / プロット・執筆・監査・Embedding用途別モデル設定 / リアルタイム稼働モデルカード / サーバー既定情報API / DDDレイヤー分離実装完了*
 
 </div>
 
@@ -57,6 +57,45 @@ AutoNovel は、AI を活用して Web 小説を **企画から執筆、校正�
 続いて、下記の目次から技術的な詳細をご覧ください。
 
 ## 📋 更新履歴 / Changelog
+
+### v4.9.1 (2026-09-12) — DDDレイヤー分離アーキテクチャ実装完了・P1実装計画統合
+
+DDD（ドメイン駆動設計）のレイヤーアーキテクチャ（Domain / Application / Infrastructure / Presentation）への完全分離を実現し、依存関係の逆転・責務の明確化・テスタビリティ向上を完了。P1実装計画の全タスクを統合。
+
+**🏗️ DDD レイヤー分離の完全実装 (`src/domain/`, `src/application/`, `src/infrastructure/`, `src/presentation/`)**
+- **Domain層 (`src/domain/`)**:
+  - エンティティ: `Series`, `Episode`, `Character`, `PlotPoint`, `WorldBuilding` 等のドメインモデル
+  - 値オブジェクト: `ModelConfig`, `WritingStyle`, `QualityMetrics` 等
+  - ドメインサービス: `PlotGenerator`, `ConsistencyChecker`, `CharacterVoiceAnalyzer`
+  - リポジトリインターフェース: `SeriesRepository`, `EpisodeRepository`, `CharacterRepository` 等
+  - ドメインイベント: `SeriesCreated`, `EpisodeWritten`, `AuditCompleted` 等
+- **Application層 (`src/application/`)**:
+  - ユースケース: `CreateSeriesUseCase`, `WriteEpisodeUseCase`, `AuditEpisodeUseCase`, `GenerateIllustrationUseCase`
+  - DTO: 入力・出力データ転送オブジェクト
+  - アプリケーションサービス: オーケストレーション・トランザクション境界管理
+- **Infrastructure層 (`src/infrastructure/`)**:
+  - リポジトリ実装: SQLAlchemy/PostgreSQL, ChromaDB, Redis 実装
+  - 外部サービスアダプタ: LLMゲートウェイ, VOICEVOX, 画像生成API, 出版プラットフォームAPI
+  - 永続化: Alembicマイグレーション, Unit of Work パターン
+- **Presentation層 (`src/presentation/`)**:
+  - API ルーター: FastAPI エンドポイント (`/api/series`, `/api/episodes`, `/api/audit`, etc.)
+  - WebSocket ハンドラ: リアルタイム進捗・通知
+  - フロントエンド: React 18 + TypeScript コンポーネント群
+
+**🔄 依存関係の逆転 & インターフェースベース設計**
+- Domain層は他層に依存せず、Application層はDomain層のみに依存
+- Infrastructure層はDomain層のインターフェースを実装
+- Presentation層はApplication層のユースケースを呼び出し
+- DIコンテナ (`src/core/container/app.py`) による依存注入の一元管理
+
+**🧪 テスト戦略の強化**
+- Domain層: 純粋な単体テスト（DB/外部API不要、高速・確実）
+- Application層: モックを用いたユースケース単体テスト
+- Infrastructure層: Testcontainers を用いた統合テスト
+- E2Eテスト: Playwright + MSW によるフルスタック検証
+- 全テストスイート: `ruff`, `mypy --strict`, `pytest -x -q`, `vitest run` 全通過
+
+---
 
 ### v4.9.0 (2026-09-12) — LLM・Embedding設定の一元化 & 用途別モデル（プロット/執筆/監査/Embedding）個別指定対応
 

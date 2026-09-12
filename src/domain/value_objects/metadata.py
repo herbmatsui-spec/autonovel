@@ -28,6 +28,17 @@ class NovelMode(Enum):
     EXPERT = "expert"
 
 
+class SettingType(Enum):
+    """Setting type enumeration for World Bible."""
+    WORLDVIEW = "worldview"
+    CHARACTER = "character"
+    TERMINOLOGY = "terminology"
+    LOCATION = "location"
+    ORGANIZATION = "organization"
+    ITEM = "item"
+    CUSTOM = "custom"
+
+
 @dataclass(frozen=True, slots=True)
 class NovelMetadata:
     """Novel metadata value object."""
@@ -188,6 +199,7 @@ class AuditMetadata:
 __all__ = [
     "NovelStatus",
     "NovelMode",
+    "SettingType",
     "NovelMetadata",
     "PublishPlatform",
     "PublishStatus",
