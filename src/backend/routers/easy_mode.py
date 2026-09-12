@@ -150,10 +150,13 @@ async def execute_generation(payload: dict[str, Any]) -> dict[str, Any]:
     if content_length_limit:
         user_prompt += f"\n\n【執筆指示】1話あたりの目標文字数は約{content_length_limit}文字（目安: {max(500, content_length_limit - 300)}〜{content_length_limit + 300}文字）で執筆してください。"
 
+    from src.llm.model_router import resolve_model_for_purpose
+
+    writing_model = resolve_model_for_purpose("writing", llm_config)
     adapter = get_llm_adapter(
         provider=llm_config.get("provider"),
         api_key=llm_config.get("api_key"),
-        model_name=llm_config.get("model_name"),
+        model_name=writing_model,
         base_url=llm_config.get("base_url"),
     )
     max_tokens = max(500, min(8000, int(content_length_limit * 1.5)))
@@ -185,10 +188,21 @@ async def execute_generation(payload: dict[str, Any]) -> dict[str, Any]:
         except Exception as e:
             logger.warning("Failed to process chapter knowledge in background: %s", e)
 
-    # 次話展開提案の生成
+    # 次話展開提案の生成 (planningモデルを使用)
+    planning_model = resolve_model_for_purpose("planning", llm_config)
+    planning_adapter = (
+        adapter
+        if planning_model == writing_model
+        else get_llm_adapter(
+            provider=llm_config.get("provider"),
+            api_key=llm_config.get("api_key"),
+            model_name=planning_model,
+            base_url=llm_config.get("base_url"),
+        )
+    )
     suggestions_prompt = SUGGESTIONS_PROMPT_TEMPLATE.format(chapter_text=generated_text[:1000])
     try:
-        suggestions_raw = await adapter.generate_text(
+        suggestions_raw = await planning_adapter.generate_text(
             prompt=suggestions_prompt,
             max_tokens=300,
         )
@@ -197,6 +211,7 @@ async def execute_generation(payload: dict[str, Any]) -> dict[str, Any]:
             for line in suggestions_raw.strip().split("\n")
             if line.strip()
         ][:3]
+
     except Exception:
         logger.warning("Failed to generate suggestions, using defaults", exc_info=True)
         suggestions = [

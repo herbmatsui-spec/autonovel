@@ -63,12 +63,16 @@ async def _stream_generator(input_data: EasyModeInput, request: Request) -> Asyn
     user_prompt += f"\n\n【執筆指示】1話あたりの目標文字数は約{limit}文字（目安: {max(500, limit - 300)}〜{limit + 300}文字）で執筆してください。"
 
     llm_cfg = input_data.llm_config
+    from src.llm.model_router import resolve_model_for_purpose
+    writing_model = resolve_model_for_purpose("writing", llm_cfg)
+
     adapter = get_llm_adapter(
         provider=llm_cfg.provider if llm_cfg else None,
         api_key=llm_cfg.api_key if llm_cfg else None,
-        model_name=llm_cfg.model_name if llm_cfg else None,
+        model_name=writing_model,
         base_url=llm_cfg.base_url if llm_cfg else None,
     )
+
 
     yield f"data: {json.dumps({'type': 'start'}, ensure_ascii=False)}\n\n"
 

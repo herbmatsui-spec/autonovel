@@ -17,6 +17,7 @@ services:
       - DATABASE_URL=postgresql://autonovel:autonovel@db:5432/autonovel
       - REDIS_URL=redis://redis:6379/0
       - HUEY_BACKEND=redis
+      - AUTH_DISABLED=true
       - LOG_LEVEL=INFO
       - LLM_PROVIDER=${LLM_PROVIDER:?LLM_PROVIDER is required}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
@@ -39,7 +40,8 @@ services:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8200/health')"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 30s
     logging:
       driver: json-file
       options:
@@ -47,6 +49,7 @@ services:
         max-file: "3"
 
   worker:
+    image: autonovel-backend:latest
     build:
       context: .
       dockerfile: Dockerfile
@@ -58,6 +61,8 @@ services:
       - DATABASE_URL=postgresql://autonovel:autonovel@db:5432/autonovel
       - REDIS_URL=redis://redis:6379/0
       - HUEY_BACKEND=redis
+      - USE_NULL_POOL=1
+      - AUTH_DISABLED=true
       - LOG_LEVEL=INFO
       - LLM_PROVIDER=${LLM_PROVIDER:?LLM_PROVIDER is required}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
@@ -128,9 +133,9 @@ services:
     container_name: autonovel_frontend_dev
     ports:
       - "5173:5173"
-#    volumes:
-#      - ./frontend:/app
-#      - /app/node_modules
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
     environment:
       - CHOKIDAR_USEPOLLING=true
       - VITE_BACKEND_URL=http://backend:8200

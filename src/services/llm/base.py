@@ -27,7 +27,7 @@ class BaseLLMAdapter(ABC):
         warnings.warn(
             "BaseLLMAdapter is deprecated, use IUnifiedLLMClient instead",
             DeprecationWarning,
-            stacklevel=2
+            stacklevel=2,
         )
         raise NotImplementedError
 
@@ -44,7 +44,7 @@ class BaseLLMAdapter(ABC):
         warnings.warn(
             "BaseLLMAdapter is deprecated, use IUnifiedLLMClient instead",
             DeprecationWarning,
-            stacklevel=2
+            stacklevel=2,
         )
         raise NotImplementedError
         yield ""  # generator 型ヒント用
@@ -53,7 +53,7 @@ class BaseLLMAdapter(ABC):
         """進行中のストリームをキャンセルするフック。既定は何もしない。"""
         return None
 
-def generate(
+    def generate(
         self,
         prompt: str,
         system_prompt: str | None = None,
@@ -66,7 +66,7 @@ def generate(
         warnings.warn(
             "BaseLLMAdapter is deprecated, use IUnifiedLLMClient instead",
             DeprecationWarning,
-            stacklevel=2
+            stacklevel=2,
         )
         coro = self.generate_text(
             prompt=prompt,

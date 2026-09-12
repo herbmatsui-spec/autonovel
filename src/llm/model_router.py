@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import Any
+
 # デフォルトモデルマッピング（必要に応じて追加）
 _DEFAULTS = {
     "planning": "gemini-3.5-flash-lite",
@@ -85,3 +89,32 @@ def resolve_model(value: str) -> str:
     if value in _PURPOSES:
         return select_model(value)
     return value
+
+
+def resolve_model_for_purpose(purpose: str, override_config: Any | None = None) -> str:
+    """用途 (purpose) に応じたモデル名を解決する。
+
+    優先順位:
+    1. override_config の用途別指定 (model_planning, model_writing, model_audit, model_embedding 等)
+    2. override_config の全体指定 (model_name)
+    3. サーバー既定値 (select_model)
+    """
+    if override_config:
+        # dict または Pydantic モデルの両方に対応
+        val_purpose = None
+        val_global = None
+        key_purpose = f"model_{purpose}"
+        if isinstance(override_config, dict):
+            val_purpose = override_config.get(key_purpose)
+            val_global = override_config.get("model_name")
+        else:
+            val_purpose = getattr(override_config, key_purpose, None)
+            val_global = getattr(override_config, "model_name", None)
+
+        if val_purpose:
+            return str(val_purpose)
+        if val_global:
+            return str(val_global)
+
+    return select_model(purpose)
+

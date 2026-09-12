@@ -26,6 +26,7 @@ function AppContent() {
   const [showGraph, setShowGraph] = useState(false);
   const [showMedia, setShowMedia] = useState(false);
   const [showConfig, setShowConfig] = useState(false);
+  const [showTransitionOverlay, setShowTransitionOverlay] = useState(false);
   const [mode, setMode] = useState<"easy" | "studio">(() => {
     if (typeof window === "undefined") return "studio";
     return (localStorage.getItem("autonovel.mode") as "easy" | "studio") || "studio";
@@ -210,12 +211,18 @@ function AppContent() {
             <button
               type="button"
               className={`mode-btn ${mode === "studio" ? "mode-btn--active" : ""}`}
-              onClick={() => setMode("studio")}
+              onClick={() => {
+                if (mode === "easy") {
+                  // EasyからStudioへの切り替え時はオーバーレイを表示
+                  setShowTransitionOverlay(true);
+                }
+                setMode("studio");
+              }}
               data-testid="btn-mode-studio"
             >
               🚀 上級者 Studio
             </button>
-</div>
+          </div>
 
 <button
   onClick={() => setShowConfig(true)}
@@ -299,6 +306,87 @@ function AppContent() {
           })()}
         </div>
       </header>
+
+      {showTransitionOverlay && (
+        <div
+          className="transition-overlay"
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 999,
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowTransitionOverlay(false);
+          }}
+        >
+          <div
+            style={{
+              background: "var(--card-bg, #18181b)",
+              border: "2px solid var(--accent-primary, #a78bfa)",
+              borderRadius: "16px",
+              width: "90%",
+              maxWidth: "500px",
+              padding: "32px",
+              textAlign: "center",
+            }}
+          >
+            <h2 style={{ marginBottom: "24px", color: "var(--accent-primary, #a78bfa)" }}>
+              🚀 Studioモードへようこそ！
+            </h2>
+            <div style={{ textAlign: "left", marginBottom: "24px" }}>
+              <p>EasyモードからStudioモードへの移行時に、以下の高度な機能が利用可能になります：</p>
+              <ul style={{ paddingLeft: "20px" }}>
+                <li>📊 リアルタイム品質スコアと詳細なフィードバック</li>
+                <li>🎭 キャラクター詳細プロファイルと関係性マッピング</li>
+                <li>🖼️ シーン別マルチメディアプレビューと画像生成</li>
+                <li>📖 プロットビジュアライザーとBeatシート編集</li>
+                <li>🔍 AI診断による矛盾検出と修正提案</li>
+                <li>⚡ ブランチベースの実験的執筆とバージョン管理</li>
+              </ul>
+            </div>
+            <div style={{ display: "flex", justifyContent: "center", gap: "16px" }}>
+              <button
+                onClick={() => setShowTransitionOverlay(false)}
+                style={{
+                  padding: "12px 24px",
+                  backgroundColor: "var(--accent-primary, #a78bfa)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  fontWeight: "600",
+                }}
+              >
+                今すぐ体験する
+              </button>
+              <button
+                onClick={() => {
+                  setShowTransitionOverlay(false);
+                  setMode("easy"); // Easyモードに戻す
+                }}
+                style={{
+                  padding: "12px 24px",
+                  backgroundColor: "transparent",
+                  border: "2px solid var(--text-muted)",
+                  color: "var(--text-muted)",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  fontWeight: "600",
+                }}
+              >
+                今はEasyモードで
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {mode === "easy" ? (
         <main className="main-grid">

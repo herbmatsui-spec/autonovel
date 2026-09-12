@@ -41,10 +41,37 @@ _llm_gateway = None
 _llm_circuit_breaker = None
 
 
+@router.get("/api/system/models/info")
+async def get_models_info() -> dict[str, Any]:
+    """サーバー既定のモデル構成および利用可能プロバイダ一覧を返す。"""
+    from src.backend.config import settings
+    from src.llm.model_router import _DEFAULTS
+
+    return {
+        "status": "success",
+        "current_provider": settings.LLM_PROVIDER,
+        "server_defaults": {
+            "planning": _DEFAULTS.get("planning", "gemini-3.5-flash-lite"),
+            "plot_expansion": _DEFAULTS.get("plot_expansion", "gemma-4-31b-it"),
+            "writing": _DEFAULTS.get("writing", "gemma-4-31b-it"),
+            "audit": _DEFAULTS.get("audit", "gemini-3.5-flash-lite"),
+            "embedding": settings.EMBEDDING_MODEL or "text-embedding-3-small",
+        },
+        "configured_keys": {
+            "gemini": bool(settings.GEMINI_API_KEY or settings.get_gemini_api_key()),
+            "openai": bool(settings.OPENAI_API_KEY),
+            "anthropic": bool(settings.ANTHROPIC_API_KEY),
+            "openrouter": bool(settings.OPENROUTER_API_KEY),
+        },
+        "available_providers": ["gemini", "openai", "openai_compatible", "mock"],
+    }
+
+
 @router.get("/api/system/status")
 async def system_status() -> dict[str, Any]:
     """システム全体の耐障害ステータスを返す。"""
     return resilience.get_system_status()
+
 
 
 @router.get("/api/system/huey/health")

@@ -86,13 +86,7 @@ if ($LASTEXITCODE -ne 0) {
     Write-Host "[Docker] Docker daemon is running." -ForegroundColor Green
 }
 
-# 5. Open browser in background after 8 seconds
-Start-Job -ScriptBlock {
-    Start-Sleep -Seconds 8
-    Start-Process "http://localhost:5173"
-} | Out-Null
-
-# 6. Build and start services via Docker Compose
+# 5. Build and start services via Docker Compose
 Write-Host ""
 Write-Host "========================================================" -ForegroundColor Cyan
 Write-Host " Building and starting containers..." -ForegroundColor White
@@ -103,33 +97,68 @@ Write-Host " Note: Press Ctrl+C in this window to stop all services." -Foregroun
 Write-Host "========================================================" -ForegroundColor Cyan
 Write-Host ""
 
-# メモリ不足・BuildKitクラッシュを防ぐため、順次ビルドを実施
-Write-Host "[1/3] Building database (PostgreSQL + pgvector + Apache AGE)..." -ForegroundColor Yellow
-docker compose build db
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "[ERROR] Database image build failed." -ForegroundColor Red
-    Read-Host "Press Enter to exit..."
-    exit 1
+# 既存イメージが存在するか確認し、存在する場合は不要なビルドをスキップ（高速起動＆BuildKitのメモリクラッシュ防止）
+$hasDb = docker images -q autonovel-db:latest 2>$null
+$hasBackend = docker images -q autonovel-backend:latest 2>$null
+$hasFrontend = docker images -q autonovel-frontend-dev:latest 2>$null
+
+if (-not $hasDb) {
+    Write-Host "[1/3] Building database (PostgreSQL + pgvector + Apache AGE)..." -ForegroundColor Yellow
+    docker compose build db
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "[ERROR] Database image build failed." -ForegroundColor Red
+        Read-Host "Press Enter to exit..."
+        exit 1
+    }
+} else {
+    Write-Host "[1/3] Database image already built. (skipping build)" -ForegroundColor Green
 }
 
-Write-Host "[2/3] Building backend & worker..." -ForegroundColor Yellow
-docker compose build backend
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "[ERROR] Backend image build failed." -ForegroundColor Red
-    Read-Host "Press Enter to exit..."
-    exit 1
+if (-not $hasBackend) {
+    Write-Host "[2/3] Building backend & worker..." -ForegroundColor Yellow
+    docker compose build backend
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "[ERROR] Backend image build failed." -ForegroundColor Red
+        Read-Host "Press Enter to exit..."
+        exit 1
+    }
+} else {
+    Write-Host "[2/3] Backend image already built. (skipping build)" -ForegroundColor Green
 }
 
-Write-Host "[3/3] Building frontend..." -ForegroundColor Yellow
-docker compose build frontend-dev
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "[ERROR] Frontend image build failed." -ForegroundColor Red
-    Read-Host "Press Enter to exit..."
-    exit 1
+if (-not $hasFrontend) {
+    Write-Host "[3/3] Building frontend..." -ForegroundColor Yellow
+    docker compose build frontend-dev
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "[ERROR] Frontend image build failed." -ForegroundColor Red
+        Read-Host "Press Enter to exit..."
+        exit 1
+    }
+} else {
+    Write-Host "[3/3] Frontend image already built. (skipping build)" -ForegroundColor Green
 }
 
 Write-Host ""
 Write-Host "[Docker] Starting all services..." -ForegroundColor Green
+
+# サービスが実際に起動して応答を返すようになってからブラウザを開く
+Start-Job -ScriptBlock {
+    $ready = $false
+    for ($i = 0; $i -lt 30; $i++) {
+        Start-Sleep -Seconds 2
+        try {
+            $resp = Invoke-WebRequest -Uri "http://localhost:5173" -UseBasicParsing -TimeoutSec 2 -ErrorAction Stop
+            if ($resp.StatusCode -eq 200) {
+                $ready = $true
+                break
+            }
+        } catch {}
+    }
+    if ($ready) {
+        Start-Process "http://localhost:5173"
+    }
+} | Out-Null
+
 docker compose up
 
 Write-Host ""

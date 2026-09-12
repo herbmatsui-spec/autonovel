@@ -65,6 +65,10 @@ def get_api_key_service() -> APIKeyService:
 
 
 async def require_api_key(request: Request) -> str:
+    service = get_api_key_service()
+    if service.disabled:
+        return request.headers.get("X-API-Key") or "AUTH_BYPASSED"
+
     api_key = request.headers.get("X-API-Key")
     if not api_key:
         raise HTTPException(
@@ -74,7 +78,7 @@ async def require_api_key(request: Request) -> str:
                 "error_message": "API キーが指定されていません。X-API-Key ヘッダーを設定してください。",
             },
         )
-    service = get_api_key_service()
+
     if not service.validate(api_key):
         logger.warning(
             f"Invalid API key attempt from "

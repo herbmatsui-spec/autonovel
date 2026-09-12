@@ -154,6 +154,34 @@ class ClosedLoopPDCARunner:
                 "delta": delta,
             })
 
+            # Real-time event broadcast for live score monitor
+            try:
+                from src.backend.websocket.pipeline_hub import pipeline_event_hub
+                from src.backend.schemas.pipeline_events import PipelineEvent
+                await pipeline_event_hub.broadcast(
+                    PipelineEvent(
+                        event_type="score_updated",
+                        book_id=ctx.get("book_id", 0) or 0,
+                        task_id=str(ctx.get("task_id", "") or ctx.get("chapter_number", "")),
+                        payload={
+                            "cycle": cycle,
+                            "score": current_score,
+                            "delta": delta,
+                            "scores_by_specialist": dict(re_audit.by_specialist),
+                            "actionable_diffs": [
+                                {
+                                    "location": d.location,
+                                    "original_quote": d.original_quote,
+                                    "improved_suggestion": d.improved_suggestion,
+                                    "rationale": d.rationale,
+                                } for d in getattr(re_audit, "actionable_diffs", [])
+                            ],
+                        }
+                    )
+                )
+            except Exception:
+                pass
+
             # Check convergence or stagnation
             if current_score >= self.target_score:
                 converged = True
@@ -271,26 +299,47 @@ class ClosedLoopPDCARunner:
             logger.error("Failed to save PDCA snapshot: %s", e)
 
     async def _publish_pdca_finished(self, result: PDCACycleResult, ctx: dict[str, Any]) -> None:
-        """Publish PDCA outcome to event_bus."""
-        if not self.event_bus:
-            return
+        """Publish PDCA outcome to event_bus and PipelineEventHub."""
+        if self.event_bus:
+            try:
+                from src.agents.event_bus import AgentEvent
+                await self.event_bus.publish_async(
+                    AgentEvent(
+                        agent="audit.pdca",
+                        payload={
+                            "event": "audit.pdca.completed",
+                            "book_id": ctx.get("book_id"),
+                            "chapter_number": ctx.get("chapter_number"),
+                            "initial_score": result.initial_score,
+                            "final_score": result.final_score,
+                            "score_delta": result.score_delta,
+                            "improved_percentage": result.improved_percentage,
+                            "cycles_run": result.cycle_number,
+                            "converged": result.converged,
+                        },
+                        correlation_id=str(ctx.get("correlation_id", "unknown")),
+                    )
+                )
+            except Exception:
+                pass
+
         try:
-            from src.agents.event_bus import AgentEvent
-            await self.event_bus.publish_async(
-                AgentEvent(
-                    agent="audit.pdca",
+            from src.backend.websocket.pipeline_hub import pipeline_event_hub
+            from src.backend.schemas.pipeline_events import PipelineEvent
+            await pipeline_event_hub.broadcast(
+                PipelineEvent(
+                    event_type="pdca_cycle",
+                    book_id=ctx.get("book_id", 0) or 0,
+                    task_id=str(ctx.get("task_id", "") or ctx.get("chapter_number", "")),
                     payload={
-                        "event": "audit.pdca.completed",
-                        "book_id": ctx.get("book_id"),
-                        "chapter_number": ctx.get("chapter_number"),
                         "initial_score": result.initial_score,
                         "final_score": result.final_score,
                         "score_delta": result.score_delta,
                         "improved_percentage": result.improved_percentage,
                         "cycles_run": result.cycle_number,
                         "converged": result.converged,
-                    },
-                    correlation_id=str(ctx.get("correlation_id", "unknown")),
+                        "history": result.history,
+                    }
                 )
             )
         except Exception:

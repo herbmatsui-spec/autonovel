@@ -98,19 +98,21 @@ async def get_budget(book_id: int, branch_id: int = 1) -> dict[str, Any]:
         budget_value = budget_row.scalar_one_or_none()
 
     budget_usd = float(budget_value) if budget_value is not None else 5.0
+    ratio = current_cost / budget_usd if budget_usd > 0 else 0.0
+    if ratio < 0.7:
+        status = BudgetStatus.NORMAL
+    elif ratio < 0.9:
+        status = BudgetStatus.WARNING
+    else:
+        status = BudgetStatus.EXCEEDED
 
-    guard = CostBudgetGuard()
-    guard.set_book_budget(book_id, budget_usd)
-    guard._cost_provider = lambda bid: current_cost if bid == book_id else 0.0
-
-    status = guard.check_budget_status(book_id)
-    recommended = guard.get_recommended_model_for_task("writing", book_id)
+    recommended = "openai/gpt-4o-mini" if ratio >= 0.9 else "openai/gpt-4o"
 
     return {
         "book_id": book_id,
         "budget_usd": budget_usd,
         "current_cost_usd": round(current_cost, 4),
-        "ratio": round(current_cost / budget_usd, 4) if budget_usd > 0 else 0.0,
+        "ratio": round(ratio, 4),
         "status": status.value,
         "downgrade_active": status in (BudgetStatus.WARNING, BudgetStatus.EXCEEDED),
         "recommended_model": recommended,

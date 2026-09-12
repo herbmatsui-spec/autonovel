@@ -73,13 +73,43 @@ async def _generate_orchestrated(payload: dict[str, Any]) -> dict[str, Any]:
     target_word_count = payload.get("target_word_count", 3000)
     style_tag = payload.get("style_tag")
 
-    # LLM アダプタ取得
+    # LLM アダプタ取得（用途別モデル対応）
+    from src.llm.model_router import resolve_model_for_purpose
+
     llm_config = payload.get("llm_config") or {}
+    provider = llm_config.get("provider")
+    api_key = llm_config.get("api_key")
+    base_url = llm_config.get("base_url")
+
+    writing_model = resolve_model_for_purpose("writing", llm_config)
+    planning_model = resolve_model_for_purpose("planning", llm_config)
+    audit_model = resolve_model_for_purpose("audit", llm_config)
+
     llm_adapter = get_llm_adapter(
-        provider=llm_config.get("provider"),
-        api_key=llm_config.get("api_key"),
-        model_name=llm_config.get("model_name"),
-        base_url=llm_config.get("base_url"),
+        provider=provider,
+        api_key=api_key,
+        model_name=writing_model,
+        base_url=base_url,
+    )
+    planning_adapter = (
+        llm_adapter
+        if planning_model == writing_model
+        else get_llm_adapter(
+            provider=provider,
+            api_key=api_key,
+            model_name=planning_model,
+            base_url=base_url,
+        )
+    )
+    audit_adapter = (
+        llm_adapter
+        if audit_model == writing_model
+        else get_llm_adapter(
+            provider=provider,
+            api_key=api_key,
+            model_name=audit_model,
+            base_url=base_url,
+        )
     )
 
     # ImageService は遅延初期化
@@ -112,6 +142,8 @@ async def _generate_orchestrated(payload: dict[str, Any]) -> dict[str, Any]:
         dependencies = {
             "repo": repo,
             "llm": llm_adapter,
+            "planning_llm": planning_adapter,
+            "audit_llm": audit_adapter,
             "image_service": image_service,
             "reflective_rag": reflective_rag,
             "compressor": compressor,
@@ -130,19 +162,20 @@ async def _generate_orchestrated(payload: dict[str, Any]) -> dict[str, Any]:
             # マニフェスト不在時のフォールバック登録
             enrichment_enabled = settings.ENRICHMENT_ENABLED
             nodes = {
-                AgentName.PLANNING: PlanningAgent(repo=repo, llm=llm_adapter).run,
-                AgentName.PLOT: PlotAgent(repo=repo, llm=llm_adapter).run,
-                AgentName.BIBLE: BibleAgent(repo=repo, llm=llm_adapter).run,
+                AgentName.PLANNING: PlanningAgent(repo=repo, llm=planning_adapter).run,
+                AgentName.PLOT: PlotAgent(repo=repo, llm=planning_adapter).run,
+                AgentName.BIBLE: BibleAgent(repo=repo, llm=planning_adapter).run,
                 AgentName.CONTEXT_BUILDER: ContextBuilderAgent(
                     repo=repo,
-                    llm=llm_adapter,
+                    llm=planning_adapter,
                     reflective_rag=reflective_rag,
                     compressor=compressor,
                     social_manager=social_manager,
                 ).run,
                 AgentName.WRITING: WritingAgent(repo=repo, llm=llm_adapter).run,
             }
-            audit_node = AuditAggregatorNode(event_bus=event_bus, repo=repo, llm=llm_adapter)
+            audit_node = AuditAggregatorNode(event_bus=event_bus, repo=repo, llm=audit_adapter)
+
             if enrichment_enabled:
                 nodes[AgentName.ENRICHMENT] = EnrichmentAgent(repo=repo, llm=llm_adapter).run
                 nodes[AgentName.AUDIT] = audit_node.run

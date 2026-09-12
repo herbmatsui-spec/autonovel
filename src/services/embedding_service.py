@@ -127,24 +127,29 @@ class EmbeddingService:
         self,
         model_name: str | None = None,
         cache: EmbeddingCache | None = None,
+        api_key: str | None = None,
     ) -> None:
         self.model_name = model_name or settings.EMBEDDING_MODEL
+        self.model_fallback = settings.EMBEDDING_MODEL_FALLBACK
+        self._api_key = api_key
         self._client: Any = None
         self._cache: EmbeddingCache = cache or LRUEmbeddingCache()
         self._lock = threading.Lock()
 
     def _get_client(self) -> Any:
         if self._client is None:
-            if settings.OPENAI_API_KEY:
+            resolved_key = self._api_key or settings.OPENAI_API_KEY
+            if resolved_key:
                 from openai import OpenAI
 
-                kwargs: dict[str, Any] = {"api_key": settings.OPENAI_API_KEY}
+                kwargs: dict[str, Any] = {"api_key": resolved_key}
                 if settings.OPENAI_BASE_URL:
                     kwargs["base_url"] = settings.OPENAI_BASE_URL
                 self._client = OpenAI(**kwargs)
             else:
                 self._client = None
         return self._client
+
 
     def _rate_limit_wait(self) -> None:
         time.sleep(self._RATE_LIMIT_SLEEP)
@@ -224,14 +229,32 @@ class EmbeddingService:
                         input=api_inputs,
                         model=self.model_name,
                     )
-                    indexed = sorted(response.data, key=lambda d: getattr(d, "index", 0))
-                    api_results = [list(d.embedding) for d in indexed]
                 except Exception as e:
                     logger.warning(
-                        "OpenAI Embedding batch API failed: %s. Using pseudo-embeddings for chunk.",
+                        "Primary embedding model %s failed: %s. Trying fallback: %s",
+                        self.model_name,
                         e,
+                        self.model_fallback,
                     )
-                    api_results = [self._generate_pseudo_embedding(t) for t in api_inputs]
+                    try:
+                        response = client.embeddings.create(
+                            input=api_inputs,
+                            model=self.model_fallback,
+                        )
+                    except Exception as e2:
+                        logger.warning(
+                            "Fallback embedding model %s failed: %s. Using pseudo-embeddings.",
+                            self.model_fallback,
+                            e2,
+                        )
+                        api_results = [self._generate_pseudo_embedding(t) for t in api_inputs]
+                        for (pos, text), vec in zip(chunk, api_results):
+                            out[pos] = vec
+                            self._cache.set(self._key_for(text), vec)
+                        continue
+
+                indexed = sorted(response.data, key=lambda d: getattr(d, "index", 0))
+                api_results = [list(d.embedding) for d in indexed]
                 for (pos, text), vec in zip(chunk, api_results):
                     out[pos] = vec
                     self._cache.set(self._key_for(text), vec)

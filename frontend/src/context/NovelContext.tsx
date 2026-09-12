@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback, ReactNode } from "react";
 import { CharacterParams, GenerationState, ChapterItem, ActiveAuditHighlight, BookItem } from "../types";
 import { LineScore } from "../types/quality";
 import { LLMConfigOverride } from "../types/easyMode";
@@ -46,6 +46,8 @@ interface NovelContextType {
   setIsWizardActive: React.Dispatch<React.SetStateAction<boolean>>;
   hasCompletedWizard: boolean;
   setHasCompletedWizard: React.Dispatch<React.SetStateAction<boolean>>;
+  mode: "easy" | "studio";
+  setMode: React.Dispatch<React.SetStateAction<"easy" | "studio">>;
 }
 
 const defaultCharacter: CharacterParams = {
@@ -108,31 +110,75 @@ const [currentChapterText, setCurrentChapterText] = useState<string>(
     if (typeof window === "undefined") return false;
     return localStorage.getItem("autonovel.wizard_completed") === "true";
   });
+  // 共有UI設定（Easy/Studioモード間で同期）
+  const [selectedStyleId, setSelectedStyleId] = useState<string>(() => {
+    if (typeof window === "undefined") return "auto";
+    const saved = localStorage.getItem("autonovel.selectedStyleId");
+    return saved ?? "auto";
+  });
+  const [customStyleProfile, setCustomStyleProfile] = useState<any>(() => {
+    if (typeof window === "undefined") return null;
+    const saved = localStorage.getItem("autonovel.customStyleProfile");
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [showApiSettings, setShowApiSettings] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("autonovel.showApiSettings") === "true";
+  });
+  const [showApiKey, setShowApiKey] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("autonovel.showApiKey") === "true";
+  });
   const [selectedBook, setSelectedBook] = useState<BookItem | null>(null);
   const [isLoadingBooks, setIsLoadingBooks] = useState<boolean>(false);
+  const [mode, setMode] = useState<"easy" | "studio">(() => {
+    if (typeof window === "undefined") return "studio";
+    return (localStorage.getItem("autonovel.mode") as "easy" | "studio") || "studio";
+  });
 
-  const refreshBooks = async () => {
+  useEffect(() => {
+    localStorage.setItem("autonovel.mode", mode);
+  }, [mode]);
+
+  const selectedBookIdRef = useRef(selectedBookId);
+  useEffect(() => {
+    selectedBookIdRef.current = selectedBookId;
+  }, [selectedBookId]);
+
+  const refreshBooks = useCallback(async () => {
     setIsLoadingBooks(true);
     try {
       const data = await fetchBooks();
       setBooks(data);
-      const current = data.find((b) => b.id === selectedBookId);
-      setSelectedBook(current || null);
+      const current = data.find((b) => b.id === selectedBookIdRef.current);
+      setSelectedBook(current || (data.length > 0 ? data[0] : null));
+    } catch (err) {
+      console.error("Failed to fetch books:", err);
     } finally {
       setIsLoadingBooks(false);
     }
-  };
+  }, []);
 
   // 作品切り替え時にその作品の章一覧を取得
   useEffect(() => {
     let cancelled = false;
     const loadChapters = async () => {
+      if (!selectedBookId) {
+        setSelectedBook(null);
+        return;
+      }
       setIsLoadingBooks(true);
       try {
         const book = await fetchBookById(selectedBookId);
-        setSelectedBook(book);
+        if (!cancelled) {
+          setSelectedBook(book);
+        }
         // バックエンドから章一覧を取得（存在する場合）
         // TODO: 実装後に章APIを呼ぶ
+      } catch (err) {
+        if (!cancelled) {
+          setSelectedBook(null);
+        }
       } finally {
         if (!cancelled) setIsLoadingBooks(false);
       }
@@ -154,6 +200,58 @@ const [currentChapterText, setCurrentChapterText] = useState<string>(
     }
   }, [llmConfig]);
 
+  // selectedStyleId 変更時に localStorage へ同期
+  useEffect(() => {
+    try {
+      if (selectedStyleId) {
+        localStorage.setItem("autonovel.selectedStyleId", selectedStyleId);
+      } else {
+        localStorage.removeItem("autonovel.selectedStyleId");
+      }
+    } catch {
+      // ignore storage error
+    }
+  }, [selectedStyleId]);
+
+  // customStyleProfile 変更時に localStorage へ同期
+  useEffect(() => {
+    try {
+      if (customStyleProfile) {
+        localStorage.setItem("autonovel.customStyleProfile", JSON.stringify(customStyleProfile));
+      } else {
+        localStorage.removeItem("autonovel.customStyleProfile");
+      }
+    } catch {
+      // ignore storage error
+    }
+  }, [customStyleProfile]);
+
+  // showApiSettings 変更時に localStorage へ同期
+  useEffect(() => {
+    try {
+      if (showApiSettings) {
+        localStorage.setItem("autonovel.showApiSettings", "true");
+      } else {
+        localStorage.removeItem("autonovel.showApiSettings");
+      }
+    } catch {
+      // ignore storage error
+    }
+  }, [showApiSettings]);
+
+  // showApiKey 変更時に localStorage へ同期
+  useEffect(() => {
+    try {
+      if (showApiKey) {
+        localStorage.setItem("autonovel.showApiKey", "true");
+      } else {
+        localStorage.removeItem("autonovel.showApiKey");
+      }
+    } catch {
+      // ignore storage error
+    }
+  }, [showApiKey]);
+
   const isSwitchingEpRef = useRef(false);
 
   // 章切り替え時に該当章のテキストをロード
@@ -170,33 +268,37 @@ const [currentChapterText, setCurrentChapterText] = useState<string>(
   }, [currentEpNum]);
 
   // 本文編集時に chapters 配列の該当章 content も同期
-  const updateActiveChapterText = (textOrUpdater: string | ((prev: string) => string)) => {
-    const newText = typeof textOrUpdater === "function" ? textOrUpdater(currentChapterText) : textOrUpdater;
-    setCurrentChapterText(newText);
-    setChapters((prev) =>
-      prev.map((c) => (c.ep_num === currentEpNum ? { ...c, content: newText } : c))
-    );
-  };
+  const updateActiveChapterText = useCallback((textOrUpdater: string | ((prev: string) => string)) => {
+    setCurrentChapterText((prev) => {
+      const newText = typeof textOrUpdater === "function" ? textOrUpdater(prev) : textOrUpdater;
+      setChapters((prevChapters) =>
+        prevChapters.map((c) => (c.ep_num === currentEpNum ? { ...c, content: newText } : c))
+      );
+      return newText;
+    });
+  }, [currentEpNum]);
 
-  const applySuggestion = (suggestion: string) => {
-    updateActiveChapterText(
-      currentChapterText.trim()
-        ? `${currentChapterText.trim()}\n\n【展開】${suggestion}`
+  const applySuggestion = useCallback((suggestion: string) => {
+    updateActiveChapterText((prev) =>
+      prev.trim()
+        ? `${prev.trim()}\n\n【展開】${suggestion}`
         : suggestion
     );
-  };
+  }, [updateActiveChapterText]);
 
-  const applyDiff = (start: number, end: number, replacement: string) => {
-    const before = currentChapterText.substring(0, start);
-    const after = currentChapterText.substring(end);
-    updateActiveChapterText(`${before}${replacement}${after}`);
-  };
+  const applyDiff = useCallback((start: number, end: number, replacement: string) => {
+    updateActiveChapterText((prev) => {
+      const before = prev.substring(0, start);
+      const after = prev.substring(end);
+      return `${before}${replacement}${after}`;
+    });
+  }, [updateActiveChapterText]);
 
-  const syncGenerationToEditor = (output: string) => {
+  const syncGenerationToEditor = useCallback((output: string) => {
     if (output) {
       updateActiveChapterText(output);
     }
-  };
+  }, [updateActiveChapterText]);
 
   return (
     <NovelContext.Provider

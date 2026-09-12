@@ -24,9 +24,22 @@ class LLMConfigOverride(BaseModel):
     provider: str | None = Field(default=None, description="gemini / openai / mock")
     api_key: str | None = Field(default=None, description="カスタムAPIキー")
     model_name: str | None = Field(
-        default=None, description="モデル名 (例: gemini-2.5-flash, gpt-4o-mini)"
+        default=None, description="全体既定モデル名 (例: gemini-2.5-flash, gpt-4o-mini)"
     )
     base_url: str | None = Field(default=None, description="OpenAI互換 Base URL")
+    model_planning: str | None = Field(
+        default=None, description="プロット・構成用モデル (例: gemini-2.5-flash)"
+    )
+    model_writing: str | None = Field(
+        default=None, description="本文執筆用モデル (例: gpt-4o, claude-3-5-sonnet)"
+    )
+    model_audit: str | None = Field(
+        default=None, description="校正・監査用モデル (例: gemini-2.5-flash)"
+    )
+    model_embedding: str | None = Field(
+        default=None, description="ベクトル検索・Embedding用モデル (例: text-embedding-3-small)"
+    )
+
 
 
 class EasyModeInput(BaseModel):

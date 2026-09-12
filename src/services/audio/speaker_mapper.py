@@ -334,6 +334,14 @@ def resolve_speaker_and_style(
     return default_id, base_params
 
 
+def assign_speaker_id(speaker_name: str, gender: str = "female", role: str = "heroine") -> int:
+    """Legacy wrapper for speaker ID assignment."""
+    if speaker_name == "narration":
+        return 3
+    # Use existing internal helper
+    return _get_default_speaker_id(gender, role)
+
+
 def _get_default_speaker_id(gender: str, role: str) -> int:
     """Get default VOICEVOX speaker ID based on gender and role."""
     # Default to ずんだもん (neutral female)

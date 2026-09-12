@@ -12,6 +12,10 @@ export interface LLMConfigOverride {
   api_key?: string;
   model_name?: string;
   base_url?: string;
+  model_planning?: string;
+  model_writing?: string;
+  model_audit?: string;
+  model_embedding?: string;
 }
 
 export interface EasyModeInput {

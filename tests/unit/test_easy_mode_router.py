@@ -237,3 +237,122 @@ def test_get_task_status_failed(monkeypatch):
     assert result["error"] == "LLM generation timeout"
     assert result["task_id"] == "err456"
 
+@pytest.mark.asyncio
+async def test_gacha_endpoint(monkeypatch, dummy_request):
+    class DummyGachaService:
+        async def generate_plans(self, req):
+            return {
+                "request_id": "req-123",
+                "plans": [
+                    {"plan_id": "p1", "plan_type": "royal", "title": "王道", "logline": "...", "protagonist_summary": "...", "charm_point": "..."},
+                ]
+            }
+
+    monkeypatch.setattr(easy_mode, "GachaService", DummyGachaService)
+    class DummyDBManager:
+        def get_session(self):
+            class Session:
+                async def __aenter__(self): return self
+                async def __aexit__(self, *args): pass
+            return Session()
+    
+    monkeypatch.setattr(easy_mode, "get_db_manager", lambda: DummyDBManager())
+    
+    req = easy_mode.GachaRequest(genre="fantasy", keywords=["magic"])
+    response = await easy_mode.gacha_endpoint(req)
+    assert response.request_id == "req-123"
+    assert len(response.plans) == 1
+
+@pytest.mark.asyncio
+async def test_digest_endpoint(monkeypatch, dummy_request):
+    class DummyDigestService:
+        async def create_digest(self, req):
+            return easy_mode.DigestResponse(
+                book_id="book-123",
+                title="Test Title",
+                synopsis="Synopsis",
+                episode_1_text="Ep1",
+                climax_preview_text="Climax",
+                status="completed"
+            )
+
+    monkeypatch.setattr(easy_mode, "DigestService", DummyDigestService)
+    class DummyDBManager:
+        def get_session(self):
+            class Session:
+                async def __aenter__(self): return self
+                async def __aexit__(self, *args): pass
+            return Session()
+    
+    monkeypatch.setattr(easy_mode, "get_db_manager", lambda: DummyDBManager())
+    
+    req = easy_mode.DigestRequest(request_id="req-123", selected_plan_id="p1")
+    response = await easy_mode.digest_endpoint(req)
+    assert response.book_id == "book-123"
+    assert response.status == "completed"
+
+@pytest.mark.asyncio
+async def test_promote_endpoint(monkeypatch, dummy_request):
+    class DummyPromotionService:
+        async def promote_book(self, req):
+            return easy_mode.PromotionResponse(
+                success=True,
+                redirect_url="/studio/book/1",
+                state_token="token-123"
+            )
+
+    monkeypatch.setattr(easy_mode, "PromotionService", DummyPromotionService)
+    class DummyDBManager:
+        def get_session(self):
+            class Session:
+                async def __aenter__(self): return self
+                async def __aexit__(self, *args): pass
+            return Session()
+    
+    monkeypatch.setattr(easy_mode, "get_db_manager", lambda: DummyDBManager())
+    
+    req = easy_mode.PromotionRequest(book_id="1")
+    response = await easy_mode.promote_endpoint(req)
+    assert response.success is True
+    assert response.state_token == "token-123"
+
+@pytest.mark.asyncio
+async def test_reverse_generate_endpoint(monkeypatch, dummy_request):
+    class DummyWorkflow:
+        async def execute(self, **kwargs):
+            return {"status": "success", "plot": "Generated Plot"}
+    
+    monkeypatch.setattr(easy_mode, "ReversePlotGenerationWorkflow", DummyWorkflow)
+    
+    req = easy_mode.ReversePlotGeneratePayload(
+        answers={"q1": "a1"},
+        target_episodes=10,
+        genre="fantasy",
+        llm_config={}
+    )
+    response = await easy_mode.reverse_generate_endpoint(req)
+    assert response["status"] == "success"
+    assert "Generated Plot" in response["plot"]
+
+@pytest.mark.asyncio
+async def test_export_with_data_endpoint(monkeypatch, dummy_session):
+    class DummyMarketingAgent:
+        async def create_export_package(self, book_id, book_data=None):
+            return b"ZIPDATA", "book_1.zip"
+    
+    monkeypatch.setattr(easy_mode, "MarketingAgent", DummyMarketingAgent)
+    
+    payload = easy_mode.ExportRequestPayload(
+        title="Test Book",
+        genre="fantasy",
+        current_text="Content",
+        character={"name": "Hero"},
+        plots=[]
+    )
+    
+    response = asyncio.run(
+        easy_mode.export_with_data_endpoint(payload=payload, book_id=1, session=dummy_session)
+    )
+    assert response.status_code == 200
+    assert response.headers["Content-Type"] == "application/zip"
+

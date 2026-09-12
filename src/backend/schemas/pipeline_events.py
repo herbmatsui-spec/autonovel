@@ -2,7 +2,6 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
-
 @dataclass
 class PipelineEvent:
     event_type: str  # task_started | pdca_cycle | audit_diff | score_updated | completed | error

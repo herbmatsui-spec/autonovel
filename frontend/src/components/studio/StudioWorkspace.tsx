@@ -49,6 +49,10 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
     setIsWizardActive,
     wizardStep,
     setWizardStep,
+    hasCompletedWizard,
+    setHasCompletedWizard,
+    mode,
+    setMode,
   } = useNovelContext();
 
   const [tab, setTab] = useState<StudioTab>(() => {
@@ -218,6 +222,19 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
                 data-testid="btn-open-book-showcase-studio"
               >
                 📖
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (window.confirm("Easyモードに戻りますか？現在のStudioモードの設定は保存されます。")) {
+                    setMode("easy");
+                  }
+                }}
+                className="pane-toggle-btn"
+                title="Easyモードに戻る"
+                data-testid="btn-switch-to-easy-mode"
+              >
+                🏠
               </button>
               {/* 書籍ショーケースモーダル */}
               {showBookShowcase && selectedBook && (
@@ -563,7 +580,7 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
         {wizardStep === 1 && (
           <WizardStep
             stepNumber={1}
-            totalSteps={4}
+            totalSteps={6}
             title="コンセプト設定"
             description="まずは作品の方向性を決めましょう。左側のパネルでジャンルを選択し、主人公の名前や性格を入力してください。"
             onNext={() => setWizardStep(2)}
@@ -574,7 +591,7 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
         {wizardStep === 2 && (
           <WizardStep
             stepNumber={2}
-            totalSteps={4}
+            totalSteps={6}
             title="プロット構築"
             description="物語の骨組みを作りましょう。エディタ下部の「次なる展開を生成」パネルを使って、物語の構成案を具体化させてください。"
             onNext={() => setWizardStep(3)}
@@ -585,7 +602,7 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
         {wizardStep === 3 && (
           <WizardStep
             stepNumber={3}
-            totalSteps={4}
+            totalSteps={6}
             title="初稿執筆"
             description="いよいよ執筆です。プロットを参考に、まずは最初のシーンを書き進めてみましょう。AI推敲ツールバーを使って描写を肉付けすることも可能です。"
             onNext={() => setWizardStep(4)}
@@ -596,9 +613,31 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
         {wizardStep === 4 && (
           <WizardStep
             stepNumber={4}
-            totalSteps={4}
-            title="AI診断"
-            description="最後に、AIによる矛盾診断を実行しましょう。「矛盾診断レポート」タブに切り替え、診断ボタンを押して設定の整合性をチェックしてください。"
+            totalSteps={6}
+            title="マルチメディア統合"
+            description="シーンに画像を追加しましょう。マルチメディアタブに切り替え、画像をアップロードまたはプロンプトから生成してください。生成された画像はエディタ内のマーカーと同期します。"
+            onNext={() => setWizardStep(5)}
+            onSkip={() => setIsWizardActive(false)}
+            targetElementId="studio-tab-multimedia"
+          />
+        )}
+        {wizardStep === 5 && (
+          <WizardStep
+            stepNumber={5}
+            totalSteps={6}
+            title="IF分岐と物語の分岐"
+            description="物語の分岐構造を作成します。IF分岐ルートタブを使って、選択肢によるストーリーの変化を設計してください。"
+            onNext={() => setWizardStep(6)}
+            onSkip={() => setIsWizardActive(false)}
+            targetElementId="studio-tab-branches"
+          />
+        )}
+        {wizardStep === 6 && (
+          <WizardStep
+            stepNumber={6}
+            totalSteps={6}
+            title="AI診断と品質チェック"
+            description="最後に、AIによる矛盾診断と品質スコアを確認しましょう。「矛盾診断レポート」タブと品質ダッシュボードを使って、作品の完成度を高めてください。"
             onNext={() => {
               setIsWizardActive(false);
               setWizardStep(0);

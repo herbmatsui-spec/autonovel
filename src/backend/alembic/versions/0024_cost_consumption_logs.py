@@ -15,7 +15,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision = "0024_cost_consumption_logs"
-down_revision = "0021_publication_schedules"
+down_revision = "0022_pdca_history"
 branch_labels = None
 depends_on = None
 

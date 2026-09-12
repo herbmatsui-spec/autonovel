@@ -17,7 +17,7 @@
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 [![Type Checked: mypy](https://img.shields.io/badge/type%20checked-mypy-blue)](https://mypy-lang.org/)
 [![Vitest](https://img.shields.io/badge/tested_with-vitest-729B1B?logo=vitest&logoColor=white)](https://vitest.dev/)
-[![Version](https://img.shields.io/badge/version-4.8.5-brightgreen?logo=semver)](https://github.com/herbmatsui-spec/autonovel/releases/tag/v4.8.5)
+[![Version](https://img.shields.io/badge/version-4.9.0-brightgreen?logo=semver)](https://github.com/herbmatsui-spec/autonovel/releases/tag/v4.9.0)
 
 <br />
 
@@ -25,7 +25,7 @@
   <img src="docs/demo.gif" alt="AutoNovel UI & Workflow Demo" width="900" style="border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
 </p>
 
-*▲ AutoNovel v4.8.5: LLMメディアミックス台本生成 / VOICEVOX感情演技パラメータ連動 / 長編GraphRAG伏線検索結合 / マルチメディア実DB復元 / IFルートマージ確定コミット / 商用縦書きEPUB挿絵口絵統合*
+*▲ AutoNovel v4.9.0: LLM・Embedding設定の一元化 / プロット・執筆・監査・Embedding用途別モデル設定 / リアルタイム稼働モデルカード / サーバー既定情報API*
 
 </div>
 
@@ -57,6 +57,31 @@ AutoNovel は、AI を活用して Web 小説を **企画から執筆、校正�
 続いて、下記の目次から技術的な詳細をご覧ください。
 
 ## 📋 更新履歴 / Changelog
+
+### v4.9.0 (2026-09-12) — LLM・Embedding設定の一元化 & 用途別モデル（プロット/執筆/監査/Embedding）個別指定対応
+
+ユーザーが各タスク（プロット作成・本文執筆・校正監査・ベクトル検索Embedding）にどのLLMモデルが適用されているかを直感的に把握・カスタマイズできるよう、設定画面を全面的に刷新・一元化。
+
+**⚙️ 設定画面の一元化 & 稼働モデル可視化 (`frontend/src/components/ConfigPanel.tsx`, `shared/LLMConfigPanel.tsx`)**
+- 画面右上の「⚙️ LLM設定」モーダル1箇所へモデル設定を集約（他画面の重複した入力フォームを統一ステータスバーへリファクタリング）
+- **🤖 現在有効なモデル構成ステータスカード**:
+  - 📝 プロット・構成用モデルの現在値
+  - ✍️ 本文執筆用モデルの現在値
+  - 🔍 校正・監査用モデルの現在値
+  - 🧠 埋め込み（RAG）用モデルの現在値
+- **簡易設定 (全体一括)** と **詳細設定 (用途別個別指定)** のタブ切替UIを新設
+- 代表的モデル（Gemini 2.5 Flash, Claude 3.5 Sonnet, GPT-4o, Gemma 4 31B等）のワンクリック入力サジェストボタン
+
+**🧠 バックエンド 用途別モデルルーティング基盤 (`src/llm/model_router.py`, `src/domain/entities/easy_mode.py`)**
+- `LLMConfigOverride` の拡張: `model_planning`, `model_writing`, `model_audit`, `model_embedding` をサポート
+- `resolve_model_for_purpose()` 関数を新設:
+  - 解決優先度: `個別用途指定 (model_writing 等)` > `全体指定 (model_name)` > `サーバー既定値 (select_model)`
+- `GET /api/system/models/info`: サーバー既定のモデル構成およびAPIキー設定状況をクライアントへ提供する新エンドポイント
+- `easy_mode.py`, `streaming.py`, `generation_tasks.py`: 執筆・次話提案・マルチエージェントに用途別アダプタを自動注入
+- `EmbeddingService`: カスタムAPIキーおよびモデル名の上書き対応
+
+---
+
 
 ### v4.8.5 (2026-09-12) — P0/P1実用化・品質向上統合（LLMメディア台本・VOICEVOX感情演技・GraphRAG長編伏線結合・IFルートマージ確定）
 

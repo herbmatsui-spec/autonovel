@@ -43,6 +43,8 @@ from src.backend.routers import (
     styles,
     system,
     tasks,
+    pipeline_stream,
+    publishing,
 )
 
 logger = logging.getLogger(__name__)
@@ -131,6 +133,8 @@ app.include_router(multimedia.router, prefix="/multimedia", tags=["multimedia"])
 app.include_router(branches.router)
 app.include_router(anti_ai.router)
 app.include_router(cost.router)
+app.include_router(pipeline_stream.router)
+app.include_router(publishing.router, prefix="/api/export")
 
 
 @app.get("/health")

@@ -6,6 +6,7 @@ import { AiSuggestions } from "./editor/AiSuggestions";
 import { promoteToStudio } from "../api/easyMode";
 import { BookItem } from "../types";
 import { BookShowcaseModal } from "./showcase/BookShowcaseModal";
+import { PublishExportModal } from "./common/PublishExportModal";
 
 interface ExportPanelProps {
   output?: string;
@@ -32,11 +33,12 @@ export default function ExportPanel({
     syncGenerationToEditor,
   } = useNovelContext();
 
-const [validationError, setValidationError] = useState("");
-   const [promoting, setPromoting] = useState(false);
-   const [showBookShowcase, setShowBookShowcase] = useState(false);
+  const [validationError, setValidationError] = useState("");
+  const [promoting, setPromoting] = useState(false);
+  const [showBookShowcase, setShowBookShowcase] = useState(false);
+  const [showPublishModal, setShowPublishModal] = useState(false);
 
-   const { exporting, downloadExportPackage } = useNovelExport(
+  const { exporting, downloadExportPackage } = useNovelExport(
     (msg) => onExportMessage?.(msg),
     (errMsg) => onExportMessage?.(errMsg)
   );
@@ -60,6 +62,10 @@ const [validationError, setValidationError] = useState("");
   };
 
   const handlePromote = async () => {
+    if (!selectedBookId) {
+      onExportMessage?.("作品が選択されていません。昇格するには作品を選択してください。");
+      return;
+    }
     setPromoting(true);
     try {
       // 画面の最新テキストをエディタ本文にも同期
@@ -82,16 +88,15 @@ const [validationError, setValidationError] = useState("");
     }
   };
 
-const handleShowBookShowcase = () => {
-     if (!selectedBook) {
-       onExportMessage?.("作品が選択されていません");
-       return;
-     }
-     setShowBookShowcase(true);
-   };
+  const handleShowBookShowcase = () => {
+    if (!selectedBook) {
+      onExportMessage?.("作品が選択されていません");
+      return;
+    }
+    setShowBookShowcase(true);
+  };
 
-
-return (
+  return (
     <section className="card" style={{ display: "flex", flexDirection: "column" }}>
       <div
         style={{
@@ -161,42 +166,60 @@ return (
         </div>
       )}
 
-<div style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
-         <button
-           type="button"
-           className="btn btn-export"
-           style={{ flex: 1 }}
-           onClick={validateAndExport}
-           disabled={exporting || !selectedBook}
-           data-testid="btn-export-zip"
-         >
-           {exporting ? "📦 パッケージ生成中..." : "📦 納品パッケージ (ZIP) ダウンロード"}
-         </button>
+      {validationError && (
+        <div style={{ color: "var(--accent-danger, #f43f5e)", fontSize: "0.85rem", marginBottom: "8px" }}>
+          {validationError}
+        </div>
+      )}
 
-         <button
-           type="button"
-           className="btn btn-primary"
-           style={{ padding: "8px 14px", fontSize: "0.85rem", whiteSpace: "nowrap", marginLeft: "8px" }}
-           onClick={handleShowBookShowcase}
-           disabled={!selectedBook}
-           title="縦書き装丁プレビューと宣伝カードを表示"
-           data-testid="btn-show-book-showcase"
-         >
-           📖 縦書き装丁プレビュー & 宣伝カード
-         </button>
+      <div style={{ display: "flex", gap: "8px", marginBottom: "16px", flexWrap: "wrap" }}>
+        <button
+          type="button"
+          className="btn btn-export"
+          style={{ flex: 1, minWidth: "200px" }}
+          onClick={validateAndExport}
+          disabled={exporting || !selectedBook}
+          data-testid="btn-export-zip"
+        >
+          {exporting ? "📦 パッケージ生成中..." : "📦 納品パッケージ (ZIP) ダウンロード"}
+        </button>
 
-         <button
-           type="button"
-           className="btn btn-primary"
-           style={{ padding: "8px 14px", fontSize: "0.85rem", whiteSpace: "nowrap" }}
-           onClick={handlePromote}
-           disabled={promoting}
-           title="設定をGraphRAGナレッジ化し、Studioモードへ引き継ぎます"
-           data-testid="btn-promote-studio"
-         >
-           {promoting ? "⏳ 昇格中..." : "🚀 Studioへ昇格"}
-         </button>
-       </div>
+        <button
+          type="button"
+          className="btn btn-secondary"
+          style={{ padding: "8px 14px", fontSize: "0.85rem", whiteSpace: "nowrap" }}
+          onClick={() => setShowPublishModal(true)}
+          disabled={!selectedBook}
+          title="小説家になろう、カクヨム、アルファポリス等の形式で出力"
+          data-testid="btn-publish-export"
+        >
+          🌐 投稿サイト形式出力
+        </button>
+
+        <button
+          type="button"
+          className="btn btn-primary"
+          style={{ padding: "8px 14px", fontSize: "0.85rem", whiteSpace: "nowrap" }}
+          onClick={handleShowBookShowcase}
+          disabled={!selectedBook}
+          title="縦書き装丁プレビューと宣伝カードを表示"
+          data-testid="btn-show-book-showcase"
+        >
+          📖 縦書き装丁プレビュー & 宣伝カード
+        </button>
+
+        <button
+          type="button"
+          className="btn btn-primary"
+          style={{ padding: "8px 14px", fontSize: "0.85rem", whiteSpace: "nowrap" }}
+          onClick={handlePromote}
+          disabled={promoting || !selectedBookId}
+          title="設定をGraphRAGナレッジ化し、Studioモードへ引き継ぎます"
+          data-testid="btn-promote-studio"
+        >
+          {promoting ? "⏳ 昇格中..." : "🚀 Studioへ昇格"}
+        </button>
+      </div>
 
       <div style={{ flex: 1, minHeight: "240px" }}>
         <Editor
@@ -205,22 +228,31 @@ return (
         />
       </div>
 
-<AiSuggestions
-         suggestions={displaySuggestions}
-         onApplySuggestion={applySuggestion}
-       />
-       
-{/* 書籍ショーケースモーダル */}
-        {showBookShowcase && selectedBook && (
-          <BookShowcaseModal
-            onClose={() => setShowBookShowcase(false)}
-            bookData={{
-              title: selectedBook.title,
-              author: character.name || "不明な作者",
-              content: displayOutput
-            }}
-          />
-        )}
-     </section>
-   );
- }
+      <AiSuggestions
+        suggestions={displaySuggestions}
+        onApplySuggestion={applySuggestion}
+      />
+
+      {/* 書籍ショーケースモーダル */}
+      {showBookShowcase && selectedBook && (
+        <BookShowcaseModal
+          onClose={() => setShowBookShowcase(false)}
+          bookData={{
+            title: selectedBook.title,
+            author: character.name || "不明な作者",
+            content: displayOutput,
+          }}
+        />
+      )}
+
+      {/* Web小説投稿フォーマット出力モーダル (Step 65, 66) */}
+      {showPublishModal && selectedBook && (
+        <PublishExportModal
+          isOpen={showPublishModal}
+          onClose={() => setShowPublishModal(false)}
+          bookId={selectedBook.id}
+        />
+      )}
+    </section>
+  );
+}
