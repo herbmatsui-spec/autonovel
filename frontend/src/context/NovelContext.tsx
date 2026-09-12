@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
 import { CharacterParams, GenerationState, ChapterItem, ActiveAuditHighlight, BookItem } from "../types";
+import { LineScore } from "../types/quality";
 import { LLMConfigOverride } from "../types/easyMode";
 import { GeneratedPlotStructure } from "../types/reversePlot";
 import { fetchBooks, fetchBookById } from "../api/books";
@@ -28,12 +29,23 @@ interface NovelContextType {
   llmConfig: LLMConfigOverride;
   setLlmConfig: React.Dispatch<React.SetStateAction<LLMConfigOverride>>;
   applySuggestion: (suggestion: string) => void;
+  applyDiff: (start: number, end: number, replacement: string) => void;
   syncGenerationToEditor: (output: string) => void;
   updateActiveChapterText: (text: string) => void;
   books: BookItem[];
   selectedBook: BookItem | null;
   isLoadingBooks: boolean;
   refreshBooks: () => Promise<void>;
+  lineScores: LineScore[];
+  setLineScores: React.Dispatch<React.SetStateAction<LineScore[]>>;
+  hoveredNodeSummary: { summary: string; properties: Record<string, any> } | null;
+  setHoveredNodeSummary: React.Dispatch<React.SetStateAction<{ summary: string; properties: Record<string, any> } | null>>;
+  wizardStep: number;
+  setWizardStep: React.Dispatch<React.SetStateAction<number>>;
+  isWizardActive: boolean;
+  setIsWizardActive: React.Dispatch<React.SetStateAction<boolean>>;
+  hasCompletedWizard: boolean;
+  setHasCompletedWizard: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const defaultCharacter: CharacterParams = {
@@ -88,6 +100,14 @@ const [currentChapterText, setCurrentChapterText] = useState<string>(
   });
 
   const [books, setBooks] = useState<BookItem[]>([]);
+  const [lineScores, setLineScores] = useState<LineScore[]>([]);
+  const [hoveredNodeSummary, setHoveredNodeSummary] = useState<{ summary: string; properties: Record<string, any> } | null>(null);
+  const [wizardStep, setWizardStep] = useState<number>(0);
+  const [isWizardActive, setIsWizardActive] = useState<boolean>(false);
+  const [hasCompletedWizard, setHasCompletedWizard] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("autonovel.wizard_completed") === "true";
+  });
   const [selectedBook, setSelectedBook] = useState<BookItem | null>(null);
   const [isLoadingBooks, setIsLoadingBooks] = useState<boolean>(false);
 
@@ -166,6 +186,12 @@ const [currentChapterText, setCurrentChapterText] = useState<string>(
     );
   };
 
+  const applyDiff = (start: number, end: number, replacement: string) => {
+    const before = currentChapterText.substring(0, start);
+    const after = currentChapterText.substring(end);
+    updateActiveChapterText(`${before}${replacement}${after}`);
+  };
+
   const syncGenerationToEditor = (output: string) => {
     if (output) {
       updateActiveChapterText(output);
@@ -198,12 +224,23 @@ const [currentChapterText, setCurrentChapterText] = useState<string>(
         llmConfig,
         setLlmConfig,
         applySuggestion,
+        applyDiff,
         syncGenerationToEditor,
         updateActiveChapterText,
         books,
         selectedBook,
         isLoadingBooks,
         refreshBooks,
+        lineScores,
+        setLineScores,
+        hoveredNodeSummary,
+        setHoveredNodeSummary,
+        wizardStep,
+        setWizardStep,
+        isWizardActive,
+        setIsWizardActive,
+        hasCompletedWizard,
+        setHasCompletedWizard,
       }}
     >
       {children}

@@ -8,20 +8,19 @@ import logging
 import os
 import time
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, Optional, Set
+from typing import Any, Callable, Optional
 
 from src.backend.tasks.scheduling_policies import SchedulingPolicy, AffinityPriorityPolicy
 from src.backend.tasks.metrics_collector import MetricsCollector, NoOpMetricsCollector, TaskMetrics
 from src.backend.tasks.dag_persistence import DAGPersistence, FileSystemDAGPersistence
-from src.backend.tasks.worker_recovery import WorkerRecoveryManager, RecoveryConfig
+from src.backend.tasks.worker_recovery import WorkerRecoveryManager
 
-from src.backend.tasks.dag_models import (
+from src.backend.schemas.pipeline_events import PipelineEvent
     DAGGraph,
     DAGTaskNode,
     TaskResourceRequirement,
-    TaskStatus,
 )
-from src.backend.tasks.dag_engine import DAGEngine, DAGCycleError
+from src.backend.tasks.dag_engine import DAGEngine
 from src.backend.tasks.resource_manager import ResourceManager
 from src.backend.database.core import DatabaseManager
 
@@ -52,6 +51,7 @@ class DAGScheduler:
         replanner: Any = None,
         db_manager: DatabaseManager | None = None,
         worker_recovery: WorkerRecoveryManager | None = None,
+        pipeline_event_hub: Any = None,
     ) -> None:
         self.resource_manager = resource_manager or ResourceManager()
         self.huey_instance = huey_instance
@@ -60,6 +60,7 @@ class DAGScheduler:
         self.active_allocations = TaskResourceRequirement(cpu_cores=0.0, ram_mb=0, gpu_mem_mb=0)
         self.use_huey = use_huey
         self.event_bus = event_bus
+        self.pipeline_event_hub = pipeline_event_hub
         self.db_manager = db_manager
         self.worker_recovery = worker_recovery
 
@@ -92,19 +93,31 @@ class DAGScheduler:
         self._poll_interval = 0.05
         self._max_poll_interval = 1.0
 
-    async def _publish_event(self, event_type: str, payload: dict[str, Any]) -> None:
+async def _publish_event(self, event_type: str, payload: dict[str, Any]) -> None:
         """Helper to publish DAG lifecycle events to EventBus (Step 55)."""
-        if not self.event_bus:
-            return
-        try:
-            if hasattr(self.event_bus, "publish_async"):
-                await self.event_bus.publish_async(event_type, payload)
-            elif hasattr(self.event_bus, "publish"):
-                res = self.event_bus.publish(event_type, payload)
-                if inspect.iscoroutine(res):
-                    await res
-        except Exception as e:
-            logger.debug(f"Failed to publish event {event_type}: {e}")
+        if self.event_bus:
+            try:
+                if hasattr(self.event_bus, "publish_async"):
+                    await self.event_bus.publish_async(event_type, payload)
+                elif hasattr(self.event_bus, "publish"):
+                    res = self.event_bus.publish(event_type, payload)
+                    if inspect.iscoroutine(res):
+                        await res
+            except Exception as e:
+                logger.debug(f"Failed to publish event {event_type}: {e}")
+        
+        # Also publish to PipelineEventHub for real-time WebSocket streaming
+        if self.pipeline_event_hub:
+            try:
+                event = PipelineEvent(
+                    event_type=event_type,
+                    book_id=payload.get("book_id", 0),
+                    task_id=payload.get("task_id", ""),
+                    payload=payload,
+                )
+                await self.pipeline_event_hub.broadcast(event)
+            except Exception as e:
+                logger.debug(f"Failed to broadcast PipelineEvent {event_type}: {e}")
 
     def _init_semaphores(self) -> None:
         """Initialize semaphores lazily within the running event loop."""

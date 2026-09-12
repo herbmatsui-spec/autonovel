@@ -6,7 +6,6 @@ Reciprocal Rank Fusion, deduplicating identical passages and normalizing scores.
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from typing import Any
 

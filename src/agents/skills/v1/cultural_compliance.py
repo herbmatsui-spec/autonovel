@@ -1,6 +1,5 @@
 # src/agents/skills/cultural_compliance.py
 """文化的コンプライアンスチェックスキル（サンプル実装）"""
-from typing import Any
 from src.agents.skill_base import SkillAgent
 from src.agents.orchestrator import AgentContext, AgentResult
 

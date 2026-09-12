@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import re
 from collections import Counter
-from typing import List, Tuple
+from typing import Tuple
 
 from src.services.compression.models import RawTextLayerOutput
 from src.services.compression.japanese_tokenizer import SudachiConfig, create_japanese_tokenizer

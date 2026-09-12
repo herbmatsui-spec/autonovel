@@ -89,10 +89,12 @@ class CreativityAuditor(SpecialistAuditor):
             raise LLMUnavailableError("No LLM available for CreativityAuditor")
 
         prompt = CREATIVITY_USER_PROMPT.format(draft_text=draft[:4000])
-        score, critique, suggestions, confidence, reasoning, raw_resp = await self._judge_with_llm(
+        judge_res = await self._judge_with_llm(
             prompt=prompt,
             system_prompt=CREATIVITY_SYSTEM_PROMPT,
         )
+        score, critique, suggestions, confidence, reasoning, raw_resp = judge_res[:6]
+        # actionable_diffs = judge_res[6] if len(judge_res) > 6 else []  # not used
 
         return SpecialistAuditResult(
             specialist_name="creativity",

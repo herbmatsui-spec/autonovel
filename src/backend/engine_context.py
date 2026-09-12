@@ -166,7 +166,6 @@ class ContextManager:
                 compressor = None
                 social_manager = None
                 age_client = None
-                from src.agents.context_builder_agent import ContextBuilderAgent
                 full = await delegate._build_full_writing_context_internal(
                     repo=self.repo,
                     book_id=book_id,

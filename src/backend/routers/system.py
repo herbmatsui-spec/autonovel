@@ -200,7 +200,6 @@ class ImprovementPriorityItem(BaseModel):
 async def get_improvement_priorities(book_id: int) -> dict[str, Any]:
     """書籍の改善優先順位を取得する（管理者用）"""
     try:
-        from sqlalchemy import select
 
         from src.backend.database.core import get_db_manager
         from src.backend.database.repositories.book_score import BookScoreRepository

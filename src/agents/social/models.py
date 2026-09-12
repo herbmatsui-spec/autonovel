@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Literal, Optional
+from typing import Literal
 from pydantic import BaseModel, Field
 
 ReactionType = Literal["empathy", "conflict", "irony", "support", "suspicion"]

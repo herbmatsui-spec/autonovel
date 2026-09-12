@@ -41,4 +41,13 @@ class PureEpubPacker:
                     continue
                 zf.writestr(path, data, compress_type=c_type)
 
-        return buf.getvalue()
+        res = buf.getvalue()
+        # EPUB 3 規格適合性検証 (Step 43)
+        with zipfile.ZipFile(io.BytesIO(res), "r") as check_zf:
+            infolist = check_zf.infolist()
+            if not infolist or infolist[0].filename != "mimetype":
+                raise ValueError("EPUB 3 violation: 'mimetype' must be the first file in archive")
+            if infolist[0].compress_type != zipfile.ZIP_STORED:
+                raise ValueError("EPUB 3 violation: 'mimetype' must be uncompressed (ZIP_STORED)")
+
+        return res

@@ -3,6 +3,8 @@ import { useNovelContext } from "../../context/NovelContext";
 import { apiFetch, handleResponse } from "../../api/client";
 import { Editor } from "../editor/Editor";
 import { NextBeatsPanel } from "../editor/NextBeatsPanel";
+import { MultimediaPreviewPanel } from "../editor/MultimediaPreviewPanel";
+import { WizardStep } from "../wizard/WizardStep";
 import { EditorialSidebar } from "../editor/EditorialSidebar";
 import { ChapterOutlineTree } from "./ChapterOutlineTree";
 import { AssetPackPanel } from "../AssetPackPanel";
@@ -43,6 +45,10 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
     selectedBookId,
     selectedBook,
     currentEpNum,
+    isWizardActive,
+    setIsWizardActive,
+    wizardStep,
+    setWizardStep,
   } = useNovelContext();
 
   const [tab, setTab] = useState<StudioTab>(() => {
@@ -71,6 +77,26 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
   const [showQualityDashboard, setShowQualityDashboard] = useState(false);
   const [chapterScore, setChapterScore] = useState<number | null>(null);
   const [budgetInfo, setBudgetInfo] = useState<BudgetInfo | null>(null);
+  const [currentSceneName, setCurrentSceneName] = useState<string | null>(null);
+  const [currentImageUrl, setCurrentImageUrl] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    const fetchImage = async () => {
+      if (!currentSceneName) {
+        setCurrentImageUrl(undefined);
+        return;
+      }
+      try {
+        // 実際の実装では /api/multimedia/images/{sceneName} のようなエンドポイントを呼び出す
+        // 現時点ではプレースホルダーを使用して表示を確認し、API連携の構造を構築する
+        setCurrentImageUrl(`https://placehold.co/600x400?text=${encodeURIComponent(currentSceneName)}`);
+      } catch (e) {
+        console.error("Failed to fetch scene image", e);
+        setCurrentImageUrl(undefined);
+      }
+    };
+    void fetchImage();
+  }, [currentSceneName]);
 
   useEffect(() => {
     const fetchBudget = async () => {
@@ -134,10 +160,11 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
     .join(" ");
 
   return (
-    <div className={gridClass} data-testid="studio-workspace">
+    <>
+      <div className={gridClass} data-testid="studio-workspace">
       {/* 左ペイン: 作品・登場人物・設定概要 & 章ツリー */}
       {showLeftPane ? (
-        <aside className="studio-pane studio-sidebar-left" style={{ gap: "16px", display: "flex", flexDirection: "column" }}>
+        <aside id="character-settings-pane" className="studio-pane studio-sidebar-left" style={{ gap: "16px", display: "flex", flexDirection: "column" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <h2 style={{ fontSize: "1.05rem", color: "var(--accent-cyan)", fontWeight: 700 }}>
               📖 設定 & キャラクター
@@ -337,6 +364,7 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
             🌿 IF分岐ルート
           </button>
           <button
+            id="studio-tab-audit"
             type="button"
             className={`btn-tab ${tab === "audit" ? "btn-tab--active" : ""}`}
             onClick={() => setTab("audit")}
@@ -393,29 +421,43 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
       </div>
 
         {tab === "editor" && (
-          <>
-            <Editor
-              content={currentChapterText}
-              onChange={setCurrentChapterText}
-              genre={character.genre}
-              onToast={handleToast}
-              onCreateBranch={handleCreateBranch}
-            />
+          <div style={{ display: "flex", height: "100%", overflow: "hidden" }}>
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", overflowY: "auto" }}>
+              <Editor
+                content={currentChapterText}
+                onChange={(val) => {
+                  setCurrentChapterText(val);
+                  // Update scene name when content changes to keep markers in sync
+                  // Note: we can't easily get cursor pos here, but the Editor's internal
+                  // updateCurrentScene will be triggered by user interaction.
+                }}
+                genre={character.genre}
+                onToast={handleToast}
+                onCreateBranch={handleCreateBranch}
+                onSceneChange={setCurrentSceneName}
+              />
 
-            <NextBeatsPanel
-              currentText={currentChapterText}
-              genre={character.genre}
-              bookId={selectedBookId}
-              onApplyBeat={(content, mode) => {
-                if (mode === "replace_all") {
-                  setCurrentChapterText(content);
-                } else {
-                  setCurrentChapterText((prev) => (prev ? `${prev}\n\n${content}` : content));
-                }
-              }}
-              onToast={handleToast}
+              <div id="next-beats-panel">
+                <NextBeatsPanel
+                  currentText={currentChapterText}
+                  genre={character.genre}
+                  bookId={selectedBookId}
+                  onApplyBeat={(content, mode) => {
+                  if (mode === "replace_all") {
+                    setCurrentChapterText(content);
+                  } else {
+                    setCurrentChapterText((prev) => (prev ? `${prev}\n\n${content}` : content));
+                  }
+                }}
+                onToast={handleToast}
+              />
+              </div>
+            </div>
+            <MultimediaPreviewPanel
+              sceneName={currentSceneName}
+              imageUrl={currentImageUrl}
             />
-          </>
+          </div>
         )}
         {tab === "multimedia" && (
           <>
@@ -516,5 +558,62 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
         />
       )}
     </div>
-  );
+    {isWizardActive && (
+      <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, pointerEvents: "none", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        {wizardStep === 1 && (
+          <WizardStep
+            stepNumber={1}
+            totalSteps={4}
+            title="コンセプト設定"
+            description="まずは作品の方向性を決めましょう。左側のパネルでジャンルを選択し、主人公の名前や性格を入力してください。"
+            onNext={() => setWizardStep(2)}
+            onSkip={() => setIsWizardActive(false)}
+            targetElementId="character-settings-pane"
+          />
+        )}
+        {wizardStep === 2 && (
+          <WizardStep
+            stepNumber={2}
+            totalSteps={4}
+            title="プロット構築"
+            description="物語の骨組みを作りましょう。エディタ下部の「次なる展開を生成」パネルを使って、物語の構成案を具体化させてください。"
+            onNext={() => setWizardStep(3)}
+            onSkip={() => setIsWizardActive(false)}
+            targetElementId="next-beats-panel"
+          />
+        )}
+        {wizardStep === 3 && (
+          <WizardStep
+            stepNumber={3}
+            totalSteps={4}
+            title="初稿執筆"
+            description="いよいよ執筆です。プロットを参考に、まずは最初のシーンを書き進めてみましょう。AI推敲ツールバーを使って描写を肉付けすることも可能です。"
+            onNext={() => setWizardStep(4)}
+            onSkip={() => setIsWizardActive(false)}
+            targetElementId="editor-textarea"
+          />
+        )}
+        {wizardStep === 4 && (
+          <WizardStep
+            stepNumber={4}
+            totalSteps={4}
+            title="AI診断"
+            description="最後に、AIによる矛盾診断を実行しましょう。「矛盾診断レポート」タブに切り替え、診断ボタンを押して設定の整合性をチェックしてください。"
+            onNext={() => {
+              setIsWizardActive(false);
+              setWizardStep(0);
+              setHasCompletedWizard(true);
+              localStorage.setItem("autonovel.wizard_completed", "true");
+            }}
+            onSkip={() => {
+              setIsWizardActive(false);
+              // Skip doesn't necessarily mean completed, but we can mark it as such if we want
+            }}
+            targetElementId="studio-tab-audit"
+          />
+        )}
+      </div>
+    )}
+  </>
+);
 };

@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from src.services.anti_ai.correction_pipeline import AntiAICorrector
-from src.services.anti_ai.models import CorrectionHistory, ViolationSpan
+from src.services.anti_ai.models import CorrectionHistory
 from src.services.anti_ai.orchestrator import RuleBasedAntiAIDetector
 
 logger = logging.getLogger(__name__)

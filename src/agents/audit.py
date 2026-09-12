@@ -1100,5 +1100,4 @@ class LogicalAuditor:
 
 
 # Step 65/66: 後方互換性エイリアス
-from src.agents.audit_agent import AuditAgent  # noqa: E402
 

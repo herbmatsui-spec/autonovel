@@ -1,7 +1,7 @@
 """DAG Checkpoint/Resume Persistence (Step 6)."""
 from __future__ import annotations
 
-from typing import Protocol, Optional, Dict, Any
+from typing import Protocol, Optional
 from src.backend.tasks.dag_models import DAGGraph
 
 
@@ -25,7 +25,6 @@ class DAGPersistence(Protocol):
 
 
 import json
-import os
 from pathlib import Path
 from datetime import datetime
 

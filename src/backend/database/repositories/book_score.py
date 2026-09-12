@@ -1,6 +1,5 @@
 from typing import Optional
 from sqlalchemy import select, func
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.backend.database.repositories.base import BaseRepository
 from src.infrastructure.database.models.book_score import BookScore

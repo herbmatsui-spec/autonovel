@@ -14,6 +14,7 @@ from fastapi import Path as PathParam
 from fastapi.responses import FileResponse
 
 from src.backend.auth import validate_api_key_or_raise
+from src.backend.exceptions import NoChaptersFoundError
 from src.backend.feature_flags import is_multimedia_enabled
 from src.backend.multimedia_service import MultimediaService
 from src.backend.multimedia_storage import get_multimedia_dir
@@ -88,6 +89,12 @@ def generate_media_mix(
             format_name=payload.format,
             episode_num=payload.episode_num,
         )
+    except NoChaptersFoundError as e:
+        metrics.increment("multimedia_errors_total")
+        raise HTTPException(status_code=422, detail=str(e))
+    except ValueError as e:
+        metrics.increment("multimedia_errors_total")
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception:
         metrics.increment("multimedia_errors_total")
         raise
@@ -113,7 +120,17 @@ def export_ebook(
     _check_enabled()
     generate_limiter.check(request)
     logger.info("multimedia.ebook book_id=%s formats=%s", payload.book_id, payload.formats)
-    result = service.export_ebook(book_id=payload.book_id, formats=payload.formats)
+    try:
+        result = service.export_ebook(book_id=payload.book_id, formats=payload.formats)
+    except NoChaptersFoundError as e:
+        metrics.increment("multimedia_errors_total")
+        raise HTTPException(status_code=422, detail=str(e))
+    except ValueError as e:
+        metrics.increment("multimedia_errors_total")
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception:
+        metrics.increment("multimedia_errors_total")
+        raise
     return EbookExportResponse(
         asset_id=result.asset_id or 0,
         files=result.files,
@@ -140,7 +157,18 @@ def generate_if_routes(
         payload.book_id,
         payload.persist,
     )
-    result, graph = service.generate_if_routes(book_id=payload.book_id, persist=payload.persist)
+    try:
+        result, graph = service.generate_if_routes(book_id=payload.book_id, persist=payload.persist)
+    except NoChaptersFoundError as e:
+        metrics.increment("multimedia_errors_total")
+        raise HTTPException(status_code=422, detail=str(e))
+    except ValueError as e:
+        metrics.increment("multimedia_errors_total")
+        raise HTTPException(status_code=404, detail=str(e))
+
+    except Exception:
+        metrics.increment("multimedia_errors_total")
+        raise
     if graph is None:
         raise HTTPException(status_code=500, detail="Failed to generate graph")
     return IFRouteResponse(
@@ -166,15 +194,22 @@ def generate_asset_pack(
     _check_enabled()
     generate_limiter.check(request)
     logger.info("multimedia.asset_pack book_id=%s", payload.book_id)
-    result, task_id = service.generate_asset_pack(
-        book_id=payload.book_id,
-        include_if_routes=payload.include_if_routes,
-        include_media_mix=payload.include_media_mix,
-        include_ebook=payload.include_ebook,
-        include_audio=getattr(payload, "include_audio", True),
-        ebook_formats=payload.ebook_formats,
-        media_mix_formats=payload.media_mix_formats,
-    )
+    try:
+        result, task_id = service.generate_asset_pack(
+            book_id=payload.book_id,
+            include_if_routes=payload.include_if_routes,
+            include_media_mix=payload.include_media_mix,
+            include_ebook=payload.include_ebook,
+            include_audio=getattr(payload, "include_audio", True),
+            ebook_formats=payload.ebook_formats,
+            media_mix_formats=payload.media_mix_formats,
+        )
+    except NoChaptersFoundError as e:
+        metrics.increment("multimedia_errors_total")
+        raise HTTPException(status_code=422, detail=str(e))
+    except Exception:
+        metrics.increment("multimedia_errors_total")
+        raise
     return AssetPackResponse(
         asset_id=result.asset_id or 0,
         task_id=task_id,
@@ -198,14 +233,21 @@ def generate_asset_pack_alias(
     _check_enabled()
     generate_limiter.check(request)
     logger.info("multimedia.generate (alias) book_id=%s", payload.book_id)
-    result, task_id = service.generate_asset_pack(
-        book_id=payload.book_id,
-        include_if_routes=payload.include_if_routes,
-        include_media_mix=payload.include_media_mix,
-        include_ebook=payload.include_ebook,
-        ebook_formats=payload.ebook_formats,
-        media_mix_formats=payload.media_mix_formats,
-    )
+    try:
+        result, task_id = service.generate_asset_pack(
+            book_id=payload.book_id,
+            include_if_routes=payload.include_if_routes,
+            include_media_mix=payload.include_media_mix,
+            include_ebook=payload.include_ebook,
+            ebook_formats=payload.ebook_formats,
+            media_mix_formats=payload.media_mix_formats,
+        )
+    except NoChaptersFoundError as e:
+        metrics.increment("multimedia_errors_total")
+        raise HTTPException(status_code=422, detail=str(e))
+    except Exception:
+        metrics.increment("multimedia_errors_total")
+        raise
     return AssetPackGenerateResponse(
         asset_id=result.asset_id or 0,
         task_id=task_id,

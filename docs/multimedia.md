@@ -40,6 +40,21 @@ AutoNovel の Phase 7 マルチメディア展開 (Asset Pack / Media Mix / IF R
 - `frontend/src/components/AssetPackPanel.tsx` を参照
 - スタジオワークスペースの「Multimedia」タブから操作
 
-## スクリーンショット
+## 商用EPUB 3 挿絵・口絵の仕様と登録API (Step 47)
 
-TODO: スクショを `docs/images/multimedia/` に追加する
+### 挿絵仕様概要
+- **規格適合性**: EPUB 3.2 / IDPF 規格完全準拠（Kindle縦書き・右開き `page-progression-direction="rtl"` 対応）。
+- **対応画像フォーマット**: JPEG (`image/jpeg`), PNG (`image/png`), WebP (`image/webp`), SVG (`image/svg+xml`)。
+- **推奨解像度・アスペクト比**:
+  - カラー口絵（Frontmatter）: 縦横比 16:9 または 3:2（推奨解像度: 1600×2560px 等の電子書籍標準）。
+  - 章間挿絵（Chapter Inset）: 縦長（3:4 または 9:16）、本文見開き直前に自動挿入。
+- **CSS組版**:
+  - `p-illustration`: 挿絵専用見開きクラス。本文縦書きスタイルと干渉しないよう横書きボックスとして中央配置。
+  - `object-fit: contain; max-height: 90vh;` によるデバイス全画面追従。
+  - `illustration-caption`: キャプションの下部センタリング表示。
+
+### 挿絵の自動引き当てと配信
+1. `POST /multimedia/ebook` 実行時、DB（`multimedia_artifacts` / `illustrations` テーブル）から該当書籍の画像アセットを自動抽出。
+2. 目次（`nav.xhtml`, `toc.ncx`）には挿絵が項目として混入しないよう自動フィルタリング。
+3. `POST /multimedia/asset-pack` でのZIPアーカイブ内 `04_電子書籍/` に挿絵入り完全EPUBが同梱されます。
+

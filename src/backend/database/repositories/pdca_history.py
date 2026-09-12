@@ -1,6 +1,5 @@
 from typing import Optional
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 from src.backend.database.repositories.base import BaseRepository
 from src.backend.database.models import PDCAHistorySnapshot
 

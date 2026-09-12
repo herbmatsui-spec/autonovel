@@ -6,7 +6,6 @@ import logging
 from typing import Any
 
 from src.agents.episode_pipeline import EpisodePipeline
-from src.agents.scheduler_coordinator import SchedulerCoordinator
 
 logger = logging.getLogger(__name__)
 

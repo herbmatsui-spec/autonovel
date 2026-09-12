@@ -17,7 +17,6 @@ from src.agents.specialist_auditor_base import (
 )
 from src.agents.specialists.fallback_utils import (
     analyze_pacing,
-    compute_coverage,
 )
 
 STRUCTURE_SYSTEM_PROMPT = """あなたは小説の構成・プロット展開・起承転結（Structure & Pacing）を審査する専門オーディターです。

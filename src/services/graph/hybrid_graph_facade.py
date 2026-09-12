@@ -10,7 +10,6 @@ import logging
 from pathlib import Path
 from typing import Any
 
-from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from src.backend.config import settings

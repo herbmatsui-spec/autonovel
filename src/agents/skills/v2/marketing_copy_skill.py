@@ -32,8 +32,8 @@ class MarketingCopySkillAgent(SkillAgent):
     async def _v2_pre_process(self, ctx: AgentContext):
         if ctx.artifacts.get("regeneration_focus"):
             ctx.artifacts["marketing_copy_v2_enhanced"] = True
-            logger.info(f"MarketingCopySkillAgent v2: 再生成モード - 多言語マーケティング・SEO対応有効")
+            logger.info("MarketingCopySkillAgent v2: 再生成モード - 多言語マーケティング・SEO対応有効")
     
     async def _v2_post_process(self, ctx: AgentContext, result: AgentResult):
         if result.artifacts.get("marketing_copy"):
-            logger.debug(f"MarketingCopySkillAgent v2: マーケティングコピー生成完了")
+            logger.debug("MarketingCopySkillAgent v2: マーケティングコピー生成完了")

@@ -8,7 +8,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Any
 
 from src.backend.tasks.huey import huey
 
@@ -32,7 +32,7 @@ def execute_publication_task(schedule_id: int) -> dict[str, Any]:
         from src.backend.database.uow import UnitOfWork
         from src.core.container import AppContainer
         from src.backend.services.commercial_helpers import _get_novel_data, _get_episodes_data
-        from src.backend.routers.commercial import _save_publish_records, _get_credentials_class
+        from src.backend.routers.commercial import _save_publish_records
         from src.services.commercial_pipeline import CommercialPipeline
 
         async with UnitOfWork(AppContainer.db()) as uow:

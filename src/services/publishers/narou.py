@@ -9,11 +9,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import os
 import re
 from dataclasses import dataclass
-from typing import Any, Optional
-from urllib.parse import urljoin
+from typing import Any
 
 from src.services.publishers.base import (
     PublisherAdapter,

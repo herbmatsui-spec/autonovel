@@ -32,8 +32,8 @@ class CulturalComplianceCheckerSkillAgent(SkillAgent):
     async def _v2_pre_process(self, ctx: AgentContext):
         if ctx.artifacts.get("regeneration_focus"):
             ctx.artifacts["cultural_compliance_v2_enhanced"] = True
-            logger.info(f"CulturalComplianceCheckerSkillAgent v2: 再生成モード - 多言語対応強化有効")
+            logger.info("CulturalComplianceCheckerSkillAgent v2: 再生成モード - 多言語対応強化有効")
     
     async def _v2_post_process(self, ctx: AgentContext, result: AgentResult):
         if result.artifacts.get("cultural_compliance"):
-            logger.debug(f"CulturalComplianceCheckerSkillAgent v2: 文化的適切性チェック完了")
+            logger.debug("CulturalComplianceCheckerSkillAgent v2: 文化的適切性チェック完了")

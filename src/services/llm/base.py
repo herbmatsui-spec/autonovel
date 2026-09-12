@@ -7,6 +7,7 @@ import concurrent.futures
 from abc import ABC, abstractmethod
 from collections.abc import AsyncIterator
 from typing import Any
+import warnings
 
 
 class BaseLLMAdapter(ABC):
@@ -23,6 +24,11 @@ class BaseLLMAdapter(ABC):
         **kwargs: Any,
     ) -> str:
         """テキストを一括生成する。"""
+        warnings.warn(
+            "BaseLLMAdapter is deprecated, use IUnifiedLLMClient instead",
+            DeprecationWarning,
+            stacklevel=2
+        )
         raise NotImplementedError
 
     @abstractmethod
@@ -35,6 +41,11 @@ class BaseLLMAdapter(ABC):
         **kwargs: Any,
     ) -> AsyncIterator[str]:
         """テキストをストリーミング生成する。"""
+        warnings.warn(
+            "BaseLLMAdapter is deprecated, use IUnifiedLLMClient instead",
+            DeprecationWarning,
+            stacklevel=2
+        )
         raise NotImplementedError
         yield ""  # generator 型ヒント用
 
@@ -42,7 +53,7 @@ class BaseLLMAdapter(ABC):
         """進行中のストリームをキャンセルするフック。既定は何もしない。"""
         return None
 
-    def generate(
+def generate(
         self,
         prompt: str,
         system_prompt: str | None = None,
@@ -52,6 +63,11 @@ class BaseLLMAdapter(ABC):
         **kwargs: Any,
     ) -> str:
         """同期コンテキスト向けの生成メソッド（イベントループを安全に処理）。"""
+        warnings.warn(
+            "BaseLLMAdapter is deprecated, use IUnifiedLLMClient instead",
+            DeprecationWarning,
+            stacklevel=2
+        )
         coro = self.generate_text(
             prompt=prompt,
             system_prompt=system_prompt,

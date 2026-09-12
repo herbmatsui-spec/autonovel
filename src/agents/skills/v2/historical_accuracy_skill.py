@@ -32,8 +32,8 @@ class HistoricalAccuracyCheckerSkillAgent(SkillAgent):
     async def _v2_pre_process(self, ctx: AgentContext):
         if ctx.artifacts.get("regeneration_focus"):
             ctx.artifacts["historical_accuracy_v2_enhanced"] = True
-            logger.info(f"HistoricalAccuracyCheckerSkillAgent v2: 再生成モード - 時代考証DB連携強化有効")
+            logger.info("HistoricalAccuracyCheckerSkillAgent v2: 再生成モード - 時代考証DB連携強化有効")
     
     async def _v2_post_process(self, ctx: AgentContext, result: AgentResult):
         if result.artifacts.get("historical_accuracy"):
-            logger.debug(f"HistoricalAccuracyCheckerSkillAgent v2: 時代考証チェック完了")
+            logger.debug("HistoricalAccuracyCheckerSkillAgent v2: 時代考証チェック完了")

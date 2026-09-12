@@ -45,3 +45,10 @@ class MultimediaDisabledError(AutoNovelException):
 
     def __init__(self, detail: str = "Multimedia features are disabled"):
         super().__init__(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=detail)
+
+
+class NoChaptersFoundError(AutoNovelException):
+    """章が見つからない場合の例外。"""
+
+    def __init__(self, detail: str = "No chapters found for the specified book"):
+        super().__init__(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=detail)

@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import logging
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any
 from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
@@ -139,7 +139,7 @@ def discover_related_characters(
             conflict_potential="主人公の変化に対する戸惑いと忠誠心の揺らぎ。",
         ))
         matched_candidates.append(DiscoveredCharacterCandidate(
-            name=f"暗影の密偵・シャドウ",
+            name="暗影の密偵・シャドウ",
             relation_to_base_char=f"{char_name}を影から監視する謎の諜報員",
             role="informant",
             archetype="謎めいた傍観者",

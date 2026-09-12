@@ -21,7 +21,7 @@ from src.easy_mode.phase3.media_mix import (
     MediaMixExporter,
     create_media_mix_exporter,
 )
-from src.easy_mode import EpisodeResult, SeriesResult
+from src.easy_mode import SeriesResult
 
 logger = logging.getLogger(__name__)
 

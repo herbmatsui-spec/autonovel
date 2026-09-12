@@ -11,9 +11,6 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any, Mapping
 
-from src.services.book_score_mapping import BOOK_SCORE_DIMENSIONS, BASE_TRANSFORMATION_MATRIX
-from src.services.pdca_directive import WritingDirective
-from src.agents.specialists.anchors import ANCHOR_PRESETS
 
 logger = logging.getLogger(__name__)
 

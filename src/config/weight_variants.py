@@ -7,7 +7,6 @@ audit weighting with validation and dynamic registration.
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 import yaml
 

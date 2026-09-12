@@ -1,5 +1,12 @@
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+from typing import Optional
+
+from src.services.audio.emotion_classifier import (
+    AcousticParameters,
+    DialogueEmotionClassifier,
+    SpeechEmotion,
+)
 
 
 @dataclass
@@ -9,8 +16,10 @@ class DialogueLine:
     line_index: int
     text: str
     is_dialogue: bool
-    speaker_name: str = "narration"  # キャラクター名 または "narration"
+    speaker_name: str = "narration"
     speaker_id: int = 3
+    emotion: SpeechEmotion = SpeechEmotion.NEUTRAL
+    acoustics: Optional[AcousticParameters] = None
 
 
 def split_long_sentence(text: str, max_length: int = 120) -> list[str]:
@@ -65,8 +74,13 @@ class DialogueExtractor:
     # かぎ括弧のパターン: 「...」 または 『...』
     DIALOGUE_PATTERN = re.compile(r"([「『].*?[」』])")
 
-    def __init__(self, default_narrator_speaker_id: int = 3):
+    def __init__(
+        self,
+        default_narrator_speaker_id: int = 3,
+        emotion_classifier: Optional[DialogueEmotionClassifier] = None,
+    ):
         self.default_narrator_speaker_id = default_narrator_speaker_id
+        self.emotion_classifier = emotion_classifier or DialogueEmotionClassifier()
 
     def extract_lines(
         self,
@@ -110,6 +124,12 @@ class DialogueExtractor:
                                 last_mentioned_speaker = char
                                 break
 
+                    # 感情分類と音響パラメータ計算
+                    emotion = self.emotion_classifier.classify(chunk, context=p)
+                    acoustics = self.emotion_classifier.adjust_acoustics_by_punctuation(
+                        self._get_base_acoustics(emotion), chunk
+                    )
+
                     result.append(
                         DialogueLine(
                             line_index=line_idx,
@@ -117,11 +137,18 @@ class DialogueExtractor:
                             is_dialogue=is_dialogue,
                             speaker_name=speaker,
                             speaker_id=self.default_narrator_speaker_id,
+                            emotion=emotion,
+                            acoustics=acoustics,
                         )
                     )
                     line_idx += 1
 
         return result
+
+    def _get_base_acoustics(self, emotion: SpeechEmotion) -> AcousticParameters:
+        """感情に対応する基本音響パラメータを取得"""
+        from src.services.audio.emotion_classifier import EMOTION_ACOUSTIC_TABLE
+        return EMOTION_ACOUSTIC_TABLE.get(emotion, EMOTION_ACOUSTIC_TABLE[SpeechEmotion.NEUTRAL])
 
     def _resolve_speaker(self, paragraph: str, characters: list[str]) -> str:
         """段落内の文脈（〇〇は言った、〇〇が微笑んだ等）から話者を推定する (Step 8)。"""

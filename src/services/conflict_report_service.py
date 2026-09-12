@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import difflib
-import json
 import logging
 from dataclasses import dataclass
 from typing import Any

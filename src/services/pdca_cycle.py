@@ -8,11 +8,10 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from dataclasses import dataclass, field
-from typing import Any, Callable, Mapping, Sequence
+from typing import Any, Callable
 
-from src.services.audit_aggregator import AuditAggregator, BookScoreResult
-from src.services.book_score_mapping import UnifiedBookScoreBridge, Unified5DScore
+from src.services.audit_aggregator import AuditAggregator
+from src.services.book_score_mapping import UnifiedBookScoreBridge
 from src.services.pdca_directive import (
     PDCADirectiveGenerator,
     PDCACycleResult,

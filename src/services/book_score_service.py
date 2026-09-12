@@ -7,7 +7,7 @@ from typing import Any, Dict, Mapping, Optional, Protocol
 from dataclasses import dataclass
 from datetime import datetime
 
-from src.agents.orchestrator import AgentContext, AgentResult
+from src.agents.orchestrator import AgentContext
 from src.infrastructure.database.models.book_score import BookScore as BookScoreModel
 
 logger = logging.getLogger(__name__)

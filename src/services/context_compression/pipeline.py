@@ -5,19 +5,15 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 import logging
-import re
-from collections import Counter
 
 from src.utils.context_compression_config import (
     CompressionConfig,
-    Layer1Config,
     Layer2Config,
     Layer3Config,
     Layer4Config,
     get_compression_config,
 )
 from src.services.context_compression.keyphrase_extractors import (
-    KeyphraseExtractor,
     create_extractor,
 )
 

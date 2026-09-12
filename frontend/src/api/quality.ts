@@ -1,4 +1,5 @@
 import { apiFetch, handleResponse } from './client';
+import { LineScore } from '../types/quality';
 
 export interface BookScore {
   book_id: number;
@@ -55,6 +56,11 @@ export interface PDCACycleSnapshot {
   delta: number;
   converged: boolean;
   created_at: string;
+}
+
+export async function fetchLineScores(bookId: number, chapterNumber: number): Promise<LineScore[]> {
+  const res = await apiFetch(`/api/novel/books/${bookId}/chapters/${chapterNumber}/line-scores`);
+  return handleResponse<LineScore[]>(res, 'Failed to fetch line scores');
 }
 
 export async function fetchChapterBookScore(bookId: number, chapterNumber: number): Promise<BookScore> {

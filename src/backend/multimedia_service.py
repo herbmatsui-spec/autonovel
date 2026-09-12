@@ -22,10 +22,10 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from src.backend.database import SessionLocal
+from src.backend.database.series_loader import SeriesDataLoader, SeriesDataLoaderConfig
 from src.backend.feature_flags import require_multimedia
 from src.backend.multimedia_storage import ensure_multimedia_dir
 from src.easy_mode.phase3.ebook_export import (
-    EPUB_AVAILABLE,
     PDF_AVAILABLE,
     create_ebook_exporter,
 )
@@ -37,62 +37,52 @@ from src.easy_mode.phase3.media_mix import (
     MediaFormat,
     create_media_mix_exporter,
 )
-from src.easy_mode import EpisodeResult, SeriesResult
+from src.easy_mode import SeriesResult
 
 logger = logging.getLogger(__name__)
 
 
-PRESET_FALLBACK: dict[str, Any] = {
-    "characters": {"archetypes": {}},
-    "erotic": {},
-}
+def _extract_preset(series: SeriesResult) -> dict[str, Any]:
+    """series.bible から characters と style を安全に抽出しプリセット辞書を組み立てる (Step 19)。"""
+    bible = series.bible or {}
+    raw_characters = bible.get("characters") or {}
+    if not isinstance(raw_characters, dict):
+        raw_characters = {}
+    archetypes = raw_characters.get("archetypes") or {}
+    if not isinstance(archetypes, dict):
+        archetypes = {}
 
+    normalized_archetypes = {}
+    for k, v in archetypes.items():
+        if isinstance(v, dict):
+            normalized_archetypes[k] = v
+        elif isinstance(v, str):
+            normalized_archetypes[k] = {"name_pattern": v, "display_name": v}
+        else:
+            normalized_archetypes[k] = {"name_pattern": str(v)}
 
-def _make_minimal_preset(genre: str) -> dict[str, Any]:
-    """genre のみから preset を組み立てる (DB 不在のテスト用)。"""
+    characters = dict(raw_characters)
+    characters["archetypes"] = normalized_archetypes
+
+    style = bible.get("style") or {}
+    erotic = bible.get("erotic") or {}
     return {
-        "genre": genre,
-        "characters": {"archetypes": {}},
-        "erotic": {},
+        "genre": series.genre,
+        "characters": characters,
+        "style": style,
+        "erotic": erotic,
     }
 
 
-def _make_minimal_episode(num: int = 1, title: str = "テスト話") -> EpisodeResult:
-    """単体エピソードを組み立てるヘルパ。"""
-    content = (
-        f"第{num}話のテスト本文です。\n\n主人公は困難に立ち向かった。\n「行くぞ」と彼は言った。\n"
+# 後方互換性のためテストフィクスチャからエイリアス提供 (Step 21)
+try:
+    from tests.helpers.multimedia_fixtures import (
+        make_minimal_episode as _make_minimal_episode,
+        make_minimal_preset as _make_minimal_preset,
+        make_minimal_series,
     )
-    return EpisodeResult(
-        episode_num=num,
-        title=title,
-        content=content,
-        word_count=len(content),
-        audit_score=80.0,
-        audit_passed=True,
-        rewrite_count=0,
-        spice_elements=[],
-        metadata={},
-        needs_human_review=False,
-    )
-
-
-def make_minimal_series(
-    genre: str = "ハイファンタジー (R15)",
-    title: str = "テストシリーズ",
-    episode_count: int = 1,
-) -> SeriesResult:
-    """テスト・サービス層から利用する最小 SeriesResult を生成する。"""
-    eps = [_make_minimal_episode(i + 1, f"第{i + 1}話") for i in range(episode_count)]
-    return SeriesResult(
-        genre=genre,
-        title=title,
-        concept="テストコンセプト",
-        total_episodes=episode_count,
-        episodes=eps,
-        bible={},
-        plot_outline=[],
-        metadata={"prologue": f"{title} - 始まりの物語"},
-    )
+except ImportError:
+    pass
 
 
 @dataclass
@@ -107,9 +97,21 @@ class MultimediaResult:
 class MultimediaService:
     """Multimedia 機能の統合サービス。"""
 
-    def __init__(self, session_factory: Any = None, output_dir: Path | None = None) -> None:
+    def __init__(
+        self,
+        session_factory: Any = None,
+        output_dir: Path | None = None,
+        series_loader: SeriesDataLoader | None = None,
+    ) -> None:
         self._session_factory = session_factory or SessionLocal
         self._output_dir = output_dir
+        self._series_loader = series_loader or SeriesDataLoader(self._session_factory)
+
+    def _resolve_series(self, book_id: int, series: SeriesResult | None = None) -> SeriesResult:
+        """外部から渡された series を返すか、未指定なら DB から実データを読み出す。"""
+        if series is not None:
+            return series
+        return self._series_loader.load_series(SeriesDataLoaderConfig(book_id=book_id))
 
     def _output_path(self) -> Path:
         if self._output_dir is not None:
@@ -249,17 +251,21 @@ class MultimediaService:
         episode_num: int | None = None,
     ) -> MultimediaResult:
         require_multimedia()
-        series = series or make_minimal_series(episode_count=max(1, episode_num or 1))
-        target_ep = series.episodes[(episode_num or 1) - 1] if series.episodes else None
-        if target_ep is None:
-            target_ep = _make_minimal_episode(1)
+        series = self._resolve_series(book_id, series)
+        if not series.episodes:
+            raise ValueError(f"No chapters found for book {book_id}")
+        target_idx = (episode_num or 1) - 1
+        if 0 <= target_idx < len(series.episodes):
+            target_ep = series.episodes[target_idx]
+        else:
+            target_ep = series.episodes[0]
 
         try:
             fmt = MediaFormat(format_name)
         except ValueError:
             raise ValueError(f"Unsupported media mix format: {format_name}")
 
-        exporter = create_media_mix_exporter(series.genre, _make_minimal_preset(series.genre))
+        exporter = create_media_mix_exporter(series.genre, _extract_preset(series))
         scripts = exporter.export_all(target_ep, series, [fmt])
 
         out_dir = self._output_path() / f"book_{book_id}" / "media_mix"
@@ -287,19 +293,102 @@ class MultimediaService:
             metadata={"format": fmt.value, "episode_num": target_ep.episode_num},
         )
 
+    def _load_book_illustrations(self, session: Session, book_id: int) -> list[dict[str, Any]]:
+        """DBから該当書籍の挿絵・イラストアセットを安全に取得・ロードする (Step 39, 40)。"""
+        illustrations: list[dict[str, Any]] = []
+        try:
+            rows = session.execute(
+                text(
+                    """
+                    SELECT id, file_path, metadata_json
+                    FROM multimedia_artifacts
+                    WHERE book_id = :book_id AND asset_type = 'illustration'
+                    ORDER BY id ASC
+                    """
+                ),
+                {"book_id": book_id},
+            ).fetchall()
+            for r in rows:
+                row_id, fp_str, meta_str = r[0], r[1], r[2]
+                try:
+                    meta = json.loads(meta_str) if meta_str else {}
+                except (json.JSONDecodeError, TypeError):
+                    meta = {}
+                fp = Path(fp_str)
+                if not fp.exists():
+                    logger.warning("Illustration file not found: %s", fp_str)
+                    continue
+                try:
+                    data = fp.read_bytes()
+                except Exception as exc:
+                    logger.warning("Failed to read illustration file %s: %s", fp_str, exc)
+                    continue
+
+                illustrations.append({
+                    "image_id": f"art_{row_id}",
+                    "image_bytes": data,
+                    "file_name": fp.name,
+                    "media_type": meta.get("media_type", "image/jpeg"),
+                    "position": meta.get("position", "chapter_start"),
+                    "chapter_index": meta.get("chapter_index", 1),
+                    "caption": meta.get("caption", ""),
+                })
+        except Exception as e:
+            logger.debug("Could not query illustrations from multimedia_artifacts: %s", e)
+
+        # illustrations テーブルがある場合のフォールバック試行
+        try:
+            ill_rows = session.execute(
+                text(
+                    """
+                    SELECT id, file_path, chapter_number, caption, position
+                    FROM illustrations
+                    WHERE book_id = :book_id
+                    ORDER BY id ASC
+                    """
+                ),
+                {"book_id": book_id},
+            ).fetchall()
+            for r in ill_rows:
+                row_id, fp_str, chap_num, caption, pos = r[0], r[1], r[2], r[3], r[4]
+                fp = Path(fp_str)
+                if not fp.exists():
+                    continue
+                try:
+                    data = fp.read_bytes()
+                except Exception:
+                    continue
+                illustrations.append({
+                    "image_id": f"ill_{row_id}",
+                    "image_bytes": data,
+                    "file_name": fp.name,
+                    "media_type": "image/jpeg",
+                    "position": pos or "chapter_start",
+                    "chapter_index": chap_num or 1,
+                    "caption": caption or "",
+                })
+        except Exception:
+            pass
+
+        return illustrations
+
     # ===== Ebook =====
     def export_ebook(
         self,
         book_id: int,
         formats: Sequence[str] = ("epub", "pdf"),
         series: SeriesResult | None = None,
+        images: list[dict[str, Any]] | None = None,
     ) -> MultimediaResult:
         require_multimedia()
-        series = series or make_minimal_series()
-        exporter = create_ebook_exporter(series.genre, _make_minimal_preset(series.genre))
+        series = self._resolve_series(book_id, series)
+        exporter = create_ebook_exporter(series.genre, _extract_preset(series))
 
         out_dir = self._output_path() / f"book_{book_id}" / "ebook"
         out_dir.mkdir(parents=True, exist_ok=True)
+
+        with self._session() as s:
+            illustrations = images if images is not None else self._load_book_illustrations(s, book_id)
 
         results: dict[str, str] = {}
         for fmt in formats:
@@ -308,7 +397,7 @@ class MultimediaService:
             path = out_dir / fname
             try:
                 if fmt == "epub":
-                    # Step 54: Pure Python 商用縦書きEPUB 3ビルダーへの切り替え
+                    # Step 54 & Step 41: Pure Python 商用縦書きEPUB 3ビルダーへの挿絵受け渡し
                     from src.services.exporters.epub_commercial_builder import CommercialEpubBuilder
                     builder = CommercialEpubBuilder()
                     chap_list = [
@@ -318,6 +407,7 @@ class MultimediaService:
                     epub_bytes = builder.build_commercial_epub(
                         novel_meta={"title": series.title},
                         chapters=chap_list,
+                        images=illustrations,
                     )
                     path.write_bytes(epub_bytes)
                 elif fmt == "pdf":
@@ -356,14 +446,21 @@ class MultimediaService:
                 "ebook",
                 "+".join(formats),
                 out_dir / "index.json",
-                {"formats": list(results.keys()), "files": list(results.values())},
+                {
+                    "formats": list(results.keys()),
+                    "files": list(results.values()),
+                    "illustration_count": len(illustrations),
+                },
             )
             s.commit()
 
         return MultimediaResult(
             asset_id=asset_id,
             files=list(results.values()),
-            metadata={"formats": list(results.keys())},
+            metadata={
+                "formats": list(results.keys()),
+                "illustration_count": len(illustrations),
+            },
         )
 
     # ===== IF Routes =====
@@ -374,8 +471,8 @@ class MultimediaService:
         persist: bool = True,
     ) -> tuple[MultimediaResult, IFRouteGraph | None]:
         require_multimedia()
-        series = series or make_minimal_series(episode_count=2)
-        graph = create_if_route_system(series.genre, series, _make_minimal_preset(series.genre))
+        series = self._resolve_series(book_id, series)
+        graph = create_if_route_system(series.genre, series, _extract_preset(series))
 
         out_dir = self._output_path() / f"book_{book_id}" / "if_routes"
         out_dir.mkdir(parents=True, exist_ok=True)
@@ -435,7 +532,7 @@ class MultimediaService:
     ) -> tuple[MultimediaResult, str]:
         require_multimedia()
         task_id = str(uuid.uuid4())
-        series = series or make_minimal_series(episode_count=1)
+        series = self._resolve_series(book_id, series)
 
         out_dir = self._output_path() / f"book_{book_id}" / f"pack_{task_id[:8]}"
         out_dir.mkdir(parents=True, exist_ok=True)

@@ -33,8 +33,8 @@ class IllustrationSkillAgent(SkillAgent):
         regeneration_focus = ctx.artifacts.get("regeneration_focus", [])
         if "visual_textual_synergy" in regeneration_focus:
             ctx.artifacts["illustration_v2_enhanced"] = True
-            logger.info(f"IllustrationSkillAgent v2: 再生成モード - Visual-textual synergy 特化有効")
+            logger.info("IllustrationSkillAgent v2: 再生成モード - Visual-textual synergy 特化有効")
     
     async def _v2_post_process(self, ctx: AgentContext, result: AgentResult):
         if result.artifacts.get("illustration_result"):
-            logger.debug(f"IllustrationSkillAgent v2: 挿絵生成完了")
+            logger.debug("IllustrationSkillAgent v2: 挿絵生成完了")

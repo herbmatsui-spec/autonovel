@@ -55,3 +55,36 @@ class BranchMergeRequest(BaseModel):
     name: str | None = None
 
     model_config = MODEL_CONFIG_DEFAULTS
+
+
+class ResolvedChapterPayload(BaseModel):
+    """コンフリクト解決済み章コンテンツ (Step 49)."""
+
+    chapter_number: int = Field(ge=1)
+    resolved_content: str
+    resolution_strategy: str = Field("manual", description="base | source | target | manual")
+
+    model_config = MODEL_CONFIG_DEFAULTS
+
+
+class BranchMergeCommitRequest(BaseModel):
+    """マージ確定コミットリクエスト (Step 49)."""
+
+    source_branch_id: int
+    target_branch_id: int
+    merge_ep_num: int = Field(ge=0)
+    resolved_chapters: list[ResolvedChapterPayload]
+    commit_message: str = "Merged branch with resolved conflicts"
+
+    model_config = MODEL_CONFIG_DEFAULTS
+
+
+class BranchMergeCommitResponse(BaseModel):
+    """マージ確定コミッドレスポンス (Step 49)."""
+
+    success: bool
+    target_branch_id: int
+    updated_chapters_count: int
+    committed_at: str
+
+    model_config = MODEL_CONFIG_DEFAULTS

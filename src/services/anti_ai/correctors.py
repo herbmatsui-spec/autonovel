@@ -10,7 +10,7 @@ from __future__ import annotations
 import re
 from collections import defaultdict
 
-from src.services.anti_ai.corrector import BaseCorrector, _apply_replacements
+from src.services.anti_ai.corrector import BaseCorrector
 from src.services.anti_ai.models import AICategory, ViolationSpan
 
 

@@ -7,7 +7,6 @@ and generates hypothetical document embeddings (HyDE) to prevent semantic drift.
 from __future__ import annotations
 
 import logging
-import re
 from typing import Any, Literal
 
 logger = logging.getLogger(__name__)

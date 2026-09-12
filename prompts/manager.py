@@ -647,6 +647,7 @@ class PromptManager:
         script_text: str,
         target_word_count: int,
         book_id: Optional[int] = None,
+        foreshadowing_context: str = "",
         **kwargs: Any,
     ) -> str:
         scenes_data = plot_data.get("scenes", [])
@@ -694,6 +695,7 @@ class PromptManager:
             "blueprint": blueprint,
             "target_word_count": target_word_count,
             "tone_inst": tone_inst,
+            "foreshadowing_context": foreshadowing_context,
             "CONTENT_SEPARATOR": "---",
             "dialogue_profiles": kwargs.get("dialogue_profiles", {}),
         }

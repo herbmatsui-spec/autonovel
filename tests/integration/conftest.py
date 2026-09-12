@@ -7,9 +7,16 @@ import time
 import redis
 from sqlalchemy import create_engine, event, text
 from sqlalchemy.orm import sessionmaker, Session
-from testcontainers.core.container import DockerContainer
-from testcontainers.postgres import PostgresContainer
-from testcontainers.redis import RedisContainer
+try:
+    from testcontainers.core.container import DockerContainer
+    from testcontainers.postgres import PostgresContainer
+    from testcontainers.redis import RedisContainer
+    HAS_TESTCONTAINERS = True
+except ImportError:
+    DockerContainer = None
+    PostgresContainer = None
+    RedisContainer = None
+    HAS_TESTCONTAINERS = False
 from alembic.config import Config
 from alembic import command
 
@@ -17,6 +24,8 @@ from alembic import command
 @pytest.fixture(scope="session")
 def postgres_container():
     """PostgreSQL コンテナをセッションスコープで起動."""
+    if not HAS_TESTCONTAINERS:
+        pytest.skip("testcontainers is not installed")
     postgres = PostgresContainer("postgres:15")
     postgres.start()
     # Install the vector extension
@@ -33,6 +42,7 @@ def postgres_container():
             pass
     yield postgres
     postgres.stop()
+
 
 
 @pytest.fixture(scope="session")

@@ -1,6 +1,5 @@
 # src/agents/skills/historical_accuracy.py
 """時代考証チェックスキル（サンプル実装）"""
-from typing import Any
 from src.agents.skill_base import SkillAgent
 from src.agents.orchestrator import AgentContext, AgentResult
 

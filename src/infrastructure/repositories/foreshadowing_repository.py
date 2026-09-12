@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 import threading
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 from src.domain.interfaces.foreshadowing_repository import ForeshadowingRepository
 from src.models.foreshadowing import Foreshadowing

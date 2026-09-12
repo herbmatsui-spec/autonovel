@@ -183,7 +183,6 @@ async def check_enrichment_agent() -> HealthCheckResult:
     start = time.perf_counter()
     try:
         from src.backend.config import settings
-        from src.agents.enrichment_agent import EnrichmentAgent
         from src.services.rag_service import rag_service
         
         # 機能フラグチェック

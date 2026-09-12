@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Any, Dict, Optional
+from typing import Dict, Optional
 
 from src.backend.tasks.dag_models import TaskResourceRequirement
 from src.backend.tasks.numa_topology import NUMATopology, detect_numa_topology, detect_gpu_numa_py3nvml

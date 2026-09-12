@@ -31,8 +31,8 @@ class BibleSkillAgent(SkillAgent):
     async def _v2_pre_process(self, ctx: AgentContext):
         if ctx.artifacts.get("regeneration_focus"):
             ctx.artifacts["bible_v2_enhanced"] = True
-            logger.info(f"BibleSkillAgent v2: 再生成モード - 関係性モデリング強化有効")
+            logger.info("BibleSkillAgent v2: 再生成モード - 関係性モデリング強化有効")
     
     async def _v2_post_process(self, ctx: AgentContext, result: AgentResult):
         if result.artifacts.get("bible"):
-            logger.debug(f"BibleSkillAgent v2: Bible生成完了")
+            logger.debug("BibleSkillAgent v2: Bible生成完了")

@@ -70,7 +70,39 @@ ruby rt {
     break-before: page;
 }
 
-/* 挿絵画像 */
+/* 挿絵画像 (Step 37) */
+body.p-illustration {
+    margin: 0;
+    padding: 0;
+    text-align: center;
+    writing-mode: horizontal-tb;
+    -webkit-writing-mode: horizontal-tb;
+}
+
+div.illustration-wrap {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+img.illustration-img,
+div.illustration-wrap img {
+    max-width: 100%;
+    max-height: 90vh;
+    object-fit: contain;
+}
+
+p.illustration-caption {
+    font-size: 0.85em;
+    color: #555555;
+    text-align: center;
+    margin-top: 0.5em;
+    text-indent: 0;
+}
+
 .illustration-container {
     text-align: center;
     margin: 0;

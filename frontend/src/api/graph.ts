@@ -27,6 +27,12 @@ export async function upsertNode(payload: GraphNodeDetail): Promise<void> {
   if (!res.ok) throw new Error(await res.text());
 }
 
+export async function fetchNodeSummary(nodeName: string): Promise<{ summary: string; properties: Record<string, any> }> {
+  const res = await fetch(`/api/graph/nodes/${encodeURIComponent(nodeName)}/summary`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
 export async function upsertEdge(payload: EdgeCreationPayload): Promise<void> {
   const res = await fetch(`/api/graph/edges`, {
     method: 'POST',

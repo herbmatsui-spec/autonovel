@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, List, Dict, Set
+from typing import Any
 from sqlalchemy.orm import Session
 
 from src.services.compression.models import SubgraphLayerOutput

@@ -14,7 +14,6 @@ The detectors return :class:`ViolationSpan` lists sorted by
 from __future__ import annotations
 
 import re
-from typing import Iterable
 
 from src.services.anti_ai.models import (
     AICategory,

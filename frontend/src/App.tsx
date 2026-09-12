@@ -19,11 +19,17 @@ function AppContent() {
     books,
     selectedBook,
     refreshBooks,
+    setIsWizardActive,
+    setWizardStep,
+    hasCompletedWizard,
   } = useNovelContext();
   const [showGraph, setShowGraph] = useState(false);
   const [showMedia, setShowMedia] = useState(false);
   const [showConfig, setShowConfig] = useState(false);
-  const [mode, setMode] = useState<"easy" | "studio">("studio");
+  const [mode, setMode] = useState<"easy" | "studio">(() => {
+    if (typeof window === "undefined") return "studio";
+    return (localStorage.getItem("autonovel.mode") as "easy" | "studio") || "studio";
+  });
 
   // 初回マウント時に作品一覧を読み込み
   React.useEffect(() => {
@@ -43,6 +49,10 @@ function AppContent() {
     window.addEventListener("popstate", syncModeFromLocation);
     return () => window.removeEventListener("popstate", syncModeFromLocation);
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem("autonovel.mode", mode);
+  }, [mode]);
 
   const handleMessage = (msg: string) => {
     if (!msg) return;
@@ -177,6 +187,11 @@ function AppContent() {
               const newBook = await createBook(payload);
               await refreshBooks();
               setSelectedBookId(newBook.id);
+              
+              if (!hasCompletedWizard) {
+                setWizardStep(1);
+                setIsWizardActive(true);
+              }
             }}
           />
         </div>

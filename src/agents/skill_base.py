@@ -1,7 +1,7 @@
 # agents/skill_base.py
 import logging
 import time
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from typing import Any, TYPE_CHECKING, List, Type, Optional
 from pydantic import BaseModel, Field
 
@@ -74,7 +74,7 @@ class SkillAgent(BaseAgent):
             result = await self.execute(ctx)
             self._record_metric("success", time.perf_counter() - start_time)
             return result
-        except Exception as e:
+        except Exception:
             self._record_metric("error", time.perf_counter() - start_time)
             raise
 

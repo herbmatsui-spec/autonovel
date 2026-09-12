@@ -691,7 +691,7 @@ class IllustrationPointGenerationStep(WorkflowStep):
                 illustration_point = IllustrationPoint(
                     id=ip_id,
                     page=str((len(episodes)//2) * 10 + 5),  # 概算ページ番号
-                    scene_description=f"主人公と主要 antagonistic force の対峙シーン",
+                    scene_description="主人公と主要 antagonistic force の対峙シーン",
                     composition="二人のキャラクターが画面中央で対角線上に配置され、緊張感を表現",
                     props="それぞれのキャラクターが持つ象徴的なアイテムまたは武器",
                     expressions={
@@ -712,7 +712,7 @@ class IllustrationPointGenerationStep(WorkflowStep):
                 illustration_point = IllustrationPoint(
                     id=ip_id,
                     page="口絵2",
-                    scene_description=f"物語の旅路を終えたキャラクターたちの新たな始まりの瞬間",
+                    scene_description="物語の旅路を終えたキャラクターたちの新たな始まりの瞬間",
                     composition="キャラクターたちが画面左右に分かれて立ち、間に希望を象徴する要素（光、花など）",
                     props="旅での経験を象徴するアイテムまたは記念品",
                     expressions={list(characters.keys())[0] if characters else "主人公": "穏やかで満足感のある表情"},

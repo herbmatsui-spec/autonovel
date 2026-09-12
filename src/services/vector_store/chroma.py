@@ -3,7 +3,6 @@ src/services/vector_store/chroma.py - ChromaDB ベクトルストア実装
 """
 from __future__ import annotations
 
-import json
 import logging
 import re
 from typing import Any, TYPE_CHECKING
@@ -33,7 +32,7 @@ except Exception as e:
 try:
     from rank_bm25 import BM25Okapi
     HAS_BM25 = True
-except Exception as e:
+except Exception:
     HAS_BM25 = False
 
 class ChromaClientProvider:

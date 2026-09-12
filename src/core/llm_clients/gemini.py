@@ -7,7 +7,10 @@ import time
 from collections.abc import Callable
 from typing import Any
 
-from google import genai  # type: ignore
+try:
+    from google import genai  # type: ignore
+except ImportError:
+    import google.genai as genai  # type: ignore
 from google.genai import types as genai_types
 
 from src.backend.engine_utils import AdaptiveCooldown, safe_model_validate

@@ -17,7 +17,7 @@
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 [![Type Checked: mypy](https://img.shields.io/badge/type%20checked-mypy-blue)](https://mypy-lang.org/)
 [![Vitest](https://img.shields.io/badge/tested_with-vitest-729B1B?logo=vitest&logoColor=white)](https://vitest.dev/)
-[![Version](https://img.shields.io/badge/version-4.8.4-brightgreen?logo=semver)](https://github.com/herbmatsui-spec/autonovel/releases/tag/v4.8.4)
+[![Version](https://img.shields.io/badge/version-4.8.5-brightgreen?logo=semver)](https://github.com/herbmatsui-spec/autonovel/releases/tag/v4.8.5)
 
 <br />
 
@@ -25,7 +25,7 @@
   <img src="docs/demo.gif" alt="AutoNovel UI & Workflow Demo" width="900" style="border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
 </p>
 
-*▲ AutoNovel v4.8.4: 商用縦書きEPUB 3組版刷新 / VOICEVOX音声合成基盤 / フロントエンド音声試聴 / 自律レジリエンス・カオス耐性統合 / 3案企画ガチャ / 逆算プロット / 上級者Studio / インライン五感推敲 / GraphRAG相関図 / ワンクリックZIP納品*
+*▲ AutoNovel v4.8.5: LLMメディアミックス台本生成 / VOICEVOX感情演技パラメータ連動 / 長編GraphRAG伏線検索結合 / マルチメディア実DB復元 / IFルートマージ確定コミット / 商用縦書きEPUB挿絵口絵統合*
 
 </div>
 
@@ -57,6 +57,33 @@ AutoNovel は、AI を活用して Web 小説を **企画から執筆、校正�
 続いて、下記の目次から技術的な詳細をご覧ください。
 
 ## 📋 更新履歴 / Changelog
+
+### v4.8.5 (2026-09-12) — P0/P1実用化・品質向上統合（LLMメディア台本・VOICEVOX感情演技・GraphRAG長編伏線結合・IFルートマージ確定）
+
+P0（即効性が高い実用化）および P1（生成物のクオリティ向上）の全実装計画（計144ステップ）を完備し、全77テスト ALL GREEN を達成したメジャー機能アップデート。
+
+**🎬 LLM駆動メディアミックス台本生成 (`src/agents/media_script_agent.py`, `src/easy_mode/phase3/media_mix.py`)**
+- `MediaScriptAgent`: 小説本文から漫画コマ割り（構図、カメラアングル、セリフ、ト書き、効果音）および音声ドラマ台本（演技指導、BGM、環境音）をLLMで自動生成
+- `MangaScriptGenerator` / `AudioDramaScriptGenerator` のルールベース依存からLLM生成エンジンへの全面刷新
+- キャラクターコンテキストおよびシーンの感情・雰囲気の自動注入とフォールバック機構
+
+**🎭 VOICEVOX 感情演技パラメータ連動 & ChapterAudioSynthesizer 統合 (`src/services/audio/`)**
+- `emotion_classifier.py`: 喜怒哀楽・恐怖・驚き・真剣など8系統の感情分類（`SpeechEmotion`）および音響パラメータ（速度・音高・抑揚・音量）の自動最適化
+- `speaker_mapper.py`: キャラクター属性およびセリフ感情に応じた VOICEVOX スタイルID動的マッピング
+- `ChapterSynthesizer`: 各セリフの感情に連動した並列音声合成、無音ポーズ結合、章全体の感情分布メタデータ出力
+
+**🔍 GraphRAG / ChromaDB 長編伏線検索 & 執筆パイプライン自動注入 (`src/services/rag/`, `src/agents/writing/`)**
+- `LongFormContextRetriever` / `subgraph_extractor.py`: NetworkX サブグラフ抽出とセマンティック検索を融合した伏線・伏線未回収エンティティの自動検出
+- `episode_writer.py` & `prompt_composer.py`: 執筆プロンプトへの伏線回収指示の自動注入
+- `ConsistencyAuditor` & `pdca_directive.py`: 伏線回収の整合性監査ルール強化とPDCAリライト指示の自動発行
+
+**💾 マルチメディア実DB結合 & IFルートマージ確定コミット (P0基盤)**
+- `SeriesDataLoader`: DBから `SeriesResult` / `EpisodeResult` を実データから完全復元するローダー基盤
+- `MultimediaService`: ダミー依存を完全排除し、実DBの小説・キャラクター・章データを元にしたアセット生成
+- 商用縦書き EPUB への挿絵・口絵マニフェストおよび目次・XHTML完全統合
+- `BranchMergeService`: IFルートブランチ間の競合検知・マージ確定コミットAPIおよびフロントエンド差分プレビュー連携
+
+---
 
 ### v4.8.4 (2026-09-11) — 商用縦書きEPUB 3組版刷新・VOICEVOX音声合成基盤・自律レジリエンス統合
 

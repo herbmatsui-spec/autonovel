@@ -6,7 +6,7 @@ import logging
 from typing import Any
 
 from src.agents.skill_base import SkillAgent
-from src.agents.orchestrator import AgentContext, AgentResult, AgentName
+from src.agents.orchestrator import AgentContext, AgentResult
 
 logger = logging.getLogger(__name__)
 

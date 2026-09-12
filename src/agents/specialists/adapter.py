@@ -17,7 +17,7 @@ from src.agents.specialists import (
     StructureAuditor,
     StyleAuditor,
 )
-from src.config.weight_variants import load_variants_from_yaml, merge_genre_phase_variants
+from src.config.weight_variants import load_variants_from_yaml
 from src.services.audit_aggregator import AuditAggregator, BookScoreResult
 from src.services.experiment_allocator import ExperimentAllocator, DEFAULT_ALLOCATOR
 

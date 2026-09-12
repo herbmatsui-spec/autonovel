@@ -1168,6 +1168,112 @@ select:focus-visible,
   color: rgba(156, 163, 175, 0.4);
 }
 
+/* Wizard Onboarding Styles */
+.wizard-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2000;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-sans);
+}
+
+.wizard-panel {
+  position: relative;
+  pointer-events: auto;
+  width: 380px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: wizard-fade-in 0.3s ease-out;
+}
+
+@keyframes wizard-fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.wizard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.wizard-step-count {
+  font-weight: bold;
+  color: var(--accent-purple);
+}
+
+.wizard-skip-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.75rem;
+  text-decoration: underline;
+}
+
+.wizard-skip-btn:hover {
+  color: var(--text-primary);
+}
+
+.wizard-title {
+  margin: 0 0 8px 0;
+  font-size: 1.1rem;
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.wizard-description {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.wizard-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.wizard-next-btn {
+  background: var(--accent-purple);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.wizard-next-btn:hover {
+  background: #7c3aed;
+}
+
+.wizard-highlight {
+  position: absolute;
+  border: 3px solid var(--accent-cyan);
+  border-radius: 4px;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+  transition: all 0.3s ease;
+  z-index: 1999;
+}
+
 /* ==========================================
  * AssetPackPanel (アセットパック) スタイル
  * ========================================== */
