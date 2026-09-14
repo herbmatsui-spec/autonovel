@@ -6,7 +6,6 @@ import logging
 from typing import Any
 
 from src.agents.episode_pipeline import EpisodePipeline
-from src.agents.scheduler_coordinator import SchedulerCoordinator
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +36,13 @@ class WritingGenerator:
         self.prompt_manager = pm
         self._writing_graph_manager = None
 
+        from src.agents.writing.opening_booster import OpeningBoosterAgent
+        self.opening_booster = OpeningBoosterAgent(
+            repo=self.repo,
+            llm=self.llm,
+            style_rag=self.style_rag,
+        )
+
     def _get_bible(self, book_id: int) -> Any:
         """Bible を取得（SchedulerCoordinator 用）"""
         if self.repo is None:
@@ -46,6 +52,32 @@ class WritingGenerator:
         except Exception as e:
             logger.debug(f"Failed to get bible for book_id={book_id}: {e}")
             return None
+
+    async def generate_opening_if_applicable(
+        self,
+        book_id: int,
+        ep_num: int,
+        target_word_count: int = 2500,
+        inciting_incident: str = "",
+        payoff_moment: str = "",
+        genre: str = "異世界ファンタジー",
+        protagonist_name: str = "主人公",
+    ) -> dict[str, Any] | None:
+        """第1話〜第3話の場合は OpeningBoosterAgent へ委譲し、それ以外は None を返す"""
+        if ep_num in (1, 2, 3):
+            from src.models.opening_booster import OpeningEpisodeConfig
+            config = OpeningEpisodeConfig(
+                ep_num=ep_num,
+                target_word_count=target_word_count,
+                inciting_incident=inciting_incident or f"第{ep_num}話の理不尽と事件",
+                payoff_moment=payoff_moment or f"第{ep_num}話の転機と覚醒",
+            )
+            return await self.opening_booster.generate_opening_episode(
+                config=config,
+                protagonist_name=protagonist_name,
+                genre=genre,
+            )
+        return None
 
     async def generate_episodes_pipeline(
         self,
@@ -221,3 +253,6 @@ class WritingAgent:
             import_text=import_text,
             do_refine=do_refine,
         )
+
+    async def generate_opening_if_applicable(self, *args, **kwargs) -> Any:
+        return await self.generator.generate_opening_if_applicable(*args, **kwargs)

@@ -46,6 +46,29 @@ class PromptComposer:
                 )
 
         script_text = context.get("script", "")
+        # Get foreshadowing context if context_retriever is available on the agent
+        foreshadowing_context = ""
+        context_retriever = getattr(self.agent, "context_retriever", None)
+        if context_retriever and book_id is not None:
+            plot_data = context.get("plot", {})
+            plot_outline = plot_data.get("detailed_blueprint", "")
+            if not plot_outline:
+                plot_outline = plot_data.get("summary", "")
+            character_names = []  # We don't have character names easily, so pass empty list
+            try:
+                context_dict = context_retriever.retrieve_writing_context(
+                    book_id=book_id,
+                    current_ep=ep_num,
+                    plot_outline=plot_outline,
+                    character_names=character_names,
+                )
+                foreshadowing_context = context_retriever.format_context_for_prompt(context_dict)
+            except Exception as e:
+                if hasattr(self.agent, "logger"):
+                    self.agent.logger.warning(
+                        f"Ep.{ep_num}: Failed to get foreshadowing context: {e}"
+                    )
+                foreshadowing_context = ""
         prompt = await getattr(self.agent, "prompt_manager").build_final_writing_prompt(
             ep_num=ep_num,
             plot_data=plot_data,
@@ -59,6 +82,7 @@ class PromptComposer:
             dialogue_profiles=context.get("dialogue_profiles", {}),
             density_level=context.get("density_level", "Standard"),
             style_tag=context.get("style_tag"),
+            foreshadowing_context=foreshadowing_context,
         )
 
         regeneration_directive = context.get("regeneration_directive")
@@ -71,5 +95,25 @@ class PromptComposer:
                 f"==================================================\n\n"
                 + prompt
             )
+
+        # PLAN 03: 生々しいエゴ・打算・身体反応の強制指示（AI優等生病の外科的切除）
+        try:
+            from pathlib import Path
+            import jinja2
+            from src.agents.context_builder_agent import resolve_character_flaw
+
+            char_flaw = context.get("character_flaw")
+            if not char_flaw:
+                char_data = context.get("character") or {"name": context.get("pov_character_name", "主人公")}
+                char_flaw = resolve_character_flaw(char_data)
+
+            tmpl_path = Path(__file__).resolve().parents[2] / "prompts" / "templates"
+            jenv = jinja2.Environment(loader=jinja2.FileSystemLoader(str(tmpl_path)))
+            tmpl = jenv.get_template("narrative/raw_emotion_instruction.j2")
+            emotion_instruction = tmpl.render(character_flaw=char_flaw)
+            prompt = emotion_instruction + "\n\n" + prompt
+        except Exception as e:
+            if hasattr(self.agent, "logger"):
+                self.agent.logger.warning("Failed to render raw_emotion_instruction: %s", e)
 
         return prompt

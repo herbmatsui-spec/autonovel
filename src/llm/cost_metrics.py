@@ -1,7 +1,6 @@
-from prometheus_client import Counter, Gauge, start_http_server
+from prometheus_client import start_http_server
 import time
 
-from .cost_budget_guard import CostBudgetGuard
 
 
 class CostMetrics:

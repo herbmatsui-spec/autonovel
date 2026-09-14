@@ -22,6 +22,9 @@
 【視点人物 (POV)】: {{ pov_character_name }}
 ※ {{ pov_character_name }} が知り得ない情報は地の文で記述せず、外部からの観察や推測として描写せよ。視点漏れ (POV Leak) を厳格に排除すること。
 {% endif %}
+{% if foreshadowing_context %}
+{{ foreshadowing_context }}
+{% endif %}
 
 【指令】
 {% if density_level == 'Extreme' %}

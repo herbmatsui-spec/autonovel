@@ -22,6 +22,8 @@ from src.agents.specialists.fallback_utils import (
     compute_coverage,
 )
 
+import re
+
 CONSISTENCY_SYSTEM_PROMPT = """あなたは小説の設定・論理一貫性（Consistency）を厳格に審査する専門編集オーディターです。
 与えられた「World Bible設定」と「執筆ドラフト本文」を照合し、以下の観点で論理矛盾を精査してください:
 1. キャラクターの生死・負傷・能力制限の整合性（死亡したはずの人物の理由なき再登場等）
@@ -52,6 +54,7 @@ class ConsistencyAuditor(SpecialistAuditor):
     async def audit(self, ctx: dict[str, Any]) -> SpecialistAuditResult:
         draft = ctx.get("draft_text", "") or ""
         bible = ctx.get("world_bible_snapshot") or {}
+        foreshadowing_context = ctx.get("foreshadowing_context", "")
         if not draft:
             return SpecialistAuditResult(
                 "consistency", 0.0,
@@ -65,7 +68,6 @@ class ConsistencyAuditor(SpecialistAuditor):
         bible_summary = self._summarize_bible(bible)
         
         # Extract entity keywords from bible summary to find relevant sections in long draft
-        import re
         keywords = re.findall(r"[ァ-ヴー]{2,}|[一-龥々]{2,}|[a-zA-Z0-9]{2,}", bible_summary) if bible_summary else []
         
         if len(draft) <= 3500:
@@ -87,6 +89,49 @@ class ConsistencyAuditor(SpecialistAuditor):
         )
         score, critique, suggestions, confidence, reasoning, raw_resp = judge_res[:6]
         actionable_diffs = judge_res[6] if len(judge_res) > 6 else []
+
+        # Foreshadowing consistency check
+        if foreshadowing_context:
+# Extract foreshadowing descriptions from the context
+            # Look for lines that start with "- **" and extract the description between the first and second "**"
+            # Example: "- **{fs.foreshadow_id}** (第{fs.introduced_in_ep}話提示 → 第{target}話回収予定): {fs.description} [キャラ: {', '.join(fs.related_characters) or 'なし'}]"
+            # We want to extract the description part before the first and second "**"
+            # We'll use a simple approach: split by lines and look for lines containing "**"
+            desc_lines = []
+            for line in foreshadowing_context.split('\n'):
+                if line.strip().startswith('- **'):
+                    # Extract the text between the first and second "**"
+                    parts = line.split('**')
+                    if len(parts) >= 3:
+                        # parts[0] is "- ", parts[1] is the foreshadow_id, parts[2] is the rest
+                        # The description is in parts[2] until the first " [" or the end of the string
+                        rest = parts[2]
+                        # Find the first " [" or end of line
+                        bracket_pos = rest.find(' [')
+                        if bracket_pos != -1:
+                            desc = rest[:bracket_pos].strip()
+                        else:
+                            desc = rest.strip()
+                        desc_lines.append(desc)
+            # Check if any of the descriptions appear in the draft (case-insensitive)
+            draft_lower = draft.lower()
+            found_any = False
+            for desc in desc_lines:
+                if desc.lower() in draft_lower:
+                    found_any = True
+                    break
+            if not found_any and desc_lines:
+                # Reduce score and add an actionable diff
+                score = max(0.0, score - 20.0)  # Reduce by 20 points
+                critique = f"【フォローアップ】{critique} 指摘された伏線が本文に反映されていない可能性があります。"
+                actionable_diffs.append(
+                    ActionableDiff(
+                        location="伏線反映箇所",
+                        original_quote="伏線の反映が不十分な箇所",
+                        improved_suggestion="伏線のキーワードや説明を本文に適切に組み込んでください。",
+                        rationale="伏線は物語の整合性のために適切に反映される必要があります。",
+                    )
+                )
 
         return SpecialistAuditResult(
             specialist_name="consistency",
@@ -132,7 +177,6 @@ class ConsistencyAuditor(SpecialistAuditor):
         diffs: list[ActionableDiff] = []
 
         # 死亡キャラの再登場チェック
-        import re
         chars = bible.get("characters", [])
         if isinstance(chars, list):
             for c in chars:

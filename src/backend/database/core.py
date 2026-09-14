@@ -90,7 +90,9 @@ class WorkspaceManager:
 # ==========================================
 # DatabaseManager（低レベルSQLite/PostgreSQL操作 - SQLAlchemy コネクションプール版）
 # ==========================================
+import os
 from sqlalchemy import event
+from sqlalchemy.pool import NullPool
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 
@@ -151,7 +153,9 @@ class DatabaseManager:
             "connect_args": connect_args,
             "pool_pre_ping": True,
         }
-        if not is_sqlite:
+        if os.getenv("USE_NULL_POOL", "0") in ("1", "true", "True"):
+            engine_kwargs["poolclass"] = NullPool
+        elif not is_sqlite:
             engine_kwargs.update(
                 {
                     "pool_size": pool_size,
@@ -357,6 +361,30 @@ def init_db(db_path: str = ""):
     engine_obj = create_engine(sync_url)
     # BackendBase と InfraBase は同一の基底メタデータを共有しているため 1 回で同期
     InfraBase.metadata.create_all(engine_obj)
+
+    # 初回起動時に作品が存在しない場合は初期作品を自動シード
+    try:
+        from sqlalchemy.orm import Session
+        from src.backend.database.models import Book
+        with Session(engine_obj) as session:
+            existing_count = session.query(Book).count()
+            if existing_count == 0:
+                default_book = Book(
+                    id=1,
+                    title="はじめての物語",
+                    genre="ハイファンタジー (R15)",
+                    concept="古代魔導剣術を受け継いだ少年の冒険譚",
+                    synopsis="薄暗いダンジョンの中、15歳の青年アルトは古代の剣を手に取った。",
+                    catchcopy="運命の剣が、少年の世界を変える。",
+                    target_eps=10,
+                    mode="studio",
+                    status="draft",
+                )
+                session.add(default_book)
+                session.commit()
+                logger.info("[init_db] Seeded initial default book (id=1)")
+    except Exception as e:
+        logger.warning("[init_db] Failed to seed default book: %s", e)
 
 
 def get_db_manager() -> DatabaseManager:

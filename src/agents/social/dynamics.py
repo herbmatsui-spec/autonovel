@@ -2,8 +2,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from src.agents.social.models import JournalEntry, SocialComment, RelationshipMetrics
 from src.agents.social.manager import SocialInteractionManager

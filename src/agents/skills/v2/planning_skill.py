@@ -31,7 +31,7 @@ class PlanningSkillAgent(SkillAgent):
         if ctx.artifacts.get("regeneration_focus"):
             # 再生成時はアーク構成をより詳細に分析
             ctx.artifacts["planning_v2_enhanced"] = True
-            logger.info(f"PlanningSkillAgent v2: 再生成モード - アーク構成最適化有効")
+            logger.info("PlanningSkillAgent v2: 再生成モード - アーク構成最適化有効")
     
     async def _v2_post_process(self, ctx: AgentContext, result: AgentResult):
         """v2 固有の後処理: メトリクス記録"""

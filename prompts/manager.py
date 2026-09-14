@@ -94,6 +94,48 @@ class PromptManager:
             book_id=book_id,
         )
 
+    async def build_viral_title_prompt(
+        self,
+        genre: str,
+        core_concept: str,
+        protagonist_benefit: str,
+        antagonist_misfortune: str = "",
+        candidate_count: int = 30,
+        book_id: Optional[int] = None,
+    ) -> str:
+        return await self.render_async(
+            "viral_title_generation.j2",
+            {
+                "genre": genre,
+                "core_concept": core_concept,
+                "protagonist_benefit": protagonist_benefit,
+                "antagonist_misfortune": antagonist_misfortune,
+                "candidate_count": candidate_count,
+            },
+            book_id=book_id,
+        )
+
+    async def build_viral_synopsis_prompt(
+        self,
+        selected_title: str,
+        genre: str,
+        core_concept: str,
+        protagonist_benefit: str,
+        antagonist_misfortune: str = "",
+        book_id: Optional[int] = None,
+    ) -> str:
+        return await self.render_async(
+            "viral_synopsis_generation.j2",
+            {
+                "selected_title": selected_title,
+                "genre": genre,
+                "core_concept": core_concept,
+                "protagonist_benefit": protagonist_benefit,
+                "antagonist_misfortune": antagonist_misfortune,
+            },
+            book_id=book_id,
+        )
+
     async def build_plot_integrity_audit_prompt(
         self,
         synopsis: str,
@@ -262,28 +304,28 @@ class PromptManager:
             book_id=book_id,
         )
 
-    def get_style_instruction(self, style_key: str, book_id: Optional[int] = None) -> str:
+    async def build_character_constraints(self, character: Any) -> str:
         """
-        スタイルInstructionを取得する（ 非推奨: Jinja2テンプレート化予定）
-
-        Args:
-            style_key: スタイルキー
-            book_id: 書籍ID
-
-        Returns:
-            空文字列（テンプレート実装までの一時的な返り値）
-
-        .. deprecated::
-            このメソッドは非推奨です。Jinja2テンプレートを使用して同等の機能を実装予定です。
+        キャラクターボイス制約をプロンプト用に構築する
         """
-        import warnings
+        from src.models.character_voice_profile import CharacterVoiceProfile
 
-        warnings.warn(
-            "get_style_instructionは非推奨です。テンプレート化された実装を使用してください。",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return ""
+        # キャラクターからボイスプロファイルを取得（JSONとして保存されている想定）
+        # キャラクターモデルから voice_profile_json を取得する必要がある
+        voice_profile_json = getattr(character, "voice_profile_json", None)
+        if not voice_profile_json:
+            return ""
+
+        profile = CharacterVoiceProfile(**voice_profile_json)
+
+        return f"""
+【ダイアログ・プロファイル: {profile.character_name}】
+- 一人称: {', '.join(profile.first_person)}
+- 二人称: {', '.join(profile.second_person)}
+- 語尾制約: {', '.join(profile.endings)}
+- 禁止語彙: {', '.join(profile.forbidden_words)}
+- 口癖: {', '.join(profile.catchphrases)}
+"""
 
     async def build_global_repair_prompt(
         self,
@@ -647,6 +689,7 @@ class PromptManager:
         script_text: str,
         target_word_count: int,
         book_id: Optional[int] = None,
+        foreshadowing_context: str = "",
         **kwargs: Any,
     ) -> str:
         scenes_data = plot_data.get("scenes", [])
@@ -694,6 +737,7 @@ class PromptManager:
             "blueprint": blueprint,
             "target_word_count": target_word_count,
             "tone_inst": tone_inst,
+            "foreshadowing_context": foreshadowing_context,
             "CONTENT_SEPARATOR": "---",
             "dialogue_profiles": kwargs.get("dialogue_profiles", {}),
         }

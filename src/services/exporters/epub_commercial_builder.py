@@ -1,7 +1,7 @@
 import uuid
 from typing import Any
 from src.services.exporters.epub_content_builder import EpubContentBuilder
-from src.services.exporters.epub_manifest_builder import EpubManifestBuilder
+from src.services.exporters.epub_manifest_builder import EpubManifestBuilder, EpubIllustrationItem
 from src.services.exporters.pure_epub_packer import PureEpubPacker
 from src.services.exporters.vertical_css_templates import VERTICAL_EPUB_CSS
 
@@ -83,11 +83,64 @@ class CommercialEpubBuilder:
             spine_items.append(chap_id)
             chapter_manifest_meta.append({"title": chap_title, "href": chap_file})
 
+        # 4. 挿絵の処理 (Step 30-34)
+        illustrations: list[EpubIllustrationItem] = []
+        if images:
+            used_ids = set()
+            used_filenames = set()
+            for i, img in enumerate(images):
+                if isinstance(img, EpubIllustrationItem):
+                    item = img
+                elif isinstance(img, dict):
+                    raw_id = str(img.get("image_id") or f"ill-{i+1}")
+                    raw_filename = str(img.get("file_name") or f"illustration_{i+1}.jpg")
+                    item = EpubIllustrationItem(
+                        image_id=raw_id,
+                        image_bytes=img.get("image_bytes") or b"",
+                        file_name=raw_filename,
+                        media_type=img.get("media_type", "image/jpeg"),
+                        position=img.get("position", "chapter_start"),
+                        chapter_index=img.get("chapter_index"),
+                        caption=img.get("caption", ""),
+                    )
+                else:
+                    continue
+
+                if not item.image_bytes:
+                    continue
+
+                # ID およびファイル名の衝突防止サニタイズ (Step 34)
+                safe_id = item.image_id
+                count = 1
+                while safe_id in used_ids:
+                    safe_id = f"{item.image_id}_{count}"
+                    count += 1
+                used_ids.add(safe_id)
+                item.image_id = safe_id
+
+                safe_fn = item.file_name
+                count = 1
+                while safe_fn in used_filenames:
+                    stem = safe_fn.rsplit(".", 1)[0] if "." in safe_fn else safe_fn
+                    ext = safe_fn.rsplit(".", 1)[1] if "." in safe_fn else "jpg"
+                    safe_fn = f"{stem}_{count}.{ext}"
+                    count += 1
+                used_filenames.add(safe_fn)
+                item.file_name = safe_fn
+
+                # 画像バイナリのZIPパッケージ追加 (Step 31)
+                packer.add_file(f"item/images/{item.file_name}", item.image_bytes)
+                illustrations.append(item)
+
         # 4. ナビゲーション文書 (nav.xhtml) & NCX (toc.ncx)
+        # 挿絵ページを目次から除外 (Step 29)
+        illustration_hrefs = {f"xhtml/ill-{ill.image_id}.xhtml" for ill in illustrations}
+
         nav_xhtml = EpubManifestBuilder.build_nav_xhtml(
             title=title,
             chapters=chapter_manifest_meta,
             css_rel_path="style/vertical.css",
+            exclude_hrefs=illustration_hrefs,
         )
         packer.add_text_file("item/nav.xhtml", nav_xhtml)
 
@@ -95,8 +148,26 @@ class CommercialEpubBuilder:
             book_uuid=book_uuid,
             title=title,
             chapters=chapter_manifest_meta,
+            exclude_hrefs=illustration_hrefs,
         )
         packer.add_text_file("item/toc.ncx", toc_ncx)
+
+        # 5. 口絵・章間挿絵ページの生成とマニフェスト登録 (Step 32, 33)
+        for ill in illustrations:
+            ill_xhtml = EpubContentBuilder.build_illustration_xhtml(
+                image_rel_path=f"../images/{ill.file_name}",
+                title=ill.caption or "挿絵",
+                caption=ill.caption,
+                css_rel_path="../style/vertical.css",
+            )
+            ill_file = f"xhtml/ill-{ill.image_id}.xhtml"
+            packer.add_text_file(f"item/{ill_file}", ill_xhtml)
+            manifest_items.append({
+                "id": f"p-ill-{ill.image_id}",
+                "href": ill_file,
+                "media-type": "application/xhtml+xml",
+            })
+            # Note: illustrations are inserted into spine via OPF builder
 
         # 5. OPF パッケージ
         standard_opf = EpubManifestBuilder.build_standard_opf(
@@ -107,6 +178,7 @@ class CommercialEpubBuilder:
             manifest_items=manifest_items,
             spine_items=spine_items,
             has_cover=has_cover,
+            illustrations=illustrations,
         )
         packer.add_text_file("item/standard.opf", standard_opf)
 

@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 class FullAutoWorkflow(BaseWorkflow):
     """かんたんモード: 企画・執筆・パッケージングの一連のフローを実行 (統合パイプライン版)"""
 
-    async def execute(self, reporter: StatusReporter, **kwargs) -> dict[str, Any]:
+    async def execute(self, reporter: StatusReporter, start_ep: int = 1, end_ep: int | None = None, **kwargs) -> dict[str, Any]:
         if not USE_UNIFIED:
             raise NotImplementedError(
                 "USE_UNIFIED_PIPELINE=0 is no longer supported. "
@@ -35,6 +35,8 @@ class FullAutoWorkflow(BaseWorkflow):
             )
 
         # 1. 統合パイプライン用 Context 構築
+        kwargs["start_ep"] = start_ep
+        kwargs["end_ep"] = end_ep
         ctx = map_fullauto_kwargs_to_context(kwargs)
 
         # 2. パイプライン構築・実行

@@ -9,7 +9,6 @@ across many detection calls and across processes.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any
 
 from src.config.anti_ai_config import AntiAIConfig
 from src.services.anti_ai.models import (

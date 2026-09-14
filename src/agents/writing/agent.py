@@ -4,6 +4,8 @@ import logging
 from typing import Any
 from src.agents.skill_base import SkillAgent
 from src.agents.orchestrator import AgentContext, AgentResult, AgentName
+from src.core.llm.types import LLMRequest, LLMResponse
+from src.core.llm.unified_interface import IUnifiedLLMClient
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +16,7 @@ class WritingAgent(SkillAgent):
     def __init__(
         self,
         repo: Any = None,
-        llm: Any = None,
+        llm: IUnifiedLLMClient | None = None,
         style_rag: Any = None,
         rag_prefetch: Any = None,
         pm: Any = None,
@@ -286,8 +288,8 @@ class WritingAgent(SkillAgent):
             rewrite_instructions.append("読者体験全般（フック・クリフハンガー・感情曲線）を向上させよ。")
 
         rewrite_prompt = (
-            f"あなたはプロのWeb小説作家兼編集者です。以下の本文を、指定された【書き直し指示】に従って推敲・改稿してください。\n\n"
-            f"【書き直し指示】\n" + "\n".join(f"- {inst}" for inst in rewrite_instructions) + "\n\n"
+            "あなたはプロのWeb小説作家兼編集者です。以下の本文を、指定された【書き直し指示】に従って推敲・改稿してください。\n\n"
+            "【書き直し指示】\n" + "\n".join(f"- {inst}" for inst in rewrite_instructions) + "\n\n"
             f"【制約事項】\n"
             f"- 前置きや解説（「はい」「以下が書き直しです」等）は一切出力せず、改稿後の小説本文のみを出力すること。\n"
             f"- 視点（一人称/三人称）や文体、登場人物の口調の一貫性を保つこと。\n\n"
@@ -303,22 +305,18 @@ class WritingAgent(SkillAgent):
         rewritten_text = ""
         if self.llm is not None:
             try:
-                if hasattr(self.llm, "generate_text"):
-                    res = self.llm.generate_text(
-                        prompt=rewrite_prompt,
-                        system_prompt="プロの小説家として、指示に従い本文を魅力的に改稿してください。解説や挨拶は含めず本文のみを出力してください。",
-                        max_tokens=max(2000, int(len(original_text) * 1.5)),
-                    )
-                    if inspect.isawaitable(res):
-                        rewritten_text = await res
-                    else:
-                        rewritten_text = str(res)
-                elif hasattr(self.llm, "generate"):
-                    res = self.llm.generate(rewrite_prompt)
-                    if inspect.isawaitable(res):
-                        rewritten_text = await res
-                    else:
-                        rewritten_text = str(res)
+                req = LLMRequest(
+                    prompt=rewrite_prompt,
+                    system_prompt="プロの小説家として、指示に従い本文を魅力的に改稿してください。解説や挨拶は含めず本文のみを出力してください。",
+                    temperature=0.7,
+                    max_tokens=max(2000, int(len(original_text) * 1.5)),
+                    model=None,
+                    json_mode=False,
+                    response_schema=None,
+                    extra_params={},
+                )
+                resp: LLMResponse = await self.llm.agenerate(req)
+                rewritten_text = resp.content
             except Exception as llm_err:
                 logger.warning(f"WritingAgent rewrite LLM error: {llm_err}")
 
@@ -432,8 +430,8 @@ class WritingAgent(SkillAgent):
                     rewrite_instructions.append(diff_line)
 
         rewrite_prompt = (
-            f"あなたはプロのWeb小説作家兼編集者です。以下の本文を、指定された【書き直し指示】に従って推敲・改稿してください。\n\n"
-            f"【書き直し指示】\n" + "\n".join(f"- {inst}" for inst in rewrite_instructions) + "\n\n"
+            "あなたはプロのWeb小説作家兼編集者です。以下の本文を、指定された【書き直し指示】に従って推敲・改稿してください。\n\n"
+            "【書き直し指示】\n" + "\n".join(f"- {inst}" for inst in rewrite_instructions) + "\n\n"
             f"【制約事項】\n"
             f"- 前置きや解説（「はい」「以下が書き直しです」等）は一切出力せず、改稿後の小説本文のみを出力すること。\n"
             f"- 視点（一人称/三人称）や文体、登場人物の口調の一貫性を保つこと。\n\n"
@@ -441,28 +439,22 @@ class WritingAgent(SkillAgent):
             f"【改稿後の本文】"
         )
 
-        start_time = time.perf_counter()
-        rewritten_text = ""
+        
 
         if self.llm is not None:
             try:
-                import inspect as inspect_mod
-                if hasattr(self.llm, "generate_text"):
-                    res = self.llm.generate_text(
-                        prompt=rewrite_prompt,
-                        system_prompt="プロの小説家として、指示に従い本文を魅力的に改稿してください。解説や挨拶は含めず本文のみを出力してください。",
-                        max_tokens=max(2000, int(len(original_text) * 1.5)),
-                    )
-                    if inspect_mod.isawaitable(res):
-                        rewritten_text = await res
-                    else:
-                        rewritten_text = str(res)
-                elif hasattr(self.llm, "generate"):
-                    res = self.llm.generate(rewrite_prompt)
-                    if inspect_mod.isawaitable(res):
-                        rewritten_text = await res
-                    else:
-                        rewritten_text = str(res)
+                req = LLMRequest(
+                    prompt=rewrite_prompt,
+                    system_prompt="プロの小説家として、指示に従い本文を魅力的に改稿してください。解説や挨拶は含めず本文のみを出力してください。",
+                    temperature=0.7,
+                    max_tokens=max(2000, int(len(original_text) * 1.5)),
+                    model=None,
+                    json_mode=False,
+                    response_schema=None,
+                    extra_params={},
+                )
+                resp: LLMResponse = await self.llm.agenerate(req)
+                rewritten_text = resp.content
             except Exception as llm_err:
                 logger.warning(f"WritingAgent rewrite_for_dimension LLM error: {llm_err}")
 

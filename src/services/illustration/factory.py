@@ -1,5 +1,4 @@
 import os
-from typing import Literal
 
 from .base import ImageGeneratorClient
 from .dalle_client import DalleClient

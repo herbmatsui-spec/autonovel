@@ -24,9 +24,22 @@ class LLMConfigOverride(BaseModel):
     provider: str | None = Field(default=None, description="gemini / openai / mock")
     api_key: str | None = Field(default=None, description="カスタムAPIキー")
     model_name: str | None = Field(
-        default=None, description="モデル名 (例: gemini-2.5-flash, gpt-4o-mini)"
+        default=None, description="全体既定モデル名 (例: gemini-2.5-flash, gpt-4o-mini)"
     )
     base_url: str | None = Field(default=None, description="OpenAI互換 Base URL")
+    model_planning: str | None = Field(
+        default=None, description="プロット・構成用モデル (例: gemini-2.5-flash)"
+    )
+    model_writing: str | None = Field(
+        default=None, description="本文執筆用モデル (例: gpt-4o, claude-3-5-sonnet)"
+    )
+    model_audit: str | None = Field(
+        default=None, description="校正・監査用モデル (例: gemini-2.5-flash)"
+    )
+    model_embedding: str | None = Field(
+        default=None, description="ベクトル検索・Embedding用モデル (例: text-embedding-3-small)"
+    )
+
 
 
 class EasyModeInput(BaseModel):
@@ -45,6 +58,8 @@ class EasyModeInput(BaseModel):
         default=None,
         description="既存作品に追加・更新する場合の作品ID。未指定時は新規採番して保存",
     )
+    start_ep: int = Field(default=1, ge=1, le=50, description="開始話数")
+    end_ep: int | None = Field(default=None, ge=1, le=50, description="終了話数（未指定時はtarget_episodesまで）")
 
 
 class StreamQueryInput(BaseModel):
@@ -196,6 +211,8 @@ class FullAutoRequest(BaseModel):
     )
     enable_audit: bool = Field(default=True, description="推敲監査を有効化")
     max_rewrites: int = Field(default=2, ge=0, le=5, description="最大リライト回数")
+    start_ep: int = Field(default=1, ge=1, le=50, description="開始話数")
+    end_ep: int | None = Field(default=None, ge=1, le=50, description="終了話数（未指定時はtarget_episodesまで）")
 
 
 __all__ = [

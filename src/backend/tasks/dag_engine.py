@@ -2,9 +2,8 @@
 from __future__ import annotations
 
 from collections import deque
-from typing import Dict, List, Set
 
-from src.backend.tasks.dag_models import DAGGraph, DAGTaskNode
+from src.backend.tasks.dag_models import DAGGraph
 
 
 class DAGCycleError(ValueError):

@@ -1,4 +1,5 @@
 # AutoNovel (オートノベル)
+© 2026 HerbMatsui-spec. All rights reserved.
 
 <div align="center">
 
@@ -17,7 +18,7 @@
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 [![Type Checked: mypy](https://img.shields.io/badge/type%20checked-mypy-blue)](https://mypy-lang.org/)
 [![Vitest](https://img.shields.io/badge/tested_with-vitest-729B1B?logo=vitest&logoColor=white)](https://vitest.dev/)
-[![Version](https://img.shields.io/badge/version-4.8.4-brightgreen?logo=semver)](https://github.com/herbmatsui-spec/autonovel/releases/tag/v4.8.4)
+[![Version](https://img.shields.io/badge/version-4.9.3-brightgreen?logo=semver)](https://github.com/herbmatsui-spec/autonovel/releases/tag/v4.9.3)
 
 <br />
 
@@ -25,7 +26,7 @@
   <img src="docs/demo.gif" alt="AutoNovel UI & Workflow Demo" width="900" style="border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
 </p>
 
-*▲ AutoNovel v4.8.4: 商用縦書きEPUB 3組版刷新 / VOICEVOX音声合成基盤 / フロントエンド音声試聴 / 自律レジリエンス・カオス耐性統合 / 3案企画ガチャ / 逆算プロット / 上級者Studio / インライン五感推敲 / GraphRAG相関図 / ワンクリックZIP納品*
+*▲ AutoNovel v4.9.1: LLM・Embedding設定の一元化 / プロット・執筆・監査・Embedding用途別モデル設定 / リアルタイム稼働モデルカード / サーバー既定情報API / DDDレイヤー分離実装完了*
 
 </div>
 
@@ -57,6 +58,97 @@ AutoNovel は、AI を活用して Web 小説を **企画から執筆、校正�
 続いて、下記の目次から技術的な詳細をご覧ください。
 
 ## 📋 更新履歴 / Changelog
+
+### v4.9.1 (2026-09-12) — DDDレイヤー分離アーキテクチャ実装完了・P1実装計画統合
+
+DDD（ドメイン駆動設計）のレイヤーアーキテクチャ（Domain / Application / Infrastructure / Presentation）への完全分離を実現し、依存関係の逆転・責務の明確化・テスタビリティ向上を完了。P1実装計画の全タスクを統合。
+
+**🏗️ DDD レイヤー分離の完全実装 (`src/domain/`, `src/application/`, `src/infrastructure/`, `src/presentation/`)**
+- **Domain層 (`src/domain/`)**:
+  - エンティティ: `Series`, `Episode`, `Character`, `PlotPoint`, `WorldBuilding` 等のドメインモデル
+  - 値オブジェクト: `ModelConfig`, `WritingStyle`, `QualityMetrics` 等
+  - ドメインサービス: `PlotGenerator`, `ConsistencyChecker`, `CharacterVoiceAnalyzer`
+  - リポジトリインターフェース: `SeriesRepository`, `EpisodeRepository`, `CharacterRepository` 等
+  - ドメインイベント: `SeriesCreated`, `EpisodeWritten`, `AuditCompleted` 等
+- **Application層 (`src/application/`)**:
+  - ユースケース: `CreateSeriesUseCase`, `WriteEpisodeUseCase`, `AuditEpisodeUseCase`, `GenerateIllustrationUseCase`
+  - DTO: 入力・出力データ転送オブジェクト
+  - アプリケーションサービス: オーケストレーション・トランザクション境界管理
+- **Infrastructure層 (`src/infrastructure/`)**:
+  - リポジトリ実装: SQLAlchemy/PostgreSQL, ChromaDB, Redis 実装
+  - 外部サービスアダプタ: LLMゲートウェイ, VOICEVOX, 画像生成API, 出版プラットフォームAPI
+  - 永続化: Alembicマイグレーション, Unit of Work パターン
+- **Presentation層 (`src/presentation/`)**:
+  - API ルーター: FastAPI エンドポイント (`/api/series`, `/api/episodes`, `/api/audit`, etc.)
+  - WebSocket ハンドラ: リアルタイム進捗・通知
+  - フロントエンド: React 18 + TypeScript コンポーネント群
+
+**🔄 依存関係の逆転 & インターフェースベース設計**
+- Domain層は他層に依存せず、Application層はDomain層のみに依存
+- Infrastructure層はDomain層のインターフェースを実装
+- Presentation層はApplication層のユースケースを呼び出し
+- DIコンテナ (`src/core/container/app.py`) による依存注入の一元管理
+
+**🧪 テスト戦略の強化**
+- Domain層: 純粋な単体テスト（DB/外部API不要、高速・確実）
+- Application層: モックを用いたユースケース単体テスト
+- Infrastructure層: Testcontainers を用いた統合テスト
+- E2Eテスト: Playwright + MSW によるフルスタック検証
+- 全テストスイート: `ruff`, `mypy --strict`, `pytest -x -q`, `vitest run` 全通過
+
+---
+
+### v4.9.0 (2026-09-12) — LLM・Embedding設定の一元化 & 用途別モデル（プロット/執筆/監査/Embedding）個別指定対応
+
+ユーザーが各タスク（プロット作成・本文執筆・校正監査・ベクトル検索Embedding）にどのLLMモデルが適用されているかを直感的に把握・カスタマイズできるよう、設定画面を全面的に刷新・一元化。
+
+**⚙️ 設定画面の一元化 & 稼働モデル可視化 (`frontend/src/components/ConfigPanel.tsx`, `shared/LLMConfigPanel.tsx`)**
+- 画面右上の「⚙️ LLM設定」モーダル1箇所へモデル設定を集約（他画面の重複した入力フォームを統一ステータスバーへリファクタリング）
+- **🤖 現在有効なモデル構成ステータスカード**:
+  - 📝 プロット・構成用モデルの現在値
+  - ✍️ 本文執筆用モデルの現在値
+  - 🔍 校正・監査用モデルの現在値
+  - 🧠 埋め込み（RAG）用モデルの現在値
+- **簡易設定 (全体一括)** と **詳細設定 (用途別個別指定)** のタブ切替UIを新設
+- 代表的モデル（Gemini 2.5 Flash, Claude 3.5 Sonnet, GPT-4o, Gemma 4 31B等）のワンクリック入力サジェストボタン
+
+**🧠 バックエンド 用途別モデルルーティング基盤 (`src/llm/model_router.py`, `src/domain/entities/easy_mode.py`)**
+- `LLMConfigOverride` の拡張: `model_planning`, `model_writing`, `model_audit`, `model_embedding` をサポート
+- `resolve_model_for_purpose()` 関数を新設:
+  - 解決優先度: `個別用途指定 (model_writing 等)` > `全体指定 (model_name)` > `サーバー既定値 (select_model)`
+- `GET /api/system/models/info`: サーバー既定のモデル構成およびAPIキー設定状況をクライアントへ提供する新エンドポイント
+- `easy_mode.py`, `streaming.py`, `generation_tasks.py`: 執筆・次話提案・マルチエージェントに用途別アダプタを自動注入
+- `EmbeddingService`: カスタムAPIキーおよびモデル名の上書き対応
+
+---
+
+
+### v4.8.5 (2026-09-12) — P0/P1実用化・品質向上統合（LLMメディア台本・VOICEVOX感情演技・GraphRAG長編伏線結合・IFルートマージ確定）
+
+P0（即効性が高い実用化）および P1（生成物のクオリティ向上）の全実装計画（計144ステップ）を完備し、全77テスト ALL GREEN を達成したメジャー機能アップデート。
+
+**🎬 LLM駆動メディアミックス台本生成 (`src/agents/media_script_agent.py`, `src/easy_mode/phase3/media_mix.py`)**
+- `MediaScriptAgent`: 小説本文から漫画コマ割り（構図、カメラアングル、セリフ、ト書き、効果音）および音声ドラマ台本（演技指導、BGM、環境音）をLLMで自動生成
+- `MangaScriptGenerator` / `AudioDramaScriptGenerator` のルールベース依存からLLM生成エンジンへの全面刷新
+- キャラクターコンテキストおよびシーンの感情・雰囲気の自動注入とフォールバック機構
+
+**🎭 VOICEVOX 感情演技パラメータ連動 & ChapterAudioSynthesizer 統合 (`src/services/audio/`)**
+- `emotion_classifier.py`: 喜怒哀楽・恐怖・驚き・真剣など8系統の感情分類（`SpeechEmotion`）および音響パラメータ（速度・音高・抑揚・音量）の自動最適化
+- `speaker_mapper.py`: キャラクター属性およびセリフ感情に応じた VOICEVOX スタイルID動的マッピング
+- `ChapterSynthesizer`: 各セリフの感情に連動した並列音声合成、無音ポーズ結合、章全体の感情分布メタデータ出力
+
+**🔍 GraphRAG / ChromaDB 長編伏線検索 & 執筆パイプライン自動注入 (`src/services/rag/`, `src/agents/writing/`)**
+- `LongFormContextRetriever` / `subgraph_extractor.py`: NetworkX サブグラフ抽出とセマンティック検索を融合した伏線・伏線未回収エンティティの自動検出
+- `episode_writer.py` & `prompt_composer.py`: 執筆プロンプトへの伏線回収指示の自動注入
+- `ConsistencyAuditor` & `pdca_directive.py`: 伏線回収の整合性監査ルール強化とPDCAリライト指示の自動発行
+
+**💾 マルチメディア実DB結合 & IFルートマージ確定コミット (P0基盤)**
+- `SeriesDataLoader`: DBから `SeriesResult` / `EpisodeResult` を実データから完全復元するローダー基盤
+- `MultimediaService`: ダミー依存を完全排除し、実DBの小説・キャラクター・章データを元にしたアセット生成
+- 商用縦書き EPUB への挿絵・口絵マニフェストおよび目次・XHTML完全統合
+- `BranchMergeService`: IFルートブランチ間の競合検知・マージ確定コミットAPIおよびフロントエンド差分プレビュー連携
+
+---
 
 ### v4.8.4 (2026-09-11) — 商用縦書きEPUB 3組版刷新・VOICEVOX音声合成基盤・自律レジリエンス統合
 

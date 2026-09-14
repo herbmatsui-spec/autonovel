@@ -66,6 +66,12 @@
 - リクエストボディ: `BranchMergeRequest` (source_branch_id, target_branch_id, merge_ep_num, name?)
 - レスポンス形式: マージ可能かどうか、コンフリクトチャンク、マージ後の内容（コンフリクトがない場合）
 
+### POST `/api/branches/{book_id}/merge/commit` (P0 Step 55 実装完了)
+- 競合解決済みテキスト群を受け取り、ターゲットブランチの章テーブル (`chapters`) および IF グラフ (`BranchGraph`) をアトミックに確定更新
+- EventBus への `branch.merged` イベント発行によるリアルタイム連携
+- リクエストボディ: `BranchMergeCommitRequest` (source_branch_id, target_branch_id, merge_ep_num, resolved_chapters, commit_message)
+- レスポンス形式: `BranchMergeCommitResponse` (success, target_branch_id, updated_chapters_count, committed_at)
+
 ## 依存関係
 - frontend:
   - reactflow@11.11.4 (ブランチツリー可視化)
@@ -79,17 +85,14 @@
 2. もう一方のブランチを選択
 3. 章番号を指定して「差分表示」または「マージプレビュー」ボタンをクリック
 4. 差分ビューアで章の違いを確認
-5. マージプレビューでコンフリクトを解決し、マージを実行
+5. マージプレビューでコンフリクトを解決し、マージ確定コミットを実行
 
 ## 実装完了ステータス
-✅ 全40ステップが完了しました
-- バックエンドAPI: 3つの新エンドポイントを追加
-- フロントエンドコンポーネント: 7つの新コンポーネントを作成
-- フロントエンドフック: 3つの新カスタムフックを作成
-- ユーティリティ: 常用関数と型定義を作成
-- スタイリング: 基本的なレスポンシブデザインを実装
+✅ P0 マージ確定コミットエンジン統合完了
+- バックエンドAPI: `POST /api/branches/{book_id}/merge/commit` を追加
+- `BranchMergeService`: アトミックトランザクションによる章コンテンツ更新 & IF グラフ MERGE ノード永続化
+- ロールバック保証: 単体テストにて異常時の完全ロールバックを検証済み
 
 ## 注意事項
-- 実際のプロダクション使用には、さらにスタイリングとアクセシビリティの改善が必要です
 - 差分アルゴリズムは現在簡易的な実装です；より高度な差分表示にはライブラリの使用を検討してください
-- マージプレビューは現在シミュレーションです；実際のマージ処理は別途バックエンドエンドポイントを呼び出す必要があります
+- マージ確定コミットAPIにより、プレビュー後の確定マージがアトミックに永続化されます

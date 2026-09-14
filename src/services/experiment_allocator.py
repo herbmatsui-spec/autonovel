@@ -11,7 +11,6 @@ import logging
 from typing import Any
 
 from src.config.weight_variants import (
-    list_variants,
     select_variant_for_genre,
     WEIGHT_VARIANTS,
 )

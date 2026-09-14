@@ -13,6 +13,12 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any
 
+import logging
+import re
+
+from src.core.llm.types import LLMRequest
+from src.core.llm.unified_interface import IUnifiedLLMClient
+
 
 class LLMUnavailableError(RuntimeError):
     """Raised by an LLM-using specialist when the LLM is down. The
@@ -137,7 +143,6 @@ def parse_actionable_diffs(raw_diffs: Any) -> list[ActionableDiff]:
 def parse_audit_response_json(text_resp: str) -> tuple[float, str, list[str], float, str, list[ActionableDiff]]:
     """Robustly extract and parse audit fields from arbitrary LLM text."""
     import json
-    import re
 
     score = 50.0
     critique = ""
@@ -277,7 +282,6 @@ class SpecialistAuditor(ABC):
             result = await self.audit(ctx)
             # Auto-fallback if LLM confidence is too low
             if result.confidence < self.CONFIDENCE_THRESHOLD:
-                import logging
                 logger = logging.getLogger(__name__)
                 logger.warning(
                     f"{self.specialist_name}: low confidence {result.confidence:.2f} "
@@ -330,12 +334,14 @@ class SpecialistAuditor(ABC):
         Forces structured evaluation and returns (score, critique, suggestions, confidence, reasoning, raw, actionable_diffs).
         Raises LLMUnavailableError if LLM is missing or call fails.
         """
+        # Resolve LLM if not set
         llm = self.llm
         if llm is None:
-            llm = self._resolve_llm()
+            llm = await self._resolve_llm()
         if llm is None:
             raise LLMUnavailableError("LLM client is not configured on specialist")
 
+        # Build the user prompt (including anchor preset and JSON instruction)
         full_prompt = prompt
         if system_prompt:
             full_prompt = f"【システム役割】\n{system_prompt}\n\n{prompt}"
@@ -373,34 +379,59 @@ class SpecialistAuditor(ABC):
         if "必ず以下のJSON形式" not in full_prompt:
             full_prompt += instruction_suffix
 
-        import inspect
-        import json
-        import re
-        import statistics
+        # Now we have the full prompt (which includes system prompt, anchor, and JSON instruction).
+        # However, for the unified LLM client, we want to separate system prompt and user prompt.
+        # We'll extract the system prompt from the full_prompt if it was added, but note that
+        # the system_prompt variable already contains the system prompt (if any).
+        # The full_prompt currently is: [system_prompt header] + [original prompt] + [anchor] + [JSON instruction]
+        # We want to set:
+        #   system_prompt = system_prompt (the one passed in, or empty)
+        #   user_prompt = original prompt + anchor + JSON instruction
+        # But note: the anchor and JSON instruction are part of the user prompt from the LLM's perspective.
+        # We'll reconstruct the user prompt without the system prefix.
 
-        async def _single_judge(p: str) -> tuple[float, str, list[str], float, str, str, list[ActionableDiff]]:
-            """Single LLM call returning parsed result."""
-            try:
-                if hasattr(self.llm, "ainvoke"):
-                    raw = self.llm.ainvoke(p)
-                elif hasattr(self.llm, "generate"):
-                    raw = self.llm.generate(p)
-                elif hasattr(self.llm, "invoke"):
-                    raw = self.llm.invoke(p)
-                elif callable(self.llm):
-                    raw = self.llm(p)
+        # If a system_prompt was provided, we remove it from the beginning of full_prompt.
+        if system_prompt:
+            # The full_prompt starts with "【システム役割】\n{system_prompt}\n\n{original prompt}..."
+            # We want to remove the system prefix.
+            prefix = f"【システム役割】\n{system_prompt}\n\n"
+            if full_prompt.startswith(prefix):
+                user_prompt = full_prompt[len(prefix):]
+            else:
+                # Fallback: we assume the system_prompt is at the start and remove it.
+                # This is a bit fragile, but we'll do our best.
+                user_prompt = full_prompt
+        else:
+            user_prompt = full_prompt
+
+        # Create the LLM request
+        req = LLMRequest(
+            prompt=user_prompt,
+            system_prompt=system_prompt or "",
+            temperature=0.7,  # Default temperature
+            max_tokens=None,  # Let the LLM client decide
+            model=None,       # Let the LLM client decide
+            json_mode=True,   # We are asking for JSON output
+            response_schema=None,
+            extra_params={},
+        )
+
+        # Single judge function that uses the unified LLM client
+        async def _single_judge() -> tuple[float, str, list[str], float, str, str, list[ActionableDiff]]:
+            # Ensure the llm is an IUnifiedLLMClient (or at least has agenerate)
+            if not isinstance(llm, IUnifiedLLMClient):
+                # If it's not, we try to call agenerate anyway if it exists
+                if hasattr(llm, "agenerate"):
+                    pass
                 else:
-                    raise LLMUnavailableError(f"Unsupported LLM interface: {type(self.llm)}")
-
-                if inspect.isawaitable(raw):
-                    raw = await raw
-
-                text_resp = str(getattr(raw, "content", raw)).strip()
+                    raise LLMUnavailableError(f"LLM does not have agenerate method: {type(llm)}")
+            try:
+                resp: LLMResponse = await llm.agenerate(req)
+                text_resp = resp.content.strip()
+                if not text_resp:
+                    raise LLMUnavailableError("LLM returned empty response")
                 score, critique, suggestions, confidence, reasoning, actionable_diffs = parse_audit_response_json(text_resp)
                 return score, critique, suggestions, confidence, reasoning, text_resp, actionable_diffs
-
-            except LLMUnavailableError:
-                raise
             except Exception as e:
                 raise LLMUnavailableError(f"LLM call failed: {e}") from e
 
@@ -414,7 +445,7 @@ class SpecialistAuditor(ABC):
         all_diffs: list[ActionableDiff] = []
 
         for _ in range(self.LLM_SAMPLE_COUNT):
-            sc, cr, sg, cf, reas, raw, diffs = await _single_judge(full_prompt)
+            sc, cr, sg, cf, reas, raw, diffs = await _single_judge()
             scores.append(sc)
             critiques.append(cr)
             suggestions_list.append(sg)
@@ -426,6 +457,7 @@ class SpecialistAuditor(ABC):
 
         # Check variance
         if len(scores) >= 2:
+            import statistics
             stdev = statistics.stdev(scores)
             if stdev > self.LLM_MAX_SCORE_STDEV:
                 raise LLMUnavailableError(
@@ -434,8 +466,8 @@ class SpecialistAuditor(ABC):
                 )
 
         # Return average score, first critique/suggestions, average confidence, combined reasoning
-        avg_score = statistics.mean(scores)
-        avg_confidence = statistics.mean(confidences)
+        avg_score = sum(scores) / len(scores)
+        avg_confidence = sum(confidences) / len(confidences)
         combined_reasoning = " | ".join(reasonings[:3])  # Limit to first 3
         combined_raw = " || ".join(raw_responses[:2])  # Limit to first 2
 
@@ -457,4 +489,4 @@ __all__ = [
     "LLMUnavailableError",
     "parse_actionable_diffs",
     "parse_audit_response_json",
-]
+]

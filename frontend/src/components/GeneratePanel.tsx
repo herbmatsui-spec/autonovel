@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNovelContext } from "../context/NovelContext";
+import { useToast } from "../hooks/useToast";
 import { useNovelGeneration } from "../hooks/useNovelGeneration";
 import { useStreamingWriter } from "../hooks/useStreamingWriter";
 import { useSnapshotHistory } from "../hooks/useSnapshotHistory";
@@ -16,6 +17,10 @@ import { StyleComparisonModal } from "./style/StyleComparisonModal";
 import SimpleModePanel from "./generate/SimpleModePanel";
 import ReverseModePanel from "./generate/ReverseModePanel";
 import OrchestratedModePanel from "./generate/OrchestratedModePanel";
+import { GachaModal } from "./generate/GachaModal";
+import { DigestModal } from "./generate/DigestModal";
+import { PDCALiveMonitor } from "./studio/PDCALiveMonitor";
+import { DAGLiveTracker } from "./studio/DAGLiveTracker";
 
 interface GeneratePanelProps {
   onGenerated?: (output: string, suggestions: string[]) => void;
@@ -23,6 +28,7 @@ interface GeneratePanelProps {
 }
 
 export default function GeneratePanel({ onGenerated, onMessage }: GeneratePanelProps) {
+  const { addToast } = useToast();
   const {
     character,
     setCharacter,
@@ -102,9 +108,11 @@ export default function GeneratePanel({ onGenerated, onMessage }: GeneratePanelP
 
   const [mode, setMode] = useState<'simple' | 'reverse' | 'orchestrated'>('simple');
   const [showGachaModal, setShowGachaModal] = useState(false);
+  const [showDigestModal, setShowDigestModal] = useState(false);
 
   const [gachaLoading, setGachaLoading] = useState(false);
   const [gachaResult, setGachaResult] = useState<GachaResponse | null>(null);
+  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [digestLoading, setDigestLoading] = useState(false);
   const [digestResult, setDigestResult] = useState<DigestResponse | null>(null);
 
@@ -146,15 +154,70 @@ export default function GeneratePanel({ onGenerated, onMessage }: GeneratePanelP
   };
 
   const handleSelectGachaPlan = (plan: GachaPlan) => {
-    // Implementation placeholder
+    // 1. ガチャの結果をキャラクター設定に反映
+    setCharacter((prev) => ({
+      ...prev,
+      personality: `${prev.personality}\n${plan.protagonist_summary}`.trim(),
+    }));
+
+    // 2. 選択したプランの方向性を本文のシードとして挿入
+    const seedText = `【プラン: ${plan.title}】\n概要: ${plan.logline}\n魅力点: ${plan.charm_point}`;
+    setCurrentChapterText((prev) => (prev ? `${prev}\n\n${seedText}` : seedText));
+
+    // 3. モーダルを閉じる
+    setShowGachaModal(false);
+
+    // 4. ステート反映後に生成を開始 (少しだけ遅延させて context 更新を待つ)
+    setTimeout(() => {
+      startGeneration();
+    }, 100);
   };
 
-  const handleRunGacha = () => {
-    // Implementation placeholder
+  const handleRunGacha = async () => {
+    setGachaLoading(true);
+    try {
+      const response = await generateGachaPlans({
+        genre: character.genre,
+        keywords: [], // 将来的にキーワード入力欄を追加することを想定
+      });
+      setGachaResult(response);
+      setShowGachaModal(true);
+      addToast("企画ガチャの生成が完了しました。3案から選択してください。", "success");
+    } catch (error) {
+      console.error("Gacha generation failed:", error);
+      addToast("ガチャの生成に失敗しました。しばらくしてから再試行してください。", "error");
+    } finally {
+      setGachaLoading(false);
+    }
   };
 
-  const handleRunDigest = () => {
-    // Implementation placeholder
+  const handleRunDigest = async () => {
+    if (!gachaResult) {
+      addToast("先にガチャを回してプランを生成してください。", "info");
+      return;
+    }
+
+    const planId = selectedPlanId || gachaResult.plans[0]?.plan_id;
+    if (!planId) {
+      addToast("利用可能なプランが見つかりませんでした。", "error");
+      return;
+    }
+
+    setDigestLoading(true);
+    try {
+      const response = await generateDigest({
+        request_id: gachaResult.request_id,
+        selected_plan_id: planId,
+      });
+      setDigestResult(response);
+      setShowDigestModal(true);
+      addToast("ダイジェストの生成が完了しました。", "success");
+    } catch (error) {
+      console.error("Digest generation failed:", error);
+      addToast("ダイジェストの生成に失敗しました。しばらくしてから再試行してください。", "error");
+    } finally {
+      setDigestLoading(false);
+    }
   };
 
   const handleRunDistill = () => {
@@ -203,7 +266,11 @@ export default function GeneratePanel({ onGenerated, onMessage }: GeneratePanelP
         setContentLengthLimit={setContentLengthLimit}
         currentChapterText={currentChapterText}
         setCurrentChapterText={setCurrentChapterText}
-onMessage={onMessage ?? (() => {})}
+        onMessage={onMessage ?? (() => {})}
+        onRunGacha={handleRunGacha}
+        onRunDigest={handleRunDigest}
+        isGachaLoading={gachaLoading}
+        isDigestLoading={digestLoading}
         />
       );
     }
@@ -266,7 +333,8 @@ onMessage={onMessage ?? (() => {})}
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+    <>
+      <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
       {chapterScore !== null && (
         <div
           style={{
@@ -332,6 +400,22 @@ onMessage={onMessage ?? (() => {})}
         </div>
       )}
       {renderContent()}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+        <PDCALiveMonitor bookId={selectedBookId} />
+        <DAGLiveTracker bookId={selectedBookId} />
+      </div>
     </div>
+      <GachaModal
+        isOpen={showGachaModal}
+        onClose={() => setShowGachaModal(false)}
+        plans={gachaResult?.plans || []}
+        onSelectPlan={handleSelectGachaPlan}
+      />
+      <DigestModal
+        isOpen={showDigestModal}
+        onClose={() => setShowDigestModal(false)}
+        digest={digestResult}
+      />
+    </>
   );
 }

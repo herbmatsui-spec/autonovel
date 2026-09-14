@@ -49,20 +49,23 @@ class EpubContentBuilder:
     def build_illustration_xhtml(
         image_rel_path: str,
         title: str = "挿絵",
+        caption: str = "",
         css_rel_path: str = "../style/vertical.css",
     ) -> str:
         """口絵・章間挿絵の専用見開きレイアウト (Step 46)。"""
+        caption_html = f'<p class="illustration-caption">{escape_xhtml_text(caption)}</p>' if caption else ""
         return f"""<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="ja">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="ja" class="vrtl">
 <head>
 <meta charset="UTF-8" />
 <title>{escape_xhtml_text(title)}</title>
 <link rel="stylesheet" type="text/css" href="{css_rel_path}" />
 </head>
-<body class="p-image">
-<div class="illustration-container">
-    <img src="{image_rel_path}" alt="{escape_xhtml_text(title)}" />
+<body class="p-illustration">
+<div class="illustration-wrap">
+    <img class="illustration-img" src="{image_rel_path}" alt="{escape_xhtml_text(title)}" style="max-width:100%;max-height:100vh;object-fit:contain;" />
 </div>
+{caption_html}
 </body>
 </html>"""

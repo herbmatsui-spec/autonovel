@@ -18,10 +18,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.backend.auth import validate_api_key_or_raise
 from src.backend.database.core import get_db_manager
 from src.backend.database.repositories.branch import BranchRepository
-from src.backend.database.repositories.chapter import ChapterRepository
+from src.backend.services.branch_merge_service import BranchMergeService
 from src.backend.schemas.branch import (
     BranchForkRequest,
     BranchGraphResponse,
+    BranchMergeCommitRequest,
+    BranchMergeCommitResponse,
     BranchMergeRequest,
     BranchResponse,
 )
@@ -342,6 +344,45 @@ async def preview_merge(
         "target_branch_id": payload.target_branch_id,
         "base_branch_id": target_branch.parent_id or None,
     }
+
+
+@router.post("/{book_id}/merge/commit", response_model=BranchMergeCommitResponse)
+async def commit_branch_merge(
+    book_id: int,
+    payload: BranchMergeCommitRequest,
+    session: AsyncSession = Depends(get_branch_session),
+) -> BranchMergeCommitResponse:
+    """解決済みテキストを受け取りマージを確定コミットする (Step 55)。"""
+    service = BranchMergeService(session)
+    try:
+        res = await service.commit_merge(book_id=book_id, request=payload)
+    except ValueError as val_err:
+        raise HTTPException(status_code=400, detail=str(val_err))
+    except Exception as exc:
+        logger.error("Merge commit error: %s", exc)
+        raise HTTPException(status_code=500, detail=f"Merge commit failed: {exc}")
+
+    # EventBus への branch.merged イベント発行 (Step 56)
+    try:
+        from src.agents.event_bus import AgentEvent, get_event_bus
+        bus = get_event_bus()
+        await bus.publish(
+            AgentEvent(
+                agent="branch.merged",
+                payload={
+                    "book_id": book_id,
+                    "source_branch_id": payload.source_branch_id,
+                    "target_branch_id": payload.target_branch_id,
+                    "updated_chapters_count": res.updated_chapters_count,
+                    "committed_at": res.committed_at,
+                },
+                correlation_id=str(book_id),
+            )
+        )
+    except Exception as ev_err:
+        logger.debug("EventBus publishing skipped or failed: %s", ev_err)
+
+    return res
 
 
 @router.put("/{book_id}/graph", response_model=BranchGraphResponse)

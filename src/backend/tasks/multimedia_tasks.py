@@ -11,48 +11,33 @@ logger = logging.getLogger(__name__)
 
 
 @huey.task(retries=2, retry_delay=10)
-def synthesize_chapter_audio_task(
+def generate_asset_pack_task(
     book_id: int,
-    episode_num: int,
-    chapter_text: str,
-    characters: list[str] | None = None,
+    include_if_routes: bool = True,
+    include_media_mix: bool = True,
+    include_ebook: bool = True,
+    include_audio: bool = True,
+    ebook_formats: list[str] = ["epub", "pdf"],
+    media_mix_formats: list[str] = ["manga"],
 ) -> dict[str, Any]:
-    """1話分の音声合成をバックグラウンド実行し、DBに永続化するタスク。"""
-    logger.info("synthesize_chapter_audio_task started for book_id=%d, episode_num=%d", book_id, episode_num)
-
-    async def _run() -> dict[str, Any]:
-        from src.services.audio.chapter_synthesizer import ChapterAudioSynthesizer
-        from src.backend.database.core import get_db_manager
-        from src.backend.database.models import AudioAssetModel
-
-        synth = ChapterAudioSynthesizer()
-        result = await synth.synthesize_chapter(
-            book_id=book_id,
-            episode_num=episode_num,
-            chapter_text=chapter_text,
-            characters=characters,
-        )
-
-        file_path = result.get("file_path")
-        if file_path:
-            db_mgr = get_db_manager()
-            async with db_mgr.session() as session:
-                audio_asset = AudioAssetModel(
-                    book_id=book_id,
-                    episode_num=episode_num,
-                    file_path=file_path,
-                    duration_seconds=result.get("duration_seconds", 0.0),
-                    file_size_bytes=result.get("file_size_bytes", 0),
-                )
-                session.add(audio_asset)
-                await session.commit()
-                await session.refresh(audio_asset)
-                result["audio_id"] = audio_asset.id
-
-        return result
-
-    loop = asyncio.new_event_loop()
-    try:
-        return loop.run_until_complete(_run())
-    finally:
-        loop.close()
+    """Asset Pack 生成 Huey タスク。"""
+    from src.backend.multimedia_service import MultimediaService
+    
+    service = MultimediaService()
+    result, task_id = service.generate_asset_pack(
+        book_id=book_id,
+        include_if_routes=include_if_routes,
+        include_media_mix=include_media_mix,
+        include_ebook=include_ebook,
+        include_audio=include_audio,
+        ebook_formats=ebook_formats,
+        media_mix_formats=media_mix_formats,
+    )
+    
+    return {
+        "task_id": task_id,
+        "asset_id": result.asset_id,
+        "files": result.files,
+        "metadata": result.metadata,
+        "file_count": len(result.files)
+    }

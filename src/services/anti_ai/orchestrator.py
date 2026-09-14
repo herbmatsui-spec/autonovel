@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Any
 
 from src.config.anti_ai_config import AntiAIConfig
 from src.services.anti_ai.detectors import RULE_DETECTORS

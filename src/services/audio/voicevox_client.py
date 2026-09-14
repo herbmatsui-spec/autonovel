@@ -35,6 +35,7 @@ class VoicevoxClient(AudioSynthesisClient):
             query_data["speedScale"] = req.speed_scale
             query_data["pitchScale"] = req.pitch_scale
             query_data["intonationScale"] = req.intonation_scale
+            query_data["volumeScale"] = req.volume_scale
 
             # 2. 音声合成実行
             synth_res = await client.post(

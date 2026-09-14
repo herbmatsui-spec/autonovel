@@ -12,7 +12,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from src.services.compression.layer3_taxonomy import DynamicTaxonomyEngine, SUFFIX_TAXONOMY_RULES
+from src.services.compression.layer3_taxonomy import DynamicTaxonomyEngine
 from src.services.compression.models import AbstractionLayerOutput, SubgraphLayerOutput
 
 logger = logging.getLogger(__name__)

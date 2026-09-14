@@ -8,24 +8,33 @@ import logging
 import os
 import time
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, Optional, Set
+from typing import Any, Callable, Optional
 
 from src.backend.tasks.scheduling_policies import SchedulingPolicy, AffinityPriorityPolicy
 from src.backend.tasks.metrics_collector import MetricsCollector, NoOpMetricsCollector, TaskMetrics
 from src.backend.tasks.dag_persistence import DAGPersistence, FileSystemDAGPersistence
-from src.backend.tasks.worker_recovery import WorkerRecoveryManager, RecoveryConfig
-
+from src.backend.tasks.worker_recovery import WorkerRecoveryManager
+from src.backend.schemas.pipeline_events import PipelineEvent
 from src.backend.tasks.dag_models import (
     DAGGraph,
     DAGTaskNode,
     TaskResourceRequirement,
-    TaskStatus,
 )
-from src.backend.tasks.dag_engine import DAGEngine, DAGCycleError
+from src.backend.tasks.dag_engine import DAGEngine
 from src.backend.tasks.resource_manager import ResourceManager
 from src.backend.database.core import DatabaseManager
 
 logger = logging.getLogger(__name__)
+
+
+from enum import Enum
+
+class DAGTaskState(str, Enum):
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
 
 
 @dataclass(slots=True)
@@ -52,6 +61,7 @@ class DAGScheduler:
         replanner: Any = None,
         db_manager: DatabaseManager | None = None,
         worker_recovery: WorkerRecoveryManager | None = None,
+        pipeline_event_hub: Any = None,
     ) -> None:
         self.resource_manager = resource_manager or ResourceManager()
         self.huey_instance = huey_instance
@@ -60,6 +70,7 @@ class DAGScheduler:
         self.active_allocations = TaskResourceRequirement(cpu_cores=0.0, ram_mb=0, gpu_mem_mb=0)
         self.use_huey = use_huey
         self.event_bus = event_bus
+        self.pipeline_event_hub = pipeline_event_hub
         self.db_manager = db_manager
         self.worker_recovery = worker_recovery
 
@@ -75,6 +86,7 @@ class DAGScheduler:
 
         self.replanning_history: list[Any] = []
         self.active_async_tasks: dict[str, asyncio.Task] = {}
+        self._running_tasks: dict[str, asyncio.Task] = self.active_async_tasks
 
         # Pluggable scheduling policy (Step 3)
         self.scheduling_policy = scheduling_policy or AffinityPriorityPolicy(self.worker_affinity_map)
@@ -94,17 +106,29 @@ class DAGScheduler:
 
     async def _publish_event(self, event_type: str, payload: dict[str, Any]) -> None:
         """Helper to publish DAG lifecycle events to EventBus (Step 55)."""
-        if not self.event_bus:
-            return
-        try:
-            if hasattr(self.event_bus, "publish_async"):
-                await self.event_bus.publish_async(event_type, payload)
-            elif hasattr(self.event_bus, "publish"):
-                res = self.event_bus.publish(event_type, payload)
-                if inspect.iscoroutine(res):
-                    await res
-        except Exception as e:
-            logger.debug(f"Failed to publish event {event_type}: {e}")
+        if self.event_bus:
+            try:
+                if hasattr(self.event_bus, "publish_async"):
+                    await self.event_bus.publish_async(event_type, payload)
+                elif hasattr(self.event_bus, "publish"):
+                    res = self.event_bus.publish(event_type, payload)
+                    if inspect.iscoroutine(res):
+                        await res
+            except Exception as e:
+                logger.debug(f"Failed to publish event {event_type}: {e}")
+        
+        # Also publish to PipelineEventHub for real-time WebSocket streaming
+        if self.pipeline_event_hub:
+            try:
+                event = PipelineEvent(
+                    event_type=event_type,
+                    book_id=payload.get("book_id", 0),
+                    task_id=payload.get("task_id", ""),
+                    payload=payload,
+                )
+                await self.pipeline_event_hub.broadcast(event)
+            except Exception as e:
+                logger.debug(f"Failed to broadcast PipelineEvent {event_type}: {e}")
 
     def _init_semaphores(self) -> None:
         """Initialize semaphores lazily within the running event loop."""
@@ -170,6 +194,7 @@ class DAGScheduler:
                     # Fatal failure check if fail_fast is enabled
                     if fail_fast and graph.has_failures():
                         logger.error(f"DAG {graph.dag_id} contains fatal task failures, halting (fail_fast=True).")
+                        await self.cancel_running_tasks()
                         break
 
                     ready_tasks = graph.get_ready_tasks()
@@ -190,6 +215,7 @@ class DAGScheduler:
                         coro = self._execute_task_wrapper(graph, task_node)
                         task = tg.create_task(coro)
                         self.active_async_tasks[task_node.task_id] = task
+                        self._running_tasks[task_node.task_id] = task
                         task.add_done_callback(self._make_task_done_callback(task_node.task_id, allocated_resources, graph))
 
                         launched += 1
@@ -200,6 +226,8 @@ class DAGScheduler:
                     if launched == 0:
                         # Waiting for dependencies, waiting for resources, or all terminal
                         if graph.is_finished() or (fail_fast and graph.has_failures()):
+                            if fail_fast and graph.has_failures():
+                                await self.cancel_running_tasks()
                             break
                         await asyncio.sleep(current_poll)
                         current_poll = min(current_poll * 1.5, self._max_poll_interval)
@@ -673,6 +701,23 @@ class DAGScheduler:
         
         return graph
 
+    def _cancel_downstream_tasks(self, failed_task_id: str, graph: DAGGraph | None = None) -> list[str]:
+        """Cancel downstream tasks of a failed task (Step 3)."""
+        if graph is not None:
+            return graph.cascade_cancel_downstream(failed_task_id, reason=f"Dependency {failed_task_id} failed")
+        return []
+
+    async def cancel_running_tasks(self) -> None:
+        """Cancel all currently running tasks (Step 4)."""
+        for tid, t in list(self.active_async_tasks.items()):
+            if not t.done():
+                t.cancel()
+        if hasattr(self, "_running_tasks") and self._running_tasks is not self.active_async_tasks:
+            for tid, t in list(self._running_tasks.items()):
+                if not t.done():
+                    t.cancel()
+        await asyncio.sleep(0.01)
+
     def _can_schedule_approx(self, req: TaskResourceRequirement) -> bool:
         """Fast approximate check using semaphore current values."""
         if self._semaphores.cpu._value <= 0:
@@ -700,4 +745,4 @@ class DAGScheduler:
             running_tasks.clear()
 
 
-__all__ = ["DAGScheduler"]
+__all__ = ["DAGScheduler", "DAGTaskState"]

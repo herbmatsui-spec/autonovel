@@ -28,6 +28,7 @@ class BookRepository(BaseRepository):
     @retry_on_lock()
     async def create_book(
         self,
+        user_id: int,
         title: str,
         genre: str,
         concept: str,
@@ -37,6 +38,7 @@ class BookRepository(BaseRepository):
         marketing_data: dict,
     ) -> int:
         book = Book(
+            user_id=user_id,
             title=title,
             genre=genre,
             concept=concept,
@@ -50,8 +52,11 @@ class BookRepository(BaseRepository):
         await self.session.flush()
         return book.id
 
-    async def get_book(self, book_id: int) -> BookDbModel | None:
-        result = await self.session.execute(select(Book).where(Book.id == book_id))
+    async def get_book(self, book_id: int, user_id: int | None = None) -> BookDbModel | None:
+        stmt = select(Book).where(Book.id == book_id)
+        if user_id is not None:
+            stmt = stmt.where(Book.user_id == user_id)
+        result = await self.session.execute(stmt)
         book = result.scalar_one_or_none()
         if not book:
             return None
@@ -61,8 +66,11 @@ class BookRepository(BaseRepository):
 
         return BookDbModel(**d)
 
-    async def get_all_books(self) -> list[BookDbModel]:
-        result = await self.session.execute(select(Book).order_by(Book.id.desc()))
+    async def get_all_books(self, user_id: int | None = None) -> list[BookDbModel]:
+        stmt = select(Book).order_by(Book.id.desc())
+        if user_id is not None:
+            stmt = stmt.where(Book.user_id == user_id)
+        result = await self.session.execute(stmt)
         books = result.scalars().all()
         from src.models import BookDbModel
 
@@ -72,30 +80,30 @@ class BookRepository(BaseRepository):
         ]
 
     @retry_on_lock()
-    async def update_book_cumulative_tension(self, book_id: int, tension: int) -> None:
+    async def update_book_cumulative_tension(self, book_id: int, user_id: int, tension: int) -> None:
         await self.session.execute(
-            update(Book).where(Book.id == book_id).values(cumulative_tension=tension)
+            update(Book).where(Book.id == book_id, Book.user_id == user_id).values(cumulative_tension=tension)
         )
 
     @retry_on_lock()
-    async def update_book_cumulative_stress(self, book_id: int, stress: int) -> None:
+    async def update_book_cumulative_stress(self, book_id: int, user_id: int, stress: int) -> None:
         # stress is mapped to cumulative_tension
         await self.session.execute(
-            update(Book).where(Book.id == book_id).values(cumulative_tension=stress)
+            update(Book).where(Book.id == book_id, Book.user_id == user_id).values(cumulative_tension=stress)
         )
 
     @retry_on_lock()
-    async def delete_book(self, book_id: int) -> None:
-        await self.session.execute(delete(Book).where(Book.id == book_id))
+    async def delete_book(self, book_id: int, user_id: int) -> None:
+        await self.session.execute(delete(Book).where(Book.id == book_id, Book.user_id == user_id))
 
     @retry_on_lock()
     async def update_book_marketing_data(
-        self, book_id: int, title: str, marketing_data: dict[str, Any]
+        self, book_id: int, user_id: int, title: str, marketing_data: dict[str, Any]
     ) -> None:
         """作品名とマーケティングデータを更新する。既存のデータがある場合はマージを試みる。"""
         import traceback
 
-        result = await self.session.execute(select(Book.marketing_data).where(Book.id == book_id))
+        result = await self.session.execute(select(Book.marketing_data).where(Book.id == book_id, Book.user_id == user_id))
         row_val = result.scalar_one_or_none()
         current_data = {}
         if row_val:
@@ -109,42 +117,42 @@ class BookRepository(BaseRepository):
         merged = {**current_data, **marketing_data}
         await self.session.execute(
             update(Book)
-            .where(Book.id == book_id)
+            .where(Book.id == book_id, Book.user_id == user_id)
             .values(title=title, marketing_data=json.dumps(merged, ensure_ascii=False))
         )
 
     @retry_on_lock()
-    async def update_book_target_eps(self, book_id: int, new_total_eps: int) -> None:
+    async def update_book_target_eps(self, book_id: int, user_id: int, new_total_eps: int) -> None:
         """作品の目標話数を更新する"""
         await self.session.execute(
-            update(Book).where(Book.id == book_id).values(target_eps=new_total_eps)
+            update(Book).where(Book.id == book_id, Book.user_id == user_id).values(target_eps=new_total_eps)
         )
 
     @retry_on_lock()
-    async def recalculate_book_tension(self, book_id: int, branch_id: int = 1) -> int:
+    async def recalculate_book_tension(self, book_id: int, user_id: int, branch_id: int = 1) -> int:
         """指定ブランチの全チャプターの tension_delta を合計して累積テンションを再計算し、DBを更新する"""
         result = await self.session.execute(
-            select(Chapter.tension_delta).where(Chapter.branch_id == branch_id)
+            select(Chapter.tension_delta).where(Chapter.book_id == book_id, Chapter.user_id == user_id, Chapter.branch_id == branch_id)
         )
         rows = result.scalars().all()
         total_tension = sum(t or 0 for t in rows)
         await self.session.execute(
-            update(Book).where(Book.id == book_id).values(cumulative_tension=total_tension)
+            update(Book).where(Book.id == book_id, Book.user_id == user_id).values(cumulative_tension=total_tension)
         )
         return total_tension
 
     @retry_on_lock()
-    async def recalculate_book_comfort(self, book_id: int, branch_id: int = 1) -> tuple[int, int]:
+    async def recalculate_book_comfort(self, book_id: int, user_id: int, branch_id: int = 1) -> tuple[int, int]:
         """指定ブランチの全チャプターの qol_delta を合計して累積QOLを再計算し、DBを更新する"""
         result = await self.session.execute(
-            select(Chapter.qol_delta).where(Chapter.branch_id == branch_id)
+            select(Chapter.qol_delta).where(Chapter.book_id == book_id, Chapter.user_id == user_id, Chapter.branch_id == branch_id)
         )
         rows = result.scalars().all()
         total_qol = sum(q or 0 for q in rows)
 
         plot_result = await self.session.execute(
             select(Plot.state_integrity_score)
-            .where(Plot.branch_id == branch_id)
+            .where(Plot.book_id == book_id, Plot.branch_id == branch_id)
             .order_by(Plot.ep_num.desc())
             .limit(1)
         )
@@ -153,17 +161,17 @@ class BookRepository(BaseRepository):
 
         await self.session.execute(
             update(Book)
-            .where(Book.id == book_id)
+            .where(Book.id == book_id, Book.user_id == user_id)
             .values(cumulative_qol=total_qol, sanctuary_integrity=integrity)
         )
         return total_qol, integrity
 
     @retry_on_lock()
-    async def recalculate_book_cost(self, book_id: int, branch_id: int = 1) -> float:
+    async def recalculate_book_cost(self, book_id: int, user_id: int, branch_id: int = 1) -> float:
         """最新のプロットから代償蓄積スコアを取得し、DBを更新する"""
         plot_result = await self.session.execute(
             select(Plot.cost_score)
-            .where(Plot.branch_id == branch_id)
+            .where(Plot.book_id == book_id, Plot.branch_id == branch_id)
             .where(Plot.status == "expanded")
             .order_by(Plot.ep_num.desc())
             .limit(1)
@@ -172,6 +180,6 @@ class BookRepository(BaseRepository):
         total_cost = latest_plot_cost if latest_plot_cost is not None else 0.0
 
         await self.session.execute(
-            update(Book).where(Book.id == book_id).values(cumulative_cost=total_cost)
+            update(Book).where(Book.id == book_id, Book.user_id == user_id).values(cumulative_cost=total_cost)
         )
         return total_cost

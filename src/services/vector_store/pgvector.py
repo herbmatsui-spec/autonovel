@@ -11,9 +11,6 @@ from contextlib import asynccontextmanager
 
 from src.services.vector_store.base import (
     BaseVectorStore,
-    CollectionType,
-    CollectionConfig,
-    DEFAULT_COLLECTIONS,
 )
 
 logger = logging.getLogger(__name__)

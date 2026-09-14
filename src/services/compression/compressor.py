@@ -4,7 +4,7 @@ from __future__ import annotations
 import hashlib
 import logging
 import time
-from typing import Any, Optional
+from typing import Any
 from sqlalchemy.orm import Session
 
 from src.services.compression.models import (
@@ -13,7 +13,7 @@ from src.services.compression.models import (
     SceneType,
     ProtectedContext,
 )
-from src.services.compression.layer1_keywords import Layer1KeywordExtractor, count_tokens
+from src.services.compression.layer1_keywords import Layer1KeywordExtractor
 from src.services.compression.layer2_subgraph import Layer2SubgraphExtractor
 from src.services.compression.layer3_abstraction import Layer3ConceptAbstractor
 from src.services.compression.layer4_trimming import Layer4SceneTrimmer

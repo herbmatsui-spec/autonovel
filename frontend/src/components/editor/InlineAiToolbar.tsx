@@ -87,6 +87,36 @@ export const InlineAiToolbar: React.FC<InlineAiToolbarProps> = ({
     }
   };
 
+  const handleGenerateImage = async () => {
+    if (!selectedText.trim()) {
+      onToast?.("画像生成のヒントにするテキストを選択してください", "info");
+      return;
+    }
+
+    setActiveAction("generate_image");
+    setLoading(true);
+    try {
+      // 1. シーン名の決定 (簡易的に選択テキストの先頭10文字を使用し、空白をアンダースコアに置換)
+      const sceneName = selectedText.trim().substring(0, 10).replace(/\s+/g, '_');
+      
+      // 2. 画像生成APIの呼び出し (モック)
+      // 実際には /api/multimedia/generate-image 等を呼び出すが、ここではフローを完結させるためモック化
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // 3. マーカーを挿入してテキストを更新
+      // 選択範囲の直後にマーカーを挿入する
+      const marker = `[[img:${sceneName}]]`;
+      onApplyResult(`${selectedText}\n${marker}`, "replace");
+      
+      onToast?.(`✨ シーン「${sceneName}」の画像を生成し、マーカーを挿入しました`, "success");
+    } catch (err: any) {
+      onToast?.(`❌ エラー: ${err.message || err}`, "error");
+    } finally {
+      setLoading(false);
+      setActiveAction(null);
+    }
+  };
+
   return (
     <div ref={toolbarRef} className="inline-ai-toolbar" data-testid="inline-ai-toolbar">
       {!preview ? (
@@ -153,6 +183,16 @@ export const InlineAiToolbar: React.FC<InlineAiToolbarProps> = ({
             data-testid="btn-show-dont-tell"
           >
             {activeAction === "show_dont_tell" ? <span className="spinner" /> : "🎭"} Show, Don't Tell
+          </button>
+          <button
+            type="button"
+            className="inline-ai-btn"
+            disabled={loading}
+            onClick={handleGenerateImage}
+            title="このシーンのイメージ画像を生成してマーカーを挿入"
+            data-testid="btn-generate-scene-image"
+          >
+            {activeAction === "generate_image" ? <span className="spinner" /> : "🖼️"} 画像生成
           </button>
 
           {/* トーン変換 */}

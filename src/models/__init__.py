@@ -25,7 +25,12 @@ from src.models.task import *
 from src.models.world import *
 from src.models.writing import *
 from src.models.editor import *
-from src.backend.database.models import Bible, Book, Chapter, Character, Plot
+# 後方互換用遅延インポート (ORM循環インポート/起動ブロッキング回避)
+def __getattr__(name: str):
+    if name in ("Bible", "Book", "Chapter", "Character", "Plot"):
+        import src.backend.database.models as _backend_models
+        return getattr(_backend_models, name)
+    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
 
 __all__ = [
     "ChapterChunk",

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import logging
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import Any
 from datetime import datetime, timezone
 
 from src.agents.social.models import JournalEntry

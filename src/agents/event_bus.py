@@ -161,6 +161,17 @@ class EventBus:
                 pass
 
 
+_global_event_bus: EventBus | None = None
+
+
+def get_event_bus() -> EventBus:
+    """システム共通のグローバル EventBus シングルトンを取得."""
+    global _global_event_bus
+    if _global_event_bus is None:
+        _global_event_bus = EventBus()
+    return _global_event_bus
+
+
 __all__ = [
     "AUDIT_SPECIALIST_COMPLETED",
     "AUDIT_SPECIALIST_STARTED",
@@ -173,4 +184,5 @@ __all__ = [
     "AGENT_BACKTRACKED",
     "AgentEvent",
     "EventBus",
+    "get_event_bus",
 ]

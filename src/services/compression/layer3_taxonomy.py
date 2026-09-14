@@ -7,7 +7,6 @@ and LLM-driven concept generalization for open-world creative entities.
 from __future__ import annotations
 
 import abc
-import functools
 import logging
 import re
 from typing import Any, Callable

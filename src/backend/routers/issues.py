@@ -1,6 +1,5 @@
 import json
 import time
-from typing import Any
 
 from fastapi import APIRouter, Depends
 

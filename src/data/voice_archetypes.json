@@ -1,0 +1,18 @@
+{
+  "tsundere": {
+    "first_person": ["私", "わたし"],
+    "second_person": ["あんた", "あなた"],
+    "endings": ["〜じゃない", "〜でしょ", "〜わよ"],
+    "forbidden_words": ["大好き", "愛してる"],
+    "catchphrases": ["べ、別にアンタのためじゃないんだからね！"],
+    "sample_dialogue": "べ、別にアンタのためじゃないんだからね！勘違いしないでよね！"
+  },
+  "ojousama": {
+    "first_person": ["わたくし"],
+    "second_person": ["貴方様", "あなた"],
+    "endings": ["〜ですわ", "〜ましてよ"],
+    "forbidden_words": ["だめ", "やだ"],
+    "catchphrases": ["おーっほっほっほ！"],
+    "sample_dialogue": "あら、ごきげんよう。わたくしと優雅なティータイムを過ごしませんこと？"
+  }
+}

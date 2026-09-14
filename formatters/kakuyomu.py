@@ -158,3 +158,6 @@ class KakuyomuFormatter(BaseFormatter):
         result = re.sub(r"\n{3,}", "\n\n", result)
 
         return self.enforce_cliffhanger(result)
+
+
+

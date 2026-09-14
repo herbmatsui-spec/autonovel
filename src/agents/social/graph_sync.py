@@ -6,7 +6,7 @@ into the Apache AGE graph database using Cypher queries.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 from sqlalchemy.orm import Session
 
 from src.agents.social.models import (

@@ -31,8 +31,8 @@ class ContextBuilderSkillAgent(SkillAgent):
     async def _v2_pre_process(self, ctx: AgentContext):
         if ctx.artifacts.get("regeneration_focus"):
             ctx.artifacts["context_builder_v2_enhanced"] = True
-            logger.info(f"ContextBuilderSkillAgent v2: 再生成モード - 圧縮・RAG精度強化有効")
+            logger.info("ContextBuilderSkillAgent v2: 再生成モード - 圧縮・RAG精度強化有効")
     
     async def _v2_post_process(self, ctx: AgentContext, result: AgentResult):
         if result.artifacts.get("writing_context"):
-            logger.debug(f"ContextBuilderSkillAgent v2: コンテキスト構築完了")
+            logger.debug("ContextBuilderSkillAgent v2: コンテキスト構築完了")

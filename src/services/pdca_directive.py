@@ -22,6 +22,7 @@ class WritingDirective:
     mandatory_instruction: str  # Explicit command for writer prompt
     rationale: str  # Reason for the constraint
     specialist_name: str = ""
+    foreshadowing_directives: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -32,6 +33,7 @@ class WritingDirective:
             "mandatory_instruction": self.mandatory_instruction,
             "rationale": self.rationale,
             "specialist_name": self.specialist_name,
+            "foreshadowing_directives": self.foreshadowing_directives,
         }
 
     def format_for_prompt(self) -> str:
@@ -39,12 +41,17 @@ class WritingDirective:
         sev_marker = {"CRITICAL": "【最優先必須修正】", "MAJOR": "【重点改善要求】", "MINOR": "【表現ブラッシュアップ】"}.get(
             self.severity, "【修正指示】"
         )
-        return (
+        result = (
             f"{sev_marker} 対象箇所: {self.target_location}\n"
             f"  - 現状の課題: {self.current_issue}\n"
+        )
+        if self.foreshadowing_directives:
+            result += f"  - 伏線指示: {', '.join(self.foreshadowing_directives)}\n"
+        result += (
             f"  - 必須執筆要件: {self.mandatory_instruction}\n"
             f"  - 改善の狙い: {self.rationale}"
         )
+        return result
 
 
 @dataclass
@@ -164,7 +171,14 @@ class PDCADirectiveGenerator:
             f"原文抜粋『{quote}』の描写を改め、"
             f"以下の指示通りにリライトすること: {suggestion}"
         )
-
+        # Check if this diff is related to foreshadowing
+        is_foreshadowing_related = (
+            "伏線" in loc or "伏線" in quote or "伏線" in suggestion or "伏線" in rationale
+        )
+        foreshadowing_directives = []
+        if is_foreshadowing_related:
+            # For now, we can add a generic foreshadowing directive
+            foreshadowing_directives.append("伏線の描写を適切に反映させ、物語の整合性を保つようにしてください。")
         return WritingDirective(
             dimension=dimension,
             severity=severity,
@@ -173,6 +187,7 @@ class PDCADirectiveGenerator:
             mandatory_instruction=instruction,
             rationale=rationale,
             specialist_name=specialist_name or dimension,
+            foreshadowing_directives=foreshadowing_directives,
         )
 
     @classmethod

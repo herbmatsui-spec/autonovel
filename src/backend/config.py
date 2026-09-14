@@ -30,7 +30,7 @@ class Settings(BaseSettings):
 
     # サーバー基本設定
     APP_NAME: str = "AutoNovel"
-    APP_VERSION: str = "4.7.0"
+    APP_VERSION: str = "4.9.0"
     APP_ENV: Literal["development", "production", "testing", "local", "staging"] = "development"
     PORT: int = 8200
     HOST: str = "0.0.0.0"
@@ -107,6 +107,7 @@ class Settings(BaseSettings):
 
     # Embedding / GraphRAG (pgvector + Apache AGE) 設定
     EMBEDDING_MODEL: str = "text-embedding-3-small"
+    EMBEDDING_MODEL_FALLBACK: str = "text-embedding-3-small"
     AGE_GRAPH_NAME: str = "autonovel_graph"
     ENABLE_GRAPHRAG: bool = True
 
@@ -138,6 +139,11 @@ class Settings(BaseSettings):
 
     # Phase 4: Enrichment Agent
     ENRICHMENT_ENABLED: bool = False
+
+    # プロセ精練設定 (Step 9)
+    PROSE_REFINER_ENABLED: bool = True
+    PROSE_REFINER_MODEL: str = "gemini-2.0-flash"
+    PROSE_REFINER_STYLE: str = "balanced"
 
     # Phase 2: Feature Flags
     BLIND_REVIEW_ENABLED: bool = True

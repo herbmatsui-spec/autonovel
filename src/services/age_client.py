@@ -34,7 +34,6 @@ from tenacity import (
 
 from src.backend.config import settings
 from src.backend.logging_config import get_logger
-from src.services.graph.hybrid_graph_facade import HybridGraphFacade, get_hybrid_facade
 
 logger = get_logger("age_client")
 
@@ -756,7 +755,6 @@ class AgeClient:
         
         # Use a completely independent psycopg2 connection to avoid SQLAlchemy transaction issues
         import psycopg2
-        from sqlalchemy import text
         
         # Extract connection parameters from the session's bind
         bind = session.get_bind()

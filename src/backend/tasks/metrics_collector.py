@@ -1,7 +1,7 @@
 """Metrics Collector for DAG Scheduler Observability (Step 4)."""
 from __future__ import annotations
 
-from typing import Protocol, Dict, Any
+from typing import Protocol, Dict
 from dataclasses import dataclass
 
 

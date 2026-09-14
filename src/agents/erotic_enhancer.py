@@ -96,7 +96,7 @@ class EroticEnhancer:
         except ImportError:
             # エロティック関連のモジュールが見つからない場合は元の結果を返す
             pass
-        except Exception as e:
+        except Exception:
             # その他のエラーも元の結果を返す
             pass
 

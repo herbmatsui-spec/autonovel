@@ -7,7 +7,6 @@ logger = get_structured_logger("llm_client")
 from collections.abc import Callable
 from typing import Any
 
-from src.core.llm_clients.gemini import GeminiApiClient
 from src.models import GenerateResult
 
 

@@ -199,10 +199,16 @@ class UnitOfWork:
         return self._trace
 
     async def __aenter__(self) -> UnitOfWork:
-        self.session = self.db.get_session()
+        if hasattr(self.db, "get_session"):
+            self.session = self.db.get_session()
+        elif callable(self.db):
+            self.session = self.db()
+        else:
+            self.session = self.db
         if self.session is None:
             raise RuntimeError("Session not initialized")
-        await self.session.begin()
+        if not self.session.in_transaction():
+            await self.session.begin()
         self._token = current_uow.set(self)  # type: ignore
         return self
 

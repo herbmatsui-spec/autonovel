@@ -43,7 +43,7 @@ class BranchRepository(BaseRepository):
             )
             parent_plots = plot_result.scalars().all()
             for p in parent_plots:
-                p_dict = {c.name: getattr(p, c.name) for c in p.__table__.columns}
+                p_dict = {c.name: getattr(p, c.name) for c in p.__table__.columns if c.name != "id"}
                 p_dict["branch_id"] = branch_id
                 self.session.add(Plot(**p_dict))
 
@@ -55,7 +55,7 @@ class BranchRepository(BaseRepository):
             )
             parent_chaps = chap_result.scalars().all()
             for c in parent_chaps:
-                c_dict = {c_col.name: getattr(c, c_col.name) for c_col in c.__table__.columns}
+                c_dict = {c_col.name: getattr(c, c_col.name) for c_col in c.__table__.columns if c_col.name != "id"}
                 c_dict["branch_id"] = branch_id
                 self.session.add(Chapter(**c_dict))
 

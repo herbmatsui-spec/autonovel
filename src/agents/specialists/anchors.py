@@ -7,7 +7,7 @@ score drift and ensure consistent grading criteria (e.g. High: 85+, Mid: 65, Low
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Literal
+from typing import Literal
 
 
 @dataclass

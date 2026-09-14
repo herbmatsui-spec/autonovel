@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 from src.agents.orchestrator import AgentContext, AgentResult
 from src.agents.skill_base import SkillAgent

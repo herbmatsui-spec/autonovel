@@ -17,7 +17,11 @@ class TestNarouPublisher:
     @pytest.fixture
     def publisher(self):
         """Publisherフィクスチャ"""
-        with patch("webdriver_manager.chrome.ChromeDriverManager"):
+        # 依存関係を完全にモック化
+        with patch("src.services.publishers.narou.webdriver"), \
+             patch("src.services.publishers.narou.ChromeDriverManager"), \
+             patch("src.services.publishers.narou.Options"), \
+             patch("src.services.publishers.narou.Service"):
             pub = NarouPublisher(headless=True)
             yield pub
             pub._close_driver()

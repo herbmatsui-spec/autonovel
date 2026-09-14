@@ -124,7 +124,6 @@ class PlanningAgent(SkillAgent):
 
         # 企画ガチャ（3案並行生成）モードのサポート (Step 9)
         if ctx.artifacts.get("proposal_gacha", False):
-            from src.services.proposal_isolation import ProposalIsolationRunner
             proposals = await self.generate_proposals_isolated(
                 title=title,
                 synopsis=synopsis,

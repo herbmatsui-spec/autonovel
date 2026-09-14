@@ -62,7 +62,7 @@ class IllustrationAgent(SkillAgent):
             ctx.artifacts["illustration_regeneration"] = True
             if regeneration_action:
                 ctx.artifacts["illustration_focus"] = regeneration_action.illustration_focus
-            logger.info(f"IllustrationAgent: 再生成モード - focus=visual_textual_synergy")
+            logger.info("IllustrationAgent: 再生成モード - focus=visual_textual_synergy")
         
         result_dict = await self.generate_prompt_only(request=request)
         

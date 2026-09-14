@@ -54,13 +54,6 @@ export interface ConflictChunk {
   target: string; // ターゲットブランチのテキスト
 }
 
-/** マージプレビューのレスポンス */
-export interface MergePreviewResponse {
-  can_merge: boolean;
-  conflict_chunks: ConflictChunk[];
-  merged_content?: string;
-}
-
 /** ブランチツリー可視化用（バックエンドからの実際のレスポンス形式） */
 export interface BranchTreeNode {
   id: number;
@@ -113,9 +106,9 @@ export interface MergePreviewResponse {
   conflict_chunks: ConflictChunk[];
   merged_content?: string;
   // 追加情報
-  source_branch_id: number;
-  target_branch_id: number;
-  base_branch_id: number | null; // 共通祖先ブランチID
+  source_branch_id?: number;
+  target_branch_id?: number;
+  base_branch_id?: number | null; // 共通祖先ブランチID
 }
 
 /** マージ実行リクエスト */
@@ -134,3 +127,28 @@ export interface MergeResponse {
   // コンフリクトがある場合の詳細
   conflict_chunks?: ConflictChunk[];
 }
+
+/** コンフリクト解決済み章コンテンツ (Step 49 / Step 61) */
+export interface ResolvedChapterPayload {
+  chapter_number: number;
+  resolved_content: string;
+  resolution_strategy: 'base' | 'source' | 'target' | 'manual' | string;
+}
+
+/** マージ確定コミットリクエスト (Step 49 / Step 61) */
+export interface BranchMergeCommitRequest {
+  source_branch_id: number;
+  target_branch_id: number;
+  merge_ep_num: number;
+  resolved_chapters: ResolvedChapterPayload[];
+  commit_message?: string;
+}
+
+/** マージ確定コミッドレスポンス (Step 49 / Step 61) */
+export interface BranchMergeCommitResponse {
+  success: boolean;
+  target_branch_id: number;
+  updated_chapters_count: number;
+  committed_at: string;
+}
+

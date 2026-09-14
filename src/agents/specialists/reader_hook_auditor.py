@@ -82,15 +82,32 @@ class ReaderHookAuditor(SpecialistAuditor):
             raise LLMUnavailableError("No LLM available for ReaderHookAuditor")
 
         prompt = READER_HOOK_USER_PROMPT.format(draft_text=draft[:4000])
-        score, critique, suggestions, confidence, reasoning, raw_resp = await self._judge_with_llm(
+        judge_res = await self._judge_with_llm(
             prompt=prompt,
             system_prompt=READER_HOOK_SYSTEM_PROMPT,
         )
+        score, critique, suggestions, confidence, reasoning, raw_resp = judge_res[:6]
+        # actionable_diffs = judge_res[6] if len(judge_res) > 6 else []  # not used
+
+        feedback = {"critique": critique}
+
+        # 序盤3話特化: クリフハンガー強制（合格ライン 80点）
+        ep_num = ctx.get("ep_num")
+        if ep_num is not None and ep_num <= 3:
+            from src.services.auditors.cliffhanger_scorer import score_cliffhanger
+            cliff_eval = score_cliffhanger(draft)
+            feedback["opening_cliffhanger"] = cliff_eval.model_dump()
+            if cliff_eval.requires_rewrite or cliff_eval.score < 80.0:
+                score = min(score, cliff_eval.score, 45.0)
+                suggestions.append(
+                    f"【第{ep_num}話 離脱防止】話末クリフハンガーが不合格です（{cliff_eval.reason}）。"
+                    "末尾は必ず急襲・新事実判明・反撃予告で締めてください。"
+                )
 
         return SpecialistAuditResult(
             specialist_name="reader_hook",
             score=score,
-            feedback={"critique": critique},
+            feedback=feedback,
             suggestions=suggestions,
             degraded=False,
             confidence=confidence,
@@ -128,18 +145,34 @@ class ReaderHookAuditor(SpecialistAuditor):
         if ending_score < 20:
             suggs.append("末尾にクリフハンガー・未解決の謎・示唆を追加してください")
 
+        final_score = max(10.0, min(100.0, round(total, 1)))
+        feedback_data: dict[str, Any] = {
+            "fallback": "rule-based rhetorical analysis",
+            "opening_chars": len(opening),
+            "ending_chars": len(ending),
+            "opening_rhetorical": opening_analysis,
+            "ending_rhetorical": ending_analysis,
+            "opening_score": round(opening_score, 1),
+            "ending_score": round(ending_score, 1),
+        }
+
+        # 序盤3話特化: クリフハンガー強制
+        ep_num = ctx.get("ep_num")
+        if ep_num is not None and ep_num <= 3:
+            from src.services.auditors.cliffhanger_scorer import score_cliffhanger
+            cliff_eval = score_cliffhanger(draft)
+            feedback_data["opening_cliffhanger"] = cliff_eval.model_dump()
+            if cliff_eval.requires_rewrite or cliff_eval.score < 80.0:
+                final_score = min(final_score, cliff_eval.score, 45.0)
+                suggs.append(
+                    f"【第{ep_num}話 離脱防止】話末クリフハンガーが不合格です（{cliff_eval.reason}）。"
+                    "末尾は必ず急襲・新事実判明・反撃予告で締めてください。"
+                )
+
         return SpecialistAuditResult(
             specialist_name="reader_hook",
-            score=max(10.0, min(100.0, round(total, 1))),
-            feedback={
-                "fallback": "rule-based rhetorical analysis",
-                "opening_chars": len(opening),
-                "ending_chars": len(ending),
-                "opening_rhetorical": opening_analysis,
-                "ending_rhetorical": ending_analysis,
-                "opening_score": round(opening_score, 1),
-                "ending_score": round(ending_score, 1),
-            },
+            score=final_score,
+            feedback=feedback_data,
             suggestions=suggs,
             degraded=True,
         )

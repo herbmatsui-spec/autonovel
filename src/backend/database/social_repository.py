@@ -10,8 +10,7 @@ from typing import TYPE_CHECKING, Any, AsyncIterator
 from sqlalchemy.ext.asyncio import AsyncSession
 
 if TYPE_CHECKING:
-    from src.agents.social.journals import CharacterJournalEntry
-    from src.agents.social.models import CharacterCommentEntry, RelationshipMetrics
+    from src.agents.social.models import RelationshipMetrics
     from src.backend.database.core import DatabaseManager
 
 logger = logging.getLogger(__name__)

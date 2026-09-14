@@ -14,7 +14,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from src.easy_mode import EpisodeResult, SeriesResult
+from src.easy_mode import SeriesResult
 
 logger = logging.getLogger(__name__)
 
@@ -367,8 +367,6 @@ class PdfGenerator:
         from reportlab.lib.units import mm
         from reportlab.platypus import SimpleDocTemplate, PageBreak
         from reportlab.lib.styles import getSampleStyleSheet
-        from reportlab.pdfbase import pdfmetrics
-        from reportlab.pdfbase.ttfonts import TTFont
 
         output_path = Path(output_path)
         output_path.parent.mkdir(parents=True, exist_ok=True)

@@ -6,6 +6,10 @@ interface UseStreamingWriterOptions {
   onSuccess?: (finalText: string) => void;
   onMessage?: (msg: string) => void;
   onError?: (errMsg: string) => void;
+  /** 接続エラー時の最大リトライ回数 (デフォルト: 2) */
+  maxRetries?: number;
+  /** リトライ間隔 (ミリ秒, デフォルト: 1000) */
+  retryDelayMs?: number;
 }
 
 export function useStreamingWriter(options?: UseStreamingWriterOptions) {
@@ -21,10 +25,15 @@ export function useStreamingWriter(options?: UseStreamingWriterOptions) {
   const [isStreaming, setIsStreaming] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [streamOutput, setStreamOutput] = useState("");
+  /** 現在のリトライ回数 (UI 表示用) */
+  const [retryCount, setRetryCount] = useState(0);
 
   const abortControllerRef = useRef<AbortController | null>(null);
   const isPausedRef = useRef(false);
   const accumulatedTextRef = useRef("");
+
+  const maxRetries = options?.maxRetries ?? 2;
+  const retryDelayMs = options?.retryDelayMs ?? 1000;
 
   const startStreaming = useCallback(
     async (promptOverride?: string) => {
@@ -33,6 +42,7 @@ export function useStreamingWriter(options?: UseStreamingWriterOptions) {
       isPausedRef.current = false;
       setStreamOutput("");
       accumulatedTextRef.current = "";
+      setRetryCount(0);
 
       setGenerationState((prev) => ({
         ...prev,
@@ -46,19 +56,63 @@ export function useStreamingWriter(options?: UseStreamingWriterOptions) {
 
       const promptText = promptOverride !== undefined ? promptOverride : currentChapterText;
 
-      try {
-        const response = await generateContentStream(
-          {
-            chapter_history: promptText ? [promptText] : [],
-            current_chapter: promptText || "冒険のプロット",
-            character_params: character,
-            content_length_limit: contentLengthLimit || 2000,
-            target_episodes: targetEpisodes || 1,
-            ...( (llmConfig && (llmConfig.api_key || llmConfig.provider)) ? { llm_config: llmConfig } : {} ),
-          },
-          controller.signal
-        );
+      // 接続フェーズ: リトライ機構付きでストリーム接続を確立する
+      let response: Response | null = null;
+      let lastConnectError: Error | null = null;
+      for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        if (controller.signal.aborted) break;
+        try {
+          if (attempt > 0) {
+            setRetryCount(attempt);
+            setGenerationState((prev) => ({
+              ...prev,
+              isGenerating: true,
+              statusText: `接続エラー。再接続中... (${attempt}/${maxRetries})`,
+            }));
+            options?.onMessage?.(`🔄 接続エラーのため再接続します (${attempt}/${maxRetries})...`);
+            await new Promise((r) => setTimeout(r, retryDelayMs));
+            if (controller.signal.aborted) break;
+          }
+          response = await generateContentStream(
+            {
+              chapter_history: promptText ? [promptText] : [],
+              current_chapter: promptText || "冒険のプロット",
+              character_params: character,
+              content_length_limit: contentLengthLimit || 2000,
+              target_episodes: targetEpisodes || 1,
+              ...( (llmConfig && (llmConfig.api_key || llmConfig.provider)) ? { llm_config: llmConfig } : {} ),
+            },
+            controller.signal
+          );
+          lastConnectError = null;
+          setRetryCount(0);
+          break;
+        } catch (err: any) {
+          // ユーザーキャンセルはリトライしない
+          if (controller.signal.aborted) break;
+          lastConnectError = err instanceof Error ? err : new Error(err?.message || "不明なエラー");
+        }
+      }
 
+      // 全リトライ失敗時は明示エラーで終了
+      if (!response) {
+        const message = lastConnectError?.message || "接続に失敗しました";
+        setIsStreaming(false);
+        setStreamOutput("");
+        accumulatedTextRef.current = "";
+        setRetryCount(0);
+        setGenerationState((prev) => ({
+          ...prev,
+          isGenerating: false,
+          statusText: `接続エラー: ${message}`,
+          error: message,
+        }));
+        options?.onError?.(`❌ 接続エラー (${maxRetries + 1}回試行): ${message}`);
+        options?.onMessage?.(`❌ 接続エラー (${maxRetries + 1}回試行): ${message}`);
+        return;
+      }
+
+      try {
         if (!response.body) {
           throw new Error("ストリームレスポンスが取得できませんでした");
         }
@@ -130,11 +184,12 @@ export function useStreamingWriter(options?: UseStreamingWriterOptions) {
           return;
         }
 
-        // 接続エラー時はフォールバックせず明示エラーで停止する
+        // ストリーム読み取り中のエラーはフォールバックせず明示エラーで停止する
         const message = err?.message || "不明なエラー";
         setIsStreaming(false);
         setStreamOutput("");
         accumulatedTextRef.current = "";
+        setRetryCount(0);
         setGenerationState((prev) => ({
           ...prev,
           isGenerating: false,
@@ -154,6 +209,8 @@ export function useStreamingWriter(options?: UseStreamingWriterOptions) {
       contentLengthLimit,
       targetEpisodes,
       llmConfig,
+      maxRetries,
+      retryDelayMs,
     ]
   );
 
@@ -183,6 +240,7 @@ export function useStreamingWriter(options?: UseStreamingWriterOptions) {
     isStreaming,
     isPaused,
     streamOutput,
+    retryCount,
     startStreaming,
     pauseStreaming,
     resumeStreaming,

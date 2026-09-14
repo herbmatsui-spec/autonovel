@@ -24,6 +24,8 @@ class UnifiedPipelineConfig:
     concept: str = ""
     tone_vibe: float = 0.6
     user_prompt: str = ""
+    start_ep: int = 1
+    end_ep: int | None = None
 
     # === EasyMode 由来設定 (SpiceGuard・監査リライト) ===
     enable_spice_guard: bool = True
@@ -63,6 +65,8 @@ class UnifiedPipelineConfig:
             concept=self.concept,
             tone_vibe=self.tone_vibe,
             user_prompt=self.user_prompt,
+            start_ep=self.start_ep,
+            end_ep=self.end_ep,
             enable_spice_guard=self.enable_spice_guard,
             max_rewrite_iterations=self.max_rewrite_iterations,
             target_audit_score=self.target_audit_score,
@@ -88,6 +92,8 @@ class UnifiedPipelineConfig:
             concept=kwargs.get("concept", ""),
             tone_vibe=kwargs.get("tone_vibe", 0.6),
             user_prompt=kwargs.get("user_prompt", ""),
+            start_ep=kwargs.get("start_ep", 1),
+            end_ep=kwargs.get("end_ep"),
             enable_illustration=bool(
                 kwargs.get("illustration_settings", {}).get("enableIllustration", False)
             ),
@@ -116,6 +122,8 @@ class UnifiedPipelineConfig:
             archetype_key=kwargs.get("protagonist_type", "チート主人公"),
             target_eps=kwargs.get("target_episodes", 10),
             word_count=kwargs.get("words_per_episode", 2000),
+            start_ep=kwargs.get("start_ep", 1),
+            end_ep=kwargs.get("end_ep"),
             enable_spice_guard=kwargs.get("enable_audit", True),
             max_rewrite_iterations=kwargs.get("max_rewrites", 2),
             target_audit_score=95.0,

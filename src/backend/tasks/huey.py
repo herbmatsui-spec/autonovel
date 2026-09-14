@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 from huey import RedisHuey, SqliteHuey
 
@@ -125,9 +125,12 @@ def check_huey_health() -> dict[str, Any]:
         }
 
 
-# ワーカー側でタスクを認識するためにここでインポートしておく
-import src.backend.tasks  # noqa
-import src.backend.tasks.generation_tasks  # noqa
+# ワーカー側タスク認識用（循環インポート回避のためトップレベルでの自モジュール親importを排除）
+def _register_tasks() -> None:
+    try:
+        import src.backend.tasks.generation_tasks  # noqa
+    except ImportError:
+        pass
 
 __all__: list[str] = [
     "huey",

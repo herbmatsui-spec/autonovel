@@ -121,6 +121,13 @@ export interface BeatCard {
   hook_text: string;
 }
 
+export interface DiffChunk {
+  original: string;
+  replacement: string;
+  start: number;
+  end: number;
+}
+
 export interface NextBeatsRequest {
   book_id?: number;
   current_text: string;

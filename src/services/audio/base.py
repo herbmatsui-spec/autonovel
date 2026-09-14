@@ -9,6 +9,7 @@ class AudioSynthesisRequest:
     speed_scale: float = 1.0
     pitch_scale: float = 0.0
     intonation_scale: float = 1.0
+    volume_scale: float = 1.0
 
 
 @dataclass

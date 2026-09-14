@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 from src.easy_mode import EpisodeResult, SeriesResult
 
@@ -171,14 +171,46 @@ class MediaScript:
 class MangaScriptGenerator:
     """漫画台本生成器"""
 
-    def __init__(self, genre: str, preset: dict[str, Any]):
+    def __init__(
+        self,
+        genre: str,
+        preset: dict[str, Any],
+        script_agent: Optional[Any] = None,
+    ):
         self.genre = genre
         self.preset = preset
         self.style_guide = preset.get("style", {})
         self.characters = preset.get("characters", {}).get("archetypes", {})
+        self.script_agent = script_agent
 
     def generate(self, episode: EpisodeResult, series: SeriesResult) -> MediaScript:
         """漫画台本生成"""
+        # LLMエージェントが利用可能な場合は優先的に使用
+        if self.script_agent is not None:
+            try:
+                manga_outputs = self.script_agent.generate_manga_script(
+                    episode.content,
+                    self._build_character_list(),
+                )
+                panels = self._convert_to_panels(manga_outputs)
+                return MediaScript(
+                    format=MediaFormat.MANGA,
+                    title=f"{series.title} 第{episode.episode_num}話",
+                    episode_num=episode.episode_num,
+                    source_content=episode.content,
+                    panels=panels,
+                    metadata={
+                        "genre": self.genre,
+                        "total_panels": len(panels),
+                        "estimated_pages": max(1, len(panels) // 4),
+                        "style_notes": self.style_guide.get("manga_notes", ""),
+                        "generated_by": "llm",
+                    },
+                )
+            except Exception as e:
+                logger.warning(f"LLM manga generation failed, falling back to rule-based: {e}")
+
+        # フォールバック: ルールベース生成
         panels = self._split_into_panels(episode.content, episode)
 
         return MediaScript(
@@ -192,8 +224,50 @@ class MangaScriptGenerator:
                 "total_panels": len(panels),
                 "estimated_pages": max(1, len(panels) // 4),
                 "style_notes": self.style_guide.get("manga_notes", ""),
+                "generated_by": "rule_based",
             },
         )
+
+    def _build_character_list(self) -> list[dict]:
+        """キャラクター情報をリスト形式で構築"""
+        char_list = []
+        for archetype_name, archetype_data in self.characters.items():
+            char_list.append({
+                "name": archetype_data.get("name_pattern", "").split("（")[0],
+                "personality": archetype_data.get("personality", ""),
+                "first_person": archetype_data.get("speech_patterns", {}).get("first_person", ""),
+                "speech_pattern": archetype_data.get("speech_patterns", {}).get("tone", ""),
+            })
+        return char_list
+
+    def _convert_to_panels(self, manga_outputs: list[Any]) -> list[Panel]:
+        """LLM出力のMangaScriptOutputを内部Panelモデルに変換"""
+        panels = []
+        for page_output in manga_outputs:
+            for panel_script in page_output.panels:
+                # セリフを結合
+                dialogue_texts = []
+                for d in panel_script.dialogues:
+                    speaker = d.get("speaker", "")
+                    text = d.get("text", "")
+                    if speaker and text:
+                        dialogue_texts.append(f"{speaker}：「{text}」")
+                    elif text:
+                        dialogue_texts.append(text)
+
+                panel = Panel(
+                    number=panel_script.panel_number,
+                    description=panel_script.visual_description,
+                    dialogue=dialogue_texts,
+                    narration=panel_script.narration,
+                    sfx=panel_script.sfx,
+                    camera_angle=panel_script.camera_angle,
+                    characters=[d.get("speaker", "") for d in panel_script.dialogues if d.get("speaker")],
+                    background="",
+                    mood=page_output.scene_mood,
+                )
+                panels.append(panel)
+        return panels
 
     def _split_into_panels(self, content: str, episode: EpisodeResult) -> list[Panel]:
         """本文をコマに分割"""
@@ -457,15 +531,50 @@ class MangaScriptGenerator:
 class AudioDramaScriptGenerator:
     """音声ドラマ台本生成器"""
 
-    def __init__(self, genre: str, preset: dict[str, Any]):
+    def __init__(
+        self,
+        genre: str,
+        preset: dict[str, Any],
+        script_agent: Optional[Any] = None,
+    ):
         self.genre = genre
         self.preset = preset
         self.characters = preset.get("characters", {}).get("archetypes", {})
         self.erotic_rules = preset.get("erotic", {})
+        self.script_agent = script_agent
 
     def generate(self, episode: EpisodeResult, series: SeriesResult) -> MediaScript:
         """音声ドラマ台本生成"""
-        voice_lines = self._convert_to_voice_lines(episode.content, episode)
+        # LLMエージェントが利用可能な場合は優先的に使用
+        if self.script_agent is not None:
+            try:
+                audio_output = self.script_agent.generate_audio_script(
+                    episode.content,
+                    self._build_character_list(),
+                )
+                voice_lines = self._convert_to_voice_lines(audio_output)
+
+                return MediaScript(
+                    format=MediaFormat.AUDIO_DRAMA,
+                    title=f"{series.title} 第{episode.episode_num}話【音声ドラマ版】",
+                    episode_num=episode.episode_num,
+                    source_content=episode.content,
+                    voice_lines=voice_lines,
+                    metadata={
+                        "genre": self.genre,
+                        "total_lines": len(voice_lines),
+                        "estimated_duration_min": len(voice_lines) * 15 / 60,
+                        "bgm_plan": audio_output.bgm_plan,
+                        "sfx_plan": audio_output.sfx_plan,
+                        "cast_requirements": audio_output.cast_requirements,
+                        "generated_by": "llm",
+                    },
+                )
+            except Exception as e:
+                logger.warning(f"LLM audio generation failed, falling back to rule-based: {e}")
+
+        # フォールバック: ルールベース生成
+        voice_lines = self._convert_to_voice_lines_legacy(episode.content, episode)
 
         # BGM・効果音プラン生成
         bgm_plan = self._generate_bgm_plan(episode, series)
@@ -480,15 +589,68 @@ class AudioDramaScriptGenerator:
             metadata={
                 "genre": self.genre,
                 "total_lines": len(voice_lines),
-                "estimated_duration_min": len(voice_lines) * 15 / 60,  # 1行15秒換算
+                "estimated_duration_min": len(voice_lines) * 15 / 60,
                 "bgm_plan": bgm_plan,
                 "sfx_plan": sfx_plan,
                 "cast_requirements": self._get_cast_requirements(voice_lines),
+                "generated_by": "rule_based",
             },
         )
 
-    def _convert_to_voice_lines(self, content: str, episode: EpisodeResult) -> list[VoiceLine]:
-        """本文をセリフ行に変換"""
+    def _build_character_list(self) -> list[dict]:
+        """キャラクター情報をリスト形式で構築"""
+        char_list = []
+        for archetype_name, archetype_data in self.characters.items():
+            char_list.append({
+                "name": archetype_data.get("name_pattern", "").split("（")[0],
+                "personality": archetype_data.get("personality", ""),
+                "first_person": archetype_data.get("speech_patterns", {}).get("first_person", ""),
+                "speech_pattern": archetype_data.get("speech_patterns", {}).get("tone", ""),
+            })
+        return char_list
+
+    def _convert_to_voice_lines(self, audio_output: Any) -> list[VoiceLine]:
+        """LLM出力のAudioDramaScriptOutputを内部VoiceLineモデルに変換"""
+        voice_lines = []
+        for line in audio_output.lines:
+            audio_cues_before = [
+                AudioCue(
+                    type=cue.get("type", "sfx"),
+                    name=cue.get("name", ""),
+                    description=cue.get("description", ""),
+                    duration=cue.get("duration", 0.0),
+                    volume=cue.get("volume", 1.0),
+                    fade_in=cue.get("fade_in", 0.0),
+                    fade_out=cue.get("fade_out", 0.0),
+                )
+                for cue in line.audio_cues_before
+            ]
+            audio_cues_after = [
+                AudioCue(
+                    type=cue.get("type", "sfx"),
+                    name=cue.get("name", ""),
+                    description=cue.get("description", ""),
+                    duration=cue.get("duration", 0.0),
+                    volume=cue.get("volume", 1.0),
+                    fade_in=cue.get("fade_in", 0.0),
+                    fade_out=cue.get("fade_out", 0.0),
+                )
+                for cue in line.audio_cues_after
+            ]
+
+            voice_line = VoiceLine(
+                character=line.character,
+                text=line.text,
+                emotion=line.emotion,
+                direction=line.direction,
+                audio_cues_before=audio_cues_before,
+                audio_cues_after=audio_cues_after,
+            )
+            voice_lines.append(voice_line)
+        return voice_lines
+
+    def _convert_to_voice_lines_legacy(self, content: str, episode: EpisodeResult) -> list[VoiceLine]:
+        """従来のルールベース変換（後方互換性のため保持）"""
         lines = []
 
         # シーン分割
@@ -584,7 +746,9 @@ class AudioDramaScriptGenerator:
         return lines
 
     def _guess_speaker(self, dialogue: str, context: str) -> str:
-        """話者推定"""
+        """話者推定
+        @deprecated: Used only as rule-based fallback when LLM is unavailable.
+        """
         # 文末・一人称から推定
         archetypes = self.characters
 
@@ -610,7 +774,9 @@ class AudioDramaScriptGenerator:
         return "キャラクター"
 
     def _guess_emotion(self, dialogue: str) -> str:
-        """感情推定"""
+        """感情推定
+        @deprecated: Used only as rule-based fallback when LLM is unavailable.
+        """
         if any(kw in dialogue for kw in ["！", "ッ", "！"]):
             if any(kw in dialogue for kw in ["死", "殺", "許さ", "絶対", "覚悟"]):
                 return "anger"
@@ -624,7 +790,9 @@ class AudioDramaScriptGenerator:
         return "neutral"
 
     def _generate_direction(self, dialogue: str, emotion: str) -> str:
-        """演出指示生成"""
+        """演出指示生成
+        @deprecated: Used only as rule-based fallback when LLM is unavailable.
+        """
         directions = {
             "anger": "[激昂・声量大・早口]",
             "excited": "[高揚・明るく・早め]",
@@ -894,11 +1062,17 @@ class VideoScriptGenerator:
 class MediaMixExporter:
     """メディアミックス一括エクスポーター"""
 
-    def __init__(self, genre: str, preset: dict[str, Any]):
+    def __init__(
+        self,
+        genre: str,
+        preset: dict[str, Any],
+        script_agent: Optional[Any] = None,
+    ):
         self.genre = genre
         self.preset = preset
-        self.manga_gen = MangaScriptGenerator(genre, preset)
-        self.audio_gen = AudioDramaScriptGenerator(genre, preset)
+        self.script_agent = script_agent
+        self.manga_gen = MangaScriptGenerator(genre, preset, script_agent)
+        self.audio_gen = AudioDramaScriptGenerator(genre, preset, script_agent)
         self.video_gen = VideoScriptGenerator(genre, preset)
 
     def export_all(
@@ -938,6 +1112,10 @@ class MediaMixExporter:
         return saved
 
 
-def create_media_mix_exporter(genre: str, preset: dict[str, Any]) -> MediaMixExporter:
+def create_media_mix_exporter(
+    genre: str,
+    preset: dict[str, Any],
+    script_agent: Optional[Any] = None,
+) -> MediaMixExporter:
     """メディアミックスエクスポーター作成"""
-    return MediaMixExporter(genre, preset)
+    return MediaMixExporter(genre, preset, script_agent)

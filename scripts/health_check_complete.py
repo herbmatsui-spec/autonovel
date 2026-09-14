@@ -1,5 +1,10 @@
 """システム健全性全機能診断スクリプト (Step 66)。"""
 import sys
+from pathlib import Path
+
+# プロジェクトルートをパスに追加
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
 
 def check_all_modules():
     print("[1/5] Checking Phase 1 Commercial & UX modules...")

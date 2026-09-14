@@ -5,7 +5,6 @@ from src.agents.skill_base import SkillAgent
 from src.agents.orchestrator import AgentContext, AgentResult
 from src.agents.writing import WritingAgent
 from src.services.book_score_service import BookScoreCalculator
-from src.backend.observability.metrics import record_book_score
 import logging
 import time
 
@@ -106,7 +105,7 @@ class WritingSkillAgent(SkillAgent):
             self._record_metric("success", duration)
             return result
             
-        except Exception as e:
+        except Exception:
             duration = time.perf_counter() - start_time
             self._record_metric("error", duration)
             raise

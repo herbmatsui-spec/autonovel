@@ -25,8 +25,7 @@ if (-not (Test-Path ".venv")) {
 Write-Host "[2/5] Installing backend dependencies..." -ForegroundColor Yellow
 & .\.venv\Scripts\Activate.ps1
 py -m pip install --upgrade pip -q
-py -m pip install -r requirements-dev.txt -q
-py -m pip install -e . -q
+py -m pip install -e .[dev,rag] -q
 if ($LASTEXITCODE -ne 0) {
     Write-Host "[ERROR] Backend dependency installation failed." -ForegroundColor Red
     Read-Host "Press Enter to exit..."

@@ -251,7 +251,6 @@ class BM25Extractor(KeyphraseExtractor):
             
             tokenized_corpus = [self._tokenize(s) for s in sentences]
             
-            from rank_bm25 import BM25Okapi
             bm25 = BM25Okapi(tokenized_corpus)
             
             query_tokens = self._tokenize(text)

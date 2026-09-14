@@ -12,7 +12,7 @@ from __future__ import annotations
 import logging
 import re
 import unicodedata
-from typing import Any, Iterable
+from typing import Iterable
 
 logger = logging.getLogger(__name__)
 
