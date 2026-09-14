@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNovelContext } from "../context/NovelContext";
+import { useToast } from "../hooks/useToast";
 import { useNovelGeneration } from "../hooks/useNovelGeneration";
 import { useStreamingWriter } from "../hooks/useStreamingWriter";
 import { useSnapshotHistory } from "../hooks/useSnapshotHistory";
@@ -27,6 +28,7 @@ interface GeneratePanelProps {
 }
 
 export default function GeneratePanel({ onGenerated, onMessage }: GeneratePanelProps) {
+  const { addToast } = useToast();
   const {
     character,
     setCharacter,
@@ -180,9 +182,10 @@ export default function GeneratePanel({ onGenerated, onMessage }: GeneratePanelP
       });
       setGachaResult(response);
       setShowGachaModal(true);
+      addToast("企画ガチャの生成が完了しました。3案から選択してください。", "success");
     } catch (error) {
       console.error("Gacha generation failed:", error);
-      alert("ガチャの生成に失敗しました。");
+      addToast("ガチャの生成に失敗しました。しばらくしてから再試行してください。", "error");
     } finally {
       setGachaLoading(false);
     }
@@ -190,13 +193,13 @@ export default function GeneratePanel({ onGenerated, onMessage }: GeneratePanelP
 
   const handleRunDigest = async () => {
     if (!gachaResult) {
-      alert("先にガチャを回してプランを生成してください。");
+      addToast("先にガチャを回してプランを生成してください。", "info");
       return;
     }
 
     const planId = selectedPlanId || gachaResult.plans[0]?.plan_id;
     if (!planId) {
-      alert("利用可能なプランが見つかりませんでした。");
+      addToast("利用可能なプランが見つかりませんでした。", "error");
       return;
     }
 
@@ -208,9 +211,10 @@ export default function GeneratePanel({ onGenerated, onMessage }: GeneratePanelP
       });
       setDigestResult(response);
       setShowDigestModal(true);
+      addToast("ダイジェストの生成が完了しました。", "success");
     } catch (error) {
       console.error("Digest generation failed:", error);
-      alert("ダイジェストの生成に失敗しました。");
+      addToast("ダイジェストの生成に失敗しました。しばらくしてから再試行してください。", "error");
     } finally {
       setDigestLoading(false);
     }

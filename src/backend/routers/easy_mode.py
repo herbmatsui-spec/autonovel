@@ -266,12 +266,14 @@ async def generate_content(
                 else input_data.llm_config
             ),
             "book_id": input_data.book_id,
+            "start_ep": input_data.start_ep,
+            "end_ep": input_data.end_ep,
         }
 
         # タスクをキューに投入 (Huey 非同期タスク呼び出し)
-        from src.backend.tasks.generation_tasks import generate_chapter_easy_mode_orchestrated_task
+        from src.backend.tasks.generation_tasks import generate_chapter_orchestrated_task
 
-        task_result = generate_chapter_easy_mode_orchestrated_task(params)
+        task_result = generate_chapter_orchestrated_task(params)
         huey_task_id = str(task_result.id)
         params["task_id"] = huey_task_id
 

@@ -10,6 +10,9 @@ import { AssetPackPanel } from "./components/AssetPackPanel";
 import ConfigPanel from "./components/ConfigPanel";
 import { BookSelector } from "./components/common/BookSelector";
 import { getGenreBadgeConfig } from "./constants/genres";
+import { MobileBottomNav } from "./components/mobile/MobileBottomNav";
+import { MobileChapterDrawer } from "./components/mobile/MobileChapterDrawer";
+import { MobileQuickActionBar } from "./components/mobile/MobileQuickActionBar";
 
 function AppContent() {
   const { toasts, addToast, removeToast } = useToast();
@@ -22,11 +25,16 @@ function AppContent() {
     setIsWizardActive,
     setWizardStep,
     hasCompletedWizard,
+    chapters,
+    currentEpNum,
+    setCurrentEpNum,
   } = useNovelContext();
   const [showGraph, setShowGraph] = useState(false);
   const [showMedia, setShowMedia] = useState(false);
   const [showConfig, setShowConfig] = useState(false);
   const [showTransitionOverlay, setShowTransitionOverlay] = useState(false);
+  const [mobileTab, setMobileTab] = useState<'books' | 'plots' | 'writing' | 'settings'>('writing');
+  const [isChapterDrawerOpen, setIsChapterDrawerOpen] = useState(false);
   const [mode, setMode] = useState<"easy" | "studio">(() => {
     if (typeof window === "undefined") return "studio";
     return (localStorage.getItem("autonovel.mode") as "easy" | "studio") || "studio";
@@ -402,6 +410,42 @@ function AppContent() {
           onOpenGraph={() => setShowGraph(true)}
         />
       )}
+
+      {/* Mobile Responsive Navigation & Toolbars */}
+      <MobileQuickActionBar
+        onInsertText={(txt) => {
+          handleMessage(`テキストに「${txt}」を挿入しました`);
+        }}
+        onAiContinue={() => handleMessage("AI続きの執筆を開始します...")}
+        onProofread={() => handleMessage("文章の校正を実行中...")}
+      />
+
+      <MobileChapterDrawer
+        isOpen={isChapterDrawerOpen}
+        onClose={() => setIsChapterDrawerOpen(false)}
+        chapters={chapters || []}
+        currentChapterId={currentEpNum}
+        onSelectChapter={(epNum) => {
+          setCurrentEpNum(epNum);
+          handleMessage(`第 ${epNum} 話を選択しました`);
+        }}
+      />
+
+      <MobileBottomNav
+        activeTab={mobileTab}
+        onTabChange={(tab) => {
+          setMobileTab(tab);
+          if (tab === 'books') {
+            setShowConfig(true);
+          } else if (tab === 'plots') {
+            setShowGraph(true);
+          } else if (tab === 'writing') {
+            setIsChapterDrawerOpen(true);
+          } else if (tab === 'settings') {
+            setShowConfig(true);
+          }
+        }}
+      />
     </div>
   );
 }

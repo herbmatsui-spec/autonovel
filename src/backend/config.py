@@ -140,6 +140,11 @@ class Settings(BaseSettings):
     # Phase 4: Enrichment Agent
     ENRICHMENT_ENABLED: bool = False
 
+    # プロセ精練設定 (Step 9)
+    PROSE_REFINER_ENABLED: bool = True
+    PROSE_REFINER_MODEL: str = "gemini-2.0-flash"
+    PROSE_REFINER_STYLE: str = "balanced"
+
     # Phase 2: Feature Flags
     BLIND_REVIEW_ENABLED: bool = True
     MULTI_LAYER_AUDIT_ENABLED: bool = True

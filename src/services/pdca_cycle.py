@@ -8,15 +8,20 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Any, Callable
+from typing import Any, Callable, List
 
+from src.models.patch_pdca import ParagraphTarget, PatchRewriteResult
 from src.services.audit_aggregator import AuditAggregator
+from src.services.audit.targeted_diagnostic import TargetedDiagnostic
 from src.services.book_score_mapping import UnifiedBookScoreBridge
+from src.services.prose.paragraph_indexer import ParagraphIndexer
+from src.services.prose.patch_merger import PatchMerger
 from src.services.pdca_directive import (
     PDCADirectiveGenerator,
     PDCACycleResult,
     WritingDirective,
 )
+from src.agents.writing.paragraph_patch_agent import ParagraphPatchAgent
 from src.backend.database.models import PDCAHistorySnapshot
 from src.backend.database.repositories.pdca_history import PDCAHistoryRepository
 
@@ -36,15 +41,25 @@ class ClosedLoopPDCARunner:
         min_improvement_delta: float = 1.5,
         event_bus: Any | None = None,
         pdca_history_repo: PDCAHistoryRepository | None = None,
+        # New dependencies for paragraph patching
+        indexer: ParagraphIndexer | None = None,
+        diagnostic: TargetedDiagnostic | None = None,
+        patch_agent: ParagraphPatchAgent | None = None,
+        patch_merger: PatchMerger | None = None,
     ) -> None:
         self.aggregator = aggregator
-        self.writer = writer
+        self.writer = writer  # Kept for compatibility, but not used in new loop
         self.bridge = bridge or UnifiedBookScoreBridge()
         self.target_score = target_score
         self.max_cycles = max(1, max_cycles)
         self.min_improvement_delta = min_improvement_delta
         self.event_bus = event_bus
         self.pdca_history_repo = pdca_history_repo
+        # New dependencies
+        self.indexer = indexer or ParagraphIndexer()
+        self.diagnostic = diagnostic or TargetedDiagnostic()
+        self.patch_agent = patch_agent or ParagraphPatchAgent()
+        self.patch_merger = patch_merger or PatchMerger()
 
     async def run_pdca_cycle(
         self,
@@ -52,7 +67,7 @@ class ClosedLoopPDCARunner:
         genre: str = "general",
         phase: str = "draft",
     ) -> tuple[str, PDCACycleResult]:
-        """Execute closed-loop PDCA regeneration.
+        """Execute closed-loop PDCA regeneration using paragraph patching.
 
         Returns:
             (best_draft_text, pdca_result)
@@ -88,46 +103,51 @@ class ClosedLoopPDCARunner:
 
         converged = current_score >= self.target_score
 
-        # 2. PDCA Loop
+        # 2. PDCA Loop with paragraph patching
         for cycle in range(1, self.max_cycles + 1):
             if converged:
                 logger.info("PDCA converged: current score %.1f >= target %.1f", current_score, self.target_score)
                 break
 
-            # A. Generate targeted directives from actionable diffs and scores
+            # A. Identify weak paragraphs from the latest audit
             latest_audit = self.aggregator.aggregate(genre=genre)
-            diffs = latest_audit.all_actionable_diffs()
-            scores = (
-                latest_audit.calibrated_by_specialist
-                if latest_audit.calibrated_by_specialist
-                else latest_audit.by_specialist
-            )
+            target_paras: List[ParagraphTarget] = self.diagnostic.identify_weak_paragraphs(latest_audit)
+            if not target_paras:
+                logger.info("No weak paragraphs identified in cycle %d, stopping loop", cycle)
+                break
 
-            directives = PDCADirectiveGenerator.generate_directives_for_regeneration(
-                scores_by_specialist=scores,
-                actionable_diffs=diffs,
-                target_threshold=self.target_score,
-                max_directives=4,
-            )
-            all_directives.extend(directives)
-            directive_prompt = PDCADirectiveGenerator.format_directives_for_llm_prompt(directives)
+            # B. Index the current draft to get paragraphs and context
+            indexed_paras = self.indexer.index_paragraphs(current_draft)
+            # indexed_paras is a list of dicts: [{'index': i, 'text': para}, ...]
 
-            # B. Execute rewrite / regeneration
-            ctx_for_writer = dict(ctx)
-            ctx_for_writer["draft_text"] = current_draft
-            ctx_for_writer["pdca_directives"] = directive_prompt
-            ctx_for_writer["actionable_diffs"] = diffs
-            ctx_for_writer["pdca_cycle"] = cycle
+            # C. For each target paragraph, rewrite it with context
+            patches: List[PatchRewriteResult] = []
+            for target in target_paras:
+                idx = target.index
+                # Get context: previous and next paragraphs
+                prev_para = indexed_paras[idx - 1]['text'] if idx > 0 else ""
+                next_para = indexed_paras[idx + 1]['text'] if idx < len(indexed_paras) - 1 else ""
+                context = {
+                    'prev_paragraph': prev_para,
+                    'next_paragraph': next_para,
+                    # We could also pass the directive and issue_category if needed by the agent
+                    'directive': target.directive,
+                    'issue_category': target.issue_category,
+                }
+                # Rewrite the paragraph
+                patch_result = await self.patch_agent.rewrite_paragraph(target, context)
+                patches.append(patch_result)
 
-            new_draft = await self._generate_rewrite(ctx_for_writer)
+            # D. Merge the patches into the draft
+            new_draft = self.patch_merger.merge_patches(current_draft, patches)
             if not new_draft or len(new_draft.strip()) == 0:
-                logger.warning("Writer returned empty draft during cycle %d, stopping loop", cycle)
+                logger.warning("Patch merge returned empty draft during cycle %d, stopping loop", cycle)
                 break
 
             current_draft = new_draft
             ctx["draft_text"] = current_draft
 
-            # C. Re-audit regenerated text
+            # E. Re-audit the new draft
             await self.aggregator.run_all(ctx)
             re_audit = self.aggregator.aggregate(genre=genre)
             new_score = (
@@ -150,7 +170,7 @@ class ClosedLoopPDCARunner:
                 "scores_by_specialist": dict(re_audit.by_specialist),
                 "calibrated_scores": dict(re_audit.calibrated_by_specialist),
                 "lowest_dimension": re_audit.lowest_dimension(),
-                "directives_count": len(directives),
+                "directives_count": len(target_paras),  # Number of paragraphs patched
                 "delta": delta,
             })
 
@@ -209,7 +229,7 @@ class ClosedLoopPDCARunner:
             score_delta=score_delta,
             improved_percentage=improved_pct,
             lowest_dimension=history[-1]["lowest_dimension"] or "unknown",
-            directives_applied=all_directives,
+            directives_applied=all_directives,  # Note: we are not collecting WritingDirective objects anymore
             history=history,
             converged=converged,
         )
@@ -217,57 +237,6 @@ class ClosedLoopPDCARunner:
         await self._save_snapshot(result, ctx)
         await self._publish_pdca_finished(result, ctx)
         return best_draft, result
-
-    async def _generate_rewrite(self, ctx: dict[str, Any]) -> str:
-        """Invoke writer agent or function with directives."""
-        if hasattr(self.writer, "rewrite_for_dimension"):
-            # WritingAgent with PDCA dimension support
-            res = self.writer.rewrite_for_dimension(
-                book_id=ctx.get("book_id", 1),
-                branch_id=ctx.get("branch_id", 1),
-                ep_num=ctx.get("chapter_number") or ctx.get("ep_num", 1),
-                dimension=ctx.get("focus", "reader_experience"),
-                actionable_diffs=ctx.get("actionable_diffs", []),
-                reporter=ctx.get("reporter"),
-            )
-            if asyncio.iscoroutine(res):
-                res = await res
-            if isinstance(res, dict) and "rewritten_text" in res:
-                return str(res["rewritten_text"])
-            return str(ctx.get("draft_text", ""))
-        elif hasattr(self.writer, "rewrite_with_focus"):
-            # WritingAgent instance (legacy)
-            res = self.writer.rewrite_with_focus(
-                book_id=ctx.get("book_id", 1),
-                ep_num=ctx.get("chapter_number") or ctx.get("ep_num", 1),
-                focus=ctx.get("focus", "pdca_improvement"),
-                params={
-                    "actionable_diffs": ctx.get("actionable_diffs", []),
-                    "pdca_directives": ctx.get("pdca_directives", ""),
-                },
-                reporter=ctx.get("reporter"),
-            )
-            if asyncio.iscoroutine(res):
-                res = await res
-            if isinstance(res, dict) and "rewritten_text" in res:
-                return str(res["rewritten_text"])
-            return str(ctx.get("draft_text", ""))
-        elif callable(self.writer):
-            res = self.writer(ctx)
-            if asyncio.iscoroutine(res):
-                res = await res
-            return str(res)
-        elif hasattr(self.writer, "generate_chapter"):
-            res = self.writer.generate_chapter(ctx)
-            if asyncio.iscoroutine(res):
-                res = await res
-            return str(res)
-        elif hasattr(self.writer, "run"):
-            res = self.writer.run(ctx)
-            if asyncio.iscoroutine(res):
-                res = await res
-            return str(getattr(res, "content", res))
-        return str(ctx.get("draft_text", ""))
 
     async def _save_snapshot(self, result: PDCACycleResult, ctx: dict[str, Any]) -> None:
         """Save the PDCA cycle result to the database."""

@@ -32,6 +32,8 @@ def map_fullauto_kwargs_to_context(kwargs: dict[str, Any]) -> WorkflowContext:
         concept=kwargs.get("concept", ""),
         tone_vibe=kwargs.get("tone_vibe", 0.6),
         user_prompt=kwargs.get("user_prompt", ""),
+        start_ep=kwargs.get("start_ep", 1),
+        end_ep=kwargs.get("end_ep"),
         enable_illustration=bool(
             kwargs.get("illustration_settings", {}).get("enableIllustration", False)
         ),
@@ -56,6 +58,8 @@ def map_easymode_kwargs_to_context(
     words_per_episode: int,
     enable_audit: bool,
     max_rewrites: int,
+    start_ep: int = 1,
+    end_ep: int | None = None,
     **kwargs: Any,
 ) -> WorkflowContext:
     """EasyModeWorkflow の kwargs を WorkflowContext に変換"""
@@ -70,6 +74,8 @@ def map_easymode_kwargs_to_context(
         concept=kwargs.get("concept", ""),
         tone_vibe=kwargs.get("tone_vibe", 0.6),
         user_prompt=kwargs.get("user_prompt", ""),
+        start_ep=start_ep,
+        end_ep=end_ep,
         enable_spice_guard=enable_audit,
         max_rewrite_iterations=max_rewrites,
         target_audit_score=95.0,

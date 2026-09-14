@@ -19,8 +19,22 @@ from src.backend import database
 from src.backend.database.repository import BookRepository
 from src.backend.observability.health import metrics
 from src.backend.tasks.huey import huey
+from src.backend.database.models import BookDbModel
+from src.services.billing.credit_service import CreditService, InsufficientCreditsError
 
 logger = logging.getLogger(__name__)
+
+
+def _get_user_id_from_book_id(book_id: int) -> int:
+    """書籍IDからユーザーIDを取得する。"""
+    session = database.SessionLocal()
+    try:
+        book = session.query(BookDbModel).get(book_id)
+        if book is None:
+            raise ValueError(f"Book not found: {book_id}")
+        return book.user_id
+    finally:
+        session.close()
 
 
 def _run_async(coro: Any) -> Any:
@@ -296,6 +310,45 @@ def generate_chapter_task(payload: dict[str, Any]) -> dict[str, Any]:
     logger.info("Starting generation task (easy): %s", payload)
     task_id = payload.get("task_id")
 
+    # クレジット消費の処理
+    book_id = payload.get("book_id")
+    if book_id is None:
+        logger.error("book_id is missing in payload for credit deduction")
+        # クレジット処理をスキップしてタスクを続行（後方互換性のため）
+        # ただし、本番環境ではエラーにするべき
+        user_id = None
+        credit_cost = 0
+        credit_service = None
+        credits_deducted = False
+    else:
+        try:
+            user_id = _get_user_id_from_book_id(book_id)
+            # 易しいタスクのクレジットコスト: writing_standard (10クレジット)
+            credit_cost = 10
+            # 新しいDBセッションでCreditServiceを初期化
+            credit_session = database.SessionLocal()
+            credit_service = CreditService(credit_session)
+            # クレジットを仮押さえ（即時引き落とし）
+            credit_service.deduct_credits(
+                user_id=user_id,
+                amount=credit_cost,
+                transaction_type="consumption",
+                description="Chapter generation (easy mode) credit hold",
+                task_id=str(task_id) if task_id else None
+            )
+            credits_deducted = True
+            # Note: credit_sessionはdeduct_credits内でクローズされないのでここでクローズする
+            # しかし、deduct_creditsメソッド内でコミットを行い、セッションはクローズされない？
+            # 現在のCreditService.deduct_creditsはコミット後にセッションをクローズしていない。
+            # したがって、ここでクローズする必要がある。
+            credit_session.close()
+        except Exception as e:
+            logger.error(f"Failed to deduct credits for book_id {book_id}: {e}")
+            # クレジット処理に失敗した場合はタスクを失敗させる
+            if task_id:
+                _update_task_in_db(str(task_id), "failed")
+            return {"error": f"Credit deduction failed: {str(e)}", "text": "", "time": 0}
+
     try:
         result = _run_async(_generate(payload))
         metrics.increment("tasks_completed")
@@ -307,12 +360,29 @@ def generate_chapter_task(payload: dict[str, Any]) -> dict[str, Any]:
                 json.dumps(result, ensure_ascii=False),
                 payload=payload,
             )
+        # クレジットを控除したままにする（成功時は確定）
         return result
     except Exception as exc:
         logger.exception("Generation task failed: %s", exc)
         metrics.increment("tasks_failed")
         if task_id:
             _update_task_in_db(str(task_id), "failed")
+        # クレジットを返金（失敗時）
+        if credits_deducted and credit_service is not None and user_id is not None:
+            try:
+                # 新しいセッションで返金処理
+                refund_session = database.SessionLocal()
+                refund_service = CreditService(refund_session)
+                refund_service.grant_credits(
+                    user_id=user_id,
+                    amount=credit_cost,
+                    transaction_type="refund",
+                    description="Refund for failed chapter generation (easy mode)",
+                    task_id=str(task_id) if task_id else None
+                )
+                refund_session.close()
+            except Exception as refund_err:
+                logger.error(f"Failed to refund credits: {refund_err}")
         return {"error": str(exc), "text": "", "time": 0}
 
 
@@ -325,6 +395,39 @@ def generate_chapter_orchestrated_task(payload: dict[str, Any]) -> dict[str, Any
     logger.info("Starting generation task (orchestrated): %s", payload)
     task_id = payload.get("task_id")
 
+    # クレジット消費の処理
+    book_id = payload.get("book_id")
+    if book_id is None:
+        logger.error("book_id is missing in payload for credit deduction")
+        # クレジット処理をスキップしてタスクを続行（後方互換性のため）
+        user_id = None
+        credit_cost = 0
+        credit_service = None
+        credits_deducted = False
+    else:
+        try:
+            user_id = _get_user_id_from_book_id(book_id)
+            # オーケストレーションタスクのクレジットコスト: writing_standard (10) + audit_full (5) + illustration_generate (8) = 23
+            credit_cost = 23
+            # 新しいDBセッションでCreditServiceを初期化
+            credit_session = database.SessionLocal()
+            credit_service = CreditService(credit_session)
+            # クレジットを仮押さえ（即時引き落とし）
+            credit_service.deduct_credits(
+                user_id=user_id,
+                amount=credit_cost,
+                transaction_type="consumption",
+                description="Chapter generation (orchestrated mode) credit hold",
+                task_id=str(task_id) if task_id else None
+            )
+            credits_deducted = True
+            credit_session.close()
+        except Exception as e:
+            logger.error(f"Failed to deduct credits for book_id {book_id}: {e}")
+            if task_id:
+                _update_task_in_db(str(task_id), "failed")
+            return {"error": f"Credit deduction failed: {str(e)}", "text": "", "time": 0}
+
     try:
         result = _run_async(_generate_orchestrated(payload))
         metrics.increment("tasks_completed")
@@ -336,12 +439,29 @@ def generate_chapter_orchestrated_task(payload: dict[str, Any]) -> dict[str, Any
                 json.dumps(result, ensure_ascii=False),
                 payload=payload,
             )
+        # クレジットを控除したままにする（成功時は確定）
         return result
     except Exception as exc:
         logger.exception("Orchestrated generation task failed: %s", exc)
         metrics.increment("tasks_failed")
         if task_id:
             _update_task_in_db(str(task_id), "failed")
+        # クレジットを返金（失敗時）
+        if credits_deducted and credit_service is not None and user_id is not None:
+            try:
+                # 新しいセッションで返金処理
+                refund_session = database.SessionLocal()
+                refund_service = CreditService(refund_session)
+                refund_service.grant_credits(
+                    user_id=user_id,
+                    amount=credit_cost,
+                    transaction_type="refund",
+                    description="Refund for failed chapter generation (orchestrated mode)",
+                    task_id=str(task_id) if task_id else None
+                )
+                refund_session.close()
+            except Exception as refund_err:
+                logger.error(f"Failed to refund credits: {refund_err}")
         return {"error": str(exc), "text": "", "time": 0}
 
 

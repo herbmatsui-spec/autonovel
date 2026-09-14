@@ -274,100 +274,14 @@ async def run_commercial_pipeline(
 @router.post("/publish", response_model=dict[str, Any])
 async def publish_commercial(request: PublishRequest, api_key: str = Depends(require_api_key)):
     """
-    既存書籍のエピソードを指定プラットフォームへ投稿する。
-
-    書籍・エピソードはDBから取得し、認証情報は環境変数/キーリング/暗号化ファイルから自動取得。
-    credentialsパラメータで上書き指定も可能。
-
-    Args:
-        request: 投稿リクエスト
-
-    Returns:
-        投稿結果
+    【非推奨・廃止】外部投稿サイトの利用規約（自動スクレイピング・非公式API投稿の禁止）および
+    アカウントBANリスクゼロの安全確保のため、自動直接投稿機能は無効化されました。
+    今後は半自動投稿アシスタント（/api/publish-assistant/format）をご利用ください。
     """
-    try:
-        from src.backend.services.commercial_helpers import _get_novel_data, _get_episodes_data
-
-        # 1. 書籍・エピソードデータ取得（プラットフォームIDもまとめて取得）
-        await _get_novel_data(request.book_id)
-        episodes_data = await _get_episodes_data(request.book_id, request.episode_ids, request.platforms)
-
-        if not episodes_data:
-            raise HTTPException(status_code=404, detail="No episodes found for this book")
-
-        # 3. 認証情報準備
-        credentials = {}
-        credential_store = get_credential_store()
-
-        for platform in request.platforms:
-            if request.credentials and platform in request.credentials:
-                # リクエストで指定された認証情報を優先
-                creds_class = _get_credentials_class(platform)
-                credentials[platform] = creds_class(**request.credentials[platform])
-            else:
-                # ストアから取得
-                credentials[platform] = credential_store.get(platform)
-
-        # 4. 予約投稿または非同期タスク投入 (Step 50, 51)
-        serializable_credentials = {}
-        for p, cred in credentials.items():
-            if cred is not None:
-                if hasattr(cred, "__dict__"):
-                    serializable_credentials[p] = {
-                        k: v for k, v in cred.__dict__.items() if not k.startswith("_")
-                    }
-                elif isinstance(cred, dict):
-                    serializable_credentials[p] = cred
-
-        from src.backend.tasks.commercial_tasks import schedule_commercial_publish
-
-        if request.schedule:
-            # 予約投稿ジョブの登録 (Step 50, 51)
-            # request.schedule が dict 形式の場合に ISO 文字列または datetime オブジェクトへ正規化して渡す
-            publish_at = request.schedule
-            if isinstance(publish_at, dict):
-                # 辞書型（{"target_time": "..."} や {"publish_at": "..."}）の展開
-                publish_at = publish_at.get("target_time") or publish_at.get("publish_at") or publish_at.get("at")
-            
-            job_info = schedule_commercial_publish(
-                book_id=request.book_id,
-                platforms=request.platforms,
-                credentials=serializable_credentials,
-                episode_ids=request.episode_ids,
-                publish_at=publish_at,
-            )
-            return {
-                "success": True,
-                "status": "scheduled",
-                "message": "Commercial publish scheduled successfully",
-                "data": job_info,
-            }
-
-        # 即時投稿：Hueyタスクを直接キューイング (Step 51)
-        from src.backend.tasks.commercial_tasks import publish_to_platforms_task
-        task_result = publish_to_platforms_task(
-            book_id=request.book_id,
-            platforms=request.platforms,
-            credentials=serializable_credentials,
-            episode_ids=request.episode_ids,
-        )
-        task_id = str(task_result.id) if task_result else "mock-task-id"
-        return {
-            "success": True,
-            "status": "queued",
-            "message": "Commercial publish queued for immediate execution",
-            "data": {
-                "task_id": task_id,
-                "book_id": request.book_id,
-                "platforms": request.platforms,
-                "status": "queued",
-            },
-        }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Publish failed: {str(e)}")
+    raise HTTPException(
+        status_code=410,
+        detail="Automated direct posting has been deprecated to comply with platform terms of service and prevent account bans. Please use the Safe Publishing Assistant clipboard formatting and checklist API instead."
+    )
 
 
 @router.get("/scheduled-tasks/{book_id}", response_model=dict[str, Any])

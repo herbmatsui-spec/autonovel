@@ -415,6 +415,46 @@ class GenericVocabularyDetector(BaseRuleDetector):
 
 
 # ---------------------------------------------------------------------------
+# 8. Emotion Syllogism (感情の三段論法・説明的自己説得)
+# ---------------------------------------------------------------------------
+class EmotionSyllogismDetector(BaseRuleDetector):
+    """感情の三段論法（説明的理由付け、不自然な自己説得、紋切り型感情抑制）を検知する"""
+
+    category = AICategory.EMOTION_SYLLOGISM
+
+    def __init__(self, config: Any = None):
+        super().__init__(config=config)
+        from src.services.anti_ai.syllogism_patterns import SYLLOGISM_PATTERNS
+        self.patterns = SYLLOGISM_PATTERNS
+
+    def detect(self, text: str) -> list[ViolationSpan]:
+        if not text:
+            return []
+        violations: list[ViolationSpan] = []
+        for pat in self.patterns:
+            for match in pat.finditer(text):
+                violations.append(
+                    ViolationSpan(
+                        category=AICategory.EMOTION_SYLLOGISM,
+                        start=match.start(),
+                        end=match.end(),
+                        matched_text=match.group(0),
+                        severity=Severity.HIGH,
+                        suggestion=f"感情の三段論法（説明的感情処理）を検知: 生理的反応や生々しい呟きに置換してください: '{match.group(0)}'",
+                    )
+                )
+        violations.sort(key=lambda v: v.start)
+        return violations
+
+    def score_from_violations(self, text: str, violations: list[ViolationSpan]) -> float:
+        if not text or not violations:
+            return 100.0
+        # 1件あたり20点減点
+        penalty = len(violations) * 20.0
+        return max(0.0, 100.0 - penalty)
+
+
+# ---------------------------------------------------------------------------
 # Registry
 # ---------------------------------------------------------------------------
 RULE_DETECTORS: dict[AICategory, type[BaseRuleDetector]] = {
@@ -425,6 +465,7 @@ RULE_DETECTORS: dict[AICategory, type[BaseRuleDetector]] = {
     AICategory.TEMPLATE_PHRASES: TemplatePhrasesDetector,
     AICategory.UNIFORM_PARAGRAPH: UniformParagraphDetector,
     AICategory.GENERIC_VOCABULARY: GenericVocabularyDetector,
+    AICategory.EMOTION_SYLLOGISM: EmotionSyllogismDetector,
 }
 
 
@@ -436,6 +477,7 @@ __all__ = [
     "TemplatePhrasesDetector",
     "UniformParagraphDetector",
     "GenericVocabularyDetector",
+    "EmotionSyllogismDetector",
     "RULE_DETECTORS",
     "_split_sentences",
     "_split_paragraphs",

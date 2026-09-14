@@ -4,8 +4,16 @@ import logging
 from collections.abc import AsyncGenerator
 
 from src.backend.redis_util import get_async_redis_client
+from src.models.generation_progress import AgentThoughtStep
 
 logger = logging.getLogger(__name__)
+
+
+def format_thought_event(step: AgentThoughtStep) -> str:
+    """AgentThoughtStep を SSE event: progress フォーマットに変換する。"""
+    payload = step.model_dump_json()
+    return f"event: progress\ndata: {payload}\n\n"
+
 
 
 async def task_event_generator(task_id: str) -> AsyncGenerator[str, None]:

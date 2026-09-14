@@ -1,4 +1,5 @@
 import { BookShowcaseData, MarketingPromoData } from "../types/marketingShowcase";
+import { ViralTitleRequest, ViralTitleResponse } from "../types/marketing";
 
 const BASE = "/api/marketing";
 
@@ -17,5 +18,20 @@ export async function generateMarketingContent(
     }),
   });
   if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+export async function generateViralTitles(
+  payload: ViralTitleRequest
+): Promise<ViralTitleResponse> {
+  const res = await fetch(`${BASE}/viral-titles`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(errorText || `Request failed with status ${res.status}`);
+  }
   return res.json();
 }

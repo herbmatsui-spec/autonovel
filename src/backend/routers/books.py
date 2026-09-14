@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends
-
-from src.backend.auth import require_api_key
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
+from src.backend.auth import get_current_user
+from src.backend.database.models import User, Book
 from src.backend.database.uow import UnitOfWork
 from src.core.container import AppContainer
 from src.models.api_schemas import BookSchema, BookCreateRequest, BookScoreHistoryResponse, PDCACycleSnapshot
@@ -10,9 +11,9 @@ router = APIRouter(prefix="/api/books", tags=["books"])
 
 @router.get("", response_model=list[BookSchema])
 @router.get("/", response_model=list[BookSchema])
-async def list_books():
+async def list_books(current_user: User = Depends(get_current_user)):
     async with UnitOfWork(AppContainer.db()) as uow:
-        books = await uow.books.get_all_books()
+        books = await uow.books.get_all_books(user_id=current_user.id)
 
     return [
         {
@@ -30,13 +31,17 @@ async def list_books():
 
 
 @router.get("/{book_id}", response_model=BookSchema)
-async def get_book(book_id: int):
+async def get_book(book_id: int, current_user: User = Depends(get_current_user)):
     async with UnitOfWork(AppContainer.db()) as uow:
-        b = await uow.books.get_book(book_id)
-    if not b:
-        from src.core.exceptions import NotFoundError
-
-        raise NotFoundError("Book not found", resource_type="Book", resource_id=str(book_id))
+        b = await uow.books.get_book(book_id=book_id, user_id=current_user.id)
+        if not b:
+            # Check if the book exists under another user for proper 403 response
+            result = await uow.session.execute(select(Book).where(Book.id == book_id))
+            other_book = result.scalar_one_or_none()
+            if other_book and other_book.user_id != current_user.id and current_user.role != "admin":
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="この作品に対するアクセス権限がありません")
+            from src.core.exceptions import NotFoundError
+            raise NotFoundError("Book not found", resource_type="Book", resource_id=str(book_id))
 
     return {
         "id": b.id,
@@ -52,18 +57,19 @@ async def get_book(book_id: int):
 
 @router.post("", response_model=BookSchema)
 @router.post("/", response_model=BookSchema)
-async def create_book(payload: BookCreateRequest, api_key: str = Depends(require_api_key)):
+async def create_book(payload: BookCreateRequest, current_user: User = Depends(get_current_user)):
     async with UnitOfWork(AppContainer.db()) as uow:
         book_id = await uow.books.create_book(
+            user_id=current_user.id,
             title=payload.title,
-            genre=payload.genre,
-            concept=payload.concept,
-            synopsis=payload.synopsis,
-            target_eps=payload.target_eps,
+            genre=payload.genre or "ファンタジー",
+            concept=payload.concept or "",
+            synopsis=payload.synopsis or "",
+            target_eps=payload.target_eps or 10,
             style_dna={},
             marketing_data={},
         )
-        b = await uow.books.get_book(book_id)
+        b = await uow.books.get_book(book_id=book_id, user_id=current_user.id)
     if not b:
         from src.core.exceptions import NotFoundError
 
@@ -82,9 +88,18 @@ async def create_book(payload: BookCreateRequest, api_key: str = Depends(require
 
 
 @router.delete("/{book_id}")
-async def delete_book(book_id: int, api_key: str = Depends(require_api_key)):
+async def delete_book(book_id: int, current_user: User = Depends(get_current_user)):
     async with UnitOfWork(AppContainer.db()) as uow:
-        await uow.books.delete_book(book_id)
+        b = await uow.books.get_book(book_id=book_id, user_id=current_user.id)
+        if not b:
+            result = await uow.session.execute(select(Book).where(Book.id == book_id))
+            other_book = result.scalar_one_or_none()
+            if other_book and other_book.user_id != current_user.id and current_user.role != "admin":
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="この作品に対するアクセス権限がありません")
+            from src.core.exceptions import NotFoundError
+            raise NotFoundError("Book not found", resource_type="Book", resource_id=str(book_id))
+
+        await uow.books.delete_book(book_id=book_id, user_id=current_user.id)
     return {"message": f"Book {book_id} deleted successfully"}
 
 

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from src.config.cost_optimization import MODEL_PRICING, ROUTING_TIERS
+
 # デフォルトモデルマッピング（必要に応じて追加）
 _DEFAULTS = {
     "planning": "gemini-3.5-flash-lite",
@@ -118,3 +120,14 @@ def resolve_model_for_purpose(purpose: str, override_config: Any | None = None) 
 
     return select_model(purpose)
 
+
+def resolve_optimized_model(task_type: str, is_climax: bool = False, user_plan: str = "free") -> str:
+    """
+    リクエストの要求品質とタスク種別から最適モデルを動的解決。
+    3層ハイブリッドルーティングを実装。
+    """
+    if task_type in ["planning", "audit", "screening"]:
+        return ROUTING_TIERS["tier1_light"]
+    if is_climax or user_plan in ["pro", "enterprise"]:
+        return ROUTING_TIERS["tier3_premium"]
+    return ROUTING_TIERS["tier2_standard"]

@@ -58,6 +58,8 @@ class EasyModeInput(BaseModel):
         default=None,
         description="既存作品に追加・更新する場合の作品ID。未指定時は新規採番して保存",
     )
+    start_ep: int = Field(default=1, ge=1, le=50, description="開始話数")
+    end_ep: int | None = Field(default=None, ge=1, le=50, description="終了話数（未指定時はtarget_episodesまで）")
 
 
 class StreamQueryInput(BaseModel):
@@ -209,6 +211,8 @@ class FullAutoRequest(BaseModel):
     )
     enable_audit: bool = Field(default=True, description="推敲監査を有効化")
     max_rewrites: int = Field(default=2, ge=0, le=5, description="最大リライト回数")
+    start_ep: int = Field(default=1, ge=1, le=50, description="開始話数")
+    end_ep: int | None = Field(default=None, ge=1, le=50, description="終了話数（未指定時はtarget_episodesまで）")
 
 
 __all__ = [

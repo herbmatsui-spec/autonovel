@@ -151,7 +151,7 @@ const [currentChapterText, setCurrentChapterText] = useState<string>(
       const data = await fetchBooks();
       setBooks(data);
       const current = data.find((b) => b.id === selectedBookIdRef.current);
-      setSelectedBook(current || (data.length > 0 ? data[0] : null));
+      setSelectedBook((current || data[0]) ?? null);
     } catch (err) {
       console.error("Failed to fetch books:", err);
     } finally {
@@ -343,6 +343,8 @@ const [currentChapterText, setCurrentChapterText] = useState<string>(
         setIsWizardActive,
         hasCompletedWizard,
         setHasCompletedWizard,
+        mode,
+        setMode,
       }}
     >
       {children}

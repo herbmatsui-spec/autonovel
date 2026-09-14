@@ -65,9 +65,11 @@ export async function downloadPublishZip(
   const disposition = res.headers.get('Content-Disposition');
   let filename = `${platform}_novel_export.zip`;
   if (disposition && disposition.includes("filename*=UTF-8''")) {
-    filename = decodeURIComponent(disposition.split("filename*=UTF-8''")[1]);
+    const part = disposition.split("filename*=UTF-8''")[1];
+    if (part) filename = decodeURIComponent(part);
   } else if (disposition && disposition.includes('filename=')) {
-    filename = disposition.split('filename=')[1].replace(/["']/g, '');
+    const part = disposition.split('filename=')[1];
+    if (part) filename = part.replace(/["']/g, '');
   }
 
   a.download = filename;

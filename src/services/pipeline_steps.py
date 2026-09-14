@@ -191,8 +191,8 @@ class WriteStep(WorkflowStep):
             async def write_operation():
                 return await engine.writer.generate_episodes_pipeline(
                     book_id=ctx.book_id,
-                    start_ep=1,
-                    end_ep=ctx.target_eps,
+                    start_ep=ctx.start_ep,
+                    end_ep=ctx.end_ep or ctx.target_eps,
                     passion=ctx.tone_vibe,
                     target_word_count=ctx.word_count,
                     reporter=reporter,

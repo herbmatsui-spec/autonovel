@@ -19,6 +19,7 @@ from sqlalchemy import (
     text,
 )
 from sqlalchemy.types import TypeDecorator
+from sqlalchemy.orm import relationship
 
 from src.infrastructure.database.models.base_orm import Base
 
@@ -41,10 +42,30 @@ def on_create(target, connection, **kw):
 # ==========================================
 
 
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    email = Column(String(255), unique=True, nullable=False, index=True)
+    hashed_password = Column(String(255), nullable=False)
+    display_name = Column(String(100), nullable=False)
+    role = Column(String(20), default="user", nullable=False)
+    status = Column(String(20), default="active", nullable=False)
+    plan_tier = Column(String(20), default="free", nullable=False)
+    credits = Column(Integer, default=50, nullable=False)
+    stripe_customer_id = Column(String(255), nullable=True, index=True)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+    books = relationship("Book", back_populates="owner", cascade="all, delete-orphan")
+
+
 class Book(Base):
     __tablename__ = "books"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)
+    owner = relationship("User", back_populates="books")
     title = Column(String(200), nullable=False)
     genre = Column(String(100), default="")
     concept = Column(Text, default="")
@@ -89,6 +110,7 @@ class Branch(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     book_id = Column(Integer, ForeignKey("books.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)
     name = Column(String(100), nullable=False)
     parent_id = Column(Integer, nullable=True)
     fork_ep_num = Column(Integer, default=0)
@@ -209,6 +231,7 @@ class Chapter(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     book_id = Column(Integer, ForeignKey("books.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)
     branch_id = Column(Integer, default=1, nullable=False)
     ep_num = Column(Integer, nullable=False)
     title = Column(String(200))
@@ -223,12 +246,12 @@ class Chapter(Base):
     tension_delta = Column(Integer, default=0)
     qol_delta = Column(Integer, default=0)
     is_anchor = Column(Boolean, default=False)
+    cost_jpy = Column(Float, default=0.0)
+    cache_hit_ratio = Column(Float, default=0.0)
 
     __table_args__ = (
         UniqueConstraint("book_id", "branch_id", "ep_num", name="uq_chapters_book_branch_ep"),
     )
-
-
 class Character(Base):
     __tablename__ = "characters"
 
@@ -239,6 +262,7 @@ class Character(Base):
     personality = Column(String(500), default="")
     ability = Column(String(500), default="")
     registry_data = Column(Text)
+    voice_profile_json = Column(JSON, nullable=True)
 
 
 class CharacterArc(Base):

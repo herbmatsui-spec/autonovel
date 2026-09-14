@@ -29,6 +29,8 @@ class WorkflowContext(BaseModel):
     concept: str = ""
     tone_vibe: float = 0.6
     user_prompt: str = ""
+    start_ep: int = 1
+    end_ep: int | None = None
 
     # === 実行状態 ===
     book_id: int | None = None

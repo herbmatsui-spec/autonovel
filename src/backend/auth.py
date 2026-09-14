@@ -1,8 +1,5 @@
 """
 src/backend/auth.py — API 認証ユーティリティ
-
-api_key の検証ロジックを提供する。現在はシンプルな許可リスト方式を採用し、
-将来的に JWT/OAuth 等へ置き換え可能な抽象化レイヤーとする。
 """
 
 from __future__ import annotations
@@ -10,99 +7,55 @@ from __future__ import annotations
 import logging
 import os
 
-from fastapi import HTTPException, Request
+from fastapi import Depends, HTTPException, Request, Header, status
+from sqlalchemy.ext.asyncio import AsyncSession
+from src.backend.database import get_db
+from src.backend.database.models import User
+from src.backend.security.jwt import decode_token
+from fastapi.security import OAuth2PasswordBearer
+from src.dependencies import get_prompt_manager
 
-from src.backend.config import settings
-from src.core.exceptions import AppError
-from src.dependencies import get_prompt_manager  # noqa: F401
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
 
-logger = logging.getLogger(__name__)
+async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)) -> User:
+    if not token:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="認証が必要です")
+    payload = decode_token(token)
+    user_id = int(payload["sub"]) if isinstance(payload["sub"], (int, str)) and str(payload["sub"]).isdigit() else payload["sub"]
+    user = await db.get(User, user_id)
+    if not user or user.status != "active":
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="ユーザーが無効です")
+    return user
 
+async def require_api_key(authorization: str = Header(default="", alias="Authorization")) -> str:
+    """APIキーの簡易検証を行う依存性関数"""
+    allowed_keys_str = os.environ.get("ALLOWED_API_KEYS", "")
+    allowed_keys = [k.strip() for k in allowed_keys_str.split(",") if k.strip()]
+    
+    if not allowed_keys or os.environ.get("APP_ENV") == "development":
+        return "dev-key"
 
-class APIKeyService:
-    """API キーの検証を司るサービス。"""
+    token = ""
+    if authorization.startswith("Bearer "):
+        token = authorization[7:]
+    elif authorization:
+        token = authorization
 
-    def __init__(self, allowed_keys: list[str] | None = None, disabled: bool = False):
-        self.allowed_keys = allowed_keys or []
-        self.disabled = disabled
+    if token in allowed_keys:
+        return token
+    
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid or missing API Key"
+    )
 
-    def validate(self, api_key: str) -> bool:
-        if self.disabled:
-            # 本番環境では AUTH_DISABLED を無視して認証を要求
-            if settings.APP_ENV == "production" or os.environ.get("ENVIRONMENT") == "production":
-                logger.error(
-                    "AUTH_DISABLED is set but APP_ENV=production - authentication is strictly required"
-                )
-                return False
-            logger.warning("AUTH_DISABLED is set - authentication is bypassed (non-production)")
-            return True
-        if not self.allowed_keys:
-            return False
-        import hmac
-
-        return any(hmac.compare_digest(api_key, key) for key in self.allowed_keys)
-
-    def get_rate_limit_key(self, api_key: str) -> str:
-        """API key ベースのレート制限キーを返す"""
-        return f"apikey:{api_key[:8]}"
-
-
-_api_key_service: APIKeyService | None = None
-
-
-def get_api_key_service() -> APIKeyService:
-    global _api_key_service
-    if _api_key_service is None:
-        disabled = settings.AUTH_DISABLED or os.environ.get("AUTH_DISABLED", "false").lower() in (
-            "1",
-            "true",
-            "yes",
-        )
-        keys_env = settings.ALLOWED_API_KEYS or os.environ.get("ALLOWED_API_KEYS", "")
-        allowed_keys = [k.strip() for k in keys_env.split(",") if k.strip()]
-        _api_key_service = APIKeyService(allowed_keys=allowed_keys, disabled=disabled)
-    return _api_key_service
-
-
-async def require_api_key(request: Request) -> str:
-    service = get_api_key_service()
-    if service.disabled:
-        return request.headers.get("X-API-Key") or "AUTH_BYPASSED"
-
-    api_key = request.headers.get("X-API-Key")
-    if not api_key:
-        raise HTTPException(
-            status_code=401,
-            detail={
-                "error_code": "UNAUTHORIZED",
-                "error_message": "API キーが指定されていません。X-API-Key ヘッダーを設定してください。",
-            },
-        )
-
-    if not service.validate(api_key):
-        logger.warning(
-            f"Invalid API key attempt from "
-            f"{request.client.host if request.client else 'unknown'} "
-            f"key_prefix={api_key[:4]}***"
-        )
-        raise HTTPException(
-            status_code=403,
-            detail={"error_code": "FORBIDDEN", "error_message": "API キーが無効です。"},
-        )
-    return api_key
-
-
-def validate_api_key_or_raise(api_key: str) -> str:
-    service = get_api_key_service()
-    if not service.validate(api_key):
-        raise AppError("API キーが無効です。", status_code=403, error_code="FORBIDDEN")
-    return api_key
+async def validate_api_key_or_raise(authorization: str = Header(default="", alias="Authorization")) -> str:
+    return await require_api_key(authorization)
 
 __all__ = [
-    "APIKeyService",
-    "get_api_key_service",
+    "get_current_user",
     "require_api_key",
     "validate_api_key_or_raise",
     "get_prompt_manager",
+    "oauth2_scheme",
 ]
-

@@ -1,0 +1,18 @@
+以下のセリフをキャラクター「{{ character.character_name }}」の口調ルールに基づいて修正してください。
+
+キャラクタープロフィール:
+一人称候補: {{ character.first_person | join(', ') }}
+二人称候補: {{ character.second_person | join(', ') }}
+許可される語尾: {{ character.endings | join(', ') }}
+禁止語彙: {{ character.forbidden_words | join(', ') }}
+口癖: {{ character.catchphrases | join(', ') }}
+
+修正対象のセリフ:
+"{{ original_dialogue }}"
+
+制約:
+- 文意を維持すること。
+- キャラクタープロフィールに厳格に従うこと。
+- 余計な説明を加えず、修正されたセリフのみを出力すること。
+
+修正後のセリフ:

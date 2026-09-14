@@ -96,4 +96,24 @@ class PromptComposer:
                 + prompt
             )
 
+        # PLAN 03: 生々しいエゴ・打算・身体反応の強制指示（AI優等生病の外科的切除）
+        try:
+            from pathlib import Path
+            import jinja2
+            from src.agents.context_builder_agent import resolve_character_flaw
+
+            char_flaw = context.get("character_flaw")
+            if not char_flaw:
+                char_data = context.get("character") or {"name": context.get("pov_character_name", "主人公")}
+                char_flaw = resolve_character_flaw(char_data)
+
+            tmpl_path = Path(__file__).resolve().parents[2] / "prompts" / "templates"
+            jenv = jinja2.Environment(loader=jinja2.FileSystemLoader(str(tmpl_path)))
+            tmpl = jenv.get_template("narrative/raw_emotion_instruction.j2")
+            emotion_instruction = tmpl.render(character_flaw=char_flaw)
+            prompt = emotion_instruction + "\n\n" + prompt
+        except Exception as e:
+            if hasattr(self.agent, "logger"):
+                self.agent.logger.warning("Failed to render raw_emotion_instruction: %s", e)
+
         return prompt

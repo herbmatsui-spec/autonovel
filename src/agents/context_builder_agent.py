@@ -21,6 +21,59 @@ class ContextBuilderOutput(BaseModel):
     full_context: dict[str, Any]
 
 
+def resolve_character_flaw(char_data: dict[str, Any]) -> Any:
+    """キャラクター辞書からFlawプロファイル（俗物動機・裏の打算）を抽出・自動補完する"""
+    from src.config.flaw_and_fetish import FLAW_PRESETS
+    from src.models.character_flaw import CharacterFlawProfile, SecretMotive
+
+    name = char_data.get("name") or "主人公"
+    surface = char_data.get("personality") or "人当たりが良く善良"
+
+    # 既存のFlaw設定がある場合
+    existing_flaw = char_data.get("secret_flaw")
+    if existing_flaw and isinstance(existing_flaw, dict):
+        motive = SecretMotive(
+            motive_type=existing_flaw.get("motive_type", "絶対的損得勘定"),
+            inner_monologue_sample=existing_flaw.get("inner_monologue_sample", "計算通りだ。"),
+            physical_trigger=existing_flaw.get("physical_trigger", "口角を微かに吊り上げる"),
+        )
+        return CharacterFlawProfile(
+            character_name=name,
+            surface_persona=surface,
+            secret_flaw=motive,
+            target_of_contempt=char_data.get("target_of_contempt", ""),
+        )
+    elif isinstance(existing_flaw, SecretMotive):
+        return CharacterFlawProfile(
+            character_name=name,
+            surface_persona=surface,
+            secret_flaw=existing_flaw,
+            target_of_contempt=char_data.get("target_of_contempt", ""),
+        )
+
+    # プリセットからの自動補完
+    preset_key = "calculating_merchant"
+    char_str = str(char_data)
+    if "追放" in char_str or "復讐" in char_str:
+        preset_key = "vengeful_grudge"
+    elif "劣等" in char_str or "見下し" in char_str:
+        preset_key = "twisted_inferiority"
+
+    preset = FLAW_PRESETS.get(preset_key, FLAW_PRESETS["calculating_merchant"])
+    motive = SecretMotive(
+        motive_type=preset["motive_type"],
+        inner_monologue_sample=preset["inner_monologue_sample"],
+        physical_trigger=preset["physical_trigger"],
+    )
+
+    return CharacterFlawProfile(
+        character_name=name,
+        surface_persona=surface,
+        secret_flaw=motive,
+        target_of_contempt=char_data.get("target_of_contempt", "かつて主人公を見下した旧勢力"),
+    )
+
+
 class ContextBuilderAgent(SkillAgent):
     """執筆に必要な完全なコンテキストを構築するエージェント。"""
 

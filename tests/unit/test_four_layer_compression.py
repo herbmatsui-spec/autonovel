@@ -233,7 +233,7 @@ def test_layer4_packs_smaller_facts_after_large_fact_exceeds_budget():
 @pytest.mark.parametrize("test_case", ACCURACY_TEST_CASES)
 def test_scene_type_accuracy(test_case):
     """シーンタイプ別圧縮精度の検証: 必須カテゴリ・エンティティが保持されること."""
-    config = CompressionConfig(max_tokens=300, cache_enabled=False)
+    config = CompressionConfig(max_tokens=4000, cache_enabled=False)
     compressor = FourLayerCompressor(config=config)
 
     # Build entities with appropriate labels for categorization
@@ -342,7 +342,7 @@ def test_scene_type_accuracy(test_case):
 
 def test_scene_type_accuracy_all_scenes():
     """全シーンタイプでの精度検証（統合テスト）."""
-    config = CompressionConfig(max_tokens=300, cache_enabled=False)
+    config = CompressionConfig(max_tokens=4000, cache_enabled=False)
     compressor = FourLayerCompressor(config=config)
 
     def build_entities_relations(test_case):

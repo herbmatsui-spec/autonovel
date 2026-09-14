@@ -33,6 +33,7 @@ from src.backend.routers import (
     illustrations,
     issues,
     marketing,
+    marketing_ctr,
     misc,
     multimedia,
     novel,
@@ -45,6 +46,10 @@ from src.backend.routers import (
     tasks,
     pipeline_stream,
     publishing,
+    publishing_assistant,
+    auth,
+    billing,
+    billing_webhook,
 )
 
 logger = logging.getLogger(__name__)
@@ -124,6 +129,7 @@ app.include_router(tasks.router)
 app.include_router(patches.router)
 app.include_router(issues.router)
 app.include_router(marketing.router)
+app.include_router(marketing_ctr.router)
 app.include_router(prompt_versions.router)
 app.include_router(misc.router)
 app.include_router(novel.router)
@@ -135,6 +141,10 @@ app.include_router(anti_ai.router)
 app.include_router(cost.router)
 app.include_router(pipeline_stream.router)
 app.include_router(publishing.router, prefix="/api/export")
+app.include_router(publishing_assistant.router, prefix="/api")
+app.include_router(auth.router)
+app.include_router(billing.router)
+app.include_router(billing_webhook.router)
 
 
 @app.get("/health")

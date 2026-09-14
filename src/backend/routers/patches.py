@@ -1,6 +1,6 @@
 from typing import Any
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import select
 
@@ -12,7 +12,13 @@ from src.backend.prompt_version_manager import PromptVersionManager
 from src.core.container import AppContainer
 from src.core.exceptions import NotFoundError, ValidationError
 
-router = APIRouter(prefix="/api/patches", tags=["patches"])
+# New imports for paragraph patching
+from src.services.prose.paragraph_indexer import ParagraphIndexer
+from src.agents.writing.paragraph_patch_agent import ParagraphPatchAgent
+from src.services.prose.patch_merger import PatchMerger
+from src.models.patch_pdca import ParagraphTarget, PatchRewriteResult
+
+router = APIRouter(prefix="/api", tags=["patches"])
 
 
 class ReviewActionRequest(BaseModel):
@@ -26,7 +32,20 @@ class ReviseReviewRequest(BaseModel):
     comment: str = ""
 
 
-@router.get("/{book_id}/pending", dependencies=[Depends(require_api_key)])
+# New request model for paragraph patching
+class ParagraphPatchRequest(BaseModel):
+    paragraph_index: int
+    directive: str
+
+
+# New response model for paragraph patching
+class ParagraphPatchResponse(BaseModel):
+    index: int
+    original_paragraph: str
+    patched_paragraph: str
+
+
+@router.get("/patches/{book_id}/pending", dependencies=[Depends(require_api_key)])
 async def get_pending_patches(book_id: int):
     from src.backend.database.uow import UnitOfWork
 
@@ -37,7 +56,7 @@ async def get_pending_patches(book_id: int):
     return patches
 
 
-@router.post("/{patch_id}/approve")
+@router.post("/patches/{patch_id}/approve")
 async def approve_patch(
     patch_id: int, req: Any | None = None, api_key: str = Depends(require_api_key)
 ):
@@ -101,7 +120,7 @@ async def approve_patch(
     return {"message": "Patch approved and applied successfully"}
 
 
-@router.post("/{patch_id}/reject")
+@router.post("/patches/{patch_id}/reject")
 async def reject_patch(
     patch_id: int, req: Any | None = None, api_key: str = Depends(require_api_key)
 ):
@@ -125,7 +144,7 @@ async def reject_patch(
     return {"message": "Patch rejected successfully"}
 
 
-@router.post("/{patch_id}/edit")
+@router.post("/patches/{patch_id}/edit")
 async def edit_patch(patch_id: int, req: Any, api_key: str = Depends(require_api_key)):
     # Note: PatchEditRequest should be imported from api_schemas in the actual final version
     # For now, we assume it's handled by the request body
@@ -180,7 +199,7 @@ async def edit_patch(patch_id: int, req: Any, api_key: str = Depends(require_api
 # ============================================================================
 
 
-@router.get("/{book_id}/reviews")
+@router.get("/patches/{book_id}/reviews")
 async def get_pending_reviews(book_id: int):
     """レビュー待ちパッチ一覧を取得"""
     from src.backend.database.uow import UnitOfWork
@@ -192,7 +211,7 @@ async def get_pending_reviews(book_id: int):
     return reviews
 
 
-@router.get("/reviews/{review_id}", dependencies=[Depends(require_api_key)])
+@router.get("/patches/reviews/{review_id}", dependencies=[Depends(require_api_key)])
 async def get_review_detail(review_id: int):
     """レビュー詳細を取得"""
     from src.backend.database.uow import UnitOfWork
@@ -208,7 +227,7 @@ async def get_review_detail(review_id: int):
     return review
 
 
-@router.post("/reviews/{review_id}/approve")
+@router.post("/patches/reviews/{review_id}/approve")
 async def approve_review(
     review_id: int, req: ReviewActionRequest, api_key: str = Depends(require_api_key)
 ):
@@ -246,7 +265,7 @@ async def approve_review(
     return {"message": "Review approved successfully"}
 
 
-@router.post("/reviews/{review_id}/reject")
+@router.post("/patches/reviews/{review_id}/reject")
 async def reject_review(
     review_id: int, req: ReviewActionRequest, api_key: str = Depends(require_api_key)
 ):
@@ -290,7 +309,7 @@ async def reject_review(
     return {"message": "Review rejected successfully"}
 
 
-@router.post("/reviews/{review_id}/revise")
+@router.post("/patches/reviews/{review_id}/revise")
 async def revise_review(
     review_id: int, req: ReviseReviewRequest, api_key: str = Depends(require_api_key)
 ):
@@ -331,7 +350,7 @@ async def revise_review(
 # ============================================================================
 
 
-@router.get("/{book_id}/setting-versions")
+@router.get("/patches/{book_id}/setting-versions")
 async def get_setting_versions(book_id: int):
     """設定バージョン履歴を取得"""
     from src.backend.database.uow import UnitOfWork
@@ -343,7 +362,7 @@ async def get_setting_versions(book_id: int):
     return versions
 
 
-@router.get("/{book_id}/setting-versions/{version_number}")
+@router.get("/patches/{book_id}/setting-versions/{version_number}")
 async def get_setting_version(book_id: int, version_number: int):
     """特定バージョンの設定を取得"""
     from src.backend.database.uow import UnitOfWork
@@ -359,3 +378,40 @@ async def get_setting_version(book_id: int, version_number: int):
             resource_id=str(version_number),
         )
     return version
+
+
+# ============================================================================
+# Paragraph Patch Endpoint (Manual Paragraph Rewriting)
+# ============================================================================
+
+
+@router.post("/episodes/{episode_id}/patch-paragraph")
+async def patch_paragraph(
+    episode_id: int, req: ParagraphPatchRequest, api_key: str = Depends(require_api_key)
+):
+    """手動で特定段落のリライトを指示し、即時差分を取得"""
+    # TODO: Implement actual logic to fetch episode text, apply patch, and return diff
+    # For now, we return a dummy response to ensure the endpoint works
+
+    # Validate paragraph index
+    if req.paragraph_index < 0:
+        raise HTTPException(status_code=400, detail="Paragraph index must be non-negative")
+
+    # Dummy implementation: return a fixed response
+    # In a real implementation, we would:
+    # 1. Fetch the episode text from the database or service
+    # 2. Index the text into paragraphs
+    # 3. Get the target paragraph by index
+    # 4. Use the patch agent to rewrite the paragraph with context
+    # 5. Use the patch merchant to merge the patch
+    # 6. Return the original and patched paragraph
+
+    # For now, we return a dummy response
+    dummy_original = f"This is the original content of paragraph {req.paragraph_index} for episode {episode_id}."
+    dummy_patched = f"This is the patched content of paragraph {req.paragraph_index} for episode {episode_id} based on directive: {req.directive}"
+
+    return ParagraphPatchResponse(
+        index=req.paragraph_index,
+        original_paragraph=dummy_original,
+        patched_paragraph=dummy_patched,
+    )

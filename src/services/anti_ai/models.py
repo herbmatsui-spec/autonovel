@@ -21,6 +21,7 @@ class AICategory(str, enum.Enum):
     TEMPLATE_PHRASES = "TEMPLATE_PHRASES"
     UNIFORM_PARAGRAPH = "UNIFORM_PARAGRAPH"
     GENERIC_VOCABULARY = "GENERIC_VOCABULARY"
+    EMOTION_SYLLOGISM = "EMOTION_SYLLOGISM"
 
 
 class Severity(str, enum.Enum):
@@ -45,6 +46,7 @@ DEFAULT_SEVERITY: dict[AICategory, Severity] = {
     AICategory.TEMPLATE_PHRASES: Severity.HIGH,
     AICategory.UNIFORM_PARAGRAPH: Severity.LOW,
     AICategory.GENERIC_VOCABULARY: Severity.LOW,
+    AICategory.EMOTION_SYLLOGISM: Severity.HIGH,
 }
 
 
@@ -94,6 +96,7 @@ DEFAULT_CATEGORY_WEIGHTS: dict[AICategory, float] = {
     AICategory.TEMPLATE_PHRASES: 1.2,
     AICategory.UNIFORM_PARAGRAPH: 0.6,
     AICategory.GENERIC_VOCABULARY: 0.7,
+    AICategory.EMOTION_SYLLOGISM: 1.5,
 }
 
 

@@ -15,6 +15,8 @@ from dataclasses import dataclass, field
 from typing import Any, Mapping, Sequence
 from prometheus_client import Counter, Gauge
 
+from src.services.audit.fast_screener import FastScreener
+
 logger = logging.getLogger(__name__)
 
 SPECIALIST_NAMES: tuple[str, ...] = (
@@ -62,7 +64,7 @@ class BookScoreResult:
     by_specialist: dict[str, float]
     missing: list[str] = field(default_factory=list)
     weights_used: dict[str, float] = field(default_factory=dict)
-    raw: dict[str, SpecialistAuditResult] = field(default_factory=dict)
+    raw: dict[str, Any] = field(default_factory=dict)
     calibrated_overall: float | None = None
     calibrated_by_specialist: dict[str, float] = field(default_factory=dict)
     calibration_meta: dict[str, Any] = field(default_factory=dict)
@@ -158,6 +160,7 @@ class AuditAggregator:
         calibrator: Any | None = None,
         model_router: Any | None = None,
         batch_mode: bool = False,
+        fast_screener: FastScreener | None = None,
     ) -> None:
         self.weights: dict[str, float] = {n: float(weights.get(n, 0.0)) for n in SPECIALIST_NAMES}
         validate_weights(self.weights)
@@ -183,6 +186,7 @@ class AuditAggregator:
                 self.calibrator = None
         else:
             self.calibrator = calibrator
+        self.fast_screener = fast_screener or FastScreener()
 
     @classmethod
     def from_registry(
@@ -193,9 +197,10 @@ class AuditAggregator:
         calibrator: Any | None = None,
         model_router: Any | None = None,
         batch_mode: bool = False,
+        fast_screener: FastScreener | None = None,
     ) -> "AuditAggregator":
         specialists = list(registry.values())
-        return cls(specialists=specialists, weights=weights, event_bus=event_bus, calibrator=calibrator, model_router=model_router, batch_mode=batch_mode)
+        return cls(specialists=specialists, weights=weights, event_bus=event_bus, calibrator=calibrator, model_router=model_router, batch_mode=batch_mode, fast_screener=fast_screener)
 
     def refresh_model_routing(self, config_path: str = "config/audit_models.yaml") -> None:
         """Hot reload the model routing config without restarting the app."""
@@ -344,6 +349,81 @@ class AuditAggregator:
             outliers=outliers,
             variance_penalty=variance_penalty,
         )
+
+    async def run_hierarchical_audit(
+        self,
+        ctx: dict[str, Any],
+        genre: str = "general",
+        apply_calibration: bool = True,
+        pass_threshold: float = 80.0,
+    ) -> BookScoreResult:
+        """Run hierarchical audit with fast screener for early exit.
+
+        If the fast screener score is above pass_threshold, skip running the 8 specialists
+        and return a high score result.
+
+        Args:
+            ctx: The context dictionary containing the draft text.
+            genre: The genre for calibration.
+            apply_calibration: Whether to apply calibration.
+            pass_threshold: The score above which the screener passes.
+
+        Returns:
+            A BookScoreResult representing the audit outcome.
+        """
+        # Extract the draft text from context
+        draft_text = ctx.get("draft_text", "")
+        if not draft_text:
+            logger.warning("No draft text found in context for hierarchical audit")
+            # Fallback to full audit
+            await self.run_all(ctx)
+            return self.aggregate(genre=genre, apply_calibration=apply_calibration)
+
+        # Run the fast screener
+        screener_score, passed = await self.fast_screener.screen(draft_text)
+        logger.info(
+            "Fast screener score: %.2f (passed: %s, threshold: %.2f)",
+            screener_score,
+            passed,
+            pass_threshold,
+        )
+
+        if passed and screener_score >= pass_threshold:
+            # Early exit: return a high score result without running specialists
+            logger.info("Fast screener passed, skipping specialist audits")
+            # Create a result where all specialists are assumed to have passed with the screener score
+            present = list(SPECIALIST_NAMES)
+            weights_used = renormalize(self.weights, present)
+            overall = screener_score
+            by_specialist = {name: screener_score for name in present}
+
+            # For consistency, we set calibrated scores to the same as raw scores
+            calibrated_overall = overall
+            calibrated_by_specialist = by_specialist.copy()
+            calibration_meta = {"early_exit": True, "screener_score": screener_score}
+            outliers = []
+            variance_penalty = 0.0
+            missing = []
+            # We don't have raw results from specialists, so we leave raw empty
+            raw = {}
+
+            return BookScoreResult(
+                overall=round(overall, 2),
+                by_specialist=by_specialist,
+                missing=missing,
+                weights_used=weights_used,
+                raw=raw,
+                calibrated_overall=round(calibrated_overall, 2) if calibrated_overall is not None else None,
+                calibrated_by_specialist={k: round(v, 2) for k, v in calibrated_by_specialist.items()},
+                calibration_meta=calibration_meta,
+                outliers=outliers,
+                variance_penalty=variance_penalty,
+            )
+        else:
+            # Screener failed or score below threshold, run full audit
+            logger.info("Fast screener failed or score below threshold, running full specialist audit")
+            await self.run_all(ctx)
+            return self.aggregate(genre=genre, apply_calibration=apply_calibration)
 
     async def _publish_started(self, name: str, ctx: dict[str, Any]) -> None:
         if not self.event_bus:

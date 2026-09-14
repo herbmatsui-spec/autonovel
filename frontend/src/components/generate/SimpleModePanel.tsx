@@ -75,6 +75,10 @@ export default function SimpleModePanel(props: SimpleModePanelProps) {
     currentChapterText,
     setCurrentChapterText,
     onMessage,
+    onRunGacha,
+    onRunDigest,
+    isGachaLoading,
+    isDigestLoading,
   } = props;
 
   return (
@@ -201,6 +205,40 @@ export default function SimpleModePanel(props: SimpleModePanelProps) {
           {isDigestLoading ? "📖 解析中..." : "📖 ダイジェスト"}
         </button>
       </div>
+
+      {/* ストリーミングライブプレビュー: 視認性向上 (モノスペース・自動スクロール・文字数表示) */}
+      {isStreaming && (
+        <div style={{ marginTop: "12px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+            <span style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--accent-cyan)" }}>
+              ⚡ リアルタイム執筆プレビュー
+            </span>
+            <span style={{ fontSize: "0.75rem", color: "var(--text-muted, #888)" }}>
+              {streamOutput.length.toLocaleString()} 文字
+            </span>
+          </div>
+          <div
+            style={{
+              fontFamily: "var(--font-mono, 'Consolas', 'Menlo', monospace)",
+              fontSize: "0.8rem",
+              lineHeight: 1.6,
+              backgroundColor: "rgba(0, 0, 0, 0.4)",
+              border: "1px solid var(--accent-cyan, #0ff)",
+              borderRadius: "8px",
+              padding: "12px",
+              maxHeight: "200px",
+              overflowY: "auto",
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
+              boxShadow: "inset 0 2px 6px rgba(0,0,0,0.4)",
+            }}
+          >
+            {streamOutput || (
+              <span style={{ color: "var(--text-muted, #888)", fontStyle: "italic" }}>生成中...</span>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

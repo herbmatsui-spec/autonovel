@@ -5,6 +5,7 @@ from src.agents.context_builder_agent import ContextBuilderAgent
 from src.agents.erotic_enhancer import EroticEnhancer
 from src.agents.orchestrator import AgentContext, AgentResult
 from src.agents.prompt_composer import PromptComposer
+from src.agents.writing.prose_refiner_agent import ProseRefinerAgent
 from src.services.llm_service import LLMService
 from src.services.rag.context_retriever import ForeshadowingEntity
 from prompts.manager import PromptManager
@@ -99,6 +100,26 @@ class EpisodeWriter(BaseAgent):
         # エロティックコンテンツを強化
         erotic_enhancer = EroticEnhancer(self)
         result = erotic_enhancer.enhance_erotic_content(prompt, result, context)
+
+        # プロセ精練（オプション）
+        try:
+            # 設定からジャンルとスタイル強度を取得（デフォルト値を設定）
+            genre = context.get("genre", "fantasy_action")
+            style_intensity = context.get("style_intensity", "balanced")
+            prose_refiner_enabled = context.get("prose_refiner_enabled", True)
+            if prose_refiner_enabled:
+                refiner = ProseRefinerAgent()
+                refinement_result = await refiner.refine(
+                    draft_text=result,
+                    genre=genre,
+                    style_intensity=style_intensity
+                )
+                result = refinement_result.refined_text
+        except Exception as e:
+            # プロセ精練に失敗しても、元のテキストを返す（フォールバック）
+            # In a real implementation, we would have access to a logger
+            # For now, we'll just continue with the unrefined text
+            pass
 
         return str(result)
 

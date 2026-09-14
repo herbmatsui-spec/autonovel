@@ -4,6 +4,7 @@ import asyncio
 from unittest.mock import MagicMock
 
 import pytest
+from fastapi import HTTPException
 
 import src.backend.tasks.huey as huey_mod
 from src.backend.routers import easy_mode
@@ -118,6 +119,18 @@ async def test_execute_generation(monkeypatch):
 @pytest.mark.asyncio
 async def test_generate_content_success(monkeypatch, dummy_session, dummy_request):
     called_metrics = patch_dependencies(monkeypatch)
+    # orchestrated タスクをモック (実装は generate_chapter_orchestrated_task を利用)
+    import src.backend.tasks.generation_tasks as gen_tasks_mod
+
+    class DummyTaskResult:
+        def __init__(self):
+            self.id = "test-huey-id"
+
+    monkeypatch.setattr(
+        gen_tasks_mod,
+        "generate_chapter_orchestrated_task",
+        lambda *args, **kwargs: DummyTaskResult(),
+    )
     valid_input = easy_mode.EasyModeInput(
         chapter_history=["prev chapter"],
         current_chapter="current content",
@@ -134,48 +147,23 @@ async def test_generate_content_success(monkeypatch, dummy_session, dummy_reques
 
 @pytest.mark.asyncio
 async def test_generate_content_stream(monkeypatch, dummy_session, dummy_request):
-    # Mock LLM adapter for streaming
-    class MockStreamingAdapter:
-        async def generate_text_stream(self, prompt, system_prompt, max_tokens):
-            yield "Streaming "
-            yield "content..."
+    """StreamQueryInput を含むストリーミング用モデルの存在と動作を検証する。
 
-    monkeypatch.setattr(easy_mode, "get_llm_adapter", lambda **kwargs: MockStreamingAdapter())
-    
-    valid_input = easy_mode.EasyModeInput(
-        chapter_history=["a"],
+    実装上、ストリーミングは GET /easy_mode/generate/stream エンドポイント (SSE) で
+    フロントエンドと連携するため、ここではクエリ互換入力の変換ロジックを検証する。
+    """
+    from src.domain.entities.easy_mode import StreamQueryInput
+
+    # StreamQueryInput が EasyModeInput に正しく変換されることを確認
+    query = StreamQueryInput(
         current_chapter="content",
-        character_params={},
+        character_name="hero",
         content_length_limit=1000,
     )
-    
-    # Since generate_content_stream returns a Response object (FastAPI),
-    # we test if it returns a response and doesn't raise an error.
-    # In a unit test, apiFetch is usually mocked or we test the router function directly.
-    # However, generate_content_stream in easy_mode.py calls apiFetch.
-    # We need to mock apiFetch to return a mock Response.
-    
-    class MockResponse:
-        def __init__(self):
-            self.ok = True
-            self.json = asyncio.coroutine(lambda: {})
-            self.text = asyncio.coroutine(lambda: "ok")
-
-    monkeypatch.setattr(easy_mode, "apiFetch", lambda *args, **kwargs: asyncio.Future().set_result(MockResponse()))
-    
-    # Since we are testing the router function, and it uses apiFetch,
-    # we just want to ensure the logic flows correctly.
-    # Actually, looking at src/backend/routers/easy_mode.py,
-    # generate_content_stream is a function that returns a Response.
-    
-    # Let's use a simpler mock for apiFetch
-    async def mock_api_fetch(*args, **kwargs):
-        return MockResponse()
-    
-    monkeypatch.setattr(easy_mode, "apiFetch", mock_api_fetch)
-    
-    response = await easy_mode.generate_content_stream(valid_input)
-    assert response.ok is True
+    converted = query.to_easy_mode_input()
+    assert converted.current_chapter == "content"
+    assert converted.content_length_limit == 1000
+    assert converted.character_params.name == "hero"
 
 
 @pytest.mark.asyncio
@@ -284,33 +272,73 @@ def test_get_task_status_failed(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_gacha_endpoint(monkeypatch, dummy_request):
-    class DummyGachaService:
-        async def generate_plans(self, req):
-            return {
-                "request_id": "req-123",
-                "plans": [
-                    {"plan_id": "p1", "plan_type": "royal", "title": "王道", "logline": "...", "protagonist_summary": "...", "charm_point": "..."},
-                ]
-            }
+    # 遅延 import される src.backend.database.core.get_db_manager をパッチ
+    import src.backend.database.core as db_core
+    from src.domain.entities.easy_mode import GachaPlan, GachaResponse
 
-    monkeypatch.setattr(easy_mode, "GachaService", DummyGachaService)
+    class DummyGachaService:
+        def __init__(self, db=None):
+            self.db = db
+
+        async def generate_plans(self, req):
+            return GachaResponse(
+                request_id="req-123",
+                plans=[
+                    GachaPlan(
+                        plan_id="p1",
+                        plan_type="royal",
+                        title="王道",
+                        logline="...",
+                        protagonist_summary="...",
+                        charm_point="...",
+                    ),
+                    GachaPlan(
+                        plan_id="p2",
+                        plan_type="curveball",
+                        title="変化球",
+                        logline="...",
+                        protagonist_summary="...",
+                        charm_point="...",
+                    ),
+                    GachaPlan(
+                        plan_id="p3",
+                        plan_type="dark",
+                        title="ダーク",
+                        logline="...",
+                        protagonist_summary="...",
+                        charm_point="...",
+                    ),
+                ],
+            )
+
     class DummyDBManager:
         def get_session(self):
             class Session:
-                async def __aenter__(self): return self
-                async def __aexit__(self, *args): pass
+                async def __aenter__(self):
+                    return self
+
+                async def __aexit__(self, *args):
+                    pass
+
             return Session()
-    
-    monkeypatch.setattr(easy_mode, "get_db_manager", lambda: DummyDBManager())
-    
+
+    monkeypatch.setattr(db_core, "get_db_manager", lambda: DummyDBManager())
+    monkeypatch.setattr(easy_mode, "GachaService", DummyGachaService)
+
     req = easy_mode.GachaRequest(genre="fantasy", keywords=["magic"])
     response = await easy_mode.gacha_endpoint(req)
     assert response.request_id == "req-123"
-    assert len(response.plans) == 1
+    assert len(response.plans) == 3
 
 @pytest.mark.asyncio
 async def test_digest_endpoint(monkeypatch, dummy_request):
+    # 遅延 import される src.backend.database.core.get_db_manager をパッチ
+    import src.backend.database.core as db_core
+
     class DummyDigestService:
+        def __init__(self, db=None):
+            self.db = db
+
         async def create_digest(self, req):
             return easy_mode.DigestResponse(
                 book_id="book-123",
@@ -318,19 +346,23 @@ async def test_digest_endpoint(monkeypatch, dummy_request):
                 synopsis="Synopsis",
                 episode_1_text="Ep1",
                 climax_preview_text="Climax",
-                status="completed"
+                status="completed",
             )
 
-    monkeypatch.setattr(easy_mode, "DigestService", DummyDigestService)
     class DummyDBManager:
         def get_session(self):
             class Session:
-                async def __aenter__(self): return self
-                async def __aexit__(self, *args): pass
+                async def __aenter__(self):
+                    return self
+
+                async def __aexit__(self, *args):
+                    pass
+
             return Session()
-    
-    monkeypatch.setattr(easy_mode, "get_db_manager", lambda: DummyDBManager())
-    
+
+    monkeypatch.setattr(db_core, "get_db_manager", lambda: DummyDBManager())
+    monkeypatch.setattr(easy_mode, "DigestService", DummyDigestService)
+
     req = easy_mode.DigestRequest(request_id="req-123", selected_plan_id="p1")
     response = await easy_mode.digest_endpoint(req)
     assert response.book_id == "book-123"
@@ -338,24 +370,34 @@ async def test_digest_endpoint(monkeypatch, dummy_request):
 
 @pytest.mark.asyncio
 async def test_promote_endpoint(monkeypatch, dummy_request):
+    # 遅延 import される src.backend.database.core.get_db_manager をパッチ
+    import src.backend.database.core as db_core
+
     class DummyPromotionService:
+        def __init__(self, db=None):
+            self.db = db
+
         async def promote_book(self, req):
             return easy_mode.PromotionResponse(
                 success=True,
                 redirect_url="/studio/book/1",
-                state_token="token-123"
+                state_token="token-123",
             )
 
-    monkeypatch.setattr(easy_mode, "PromotionService", DummyPromotionService)
     class DummyDBManager:
         def get_session(self):
             class Session:
-                async def __aenter__(self): return self
-                async def __aexit__(self, *args): pass
+                async def __aenter__(self):
+                    return self
+
+                async def __aexit__(self, *args):
+                    pass
+
             return Session()
-    
-    monkeypatch.setattr(easy_mode, "get_db_manager", lambda: DummyDBManager())
-    
+
+    monkeypatch.setattr(db_core, "get_db_manager", lambda: DummyDBManager())
+    monkeypatch.setattr(easy_mode, "PromotionService", DummyPromotionService)
+
     req = easy_mode.PromotionRequest(book_id="1")
     response = await easy_mode.promote_endpoint(req)
     assert response.success is True
@@ -363,17 +405,20 @@ async def test_promote_endpoint(monkeypatch, dummy_request):
 
 @pytest.mark.asyncio
 async def test_reverse_generate_endpoint(monkeypatch, dummy_request):
+    # 遅延 import される src.backend.workflows.reverse_plot_workflow をパッチ
+    import src.backend.workflows.reverse_plot_workflow as wf_mod
+
     class DummyWorkflow:
         async def execute(self, **kwargs):
             return {"status": "success", "plot": "Generated Plot"}
-    
-    monkeypatch.setattr(easy_mode, "ReversePlotGenerationWorkflow", DummyWorkflow)
-    
+
+    monkeypatch.setattr(wf_mod, "ReversePlotGenerationWorkflow", DummyWorkflow)
+
     req = easy_mode.ReversePlotGeneratePayload(
         answers={"q1": "a1"},
         target_episodes=10,
         genre="fantasy",
-        llm_config={}
+        llm_config={},
     )
     response = await easy_mode.reverse_generate_endpoint(req)
     assert response["status"] == "success"
@@ -382,21 +427,25 @@ async def test_reverse_generate_endpoint(monkeypatch, dummy_request):
 @pytest.mark.asyncio
 async def test_export_with_data_endpoint(monkeypatch, dummy_session):
     class DummyMarketingAgent:
+        def __init__(self, repo=None):
+            self.repo = repo
+
         async def create_export_package(self, book_id, book_data=None):
             return b"ZIPDATA", "book_1.zip"
-    
+
     monkeypatch.setattr(easy_mode, "MarketingAgent", DummyMarketingAgent)
-    
+
     payload = easy_mode.ExportRequestPayload(
         title="Test Book",
         genre="fantasy",
         current_text="Content",
         character={"name": "Hero"},
-        plots=[]
+        plots=[],
     )
-    
-    response = asyncio.run(
-        easy_mode.export_with_data_endpoint(payload=payload, book_id=1, session=dummy_session)
+
+    # pytest-asyncio のイベントループ内で直接 await する
+    response = await easy_mode.export_with_data_endpoint(
+        payload=payload, book_id=1, session=dummy_session
     )
     assert response.status_code == 200
     assert response.headers["Content-Type"] == "application/zip"
@@ -413,4 +462,26 @@ async def test_cancel_task(monkeypatch):
     response = await easy_mode.cancel_task("task-123")
     assert response["task_id"] == "task-123"
     assert response["status"] == "cancelled"
+
+@pytest.mark.asyncio
+async def test_generate_content_validation_error(monkeypatch, dummy_session, dummy_request):
+    """EasyModeInput の Pydantic バリデーションが不正な入力を拒否することを確認する。
+
+    chapter_history は list 型であるべき。文字列を渡すと Pydantic ValidationError が発生する。
+    """
+    from pydantic import ValidationError as PydanticValidationError
+
+    # Provide invalid input: chapter_history should be list, not string
+    with pytest.raises(PydanticValidationError) as exc_info:
+        easy_mode.EasyModeInput(
+            chapter_history="not a list",  # Should be list
+            current_chapter="content",
+            character_params={"name": "hero"},
+            content_length_limit=1000,
+        )
+
+    # chapter_history フィールドに対するバリデーションエラーであることを確認
+    errors = exc_info.value.errors()
+    assert any(e["loc"] == ("chapter_history",) for e in errors)
+    assert any(e["type"] == "list_type" for e in errors)
 

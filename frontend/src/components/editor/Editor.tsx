@@ -572,7 +572,7 @@ export const Editor: React.FC<EditorProps> = ({
                        justifyContent: "flex-end",
                      }}
                    >
-                     {lineScores[index] && (
+                     {lineScores && lineScores[index] && (
                        <div
                          style={{
                            position: "absolute",
