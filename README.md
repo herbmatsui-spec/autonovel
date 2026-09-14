@@ -2403,12 +2403,8 @@ python -m pytest tests/unit/test_audit_anchors.py tests/unit/test_specialist_act
 - [第3の柱: セマンティックRAG・圧縮 仕様書](docs/ARCHITECTURE_PILLAR3.md)
 - [第4の柱: 評価・閉ループPDCA統合 仕様書](docs/ARCHITECTURE_PILLAR4.md)
 
-### 21.3 ライセンス & クレジット
-
-本プロジェクトは MIT License の下で公開されています。商用利用・改変・再配布が自由に認められています。
 
 ---
-
 <div align="center">
   <sub>Built with ❤️ for Novelists, Creators, and AI Engineers Worldwide.</sub>
 </div>
