@@ -1,7 +1,9 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
-from src.backend.auth import validate_api_key_or_raise
+from src.backend.auth import get_current_user, validate_api_key_sync
+from src.backend.database.models import User
 from src.backend.database.uow import UnitOfWork
+from src.backend.security.owner_guard import verify_book_ownership
 from src.backend.task_helpers import create_task as _create_task
 from src.core.container import AppContainer
 from src.core.observability import TraceContext
@@ -12,12 +14,17 @@ from src.models.api_schemas import (
     RetryFailedRequest,
 )
 
-router = APIRouter(prefix="/api/episodes", tags=["episodes"])
+router = APIRouter(
+    prefix="/api/episodes",
+    tags=["episodes"],
+    dependencies=[Depends(get_current_user)],
+)
 
 
 @router.get("/chapters/{book_id}")
-async def get_chapters(book_id: int):
+async def get_chapters(book_id: int, current_user: User = Depends(get_current_user)):
     async with UnitOfWork(AppContainer.db()) as uow:
+        await verify_book_ownership(book_id, current_user, uow)
         chapters = await uow.chapters.get_all_non_anchor_chapters(book_id)
     return [
         {
@@ -38,8 +45,13 @@ def generate_task_id(prefix: str) -> str:
 
 
 @router.post("/generate")
-async def generate_episodes(req: EpisodeGenerateRequest):
-    validate_api_key_or_raise(req.api_key)
+async def generate_episodes(
+    req: EpisodeGenerateRequest,
+    current_user: User = Depends(get_current_user),
+):
+    if req.api_key:
+        validate_api_key_sync(req.api_key)
+    await verify_book_ownership(req.book_id, current_user, AppContainer.db())
     from src.backend.tasks import execute_service_workflow
 
     task_id = generate_task_id("write")
@@ -68,8 +80,13 @@ async def generate_episodes(req: EpisodeGenerateRequest):
 
 
 @router.post("/generate_candidates")
-async def generate_episodes_candidates(req: EpisodeGenerateCandidatesRequest):
-    validate_api_key_or_raise(req.api_key)
+async def generate_episodes_candidates(
+    req: EpisodeGenerateCandidatesRequest,
+    current_user: User = Depends(get_current_user),
+):
+    if req.api_key:
+        validate_api_key_sync(req.api_key)
+    await verify_book_ownership(req.book_id, current_user, AppContainer.db())
     from src.backend.tasks import execute_service_workflow
 
     task_id = generate_task_id("write_candidates")
@@ -98,8 +115,13 @@ async def generate_episodes_candidates(req: EpisodeGenerateCandidatesRequest):
 
 
 @router.post("/retry_failed")
-async def retry_failed_episodes(req: RetryFailedRequest):
-    validate_api_key_or_raise(req.api_key)
+async def retry_failed_episodes(
+    req: RetryFailedRequest,
+    current_user: User = Depends(get_current_user),
+):
+    if req.api_key:
+        validate_api_key_sync(req.api_key)
+    await verify_book_ownership(req.book_id, current_user, AppContainer.db())
     from src.backend.tasks import execute_service_workflow
 
     task_id = generate_task_id("retry_failed")
@@ -116,8 +138,13 @@ async def retry_failed_episodes(req: RetryFailedRequest):
 
 
 @router.post("/chapters/import")
-async def import_chapter(req: ChapterImportRequest):
-    validate_api_key_or_raise(req.api_key)
+async def import_chapter(
+    req: ChapterImportRequest,
+    current_user: User = Depends(get_current_user),
+):
+    if req.api_key:
+        validate_api_key_sync(req.api_key)
+    await verify_book_ownership(req.book_id, current_user, AppContainer.db())
     from src.backend.tasks import execute_service_workflow
 
     task_id = generate_task_id("import")

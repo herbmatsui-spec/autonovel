@@ -15,7 +15,11 @@ from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisco
 from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.backend.auth import validate_api_key_or_raise
+from src.backend.auth import get_current_user
+from src.backend.database.models import User
+from src.backend.security.owner_guard import verify_book_ownership
+from src.backend.database.uow import UnitOfWork
+from src.core.container import AppContainer
 from src.backend.database.core import get_db_manager
 from src.backend.database.repositories.branch import BranchRepository
 from src.backend.services.branch_merge_service import BranchMergeService
@@ -42,7 +46,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(
     prefix="/api/branches",
     tags=["branches"],
-    dependencies=[Depends(validate_api_key_or_raise)],
+    dependencies=[Depends(get_current_user)],
 )
 
 
@@ -103,55 +107,59 @@ async def create_branch(
 @router.get("/{book_id}", response_model=list[BranchResponse])
 async def list_branches(
     book_id: int,
-    session: AsyncSession = Depends(get_branch_session),
+    current_user: User = Depends(get_current_user),
 ) -> list[BranchResponse]:
     """書籍配下の全ブランチをツリー順に取得."""
-    repo = BranchRepository(session)
-    branches = await repo.get_branch_tree(book_id)
-    return [_to_response(b) for b in branches]
+    async with UnitOfWork(AppContainer.db()) as uow:
+        await verify_book_ownership(book_id, current_user, uow)
+        repo = BranchRepository(uow.session)
+        branches = await repo.get_branch_tree(book_id)
+        return [_to_response(b) for b in branches]
 
 
 
 @router.get("/{book_id}/tree", response_model=dict)
 async def get_branch_tree(
     book_id: int,
-    session: AsyncSession = Depends(get_branch_session),
+    current_user: User = Depends(get_current_user),
 ) -> dict[str, Any]:
     """書籍の全ブランチをツリー構造（ノードとエッジ）で取得."""
-    repo = BranchRepository(session)
-    branches = await repo.get_branch_tree(book_id)
-    
-    # ノードとエッジに変換
-    nodes: list[dict] = []
-    edges: list[dict] = []
-    
-    for branch in branches:
-        # ノードデータ
-        nodes.append({
-            "id": int(branch.id),
-            "data": {
-                "label": str(branch.name) if branch.name else None,
-                "bookId": int(branch.book_id),
-                "parentId": int(branch.parent_id) if branch.parent_id else None,
-                "forkEpNum": int(branch.fork_ep_num) if branch.fork_ep_num is not None else 0,
-                "createdAt": branch.created_at.isoformat() if branch.created_at else None
-            },
-            "position": { "x": 0, "y": 0 }  # レイアウトはフロントエンドで計算
-        })
+    async with UnitOfWork(AppContainer.db()) as uow:
+        await verify_book_ownership(book_id, current_user, uow)
+        repo = BranchRepository(uow.session)
+        branches = await repo.get_branch_tree(book_id)
         
-        # エッジデータ（親が存在する場合）
-        if branch.parent_id is not None:
-            edges.append({
-                "id": f"edge-{branch.parent_id}-{branch.id}",
-                "source": branch.parent_id,
-                "target": branch.id,
-                "type": "smoothstep"
+        # ノードとエッジに変換
+        nodes: list[dict] = []
+        edges: list[dict] = []
+        
+        for branch in branches:
+            # ノードデータ
+            nodes.append({
+                "id": int(branch.id),
+                "data": {
+                    "label": str(branch.name) if branch.name else None,
+                    "bookId": int(branch.book_id),
+                    "parentId": int(branch.parent_id) if branch.parent_id else None,
+                    "forkEpNum": int(branch.fork_ep_num) if branch.fork_ep_num is not None else 0,
+                    "createdAt": branch.created_at.isoformat() if branch.created_at else None
+                },
+                "position": { "x": 0, "y": 0 }  # レイアウトはフロントエンドで計算
             })
-    
-    return {
-        "nodes": nodes,
-        "edges": edges
-    }
+            
+            # エッジデータ（親が存在する場合）
+            if branch.parent_id is not None:
+                edges.append({
+                    "id": f"edge-{branch.parent_id}-{branch.id}",
+                    "source": branch.parent_id,
+                    "target": branch.id,
+                    "type": "smoothstep"
+                })
+        
+        return {
+            "nodes": nodes,
+            "edges": edges
+        }
 def _compute_unified_diff(content_a: str, content_b: str) -> str:
     lines_a = content_a.splitlines(keepends=True)
     lines_b = content_b.splitlines(keepends=True)

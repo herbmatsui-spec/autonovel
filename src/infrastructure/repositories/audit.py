@@ -1,0 +1,64 @@
+from __future__ import annotations
+
+"""
+database/repositories/audit.py - 監査Issueデータ操作用のリポジトリ
+"""
+import logging
+
+from sqlalchemy import select, update
+
+from src.backend.database.models import AuditIssue
+from src.backend.database.repositories.base import BaseRepository
+
+logger = logging.getLogger(__name__)
+
+
+class AuditRepository(BaseRepository):
+    """監査Issueに関するDB操作をまとめたリポジトリ"""
+
+    async def create_audit_issue(
+        self,
+        book_id: int,
+        ep_num: int,
+        category: str,
+        severity: str,
+        description: str,
+        evidence_past: str = "",
+        evidence_current: str = "",
+        constraint_for_next_ep: str = "",
+    ) -> int:
+        issue = AuditIssue(
+            book_id=book_id,
+            ep_num=ep_num,
+            category=category,
+            severity=severity,
+            description=description,
+            evidence_past=evidence_past,
+            evidence_current=evidence_current,
+            constraint_for_next_ep=constraint_for_next_ep,
+            status="open",
+        )
+        self.session.add(issue)
+        await self.session.flush()
+        return issue.id
+
+    async def get_issue(self, issue_id: int) -> AuditIssue | None:
+        result = await self.session.execute(select(AuditIssue).where(AuditIssue.id == issue_id))
+        return result.scalar_one_or_none()
+
+    async def get_book_issues(self, book_id: int, status: str | None = None) -> list[AuditIssue]:
+        stmt = select(AuditIssue).where(AuditIssue.book_id == book_id)
+        if status:
+            stmt = stmt.where(AuditIssue.status == status)
+        stmt = stmt.order_by(AuditIssue.id.desc())
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def update_issue_status(
+        self, issue_id: int, status: str, resolved_note: str = ""
+    ) -> None:
+        await self.session.execute(
+            update(AuditIssue)
+            .where(AuditIssue.id == issue_id)
+            .values(status=status, resolved_note=resolved_note)
+        )

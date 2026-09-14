@@ -22,11 +22,15 @@ class WritingAgent(SkillAgent):
         pm: Any = None,
         ctx_mgr: Any = None,
         reporter_factory: Any = None,
+        model_name: str = None,
+        temperature: float = None,
     ):
         super().__init__(repo=repo, llm=llm, style_rag=style_rag, rag_prefetch=rag_prefetch)
         self.pm = pm
         self.ctx_mgr = ctx_mgr
         self.reporter_factory = reporter_factory
+        self.model_name = model_name
+        self.temperature = temperature
         # generator は遅延初期化
         self._generator = None
 

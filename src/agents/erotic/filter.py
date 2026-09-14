@@ -719,3 +719,44 @@ class EroticIntegrityChecker:
                 all_issues.extend(continuity_report.issues)
 
         return len(all_issues) == 0, all_issues, quality_report, continuity_report
+
+
+class EroticFilter:
+    """プラットフォーム規約適合性を判定するフィルタ。"""
+
+    # 規約違反ワード（簡易版）
+    BANNED_KEYWORDS = [
+        "未成年",
+        "児童",
+        "少女",
+        "少男",
+        "レイプ",
+        "強姦",
+        "暴行",
+        "拷問",
+        "殺害",
+        "死亡",
+        "自殺",
+        "薬物",
+        "違法",
+    ]
+
+    def evaluate(self, text: str) -> dict[str, Any]:
+        """
+        テキストを評価し、規約適合性を判定する。
+
+        Args:
+            text: 評価対象のテキスト
+
+        Returns:
+            {"is_compliant": bool, "flags": list[str]}
+        """
+        flags = []
+        for keyword in self.BANNED_KEYWORDS:
+            if keyword in text:
+                flags.append(keyword)
+
+        return {
+            "is_compliant": len(flags) == 0,
+            "flags": flags,
+        }

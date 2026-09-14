@@ -26,6 +26,7 @@ from .base import (
     PipelineError,
     ValidationError,
 )
+from src.services.billing.token_budget_tracker import CostBudgetExceededError
 from .phase3 import (
     CompressionCacheError,
     CompressionConfigError,
@@ -87,4 +88,5 @@ __all__ = [
     "SocialSimulationError",
     "ConfigurationError",
     "ResourceExhaustedError",
+    "CostBudgetExceededError",
 ]

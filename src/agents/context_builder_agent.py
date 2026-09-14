@@ -101,6 +101,29 @@ class ContextBuilderAgent(SkillAgent):
         self.social_manager = social_manager
         self.age_client = age_client
 
+    async def build_context(
+        self,
+        book_id: str,
+        episode_number: int,
+        bible_data: dict,
+        characters: list,
+        prev_summary: str,
+    ) -> dict:
+        """Build writing context from bible data, characters, and previous summary."""
+        # Create a context dictionary that includes all the provided data
+        context = {
+            "book_id": book_id,
+            "episode_number": episode_number,
+            "bible_data": bible_data,
+            "characters": characters,
+            "prev_summary": prev_summary,
+            # Additional fields that might be useful
+            "world_name": bible_data.get("world_name", ""),
+            "rules": bible_data.get("rules", []),
+            "character_names": [char.get("name", "") for char in characters if isinstance(char, dict)],
+        }
+        return context
+
     async def execute(self, ctx: AgentContext) -> AgentResult:
         """スキル実行エントリーポイント。"""
         self.emit_event("context_builder.started", {

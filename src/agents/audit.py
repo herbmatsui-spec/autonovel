@@ -156,6 +156,15 @@ class PlotIntegrityMonitor:
         self.repo = repo
         self._extraction_service = extraction_service
 
+    def check_scene(self, scene_text: str, characters: dict[str, Any]) -> list[str]:
+        """シーンテキストとキャラクター情報から矛盾を検出する簡易チェック"""
+        issues = []
+        for char_name, char_info in characters.items():
+            if isinstance(char_info, dict) and char_info.get("status") == "死亡":
+                if char_name in scene_text:
+                    issues.append(f"矛盾検出: {char_name}は死亡しているが、シーンに登場している")
+        return issues
+
     async def extract_keywords(self, text: str) -> list[str]:
         """GraphRAG抽出サービス経由でエンティティ名を取得（NER代替）
 

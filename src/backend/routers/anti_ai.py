@@ -7,7 +7,8 @@ import asyncio
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from src.backend.auth import require_api_key
+from src.backend.auth import get_current_user
+from src.backend.security.roles import require_admin
 from src.services.anti_ai import (
     RuleBasedAntiAIDetector,
     AntiAICorrector,
@@ -18,7 +19,7 @@ from src.services.anti_ai.models import AICategory
 router = APIRouter(
     prefix="/admin/anti_ai", 
     tags=["admin", "anti_ai"], 
-    dependencies=[Depends(require_api_key)]
+    dependencies=[Depends(get_current_user), Depends(require_admin())],
 )
 
 

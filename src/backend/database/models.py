@@ -5,6 +5,7 @@ from datetime import datetime
 from sqlalchemy import (
     JSON,
     Boolean,
+    CheckConstraint,
     Column,
     DateTime,
     Float,
@@ -44,6 +45,9 @@ def on_create(target, connection, **kw):
 
 class User(Base):
     __tablename__ = "users"
+    __table_args__ = (
+        CheckConstraint("credits >= 0", name="chk_user_credits_non_negative"),
+    )
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     email = Column(String(255), unique=True, nullable=False, index=True)

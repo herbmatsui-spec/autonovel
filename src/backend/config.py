@@ -8,7 +8,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Literal
 
-from pydantic import AliasChoices, Field
+from pydantic import AliasChoices, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # プロジェクトのルートディレクトリ
@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     )
 
     # サーバー基本設定
+    # サーバー基本設定
     APP_NAME: str = "AutoNovel"
     APP_VERSION: str = "4.9.0"
     APP_ENV: Literal["development", "production", "testing", "local", "staging"] = "development"
@@ -36,22 +37,70 @@ class Settings(BaseSettings):
     HOST: str = "0.0.0.0"
 
     # データベース設定
+    # データベース設定
     DATABASE_URL: str = Field(default_factory=lambda: f"sqlite:///{STORAGE_DIR / 'autonovel.db'}")
 
     # Huey / Redis 設定
+    # Redis/キュー設定
     HUEY_BACKEND: Literal["sqlite", "redis"] = "sqlite"
     HUEY_SQLITE_PATH: str = Field(default_factory=lambda: str(STORAGE_DIR / "huey.db"))
     REDIS_URL: str = "redis://localhost:6379/0"
 
-    # CORS設定
+
+# 認証・セキュリティ設定
     CORS_ORIGINS: str = (
         "http://localhost:5173,http://localhost:8080,http://127.0.0.1:5173,http://127.0.0.1:8080"
     )
     CORS_ALLOW_HEADERS: str = "Content-Type,Authorization,X-API-Key,Accept,Origin,X-Requested-With"
-
-    # 認証設定
-    AUTH_DISABLED: bool = False
     ALLOWED_API_KEYS: str = ""
+    JWT_SECRET_KEY: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("JWT_SECRET_KEY", "SECRET_KEY"),
+    )
+    JWT_ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+
+    @model_validator(mode="after")
+    def validate_production_secrets(self) -> Settings:
+        """本番環境でデフォルト値や空シークレットが使用されるのを防止する。"""
+        if self.APP_ENV == "production":
+            if not self.JWT_SECRET_KEY or "change-in-prod" in self.JWT_SECRET_KEY:
+                raise ValueError("本番環境 (APP_ENV=production) では安全な JWT_SECRET_KEY の設定が必須です。")
+            if "sqlite" in self.DATABASE_URL:
+                raise ValueError("本番環境では SQLite ではなく PostgreSQL の設定が必要です。")
+        return self
+
+    # 外部決済設定
+    def get_jwt_secret_key(self) -> str:
+        """JWTシークレットキーを取得し、本番環境での安全性を厳格に検証する。"""
+        import os
+        import logging
+        key = self.JWT_SECRET_KEY or os.environ.get("JWT_SECRET_KEY") or os.environ.get("SECRET_KEY")
+        insecure_keys = {
+            "",
+            "autonovel-super-secret-key-32bytes-minimum-change-in-prod",
+            "your-secret-key-here",
+            "change-me",
+            "secret",
+        }
+        if self.APP_ENV == "production":
+            if not key or key in insecure_keys or len(key) < 32:
+                raise ValueError(
+                    "CRITICAL SECURITY RISK: In production, JWT_SECRET_KEY must be set to a secure string of at least 32 bytes. "
+                    "Current key is missing, default, or too short."
+                )
+            return key
+
+        # 開発・テスト環境
+        if key and key not in insecure_keys:
+            return key
+
+        # 開発環境用フォールバック
+        logging.getLogger(__name__).warning(
+            "[SECURITY WARNING] Using default development JWT secret key. DO NOT USE IN PRODUCTION."
+        )
+        return "autonovel-dev-insecure-secret-key-for-local-testing-only-32bytes"
 
     # ロギング設定
     LOG_LEVEL: str = "INFO"
@@ -59,6 +108,7 @@ class Settings(BaseSettings):
 
     # LLM設定 (5プロバイダ対応)
     # 実装済み: openai, gemini, mock, claude, ollama, vllm
+    # LLMプロバイダー設定
     LLM_PROVIDER: Literal["openai", "gemini", "mock", "claude", "ollama", "vllm", "vertex"] = "mock"
 
     # OpenAI 互換設定
@@ -106,6 +156,7 @@ class Settings(BaseSettings):
     VLLM_MODEL: str = "meta-llama/Llama-3.1-8B-Instruct"
 
     # Embedding / GraphRAG (pgvector + Apache AGE) 設定
+    # ストレージ設定
     EMBEDDING_MODEL: str = "text-embedding-3-small"
     EMBEDDING_MODEL_FALLBACK: str = "text-embedding-3-small"
     AGE_GRAPH_NAME: str = "autonovel_graph"
@@ -170,3 +221,6 @@ class Settings(BaseSettings):
 settings = Settings()
 
 __all__ = ["Settings", "settings", "STORAGE_DIR", "ROOT_DIR"]
+
+
+

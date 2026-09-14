@@ -1111,6 +1111,73 @@ class MediaMixExporter:
 
         return saved
 
+    def convert_to_manga(self, text: str) -> MediaScript:
+        """テキストから漫画台本に変換（簡易実装）"""
+        # 簡易的にテキストを1つのパネルに変換
+        panel = Panel(
+            number=1,
+            description="自動生成されたコマ",
+            dialogue=[text] if text else [""],
+            camera_angle="medium",
+            sfx=[],
+            characters=[],
+            background="",
+            mood="neutral"
+        )
+        
+        return MediaScript(
+            format=MediaFormat.MANGA,
+            title="自動生成漫画",
+            episode_num=1,
+            source_content=text,
+            panels=[panel],
+            metadata={
+                "generated_by": "convert_to_manga",
+                "panel_count": 1
+            }
+        )
+
+    def convert_to_audio_drama(self, text: str) -> MediaScript:
+        """テキストから音声ドラマ台本に変換（簡易実装）"""
+        # 簡易的にテキストを音声ドラマのセリフ行に変換
+        # 「キャラクター「セリフ」」のパターンを検出
+        import re
+        
+        voice_lines = []
+        
+        # 「キャラクター「セリフ」」パターンを検索
+        pattern = r'([^「」]+)「([^」]+)」'
+        matches = re.findall(pattern, text)
+        
+        if matches:
+            for character, dialogue in matches:
+                voice_line = VoiceLine(
+                    character=character.strip(),
+                    text=dialogue.strip(),
+                    emotion="neutral"
+                )
+                voice_lines.append(voice_line)
+        else:
+            # パターンが見つからない場合は、全体をナレーションとして扱う
+            voice_line = VoiceLine(
+                character="ナレーター",
+                text=text.strip(),
+                emotion="neutral"
+            )
+            voice_lines.append(voice_line)
+        
+        return MediaScript(
+            format=MediaFormat.AUDIO_DRAMA,
+            title="自動生成音声ドラマ",
+            episode_num=1,
+            source_content=text,
+            voice_lines=voice_lines,
+            metadata={
+                "generated_by": "convert_to_audio_drama",
+                "voice_line_count": len(voice_lines)
+            }
+        )
+
 
 def create_media_mix_exporter(
     genre: str,

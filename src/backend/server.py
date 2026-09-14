@@ -50,6 +50,7 @@ from src.backend.routers import (
     auth,
     billing,
     billing_webhook,
+    trace,
 )
 
 logger = logging.getLogger(__name__)
@@ -145,6 +146,7 @@ app.include_router(publishing_assistant.router, prefix="/api")
 app.include_router(auth.router)
 app.include_router(billing.router)
 app.include_router(billing_webhook.router)
+app.include_router(trace.router)
 
 
 @app.get("/health")

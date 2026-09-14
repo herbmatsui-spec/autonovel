@@ -11,7 +11,8 @@
     "test:ci": "vitest run --coverage",
     "lint": "eslint .",
     "typecheck": "node --max-old-space-size=8192 ./node_modules/typescript/bin/tsc --noEmit",
-    "generate:api-types": "openapi-typescript ../docs/openapi.json -o src/types/api.generated.ts"
+    "export:openapi": "python ../scripts/export_openapi.py",
+    "generate:api-types": "npm run export:openapi && npx openapi-typescript ../docs/openapi.json -o src/types/api.generated.ts"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.102.8",

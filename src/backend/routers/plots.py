@@ -1,8 +1,10 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
-from src.backend.auth import validate_api_key_or_raise
+from src.backend.auth import get_current_user, validate_api_key_sync
+from src.backend.database.models import User
 from src.backend.database.uow import UnitOfWork
 from src.backend.engine_helpers import get_engine as resolve_engine
+from src.backend.security.owner_guard import verify_book_ownership
 from src.backend.task_helpers import create_task as _create_task
 from src.core.container import AppContainer
 from src.core.exceptions import AppError
@@ -16,12 +18,17 @@ from src.models.api_schemas import (
     ReversePlotGenerateRequest,
 )
 
-router = APIRouter(prefix="/api/plots", tags=["plots"])
+router = APIRouter(
+    prefix="/api/plots",
+    tags=["plots"],
+    dependencies=[Depends(get_current_user)],
+)
 
 
 @router.get("/{book_id}")
-async def get_plots(book_id: int):
+async def get_plots(book_id: int, current_user: User = Depends(get_current_user)):
     async with UnitOfWork(AppContainer.db()) as uow:
+        await verify_book_ownership(book_id, current_user, uow)
         plots = await uow.plots.get_all_plots(book_id)
     return [
         {
@@ -44,8 +51,12 @@ def generate_task_id(prefix: str) -> str:
 
 
 @router.post("/plan_generation")
-async def plan_generation(req: PlanGenerationRequest):
-    validate_api_key_or_raise(req.api_key)
+async def plan_generation(
+    req: PlanGenerationRequest,
+    current_user: User = Depends(get_current_user),
+):
+    if req.api_key:
+        validate_api_key_sync(req.api_key)
     from src.backend.tasks import execute_service_workflow
 
     task_id = generate_task_id("plan_gen")
@@ -62,8 +73,13 @@ async def plan_generation(req: PlanGenerationRequest):
 
 
 @router.post("/expand")
-async def expand_plots(req: PlotExpandRequest):
-    validate_api_key_or_raise(req.api_key)
+async def expand_plots(
+    req: PlotExpandRequest,
+    current_user: User = Depends(get_current_user),
+):
+    if req.api_key:
+        validate_api_key_sync(req.api_key)
+    await verify_book_ownership(req.book_id, current_user, AppContainer.db())
     from src.backend.tasks import execute_service_workflow
 
     task_id = generate_task_id("plot_expand")
@@ -87,8 +103,13 @@ async def expand_plots(req: PlotExpandRequest):
 
 
 @router.post("/expand_candidates")
-async def expand_plots_candidates(req: PlotExpandCandidatesRequest):
-    validate_api_key_or_raise(req.api_key)
+async def expand_plots_candidates(
+    req: PlotExpandCandidatesRequest,
+    current_user: User = Depends(get_current_user),
+):
+    if req.api_key:
+        validate_api_key_sync(req.api_key)
+    await verify_book_ownership(req.book_id, current_user, AppContainer.db())
     from src.backend.tasks import execute_service_workflow
 
     task_id = generate_task_id("plot_candidates")
@@ -112,8 +133,12 @@ async def expand_plots_candidates(req: PlotExpandCandidatesRequest):
 
 
 @router.post("/rebuild")
-async def rebuild_plots(req: PlotRebuildRequest):
-    validate_api_key_or_raise(req.api_key)
+async def rebuild_plots(
+    req: PlotRebuildRequest,
+    current_user: User = Depends(get_current_user),
+):
+    if req.api_key:
+        validate_api_key_sync(req.api_key)
     import json
     import time
 
@@ -150,8 +175,12 @@ async def rebuild_plots(req: PlotRebuildRequest):
 
 
 @router.post("/audit")
-async def audit_plan(req: AuditPlanRequest):
-    validate_api_key_or_raise(req.api_key)
+async def audit_plan(
+    req: AuditPlanRequest,
+    current_user: User = Depends(get_current_user),
+):
+    if req.api_key:
+        validate_api_key_sync(req.api_key)
     engine = resolve_engine(req.api_key)
     res = await engine.planner.audit_producer_plan(
         req.genre,
@@ -173,9 +202,13 @@ async def audit_plan(req: AuditPlanRequest):
 
 
 @router.post("/reverse-generate")
-async def reverse_generate_plot(req: ReversePlotGenerateRequest):
+async def reverse_generate_plot(
+    req: ReversePlotGenerateRequest,
+    current_user: User = Depends(get_current_user),
+):
     """逆算プロットビルダーからの回答を受け、プロット構造を生成"""
-    validate_api_key_or_raise(req.api_key)
+    if req.api_key:
+        validate_api_key_sync(req.api_key)
     from src.backend.tasks import execute_service_workflow
 
     task_id = generate_task_id("reverse_plot")

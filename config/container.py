@@ -17,7 +17,7 @@ warnings.warn(
 
 
 class Container(_AppContainer):
-    wiring_config = containers.WiringConfiguration(packages=["src", "src.kernels", "prompts"])
+    wiring_config = containers.WiringConfiguration(packages=["src", "prompts"])
 
 
 _container_singleton = None

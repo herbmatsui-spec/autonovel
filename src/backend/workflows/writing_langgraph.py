@@ -530,6 +530,11 @@ class WritingGraphManager:
 
     def route_after_critic(self, state: dict[str, Any]) -> str:
         """批評後のルート分岐"""
+        tracker = state.get("budget_tracker")
+        if tracker is not None and not tracker.is_within_budget():
+            logger.info(f"Budget exceeded, forcing finish for Ep.{state.get('ep_num')}")
+            return "finish"
+
         if state.get("critic_triggered"):
             # 最大反復回数に達していない場合のみリトライ
             if state.get("ac_iter", 0) < state.get("max_ac_iter", 2):

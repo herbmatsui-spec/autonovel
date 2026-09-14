@@ -13,7 +13,11 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi import Path as PathParam
 from fastapi.responses import FileResponse
 
-from src.backend.auth import validate_api_key_or_raise
+from src.backend.auth import get_current_user
+from src.backend.database.models import User
+from src.backend.security.owner_guard import verify_book_ownership
+from src.backend.database.uow import UnitOfWork
+from src.core.container import AppContainer
 from src.backend.exceptions import NoChaptersFoundError
 from src.backend.feature_flags import is_multimedia_enabled
 from src.backend.multimedia_service import MultimediaService
@@ -72,14 +76,15 @@ def _safe_path_under_base(name: str) -> Path:
     response_model=MediaMixResponse,
     responses={503: {"description": "Multimedia disabled"}},
 )
-def generate_media_mix(
+async def generate_media_mix(
     payload: MediaMixRequest,
     request: Request,
+    current_user: User = Depends(get_current_user),
     service: MultimediaService = Depends(get_multimedia_service),
-    _api_key: str = Depends(validate_api_key_or_raise),
 ) -> MediaMixResponse:
     """Media Mix 台本生成。"""
     _check_enabled()
+    await verify_book_ownership(payload.book_id, current_user, AppContainer.db())
     generate_limiter.check(request)
     metrics.increment("multimedia_requests_total")
     logger.info("multimedia.media_mix book_id=%s format=%s", payload.book_id, payload.format)
@@ -110,14 +115,15 @@ def generate_media_mix(
     response_model=EbookExportResponse,
     responses={503: {"description": "Multimedia disabled"}},
 )
-def export_ebook(
+async def export_ebook(
     payload: EbookExportRequest,
     request: Request,
+    current_user: User = Depends(get_current_user),
     service: MultimediaService = Depends(get_multimedia_service),
-    _api_key: str = Depends(validate_api_key_or_raise),
 ) -> EbookExportResponse:
     """Ebook エクスポート (EPUB/PDF/MOBI)。"""
     _check_enabled()
+    await verify_book_ownership(payload.book_id, current_user, AppContainer.db())
     generate_limiter.check(request)
     logger.info("multimedia.ebook book_id=%s formats=%s", payload.book_id, payload.formats)
     try:
@@ -143,14 +149,15 @@ def export_ebook(
     response_model=IFRouteResponse,
     responses={503: {"description": "Multimedia disabled"}},
 )
-def generate_if_routes(
+async def generate_if_routes(
     payload: IFRouteGenerateRequest,
     request: Request,
+    current_user: User = Depends(get_current_user),
     service: MultimediaService = Depends(get_multimedia_service),
-    _api_key: str = Depends(validate_api_key_or_raise),
 ) -> IFRouteResponse:
     """IF ルートグラフ生成。"""
     _check_enabled()
+    await verify_book_ownership(payload.book_id, current_user, AppContainer.db())
     generate_limiter.check(request)
     logger.info(
         "multimedia.if_routes book_id=%s persist=%s (also accessible via /api/branches)",
@@ -184,14 +191,15 @@ def generate_if_routes(
     response_model=AssetPackResponse,
     responses={503: {"description": "Multimedia disabled"}},
 )
-def generate_asset_pack(
+async def generate_asset_pack(
     payload: AssetPackRequest,
     request: Request,
+    current_user: User = Depends(get_current_user),
     service: MultimediaService = Depends(get_multimedia_service),
-    _api_key: str = Depends(validate_api_key_or_raise),
 ) -> AssetPackResponse:
     """統合アセットパック (ZIP) を生成。"""
     _check_enabled()
+    await verify_book_ownership(payload.book_id, current_user, AppContainer.db())
     generate_limiter.check(request)
     logger.info("multimedia.asset_pack book_id=%s", payload.book_id)
     try:
@@ -223,14 +231,15 @@ def generate_asset_pack(
     response_model=AssetPackGenerateResponse,
     responses={503: {"description": "Multimedia disabled"}},
 )
-def generate_asset_pack_alias(
+async def generate_asset_pack_alias(
     payload: AssetPackGenerateRequest,
     request: Request,
+    current_user: User = Depends(get_current_user),
     service: MultimediaService = Depends(get_multimedia_service),
-    _api_key: str = Depends(validate_api_key_or_raise),
 ) -> AssetPackGenerateResponse:
     """README 互換エイリアス: 統合アセットパック (ZIP) を生成 (`/asset-pack` と同等)。"""
     _check_enabled()
+    await verify_book_ownership(payload.book_id, current_user, AppContainer.db())
     generate_limiter.check(request)
     logger.info("multimedia.generate (alias) book_id=%s", payload.book_id)
     try:
@@ -377,11 +386,12 @@ class AudioSynthesizeRequest(BaseModel):
 @router.post("/audio/synthesize")
 async def trigger_audio_synthesis(
     payload: AudioSynthesizeRequest,
+    current_user: User = Depends(get_current_user),
     service: MultimediaService = Depends(get_multimedia_service),
-    _api_key: str = Depends(validate_api_key_or_raise),
 ) -> dict[str, Any]:
     """指定章の音声合成ジョブを投入または実行する (Step 19)。"""
     _check_enabled()
+    await verify_book_ownership(payload.book_id, current_user, AppContainer.db())
     chapter_text = payload.chapter_text
     if not chapter_text:
         # DBからエピソード本文を取得
@@ -415,10 +425,11 @@ async def trigger_audio_synthesis(
 async def get_chapter_audio(
     book_id: int = PathParam(..., ge=1),
     episode_num: int = PathParam(..., ge=1),
-    _api_key: str = Depends(validate_api_key_or_raise),
+    current_user: User = Depends(get_current_user),
 ) -> dict[str, Any]:
     """作品・章ごとの音声アセット情報を取得する (Step 21)。"""
     _check_enabled()
+    await verify_book_ownership(book_id, current_user, AppContainer.db())
     from src.backend.database.core import get_db_manager
     from src.backend.database.models import AudioAssetModel
     from sqlalchemy import select

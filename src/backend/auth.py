@@ -1,61 +1,178 @@
 """
-src/backend/auth.py — API 認証ユーティリティ
+src/backend/auth.py — API 認証・認可ユーティリティ
 """
 
 from __future__ import annotations
 
 import logging
 import os
+from typing import Optional
 
-from fastapi import Depends, HTTPException, Request, Header, status
+from fastapi import Depends, Header, HTTPException, Request, status
+from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.backend.config import settings
 from src.backend.database import get_db
 from src.backend.database.models import User
 from src.backend.security.jwt import decode_token
-from fastapi.security import OAuth2PasswordBearer
 from src.dependencies import get_prompt_manager
+
+logger = logging.getLogger(__name__)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
 
-async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)) -> User:
-    if not token:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="認証が必要です")
-    payload = decode_token(token)
-    user_id = int(payload["sub"]) if isinstance(payload["sub"], (int, str)) and str(payload["sub"]).isdigit() else payload["sub"]
-    user = await db.get(User, user_id)
-    if not user or user.status != "active":
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="ユーザーが無効です")
+
+def _get_dev_mock_user() -> User:
+    """開発・テスト用のモック管理者ユーザーを生成する。"""
+    user = User(
+        id=1,
+        email="dev@autonovel.local",
+        display_name="Dev Admin",
+        role="admin",
+        status="active",
+        plan_tier="enterprise",
+        credits=99999,
+    )
     return user
 
-async def require_api_key(authorization: str = Header(default="", alias="Authorization")) -> str:
-    """APIキーの簡易検証を行う依存性関数"""
-    allowed_keys_str = os.environ.get("ALLOWED_API_KEYS", "")
-    allowed_keys = [k.strip() for k in allowed_keys_str.split(",") if k.strip()]
-    
-    if not allowed_keys or os.environ.get("APP_ENV") == "development":
+
+async def get_current_user(
+    token: str = Depends(oauth2_scheme),
+    db: AsyncSession = Depends(get_db),
+) -> User:
+    """現在の認証済みユーザーを取得する。
+    AUTH_DISABLED が True の場合は、開発用モックユーザーを返却してバイパスする。
+    """
+    if getattr(settings, "AUTH_DISABLED", False):
+        return _get_dev_mock_user()
+
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="認証が必要です",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    payload = decode_token(token, expected_type="access")
+    sub = payload.get("sub")
+    if sub is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="無効なトークンペイロードです",
+        )
+
+    user_id = int(sub) if isinstance(sub, (int, str)) and str(sub).isdigit() else sub
+    user = await db.get(User, user_id)
+    if not user or user.status != "active":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="ユーザーが存在しないか、無効化されています",
+        )
+    return user
+
+
+async def require_admin_user(
+    current_user: User = Depends(get_current_user),
+) -> User:
+    """管理者ロール（admin）を必須とする認可依存性。"""
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="管理者権限が必要です",
+        )
+    return current_user
+
+
+async def require_api_key(
+    authorization: str = Header(default="", alias="Authorization"),
+) -> str:
+    """APIキーの検証を行う依存性関数。
+    AUTH_DISABLED が True の場合のみ開発キーを許可し、それ以外は厳格に検証する。
+    """
+    if getattr(settings, "AUTH_DISABLED", False):
         return "dev-key"
+
+    allowed_keys_str = getattr(settings, "ALLOWED_API_KEYS", "") or os.environ.get("ALLOWED_API_KEYS", "")
+    allowed_keys = [k.strip() for k in allowed_keys_str.split(",") if k.strip()]
+
+    if not allowed_keys:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="API Key access is disabled or not configured",
+        )
 
     token = ""
     if authorization.startswith("Bearer "):
-        token = authorization[7:]
+        token = authorization[7:].strip()
     elif authorization:
-        token = authorization
+        token = authorization.strip()
 
-    if token in allowed_keys:
+    if token and token in allowed_keys:
         return token
-    
+
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Invalid or missing API Key"
+        detail="Invalid or missing API Key",
     )
 
-async def validate_api_key_or_raise(authorization: str = Header(default="", alias="Authorization")) -> str:
+
+async def require_admin_user_or_key(
+    token: str = Depends(oauth2_scheme),
+    authorization: str = Header(default="", alias="Authorization"),
+    db: AsyncSession = Depends(get_db),
+) -> User:
+    """管理者JWTまたは有効なAPI Keyのいずれかを要求する依存性関数。"""
+    if getattr(settings, "AUTH_DISABLED", False):
+        return _get_dev_mock_user()
+
+    if token:
+        user = await get_current_user(token=token, db=db)
+        if user.role == "admin":
+            return user
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="管理者権限が必要です",
+        )
+
+    # API Key を試行
+    key = await require_api_key(authorization)
+    if key:
+        return _get_dev_mock_user()
+
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="管理者認証または有効なAPI Keyが必要です",
+    )
+
+
+def validate_api_key_sync(api_key: str) -> str:
+    """同期コンテキスト用のAPIキー検証ヘルパー"""
+    if getattr(settings, "AUTH_DISABLED", False):
+        return "dev-key"
+    allowed_keys_str = getattr(settings, "ALLOWED_API_KEYS", "") or os.environ.get("ALLOWED_API_KEYS", "")
+    allowed_keys = [k.strip() for k in allowed_keys_str.split(",") if k.strip()]
+    if not allowed_keys or api_key not in allowed_keys:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or missing API Key",
+        )
+    return api_key
+
+
+async def validate_api_key_or_raise(
+    authorization: str = Header(default="", alias="Authorization"),
+) -> str:
     return await require_api_key(authorization)
+
 
 __all__ = [
     "get_current_user",
+    "require_admin_user",
+    "require_admin_user_or_key",
     "require_api_key",
     "validate_api_key_or_raise",
+    "validate_api_key_sync",
     "get_prompt_manager",
     "oauth2_scheme",
 ]

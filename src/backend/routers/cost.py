@@ -1,28 +1,46 @@
-from fastapi import APIRouter, Depends
+# ruff: noqa: B008
+from datetime import datetime
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
-from src.backend.database import get_db
-from src.backend.database.models import CostLogModel
 from sqlalchemy import func
-from datetime import datetime, timedelta
+from src.backend.auth import get_current_user
+from src.backend.database import get_db
+from src.backend.database.models import User, Book, CostLogModel
+from src.backend.security.roles import RoleChecker, UserRole
 
-router = APIRouter(prefix="/api/cost", tags=["cost"])
+router = APIRouter(
+    prefix="/api/cost",
+    tags=["cost"],
+    dependencies=[Depends(get_current_user), Depends(RoleChecker([UserRole.ADMIN, UserRole.PRO]))],
+)
 
 @router.get("/summary")
-async def get_cost_summary(db: Session = Depends(get_db)):
+async def get_cost_summary(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    all_users: bool = Query(False, description="管理者のみ: 全ユーザー集約を取得"),
+):
     # Get the start of the current month
     now = datetime.now()
     start_of_month = datetime(now.year, now.month, 1)
     
     # Query the cost logs for the current month
-    results = db.query(
+    query = db.query(
         func.sum(CostLogModel.cost_usd).label("total_cost_usd"),
         func.sum(CostLogModel.input_tokens).label("total_input_tokens"),
         func.sum(CostLogModel.output_tokens).label("total_output_tokens"),
-        func.sum(CostLogModel.cache_read_tokens).label("total_cache_read_tokens"),
-        func.sum(CostLogModel.cache_creation_tokens).label("total_cache_creation_tokens")
+        func.sum(getattr(CostLogModel, "cache_read_tokens", 0)).label("total_cache_read_tokens") if hasattr(CostLogModel, "cache_read_tokens") else func.sum(0).label("total_cache_read_tokens"),
+        func.sum(getattr(CostLogModel, "cache_creation_tokens", 0)).label("total_cache_creation_tokens") if hasattr(CostLogModel, "cache_creation_tokens") else func.sum(0).label("total_cache_creation_tokens"),
     ).filter(
         CostLogModel.timestamp >= start_of_month
-    ).first()
+    )
+
+    # 一般ユーザー、または管理者でall_users=Falseの場合は自身が所有する書籍に限定
+    if current_user.role != "admin" or not all_users:
+        user_book_ids = db.query(Book.id).filter(Book.user_id == current_user.id).subquery()
+        query = query.filter(CostLogModel.book_id.in_(user_book_ids))
+
+    results = query.first()
     
     total_cost_usd = results.total_cost_usd or 0.0
     total_input_tokens = results.total_input_tokens or 0

@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 class InfraContainer(containers.DeclarativeContainer):
-    wiring_config = containers.WiringConfiguration(packages=["src", "src.kernels", "prompts"])
+    wiring_config = containers.WiringConfiguration(packages=["src", "prompts"])
 
     config: providers.Singleton = providers.Singleton(GlobalConfigModel.load)
 

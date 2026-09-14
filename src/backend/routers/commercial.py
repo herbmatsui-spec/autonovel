@@ -8,9 +8,10 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
-from src.backend.auth import require_api_key
+from src.backend.auth import get_current_user, require_api_key
 from src.backend.database import get_db
-from src.backend.database.models import PublicationScheduleDbModel
+from src.backend.database.models import PublicationScheduleDbModel, User
+from src.backend.middleware.tenant_guard import verify_book_ownership
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.backend.workflows.commercial_pipeline import CommercialPipeline
 from src.services.publishers import (
@@ -21,7 +22,11 @@ from src.services.publishers import (
     KindleCredentials,
 )
 
-router = APIRouter(prefix="/commercial", tags=["commercial"])
+router = APIRouter(
+    prefix="/commercial",
+    tags=["commercial"],
+    dependencies=[Depends(get_current_user)],
+)
 
 
 class CommercialConfig(BaseModel):
@@ -79,12 +84,14 @@ class PublicationScheduleResponse(BaseModel):
 @router.post("/schedules", response_model=PublicationScheduleResponse)
 async def create_schedule(
     req: PublicationScheduleCreate,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
     api_key: str = Depends(require_api_key),
 ):
     """
     投稿スケジュールを登録する。
     """
+    await verify_book_ownership(req.book_id, current_user, db)
     try:
         schedule = PublicationScheduleDbModel(
             book_id=req.book_id,
@@ -115,12 +122,14 @@ async def create_schedule(
 @router.get("/schedules/{book_id}", response_model=list[PublicationScheduleResponse])
 async def get_schedules(
     book_id: int,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
     api_key: str = Depends(require_api_key),
 ):
     """
     書籍ごとの投稿スケジュール一覧を取得する。
     """
+    await verify_book_ownership(book_id, current_user, db)
     try:
         from sqlalchemy import select
         stmt = (

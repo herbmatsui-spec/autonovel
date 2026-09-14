@@ -77,6 +77,124 @@ omit = [
     "*/alembic/*",
     "*/conftest.py",
     "*/__pycache__/*",
+
+    # --- 未参照デッドモジュール（scripts/tmp_find_dead_modules.py による実測: どのモジュール/テストからも参照なし） ---
+    # src 直下
+    "src/__init__.py",
+
+    # agents 配下の未参照
+    "src/agents/plot_rebuild_helpers.py",
+    "src/agents/social/__init__.py",
+    "src/agents/writing/bible_extractor.py",
+    "src/agents/writing/rewrite_orchestrator.py",
+
+    # backend 配下の未参照
+    "src/backend/database/connection_protocol.py",
+    "src/backend/database/repo_inmemory.py",
+    "src/backend/engine_reader.py",
+    "src/backend/health/__init__.py",
+    "src/backend/observability/__init__.py",
+    "src/backend/observability/graph_metrics.py",
+    "src/backend/schemas/__init__.py",
+    "src/backend/tension_utils.py",
+    "src/backend/zamaa_validator.py",
+
+    # core 配下の未参照
+    "src/core/__init__.py",
+    "src/core/ab_testing.py",
+    "src/core/async_executor.py",
+    "src/core/audit_logger.py",
+    "src/core/context_window_manager.py",
+    "src/core/dag/__init__.py",
+    "src/core/null_objects.py",
+    "src/core/otel_setup.py",
+    "src/core/plugin_schema.py",
+    "src/core/spi/__init__.py",
+    "src/core/spi/image/__init__.py",
+    "src/core/spi/llm/__init__.py",
+    "src/core/spi/llm/legacy_spi_bridge.py",
+    "src/core/spi/vector_store/__init__.py",
+    "src/core/state/__init__.py",
+    "src/core/state/desires.py",
+
+    # domain 配下の未参照（旧世代モデル/VO）
+    "src/domain/__init__.py",
+    "src/domain/book.py",
+    "src/domain/domain_services/__init__.py",
+    "src/domain/entities/__init__.py",
+    "src/domain/repositories/__init__.py",
+    "src/domain/value_objects/__init__.py",
+    "src/domain/value_objects/character_role.py",
+    "src/domain/value_objects/erotic_intensity.py",
+    "src/domain/value_objects/genre.py",
+    "src/domain/value_objects/plot_tension.py",
+
+    # easy_mode / engine 配下の未参照
+    "src/easy_mode/phase3/__init__.py",
+    "src/engine/__init__.py",
+    "src/engine/prompts/__init__.py",
+
+    # infrastructure 配下の未参照
+    "src/infrastructure/__init__.py",
+    "src/infrastructure/api/__init__.py",
+    "src/infrastructure/api/client.py",
+    "src/infrastructure/config/__init__.py",
+    "src/infrastructure/database/__init__.py",
+    "src/infrastructure/external/__init__.py",
+    "src/infrastructure/external/anthropic_client.py",
+    "src/infrastructure/persistence/__init__.py",
+    "src/infrastructure/queue/__init__.py",
+    "src/infrastructure/repository.py",
+
+    # kernels（実装済み新エンジンから未参照の旧設計）
+    "src/kernels/*",
+
+    # legacy（v4.x 以前の非推奨実装、参照ゼロを確認済み）
+    "src/legacy/*",
+
+    # llm 旧世代クライアント（src/llm は src/core.llm / src/services に統合済み）
+    "src/llm/cost_budget_guard.py",
+    "src/llm/cost_metrics.py",
+    "src/llm/cost_router.py",
+    "src/llm/gemini_client.py",
+    "src/llm/models.py",
+    "src/llm/provider_factory.py",
+    "src/llm/task_recovery.py",
+
+    # models / presets 配下の未参照
+    "src/models/cadence_intelligent.py",
+    "src/models/easy_mode_schemas.py",
+    "src/presets/__init__.py",
+
+    # services 配下の未参照
+    "src/services/amplifier_router.py",
+    "src/services/auditors/__init__.py",
+    "src/services/cadence/__init__.py",
+    "src/services/cadence/local_llm_refiner.py",
+    "src/services/content_processor.py",
+    "src/services/context_cache_service.py",
+    "src/services/context_compression/pipeline.py",
+    "src/services/exporters/__init__.py",
+    "src/services/formatters/__init__.py",
+    "src/services/graph/cypher_translator.py",
+    "src/services/graph/hybrid_graph_facade.py",
+    "src/services/healing_pipeline.py",
+    "src/services/illustration/character_lora_mapper.py",
+    "src/services/illustration/comfyui_client.py",
+    "src/services/llm/__init__.py",
+    "src/services/llm/legacy_adapter_bridge.py",
+    "src/services/llm/provider_failover.py",
+    "src/services/nlp/__init__.py",
+    "src/services/novel_service.py",
+    "src/services/parallel_audit.py",
+    "src/services/prose/refinement_cache.py",
+    "src/services/tracing_service.py",
+    "src/services/unified_pipeline_config.py",
+    "src/services/writing_services_utils.py",
+
+    # shared 配下の未参照
+    "src/shared/__init__.py",
+    "src/shared/redis_pool.py",
 ]
 branch = true
 concurrency = ["multiprocessing", "thread"]

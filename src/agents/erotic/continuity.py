@@ -1209,3 +1209,20 @@ class ContinuityTracker:
                         f"[環境矛盾] 前話末に'{w1}'描写 → 今話冒頭に'{w2}'描写。時間経過の描写がありません"
                     )
         return issues
+
+
+class EroticContinuityTracker:
+    """官能シーンのキャラクター状態（着衣、体勢など）を追跡する。"""
+
+    def __init__(self):
+        self._character_states: dict[str, dict[str, Any]] = {}
+
+    def update_character_state(self, character_name: str, state: dict[str, Any]) -> None:
+        """キャラクターの状態を更新する。"""
+        if character_name not in self._character_states:
+            self._character_states[character_name] = {}
+        self._character_states[character_name].update(state)
+
+    def get_character_state(self, character_name: str) -> dict[str, Any]:
+        """キャラクターの現在の状態を取得する。"""
+        return self._character_states.get(character_name, {}).copy()

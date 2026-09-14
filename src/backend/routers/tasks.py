@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 
-from src.backend.auth import require_api_key
+from src.backend.auth import get_current_user, require_api_key
 from src.backend.database.models import InternalState, TaskWALLogModel
 from src.backend.redis_util import get_async_redis_client
 from src.backend.sse import task_event_generator
@@ -16,7 +16,11 @@ from src.core.exceptions import NotFoundError
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/tasks", tags=["tasks"])
+router = APIRouter(
+    prefix="/api/tasks",
+    tags=["tasks"],
+    dependencies=[Depends(get_current_user)],
+)
 
 
 @router.get("/{task_id}/status")
