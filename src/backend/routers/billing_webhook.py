@@ -58,16 +58,39 @@ async def handle_stripe_webhook(
     # べき等性チェック: 既に処理済みのイベントなら即座に 200 OK を返却
     existing_event = await db.get(StripeWebhookEvent, event_id)
     if existing_event:
-        logger.info(f"Stripe event {event_id} already processed. Skipping duplicate.")
-        return {"status": "already_processed", "event_id": event_id}
+        if existing_event.status == "processed":
+            logger.info(f"Stripe event {event_id} already processed. Skipping duplicate.")
+            return {"status": "already_processed", "event_id": event_id}
+        elif existing_event.status == "processing":
+            # 処理中イベントのタイムアウト判定 (10分以上経過していれば前回の処理クラッシュとみなして再試行)
+            from datetime import datetime, timezone, timedelta
+            now = datetime.now(timezone.utc)
+            created = existing_event.created_at
+            if created and created.tzinfo is None:
+                created = created.replace(tzinfo=timezone.utc)
+            if created and (now - created) > timedelta(minutes=10):
+                logger.warning(
+                    f"Stripe event {event_id} was stuck in processing since {created}. Retrying processing."
+                )
+                existing_event.status = "processing"
+                webhook_record = existing_event
+            else:
+                logger.info(f"Stripe event {event_id} is currently being processed. Skipping concurrent duplicate.")
+                return {"status": "already_processing", "event_id": event_id}
+        else:
+            # status == "failed": 前回失敗したイベントの再試行
+            logger.warning(f"Stripe event {event_id} previously failed. Retrying processing.")
+            existing_event.status = "processing"
+            webhook_record = existing_event
+    else:
+        # イベントを processing 状態で記録
+        webhook_record = StripeWebhookEvent(
+            event_id=event_id,
+            event_type=event_type,
+            status="processing",
+        )
+        db.add(webhook_record)
 
-    # イベントを processing 状態で記録
-    webhook_record = StripeWebhookEvent(
-        event_id=event_id,
-        event_type=event_type,
-        status="processing",
-    )
-    db.add(webhook_record)
     try:
         await db.commit()
     except Exception:
@@ -77,9 +100,9 @@ async def handle_stripe_webhook(
 
     try:
         if event_type == "checkout.session.completed":
-            await _handle_checkout_session_completed(event_data, db)
+            await _handle_checkout_session_completed(event_data, db, event_id=event_id)
         elif event_type == "invoice.payment_succeeded":
-            await _handle_invoice_payment_succeeded(event_data, db)
+            await _handle_invoice_payment_succeeded(event_data, db, event_id=event_id)
         elif event_type == "customer.subscription.deleted":
             await _handle_customer_subscription_deleted(event_data, db)
         elif event_type == "customer.subscription.updated":
@@ -99,7 +122,9 @@ async def handle_stripe_webhook(
     return {"status": "success", "event_id": event_id}
 
 
-async def _handle_checkout_session_completed(session: dict, db: AsyncSession):
+async def _handle_checkout_session_completed(
+    session: dict, db: AsyncSession, event_id: Optional[str] = None
+):
     """Checkout Session完了時に初回クレジットを付与"""
     user_id = int(session.get("metadata", {}).get("user_id", 0))
     if user_id == 0:
@@ -143,13 +168,16 @@ async def _handle_checkout_session_completed(session: dict, db: AsyncSession):
             amount=credits_to_grant,
             transaction_type="monthly_grant",
             description=f"Initial credit grant for {getattr(subscription.plan, 'nickname', None) or 'subscription'}",
-            task_id=None,
+            task_id=f"stripe_evt_{event_id}" if event_id else None,
+            auto_commit=False,
         )
 
     await _create_or_update_subscription_record(user, subscription, db)
 
 
-async def _handle_invoice_payment_succeeded(invoice: dict, db: AsyncSession):
+async def _handle_invoice_payment_succeeded(
+    invoice: dict, db: AsyncSession, event_id: Optional[str] = None
+):
     """インボイス支払い成功時に月次クレジットを付与"""
     subscription_id = invoice.get("subscription")
     if not subscription_id:
@@ -183,7 +211,8 @@ async def _handle_invoice_payment_succeeded(invoice: dict, db: AsyncSession):
             amount=credits_to_grant,
             transaction_type="monthly_grant",
             description=f"Monthly credit grant for {getattr(subscription.plan, 'nickname', None) or 'subscription'}",
-            task_id=None,
+            task_id=f"stripe_evt_{event_id}" if event_id else None,
+            auto_commit=False,
         )
 
     await _create_or_update_subscription_record(user, subscription, db)
@@ -203,7 +232,7 @@ async def _handle_customer_subscription_deleted(subscription, db: AsyncSession):
         return
 
     user.plan_tier = "free"
-    await db.commit()
+    await db.flush()
 
 
 async def _handle_customer_subscription_updated(subscription, db: AsyncSession):
@@ -251,4 +280,4 @@ async def _create_or_update_subscription_record(user: User, subscription, db: As
         )
         db.add(new_subscription)
 
-    await db.commit()
+    await db.flush()

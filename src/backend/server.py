@@ -103,7 +103,10 @@ app.add_middleware(
     allow_headers=settings.cors_allow_headers_list,
 )
 
+from src.backend.middleware.auth_middleware import GlobalAuthMiddleware
+
 register_error_handlers(app)
+app.add_middleware(GlobalAuthMiddleware)
 
 
 # コアルーター登録

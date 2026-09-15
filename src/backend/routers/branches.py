@@ -75,11 +75,12 @@ def _to_response(model: Any) -> BranchResponse:
     )
 
 
-def _validate_uuid(session_id: str) -> None:
+def _validate_uuid(session_id: str) -> bool:
     try:
         uuid.UUID(session_id)
+        return True
     except (ValueError, AttributeError):
-        raise HTTPException(status_code=400, detail="Invalid session_id (UUID required)")
+        return False
 
 
 @router.post("/", response_model=BranchResponse, status_code=201)
@@ -166,11 +167,16 @@ def _compute_unified_diff(content_a: str, content_b: str) -> str:
     return "".join(difflib.unified_diff(lines_a, lines_b, fromfile="Branch A", tofile="Branch B"))
 
 
-def _compute_side_by_side_diff(content_a: str, content_b: str) -> dict[str, list[str]]:
-    return {
-        "left": content_a.splitlines(),
-        "right": content_b.splitlines(),
-    }
+def _compute_side_by_side_diff(content_a: str, content_b: str) -> list[tuple[str, str]]:
+    lines_a = content_a.splitlines()
+    lines_b = content_b.splitlines()
+    max_len = max(len(lines_a), len(lines_b))
+    result = []
+    for i in range(max_len):
+        a = lines_a[i] if i < len(lines_a) else ""
+        b = lines_b[i] if i < len(lines_b) else ""
+        result.append((a, b))
+    return result
 
 
 @router.get("/{book_id}/diff", response_model=dict)
@@ -453,7 +459,8 @@ async def get_play_state(
     session: AsyncSession = Depends(get_branch_session),
 ) -> BranchPlayStateResponse:
     """セッションの現状態（current node / context / available choices）を取得."""
-    _validate_uuid(session_id)
+    if not _validate_uuid(session_id):
+        raise HTTPException(status_code=400, detail="Invalid session_id (UUID required)")
     repo = BranchRepository(session)
     sess = await repo.get_play_session(session_id)
     if sess is None:
@@ -485,7 +492,8 @@ async def play_choose(
     session: AsyncSession = Depends(get_branch_session),
 ) -> BranchPlayStateResponse:
     """選択肢を実行し current_node を進める. 楽観ロック対応."""
-    _validate_uuid(session_id)
+    if not _validate_uuid(session_id):
+        raise HTTPException(status_code=400, detail="Invalid session_id (UUID required)")
     repo = BranchRepository(session)
     sess = await repo.get_play_session(session_id)
     if sess is None:
@@ -531,7 +539,8 @@ async def play_save(
     session: AsyncSession = Depends(get_branch_session),
 ) -> BranchPlayStateResponse:
     """現状態を save_points に追記保存."""
-    _validate_uuid(session_id)
+    if not _validate_uuid(session_id):
+        raise HTTPException(status_code=400, detail="Invalid session_id (UUID required)")
     repo = BranchRepository(session)
     sess = await repo.get_play_session(session_id)
     if sess is None:
@@ -562,7 +571,8 @@ async def play_load(
     session: AsyncSession = Depends(get_branch_session),
 ) -> BranchPlayStateResponse:
     """save_points の index から状態を復元."""
-    _validate_uuid(session_id)
+    if not _validate_uuid(session_id):
+        raise HTTPException(status_code=400, detail="Invalid session_id (UUID required)")
     repo = BranchRepository(session)
     sess = await repo.get_play_session(session_id)
     if sess is None:
@@ -592,7 +602,8 @@ async def play_end(
     session: AsyncSession = Depends(get_branch_session),
 ) -> BranchPlaySessionResponse:
     """セッションを終了（status 更新）."""
-    _validate_uuid(session_id)
+    if not _validate_uuid(session_id):
+        raise HTTPException(status_code=400, detail="Invalid session_id (UUID required)")
     repo = BranchRepository(session)
     sess = await repo.get_play_session(session_id)
     if sess is None:
@@ -618,7 +629,8 @@ async def get_playthrough(
     session: AsyncSession = Depends(get_branch_session),
 ) -> BranchPlayPlaythroughResponse:
     """プレイスルー記録 (history + context) を取得."""
-    _validate_uuid(session_id)
+    if not _validate_uuid(session_id):
+        raise HTTPException(status_code=400, detail="Invalid session_id (UUID required)")
     repo = BranchRepository(session)
     sess = await repo.get_play_session(session_id)
     if sess is None:

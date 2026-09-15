@@ -6,6 +6,9 @@ from src.backend.workflows.writing_langgraph import WritingGraphManager
 @pytest.mark.asyncio
 async def test_writing_graph_complete_flow():
     """Writing LangGraphの正常系実行フローをテスト"""
+    # キャッシュをクリアして一貫したテスト条件を確保
+    WritingGraphManager.clear_gen_ctx_cache()
+    
     # モックマネージャーを作成
     mock_manager = MagicMock()
     
@@ -58,7 +61,7 @@ async def test_writing_graph_complete_flow():
         mock_manager._phase_prepare_context.assert_called_once()
         mock_manager._phase_drafting.assert_called_once()
         mock_manager._phase_audit.assert_called_once()
-        # criticはトリガーされないはず（品質が良いため）
+        # criticはトリガーされないはず（should_heavy_auditがFalseのため）
         mock_manager._phase_critic.assert_not_called()
         mock_manager._phase_healing.assert_not_called()  # healingも不要
         mock_manager._run_dogfeeding_loop.assert_called_once()

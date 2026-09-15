@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any
 
 import aiosqlite
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, text, event
 from sqlalchemy.orm import sessionmaker
 
 try:
@@ -32,6 +32,19 @@ except ImportError:
         DATABASE_URL = f"sqlite:///{BASE_DIR / 'storage' / 'autonovel.db'}"
 
 logger = logging.getLogger(__name__)
+
+
+def configure_sqlite_engine(engine):
+    """SQLiteエンジンにWALモードと外部キー有効化PRAGMAを設定。"""
+    target = getattr(engine, "sync_engine", engine)
+    if target.dialect.name == "sqlite":
+        @event.listens_for(target, "connect")
+        def set_sqlite_pragma(dbapi_connection, connection_record):
+            cursor = dbapi_connection.cursor()
+            cursor.execute("PRAGMA journal_mode=WAL")
+            cursor.execute("PRAGMA foreign_keys=ON")
+            cursor.execute("PRAGMA synchronous=NORMAL")
+            cursor.close()
 
 
 # ==========================================
@@ -91,7 +104,6 @@ class WorkspaceManager:
 # DatabaseManager（低レベルSQLite/PostgreSQL操作 - SQLAlchemy コネクションプール版）
 # ==========================================
 import os
-from sqlalchemy import event
 from sqlalchemy.pool import NullPool
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
@@ -181,6 +193,9 @@ class DatabaseManager:
             async_url,
             **engine_kwargs,
         )
+        
+        # Configure SQLite engine if applicable
+        configure_sqlite_engine(self.engine)
 
         # Ensure is_plot_twist column exists in SQLite database
         # (Skipped: Schema updates should be handled by Alembic migrations)

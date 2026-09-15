@@ -120,3 +120,26 @@ class TenseContextAnalyzer:
             is_past_locked=is_past_locked,
             sentence_tenses=tenses
         )
+
+
+class TenseAnalyzer:
+    """Simple tense analyzer interface for compatibility with tests."""
+    
+    def __init__(self):
+        self._analyzer = TenseContextAnalyzer()
+    
+    def analyze(self, text: str) -> dict:
+        """
+        Analyze text and return tense ratios as a dictionary.
+        
+        Args:
+            text: Input text to analyze
+            
+        Returns:
+            Dictionary with past_ratio and present_ratio keys
+        """
+        result = self._analyzer.analyze_paragraph(text)
+        return {
+            "past_ratio": result.past_ratio,
+            "present_ratio": result.present_ratio
+        }

@@ -1,36 +1,23 @@
 import pytest
-from src.easy_mode.phase3.if_routes import IFRouteGraph, RouteNode, RouteChoice, BranchType
+from src.easy_mode.phase3.if_routes import IFRouteGraph, RouteNode, BranchType
 
 def test_if_route_graph_nodes():
     graph = IFRouteGraph()
-    
-    # Create nodes
-    node_root = RouteNode(
+    node1 = RouteNode(
         id="node_root",
         episode_num=1,
         content="共通ルート第1話",
-        branch_type=BranchType.CHOICE,
-        choices=[
-            RouteChoice(
-                id="choice_1",
-                text="右の道を進む",
-                target_node_id="node_route_a"
-            )
-        ]
+        branch_type=BranchType.CHOICE
     )
-    
-    node_route_a = RouteNode(
+    node2 = RouteNode(
         id="node_route_a",
-        episode_num=2,
+        episode_num=1,
         content="ヒロインAルート",
         branch_type=BranchType.CHOICE
     )
-    
-    graph.add_node(node_root)
-    graph.add_node(node_route_a)
-    graph.entry_node_id = "node_root"
+    graph.add_node(node1)
+    graph.add_node(node2)
+    graph.add_edge("node_root", "node_route_a", "右の道を進む")
     
     assert len(graph.nodes) == 2
-    # Check that the edge (choice) exists
-    assert len(node_root.choices) == 1
-    assert node_root.choices[0].target_node_id == "node_route_a"
+    assert len(graph.edges) == 1

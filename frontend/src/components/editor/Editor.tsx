@@ -8,10 +8,18 @@ import { SnippetTooltip } from "./SnippetTooltip";
 import { useHistoryStack } from "../../hooks/useHistoryStack";
 import { useSnapshotHistory } from "../../hooks/useSnapshotHistory";
 import { HistoryDrawer } from "./HistoryDrawer";
-import { useAutosave, SaveStatus } from "../../hooks/useAutosave";
 import { EditorFontFamily, EditorFontSize } from "../../types";
-import { AudioPlayer } from "../common/AudioPlayer";
 import { useChapterAudio } from "../../hooks/useChapterAudio";
+
+// Step 9: 新しいフックとモーダルのインポート
+import { useIndexedDbAutosave } from "../../hooks/useIndexedDbAutosave";
+import { useCrashRecovery } from "../../hooks/useCrashRecovery";
+import { RecoveryModal } from "./RecoveryModal";
+
+// 提案3: 巨大コンポーネント分割（Gutter / Preview / AudioSection）
+import { EditorGutter } from "./EditorGutter";
+import { EditorPreview } from "./EditorPreview";
+import { EditorAudioSection } from "./EditorAudioSection";
 
 import { findNearestImageMarker } from "../../utils/multimedia";
 
@@ -43,7 +51,8 @@ export const Editor: React.FC<EditorProps> = ({
      hoveredNodeSummary,
      setHoveredNodeSummary,
      lineScores,
-     setLineScores
+     setLineScores,
+     contentLengthLimit
    } = useNovelContext();
    const [tab, setTab] = useState<"edit" | "preview">("edit");
    const [selectedText, setSelectedText] = useState("");
@@ -81,10 +90,13 @@ export const Editor: React.FC<EditorProps> = ({
      }
    };
 
-   // Autosave hook
-   const { status, lastSavedAt, save: triggerSave } = useAutosave(content);
+// Autosave hook - Step 9: 使用 useIndexedDbAutosave
+    const { status, lastSavedAt, save: triggerSave } = useIndexedDbAutosave(selectedBookId, currentEpNum, content);
 
-   // 編集中の下書きを localStorage にミラー保存 (リロード時の復元用)
+   // Step 9: クラッシュリカバリフック
+    const { isOpen, recoverySnapshot, dismiss } = useCrashRecovery(selectedBookId, currentEpNum, content);
+
+    // 編集中の下書きを localStorage にミラー保存 (リロード時の復元用)
    const draftKey = `autonovel.editor.draft.${selectedBookId}.${currentEpNum}`;
    useEffect(() => {
      if (readOnly) return;
@@ -206,13 +218,7 @@ export const Editor: React.FC<EditorProps> = ({
      setIsHistoryDrawerOpen(false);
    };
 
-   // ルビ記法 ｜親文字《ルビ》 を HTML に変換する簡易パーサー
-   const renderRuby = (text: string) => {
-     const formatted = text
-       .replace(/｜(.+?)《(.+?)》/g, "<ruby>$1<rt>$2</rt></ruby>")
-       .replace(/\n/g, "<br />");
-     return { __html: formatted };
-   };
+   // ルビ変換・ハイライトレンダリングは EditorPreview.tsx に移動（提案3）
 
    const updateCurrentScene = useCallback(() => {
      if (!textareaRef.current || !onSceneChange) return;
@@ -328,6 +334,16 @@ export const Editor: React.FC<EditorProps> = ({
    const lineCount = content ? content.split("\n").length : 0;
    const manuscriptPages = Math.ceil(charCount / 400);
    const readingTimeMin = Math.ceil(charCount / 400);
+   // 提案5: 文字数上限（contentLengthLimit）に対する進捗率と警告レベル
+   const charLimitRatio = contentLengthLimit > 0 ? charCount / contentLengthLimit : 0;
+   const charLimitLevel =
+     charLimitRatio >= 1 ? "exceeded" : charLimitRatio >= 0.9 ? "warning" : "normal";
+   const charLimitColor =
+     charLimitLevel === "exceeded"
+       ? "var(--accent-danger)"
+       : charLimitLevel === "warning"
+         ? "var(--accent-yellow)"
+         : "var(--text-muted)";
 
    const editorClassName = [
      "textarea",
@@ -373,18 +389,7 @@ export const Editor: React.FC<EditorProps> = ({
      );
    }
 
-   // ハイライトされたコンテンツをレンダリングする関数
-   const renderHighlightedContent = (text: string) => {
-     // キャラクター名をハイライトする簡易実装
-     // 実際には、より高度なNERやキャラクター辞書を使用すべき
-     const highlighted = text
-       .replace(/([ァ-ヶー]+)/g, (match) => {
-         // 簡易的にカタカナ語をキャラクター名としてハイライト
-         // 実際のプロジェクトでは、より正確なキャラクター名検出が必要
-         return `<span class="character-name">${match}</span>`;
-       });
-     return { __html: highlighted };
-   };
+   // ハイライト・ルビ変換レンダリングは EditorPreview.tsx に移動（提案3）
 
    return (
      <>
@@ -447,7 +452,16 @@ export const Editor: React.FC<EditorProps> = ({
 
          <div style={{ fontSize: "0.82rem", color: "var(--text-muted)", display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
            <span>行数: <strong>{lineCount}</strong> 行</span>
-           <span>文字数: <strong data-testid="editor-char-count">{charCount}</strong> 文字</span>
+           <span>
+             文字数: <strong data-testid="editor-char-count" style={{ color: charLimitColor }}>{charCount}</strong>
+             / {contentLengthLimit} 文字
+             {charLimitLevel === "exceeded" && (
+               <span style={{ color: "var(--accent-danger)", marginLeft: "4px" }}>（上限超過）</span>
+             )}
+             {charLimitLevel === "warning" && (
+               <span style={{ color: "var(--accent-yellow)", marginLeft: "4px" }}>（まもなく上限）</span>
+             )}
+           </span>
            <span>読了目安: <strong>約{readingTimeMin || 1}</strong> 分</span>
            <span>原稿用紙: <strong>約{manuscriptPages}</strong> 枚</span>
            <AutosaveIndicator status={status} lastSavedAt={lastSavedAt} />
@@ -533,66 +547,13 @@ export const Editor: React.FC<EditorProps> = ({
 
          {tab === "edit" ? (
            <div style={{ position: "relative", flex: 1, minHeight: "280px" }}>
-             <div
-               className="gutter"
-               style={{
-                 position: "absolute",
-                 left: 0,
-                 top: 0,
-                 bottom: 0,
-                 width: "40px",
-                 pointerEvents: "auto",
-                 zIndex: 3,
-                 overflow: "hidden"
-               }}
-               onClick={handleGutterClick}
-             >
-               <div
-                 ref={gutterInnerRef}
-                 style={{
-                   position: "relative",
-                   height: "100%",
-                   display: "flex",
-                   flexDirection: "column"
-                 }}
-               >
-                 {content.split('\n').map((line, index) => (
-                   <div
-                     key={index}
-                     style={{
-                       position: "relative",
-                       width: "100%",
-                       textAlign: "right",
-                       paddingRight: "8px",
-                       color: "var(--text-muted)",
-                       fontSize: "0.82rem",
-                       lineHeight: "1.9",
-                       display: "flex",
-                       alignItems: "center",
-                       justifyContent: "flex-end",
-                     }}
-                   >
-                     {lineScores && lineScores[index] && (
-                       <div
-                         style={{
-                           position: "absolute",
-                           left: 0,
-                           top: 0,
-                           bottom: 0,
-                           width: "4px",
-                           backgroundColor:
-                             lineScores[index].level === "error" ? "#ef4444" :
-                             lineScores[index].level === "warning" ? "#f59e0b" :
-                             lineScores[index].level === "info" ? "#10b981" :
-                             "#10b981",
-                         }}
-                       />
-                     )}
-                     {index + 1}
-                   </div>
-                 ))}
-               </div>
-             </div>
+             {/* 行番号ガター（EditorGutter に分割） */}
+             <EditorGutter
+               content={content}
+               lineScores={lineScores}
+               gutterInnerRef={gutterInnerRef}
+               onGutterClick={handleGutterClick}
+             />
              <textarea
                id="editor-textarea"
                ref={textareaRef}
@@ -623,54 +584,24 @@ export const Editor: React.FC<EditorProps> = ({
                placeholder="ここに本文を入力してください。文章を選択するとインラインAI推敲ツールバーが表示されます。"
                data-testid="editor-textarea"
              />
-             <div
-               ref={mirrorRef}
-               className={editorClassName}
-               style={{
-                 position: "absolute",
-                 left: 40, // same as textarea left padding
-                 top: 0,
-                 right: 0,
-                 bottom: 0,
-                 pointerEvents: "none",
-                 zIndex: 2,
-                 whiteSpace: "pre-wrap",
-                 wordWrap: "break-word",
-                 lineHeight: "1.9",
-                 padding: "12px 12px 12px 40", // same as textarea
-                 boxSizing: "border-box",
-                 color: "var(--text-primary, #fff)",
-                 overflow: "hidden"
-               }}
-             >
-               <div dangerouslySetInnerHTML={renderHighlightedContent(content)} />
-             </div>
-           </div>
-         ) : (
-           <div
-             className="output-area"
-             style={{
-               flex: 1,
-               minHeight: "280px",
-               overflowY: "auto",
-               lineHeight: "1.9",
-               letterSpacing: "0.05em",
-             }}
-             dangerouslySetInnerHTML={renderRuby(content || "本文がありません。")}
-             data-testid="editor-preview"
-           />
-         )}
-
-         {/* Step 33: インライン音声プレイヤー */}
-         {audioTrack && (
-           <div style={{ marginTop: "12px" }}>
-             <AudioPlayer
-               src={audioTrack.stream_url}
-               title={`第${currentEpNum || 1}話 朗読音声`}
-               duration={audioTrack.duration_seconds}
+             {/* ハイライトミラー（EditorPreview に分割） */}
+             <EditorPreview
+               mode="mirror"
+               content={content}
+               editorClassName={editorClassName}
+               mirrorRef={mirrorRef}
              />
            </div>
+         ) : (
+           // ルビ・プレビュー（EditorPreview に分割）
+           <EditorPreview mode="ruby" content={content} />
          )}
+
+         {/* Step 33: インライン音声プレイヤー（EditorAudioSection に分割） */}
+         <EditorAudioSection
+           audioTrack={audioTrack}
+           currentEpNum={currentEpNum}
+         />
 
          {isHistoryDrawerOpen && (
            <HistoryDrawer
@@ -683,13 +614,25 @@ export const Editor: React.FC<EditorProps> = ({
            />
          )}
        </div>
-       {hoveredNodeSummary && tooltipPos && (
-         <SnippetTooltip
-           summary={hoveredNodeSummary.summary}
-           properties={hoveredNodeSummary.properties}
-           position={tooltipPos}
-         />
-       )}
-     </>
-   );
+{hoveredNodeSummary && tooltipPos && (
+          <SnippetTooltip
+            summary={hoveredNodeSummary.summary}
+            properties={hoveredNodeSummary.properties}
+            position={tooltipPos}
+          />
+        )}
+        {/* Step 9: クラッシュ復旧モーダル */}
+        {isOpen && (
+          <RecoveryModal
+            isOpen={isOpen}
+            snapshot={recoverySnapshot}
+            onRestore={(recovered) => {
+              onChange(recovered);
+              dismiss();
+            }}
+            onDiscard={dismiss}
+          />
+        )}
+      </>
+    );
 };

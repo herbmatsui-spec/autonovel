@@ -18,7 +18,7 @@
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 [![Type Checked: mypy](https://img.shields.io/badge/type%20checked-mypy-blue)](https://mypy-lang.org/)
 [![Vitest](https://img.shields.io/badge/tested_with-vitest-729B1B?logo=vitest&logoColor=white)](https://vitest.dev/)
-[![Version](https://img.shields.io/badge/version-4.9.4-brightgreen?logo=semver)](https://github.com/herbmatsui-spec/autonovel/releases/tag/v4.9.4)
+[![Version](https://img.shields.io/badge/version-4.9.6-brightgreen?logo=semver)](https://github.com/herbmatsui-spec/autonovel/releases/tag/v4.9.6)
 
 <br />
 
@@ -58,6 +58,8 @@ AutoNovel は、AI を活用して Web 小説を **企画から執筆、校正�
 続いて、下記の目次から技術的な詳細をご覧ください。
 
 ## 📋 更新履歴 / Changelog
+
+### v4.9.6 (2026-09-15) — CI/CD stabilization, dependency updates, Docker configuration fixes, backend refactoring, frontend component enhancements, test coverage improvements, cleanup of temporary scripts
 
 ### v4.9.1 (2026-09-12) — DDDレイヤー分離アーキテクチャ実装完了・P1実装計画統合
 

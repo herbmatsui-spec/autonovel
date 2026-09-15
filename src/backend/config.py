@@ -18,6 +18,9 @@ STORAGE_DIR = ROOT_DIR / "storage"
 # storage ディレクトリが存在しない場合は自動作成
 STORAGE_DIR.mkdir(parents=True, exist_ok=True)
 
+# 開発用エフェメラルJWTキーのプロセス内キャッシュ
+_ephemeral_dev_jwt_secret: str | None = None
+
 
 class Settings(BaseSettings):
     """アプリケーション設定クラス。"""
@@ -46,8 +49,8 @@ class Settings(BaseSettings):
     HUEY_SQLITE_PATH: str = Field(default_factory=lambda: str(STORAGE_DIR / "huey.db"))
     REDIS_URL: str = "redis://localhost:6379/0"
 
-
-# 認証・セキュリティ設定
+    # 認証・セキュリティ設定
+    AUTH_DISABLED: bool = False
     CORS_ORIGINS: str = (
         "http://localhost:5173,http://localhost:8080,http://127.0.0.1:5173,http://127.0.0.1:8080"
     )
@@ -65,6 +68,8 @@ class Settings(BaseSettings):
     def validate_production_secrets(self) -> Settings:
         """本番環境でデフォルト値や空シークレットが使用されるのを防止する。"""
         if self.APP_ENV == "production":
+            if self.AUTH_DISABLED:
+                raise ValueError("本番環境 (APP_ENV=production) では AUTH_DISABLED=True は許可されません。")
             if not self.JWT_SECRET_KEY or "change-in-prod" in self.JWT_SECRET_KEY:
                 raise ValueError("本番環境 (APP_ENV=production) では安全な JWT_SECRET_KEY の設定が必須です。")
             if "sqlite" in self.DATABASE_URL:
@@ -80,6 +85,7 @@ class Settings(BaseSettings):
         insecure_keys = {
             "",
             "autonovel-super-secret-key-32bytes-minimum-change-in-prod",
+            "autonovel-dev-secret-key-minimum-32-bytes-long",
             "your-secret-key-here",
             "change-me",
             "secret",
@@ -96,11 +102,17 @@ class Settings(BaseSettings):
         if key and key not in insecure_keys:
             return key
 
-        # 開発環境用フォールバック
-        logging.getLogger(__name__).warning(
-            "[SECURITY WARNING] Using default development JWT secret key. DO NOT USE IN PRODUCTION."
-        )
-        return "autonovel-dev-insecure-secret-key-for-local-testing-only-32bytes"
+        # 開発環境用フォールバック (固定文字列ではなくプロセス毎のエフェメラルキー)
+        global _ephemeral_dev_jwt_secret
+        if _ephemeral_dev_jwt_secret is None:
+            import secrets
+            _ephemeral_dev_jwt_secret = secrets.token_hex(32)
+            logging.getLogger(__name__).warning(
+                "[SECURITY WARNING] JWT_SECRET_KEY is not set or insecure. "
+                "Generated an ephemeral development key for this process lifetime. "
+                "Set a persistent JWT_SECRET_KEY in .env for production or persistent sessions."
+            )
+        return _ephemeral_dev_jwt_secret
 
     # ロギング設定
     LOG_LEVEL: str = "INFO"

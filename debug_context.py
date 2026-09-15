@@ -1,0 +1,15 @@
+from src.services.episode_context import EpisodeContextBuilder
+
+builder = EpisodeContextBuilder()
+ctx1 = builder.build_context(book_id=1, ep_num=1)
+ctx2 = builder.build_context(book_id=1, ep_num=2)
+ctx3 = builder.build_context(book_id=1, ep_num=3)
+print("ctx1:", ctx1)
+print("ctx2:", ctx2)
+print("ctx3:", ctx3)
+print("ctx1 keys:", ctx1.keys())
+print("ctx2 keys:", ctx2.keys())
+print("ctx3 keys:", ctx3.keys())
+print("ctx1['is_last']:", ctx1.get('is_last'))
+print("ctx2['is_last']:", ctx2.get('is_last'))
+print("ctx3['is_last']:", ctx3.get('is_last'))

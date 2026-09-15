@@ -3,7 +3,6 @@ from __future__ import annotations
 from datetime import datetime
 
 from sqlalchemy import (
-    JSON,
     Boolean,
     CheckConstraint,
     Column,
@@ -23,6 +22,8 @@ from sqlalchemy.types import TypeDecorator
 from sqlalchemy.orm import relationship
 
 from src.infrastructure.database.models.base_orm import Base
+from src.backend.database.models_checkpoint import WorkflowCheckpointModel
+from src.infrastructure.database.types import CompatibleJSON, CompatibleDateTime, CompatibleVector
 
 """
 database/models.py - SQLAlchemy ORMモデル定義
@@ -58,8 +59,15 @@ class User(Base):
     plan_tier = Column(String(20), default="free", nullable=False)
     credits = Column(Integer, default=50, nullable=False)
     stripe_customer_id = Column(String(255), nullable=True, index=True)
-    created_at = Column(DateTime, server_default=func.now())
-    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=True, index=True)
+    created_at = Column(CompatibleDateTime, server_default=func.now())
+    updated_at = Column(CompatibleDateTime, server_default=func.now(), onupdate=func.now())
+
+    def __contains__(self, item):
+        # Allow checking for 'user_id', 'id', 'sub' as if they were keys
+        if item in ("user_id", "id", "sub"):
+            return True
+        return hasattr(self, item)
 
     books = relationship("Book", back_populates="owner", cascade="all, delete-orphan")
 
@@ -69,6 +77,7 @@ class Book(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=True, index=True)
     owner = relationship("User", back_populates="books")
     title = Column(String(200), nullable=False)
     genre = Column(String(100), default="")
@@ -79,7 +88,8 @@ class Book(Base):
     style_dna = Column(Text, default="")
     status = Column(String(50), default="draft")
     mode = Column(String(20), default="easy", nullable=False)
-    created_at = Column(DateTime, server_default=func.now())
+    created_at = Column(CompatibleDateTime, server_default=func.now())
+    updated_at = Column(CompatibleDateTime, server_default=func.now(), onupdate=func.now())
     marketing_data = Column(Text, default="")
     cumulative_tension = Column(Integer, default=0)
     cumulative_qol = Column(Integer, default=0)
@@ -87,7 +97,7 @@ class Book(Base):
     sanctuary_integrity = Column(Integer, default=100)
     current_branch_id = Column(Integer, nullable=True)
     ai_assistant_config = Column(
-        JSON,
+        CompatibleJSON,
         nullable=False,
         default={
             "enabled": False,
@@ -105,8 +115,8 @@ class UserPreference(Base):
 
     user_id = Column(Integer, primary_key=True, nullable=False)
     easy_mode_ai_enabled = Column(Boolean, default=False, nullable=False)
-    ai_features = Column(JSON, nullable=False, default={})
-    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    ai_features = Column(CompatibleJSON, nullable=False, default={})
+    updated_at = Column(CompatibleDateTime, server_default=func.now(), onupdate=func.now())
 
 
 class Branch(Base):
@@ -118,8 +128,8 @@ class Branch(Base):
     name = Column(String(100), nullable=False)
     parent_id = Column(Integer, nullable=True)
     fork_ep_num = Column(Integer, default=0)
-    graph_json = Column(JSON, nullable=True)
-    created_at = Column(DateTime, server_default=func.now())
+    graph_json = Column(CompatibleJSON, nullable=True)
+    created_at = Column(CompatibleDateTime, server_default=func.now())
 
 
 class BranchPlaySession(Base):
@@ -131,12 +141,12 @@ class BranchPlaySession(Base):
     book_id = Column(Integer, nullable=False)
     branch_id = Column(Integer, nullable=False)
     current_node_id = Column(String(255), nullable=True)
-    context_json = Column(JSON, nullable=True)
-    save_points_json = Column(JSON, nullable=True)
+    context_json = Column(CompatibleJSON, nullable=True)
+    save_points_json = Column(CompatibleJSON, nullable=True)
     status = Column(String(20), nullable=True, server_default=text("'active'"))
     version = Column(Integer, nullable=False, server_default=text("1"))
-    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
-    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(CompatibleDateTime, server_default=func.now(), onupdate=func.now())
+    created_at = Column(CompatibleDateTime, server_default=func.now())
 
 
 class SafeDateTime(TypeDecorator):
@@ -172,7 +182,7 @@ class BiblePendingSetting(Base):
     proposed_value = Column(Text, default="")
     confidence = Column(Float, default=0.0)
     status = Column(String(50), default="pending")
-    created_at = Column(DateTime, server_default=func.now())
+    created_at = Column(CompatibleDateTime, server_default=func.now())
 
 
 class Plot(Base):
@@ -223,7 +233,7 @@ class Plot(Base):
     is_simulation = Column(Boolean, default=False)
     simulation_id = Column(String, server_default="", nullable=True)
     pov_character_id = Column(Integer, nullable=True)
-    created_at = Column(DateTime, server_default=func.now())
+    created_at = Column(CompatibleDateTime, server_default=func.now())
 
     __table_args__ = (
         UniqueConstraint("book_id", "branch_id", "ep_num", name="uq_plots_book_branch_ep"),
@@ -246,7 +256,7 @@ class Chapter(Base):
     world_state = Column(Text)
     trinity_review_log = Column(Text)
     ai_insight = Column(Text)
-    created_at = Column(DateTime, server_default=func.now())
+    created_at = Column(CompatibleDateTime, server_default=func.now())
     tension_delta = Column(Integer, default=0)
     qol_delta = Column(Integer, default=0)
     is_anchor = Column(Boolean, default=False)
@@ -256,6 +266,8 @@ class Chapter(Base):
     __table_args__ = (
         UniqueConstraint("book_id", "branch_id", "ep_num", name="uq_chapters_book_branch_ep"),
     )
+
+
 class Character(Base):
     __tablename__ = "characters"
 
@@ -266,7 +278,7 @@ class Character(Base):
     personality = Column(String(500), default="")
     ability = Column(String(500), default="")
     registry_data = Column(Text)
-    voice_profile_json = Column(JSON, nullable=True)
+    voice_profile_json = Column(CompatibleJSON, nullable=True)
 
 
 class CharacterArc(Base):
@@ -279,7 +291,7 @@ class CharacterArc(Base):
     arc_stages = Column(Text, default="[]")
     current_stage_index = Column(Integer, default=0)
     is_completed = Column(Boolean, default=False)
-    created_at = Column(DateTime, server_default=func.now())
+    created_at = Column(CompatibleDateTime, server_default=func.now())
 
 
 class Foreshadowing(Base):
@@ -296,8 +308,8 @@ class Foreshadowing(Base):
     payoff_location = Column(String(100), nullable=True)
     strength = Column(Float, default=1.0)
     fulfilled = Column(Boolean, default=False)
-    created_at = Column(DateTime, server_default=func.now())
-    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    created_at = Column(CompatibleDateTime, server_default=func.now())
+    updated_at = Column(CompatibleDateTime, server_default=func.now(), onupdate=func.now())
 
     __table_args__ = (
         UniqueConstraint("book_id", "branch_id", "ep_num", "type", name="uq_foreshadowing"),
@@ -316,8 +328,8 @@ class Outbox(Base):
     event_type = Column(String(50), nullable=False)
     payload = Column(Text, nullable=False)
     status = Column(String(20), default="pending")
-    created_at = Column(DateTime, server_default=func.now())
-    processed_at = Column(DateTime, nullable=True)
+    created_at = Column(CompatibleDateTime, server_default=func.now())
+    processed_at = Column(CompatibleDateTime, nullable=True)
 
 
 # ==========================================
@@ -338,7 +350,7 @@ class PromptVersion(Base):
     ab_test_metrics = Column(Text, default="{}")
     rollback_reason = Column(String(255))
     is_active = Column(Boolean, default=False)
-    created_at = Column(DateTime, server_default=func.now())
+    created_at = Column(CompatibleDateTime, server_default=func.now())
 
 
 class PromptUsageLog(Base):
@@ -374,8 +386,8 @@ class Rule(Base):
     domain = Column(String(50), default="all")
     character_name = Column(String(100))
     status = Column(String(20), default="active")
-    created_at = Column(DateTime, server_default=func.now())
-    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    created_at = Column(CompatibleDateTime, server_default=func.now())
+    updated_at = Column(CompatibleDateTime, server_default=func.now(), onupdate=func.now())
 
 
 class Masterpiece(Base):
@@ -384,8 +396,8 @@ class Masterpiece(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     emotion_or_scene = Column(String(200), nullable=False)
     content = Column(Text, nullable=False)
-    vector_json = Column(Text)
-    created_at = Column(DateTime, server_default=func.now())
+    vector_json = Column(CompatibleVector, nullable=True)
+    created_at = Column(CompatibleDateTime, server_default=func.now())
 
 
 # ==========================================
@@ -407,14 +419,14 @@ class AuditIssue(Base):
     constraint_for_next_ep = Column(Text, default="")
     status = Column(String(20), default="open")
     resolved_note = Column(Text, default="")
-    created_at = Column(DateTime, server_default=func.now())
+    created_at = Column(CompatibleDateTime, server_default=func.now())
 
     # Review linkage fields
     patch_review_id = Column(Integer, ForeignKey("patch_reviews.id"), nullable=True)
     user_resolution = Column(
         String(50), nullable=True
     )  # USER_ACCEPTED, USER_REJECTED, USER_MODIFIED
-    resolved_at = Column(DateTime, nullable=True)
+    resolved_at = Column(CompatibleDateTime, nullable=True)
     resolved_by = Column(String(100), nullable=True)
 
 
@@ -444,12 +456,12 @@ class PatchReview(Base):
     diff_json = Column(Text, default="{}")
     status = Column(String(20), default=PatchReviewStatus.GENERATED, nullable=False)
     reviewer_id = Column(String(100), nullable=True)
-    reviewed_at = Column(DateTime, nullable=True)
+    reviewed_at = Column(CompatibleDateTime, nullable=True)
     review_comment = Column(Text, default="")
-    audit_issue_ids = Column(JSON, default=[])
-    learning_metadata = Column(JSON, default={})  # negative_sample_flag, confidence, pattern_tags
-    created_at = Column(DateTime, server_default=func.now())
-    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    audit_issue_ids = Column(CompatibleJSON, default=[])
+    learning_metadata = Column(CompatibleJSON, default={})
+    created_at = Column(CompatibleDateTime, server_default=func.now())
+    updated_at = Column(CompatibleDateTime, server_default=func.now(), onupdate=func.now())
 
     __table_args__ = (
         Index("idx_patch_reviews_book_ep", "book_id", "ep_num"),
@@ -468,9 +480,9 @@ class SettingDelta(Base):
     delta_type = Column(String(50), nullable=False)  # MANUAL, AUTO_REPAIR, USER_CORRECTION
     source = Column(String(50), nullable=False)  # user, audit_agent, bible_service
     merged_to_graphrag = Column(Boolean, default=False, nullable=False)
-    merged_at = Column(DateTime, nullable=True)
+    merged_at = Column(CompatibleDateTime, nullable=True)
     patch_review_id = Column(Integer, ForeignKey("patch_reviews.id"), nullable=True)
-    created_at = Column(DateTime, server_default=func.now())
+    created_at = Column(CompatibleDateTime, server_default=func.now())
 
     __table_args__ = (
         Index("idx_setting_deltas_book_field", "book_id", "field_path"),
@@ -488,7 +500,7 @@ class SettingVersion(Base):
     base_version_id = Column(Integer, ForeignKey("setting_versions.id"), nullable=True)
     change_summary = Column(Text, default="")
     created_by = Column(String(100), nullable=True)
-    created_at = Column(DateTime, server_default=func.now())
+    created_at = Column(CompatibleDateTime, server_default=func.now())
 
     __table_args__ = (
         UniqueConstraint("book_id", "version_number", name="uq_setting_versions_book_ver"),
@@ -507,7 +519,7 @@ class OptimizationHistory(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     book_id = Column(Integer, ForeignKey("books.id", ondelete="CASCADE"), nullable=False)
     report_json = Column(Text, default="{}")
-    created_at = Column(DateTime, server_default=func.now())
+    created_at = Column(CompatibleDateTime, server_default=func.now())
 
 
 class StyleFragment(Base):
@@ -516,9 +528,9 @@ class StyleFragment(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     tag = Column(String(100), nullable=False)
     content = Column(Text, nullable=False)
-    embedding_json = Column(Text)
+    embedding_json = Column(CompatibleVector, nullable=True)
     origin = Column(String(50), default="Master")
-    created_at = Column(DateTime, server_default=func.now())
+    created_at = Column(CompatibleDateTime, server_default=func.now())
 
 
 class CustomStyle(Base):
@@ -529,7 +541,7 @@ class CustomStyle(Base):
     instruction = Column(Text)
     score = Column(Integer, default=0)
     analysis = Column(Text)
-    created_at = Column(DateTime, server_default=func.now())
+    created_at = Column(CompatibleDateTime, server_default=func.now())
 
 
 class InternalState(Base):
@@ -538,7 +550,7 @@ class InternalState(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     key = Column(String(200), nullable=False, unique=True)
     value = Column(Text, default="")
-    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    updated_at = Column(CompatibleDateTime, server_default=func.now(), onupdate=func.now())
 
 
 class PendingPatch(Base):
@@ -550,8 +562,8 @@ class PendingPatch(Base):
     patch_content = Column(Text, nullable=False)
     ab_test_result = Column(Text, default="{}")
     status = Column(String(20), default="pending")
-    reviewed_at = Column(DateTime)
-    created_at = Column(DateTime, server_default=func.now())
+    reviewed_at = Column(CompatibleDateTime)
+    created_at = Column(CompatibleDateTime, server_default=func.now())
 
 
 class BackgroundTask(Base):
@@ -567,7 +579,7 @@ class BackgroundTask(Base):
     logs = Column(Text, default="[]")
     error = Column(Text)
     result_data = Column(Text)
-    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    updated_at = Column(CompatibleDateTime, server_default=func.now(), onupdate=func.now())
 
 
 class NarrativeMetric(Base):
@@ -578,7 +590,7 @@ class NarrativeMetric(Base):
     chapter_id = Column(Integer, ForeignKey("chapters.id", ondelete="CASCADE"), nullable=True)
     metric_name = Column(String(100), nullable=False)
     metric_value = Column(Float, nullable=False)
-    recorded_at = Column(DateTime, server_default=func.now())
+    recorded_at = Column(CompatibleDateTime, server_default=func.now())
 
     __table_args__ = (
         Index("idx_narrative_metrics_book_id", "book_id"),
@@ -597,7 +609,7 @@ class EntertainmentCheckLog(Base):
     physiological_reaction = Column(String(255), nullable=True)
     would_continue_reading = Column(Boolean, nullable=True)
     feedback = Column(Text, nullable=True)
-    created_at = Column(DateTime, server_default=func.now())
+    created_at = Column(CompatibleDateTime, server_default=func.now())
 
     __table_args__ = (Index("idx_entertainment_check_log_book_ep", "book_id", "ep_num"),)
 
@@ -614,7 +626,7 @@ class CostRecord(Base):
     total_tokens = Column(Integer, nullable=False, default=0)
     est_cost_usd = Column(Float, nullable=False, default=0.0)
     ep_num = Column(Integer, nullable=True)
-    created_at = Column(DateTime, server_default=func.now())
+    created_at = Column(CompatibleDateTime, server_default=func.now())
 
     __table_args__ = (
         Index("idx_cost_record_book_id", "book_id"),
@@ -660,7 +672,7 @@ class GenerationRun(Base):
     input_hash = Column(String(64), nullable=True)
     output_preview = Column(Text, nullable=True)
     trace_id = Column(String(64), nullable=True)
-    created_at = Column(DateTime, server_default=func.now())
+    created_at = Column(CompatibleDateTime, server_default=func.now())
 
     __table_args__ = (
         Index("idx_generation_run_book_id", "book_id"),
@@ -679,7 +691,7 @@ class TaskWALLogModel(Base):
     input_json = Column(Text, nullable=True)
     output_json = Column(Text, nullable=True)
     heartbeat_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, server_default=func.now())
+    created_at = Column(CompatibleDateTime, server_default=func.now())
 
     __table_args__ = (
         Index("idx_task_wal_logs_dag_id", "dag_id"),
@@ -696,7 +708,7 @@ class ProjectMember(Base):
     book_id = Column(Integer, ForeignKey("books.id"), nullable=False)
     user_name = Column(String(100), nullable=False)
     role = Column(String(50), nullable=False, default="viewer")
-    created_at = Column(DateTime, server_default=func.now())
+    created_at = Column(CompatibleDateTime, server_default=func.now())
 
 
 class Comment(Base):
@@ -710,7 +722,7 @@ class Comment(Base):
     content = Column(Text, nullable=False)
     parent_id = Column(Integer, ForeignKey("comments.id"), nullable=True)
     resolved = Column(Boolean, default=False)
-    created_at = Column(DateTime, server_default=func.now())
+    created_at = Column(CompatibleDateTime, server_default=func.now())
 
 
 class ChapterVersion(Base):
@@ -721,9 +733,9 @@ class ChapterVersion(Base):
     chapter_ep = Column(Integer, nullable=False)
     user_name = Column(String(100), nullable=False)
     content = Column(Text, nullable=False)
-    vector_clock = Column(JSON, nullable=False)
+    vector_clock = Column(CompatibleJSON, nullable=False)
     base_version_id = Column(Integer, ForeignKey("chapter_versions.id"), nullable=True)
-    created_at = Column(DateTime, server_default=func.now())
+    created_at = Column(CompatibleDateTime, server_default=func.now())
 
     __table_args__ = (Index("idx_chv_book_chap", "book_id", "chapter_ep"),)
 
@@ -741,7 +753,7 @@ class Illustration(Base):
     prompt = Column(Text, default="")
     image_url = Column(String(500), nullable=False)
     generation_time_ms = Column(Integer, default=0)
-    created_at = Column(DateTime, server_default=func.now())
+    created_at = Column(CompatibleDateTime, server_default=func.now())
 
     __table_args__ = (
         Index("idx_illustrations_book_id", "book_id"),
@@ -777,8 +789,8 @@ class EasyModeDraft(Base):
     review_session_json = Column(Text, nullable=True)  # ReviewSession シリアライズ用
     parent_draft_id = Column(String(64), nullable=True, index=True)
     book_id = Column(String(64), nullable=True, index=True)
-    created_at = Column(DateTime, server_default=func.now())
-    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    created_at = Column(CompatibleDateTime, server_default=func.now())
+    updated_at = Column(CompatibleDateTime, server_default=func.now(), onupdate=func.now())
 
     __table_args__ = (
         Index("idx_easy_mode_drafts_kind", "kind"),
@@ -797,7 +809,7 @@ class MultimediaArtifact(Base):
     format = Column(String(50), nullable=False)
     file_path = Column(String(1024), nullable=False)
     metadata_json = Column(Text, nullable=True)
-    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    created_at = Column(CompatibleDateTime, server_default=func.now(), nullable=False)
 
     __table_args__ = (
         Index("ix_multimedia_artifacts_book_id", "book_id"),
@@ -814,8 +826,8 @@ class MultimediaTask(Base):
     task_id = Column(String(64), nullable=False, unique=True)
     asset_id = Column(Integer, nullable=True)
     status = Column(String(32), nullable=False, server_default="pending")
-    started_at = Column(DateTime, server_default=func.now(), nullable=False)
-    finished_at = Column(DateTime, nullable=True)
+    started_at = Column(CompatibleDateTime, server_default=func.now(), nullable=False)
+    finished_at = Column(CompatibleDateTime, nullable=True)
     error = Column(Text, nullable=True)
 
     __table_args__ = (Index("ix_multimedia_tasks_task_id", "task_id"),)
@@ -841,7 +853,7 @@ class CharacterRelationship(Base):
     depth = Column(Float, default=0.0, nullable=False)
     dynamics_state = Column(String(50), default="strangers", nullable=False)
     last_interaction_ep = Column(Integer, default=0, nullable=False)
-    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    updated_at = Column(CompatibleDateTime, server_default=func.now(), onupdate=func.now())
 
     __table_args__ = (
         UniqueConstraint("book_id", "char_a", "char_b", name="uq_char_rel"),
@@ -861,7 +873,7 @@ class CharacterJournal(Base):
     entry_text = Column(Text, nullable=False)
     emotional_state = Column(String(100), default="")
     secret_thought = Column(Text, default="")
-    created_at = Column(DateTime, server_default=func.now())
+    created_at = Column(CompatibleDateTime, server_default=func.now())
 
     __table_args__ = (
         Index("ix_char_journal_book_char", "book_id", "character_name"),
@@ -881,7 +893,7 @@ class CharacterComment(Base):
     comment_text = Column(Text, nullable=False)
     topic = Column(String(100), default="")
     sentiment = Column(String(50), default="neutral")
-    created_at = Column(DateTime, server_default=func.now())
+    created_at = Column(CompatibleDateTime, server_default=func.now())
 
     __table_args__ = (
         Index("ix_char_comment_book_char", "book_id", "character_name"),
@@ -907,7 +919,7 @@ class RelationshipHistory(Base):
     depth = Column(Float, nullable=False)
     dynamics_state = Column(String(50), nullable=False)
     trigger_event = Column(String(255), default="")
-    created_at = Column(DateTime, server_default=func.now())
+    created_at = Column(CompatibleDateTime, server_default=func.now())
 
     __table_args__ = (
         Index("ix_rel_history_rel_id", "relationship_id"),
@@ -925,6 +937,7 @@ CharacterRelationshipDbModel = CharacterRelationship
 CharacterJournalDbModel = CharacterJournal
 CharacterCommentDbModel = CharacterComment
 RelationshipHistoryDbModel = RelationshipHistory
+
 
 # ==========================================
 # Commercial Publication
@@ -951,6 +964,7 @@ PlotDbModel = Plot
 PromptVersionDbModel = PromptVersion
 WorldBible = Bible
 
+
 class PDCAHistorySnapshot(Base):
     __tablename__ = "pdca_history_snapshots"
 
@@ -963,14 +977,15 @@ class PDCAHistorySnapshot(Base):
     score_delta = Column(Float, nullable=False)
     improved_percentage = Column(Float, nullable=False)
     lowest_dimension = Column(String(100), nullable=False)
-    directives = Column(JSON, nullable=False, default=list)
-    history = Column(JSON, nullable=False, default=list)
+    directives = Column(CompatibleJSON, nullable=False, default=list)
+    history = Column(CompatibleJSON, nullable=False, default=list)
     converged = Column(Boolean, nullable=False, default=False)
-    created_at = Column(DateTime, server_default=func.now())
+    created_at = Column(CompatibleDateTime, server_default=func.now())
 
     __table_args__ = (
         Index("idx_pdca_history_book_chap", "book_id", "chapter_number"),
     )
+
 
 PDCAHistorySnapshotDbModel = PDCAHistorySnapshot
 
@@ -990,4 +1005,57 @@ class AudioAssetModel(Base):
         Index("idx_audio_assets_book_ep", "book_id", "episode_num"),
     )
 
+
 AudioAssetDbModel = AudioAssetModel
+
+
+__all__ = [
+    "User",
+    "Book",
+    "UserPreference",
+    "Branch",
+    "BranchPlaySession",
+    "Bible",
+    "BiblePendingSetting",
+    "Plot",
+    "Chapter",
+    "Character",
+    "CharacterArc",
+    "Foreshadowing",
+    "Outbox",
+    "PromptVersion",
+    "PromptUsageLog",
+    "Rule",
+    "Masterpiece",
+    "AuditIssue",
+    "PatchReview",
+    "SettingDelta",
+    "SettingVersion",
+    "OptimizationHistory",
+    "StyleFragment",
+    "CustomStyle",
+    "InternalState",
+    "PendingPatch",
+    "BackgroundTask",
+    "NarrativeMetric",
+    "EntertainmentCheckLog",
+    "CostRecord",
+    "CostLogModel",
+    "GenerationRun",
+    "TaskWALLogModel",
+    "ProjectMember",
+    "Comment",
+    "ChapterVersion",
+    "Illustration",
+    "EasyModeDraft",
+    "MultimediaArtifact",
+    "MultimediaTask",
+    "CharacterRelationship",
+    "CharacterJournal",
+    "CharacterComment",
+    "RelationshipHistory",
+    "PublicationScheduleModel",
+    "PDCAHistorySnapshot",
+    "AudioAssetModel",
+    "WorkflowCheckpointModel",
+]

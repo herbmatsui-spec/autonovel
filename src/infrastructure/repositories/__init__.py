@@ -1,25 +1,45 @@
-from .audit import AuditRepository
-from .base import BaseRepository
-from .bible import BibleRepository
-from .book import BookRepository
-from .book_score import BookScoreRepository
-from .branch import BranchRepository
-from .chapter import ChapterRepository
-from .character import CharacterRepository
-from .collab import CollabRepository
-from .cost import CostRepository
-from .easy_mode_draft_repository import EasyModeDraftRepository
-from .illustration import IllustrationRepository
-from .misc import MiscRepository
-from .narrative_metrics_repo import NarrativeMetricRepository
-from .pdca_history import PDCAHistoryRepository
-from .plot import PlotRepository
-from .prompt_versions import PromptVersionRepository
-from .repo_prompt_metrics import PromptMetricsRepository
-from .rules import RulesRepository
-from .trace import TraceRepository
+"""下位互換性維持のためのエイリアス。実体は src.infrastructure.repositories に移動しました。"""
+from __future__ import annotations
+import importlib
+import sys
+
+
+def __getattr__(name: str):
+    _module_map = {
+        "AuditRepository": "audit",
+        "BaseRepository": "base",
+        "BibleRepository": "bible",
+        "BookRepository": "book",
+        "BookScoreRepository": "book_score",
+        "BranchRepository": "branch",
+        "ChapterRepository": "chapter",
+        "CharacterRepository": "character",
+        "CollabRepository": "collab",
+        "CostRepository": "cost",
+        "EasyModeDraftRepository": "easy_mode_draft_repository",
+        "IllustrationRepository": "illustration",
+        "MiscRepository": "misc",
+        "NarrativeMetricRepository": "narrative_metrics_repo",
+        "PDCAHistoryRepository": "pdca_history",
+        "PlotRepository": "plot",
+        "RulesRepository": "rules",
+        "TraceRepository": "trace",
+        "PromptVersionRepository": "prompt_versions",
+        "PromptMetricsRepository": "repo_prompt_metrics",
+    }
+    if name in _module_map:
+        module_name = _module_map[name]
+        module = importlib.import_module(f".{module_name}", __package__)
+        return getattr(module, name)
+    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
+
+
+def __dir__():
+    return list(_module_map.keys())
+
 
 __all__ = [
+    "AuditRepository",
     "BaseRepository",
     "BibleRepository",
     "BookRepository",
@@ -29,15 +49,14 @@ __all__ = [
     "CharacterRepository",
     "CollabRepository",
     "CostRepository",
-    "EasyModeDraftRepository",
+    "EarlyModeDraftRepository",
     "IllustrationRepository",
     "MiscRepository",
     "NarrativeMetricRepository",
     "PDCAHistoryRepository",
     "PlotRepository",
     "RulesRepository",
-    "AuditRepository",
+    "TraceRepository",
     "PromptVersionRepository",
     "PromptMetricsRepository",
-    "TraceRepository",
 ]

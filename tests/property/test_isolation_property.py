@@ -4,6 +4,7 @@ Uses Hypothesis to verify that isolation properties hold for arbitrary payloads.
 """
 
 import pytest
+pytest.importorskip("hypothesis")
 from hypothesis import given, settings, strategies as st
 from src.services.blind_review import (
     BlindReviewGate,

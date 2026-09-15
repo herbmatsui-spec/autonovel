@@ -44,7 +44,7 @@ async def get_current_user(
     """現在の認証済みユーザーを取得する。
     AUTH_DISABLED が True の場合は、開発用モックユーザーを返却してバイパスする。
     """
-    if getattr(settings, "AUTH_DISABLED", False):
+    if settings.AUTH_DISABLED:
         return _get_dev_mock_user()
 
     if not token:
@@ -55,6 +55,11 @@ async def get_current_user(
         )
 
     payload = decode_token(token, expected_type="access")
+    if payload is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="無効なトークンです",
+        )
     sub = payload.get("sub")
     if sub is None:
         raise HTTPException(
@@ -90,31 +95,24 @@ async def require_api_key(
     """APIキーの検証を行う依存性関数。
     AUTH_DISABLED が True の場合のみ開発キーを許可し、それ以外は厳格に検証する。
     """
-    if getattr(settings, "AUTH_DISABLED", False):
+    if settings.AUTH_DISABLED:
         return "dev-key"
 
-    allowed_keys_str = getattr(settings, "ALLOWED_API_KEYS", "") or os.environ.get("ALLOWED_API_KEYS", "")
-    allowed_keys = [k.strip() for k in allowed_keys_str.split(",") if k.strip()]
-
-    if not allowed_keys:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="API Key access is disabled or not configured",
-        )
-
+    # Extract token from header
     token = ""
     if authorization.startswith("Bearer "):
         token = authorization[7:].strip()
     elif authorization:
         token = authorization.strip()
 
-    if token and token in allowed_keys:
-        return token
-
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Invalid or missing API Key",
-    )
+    # Validate the extracted token
+    result = validate_api_key_sync(token)
+    if result is False:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or missing API Key",
+        )
+    return result  # token string
 
 
 async def require_admin_user_or_key(
@@ -123,7 +121,7 @@ async def require_admin_user_or_key(
     db: AsyncSession = Depends(get_db),
 ) -> User:
     """管理者JWTまたは有効なAPI Keyのいずれかを要求する依存性関数。"""
-    if getattr(settings, "AUTH_DISABLED", False):
+    if settings.AUTH_DISABLED:
         return _get_dev_mock_user()
 
     if token:
@@ -146,17 +144,14 @@ async def require_admin_user_or_key(
     )
 
 
-def validate_api_key_sync(api_key: str) -> str:
+def validate_api_key_sync(api_key: str) -> str | bool:
     """同期コンテキスト用のAPIキー検証ヘルパー"""
-    if getattr(settings, "AUTH_DISABLED", False):
+    if settings.AUTH_DISABLED:
         return "dev-key"
     allowed_keys_str = getattr(settings, "ALLOWED_API_KEYS", "") or os.environ.get("ALLOWED_API_KEYS", "")
     allowed_keys = [k.strip() for k in allowed_keys_str.split(",") if k.strip()]
     if not allowed_keys or api_key not in allowed_keys:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or missing API Key",
-        )
+        return False
     return api_key
 
 

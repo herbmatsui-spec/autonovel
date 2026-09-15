@@ -4,7 +4,8 @@
 - [plans/P3_COVERAGE_AGENTS_12STEPS.md](file:///e:/hhh/plans/P3_COVERAGE_AGENTS_12STEPS.md)
 
 **概要**:
-- **対象**: `src/agents/` (erotic/*, writing/*, context_builder_agent.py, audit.py, plot.py, writing_scheduler.py)
+- **対象**: `src/agents/` (erotic/*, audit.py, specialists/*, context_builder_agent.py, orchestrator.py, writing/*, illustration_agent.py)
 - **テスト保存先**: `tests/unit/agents/`
-- **カバー追加見込み**: 約 2,250 行
+- **カバー追加見込み**: 約 4,500 行（累計カバレッジ: 51.88%）
 - **ステップ数**: 全12ステップ (低性能LLM向け完全自己完結コード付属)
+- **マスターロードマップ**: [plans/P0_COVERAGE_MASTER_ROADMAP_72STEPS.md](file:///e:/hhh/plans/P0_COVERAGE_MASTER_ROADMAP_72STEPS.md)

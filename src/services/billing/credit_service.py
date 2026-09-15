@@ -1,6 +1,6 @@
 import logging
 from typing import Optional
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.backend.database.models_billing import CreditTransaction
 from src.backend.database.models import User
@@ -31,19 +31,22 @@ class CreditService:
         transaction_type: str,
         description: str,
         task_id: Optional[str] = None,
+        auto_commit: bool = True,
     ) -> int:
-        """クレジットを行ロック下で安全に付与し、台帳に同一トランザクションで記録する。"""
+        """クレジットをアトミックに加算付与し、台帳に記録する。"""
         if amount <= 0:
             raise ValueError(f"付与額は正の整数である必要があります: {amount}")
 
-        stmt = select(User).where(User.id == user_id).with_for_update()
+        stmt = (
+            update(User)
+            .where(User.id == user_id)
+            .values(credits=User.credits + amount)
+        )
         result = await self.db.execute(stmt)
-        user = result.scalar_one_or_none()
-        if not user:
+        if result.rowcount == 0:
             raise ValueError(f"ユーザーが見つかりません: {user_id}")
 
-        user.credits += amount
-        new_balance = user.credits
+        new_balance = await self.get_balance(user_id)
 
         transaction = CreditTransaction(
             user_id=user_id,
@@ -54,8 +57,11 @@ class CreditService:
             description=description,
         )
         self.db.add(transaction)
-        await self.db.commit()
-        await self.db.refresh(transaction)
+        if auto_commit:
+            await self.db.commit()
+            await self.db.refresh(transaction)
+        else:
+            await self.db.flush()
         return new_balance
 
     async def deduct_credits(
@@ -65,8 +71,9 @@ class CreditService:
         transaction_type: str,
         description: str,
         task_id: Optional[str] = None,
+        auto_commit: bool = True,
     ) -> bool:
-        """クレジットを行ロック下で厳格に減算し、二重消費を防止する。
+        """クレジットをアトミックに厳格減算し、二重消費や競合を防止する。
         残高不足時は InsufficientCreditsError を送出。
         """
         if amount < 0:
@@ -74,19 +81,29 @@ class CreditService:
         if amount == 0:
             return True
 
-        stmt = select(User).where(User.id == user_id).with_for_update()
+        # アトミック UPDATE (SQLite/PostgreSQL 共通対応)
+        # credits >= amount の条件により、同時リクエスト時も残高不足でのマイナス消費をDBレベルで防ぐ
+        stmt = (
+            update(User)
+            .where(User.id == user_id, User.credits >= amount)
+            .values(credits=User.credits - amount)
+        )
         result = await self.db.execute(stmt)
-        user = result.scalar_one_or_none()
-        if not user:
-            raise ValueError(f"ユーザーが見つかりません: {user_id}")
 
-        if user.credits < amount:
+        if result.rowcount == 0:
+            # ユーザー不在か残高不足かを判定
+            user_exists = (
+                await self.db.execute(select(User.id).where(User.id == user_id))
+            ).scalar_one_or_none()
+            if not user_exists:
+                raise ValueError(f"ユーザーが見つかりません: {user_id}")
+
+            current_balance = await self.get_balance(user_id)
             raise InsufficientCreditsError(
-                f"Insufficient credits. Required: {amount}, Available: {user.credits}"
+                f"Insufficient credits. Required: {amount}, Available: {current_balance}"
             )
 
-        user.credits -= amount
-        new_balance = user.credits
+        new_balance = await self.get_balance(user_id)
 
         transaction = CreditTransaction(
             user_id=user_id,
@@ -97,6 +114,9 @@ class CreditService:
             description=description,
         )
         self.db.add(transaction)
-        await self.db.commit()
-        await self.db.refresh(transaction)
+        if auto_commit:
+            await self.db.commit()
+            await self.db.refresh(transaction)
+        else:
+            await self.db.flush()
         return True

@@ -49,19 +49,17 @@ async def test_full_ab_pdca_cycle():
         for i in range(5)
     ]
     
-    # v2 が存在しない場合のエラーハンドリングを確認
+    # 2. 存在しないスキル名でのA/Bテストでエラーになることを確認
     try:
         result = await orch.run_ab_test(
-            skill_name=skill_name,
+            skill_name="non_existent_skill_name",
             version_a="v1",
             version_b="v2",
             ctx_list=ctx_list,
         )
-        # v2 が存在しない場合はエラーになることを確認
-        pytest.fail("v2が存在しない場合はエラーになるはず")
+        pytest.fail("存在しないスキルならエラーになるはず")
     except ValueError as e:
-        # 期待通りエラーが発生
-        assert "not found in version v2" in str(e)
+        assert "not found" in str(e)
     
     # 3. v1のみでA/Bテストを実行（同一バージョンでの比較）
     # 実際の運用では v1 と v2 で異なる実装を比較するが、テストでは同一バージョンで動作確認

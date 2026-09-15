@@ -43,6 +43,8 @@ async def run_parallel(
                 task = tg.create_task(coro)
             tasks.append(task)
 
+    return [t.result() for t in tasks]
+
 
 @asynccontextmanager
 async def safe_timeout(seconds: float):

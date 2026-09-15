@@ -27,6 +27,9 @@ except ImportError:
     StateGraph = None  # type: ignore
     HAS_LANGGRAPH = False
 
+from src.backend.checkpoint_saver import CheckpointManager
+from src.domain.entities.checkpoint import CheckpointStatus
+
 logger = logging.getLogger(__name__)
 
 # ============================================================================
@@ -69,6 +72,11 @@ class WritingGraphState(dict[str, Any]):
 
     # Status
     status: str
+    task_id: str
+    checkpoint_id: str
+    step_index: int
+    resumed_from_step: int | None
+    is_resumed: bool
 
 
 class WritingGraphManager:
@@ -93,6 +101,27 @@ class WritingGraphManager:
         self.metrics_collector = QualityMetricsCollector()
         # StreamingPlotScheduler 統合（依存関係管理用、None=未注入）
         self._scheduler: Any | None = None
+        # チェックポイントマネージャー設定
+        self.checkpoint_manager = None
+        if hasattr(manager, "session_factory"):
+            self.checkpoint_manager = CheckpointManager(manager.session_factory)
+
+    def _save_checkpoint_if_needed(self, state: dict[str, Any], step_name: str, step_index: int) -> None:
+        """ステップ完了時にチェックポイントを保存"""
+        task_id = state.get("task_id")
+        if task_id and self.checkpoint_manager:
+            self.checkpoint_manager.record_step(
+                task_id=task_id,
+                step_name=step_name,
+                step_index=step_index,
+                state_payload={
+                    "ep_num": state.get("ep_num"),
+                    "draft": state.get("draft_content", ""),
+                    "audit_result": state.get("audit_result", {}),
+                    "ac_iter": state.get("ac_iter", 0),
+                },
+                status=CheckpointStatus.COMPLETED,
+            )
 
     def _build_graph(self):
         if not HAS_LANGGRAPH or StateGraph is None:
@@ -247,6 +276,8 @@ class WritingGraphManager:
             should_dogfeed = False
             logger.info(f"High NCS score ({ncs_score}), skipping dogfeed for Ep.{state['ep_num']}")
 
+        # チェックポイント保存
+        self._save_checkpoint_if_needed(state, "prepare", 0)
         return {
             "gen_ctx": gen_ctx,
             "max_ac_iter": max_ac_iter,
@@ -279,6 +310,8 @@ class WritingGraphManager:
                     logger.info(
                         f"Drafting completed for Ep.{state['ep_num']} (attempt {attempt + 1}), length: {len(content)}"
                     )
+                    # チェックポイント保存
+                    self._save_checkpoint_if_needed(state, "drafting", 1)
                     return {"draft_content": content, "final_meta": meta}
                 else:
                     logger.warning(
@@ -295,6 +328,8 @@ class WritingGraphManager:
 
         # 全リトライ失敗時
         logger.error(f"Drafting failed after 3 attempts for Ep.{state['ep_num']}: {last_error}")
+        # チェックポイント保存
+        self._save_checkpoint_if_needed(state, "drafting", 1)
         return {"draft_content": "", "final_meta": {}}
 
     async def node_audit(self, state: dict[str, Any]):
@@ -304,6 +339,8 @@ class WritingGraphManager:
         # easy_mode または品質が十分高い場合は早期終了
         if state["is_easy_mode"]:
             logger.info(f"Easy mode for Ep.{state['ep_num']}, skipping detailed audit")
+            # チェックポイント保存
+            self._save_checkpoint_if_needed(state, "audit", 2)
             return {
                 "is_integrity_ok": True,
                 "is_causal_ok": True,
@@ -359,6 +396,8 @@ class WritingGraphManager:
                 logger.info(
                     f"Audit completed for Ep.{state['ep_num']}: integrity={is_integrity_ok}, causal={is_causal_ok}, rate={rate:.2f}"
                 )
+                # チェックポイント保存
+                self._save_checkpoint_if_needed(state, "audit", 2)
                 return {
                     "is_integrity_ok": is_integrity_ok,
                     "is_causal_ok": is_causal_ok,
@@ -378,6 +417,8 @@ class WritingGraphManager:
                     retry_delay = min(retry_delay * RETRY_BACKOFF_FACTOR, MAX_RETRY_DELAY)
 
         logger.error(f"Audit failed after 3 attempts for Ep.{state['ep_num']}: {last_error}")
+        # チェックポイント保存
+        self._save_checkpoint_if_needed(state, "audit", 2)
         return {
             "is_integrity_ok": False,
             "is_causal_ok": False,
@@ -517,6 +558,8 @@ class WritingGraphManager:
                     None,
                 )
                 logger.info(f"Critic completed for Ep.{state['ep_num']}: triggered={triggered}")
+                # チェックポイント保存
+                self._save_checkpoint_if_needed(state, "critic", 3)
                 return {"critic_triggered": triggered}
             except Exception as e:
                 last_error = e

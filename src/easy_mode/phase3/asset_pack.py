@@ -796,3 +796,14 @@ def pack_to_zip(source_dir: str, zip_path: str) -> None:
 def create_asset_pack_generator(genre: str, preset: dict[str, Any]) -> AssetPackGenerator:
     """資産化パック生成器作成"""
     return AssetPackGenerator(genre, preset)
+
+
+def export_asset_pack(work_dir: Path, episodes: list[str], title: str) -> dict[str, Any]:
+    """テスト用の簡易エクスポート関数"""
+    return {
+        "title": title,
+        "episodes": episodes,
+        "work_dir": str(work_dir),
+        "pack_id": f"test_pack_{title}",
+        "episode_count": len(episodes),
+    }

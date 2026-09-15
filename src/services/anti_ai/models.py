@@ -187,7 +187,7 @@ def compute_total_score(
         total_w += weight
     if total_w <= 0:
         return 100.0
-    return normalise_score(total / total_w, 0.0, 100.0)
+    return round(normalise_score(total / total_w, 0.0, 100.0), 4)
 
 
 __all__ = [

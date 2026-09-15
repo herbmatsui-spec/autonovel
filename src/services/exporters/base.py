@@ -97,7 +97,7 @@ def process_footnotes(text: str, platform: str) -> str:
         return text
 
     # 脚注をマッチ: ^[注釈]
-    footnote_pattern = r"\$$\^([^$$]+)\$\$"
+    footnote_pattern = r"\^\[([^\]]+)\]"
 
     def replace_footnote(match):
         footnote_text = match.group(1)
@@ -138,7 +138,7 @@ def detect_unsupported_elements(text: str, platform: str) -> List[str]:
         )
 
     # 脚注をチェック
-    footnote_pattern = r"\$$\^([^$$]+)\$\$"
+    footnote_pattern = r"\^\[([^\]]+)\]"
     footnote_matches = re.findall(footnote_pattern, text)
     if footnote_matches and platform in ["narou", "nocturn", "txt"]:
         warnings.append(
@@ -212,9 +212,9 @@ def process_content_for_platform(text: str, platform: str) -> tuple[str, List[st
     original_text = text
     text = process_footnotes(text, platform)
     if text != original_text:
-        # 脚注が実際に変換された場合は警告を追加
-        footnote_pattern = r"\$$\^([^$$]+)\$\$"
-        if re.search(footnote_pattern, original_text):
+# 脚注が実際に変換された場合は警告を追加
+         footnote_pattern = r"\^\[([^\]]+)\]"
+         if re.search(footnote_pattern, original_text):
             if platform in ["narou", "nocturn", "txt"]:
                 warnings.append(f"脚注が検出されました。{platform} では括弧表記に変換されます。")
 

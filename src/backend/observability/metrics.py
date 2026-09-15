@@ -254,9 +254,9 @@ def record_generation_task(workflow_type: str, status: str, duration: float | No
 def record_llm_call(model: str, status: str, prompt_tokens: int = 0, completion_tokens: int = 0):
     llm_api_calls_total.labels(model=model, status=status).inc()
     if prompt_tokens:
-        llm_api_tokens_total.labels(model=model, type="prompt").inc(prompt_tokens)
+        llm_api_tokens_total.labels(model=model, token_type="prompt").inc(prompt_tokens)
     if completion_tokens:
-        llm_api_tokens_total.labels(model=model, type="completion").inc(completion_tokens)
+        llm_api_tokens_total.labels(model=model, token_type="completion").inc(completion_tokens)
 
 
 def update_db_pool_metrics(active: int, idle: int):

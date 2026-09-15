@@ -63,7 +63,7 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 norecursedirs = [".git", "scripts", "node_modules", "storage", "autonovel"]
-addopts = "-p no:cacheprovider --tb=short --cov=src --cov-branch --cov-fail-under=35"
+addopts = "-p no:cacheprovider --import-mode=importlib --tb=short --cov=src --cov-branch --cov-fail-under=35"
 asyncio_mode = "auto"
 markers = [
     "perf: Performance benchmark tests",
@@ -78,7 +78,7 @@ omit = [
     "*/conftest.py",
     "*/__pycache__/*",
 
-    # --- 未参照デッドモジュール（scripts/tmp_find_dead_modules.py による実測: どのモジュール/テストからも参照なし） ---
+    # --- 未参照デッドモジュール（どのモジュール/テストからも参照なし） ---
     # src 直下
     "src/__init__.py",
 

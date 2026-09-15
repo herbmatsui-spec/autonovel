@@ -8,9 +8,44 @@ from fastapi.responses import StreamingResponse
 
 from src.backend.websocket.pipeline_hub import pipeline_event_hub
 
+import os
+from src.backend.config import settings
+from src.backend.security.jwt import decode_token
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["pipeline_stream"])
+
+
+def _verify_stream_token(token: Optional[str]) -> bool:
+    """WebSocket / SSE 接続用のトークン（JWTまたはAPI Key）を検証する。"""
+    if settings.AUTH_DISABLED:
+        return True
+
+    if not token:
+        return False
+
+    # 1. API Key の検証
+    allowed_keys_str = getattr(settings, "ALLOWED_API_KEYS", "") or os.getenv("ALLOWED_API_KEYS", "")
+    allowed_keys = {k.strip() for k in allowed_keys_str.split(",") if k.strip()}
+    env_keys = {
+        k
+        for k in [os.getenv("AUTONOVEL_API_KEY"), os.getenv("API_KEY")]
+        if k
+    }
+    all_valid_keys = allowed_keys | env_keys
+    if token in all_valid_keys:
+        return True
+
+    # 2. JWT トークンの検証
+    try:
+        payload = decode_token(token, expected_type="access")
+        if payload and payload.get("sub"):
+            return True
+    except Exception as exc:
+        logger.debug("Stream token decode failed: %s", exc)
+
+    return False
 
 
 @router.websocket("/api/ws/pipeline/{book_id}")
@@ -20,11 +55,8 @@ async def websocket_pipeline_stream(
     token: Optional[str] = Query(None),
 ):
     """WebSocket endpoint for real-time pipeline, DAG, and PDCA event stream (Step 29, 30, 32, 34)."""
-    expected_token = None
-    import os
-    expected_token = os.getenv("AUTONOVEL_API_KEY") or os.getenv("API_KEY")
-    if expected_token and token != expected_token:
-        await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="Invalid API token")
+    if not _verify_stream_token(token):
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="Invalid authentication token")
         return
 
     await websocket.accept()
@@ -52,11 +84,8 @@ async def sse_pipeline_stream(
     token: Optional[str] = Query(None),
 ):
     """Server-Sent Events (SSE) fallback endpoint for pipeline telemetry (Step 31)."""
-    expected_token = None
-    import os
-    expected_token = os.getenv("AUTONOVEL_API_KEY") or os.getenv("API_KEY")
-    if expected_token and token != expected_token:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid API token")
+    if not _verify_stream_token(token):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid authentication token")
 
     async def event_generator():
         queue: asyncio.Queue = asyncio.Queue()

@@ -717,28 +717,42 @@ class MobiGenerator:
 class EbookExporter:
     """電子書籍エクスポーター統合"""
 
-    def __init__(self, genre: str, preset: dict[str, Any]):
-        self.genre = genre
-        self.preset = preset
-        self.processor = EbookContentProcessor(genre)
+    def __init__(self, metadata: EbookMetadata, output_dir: Path):
+        self.metadata = metadata
+        self.output_dir = output_dir
+        # Use metadata's genre or default
+        self.genre = metadata.genre or "general"
+        self.preset = {}  # Default empty preset
+        self.processor = EbookContentProcessor(self.genre)
 
     def create_metadata(self, series: SeriesResult, **kwargs) -> EbookMetadata:
         """メタデータ作成"""
-        author = kwargs.pop("author", "AI Novel Engine")
-        tags = kwargs.pop("tags", [])
-        cover_image = kwargs.pop("cover_image", None)
-        cover_image_path = kwargs.pop("cover_image_path", None)
+        author = kwargs.pop("author", self.metadata.author)
+        tags = kwargs.pop("tags", self.metadata.tags)
+        cover_image = kwargs.pop("cover_image", self.metadata.cover_image)
+        cover_image_path = kwargs.pop("cover_image_path", self.metadata.cover_image_path)
+        publisher = kwargs.pop("publisher", self.metadata.publisher)
+        publication_date = kwargs.pop("publication_date", self.metadata.publication_date)
+        identifier = kwargs.pop("identifier", self.metadata.identifier)
+        description = kwargs.pop("description", self.metadata.description)
+        subject = kwargs.pop("subject", self.metadata.subject)
+        genre = kwargs.pop("genre", self.metadata.genre or self.genre)
+        rights = kwargs.pop("rights", self.metadata.rights)
 
         return EbookMetadata(
             title=series.title,
             author=author,
-            description=series.metadata.get("concept", ""),
-            subject=[self.genre, "Web小説", "AI生成"],
-            genre=self.genre,
-            tags=tags + [self.genre],
+            language=self.metadata.language,  # Keep language from metadata
+            publisher=publisher,
+            publication_date=publication_date,
+            identifier=identifier,
+            description=description,
+            subject=subject,
+            rights=rights,
+            genre=genre,
+            tags=tags,
             cover_image=cover_image,
             cover_image_path=cover_image_path,
-            **kwargs,
         )
 
     def export_epub(self, series: SeriesResult, output_path: Path, **kwargs) -> Path:
@@ -789,6 +803,6 @@ class EbookExporter:
         return results
 
 
-def create_ebook_exporter(genre: str, preset: dict[str, Any]) -> EbookExporter:
+def create_ebook_exporter(metadata: EbookMetadata, output_dir: Path) -> EbookExporter:
     """電子書籍エクスポーター作成"""
-    return EbookExporter(genre, preset)
+    return EbookExporter(metadata, output_dir)

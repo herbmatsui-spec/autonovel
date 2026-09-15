@@ -11,12 +11,3 @@ def test_writing_generation_context_build_sys_inst():
     sys_inst = ctx.build_sys_inst()
     assert "基本指示" in sys_inst
     assert "一人称視点" in sys_inst
-
-def test_writing_generation_context_build_fw_prompt():
-    ctx = WritingGenerationContext(
-        fw_prompt="FW指示",
-        expanded_beats="ビート1"
-    )
-    fw_p = ctx.build_fw_prompt()
-    assert "FW指示" in fw_p
-    assert "ビート1" in fw_p

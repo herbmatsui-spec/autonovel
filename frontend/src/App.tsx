@@ -1,18 +1,26 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense, lazy } from "react";
 import { NovelProvider, useNovelContext } from "./context/NovelContext";
 import { useToast } from "./hooks/useToast";
+import { useAppTheme, AppTheme } from "./hooks/useAppTheme";
 import { ToastContainer } from "./components/common/ToastContainer";
+import { Modal } from "./components/common/Modal";
+import { Button } from "./components/common/Button";
 import GeneratePanel from "./components/GeneratePanel";
 import ExportPanel from "./components/ExportPanel";
-import GraphVisualization from "./components/GraphVisualization";
 import { StudioWorkspace } from "./components/studio/StudioWorkspace";
 import { AssetPackPanel } from "./components/AssetPackPanel";
 import ConfigPanel from "./components/ConfigPanel";
 import { BookSelector } from "./components/common/BookSelector";
+import { BookshelfModal } from "./components/common/BookshelfModal";
 import { getGenreBadgeConfig } from "./constants/genres";
 import { MobileBottomNav } from "./components/mobile/MobileBottomNav";
 import { MobileChapterDrawer } from "./components/mobile/MobileChapterDrawer";
 import { MobileQuickActionBar } from "./components/mobile/MobileQuickActionBar";
+
+// 提案3: react-force-graph-2d は重いため React.lazy でコード分割
+const GraphVisualization = lazy(
+  () => import("./components/GraphVisualization")
+);
 
 function AppContent() {
   const { toasts, addToast, removeToast } = useToast();
@@ -32,6 +40,8 @@ function AppContent() {
   const [showGraph, setShowGraph] = useState(false);
   const [showMedia, setShowMedia] = useState(false);
   const [showConfig, setShowConfig] = useState(false);
+  // 提案4: モバイル「books」タブ用の本棚モーダル
+  const [showBookshelf, setShowBookshelf] = useState(false);
   const [showTransitionOverlay, setShowTransitionOverlay] = useState(false);
   const [mobileTab, setMobileTab] = useState<'books' | 'plots' | 'writing' | 'settings'>('writing');
   const [isChapterDrawerOpen, setIsChapterDrawerOpen] = useState(false);
@@ -39,6 +49,8 @@ function AppContent() {
     if (typeof window === "undefined") return "studio";
     return (localStorage.getItem("autonovel.mode") as "easy" | "studio") || "studio";
   });
+  // 提案8: アプリ全体のテーマ（ライト/ダーク/セピア）
+  const { theme, setTheme } = useAppTheme();
 
   // 初回マウント時に作品一覧を読み込み
   React.useEffect(() => {
@@ -78,108 +90,70 @@ function AppContent() {
     <div className={mode === "studio" ? "container-fluid" : "container"} style={mode === "studio" ? { maxWidth: "1500px", margin: "0 auto" } : undefined}>
       <ToastContainer toasts={toasts} onClose={removeToast} />
 
-      {showGraph && <GraphVisualization onClose={() => setShowGraph(false)} />}
-
-      {showMedia && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0,0,0,0.7)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1000,
-            backdropFilter: "blur(4px)",
-          }}
-          data-testid="media-modal"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setShowMedia(false);
-          }}
-        >
-          <div
-            style={{
-              background: "var(--card-bg, #18181b)",
-              border: "1px solid var(--border-color, #27272a)",
-              borderRadius: "12px",
-              width: "90%",
-              maxWidth: "900px",
-              padding: "20px",
-              maxHeight: "85vh",
-              overflowY: "auto",
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-              <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--accent-primary, #a78bfa)" }}>
-                🖼️ マルチメディア生成 (Asset Pack)
-              </h2>
-              <button
-                type="button"
-                style={{ background: "transparent", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: "1.2rem" }}
-                onClick={() => setShowMedia(false)}
-                data-testid="btn-close-media-modal"
-              >
-                ✕
-              </button>
-            </div>
-            <AssetPackPanel bookId={selectedBookId} />
-          </div>
-        </div>
-      )}
-      {showConfig && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0,0,0,0.7)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1000,
-            backdropFilter: "blur(4px)",
-          }}
-          data-testid="config-modal"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setShowConfig(false);
-          }}
-        >
-          <div
-            style={{
-              background: "var(--card-bg, #18181b)",
-              border: "1px solid var(--border-color, #27272a)",
-              borderRadius: "12px",
-              width: "90%",
-              maxWidth: "500px",
-              padding: "20px",
-              maxHeight: "85vh",
-              overflowY: "auto",
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-              <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--accent-primary, #a78bfa)" }}>
-                ⚙️ LLM設定
-              </h2>
-              <button
-                type="button"
-                style={{ background: "transparent", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: "1.2rem" }}
-                onClick={() => setShowConfig(false)}
-                data-testid="btn-close-config-modal"
-              >
-                ✕
-              </button>
-            </div>
-            <ConfigPanel onClose={() => setShowConfig(false)} />
-          </div>
-        </div>
+      {showGraph && (
+        <Suspense fallback={null}>
+          <GraphVisualization onClose={() => setShowGraph(false)} />
+        </Suspense>
       )}
 
-<header className="header">
+      {/* マルチメディア生成モーダル（共通 Modal に統合） */}
+      <Modal
+        isOpen={showMedia}
+        onClose={() => setShowMedia(false)}
+        title="🖼️ マルチメディア生成 (Asset Pack)"
+        testId="media-modal"
+        closeBtnTestId="btn-close-media-modal"
+      >
+        <AssetPackPanel bookId={selectedBookId} />
+      </Modal>
+
+      {/* LLM設定モーダル（共通 Modal に統合） */}
+      <Modal
+        isOpen={showConfig}
+        onClose={() => setShowConfig(false)}
+        title="⚙️ LLM設定"
+        testId="config-modal"
+        closeBtnTestId="btn-close-config-modal"
+        maxWidth={500}
+      >
+        <ConfigPanel onClose={() => setShowConfig(false)} />
+      </Modal>
+
+      {/* Studioモード移行オーバーレイ（共通 Modal に統合） */}
+      <Modal
+        isOpen={showTransitionOverlay}
+        onClose={() => setShowTransitionOverlay(false)}
+        title="🚀 Studioモードへようこそ！"
+        testId="transition-overlay"
+        closeBtnTestId="btn-close-transition-overlay"
+        maxWidth={500}
+        zIndex={999}
+      >
+        <div style={{ textAlign: "left", marginBottom: "24px" }}>
+          <p>EasyモードからStudioモードへの移行時に、以下の高度な機能が利用可能になります：</p>
+          <ul style={{ paddingLeft: "20px" }}>
+            <li>📊 リアルタイム品質スコアと詳細なフィードバック</li>
+            <li>🎭 キャラクター詳細プロファイルと関係性マッピング</li>
+            <li>🖼️ シーン別マルチメディアプレビューと画像生成</li>
+            <li>📖 プロットビジュアライザーとBeatシート編集</li>
+            <li>🔍 AI診断による矛盾検出と修正提案</li>
+            <li>⚡ ブランチベースの実験的執筆とバージョン管理</li>
+          </ul>
+        </div>
+        <div style={{ display: "flex", justifyContent: "center", gap: "16px" }}>
+          <Button variant="primary" onClick={() => setShowTransitionOverlay(false)}>
+            今すぐ体験する
+          </Button>
+          <Button variant="secondary" onClick={() => {
+            setShowTransitionOverlay(false);
+            setMode("easy"); // Easyモードに戻す
+          }}>
+            今はEasyモードで
+          </Button>
+        </div>
+      </Modal>
+
+      <header className="header">
         <div style={{ display: "flex", alignItems: "center", gap: "16px", flex: 1 }}>
           <div>
             <h1 className="brand-title">AutoNovel Studio</h1>
@@ -196,7 +170,7 @@ function AppContent() {
               const newBook = await createBook(payload);
               await refreshBooks();
               setSelectedBookId(newBook.id);
-              
+
               if (!hasCompletedWizard) {
                 setWizardStep(1);
                 setIsWizardActive(true);
@@ -232,64 +206,47 @@ function AppContent() {
             </button>
           </div>
 
-<button
-  onClick={() => setShowConfig(true)}
-  style={{
-    padding: "6px 12px",
-    borderRadius: "8px",
-    backgroundColor: "var(--accent-yellow, #f59e0b)",
-    color: "white",
-    border: "none",
-    cursor: "pointer",
-    fontSize: "0.85rem",
-    fontWeight: 500,
-    display: "flex",
-    alignItems: "center",
-    gap: "4px",
-  }}
-  data-testid="open-config-btn"
->
-  ⚙️ LLM設定
-</button>
+          {/* 提案8: テーマ切替セレクター（ライト/ダーク/セピア） */}
+          <select
+            className="select theme-selector"
+            value={theme}
+            onChange={(e) => setTheme(e.target.value as AppTheme)}
+            aria-label="テーマを選択"
+            data-testid="theme-selector"
+            style={{ width: "auto", padding: "6px 10px", fontSize: "0.85rem" }}
+          >
+            <option value="dark">🌙 ダーク</option>
+            <option value="light">☀️ ライト</option>
+            <option value="sepia">📜 セピア</option>
+          </select>
 
-           <button
+          <Button
+            variant="accent-yellow"
+            size="sm"
+            onClick={() => setShowConfig(true)}
+            data-testid="open-config-btn"
+          >
+            ⚙️ LLM設定
+          </Button>
+
+          <Button
+            variant="accent-cyan"
+            size="sm"
             onClick={() => setShowMedia(true)}
-            style={{
-              padding: "6px 12px",
-              borderRadius: "8px",
-              backgroundColor: "var(--accent-cyan, #06b6d4)",
-              color: "white",
-              border: "none",
-              cursor: "pointer",
-              fontSize: "0.85rem",
-              fontWeight: 500,
-              display: "flex",
-              alignItems: "center",
-              gap: "4px",
-            }}
             data-testid="open-media-btn"
           >
             🖼️ 画像生成
-          </button>
-          <button
+          </Button>
+
+          <Button
+            variant="accent-purple"
+            size="sm"
             onClick={() => setShowGraph(true)}
-            style={{
-              padding: "6px 12px",
-              borderRadius: "8px",
-              backgroundColor: "var(--accent-purple, #8b5cf6)",
-              color: "white",
-              border: "none",
-              cursor: "pointer",
-              fontSize: "0.85rem",
-              fontWeight: 500,
-              display: "flex",
-              alignItems: "center",
-              gap: "4px",
-            }}
             data-testid="open-graph-btn"
           >
             📊 相関図
-          </button>
+          </Button>
+
           {(() => {
             const c = getGenreBadgeConfig(selectedBook?.genre || "ハイファンタジー (R15)");
             return (
@@ -314,87 +271,6 @@ function AppContent() {
           })()}
         </div>
       </header>
-
-      {showTransitionOverlay && (
-        <div
-          className="transition-overlay"
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0,0,0,0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 999,
-          }}
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setShowTransitionOverlay(false);
-          }}
-        >
-          <div
-            style={{
-              background: "var(--card-bg, #18181b)",
-              border: "2px solid var(--accent-primary, #a78bfa)",
-              borderRadius: "16px",
-              width: "90%",
-              maxWidth: "500px",
-              padding: "32px",
-              textAlign: "center",
-            }}
-          >
-            <h2 style={{ marginBottom: "24px", color: "var(--accent-primary, #a78bfa)" }}>
-              🚀 Studioモードへようこそ！
-            </h2>
-            <div style={{ textAlign: "left", marginBottom: "24px" }}>
-              <p>EasyモードからStudioモードへの移行時に、以下の高度な機能が利用可能になります：</p>
-              <ul style={{ paddingLeft: "20px" }}>
-                <li>📊 リアルタイム品質スコアと詳細なフィードバック</li>
-                <li>🎭 キャラクター詳細プロファイルと関係性マッピング</li>
-                <li>🖼️ シーン別マルチメディアプレビューと画像生成</li>
-                <li>📖 プロットビジュアライザーとBeatシート編集</li>
-                <li>🔍 AI診断による矛盾検出と修正提案</li>
-                <li>⚡ ブランチベースの実験的執筆とバージョン管理</li>
-              </ul>
-            </div>
-            <div style={{ display: "flex", justifyContent: "center", gap: "16px" }}>
-              <button
-                onClick={() => setShowTransitionOverlay(false)}
-                style={{
-                  padding: "12px 24px",
-                  backgroundColor: "var(--accent-primary, #a78bfa)",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                  fontWeight: "600",
-                }}
-              >
-                今すぐ体験する
-              </button>
-              <button
-                onClick={() => {
-                  setShowTransitionOverlay(false);
-                  setMode("easy"); // Easyモードに戻す
-                }}
-                style={{
-                  padding: "12px 24px",
-                  backgroundColor: "transparent",
-                  border: "2px solid var(--text-muted)",
-                  color: "var(--text-muted)",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                  fontWeight: "600",
-                }}
-              >
-                今はEasyモードで
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {mode === "easy" ? (
         <main className="main-grid">
@@ -435,8 +311,9 @@ function AppContent() {
         activeTab={mobileTab}
         onTabChange={(tab) => {
           setMobileTab(tab);
+          // 提案4: タブ名と動作の不一致を解消
           if (tab === 'books') {
-            setShowConfig(true);
+            setShowBookshelf(true); // 本棚モーダル（LLM設定ではなく作品一覧）
           } else if (tab === 'plots') {
             setShowGraph(true);
           } else if (tab === 'writing') {
@@ -444,6 +321,25 @@ function AppContent() {
           } else if (tab === 'settings') {
             setShowConfig(true);
           }
+        }}
+      />
+
+      {/* 提案4: モバイル「books」タブ用の本棚モーダル */}
+      <BookshelfModal
+        isOpen={showBookshelf}
+        onClose={() => setShowBookshelf(false)}
+        books={books}
+        selectedBook={selectedBook}
+        onSelectBook={(book) => {
+          setSelectedBookId(book.id);
+          setShowBookshelf(false);
+        }}
+        onCreateBook={async (payload) => {
+          const { createBook } = await import("./api/books");
+          const newBook = await createBook(payload);
+          await refreshBooks();
+          setSelectedBookId(newBook.id);
+          setShowBookshelf(false);
         }}
       />
     </div>

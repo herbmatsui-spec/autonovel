@@ -50,17 +50,10 @@ class EasyModePipeline:
         # 実際の処理（簡易版）
         # 本来はWorkflowContextを作成してエンジンなどが必要だが、
         # テスト目的では簡易的な結果を返す
+        from unittest.mock import MagicMock
         from src.backend.orchestrator_engine_adapter import OrchestratorEngineAdapter as UltimateHegemonyEngine
         
-        # モックエンジンとレポーターを作成（実際のテストではこれらはモックされるべき）
-        mock_engine = UltimateHegemonyEngine.__new__(UltimateHegemonyEngine)  # type: ignore
-        mock_engine.planner = None
-        mock_engine.ctx_mgr = None
-        mock_engine.generate_json = None
-        mock_engine.logic_validator = None
-        mock_engine.auditor = None
-        mock_engine.narrative = None
-        mock_engine.repo = None
+        mock_engine = MagicMock(spec=UltimateHegemonyEngine)
         
         if reporter is None:
             mock_reporter = StatusReporter.__new__(StatusReporter)  # type: ignore
