@@ -86,7 +86,7 @@ def _is_retryable_db_error(exc: BaseException) -> bool:
 def _safe_retry(max_attempts: int = 3):
     """tenacity ベースの SQLSTATE 駆動リトライデコレータを返す."""
     def _before_sleep(retry_state):
-        if retry_state.outcome and retry_state.outcome.failed():
+        if retry_state.outcome and retry_state.outcome.failed:
             logger.warning(
                 "Retrying AGE operation (attempt %d/%d): %s",
                 retry_state.attempt_number, max_attempts, retry_state.outcome.exception()

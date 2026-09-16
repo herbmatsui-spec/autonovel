@@ -12,7 +12,9 @@ from src.services.compression.models import (
     CompressedContextResult,
     SceneType,
     ProtectedContext,
+    SceneFlowHistory,
 )
+from src.services.compression.metrics import calculate_consistency_metrics
 from src.services.compression.layer1_keywords import Layer1KeywordExtractor
 from src.services.compression.layer2_subgraph import Layer2SubgraphExtractor
 from src.services.compression.layer3_abstraction import Layer3ConceptAbstractor
@@ -70,10 +72,21 @@ class FourLayerCompressor:
         bypass_cache: bool = False,
         scene_weights: dict[SceneType, float] | None = None,
         protected_context: ProtectedContext | None = None,
+        scene_flow: SceneFlowHistory | None = None,
     ) -> CompressedContextResult:
         """Execute the full 4-layer compression pipeline with protected context pinning."""
         start_time = time.perf_counter()
         target_scene = scene_type or self.config.scene_type
+        # Use context-aware scene detection if scene_flow is provided
+        if scene_flow:
+            detected_scenes = self.layer4.detect_scene_context_aware(
+                plot_summary=raw_text,
+                scenes=None,
+                scene_flow=scene_flow,
+            )
+            # Use the top detected scene if available
+            if detected_scenes:
+                target_scene = detected_scenes[0][0]
         budget = max_tokens or self.config.max_tokens
 
         if not raw_text or not raw_text.strip():
@@ -90,6 +103,7 @@ class FourLayerCompressor:
                 final_token_count=0,
                 overall_reduction_ratio=0.0,
                 elapsed_ms=0.0,
+                metrics=CompressionQualityMetrics(),  # Default metrics for empty text
             )
 
         # キャッシュ確認
@@ -131,8 +145,21 @@ class FourLayerCompressor:
                 keyword_scores=layer1_out.keyword_scores,
             )
         else:
+            effective_entities = list(entities) if entities else []
+            if not effective_entities and seeds:
+                # グラフDBやエンティティが渡されない場合、シードおよび保護コンテキストから合成ノードを構築
+                active_set = set(protected_context.active_characters) if protected_context else set()
+                pending_set = set(protected_context.pending_foreshadowing_ids) if protected_context else set()
+                for s in seeds:
+                    labels = ["AutoExtracted"]
+                    if s in active_set:
+                        labels = ["Character"]
+                    elif s in pending_set:
+                        labels = ["Rule"]
+                    effective_entities.append({"name": s, "labels": labels})
+
             layer2_out = self.layer2.extract_from_memory(
-                entities=entities or [],
+                entities=effective_entities,
                 relations=relations or [],
                 seed_names=seeds,
                 keyword_scores=layer1_out.keyword_scores,
@@ -163,6 +190,13 @@ class FourLayerCompressor:
         if layer1_out.original_token_count > 0:
             reduction = max(0.0, 1.0 - (final_tokens / layer1_out.original_token_count))
 
+        # Calculate quality metrics
+        metrics = calculate_consistency_metrics(
+            raw_text=raw_text,
+            trimmed_output=layer4_out,
+            protected_context=protected_context,
+        )
+
         result = CompressedContextResult(
             layer1=layer1_out,
             layer2=layer2_out,
@@ -173,6 +207,7 @@ class FourLayerCompressor:
             overall_reduction_ratio=round(reduction, 3),
             from_cache=False,
             elapsed_ms=round(elapsed_ms, 2),
+            metrics=metrics,
         )
 
         # キャッシュ保存

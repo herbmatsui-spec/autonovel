@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from src.services.context_compression.keyphrase_extractors import (
+from src.services.compression.layer1_keywords import (
     KeyphraseExtractor,
     TFIDFExtractor,
     KeyBERTExtractor,

@@ -3,6 +3,12 @@
 AutoNovel の品質向上・商用化に向けたアクティブな実装計画書一覧です。
 すべての計画書は**「全12ステップ・完全自己完結コード（コピペで動作可能）・単体テスト・検証コマンド付属」**で設計されています。
 
+## 💰 商用化ロードマップ
+
+| 計画書 | 提案名 | 状態 | 目的・主要対象 |
+|:---|:---|:---:|:---|
+| [PLAN_LOW_COST_COMMERCIALIZATION_ROADMAP.md](./PLAN_LOW_COST_COMMERCIALIZATION_ROADMAP.md) | 低コスト商用化ロードマップ（ゼロ予算公開戦略） | 🚀 アクティブ | 固定費ゼロ主義・クレジット前払いLLM・0円マーケティング、Stage 0-2 段階的公開 |
+
 ## 📋 アクティブ計画書一覧
 
 | 計画書 | 提案名 | 状態 | 目的・主要対象 |
@@ -28,6 +34,7 @@ AutoNovel の品質向上・商用化に向けたアクティブな実装計画�
 | [P4_COVERAGE_WORKFLOWS_12STEPS.md](./P4_COVERAGE_WORKFLOWS_12STEPS.md) | ワークフロー・タスク実行層 | 🚀 アクティブ | `src/backend/workflows/`, `tasks/`, `background.py` (+3,600行) |
 | [P5_COVERAGE_EASYMODE_12STEPS.md](./P5_COVERAGE_EASYMODE_12STEPS.md) | Easy Mode・出版エクスポート層 | 🚀 アクティブ | `src/easy_mode/`, `publishers/`, `multimedia` (+3,300行) |
 | [P6_COVERAGE_ROUTERS_DOMAIN_12STEPS.md](./P6_COVERAGE_ROUTERS_DOMAIN_12STEPS.md) | APIルーター・ドメイン・コア層 | 🚀 アクティブ | `routers/`, `domain/`, `core/`, `sanitizer.py`, `auth.py` (+5,500行) |
+| [P7_COVERAGE_80_PERCENT_12STEPS.md](./P7_COVERAGE_80_PERCENT_12STEPS.md) | 最終スプリント・80%突破ゲート | 🚀 アクティブ | 65.84%→80.0%突破、AGE・Branches・Ebook・モック修復 (+7,250行) |
 
 ## 📦 過去ドキュメント
 過去の完了済み計画書や検討メモは `docs/archive/plans_v4/` に保管されています。

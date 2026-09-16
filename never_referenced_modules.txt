@@ -131,7 +131,6 @@ src\services\cadence\local_llm_refiner.py
 src\services\character\dialogue_extractor.py
 src\services\content_processor.py
 src\services\context_cache_service.py
-src\services\context_compression\pipeline.py
 src\services\exporters\__init__.py
 src\services\formatters\__init__.py
 src\services\graph\cypher_translator.py

@@ -8,7 +8,7 @@ from pydantic import BaseModel
 
 from src.agents.skill_base import SkillAgent
 from src.agents.orchestrator import AgentContext, AgentResult, AgentName
-from src.services.compression.models import ProtectedContext
+from src.services.compression.models import ProtectedContext, SceneFlowHistory
 
 
 class ContextBuilderInput(BaseModel):
@@ -371,40 +371,50 @@ class ContextBuilderAgent(SkillAgent):
                     else:
                         s_type = multi
 
-            # Build ProtectedContext for guaranteed retention of active characters & foreshadowings (Step 61)
-            active_char_names = [getattr(c, "name", str(c)) for c in (active_chars or []) if c]
-            foreshadowing_ids = [
-                str(fs.get("id")) for fs in plot_dict.get("foreshadowings", [])
-                if isinstance(fs, dict) and fs.get("id")
-            ]
-            protected_ctx = ProtectedContext(
-                active_characters=active_char_names,
-                pending_foreshadowing_ids=foreshadowing_ids,
-            )
+# Build ProtectedContext for guaranteed retention of active characters & foreshadowings (Step 61)
+        active_char_names = [getattr(c, "name", str(c)) for c in (active_chars or []) if c]
+        foreshadowing_ids = [
+            str(fs.get("id")) for fs in plot_dict.get("foreshadowings", [])
+            if isinstance(fs, dict) and fs.get("id")
+        ]
+        protected_ctx = ProtectedContext(
+            active_characters=active_char_names,
+            pending_foreshadowing_ids=foreshadowing_ids,
+        )
+        
+        # Build SceneFlowHistory for context-aware compression (Step 14)
+        # Extract recent scene types from plot history or use defaults
+        recent_scene_types = []  # In a full implementation, this would come from previous episodes
+        episode_goal = plot_dict.get("summary", "") or plot_dict.get("title", "") or f"Episode {ep_num}"
+        scene_flow = SceneFlowHistory(
+            recent_scene_types=recent_scene_types,
+            episode_goal=episode_goal,
+        )
 
-            try:
-                import inspect
-                c_res = compressor.compress(
-                    raw_corpus,
-                    session=session,
-                    book_id=book_id,
-                    ep_num=ep_num,
-                    scene_type=s_type,
-                    scene_weights=scene_weights,
-                    protected_context=protected_ctx,
-                )
-                if inspect.iscoroutine(c_res):
-                    c_res = await c_res
-                if c_res and hasattr(c_res, "final_context_text"):
-                    compressed_context = c_res.final_context_text
-                    compression_stats = {
-                        "reduction_ratio": getattr(c_res, "overall_reduction_ratio", 0.0),
-                        "final_tokens": getattr(c_res, "final_token_count", 0),
-                        "from_cache": getattr(c_res, "from_cache", False),
-                        "scene_type": getattr(c_res, "layer4", None).scene_type if getattr(c_res, "layer4", None) else s_type,
-                        "scene_weights": scene_weights,
-                    }
-            except Exception as e:
+        try:
+            import inspect
+            c_res = compressor.compress(
+                raw_corpus,
+                session=session,
+                book_id=book_id,
+                ep_num=ep_num,
+                scene_type=s_type,
+                scene_weights=scene_weights,
+                protected_context=protected_ctx,
+                scene_flow=scene_flow,
+)
+            if inspect.iscoroutine(c_res):
+                c_res = await c_res
+            if c_res and hasattr(c_res, "final_context_text"):
+                compressed_context = c_res.final_context_text
+                compression_stats = {
+                    "reduction_ratio": getattr(c_res, "overall_reduction_ratio", 0.0),
+                    "final_tokens": getattr(c_res, "final_token_count", 0),
+                    "from_cache": getattr(c_res, "from_cache", False),
+                    "scene_type": getattr(c_res, "layer4", None).scene_type if getattr(c_res, "layer4", None) else s_type,
+                    "scene_weights": scene_weights,
+                }
+        except Exception as e:
                 import logging
                 logging.getLogger(__name__).warning(f"Context compression failed: {e}")
 

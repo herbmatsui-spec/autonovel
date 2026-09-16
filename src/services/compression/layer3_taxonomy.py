@@ -255,3 +255,10 @@ class DynamicTaxonomyEngine(TaxonomyEngine):
             first_key = next(iter(self._cache))
             del self._cache[first_key]
         self._cache[key] = value
+
+    def format_dual_concept(self, entity_name: str, context: str = "") -> str:
+        """固有名詞と一般化概念を '名称 [概念]' のデュアル形式で生成"""
+        concept = self.generalize(entity_name, context)
+        if concept and concept != entity_name:
+            return f"{entity_name} [{concept}]"
+        return entity_name
