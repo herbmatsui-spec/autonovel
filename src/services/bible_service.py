@@ -4,9 +4,8 @@ import logging
 from datetime import datetime
 from typing import Any
 
-from config import MODEL_PLANNING, MODEL_PLOT_EXPANSION
-from config.domain_profile_manager import DomainProfileService
 from src.agents.plot import PlotAgent as PlotExpander
+from src.backend.config import settings as _settings
 from src.backend.engine_utils import safe_get, safe_model_validate
 from src.models import (
     ArcBlueprint,
@@ -21,6 +20,14 @@ from src.models import (
     WorldRules,
 )
 from src.models.planning_config import PlanningConfig
+
+try:
+    from config.domain_profile_manager import DomainProfileService
+except ImportError:
+    from src.config.domain_profile_manager import DomainProfileService  # type: ignore
+
+MODEL_PLANNING = getattr(_settings, "GEMINI_MODEL", "gemini-1.5-flash")
+MODEL_PLOT_EXPANSION = getattr(_settings, "GEMINI_MODEL", "gemini-1.5-flash")
 
 logger = logging.getLogger(__name__)
 

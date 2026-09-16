@@ -158,7 +158,9 @@ def with_llm_retry():
 
                     state.error_feedback = OutputSanitizer.format_validation_error(ve)
                     logger.warning(
-                        f"Validation failed (Attempt {state.attempt + 1}): {state.error_feedback}"
+                        "Validation failed (Attempt %s): %s",
+                        state.attempt + 1,
+                        state.error_feedback,
                     )
                     if state.attempt == state.max_retries - 1:
                         raise LLMValidationError(
@@ -174,7 +176,7 @@ def with_llm_retry():
 
                 except (LLMUnrecoverableError, LLMTokenLimitError, LLMValidationError) as e:
                     # すでに定義済みの致命的エラーはリトライせず即座に伝播
-                    logger.error(f"❌ Fatal LLM error detected. Fail-Fast. Error: {e}")
+                    logger.error("❌ Fatal LLM error detected. Fail-Fast. Error: %s", e)
                     raise e
                 except Exception as e:
                     # コードのバグやプログラム論理エラーはFail-Fastで即座に投げる
@@ -193,13 +195,14 @@ def with_llm_retry():
                             "resource exhausted",
                         ]
                     ):
-                        logger.error(f"❌ Token limit exceeded. Fail-Fast. Error: {e}")
+                        logger.error("❌ Token limit exceeded. Fail-Fast. Error: %s", e)
                         raise LLMTokenLimitError(f"Token limit exceeded: {e}") from e
 
                     # モデル名未指定の判定を追加
                     if "model is required" in err_msg:
                         logger.error(
-                            f"❌ AIモデル名が空の状態でAPIが呼ばれました。UIの詳細設定でモデル名が空欄になっていないか確認してください。 Error: {e}"
+                            "❌ AIモデル名が空の状態でAPIが呼ばれました。UIの詳細設定でモデル名が空欄になっていないか確認してください。 Error: %s",
+                            e,
                         )
                         raise LLMUnrecoverableError(f"Model name is empty: {e}") from e
 
@@ -215,7 +218,7 @@ def with_llm_retry():
                             "unauthenticated",
                         ]
                     ):
-                        logger.error(f"❌ Fatal unrecoverable LLM error. Fail-Fast. Error: {e}")
+                        logger.error("❌ Fatal unrecoverable LLM error. Fail-Fast. Error: %s", e)
                         raise LLMUnrecoverableError(f"Fatal unrecoverable LLM error: {e}") from e
 
                     # 3. 一時的なエラーの判定
@@ -242,11 +245,11 @@ def with_llm_retry():
                     )
 
                     if not is_retryable:
-                        logger.error(f"❌ Non-retryable error. Fail-Fast. Error: {e}")
+                        logger.error("❌ Non-retryable error. Fail-Fast. Error: %s", e)
                         raise LLMUnrecoverableError(f"Non-retryable error: {e}") from e
 
                     if state.attempt == state.max_retries - 1:
-                        logger.error(f"❌ Max retries reached for temporary error: {e}")
+                        logger.error("❌ Max retries reached for temporary error: %s", e)
                         raise LLMTemporaryError(
                             f"Temporary LLM error persisted after {state.max_retries} attempts: {e}"
                         ) from e
@@ -314,7 +317,8 @@ def with_llm_retry():
                                     else "gemini-3.1-flash-lite"
                                 )
                                 logger.warning(
-                                    f"[Gemini FALLBACK] Persistent 5xx. Switching to ULTRA_STABLE: {state.model_name}"
+                                    "[Gemini FALLBACK] Persistent 5xx. Switching to ULTRA_STABLE: %s",
+                                    state.model_name,
                                 )
                             elif (
                                 state.model_name != MODEL_STABLE_FALLBACK
@@ -326,7 +330,8 @@ def with_llm_retry():
                                     else "gemini-3.1-flash-lite"
                                 )
                                 logger.warning(
-                                    f"[Gemini FALLBACK] 5xx detected. Switching to STABLE_FALLBACK: {state.model_name}"
+                                    "[Gemini FALLBACK] 5xx detected. Switching to STABLE_FALLBACK: %s",
+                                    state.model_name,
                                 )
 
                     await asyncio.sleep(wait_time)

@@ -37,7 +37,9 @@ class CreateBranchUseCase:
         parent_bid = None
         if dto.parent_branch_id:
             parent_bid = BranchId.from_string(dto.parent_branch_id)
-            # TODO: Verify parent branch exists and belongs to same novel
+            parent_branch = await self.branch_repo.get_by_id(parent_bid)
+            if parent_branch and parent_branch.novel_id != nid:
+                raise ValueError("Parent branch does not belong to the same novel")
 
         async with self.uow:
             branch = Branch.create(
@@ -137,18 +139,9 @@ class CreateBranchPlaySessionUseCase:
     novel_repo: INovelRepository
 
     async def execute(self, novel_id: str, branch_id: str, initial_node_id: Optional[str] = None) -> dict:
-        # TODO: Implement with proper repository
-        # For now, return a mock response
-        return {
-            "id": "mock-session-id",
-            "novel_id": novel_id,
-            "branch_id": branch_id,
-            "current_node_id": initial_node_id,
-            "status": "active",
-            "version": 1,
-            "created_at": "2026-09-12T11:00:00Z",
-            "updated_at": "2026-09-12T11:00:00Z",
-        }
+        raise NotImplementedError(
+            "CreateBranchPlaySessionUseCase は未実装です。IBranchPlaySessionRepository 実装後に有効化してください。"
+        )
 
 
 from typing import TYPE_CHECKING

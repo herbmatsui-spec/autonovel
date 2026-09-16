@@ -22,6 +22,23 @@ STORAGE_DIR.mkdir(parents=True, exist_ok=True)
 _ephemeral_dev_jwt_secret: str | None = None
 
 
+def _get_package_version() -> str:
+    """pyproject.toml からバージョンを動的取得する。"""
+    try:
+        pyproject_path = ROOT_DIR / "pyproject.toml"
+        if pyproject_path.exists():
+            import tomllib
+            with open(pyproject_path, "rb") as f:
+                data = tomllib.load(f)
+                ver = data.get("project", {}).get("version")
+                if ver:
+                    return str(ver)
+        from importlib.metadata import version
+        return version("autonovel")
+    except Exception:
+        return "4.9.3"
+
+
 class Settings(BaseSettings):
     """アプリケーション設定クラス。"""
 
@@ -32,18 +49,15 @@ class Settings(BaseSettings):
     )
 
     # サーバー基本設定
-    # サーバー基本設定
     APP_NAME: str = "AutoNovel"
-    APP_VERSION: str = "4.9.0"
+    APP_VERSION: str = Field(default_factory=lambda: _get_package_version())
     APP_ENV: Literal["development", "production", "testing", "local", "staging"] = "development"
     PORT: int = 8200
     HOST: str = "0.0.0.0"
 
     # データベース設定
-    # データベース設定
     DATABASE_URL: str = Field(default_factory=lambda: f"sqlite:///{STORAGE_DIR / 'autonovel.db'}")
 
-    # Huey / Redis 設定
     # Redis/キュー設定
     HUEY_BACKEND: Literal["sqlite", "redis"] = "sqlite"
     HUEY_SQLITE_PATH: str = Field(default_factory=lambda: str(STORAGE_DIR / "huey.db"))
@@ -120,7 +134,6 @@ class Settings(BaseSettings):
 
     # LLM設定 (5プロバイダ対応)
     # 実装済み: openai, gemini, mock, claude, ollama, vllm
-    # LLMプロバイダー設定
     LLM_PROVIDER: Literal["openai", "gemini", "mock", "claude", "ollama", "vllm", "vertex"] = "mock"
 
     # OpenAI 互換設定
@@ -168,7 +181,6 @@ class Settings(BaseSettings):
     VLLM_MODEL: str = "meta-llama/Llama-3.1-8B-Instruct"
 
     # Embedding / GraphRAG (pgvector + Apache AGE) 設定
-    # ストレージ設定
     EMBEDDING_MODEL: str = "text-embedding-3-small"
     EMBEDDING_MODEL_FALLBACK: str = "text-embedding-3-small"
     AGE_GRAPH_NAME: str = "autonovel_graph"

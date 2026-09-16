@@ -10,8 +10,6 @@ from src.models import CharacterRegistry
 
 logger = logging.getLogger(__name__)
 
-warnings.warn("src.backend.engine_context is deprecated, use src.agents.context_builder_agent instead", DeprecationWarning, stacklevel=2)
-
 
 class ImmutableInput(BaseModel):
     past_summary: str

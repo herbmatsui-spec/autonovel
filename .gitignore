@@ -22,6 +22,8 @@ storage/
 *.db-journal
 *.bak_*.db
 coverage.xml
+coverage.json
+benchmark_results.json
 
 # build artifacts
 *.egg-info/

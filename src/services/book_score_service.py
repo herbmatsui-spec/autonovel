@@ -3,46 +3,14 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Mapping, Optional, Protocol
-from dataclasses import dataclass
 from datetime import datetime
+from typing import Any, Dict, Mapping, Optional
 
 from src.agents.orchestrator import AgentContext
 from src.infrastructure.database.models.book_score import BookScore as BookScoreModel
+from src.services.book_score_models import BookScore, BookScoreRepository  # noqa: F401
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class BookScore:
-    overall_score: float
-    structure_score: float
-    coherency_score: float
-    factual_grounding_score: float
-    visual_textual_synergy_score: float
-    reader_experience_score: float
-    specialist_breakdown: Optional[Dict[str, Any]] = None
-
-    def lowest_dimension(self) -> str:
-        """Return the lowest scoring dimension."""
-        dims = {
-            "structure_score": self.structure_score,
-            "coherency_score": self.coherency_score,
-            "factual_grounding_score": self.factual_grounding_score,
-            "visual_textual_synergy_score": self.visual_textual_synergy_score,
-            "reader_experience_score": self.reader_experience_score,
-        }
-        return min(dims, key=dims.get)
-
-
-class BookScoreRepository(Protocol):
-    """BookScore リポジトリのプロトコル"""
-
-    async def save(self, score: BookScoreModel) -> None:
-        ...
-
-    async def get_latest(self, book_id: int, chapter_number: int) -> Optional[BookScoreModel]:
-        ...
 
 
 class BookScoreCalculator:
@@ -861,7 +829,7 @@ class BookScoreCalculator:
                     # 文長の変化で感情の起伏を推定
                     lengths = [len(s) for s in sentences]
                     avg_len = sum(lengths) / len(lengths)
-                    var_len = sum((l - avg_len) ** 2 for l in lengths) / len(lengths)
+                    var_len = sum((length - avg_len) ** 2 for length in lengths) / len(lengths)
                     cv = (var_len ** 0.5) / max(1, avg_len)  # 変動係数
                     if 0.3 <= cv <= 0.8:
                         emotion_score = 80.0

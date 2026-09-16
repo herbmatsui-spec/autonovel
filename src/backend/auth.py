@@ -6,9 +6,8 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Optional
 
-from fastapi import Depends, Header, HTTPException, Request, status
+from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -136,7 +135,10 @@ async def require_admin_user_or_key(
     # API Key を試行
     key = await require_api_key(authorization)
     if key:
-        return _get_dev_mock_user()
+        # API Key 保持者には読み取り専用ロールを付与（admin 昇格しない）
+        api_user = _get_dev_mock_user()
+        setattr(api_user, "role", "api_readonly")
+        return api_user
 
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,

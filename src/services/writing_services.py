@@ -12,11 +12,20 @@ import uuid
 import warnings
 from typing import TYPE_CHECKING, Any
 
-warnings.warn(
-    "src.services.writing_services は非推奨です。src.backend.writing_service を使用してください。",
-    DeprecationWarning,
-    stacklevel=2,
-)
+# 遅延警告: import時ではなくクラス初期化時に非推奨警告を発する
+_DEPRECATION_WARNING_ISSUED = False
+
+
+def _emit_deprecation_warning():
+    global _DEPRECATION_WARNING_ISSUED
+    if not _DEPRECATION_WARNING_ISSUED:
+        warnings.warn(
+            "src.services.writing_services は非推奨です。"
+            "src.backend.writing_service を使用してください。",
+            DeprecationWarning,
+            stacklevel=3,
+        )
+        _DEPRECATION_WARNING_ISSUED = True
 
 from pydantic import BaseModel
 
@@ -99,6 +108,7 @@ class WritingGenerationContext(BaseModel):
 
 class GenerationLoopManager:
     def __init__(self, repo, llm, pm, critique, narrative, config):
+        _emit_deprecation_warning()
         self.repo = repo
         self.llm = llm
         self.pm = pm
