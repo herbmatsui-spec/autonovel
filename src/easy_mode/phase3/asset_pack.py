@@ -782,10 +782,10 @@ def pack_to_zip(source_dir: str, zip_path: str) -> None:
     """指定ディレクトリをZIPファイルに圧縮"""
     import zipfile
     from pathlib import Path
-    
+
     source = Path(source_dir)
     target = Path(zip_path)
-    
+
     with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as zf:
         for file_path in source.rglob("*"):
             if file_path.is_file():

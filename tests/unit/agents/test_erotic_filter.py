@@ -1,4 +1,3 @@
-import pytest
 from src.agents.erotic.filter import EroticFilter
 
 def test_erotic_filter_safe_text():

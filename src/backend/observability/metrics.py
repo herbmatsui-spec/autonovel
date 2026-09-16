@@ -175,7 +175,7 @@ phase3_operation_total = Counter(
 )
 
 
-def record_ab_test_result(skill_name: str, winner: str, version_a: str, version_b: str, 
+def record_ab_test_result(skill_name: str, winner: str, version_a: str, version_b: str,
                           duration: float, success_rate_a: float, success_rate_b: float):
     """A/Bテスト結果を記録"""
     ab_test_result_total.labels(skill_name=skill_name, winner=winner).inc()
@@ -196,7 +196,7 @@ def record_book_score(score: dict, genre: str = "", phase: str = ""):
     if score.get("regeneration_triggered"):
         for dim in score.get("low_dimensions", []):
             book_score_regeneration_triggered.labels(dimension=dim).inc()
-    
+
     # トレンドメトリクス（書籍IDが含まれている場合）
     book_id = score.get("book_id")
     if book_id and "trend_3ch" in score and score["trend_3ch"]:
@@ -422,24 +422,24 @@ def record_enrichment_metrics(
 ):
     """EnrichmentAgent 実行メトリクスを記録"""
     enrichment_duration_seconds.labels(status=status).observe(duration)
-    
+
     if trivia_count > 0:
         enrichment_trivia_insertions_total.labels(book_id=str(book_id), status="inserted").inc(trivia_count)
-    
+
     if citation_count > 0:
         # style は設定から取得（デフォルト footnote）
         enrichment_citations_added_total.labels(book_id=str(book_id), style="footnote").inc(citation_count)
-    
+
     if sensory_count > 0:
         enrichment_sensory_expansions_total.labels(book_id=str(book_id), emotion="mixed").inc(sensory_count)
-    
+
     if multimedia_formats:
         for fmt in multimedia_formats:
             enrichment_multimedia_scenarios_total.labels(book_id=str(book_id), format=fmt).inc()
-    
+
     if token_delta > 0:
         enrichment_token_usage.labels(book_id=str(book_id)).observe(token_delta)
-    
+
     if error:
         stage = "unknown"
         if "trivia" in error.lower():

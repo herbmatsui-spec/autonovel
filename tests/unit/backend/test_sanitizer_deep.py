@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import json
-import pytest
 from pydantic import BaseModel, Field, ValidationError
 
 from src.backend.sanitizer import (

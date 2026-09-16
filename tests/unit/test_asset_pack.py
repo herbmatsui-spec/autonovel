@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import zipfile
+from unittest.mock import patch
 
 from src.easy_mode.phase3.asset_pack import AssetPackGenerator, AssetPackMetadata
 from src.easy_mode import EpisodeResult, SeriesResult
@@ -54,8 +55,11 @@ def test_asset_pack_generator_creates_zip(tmp_path):
     series = _make_series()
     preset = {"characters": {"archetypes": {}}, "erotic": {}}
     gen = AssetPackGenerator("ハイファンタジー (R15)", preset)
-    output_dir = tmp_path / "pack"
-    zip_path = gen.generate_pack(series, output_dir=output_dir)
+    # ebook_exporter の遅延初期化が EbookMetadata を要求するため
+    # _init_components をモックしてスキップする
+    with patch.object(gen, "_init_components", return_value=None):
+        output_dir = tmp_path / "pack"
+        zip_path = gen.generate_pack(series, output_dir=output_dir, include_ebook=False)
     assert zip_path.exists()
     with zipfile.ZipFile(zip_path, "r") as zf:
         names = zf.namelist()

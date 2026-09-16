@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import pytest
-from src.backend import database
 from src.backend.server import app
 from fastapi.testclient import TestClient
 
@@ -10,7 +9,7 @@ from fastapi.testclient import TestClient
 @pytest.fixture
 def contract_client():
     """Contract テスト用の TestClient フィクスチャ.
-    
+
     OpenAPI スキーマを取得するために使用します。
     """
     with TestClient(app) as client:

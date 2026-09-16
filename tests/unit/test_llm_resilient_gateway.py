@@ -1,11 +1,10 @@
 """ResilientLLMGateway と LLMCircuitBreaker のユニットテスト"""
 
-import asyncio
 import pytest
 from src.llm.circuit_breaker import LLMCircuitBreaker, CircuitState, ProviderHealthState
-from src.llm.fallback_policy import FallbackPolicy, DEFAULT_FALLBACK_CHAINS
+from src.llm.fallback_policy import FallbackPolicy
 from src.llm.resilient_gateway import ResilientLLMGateway, normalize_schema_prompt
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
 
 class TestProviderHealthState:

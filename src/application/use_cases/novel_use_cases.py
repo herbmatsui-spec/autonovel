@@ -137,7 +137,6 @@ class ChangeNovelStatusUseCase:
     uow: IUnitOfWork
 
     async def execute(self, novel_id: str, status: "NovelStatus") -> bool:
-        from src.domain.value_objects.metadata import NovelStatus
         nid = NovelId.from_string(novel_id)
         async with self.uow:
             updated = await self.novel_repo.update_status(nid, status)
@@ -154,7 +153,6 @@ class SetNovelModeUseCase:
     uow: IUnitOfWork
 
     async def execute(self, novel_id: str, mode: "NovelMode") -> bool:
-        from src.domain.value_objects.metadata import NovelMode
         nid = NovelId.from_string(novel_id)
         async with self.uow:
             updated = await self.novel_repo.update_mode(nid, mode)

@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Protocol, Optional, List, runtime_checkable
 from src.domain.entities.plot import Plot, PlotPoint, Arc
 from src.domain.value_objects.ids import PlotId, NovelId, PlotPointId, ArcId
-from src.domain.entities.plot import PlotStatus, ChainPhase
+from src.domain.entities.plot import ChainPhase
 
 
 @runtime_checkable

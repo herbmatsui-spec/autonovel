@@ -273,6 +273,14 @@ def with_llm_retry():
                     # その他の一時的エラー
                     else:
                         wait_time = min(1.0 * (2**state.attempt), 10.0)
+                    logger.warning(
+                        "Retry attempt %d/%d for %s after %.2fs due to: %s",
+                        state.attempt + 1,
+                        state.max_retries,
+                        func.__name__,
+                        wait_time,
+                        e,
+                    )
 
                     # UIへの警告表示
                     if state.reporter and hasattr(state.reporter, "report"):

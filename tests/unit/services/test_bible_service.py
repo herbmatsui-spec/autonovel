@@ -27,7 +27,7 @@ async def test_bible_service_apply_manual_setting_change_not_found():
 async def test_bible_service_apply_manual_setting_change_unchanged():
     repo = MagicMock()
     service = WorldBibleGenerator(repo, MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock())
-    
+
     dummy_bible = {"title": "Same Title"}
     repo.bible.get_bible = AsyncMock(return_value=dummy_bible)
 
@@ -42,7 +42,7 @@ async def test_bible_service_apply_manual_setting_change_unchanged():
 async def test_bible_service_apply_manual_setting_change_success():
     repo = MagicMock()
     service = WorldBibleGenerator(repo, MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock())
-    
+
     dummy_bible = {"title": "Old Title"}
     repo.bible.get_bible = AsyncMock(return_value=dummy_bible)
     repo.save_full_world_bible = AsyncMock()

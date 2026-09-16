@@ -116,7 +116,7 @@ class DAGScheduler:
                         await res
             except Exception as e:
                 logger.debug(f"Failed to publish event {event_type}: {e}")
-        
+
         # Also publish to PipelineEventHub for real-time WebSocket streaming
         if self.pipeline_event_hub:
             try:
@@ -158,7 +158,7 @@ class DAGScheduler:
         """Execute all nodes in the DAG respecting dependencies, resources, and affinity.
 
         Uses asyncio.TaskGroup for structured concurrency and semaphores for backpressure.
-        
+
         Args:
             graph: DAGGraph to execute. Optional if resume_from is provided.
             max_concurrency: Maximum parallel tasks.
@@ -179,7 +179,7 @@ class DAGScheduler:
         DAGEngine.validate_dag(graph)
 
         limits = self.resource_manager.calculate_worker_pool_limits()
-        effective_max = max_concurrency or limits["max_parallel_tasks"]
+        max_concurrency or limits["max_parallel_tasks"]
 
         allocated_resources: dict[str, TaskResourceRequirement] = {}
         self._poll_interval = poll_interval
@@ -351,10 +351,10 @@ class DAGScheduler:
                 worker_idx = int(worker_id.split("_")[-1])
             except ValueError:
                 worker_idx = 0
-            
+
             is_gpu = task_node.resources.gpu_mem_mb > 0
             numa = self.resource_manager.get_worker_numa_affinity(worker_idx, is_gpu)
-            
+
             if numa is not None:
                 cpus = self.resource_manager.numa_topology.get_cpus_for_numa(numa)
                 if cpus:
@@ -411,7 +411,7 @@ class DAGScheduler:
                 "task_id": task_node.task_id,
                 "worker_id": worker_id,
             })
-            
+
             # Log task completion to WAL (Step 51)
             if self.worker_recovery:
                 await self.worker_recovery.log_task_completion(
@@ -455,14 +455,14 @@ class DAGScheduler:
                 cancelled = graph.cascade_cancel_downstream(task_node.task_id, reason=f"Dependency {task_node.task_id} failed")
                 if cancelled:
                     logger.info(f"Cascade cancelled downstream tasks of '{task_node.task_id}': {cancelled}")
-                
+
                 # Log task failure to WAL (Step 51)
                 if self.worker_recovery:
                     await self.worker_recovery.log_task_completion(
                         task_id=task_node.task_id,
                         error=err_msg,
                     )
-                
+
                 # Metrics: record task end (failure)
                 duration = time.monotonic() - start_time
                 self.metrics.record_task_end(TaskMetrics(
@@ -629,10 +629,10 @@ class DAGScheduler:
 
     async def on_startup(self) -> list[str]:
         """Startup hook: scan for and resume all active DAGs (Step 54).
-        
+
         If WorkerRecoveryManager is configured, delegates to it for zombie detection
         and recovery. Otherwise uses local checkpoint-based recovery.
-        
+
         Returns list of DAG IDs that were resumed.
         """
         if self.worker_recovery:
@@ -641,13 +641,13 @@ class DAGScheduler:
             if recovered_tasks:
                 logger.info(f"Recovered {len(recovered_tasks)} orphan tasks on startup")
             return recovered_tasks
-        
+
         # Fallback: local checkpoint-based recovery
         logger.info("Running local checkpoint-based startup recovery...")
         checkpoints_dir = self.persistence.base_dir
         if not checkpoints_dir.exists():
             return []
-        
+
         resumed_dags = set()
         for cp_file in checkpoints_dir.glob("*.json"):
             dag_id = cp_file.stem.split("_cp_")[0]
@@ -659,7 +659,7 @@ class DAGScheduler:
                         logger.info(f"Auto-recovered DAG {dag_id} from checkpoint")
                 except Exception as e:
                     logger.warning(f"Failed to auto-recover DAG {dag_id}: {e}")
-        
+
         return list(resumed_dags)
 
     async def resume_from_checkpoint_with_wal(
@@ -668,14 +668,14 @@ class DAGScheduler:
         graph: DAGGraph,
     ) -> DAGGraph:
         """Resume DAG from checkpoint using WAL for idempotent intermediate state (Step 55).
-        
+
         Finds completed nodes from WAL and restores their outputs to graph nodes,
         allowing downstream nodes to execute without re-running completed work.
-        
+
         Args:
             dag_id: The DAG identifier
             graph: The DAGGraph loaded from checkpoint
-            
+
         Returns:
             Updated graph with completed node outputs restored from WAL
         """
@@ -685,7 +685,7 @@ class DAGScheduler:
 
         completed_nodes = await self.worker_recovery.resume_dag_from_checkpoint(dag_id)
         logger.info(f"Resuming DAG {dag_id}: found {len(completed_nodes)} completed nodes in WAL")
-        
+
         for node_id in completed_nodes:
             if node_id in graph.nodes:
                 wal_entry = await self.worker_recovery.get_latest_wal_for_node(dag_id, node_id)
@@ -698,7 +698,7 @@ class DAGScheduler:
                         logger.debug(f"Restored output for node {node_id} from WAL")
                     except json.JSONDecodeError:
                         logger.warning(f"Failed to parse WAL output for node {node_id}")
-        
+
         return graph
 
     def _cancel_downstream_tasks(self, failed_task_id: str, graph: DAGGraph | None = None) -> list[str]:

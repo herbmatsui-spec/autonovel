@@ -1,4 +1,3 @@
-import pytest
 from src.services.blind_review import BlindReviewGate
 
 def test_blind_review_gate_isolation():

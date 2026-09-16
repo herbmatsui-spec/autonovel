@@ -1,4 +1,3 @@
-import pytest
 from src.easy_mode.phase3.media_mix import MediaFormat, Panel
 
 def test_media_format_enum_values():

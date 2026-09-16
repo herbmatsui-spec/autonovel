@@ -39,19 +39,19 @@ class PlotAgent(SkillAgent):
 
     async def generate_plot(self, theme: str) -> list[dict[str, Any]]:
         """Generate plot beats from a theme or genre.
-        
+
         Args:
             theme: Theme or genre for the plot
-            
+
         Returns:
             List of beat dictionaries
         """
         # Use the LLM to generate plot beats
         prompt = f"Generate a plot beats sheet for the theme: {theme}. "
         prompt += "Return a JSON object with a 'beats' array containing act summaries."
-        
+
         result = await self._llm.generate(prompt=prompt)
-        
+
         # Parse the JSON response
         import json
         try:

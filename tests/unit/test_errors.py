@@ -1,4 +1,3 @@
-import pytest
 
 from src.shared.errors import (
     GenerationError,

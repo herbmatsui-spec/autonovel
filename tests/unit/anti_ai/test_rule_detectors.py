@@ -7,13 +7,10 @@ import pytest
 from src.config.anti_ai_config import (
     AntiAIConfig,
     DetectorSettings,
-    DirectEmotionSettings,
-    GenericVocabularySettings,
     HedgingSettings,
     SameStructureSettings,
     TemplatePhrasesSettings,
     TransitionOveruseSettings,
-    UniformParagraphSettings,
     clear_cache,
 )
 from src.services.anti_ai.detectors import (
@@ -25,7 +22,6 @@ from src.services.anti_ai.detectors import (
     TransitionOveruseDetector,
     UniformParagraphDetector,
 )
-from src.services.anti_ai.models import AICategory, Severity
 
 
 @pytest.fixture(autouse=True)

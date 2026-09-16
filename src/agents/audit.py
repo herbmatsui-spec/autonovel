@@ -811,7 +811,7 @@ class InternalLogicValidator:
 
 class LogicalAuditor:
     """@deprecated ロジカル一貫性チェックエージェント。
-    
+
     このクラスは非推奨です。新規コードでは `src.services.audit_aggregator.AuditAggregator`
     または `src.agents.audit_agent.AuditAgent` を使用してください。(Phase 6: Step 65)
     """

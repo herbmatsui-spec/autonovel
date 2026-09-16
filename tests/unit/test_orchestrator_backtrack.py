@@ -12,11 +12,11 @@ from src.agents.orchestrator import Orchestrator, AgentContext, AgentResult, Age
 
 class MockWritingAgent:
     """Mock writing agent that can be controlled to pass/fail audit."""
-    
+
     def __init__(self, should_pass_audit: bool = False):
         self.should_pass_audit = should_pass_audit
         self.call_count = 0
-    
+
     async def __call__(self, ctx: AgentContext) -> AgentResult:
         self.call_count += 1
         # Simulate writing producing text
@@ -30,14 +30,14 @@ class MockWritingAgent:
 
 class MockAuditAgent:
     """Mock audit agent that fails first N times then passes."""
-    
+
     def __init__(self, fail_count: int = 1):
         self.fail_count = fail_count
         self.call_count = 0
-    
+
     async def __call__(self, ctx: AgentContext) -> AgentResult:
         self.call_count += 1
-        
+
         # Simulate audit score
         if self.call_count <= self.fail_count:
             # Fail audit - should trigger backtrack to WRITING
@@ -67,10 +67,10 @@ class MockAuditAgent:
 
 class MockIllustrationAgent:
     """Mock illustration agent."""
-    
+
     def __init__(self):
         self.call_count = 0
-    
+
     async def __call__(self, ctx: AgentContext) -> AgentResult:
         self.call_count += 1
         ctx.artifacts["illustrations"] = ["illustration_1.png"]
@@ -84,7 +84,7 @@ class MockIllustrationAgent:
 @pytest.mark.asyncio
 async def test_backtrack_from_audit_to_writing():
     """Test that audit failure correctly backtracks to WRITING (not re-execute AUDIT).
-    
+
     This is the MAIN BUG REPRODUCTION TEST.
     Before fix: AUDIT re-executes itself infinitely
     After fix: AUDIT -> WRITING -> AUDIT -> ILLUSTRATION
@@ -92,23 +92,23 @@ async def test_backtrack_from_audit_to_writing():
     writing_agent = MockWritingAgent()
     audit_agent = MockAuditAgent(fail_count=1)  # Fail once, then pass
     illustration_agent = MockIllustrationAgent()
-    
+
     nodes = {
         AgentName.WRITING: writing_agent,
         AgentName.AUDIT: audit_agent,
         AgentName.ILLUSTRATION: illustration_agent,
     }
-    
+
     orchestrator = Orchestrator(nodes=nodes)
-    
+
     ctx = AgentContext(book_id=1, branch_id=1, ep_num=1, artifacts={})
     result_ctx = await orchestrator.run(ctx, start=AgentName.WRITING)
-    
+
     # Verify the flow: WRITING -> AUDIT (fail) -> WRITING -> AUDIT (pass) -> ILLUSTRATION
     assert writing_agent.call_count == 2, f"Expected WRITING called 2 times, got {writing_agent.call_count}"
     assert audit_agent.call_count == 2, f"Expected AUDIT called 2 times, got {audit_agent.call_count}"
     assert illustration_agent.call_count == 1, f"Expected ILLUSTRATION called 1 time, got {illustration_agent.call_count}"
-    
+
     # Verify final state
     assert result_ctx.artifacts.get("audit_status") == "passed"
     assert result_ctx.artifacts.get("audit_score") == 85.0
@@ -120,31 +120,31 @@ async def test_backtrack_max_limit_exceeded():
     writing_agent = MockWritingAgent()
     audit_agent = MockAuditAgent(fail_count=10)  # Always fail
     illustration_agent = MockIllustrationAgent()
-    
+
     nodes = {
         AgentName.WRITING: writing_agent,
         AgentName.AUDIT: audit_agent,
         AgentName.ILLUSTRATION: illustration_agent,
     }
-    
+
     orchestrator = Orchestrator(nodes=nodes, max_backtracks_per_node=3)
-    
+
     ctx = AgentContext(book_id=1, branch_id=1, ep_num=1, artifacts={})
-    
+
     # Should not raise an exception; should proceed to illustration agent safely
     result_ctx = await orchestrator.run(ctx, start=AgentName.WRITING)
-    
+
     # Verify WRITING was called max_backtracks_per_node + 1 times (initial + retries)
     assert writing_agent.call_count == 4, f"WRITING called {writing_agent.call_count} times, expected 4"
     # Verify AUDIT was called max_backtracks_per_node + 1 times
     assert audit_agent.call_count == 4, f"AUDIT called {audit_agent.call_count} times, expected 4"
     # Verify ILLUSTRATION was called once
     assert illustration_agent.call_count == 1, f"ILLUSTRATION called {illustration_agent.call_count} time, expected 1"
-    
+
     # Verify final state: we proceeded to illustration agent
     assert result_ctx.artifacts.get("illustrations") == ["illustration_1.png"]
     # Verify that we have the max backtrack exceeded flag set for the audit agent
-    assert result_ctx.artifacts.get("audit_max_backtrack_exceeded") == True
+    assert result_ctx.artifacts.get("audit_max_backtrack_exceeded")
 
 
 @pytest.mark.asyncio
@@ -153,18 +153,18 @@ async def test_backtrack_history_recorded():
     writing_agent = MockWritingAgent()
     audit_agent = MockAuditAgent(fail_count=1)
     illustration_agent = MockIllustrationAgent()
-    
+
     nodes = {
         AgentName.WRITING: writing_agent,
         AgentName.AUDIT: audit_agent,
         AgentName.ILLUSTRATION: illustration_agent,
     }
-    
+
     orchestrator = Orchestrator(nodes=nodes)
-    
+
     ctx = AgentContext(book_id=1, branch_id=1, ep_num=1, artifacts={})
     result_ctx = await orchestrator.run(ctx, start=AgentName.WRITING)
-    
+
     # Check backtrack history exists
     assert "backtrack_history" in result_ctx.artifacts
     history = result_ctx.artifacts["backtrack_history"]
@@ -180,29 +180,29 @@ async def test_backtrack_event_published():
     writing_agent = MockWritingAgent()
     audit_agent = MockAuditAgent(fail_count=1)
     illustration_agent = MockIllustrationAgent()
-    
+
     nodes = {
         AgentName.WRITING: writing_agent,
         AgentName.AUDIT: audit_agent,
         AgentName.ILLUSTRATION: illustration_agent,
     }
-    
+
     # Mock event bus
     mock_event_bus = MagicMock()
     mock_event_bus.publish_async = AsyncMock()
-    
+
     orchestrator = Orchestrator(nodes=nodes, event_bus=mock_event_bus)
-    
+
     ctx = AgentContext(book_id=1, branch_id=1, ep_num=1, artifacts={})
     await orchestrator.run(ctx, start=AgentName.WRITING)
-    
+
     # Verify backtrack event was published
     backtrack_calls = [
         call for call in mock_event_bus.publish_async.call_args_list
         if call[0][0].payload.get("status") == "backtracked"
     ]
     assert len(backtrack_calls) == 1, "Expected exactly one backtracked event"
-    
+
     event = backtrack_calls[0][0][0]
     assert event.agent == "audit"
     assert event.payload["to"] == "writing"
@@ -218,7 +218,7 @@ async def test_agent_result_is_backtrack_field():
         is_backtrack=True
     )
     assert result.is_backtrack is True
-    
+
     # Default should be False
     result2 = AgentResult(next_agent=AgentName.WRITING, artifacts={})
     assert result2.is_backtrack is False
@@ -236,7 +236,7 @@ async def test_agent_context_has_backtrack_history():
 @pytest.mark.asyncio
 async def test_self_repair_scenario():
     """Test that the writing agent uses regeneration directive to self-repair and pass audit.
-    
+
     This test verifies the self-repair loop:
     1. Writing agent produces draft without improvement.
     2. Audit agent fails and provides regeneration directive.

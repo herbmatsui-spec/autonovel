@@ -4,8 +4,6 @@ erotic/diversity_scorer.py - 官能シーンの多様性スコアリング
 
 from __future__ import annotations
 
-import re
-from collections import Counter
 
 
 class EroticDiversityScorer:

@@ -1,16 +1,14 @@
 """Pillar 2 Full Regression and End-to-End Cross-Component Integration Test (Step 70)."""
 from __future__ import annotations
 
-import asyncio
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from starlette.testclient import TestClient
 
 from src.agents.social.manager import SocialInteractionManager
-from src.agents.social.models import RelationshipMetrics
 from src.backend.database.models import Book, CharacterRelationship, Base
 from src.backend.database.social_repository import SocialRepository
-from src.backend.tasks.dag_models import DAGGraph, DAGTaskNode, TaskResourceRequirement
+from src.backend.tasks.dag_models import DAGGraph, DAGTaskNode
 from src.backend.tasks.dag_scheduler import DAGScheduler
 from src.backend.tasks.dag_persistence import FileSystemDAGPersistence
 from src.backend.server import app
@@ -123,7 +121,7 @@ async def test_pillar2_end_to_end_cross_component(tmp_path):
 
         # 6. Verify System API endpoints
         client = TestClient(app)
-        
+
         # Huey Health Endpoint
         huey_resp = client.get("/api/system/huey/health")
         assert huey_resp.status_code == 200

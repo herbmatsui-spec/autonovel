@@ -2,12 +2,12 @@ import json
 import logging
 import time
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 
 from src.backend.auth import get_current_user, require_api_key
-from src.backend.database.models import InternalState, TaskWALLogModel
+from src.backend.database.models import InternalState, TaskWALLogModel, User
 from src.backend.redis_util import get_async_redis_client
 from src.backend.sse import task_event_generator
 from src.backend.tasks.worker_recovery import WorkerRecoveryManager, RecoveryConfig
@@ -24,13 +24,16 @@ router = APIRouter(
 
 
 @router.get("/{task_id}/status")
-async def get_task_status(task_id: str):
+async def get_task_status(
+    task_id: str,
+    current_user: User = Depends(get_current_user),
+):
     redis_client = await get_async_redis_client()
     if redis_client is not None:
         try:
             val = await redis_client.get(f"task_status:{task_id}")
             if val:
-                return json.loads(val)
+                data = json.loads(val)
         except Exception as exc:
             # Redis 取得失敗は DB フォールバックへ進む想定だが、原因を追跡できるようログは残す
             logger.warning(
@@ -43,8 +46,15 @@ async def get_task_status(task_id: str):
         result = await session.execute(stmt)
         row = result.scalar_one_or_none()
     if not row:
-        return {"is_running": False, "message": "タスクが見つかりません", "logs": []}
-    return json.loads(row.value)
+        data = {"is_running": False, "message": "タスクが見つかりません", "logs": []}
+    else:
+        data = json.loads(row.value)
+
+    # user_id がペイロードに含まれている場合は本人確認を実施
+    task_user_id = data.get("user_id")
+    if task_user_id and task_user_id != current_user.id and current_user.role != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="このタスクへのアクセス権限がありません")
+    return data
 
 
 @router.get("/dag/{dag_id}")
@@ -144,7 +154,7 @@ async def stop_task(task_id: str, api_key: str = Depends(require_api_key)):
 @router.post("/admin/recover", dependencies=[Depends(require_api_key)])
 async def trigger_task_recovery():
     """Step 58: Manual trigger for orphan task detection and recovery.
-    
+
     Scans for zombie tasks (running with stale heartbeat) and resets them to pending
     for re-scheduling. Returns count of recovered tasks.
     """
@@ -153,9 +163,9 @@ async def trigger_task_recovery():
         db_manager=db_manager,
         config=RecoveryConfig(),
     )
-    
+
     recovered_tasks = await recovery_manager.recover_orphan_tasks()
-    
+
     return {
         "recovered_count": len(recovered_tasks),
         "recovered_task_ids": recovered_tasks,
@@ -171,9 +181,9 @@ async def list_zombie_tasks():
         db_manager=db_manager,
         config=RecoveryConfig(),
     )
-    
+
     zombies = await recovery_manager.detect_zombie_tasks()
-    
+
     return {
         "zombie_count": len(zombies),
         "zombies": [
@@ -193,14 +203,14 @@ async def list_zombie_tasks():
 async def get_wal_logs(dag_id: str):
     """Get WAL logs for a specific DAG for debugging."""
     db_manager = AppContainer.db()
-    
+
     async with db_manager.get_session() as session:
         stmt = select(TaskWALLogModel).where(
             TaskWALLogModel.dag_id == dag_id
         ).order_by(TaskWALLogModel.created_at.desc()).limit(100)
         result = await session.execute(stmt)
         logs = result.scalars().all()
-    
+
     return {
         "dag_id": dag_id,
         "logs": [

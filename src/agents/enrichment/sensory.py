@@ -153,29 +153,29 @@ def is_inside_dialogue(text: str, pos: int) -> bool:
 def detect_abstract_emotions(text: str, skip_dialogue: bool = True) -> list[EmotionSpan]:
     """テキストから抽象的感情フレーズを検出（Step 32: 会話文内部保護ガード対応）"""
     spans = []
-    
+
     for emotion, patterns in ABSTRACT_EMOTION_PATTERNS.items():
         for pattern in patterns:
             for match in re.finditer(pattern, text):
                 match_start = match.start()
                 match_end = match.end()
-                
+
                 # Step 32: セリフ内の感情表現を地の文の五感描写に置換しないようスキップ
                 if skip_dialogue and is_inside_dialogue(text, match_start):
                     continue
-                
+
                 # 文脈を含めて少し広めに取得（フレーズ用）
                 start = max(0, match_start - 10)
                 end = min(len(text), match_end + 10)
                 phrase = text[start:end].strip()
-                
+
                 # 既に検出済みの範囲と重複しないかチェック（マッチ位置ベースで判定）
                 overlap = False
                 for s in spans:
                     if not (match_end <= s.start or match_start >= s.end):
                         overlap = True
                         break
-                
+
                 if not overlap:
                     s_start, s_end, s_text = extract_sentence_span(text, match_start, match_end)
                     conj = detect_trailing_conjunction(text, match_end)
@@ -190,7 +190,7 @@ def detect_abstract_emotions(text: str, skip_dialogue: bool = True) -> list[Emot
                         sentence_text=s_text,
                         trailing_conjunction=conj,
                     ))
-    
+
     # 位置でソート
     spans.sort(key=lambda x: x.start)
     return spans
@@ -249,11 +249,11 @@ async def generate_sensory_details(
     """感覚詳細生成（LLM使用時は高品質、未使用時や障害時はテンプレートベースへフォールバック）"""
     emotion = emotion_span.emotion
     sensory_map = EMOTION_TO_SENSORY_MAP.get(emotion, {})
-    
+
     # 文脈から感覚を選択（キーワードマッチング）
     selected_senses = []
     context_lower = scene_context.lower()
-    
+
     # シーン文脈に基づく感覚優先度
     sense_priority = []
     if any(kw in context_lower for kw in ["雨", "水", "川", "海", "湖", "濡れ"]):
@@ -266,11 +266,11 @@ async def generate_sensory_details(
         sense_priority.extend(["tactile", "olfactory", "auditory"])
     if any(kw in context_lower for kw in ["部屋", "室内", "ベッド", "椅子", "机"]):
         sense_priority.extend(["tactile", "visual", "olfactory"])
-    
+
     # デフォルト優先度
     if not sense_priority:
         sense_priority = ["visual", "auditory", "tactile", "olfactory", "gustatory"]
-    
+
     # 重複除去しつつ最大3感覚まで
     seen = set()
     for sense in sense_priority:
@@ -340,7 +340,7 @@ async def generate_sensory_details(
         except Exception as e:
             import logging
             logging.getLogger(__name__).warning("LLM sensory detail generation failed: %s", e)
-    
+
     # Step 21: フォールバック処理
     return _fallback_sensory_details(emotion_span, selected_senses, sensory_map)
 
@@ -380,35 +380,35 @@ def replace_with_sensory_expansion(
     sensory_details_list: list[list[str]],
 ) -> tuple[str, list[dict]]:
     """抽象フレーズを感覚展開版で置換（文置換対応・構文サニタイズ・自動ロールバック付き: Step 29, 30, 33）
-    
+
     Args:
         text: 置換対象の本文テキスト
         emotion_spans: 検出された抽象感情スパンリスト
         sensory_details_list: 各スパンに対応する五感描写リスト
-        
+
     Returns:
         tuple[str, list[dict]]: 展開後テキストと置換メタデータ
     """
     if not emotion_spans:
         return text, []
-    
+
     # 後ろから置換（位置ズレ防止、文単位優先）
     def get_sort_key(item):
         span = item[0]
         return span.sentence_start if span.sentence_end > span.sentence_start else span.start
 
-    sorted_spans = sorted(zip(emotion_spans, sensory_details_list), 
+    sorted_spans = sorted(zip(emotion_spans, sensory_details_list),
                           key=get_sort_key, reverse=True)
-    
+
     enriched_text = text
     expansions_meta = []
-    
+
     for span, details in sorted_spans:
         is_sentence_level = span.sentence_end > span.sentence_start
         rep_start = span.sentence_start if is_sentence_level else span.start
         rep_end = span.sentence_end if is_sentence_level else span.end
         original_chunk = text[rep_start:rep_end]
-        
+
         if details:
             expanded_parts = []
             for d in details:
@@ -416,9 +416,9 @@ def replace_with_sensory_expansion(
                 clean_d = re.sub(r'\[[a-zA-Z0-9_]+\]\s*', '', d).strip()
                 if clean_d:
                     expanded_parts.append(clean_d)
-            
+
             raw_expansion = "。".join(expanded_parts)
-            
+
             # Step 33: 生成された五感描写自体の文法健全性チェック（破損時は元の文/フレーズにロールバック）
             if not validate_rewritten_sentence(raw_expansion, text[span.start:span.end]):
                 import logging
@@ -436,7 +436,7 @@ def replace_with_sensory_expansion(
                     # 感情語の後ろの後続節（例：「〜が耐えた。」の「耐えた。」）
                     after_pos = span.end + len(span.trailing_conjunction)
                     trailing_clause = text[after_pos:span.sentence_end]
-                    
+
                     if span.trailing_conjunction and trailing_clause:
                         # expanded が既に trailing_clause を含んでいない場合は自然に結合
                         if trailing_clause not in expanded:
@@ -445,10 +445,10 @@ def replace_with_sensory_expansion(
                             expanded = expanded + span.trailing_conjunction + trailing_clause
         else:
             expanded = original_chunk
-        
+
         # 置換実行
         enriched_text = enriched_text[:rep_start] + expanded + enriched_text[rep_end:]
-        
+
         # メタデータ
         senses = []
         for d in details:
@@ -457,7 +457,7 @@ def replace_with_sensory_expansion(
                 senses.append(match.group(1))
         if not senses and details:
             senses = ["sensory"]
-            
+
         expansions_meta.append({
             "original_phrase": span.abstract_phrase,
             "original_sentence": span.sentence_text or text[rep_start:rep_end],
@@ -466,13 +466,13 @@ def replace_with_sensory_expansion(
             "senses_covered": senses,
             "position": rep_start,
         })
-    
+
     # メタデータを元の順序（位置昇順）に戻す
     expansions_meta.reverse()
 
     # Step 30: 句読点サニタイズ
     enriched_text = sanitize_punctuation(enriched_text)
-    
+
     return enriched_text, expansions_meta
 
 
@@ -487,10 +487,10 @@ async def expand_sensory_details_pipeline(
     """感覚拡充パイプライン（非同期エントリーポイント、並列生成対応）"""
     # 1. 抽象感情検出
     emotion_spans = detect_abstract_emotions(text)
-    
+
     if not emotion_spans:
         return text, []
-    
+
     # 2. 各感情に対する感覚詳細生成（Step 20: asyncio.gather 並列化）
     import asyncio
     tasks = [
@@ -500,10 +500,10 @@ async def expand_sensory_details_pipeline(
         for span in emotion_spans
     ]
     all_sensory_details = await asyncio.gather(*tasks)
-    
+
     # 3. 置換実行
     enriched_text, expansions_meta = replace_with_sensory_expansion(
         text, emotion_spans, list(all_sensory_details)
     )
-    
+
     return enriched_text, expansions_meta

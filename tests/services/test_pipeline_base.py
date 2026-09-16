@@ -1,4 +1,3 @@
-import pytest
 from src.services.pipeline_base import WorkflowContext
 from src.models.foreshadowing import Foreshadowing
 from src.models.hook import Hook
@@ -15,7 +14,7 @@ def test_workflow_context_foreshadowings_default():
         initial_limit=3,
         word_count=2000
     )
-    
+
     assert ctx.foreshadowings == []
     assert isinstance(ctx.foreshadowings, list)
 
@@ -31,7 +30,7 @@ def test_workflow_context_foreshadowings_can_be_set():
         hang_type="implicit",
         importance="★★"
     )
-    
+
     fs2 = Foreshadowing(
         id="F-002",
         content="古い遺跡",
@@ -43,7 +42,7 @@ def test_workflow_context_foreshadowings_can_be_set():
         resolution_volume=3,
         resolution_episode=1
     )
-    
+
     ctx = WorkflowContext(
         genre="ファンタジー",
         keywords="魔法,剣",
@@ -53,7 +52,7 @@ def test_workflow_context_foreshadowings_can_be_set():
         word_count=2000,
         foreshadowings=[fs1, fs2]
     )
-    
+
     assert len(ctx.foreshadowings) == 2
     assert ctx.foreshadowings[0] == fs1
     assert ctx.foreshadowings[1] == fs2
@@ -71,10 +70,10 @@ def test_workflow_context_foreshadowings_append():
         initial_limit=3,
         word_count=2000
     )
-    
+
     # 初期状態では空
     assert ctx.foreshadowings == []
-    
+
     # 項目を追加
     fs = Foreshadowing(
         id="F-003",
@@ -85,9 +84,9 @@ def test_workflow_context_foreshadowings_append():
         hang_type="reader_task",
         importance="★"
     )
-    
+
     ctx.foreshadowings.append(fs)
-    
+
     assert len(ctx.foreshadowings) == 1
     assert ctx.foreshadowings[0] == fs
     assert ctx.foreshadowings[0].id == "F-003"
@@ -104,17 +103,17 @@ def test_workflow_context_hook_fields_default():
         initial_limit=3,
         word_count=2000
     )
-    
+
     # hooks フィールドが空リストで初期化されることを確認
     assert ctx.hooks == []
     assert isinstance(ctx.hooks, list)
-    
+
     # hook_generation_index フィールドが 0 で初期化されることを確認
     assert ctx.hook_generation_index == 0
-    
+
     # current_volume フィールドが 1 で初期化されることを確認
     assert ctx.current_volume == 1
-    
+
     # current_episode フィールドが 0 で初期化されることを確認
     assert ctx.current_episode == 0
 
@@ -130,7 +129,7 @@ def test_workflow_context_hook_fields_can_be_set():
         episode=3,
         chapter=5
     )
-    
+
     hook2 = Hook(
         id="H-002",
         type="threat",
@@ -140,7 +139,7 @@ def test_workflow_context_hook_fields_can_be_set():
         episode=1,
         chapter=1
     )
-    
+
     ctx = WorkflowContext(
         genre="ファンタジー",
         keywords="魔法,剣",
@@ -153,7 +152,7 @@ def test_workflow_context_hook_fields_can_be_set():
         current_volume=3,
         current_episode=7
     )
-    
+
     assert len(ctx.hooks) == 2
     assert ctx.hooks[0] == hook1
     assert ctx.hooks[1] == hook2
@@ -174,13 +173,13 @@ def test_workflow_context_hook_fields_append():
         initial_limit=3,
         word_count=2000
     )
-    
+
     # 初期状態では空
     assert ctx.hooks == []
     assert ctx.hook_generation_index == 0
     assert ctx.current_volume == 1
     assert ctx.current_episode == 0
-    
+
     # フックを追加
     hook = Hook(
         id="H-003",
@@ -191,18 +190,18 @@ def test_workflow_context_hook_fields_append():
         episode=5,
         chapter=3
     )
-    
+
     ctx.hooks.append(hook)
-    
+
     assert len(ctx.hooks) == 1
     assert ctx.hooks[0] == hook
     assert ctx.hooks[0].id == "H-003"
     assert ctx.hooks[0].content == "感情のフック"
-    
+
     # インデックスをインクリメント
     ctx.hook_generation_index += 1
     assert ctx.hook_generation_index == 1
-    
+
     # 巻数・話数を更新
     ctx.current_volume = 2
     ctx.current_episode = 10
@@ -220,7 +219,7 @@ def test_workflow_context_illustration_points_default():
         initial_limit=3,
         word_count=2000
     )
-    
+
     assert ctx.illustration_points == []
     assert isinstance(ctx.illustration_points, list)
 
@@ -236,7 +235,7 @@ def test_workflow_context_illustration_points_can_be_set():
         expressions={"主人公": "決意した表情", "ヒロイン": "不安と信頼の混じった表情"},
         background="夕焼けに染まる荒野、廃城の尖塔"
     )
-    
+
     ip2 = IllustrationPoint(
         id="IP-002",
         page="15",
@@ -247,7 +246,7 @@ def test_workflow_context_illustration_points_can_be_set():
         background="暗い洞窟、壁に苔が生えている",
         notes="このシーンは第1章のクライマックス"
     )
-    
+
     ctx = WorkflowContext(
         genre="ファンタジー",
         keywords="魔法,剣",
@@ -257,7 +256,7 @@ def test_workflow_context_illustration_points_can_be_set():
         word_count=2000,
         illustration_points=[ip1, ip2]
     )
-    
+
     assert len(ctx.illustration_points) == 2
     assert ctx.illustration_points[0] == ip1
     assert ctx.illustration_points[1] == ip2
@@ -275,10 +274,10 @@ def test_workflow_context_illustration_points_append():
         initial_limit=3,
         word_count=2000
     )
-    
+
     # 初期状態では空
     assert ctx.illustration_points == []
-    
+
     # 項目を追加
     ip = IllustrationPoint(
         id="IP-003",
@@ -290,9 +289,9 @@ def test_workflow_context_illustration_points_append():
         background="桜並びの道、花びらが舞っている",
         notes="エンディングを彷彿とさせるシーン"
     )
-    
+
     ctx.illustration_points.append(ip)
-    
+
     assert len(ctx.illustration_points) == 1
     assert ctx.illustration_points[0] == ip
     assert ctx.illustration_points[0].id == "IP-003"
@@ -311,7 +310,7 @@ def test_workflow_context_all_fields_together():
         hang_type="implicit",
         importance="★★"
     )
-    
+
     # フック
     hook = Hook(
         id="H-001",
@@ -322,7 +321,7 @@ def test_workflow_context_all_fields_together():
         episode=3,
         chapter=5
     )
-    
+
     # 挿絵ポイント
     ip = IllustrationPoint(
         id="IP-001",
@@ -333,7 +332,7 @@ def test_workflow_context_all_fields_together():
         expressions={"主人公": "決意した表情", "ヒロイン": "不安と信頼の混じった表情"},
         background="夕焼けに染まる荒野、廃城の尖塔"
     )
-    
+
     ctx = WorkflowContext(
         genre="ファンタジー",
         keywords="魔法,剣",
@@ -347,16 +346,16 @@ def test_workflow_context_all_fields_together():
         current_volume=1,
         current_episode=3
     )
-    
+
     # すべてのフィールドが正しく設定されていることを確認
     assert len(ctx.foreshadowings) == 1
     assert ctx.foreshadowings[0] == fs
-    
+
     assert len(ctx.hooks) == 1
     assert ctx.hooks[0] == hook
-    
+
     assert len(ctx.illustration_points) == 1
     assert ctx.illustration_points[0] == ip
-    
+
     assert ctx.current_volume == 1
     assert ctx.current_episode == 3

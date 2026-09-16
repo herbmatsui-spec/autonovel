@@ -49,7 +49,7 @@ class ReflectiveDoc:
     combined_score: float
     rerank_score: float | None = None
     bm25_keywords_matched: list[str] = field(default_factory=list)
-    
+
     def to_citation_dict(self) -> dict:
         """Citation summary (JSON serializable)."""
         return {
@@ -96,7 +96,7 @@ class ReflectiveRetrievalResult:
     history: list[dict[str, Any]] = field(default_factory=list)
     elapsed_ms: float = 0.0
     convergence_reason: str = ""
-    
+
     def get_citations(self) -> list[dict]:
         """Get citation summaries for all documents."""
         return [d.to_citation_dict() for d in self.documents]
@@ -199,13 +199,13 @@ class ReflectiveRAGService:
             import logging
             logging.getLogger(__name__).warning(f"Failed to persist rag_reflection_history: {e}")
 
-    def _bm25_keyword_extract(self, 
-                          pos_documents: list[SearchResult], 
+    def _bm25_keyword_extract(self,
+                          pos_documents: list[SearchResult],
                           neg_documents: list[SearchResult] | None = None,
                           n: int = 5,
                           lambda_neg: float = 0.5) -> list[str]:
         """Extract top-n discriminative keywords using BM25 over the document set.
-        
+
         Args:
             pos_documents: Positive (filtered/passed) documents
             neg_documents: Negative (filtered out) documents for contrastive scoring
@@ -220,14 +220,14 @@ class ReflectiveRAGService:
             # Positive corpus
             pos_corpus = [d.content for d in pos_documents]
             pos_tokenized = [self._tokenize(text) for text in pos_corpus]
-            
+
             # Filter out empty tokenized docs
             pos_tokenized = [t for t in pos_tokenized if t]
             if not pos_tokenized:
                 return []
-            
+
             bm25_pos = BM25Okapi(pos_tokenized)
-            
+
             term_scores: dict[str, float] = {}
             # Positive scores: TF weighted by effective IDF (floored to avoid 0 IDF on small corpora)
             for doc_tokens in pos_tokenized:
@@ -236,7 +236,7 @@ class ReflectiveRAGService:
                     raw_idf = bm25_pos.idf.get(term, 0.0)
                     effective_idf = raw_idf if raw_idf > 0.1 else 0.5
                     term_scores[term] = term_scores.get(term, 0.0) + count * effective_idf
-            
+
             # Negative corpus (contrastive)
             if neg_documents:
                 neg_corpus = [d.content for d in neg_documents]
@@ -249,12 +249,12 @@ class ReflectiveRAGService:
                             raw_idf = bm25_pos.idf.get(term, 0.0)
                             effective_idf = raw_idf if raw_idf > 0.1 else 0.5
                             term_scores[term] -= lambda_neg * count * effective_idf
-            
+
             sorted_terms = sorted(term_scores.items(), key=lambda x: x[1], reverse=True)
             stop = {"の", "は", "が", "を", "に", "で", "と", "も", "や", "な", "た", "だ", "する", "ある", "いる"}
             # Only return terms with positive score (negative-filtered)
             return [t for t, s in sorted_terms if t not in stop and s > 0][:n]
-        
+
         # Fallback: simple frequency-based (positive only)
         import re
         all_text = " ".join(d.content for d in pos_documents)
@@ -325,7 +325,7 @@ class ReflectiveRAGService:
         and detailed conflict information.
         """
         meta = doc.metadata or {}
-        
+
         # Check metadata flags first
         if meta.get("is_forbidden") or meta.get("status") in ("forbidden", "deprecated", "banned"):
             return ContextFitResult(
@@ -361,7 +361,7 @@ class ReflectiveRAGService:
                         if status in ("dead", "destroyed", "sealed", "forbidden", "retired", "deprecated"):
                             is_retired = True
                         valid = bool(v.get("valid", True)) and not is_forbidden and not is_retired
-                        
+
                         conflict_types = []
                         if is_forbidden:
                             conflict_types.append("forbidden")
@@ -369,7 +369,7 @@ class ReflectiveRAGService:
                             conflict_types.append("retired")
                         if not valid and not is_forbidden and not is_retired:
                             conflict_types.append("invalid")
-                        
+
                         # Determine score based on severity
                         if is_forbidden or is_retired:
                             score = 0.0
@@ -377,7 +377,7 @@ class ReflectiveRAGService:
                             score = 0.2
                         else:
                             score = 1.0
-                    
+
                     return ContextFitResult(
                         score=score,
                         is_forbidden=is_forbidden,
@@ -494,7 +494,7 @@ class ReflectiveRAGService:
                 # Compute convergence metrics
                 top_scores = [s for _, s, _, _, _ in scored[:top_k]]
                 score_variance = self._compute_variance(top_scores) if top_scores else 0.0
-                
+
                 # Score improvement check
                 score_improved = False
                 if prev_top_scores and top_scores:
@@ -532,13 +532,13 @@ class ReflectiveRAGService:
                 # Convergence checks
                 has_enough_docs = len(filtered) >= top_k
                 min_iterations_met = iteration + 1 >= min_iter
-                
+
                 if has_enough_docs and min_iterations_met:
                     # Check semantic convergence
                     stable_scores = score_variance <= self.convergence_config.score_variance_threshold
                     no_significant_improvement = not score_improved
                     embedding_converged = embedding_stable
-                    
+
                     if stable_scores and no_significant_improvement and embedding_converged:
                         final_docs = [d for d, _, _, _, _ in filtered[:top_k]]
                         converged = True
@@ -557,7 +557,7 @@ class ReflectiveRAGService:
                 neg_documents = [d for d, s, c, f, r in scored if s < relevance_threshold]
 
                 # Cross-encoder reranking for precision (Step: Priority 5)
-                if (self.convergence_config.enable_cross_encoder_rerank 
+                if (self.convergence_config.enable_cross_encoder_rerank
                     and iteration % self.convergence_config.rerank_every_n_iterations == 0
                     and hasattr(self.rag_service, 'rerank_with_cross_encoder')
                     and len(scored) > top_k):
@@ -597,7 +597,7 @@ class ReflectiveRAGService:
                 pos_ids = {d.id for d in pos_docs}
                 contrastive_neg = [d for d in neg_documents if d.id not in pos_ids] if neg_documents else None
                 keywords = self._bm25_keyword_extract(
-                    pos_docs, 
+                    pos_docs,
                     neg_documents=contrastive_neg,
                     n=5,
                     lambda_neg=self.convergence_config.lambda_neg
@@ -642,7 +642,7 @@ class ReflectiveRAGService:
         for doc in final_docs:
             # Find matching scored entry for this document
             scored_entry = next(
-                ((d, comb, cos, ctx, ctx_res) for d, comb, cos, ctx, ctx_res in scored if d.id == doc.id), 
+                ((d, comb, cos, ctx, ctx_res) for d, comb, cos, ctx, ctx_res in scored if d.id == doc.id),
                 None
             )
             if scored_entry:
@@ -662,7 +662,7 @@ class ReflectiveRAGService:
                 ctx_fit_result = ContextFitResult(score=1.0)
                 rerank_score = None
                 matched_kws = []
-            
+
             reflective_docs.append(ReflectiveDoc(
                 search_result=doc,
                 iteration_found=iteration + 1,

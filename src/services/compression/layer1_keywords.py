@@ -188,12 +188,12 @@ class TFIDFExtractor(KeyphraseExtractor):
             r'[\u4e00-\u9fff](?=[はがをにへとでからまでよりのもやなどて])',
             r'[\u4e00-\u9fff]{2,}(?=[はがをにへとでからまでよりのもやなどて])',
         ]
-        
+
         nouns = []
         for pattern in patterns:
             matches = re.findall(pattern, text)
             nouns.extend(matches)
-        
+
         # 重複除去・フィルタリング
         filtered = []
         seen = set()
@@ -211,7 +211,7 @@ class TFIDFExtractor(KeyphraseExtractor):
                 continue
             seen.add(noun)
             filtered.append(noun)
-        
+
         return filtered
 
     def _compute_tfidf_scores(self, nouns: list[str], sentences: list[str], top_k: int, min_score: float) -> list[tuple[str, float]]:

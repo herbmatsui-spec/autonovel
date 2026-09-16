@@ -7,7 +7,7 @@ Step 32: R15 safety の検証 (test_image_service.py に集約済み)。
 from __future__ import annotations
 
 import os
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -129,7 +129,6 @@ def test_illustration_batch_queues_huey_task():
     from fastapi import FastAPI
     from fastapi.testclient import TestClient
 
-    from src.backend.tasks.illustration_tasks import illustrate_batch_task
 
     # Huey を immediate モードに切替 (CI で redis/sqlite 不要)
     # 重要: src.backend.tasks パッケージは `huey` を属性に持つので、

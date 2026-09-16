@@ -3,7 +3,7 @@ opening_booster_service.py - 序盤1〜3話のクリフハンガー強制チェ�
 """
 from __future__ import annotations
 
-from typing import Any, List
+from typing import List
 
 from src.models.opening_booster import CliffhangerEvaluation, CliffhangerType
 from src.services.auditors.cliffhanger_scorer import score_cliffhanger

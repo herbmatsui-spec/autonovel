@@ -1,4 +1,3 @@
-from pydantic import BaseModel
 
 # 1MトークンあたりのUSD単価 (2026年時点想定)
 MODEL_PRICING = {

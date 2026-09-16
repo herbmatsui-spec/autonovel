@@ -2,7 +2,6 @@
 """Phase 3 フィクスチャ動作確認テスト"""
 from __future__ import annotations
 
-import pytest
 
 # Phase 3 フィクスチャを明示的にインポート
 pytest_plugins = ["tests.conftest_phase3"]

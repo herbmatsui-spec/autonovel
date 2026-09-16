@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import pytest
 from unittest.mock import MagicMock
 
 from src.backend.workflows.base_workflow import BaseWorkflow

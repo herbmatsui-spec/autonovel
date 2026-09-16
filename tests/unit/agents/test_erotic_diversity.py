@@ -1,4 +1,3 @@
-import pytest
 from src.agents.erotic.diversity_scorer import EroticDiversityScorer
 
 def test_diversity_score_calculation():

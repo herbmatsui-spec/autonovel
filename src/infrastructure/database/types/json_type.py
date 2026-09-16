@@ -4,7 +4,7 @@ import json
 from typing import Any
 from sqlalchemy import Text
 from sqlalchemy.types import TypeDecorator
-from sqlalchemy.dialects.postgresql import JSONB, JSON as PG_JSON
+from sqlalchemy.dialects.postgresql import JSONB
 
 
 class CompatibleJSON(TypeDecorator):

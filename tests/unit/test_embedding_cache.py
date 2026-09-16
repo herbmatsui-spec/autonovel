@@ -1,8 +1,6 @@
 """Unit tests for EmbeddingService cache + rate limit + __repr__."""
 from __future__ import annotations
 
-import pytest
-from unittest.mock import MagicMock
 
 from src.services.embedding_service import (
     EmbeddingService,

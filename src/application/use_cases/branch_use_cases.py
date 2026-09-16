@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import Optional, List
-from uuid import UUID
+from typing import Optional
 
 from src.domain.repositories.branch_repository import IBranchRepository
 from src.domain.repositories.novel_repository import INovelRepository

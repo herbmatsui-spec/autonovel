@@ -2,11 +2,10 @@ from __future__ import annotations
 
 import asyncio
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import patch
 
 from src.core.async_utils import (
     fire_and_forget,
-    get_concurrency_semaphore,
     limit_concurrency,
     run_parallel,
     safe_timeout,
@@ -89,7 +88,7 @@ async def test_fire_and_forget_error():
         raise ValueError("bg failure")
 
     with patch("src.core.async_utils.logger.exception") as mock_log:
-        task = fire_and_forget(bg_fail(), name="test_bg_fail")
+        fire_and_forget(bg_fail(), name="test_bg_fail")
         await asyncio.sleep(0.05)
         mock_log.assert_called_once()
         assert "Background task test_bg_fail failed" in mock_log.call_args[0][0]

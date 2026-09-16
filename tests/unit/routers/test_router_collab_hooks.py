@@ -1,4 +1,3 @@
-import pytest
 from src.backend.routers.hooks import FixRequest
 from src.backend.routers.collab import MemberRequest, CommentRequest
 

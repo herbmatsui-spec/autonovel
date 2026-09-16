@@ -1,8 +1,6 @@
 """E2E integration tests for hybrid collaborative editing (Step 11)."""
 
 import pytest
-import asyncio
-from unittest.mock import AsyncMock, patch, MagicMock
 from datetime import datetime, timedelta
 
 # Import the merge function directly (copy from router to avoid container issues)
@@ -52,7 +50,7 @@ async def test_sync_endpoint_no_conflict():
         {},  # server_vc
         {"userA": 1}
     )
-    
+
     assert merged == "Hello world\n\nThis is a test"
     assert conflicts == []
 
@@ -64,9 +62,9 @@ async def test_sync_endpoint_with_conflict():
     client_content = "Chapter 1\n\nOnce upon a different time"
     server_vc = {"userA": 2}
     client_vc = {"userB": 1}
-    
+
     merged, conflicts = merge_paragraphs_lww(server_content, client_content, server_vc, client_vc)
-    
+
     # Should have conflict on paragraph 1
     assert len(conflicts) == 1
     assert conflicts[0]["index"] == 1
@@ -78,7 +76,7 @@ async def test_sync_endpoint_with_conflict():
 async def test_presence_in_memory_storage():
     """Test presence in-memory storage."""
     _presence = {}
-    
+
     key = (1, 1)
     _presence[key] = {
         "userA": {
@@ -87,25 +85,25 @@ async def test_presence_in_memory_storage():
             "updated": datetime.utcnow().isoformat()
         }
     }
-    
+
     # Test retrieval
     data = _presence.get(key, {})
     assert "userA" in data
     assert data["userA"]["cursor"] == 100
-    
+
     # Test TTL filtering
     _presence[key]["userB"] = {
         "cursor": 200,
         "selection": None,
         "updated": (datetime.utcnow() - timedelta(seconds=60)).isoformat()
     }
-    
+
     now = datetime.utcnow()
     filtered = {
         u: p for u, p in _presence[key].items()
         if (now - datetime.fromisoformat(p["updated"])).total_seconds() < 30
     }
-    
+
     assert "userA" in filtered
     assert "userB" not in filtered  # Expired
 
@@ -115,24 +113,24 @@ async def test_local_draft_persistence():
     """Test local draft save/load."""
     # Simulate localStorage behavior
     storage = {}
-    
+
     def setItem(key, value):
         storage[key] = value
-    
+
     def getItem(key):
         return storage.get(key)
-    
+
     def removeItem(key):
         storage.pop(key, None)
-    
+
     # Save draft
     draft_content = "This is a draft\n\nwith multiple paragraphs"
     setItem("draft_test_1_1_user", draft_content)
-    
+
     # Load draft
     loaded = getItem("draft_test_1_1_user")
     assert loaded == draft_content
-    
+
     # Clear draft
     removeItem("draft_test_1_1_user")
     assert getItem("draft_test_1_1_user") is None
@@ -143,29 +141,29 @@ async def test_concurrent_edit_simulation():
     """Simulate two users editing concurrently."""
     # Initial content
     initial = "Paragraph 1\n\nParagraph 2\n\nParagraph 3"
-    
+
     # User A edits paragraph 1
     user_a_content = "Paragraph 1 edited by A\n\nParagraph 2\n\nParagraph 3"
     user_a_vc = {"userA": 1, "userB": 0}
-    
+
     # User B edits paragraph 2 (no conflict)
     user_b_content = "Paragraph 1\n\nParagraph 2 edited by B\n\nParagraph 3"
     user_b_vc = {"userA": 0, "userB": 1}
-    
+
     # Server has initial version
     server_vc = {"userA": 0, "userB": 0}
-    
+
     # User A syncs first - detects conflict on paragraph 0 (different content)
     merged_a, conflicts_a = merge_paragraphs_lww(initial, user_a_content, server_vc, user_a_vc)
     # Current implementation detects conflict on different paragraphs
     # This is a known limitation of simple paragraph-level LWW
     assert len(conflicts_a) == 1  # Paragraph 0 differs
     assert "edited by A" in merged_a
-    
+
     # Server now has user A's version (server wins on conflict since equal VC)
     server_vc_after_a = {"userA": 1, "userB": 0}
     server_content_after_a = merged_a
-    
+
     # User B syncs - may have additional conflicts
     merged_b, conflicts_b = merge_paragraphs_lww(server_content_after_a, user_b_content, server_vc_after_a, user_b_vc)
     # Server content has A's edit, B's content has B's edit on different paragraph
@@ -179,14 +177,14 @@ async def test_conflict_resolution_flow():
     # Server content
     server = "Intro\n\nConflict paragraph\n\nConclusion"
     server_vc = {"userA": 2, "userB": 1}
-    
+
     # Client content (userB edited same paragraph)
     client = "Intro\n\nConflict paragraph modified by B\n\nConclusion"
     client_vc = {"userA": 2, "userB": 2}
-    
+
     # Merge - client has higher VC, should win
     merged, conflicts = merge_paragraphs_lww(server, client, server_vc, client_vc)
-    
+
     assert len(conflicts) == 1
     assert conflicts[0]["index"] == 1
     assert "modified by B" in merged
@@ -196,21 +194,21 @@ async def test_conflict_resolution_flow():
 async def test_reload_restores_draft():
     """Test that draft is restored after reload."""
     storage = {}
-    
+
     def setItem(key, value):
         storage[key] = value
-    
+
     def getItem(key):
         return storage.get(key)
-    
+
     # User types content
     content_v1 = "First version"
     setItem("draft_1_1_user", content_v1)
-    
+
     # User continues typing
     content_v2 = "First version\n\nSecond paragraph"
     setItem("draft_1_1_user", content_v2)
-    
+
     # Simulate reload - get latest
     restored = getItem("draft_1_1_user")
     assert restored == content_v2
@@ -229,7 +227,7 @@ async def test_version_history_chain():
             self.content = content
             self.vector_clock = vector_clock
             self.base_version_id = base_version_id
-    
+
     # Create version chain
     v1 = ChapterVersion(
         id=1,
@@ -240,7 +238,7 @@ async def test_version_history_chain():
         vector_clock={"userA": 1},
         base_version_id=None
     )
-    
+
     v2 = ChapterVersion(
         id=2,
         book_id=1,
@@ -250,7 +248,7 @@ async def test_version_history_chain():
         vector_clock={"userA": 1, "userB": 1},
         base_version_id=1
     )
-    
+
     v3 = ChapterVersion(
         id=3,
         book_id=1,
@@ -260,12 +258,12 @@ async def test_version_history_chain():
         vector_clock={"userA": 2, "userB": 1},
         base_version_id=2
     )
-    
+
     # Verify chain
     assert v1.base_version_id is None
     assert v2.base_version_id == 1
     assert v3.base_version_id == 2
-    
+
     # Can traverse back
     chain = [v3, v2, v1]
     for i in range(len(chain) - 1):

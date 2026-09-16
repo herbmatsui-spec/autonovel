@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 from src.services.bible_service import WorldBibleGenerator
 from src.services.graphrag_sync_service import GraphRAGSyncService

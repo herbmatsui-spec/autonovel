@@ -19,7 +19,7 @@ class HistoricalAccuracyChecker(SkillAgent):
             "ep_num": ctx.ep_num,
             "period": self.period,
         })
-        
+
         drafted_text = (
             ctx.artifacts.get("drafted_text")
             or ctx.artifacts.get("content")
@@ -73,7 +73,7 @@ class HistoricalAccuracyChecker(SkillAgent):
             "ep_num": ctx.ep_num,
             "result": "passed",
         })
-        
+
         return AgentResult(
             next_agent=None,
             artifacts={"historical_accuracy": "passed"},

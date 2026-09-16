@@ -1,15 +1,10 @@
 from __future__ import annotations
 
-import json
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock
 
 from src.easy_mode.phase3.media_mix import (
     MediaFormat,
-    MediaScript,
-    Panel,
-    VoiceLine,
-    AudioCue,
     MangaScriptGenerator,
     AudioDramaScriptGenerator,
     MediaMixExporter,
@@ -20,13 +15,13 @@ from src.easy_mode import EpisodeResult, SeriesResult
 
 class MockMediaScriptAgent:
     """Mock MediaScriptAgent for testing"""
-    
+
     def __init__(self, manga_response=None, audio_response=None):
         self.manga_response = manga_response or self._default_manga_response()
         self.audio_response = audio_response or self._default_audio_response()
         self.manga_call_count = 0
         self.audio_call_count = 0
-    
+
     def _default_manga_response(self):
         return [
             MagicMock(
@@ -52,7 +47,7 @@ class MockMediaScriptAgent:
                 scene_mood="tense",
             )
         ]
-    
+
     def _default_audio_response(self):
         return MagicMock(
             episode_title="Test Episode",
@@ -87,11 +82,11 @@ class MockMediaScriptAgent:
                 "total_voice_actors": 2,
             },
         )
-    
+
     def generate_manga_script(self, chapter_text: str, characters: list[dict]):
         self.manga_call_count += 1
         return self.manga_response
-    
+
     def generate_audio_script(self, chapter_text: str, characters: list[dict]):
         self.audio_call_count += 1
         return self.audio_response
@@ -169,12 +164,12 @@ def test_manga_generator_with_llm_agent():
         preset=make_test_preset(),
         script_agent=mock_agent,
     )
-    
+
     episode = make_test_episode(1)
     series = make_test_series()
-    
+
     script = generator.generate(episode, series)
-    
+
     assert script.format == MediaFormat.MANGA
     assert script.metadata.get("generated_by") == "llm"
     assert mock_agent.manga_call_count == 1
@@ -191,12 +186,12 @@ def test_audio_generator_with_llm_agent():
         preset=make_test_preset(),
         script_agent=mock_agent,
     )
-    
+
     episode = make_test_episode(1)
     series = make_test_series()
-    
+
     script = generator.generate(episode, series)
-    
+
     assert script.format == MediaFormat.AUDIO_DRAMA
     assert script.metadata.get("generated_by") == "llm"
     assert mock_agent.audio_call_count == 1
@@ -211,18 +206,18 @@ def test_manga_generator_fallback_when_llm_fails():
     """Test MangaScriptGenerator falls back to rule-based when LLM fails"""
     mock_agent = MockMediaScriptAgent()
     mock_agent.generate_manga_script = MagicMock(side_effect=Exception("LLM Error"))
-    
+
     generator = MangaScriptGenerator(
         genre="Test Genre",
         preset=make_test_preset(),
         script_agent=mock_agent,
     )
-    
+
     episode = make_test_episode(1)
     series = make_test_series()
-    
+
     script = generator.generate(episode, series)
-    
+
     assert script.metadata.get("generated_by") == "rule_based"
     assert len(script.panels) > 0
 
@@ -231,18 +226,18 @@ def test_audio_generator_fallback_when_llm_fails():
     """Test AudioDramaScriptGenerator falls back to rule-based when LLM fails"""
     mock_agent = MockMediaScriptAgent()
     mock_agent.generate_audio_script = MagicMock(side_effect=Exception("LLM Error"))
-    
+
     generator = AudioDramaScriptGenerator(
         genre="Test Genre",
         preset=make_test_preset(),
         script_agent=mock_agent,
     )
-    
+
     episode = make_test_episode(1)
     series = make_test_series()
-    
+
     script = generator.generate(episode, series)
-    
+
     assert script.metadata.get("generated_by") == "rule_based"
     assert len(script.voice_lines) > 0
 
@@ -255,7 +250,7 @@ def test_create_media_mix_exporter_with_script_agent():
         preset=make_test_preset(),
         script_agent=mock_agent,
     )
-    
+
     assert exporter.script_agent is mock_agent
     assert exporter.manga_gen.script_agent is mock_agent
     assert exporter.audio_gen.script_agent is mock_agent
@@ -269,15 +264,15 @@ def test_media_mix_exporter_export_all():
         preset=make_test_preset(),
         script_agent=mock_agent,
     )
-    
+
     episode = make_test_episode(1)
     series = make_test_series()
-    
+
     scripts = exporter.export_all(episode, series, [
         MediaFormat.MANGA,
         MediaFormat.AUDIO_DRAMA,
     ])
-    
+
     assert MediaFormat.MANGA in scripts
     assert MediaFormat.AUDIO_DRAMA in scripts
     assert scripts[MediaFormat.MANGA].metadata.get("generated_by") == "llm"
@@ -292,7 +287,7 @@ def test_manga_character_context_injection():
         preset=make_test_preset(),
         script_agent=mock_agent,
     )
-    
+
     # Capture the characters passed to the agent
     captured_chars = []
     original_generate = mock_agent.generate_manga_script
@@ -300,12 +295,12 @@ def test_manga_character_context_injection():
         captured_chars.append(chars)
         return original_generate(text, chars)
     mock_agent.generate_manga_script = capture_chars
-    
+
     episode = make_test_episode(1)
     series = make_test_series()
-    
+
     generator.generate(episode, series)
-    
+
     assert len(captured_chars) == 1
     chars = captured_chars[0]
     assert len(chars) == 2
@@ -321,19 +316,19 @@ def test_audio_character_context_injection():
         preset=make_test_preset(),
         script_agent=mock_agent,
     )
-    
+
     captured_chars = []
     original_generate = mock_agent.generate_audio_script
     def capture_chars(text, chars):
         captured_chars.append(chars)
         return original_generate(text, chars)
     mock_agent.generate_audio_script = capture_chars
-    
+
     episode = make_test_episode(1)
     series = make_test_series()
-    
+
     generator.generate(episode, series)
-    
+
     assert len(captured_chars) == 1
     chars = captured_chars[0]
     assert len(chars) == 2
@@ -347,12 +342,12 @@ def test_direction_quality_in_generated_audio():
         preset=make_test_preset(),
         script_agent=mock_agent,
     )
-    
+
     episode = make_test_episode(1)
     series = make_test_series()
-    
+
     script = generator.generate(episode, series)
-    
+
     # Check that direction contains emotional markers
     for line in script.voice_lines:
         if line.emotion != "neutral":
@@ -368,12 +363,12 @@ def test_manga_panels_have_camera_angles():
         preset=make_test_preset(),
         script_agent=mock_agent,
     )
-    
+
     episode = make_test_episode(1)
     series = make_test_series()
-    
+
     script = generator.generate(episode, series)
-    
+
     for panel in script.panels:
         assert panel.camera_angle in ["close_up", "medium", "wide", "bird_eye", "low_angle", "over_shoulder", "dynamic"]
 

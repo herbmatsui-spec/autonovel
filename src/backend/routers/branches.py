@@ -129,11 +129,11 @@ async def get_branch_tree(
         await verify_book_ownership(book_id, current_user, uow)
         repo = BranchRepository(uow.session)
         branches = await repo.get_branch_tree(book_id)
-        
+
         # ノードとエッジに変換
         nodes: list[dict] = []
         edges: list[dict] = []
-        
+
         for branch in branches:
             # ノードデータ
             nodes.append({
@@ -147,7 +147,7 @@ async def get_branch_tree(
                 },
                 "position": { "x": 0, "y": 0 }  # レイアウトはフロントエンドで計算
             })
-            
+
             # エッジデータ（親が存在する場合）
             if branch.parent_id is not None:
                 edges.append({
@@ -156,7 +156,7 @@ async def get_branch_tree(
                     "target": branch.id,
                     "type": "smoothstep"
                 })
-        
+
         return {
             "nodes": nodes,
             "edges": edges
@@ -301,32 +301,32 @@ async def preview_merge(
     """マージのプレビューとコンフリクト検知."""
     branch_repo = BranchRepository(session)
     chapter_repo = ChapterRepository(session)
-    
+
     # ソースブランチとターゲットブランチを取得
     source_branch = await branch_repo.get_branch(payload.source_branch_id)
     target_branch = await branch_repo.get_branch(payload.target_branch_id)
-    
+
     if not source_branch or not target_branch:
         raise HTTPException(status_code=404, detail="Branch not found")
-    
+
     # マージポイントの章内容を取得
     source_chapter = await chapter_repo.get_chapter(payload.source_branch_id, payload.merge_ep_num)
     target_chapter = await chapter_repo.get_chapter(payload.target_branch_id, payload.merge_ep_num)
-    
+
     # ベースブランチ（共通祖先）の内容を取得（簡易実装：ターゲットブランチの親）
     base_chapter_content = ""
     if target_branch.parent_id is not None:
         base_chapter = await chapter_repo.get_chapter(target_branch.parent_id, payload.merge_ep_num)
         if base_chapter:
             base_chapter_content = base_chapter.content or ""
-    
+
     source_content = source_chapter.content or "" if source_chapter else ""
     target_content = target_chapter.content or "" if target_chapter else ""
-    
+
     # 簡易的なコンフリクト検知
     has_conflict = False
     conflict_chunks = []
-    
+
     if source_content != target_content and source_content != base_chapter_content and target_content != base_chapter_content:
         # 三方向の変更が異なる場合はコンフリクト
         has_conflict = True
@@ -345,10 +345,10 @@ async def preview_merge(
             "source": source_content,
             "target": target_content,
         })
-    
+
     # マージ後の内容をシミュレート（簡易：ソースを優先）
     merged_content = source_content if source_content else target_content
-    
+
     return {
         "can_merge": not has_conflict,
         "has_conflict": has_conflict,

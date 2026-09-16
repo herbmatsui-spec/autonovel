@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock
 from src.domain.domain_services.plot_domain_service import (
     PlotDomainService, PlotStructureValidator, PlotIntegrityChecker, PlotValidationError,
 )
-from src.domain.entities.plot import Plot, Arc, PlotPoint, PlotStatus, ChainPhase
+from src.domain.entities.plot import Plot, Arc, PlotStatus, ChainPhase
 from src.domain.value_objects.ids import NovelId, PlotId
 from src.domain.value_objects.text import MarkdownText, TextContent
 

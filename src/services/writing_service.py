@@ -104,7 +104,7 @@ class WritingService:
         self._anti_ai_controller = anti_ai_controller
         self._enable_anti_ai_loop = enable_anti_ai_loop and AntiAILoopController is not None
         self._anti_ai_threshold = anti_ai_threshold
-    
+
     async def generate_with_quality_assurance(
         self,
         ctx: AgentContext,
@@ -115,7 +115,6 @@ class WritingService:
         BookScore が閾値未満の場合、自動的に再生成を試行
         """
         retry_count = 0
-        last_result = None
         regeneration_history = []
 
         while retry_count <= self.max_retries:
@@ -152,18 +151,18 @@ class WritingService:
             # 3. BookScore 計算
             if reporter:
                 reporter.report("BookScore 計算中...", "info")
-            
+
             book_score = await self.book_score_calculator.calculate(
                 book_id=ctx.book_id,
                 chapter_number=ctx.ep_num,
                 ctx=ctx,
             )
-            
+
             overall_score = book_score.overall_score
-            
+
             if reporter:
                 reporter.report(f"BookScore: {overall_score:.1f} 点 (閾値: {self.score_threshold})", "info")
-            
+
             # 4. 閾値チェック
             if overall_score >= self.score_threshold:
                 if reporter:
@@ -175,13 +174,13 @@ class WritingService:
             if retry_count > self.max_retries:
                 logger.warning(f"最大リトライ回数到達 ({self.max_retries})、品質基準未達のまま完了")
                 return result
-            
+
             # 6. 低スコア次元特定
             low_dimensions = self._identify_low_dimensions(book_score)
             if not low_dimensions:
                 logger.warning("低スコア次元が特定できません")
                 return result
-            
+
             # 7. 再生成アクション決定
             action = self._determine_regeneration_action(low_dimensions)
             regeneration_history.append({
@@ -190,10 +189,10 @@ class WritingService:
                 "low_dimensions": low_dimensions,
                 "action": action.focus_dimensions,
             })
-            
+
             if reporter:
                 reporter.report(f"再生成実行: 対象次元={action.focus_dimensions}", "warning")
-            
+
             # 8. コンテキスト更新 (regeneration_focus 設定)
             ctx.artifacts["regeneration_focus"] = action.focus_dimensions
             ctx.artifacts["regeneration_action"] = action
@@ -206,9 +205,9 @@ class WritingService:
             if reporter:
                 reporter.report(f"{wait_time:.1f}秒待機後、再生成実行", "info")
             await asyncio.sleep(wait_time)
-        
+
         return result
-    
+
     def _identify_low_dimensions(self, book_score: Any) -> list[str]:
         """閾値未満の次元を特定"""
         dims = {
@@ -219,7 +218,7 @@ class WritingService:
             "reader_experience": book_score.reader_experience_score,
         }
         return [dim for dim, score in dims.items() if score < self.score_threshold]
-    
+
     def _determine_regeneration_action(self, low_dimensions: list[str]) -> RegenerationAction:
         """複数の低次元から最優先アクションを決定"""
         # 優先度順でソート

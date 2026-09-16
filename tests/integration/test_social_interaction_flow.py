@@ -24,11 +24,11 @@ async def test_social_interaction_end_to_end_flow():
     """Step 54: 執筆完了 → ジャーナル・コメント生成 → AGE同期 → 次章コンテキスト反映の一連フロー検証."""
     event_bus = EventBus()
     mock_age = MagicMock()
-    
+
     # 1. Setup SocialInteractionManager & Listener
     mock_session = MagicMock()
     manager = SocialInteractionManager(age_client=mock_age)
-    listener = register_social_listener(
+    register_social_listener(
         event_bus, manager, session_factory=lambda: mock_session, graph_name="novel_graph"
     )
 

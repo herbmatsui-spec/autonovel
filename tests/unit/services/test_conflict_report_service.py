@@ -1,6 +1,5 @@
 """src/services/conflict_report_service.py の単体テスト."""
 
-import pytest
 
 from src.services.conflict_report_service import (
     ConflictReportService, ConflictItem, ConflictReport,

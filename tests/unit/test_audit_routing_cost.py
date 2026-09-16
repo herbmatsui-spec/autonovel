@@ -47,7 +47,7 @@ class TestAuditRoutingCostReduction:
         # factual/consistency/style/multimodal → gemini/flash (cheap)
         # creativity/emotion_curve → claude (medium)
         # reader_hook/structure → gpt-4o (expensive but fewer)
-        
+
         # Weighted average should be significantly less than all-sonnet
         # This validates Step 47's 70%+ reduction claim
         model_costs = {
@@ -55,16 +55,16 @@ class TestAuditRoutingCostReduction:
             "claude": 1.0,     # anthropic/claude-3-5-sonnet
             "openai": 1.5,     # openai/gpt-4o
         }
-        
+
         # Simulate 8 auditors: 4 flash, 2 claude, 2 sonnet
-        total_cost = (4 * model_costs["gemini"] + 
-                     2 * model_costs["claude"] + 
+        total_cost = (4 * model_costs["gemini"] +
+                     2 * model_costs["claude"] +
                      2 * model_costs["openai"])
         avg_cost = total_cost / 8
-        
+
         # Baseline if all used sonnet ($3.0)
         baseline_avg = 3.0
-        
+
         # Savings ratio
         ratio = 1.0 - (avg_cost / baseline_avg)
         assert ratio >= 0.7, f"Expected >=70% savings, got {ratio:.1%} (avg cost ${avg_cost:.2f} vs ${baseline_avg})"

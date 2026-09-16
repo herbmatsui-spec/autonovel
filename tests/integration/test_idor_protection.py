@@ -60,7 +60,7 @@ async def test_user_cannot_access_other_users_book():
         user_a_role = user_a.role
 
     # ユーザーAのトークン生成
-    token_a = create_access_token(user_id=user_a_id, role=user_a_role)
+    token_a = create_access_token(data={"sub": str(user_a_id), "role": user_a_role})
     headers_a = {"Authorization": f"Bearer {token_a}"}
 
     transport = ASGITransport(app=app)

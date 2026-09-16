@@ -15,7 +15,6 @@ from src.backend.middleware.tenant_guard import verify_book_ownership
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.backend.workflows.commercial_pipeline import CommercialPipeline
 from src.services.publishers import (
-    get_credential_store,
     NarouCredentials,
     KakuyomuCredentials,
     KoboCredentials,
@@ -169,27 +168,27 @@ async def cancel_schedule(
     """
     try:
         from sqlalchemy import select
-        
+
         # スケジュールの取得
         result = await db.execute(select(PublicationScheduleDbModel).where(PublicationScheduleDbModel.id == schedule_id))
         schedule = result.scalar_one_or_none()
-        
+
         if not schedule:
             raise HTTPException(status_code=404, detail="Schedule not found")
-        
+
         if schedule.status != "pending":
             raise HTTPException(
                 status_code=400,
                 detail=f"Only pending schedules can be cancelled. Current status: {schedule.status}"
             )
-        
+
         # ステータスを cancelled に更新
         schedule.status = "cancelled"
         await db.commit()
         await db.refresh(schedule)
-        
+
         return {"success": True, "message": "Schedule cancelled successfully", "schedule_id": schedule_id}
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -208,31 +207,31 @@ async def run_schedule_now(
     try:
         from sqlalchemy import select
         from src.backend.tasks.commercial_tasks import execute_publication_task
-        
+
         # スケジュールの存在確認
         result = await db.execute(select(PublicationScheduleDbModel).where(PublicationScheduleDbModel.id == schedule_id))
         schedule = result.scalar_one_or_none()
-        
+
         if not schedule:
             raise HTTPException(status_code=404, detail="Schedule not found")
-        
+
         if schedule.status == "running":
             raise HTTPException(status_code=400, detail="Schedule is already running")
-        
+
         # Hueyタスクを即時投入
         execute_publication_task(schedule_id)
-        
+
         return {"success": True, "message": "Publication task triggered successfully", "schedule_id": schedule_id}
-        
+
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Trigger run-now failed: {str(e)}")
         await db.commit()
         await db.refresh(schedule)
-        
+
         return {"success": True, "message": "Schedule cancelled successfully", "schedule_id": schedule_id}
-        
+
     except HTTPException:
         raise
     except Exception as e:

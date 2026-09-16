@@ -41,7 +41,7 @@ def extract_png_metadata(image_bytes: bytes) -> Dict[str, Any]:
     except Exception:
         width = height = 0
         format = None
-    
+
     return {
         "width": width,
         "height": height,

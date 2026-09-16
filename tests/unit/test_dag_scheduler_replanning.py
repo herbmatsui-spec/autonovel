@@ -1,6 +1,5 @@
 """Integration tests for DAGScheduler Replanning (Part 5 / Step 60 / Checkpoint 10)."""
 
-import asyncio
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 

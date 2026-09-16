@@ -34,7 +34,7 @@ class ProviderFailoverManager:
         # Fallback 実行
         if not f_breaker.can_execute():
             raise CircuitBreakerOpenException("すべての利用可能なプロバイダーが遮断されています")
-        
+
         try:
             res = await fallback_fn()
             f_breaker.record_success()

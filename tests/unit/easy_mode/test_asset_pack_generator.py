@@ -1,5 +1,3 @@
-import pytest
-from unittest.mock import Mock
 from src.easy_mode.phase3.asset_pack import AssetPackGenerator
 
 def test_asset_pack_generator_init():

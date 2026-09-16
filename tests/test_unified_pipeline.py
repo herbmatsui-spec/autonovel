@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -17,7 +16,6 @@ from src.services.auto_workflow_pipeline import (
     create_easy_mode_pipeline,
     create_full_auto_pipeline,
 )
-from src.services.pipeline_base import WorkflowStep
 
 
 class MockReporter:
@@ -254,7 +252,7 @@ class TestUnifiedPipeline:
         )
 
         pipeline = AutoWorkflowPipeline([InferenceStep()])
-        result = await pipeline.execute(ctx, mock_engine, mock_reporter)
+        await pipeline.execute(ctx, mock_engine, mock_reporter)
 
         # 推論が実行され、genre/concept が更新される
         assert ctx.genre == "ファンタジー"
@@ -266,7 +264,7 @@ class TestUnifiedPipeline:
         from src.services.pipeline_steps import PlanStep
 
         pipeline = AutoWorkflowPipeline([PlanStep()])
-        result = await pipeline.execute(full_auto_context, mock_engine, mock_reporter)
+        await pipeline.execute(full_auto_context, mock_engine, mock_reporter)
 
         # プリセット設定が適用される
         assert full_auto_context.book_id == 1
@@ -301,7 +299,7 @@ class TestUnifiedPipeline:
         mock_engine.writer.generate_episodes_pipeline = mock_generate
 
         pipeline = AutoWorkflowPipeline([WriteStep()])
-        result = await pipeline.execute(ctx, mock_engine, mock_reporter)
+        await pipeline.execute(ctx, mock_engine, mock_reporter)
 
         assert call_count[0] == 2  # 初回 + リトライ1回
         assert ctx.chars_count == 10000

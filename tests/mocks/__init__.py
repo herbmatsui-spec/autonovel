@@ -185,8 +185,6 @@ class MockWritingAgent:
                 error="writing_context is required in artifacts",
             )
 
-        book_id = ctx.book_id
-        ep_num = ctx.ep_num
 
         # モック本文を返す
         drafted_text = "モック生成本文です。" * 50
@@ -240,8 +238,8 @@ class MockIllustrationAgent:
 
     async def run(self, ctx: Any) -> Any:
         from src.agents.orchestrator import AgentResult, AgentName
-        drafted_text = ctx.artifacts.get("drafted_text", "")
-        book_context = ctx.artifacts.get("book_context", {})
+        ctx.artifacts.get("drafted_text", "")
+        ctx.artifacts.get("book_context", {})
         book_id = ctx.book_id
 
         # モックプロンプトを返す

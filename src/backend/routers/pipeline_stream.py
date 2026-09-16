@@ -89,7 +89,7 @@ async def sse_pipeline_stream(
 
     async def event_generator():
         queue: asyncio.Queue = asyncio.Queue()
-        
+
         class SSEWebsocketShim:
             async def send_json(self, data: dict):
                 await queue.put(data)

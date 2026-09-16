@@ -1,4 +1,3 @@
-import pytest
 from src.backend.workflows.graph_state import WorkflowState, PlotNodeOutput
 
 
@@ -16,7 +15,7 @@ def test_workflow_state_initialization():
     assert state.blueprint == {}
     assert state.final_plot == {}
     assert state.audit_results == []
-    assert state.is_consistent == True
+    assert state.is_consistent
     assert state.retry_count == 0
     assert state.max_retries == 3
     assert state.status == "pending"
@@ -44,7 +43,7 @@ def test_workflow_state_with_custom_values():
     assert state.blueprint == {"chapter": 1}
     assert state.final_plot == {"arc": "complete"}
     assert state.audit_results == [{"check": "passed"}]
-    assert state.is_consistent == False
+    assert not state.is_consistent
     assert state.retry_count == 2
     assert state.max_retries == 5
     assert state.status == "success"

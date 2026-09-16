@@ -1,8 +1,6 @@
 """Simple test to get container info."""
 from __future__ import annotations
 
-import pytest
-import time
 
 
 def test_container_info(postgres_container, redis_container, chromadb_container):
@@ -14,7 +12,7 @@ def test_container_info(postgres_container, redis_container, chromadb_container)
         print(f"Port 5432: {port}")
     except Exception as e:
         print(f"Error getting PG port: {e}")
-    
+
     print("\n=== Redis ===")
     print(f"Host: {redis_container.get_container_host_ip()}")
     try:
@@ -22,7 +20,7 @@ def test_container_info(postgres_container, redis_container, chromadb_container)
         print(f"Port 6379: {port}")
     except Exception as e:
         print(f"Error getting Redis port: {e}")
-    
+
     print("\n=== ChromaDB ===")
     print(f"Host: {chadb_container.get_container_host_ip()}")
     try:

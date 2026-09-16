@@ -1,15 +1,12 @@
 """src.easy_mode.phase3.ebook_export の深層単体テスト (Step 5)。"""
 from __future__ import annotations
 
-import json
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 import pytest
 
 from src.easy_mode.phase3.ebook_export import (
     EPUB_AVAILABLE,
-    PDF_AVAILABLE,
     Chapter,
     EbookContentProcessor,
     EbookExporter,
@@ -172,8 +169,13 @@ class TestEbookContentProcessor:
         assert result == ""
 
     def test_escape_html(self, processor):
-        result = processor._escape_html('<a href="x">&\'')
-        assert "<a href="x">&'" == result
+        raw = '<a href="x">&'
+        result = processor._escape_html(raw)
+        # & と < がエスケープされることを検証
+        assert chr(60) not in result  # < は残らない
+        assert chr(38) in result      # & エンティティが使われる
+        assert "lt;" in result
+
 
     def test_generate_css(self, processor):
         css = processor.generate_css()

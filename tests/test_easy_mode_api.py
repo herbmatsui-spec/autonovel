@@ -1,6 +1,4 @@
-import pytest
 
-from src.backend.server import app
 
 
 

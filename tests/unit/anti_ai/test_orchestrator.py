@@ -13,10 +13,8 @@ from src.config.anti_ai_config import (
 )
 from src.services.anti_ai import (
     AICategory,
-    AntiAIDetectionResult,
     RuleBasedAntiAIDetector,
 )
-from src.services.anti_ai.detectors import RULE_DETECTORS
 
 
 @pytest.fixture(autouse=True)
@@ -56,7 +54,6 @@ class TestOrchestrator:
             TEMPLATE_TEXT,
             UNIFORM_PARAGRAPH_TEXT,
             GENERIC_TEXT,
-            CLEAN_PROSE,
         )
 
         samples_with_expected = [
@@ -89,7 +86,6 @@ class TestOrchestrator:
     def test_disable_specific_detector(self):
         # All detectors disabled → score 100
         from src.config.anti_ai_config import (
-            DetectorSettings,
             DirectEmotionSettings,
             GenericVocabularySettings,
             HedgingSettings,

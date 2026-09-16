@@ -9,7 +9,6 @@ from hypothesis import given, settings, strategies as st
 from src.services.blind_review import (
     BlindReviewGate,
     IsolationSchema,
-    VerificationResult,
 )
 
 

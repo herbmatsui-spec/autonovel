@@ -3,8 +3,22 @@ from unittest.mock import AsyncMock, MagicMock
 from src.backend.workflows.writing_langgraph import WritingGraphManager, WritingGraphState
 
 
+@pytest.fixture
+def make_manager():
+    """WritingGraphManager を safe 属性で生成するヘルパー。
+
+    manager.session_factory が存在しないため checkpoint_manager は None になるが、
+    checkpointer / metrics_collector は __init__ で必ず設定される。
+    """
+
+    def _make(mock_manager):
+        return WritingGraphManager(mock_manager)
+
+    return _make
+
+
 @pytest.mark.asyncio
-async def test_node_prepare():
+async def test_node_prepare(make_manager):
     """node_prepareのテスト"""
     # モックマネージャーを作成
     mock_manager = MagicMock()
@@ -15,10 +29,10 @@ async def test_node_prepare():
         False,           # should_beat_decompose
         50               # ncs_score
     ))
-    
+
     # WritingGraphManagerのインスタンスを作成
-    manager = WritingGraphManager(mock_manager)
-    
+    manager = make_manager(mock_manager)
+
     # テスト状態
     state = {
         "ep_num": 1,
@@ -28,31 +42,33 @@ async def test_node_prepare():
         "is_easy_mode": False,
         "passion": 0.8
     }
-    
+
     # node_prepareを実行
     result = await manager.node_prepare(state)
-    
+
     # アサーション
     assert result["gen_ctx"] == "fake_gen_ctx"
     assert result["max_ac_iter"] == 2  # デフォルト値 (base_max from ProjectContext)
-    assert result["should_heavy_audit"] == False
-    assert result["should_dogfeed"] == True
-    assert result["should_beat_decompose"] == False
+    assert not result["should_heavy_audit"]
+    assert result["should_dogfeed"]
+    assert not result["should_beat_decompose"]
     assert result["ac_iter"] == 0
 
 
 @pytest.mark.asyncio
-async def test_node_drafting_success():
+async def test_node_drafting_success(monkeypatch, make_manager):
     """node_draftingの成功ケースをテスト"""
+    # リトリーの sleep をスキップして高速化
+    monkeypatch.setattr("asyncio.sleep", AsyncMock())
     mock_manager = MagicMock()
     # 内容が100文字以上必要（node_drafting内のチェック）
     mock_manager._phase_drafting = AsyncMock(return_value=(
         "Generated draft content " * 10,  # 230文字以上
         {"words": 230}
     ))
-    
-    manager = WritingGraphManager(mock_manager)
-    
+
+    manager = make_manager(mock_manager)
+
     state = {
         "ep_num": 1,
         "context": {
@@ -63,9 +79,9 @@ async def test_node_drafting_success():
         "should_beat_decompose": False,
         "gen_ctx": "fake_gen_ctx"
     }
-    
+
     result = await manager.node_drafting(state)
-    
+
     assert result["draft_content"] == "Generated draft content " * 10
     assert result["final_meta"] == {"words": 230}
 
@@ -75,9 +91,9 @@ async def test_node_drafting_failure():
     """node_draftingの失敗ケースをテスト（3回リトリー後に失敗）"""
     mock_manager = MagicMock()
     mock_manager._phase_drafting = AsyncMock(side_effect=Exception("Drafting failed"))
-    
+
     manager = WritingGraphManager(mock_manager)
-    
+
     state = {
         "ep_num": 1,
         "context": {
@@ -88,9 +104,9 @@ async def test_node_drafting_failure():
         "should_beat_decompose": False,
         "gen_ctx": "fake_gen_ctx"
     }
-    
+
     result = await manager.node_drafting(state)
-    
+
     # 3回リトリー後に失敗すると空のコンテンツが返される
     assert result["draft_content"] == ""
     assert result["final_meta"] == {}
@@ -100,19 +116,19 @@ async def test_node_drafting_failure():
 async def test_node_audit_easy_mode():
     """easy_mode時のnode_auditをテスト"""
     mock_manager = MagicMock()
-    
+
     manager = WritingGraphManager(mock_manager)
-    
+
     state = {
         "ep_num": 1,
         "is_easy_mode": True,
         "ac_iter": 0
     }
-    
+
     result = await manager.node_audit(state)
-    
-    assert result["is_integrity_ok"] == True
-    assert result["is_causal_ok"] == True
+
+    assert result["is_integrity_ok"]
+    assert result["is_causal_ok"]
     assert result["causal_reason"] == "easy_mode"
     assert result["failures"] == []
     assert result["ac_iter"] == 1  # ac_iterがインクリメントされる
@@ -131,9 +147,9 @@ async def test_node_audit_success():
     ))
     mock_manager.narrative = MagicMock()
     mock_manager.narrative.get_integrity_threshold = MagicMock(return_value=0.6)
-    
+
     manager = WritingGraphManager(mock_manager)
-    
+
     state = {
         "ep_num": 1,
         "context": {
@@ -148,11 +164,11 @@ async def test_node_audit_success():
         "ac_iter": 0,
         "should_heavy_audit": False
     }
-    
+
     result = await manager.node_audit(state)
-    
-    assert result["is_integrity_ok"] == True
-    assert result["is_causal_ok"] == True
+
+    assert result["is_integrity_ok"]
+    assert result["is_causal_ok"]
     assert result["causal_reason"] == "OK"
     assert result["rate"] == 0.8
     assert result["ac_iter"] == 1
@@ -165,9 +181,9 @@ async def test_node_critic():
     """node_criticのテスト"""
     mock_manager = MagicMock()
     mock_manager._phase_critic = AsyncMock(return_value=True)  # triggered
-    
+
     manager = WritingGraphManager(mock_manager)
-    
+
     state = {
         "ac_iter": 0,
         "ep_num": 1,
@@ -179,10 +195,10 @@ async def test_node_critic():
         "failures": [],
         "gen_ctx": "fake_gen_ctx"
     }
-    
+
     result = await manager.node_critic(state)
-    
-    assert result["critic_triggered"] == True
+
+    assert result["critic_triggered"]
 
 
 @pytest.mark.asyncio
@@ -194,9 +210,9 @@ async def test_node_healing():
         True,              # is_causal_ok
         "Fixed"            # causal_reason
     ))
-    
+
     manager = WritingGraphManager(mock_manager)
-    
+
     state = {
         "ep_num": 1,
         "draft_content": "original draft",
@@ -208,11 +224,11 @@ async def test_node_healing():
         "failures": [],
         "monitor": None
     }
-    
+
     result = await manager.node_healing(state)
-    
+
     assert result["draft_content"] == "healed content"
-    assert result["is_causal_ok"] == True
+    assert result["is_causal_ok"]
     assert result["causal_reason"] == "Fixed"
 
 
@@ -220,9 +236,9 @@ async def test_node_healing():
 async def test_node_dogfeed_skipped():
     """should_dogfeedがFalseのときのnode_dogfeedをテスト（スキップされる）"""
     mock_manager = MagicMock()
-    
+
     manager = WritingGraphManager(mock_manager)
-    
+
     state = {
         "ep_num": 1,
         "draft_content": "draft",
@@ -233,10 +249,10 @@ async def test_node_dogfeed_skipped():
         "max_ac_iter": 2,
         "gen_ctx": "fake_gen_ctx"
     }
-    
+
     result = await manager.node_dogfeed(state)
-    
-    assert result["dogfeed_ok"] == True  # スキップ時にTrueが返される
+
+    assert result["dogfeed_ok"]  # スキップ時にTrueが返される
 
 
 @pytest.mark.asyncio
@@ -244,9 +260,9 @@ async def test_node_dogfeed_success():
     """node_dogfeedの成功ケースをテスト"""
     mock_manager = MagicMock()
     mock_manager._run_dogfeeding_loop = AsyncMock(return_value=True)
-    
+
     manager = WritingGraphManager(mock_manager)
-    
+
     state = {
         "ep_num": 1,
         "draft_content": "draft",
@@ -257,10 +273,10 @@ async def test_node_dogfeed_success():
         "max_ac_iter": 2,
         "gen_ctx": "fake_gen_ctx"
     }
-    
+
     result = await manager.node_dogfeed(state)
-    
-    assert result["dogfeed_ok"] == True
+
+    assert result["dogfeed_ok"]
 
 
 @pytest.mark.asyncio
@@ -268,9 +284,9 @@ async def test_node_finalize():
     """node_finalizeのテスト"""
     mock_manager = MagicMock()
     mock_manager._register_lazy_patch = AsyncMock()
-    
+
     manager = WritingGraphManager(mock_manager)
-    
+
     state = {
         "ep_num": 1,
         "is_integrity_ok": True,
@@ -283,9 +299,9 @@ async def test_node_finalize():
         "causal_reason": "OK",
         "ac_iter": 1
     }
-    
+
     result = await manager.node_finalize(state)
-    
+
     assert result["status"] == "completed"
     # _register_lazy_patchは呼ばれないはず（すべてOKなので）
     mock_manager._register_lazy_patch.assert_not_called()
@@ -295,7 +311,7 @@ def test_route_after_audit_easy_mode():
     """easy_mode時のroute_after_auditをテスト"""
     mock_manager = MagicMock()
     manager = WritingGraphManager(mock_manager)
-    
+
     state = {"is_easy_mode": True}
     assert manager.route_after_audit(state) == "finish"
 
@@ -304,7 +320,7 @@ def test_route_after_audit_high_quality():
     """高品質時のroute_after_auditをテスト（早期終了）"""
     mock_manager = MagicMock()
     manager = WritingGraphManager(mock_manager)
-    
+
     state = {
         "is_easy_mode": False,
         "quality_skip": True,
@@ -318,7 +334,7 @@ def test_route_after_audit_needs_review():
     """ユーザーレビューが必要な時のroute_after_auditをテスト"""
     mock_manager = MagicMock()
     manager = WritingGraphManager(mock_manager)
-    
+
     state = {
         "is_easy_mode": False,
         "quality_skip": False,
@@ -332,7 +348,7 @@ def test_route_after_critic_retry():
     """critic後にリトライすべき時のroute_after_criticをテスト"""
     mock_manager = MagicMock()
     manager = WritingGraphManager(mock_manager)
-    
+
     state = {
         "critic_triggered": True,
         "ac_iter": 0,
@@ -345,7 +361,7 @@ def test_route_after_critic_finish():
     """critic後に終了すべき時のroute_after_criticをテスト"""
     mock_manager = MagicMock()
     manager = WritingGraphManager(mock_manager)
-    
+
     state = {
         "critic_triggered": True,
         "ac_iter": 2,  # max_ac_iterに到達
@@ -358,19 +374,19 @@ def test_route_after_review_wait():
     """route_after_review_waitのテスト"""
     mock_manager = MagicMock()
     manager = WritingGraphManager(mock_manager)
-    
+
     # approved
     state = {"review_status": "approved"}
     assert manager.route_after_review_wait(state) == "approved"
-    
+
     # rejected
     state = {"review_status": "rejected"}
     assert manager.route_after_review_wait(state) == "rejected"
-    
+
     # revised
     state = {"review_status": "revised"}
     assert manager.route_after_review_wait(state) == "revised"
-    
+
     # timeout
     state = {"review_status": "timeout"}
     assert manager.route_after_review_wait(state) == "timeout"
@@ -400,11 +416,11 @@ def test_writing_graph_state_typeddict():
         "requires_user_review": False,
         "status": "pending"
     }
-    
+
     # 必須フィールへのアクセス
     assert state["ep_num"] == 1
     assert state["passion"] == 0.5
-    assert state["is_easy_mode"] == False
+    assert not state["is_easy_mode"]
     assert state["context"] == {}
     assert state["sys_inst"] == ""
     assert state["fw_prompt"] == ""
@@ -413,11 +429,11 @@ def test_writing_graph_state_typeddict():
     assert state["gen_ctx"] is None
     assert state["draft_content"] == ""
     assert state["final_meta"] == {}
-    assert state["is_integrity_ok"] == False
-    assert state["is_causal_ok"] == False
+    assert not state["is_integrity_ok"]
+    assert not state["is_causal_ok"]
     assert state["causal_reason"] == ""
     assert state["failures"] == []
     assert state["patch_review_id"] is None
     assert state["review_status"] is None
-    assert state["requires_user_review"] == False
+    assert not state["requires_user_review"]
     assert state["status"] == "pending"

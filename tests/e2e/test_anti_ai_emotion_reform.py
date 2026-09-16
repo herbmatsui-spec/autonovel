@@ -4,10 +4,8 @@ PLAN 03 - Step 12: 優等生的文章が排除され、エゴと毒が効いた�
 """
 from __future__ import annotations
 
-from unittest.mock import AsyncMock
 import pytest
 
-from src.agents.prompt_composer import PromptComposer
 from src.services.anti_ai.detectors import EmotionSyllogismDetector
 from src.services.anti_ai.orchestrator import RuleBasedAntiAIDetector
 from src.services.anti_ai.rewrite_directive_generator import generate_syllogism_rewrite_directive

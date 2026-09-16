@@ -1,11 +1,10 @@
 """E2E Integration Test for DAGScheduler + Huey Queue Execution (Step 66)."""
 from __future__ import annotations
 
-import asyncio
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from src.backend.tasks.dag_models import DAGGraph, DAGTaskNode, TaskResourceRequirement
+from src.backend.tasks.dag_models import DAGGraph, DAGTaskNode
 from src.backend.tasks.dag_scheduler import DAGScheduler
 from src.backend.tasks.dag_persistence import FileSystemDAGPersistence
 

@@ -5,7 +5,6 @@ GlobalAuthMiddleware の動作検証テスト
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from starlette.responses import JSONResponse
 
 from src.backend.config import settings
 from src.backend.middleware.auth_middleware import GlobalAuthMiddleware

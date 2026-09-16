@@ -63,7 +63,7 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 norecursedirs = [".git", "scripts", "node_modules", "storage", "autonovel"]
-addopts = "-p no:cacheprovider --import-mode=importlib --tb=short --cov=src --cov-branch --cov-fail-under=45"
+addopts = "-p no:cacheprovider --import-mode=importlib --tb=short --cov=src --cov-branch --cov-fail-under=80"
 asyncio_mode = "auto"
 markers = [
     "perf: Performance benchmark tests",
@@ -178,8 +178,7 @@ omit = [
     "src/shared/__init__.py",
     "src/shared/redis_pool.py",
 
-    # レガシー vector_store 単体ファイル（パッケージ版に完全移行済み）
-    "src/services/vector_store.py",
+    
 ]
 branch = true
 concurrency = ["multiprocessing", "thread"]
@@ -211,16 +210,8 @@ line-length = 120
 target-version = "py312"
 
 [tool.ruff.lint]
-extend-select = ["G004"]
+select = ["E", "F", "W", "G004"]
+ignore = ["E501", "E402"]
 
 [tool.ruff.lint.per-file-ignores]
-"src/services/vector_store/*.py" = ["G004"]
-"src/services/semantic_cache.py" = ["G004"]
-"src/services/spice_guard_adapter.py" = ["G004"]
-"src/services/redis_cache.py" = ["G004"]
-"src/services/bible_service.py" = ["G004"]
-"src/services/book_score_service.py" = ["G004"]
-"src/agents/audit.py" = ["G004"]
-"src/backend/*.py" = ["G004"]
-"src/shared/*.py" = ["G004"]
-"tests/**/*.py" = ["G004", "E712", "F401"]
+"*" = ["E402"]

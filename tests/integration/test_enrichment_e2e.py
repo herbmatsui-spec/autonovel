@@ -1,7 +1,7 @@
 # tests/integration/test_enrichment_e2e.py
 """EnrichmentAgent E2E統合テスト"""
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 from src.agents.enrichment_agent import EnrichmentAgent
 from src.agents.orchestrator import AgentContext, AgentResult, AgentName
@@ -71,9 +71,9 @@ class TestEnrichmentE2E:
         """基本フロー実行"""
         # 機能フラグを有効化
         agent._config = {"enabled": True}
-        
+
         result = await agent.execute(sample_context)
-        
+
         assert isinstance(result, AgentResult)
         assert result.next_agent == AgentName.AUDIT
         assert "enriched_text" in result.artifacts
@@ -84,9 +84,9 @@ class TestEnrichmentE2E:
     async def test_execute_disabled_flag(self, agent, sample_context):
         """機能フラグOFFでパススルー"""
         agent._config = {"enabled": False}
-        
+
         result = await agent.execute(sample_context)
-        
+
         assert result.next_agent == AgentName.AUDIT
         assert result.artifacts["enriched_text"] == sample_context.artifacts["drafted_text"]
         assert result.artifacts["enrichment_metadata"] == {"trivia": [], "citations": [], "sensory": [], "multimedia": {}}
@@ -95,9 +95,9 @@ class TestEnrichmentE2E:
     async def test_execute_no_drafted_text(self, agent):
         """drafted_textなしでエラー"""
         ctx = AgentContext(book_id=1, branch_id=1, ep_num=1, artifacts={})
-        
+
         result = await agent.execute(ctx)
-        
+
         assert result.error is not None
         assert "drafted_text is required" in result.error
 
@@ -106,9 +106,9 @@ class TestEnrichmentE2E:
         """ブラインドレビューモード"""
         agent._config = {"enabled": True}
         sample_context.artifacts["blind_review_mode"] = True
-        
+
         result = await agent.execute(sample_context)
-        
+
         assert result.next_agent == AgentName.AUDIT
         # トリビア・引用がスキップされている
         meta = result.artifacts["enrichment_metadata"]
@@ -123,16 +123,16 @@ class TestEnrichmentE2E:
         """イベント発行確認"""
         agent._config = {"enabled": True}
         events = []
-        
+
         # emit_event をフック
         original_emit = agent.emit_event
         def capture_event(name, payload):
             events.append((name, payload))
             return original_emit(name, payload)
         agent.emit_event = capture_event
-        
+
         await agent.execute(sample_context)
-        
+
         event_names = [e[0] for e in events]
         assert "enrichment.started" in event_names
         assert "enrichment.step_completed" in event_names
@@ -150,9 +150,9 @@ class TestEnrichmentE2E:
     async def test_enrichment_metadata_structure(self, agent, sample_context):
         """メタデータ構造確認"""
         agent._config = {"enabled": True}
-        
+
         result = await agent.execute(sample_context)
-        
+
         meta = result.artifacts["enrichment_metadata"]
         assert "trivia" in meta
         assert "citations" in meta
@@ -170,9 +170,9 @@ class TestEnrichmentE2E:
             "enabled": True,
             "trivia_insertion": {"enabled": True, "max_insertions_per_chapter": 3, "relevance_threshold": 0.5}
         }
-        
+
         result = await agent.execute(sample_context)
-        
+
         enriched = result.artifacts["enriched_text"]
         original = sample_context.artifacts["drafted_text"]
         # トリビア挿入により長くなる（モックの場合は変わらない可能性もある）
@@ -182,9 +182,9 @@ class TestEnrichmentE2E:
     async def test_sensory_expansion_adds_details(self, agent, sample_context):
         """感覚拡充で詳細が追加"""
         agent._config = {"enabled": True, "sensory_expansion": {"enabled": True}}
-        
+
         result = await agent.execute(sample_context)
-        
+
         meta = result.artifacts["enrichment_metadata"]
         # 感覚拡充メタデータがある
         assert "sensory" in meta
@@ -194,9 +194,9 @@ class TestEnrichmentE2E:
         """クライマックスシーンでマルチメディア生成"""
         agent._config = {"enabled": True, "multimedia_scenarios": {"enabled": True}}
         sample_context.artifacts["drafted_text"] = "最終決戦だ。主人公は剣を構える。敵将軍が迫る。命懸けの戦い。"
-        
+
         result = await agent.execute(sample_context)
-        
+
         meta = result.artifacts["enrichment_metadata"]
         assert "multimedia" in meta
         multimedia = meta["multimedia"]
@@ -215,12 +215,12 @@ class TestEnrichmentFallback:
         mock_rag = AsyncMock()
         mock_rag.query_trivia_candidates = AsyncMock(side_effect=Exception("DB error"))
         mock_rag.index_bible_sources = AsyncMock(return_value={})
-        
+
         agent = EnrichmentAgent(rag_service=mock_rag)
         agent._config = {"enabled": True}
-        
+
         result = await agent.execute(sample_context)
-        
+
         # エラーにならず完了
         assert result.next_agent == AgentName.AUDIT
         assert "enriched_text" in result.artifacts
@@ -230,11 +230,11 @@ class TestEnrichmentFallback:
         """LLM失敗時のフォールバック"""
         mock_llm = AsyncMock()
         mock_llm.generate_text = AsyncMock(side_effect=Exception("LLM error"))
-        
+
         agent = EnrichmentAgent(llm=mock_llm)
         agent._config = {"enabled": True}
-        
+
         result = await agent.execute(sample_context)
-        
+
         assert result.next_agent == AgentName.AUDIT
         assert "enriched_text" in result.artifacts

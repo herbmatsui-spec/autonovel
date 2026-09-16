@@ -17,9 +17,8 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 # Core Unified LLM
-from src.core.llm.types import LLMRequest, LLMResponse, LLMUsage
 from src.core.llm.adapters.mock_unified_client import UnifiedMockLLMClient
-from src.agents.specialist_auditor_base import SpecialistAuditor, SpecialistAuditResult
+from src.agents.specialist_auditor_base import SpecialistAuditResult
 
 # WebSocket & Pipeline Events
 from src.backend.schemas.pipeline_events import PipelineEvent
@@ -27,9 +26,8 @@ from src.backend.websocket.pipeline_hub import PipelineEventHub
 from src.backend.routers.pipeline_stream import router as pipeline_router
 
 # Publishing Formatters
-from src.services.formatters.ruby_transpiler import PublishPlatform, RubyTranspiler
+from src.services.formatters.ruby_transpiler import PublishPlatform
 from src.services.formatters.platform_formatter import PlatformFormatter
-from src.backend.routers.publishing import router as publishing_router
 
 
 # ==============================================================================

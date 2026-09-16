@@ -1,8 +1,7 @@
 """Unit tests for EmbeddingService.get_embeddings_batch (Phase C)."""
 from __future__ import annotations
 
-import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 from src.services.embedding_service import EmbeddingService
 

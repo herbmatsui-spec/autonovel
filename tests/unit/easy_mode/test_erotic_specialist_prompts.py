@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import pytest
 from config.erotic_pacing import EroticCurve
 from src.engine.prompts.erotic_specialist import EroticSpecialist
 

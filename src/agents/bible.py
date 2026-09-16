@@ -40,7 +40,7 @@ class BibleAgent(SkillAgent):
             "book_id": ctx.book_id,
             "title": ctx.artifacts.get("title"),
         })
-        
+
         title = ctx.artifacts.get("title")
         synopsis = ctx.artifacts.get("synopsis", "")
         target_eps = ctx.artifacts.get("target_eps", 10)
@@ -72,7 +72,7 @@ class BibleAgent(SkillAgent):
             "book_id": ctx.book_id,
             "title": title,
         })
-        
+
         return AgentResult(
             next_agent=AgentName.CONTEXT_BUILDER,
             artifacts={"bible": bible_data},

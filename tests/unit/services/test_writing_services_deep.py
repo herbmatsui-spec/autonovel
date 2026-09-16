@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -163,7 +163,7 @@ async def test_phase_prepare_context_with_json_style_dna(manager_setup):
 async def test_surgical_causality_healing_pass(manager_setup):
     manager, _, llm, pm, _ = manager_setup
     pm.build_surgical_causality_healing_prompt.return_value = "healer prompt"
-    
+
     mock_res = MagicMock()
     mock_res.success = True
     mock_res.story_content = "Line 1\nLine 2 healed\nLine 3"
@@ -184,7 +184,7 @@ async def test_surgical_causality_healing_pass(manager_setup):
 async def test_expand_scene_beats(manager_setup):
     manager, _, llm, pm, _ = manager_setup
     pm.build_beat_expansion_prompt.return_value = "expansion prompt"
-    
+
     mock_res = MagicMock()
     mock_res.unwrap_or.return_value = (
         {"beats": [{"beat_num": 1, "physical_action": "Draw blade", "sensory_tags": ["sharp"], "emotion_phase": "focus", "word_budget": 200}]},

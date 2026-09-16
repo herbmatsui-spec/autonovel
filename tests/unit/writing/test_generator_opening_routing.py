@@ -4,7 +4,7 @@ PLAN 02 - Step 10: WritingGeneratorへのルーティング組み込み検証
 """
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 import pytest
 
 from src.agents.writing.generator import WritingGenerator

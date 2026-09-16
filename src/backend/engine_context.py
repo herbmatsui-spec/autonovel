@@ -37,7 +37,7 @@ class ContextData(BaseModel):
 
 class ContextManager:
     """@deprecated プロンプト用文脈（長期記憶）の構築クラス。
-    
+
     このクラスは非推奨です。新規コードでは `src.agents.context_builder_agent.ContextBuilderAgent`
     またはワークフロー内の統合コンテキストビルダークラスを使用してください。(Phase 6: Step 61)
     """
@@ -467,7 +467,7 @@ class ContextManager:
                 static_str = full.get("char_static_ctx", "")
                 dyn_str = full.get("char_dynamic_ctx", "")
                 prev_ctx = full.get("prev_ctx", "")
-                
+
                 # Parse strings into dicts for structured model
                 static_profiles = {}
                 for line in static_str.split("\n"):

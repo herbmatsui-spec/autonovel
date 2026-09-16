@@ -15,7 +15,7 @@ def calculate_consistency_metrics(
 ) -> CompressionQualityMetrics:
     """圧縮後テキストの情報保持率と整合性スコアを定量計算"""
     compressed = trimmed_output.compressed_text
-    
+
     # 1. キャラクター保持率 (Protected active_characters)
     char_score = 1.0
     if protected_context and protected_context.active_characters:

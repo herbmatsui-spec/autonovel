@@ -16,7 +16,7 @@ async def _get_novel_data(book_id: int) -> dict[str, Any]:
         book_row = result.scalar_one_or_none()
         if book_row is None:
             raise ValueError(f"Book {book_id} not found")
-        
+
         return {
             "title": book_row.title,
             "synopsis": book_row.synopsis or book_row.concept or "",
@@ -35,12 +35,12 @@ async def _get_episodes_data(
         )
         if episode_ids:
             chapters_query = chapters_query.where(Chapter.id.in_(episode_ids))
-        
+
         if uow.session is None:
             raise RuntimeError("Database session not initialized")
         chapters_result = await uow.session.execute(chapters_query)
         chapters = chapters_result.scalars().all()
-        
+
         platforms_list = platforms or []
         episodes_data = []
         for ch in chapters:

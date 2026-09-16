@@ -1,7 +1,6 @@
 """`MultimediaService` の単体テスト。"""
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 import pytest
@@ -17,9 +16,21 @@ from src.backend.multimedia_service import (
 
 @pytest.fixture
 def service(monkeypatch, tmp_path, real_db_manager):
-    """Multimedia 有効化 + 一時出力ディレクトリのサービス。"""
+    """Multimedia 有効化 + 一時出力ディレクトリのサービス。
+
+    DB に書籍データが存在しないため、SeriesDataLoader を make_minimal_series
+    にフォールバックさせるモックローダーを注入する。
+    """
+    from src.easy_mode import SeriesResult as _SR
+    from src.backend.database.series_loader import SeriesDataLoaderConfig
+
     monkeypatch.setattr(settings, "ENABLE_MULTIMEDIA", True)
-    return MultimediaService(output_dir=tmp_path / "mm")
+
+    class _StubLoader:
+        def load_series(self, config: SeriesDataLoaderConfig) -> _SR:
+            return make_minimal_series(episode_count=1)
+
+    return MultimediaService(output_dir=tmp_path / "mm", series_loader=_StubLoader())
 
 
 def test_service_generate_media_mix(service, real_db_manager):

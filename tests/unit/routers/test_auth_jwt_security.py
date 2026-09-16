@@ -1,6 +1,4 @@
-import time
-import pytest
-from src.backend.security.jwt import create_access_token, create_refresh_token, decode_token, get_secret_key
+from src.backend.security.jwt import create_access_token, create_refresh_token, decode_token
 from src.backend.auth import validate_api_key_sync, _get_dev_mock_user
 
 def test_jwt_create_and_decode():

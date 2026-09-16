@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock
 from src.domain.domain_services.character_domain_service import (
     CharacterDomainService, CharacterValidator, CharacterConsistencyChecker,
     CharacterRelationshipManager, CharacterValidationError,
-    RelationshipType, CharacterRelationship, CharacterConsistencyIssue,
+    RelationshipType,
 )
 from src.domain.entities.character import Character, CharacterArc
 from src.domain.value_objects.ids import NovelId, CharacterId

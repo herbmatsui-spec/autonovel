@@ -6,7 +6,6 @@ from src.agents.illustration_agent import IllustrationAgent
 from src.models.illustration import (
     IllustrationModel,
     IllustrationRequest,
-    IllustrationResult,
     IllustrationType,
     SafetyLevel,
 )

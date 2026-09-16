@@ -4,7 +4,6 @@ PLAN 02 - Step 2: 話末クリフハンガー判定エンジンの単体テス�
 """
 from __future__ import annotations
 
-import pytest
 from src.models.opening_booster import CliffhangerType
 from src.services.auditors.cliffhanger_scorer import score_cliffhanger
 

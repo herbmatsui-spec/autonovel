@@ -1,6 +1,6 @@
 """チェックポイントリポジトリ。"""
 from __future__ import annotations
-from typing import Optional, List
+from typing import Optional
 from sqlalchemy.orm import Session
 from src.backend.database.models_checkpoint import WorkflowCheckpointModel
 from src.domain.entities.checkpoint import WorkflowCheckpoint, CheckpointStatus

@@ -1,11 +1,11 @@
 from __future__ import annotations
-
 """
 database/core.py - データベース接続および低レベルインフラ管理
 """
 import asyncio
 import functools
 import logging
+import os
 import shutil
 import sqlite3
 import time
@@ -15,7 +15,9 @@ from typing import Any
 
 import aiosqlite
 from sqlalchemy import create_engine, text, event
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import NullPool
 
 try:
     from src.backend.config import ROOT_DIR as BASE_DIR
@@ -103,9 +105,6 @@ class WorkspaceManager:
 # ==========================================
 # DatabaseManager（低レベルSQLite/PostgreSQL操作 - SQLAlchemy コネクションプール版）
 # ==========================================
-import os
-from sqlalchemy.pool import NullPool
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 
 class DatabaseConnectionWrapper:
@@ -193,7 +192,7 @@ class DatabaseManager:
             async_url,
             **engine_kwargs,
         )
-        
+
         # Configure SQLite engine if applicable
         configure_sqlite_engine(self.engine)
 

@@ -8,13 +8,13 @@ class MockStatusReporter:
     def __init__(self):
         self.reports = []
         self._should_stop = False
-    
+
     def report(self, message, level="info"):
         self.reports.append((message, level))
-    
+
     def update_progress(self, current, total, message):
         pass
-    
+
     @property
     def state(self):
         class State:
@@ -41,7 +41,7 @@ async def test_hook_generation_step_create():
 async def test_hook_generation_step_execute():
     """HookGenerationStep.execute の基本動作テスト"""
     step = HookGenerationStep()
-    
+
     # モックオブジェクトを作成
     ctx = WorkflowContext(
         genre="ファンタジー",
@@ -53,14 +53,14 @@ async def test_hook_generation_step_execute():
     )
     engine = MockEngine()
     reporter = MockStatusReporter()
-    
+
     # execute メソッドを呼び出す
     # 骨格実装なので常に True を返すはず
     result = await step.execute(ctx, engine, reporter)
-    
+
     # 結果が True であることを確認
     assert result is True
-    
+
     # 特にエラーが発生していないことを確認
     # （エラーが発生した場合は例外が送出される）
 
@@ -69,7 +69,7 @@ async def test_hook_generation_step_execute():
 async def test_hook_generation_step_execute_with_none_values():
     """None 値でもエラーにならないことを確認"""
     step = HookGenerationStep()
-    
+
     # None や空の値でも動作することを確認
     ctx = WorkflowContext(
         genre="",
@@ -81,10 +81,10 @@ async def test_hook_generation_step_execute_with_none_values():
     )
     engine = MockEngine()
     reporter = MockStatusReporter()
-    
+
     # execute メソッドを呼び出す
     result = await step.execute(ctx, engine, reporter)
-    
+
     # 結果が True であることを確認
     assert result is True
 
@@ -92,6 +92,6 @@ async def test_hook_generation_step_execute_with_none_values():
 def test_hook_generation_step_inheritance():
     """WorkflowStep を継承していることを確認"""
     from src.services.pipeline_base import WorkflowStep
-    
+
     step = HookGenerationStep()
     assert isinstance(step, WorkflowStep)

@@ -1,5 +1,4 @@
-import os
-from typing import Any, AsyncIterator, Iterator
+from typing import AsyncIterator, Iterator
 from google import genai
 from google.genai import types
 
@@ -40,7 +39,7 @@ class GeminiUnifiedClient(IUnifiedLLMClient):
         import asyncio
         loop = asyncio.get_running_loop()
         response = await loop.run_in_executor(
-            None, 
+            None,
             lambda: self.client.models.generate_content(
                 model=req.model or self.model,
                 contents=req.prompt,
@@ -72,7 +71,7 @@ class GeminiUnifiedClient(IUnifiedLLMClient):
     async def astream(self, req: LLMRequest) -> AsyncIterator[StreamChunk]:
         import asyncio
         loop = asyncio.get_running_loop()
-        
+
         # Generator wrapper for run_in_executor
         def _get_stream():
             return self.client.models.generate_content_stream(
@@ -82,7 +81,7 @@ class GeminiUnifiedClient(IUnifiedLLMClient):
             )
 
         stream = await loop.run_in_executor(None, _get_stream)
-        
+
         for chunk in stream:
             if chunk.text:
                 yield StreamChunk(text=chunk.text)

@@ -4,7 +4,6 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 
 from src.agents.orchestrator import Orchestrator
 from src.agents.skill_base import SkillAgent
@@ -49,7 +48,7 @@ def test_orchestrator_switch_version():
     orch = Orchestrator(nodes={})
     orch.register_discovered_skills('src.agents.skills.v1')
     assert orch.get_active_version() == "v1"
-    
+
     # v2 へ切替（v2 は空でもエラーにならない）
     orch.set_skill_version('v2')
     assert orch.get_active_version() == "v2"
@@ -67,13 +66,13 @@ async def test_skill_version_attribute():
     """スキルの version 属性確認"""
     assert MockSkillV1.version == "1.0"
     assert MockSkillV2.version == "2.0"
-    
+
     skill1 = MockSkillV1()
     skill2 = MockSkillV2()
     ctx = AgentContext(book_id=1, branch_id=1, ep_num=1, artifacts={})
-    
+
     result1 = await skill1.execute(ctx)
     result2 = await skill2.execute(ctx)
-    
+
     assert result1.artifacts["version"] == "v1"
     assert result2.artifacts["version"] == "v2"

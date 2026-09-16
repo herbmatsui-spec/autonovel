@@ -19,6 +19,7 @@ if settings.HUEY_BACKEND == "redis":
             "autonovel",
             url=settings.REDIS_URL,
             results=True,
+            connection_pool_kwargs={"socket_timeout": 2.0, "socket_connect_timeout": 2.0},
         )
         # 接続確認 (遅延接続エラーを事前検知)
         huey.storage.conn.ping()

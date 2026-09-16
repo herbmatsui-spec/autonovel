@@ -1,7 +1,7 @@
 """Unit of Work interface for transaction management."""
 
 from __future__ import annotations
-from typing import Protocol, Optional, AsyncGenerator, runtime_checkable
+from typing import Protocol, AsyncGenerator, runtime_checkable
 from contextlib import asynccontextmanager
 
 from src.domain.repositories.novel_repository import INovelRepository

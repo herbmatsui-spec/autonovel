@@ -53,24 +53,24 @@ class IllustrationAgent(SkillAgent):
                 artifacts={},
                 error="request is required in artifacts",
             )
-        
+
         # 再生成フォーカス取得（WritingService からの指示：visual_textual_synergy のみ対応）
         regeneration_focus = ctx.artifacts.get("regeneration_focus", [])
         regeneration_action = ctx.artifacts.get("regeneration_action")
-        
+
         if "visual_textual_synergy" in regeneration_focus:
             ctx.artifacts["illustration_regeneration"] = True
             if regeneration_action:
                 ctx.artifacts["illustration_focus"] = regeneration_action.illustration_focus
             logger.info("IllustrationAgent: 再生成モード - focus=visual_textual_synergy")
-        
+
         result_dict = await self.generate_prompt_only(request=request)
-        
+
         self.emit_event("illustration.completed", {
             "illustration_type": getattr(request, "illustration_type", None),
             "book_id": getattr(request, "book_id", None),
         })
-        
+
         return AgentResult(
             next_agent=None,
             artifacts={"illustration_result": result_dict},
@@ -239,23 +239,23 @@ class IllustrationAgent(SkillAgent):
             f"Scene illustration for episode {episode_num} of '{title}'",
             f"Genre: {genre}",
         ]
-        
+
         # 場所を追加
         if location:
             parts.append(f"Location: {location}")
-        
+
         # 時間帯を追加
         if time_of_day:
             parts.append(f"Time of day: {time_of_day}")
-        
+
         # 登場人物の詳細
         if character_details:
             parts.append(f"Character details: {character_details}")
-        
+
         # アクション
         if action:
             parts.append(f"Action: {action}")
-        
+
         # 基本的な画像品質指示
         parts.extend([
             "Detailed background, cinematic lighting, rich detail, manga/anime style, no text or letters in image"
@@ -273,10 +273,10 @@ class IllustrationAgent(SkillAgent):
         """
         if not scene_text:
             return "", "", "", ""
-        
+
         # 簡易的なキーワードベース抽出（実際の実装ではより高度なNLPを使用）
         scene_lower = scene_text.lower()
-        
+
         # 場所キーワード
         locations = {
             "city": ["都市", "街", "町", "downtown", "street", "avenue", "city"],
@@ -287,13 +287,13 @@ class IllustrationAgent(SkillAgent):
             "mountain": ["山", "峠", "mountain", "hill", "peak"],
             "ocean": ["海", "浜", "beach", "ocean", "sea", "shore"],
         }
-        
+
         location = ""
         for loc, keywords in locations.items():
             if any(keyword in scene_lower for keyword in keywords):
                 location = loc
                 break
-        
+
         # 時間帯キーワード
         time_keywords = {
             "morning": ["朝", "午前", "morning", "dawn", "sunrise"],
@@ -302,13 +302,13 @@ class IllustrationAgent(SkillAgent):
             "night": ["夜", "深夜", "night", "midnight", "moonlight", "starlight"],
             "golden_hour": ["魔法の時間", "golden hour", "twilight"],
         }
-        
+
         time_of_day = ""
         for time, keywords in time_keywords.items():
             if any(keyword in scene_lower for keyword in keywords):
                 time_of_day = time
                 break
-        
+
         # キャラクター表情キーワード
         expression_keywords = {
             "happy": ["笑顔", "嬉し", "楽し", "happy", "smile", "grin"],
@@ -318,13 +318,13 @@ class IllustrationAgent(SkillAgent):
             "determined": ["決意", "決闘", "determined", "resolved", "focused"],
             "calm": ["静か", "穏やか", "calm", "peaceful", "serene"],
         }
-        
+
         character_details = ""
         for expr, keywords in expression_keywords.items():
             if any(keyword in scene_lower for keyword in keywords):
                 character_details = expr
                 break
-        
+
         # アクションキーワード
         action_keywords = {
             "running": ["走る", "sprint", "run", "dash", "駆け"],
@@ -334,13 +334,13 @@ class IllustrationAgent(SkillAgent):
             "standing": ["立つ", "stand", "pose", "姿勢"],
             "sitting": ["座る", "sit", "座席"],
         }
-        
+
         action = ""
         for act, keywords in action_keywords.items():
             if any(keyword in scene_lower for keyword in keywords):
                 action = act
                 break
-        
+
         return location, time_of_day, character_details, action
 
     async def _build_yonkoma_prompt(self, request: IllustrationRequest) -> str:
@@ -436,7 +436,7 @@ class IllustrationAgent(SkillAgent):
         params: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """プロンプト再生成（視覚×テキスト相乗効果改善用）。
-        
+
         Args:
             request: 元のリクエスト
             focus: 再生成フォーカス ("visual_textual_synergy" 等)
@@ -446,7 +446,7 @@ class IllustrationAgent(SkillAgent):
         """
         params = params or {}
         ctx = request.book_context or {}
-        
+
         # 本文からエンティティ抽出
         text_entities = []
         if params.get("refocus_on_text_entities"):
@@ -454,7 +454,7 @@ class IllustrationAgent(SkillAgent):
             if scene_text:
                 import re
                 text_entities = list(set(re.findall(r'[一-龯ァ-ヴー]{2,}', scene_text)))[:20]
-        
+
         # 感情トーン抽出
         emotional_tone = "neutral"
         if params.get("match_emotional_tone"):
@@ -466,11 +466,11 @@ class IllustrationAgent(SkillAgent):
                     emotional_tone = "positive"
                 elif negative > positive:
                     emotional_tone = "negative"
-        
+
         # 既存のプロンプトを取得して強化
         original_prompt = await self.generate_prompt_only(request=request)
         original = original_prompt.get("prompt", "")
-        
+
         # 強化プロンプト構築
         enhancements = []
         if text_entities:
@@ -478,11 +478,11 @@ class IllustrationAgent(SkillAgent):
         if emotional_tone != "neutral":
             tone_desc = "bright and hopeful" if emotional_tone == "positive" else "dark and somber"
             enhancements.append(f"Emotional tone: {tone_desc}")
-        
+
         enhanced_prompt = original
         if enhancements:
             enhanced_prompt = original + " | ENHANCEMENTS: " + "; ".join(enhancements)
-        
+
         # 結果返却
         return {
             "status": "success",

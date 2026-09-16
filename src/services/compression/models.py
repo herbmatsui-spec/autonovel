@@ -155,7 +155,7 @@ class ReversibleEntityFact(BaseModel):
     concept: str = Field(description="一般化された抽象概念（例：雷撃系近接スキル）")
     category: str = Field(description="所属カテゴリ（例：武術・スキル）")
     raw_fact: str = Field(description="抽出元の元テキストまたは属性")
-    
+
     @property
     def display_text(self) -> str:
         """執筆プロンプト用のデュアル表現形式"""

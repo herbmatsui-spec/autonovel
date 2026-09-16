@@ -21,12 +21,6 @@ if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
 from prompts.commercial_prompts import (
-    AB_TEST_PROMPTS,
-    COMMERCIAL_ROLE_PROMPT_TEMPLATES,
-    MARKETING_PROMPT_TEMPLATES,
-    PLEASURE_GRAPH_PROMPT_TEMPLATES,
-    SERIES_EXPENSION_PROMPTS,
-    STYLE_DNA_PROMPT_TEMPLATES,
     ab_test_prompt_registry,
     commercial_role_prompt_registry,
     generate_commercial_role_summary,

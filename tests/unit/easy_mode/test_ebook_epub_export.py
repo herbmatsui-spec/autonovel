@@ -1,5 +1,3 @@
-import pytest
-from pathlib import Path
 from src.easy_mode.phase3.ebook_export import EbookExporter, EbookMetadata
 
 def test_ebook_exporter_initialization(tmp_path):

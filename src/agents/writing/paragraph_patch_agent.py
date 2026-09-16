@@ -2,7 +2,7 @@
 Agent for rewriting a specific paragraph based on a directive.
 """
 
-from typing import Any, Dict
+from typing import Dict
 from src.models.patch_pdca import ParagraphTarget, PatchRewriteResult
 
 class ParagraphPatchAgent:

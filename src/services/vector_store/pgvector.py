@@ -47,9 +47,9 @@ class PgVectorStore(BaseVectorStore):
 
         self.database_url = database_url
         self.dimension = dimension
-        
+
         async_url = database_url.replace("postgresql://", "postgresql+asyncpg://")
-        
+
         self._engine = create_async_engine(
             async_url,
             pool_size=pool_size,

@@ -5,7 +5,7 @@ This test file sets up the environment for end-to-end testing of the P1 quality 
 """
 
 import pytest
-from unittest.mock import AsyncMock, Mock, MagicMock
+from unittest.mock import AsyncMock, Mock
 
 from src.agents.writing.episode_writer import EpisodeWriter
 from src.agents.context_builder_agent import ContextBuilderAgent
@@ -335,7 +335,6 @@ async def test_commercial_quality_check_e2e(
 
     # For emotion expression score, we can mock another component or use a fixed value.
     # For simplicity, we'll assume the emotion expression score is also high.
-    emotion_score = 85.0
 
     # Prepare dimension scores for CommercialQualityMetrics
     dimension_scores = {

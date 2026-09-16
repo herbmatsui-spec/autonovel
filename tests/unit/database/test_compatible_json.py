@@ -1,4 +1,3 @@
-import pytest
 from sqlalchemy import create_engine, Column, Integer
 from sqlalchemy.orm import sessionmaker, declarative_base
 from src.infrastructure.database.types.json_type import CompatibleJSON

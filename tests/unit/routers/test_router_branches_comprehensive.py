@@ -4,9 +4,7 @@ import uuid
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
-from fastapi import HTTPException, WebSocketDisconnect
-from fastapi.testclient import TestClient
-from starlette.websockets import WebSocketState
+from fastapi import HTTPException
 
 from src.backend.routers.branches import (
     _to_response,
@@ -19,7 +17,6 @@ from src.backend.routers.branches import (
     fork_branch,
     merge_branches,
     preview_merge,
-    commit_branch_merge,
     save_branch_graph,
     start_play_session,
     get_play_state,
@@ -35,7 +32,6 @@ from src.backend.routers.branches import (
 )
 from src.backend.schemas.branch import (
     BranchForkRequest,
-    BranchMergeCommitRequest,
     BranchMergeRequest,
     BranchResponse,
 )

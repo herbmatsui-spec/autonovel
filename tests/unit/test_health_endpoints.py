@@ -2,7 +2,6 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from src.backend.routers.health import router
 import src.backend.routers.health
-from src.core.container import AppContainer
 from unittest.mock import patch
 from src.backend.health.checks import HealthCheckResult, HealthStatus
 
@@ -29,7 +28,7 @@ def test_readiness_endpoint_returns_503_on_db_failure():
         # Mock the database container to return a mock db manager
         mock_db_manager = {}
         mock_db_container.return_value = mock_db_manager
-        
+
         # Mock the check_database function to return an error result
         mock_check_db.return_value = HealthCheckResult(
             status=HealthStatus.ERROR,

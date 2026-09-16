@@ -1,4 +1,3 @@
-import pytest
 from src.services.episode_context import EpisodeContextBuilder
 
 def test_init():
@@ -10,8 +9,8 @@ def test_build_context_first_episode():
     context = builder.build_context(book_id=1, ep_num=1)
     assert context["book_id"] == 1
     assert context["ep_num"] == 1
-    assert context["is_first"] == True
-    assert context["is_last"] == False
+    assert context["is_first"]
+    assert not context["is_last"]
     assert context["target_word_count"] == 3000
     assert "previous_episode" not in context  # Because previous_episode is None and is_first=True
     assert len(builder._episode_history) == 1
@@ -29,8 +28,8 @@ def test_build_context_with_previous_episode():
     context = builder.build_context(book_id=1, ep_num=2, previous_episode=previous)
     assert context["book_id"] == 1
     assert context["ep_num"] == 2
-    assert context["is_first"] == False
-    assert context["is_last"] == False
+    assert not context["is_first"]
+    assert not context["is_last"]
     assert context["target_word_count"] == 3000
     assert "previous_episode" in context
     assert context["previous_episode"]["title"] == "前話のタイトル"
@@ -50,7 +49,7 @@ def test_build_context_without_previous_episode_not_first():
     context = builder.build_context(book_id=1, ep_num=2)
     assert context["book_id"] == 1
     assert context["ep_num"] == 2
-    assert context["is_first"] == False
+    assert not context["is_first"]
     assert context["previous_episode"] is not None
     # The previous_episode should be derived from history
     assert context["previous_episode"]["title"] == ""
@@ -127,6 +126,6 @@ def test_set_final_episode():
         {"ep_num": 3, "context": ctx3},
     ]
     builder.set_final_episode(2)
-    assert builder._episode_history[0]["context"]["is_last"] == False
-    assert builder._episode_history[1]["context"]["is_last"] == True
-    assert builder._episode_history[2]["context"]["is_last"] == False
+    assert not builder._episode_history[0]["context"]["is_last"]
+    assert builder._episode_history[1]["context"]["is_last"]
+    assert not builder._episode_history[2]["context"]["is_last"]

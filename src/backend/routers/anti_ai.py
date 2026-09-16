@@ -17,8 +17,8 @@ from src.services.anti_ai import (
 from src.services.anti_ai.models import AICategory
 
 router = APIRouter(
-    prefix="/admin/anti_ai", 
-    tags=["admin", "anti_ai"], 
+    prefix="/admin/anti_ai",
+    tags=["admin", "anti_ai"],
     dependencies=[Depends(get_current_user), Depends(require_admin())],
 )
 

@@ -1,7 +1,6 @@
 """Unit tests for Commercial Quality Benchmarks & Health Checks (Step 66 / Checkpoint 11)."""
 
-import pytest
-from src.services.commercial_benchmarks import CommercialBenchmarkJudge, CommercialQualityMetrics
+from src.services.commercial_benchmarks import CommercialBenchmarkJudge
 
 
 def test_evaluate_quality_commercial_ready():

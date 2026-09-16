@@ -18,5 +18,5 @@ class AIDisclosureGenerator:
             return "※本作の制作にあたってはAIアシスタントツール（AutoNovel）の支援を受けています。"
         elif platform_str == TargetPlatform.KINDLE.value or platform_str == "kindle":
             return "This work was created with AI-assistance (AutoNovel) for plotting and structuring."
-        
+
         return "Generated / Assisted with AI (AutoNovel)"

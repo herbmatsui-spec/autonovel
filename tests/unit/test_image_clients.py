@@ -1,4 +1,3 @@
-import base64
 import pytest
 
 from src.services.illustration.base import ImageGenerationRequest, ImageGenerationResult

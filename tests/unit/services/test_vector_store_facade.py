@@ -6,7 +6,6 @@ config・collection 系・InMemoryFallbackStore 以外のパブリックAPIを�
 """
 
 import pytest
-from unittest.mock import MagicMock, AsyncMock
 
 import src.services.vector_store as vs
 

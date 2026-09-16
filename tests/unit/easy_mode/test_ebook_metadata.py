@@ -1,4 +1,3 @@
-import pytest
 from src.easy_mode.phase3.ebook_export import EbookMetadata
 
 def test_ebook_metadata_defaults():

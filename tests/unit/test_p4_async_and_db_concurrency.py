@@ -4,12 +4,11 @@ import asyncio
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from src.services.embedding_service import EmbeddingService, embedding_service
+from src.services.embedding_service import embedding_service
 from src.services.chunk_ingestion import upsert_chunks, backfill_missing_embeddings
-from src.services.rag_service import GraphRAGService, rag_service
+from src.services.rag_service import GraphRAGService
 from src.services.graph_pipeline import GraphPipelineService
 from src.backend.redis_util import get_async_redis_client
-from src.backend.routers.tasks import get_task_status, get_dag_status, stop_task
 
 
 class TestAsyncEmbeddingOffload:
@@ -107,14 +106,13 @@ class TestRAGServiceAsync:
         mock_session.execute = MagicMock(return_value=[])
 
         # pgvectorブランチのテスト（HAS_PGVECTOR=FalseでSQLiteブランチをテスト）
-        from src.services.rag_service import GraphRAGService
 
         with patch("src.services.rag_service.embedding_service") as mock_emb:
             mock_emb.get_embedding = MagicMock(return_value=[0.1] * 1536)
 
             rag = GraphRAGService()
             # 内部で await asyncio.to_thread が呼ばれていることを確認
-            result = await rag.search_similar_chunks(mock_session, "test query")
+            await rag.search_similar_chunks(mock_session, "test query")
 
             # 埋め込み呼び出しが発生していることを確認
             mock_emb.get_embedding.assert_called()
@@ -122,7 +120,6 @@ class TestRAGServiceAsync:
     @pytest.mark.asyncio
     async def test_hybrid_search_async(self):
         """hybrid_search が非同期で動作すること."""
-        from src.services.rag_service import GraphRAGService
 
         mock_session = MagicMock()
 
@@ -180,7 +177,7 @@ class TestTasksRouterAsyncRedis:
 
             from src.backend.routers.tasks import get_task_status
 
-            result = await get_task_status("test_task")
+            await get_task_status("test_task")
 
             mock_get.assert_called_once()
             mock_redis.get.assert_called_once_with("task_status:test_task")
@@ -195,7 +192,7 @@ class TestTasksRouterAsyncRedis:
 
             from src.backend.routers.tasks import get_dag_status
 
-            result = await get_dag_status("test_dag")
+            await get_dag_status("test_dag")
 
             mock_get.assert_called_once()
             mock_redis.get.assert_called_once_with("dag_status:test_dag")
@@ -267,7 +264,7 @@ class TestAntiAIAsyncOffload:
                 request = CorrectRequest(text="test text", max_loops=3, score_threshold=90.0)
 
                 try:
-                    result = await correct(request)
+                    await correct(request)
                 except Exception:
                     pass  # 他の依存関係エラーは無視
 

@@ -3,7 +3,6 @@ test_opening_booster_cliffhanger.py - 序盤1〜3話のクリフハンガー評�
 """
 from __future__ import annotations
 
-import pytest
 
 from src.models.opening_booster import CliffhangerType
 from src.services.narrative.opening_booster_service import OpeningBoosterService

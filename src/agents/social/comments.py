@@ -21,11 +21,10 @@ def simulate_character_reactions(
     if not other_characters:
         return []
 
-    comments: list[SocialComment] = []
     author_id = journal.character_id
     author_name = journal.character_name
 
-    candidates = [
+    [
         c for c in other_characters
         if str(c.get("id", c.get("name", ""))) != author_id
         and c.get("name") != author_name

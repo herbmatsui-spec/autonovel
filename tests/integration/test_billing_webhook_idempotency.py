@@ -9,7 +9,6 @@ from unittest.mock import patch, MagicMock
 from src.backend.server import app
 from src.backend.database import get_db
 from src.backend.database.models import Base, User
-from src.backend.database.models_billing import StripeWebhookEvent, CreditTransaction
 from src.core.container import AppContainer
 
 

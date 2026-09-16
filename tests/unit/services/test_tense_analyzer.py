@@ -1,4 +1,3 @@
-import pytest
 from src.services.nlp.tense_analyzer import TenseAnalyzer
 
 def test_tense_analyzer_ratio():

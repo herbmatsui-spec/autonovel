@@ -1,5 +1,5 @@
 import openai
-from typing import Any, AsyncIterator, Iterator
+from typing import AsyncIterator, Iterator
 from src.core.llm.unified_interface import IUnifiedLLMClient
 from src.core.llm.types import LLMRequest, LLMResponse, StreamChunk, LLMUsage
 

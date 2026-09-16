@@ -1,13 +1,10 @@
 """Unit tests for UnifiedBookScoreBridge (Part 3 / Step 30 / Checkpoint 5)."""
 
-import pytest
 from src.services.book_score_mapping import (
     UnifiedBookScoreBridge,
-    Unified5DScore,
     BASE_TRANSFORMATION_MATRIX,
     DEFAULT_DIMENSION_WEIGHTS,
     PHASE_DIMENSION_SHIFTS,
-    BOOK_SCORE_DIMENSIONS,
 )
 
 

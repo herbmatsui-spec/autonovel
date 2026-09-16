@@ -8,10 +8,10 @@ async def test_writing_graph_complete_flow():
     """Writing LangGraphの正常系実行フローをテスト"""
     # キャッシュをクリアして一貫したテスト条件を確保
     WritingGraphManager.clear_gen_ctx_cache()
-    
+
     # モックマネージャーを作成
     mock_manager = MagicMock()
-    
+
     # 各ノードのモックを設定
     mock_manager._phase_prepare_context = AsyncMock(return_value=(
         "fake_gen_ctx", True, False, False, 50
@@ -29,15 +29,15 @@ async def test_writing_graph_complete_flow():
     ))
     mock_manager._run_dogfeeding_loop = AsyncMock(return_value=True)
     mock_manager._register_lazy_patch = AsyncMock()
-    
+
     # 他の必要なモック
     mock_manager.narrative = MagicMock()
     mock_manager.narrative.get_integrity_threshold = MagicMock(return_value=0.7)
     mock_manager.repo = None  # ユーザーレビューなし
-    
+
     # WritingGraphManagerのインスタンスを作成
     manager = WritingGraphManager(mock_manager)
-    
+
     # langgraphが利用できない場合のフォールバックパスをテストするため、
     # あえてHAS_LANGGRAPHをFalseにする
     with patch('src.backend.workflows.writing_langgraph.HAS_LANGGRAPH', False):
@@ -50,13 +50,13 @@ async def test_writing_graph_complete_flow():
             passion=0.8,
             is_easy_mode=False
         )
-        
+
         # アサーション
         assert isinstance(draft, str)
         assert len(draft) > 0
         assert isinstance(meta, dict)
-        assert is_ok == True  # すべてのチェックがパスしたはず
-        
+        assert is_ok  # すべてのチェックがパスしたはず
+
         # 各フェーズが呼ばれたことを確認
         mock_manager._phase_prepare_context.assert_called_once()
         mock_manager._phase_drafting.assert_called_once()
@@ -73,7 +73,7 @@ async def test_writing_graph_flow_with_mocked_workflow():
     # WritingGraphManagerのインスタンスを作成
     mock_manager = MagicMock()
     manager = WritingGraphManager(mock_manager)
-    
+
     # langgraphが利用可能な状態をシミュレート
     # workflow属性にモックを直接設定
     mock_workflow = MagicMock()
@@ -85,7 +85,7 @@ async def test_writing_graph_flow_with_mocked_workflow():
         "status": "completed"
     })
     manager.workflow = mock_workflow
-    
+
     # 初期状態を作成する内部メソッドもモック
     initial_state = {
         "ep_num": 1,
@@ -111,7 +111,7 @@ async def test_writing_graph_flow_with_mocked_workflow():
         "review_status": None,
         "requires_user_review": False
     }
-    
+
     # _create_initial_stateをモック
     with patch.object(manager, '_create_initial_state', return_value=initial_state):
         # runメソッドを実行
@@ -123,17 +123,17 @@ async def test_writing_graph_flow_with_mocked_workflow():
             passion=0.8,
             is_easy_mode=False
         )
-        
+
         # アサーション（計画書の例に合わせる）
         assert isinstance(draft, str)
         assert "完成した第1話原稿" in draft
         assert isinstance(meta, dict)
         assert meta.get("score") == 85
-        assert is_ok == True
-        
+        assert is_ok
+
         # ainvokeが呼ばれたことを確認
         mock_workflow.ainvoke.assert_called_once()
-        
+
         # 渡された引数を確認
         call_args = mock_workflow.ainvoke.call_args[0][0]
         assert call_args == initial_state

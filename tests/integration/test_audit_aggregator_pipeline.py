@@ -3,9 +3,8 @@
 import pytest
 from unittest.mock import MagicMock
 
-from src.agents.orchestrator import AgentContext, AgentName, AgentResult
+from src.agents.orchestrator import AgentContext, AgentName
 from src.agents.specialists.adapter import AuditAggregatorNode
-from src.backend.tasks.generation_tasks import _generate_orchestrated
 
 
 @pytest.mark.asyncio

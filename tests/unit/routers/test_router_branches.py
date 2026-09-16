@@ -1,4 +1,3 @@
-import pytest
 from src.backend.routers.branches import _compute_unified_diff, _compute_side_by_side_diff, _validate_uuid
 
 def test_validate_uuid_valid():

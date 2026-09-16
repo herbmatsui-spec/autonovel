@@ -16,7 +16,7 @@ from src.services.blind_review import (
 @pytest.mark.asyncio
 async def test_blind_review_e2e_isolation_and_purification():
     """E2E Test: 3-Proposal Generation, Sandbox Isolation, Blind Routing, and Leak Purification."""
-    
+
     # 1. Simulate 3 distinct proposal outputs from planning generation
     proposals = [
         {
@@ -48,7 +48,7 @@ async def test_blind_review_e2e_isolation_and_purification():
         for p in proposals
     }
     runner = ProposalIsolationRunner(proposal_ids=list(custom_contexts.keys()))
-    
+
     async def mock_eval_fn(sandbox: ProposalSandboxContext):
         p = sandbox.metadata["proposal"]
         if p["proposal_id"] == "prop_alpha_001":
@@ -86,8 +86,8 @@ async def test_blind_review_e2e_isolation_and_purification():
     for res in isolation_results.values():
         pid = res["proposal_id"]
         raw_text = res["raw_review"]
-        
-        target_prop = next(p for p in proposals if p["proposal_id"] == pid)
+
+        next(p for p in proposals if p["proposal_id"] == pid)
         sibling_props = [p for p in proposals if p["proposal_id"] != pid]
 
         # Gather forbidden terms from sibling proposals

@@ -130,7 +130,7 @@ class ContextBuilderAgent(SkillAgent):
             "book_id": ctx.book_id,
             "ep_num": ctx.ep_num,
         })
-        
+
         repo = ctx.artifacts.get("repo")
         if repo is None:
             self.emit_event("context_builder.error", {
@@ -177,7 +177,7 @@ class ContextBuilderAgent(SkillAgent):
             "book_id": book_id,
             "ep_num": ep_num,
         })
-        
+
         res_artifacts = dict(ctx.artifacts)
         res_artifacts["writing_context"] = full_context
         return AgentResult(
@@ -233,7 +233,7 @@ class ContextBuilderAgent(SkillAgent):
         prev_chapter = await self._get_prev_chapter(repo, book_id, branch_id, ep_num)
 
         active_chars = await self._get_active_chars(chars, plot)
-        
+
         # Step 53: ソーシャル関係性・直近ジャーナルの動的コンテキスト取得
         social_ctx = await self._get_social_dynamic_context(
             session=session,
@@ -256,13 +256,13 @@ class ContextBuilderAgent(SkillAgent):
             char_dynamic_ctx = self._build_char_dynamic_ctx(
                 active_chars, prev_chapter, social_context=social_ctx
             )
-        
+
         # 再生成フォーカスに応じて前話文脈を強化
         if regeneration_focus and "structure" in regeneration_focus:
             prev_ctx = self._build_prev_ctx(prev_chapter, book_id, branch_id, ep_num, include_arc_info=True)
         else:
             prev_ctx = self._build_prev_ctx(prev_chapter, book_id, branch_id, ep_num)
-        
+
         dialogue_profiles = self._build_dialogue_profiles(active_chars)
 
         plot_dict = {}
@@ -350,7 +350,7 @@ class ContextBuilderAgent(SkillAgent):
             raw_corpus = f"{prev_ctx}\n{char_static_ctx}\n{plot_dict.get('summary', '')}"
             s_type = "general"
             scene_weights = None
-            
+
             # Try to get multi-label detection from compressor or its layer4
             detector = None
             if hasattr(compressor, "detect_scene_type_multi") and callable(compressor.detect_scene_type_multi):
@@ -361,7 +361,7 @@ class ContextBuilderAgent(SkillAgent):
                 detector = compressor.detect_scene_type
             elif hasattr(getattr(compressor, "layer4", None), "detect_scene_type"):
                 detector = compressor.layer4.detect_scene_type
-            
+
             if detector:
                 multi = detector(plot_dict.get("summary", ""), plot_dict.get("scenes", []))
                 if multi:
@@ -381,7 +381,7 @@ class ContextBuilderAgent(SkillAgent):
             active_characters=active_char_names,
             pending_foreshadowing_ids=foreshadowing_ids,
         )
-        
+
         # Build SceneFlowHistory for context-aware compression (Step 14)
         # Extract recent scene types from plot history or use defaults
         recent_scene_types = []  # In a full implementation, this would come from previous episodes

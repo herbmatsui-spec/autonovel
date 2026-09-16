@@ -1,6 +1,5 @@
 # tests/unit/test_enrichment_multimedia.py
 """EnrichmentAgent マルチメディアシナリオ生成の単体テスト"""
-import pytest
 from src.agents.enrichment.multimedia import (
     classify_scene_type,
     render_manga_script,
@@ -67,10 +66,10 @@ class TestSceneClassification:
         text_high = "死を覚悟で剣を振るう。必死の攻撃。"
         text_low = "お茶を飲みながら会話する。"
         context = {"characters": ["主人公"]}
-        
+
         seg_high = classify_scene_type(text_high, context)[0]
         seg_low = classify_scene_type(text_low, context)
-        
+
         if seg_low:
             assert seg_high.tension_level >= seg_low[0].tension_level
 

@@ -3,7 +3,7 @@
 import pytest
 from unittest.mock import MagicMock
 
-from src.services.rrf_fusion import compute_rrf_scores, FusionResult
+from src.services.rrf_fusion import compute_rrf_scores
 from src.services.sparse_retriever import BM25SparseRetriever
 from src.services.hybrid_retriever import HybridRetriever
 from src.services.rag_service import SearchResult

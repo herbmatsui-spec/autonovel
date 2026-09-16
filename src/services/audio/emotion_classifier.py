@@ -117,7 +117,7 @@ class DialogueEmotionClassifier:
         exclamation_count = text.count("！")
         question_count = text.count("？") + text.count("?")
         ellipsis_count = text.count("…") + text.count("。。")
-        
+
         # Surprise: ?! or ?! combination
         if "？" in text and "！" in text:
             return SpeechEmotion.SURPRISE
@@ -142,14 +142,14 @@ class DialogueEmotionClassifier:
             if any(kw in text for kw in ["死", "殺", "許さ", "絶対", "覚悟"]):
                 return SpeechEmotion.ANGER
             return SpeechEmotion.SHOUT
-        
+
         if exclamation_count >= 2:
             if any(kw in text for kw in self.EMOTION_KEYWORDS[SpeechEmotion.ANGER]):
                 return SpeechEmotion.ANGER
             if any(kw in text for kw in self.EMOTION_KEYWORDS[SpeechEmotion.SHOUT]):
                 return SpeechEmotion.SHOUT
             return SpeechEmotion.JOY
-        
+
         if exclamation_count == 1:
             if any(kw in text for kw in self.EMOTION_KEYWORDS[SpeechEmotion.SHOUT]):
                 return SpeechEmotion.SHOUT

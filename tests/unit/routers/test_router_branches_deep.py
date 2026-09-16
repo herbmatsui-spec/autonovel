@@ -21,7 +21,6 @@ from src.backend.schemas.branch import (
 )
 from src.backend.schemas.branch_play import (
     BranchPlayChooseRequest,
-    BranchPlayEndRequest,
     BranchPlayRequest,
 )
 from src.domain.models.branch import BranchDbModelCreate
@@ -112,7 +111,7 @@ async def test_create_branch_endpoint():
         repo_inst = MockRepo.return_value
         repo_inst.create_branch = AsyncMock(return_value=1)
         repo_inst.save_branch_graph = AsyncMock()
-        
+
         mock_branch = MagicMock()
         mock_branch.id = 1
         mock_branch.book_id = 1
@@ -174,7 +173,7 @@ async def test_list_and_get_branch_tree():
          patch("src.backend.routers.branches.verify_book_ownership", new_callable=AsyncMock), \
          patch("src.backend.routers.branches.BranchRepository") as MockRepo, \
          patch("src.backend.routers.branches.AppContainer.db"):
-        
+
         uow_inst = MagicMock()
         uow_inst.__aenter__ = AsyncMock(return_value=uow_inst)
         uow_inst.__aexit__ = AsyncMock(return_value=None)

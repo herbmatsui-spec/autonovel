@@ -1,14 +1,12 @@
 """Domain entities (Novel/Chapter/Episode/Volume/Plot/PlotPoint/Arc) の単体テスト."""
 
 import pytest
-from datetime import datetime
 
 from src.domain.entities.novel import Novel, Chapter, Episode, Volume
 from src.domain.entities.plot import Plot, PlotPoint, Arc, PlotStatus, ChainPhase
-from src.domain.value_objects.ids import NovelId, UserId, PlotId, ChapterId
+from src.domain.value_objects.ids import NovelId, UserId, PlotId
 from src.domain.value_objects.text import Title, MarkdownText, TextContent, Genre, Catchcopy, Summary
 from src.domain.value_objects.metadata import NovelMode, NovelStatus
-from src.domain.value_objects.scores import TensionScore, CostScore
 
 
 class TestNovelEntity:
@@ -318,5 +316,3 @@ class TestArcEntity:
 
 
 # 便利なエイリアス import（テスト内参照用）
-from src.domain.value_objects.text import Genre, Catchcopy, Summary  # noqa: E402
-from src.domain.value_objects.metadata import NovelMode  # noqa: E402

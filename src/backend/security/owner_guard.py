@@ -24,7 +24,7 @@ async def verify_book_ownership(
         book = result.scalar_one_or_none()
         if not book:
             raise NotFoundError(f"作品が見つかりません: {book_id}", resource_type="Book", resource_id=str(book_id))
-        
+
         user_role = getattr(current_user, "role", "user")
         if book.user_id != current_user.id and user_role != "admin":
             raise HTTPException(

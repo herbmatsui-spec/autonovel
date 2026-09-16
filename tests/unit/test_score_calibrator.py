@@ -1,11 +1,9 @@
 """Unit tests for ScoreCalibrator (Part 2 / Step 18 / Checkpoint 3)."""
 
-import pytest
 from src.services.score_calibrator import (
     ScoreCalibrator,
     CalibrationConfig,
     DEFAULT_SPECIALIST_PRIORS,
-    GENRE_PRIOR_OFFSETS,
     sigmoid_scale,
 )
 

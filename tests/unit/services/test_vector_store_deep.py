@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock
 
 from src.services.vector_store import (
     ChromaClientProvider,
     ChromaVectorStore,
-    CollectionConfig,
     CollectionType,
     DEFAULT_COLLECTIONS,
 )

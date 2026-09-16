@@ -1124,7 +1124,7 @@ class MediaMixExporter:
             background="",
             mood="neutral"
         )
-        
+
         return MediaScript(
             format=MediaFormat.MANGA,
             title="自動生成漫画",
@@ -1142,13 +1142,13 @@ class MediaMixExporter:
         # 簡易的にテキストを音声ドラマのセリフ行に変換
         # 「キャラクター「セリフ」」のパターンを検出
         import re
-        
+
         voice_lines = []
-        
+
         # 「キャラクター「セリフ」」パターンを検索
         pattern = r'([^「」]+)「([^」]+)」'
         matches = re.findall(pattern, text)
-        
+
         if matches:
             for character, dialogue in matches:
                 voice_line = VoiceLine(
@@ -1165,7 +1165,7 @@ class MediaMixExporter:
                 emotion="neutral"
             )
             voice_lines.append(voice_line)
-        
+
         return MediaScript(
             format=MediaFormat.AUDIO_DRAMA,
             title="自動生成音声ドラマ",

@@ -7,10 +7,10 @@ from src.backend.database.models import Chapter
 async def test_chapter_update_content():
     mock_session = AsyncMock()
     mock_session.execute = AsyncMock()
-    
+
     repo = ChapterRepository(mock_session)
     await repo.update_chapter_content(branch_id=1, ep_num=1, content="新しい本文（15文字）")
-    
+
     mock_session.execute.assert_awaited_once()
 
 @pytest.mark.asyncio
@@ -20,7 +20,7 @@ async def test_chapter_create_new():
     mock_result.scalar_one_or_none.return_value = None
     mock_session.execute.return_value = mock_result
     mock_session.add = MagicMock()
-    
+
     repo = ChapterRepository(mock_session)
     await repo.create_chapter(
         book_id=1,
@@ -35,7 +35,7 @@ async def test_chapter_create_new():
         created_at="2026-09-15T00:00:00",
         branch_id=1,
     )
-    
+
     mock_session.add.assert_called_once()
 
 @pytest.mark.asyncio
@@ -55,7 +55,7 @@ async def test_chapter_get():
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = mock_chapter
     mock_session.execute.return_value = mock_result
-    
+
     repo = ChapterRepository(mock_session)
     ch = await repo.get_chapter(branch_id=1, ep_num=1)
     assert ch is not None
@@ -67,7 +67,7 @@ async def test_chapter_get_none():
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = None
     mock_session.execute.return_value = mock_result
-    
+
     repo = ChapterRepository(mock_session)
     ch = await repo.get_chapter(branch_id=1, ep_num=99)
     assert ch is None
@@ -76,7 +76,7 @@ async def test_chapter_get_none():
 async def test_chapter_delete():
     mock_session = AsyncMock()
     mock_session.execute = AsyncMock()
-    
+
     repo = ChapterRepository(mock_session)
     await repo.delete_chapter(book_id_or_branch_id=1, ep_num=1)
     mock_session.execute.assert_awaited_once()

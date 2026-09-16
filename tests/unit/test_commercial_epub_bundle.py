@@ -1,6 +1,5 @@
 """挿絵付き商用EPUBの配信パック・DB自動引き当て統合テスト (Part 4: Step 45, 48)。"""
 
-import io
 import json
 import zipfile
 import pytest
@@ -10,7 +9,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from src.infrastructure.database.models.base_orm import Base
-from src.backend.database.models import Book, Bible, Chapter
+from src.backend.database.models import Book, Chapter
 from src.backend.database.series_loader import SeriesDataLoader
 from src.backend.multimedia_service import MultimediaService
 from src.services.exporters.epub_manifest_builder import detect_image_media_type

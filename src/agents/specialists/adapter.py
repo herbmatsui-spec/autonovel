@@ -258,11 +258,11 @@ class AuditAggregatorNode:
             try:
                 # PostgreSQL upsert or fallback insert
                 query = text("""
-                    INSERT INTO audit_specialist_results 
+                    INSERT INTO audit_specialist_results
                         (book_id, chapter_number, specialist_name, score, feedback_json, suggestions_json, evaluated_at, evaluator_version)
-                    VALUES 
+                    VALUES
                         (:book_id, :chapter_number, :specialist_name, :score, :feedback_json, :suggestions_json, :evaluated_at, :evaluator_version)
-                    ON CONFLICT (book_id, chapter_number, specialist_name) 
+                    ON CONFLICT (book_id, chapter_number, specialist_name)
                     DO UPDATE SET
                         score = EXCLUDED.score,
                         feedback_json = EXCLUDED.feedback_json,

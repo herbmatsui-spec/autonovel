@@ -30,7 +30,7 @@ class EasyModeMarketingSkill(SkillAgent):
         try:
             book_id = ctx.book_id
             drafted_text = ctx.artifacts.get("drafted_text", "")
-            illustrations = ctx.artifacts.get("illustrations", [])
+            ctx.artifacts.get("illustrations", [])
             bible = ctx.artifacts.get("bible")
             plots = ctx.artifacts.get("plots", [])
 

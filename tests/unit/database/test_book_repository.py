@@ -20,7 +20,7 @@ async def test_book_repository_get_active_books():
     mock_result = MagicMock()
     mock_result.scalars.return_value.all.return_value = [mock_book]
     mock_session.execute.return_value = mock_result
-    
+
     repo = BookRepository(mock_session)
     books = await repo.get_all_books()
     assert len(books) == 1
@@ -31,9 +31,9 @@ async def test_book_repository_create_book():
     mock_session = AsyncMock()
     mock_session.add = MagicMock()
     mock_session.flush = AsyncMock()
-    
+
     repo = BookRepository(mock_session)
-    book_id = await repo.create_book(
+    await repo.create_book(
         user_id=1,
         title="New Novel",
         genre="Sci-Fi",
@@ -43,7 +43,7 @@ async def test_book_repository_create_book():
         style_dna={"tone": "dark"},
         marketing_data={"tags": ["AI"]},
     )
-    
+
     mock_session.add.assert_called_once()
     mock_session.flush.assert_awaited_once()
 
@@ -64,7 +64,7 @@ async def test_book_repository_get_book():
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = mock_book
     mock_session.execute.return_value = mock_result
-    
+
     repo = BookRepository(mock_session)
     book = await repo.get_book(42, user_id=1)
     assert book is not None
@@ -77,7 +77,7 @@ async def test_book_repository_get_book_not_found():
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = None
     mock_session.execute.return_value = mock_result
-    
+
     repo = BookRepository(mock_session)
     book = await repo.get_book(999)
     assert book is None
@@ -86,11 +86,11 @@ async def test_book_repository_get_book_not_found():
 async def test_book_repository_updates():
     mock_session = AsyncMock()
     mock_session.execute = AsyncMock()
-    
+
     repo = BookRepository(mock_session)
     await repo.update_book_cumulative_tension(book_id=1, user_id=1, tension=75)
     await repo.update_book_cumulative_stress(book_id=1, user_id=1, stress=50)
     await repo.update_book_target_eps(book_id=1, user_id=1, new_total_eps=30)
     await repo.delete_book(book_id=1, user_id=1)
-    
+
     assert mock_session.execute.await_count == 4

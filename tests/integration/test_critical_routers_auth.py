@@ -9,7 +9,6 @@ from src.backend.server import app
 from src.backend.database import get_db
 from src.backend.database.models import Base, User, Book
 from src.backend.security.jwt import create_access_token
-from src.backend.security.password import hash_password
 from src.core.container import AppContainer
 
 

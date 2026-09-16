@@ -193,7 +193,7 @@ class Layer4SceneTrimmer:
     ) -> List[Tuple[SceneType, float]]:
         """Infer scene narrative type with confidence scores (multi-label)."""
         combined = f"{plot_summary} {' '.join(scenes or [])}".lower()
-        
+
         scores = {}
         for scene_type, keywords in SCENE_KEYWORDS_WEIGHTED.items():
             score = 0.0
@@ -202,10 +202,10 @@ class Layer4SceneTrimmer:
                     score += kw_weight
             if score > 0:
                 scores[scene_type] = score
-        
+
         if not scores:
             return [("general", 1.0)]
-        
+
         # Apply softmax to get confidence scores
         probs = _softmax(scores)
         # Sort by confidence descending
@@ -221,7 +221,7 @@ class Layer4SceneTrimmer:
         """直前シーン履歴とエピソード主目的を考慮した文脈認識型シーン判定"""
         # 1. 基本キーワードスコアリング
         raw_probs = dict(self.detect_scene_type_multi(plot_summary, scenes))
-        
+
         # 2. 直前シーン履歴によるバイアス補正
         if scene_flow and scene_flow.recent_scene_types:
             last_scene = scene_flow.recent_scene_types[-1]
@@ -229,7 +229,7 @@ class Layer4SceneTrimmer:
             for s_type in raw_probs:
                 bias = transition_weights.get(s_type, 1.0)
                 raw_probs[s_type] *= bias
-                
+
         # 3. エピソード主目的によるボーナス補正
         if scene_flow and scene_flow.episode_goal:
             goal = scene_flow.episode_goal.lower()
@@ -252,7 +252,7 @@ class Layer4SceneTrimmer:
         protected_context: ProtectedContext | None = None,
     ) -> TrimmedContextOutput:
         """Trim facts down to token budget based on scene type importance with attention pinning (Steps 53-56).
-        
+
         Args:
             abstraction_output: Output from Layer 3
             scene_type: Single scene type (legacy, used if scene_weights not provided)
@@ -287,7 +287,7 @@ class Layer4SceneTrimmer:
                 entity = fact_item.get("entity", "")
                 # Use dual_name for pinning and keyword checks (fallback to fact)
                 display_text = fact_item.get("dual_name", content)
-                
+
                 # Check attention pinning (Step 55)
                 is_pinned = False
                 pin_reason = ""

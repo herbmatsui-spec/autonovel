@@ -1,7 +1,6 @@
 """Super simple test to check ChromaDB fixture."""
 from __future__ import annotations
 
-import pytest
 
 
 def test_chromadb_fixture(chadb_container):

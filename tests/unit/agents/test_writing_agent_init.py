@@ -1,4 +1,3 @@
-import pytest
 from src.agents.writing.writing import WritingAgent
 
 def test_writing_agent_initialization():

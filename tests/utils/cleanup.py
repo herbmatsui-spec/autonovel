@@ -1,11 +1,11 @@
 """テストクリーンアップユーティリティ.
- 
+
 統合テストで使用する共通のクリーンアップ関数を提供します。
 """
 from __future__ import annotations
 
 import logging
-from typing import Any, Callable, List
+from typing import Callable, List
 
 
 logger = logging.getLogger(__name__)
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 def cleanup_redis_client(redis_client) -> None:
     """Redis クライアントのデータをすべて削除.
-    
+
     Args:
         redis_client: クリーンアップする Redis クライアントインスタンス
     """
@@ -27,7 +27,7 @@ def cleanup_redis_client(redis_client) -> None:
 
 def cleanup_chromadb_client(chromadb_client) -> None:
     """ChromaDB クライアントのすべてのコレクションを削除.
-    
+
     Args:
         chromadb_client: クリーンアップする ChromaDB クライアントインスタンス
     """
@@ -45,7 +45,7 @@ def cleanup_chromadb_client(chromadb_client) -> None:
 
 def run_cleanup_functions(cleanup_functions: List[Callable[[], None]]) -> None:
     """複数のクリーンアップ関数を順番に実行.
-    
+
     Args:
         cleanup_functions: 実行するクリーンアップ関数のリスト
     """
@@ -58,7 +58,7 @@ def run_cleanup_functions(cleanup_functions: List[Callable[[], None]]) -> None:
 
 class CleanupManager:
     """クリーンアップ関数を管理するコンテキストマネージャ.
-    
+
     使用例:
     with CleanupManager() as cleanup:
         cleanup.add(cleanup_redis_client, redis_client)
@@ -66,13 +66,13 @@ class CleanupManager:
         # テストコードをここに書く
         # 自動的にクリーンアップが実行される
     """
-    
+
     def __init__(self):
         self._cleanup_functions: List[Callable[[], None]] = []
-    
+
     def add(self, func: Callable[..., None], *args, **kwargs) -> None:
         """クリーンアップ関数とその引数を追加.
-        
+
         Args:
             func: 実行するクリーンアップ関数
             *args: 関数に渡す位置引数
@@ -81,10 +81,10 @@ class CleanupManager:
         def wrapped_func():
             func(*args, **kwargs)
         self._cleanup_functions.append(wrapped_func)
-    
+
     def __enter__(self):
         return self
-    
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         """コンテキストを終了するときにすべてのクリーンアップ関数を実行."""
         run_cleanup_functions(self._cleanup_functions)
@@ -95,7 +95,7 @@ class CleanupManager:
 # 便利なデコレータ
 def with_cleanup(*cleanup_funcs):
     """テスト関数にクリーンアップを自動的に追加するデコレータ.
-    
+
     使用例:
     @with_cleanup(cleanup_redis_client, redis_client Fox)
     def test_something():

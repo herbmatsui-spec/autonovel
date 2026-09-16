@@ -313,47 +313,47 @@ def report_exception(self, e: Exception, context: str = "") -> None:
 # ==========================================
 class BackgroundTaskManager:
     """バックグラウンドタスクの作成と状態管理を行うマネージャークラス"""
-    
+
     def __init__(self):
         self._tasks: dict[str, ProgressState] = {}
         self._lock = threading.Lock()
-    
+
     def create_task(self, task_name: str) -> str:
         """
         新しいバックグラウンドタスクを作成する。
-        
+
         Args:
             task_name: タスクの名前
-            
+
         Returns:
             作成されたタスクのID
         """
         with self._lock:
             # タスクIDを生成（タイムスタンプベース）
             task_id = f"task_{int(time.time())}_{len(self._tasks)}"
-            
+
             # ProgressStateを作成
             progress_state = ProgressState(
                 is_running=True,
                 task_id=task_id,
                 repo=None  # 実際のリポジトリは必要に応じて設定
             )
-            
+
             # 初期メッセージを設定
             progress_state.update(
                 message=f"タスク '{task_name}' を開始しました",
                 sub_message="初期化中..."
             )
-            
+
             # タスクを登録
             self._tasks[task_id] = progress_state
-            
+
             return task_id
-    
+
     def update_progress(self, task_id: str, progress: int, message: str) -> None:
         """
         タスクの進捗を更新する。
-        
+
         Args:
             task_id: 対象のタスクID
             progress: 進捗率（0-100）
@@ -368,14 +368,14 @@ class BackgroundTaskManager:
                     step=progress,
                     total=100
                 )
-    
+
     def get_status(self, task_id: str) -> dict[str, Any] | None:
         """
         タスクの現在の状態を取得する。
-        
+
         Args:
             task_id: 対象のタスクID
-            
+
         Returns:
             タスクの状態辞書。見つからない場合はNone
         """
@@ -399,14 +399,14 @@ class BackgroundTaskManager:
                     "token_usage": state.token_usage.copy()
                 }
             return None
-    
+
     def stop_task(self, task_id: str) -> bool:
         """
         タスクの停止を要求する。
-        
+
         Args:
             task_id: 対象のタスクID
-            
+
         Returns:
             停止要求が成功したかどうか
         """
@@ -416,14 +416,14 @@ class BackgroundTaskManager:
                 state.stop()
                 return True
             return False
-    
+
     def delete_task(self, task_id: str) -> bool:
         """
         タスクを削除する。
-        
+
         Args:
             task_id: 対象のタスクID
-            
+
         Returns:
             削除が成功したかどうか
         """
@@ -432,11 +432,11 @@ class BackgroundTaskManager:
                 del self._tasks[task_id]
                 return True
             return False
-    
+
     def list_tasks(self) -> list[str]:
         """
         すべてのタスクIDをリストで返す。
-        
+
         Returns:
             タスクIDのリスト
         """

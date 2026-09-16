@@ -1,6 +1,5 @@
 import io
 import zipfile
-import pytest
 from src.services.exporters.epub_commercial_builder import CommercialEpubBuilder
 
 

@@ -13,14 +13,9 @@ from src.core.container import AppContainer
 from src.backend.database.models import PatchReview, PendingPatch, PromptVersion
 from src.backend.patch_validator import PatchValidator
 from src.backend.prompt_version_manager import PromptVersionManager
-from src.core.container import AppContainer
 from src.core.exceptions import NotFoundError, ValidationError
 
 # New imports for paragraph patching
-from src.services.prose.paragraph_indexer import ParagraphIndexer
-from src.agents.writing.paragraph_patch_agent import ParagraphPatchAgent
-from src.services.prose.patch_merger import PatchMerger
-from src.models.patch_pdca import ParagraphTarget, PatchRewriteResult
 
 router = APIRouter(prefix="/api", tags=["patches"])
 
@@ -236,7 +231,7 @@ async def get_review_detail(review_id: int, current_user: User = Depends(get_cur
             raise NotFoundError(
                 "Review not found", resource_type="PatchReview", resource_id=str(review_id)
             )
-        
+
         # 所有権を確認 (reviewからbook_idを取得して確認)
         await verify_book_ownership(review["book_id"], current_user, uow)
     return review
@@ -419,7 +414,6 @@ async def patch_paragraph(
     from src.backend.database.models import Chapter
     from sqlalchemy import select
     from src.core.exceptions import NotFoundError
-    from fastapi import HTTPException
 
     # Validate paragraph index
     if req.paragraph_index < 0:
@@ -428,7 +422,7 @@ async def patch_paragraph(
     async with UnitOfWork(AppContainer.db()) as uow:
         if uow.session is None:
             raise RuntimeError("Database session not initialized")
-        
+
         # episode_id から chapter を取得し book_id を特定
         result = await uow.session.execute(
             select(Chapter).where(Chapter.id == episode_id)
@@ -436,9 +430,9 @@ async def patch_paragraph(
         chapter = result.scalar_one_or_none()
         if not chapter:
             raise NotFoundError("Episode not found", resource_type="Chapter", resource_id=str(episode_id))
-        
+
         book_id = chapter.book_id
-        
+
         # 所有権を確認
         await verify_book_ownership(book_id, current_user, uow)
 

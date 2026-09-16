@@ -1,7 +1,6 @@
 """WorldBible/PendingSetting/Setting/Lore entities の単体テスト."""
 
 import pytest
-from datetime import datetime
 
 from src.domain.entities.world_bible import WorldBible, PendingSetting, Setting, Lore
 from src.domain.value_objects.ids import NovelId, SettingId

@@ -2,7 +2,6 @@
 
 import pytest
 import tempfile
-import yaml
 from pathlib import Path
 
 # Import the module to access cache

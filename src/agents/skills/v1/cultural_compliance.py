@@ -19,7 +19,7 @@ class CulturalComplianceChecker(SkillAgent):
             "book_id": ctx.book_id,
             "ep_num": ctx.ep_num,
         })
-        
+
         drafted_text = (
             ctx.artifacts.get("drafted_text")
             or ctx.artifacts.get("content")
@@ -65,7 +65,7 @@ class CulturalComplianceChecker(SkillAgent):
             "ep_num": ctx.ep_num,
             "result": "passed",
         })
-        
+
         return AgentResult(
             next_agent=None,
             artifacts={"cultural_compliance": "passed"},

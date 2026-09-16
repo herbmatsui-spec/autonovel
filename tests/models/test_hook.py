@@ -1,4 +1,3 @@
-import pytest
 from src.models.hook import Hook
 
 
@@ -13,7 +12,7 @@ def test_hook_creation():
         episode=3,
         chapter=5
     )
-    
+
     assert hook.id == "H-001"
     assert hook.type == "mystery"
     assert hook.content == "なぜ、彼女は俺の名を知っていたのか──"
@@ -36,7 +35,7 @@ def test_hook_all_types():
         chapter=1
     )
     assert hook_mystery.type == "mystery"
-    
+
     # threat
     hook_threat = Hook(
         id="H-003",
@@ -48,7 +47,7 @@ def test_hook_all_types():
         chapter=1
     )
     assert hook_threat.type == "threat"
-    
+
     # emotion
     hook_emotion = Hook(
         id="H-004",
@@ -75,7 +74,7 @@ def test_hook_all_target_positions():
         chapter=1
     )
     assert hook_ep.target_position == "episode_end"
-    
+
     # volume_end
     hook_vol = Hook(
         id="H-006",
@@ -87,7 +86,7 @@ def test_hook_all_target_positions():
         chapter=1
     )
     assert hook_vol.target_position == "volume_end"
-    
+
     # series_end
     hook_ser = Hook(
         id="H-007",
@@ -112,7 +111,7 @@ def test_hook_to_dict():
         episode=5,
         chapter=12
     )
-    
+
     expected = {
         "id": "H-008",
         "type": "threat",
@@ -122,7 +121,7 @@ def test_hook_to_dict():
         "episode": 5,
         "chapter": 12
     }
-    
+
     assert hook.to_dict() == expected
 
 
@@ -137,9 +136,9 @@ def test_hook_from_dict():
         "episode": 2,
         "chapter": 7
     }
-    
+
     hook = Hook.from_dict(data)
-    
+
     assert hook.id == "H-009"
     assert hook.type == "emotion"
     assert hook.content == "二人だけの秘密"
@@ -160,8 +159,8 @@ def test_hook_roundtrip():
         episode=1,
         chapter=1
     )
-    
+
     data = original.to_dict()
     restored = Hook.from_dict(data)
-    
+
     assert original == restored

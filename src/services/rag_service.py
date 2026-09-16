@@ -551,7 +551,7 @@ class GraphRAGService:
             rel = item.get("relation_type", "")
             props = item.get("properties") or {}
             desc = props.get("description", "") if isinstance(props, dict) else ""
-            
+
             fact_text = f"{name} {rel} {desc}".strip()
             item_emb = await asyncio.to_thread(embedding_service.get_embedding, fact_text)
             sim = self._cosine_similarity(prompt_emb, item_emb)
@@ -749,17 +749,17 @@ class GraphRAGService:
         book_id: int,
     ) -> dict[str, list[dict[str, Any]]]:
         """World Bible ソースを検索可能なインデックスとして構築.
-        
+
         Returns:
             claim_pattern -> list of source_refs マッピング
         """
         from src.infrastructure.database.models.chunk import ChapterChunk
-        
+
         # World Bible 関連のチャンクを取得（book_id でフィルタ、メタデータでタイプ判定）
         chunks = session.query(ChapterChunk).filter(
             ChapterChunk.chunk_metadata.op('->>')('type').in_(['world_bible', 'setting', 'lore'])
         ).all()
-        
+
         # 簡易実装: キーワードベースの逆引き索引
         index = {}
         for chunk in chunks:
@@ -770,14 +770,14 @@ class GraphRAGService:
                 "page": meta.get("page", ""),
                 "category": meta.get("category", "general"),
             }
-            
+
             # キーワード抽出（簡易: 名詞っぽい単語）
             import re
             keywords = re.findall(r'[一-龯ァ-ヴー]{2,}|[a-zA-Z]{3,}', content)
             for kw in set(keywords):
                 if len(kw) >= 2:
                     index.setdefault(kw, []).append(source_ref)
-        
+
         return index
 
     async def query_trivia_candidates(
@@ -788,7 +788,7 @@ class GraphRAGService:
         limit: int = 20,
     ) -> list[dict[str, Any]]:
         """トリビア候補をハイブリッド検索で取得.
-        
+
         世界観設定・歴史的事実・文化的雑学など、「トリビア価値ある」事実を検索.
         """
         if not scene_context or not scene_context.strip():

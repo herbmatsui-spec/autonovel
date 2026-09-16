@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import Optional, List
-from uuid import UUID
+from typing import Optional
 
 from src.domain.repositories.audit_repository import IAuditRepository
 from src.domain.repositories.unit_of_work import IUnitOfWork
 from src.domain.value_objects.ids import NovelId, AuditId
-from src.domain.entities.audit import AuditFinding, AuditResult, AuditCategory, AuditSeverity, AuditStatus, AuditType
+from src.domain.entities.audit import AuditFinding, AuditResult, AuditCategory, AuditSeverity, AuditType
 from src.application.dtos.audit_dto import (
     AuditRequestDTO,
     AuditResponseDTO,
@@ -160,7 +159,7 @@ class CompleteAuditUseCase:
             if not audit:
                 return False
             audit.complete(summary)
-            saved = await self.audit_repo.save(audit)
+            await self.audit_repo.save(audit)
             await self.uow.commit()
         return True
 

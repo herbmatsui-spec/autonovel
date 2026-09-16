@@ -1,6 +1,5 @@
 """src/services/episode_context.py と src/services/erotic_afterglow_evaluator.py の単体テスト."""
 
-import pytest
 
 from src.services.episode_context import EpisodeContextBuilder
 from src.services.erotic_afterglow_evaluator import AfterglowEvaluator

@@ -1,5 +1,4 @@
 """Unit tests for ResourceManager GPU scheduling logic (Step 14)."""
-import pytest
 from unittest.mock import patch
 from src.backend.tasks.resource_manager import ResourceManager
 from src.backend.tasks.dag_models import TaskResourceRequirement

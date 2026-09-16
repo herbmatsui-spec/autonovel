@@ -24,20 +24,20 @@ def test_openapi_schema_structure(contract_client):
     response = contract_client.get("/openapi.json")
     assert response.status_code == 200
     schema_data = response.json()
-    
+
     # 必須フィールドの存在を確認
     assert "openapi" in schema_data
     assert "info" in schema_data
     assert "paths" in schema_data
-    
+
     # info フィールドの構造をチェック
     info = schema_data["info"]
     assert "title" in info
     assert "version" in info
-    
+
     # paths が辞書であることを確認
     assert isinstance(schema_data["paths"], dict)
-    
+
     # 各パスが正しい構造であることを確認
     for path, path_item in schema_data["paths"].items():
         assert isinstance(path, str)
@@ -56,10 +56,10 @@ def test_api_schema_with_schemathesis(contract_client):
     response = contract_client.get("/openapi.json")
     assert response.status_code == 200
     raw_schema = response.json()
-    
+
     # スキーマから schemathesis オブジェクトを作成
     schema = openapi.from_dict(raw_schema)
-    
+
     # スキーマオブジェクトが正しく作成されていることを確認
     assert schema is not None
     # スキーマオブジェクトが何らかの操作をサポートしていることを確認
@@ -106,10 +106,10 @@ def test_health_endpoint_contract(contract_client):
         if response.status_code == 200:
             schema_data = response.json()
             paths = schema_data.get("paths", {})
-            
+
             # ヘルスチェック関連のエンドポイントを探す
             health_paths = [path for path in paths.keys() if "health" in path.lower() or "ping" in path.lower()]
-            
+
             if health_paths:
                 # 最初のヘルスチェックエンドポイントをテスト
                 health_path = health_paths[0]

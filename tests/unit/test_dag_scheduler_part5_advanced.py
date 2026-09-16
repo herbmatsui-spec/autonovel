@@ -1,9 +1,8 @@
 """Unit tests for DAGScheduler Part 5 (Steps 55-60): EventBus, Execution Summary, DAG Pipeline, and Status Endpoint."""
 from __future__ import annotations
 
-import asyncio
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock
 from starlette.testclient import TestClient
 
 from src.backend.tasks.dag_models import DAGGraph, DAGTaskNode

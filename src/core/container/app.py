@@ -22,6 +22,7 @@ if TYPE_CHECKING:
     pass
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.ERROR)
 
 
 class AppContainer(InfraContainer):

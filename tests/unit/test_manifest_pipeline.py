@@ -3,14 +3,10 @@ import pytest
 import tempfile
 import os
 import yaml
-from unittest.mock import MagicMock, AsyncMock
 
 from src.agents.skill_base import (
     SkillAgent,
-    SkillManifest,
-    SkillManifestItem,
     validate_manifest,
-    load_skill_from_spec,
 )
 from src.agents.orchestrator import (
     Orchestrator,

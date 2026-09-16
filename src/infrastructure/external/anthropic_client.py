@@ -5,7 +5,6 @@ Anthropic API client with Prompt Caching support.
 import anthropic
 from typing import List, Dict, Any
 from src.services.llm.prompt_cache_builder import PromptCacheBuilder
-from src.config.cost_optimization import MODEL_PRICING
 
 
 class AnthropicClient:

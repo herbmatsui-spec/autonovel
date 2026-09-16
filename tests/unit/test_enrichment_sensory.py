@@ -1,6 +1,5 @@
 # tests/unit/test_enrichment_sensory.py
 """EnrichmentAgent 感覚拡充の単体テスト"""
-import pytest
 from src.agents.enrichment.sensory import (
     detect_abstract_emotions,
     generate_sensory_details,

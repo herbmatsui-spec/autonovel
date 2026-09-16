@@ -15,17 +15,17 @@ from src.shared.utils import StatusReporter
 class EasyModePipeline:
     """
     かんたんモード用パイプライン（後方互換性ラッパー）
-    
+
     実際の処理は AutoWorkflowPipeline に委譲される。
     テスト目的で簡易インターフェースを提供。
     """
-    
+
     def __init__(self):
         # デフォルトのEasyModeパイプラインを作成
         self._pipeline = create_easy_mode_pipeline()
         # モック用にrunメソッドを持たせる（テストでの差し替えを許可）
         self.run = None  # type: ignore
-    
+
     async def execute(
         self,
         theme: str,
@@ -34,35 +34,35 @@ class EasyModePipeline:
     ) -> dict[str, Any]:
         """
         簡易インターフェースでパイプラインを実行
-        
+
         Args:
             theme: 小説のテーマ
             reporter: 進捗報告者（オプション）
             **kwargs: その他のパラメータ
-            
+
         Returns:
             結果の辞書
         """
         # テストでrunメソッドがモックされている場合はそれを使用
         if self.run is not None:
             return await self.run(theme=theme, **kwargs)
-        
+
         # 実際の処理（簡易版）
         # 本来はWorkflowContextを作成してエンジンなどが必要だが、
         # テスト目的では簡易的な結果を返す
         from unittest.mock import MagicMock
         from src.backend.orchestrator_engine_adapter import OrchestratorEngineAdapter as UltimateHegemonyEngine
-        
-        mock_engine = MagicMock(spec=UltimateHegemonyEngine)
-        
+
+        MagicMock(spec=UltimateHegemonyEngine)
+
         if reporter is None:
             mock_reporter = StatusReporter.__new__(StatusReporter)  # type: ignore
             mock_reporter.report = lambda *args, **kwargs: None
         else:
             mock_reporter = reporter
-        
+
         # ワークフローコンテキストを作成
-        ctx = WorkflowContext(
+        WorkflowContext(
             genre="ファンタジー",  # デフォルト
             keywords="",
             archetype_key="チート主人公",
@@ -85,7 +85,7 @@ class EasyModePipeline:
             is_easy_mode=True,
             preset_name="zarma",
         )
-        
+
         # 実際のパイプラインを実行（モックなので例外になる可能性が高い）
         try:
             # ここで実際のpipeline.executeを呼び出したいが、

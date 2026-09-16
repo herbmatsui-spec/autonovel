@@ -23,6 +23,7 @@ from sqlalchemy.orm import relationship
 
 from src.infrastructure.database.models.base_orm import Base
 from src.backend.database.models_checkpoint import WorkflowCheckpointModel
+from src.backend.database.models_tenant import Tenant, TenantMember
 from src.infrastructure.database.types import CompatibleJSON, CompatibleDateTime, CompatibleVector
 
 """

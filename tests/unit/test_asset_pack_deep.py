@@ -5,9 +5,8 @@ import json
 import shutil
 import tempfile
 import zipfile
-from datetime import datetime
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -202,11 +201,11 @@ async def test_asset_pack_generator_generate_pack_minimal(tmp_path):
             include_ebook=False,
             clean_work_dir=False  # Keep work dir for inspection
         )
-        
+
         # Check that the zip file was created
         assert zip_path.exists()
         assert zip_path.name == "test_pack.zip"
-        
+
         # Check the contents of the zip file
         with zipfile.ZipFile(zip_path, 'r') as zf:
             names = zf.namelist()
@@ -215,7 +214,7 @@ async def test_asset_pack_generator_generate_pack_minimal(tmp_path):
             assert any("pack_metadata.json" in name for name in names)
             # Should have the original novel file (from our mock)
             assert any("orig.json" in name for name in names)
-            
+
             # Check the metadata content
             metadata_name = [name for name in names if "pack_metadata.json" in name][0]
             metadata_content = json.loads(zf.read(metadata_name))
@@ -240,7 +239,7 @@ async def test_asset_pack_generator_generate_pack_with_all_options(tmp_path):
     gen = AssetPackGenerator("ハイファンタジー (R15)", preset)
     output_dir = tmp_path / "output"
     output_dir.mkdir()
-    
+
     # Mock the internal generation methods
     # _init_components もモック (create_ebook_exporter シグネチャ不整合のため)
     with patch.object(gen, "_init_components", return_value=None), \
@@ -250,7 +249,7 @@ async def test_asset_pack_generator_generate_pack_with_all_options(tmp_path):
          patch.object(gen, '_generate_ebooks', return_value={"title.epub": "EPUBファイル", "title.pdf": "PDFファイル"}), \
          patch.object(gen, '_generate_promo_materials', return_value={"synopsis.txt": "あらすじ", "catchphrases.txt": "キャッチコピー"}), \
          patch.object(gen, '_calculate_checksums', return_value={"file1.txt": "hash1", "file2.txt": "hash2"}):
-        
+
         zip_path = gen.generate_pack(
             series,
             output_dir=output_dir,
@@ -262,37 +261,37 @@ async def test_asset_pack_generator_generate_pack_with_all_options(tmp_path):
             ebook_formats=["epub", "pdf"],
             clean_work_dir=False
         )
-        
+
         assert zip_path.exists()
         assert zip_path.name == "full_pack.zip"
-        
+
         with zipfile.ZipFile(zip_path, 'r') as zf:
             names = zf.namelist()
             # Check that all expected files are present in the manifest
             manifest_name = [name for name in names if "pack_metadata.json" in name][0]
             manifest_content = json.loads(zf.read(manifest_name))
             manifest = manifest_content["manifest"]
-            
+
             # Check original files (mock の戻り値は series.json と ep001.txt のみ)
             assert "series.json" in manifest
             assert "ep001.txt" in manifest
-            
+
             # Check IF route files
             assert "graph.json" in manifest
             assert "route_scenarios/main.json" in manifest
-            
+
             # Check media mix files (mock の戻り値は manga/ep001.txt と index.json のみ)
             assert "manga/ep001.txt" in manifest
             assert "index.json" in manifest
-            
+
             # Check ebook files
             assert "title.epub" in manifest
             assert "title.pdf" in manifest
-            
+
             # Check promo materials
             assert "synopsis.txt" in manifest
             assert "catchphrases.txt" in manifest
-            
+
             # Check metadata content
             assert manifest_content["pack_id"] == "full_pack"
             assert manifest_content["title"] == "テストシリーズ"
@@ -323,7 +322,7 @@ def test_asset_pack_generator_save_original_novel(tmp_path):
     assert expected_ep_file in files
     assert "plot_outline.json" in files
     assert "bible.json" in files
-    
+
     # Check the content of series_complete.json
     series_data = json.loads((output_dir / "series_complete.json").read_text(encoding="utf-8"))
     assert series_data["title"] == "テストシリーズ"
@@ -388,7 +387,7 @@ def test_asset_pack_generator_generate_media_mix(tmp_path):
     gen = AssetPackGenerator("ハイファンタジー (R15)", preset)
     output_dir = tmp_path / "media_mix"
     output_dir.mkdir()
-    
+
     # We'll mock the MediaMixExporter
     from src.easy_mode.phase3.media_mix import MediaFormat
 
@@ -411,7 +410,6 @@ def test_asset_pack_generator_generate_media_mix(tmp_path):
         assert (output_dir / "media_mix_index.json").exists()
 
         # Check the return value (Windows ではパス区切りが \\ になるため os.sep で正規化)
-        import os
 
         normalized = {k.replace("\\", "/"): v for k, v in files.items()}
         assert "ep001/ep001_manga.json" in normalized
@@ -424,7 +422,7 @@ def test_asset_pack_generator_generate_ebooks(tmp_path):
     gen = AssetPackGenerator("ハイファンタジー (R15)", preset)
     output_dir = tmp_path / "ebook"
     output_dir.mkdir()
-    
+
     # We'll mock the EbookExporter
     with patch("src.easy_mode.phase3.asset_pack.create_ebook_exporter") as MockCreate:
         mock_exporter = MockCreate.return_value
@@ -457,9 +455,9 @@ def test_asset_pack_generator_generate_promo_materials(tmp_path):
     gen = AssetPackGenerator("ハイファンタジー (R15)", preset)
     output_dir = tmp_path / "promo"
     output_dir.mkdir()
-    
+
     files = gen._generate_promo_materials(series, output_dir)
-    
+
     # Check that files were created
     assert (output_dir / "synopsis_long.txt").exists()
     assert (output_dir / "synopsis_short.txt").exists()
@@ -468,7 +466,7 @@ def test_asset_pack_generator_generate_promo_materials(tmp_path):
     assert (output_dir / "keywords.txt").exists()
     assert (output_dir / "sns_posts.json").exists()
     assert (output_dir / "press_release.txt").exists()
-    
+
     # Check the return value
     assert "synopsis_long.txt" in files
     assert "synopsis_short.txt" in files
@@ -488,16 +486,16 @@ def test_asset_pack_generator_calculate_checksums(tmp_path):
     subdir = test_dir / "subdir"
     subdir.mkdir()
     (subdir / "file3.txt").write_text("content3", encoding="utf-8")
-    
+
     preset = {"characters": {"archetypes": {}}, "erotic": {}}
     gen = AssetPackGenerator("ハイファンタジー (R15)", preset)
     checksums = gen._calculate_checksums(test_dir)
-    
+
     # Check that we got checksums for all files
     assert "file1.txt" in checksums
     assert "file2.txt" in checksums
     assert "subdir/file3.txt" in checksums or "subdir\\file3.txt" in checksums
-    
+
     # Check that the checksums are 16-character hex strings
     for hash_val in checksums.values():
         assert len(hash_val) == 16
@@ -510,13 +508,13 @@ def test_asset_pack_generator_create_zip(tmp_path):
     (source_dir / "file1.txt").write_text("content1", encoding="utf-8")
     (source_dir / "file2.txt").write_text("content2", encoding="utf-8")
     zip_path = tmp_path / "output.zip"
-    
+
     preset = {"characters": {"archetypes": {}}, "erotic": {}}
     gen = AssetPackGenerator("ハイファンタジー (R15)", preset)
     gen._create_zip(source_dir, zip_path)
-    
+
     assert zip_path.exists()
-    
+
     # Check the contents of the zip
     with zipfile.ZipFile(zip_path, 'r') as zf:
         names = zf.namelist()
@@ -532,9 +530,9 @@ def test_pack_to_zip_function(tmp_path):
     source_dir.mkdir()
     (source_dir / "test.txt").write_text("hello", encoding="utf-8")
     zip_path = tmp_path / "output.zip"
-    
+
     pack_to_zip(str(source_dir), str(zip_path))
-    
+
     assert zip_path.exists()
     with zipfile.ZipFile(zip_path, 'r') as zf:
         assert "test.txt" in zf.namelist()
@@ -545,9 +543,9 @@ def test_export_asset_pack_function():
     work_dir = Path("/tmp/work")
     episodes = ["episode1.txt", "episode2.txt"]
     title = "テストタイトル"
-    
+
     result = export_asset_pack(work_dir, episodes, title)
-    
+
     assert result["title"] == title
     assert result["episodes"] == episodes
     assert result["work_dir"] == str(work_dir)
@@ -566,7 +564,7 @@ def test_asset_pack_generator_generate_pack_with_clean_work_dir(tmp_path):
     gen = AssetPackGenerator("ハイファンタジー (R15)", preset)
     output_dir = tmp_path / "output"
     output_dir.mkdir()
-    
+
     # _init_components もモック (create_ebook_exporter シグネチャ不整合のため)
     with patch.object(gen, "_init_components", return_value=None), \
          patch.object(gen, '_save_original_novel', return_value={}), \
@@ -575,14 +573,14 @@ def test_asset_pack_generator_generate_pack_with_clean_work_dir(tmp_path):
          patch.object(gen, '_generate_ebooks', return_value={}), \
          patch.object(gen, '_generate_promo_materials', return_value={}), \
          patch.object(gen, '_calculate_checksums', return_value={}):
-        
+
         zip_path = gen.generate_pack(
             series,
             output_dir=output_dir,
             pack_id="clean_test",
             clean_work_dir=True
         )
-        
+
         # The work directory should have been removed
         work_dir = output_dir / "asset_pack_clean_test"
         assert not work_dir.exists()
@@ -596,13 +594,13 @@ def test_asset_pack_generator_generate_pack_with_custom_licensing(tmp_path):
     gen = AssetPackGenerator("ハイファンタジー (R15)", preset)
     output_dir = tmp_path / "output"
     output_dir.mkdir()
-    
+
     custom_licensing = {
         "type": "Copyright",
         "commercial_use": True,
         "holder": "Test Company"
     }
-    
+
     # _init_components もモック (create_ebook_exporter シグネチャ不整合のため)
     with patch.object(gen, "_init_components", return_value=None), \
          patch.object(gen, '_save_original_novel', return_value={}), \
@@ -611,7 +609,7 @@ def test_asset_pack_generator_generate_pack_with_custom_licensing(tmp_path):
          patch.object(gen, '_generate_ebooks', return_value={}), \
          patch.object(gen, '_generate_promo_materials', return_value={}), \
          patch.object(gen, '_calculate_checksums', return_value={}):
-        
+
         zip_path = gen.generate_pack(
             series,
             output_dir=output_dir,
@@ -619,7 +617,7 @@ def test_asset_pack_generator_generate_pack_with_custom_licensing(tmp_path):
             licensing=custom_licensing,
             clean_work_dir=False
         )
-        
+
         with zipfile.ZipFile(zip_path, 'r') as zf:
             metadata_name = [name for name in zf.namelist() if "pack_metadata.json" in name][0]
             metadata_content = json.loads(zf.read(metadata_name))

@@ -1,4 +1,3 @@
-import pytest
 from src.services.exporters.base import (
     normalize_newlines,
     escape_ruby_markup,

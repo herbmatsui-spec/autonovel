@@ -1,5 +1,4 @@
-import pytest
-from src.easy_mode.phase3.media_mix import MediaMixExporter, MediaFormat
+from src.easy_mode.phase3.media_mix import MediaMixExporter
 
 def test_export_manga_script():
     exporter = MediaMixExporter(genre="fantasy", preset={})

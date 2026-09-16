@@ -8,18 +8,18 @@ spec.loader.exec_module(marketing)
 MarketingAgent = marketing.MarketingAgent
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 
 @pytest.mark.asyncio
 async def test_create_export_package_fallback():
     """Test with no repo and no book_data -> uses fallback."""
     agent = MarketingAgent(repo=None)
     zip_bytes, filename = await agent.create_export_package(book_id=1)
-    
+
     assert isinstance(zip_bytes, bytes)
     assert len(zip_bytes) > 0
     assert filename == "export_1.zip"
-    
+
     # Basic check: ZIP contains expected files
     import zipfile
     import io
@@ -39,10 +39,10 @@ async def test_create_export_package_with_repo_returns_none():
     mock_repo.get_all_characters.return_value = []
     mock_repo.get_latest_bible.return_value = None
     mock_repo.get_all_plots.return_value = []
-    
+
     agent = MarketingAgent(repo=mock_repo)
     zip_bytes, filename = await agent.create_export_package(book_id=1)
-    
+
     assert isinstance(zip_bytes, bytes)
     assert len(zip_bytes) > 0
     assert filename == "export_1.zip"
@@ -57,14 +57,14 @@ async def test_create_export_package_with_repo_data():
     mock_book.genre = "Test Genre"
     mock_book.current_branch_id = 1
     mock_repo.get_book.return_value = mock_book
-    
+
     # Mock chapters
     mock_chapter = MagicMock()
     mock_chapter.ep_num = 1
     mock_chapter.title = "Test Chapter"
     mock_chapter.content = "Test content"
     mock_repo.get_all_non_anchor_chapters.return_value = [mock_chapter]
-    
+
     # Mock characters
     mock_char = MagicMock()
     mock_char.name = "Test Char"
@@ -72,26 +72,26 @@ async def test_create_export_package_with_repo_data():
     mock_char.personality = "Brave"
     mock_char.ability = "Sword"
     mock_repo.get_all_characters.return_value = [mock_char]
-    
+
     # Mock bible
     mock_bible = MagicMock()
     mock_bible.settings = {"world": "fantasy"}
     mock_repo.get_latest_bible.return_value = mock_bible
-    
+
     # Mock plots
     mock_plot = MagicMock()
     mock_plot.ep_num = 1
     mock_plot.title = "Test Plot"
     mock_plot.one_line_summary = "Test summary"
     mock_repo.get_all_plots.return_value = [mock_plot]
-    
+
     agent = MarketingAgent(repo=mock_repo)
     zip_bytes, filename = await agent.create_export_package(book_id=1)
-    
+
     assert isinstance(zip_bytes, bytes)
     assert len(zip_bytes) > 0
     assert filename == "export_1.zip"
-    
+
     # Verify ZIP content includes our data
     import zipfile
     import io
@@ -122,9 +122,9 @@ async def test_create_export_package_with_book_data_override():
     mock_repo.get_all_characters.return_value = []
     mock_repo.get_latest_bible.return_value = None
     mock_repo.get_all_plots.return_value = []
-    
+
     agent = MarketingAgent(repo=mock_repo)
-    
+
     book_data = {
         "title": "Book Data Title",
         "genre": "Book Data Genre",
@@ -133,13 +133,13 @@ async def test_create_export_package_with_book_data_override():
         "plots": [{"ep_num": 1, "title": "Book Data Plot", "one_line_summary": "Book Data Summary"}],
         "bible_settings": {"key": "value"}
     }
-    
+
     zip_bytes, filename = await agent.create_export_package(book_id=1, book_data=book_data)
-    
+
     assert isinstance(zip_bytes, bytes)
     assert len(zip_bytes) > 0
     assert filename == "export_1.zip"
-    
+
     # Verify ZIP content uses book_data
     import zipfile
     import io

@@ -9,6 +9,7 @@ import os
 
 from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
+from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.backend.config import settings
@@ -43,6 +44,7 @@ async def get_current_user(
     """現在の認証済みユーザーを取得する。
     AUTH_DISABLED が True の場合は、開発用モックユーザーを返却してバイパスする。
     """
+    print(f"DEBUG: get_current_user called with token={token[:20] if token else None}")
     if settings.AUTH_DISABLED:
         return _get_dev_mock_user()
 
@@ -137,7 +139,7 @@ async def require_admin_user_or_key(
     if key:
         # API Key 保持者には読み取り専用ロールを付与（admin 昇格しない）
         api_user = _get_dev_mock_user()
-        setattr(api_user, "role", "api_readonly")
+        api_user.role = "api_readonly"
         return api_user
 
     raise HTTPException(
@@ -165,11 +167,11 @@ async def validate_api_key_or_raise(
 
 __all__ = [
     "get_current_user",
+    "get_prompt_manager",
+    "oauth2_scheme",
     "require_admin_user",
     "require_admin_user_or_key",
     "require_api_key",
     "validate_api_key_or_raise",
     "validate_api_key_sync",
-    "get_prompt_manager",
-    "oauth2_scheme",
 ]

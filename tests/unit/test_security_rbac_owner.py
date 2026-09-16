@@ -4,7 +4,6 @@ from fastapi import HTTPException
 from src.backend.database.models import Book, User
 from src.backend.security.roles import RoleChecker, UserRole
 from src.backend.security.owner_guard import verify_book_ownership
-from src.core.exceptions import NotFoundError
 
 def test_role_checker_admin_allows_admin():
     checker = RoleChecker([UserRole.ADMIN])
@@ -24,7 +23,7 @@ async def test_verify_book_ownership_success_owner():
     book = Book(id=100, user_id=10, title="Own Book")
     mock_uow = MagicMock()
     mock_uow.session.execute = AsyncMock(return_value=MagicMock(scalar_one_or_none=lambda: book))
-    
+
     res = await verify_book_ownership(100, user, mock_uow)
     assert res.id == 100
 
@@ -34,7 +33,7 @@ async def test_verify_book_ownership_forbidden_other_user():
     other_book = Book(id=200, user_id=99, title="Other Book")
     mock_uow = MagicMock()
     mock_uow.session.execute = AsyncMock(return_value=MagicMock(scalar_one_or_none=lambda: other_book))
-    
+
     with pytest.raises(HTTPException) as exc:
         await verify_book_ownership(200, user, mock_uow)
     assert exc.value.status_code == 403
@@ -45,6 +44,6 @@ async def test_verify_book_ownership_allowed_for_admin():
     other_book = Book(id=200, user_id=99, title="Other Book")
     mock_uow = MagicMock()
     mock_uow.session.execute = AsyncMock(return_value=MagicMock(scalar_one_or_none=lambda: other_book))
-    
+
     res = await verify_book_ownership(200, admin, mock_uow)
     assert res.id == 200

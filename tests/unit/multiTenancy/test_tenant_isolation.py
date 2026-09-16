@@ -1,4 +1,3 @@
-import pytest
 from src.backend.database.models import User, Book
 
 def test_user_has_tenant_id():

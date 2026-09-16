@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 from src.domain.domain_services.bible_domain_service import (
     BibleDomainService, BibleConsistencyChecker, BibleValidator, BibleValidationError,
-    SettingConflictType, SettingConflict, ConsistencyReport,
+    SettingConflictType, ConsistencyReport,
 )
 from src.domain.entities.world_bible import WorldBible, Setting, Lore
 from src.domain.value_objects.ids import NovelId, SettingId

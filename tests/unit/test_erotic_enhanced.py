@@ -1,8 +1,7 @@
 """官能エージェント高度化（語彙刷新・LLM評価・GraphRAG連携・挿絵プロンプト）のテスト."""
 from __future__ import annotations
 
-import pytest
-from unittest.mock import MagicMock, AsyncMock
+from unittest.mock import MagicMock
 
 from src.agents.erotic.evaluator import EroticQualityReport, EroticQualityScorer
 from src.agents.erotic.continuity import SceneStateSnapshot

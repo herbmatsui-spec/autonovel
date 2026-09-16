@@ -7,19 +7,18 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from src.backend.tasks.dag_models import DAGGraph, DAGTaskNode
 from src.backend.tasks.dag_scheduler import DAGScheduler
-from src.backend.tasks.resource_manager import ResourceManager
 
 
 @pytest.mark.asyncio
 async def test_cascade_cancel_downstream():
     """Test that downstream tasks are automatically cascade-cancelled when an upstream task fails."""
     graph = DAGGraph(dag_id="test_cascade")
-    
+
     # A -> B -> C
     node_a = DAGTaskNode(task_id="A", func_name="fail_fn", retry_limit=0)
     node_b = DAGTaskNode(task_id="B", func_name="noop_fn", dependencies=["A"])
     node_c = DAGTaskNode(task_id="C", func_name="noop_fn", dependencies=["B"])
-    
+
     graph.add_node(node_a)
     graph.add_node(node_b)
     graph.add_node(node_c)
@@ -83,7 +82,7 @@ async def test_dag_scheduler_huey_dispatch():
 
     with patch("src.backend.tasks.huey.execute_agent_node_task") as mock_exec, \
          patch("src.backend.tasks.huey.async_wait_huey_result", new_callable=AsyncMock) as mock_wait:
-        
+
         mock_task = MagicMock()
         mock_exec.return_value = mock_task
         mock_wait.return_value = fake_huey_result

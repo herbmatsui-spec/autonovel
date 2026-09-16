@@ -1,6 +1,6 @@
 class IllustrationPromptGenerator:
     """イラストレーションプロンプトジェネレーター"""
-    
+
     def build_prompt(self, character_desc: str, mood: str, style: str) -> str:
         """シーンからプロンプトを生成する"""
         # 簡易実装：キャラクター説明、ムード、スタイルを組み合わせる

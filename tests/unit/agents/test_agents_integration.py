@@ -1,5 +1,4 @@
 import pytest
-from unittest.mock import AsyncMock
 
 @pytest.mark.asyncio
 async def test_agent_pipeline_e2e_mock():

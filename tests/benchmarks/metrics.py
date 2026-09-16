@@ -81,7 +81,7 @@ def compute_scaling_metrics(
         if cp in checkpoints:
             return checkpoints[cp]
         return checkpoints[str(cp)]
-    
+
     latencies = [get_cp(cp)["latency_ms"]["mean"] for cp in ep_counts]
     memories = [get_cp(cp)["memory_mb"]["mean"] for cp in ep_counts]
 

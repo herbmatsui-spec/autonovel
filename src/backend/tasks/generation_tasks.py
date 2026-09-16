@@ -20,7 +20,7 @@ from src.backend.database.repository import BookRepository
 from src.backend.observability.health import metrics
 from src.backend.tasks.huey import huey
 from src.backend.database.models import BookDbModel
-from src.services.billing.credit_service import CreditService, InsufficientCreditsError
+from src.services.billing.credit_service import CreditService
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +29,7 @@ def _get_user_id_from_book_id(book_id: int) -> int:
     """書籍IDからユーザーIDを取得する。"""
     session = database.SessionLocal()
     try:
-        book = session.query(BookDbModel).get(book_id)
+        book = session.get(BookDbModel, book_id)
         if book is None:
             raise ValueError(f"Book not found: {book_id}")
         return book.user_id
@@ -40,10 +40,20 @@ def _get_user_id_from_book_id(book_id: int) -> int:
 def _run_async(coro: Any) -> Any:
     """新規 event loop を作成して coroutine を同期実行する。"""
     loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     try:
         return loop.run_until_complete(coro)
     finally:
-        loop.close()
+        try:
+            # 残存タスクのキャンセル
+            pending = asyncio.all_tasks(loop)
+            for task in pending:
+                task.cancel()
+            if pending:
+                loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+        finally:
+            loop.close()
+            asyncio.set_event_loop(None)
 
 
 async def _generate(payload: dict[str, Any]) -> dict[str, Any]:
@@ -275,7 +285,7 @@ def _update_task_in_db(
                     # Extract book_id from payload, handle missing or invalid
                     raw_book_id = payload.get("book_id") if payload else None
                     target_book_id = int(raw_book_id) if raw_book_id is not None and str(raw_book_id).isdigit() and int(raw_book_id) > 0 else None
-                    
+
                     saved_book = repo.save_or_update_book_with_chapter(
                         book_id=target_book_id,
                         title=f"{char_params.get('name', '主人公')}の冒険譚"

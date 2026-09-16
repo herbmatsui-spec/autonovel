@@ -95,6 +95,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(title=f"{settings.APP_NAME} Backend", version=settings.APP_VERSION, lifespan=lifespan)
 
+
+
+from src.backend.middleware.auth_middleware import GlobalAuthMiddleware
+
+register_error_handlers(app)
+app.add_middleware(GlobalAuthMiddleware)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origin_list,
@@ -102,11 +109,6 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=settings.cors_allow_headers_list,
 )
-
-from src.backend.middleware.auth_middleware import GlobalAuthMiddleware
-
-register_error_handlers(app)
-app.add_middleware(GlobalAuthMiddleware)
 
 
 # コアルーター登録

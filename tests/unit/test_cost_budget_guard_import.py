@@ -1,5 +1,5 @@
 from src.services.cost_analytics import CostCalculator
-from src.services.cost_budget_guard import CostBudgetGuard, BudgetStatus
+from src.services.cost_budget_guard import CostBudgetGuard
 
 # Test that CostCalculator can be instantiated
 calc = CostCalculator()

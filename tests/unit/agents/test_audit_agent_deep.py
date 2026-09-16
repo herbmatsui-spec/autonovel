@@ -183,7 +183,7 @@ async def test_logical_auditor_generate_critic_feedback():
     # With prompt manager and callable LLM
     pm = MagicMock()
     pm.build_critic_feedback_prompt = AsyncMock(return_value="critic prompt")
-    
+
     async def mock_llm_call(purpose, prompt):
         res = MagicMock()
         res.metadata = {"rewrite_guidance": "Add more sensory details."}

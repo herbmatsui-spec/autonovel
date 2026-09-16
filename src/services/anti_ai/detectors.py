@@ -60,7 +60,6 @@ def _split_sentences(text: str) -> list[tuple[int, int, str]]:
 
 def _split_paragraphs(text: str) -> list[tuple[int, int, str]]:
     out: list[tuple[int, int, str]] = []
-    start = 0
     parts = re.split(r"\n\s*\n", text)
     cursor = 0
     for part in parts:
@@ -184,9 +183,8 @@ class SameStructureDetector(BaseRuleDetector):
         sentences = _split_sentences(text)
         if not sentences:
             return 100.0
-        consecutive_count = 3
         if self.config is not None:
-            consecutive_count = self.config.detectors.SAME_STRUCTURE.consecutive_count
+            pass
         # Ratio of flagged sentences to total
         ratio = len(violations) / max(len(sentences), 1)
         if ratio == 0:

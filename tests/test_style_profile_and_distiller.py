@@ -1,5 +1,5 @@
 import pytest
-from src.models.style_profile import StyleProfile, SentenceLengthModel, SentenceEndDistribution, MetaphorFrequency
+from src.models.style_profile import StyleProfile, SentenceLengthModel, SentenceEndDistribution
 from src.services.style_distiller import StyleDistillerService
 from src.services.llm.mock_adapter import MockLLMAdapter
 

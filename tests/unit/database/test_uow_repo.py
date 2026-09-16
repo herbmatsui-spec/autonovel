@@ -1,4 +1,3 @@
-import pytest
 from src.backend.database.uow import UnitOfWork
 
 def test_unit_of_work_initialization():

@@ -304,31 +304,31 @@ def resolve_speaker_and_style(
 ) -> tuple[int, AcousticParameters]:
     """
     Resolve VOICEVOX speaker_id (style_id) and acoustic parameters for a character and emotion.
-    
+
     Returns:
         tuple of (speaker_id, AcousticParameters)
     """
     # Get base acoustic parameters for the emotion
     base_params = EMOTION_ACOUSTIC_TABLE.get(emotion, EMOTION_ACOUSTIC_TABLE[SpeechEmotion.NEUTRAL])
-    
+
     # Look up style registry for the speaker
     speaker_styles = VOICEVOX_STYLE_REGISTRY.get(speaker_name)
-    
+
     if speaker_styles is not None:
         # Speaker found in registry
         style_id = speaker_styles.get(emotion)
         if style_id is not None:
             return style_id, base_params
-        
+
         # Emotion-specific style not found, try NEUTRAL
         style_id = speaker_styles.get(SpeechEmotion.NEUTRAL)
         if style_id is not None:
             return style_id, base_params
-        
+
         # Fallback to first available style for this speaker
         style_id = next(iter(speaker_styles.values()))
         return style_id, base_params
-    
+
     # Speaker not in registry - use default based on gender/role
     default_id = _get_default_speaker_id(gender, role)
     return default_id, base_params
@@ -351,7 +351,7 @@ def _get_default_speaker_id(gender: str, role: str) -> int:
         elif role == "villain":
             return 28  # 青山龍星 (normal)
         return 23  # default male
-    
+
     # Female defaults
     if role == "heroine":
         return 3  # ずんだもん (normal)
@@ -365,7 +365,7 @@ def _get_default_speaker_id(gender: str, role: str) -> int:
 def load_voice_config(config_path: Optional[str] = None) -> dict[str, dict[SpeechEmotion, int]]:
     """
     Load VOICEVOX style configuration from YAML file.
-    
+
     Expected YAML format:
     speakers:
       "Character Name":
@@ -373,11 +373,11 @@ def load_voice_config(config_path: Optional[str] = None) -> dict[str, dict[Speec
         joy: 1
         anger: 7
         ...
-    
+
     Args:
         config_path: Path to YAML config file. If None, tries to load from
                      config/audio_voices.yaml relative to project root.
-    
+
     Returns:
         Dictionary mapping speaker names to emotion->style_id mappings.
     """
@@ -385,17 +385,17 @@ def load_voice_config(config_path: Optional[str] = None) -> dict[str, dict[Speec
         # Try to find config file
         project_root = Path(__file__).parent.parent.parent.parent
         config_path = project_root / "config" / "audio_voices.yaml"
-    
+
     if not os.path.exists(config_path):
         return {}
-    
+
     try:
         with open(config_path, "r", encoding="utf-8") as f:
             data = yaml.safe_load(f)
-        
+
         if not data or "speakers" not in data:
             return {}
-        
+
         result: dict[str, dict[SpeechEmotion, int]] = {}
         for speaker_name, styles in data["speakers"].items():
             result[speaker_name] = {}
@@ -405,7 +405,7 @@ def load_voice_config(config_path: Optional[str] = None) -> dict[str, dict[Speec
                     result[speaker_name][emotion] = int(style_id)
                 except ValueError:
                     continue
-        
+
         return result
     except Exception:
         return {}
@@ -417,12 +417,12 @@ def get_speaker_config(speaker_name: str) -> SpeakerConfig:
     male_speakers = {"玄野武宏", "白上虎太郎", "青山龍星", "雀松朱司", "麒ヶ島宗麟", "裏命", "先生"}
     child_speakers = {"雨晴はう", "もち子", "あいえるたん"}
     villain_speakers = {"冥鳴ひまり", "†聖騎士 紅桜†"}
-    
+
     if speaker_name in male_speakers:
         return SpeakerConfig(name=speaker_name, gender="male", role="hero")
     elif speaker_name in child_speakers:
         return SpeakerConfig(name=speaker_name, gender="female", role="child")
     elif speaker_name in villain_speakers:
         return SpeakerConfig(name=speaker_name, gender="female", role="villain")
-    
+
     return SpeakerConfig(name=speaker_name, gender="female", role="heroine")

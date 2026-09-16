@@ -8,11 +8,11 @@ async def test_plot_repository_save_and_fetch():
     mock_session = AsyncMock()
     # Create a Plot with all required fields for PlotDbModel
     mock_plot = Plot(
-        id=1, 
-        book_id=1, 
-        branch_id=1, 
-        ep_num=1, 
-        title="Test Plot", 
+        id=1,
+        book_id=1,
+        branch_id=1,
+        ep_num=1,
+        title="Test Plot",
         status="expanded",
         thought_process="",
         summary="",
@@ -53,7 +53,7 @@ async def test_plot_repository_save_and_fetch():
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = mock_plot
     mock_session.execute.return_value = mock_result
-    
+
     repo = PlotRepository(mock_session)
     plot = await repo.get_plot(book_id_or_branch_id=1, ep_num=1)
     assert plot is not None

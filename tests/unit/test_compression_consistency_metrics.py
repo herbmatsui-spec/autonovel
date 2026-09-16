@@ -1,5 +1,4 @@
-import pytest
-from src.services.compression import FourLayerCompressor, ProtectedContext, SceneFlowHistory
+from src.services.compression import FourLayerCompressor, ProtectedContext
 
 def test_compression_pipeline_outputs_high_consistency_metrics():
     compressor = FourLayerCompressor()
@@ -9,7 +8,7 @@ def test_compression_pipeline_outputs_high_consistency_metrics():
         pending_foreshadowing_ids=["月が紅く染まる時"],
     )
     result = compressor.compress(text, protected_context=protected)
-    
+
     assert result.metrics is not None
     assert result.metrics.character_retention_score == 1.0
     assert result.metrics.foreshadowing_retention_score == 1.0

@@ -1,7 +1,6 @@
 """Test to check if postgres fixture via DockerContainer works."""
 from __future__ import annotations
 
-import pytest
 
 
 def test_postgres_via_docker(postgres_via_docker):

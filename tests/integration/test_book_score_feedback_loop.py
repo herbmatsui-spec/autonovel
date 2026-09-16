@@ -4,11 +4,10 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 from src.backend.writing_service import WritingService
 from src.services.book_score_service import BookScoreCalculator
-from src.agents.orchestrator import AgentContext
 
 
 @pytest.fixture
@@ -43,7 +42,7 @@ async def test_writing_service_regeneration_loop_success(
     """BookScore 閾値未満 → 再生成 → 閾値達成で停止"""
     # 1回目: 低スコア、2回目: 高スコア、3回目: 最終確認
     call_count = 0
-    
+
     async def mock_calculate(*args, **kwargs):
         nonlocal call_count
         call_count += 1
@@ -67,7 +66,7 @@ async def test_writing_service_regeneration_loop_success(
                 visual_textual_synergy_score=85.0,
                 reader_experience_score=75.0,
             )
-    
+
     mock_book_score_calculator.calculate = mock_calculate
 
     service = WritingService(
@@ -88,7 +87,7 @@ async def test_writing_service_regeneration_loop_success(
         is_easy_mode=False, reporter=MagicMock(),
         auto_regenerate=True, max_retries=3,
     )
-    
+
     assert word_count == 3000
     assert call_count >= 2  # 初回失敗→再生成→成功で最低2回呼ばれる
     assert mock_writer.generate_episodes.call_count == 2
@@ -121,13 +120,13 @@ async def test_writing_service_regeneration_max_retries(
     )
 
     reporter = MagicMock()
-    word_count = await service.generate_episodes(
+    await service.generate_episodes(
         book_id=1, start_ep=1, end_ep=1,
         passion=0.8, target_word_count=3000,
         is_easy_mode=False, reporter=reporter,
         auto_regenerate=True, max_retries=3,
     )
-    
+
     # 初回 + 3回リトライ = 4回呼ばれる
     assert mock_writer.generate_episodes.call_count == 4
     # エラーログが出力されることを確認
@@ -160,14 +159,14 @@ async def test_writing_service_no_regeneration_when_disabled(
         score_threshold=70.0,
     )
 
-    word_count = await service.generate_episodes(
+    await service.generate_episodes(
         book_id=1, start_ep=1, end_ep=1,
         passion=0.8, target_word_count=3000,
         is_easy_mode=False, reporter=MagicMock(),
         auto_regenerate=False,  # 無効
         max_retries=3,
     )
-    
+
     # 再生成なしで1回のみ
     assert mock_writer.generate_episodes.call_count == 1
 
@@ -198,12 +197,12 @@ async def test_writing_service_regeneration_actions_generated(
     )
 
     result = await service.calculate_book_score(book_id=1, chapter_number=1)
-    
+
     assert result["regeneration_triggered"] is True
     assert "structure" in result["low_dimensions"]
     assert "coherency" in result["low_dimensions"]
     assert len(result["regeneration_actions"]) == 2
-    
+
     # アクションの内容確認
     actions = {a["dimension"]: a for a in result["regeneration_actions"]}
     assert actions["structure"]["target_agent"] == "ContextBuilderAgent"

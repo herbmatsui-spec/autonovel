@@ -1,7 +1,10 @@
 import json
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
+from src.backend.auth import get_current_user
+from src.backend.database.models import User
+from src.backend.security.owner_guard import verify_book_ownership
 from src.backend.database import UnitOfWork
 from src.core.container import AppContainer
 
@@ -31,8 +34,12 @@ async def get_narrative_metrics(book_id: int, branch_id: int = 1, ep_num: int | 
 
 
 @router.get("/api/bibles/{book_id}")
-async def get_bible(book_id: int):
+async def get_bible(
+    book_id: int,
+    current_user: User = Depends(get_current_user),
+):
     async with UnitOfWork(AppContainer.db()) as uow:
+        await verify_book_ownership(book_id, current_user, uow)
         b = await uow.bible.get_latest_bible(book_id)
     if not b:
         return {}
@@ -46,8 +53,12 @@ async def get_bible(book_id: int):
 
 
 @router.get("/api/optimization_history/{book_id}")
-async def get_opt_history(book_id: int):
+async def get_opt_history(
+    book_id: int,
+    current_user: User = Depends(get_current_user),
+):
     async with UnitOfWork(AppContainer.db()) as uow:
+        await verify_book_ownership(book_id, current_user, uow)
         history = await uow.misc.get_optimization_history(book_id)
     return [
         {

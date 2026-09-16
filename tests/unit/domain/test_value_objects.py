@@ -2,7 +2,6 @@
 
 import pytest
 from uuid import UUID
-from datetime import datetime
 
 from src.domain.value_objects.ids import (
     NovelId, ChapterId, EpisodeId, CharacterId, BranchId, PlotId,

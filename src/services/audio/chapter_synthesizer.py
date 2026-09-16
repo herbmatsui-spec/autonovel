@@ -45,16 +45,16 @@ class ChapterAudioSynthesizer:
             }
 
         details = character_details or {}
-        
+
         # 並列合成
         clips = await self._synthesize_lines_parallel(lines, details)
-        
+
         # ポーズ時間計算
         pauses = [line.acoustics.pause_after_sec for line in lines if line.acoustics][:-1]
-        
+
         # 全クリップを可変ポーズで結合
         combined_wav = AudioCombiner.combine_wav_clips(clips, pauses=pauses)
-        
+
         # 保存
         saved_path = self.storage.save_chapter_audio(book_id, episode_num, combined_wav)
 
@@ -84,7 +84,7 @@ class ChapterAudioSynthesizer:
 
         tasks = [synthesize_line(line) for line in lines]
         results = await asyncio.gather(*tasks, return_exceptions=True)
-        
+
         clips = []
         for i, result in enumerate(results):
             if isinstance(result, Exception):
@@ -94,7 +94,7 @@ class ChapterAudioSynthesizer:
                 clips.append(result.audio_bytes)
             else:
                 clips.append(None)
-        
+
         # Noneを除外
         return [c for c in clips if c is not None]
 
@@ -125,7 +125,7 @@ class ChapterAudioSynthesizer:
             intonation_scale=acoustics.intonation_scale,
             volume_scale=acoustics.volume_scale,
         )
-        
+
         res = await self.client.synthesize(req)
         return res
 
@@ -133,7 +133,7 @@ class ChapterAudioSynthesizer:
         """感情分布をパーセンテージで計算 (Step 45)"""
         if not lines:
             return {}
-        
+
         emotion_counts = Counter(line.emotion.value for line in lines)
         total = len(lines)
         return {

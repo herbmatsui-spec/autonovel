@@ -8,7 +8,6 @@ from src.easy_mode.phase3.ebook_export import (
     PDF_AVAILABLE,
     EbookMetadata,
     EbookExporter,
-    create_ebook_exporter,
 )
 from src.easy_mode import SeriesResult
 from src.easy_mode.spice_guard import SpiceElement

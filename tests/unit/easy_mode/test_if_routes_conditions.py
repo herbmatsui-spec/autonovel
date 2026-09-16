@@ -1,4 +1,3 @@
-import pytest
 from src.easy_mode.phase3.if_routes import BranchCondition, ConditionOperator
 
 def test_condition_operator_eval():

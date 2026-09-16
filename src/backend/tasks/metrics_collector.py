@@ -21,16 +21,16 @@ class MetricsCollector(Protocol):
     """メトリクス収集のプロトコル。"""
     def record_task_start(self, task_id: str, dag_id: str, worker_id: str) -> None:
         ...
-    
+
     def record_task_end(self, metrics: TaskMetrics) -> None:
         ...
-    
+
     def record_queue_depth(self, dag_id: str, ready: int, running: int, pending: int) -> None:
         ...
-    
+
     def record_resource_utilization(self, cpu_pct: float, ram_pct: float, gpu_pct: float) -> None:
         ...
-    
+
     def record_retry(self, task_id: str, attempt: int) -> None:
         ...
 
@@ -39,16 +39,16 @@ class NoOpMetricsCollector:
     """何もしないデフォルト実装。"""
     def record_task_start(self, task_id: str, dag_id: str, worker_id: str) -> None:
         pass
-    
+
     def record_task_end(self, metrics: TaskMetrics) -> None:
         pass
-    
+
     def record_queue_depth(self, dag_id: str, ready: int, running: int, pending: int) -> None:
         pass
-    
+
     def record_resource_utilization(self, cpu_pct: float, ram_pct: float, gpu_pct: float) -> None:
         pass
-    
+
     def record_retry(self, task_id: str, attempt: int) -> None:
         pass
 
@@ -67,7 +67,7 @@ class PrometheusMetricsCollector:
     def __init__(self, namespace: str = "dag_scheduler"):
         if not PROMETHEUS_AVAILABLE:
             raise RuntimeError("prometheus_client not installed. Install with: pip install prometheus-client")
-        
+
         self.task_duration = Histogram(
             "task_duration_seconds", "Task execution duration",
             ["dag_id", "status"], namespace=namespace
@@ -84,25 +84,25 @@ class PrometheusMetricsCollector:
             "task_retries_total", "Total retry attempts",
             ["task_id"], namespace=namespace
         )
-    
+
     def record_task_start(self, task_id: str, dag_id: str, worker_id: str) -> None:
         pass  # 開始時刻は内部保持
-    
+
     def record_task_end(self, metrics: TaskMetrics) -> None:
         self.task_duration.labels(dag_id=metrics.dag_id, status=metrics.status).observe(
             metrics.duration_seconds
         )
-    
+
     def record_queue_depth(self, dag_id: str, ready: int, running: int, pending: int) -> None:
         self.queue_depth.labels(dag_id=dag_id, state="ready").set(ready)
         self.queue_depth.labels(dag_id=dag_id, state="running").set(running)
         self.queue_depth.labels(dag_id=dag_id, state="pending").set(pending)
-    
+
     def record_resource_utilization(self, cpu_pct: float, ram_pct: float, gpu_pct: float) -> None:
         self.resource_util.labels(resource="cpu").set(cpu_pct)
         self.resource_util.labels(resource="ram").set(ram_pct)
         self.resource_util.labels(resource="gpu").set(gpu_pct)
-    
+
     def record_retry(self, task_id: str, attempt: int) -> None:
         self.retry_counter.labels(task_id=task_id).inc()
 
@@ -124,7 +124,7 @@ class OTELTracingCollector:
         if not OTEL_AVAILABLE:
             raise RuntimeError("opentelemetry-api not installed. Install with: pip install opentelemetry-api")
         self.tracer = trace.get_tracer(tracer_name)
-    
+
     def trace_task(self, task_id: str, dag_id: str, fn):
         """タスク実行をスパンで包むデコレータ。"""
         def wrapper(*args, **kwargs):

@@ -121,7 +121,7 @@ class SudachiTokenizer:
             if not include_compound and token.pos_detail in ("接尾", "接頭辞", "非自立", "特殊"):
                 continue
 
-            # Use surface form for katakana (normalized converts to romaji), 
+            # Use surface form for katakana (normalized converts to romaji),
             # normalized for kanji (handles okurigana, etc.)
             if re.match(r"^[ァ-ンヴー]+$", token.surface):
                 base = token.surface
@@ -189,7 +189,7 @@ class RegexJapaneseTokenizer:
 class HybridJapaneseTokenizer:
     """
     Hybrid tokenizer combining SudachiPy (precision) + Regex (compound word recall).
-    
+
     Strategy:
     1. Extract nouns from Sudachi (proper nouns, known compounds)
     2. Extract compound tokens from Regex (long kanji/katakana sequences)

@@ -1,4 +1,3 @@
-import pytest
 from src.domain.entities.character import Character
 from src.domain.value_objects.ids import NovelId, CharacterId
 

@@ -1,4 +1,3 @@
-import pytest
 from src.services.illustration.prompt_generator import IllustrationPromptGenerator
 
 def test_generate_prompt_from_scene():

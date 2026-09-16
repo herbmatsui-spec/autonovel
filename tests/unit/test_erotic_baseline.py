@@ -32,55 +32,55 @@ def test_enhancer_gate_on_intensity0(mock_agent):
 
 def test_erotic_gate_disabled():
     gate = EroticGate.disabled()
-    assert gate.enabled == False
+    assert not gate.enabled
     assert gate.intensity == 0
     assert not gate.is_active()
 
 def test_erotic_gate_from_context_none():
     gate = EroticGate.from_context(None)
-    assert gate.enabled == False
+    assert not gate.enabled
     assert gate.intensity == 0
     assert not gate.is_active()
 
 def test_erotic_gate_from_context_empty():
     gate = EroticGate.from_context({})
-    assert gate.enabled == False
+    assert not gate.enabled
     assert gate.intensity == 0
     assert not gate.is_active()
 
 def test_erotic_gate_from_context_enable_erotic():
     gate = EroticGate.from_context({'enable_erotic': True})
-    assert gate.enabled == True
+    assert gate.enabled
     assert gate.intensity == 0
     assert not gate.is_active()
 
 def test_erotic_gate_from_context_enable_nsfw():
     gate = EroticGate.from_context({'enable_nsfw': True})
-    assert gate.enabled == True
+    assert gate.enabled
     assert gate.intensity == 0
     assert not gate.is_active()
 
 def test_erotic_gate_from_context_nsfw_enabled():
     gate = EroticGate.from_context({'nsfw_enabled': True})
-    assert gate.enabled == True
+    assert gate.enabled
     assert gate.intensity == 0
     assert not gate.is_active()
 
 def test_erotic_gate_from_context_is_nsfw_enabled():
     gate = EroticGate.from_context({'is_nsfw_enabled': True})
-    assert gate.enabled == True
+    assert gate.enabled
     assert gate.intensity == 0
     assert not gate.is_active()
 
 def test_erotic_gate_from_context_intensity():
     gate = EroticGate.from_context({'erotic_intensity': 3})
-    assert gate.enabled == False
+    assert not gate.enabled
     assert gate.intensity == 3
     assert not gate.is_active()
 
 def test_erotic_gate_from_context_both():
     gate = EroticGate.from_context({'enable_erotic': True, 'erotic_intensity': 4})
-    assert gate.enabled == True
+    assert gate.enabled
     assert gate.intensity == 4
     assert gate.is_active()
 
@@ -91,7 +91,7 @@ def test_erotic_gate_from_context_or():
         'nsfw_enabled': False,
         'is_nsfw_enabled': False
     })
-    assert gate.enabled == True
+    assert gate.enabled
 
 def test_erotic_gate_zero_intensity_inactive():
     gate = EroticGate(enabled=True, intensity=0)

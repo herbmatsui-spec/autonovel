@@ -5,13 +5,13 @@ from typing import Optional
 
 import stripe
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
-from sqlalchemy import select, update
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.backend.config import settings
 from src.backend.database import get_db
 from src.backend.database.models import User
-from src.backend.database.models_billing import StripeWebhookEvent, Subscription
+from src.backend.database.models_billing import StripeWebhookEvent
 from src.config.billing_plans import get_credits_for_price_id, get_tier_for_price_id
 from src.services.billing.credit_service import CreditService
 

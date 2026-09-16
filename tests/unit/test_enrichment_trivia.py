@@ -62,11 +62,11 @@ class TestTriviaInsertion:
         trivia_hist = {"fact": "テスト事実", "source_type": "historical_facts", "entity": ""}
         trivia_cult = {"fact": "テスト事実", "source_type": "cultural_trivia", "entity": ""}
         context = "テスト事実について"
-        
+
         score_wb = agent._score_trivia_relevance(trivia_wb, context)
         score_hist = agent._score_trivia_relevance(trivia_hist, context)
         score_cult = agent._score_trivia_relevance(trivia_cult, context)
-        
+
         assert score_wb >= score_hist >= score_cult
 
     def test_extract_scene_context(self, agent):

@@ -1,4 +1,3 @@
-import pytest
 from src.agents.erotic.density_controller import EroticDensityController
 
 def test_density_target_adjustment():

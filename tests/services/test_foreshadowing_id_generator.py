@@ -11,11 +11,11 @@ def test_generate_foreshadowing_id_basic():
     # ファンタジー、第1巻第3話
     fid = generate_foreshadowing_id("ファンタジー", 1, 3)
     assert fid == "F-FAN-001-003-001"
-    
+
     # 異世界転生、第5巻第12話
     fid = generate_foreshadowing_id("異世界転生", 5, 12)
     assert fid == "F-ISE-005-012-001"
-    
+
     # SF、第10巻第1話
     fid = generate_foreshadowing_id("SF", 10, 1)
     assert fid == "F-SF-010-001-001"
@@ -31,10 +31,10 @@ def test_generate_foreshadowing_id_zero_padding():
     """ゼロパディングのテスト"""
     fid = generate_foreshadowing_id("ファンタジー", 1, 1)
     assert fid == "F-FAN-001-001-001"
-    
+
     fid = generate_foreshadowing_id("ファンタジー", 12, 3)
     assert fid == "F-FAN-012-003-001"
-    
+
     fid = generate_foreshadowing_id("ファンタジー", 123, 45)
     assert fid == "F-FAN-123-045-001"
 
@@ -44,13 +44,13 @@ def test_generate_foreshadowing_id_with_sequence():
     # デフォルトの連番（001）
     fid = generate_foreshadowing_id_with_sequence("ファンタジー", 1, 3, 0)
     assert fid == "F-FAN-001-003-000"
-    
+
     fid = generate_foreshadowing_id_with_sequence("ファンタジー", 1, 3, 1)
     assert fid == "F-FAN-001-003-001"
-    
+
     fid = generate_foreshadowing_id_with_sequence("ファンタジー", 1, 3, 12)
     assert fid == "F-FAN-001-003-012"
-    
+
     fid = generate_foreshadowing_id_with_sequence("ファンタジー", 1, 3, 123)
     assert fid == "F-FAN-001-003-123"
 

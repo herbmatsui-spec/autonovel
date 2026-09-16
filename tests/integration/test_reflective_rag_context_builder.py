@@ -41,7 +41,7 @@ def sample_candidates():
 def mock_repo():
     repo = MagicMock()
     repo.session = MagicMock()
-    
+
     plot_mock = MagicMock()
     plot_mock.summary = "王都での戦いと魔法の真実"
     plot_mock.title = "第1話：胎動"
@@ -59,7 +59,7 @@ def mock_repo():
         "current_chain_phase": "Friction",
     }
     repo.get_plot = AsyncMock(return_value=plot_mock)
-    
+
     # Mock get_book, get_all_characters, get_prev_chapter
     repo.get_book = AsyncMock(return_value={"id": 1, "title": "テスト小説"})
     char_mock = MagicMock()

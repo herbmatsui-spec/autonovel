@@ -1,8 +1,6 @@
 """Unit tests for 8 Specialist Auditors."""
 
 import pytest
-import asyncio
-from unittest.mock import MagicMock
 
 from src.agents.specialists import (
     ConsistencyAuditor,
@@ -14,7 +12,7 @@ from src.agents.specialists import (
     StructureAuditor,
     MultimodalAuditor,
 )
-from src.agents.specialist_auditor_base import SpecialistAuditResult, LLMUnavailableError
+from src.agents.specialist_auditor_base import LLMUnavailableError
 
 
 class TestConsistencyAuditor:

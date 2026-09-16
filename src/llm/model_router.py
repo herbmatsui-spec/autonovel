@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from src.config.cost_optimization import MODEL_PRICING, ROUTING_TIERS
+from src.config.cost_optimization import ROUTING_TIERS
 
 # デフォルトモデルマッピング（必要に応じて追加）
 _DEFAULTS = {

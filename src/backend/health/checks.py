@@ -184,22 +184,22 @@ async def check_enrichment_agent() -> HealthCheckResult:
     try:
         from src.backend.config import settings
         from src.services.rag_service import rag_service
-        
+
         # 機能フラグチェック
         if not settings.ENRICHMENT_ENABLED:
             return HealthCheckResult(
-                status=HealthStatus.NOT_CONFIGURED, 
+                status=HealthStatus.NOT_CONFIGURED,
                 details="Enrichment disabled via ENRICHMENT_ENABLED=false"
             )
-        
+
         # 依存コンポーネントチェック
         issues = []
-        
+
         # LLM 可用性
         from src.backend.config import settings as backend_settings
         if not backend_settings.GEMINI_API_KEY or backend_settings.GEMINI_API_KEY == "DUMMY":
             issues.append("GEMINI_API_KEY not configured")
-        
+
         # RAG サービス可用性
         try:
             if rag_service is None:
@@ -211,16 +211,16 @@ async def check_enrichment_agent() -> HealthCheckResult:
                     issues.append("Trivia prompt template not loaded")
         except Exception as e:
             issues.append(f"Prompt template load failed: {e}")
-        
+
         latency = (time.perf_counter() - start) * 1000
-        
+
         if issues:
             return HealthCheckResult(
                 status=HealthStatus.DEGRADED,
                 latency_ms=latency,
                 details="; ".join(issues),
             )
-        
+
         return HealthCheckResult(
             status=HealthStatus.OK,
             latency_ms=latency,

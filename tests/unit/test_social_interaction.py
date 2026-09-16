@@ -216,7 +216,7 @@ async def test_social_event_listener_dispatch():
         "comments": [{"comment_id": "c_1"}],
     }
 
-    listener = register_social_listener(event_bus, mock_manager)
+    register_social_listener(event_bus, mock_manager)
 
     event = AgentEvent(
         agent="writing.completed",

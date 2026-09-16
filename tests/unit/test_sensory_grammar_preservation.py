@@ -1,13 +1,10 @@
 """Unit tests for sensory expansion grammar preservation and syntax safety (Part 3, Step 34)."""
 import pytest
 from src.agents.enrichment.sensory import (
-    EmotionSpan,
     extract_sentence_span,
     detect_trailing_conjunction,
     detect_abstract_emotions,
-    is_inside_dialogue,
     sanitize_punctuation,
-    validate_rewritten_sentence,
     replace_with_sensory_expansion,
 )
 

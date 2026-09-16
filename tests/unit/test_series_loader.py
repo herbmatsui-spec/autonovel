@@ -1,11 +1,14 @@
+import json
+
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from src.infrastructure.database.models.base_orm import Base
+
+import src.backend.database.models_tenant  # noqa: F401  (Tenant FK 解決のため必須)
+from src.backend.database.models import Bible, Book, Chapter
 from src.backend.database.series_loader import SeriesDataLoader, SeriesDataLoaderConfig
-from src.backend.database.models import Book, Bible, Chapter
 from src.easy_mode import EpisodeResult, SeriesResult
-import json
+from src.infrastructure.database.models.base_orm import Base
 
 # Use an in-memory SQLite database for testing
 TEST_DATABASE_URL = "sqlite:///:memory:"
@@ -36,11 +39,11 @@ def test_load_series_with_chapters(loader, db_session):
     db_session.add(book)
     db_session.commit()
     db_session.refresh(book)
-    
+
     # Create a Bible entry for the book
     bible = Bible(book_id=book.id, settings='{"theme": "epic"}')
     db_session.add(bible)
-    
+
     # Create a few chapters
     for i in range(1, 4):
         chapter = Chapter(
@@ -53,13 +56,13 @@ def test_load_series_with_chapters(loader, db_session):
         )
         db_session.add(chapter)
     db_session.commit()
-    
+
     # Configure loader to load this book
     config = SeriesDataLoaderConfig(book_id=book.id, branch_id=1)
-    
+
     # Load the series
     series = loader.load_series(config)
-    
+
     # Assertions
     assert series.title == "Test Book"
     assert series.genre == "Fantasy"
@@ -71,15 +74,15 @@ def test_load_series_with_chapters(loader, db_session):
     assert series.episodes[0].content == "Content of chapter 1"
     assert series.episodes[0].word_count == 4  # Fixed: "Content of chapter 1" has 4 words
     assert series.bible == {"theme": "epic"}
-    
+
 def test_load_series_no_chapters_raises(loader, db_session):
     # Create a book with no chapters
     book = Book(title="Empty Book", genre="Sci-Fi", concept="A concept")
     db_session.add(book)
     db_session.commit()
-    
+
     config = SeriesDataLoaderConfig(book_id=book.id, branch_id=1, fallback_to_minimal=False)
-    
+
     with pytest.raises(Exception) as exc_info:
         loader.load_series(config)
     # Check that it's the expected exception
@@ -91,24 +94,24 @@ def test_load_series_fallback_to_minimal(loader, db_session):
     book = Book(title="Fallback Book", genre="Drama", concept="A concept")
     db_session.add(book)
     db_session.commit()
-    
+
     config = SeriesDataLoaderConfig(book_id=book.id, branch_id=1, fallback_to_minimal=True)
-    
+
     series = loader.load_series(config)
-    
+
     assert series.total_episodes == 1
     assert len(series.episodes) == 1
     assert series.episodes[0].title == ""
     assert series.episodes[0].content == ""
     assert series.episodes[0].word_count == 0
-    assert series.episodes[0].needs_human_review == True
+    assert series.episodes[0].needs_human_review
 
 def test_save_series_to_db(loader, db_session):
     # Create a book
     book = Book(title="Original Title", genre="Original Genre", concept="Original concept")
     db_session.add(book)
     db_session.commit()
-    
+
     # Create a SeriesResult to save
     series = SeriesResult(
         genre="Updated Genre",
@@ -145,23 +148,23 @@ def test_save_series_to_db(loader, db_session):
         plot_outline="A plot outline",
         metadata={"extra": "data"},
     )
-    
+
     # Save to db
     loader.save_series_to_db(db_session, series, book.id)
     db_session.commit()
-    
+
     # Retrieve and verify
     saved_book = db_session.query(Book).filter(Book.id == book.id).first()
     assert saved_book.title == "Updated Title"
     assert saved_book.genre == "Updated Genre"
     assert saved_book.concept == "Updated concept"
     assert saved_book.synopsis == "A plot outline"
-    
+
     saved_bible = db_session.query(Bible).filter(Bible.book_id == book.id).first()
     assert saved_bible is not None
     settings = json.loads(saved_bible.settings)
     assert settings == {"setting": "value"}
-    
+
     saved_chapters = db_session.query(Chapter).filter(Chapter.book_id == book.id).order_by(Chapter.ep_num).all()
     assert len(saved_chapters) == 2
     assert saved_chapters[0].title == "First Chapter"

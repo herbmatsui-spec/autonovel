@@ -4,23 +4,22 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional
 from datetime import datetime
-from uuid import UUID
 
 from src.domain.repositories.episode_repository import IEpisodeRepository
 from src.domain.repositories.novel_repository import INovelRepository
 from src.domain.repositories.unit_of_work import IUnitOfWork
 from src.domain.value_objects.ids import NovelId, EpisodeId, ChapterId
+from src.domain.value_objects.text import Title
 from src.domain.entities.novel import Episode
-from src.application.ports.writing_service import IWritingService
 from src.application.dtos.episode_dto import (
     WriteEpisodeDTO,
     RewriteEpisodeDTO,
     EpisodeResponseDTO,
-    EpisodeDraftDTO,
     EpisodeListItemDTO,
     ExpandPlotDTO,
 )
 from src.application.dtos.common import PaginationDTO, PaginatedResponseDTO
+from src.application.ports.writing_service import IWritingService
 
 
 @dataclass
@@ -30,6 +29,7 @@ class WriteEpisodeUseCase:
     episode_repo: IEpisodeRepository
     novel_repo: INovelRepository
     uow: IUnitOfWork
+    writing_service: IWritingService
 
     async def execute(self, dto: WriteEpisodeDTO) -> EpisodeResponseDTO:
         # Verify novel exists
@@ -87,6 +87,7 @@ class RewriteEpisodeUseCase:
 
     episode_repo: IEpisodeRepository
     uow: IUnitOfWork
+    writing_service: IWritingService
 
     async def execute(self, dto: RewriteEpisodeDTO) -> Optional[EpisodeResponseDTO]:
         eid = EpisodeId.from_string(dto.episode_id)

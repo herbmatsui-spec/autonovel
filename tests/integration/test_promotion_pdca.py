@@ -4,7 +4,7 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 from datetime import datetime
 
 from src.services.book_score_service import BookScoreCalculator
@@ -35,7 +35,7 @@ def mock_book_score_calculator(mock_book_score_repo):
 
 class TestPromotionEligibility:
     """昇格判定テスト"""
-    
+
     @pytest.mark.asyncio
     async def test_check_promotion_eligible_eligible(self, mock_book_score_calculator):
         """直近3章平均≥80かつ上昇傾向で昇格対象"""
@@ -63,18 +63,18 @@ class TestPromotionEligibility:
                 evaluator_version="1.0"
             ),
         ]
-        
+
         async def mock_get_all(book_id):
             return scores
-        
+
         mock_book_score_calculator._repository.get_all_for_book = mock_get_all
-        
+
         # プロモーション判定ロジック（簡易版）
         avg_score = sum(s.overall_score for s in scores) / len(scores)
         slope = scores[-1].overall_score - scores[0].overall_score
-        
+
         eligible = avg_score >= 80.0 and slope > 0
-        
+
         assert eligible is True
         assert round(avg_score, 2) == 81.67
         assert slope > 0
@@ -105,12 +105,12 @@ class TestPromotionEligibility:
                 evaluator_version="1.0"
             ),
         ]
-        
+
         avg_score = sum(s.overall_score for s in scores) / len(scores)
         slope = scores[-1].overall_score - scores[0].overall_score
-        
+
         eligible = avg_score >= 80.0 and slope > 0
-        
+
         assert eligible is False
         assert avg_score < 80.0
 
@@ -140,12 +140,12 @@ class TestPromotionEligibility:
                 evaluator_version="1.0"
             ),
         ]
-        
+
         avg_score = sum(s.overall_score for s in scores) / len(scores)
         slope = scores[-1].overall_score - scores[0].overall_score
-        
+
         eligible = avg_score >= 80.0 and slope > 0
-        
+
         assert eligible is False
         assert avg_score >= 80.0
         assert slope < 0
@@ -169,23 +169,23 @@ class TestPromotionEligibility:
                 evaluator_version="1.0"
             ),
         ]
-        
+
         # 3章未満の場合は非対象
         eligible = len(scores) >= 3 and sum(s.overall_score for s in scores) / len(scores) >= 80.0
-        
+
         assert eligible is False
 
 
 class TestImprovementPriorities:
     """改善優先順位提案テスト"""
-    
+
     @pytest.mark.asyncio
     async def test_analyze_improvement_priorities(self, mock_book_score_calculator):
         """次元別時系列から改善提案を生成"""
         # 複数章のスコア履歴
         scores = [
             BookScoreModel(
-                book_id=1, chapter_number=i, 
+                book_id=1, chapter_number=i,
                 overall_score=70.0,
                 structure_score=50.0,  # 低い
                 coherency_score=70.0,
@@ -197,7 +197,7 @@ class TestImprovementPriorities:
             )
             for i in range(1, 4)
         ]
-        
+
         # 次元別平均計算
         dims = {
             "structure": sum(s.structure_score for s in scores) / len(scores),
@@ -206,14 +206,14 @@ class TestImprovementPriorities:
             "visual_textual_synergy": sum(s.visual_textual_synergy_score for s in scores) / len(scores),
             "reader_experience": sum(s.reader_experience_score for s in scores) / len(scores),
         }
-        
+
         # 最も低い次元を特定
         lowest_dim = min(dims, key=dims.get)
         lowest_score = dims[lowest_dim]
-        
+
         assert lowest_dim == "structure"
         assert lowest_score == 50.0
-        
+
         # 改善提案生成
         action_map = {
             "structure": "ContextBuilderAgent でアーク境界・テンポ強化",
@@ -222,9 +222,9 @@ class TestImprovementPriorities:
             "visual_textual_synergy": "IllustrationAgent でプロンプト再生成・感情トーン合わせ",
             "reader_experience": "WritingAgent でフック・クリフハンガー・感情曲線強化",
         }
-        
+
         suggested_action = action_map[lowest_dim]
-        
+
         assert lowest_dim in action_map
         assert "ContextBuilderAgent" in suggested_action
         assert "アーク境界" in suggested_action
@@ -232,7 +232,7 @@ class TestImprovementPriorities:
 
 class TestBookScoreAPI:
     """BookScore API エンドポイントテスト"""
-    
+
     @pytest.mark.asyncio
     async def test_book_score_response_model(self):
         """BookScoreResponse モデル検証"""
@@ -243,7 +243,7 @@ class TestBookScoreAPI:
             reader_experience_score=90.0, evaluated_at=datetime.utcnow(),
             evaluator_version="1.0"
         )
-        
+
         response = BookScoreResponse(
             book_id=score_model.book_id,
             chapter_number=score_model.chapter_number,
@@ -255,12 +255,12 @@ class TestBookScoreAPI:
             reader_experience_score=score_model.reader_experience_score,
             evaluated_at=score_model.evaluated_at.isoformat() if score_model.evaluated_at else None,
         )
-        
+
         assert response.book_id == 1
         assert response.chapter_number == 1
         assert response.overall_score == 85.5
         assert response.trend_3ch is None  # デフォルト
-        
+
     @pytest.mark.asyncio
     async def test_book_score_response_with_trend(self):
         """トレンド情報付きレスポンス検証"""
@@ -271,7 +271,7 @@ class TestBookScoreAPI:
             reader_experience_score=90.0, evaluated_at=datetime.utcnow(),
             evaluator_version="1.0"
         )
-        
+
         trend = {
             "avg_overall_score": 82.0,
             "trend_slope": 5.0,
@@ -282,7 +282,7 @@ class TestBookScoreAPI:
                 {"chapter": 3, "overall": 85.5},
             ],
         }
-        
+
         response = BookScoreResponse(
             book_id=score_model.book_id,
             chapter_number=score_model.chapter_number,
@@ -295,7 +295,7 @@ class TestBookScoreAPI:
             evaluated_at=score_model.evaluated_at.isoformat() if score_model.evaluated_at else None,
             trend_3ch=trend,
         )
-        
+
         assert response.trend_3ch is not None
         assert response.trend_3ch["avg_overall_score"] == 82.0
         assert response.trend_3ch["trend_slope"] == 5.0

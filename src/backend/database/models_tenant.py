@@ -4,7 +4,7 @@ src/backend/database/models_tenant.py — マルチテナンシー・組織管�
 
 from __future__ import annotations
 
-from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, String, UniqueConstraint, func
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, UniqueConstraint, func
 from sqlalchemy.orm import relationship
 
 from src.infrastructure.database.models.base_orm import Base

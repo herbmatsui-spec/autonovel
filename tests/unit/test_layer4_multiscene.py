@@ -1,17 +1,14 @@
 """Unit tests for Layer 4 Multi-scene awareness and Protected Token pinning (Part 5 / Steps 49-54)."""
 
-import pytest
 
 from src.services.compression.layer4_trimming import (
     Layer4SceneTrimmer,
-    Layer4DynamicTrimmer,
     SCENE_CATEGORY_WEIGHTS,
     SCENE_KEYWORDS_WEIGHTED,
 )
 from src.services.compression.models import (
     AbstractionLayerOutput,
     ProtectedContext,
-    SceneType,
 )
 
 

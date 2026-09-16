@@ -529,7 +529,7 @@ class AuditAggregator:
 
     def _record_cost_savings_metrics(self, book_id: int | None) -> None:
         """Record cost savings from dynamic model routing vs baseline all-sonnet.
-        
+
         This implements Step 45: record cost savings ratio as Prometheus metric
         audit_cost_savings_ratio. We track baseline cost (if all auditors used
         sonnet) vs actual cost with dynamic routing.

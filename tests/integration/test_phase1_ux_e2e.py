@@ -1,7 +1,5 @@
-import pytest
 from src.backend.routers.commercial import (
     PublicationScheduleCreate,
-    PublicationScheduleResponse,
 )
 from src.services.conflict_report_service import ConflictReportService
 from src.services.book_score_service import BookScoreService

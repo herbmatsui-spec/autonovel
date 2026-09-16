@@ -23,6 +23,15 @@ AutoNovel の品質向上・商用化に向けたアクティブな実装計画�
 | [PROPOSAL_08_DOCKER_OPTIMIZATION_AND_HEALTHCHECK_12STEPS.md](./PROPOSAL_08_DOCKER_OPTIMIZATION_AND_HEALTHCHECK_12STEPS.md) | Dockerマルチステージ最適化 & ヘルスチェック分離 | ⏳ 準備完了 | イメージ軽量化、非特権ユーザー、/health/liveness & /health/readiness |
 | [PROPOSAL_09_CLEANUP_AND_CONFIG_SSOT_12STEPS.md](./PROPOSAL_09_CLEANUP_AND_CONFIG_SSOT_12STEPS.md) | 計画書インフレ解消 & 設定情報源SSOT一元化 | ✅ 実装済 | 計画書アーカイブ、config.py一元化、.env.example 65キー完全同期 |
 
+## 🛡️ コードレビュー改善・品質向上実装計画書（P0〜P2・各12ステップ）
+
+| 計画書 | レイヤー / テーマ | 状態 | 目的・主要対象 |
+|:---|:---|:---:|:---|
+| [P0_SECURITY_AND_CRITICAL_FIXES_12STEPS.md](./P0_SECURITY_AND_CRITICAL_FIXES_12STEPS.md) | 致命的欠陥 & セキュリティ脆弱性 | 🚀 準備完了 | `get_current_user` 型不整合 500 クラッシュ根絶、CORS 順序是正、IDOR（Issues/Export/Misc/Tasks）完全遮断 |
+| [P1_ARCHITECTURE_AND_DEBT_12STEPS.md](./P1_ARCHITECTURE_AND_DEBT_12STEPS.md) | アーキテクチャ & 技術的負債 | 🚀 準備完了 | ゾンビ `vector_store.py` 削除、Ruff 設定標準化（4,500件誤爆解消）、Alembic Head 同期、UseCase DI 修復 |
+| [P2_CODE_QUALITY_AND_STABILITY_12STEPS.md](./P2_CODE_QUALITY_AND_STABILITY_12STEPS.md) | コード品質 & 中長期安定化 | 🚀 準備完了 | 非同期ループ安全化、SQLAlchemy 2.0 スタイル統一、Redis タイムアウト明示、フロント型競合解消 |
+
+
 ## 🧪 テストカバレッジ80%突破 実装計画書一覧（全72ステップ）
 
 | 計画書 | レイヤー | 状態 | 目的・主要対象 |

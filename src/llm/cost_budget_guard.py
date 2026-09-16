@@ -30,11 +30,6 @@ class CostBudgetGuard:
     def _downgrade_model(self, model_name: str) -> None:
         # 安価なモデルに切り替えるロジック
         # 例: gpt-4o-mini -> gemini-1.5-flash -> llama3.1
-        cheapest_alternatives = {
-            "gpt-4o-mini": "gpt-4o-mini",
-            "claude-3-5-sonnet-20241022": "claude-3-5-sonnet-20241022",
-            "anthropic-claude-3-5-sonnet-20241022": "claude-3-5-sonnet-20241022",
-        }
         # 実際のダウングレードロジックはここで行われます
         print(f"Downgrading {model_name} to cheaper alternative")
 

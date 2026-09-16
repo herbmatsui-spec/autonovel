@@ -1,22 +1,35 @@
 """Unit tests for ReflectiveRAGService."""
 
 import pytest
-import asyncio
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 from src.services.reflective_rag import ReflectiveRAGService, ReflectiveRetrievalResult, ReflectiveDoc
-from src.services.rag_service import GraphRAGService, SearchResult
-from sqlalchemy.orm import Session
+from src.services.rag_service import SearchResult
 
 
 @pytest.fixture
 def mock_rag_service():
-    rag = MagicMock(spec=GraphRAGService)
+    # spec を使うと async メソッドが AsyncMock 化され、reflective_rag 内部の
+    # 同期呼び出し (candidates = self.rag_service.search_similar_chunks(...)) で
+    # coroutine が返り 'coroutine object is not iterable' になるため spec なしで作る
+    rag = MagicMock()
+    rag.search_similar_chunks = MagicMock(return_value=[])
+    rag.rerank_with_cross_encoder = MagicMock(return_value=[])
     return rag
 
 
 @pytest.fixture
 def sample_docs():
+    return [
+        SearchResult(id="1", content="アリスは東京で剣を振った", metadata={}, source="vector", score=0.9),
+        SearchResult(id="2", content="ボブは大阪で杖を使った", metadata={}, source="vector", score=0.8),
+        SearchResult(id="3", content="カロルは京都で弓を引いた", metadata={}, source="vector", score=0.7),
+    ]
+
+
+@pytest.fixture
+def sample_docs_iterable():
+    """sync 形式のリストを直接返すヘルパー（AsyncMock の return_value 用）。"""
     return [
         SearchResult(id="1", content="アリスは東京で剣を振った", metadata={}, source="vector", score=0.9),
         SearchResult(id="2", content="ボブは大阪で杖を使った", metadata={}, source="vector", score=0.8),
@@ -68,7 +81,7 @@ class TestReflectiveRAGService:
 class TestRetrieveWithReflection:
     @pytest.mark.asyncio
     async def test_single_iteration_converged(self, mock_rag_service, sample_docs):
-        mock_rag_service.search_similar_chunks.return_value = sample_docs
+        mock_rag_service.search_similar_chunks = MagicMock(return_value=sample_docs)
         reflective = ReflectiveRAGService(
             rag_service=mock_rag_service,
             top_k=2,
@@ -107,7 +120,7 @@ class TestRetrieveWithReflection:
 
     @pytest.mark.asyncio
     async def test_multi_iteration_max_reached(self, mock_rag_service, sample_docs):
-        mock_rag_service.search_similar_chunks.return_value = sample_docs
+        mock_rag_service.search_similar_chunks = MagicMock(return_value=sample_docs)
         reflective = ReflectiveRAGService(
             rag_service=mock_rag_service,
             top_k=2,
@@ -127,7 +140,7 @@ class TestRetrieveWithReflection:
 
     @pytest.mark.asyncio
     async def test_threshold_affects_filtering(self, mock_rag_service, sample_docs):
-        mock_rag_service.search_similar_chunks.return_value = sample_docs
+        mock_rag_service.search_similar_chunks = MagicMock(return_value=sample_docs)
         reflective_low = ReflectiveRAGService(
             rag_service=mock_rag_service,
             top_k=2,
@@ -149,7 +162,7 @@ class TestRetrieveWithReflection:
 
     @pytest.mark.asyncio
     async def test_empty_initial_results(self, mock_rag_service):
-        mock_rag_service.search_similar_chunks.return_value = []
+        mock_rag_service.search_similar_chunks = AsyncMock(return_value=[])
         reflective = ReflectiveRAGService(rag_service=mock_rag_service)
         session = MagicMock()
 
@@ -161,7 +174,7 @@ class TestRetrieveWithReflection:
 
     @pytest.mark.asyncio
     async def test_history_recorded(self, mock_rag_service, sample_docs):
-        mock_rag_service.search_similar_chunks.return_value = sample_docs
+        mock_rag_service.search_similar_chunks = MagicMock(return_value=sample_docs)
         # Use top_k=2 so 3 docs >= 2 converges on first iteration
         reflective = ReflectiveRAGService(rag_service=mock_rag_service, top_k=2)
         session = MagicMock()
@@ -179,12 +192,12 @@ class TestRetrieveWithReflection:
 @pytest.mark.asyncio
 async def test_citation_output_structure(mock_rag_service, sample_docs):
     """Verify citation API returns complete structured output."""
-    mock_rag_service.search_similar_chunks.return_value = sample_docs
+    mock_rag_service.search_similar_chunks = MagicMock(return_value=sample_docs)
     reflective = ReflectiveRAGService(rag_service=mock_rag_service, top_k=2)
     session = MagicMock()
-    
+
     result = await reflective.retrieve_with_reflection(session, query="test", book_id=1)
-    
+
     citations = result.get_citations()
     assert isinstance(citations, list)
     assert len(citations) == 2

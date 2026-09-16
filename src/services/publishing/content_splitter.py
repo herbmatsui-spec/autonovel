@@ -1,6 +1,6 @@
 from __future__ import annotations
 import re
-from typing import Tuple, Dict, Any
+from typing import Dict
 
 class ContentSplitter:
     """小説本文から「前書き」「本文」「後書き」を自動抽出・構造化し、
@@ -52,7 +52,7 @@ class ContentSplitter:
                 kanji = m.group(1)
                 ruby = m.group(2)
                 return f"|{kanji}《{ruby}》"
-            
+
             converted = re.sub(r"｜?([一-龥ぁ-んァ-ン]+)[（\(]([ぁ-んァ-ンー]+)[）\)]", replace_to_kakuyomu, text)
             return converted
 

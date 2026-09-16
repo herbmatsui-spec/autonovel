@@ -1,7 +1,6 @@
 """IFルートマージ確定コミットAPI & 競合解決エンジンの単体テスト (Part 5: Step 57, 58, 60)。"""
 
 import pytest
-from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker

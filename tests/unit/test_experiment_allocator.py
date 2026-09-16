@@ -5,7 +5,6 @@ import pytest
 from src.services.experiment_allocator import (
     ExperimentAllocator,
     MultiExperimentAllocator,
-    DEFAULT_ALLOCATOR,
     allocate_variant,
 )
 

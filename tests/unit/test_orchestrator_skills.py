@@ -4,7 +4,7 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 import pytest
-from src.agents.orchestrator import Orchestrator, AgentName
+from src.agents.orchestrator import Orchestrator
 from src.agents.skill_base import SkillAgent
 from src.agents.orchestrator import AgentContext, AgentResult
 

@@ -7,11 +7,8 @@ from src.agents.enrichment.sensory import (
     EmotionSpan,
     detect_abstract_emotions,
     generate_sensory_details,
-    replace_with_sensory_expansion,
     expand_sensory_details_pipeline,
     _call_llm_async,
-    _fallback_sensory_details,
-    EMOTION_TO_SENSORY_MAP,
 )
 from src.agents.enrichment_agent import EnrichmentAgent
 

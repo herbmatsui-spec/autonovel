@@ -7,14 +7,14 @@ async def test_writing_manager_saves_checkpoint():
     # Mock the manager (GenerationLoopManager)
     mock_manager = MagicMock()
     mock_manager.session_factory = AsyncMock()
-    
+
     # Create WritingGraphManager instance
     wgm = WritingGraphManager(mock_manager)
-    
+
     # Replace the checkpoint_manager with a mock
     mock_checkpoint_manager = AsyncMock()
     wgm.checkpoint_manager = mock_checkpoint_manager
-    
+
     # Prepare a state dict
     state = {
         "task_id": "task_123",
@@ -23,10 +23,10 @@ async def test_writing_manager_saves_checkpoint():
         "audit_result": {"is_integrity_ok": True},
         "ac_iter": 2
     }
-    
+
     # Call the internal method
     wgm._save_checkpoint_if_needed(state, "drafting", 1)
-    
+
     # Verify that checkpoint_manager.record_step was called
     mock_checkpoint_manager.record_step.assert_awaited_once()
     # Check the arguments

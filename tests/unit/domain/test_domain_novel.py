@@ -1,4 +1,3 @@
-import pytest
 from src.domain.entities.novel import Novel
 from src.domain.value_objects.ids import UserId
 from src.domain.value_objects.metadata import NovelStatus

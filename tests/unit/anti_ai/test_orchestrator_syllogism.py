@@ -4,7 +4,6 @@ PLAN 03 - Step 10: 総合スコア計算への三段論法ペナルティ統合�
 """
 from __future__ import annotations
 
-import pytest
 from src.services.anti_ai.models import AICategory
 from src.services.anti_ai.orchestrator import RuleBasedAntiAIDetector
 

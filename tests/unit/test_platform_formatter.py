@@ -2,7 +2,6 @@
 
 import io
 import zipfile
-import pytest
 
 from src.services.formatters.ruby_transpiler import PublishPlatform, RubyTranspiler
 from src.services.formatters.platform_formatter import PlatformFormatter

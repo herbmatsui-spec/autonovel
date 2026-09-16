@@ -1,10 +1,8 @@
 """Multimedia Huey タスクの単体テスト。"""
 from __future__ import annotations
 
-import pytest
 
 from src.backend import config
-from src.backend.multimedia_service import MultimediaService
 from src.backend.tasks.multimedia_tasks import generate_asset_pack_task
 
 

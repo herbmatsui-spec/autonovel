@@ -16,7 +16,6 @@ from fastapi.responses import FileResponse
 from src.backend.auth import get_current_user
 from src.backend.database.models import User
 from src.backend.security.owner_guard import verify_book_ownership
-from src.backend.database.uow import UnitOfWork
 from src.core.container import AppContainer
 from src.backend.exceptions import NoChaptersFoundError
 from src.backend.feature_flags import is_multimedia_enabled

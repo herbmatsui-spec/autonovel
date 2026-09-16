@@ -1,6 +1,5 @@
 """SPI 関連のユニットテスト"""
 
-import pytest
 from src.core.spi.llm.interface import ILLMProvider
 from src.core.spi.vector_store.interface import IVectorStoreProvider
 from src.core.spi.interface import IImageProvider, ImageResult

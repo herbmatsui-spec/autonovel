@@ -3,7 +3,6 @@
 import time
 import pytest
 from unittest.mock import MagicMock
-from fastapi import HTTPException
 
 from src.backend.rate_limit import RateLimiter
 from src.services.rag_service import GraphRAGService, RagContext

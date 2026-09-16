@@ -1,12 +1,7 @@
-import tempfile
-import os
 from unittest.mock import patch, mock_open
 
-import pytest
 
 from src.shared.resilience_config import ResilienceConfigLoader
-from src.shared.circuit_breaker import CircuitBreakerConfig
-from src.shared.retry_policy import RetryPolicy
 
 
 class TestResilienceConfigLoader:

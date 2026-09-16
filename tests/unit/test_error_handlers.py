@@ -4,14 +4,12 @@ import pytest
 import json
 from unittest.mock import MagicMock
 from fastapi import HTTPException
-from fastapi.exceptions import RequestValidationError
 
 from src.backend.error_handlers import (
     register_error_handlers,
     http_exception_handler,
     validation_exception_handler,
 )
-from src.backend.config import settings
 
 
 @pytest.mark.asyncio

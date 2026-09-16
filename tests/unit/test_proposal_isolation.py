@@ -1,7 +1,6 @@
 """Unit tests for proposal isolation and cross-proposal leak detection (Part 1 / Steps 7-12)."""
 
 import pytest
-from unittest.mock import AsyncMock
 
 from src.services.blind_review import (
     BlindReviewGate,

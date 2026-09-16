@@ -1,4 +1,4 @@
-from src.core.container import AppContainer, AppContainer2, InfraContainer
+from src.core.container import AppContainer, AppContainer2
 
 
 def test_app_container_instantiation():

@@ -10,7 +10,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 from starlette.requests import Request
 
-from src.backend.database.models import Base, User
+from src.backend.database.models import Base
 from src.backend.database.models_billing import StripeWebhookEvent
 from src.backend.routers.billing_webhook import handle_stripe_webhook
 

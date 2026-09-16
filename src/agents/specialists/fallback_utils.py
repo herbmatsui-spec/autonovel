@@ -61,7 +61,7 @@ def build_relation_graph(bible: dict[str, Any]) -> dict[str, set[str]]:
 
     characters = bible.get("characters", [])
     locations = bible.get("locations", [])
-    items = bible.get("items", [])
+    bible.get("items", [])
     factions = bible.get("factions", [])
 
     char_names = set()
@@ -313,7 +313,6 @@ def extract_emotion_triples(text: str) -> set[tuple[str, str, str]]:
     triples = set()
 
     # Character patterns
-    char_pattern = r"(?:[一-龯ぁ-んァ-ヶーa-zA-Z]{1,10})(?:は|が|を|に|で|と|の|だ|です|だった|だった|だろう|らしい|ようだ|みたいだ|そうだ|らしい|かもしれない|はずだ|に違いない|わけだ|もん|んだ|のだ|のです|なのだ|なのです)"
 
     # Emotion keywords
     emotions = {

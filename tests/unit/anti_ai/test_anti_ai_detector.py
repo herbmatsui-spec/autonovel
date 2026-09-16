@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
 
 from src.agents.specialists.anti_ai_detector import AntiAIDetector
 

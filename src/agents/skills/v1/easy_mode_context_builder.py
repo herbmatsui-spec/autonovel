@@ -44,15 +44,14 @@ class EasyModeContextBuilderSkill(SkillAgent):
             )
 
             # バイブルとプロットを取得
-            bible = ctx.artifacts.get("bible")
+            ctx.artifacts.get("bible")
             plots = ctx.artifacts.get("plots", [])
-            plot = next((p for p in plots if getattr(p, "episode_number", 0) == ep_num), None)
+            next((p for p in plots if getattr(p, "episode_number", 0) == ep_num), None)
 
             # 前話の章を取得
-            prev_chapter = None
             if ep_num > 1:
                 try:
-                    prev_chapter = await self.repo.get_chapter(branch_id, ep_num - 1)
+                    await self.repo.get_chapter(branch_id, ep_num - 1)
                 except Exception:
                     pass
 

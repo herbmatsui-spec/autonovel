@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import pytest
 from src.services.exporters.base import escape_ruby_markup, process_ruby_markup
 
 

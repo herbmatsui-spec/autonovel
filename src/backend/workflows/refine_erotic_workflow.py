@@ -21,7 +21,7 @@ class RefineEroticWorkflow(BaseWorkflow):
             from src.engine.prompts.erotic_specialist import EroticSpecialist
             from src.agents.erotic_integrity import EroticIntegrityChecker
             from src.services.erotic_afterglow_evaluator import AfterglowEvaluator
-            
+
             self._erotic_specialist = EroticSpecialist()
             self._integrity_checker = EroticIntegrityChecker()
             self._afterglow_evaluator = AfterglowEvaluator()
@@ -34,29 +34,29 @@ class RefineEroticWorkflow(BaseWorkflow):
     async def refine_scene(self, scene_text: str, intensity: int = 2) -> str:
         """
         官能シーンのテキストを洗練する。
-        
+
         Args:
             scene_text: 元のシーンテキスト
             intensity: 強度レベル（デフォルト: 2）
-            
+
         Returns:
             洗練されたシーンテキスト
         """
         if not scene_text:
             return scene_text
-            
+
         # エージェントが利用できない場合は基本的な処理のみを行う
         if self._erotic_specialist is None:
             # エージェントが利用できない場合は入力をそのまま返すか、または簡易処理
             return scene_text
-            
+
         # 1. 隧ｲ蠖薙メ繝｣繝励ち繝ｼ縺ｮ譛ｬ譁・ｒ蜿門ｾ・
         refined_content = self._erotic_specialist.metaphor_filter(scene_text, intensity)
-        
+
         # 他のエージェントも利用できない場合はここで返す
         if self._integrity_checker is None or self._afterglow_evaluator is None:
             return refined_content
-        
+
         # 2. 謨ｴ蜷域ｧ繝√ぉ繝・け (EroticIntegrityChecker)
         try:
             curve = EroticCurve.create_default(intensity)
@@ -65,8 +65,8 @@ class RefineEroticWorkflow(BaseWorkflow):
             is_ok, issues, _, _ = self._integrity_checker.check_all(refined_content, consent_state=consent_state)
         except Exception:
             # チェックに失敗しても洗練されたテキストは返す
-            is_ok = True
-        
+            pass
+
         # 3. afterglow 評価
         try:
             afterglow_start = len(refined_content) * 3 // 4
@@ -74,12 +74,12 @@ class RefineEroticWorkflow(BaseWorkflow):
             afterglow_ok, afterglow_issues = self._afterglow_evaluator.evaluate(afterglow_candidate)
         except Exception:
             # 評価に失敗しても洗練されたテキストは返す
-            afterglow_ok = True
-        
+            pass
+
         # ノート: 実際のワークフローではここで問題があるとフラグを立てるか、または
         # 再処理を行うが、この簡易メソッドでは基本的な洗練されたテキストを返す
         # 本来はis_ok and afterglow_okがFalseの場合は何らかのフォールバック処理を行う
-        
+
         return refined_content
 
     async def execute(self, reporter: StatusReporter | None = None, **kwargs) -> dict[str, Any]:

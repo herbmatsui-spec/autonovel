@@ -1,4 +1,3 @@
-import pytest
 from src.easy_mode.phase3.asset_pack import AssetPackMetadata
 
 def test_asset_pack_metadata_summary():

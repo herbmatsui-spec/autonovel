@@ -1,4 +1,3 @@
-import pytest
 from src.easy_mode.phase3.media_mix import MediaMixExporter
 
 def test_export_audio_drama_script():

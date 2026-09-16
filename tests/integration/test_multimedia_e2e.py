@@ -5,12 +5,11 @@ import io
 import zipfile
 
 import pytest
-from fastapi import Depends, FastAPI
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from src.backend import config
 from src.backend.auth import validate_api_key_or_raise
-from src.backend.database import SessionLocal
 from src.backend.multimedia_service import MultimediaService
 from src.backend.rate_limit import generate_limiter
 from src.backend.routers import multimedia as multimedia_router

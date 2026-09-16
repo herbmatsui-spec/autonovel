@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from src.agents.media_script_agent import (
     MediaScriptAgent,
@@ -66,15 +66,15 @@ def test_audio_drama_script_output_schema():
 
 def test_clean_json_markdown():
     agent = MediaScriptAgent(llm_provider=None)
-    
+
     raw_with_markdown = '```json\n{"key": "value"}\n```'
     result = agent._clean_json_markdown(raw_with_markdown)
     assert result == {"key": "value"}
-    
+
     raw_without_markdown = '{"key": "value"}'
     result = agent._clean_json_markdown(raw_without_markdown)
     assert result == {"key": "value"}
-    
+
     raw_with_extra = 'Some text\n```json\n{"key": "value"}\n```\nMore text'
     result = agent._clean_json_markdown(raw_with_extra)
     assert result == {"key": "value"}
@@ -82,12 +82,12 @@ def test_clean_json_markdown():
 
 def test_split_into_scenes():
     agent = MediaScriptAgent(llm_provider=None)
-    
+
     short_text = "短いテキストです。"
     scenes = agent._split_into_scenes(short_text, max_chars=1500)
     assert len(scenes) == 1
     assert scenes[0] == short_text
-    
+
     long_text = "シーン1の内容。\n\nシーン2の内容。\n\nシーン3の内容。" * 100
     scenes = agent._split_into_scenes(long_text, max_chars=500)
     assert len(scenes) > 1
@@ -141,12 +141,12 @@ def test_generate_manga_script_with_mock_llm():
         "scene_mood": "neutral"
     })
     agent = MediaScriptAgent(llm_provider=None)
-    
+
     with patch.object(agent, '_call_llm', return_value=mock_response) as mock_call:
         chapter_text = "Test chapter content."
         characters = [{"name": "Protagonist", "personality": "Brave"}]
         results = agent.generate_manga_script(chapter_text, characters)
-        
+
         mock_call.assert_called_once()
         assert len(results) == 1
         assert results[0].page_number == 1
@@ -172,12 +172,12 @@ def test_generate_audio_script_with_mock_llm():
         "cast_requirements": {"characters": ["Protagonist"], "required_emotions": ["joy"], "narrator_needed": False, "total_voice_actors": 1}
     })
     agent = MediaScriptAgent(llm_provider=None)
-    
+
     with patch.object(agent, '_call_llm', return_value=mock_response) as mock_call:
         chapter_text = "Test chapter content."
         characters = [{"name": "Protagonist", "personality": "Brave"}]
         result = agent.generate_audio_script(chapter_text, characters)
-        
+
         mock_call.assert_called_once()
         assert result.episode_title == "Test Episode"
         assert len(result.lines) == 1
@@ -187,11 +187,11 @@ def test_generate_audio_script_with_mock_llm():
 def test_generate_manga_script_fallback_on_llm_error():
     mock_llm = MockLLMProvider(["invalid json"])
     agent = MediaScriptAgent(llm_provider=mock_llm)
-    
+
     chapter_text = "Test chapter content. " * 100
     characters = [{"name": "Protagonist", "personality": "Brave"}]
     results = agent.generate_manga_script(chapter_text, characters)
-    
+
     assert len(results) > 0
     assert all(isinstance(r, MangaScriptOutput) for r in results)
 
@@ -199,11 +199,11 @@ def test_generate_manga_script_fallback_on_llm_error():
 def test_generate_audio_script_fallback_on_llm_error():
     mock_llm = MockLLMProvider(["invalid json"])
     agent = MediaScriptAgent(llm_provider=mock_llm)
-    
+
     chapter_text = "Test chapter content."
     characters = [{"name": "Protagonist", "personality": "Brave"}]
     result = agent.generate_audio_script(chapter_text, characters)
-    
+
     assert isinstance(result, AudioDramaScriptOutput)
     assert len(result.lines) > 0
 

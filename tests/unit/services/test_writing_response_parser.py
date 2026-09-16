@@ -1,4 +1,3 @@
-import pytest
 from src.services.writing_services import clean_writing_response
 
 def test_clean_writing_response_strip_thinking():

@@ -23,7 +23,7 @@ async def get_cost_summary(
     # Get the start of the current month
     now = datetime.now()
     start_of_month = datetime(now.year, now.month, 1)
-    
+
     # Query the cost logs for the current month
     query = db.query(
         func.sum(CostLogModel.cost_usd).label("total_cost_usd"),
@@ -41,13 +41,12 @@ async def get_cost_summary(
         query = query.filter(CostLogModel.book_id.in_(user_book_ids))
 
     results = query.first()
-    
+
     total_cost_usd = results.total_cost_usd or 0.0
     total_input_tokens = results.total_input_tokens or 0
     total_output_tokens = results.total_output_tokens or 0
     total_cache_read = results.total_cache_read_tokens or 0
-    total_cache_creation = results.total_cache_creation_tokens or 0
-    
+
     # Calculate total tokens (input + output) for cache hit ratio
     total_tokens = total_input_tokens + total_output_tokens
     cache_hit_ratio = 0.0
@@ -59,10 +58,10 @@ async def get_cost_summary(
             cache_hit_ratio = total_cache_read / (total_input_tokens + total_cache_read)
         else:
             cache_hit_ratio = 0.0
-    
+
     # Convert cost to JPY (assuming 150 JPY per USD)
     total_cost_jpy = total_cost_usd * 150.0
-    
+
     # Calculate savings from cache (assuming cached input costs 0.025 per 1M tokens vs 0.10 for flash)
     # This is a simplification; in reality, we would use the actual model pricing.
     # We'll assume the base model is gemini-2.0-flash for input pricing.
@@ -70,7 +69,7 @@ async def get_cost_summary(
     cached_input_price_per_1m = 0.025  # USD per 1M cached input tokens
     savings_usd = (total_cache_read / 1_000_000) * (base_input_price_per_1m - cached_input_price_per_1m)
     savings_jpy = savings_usd * 150.0
-    
+
     return {
         "total_cost_jpy": round(total_cost_jpy, 2),
         "total_cost_usd": round(total_cost_usd, 2),

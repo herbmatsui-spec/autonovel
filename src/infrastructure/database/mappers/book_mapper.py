@@ -17,7 +17,7 @@ class BookMapper:
         # int id を str 経由で NovelId にマッピング
         novel_id = NovelId(value=str(orm.id))
         author_id = UserId(value=str(orm.user_id))
-        
+
         status = NovelStatus.DRAFT
         if hasattr(orm, "status") and orm.status:
             try:
@@ -53,14 +53,14 @@ class BookMapper:
     def to_orm(entity: Novel, existing_orm: Book | None = None) -> Book:
         """Domain Novel -> ORM Book"""
         orm = existing_orm or Book()
-        
+
         # IDがint変換可能な場合は設定
         if hasattr(entity.id, "value") and entity.id.value.isdigit():
             orm.id = int(entity.id.value)
-            
+
         if hasattr(entity.author_id, "value") and entity.author_id.value.isdigit():
             orm.user_id = int(entity.author_id.value)
-            
+
         orm.title = entity.title.value if hasattr(entity.title, "value") else str(entity.title)
         orm.genre = entity.genre.value if hasattr(entity.genre, "value") else str(entity.genre)
         orm.concept = entity.concept.value if hasattr(entity.concept, "value") else str(entity.concept)

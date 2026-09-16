@@ -1,7 +1,6 @@
 """Minimal test to check container access."""
 from __future__ import annotations
 
-import pytest
 
 
 def test_minimal_chromadb(chadb_container):

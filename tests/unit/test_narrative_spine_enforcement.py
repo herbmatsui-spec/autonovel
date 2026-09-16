@@ -3,7 +3,6 @@ test_narrative_spine_enforcement.py - EmotionalHookSpec と SharpEdgeSpec のプ
 """
 from __future__ import annotations
 
-import pytest
 
 from src.models.emotional_hook import EmotionalHookSpec
 from src.models.sharp_edge import SharpEdgeSpec

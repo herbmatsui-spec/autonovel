@@ -1,5 +1,4 @@
 """Tests for Scheduling Policies (Step 3)."""
-import pytest
 from src.backend.tasks.scheduling_policies import (
     AffinityPriorityPolicy,
     FairRoundRobinPolicy,
@@ -76,11 +75,11 @@ def test_scheduler_can_switch_policies():
     """DAGScheduler でポリシー動的切替可能。"""
     from src.backend.tasks.dag_scheduler import DAGScheduler
     from src.backend.tasks.scheduling_policies import FairRoundRobinPolicy
-    
+
     scheduler = DAGScheduler()
     # デフォルトは AffinityPriorityPolicy
     assert type(scheduler.scheduling_policy).__name__ == "AffinityPriorityPolicy"
-    
+
     # 切替
     scheduler.set_scheduling_policy(FairRoundRobinPolicy())
     assert type(scheduler.scheduling_policy).__name__ == "FairRoundRobinPolicy"
