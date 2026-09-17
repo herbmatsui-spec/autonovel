@@ -45,3 +45,9 @@ class AudioTtsAdapter(ABC):
     async def synthesize(self, request: TtsRequest) -> TtsResult:
         """テキストから音声を合成しバイトデータと消費コストを返す。"""
         pass
+
+
+# クラス名エイリアス（互換用）
+AudioTtsRequest = TtsRequest
+AudioTtsResult = TtsResult
+
