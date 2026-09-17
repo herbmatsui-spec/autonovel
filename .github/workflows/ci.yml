@@ -322,7 +322,7 @@ jobs:
       - test-contract
       - test-migration
       - frontend-test
-    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
       - name: Build image
