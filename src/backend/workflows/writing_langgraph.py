@@ -769,7 +769,27 @@ class WritingGraphManager:
         logger.info(
             f"Finalized Ep.{ep_num}: integrity={state.get('is_integrity_ok')}, causal={state.get('is_causal_ok')}, dogfeed={state.get('dogfeed_ok', True)}"
         )
-        return {"status": "completed"}
+
+        # v5.0 Step 12: 伏線ステータス自動更新（章完了トランザクションに統合）
+        try:
+            foreshadowing_service = state.get("foreshadowing_service")
+            book_id = state.get("book_id")
+            draft_content = state.get("draft_content", "")
+            if foreshadowing_service and book_id and draft_content:
+                resolved_titles = await foreshadowing_service.check_and_resolve(
+                    book_id=book_id,
+                    episode_num=ep_num,
+                    draft_text=draft_content,
+                )
+                if resolved_titles:
+                    logger.info(
+                        f"Foreshadowing auto-resolved in Ep.{ep_num}: {resolved_titles}"
+                    )
+                    final_meta["resolved_foreshadowings"] = resolved_titles
+        except Exception as e:
+            logger.warning(f"Foreshadowing auto-resolve failed for Ep.{ep_num}: {e}")
+
+        return {"status": "completed", "final_meta": final_meta}
 
     def _create_initial_state(
         self,
