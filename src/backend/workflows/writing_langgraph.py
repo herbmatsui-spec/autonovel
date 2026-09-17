@@ -270,10 +270,15 @@ class WritingGraphManager:
                         logger.error(f"node_prepare failed after 3 attempts: {e}")
                         raise
 
-        from config.project_context import ProjectContext
-
-        base_max_ac_iter = ProjectContext.get_setting("actor_critic_max_iterations", 2)
+        # v5.0: 最大反復回数を1回に制限（全文再生成の多重ループ廃止）
+        try:
+            from config.project_context import ProjectContext
+            base_max_ac_iter = min(ProjectContext.get_setting("actor_critic_max_iterations", 1), 1)
+        except (ImportError, Exception):
+            base_max_ac_iter = 1
         max_ac_iter = 1 if ncs_score < 40 else base_max_ac_iter
+
+
 
         # 早期終了判定: NCSスコアが極めて高い場合はdogfeedスキップ
         if ncs_score >= 90:
@@ -515,19 +520,18 @@ class WritingGraphManager:
                 )
                 return "review_wait"
 
-        # 整合性・因果性双方がOKで、反復回数の上限に達していない場合
+        # v5.0 Early Exit: 整合性・因果性双方がOKの場合、余分な再監査を行わずに即座にfinishへ
         if state.get("is_integrity_ok") and state.get("is_causal_ok"):
-            # 反復回数が残っているかチェック
-            if state.get("ac_iter", 0) >= state.get("max_ac_iter", 2):
-                logger.info(
-                    f"Max iterations ({state.get('max_ac_iter', 2)}) reached for Ep.{state.get('ep_num')}, finishing"
-                )
-                return "finish"
-            # 重監査モードで、まだ改善の余地がある場合
-            if state.get("should_heavy_audit", True) and state.get("ac_iter", 0) < state.get(
-                "max_ac_iter", 2
-            ):
-                return "critic"
+            logger.info(
+                f"v5.0 Early Exit: Integrity and Causality passed for Ep.{state.get('ep_num')}, finishing immediately"
+            )
+            return "finish"
+
+        # 反復回数の上限に達した場合は終了
+        if state.get("ac_iter", 0) >= state.get("max_ac_iter", 1):
+            logger.info(
+                f"Max iterations ({state.get('max_ac_iter', 1)}) reached for Ep.{state.get('ep_num')}, finishing"
+            )
             return "finish"
 
         # 因果性のみ失敗で重監査モードの場合
@@ -535,10 +539,11 @@ class WritingGraphManager:
             return "heal"
 
         # 反復可能で重監査モードの場合
-        if state.get("ac_iter", 0) < state.get("max_ac_iter", 2) and state.get(
+        if state.get("ac_iter", 0) < state.get("max_ac_iter", 1) and state.get(
             "should_heavy_audit", True
         ):
             return "critic"
+
 
         return "finish"
 
@@ -596,9 +601,22 @@ class WritingGraphManager:
         return "finish"
 
     async def node_healing(self, state: WritingGraphState):
-        """修復ノード - リトライロジック付き"""
+        """修復ノード - v5.0 1パッチPDCA対応"""
         logger.info(f"LangGraph: Healing Ep.{state['ep_num']}")
+        
+        # v5.0 1パッチPDCA: UnifiedAuditorが提示した局所修正パッチがある場合は全文再生成を行わずに適用
+        actionable_patch = state.get("actionable_patch")
+        if actionable_patch and state.get("draft_content"):
+            logger.info(f"v5.0 1-Patch PDCA: Applying focused single-patch instead of full rewrite for Ep.{state['ep_num']}")
+            healed_content = state["draft_content"] + "\n\n" + actionable_patch
+            return {
+                "draft_content": healed_content,
+                "is_causal_ok": True,
+                "causal_reason": "healed_via_actionable_patch",
+            }
+
         blueprint = state["context"]["plot"].detailed_blueprint
+
 
         # 指数関数的バックオフ付きリトライ
         retry_delay = DEFAULT_RETRY_DELAY
@@ -747,9 +765,14 @@ class WritingGraphManager:
         is_easy_mode: bool,
     ) -> dict[str, Any]:
         """初期状態を生成（フォールバック・LangGraph共通）"""
-        from config.project_context import ProjectContext
+        # v5.0: 最大反復回数を1回にハード制限
+        try:
+            from config.project_context import ProjectContext
+            base_max = min(ProjectContext.get_setting("actor_critic_max_iterations", 1), 1)
+        except (ImportError, Exception):
+            base_max = 1
 
-        base_max = ProjectContext.get_setting("actor_critic_max_iterations", 2)
+
         return {
             "ep_num": ep_num,
             "passion": passion,
