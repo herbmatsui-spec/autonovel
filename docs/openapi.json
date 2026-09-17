@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "AutoNovel Backend",
-    "version": "4.9.0"
+    "version": "4.9.3"
   },
   "paths": {
     "/easy_mode/generate": {
@@ -2234,7 +2234,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
       }
     },
     "/api/editor/ask-bible": {
@@ -2276,7 +2281,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
       }
     },
     "/api/editor/audit-consistency": {
@@ -2285,7 +2295,7 @@
           "editor"
         ],
         "summary": "Audit Consistency",
-        "description": "執筆中の本文と GraphRAG 設定情報とのリアルタイム矛盾診断",
+        "description": "執筆中の本文と設定情報とのリアルタイム矛盾診断",
         "operationId": "audit_consistency_api_editor_audit_consistency_post",
         "requestBody": {
           "content": {
@@ -2305,6 +2315,77 @@
                 "schema": {
                   "$ref": "#/components/schemas/ConsistencyAuditResponse"
                 }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/editor/audit": {
+      "post": {
+        "tags": [
+          "editor"
+        ],
+        "summary": "Audit Fast Hybrid",
+        "description": "v5.0: 二層ハイブリッド監査（静的ルール解析＋定性判定）エンドポイント",
+        "operationId": "audit_fast_hybrid_api_editor_audit_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "draft_text",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Draft Text"
+            }
+          },
+          {
+            "name": "character_profiles",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Character Profiles"
+            }
+          },
+          {
+            "name": "plot_spec",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Plot Spec"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             }
           },
@@ -2360,7 +2441,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
       }
     },
     "/api/system/models/info": {
@@ -2676,15 +2762,37 @@
         "summary": "Recalc All Book Scores",
         "description": "全書籍の BookScore を再計算する（管理者用・並列化対応）",
         "operationId": "recalc_all_book_scores_api_system_admin_book_score_recalc_post",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Authorization"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
                   "type": "object",
+                  "additionalProperties": true,
                   "title": "Response Recalc All Book Scores Api System Admin Book Score Recalc Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -2708,6 +2816,16 @@
             "schema": {
               "type": "integer",
               "title": "Book Id"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Authorization"
             }
           }
         ],
@@ -2745,15 +2863,37 @@
         "summary": "Get Skill Metrics",
         "description": "スキル実行メトリクスを取得する（デバッグ用）",
         "operationId": "get_skill_metrics_api_system_admin_skills_metrics_get",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Authorization"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
                   "type": "object",
+                  "additionalProperties": true,
                   "title": "Response Get Skill Metrics Api System Admin Skills Metrics Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -2769,15 +2909,27 @@
         "summary": "Run Ab Test",
         "description": "A/Bテストを即時実行する",
         "operationId": "run_ab_test_api_system_admin_skills_ab_test_post",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Authorization"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ABTestRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -2785,8 +2937,8 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
                   "type": "object",
+                  "additionalProperties": true,
                   "title": "Response Run Ab Test Api System Admin Skills Ab Test Post"
                 }
               }
@@ -2829,6 +2981,16 @@
               ],
               "title": "Skill Name"
             }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Authorization"
+            }
           }
         ],
         "responses": {
@@ -2865,15 +3027,27 @@
         "summary": "Schedule Ab Test",
         "description": "定期的なA/Bテストをスケジュールする",
         "operationId": "schedule_ab_test_api_system_admin_skills_ab_test_schedule_post",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Authorization"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ABTestScheduleRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -2881,8 +3055,8 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
                   "type": "object",
+                  "additionalProperties": true,
                   "title": "Response Schedule Ab Test Api System Admin Skills Ab Test Schedule Post"
                 }
               }
@@ -2917,6 +3091,16 @@
             "schema": {
               "type": "integer",
               "title": "Task Id"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Authorization"
             }
           }
         ],
@@ -3054,15 +3238,27 @@
         "summary": "Auto Promote Ab Winner",
         "description": "A/Bテスト勝者バージョンを自動本番昇格する",
         "operationId": "auto_promote_ab_winner_api_system_admin_skills_ab_test_auto_promote_post",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Authorization"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ABTestAutoPromoteRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -3070,8 +3266,8 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
                   "type": "object",
+                  "additionalProperties": true,
                   "title": "Response Auto Promote Ab Winner Api System Admin Skills Ab Test Auto Promote Post"
                 }
               }
@@ -3127,6 +3323,11 @@
         "summary": "Export Book",
         "description": "作品を指定プラットフォーム用に整形して出力する。",
         "operationId": "export_book_api_export_books__book_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "book_id",
@@ -3148,16 +3349,6 @@
               "title": "Platform"
             },
             "description": "narou | kakuyomu | nocturne | nocturn"
-          },
-          {
-            "name": "Authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "",
-              "title": "Authorization"
-            }
           }
         ],
         "responses": {
@@ -3194,27 +3385,15 @@
         "summary": "Export Ebook Alias",
         "description": "README 互換エイリアス: eBook エクスポート (EPUB/PDF/MOBI) - `/multimedia/ebook` に委譲。\n\n重い PDF/EPUB 生成をワーカースレッドにオフロードしてイベントループをブロックしない。",
         "operationId": "export_ebook_alias_api_export_ebook_post",
-        "parameters": [
-          {
-            "name": "Authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "",
-              "title": "Authorization"
-            }
-          }
-        ],
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/src__backend__routers__export__EbookExportRequest"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -3229,6 +3408,53 @@
           },
           "503": {
             "description": "Multimedia disabled"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/export/copy/": {
+      "post": {
+        "tags": [
+          "export-copy"
+        ],
+        "summary": "Format Chapter For Copy",
+        "description": "Web小説投稿サイト別の整形済みテキストを返却する（クリップボードコピー用）。",
+        "operationId": "format_chapter_for_copy_api_export_copy__post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CopyFormatRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CopyFormatResponse"
+                }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -3695,7 +3921,7 @@
               "application/json": {
                 "schema": {
                   "items": {
-                    "$ref": "#/components/schemas/BookSchema"
+                    "$ref": "#/components/schemas/src__models__api_schemas__BookSchema"
                   },
                   "type": "array",
                   "title": "Response List Books Api Books  Get"
@@ -3732,7 +3958,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BookSchema"
+                  "$ref": "#/components/schemas/src__models__api_schemas__BookSchema"
                 }
               }
             }
@@ -3769,7 +3995,7 @@
               "application/json": {
                 "schema": {
                   "items": {
-                    "$ref": "#/components/schemas/BookSchema"
+                    "$ref": "#/components/schemas/src__models__api_schemas__BookSchema"
                   },
                   "type": "array",
                   "title": "Response List Books Api Books Get"
@@ -3806,7 +4032,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BookSchema"
+                  "$ref": "#/components/schemas/src__models__api_schemas__BookSchema"
                 }
               }
             }
@@ -3858,7 +4084,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BookSchema"
+                  "$ref": "#/components/schemas/src__models__api_schemas__BookSchema"
                 }
               }
             }
@@ -4547,6 +4773,120 @@
         ]
       }
     },
+    "/api/chapters/books/{book_id}": {
+      "get": {
+        "tags": [
+          "chapters"
+        ],
+        "summary": "Get Chapters",
+        "description": "指定作品の全章を統一スキーマ ChapterSchema で正規化して返す。",
+        "operationId": "get_chapters_api_chapters_books__book_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "book_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Book Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ChapterSchema"
+                  },
+                  "title": "Response Get Chapters Api Chapters Books  Book Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "List Projects",
+        "description": "ユーザー所有の作品群を ProjectSchema（統一ドメインモデル）で返す。",
+        "operationId": "list_projects_api_projects__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProjectSchema"
+                  },
+                  "type": "array",
+                  "title": "Response List Projects Api Projects  Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/projects": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "List Projects",
+        "description": "ユーザー所有の作品群を ProjectSchema（統一ドメインモデル）で返す。",
+        "operationId": "list_projects_api_projects_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProjectSchema"
+                  },
+                  "type": "array",
+                  "title": "Response List Projects Api Projects Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
     "/api/tasks/{task_id}/status": {
       "get": {
         "tags": [
@@ -4863,6 +5203,11 @@
         ],
         "summary": "Get Pending Patches",
         "operationId": "get_pending_patches_api_patches__book_id__pending_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "book_id",
@@ -4871,16 +5216,6 @@
             "schema": {
               "type": "integer",
               "title": "Book Id"
-            }
-          },
-          {
-            "name": "Authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "",
-              "title": "Authorization"
             }
           }
         ],
@@ -4913,6 +5248,11 @@
         ],
         "summary": "Approve Patch",
         "operationId": "approve_patch_api_patches__patch_id__approve_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "patch_id",
@@ -4935,16 +5275,6 @@
                 }
               ],
               "title": "Req"
-            }
-          },
-          {
-            "name": "Authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "",
-              "title": "Authorization"
             }
           }
         ],
@@ -4977,6 +5307,11 @@
         ],
         "summary": "Reject Patch",
         "operationId": "reject_patch_api_patches__patch_id__reject_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "patch_id",
@@ -4999,16 +5334,6 @@
                 }
               ],
               "title": "Req"
-            }
-          },
-          {
-            "name": "Authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "",
-              "title": "Authorization"
             }
           }
         ],
@@ -5041,6 +5366,11 @@
         ],
         "summary": "Edit Patch",
         "operationId": "edit_patch_api_patches__patch_id__edit_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "patch_id",
@@ -5057,16 +5387,6 @@
             "required": true,
             "schema": {
               "title": "Req"
-            }
-          },
-          {
-            "name": "Authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "",
-              "title": "Authorization"
             }
           }
         ],
@@ -5100,6 +5420,11 @@
         "summary": "Get Pending Reviews",
         "description": "レビュー待ちパッチ一覧を取得",
         "operationId": "get_pending_reviews_api_patches__book_id__reviews_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "book_id",
@@ -5141,6 +5466,11 @@
         "summary": "Get Review Detail",
         "description": "レビュー詳細を取得",
         "operationId": "get_review_detail_api_patches_reviews__review_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "review_id",
@@ -5149,16 +5479,6 @@
             "schema": {
               "type": "integer",
               "title": "Review Id"
-            }
-          },
-          {
-            "name": "Authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "",
-              "title": "Authorization"
             }
           }
         ],
@@ -5192,6 +5512,11 @@
         "summary": "Approve Review",
         "description": "レビューを承認",
         "operationId": "approve_review_api_patches_reviews__review_id__approve_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "review_id",
@@ -5200,16 +5525,6 @@
             "schema": {
               "type": "integer",
               "title": "Review Id"
-            }
-          },
-          {
-            "name": "Authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "",
-              "title": "Authorization"
             }
           }
         ],
@@ -5253,6 +5568,11 @@
         "summary": "Reject Review",
         "description": "レビューを差し戻し",
         "operationId": "reject_review_api_patches_reviews__review_id__reject_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "review_id",
@@ -5261,16 +5581,6 @@
             "schema": {
               "type": "integer",
               "title": "Review Id"
-            }
-          },
-          {
-            "name": "Authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "",
-              "title": "Authorization"
             }
           }
         ],
@@ -5314,6 +5624,11 @@
         "summary": "Revise Review",
         "description": "レビューに修正案を提示（再レビュー要求）",
         "operationId": "revise_review_api_patches_reviews__review_id__revise_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "review_id",
@@ -5322,16 +5637,6 @@
             "schema": {
               "type": "integer",
               "title": "Review Id"
-            }
-          },
-          {
-            "name": "Authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "",
-              "title": "Authorization"
             }
           }
         ],
@@ -5375,6 +5680,11 @@
         "summary": "Get Setting Versions",
         "description": "設定バージョン履歴を取得",
         "operationId": "get_setting_versions_api_patches__book_id__setting_versions_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "book_id",
@@ -5416,6 +5726,11 @@
         "summary": "Get Setting Version",
         "description": "特定バージョンの設定を取得",
         "operationId": "get_setting_version_api_patches__book_id__setting_versions__version_number__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "book_id",
@@ -5466,6 +5781,11 @@
         "summary": "Patch Paragraph",
         "description": "手動で特定段落のリライトを指示し、即時差分を取得",
         "operationId": "patch_paragraph_api_episodes__episode_id__patch_paragraph_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "episode_id",
@@ -5474,16 +5794,6 @@
             "schema": {
               "type": "integer",
               "title": "Episode Id"
-            }
-          },
-          {
-            "name": "Authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "",
-              "title": "Authorization"
             }
           }
         ],
@@ -5526,6 +5836,11 @@
         ],
         "summary": "Get Issues",
         "operationId": "get_issues_api_issues_books__book_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "book_id",
@@ -5566,6 +5881,11 @@
         ],
         "summary": "Resolve Issue",
         "operationId": "resolve_issue_api_issues__issue_id__resolve_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "issue_id",
@@ -5574,16 +5894,6 @@
             "schema": {
               "type": "integer",
               "title": "Issue Id"
-            }
-          },
-          {
-            "name": "Authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "",
-              "title": "Authorization"
             }
           }
         ],
@@ -5964,6 +6274,11 @@
         ],
         "summary": "Get Bible",
         "operationId": "get_bible_api_bibles__book_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "book_id",
@@ -6004,6 +6319,11 @@
         ],
         "summary": "Get Opt History",
         "operationId": "get_opt_history_api_optimization_history__book_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "book_id",
@@ -7307,7 +7627,7 @@
     "/generate": {
       "post": {
         "summary": "Generate Illustration",
-        "description": "単一の挿絵を生成する",
+        "description": "単一の挿絵を生成する (5クレジット消費)",
         "operationId": "generate_illustration_generate_post",
         "requestBody": {
           "content": {
@@ -7340,7 +7660,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
       }
     },
     "/yonkoma": {
@@ -7379,7 +7704,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
       }
     },
     "/batch": {
@@ -7467,27 +7797,15 @@
         "summary": "Generate Media Mix",
         "description": "Media Mix 台本生成。",
         "operationId": "generate_media_mix_multimedia_media_mix_post",
-        "parameters": [
-          {
-            "name": "Authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "",
-              "title": "Authorization"
-            }
-          }
-        ],
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/MediaMixRequest"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -7513,7 +7831,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
       }
     },
     "/multimedia/ebook": {
@@ -7524,27 +7847,15 @@
         "summary": "Export Ebook",
         "description": "Ebook エクスポート (EPUB/PDF/MOBI)。",
         "operationId": "export_ebook_multimedia_ebook_post",
-        "parameters": [
-          {
-            "name": "Authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "",
-              "title": "Authorization"
-            }
-          }
-        ],
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/src__backend__schemas__multimedia__EbookExportRequest"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -7570,7 +7881,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
       }
     },
     "/multimedia/if-routes": {
@@ -7581,27 +7897,15 @@
         "summary": "Generate If Routes",
         "description": "IF ルートグラフ生成。",
         "operationId": "generate_if_routes_multimedia_if_routes_post",
-        "parameters": [
-          {
-            "name": "Authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "",
-              "title": "Authorization"
-            }
-          }
-        ],
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/IFRouteGenerateRequest"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -7627,7 +7931,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
       }
     },
     "/multimedia/asset-pack": {
@@ -7638,27 +7947,15 @@
         "summary": "Generate Asset Pack",
         "description": "統合アセットパック (ZIP) を生成。",
         "operationId": "generate_asset_pack_multimedia_asset_pack_post",
-        "parameters": [
-          {
-            "name": "Authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "",
-              "title": "Authorization"
-            }
-          }
-        ],
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/AssetPackRequest"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -7684,7 +7981,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
       }
     },
     "/multimedia/generate": {
@@ -7695,27 +7997,15 @@
         "summary": "Generate Asset Pack Alias",
         "description": "README 互換エイリアス: 統合アセットパック (ZIP) を生成 (`/asset-pack` と同等)。",
         "operationId": "generate_asset_pack_alias_multimedia_generate_post",
-        "parameters": [
-          {
-            "name": "Authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "",
-              "title": "Authorization"
-            }
-          }
-        ],
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/AssetPackGenerateRequest"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -7741,7 +8031,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
       }
     },
     "/multimedia/assets/{book_id}": {
@@ -7976,27 +8271,15 @@
         "summary": "Trigger Audio Synthesis",
         "description": "指定章の音声合成ジョブを投入または実行する (Step 19)。",
         "operationId": "trigger_audio_synthesis_multimedia_audio_synthesize_post",
-        "parameters": [
-          {
-            "name": "Authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "",
-              "title": "Authorization"
-            }
-          }
-        ],
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/AudioSynthesizeRequest"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -8004,8 +8287,8 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
                   "additionalProperties": true,
+                  "type": "object",
                   "title": "Response Trigger Audio Synthesis Multimedia Audio Synthesize Post"
                 }
               }
@@ -8021,7 +8304,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
       }
     },
     "/multimedia/audio/{book_id}/{episode_num}": {
@@ -8032,6 +8320,11 @@
         "summary": "Get Chapter Audio",
         "description": "作品・章ごとの音声アセット情報を取得する (Step 21)。",
         "operationId": "get_chapter_audio_multimedia_audio__book_id___episode_num__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "book_id",
@@ -8051,16 +8344,6 @@
               "type": "integer",
               "minimum": 1,
               "title": "Episode Num"
-            }
-          },
-          {
-            "name": "Authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "",
-              "title": "Authorization"
             }
           }
         ],
@@ -9721,6 +10004,11 @@
         "summary": "Export For Publishing",
         "description": "Export formatted novel package as a ZIP archive for the specified platform (Step 61).",
         "operationId": "export_for_publishing_api_export_publish__platform__post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "platform",
@@ -9771,6 +10059,11 @@
         "summary": "Preview For Publishing",
         "description": "Preview formatted episode text and check platform limit warnings (Step 62).",
         "operationId": "preview_for_publishing_api_export_publish__platform__preview_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "platform",
@@ -10457,6 +10750,72 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/liveness": {
+      "get": {
+        "tags": [
+          "system"
+        ],
+        "summary": "Health Liveness",
+        "description": "Liveness Probe: プロセスが生きているか即座に応答（外部依存なし）",
+        "operationId": "health_liveness_health_liveness_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LivenessResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/readiness": {
+      "get": {
+        "tags": [
+          "system"
+        ],
+        "summary": "Health Readiness",
+        "description": "Readiness Probe: DBなどの主要外部依存が準備完了しているか検証",
+        "operationId": "health_readiness_health_readiness_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/detail": {
+      "get": {
+        "tags": [
+          "system"
+        ],
+        "summary": "Health Check",
+        "description": "拡張ヘルスチェック: DB, Redis, ChromaDB, LLM Gateway, Worker を並列チェック",
+        "operationId": "health_check_health_detail_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
                 }
               }
             }
@@ -11406,83 +11765,6 @@
         "title": "BookCreateRequest",
         "description": "新規作品作成リクエスト"
       },
-      "BookSchema": {
-        "properties": {
-          "id": {
-            "type": "integer",
-            "title": "Id"
-          },
-          "title": {
-            "type": "string",
-            "title": "Title"
-          },
-          "genre": {
-            "type": "string",
-            "title": "Genre"
-          },
-          "concept": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Concept",
-            "default": ""
-          },
-          "synopsis": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Synopsis",
-            "default": ""
-          },
-          "target_eps": {
-            "type": "integer",
-            "title": "Target Eps",
-            "default": 0
-          },
-          "cumulative_stress": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Cumulative Stress",
-            "default": 0.0
-          },
-          "created_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Created At"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "title",
-          "genre"
-        ],
-        "title": "BookSchema",
-        "description": "作品情報スキーマ"
-      },
       "BookScoreHistoryItem": {
         "properties": {
           "chapter_number": {
@@ -12272,6 +12554,96 @@
         "title": "ChapterImportRequest",
         "description": "章インポートリクエスト"
       },
+      "ChapterSchema": {
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "default": "2026-09-17T08:27:37.318932"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At",
+            "default": "2026-09-17T08:27:37.318939"
+          },
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "book_id": {
+            "type": "integer",
+            "title": "Book Id"
+          },
+          "episode_number": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Episode Number"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Title"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content",
+            "default": ""
+          },
+          "digest": {
+            "type": "string",
+            "maxLength": 300,
+            "title": "Digest",
+            "default": ""
+          },
+          "word_count": {
+            "type": "integer",
+            "title": "Word Count",
+            "default": 0
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "default": "draft"
+          },
+          "scene_beats": {
+            "items": {
+              "$ref": "#/components/schemas/SceneBeat"
+            },
+            "type": "array",
+            "title": "Scene Beats"
+          },
+          "cliffhanger": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CliffhangerDef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "emotional_hook": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EmotionalHookSpec"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "book_id",
+          "episode_number",
+          "title"
+        ],
+        "title": "ChapterSchema"
+      },
       "CharacterParams": {
         "properties": {
           "name": {
@@ -12315,6 +12687,39 @@
         "title": "CharacterParams",
         "description": "キャラクター設定パラメータ。"
       },
+      "CheckResponse": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/HealthStatus"
+          },
+          "latency_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latency Ms"
+          },
+          "details": {
+            "type": "string",
+            "title": "Details",
+            "default": ""
+          },
+          "error": {
+            "type": "string",
+            "title": "Error",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "CheckResponse"
+      },
       "CircuitResetRequest": {
         "properties": {
           "provider_name": {
@@ -12331,6 +12736,32 @@
         },
         "type": "object",
         "title": "CircuitResetRequest"
+      },
+      "CliffhangerDef": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "New Crisis",
+              "Shocking Truth",
+              "Quiet Foreshadowing"
+            ],
+            "title": "Type",
+            "description": "引きの分類（新たな危機 / 衝撃の真実 / 静かな伏線）",
+            "default": "New Crisis"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "クリフハンガーの具体的な描写・引きのフック"
+          }
+        },
+        "type": "object",
+        "required": [
+          "description"
+        ],
+        "title": "CliffhangerDef",
+        "description": "Web小説の離脱を防ぐ引き・クリフハンガー3分類（v4より完全継承）"
       },
       "CommercialConfig": {
         "properties": {
@@ -12499,6 +12930,79 @@
         ],
         "title": "ConsistencyIssue",
         "description": "設定矛盾・不整合の検出項目"
+      },
+      "CopyFormatRequest": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "body": {
+            "type": "string",
+            "title": "Body"
+          },
+          "foreword": {
+            "type": "string",
+            "title": "Foreword",
+            "default": ""
+          },
+          "afterword": {
+            "type": "string",
+            "title": "Afterword",
+            "default": ""
+          },
+          "platform": {
+            "type": "string",
+            "title": "Platform",
+            "default": "narou"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "body"
+        ],
+        "title": "CopyFormatRequest",
+        "description": "整形リクエスト。"
+      },
+      "CopyFormatResponse": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "foreword": {
+            "type": "string",
+            "title": "Foreword"
+          },
+          "body": {
+            "type": "string",
+            "title": "Body"
+          },
+          "afterword": {
+            "type": "string",
+            "title": "Afterword"
+          },
+          "total_characters": {
+            "type": "integer",
+            "title": "Total Characters"
+          },
+          "platform": {
+            "type": "string",
+            "title": "Platform"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "foreword",
+          "body",
+          "afterword",
+          "total_characters",
+          "platform"
+        ],
+        "title": "CopyFormatResponse",
+        "description": "整形レスポンス。"
       },
       "CorrectRequest": {
         "properties": {
@@ -12991,6 +13495,31 @@
         ],
         "title": "EdgeUpsertRequest",
         "description": "エッジUPSERTリクエスト."
+      },
+      "EmotionalHookSpec": {
+        "properties": {
+          "hook_type": {
+            "type": "string",
+            "title": "Hook Type",
+            "description": "カタルシス / 共感 / 緊張感 / ギャップ萌え",
+            "default": "catharsis"
+          },
+          "target_scene": {
+            "type": "string",
+            "title": "Target Scene",
+            "description": "フックを仕掛けるシーン",
+            "default": ""
+          },
+          "appeal_point": {
+            "type": "string",
+            "title": "Appeal Point",
+            "description": "読者への最大の訴求ポイント",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "title": "EmotionalHookSpec",
+        "description": "読者の感情を揺さぶりカタルシスを生む感情フック（v4より完全継承）"
       },
       "EnrichmentMetricsSnapshot": {
         "properties": {
@@ -13781,6 +14310,46 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/HealthStatus"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version",
+            "default": "4.9.3"
+          },
+          "timestamp": {
+            "type": "string",
+            "title": "Timestamp"
+          },
+          "checks": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/CheckResponse"
+            },
+            "type": "object",
+            "title": "Checks"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "timestamp",
+          "checks"
+        ],
+        "title": "HealthResponse"
+      },
+      "HealthStatus": {
+        "type": "string",
+        "enum": [
+          "ok",
+          "degraded",
+          "error",
+          "not_configured"
+        ],
+        "title": "HealthStatus"
+      },
       "HybridSearchRequest": {
         "properties": {
           "query": {
@@ -13995,6 +14564,24 @@
         "type": "object",
         "title": "LLMConfigOverride",
         "description": "オプトインでフロントエンドから渡されるLLM設定。"
+      },
+      "LivenessResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "default": "alive"
+          },
+          "timestamp": {
+            "type": "string",
+            "title": "Timestamp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "timestamp"
+        ],
+        "title": "LivenessResponse"
       },
       "MarketingExportRequest": {
         "properties": {
@@ -14852,6 +15439,49 @@
         "title": "ProduceNovelResponse",
         "description": "作品生成レスポンス"
       },
+      "ProjectSchema": {
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "default": "2026-09-17T08:27:37.318932"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At",
+            "default": "2026-09-17T08:27:37.318939"
+          },
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          },
+          "books": {
+            "items": {
+              "$ref": "#/components/schemas/src__domain__schemas__project__BookSchema"
+            },
+            "type": "array",
+            "title": "Books"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "ProjectSchema"
+      },
       "PromotionEligibilityResponse": {
         "properties": {
           "book_id": {
@@ -15241,6 +15871,32 @@
         ],
         "title": "RagContextRequest",
         "description": "RAGコンテキスト生成リクエスト."
+      },
+      "ReadinessResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "dependencies": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Dependencies"
+          },
+          "timestamp": {
+            "type": "string",
+            "title": "Timestamp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "dependencies",
+          "timestamp"
+        ],
+        "title": "ReadinessResponse"
       },
       "ReflectionStatsResponse": {
         "properties": {
@@ -15715,6 +16371,47 @@
         },
         "type": "object",
         "title": "RunRequest"
+      },
+      "SceneBeat": {
+        "properties": {
+          "beat_num": {
+            "type": "integer",
+            "title": "Beat Num",
+            "description": "ビート番号"
+          },
+          "physical_action": {
+            "type": "string",
+            "title": "Physical Action",
+            "description": "肉体的な動作描写"
+          },
+          "sensory_tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Sensory Tags",
+            "description": "五感タグ: smell(嗅覚), sound(聴覚), touch(触覚), taste(味覚), sight(視覚)"
+          },
+          "emotion_phase": {
+            "type": "string",
+            "title": "Emotion Phase",
+            "description": "感情フェーズ: buildup(助走) / explosion(爆発) / aftermath(余韻)",
+            "default": "neutral"
+          },
+          "word_budget": {
+            "type": "integer",
+            "title": "Word Budget",
+            "description": "このビートに配分する目標文字数",
+            "default": 300
+          }
+        },
+        "type": "object",
+        "required": [
+          "beat_num",
+          "physical_action"
+        ],
+        "title": "SceneBeat",
+        "description": "プロットから分解された物理動作・五感ビート（v4より完全継承）"
       },
       "SensoryType": {
         "type": "string",
@@ -16565,6 +17262,175 @@
         ],
         "title": "EbookExportRequest",
         "description": "電子書籍エクスポートリクエスト。"
+      },
+      "src__domain__schemas__project__BookSchema": {
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "default": "2026-09-17T08:27:37.318932"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At",
+            "default": "2026-09-17T08:27:37.318939"
+          },
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "project_id": {
+            "type": "integer",
+            "title": "Project Id"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Title"
+          },
+          "genre": {
+            "type": "string",
+            "title": "Genre",
+            "default": "fantasy"
+          },
+          "synopsis": {
+            "type": "string",
+            "title": "Synopsis",
+            "default": ""
+          },
+          "total_words": {
+            "type": "integer",
+            "title": "Total Words",
+            "default": 0
+          },
+          "target_chapters": {
+            "type": "integer",
+            "title": "Target Chapters",
+            "default": 20
+          },
+          "cheat_scale": {
+            "type": "integer",
+            "maximum": 5.0,
+            "minimum": 1.0,
+            "title": "Cheat Scale",
+            "description": "チート度（1:微チート〜5:理不尽無双）",
+            "default": 4
+          },
+          "growth_curve": {
+            "type": "string",
+            "title": "Growth Curve",
+            "description": "成長曲線モデル",
+            "default": "最初からカンスト(無双)"
+          },
+          "system_assist": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "System Assist",
+            "description": "ステータス・システム関与度%",
+            "default": 70
+          },
+          "cost_severity": {
+            "type": "integer",
+            "maximum": 5.0,
+            "minimum": 1.0,
+            "title": "Cost Severity",
+            "description": "能力の代償・世界のリスク過酷度",
+            "default": 2
+          },
+          "thematic_core": {
+            "type": "string",
+            "title": "Thematic Core",
+            "description": "物語の根底にあるテーマ・哲学的問い",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "project_id",
+          "title"
+        ],
+        "title": "BookSchema"
+      },
+      "src__models__api_schemas__BookSchema": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "genre": {
+            "type": "string",
+            "title": "Genre"
+          },
+          "concept": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Concept",
+            "default": ""
+          },
+          "synopsis": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Synopsis",
+            "default": ""
+          },
+          "target_eps": {
+            "type": "integer",
+            "title": "Target Eps",
+            "default": 0
+          },
+          "cumulative_stress": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cumulative Stress",
+            "default": 0.0
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "genre"
+        ],
+        "title": "BookSchema",
+        "description": "作品情報スキーマ"
       }
     },
     "securitySchemes": {
