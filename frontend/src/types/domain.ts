@@ -39,7 +39,7 @@ export interface Character {
   age: string;
   appearance: string;
   personality: string;
-  
+
   // 心理・葛藤プロファイル (Save The Cat)
   surface_persona: string;
   inner_conflict: string;
@@ -47,18 +47,18 @@ export interface Character {
   save_the_cat_event: string;
   social_mask_vs_truth: string;
   iron_constraint: string;
-  
+
   // 口調・語尾
   first_person: string;
   second_person: string;
   suffix_style: string;
   suffix_patterns: string[];
   dialogue_samples: string[];
-  
+
   // Truth Ledger
   known_facts: string[];
   unknown_facts: string[];
-  
+
   relations: CharacterRelation[];
 }
 

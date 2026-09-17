@@ -18,7 +18,7 @@
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 [![Type Checked: mypy](https://img.shields.io/badge/type%20checked-mypy-blue)](https://mypy-lang.org/)
 [![Vitest](https://img.shields.io/badge/tested_with-vitest-729B1B?logo=vitest&logoColor=white)](https://vitest.dev/)
-[![Version](https://img.shields.io/badge/version-5.0.0-brightgreen?logo=semver)](https://github.com/herbmatsui-spec/autonovel/releases/tag/v5.0.0)
+[![Version](https://img.shields.io/badge/version-5.0.1-brightgreen?logo=semver)](https://github.com/herbmatsui-spec/autonovel/releases/tag/v5.0.1)
 
 <br />
 
@@ -26,7 +26,7 @@
   <img src="docs/demo.gif" alt="AutoNovel UI & Workflow Demo" width="900" style="border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
 </p>
 
-*▲ AutoNovel v5.0.0: LLM・Embedding設定の一元化 / プロット・執筆・監査・Embedding用途別モデル設定 / リアルタイム稼働モデルカード / サーバー既定情報API / DDDレイヤー分離実装完了*
+*▲ AutoNovel v5.0.1: LLM・Embedding設定の一元化 / プロット・執筆・監査・Embedding用途別モデル設定 / リアルタイム稼働モデルカード / サーバー既定情報API / DDDレイヤー分離実装完了*
 
 
 ## v5.0の新機能と変更点
@@ -2389,7 +2389,7 @@ make clean         # キャッシュや一時DBファイルをクリーンアッ
 コントリビューションの詳細は [CONTRIBUTING.md](CONTRIBUTING.md) をご覧ください。
 品質計画・テスト網羅率プランは [TEST_COVERAGE_PLAN.md](TEST_COVERAGE_PLAN.md) を、パイプライン統合の将来計画は [PIPELINE_UNIFICATION_PLAN.md](PIPELINE_UNIFICATION_PLAN.md) / [UNIFIED_PIPELINE_IMPLEMENTATION_PLAN.md](UNIFIED_PIPELINE_IMPLEMENTATION_PLAN.md) を参照してください。
 
-> **現行バージョン**: v5.0.0 (`pyproject.toml`, `frontend/package.json`, Docker イメージ `autonovel-backend:5.0.0` / `autonovel-frontend:5.0.0`)。直近のリリースノートは [CHANGELOG.md](CHANGELOG.md)。
+> **現行バージョン**: v5.0.1 (`pyproject.toml`, `frontend/package.json`, Docker イメージ `autonovel-backend:5.0.1` / `autonovel-frontend:5.0.1`)。直近のリリースノートは [CHANGELOG.md](CHANGELOG.md)。
 
 ---
 

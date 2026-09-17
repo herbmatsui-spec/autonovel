@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { PlatformCopyButton } from '../common/PlatformCopyButton';
 
 interface Step3Props {

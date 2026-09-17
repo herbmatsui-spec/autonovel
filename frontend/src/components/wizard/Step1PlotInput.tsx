@@ -42,7 +42,7 @@ export const Step1PlotInput: React.FC<Step1Props> = ({ onNext }) => {
     <div className="wizard-step step1-container p-6 bg-slate-900 text-white rounded-xl shadow-lg">
       <h2 className="text-2xl font-bold mb-2 text-sky-400">Step 1: 企画アイデアと成長曲線の設計</h2>
       <p className="text-slate-400 mb-6 text-sm">主人公のチート度や成長曲線、リスク過酷度を設定し、読者を引き込む企画の骨格を作ります。</p>
-      
+
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium mb-1">作品タイトル</label>
@@ -106,31 +106,6 @@ export const Step1PlotInput: React.FC<Step1Props> = ({ onNext }) => {
               value={costSeverity}
               onChange={(e) => setCostSeverity(Number(e.target.value))}
               className="w-full accent-amber-500"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">ステータス・システム関与度: {systemAssist}%</label>
-            <input
-              type="range"
-              min={0}
-              max={100}
-              value={systemAssist}
-              onChange={(e) => setSystemAssist(Number(e.target.value))}
-              className="w-full accent-emerald-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">目標章数</label>
-            <input
-              type="number"
-              min={1}
-              max={100}
-              value={targetChapters}
-              onChange={(e) => setTargetChapters(Number(e.target.value))}
-              className="w-full p-2.5 rounded bg-slate-800 border border-slate-700 text-white"
             />
           </div>
         </div>
