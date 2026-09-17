@@ -28,6 +28,7 @@ try:
 except Exception as e:
     logger.warning(f"[VECTOR STORE] Failed to import/initialize chromadb: {e}.")
     HAS_CHROMA = False
+    chromadb = None
 
 try:
     from rank_bm25 import BM25Okapi
