@@ -27,10 +27,14 @@ class RollingMemoryBuilder:
         max_recent_digests: int = 30,
         max_prev_episode_chars: int = 2500,
         preserve_initial_digests: int = 2,
+        max_total_tokens: int = 4000,
+        max_total_chars: int = 5000,
     ):
         self.max_recent_digests = max_recent_digests
         self.max_prev_episode_chars = max_prev_episode_chars
         self.preserve_initial_digests = preserve_initial_digests
+        self.max_total_tokens = max_total_tokens
+        self.max_total_chars = max_total_chars
 
     def _normalize_digest(self, item: Any) -> str:
         """ダイジェスト要素（str, dict, EpisodeDigestModel）を標準文字列に変換する。"""
@@ -99,6 +103,9 @@ class RollingMemoryBuilder:
     ) -> str:
         """3層ローリング記憶を結合してプロンプト用コンテキストを構築する。
 
+        ハードバジェット上限（max_total_chars / max_total_tokens）を超過する場合、
+        過去ダイジェストおよび直前話本文を段階的に圧縮して上限内に収める。
+
         Args:
             bible_summary: Layer 1 世界観・設定・主要キャラクター情報
             past_digests: Layer 2 過去エピソードのダイジェスト一覧
@@ -109,10 +116,11 @@ class RollingMemoryBuilder:
         """
         bible_clean = bible_summary.strip() if bible_summary else "（世界観設定なし）"
         windowed_digests = self.filter_and_window_digests(past_digests)
-        digests_str = "\n".join(windowed_digests) if windowed_digests else "なし"
         prev_text_clean = self.truncate_prev_episode(prev_episode_text)
 
-        return (
+        # 構成
+        digests_str = "\n".join(windowed_digests) if windowed_digests else "なし"
+        ctx = (
             f"【設定・世界観バイブル】\n"
             f"{bible_clean}\n\n"
             f"【過去話の確定事実タイムライン】\n"
@@ -120,6 +128,40 @@ class RollingMemoryBuilder:
             f"【直前エピソード本文】\n"
             f"{prev_text_clean}\n"
         )
+
+        # トークン / 文字数バジェットガード（超過時はダイジェストと直前話を動的追加圧縮）
+        while (
+            (len(ctx) > self.max_total_chars or self.estimate_tokens(ctx) > self.max_total_tokens)
+            and len(windowed_digests) > (self.preserve_initial_digests + 1)
+        ):
+            # 直近ダイジェストの中間を間引く
+            windowed_digests.pop(-2)
+            digests_str = "\n".join(windowed_digests)
+            ctx = (
+                f"【設定・世界観バイブル】\n"
+                f"{bible_clean}\n\n"
+                f"【過去話の確定事実タイムライン】\n"
+                f"{digests_str}\n\n"
+                f"【直前エピソード本文】\n"
+                f"{prev_text_clean}\n"
+            )
+
+        # それでも超過する場合は直前話本文をさらに短縮
+        if len(ctx) > self.max_total_chars or self.estimate_tokens(ctx) > self.max_total_tokens:
+            excess = max(len(ctx) - self.max_total_chars, 0)
+            if len(prev_text_clean) > excess + 200:
+                shortened_prev = prev_text_clean[excess + 50:]
+                prev_text_clean = f"……（前略）\n{shortened_prev}"
+                ctx = (
+                    f"【設定・世界観バイブル】\n"
+                    f"{bible_clean}\n\n"
+                    f"【過去話の確定事実タイムライン】\n"
+                    f"{digests_str}\n\n"
+                    f"【直前エピソード本文】\n"
+                    f"{prev_text_clean}\n"
+                )
+
+        return ctx
 
     def estimate_tokens(self, text: str) -> int:
         """日本語テキストの概算トークン数を算出（日本語1文字 ≒ 約0.8〜1.2トークン）。"""
