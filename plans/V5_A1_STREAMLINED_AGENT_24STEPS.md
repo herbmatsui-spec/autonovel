@@ -284,10 +284,21 @@ class UnifiedAuditor:
 - **実装コード**:
 ```python
 UNIFIED_AUDIT_PROMPT_TEMPLATE = """\
-あなたはWeb小説の編集長です。以下のエピソード本文を厳格に講評してください。
+あなたはWeb小説の敏腕編集長です。以下の設定と本文を厳格に講評してください。
 
-【あらすじ/設定】
-{bible_summary}
+【キャラクター設定 & 心理プロファイル】
+{character_profiles}
+※着眼点:
+- 表向きの社会的仮面(surface_persona)と内なる葛藤(inner_conflict)の揺らぎが描かれているか
+- Save The Cat善行や人間味のある共感ポイントが存在するか
+- 鉄の禁忌(iron_constraint)を破っていないか
+- Truth Ledger(known_facts/unknown_facts): まだ知らないはずの事実を先回りして口走っていないか
+
+【章プロット & ビート構成】
+{plot_spec}
+※着眼点:
+- 五感タグ(smell, sound, touch, taste, sight)を活用した生々しい動作描写があるか
+- 引き(cliffhanger: New Crisis / Shocking Truth / Quiet Foreshadowing)が機能しているか
 
 【エピソード本文】
 {draft_text}
@@ -295,9 +306,9 @@ UNIFIED_AUDIT_PROMPT_TEMPLATE = """\
 【出力要件】
 以下のJSONフォーマットのみを出力してください（Markdownコードブロック不要）:
 {{
-  "hook_score": <読者を惹きつける力 (0-100)>,
-  "emotional_score": <感情の起伏・カタルシス (0-100)>,
-  "character_consistency": <キャラ設定・口調の一貫性 (0-100)>,
+  "hook_score": <読者を惹きつける力・クリフハンガー強度 (0-100)>,
+  "emotional_score": <感情の起伏・カタルシス・五感描写 (0-100)>,
+  "character_consistency": <キャラ心理葛藤・口調・Truth Ledger遵守度 (0-100)>,
   "overall_score": <定性総合得点 (0-100)>,
   "critique": "<70字以内の的確なアドバイス>",
   "actionable_patch": "<重大な欠陥がある場合のみ、1段落の置換案。問題なければnull>"
@@ -311,7 +322,12 @@ UNIFIED_AUDIT_PROMPT_TEMPLATE = """\
 - **対象ファイル**: `src/agents/specialists/unified_auditor.py` (追記)
 - **実装コード**:
 ```python
-    async def audit_qualitative(self, text: str, bible_summary: str = "") -> QualitativeAudit:
+    async def audit_qualitative(
+        self,
+        text: str,
+        character_profiles: str = "",
+        plot_spec: str = "",
+    ) -> QualitativeAudit:
         """LLMによる定性的評価を1回のみ実行"""
         if self.llm is None:
             return QualitativeAudit(
@@ -319,7 +335,11 @@ UNIFIED_AUDIT_PROMPT_TEMPLATE = """\
                 overall_score=76.0, critique="LLM未設定のため標準フォールバック適用"
             )
         from src.agents.prompts.unified_audit_prompt import UNIFIED_AUDIT_PROMPT_TEMPLATE
-        prompt = UNIFIED_AUDIT_PROMPT_TEMPLATE.format(bible_summary=bible_summary, draft_text=text[:3000])
+        prompt = UNIFIED_AUDIT_PROMPT_TEMPLATE.format(
+            character_profiles=character_profiles or "主人公: 標準設定",
+            plot_spec=plot_spec or "標準構成",
+            draft_text=text[:3000]
+        )
         try:
             resp = await self.llm.generate(prompt=prompt, temperature=0.2)
             import json, re
