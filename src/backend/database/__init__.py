@@ -29,12 +29,25 @@ from .uow import UnitOfWork
 
 
 def get_db():
-    """FastAPI Depends 用の DB セッションプロバイダ。"""
+    """FastAPI Depends 用の同期 DB セッションプロバイダ (同期ルーター用)。"""
     session = SessionLocal()
     try:
         yield session
     finally:
         session.close()
+
+
+async def get_async_db():
+    """FastAPI Depends 用の非同期 DB セッションプロバイダ (非同期ルーター用)。"""
+    mgr = get_db_manager()
+    session = mgr.get_session()
+    try:
+        yield session
+    except Exception:
+        await session.rollback()
+        raise
+    finally:
+        await session.close()
 
 
 async def get_uow():
@@ -62,7 +75,8 @@ __all__ = [
     "init_db",
     "retry_with_logging",
     "set_db_manager",
-    # Repository & UoW
-    "DataRepository",
-    "UnitOfWork",
+    # Session providers
+    "get_db",
+    "get_async_db",
+    "get_uow",
 ]

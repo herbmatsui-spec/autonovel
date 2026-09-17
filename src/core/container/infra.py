@@ -25,7 +25,13 @@ logger = logging.getLogger(__name__)
 
 
 class InfraContainer(containers.DeclarativeContainer):
-    wiring_config = containers.WiringConfiguration(packages=["src", "prompts"])
+    wiring_config = containers.WiringConfiguration(
+        modules=[
+            "src.services.prompt_version_service",
+            "src.services.state_manager",
+            "src.backend.database.uow",
+        ]
+    )
 
     config: providers.Singleton = providers.Singleton(GlobalConfigModel.load)
 

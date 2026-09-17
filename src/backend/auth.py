@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.backend.config import settings
-from src.backend.database import get_db
+from src.backend.database import get_async_db, get_db
 from src.backend.database.models import User
 from src.backend.security.jwt import decode_token
 from src.dependencies import get_prompt_manager
@@ -39,12 +39,11 @@ def _get_dev_mock_user() -> User:
 
 async def get_current_user(
     token: str = Depends(oauth2_scheme),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ) -> User:
     """現在の認証済みユーザーを取得する。
     AUTH_DISABLED が True の場合は、開発用モックユーザーを返却してバイパスする。
     """
-    print(f"DEBUG: get_current_user called with token={token[:20] if token else None}")
     if settings.AUTH_DISABLED:
         return _get_dev_mock_user()
 
@@ -119,7 +118,7 @@ async def require_api_key(
 async def require_admin_user_or_key(
     token: str = Depends(oauth2_scheme),
     authorization: str = Header(default="", alias="Authorization"),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ) -> User:
     """管理者JWTまたは有効なAPI Keyのいずれかを要求する依存性関数。"""
     if settings.AUTH_DISABLED:

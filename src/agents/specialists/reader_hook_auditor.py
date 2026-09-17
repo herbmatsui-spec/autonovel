@@ -87,7 +87,8 @@ class ReaderHookAuditor(SpecialistAuditor):
             system_prompt=READER_HOOK_SYSTEM_PROMPT,
         )
         score, critique, suggestions, confidence, reasoning, raw_resp = judge_res[:6]
-        # actionable_diffs = judge_res[6] if len(judge_res) > 6 else []  # not used
+        # 7番目の要素は actionable_diffs (Step 55-57)
+        actionable_diffs = judge_res[6] if len(judge_res) > 6 else []
 
         feedback = {"critique": critique}
 
@@ -113,6 +114,7 @@ class ReaderHookAuditor(SpecialistAuditor):
             confidence=confidence,
             reasoning_trace=reasoning,
             llm_raw_response=raw_resp,
+            actionable_diffs=actionable_diffs,
         )
 
     def _fallback(self, ctx: dict[str, Any]) -> SpecialistAuditResult:

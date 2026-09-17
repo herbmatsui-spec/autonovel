@@ -32,7 +32,10 @@ async def test_judge_with_llm_parses_actionable_diffs():
             }
         ]
     }
-    mock_llm.ainvoke = MagicMock(return_value=json.dumps(json_payload, ensure_ascii=False))
+    # ainvoke は非同期コンテキストで await されるため AsyncMock を使用する
+    from unittest.mock import AsyncMock
+
+    mock_llm.ainvoke = AsyncMock(return_value=json.dumps(json_payload, ensure_ascii=False))
 
     auditor = ReaderHookAuditor(llm=mock_llm)
     result = await auditor.audit({"draft_text": "テストドラフト文章です。冒頭から末尾まで。"})
@@ -67,7 +70,9 @@ async def test_judge_with_llm_backward_compatible_without_diffs():
         "confidence": 0.8,
         "reasoning": "特に問題なし"
     }
-    mock_llm.ainvoke = MagicMock(return_value=json.dumps(json_payload, ensure_ascii=False))
+    from unittest.mock import AsyncMock
+
+    mock_llm.ainvoke = AsyncMock(return_value=json.dumps(json_payload, ensure_ascii=False))
 
     auditor = ConsistencyAuditor(llm=mock_llm)
     result = await auditor.audit({"draft_text": "普通の本文。"})

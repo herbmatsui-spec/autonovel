@@ -111,7 +111,8 @@ class WritingGraphManager:
         """ステップ完了時にチェックポイントを保存"""
         task_id = state.get("task_id")
         if task_id and self.checkpoint_manager:
-            self.checkpoint_manager.record_step(
+            # record_step は同期メソッドの場合と非同期メソッドの場合があるため両対応
+            result = self.checkpoint_manager.record_step(
                 task_id=task_id,
                 step_name=step_name,
                 step_index=step_index,
@@ -123,6 +124,8 @@ class WritingGraphManager:
                 },
                 status=CheckpointStatus.COMPLETED,
             )
+            if asyncio.iscoroutine(result):
+                self._pending_checkpoint_tasks.append(result)
 
     def _build_graph(self):
         if not HAS_LANGGRAPH or StateGraph is None:

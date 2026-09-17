@@ -858,9 +858,9 @@ class AudioDramaScriptGenerator:
         return {
             "characters": list(characters),
             "required_emotions": list(emotions),
-            "narrator_needed": any(l.character == "ナレーション" for l in lines),
+            "narrator_needed": any(line.character == "ナレーション" for line in lines),
             "total_voice_actors": len(characters)
-            + (1 if any(l.character == "ナレーション" for l in lines) else 0),
+            + (1 if any(line.character == "ナレーション" for line in lines) else 0),
         }
 
 

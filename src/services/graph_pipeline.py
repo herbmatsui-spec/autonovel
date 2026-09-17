@@ -135,7 +135,20 @@ class GraphPipelineService:
         try:
             # 単一トランザクションでチャンク保存とグラフ更新を原子的に実行
             chunks_count = await self._save_chapter_chunks_atomic(session, chapter_id, chapter_text)
-            graph_stats = self._update_knowledge_graph_atomic(session, chapter_id, chapter_text)
+
+            # グラフ更新は chunk 保存が成功していれば、失敗してもパイプライン全体を
+            # 失敗にしない（chunk 保存が主要機能のため）
+            try:
+                graph_stats = await self._update_knowledge_graph_atomic(
+                    session, chapter_id, chapter_text
+                )
+            except Exception as graph_err:
+                logger.warning(
+                    "Graph update failed for chapter_id=%s (chunk saving succeeded): %s",
+                    chapter_id,
+                    graph_err,
+                )
+                graph_stats = {"entities": 0, "relationships": 0}
 
             # 冪等性キー記録
             if idempotency_key:
@@ -264,6 +277,14 @@ class GraphPipelineService:
                 logger.warning(
                     "Failed to prepare chunk %d for chapter_id=%s: %s", idx, chapter_id, e
                 )
+
+        # チャンク保存をコミット（トランザクション確定）
+        try:
+            session.commit()
+        except Exception as commit_err:
+            logger.warning("Chunk save commit failed for chapter_id=%s: %s", chapter_id, commit_err)
+            session.rollback()
+            created_count = 0
 
         # ベクトルストアへの非同期保存は別トランザクションで行う（ここでは同期的に実行）
         if self._vector_store and chunks_to_store:

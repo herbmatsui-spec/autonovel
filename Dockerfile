@@ -62,4 +62,4 @@ USER appuser
 EXPOSE 8200
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-CMD ["sh", "-c", "uvicorn src.backend.server:app --host 0.0.0.0 --port 8200 --workers 1"]
+CMD ["uvicorn", "src.backend.server:app", "--host", "0.0.0.0", "--port", "8200", "--workers", "1"]

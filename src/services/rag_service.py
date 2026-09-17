@@ -636,10 +636,10 @@ class GraphRAGService:
         if additional_entities:
             entities_to_query.extend(additional_entities)
 
-        # 2. グラフ探索と Reranking
+        # 2. グラフ探索と Reranking (rerank_graph_neighbors は async メソッド)
         neighbors = self.get_graph_context(session, entities_to_query, max_depth=2)
         if neighbors:
-            ranked_neighbors = self.rerank_graph_neighbors(neighbors, current_prompt, top_k=7)
+            ranked_neighbors = await self.rerank_graph_neighbors(neighbors, current_prompt, top_k=7)
             graph_lines = []
             for item in ranked_neighbors:
                 name = item.get("name")

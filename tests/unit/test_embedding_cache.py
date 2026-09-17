@@ -60,11 +60,9 @@ class TestRedisEmbeddingCacheFallback:
 
 class TestEmbeddingServiceCache:
     def test_get_embedding_uses_cache(self):
-        svc = EmbeddingService.__new__(EmbeddingService)
-        svc.model_name = "m"
-        svc._client = None
+        # 実装は _api_key 属性も参照するため __new__ で生成せず通常コンストラクタを使う
         cache = LRUEmbeddingCache(maxsize=8)
-        svc._cache = cache
+        svc = EmbeddingService(cache=cache)
 
         v1 = svc.get_embedding("hello world")
         v2 = svc.get_embedding("hello world")
@@ -75,10 +73,7 @@ class TestEmbeddingServiceCache:
         assert info["hits"] >= 1
 
     def test_get_embedding_blank(self):
-        svc = EmbeddingService.__new__(EmbeddingService)
-        svc.model_name = "m"
-        svc._client = None
-        svc._cache = LRUEmbeddingCache()
+        svc = EmbeddingService()
         assert svc.get_embedding("") == [0.0] * 1536
         assert svc.get_embedding("   ") == [0.0] * 1536
 
@@ -89,10 +84,7 @@ class TestEmbeddingServiceCache:
         assert "api_key" not in r.lower()
 
     def test_cache_info(self):
-        svc = EmbeddingService.__new__(EmbeddingService)
-        svc.model_name = "m"
-        svc._client = None
-        svc._cache = LRUEmbeddingCache()
+        svc = EmbeddingService()
         svc.get_embedding("foo")
         info = svc.cache_info()
         assert info["backend"] == "lru"

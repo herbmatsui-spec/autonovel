@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.backend.auth import get_current_user
-from src.backend.database import get_db
+from src.backend.database import get_async_db
 from src.backend.database.models import User
 from src.dependencies import get_illustration_workflow
 from src.models.illustration import (
@@ -46,7 +46,7 @@ async def generate_illustration(
     request: dict[str, Any],
     workflow=Depends(get_illustration_workflow),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """単一の挿絵を生成する (5クレジット消費)"""
     try:
@@ -97,7 +97,7 @@ async def generate_yonkoma(
     request: dict[str, Any],
     workflow=Depends(get_illustration_workflow),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """1話分の流れを 6 コマ (デフォルト) で要約した漫画プロンプト+画像を生成する。
 

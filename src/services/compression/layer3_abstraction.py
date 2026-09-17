@@ -156,13 +156,13 @@ class Layer3ConceptAbstractor:
     ) -> str:
         """Dynamically detect category using labels and taxonomy concept (Step 44)."""
         # Explicit labels check
-        if any(l in ["Location", "Place", "City", "Country", "地理", "国家"] for l in labels):
+        if any(label in ["Location", "Place", "City", "Country", "地理", "国家"] for label in labels):
             return "地理・勢力"
-        if any(l in ["Item", "Weapon", "Artifact", "アイテム", "武器"] for l in labels):
+        if any(label in ["Item", "Weapon", "Artifact", "アイテム", "武器"] for label in labels):
             return "アイテム・装備"
-        if any(l in ["Skill", "Magic", "Ability", "スキル", "魔法"] for l in labels):
+        if any(label in ["Skill", "Magic", "Ability", "スキル", "魔法"] for label in labels):
             return "武術・スキル"
-        if any(l in ["Rule", "Lore", "WorldSetting", "設定"] for l in labels):
+        if any(label in ["Rule", "Lore", "WorldSetting", "設定"] for label in labels):
             return "核心設定"
 
         # Concept-based heuristic inference

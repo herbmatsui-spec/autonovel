@@ -139,7 +139,8 @@ class PlotIntegrityMonitor:
 
         try:
             # 既存のグラフ抽出サービスを利用（LLM構造化出力 + キャッシュ + フォールバック済み）
-            result: GraphExtractionResult = self._extraction_service.extract_graph_from_text(text)
+            # extract_graph_from_text は async メソッドのため await する
+            result: GraphExtractionResult = await self._extraction_service.extract_graph_from_text(text)
 
             # 因果律監査に関わるタイプのみ抽出
             target_types = {"Character", "Item", "Event", "Location", "Faction"}
@@ -290,8 +291,8 @@ class PlotIntegrityMonitor:
 
     async def _diff_graphs(self, blueprint: str, content: str) -> GraphDiffResult:
         """Blueprint と Content のエンティティグラフ差分を計算"""
-        bp_result = self._extraction_service.extract_graph_from_text(blueprint)
-        ct_result = self._extraction_service.extract_graph_from_text(content)
+        bp_result = await self._extraction_service.extract_graph_from_text(blueprint)
+        ct_result = await self._extraction_service.extract_graph_from_text(content)
 
         # エンティティ名集合
         bp_entities = {e.name: e for e in bp_result.entities}
@@ -426,7 +427,7 @@ class PlotIntegrityMonitor:
                 )
 
         # 3. 伏線検出: Blueprintにのみ存在する重要アイテム/イベント
-        bp_result = self._extraction_service.extract_graph_from_text(blueprint)
+        bp_result = await self._extraction_service.extract_graph_from_text(blueprint)
         bp_entities = {e.name: e for e in bp_result.entities}
 
         current_ep = ep_num or 1

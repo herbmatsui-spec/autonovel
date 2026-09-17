@@ -11,24 +11,7 @@ from src.agents.social.models import JournalEntry, SocialComment, ReactionType
 logger = logging.getLogger(__name__)
 
 
-def simulate_character_reactions(
-    journal: JournalEntry,
-    other_characters: list[dict[str, Any]],
-    llm: Any = None,
-    max_reactions: int = 2,
-) -> list[SocialComment]:
-    """Simulate psychological reactions and comments from other characters on a journal entry."""
-    if not other_characters:
-        return []
 
-    author_id = journal.character_id
-    author_name = journal.character_name
-
-    [
-        c for c in other_characters
-        if str(c.get("id", c.get("name", ""))) != author_id
-        and c.get("name") != author_name
-    ]
 
 import asyncio
 

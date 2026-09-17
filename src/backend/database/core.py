@@ -25,13 +25,11 @@ try:
 
     DATABASE_URL = settings.DATABASE_URL
 except ImportError:
-    try:
-        from config import BASE_DIR, DATABASE_URL
-    except ImportError:
-        from pathlib import Path
-
-        BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
-        DATABASE_URL = f"sqlite:///{BASE_DIR / 'storage' / 'autonovel.db'}"
+            try:
+                from config import BASE_DIR, DATABASE_URL
+            except ImportError:
+                BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
+                DATABASE_URL = f"sqlite:///{BASE_DIR / 'storage' / 'autonovel.db'}"
 
 logger = logging.getLogger(__name__)
 
@@ -401,9 +399,17 @@ def init_db(db_path: str = ""):
         logger.warning("[init_db] Failed to seed default book: %s", e)
 
 
+_async_db_manager: DatabaseManager | None = None
+_cached_async_url: str | None = None
+
+
 def get_db_manager() -> DatabaseManager:
-    logger.debug("[core] get_db_manager called - returning patched manager")
-    return DatabaseManager(DATABASE_URL)
+    global _async_db_manager, _cached_async_url
+    if _async_db_manager is None or _cached_async_url != DATABASE_URL:
+        logger.debug("[core] Initializing singleton DatabaseManager with url=%s", DATABASE_URL)
+        _async_db_manager = DatabaseManager(DATABASE_URL)
+        _cached_async_url = DATABASE_URL
+    return _async_db_manager
 
 
 _sync_engine = None

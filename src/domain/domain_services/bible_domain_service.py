@@ -620,7 +620,7 @@ class BibleDomainService:
     async def get_lore_by_category(self, novel_id: NovelId, category: str) -> List[Lore]:
         """Get lore entries by category."""
         all_lore = await self.bible_repo.get_all_lore(novel_id)
-        return [l for l in all_lore if l.category == category]
+        return [lore_item for lore_item in all_lore if lore_item.category == category]
 
     async def check_consistency(self, novel_id: NovelId) -> ConsistencyReport:
         """Perform full consistency check."""

@@ -100,7 +100,7 @@ def determine_overall_status(checks: dict[str, HealthCheckResult]) -> HealthStat
     return HealthStatus.OK
 
 
-@router.get("/health", response_model=HealthResponse)
+@router.get("/health/detail", response_model=HealthResponse)
 async def health_check():
     """拡張ヘルスチェック: DB, Redis, ChromaDB, LLM Gateway, Worker を並列チェック"""
     cfg = get_config()

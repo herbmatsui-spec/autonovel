@@ -4,29 +4,31 @@ import importlib
 import sys
 
 
+_module_map = {
+    "AuditRepository": "audit",
+    "BaseRepository": "base",
+    "BibleRepository": "bible",
+    "BookRepository": "book",
+    "BookScoreRepository": "book_score",
+    "BranchRepository": "branch",
+    "ChapterRepository": "chapter",
+    "CharacterRepository": "character",
+    "CollabRepository": "collab",
+    "CostRepository": "cost",
+    "EasyModeDraftRepository": "easy_mode_draft_repository",
+    "IllustrationRepository": "illustration",
+    "MiscRepository": "misc",
+    "NarrativeMetricRepository": "narrative_metrics_repo",
+    "PDCAHistoryRepository": "pdca_history",
+    "PlotRepository": "plot",
+    "RulesRepository": "rules",
+    "TraceRepository": "trace",
+    "PromptVersionRepository": "prompt_versions",
+    "PromptMetricsRepository": "repo_prompt_metrics",
+}
+
+
 def __getattr__(name: str):
-    _module_map = {
-        "AuditRepository": "audit",
-        "BaseRepository": "base",
-        "BibleRepository": "bible",
-        "BookRepository": "book",
-        "BookScoreRepository": "book_score",
-        "BranchRepository": "branch",
-        "ChapterRepository": "chapter",
-        "CharacterRepository": "character",
-        "CollabRepository": "collab",
-        "CostRepository": "cost",
-        "EasyModeDraftRepository": "easy_mode_draft_repository",
-        "IllustrationRepository": "illustration",
-        "MiscRepository": "misc",
-        "NarrativeMetricRepository": "narrative_metrics_repo",
-        "PDCAHistoryRepository": "pdca_history",
-        "PlotRepository": "plot",
-        "RulesRepository": "rules",
-        "TraceRepository": "trace",
-        "PromptVersionRepository": "prompt_versions",
-        "PromptMetricsRepository": "repo_prompt_metrics",
-    }
     if name in _module_map:
         module_name = _module_map[name]
         module = importlib.import_module(f".{module_name}", __package__)

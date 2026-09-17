@@ -168,7 +168,7 @@ class BibleResponseDTO(BaseModel):
             novel_id=str(bible.novel_id),
             branch_id=str(bible.branch_id),
             settings=[SettingDTO.from_entity(s) for s in bible.settings],
-            lore=[LoreDTO.from_entity(l) for l in bible.lore],
+            lore=[LoreDTO.from_entity(lore_item) for lore_item in bible.lore],
             created_at=bible.created_at,
             updated_at=bible.updated_at,
         )

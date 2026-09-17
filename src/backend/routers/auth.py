@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from src.backend.database import get_db
+from src.backend.database import get_async_db
 from src.backend.database.models import User
 from src.models.user import UserRegisterRequest, UserLoginRequest, TokenResponse, UserProfileResponse
 from src.backend.security.password import hash_password, verify_password
@@ -11,7 +11,7 @@ from src.backend.auth import get_current_user
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 @router.post("/register", response_model=UserProfileResponse)
-async def register(request: UserRegisterRequest, db: AsyncSession = Depends(get_db)):
+async def register(request: UserRegisterRequest, db: AsyncSession = Depends(get_async_db)):
     result = await db.execute(select(User).where(User.email == request.email))
     if result.scalars().first():
         raise HTTPException(status_code=400, detail="既に登録されているメールアドレスです")
@@ -28,7 +28,7 @@ async def register(request: UserRegisterRequest, db: AsyncSession = Depends(get_
     return user
 
 @router.post("/login", response_model=TokenResponse)
-async def login(request: UserLoginRequest, db: AsyncSession = Depends(get_db)):
+async def login(request: UserLoginRequest, db: AsyncSession = Depends(get_async_db)):
     result = await db.execute(select(User).where(User.email == request.email))
     user = result.scalars().first()
     if not user or not verify_password(request.password, user.hashed_password):

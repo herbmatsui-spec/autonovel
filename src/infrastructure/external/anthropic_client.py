@@ -1,15 +1,27 @@
 """
 Anthropic API client with Prompt Caching support.
+
+`anthropic` パッケージがインストールされていない環境でも
+インポート可能にするため、遅延インポートでフォールバックする。
 """
 
-import anthropic
 from typing import List, Dict, Any
+
 from src.services.llm.prompt_cache_builder import PromptCacheBuilder
+
+try:
+    import anthropic
+except ImportError:  # pragma: no cover - 環境依存
+    anthropic = None
 
 
 class AnthropicClient:
     def __init__(self, api_key: str):
-        self.client = anthropic.Anthropic(api_key=api_key)
+        if anthropic is None:
+            # anthropic SDK 未インストール環境ではクライアント生成を遅延させる
+            self.client = None
+        else:
+            self.client = anthropic.Anthropic(api_key=api_key)
         self.cache_builder = PromptCacheBuilder()
 
     async def generate_with_caching(

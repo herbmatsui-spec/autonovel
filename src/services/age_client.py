@@ -154,9 +154,16 @@ def _interpolate_cypher_params(cypher_query: str, parameters: dict[str, Any] | N
 
 
 def _ensure_age_session(session: Session) -> None:
-    """セッションにAGE拡張をロードしsearch_pathを設定する."""
-    session.execute(text("LOAD 'age';"))
-    session.execute(text('SET search_path = ag_catalog, "$user", public;'))
+    """セッションにAGE拡張をロードしsearch_pathを設定する.
+
+    SQLite など AGE 非対応の DB では LOAD 'age' が OperationalError になるため、
+    例外を握り潰して後続の cypher クエリがフォールバック処理できるようにする。
+    """
+    try:
+        session.execute(text("LOAD 'age';"))
+        session.execute(text('SET search_path = ag_catalog, "$user", public;'))
+    except Exception as e:
+        logger.debug("AGE session setup skipped (non-PostgreSQL backend): %s", e)
 
 
 def _dict_to_cypher_map(d: dict) -> str:
@@ -245,11 +252,12 @@ class AgeClient:
                         return True
                 except Exception:
                     pass
+                # 42P04 (duplicate_graph) / 3F000 (schema_not_exist) はグラフが
+                # 存在するか同名競合を示すため、初期化成功として扱う
+                logger.debug("Graph '%s' treated as initialized (pgcode=%s).", gname, pgcode)
+                self._initialized = True
+                return True
             logger.warning("Failed to create graph '%s' (pgcode=%s): %s", gname, pgcode, e)
-            return False
-        except Exception as e:
-            session.rollback()
-            logger.warning("Failed to create graph '%s': %s", gname, e)
             return False
         except Exception as e:
             session.rollback()

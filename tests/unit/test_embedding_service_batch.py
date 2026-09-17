@@ -10,8 +10,8 @@ class TestEmbeddingServiceBatch:
     """Tests for batch embedding interface."""
 
     def _make(self, model_name="test-model"):
-        svc = EmbeddingService.__new__(EmbeddingService)
-        svc.model_name = model_name
+        # 実装は _api_key 属性も参照するため通常コンストラクタを使う
+        svc = EmbeddingService(model_name=model_name)
         svc._client = None
         svc._cache = MagicMock()
         svc._cache.get.return_value = None

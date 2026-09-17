@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.backend.database import get_db
+from src.backend.database import get_async_db
 from src.backend.auth import get_current_user
 from src.backend.database.models import User
 from src.services.billing.stripe_client import StripeClient
@@ -31,7 +31,7 @@ async def get_plans():
 @router.get("/balance", response_model=Dict[str, Any])
 async def get_balance(
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """
     現在のユーザー残高とプラン情報を取得
@@ -49,7 +49,7 @@ async def get_balance(
 async def create_checkout_session(
     request: Dict[str, str],
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """
     Stripe Checkout セッションを作成してURLを取得
@@ -116,7 +116,7 @@ async def get_transactions(
     limit: int = 50,
     offset: int = 0,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """
     ユーザーのクレジット取引履歴を取得

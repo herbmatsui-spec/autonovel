@@ -11,7 +11,7 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.backend.auth import get_current_user
-from src.backend.database import get_db
+from src.backend.database import get_async_db
 from src.backend.database.models import User, Book
 from src.services.formatters.ruby_transpiler import PublishPlatform
 from src.services.formatters.platform_formatter import PlatformFormatter
@@ -43,7 +43,7 @@ async def export_for_publishing(
     platform: PublishPlatform,
     req: PublishExportRequest,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """Export formatted novel package as a ZIP archive for the specified platform (Step 61)."""
     await _verify_publish_access(db, req.book_id, current_user)
@@ -99,7 +99,7 @@ async def preview_for_publishing(
     chapter_number: int = Query(1, description="Episode/Chapter number to preview"),
     branch_id: Optional[int] = Query(None, description="Optional branch ID"),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """Preview formatted episode text and check platform limit warnings (Step 62)."""
     await _verify_publish_access(db, book_id, current_user)

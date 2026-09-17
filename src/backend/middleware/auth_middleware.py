@@ -24,8 +24,14 @@ logger = logging.getLogger(__name__)
 PUBLIC_EXACT_PATHS: set[str] = {
     "",
     "/health",
+    "/health/liveness",
+    "/health/readiness",
+    "/health/detail",
     "/metrics",
     "/api/health",
+    "/api/health/liveness",
+    "/api/health/readiness",
+    "/api/health/detail",
     "/api/metrics",
     "/docs",
     "/redoc",
@@ -117,6 +123,11 @@ class GlobalAuthMiddleware(BaseHTTPMiddleware):
                     payload = decode_token(token, expected_type="access")
                     if payload and payload.get("sub"):
                         return await call_next(request)
+                    return JSONResponse(
+                        status_code=401,
+                        content={"detail": "無効または期限切れのトークンです"},
+                        headers={"WWW-Authenticate": "Bearer"},
+                    )
                 except Exception as exc:
                     logger.debug("AuthMiddleware: Token decode failed: %s", exc)
                     return JSONResponse(

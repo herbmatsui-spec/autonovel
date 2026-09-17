@@ -30,6 +30,7 @@ from src.backend.routers import (
     episodes,
     export,
     graph,
+    health,
     illustrations,
     issues,
     marketing,
@@ -152,6 +153,7 @@ app.include_router(auth.router)
 app.include_router(billing.router)
 app.include_router(billing_webhook.router)
 app.include_router(trace.router)
+app.include_router(health.router)
 
 
 @app.get("/health")
