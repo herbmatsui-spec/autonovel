@@ -667,28 +667,21 @@ class ContextBuilderAgent(SkillAgent):
                 except Exception as e:
                     logger.debug("Failed to retrieve social summaries from repository: %s", e)
 
-            # 2. フォールバック: AGE からの直前話ジャーナル取得試行 (未取得時)
-            if not any("内面手記" in p for p in parts) and age_client and session and ep_num > 1:
+            # 2. 直前話の確定事実ダイジェスト取得 (v5.0 Relational Memory)
+            if ep_num > 1 and session:
                 try:
+                    from src.backend.database.models_digest import EpisodeDigestModel
+                    from sqlalchemy import select
                     prev_ep = ep_num - 1
-                    cypher = (
-                        f"MATCH (j:journal_entry) "
-                        f"WHERE j.book_id = {book_id} AND j.ep_num = {prev_ep} "
-                        f"RETURN j.character_name as name, j.emotion as emotion, j.theme as theme, j.content as content "
-                        f"LIMIT 5"
+                    stmt = select(EpisodeDigestModel).where(
+                        EpisodeDigestModel.book_id == book_id,
+                        EpisodeDigestModel.episode_num == prev_ep,
                     )
-                    res = age_client.execute_cypher(session, cypher)
-                    if res and getattr(res, "records", None):
-                        j_lines = []
-                        for r in res.records:
-                            c_name = r.get("name", "登場人物")
-                            emo = r.get("emotion", "")
-                            cnt = r.get("content", "")
-                            j_lines.append(f"- {c_name}（感情: {emo}）: 「{cnt[:120]}」")
-                        if j_lines:
-                            parts.append("【直前話の登場人物内面手記・独白 (Apache AGE)】\n" + "\n".join(j_lines))
+                    res = session.execute(stmt).scalars().first()
+                    if res and res.digest_text:
+                        parts.append(f"【直前話(第{prev_ep}話)の確定事実ダイジェスト】\n- {res.digest_text}")
                 except Exception as e:
-                    logger.debug("Failed to retrieve journals from AGE: %s", e)
+                    logger.debug("Failed to retrieve digest for prev episode: %s", e)
 
             # 3. フォールバック: SocialInteractionManager からの関係性メトリクス取得 (未取得時)
             if not any("動的関係性" in p or "動的心理関係性" in p for p in parts) and social_manager:

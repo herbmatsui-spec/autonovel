@@ -1,10 +1,3 @@
--- Enable pgvector
+-- Enable pgvector (v5.0: Standard PostgreSQL 16 + pgvector)
+-- Apache AGE extension removed in favor of relational memory & foreshadowing tables.
 CREATE EXTENSION IF NOT EXISTS vector;
-
--- Enable Apache AGE
-CREATE EXTENSION IF NOT EXISTS age;
-LOAD 'age';
-SET search_path = ag_catalog, "$user", public;
-
--- Initialize default graph if not exists
-SELECT create_graph('autonovel_graph');
