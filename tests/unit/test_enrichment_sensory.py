@@ -1,6 +1,7 @@
 # tests/unit/test_enrichment_sensory.py
 """EnrichmentAgent 感覚拡充の単体テスト"""
 import pytest
+
 from src.agents.enrichment.sensory import (
     detect_abstract_emotions,
     generate_sensory_details,
@@ -89,23 +90,25 @@ class TestSensoryMap:
 class TestSensoryGeneration:
     """感覚詳細生成のテスト"""
 
-    def test_generate_sensory_details(self):
-        """感覚詳細生成"""
+    @pytest.mark.asyncio
+    async def test_generate_sensory_details(self):
+        """感覚詳細生成 (generate_sensory_details は async メソッド)"""
         span = EmotionSpan(
             start=0, end=5, emotion="sadness", intensity=0.8, abstract_phrase="悲しかった"
         )
-        details = generate_sensory_details(span, "雨の夜、独り佇んでいた", "third_person")
+        details = await generate_sensory_details(span, "雨の夜、独り佇んでいた", "third_person")
         assert len(details) >= 2
         assert len(details) <= 3
         # 感覚タグ付き
         for d in details:
             assert d.startswith("[") and "]" in d
 
-    def test_generate_sensory_details_context_aware(self):
-        """文脈対応感覚選択"""
+    @pytest.mark.asyncio
+    async def test_generate_sensory_details_context_aware(self):
+        """文脈対応感覚選択 (generate_sensory_details は async メソッド)"""
         span = EmotionSpan(0, 5, "sadness", 0.8, "悲しかった")
         # 雨の文脈 -> tactile, auditory, olfactory 優先
-        details = generate_sensory_details(span, "雨が降る夜だった", "third_person")
+        details = await generate_sensory_details(span, "雨が降る夜だった", "third_person")
         sense_tags = [d.split("]")[0].strip("[") for d in details]
         assert "tactile" in sense_tags or "auditory" in sense_tags
 
@@ -131,10 +134,11 @@ class TestReplacement:
         assert meta[0]["emotion"] == "sadness"
         assert meta[1]["emotion"] == "anger"
 
-    def test_expand_sensory_details_pipeline(self):
-        """パイプライン統合テスト"""
+    @pytest.mark.asyncio
+    async def test_expand_sensory_details_pipeline(self):
+        """パイプライン統合テスト (expand_sensory_details_pipeline は async メソッド)"""
         text = "彼は悲しかった。戦いの後だった。"
-        enriched, meta = expand_sensory_details_pipeline(
+        enriched, meta = await expand_sensory_details_pipeline(
             text, scene_context="雨の戦場", pov="third_person"
         )
         assert len(enriched) > len(text)  # 展開で長くなる

@@ -298,11 +298,150 @@ class StatusReporter:
             self.state.streaming_text = text
             self.state._save_to_db()
 
-    def report_exception(self, e: Exception, context: str = "") -> None:
-        """例外をキャッチしてエラーとして報告する。"""
-        error_msg = (
-            f"{context} - {type(e).__name__}: {str(e)}"
-            if context
-            else f"{type(e).__name__}: {str(e)}"
-        )
-        self.report(error_msg, level="error")
+def report_exception(self, e: Exception, context: str = "") -> None:
+         """例外をキャッチしてエラーとして報告する。"""
+         error_msg = (
+             f"{context} - {type(e).__name__}: {str(e)}"
+             if context
+             else f"{type(e).__name__}: {str(e)}"
+         )
+         self.report(error_msg, level="error")
+
+
+# ==========================================
+# BackgroundTaskManager（バックグラウンドタスク管理）
+# ==========================================
+class BackgroundTaskManager:
+    """バックグラウンドタスクの作成と状態管理を行うマネージャークラス"""
+
+    def __init__(self):
+        self._tasks: dict[str, ProgressState] = {}
+        self._lock = threading.Lock()
+
+    def create_task(self, task_name: str) -> str:
+        """
+        新しいバックグラウンドタスクを作成する。
+
+        Args:
+            task_name: タスクの名前
+
+        Returns:
+            作成されたタスクのID
+        """
+        with self._lock:
+            # タスクIDを生成（タイムスタンプベース）
+            task_id = f"task_{int(time.time())}_{len(self._tasks)}"
+
+            # ProgressStateを作成
+            progress_state = ProgressState(
+                is_running=True,
+                task_id=task_id,
+                repo=None  # 実際のリポジトリは必要に応じて設定
+            )
+
+            # 初期メッセージを設定
+            progress_state.update(
+                message=f"タスク '{task_name}' を開始しました",
+                sub_message="初期化中..."
+            )
+
+            # タスクを登録
+            self._tasks[task_id] = progress_state
+
+            return task_id
+
+    def update_progress(self, task_id: str, progress: int, message: str) -> None:
+        """
+        タスクの進捗を更新する。
+
+        Args:
+            task_id: 対象のタスクID
+            progress: 進捗率（0-100）
+            message: 進捗メッセージ
+        """
+        with self._lock:
+            if task_id in self._tasks:
+                state = self._tasks[task_id]
+                # 進捗を更新（total_stepsを100として、current_stepをprogressに設定）
+                state.update(
+                    message=message,
+                    step=progress,
+                    total=100
+                )
+
+    def get_status(self, task_id: str) -> dict[str, Any] | None:
+        """
+        タスクの現在の状態を取得する。
+
+        Args:
+            task_id: 対象のタスクID
+
+        Returns:
+            タスクの状態辞書。見つからない場合はNone
+        """
+        with self._lock:
+            if task_id in self._tasks:
+                state = self._tasks[task_id]
+                # ProgressStateの状態を辞書形式で返す
+                return {
+                    "task_id": state.task_id,
+                    "is_running": state.is_running,
+                    "progress": state.current_step,
+                    "total_steps": state.total_steps,
+                    "message": state.message,
+                    "sub_message": state.sub_message,
+                    "streaming_text": state.streaming_text,
+                    "logs": state.logs.copy(),
+                    "error": state.error,
+                    "result_data": state.result_data,
+                    "start_time": state.start_time,
+                    "last_updated": state.last_updated,
+                    "token_usage": state.token_usage.copy()
+                }
+            return None
+
+    def stop_task(self, task_id: str) -> bool:
+        """
+        タスクの停止を要求する。
+
+        Args:
+            task_id: 対象のタスクID
+
+        Returns:
+            停止要求が成功したかどうか
+        """
+        with self._lock:
+            if task_id in self._tasks:
+                state = self._tasks[task_id]
+                state.stop()
+                return True
+            return False
+
+    def delete_task(self, task_id: str) -> bool:
+        """
+        タスクを削除する。
+
+        Args:
+            task_id: 対象のタスクID
+
+        Returns:
+            削除が成功したかどうか
+        """
+        with self._lock:
+            if task_id in self._tasks:
+                del self._tasks[task_id]
+                return True
+            return False
+
+    def list_tasks(self) -> list[str]:
+        """
+        すべてのタスクIDをリストで返す。
+
+        Returns:
+            タスクIDのリスト
+        """
+        with self._lock:
+            return list(self._tasks.keys())
+
+
+# 定義を共有ユーティリティに移動

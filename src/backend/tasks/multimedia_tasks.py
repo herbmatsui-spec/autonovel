@@ -1,7 +1,6 @@
 """src/backend/tasks/multimedia_tasks.py - Huey tasks for Audio & Multimedia generation (Step 18)."""
 from __future__ import annotations
 
-import asyncio
 import logging
 from typing import Any
 
@@ -22,7 +21,7 @@ def generate_asset_pack_task(
 ) -> dict[str, Any]:
     """Asset Pack 生成 Huey タスク。"""
     from src.backend.multimedia_service import MultimediaService
-    
+
     service = MultimediaService()
     result, task_id = service.generate_asset_pack(
         book_id=book_id,
@@ -33,7 +32,7 @@ def generate_asset_pack_task(
         ebook_formats=ebook_formats,
         media_mix_formats=media_mix_formats,
     )
-    
+
     return {
         "task_id": task_id,
         "asset_id": result.asset_id,

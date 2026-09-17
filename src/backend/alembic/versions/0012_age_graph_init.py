@@ -46,8 +46,8 @@ def upgrade() -> None:
             DO '
             BEGIN
                 IF NOT EXISTS (
-                    SELECT 1 FROM ag_catalog.ag_label 
-                    WHERE name = ''{label}'' 
+                    SELECT 1 FROM ag_catalog.ag_label
+                    WHERE name = ''{label}''
                     AND graph = (SELECT graphid FROM ag_catalog.ag_graph WHERE name = ''autonovel_graph'')
                 ) THEN
                     PERFORM ag_catalog.create_vlabel(''autonovel_graph'', ''{label}'');
@@ -55,7 +55,7 @@ def upgrade() -> None:
             END;';
         """)
         op.execute(f"""
-            CREATE INDEX IF NOT EXISTS "ix_{label}_properties" 
+            CREATE INDEX IF NOT EXISTS "ix_{label}_properties"
             ON autonovel_graph."{label}" USING gin (properties);
         """)
 

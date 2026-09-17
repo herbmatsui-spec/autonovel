@@ -1,4 +1,3 @@
-import asyncio
 import pytest
 from src.llm.circuit_breaker import LLMCircuitBreaker
 from src.llm.resilient_gateway import ResilientLLMGateway

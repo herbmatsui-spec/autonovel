@@ -148,7 +148,7 @@ class Layer2SubgraphExtractor:
         # 1. シードノード特定
         seed_node_ids = set()
         node_by_id = {e.get("id", e.get("name")): e for e in entities}
-        name_to_id = {e.get("name", ""): e.get("id", e.get("name")) for e in entities}
+        {e.get("name", ""): e.get("id", e.get("name")) for e in entities}
 
         for s in seed_names:
             s_lower = s.lower()

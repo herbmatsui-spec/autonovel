@@ -9,13 +9,13 @@ class MockStatusReporter:
     def __init__(self):
         self.reports = []
         self._should_stop = False
-    
+
     def report(self, message, level="info"):
         self.reports.append((message, level))
-    
+
     def update_progress(self, current, total, message):
         pass
-    
+
     @property
     def state(self):
         class State:
@@ -49,7 +49,7 @@ class MockPlotRepo:
     """モックの Plot リポジトリ"""
     async def get_all_plots(self, book_id):
         return [MockPlot() for _ in range(5)]
-    
+
     async def get_by_book_and_number(self, book_id, number):
         return MockPlot()
 
@@ -58,7 +58,7 @@ class MockEpisodeRepo:
     """モックの Episode リポジトリ"""
     async def get_all_by_book_id(self, book_id):
         return [MockEpisode() for _ in range(3)]
-    
+
     async def get_by_book_and_number(self, book_id, number):
         return MockEpisode()
 
@@ -100,7 +100,7 @@ async def test_illustration_point_generation_step_create():
 async def test_illustration_point_generation_step_execute():
     """IllustrationPointGenerationStep.execute の基本動作テスト"""
     step = IllustrationPointGenerationStep()
-    
+
     # モックオブジェクトを作成
     ctx = WorkflowContext(
         genre="ファンタジー",
@@ -115,16 +115,16 @@ async def test_illustration_point_generation_step_execute():
     )
     engine = MockEngine()
     reporter = MockStatusReporter()
-    
+
     # execute メソッドを呼び出す
     result = await step.execute(ctx, engine, reporter)
-    
+
     # 結果が True であることを確認
     assert result is True
-    
+
     # illustration_points が生成されていることを確認
     assert len(ctx.illustration_points) > 0
-    
+
     # 生成されたポイントが IllustrationPoint のインスタンスであることを確認
     for point in ctx.illustration_points:
         assert isinstance(point, IllustrationPoint)
@@ -137,7 +137,7 @@ async def test_illustration_point_generation_step_execute():
 async def test_illustration_point_generation_step_skip_when_disabled():
     """illustration が無効の場合はスキップされることを確認"""
     step = IllustrationPointGenerationStep()
-    
+
     ctx = WorkflowContext(
         genre="ファンタジー",
         keywords="魔法,剣",
@@ -150,12 +150,12 @@ async def test_illustration_point_generation_step_skip_when_disabled():
     )
     engine = MockEngine()
     reporter = MockStatusReporter()
-    
+
     result = await step.execute(ctx, engine, reporter)
-    
+
     # 結果が True であることを確認（スキップしても成功）
     assert result is True
-    
+
     # スキップメッセージが報告されていることを確認
     skip_reports = [r for r in reporter.reports if "illustration_point:" in r[0] and "enable_illustration=False" in r[0]]
     assert len(skip_reports) > 0
@@ -165,7 +165,7 @@ async def test_illustration_point_generation_step_skip_when_disabled():
 async def test_illustration_point_generation_step_skip_when_no_book_id():
     """book_id が None の場合はスキップされることを確認"""
     step = IllustrationPointGenerationStep()
-    
+
     ctx = WorkflowContext(
         genre="ファンタジー",
         keywords="魔法,剣",
@@ -179,12 +179,12 @@ async def test_illustration_point_generation_step_skip_when_no_book_id():
     )
     engine = MockEngine()
     reporter = MockStatusReporter()
-    
+
     result = await step.execute(ctx, engine, reporter)
-    
+
     # 結果が True であることを確認（スキップしても成功）
     assert result is True
-    
+
     # スキップメッセージが報告されていることを確認
     skip_reports = [r for r in reporter.reports if "illustration_point:" in r[0] and "book_id is None" in r[0]]
     assert len(skip_reports) > 0
@@ -194,26 +194,26 @@ async def test_illustration_point_generation_step_skip_when_no_book_id():
 async def test_illustration_point_generation_step_with_empty_characters():
     """キャラクター情報が空の場合でも動作することを確認"""
     step = IllustrationPointGenerationStep()
-    
+
     # キャラクター情報が空のBibleを返すモック
     class MockEngineNoChars(MockEngine):
         def __init__(self):
             self.repo = MockRepoNoChars()
-    
+
     class MockRepoNoChars(MockRepo):
         def __init__(self):
             self.bible = MockBibleRepoNoChars()
             self.plot = MockPlotRepo()
             self.episode = MockEpisodeRepo()
-    
+
     class MockBibleRepoNoChars:
         async def get_by_book_id(self, book_id):
             return MockBibleNoChars()
-    
+
     class MockBibleNoChars:
         def __init__(self):
             self.characters = []  # 空のキャラクター list
-    
+
     ctx = WorkflowContext(
         genre="ファンタジー",
         keywords="魔法,剣",
@@ -227,11 +227,11 @@ async def test_illustration_point_generation_step_with_empty_characters():
     )
     engine = MockEngineNoChars()
     reporter = MockStatusReporter()
-    
+
     result = await step.execute(ctx, engine, reporter)
-    
+
     # 結果が True であることを確認
     assert result is True
-    
+
     # 空のキャラクターでもポイントが生成されていることを確認
     assert len(ctx.illustration_points) > 0

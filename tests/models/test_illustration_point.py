@@ -1,4 +1,3 @@
-import pytest
 from src.models.illustration_point import IllustrationPoint
 
 
@@ -13,7 +12,7 @@ def test_illustration_point_creation():
         expressions={"主人公": "決意した表情", "ヒロイン": "不安と信頼の混じった表情"},
         background="夕焼けに染まる荒野、廃城の尖塔"
     )
-    
+
     assert ip.id == "IP-001"
     assert ip.page == "口絵1"
     assert ip.scene_description == "主人公とヒロインが夕焼け背景に背中合わせ"
@@ -36,7 +35,7 @@ def test_illustration_point_with_notes():
         background="暗い洞窟、壁に苔が生えている",
         notes="このシーンは第1章のクライマックス"
     )
-    
+
     assert ip.notes == "このシーンは第1章のクライマックス"
 
 
@@ -52,7 +51,7 @@ def test_illustration_point_to_dict():
         background="桜並びの道、花びらが舞っている",
         notes="エンディングを彷彿とさせるシーン"
     )
-    
+
     expected = {
         "id": "IP-003",
         "page": "口絵2",
@@ -63,7 +62,7 @@ def test_illustration_point_to_dict():
         "background": "桜並びの道、花びらが舞っている",
         "notes": "エンディングを彷彿とさせるシーン"
     }
-    
+
     assert ip.to_dict() == expected
 
 
@@ -79,9 +78,9 @@ def test_illustration_point_from_dict():
         "background": "崖っぷちの決戦場、雷鳴が轟く",
         "notes": None
     }
-    
+
     ip = IllustrationPoint.from_dict(data)
-    
+
     assert ip.id == "IP-004"
     assert ip.page == "25"
     assert ip.scene_description == "敵のリーダーと対峙する主人公"
@@ -104,8 +103,8 @@ def test_illustration_point_roundtrip():
         background="青空に白い雲、遠くに山脈",
         notes="オープニングに使用推奨"
     )
-    
+
     data = original.to_dict()
     restored = IllustrationPoint.from_dict(data)
-    
+
     assert original == restored

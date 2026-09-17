@@ -4,11 +4,10 @@ from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
-from sqlalchemy import select
 
 from src.backend.server import app
 from src.backend.database import get_db
-from src.backend.database.models import Base, User, Book
+from src.backend.database.models import Base, User
 from src.backend.security.jwt import create_access_token
 from src.backend.security.password import hash_password
 from src.core.container import AppContainer

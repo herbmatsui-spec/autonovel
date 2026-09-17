@@ -4,10 +4,7 @@ import pytest
 from src.services.blind_review import (
     BlindReviewGate,
     BLOCKED_TOKEN_FMT,
-    HASH_TOKEN_FMT,
     IsolationSchema,
-    VerificationResult,
-    IsolationViolation,
 )
 
 

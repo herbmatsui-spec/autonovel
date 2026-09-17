@@ -99,13 +99,13 @@ class WorkerRecoveryManager:
 
     async def detect_zombie_tasks(self) -> list[TaskWALLogModel]:
         """Detect orphan/zombie tasks (Step 52).
-        
+
         A task is considered a zombie if:
         - state == 'running'
         - heartbeat_at is older than zombie_threshold_seconds (default 5 minutes)
         """
         threshold = datetime.now() - timedelta(seconds=self.config.zombie_threshold_seconds)
-        
+
         async with self.db_manager.get_session() as session:
             stmt = select(TaskWALLogModel).where(
                 TaskWALLogModel.state == "running",
@@ -116,7 +116,7 @@ class WorkerRecoveryManager:
 
     async def recover_orphan_tasks(self) -> list[str]:
         """Recover zombie tasks by resetting them to 'pending' for re-scheduling (Step 53, 56).
-        
+
         Returns list of recovered task_ids.
         """
         zombies = await self.detect_zombie_tasks()
@@ -127,15 +127,15 @@ class WorkerRecoveryManager:
         async with self.db_manager.get_session() as session:
             for zombie in zombies:
                 recovery_attempts = await self._get_recovery_attempt_count(session, zombie.task_id)
-                
+
                 if recovery_attempts >= self.config.max_recovery_attempts:
                     logger.warning(
                         f"Task {zombie.task_id} (node {zombie.node_id}) exceeded max recovery "
                         f"attempts ({self.config.max_recovery_attempts}). Marking as failed."
                     )
                     await self._mark_task_failed(
-                        session, 
-                        zombie.task_id, 
+                        session,
+                        zombie.task_id,
                         f"Exceeded max recovery attempts ({self.config.max_recovery_attempts})"
                     )
                     await self._emit_alert(
@@ -194,7 +194,7 @@ class WorkerRecoveryManager:
             **kwargs,
         }
         logger.warning(f"RECOVERY ALERT: {alert_data}")
-        
+
         if self.event_bus:
             try:
                 if hasattr(self.event_bus, "publish_async"):
@@ -264,7 +264,7 @@ class WorkerRecoveryManager:
 
     async def resume_dag_from_checkpoint(self, dag_id: str) -> list[str]:
         """Resume a DAG from its latest WAL checkpoint.
-        
+
         Finds all completed nodes and returns their outputs for downstream consumption.
         Returns list of node_ids that can be resumed from.
         """

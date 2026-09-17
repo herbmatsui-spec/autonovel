@@ -104,7 +104,7 @@ class AuditAgent(SkillAgent):
             "book_id": ctx.book_id,
             "ep_num": ctx.ep_num,
         })
-        
+
         writing_context = ctx.artifacts.get("writing_context")
         # エンリッチメント済みテキストを優先、なければ元のドラフトを使用
         enriched_text = ctx.artifacts.get("enriched_text")

@@ -33,23 +33,22 @@ def _row_to_episode_result(row) -> EpisodeResult:
     episode_num = _get_val('ep_num')
     title = _get_val('title', '')
     content = _get_val('content', '')
-    
+
     # Compute word count (simple split by whitespace)
     word_count = len(content.split()) if content else 0
-    
+
     # Audit score: use score_story if available, else default 80.0
     audit_score = _get_val('score_story')
     if audit_score is None:
         audit_score = 80.0
     else:
         audit_score = float(audit_score)
-    
+
     # Token usage: not stored, empty dict
-    token_usage = {}
-    
+
     # Status: assume completed if content exists
-    status = "completed" if content and len(content.strip()) > 0 else "pending"
-    
+    "completed" if content and len(content.strip()) > 0 else "pending"
+
     # Build metadata from other fields
     metadata = {
         "killer_phrase": _get_val('killer_phrase'),
@@ -64,14 +63,14 @@ def _row_to_episode_result(row) -> EpisodeResult:
     }
     # Remove None values from metadata
     metadata = {k: v for k, v in metadata.items() if v is not None}
-    
+
     # For easy_mode EpisodeResult, we also need audit_passed, rewrite_count, spice_elements, needs_human_review
     # We'll set defaults: audit_passed = True if audit_score >= 60, rewrite_count = 0, spice_elements = [], needs_human_review = False
     audit_passed = audit_score >= 60.0
     rewrite_count = 0
     spice_elements = []
     needs_human_review = False
-    
+
     return EpisodeResult(
         episode_num=episode_num,
         title=title,
@@ -100,7 +99,7 @@ class SeriesDataLoader:
         book = session.query(Book).filter(Book.id == book_id).first()
         if not book:
             raise ValueError(f"Book with id {book_id} not found")
-        
+
         # Load bible settings
         bible = session.query(Bible).filter(Bible.book_id == book_id).first()
         bible_settings = {}
@@ -110,7 +109,7 @@ class SeriesDataLoader:
             except json.JSONDecodeError:
                 # If invalid JSON, treat as empty
                 bible_settings = {}
-        
+
         return {
             "title": book.title,
             "genre": book.genre,
@@ -145,10 +144,10 @@ class SeriesDataLoader:
         and re-index episode numbers to be sequential starting from 1.
         """
         logger = logging.getLogger(__name__)
-        
+
         if not episodes:
             return episodes
-        
+
         # Check for missing numbers and empty content
         expected_num = 1
         normalized = []
@@ -161,7 +160,7 @@ class SeriesDataLoader:
             # If content is empty, we still keep it but warn?
             if not ep.content or len(ep.content.strip()) == 0:
                 logger.warning(f"Chapter {ep.episode_num} has empty content.")
-            
+
             # Create a new EpisodeResult with corrected episode_num
             normalized.append(EpisodeResult(
                 episode_num=expected_num,
@@ -176,7 +175,7 @@ class SeriesDataLoader:
                 needs_human_review=ep.needs_human_review,
             ))
             expected_num += 1
-        
+
         return normalized
 
     def load_series(self, config: SeriesDataLoaderConfig) -> SeriesResult:
@@ -186,24 +185,24 @@ class SeriesDataLoader:
         with self._session_factory() as session:
             # Load book metadata
             metadata = self._load_book_metadata(session, config.book_id)
-            
+
             # Load chapters
             chapters = self._load_chapters(session, config.book_id, config.branch_id)
-            
+
             # Convert chapters to EpisodeResult
             episodes = [_row_to_episode_result(ch) for ch in chapters]
-            
+
             # Normalize episodes (handle missing numbers, empty content)
             episodes = self._normalize_episodes(episodes)
-            
+
             # If no chapters and fallback_to_minimal is False, raise exception
             if not episodes and not config.fallback_to_minimal:
                 raise NoChaptersFoundError(f"No chapters found for book {config.book_id}")
-            
+
             # If no chapters and fallback_to_minimal, create a minimal episode
             if not episodes and config.fallback_to_minimal:
                 episodes = [self._make_minimal_episode()]
-            
+
             # Construct SeriesResult
             return SeriesResult(
                 genre=metadata.get('genre', ''),
@@ -217,7 +216,7 @@ class SeriesDataLoader:
                 created_at=None,  # could be set from book's created_at
                 status="completed",
             )
-    
+
     def _make_minimal_episode(self) -> EpisodeResult:
         """
         Create a minimal episode for fallback.
@@ -250,7 +249,7 @@ class SeriesDataLoader:
         book.synopsis = series.plot_outline  # using plot_outline as synopsis
         # Note: other fields like style_dna, etc. could be updated from series.metadata if needed
         # For simplicity, we only update the fields we have in SeriesResult.
-        
+
         # Update or create Bible
         bible = session.query(Bible).filter(Bible.book_id == book_id).with_for_update().first()
         bible_settings = series.bible
@@ -264,9 +263,9 @@ class SeriesDataLoader:
                 bible = Bible(book_id=book_id, settings=json.dumps(bible_settings))
                 session.add(bible)
             # else, no bible to create
-        
+
         # Handle chapters: delete existing chapters for this book
-        deleted = session.query(Chapter).filter(Chapter.book_id == book_id).delete()
+        session.query(Chapter).filter(Chapter.book_id == book_id).delete()
         # Insert new chapters
         for idx, ep in enumerate(series.episodes, start=1):
             chapter = Chapter(

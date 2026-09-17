@@ -19,47 +19,10 @@ from src.models.db import PlotDbModel
 from src.models.graph_schemas import GraphExtractionResult
 from src.models.sharp_edge import SharpEdgeSpec
 from src.services.llm_service import LLMService
+from src.agents.audit_screeners import AbilityConsistencyChecker, FastPlotScreener  # noqa: F401
 from src.services.extraction_service import extraction_service
 
 logger = logging.getLogger(__name__)
-
-
-class FastPlotScreener:
-    """プロット快速スクリーニング。Gemini にプロットの妥当性を検証させる。"""
-
-    def __init__(self, llm: LLMService, prompt_manager: Any):
-        self.llm = llm
-        self.prompt_manager = prompt_manager
-
-    async def screen_plot(self, blueprint: str) -> tuple[bool, str]:
-        prompt = self.prompt_manager.build_fast_plot_screen_prompt(blueprint)
-        result = await self.llm.generate_json(purpose="audit", prompt=prompt)
-        metadata = result.get("metadata", {})
-        return metadata.get("is_valid", True), metadata.get("feedback", "OK")
-
-
-class AbilityConsistencyChecker:
-    """能力整合性チェック"""
-
-    def __init__(self, llm: LLMService, prompt_manager: Any = None):
-        self.llm = llm
-        self.prompt_manager = prompt_manager
-
-    async def audit_ability_consistency(
-        self, blueprint: str, settings_json: str, characters_json: str
-    ) -> tuple[bool, str, str]:
-        if self.prompt_manager is None:
-            return True, "OK", ""
-        prompt = self.prompt_manager.build_ability_audit_prompt(
-            blueprint, settings_json, characters_json
-        )
-        result = await self.llm.generate_json(purpose="audit", prompt=prompt)
-        metadata = result.get("metadata", {})
-        return (
-            metadata.get("is_consistent", True),
-            metadata.get("feedback", "OK"),
-            metadata.get("suggestions", ""),
-        )
 
 
 class PlotIntegrityMonitor:
@@ -156,6 +119,15 @@ class PlotIntegrityMonitor:
         self.repo = repo
         self._extraction_service = extraction_service
 
+    def check_scene(self, scene_text: str, characters: dict[str, Any]) -> list[str]:
+        """シーンテキストとキャラクター情報から矛盾を検出する簡易チェック"""
+        issues = []
+        for char_name, char_info in characters.items():
+            if isinstance(char_info, dict) and char_info.get("status") == "死亡":
+                if char_name in scene_text:
+                    issues.append(f"矛盾検出: {char_name}は死亡しているが、シーンに登場している")
+        return issues
+
     async def extract_keywords(self, text: str) -> list[str]:
         """GraphRAG抽出サービス経由でエンティティ名を取得（NER代替）
 
@@ -167,7 +139,8 @@ class PlotIntegrityMonitor:
 
         try:
             # 既存のグラフ抽出サービスを利用（LLM構造化出力 + キャッシュ + フォールバック済み）
-            result: GraphExtractionResult = self._extraction_service.extract_graph_from_text(text)
+            # extract_graph_from_text は async メソッドのため await する
+            result: GraphExtractionResult = await self._extraction_service.extract_graph_from_text(text)
 
             # 因果律監査に関わるタイプのみ抽出
             target_types = {"Character", "Item", "Event", "Location", "Faction"}
@@ -318,8 +291,8 @@ class PlotIntegrityMonitor:
 
     async def _diff_graphs(self, blueprint: str, content: str) -> GraphDiffResult:
         """Blueprint と Content のエンティティグラフ差分を計算"""
-        bp_result = self._extraction_service.extract_graph_from_text(blueprint)
-        ct_result = self._extraction_service.extract_graph_from_text(content)
+        bp_result = await self._extraction_service.extract_graph_from_text(blueprint)
+        ct_result = await self._extraction_service.extract_graph_from_text(content)
 
         # エンティティ名集合
         bp_entities = {e.name: e for e in bp_result.entities}
@@ -454,7 +427,7 @@ class PlotIntegrityMonitor:
                 )
 
         # 3. 伏線検出: Blueprintにのみ存在する重要アイテム/イベント
-        bp_result = self._extraction_service.extract_graph_from_text(blueprint)
+        bp_result = await self._extraction_service.extract_graph_from_text(blueprint)
         bp_entities = {e.name: e for e in bp_result.entities}
 
         current_ep = ep_num or 1
@@ -839,7 +812,7 @@ class InternalLogicValidator:
 
 class LogicalAuditor:
     """@deprecated ロジカル一貫性チェックエージェント。
-    
+
     このクラスは非推奨です。新規コードでは `src.services.audit_aggregator.AuditAggregator`
     または `src.agents.audit_agent.AuditAgent` を使用してください。(Phase 6: Step 65)
     """

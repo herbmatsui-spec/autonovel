@@ -189,7 +189,7 @@ class WritingService:
                 max_cycles=2,
             )
 
-            ctx = AgentContext(book_id=book_id, branch_id=1, ep_num=ep_num, artifacts={})
+            AgentContext(book_id=book_id, branch_id=1, ep_num=ep_num, artifacts={})
             initial_context = {
                 "draft_text": "",
                 "book_id": book_id,

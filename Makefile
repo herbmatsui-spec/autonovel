@@ -1,7 +1,7 @@
 # AutoNovel Makefile - 一般的な開発タスクのエイリアス。
 # Windows でも GNU Make (Git for Windows 同梱等) で実行可能。
 
-.PHONY: help install dev test lint typecheck openapi frontend-test frontend-lint run dev-up dev-down prod-up prod-down clean verify test-unit test-integration test-contract test-perf test-migration format-check black-check
+.PHONY: help install dev test lint typecheck openapi frontend-test frontend-lint run dev-up dev-down prod-up prod-down clean verify test-unit test-integration test-contract test-perf test-migration format-check black-check check-migrations
 
 help:  ## 利用可能ターゲット一覧を表示
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
@@ -70,6 +70,9 @@ test-perf:  ## パフォーマンステスト (benchmarks.json ベースライ�
 
 test-migration:  ## alembic 整合性チェック (alembic check + 往復)
 	cd src/backend && alembic check && alembic upgrade head && alembic downgrade -1 && alembic upgrade head
+
+check-migrations:  ## マイグレーション往復検証スクリプトを実行
+	python scripts/check_migrations.py
 
 verify: lint format-check typecheck black-check test-unit test-contract test-migration  ## PR 前のフル検証 (CI と同じ順序)
 	@echo "All checks passed."

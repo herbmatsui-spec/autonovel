@@ -10,7 +10,6 @@ Verifies the end-to-end integration of all Pillar 4 components:
 7. Commercial Quality Benchmarking (85+ S-rank) & 7-Point Health Check
 """
 
-import asyncio
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 
@@ -31,12 +30,10 @@ from src.services.audit_aggregator import AuditAggregator, SPECIALIST_NAMES
 
 # 3. 5D Mapping & BookScore
 from src.services.book_score_mapping import UnifiedBookScoreBridge
-from src.services.book_score_service import BookScoreCalculator
 
 # 4. Directives & PDCA
 from src.services.pdca_directive import (
     PDCADirectiveGenerator,
-    WritingDirective,
 )
 from src.services.pdca_cycle import ClosedLoopPDCARunner
 
@@ -48,7 +45,6 @@ from src.backend.tasks.dag_replanning import DAGReplanningState
 # 6. Commercial Benchmarks
 from src.services.commercial_benchmarks import (
     CommercialBenchmarkJudge,
-    CommercialQualityMetrics,
 )
 
 

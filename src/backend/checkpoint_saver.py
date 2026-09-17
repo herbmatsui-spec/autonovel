@@ -94,3 +94,37 @@ class CheckpointSaver:
         """checkpoint を削除"""
         saver = self._get_saver()
         await saver.adelete(checkpoint_id)
+
+
+from src.domain.entities.checkpoint import WorkflowCheckpoint, CheckpointStatus
+from src.infrastructure.repositories.checkpoint import CheckpointRepository
+
+class CheckpointManager:
+    """DBベースのチェックポイント永続化管理マネージャー。"""
+
+    def __init__(self, session_factory):
+        self.session_factory = session_factory
+
+    def record_step(self, task_id: str, step_name: str, step_index: int, state_payload: dict, status: CheckpointStatus = CheckpointStatus.COMPLETED, error_message: str | None = None) -> str:
+        checkpoint_id = f"{task_id}_{step_index}_{step_name}"
+        checkpoint = WorkflowCheckpoint(
+            checkpoint_id=checkpoint_id,
+            task_id=task_id,
+            step_name=step_name,
+            step_index=step_index,
+            status=status,
+            state_payload=state_payload,
+            error_message=error_message,
+        )
+        with self.session_factory() as session:
+            repo = CheckpointRepository(session)
+            repo.save(checkpoint)
+        return checkpoint_id
+
+    def load_last_state(self, task_id: str) -> tuple[int, str, dict] | None:
+        with self.session_factory() as session:
+            repo = CheckpointRepository(session)
+            cp = repo.get_latest_checkpoint(task_id)
+            if cp and cp.status == CheckpointStatus.COMPLETED:
+                return cp.step_index, cp.step_name, cp.state_payload
+            return None

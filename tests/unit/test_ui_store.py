@@ -1,7 +1,7 @@
 """Unit tests for src/core/state/ui_store.py - UI State Store."""
 
 import pytest
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import MagicMock, patch
 
 from src.core.state.ui_store import UIStateStore
 
@@ -83,7 +83,7 @@ class TestUIStateStore:
         # Need to use a spec to prevent MagicMock from auto-creating attributes
         from schemas.app_state import AppRuntimeState
         self.mock_session.runtime = MagicMock(spec=AppRuntimeState)
-        
+
         with pytest.raises(AttributeError):
             UIStateStore.update_runtime("invalid_attr", "value")
 

@@ -18,7 +18,7 @@
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 [![Type Checked: mypy](https://img.shields.io/badge/type%20checked-mypy-blue)](https://mypy-lang.org/)
 [![Vitest](https://img.shields.io/badge/tested_with-vitest-729B1B?logo=vitest&logoColor=white)](https://vitest.dev/)
-[![Version](https://img.shields.io/badge/version-4.9.3-brightgreen?logo=semver)](https://github.com/herbmatsui-spec/autonovel/releases/tag/v4.9.3)
+[![Version](https://img.shields.io/badge/version-5.0.0-brightgreen?logo=semver)](https://github.com/herbmatsui-spec/autonovel/releases/tag/v5.0.0)
 
 <br />
 
@@ -26,7 +26,32 @@
   <img src="docs/demo.gif" alt="AutoNovel UI & Workflow Demo" width="900" style="border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
 </p>
 
-*▲ AutoNovel v4.9.1: LLM・Embedding設定の一元化 / プロット・執筆・監査・Embedding用途別モデル設定 / リアルタイム稼働モデルカード / サーバー既定情報API / DDDレイヤー分離実装完了*
+*▲ AutoNovel v5.0.0: LLM・Embedding設定の一元化 / プロット・執筆・監査・Embedding用途別モデル設定 / リアルタイム稼働モデルカード / サーバー既定情報API / DDDレイヤー分離実装完了*
+
+
+## v5.0の新機能と変更点
+
+v5.0では、v4系から以下の主要な改善が行われました：
+
+### アーキテクチャの統合
+- **統合ドメインタイプシステム**: 心理的プロファイルと感覚的ビートを含む統一されたドメインモデル
+- **オープンAPIとTypeScriptの自動同期**: バックエンドスキーマ変更時にフロントエンド型定義を自動生成
+
+### ユーザーインターフェースの改善
+- **WizardWorkflowPage 3ステップUI**: 小説執筆プロセスをわかりやすいウィザード形式に
+- **SSEストリーミング進捗表示**: リアルタイムでの執筆進捗とサーバーイベントの可視化
+- **プラットフォームクリップボード統合**: シームレスなコピー/ペースト体験
+
+### パフォーマンスと信頼性
+- **ゼロコストパイプライン統合テスト**: CPU最適化されたDocker Compose構成
+- **サーキットブレーカーとトークン予算計算**: LLMコスト管理とサービス障害からの自動復旧
+- **メモリ最適化**: TypeCheckとOpenAPI TypeScript同期の最適化
+
+### 機能拡張
+- **商業向けCSS縦組み**: ルビ・傍線・送り仮名などの高度な組版機能
+- **純Python EPUB 3ビルダー**: 外部依存なしの高品質電子書籍生成
+- **完全な小説ライフサイクル統合テスト**: 企画から納品までのエンドツーエンドテスト
+
 
 </div>
 
@@ -59,7 +84,9 @@ AutoNovel は、AI を活用して Web 小説を **企画から執筆、校正�
 
 ## 📋 更新履歴 / Changelog
 
-### v4.9.1 (2026-09-12) — DDDレイヤー分離アーキテクチャ実装完了・P1実装計画統合
+### v4.9.7 (2026-09-16) — Context compression system enhancements, AgeDB integration, compression reversibility improvements, taxonomy refinements, benchmark additions, test fixes
+
+### v4.9.6 (2026-09-15) — CI/CD stabilization, dependency updates, Docker configuration fixes, backend refactoring, frontend component enhancements, test coverage improvements, cleanup of temporary scripts
 
 DDD（ドメイン駆動設計）のレイヤーアーキテクチャ（Domain / Application / Infrastructure / Presentation）への完全分離を実現し、依存関係の逆転・責務の明確化・テスタビリティ向上を完了。P1実装計画の全タスクを統合。
 
@@ -2362,7 +2389,7 @@ make clean         # キャッシュや一時DBファイルをクリーンアッ
 コントリビューションの詳細は [CONTRIBUTING.md](CONTRIBUTING.md) をご覧ください。
 品質計画・テスト網羅率プランは [TEST_COVERAGE_PLAN.md](TEST_COVERAGE_PLAN.md) を、パイプライン統合の将来計画は [PIPELINE_UNIFICATION_PLAN.md](PIPELINE_UNIFICATION_PLAN.md) / [UNIFIED_PIPELINE_IMPLEMENTATION_PLAN.md](UNIFIED_PIPELINE_IMPLEMENTATION_PLAN.md) を参照してください。
 
-> **現行バージョン**: v4.7.0 (`pyproject.toml`, `frontend/package.json`, Docker イメージ `autonovel-backend:4.7.0` / `autonovel-frontend:4.7.0`)。直近のリリースノートは [CHANGELOG.md](CHANGELOG.md)。
+> **現行バージョン**: v5.0.0 (`pyproject.toml`, `frontend/package.json`, Docker イメージ `autonovel-backend:5.0.0` / `autonovel-frontend:5.0.0`)。直近のリリースノートは [CHANGELOG.md](CHANGELOG.md)。
 
 ---
 

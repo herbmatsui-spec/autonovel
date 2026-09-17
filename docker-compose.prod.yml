@@ -41,10 +41,10 @@ services:
         max-size: "10m"
         max-file: "3"
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8200/health').read()"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -f http://localhost:8200/health/liveness || exit 1"]
+      interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 3
       start_period: 30s
     expose:
       - "8200"

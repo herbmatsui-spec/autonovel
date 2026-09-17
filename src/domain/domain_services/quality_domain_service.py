@@ -1,13 +1,13 @@
 """Quality domain service - pure business logic for quality score calculation and validation."""
 
 from __future__ import annotations
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from enum import Enum
 
-from src.domain.value_objects.scores import QualityScore, TensionScore, BookScore, QolScore, CostScore
-from src.domain.value_objects.ids import NovelId, PlotId
+from src.domain.value_objects.scores import TensionScore, BookScore, QolScore, CostScore
+from src.domain.value_objects.ids import NovelId
 
 
 class QualityValidationError(Exception):
@@ -117,7 +117,6 @@ class QualityCalculator:
     @classmethod
     def calculate_book_score(cls, dimensions: Dict[str, int], weights: Optional[Dict[str, float]] = None) -> BookScore:
         """Calculate BookScore from dimension scores using weights."""
-        effective_weights = weights or cls.DEFAULT_WEIGHTS
         return BookScore.calculate_from_dimensions(dimensions)
 
     @classmethod

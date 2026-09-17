@@ -3,8 +3,7 @@ from __future__ import annotations
 
 import argparse
 import sys
-from pathlib import Path
-from typing import List, Optional
+from typing import List
 
 from tests.benchmarks.fixtures import generate_long_novel
 from tests.benchmarks.run_multi import benchmark_novel
@@ -102,7 +101,7 @@ def main() -> int:
         # Scaling metrics
         scaling = compute_scaling_metrics(result["checkpoints"])
         if scaling:
-            print(f"\nSCALING ANALYSIS:")
+            print("\nSCALING ANALYSIS:")
             print(f"  Latency per episode: {scaling['latency_per_episode_ms']:.3f} ms/ep")
             print(f"  Memory per episode:  {scaling['memory_per_episode_mb']:.4f} MB/ep")
 

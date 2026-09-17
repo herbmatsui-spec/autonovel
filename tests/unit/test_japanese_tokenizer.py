@@ -1,9 +1,8 @@
 """Unit tests for Japanese morphological tokenizer & BM25 integration (Steps 13-18)."""
 
-import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
-from src.services.nlp.japanese_tokenizer import JapaneseTokenizer, NOVEL_STOPWORDS
+from src.services.nlp.japanese_tokenizer import JapaneseTokenizer
 from src.services.reflective_rag import ReflectiveRAGService
 from src.services.rag_service import SearchResult
 

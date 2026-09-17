@@ -3,7 +3,6 @@ PLAN 01 - Step 5: CTRスコアリングエンジンの単体テスト
 """
 from __future__ import annotations
 
-import pytest
 
 from src.services.marketing.ctr_scorer import score_title_ctr
 

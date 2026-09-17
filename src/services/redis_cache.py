@@ -17,7 +17,7 @@ try:
 except ImportError:
     REDIS_AVAILABLE = False
     redis: Any = None
-from config import get_config
+from src.backend.config import settings as _app_settings
 
 logger = logging.getLogger(__name__)
 
@@ -63,8 +63,7 @@ class RedisCacheService:
 
         # 接続URLの決定
         if redis_url is None:
-            config = get_config()
-            redis_url = getattr(config, "redis_url", None) or "redis://localhost:6379/0"
+            redis_url = getattr(_app_settings, "REDIS_URL", None) or "redis://localhost:6379/0"
 
         # 接続プールの作成
         self._pool = redis.ConnectionPool.from_url(

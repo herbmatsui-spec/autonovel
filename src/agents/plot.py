@@ -22,9 +22,9 @@ class PlotAgent(SkillAgent):
 
     def __init__(
         self,
-        repo: "IRepository",
-        pm: "IPromptManager",
-        generate_json: Callable[..., Awaitable[Any]],
+        repo: "IRepository" = None,
+        pm: "IPromptManager" = None,
+        generate_json: Callable[..., Awaitable[Any]] = None,
         plot_expander: Optional["IPlotExpander"] = None,
         auditor: Any | None = None,
         uow_factory: Callable[[], Any] | None = None,
@@ -36,6 +36,31 @@ class PlotAgent(SkillAgent):
         self._plot_expander = plot_expander
         self._auditor = auditor
         self._uow_factory = uow_factory
+
+    async def generate_plot(self, theme: str) -> list[dict[str, Any]]:
+        """Generate plot beats from a theme or genre.
+
+        Args:
+            theme: Theme or genre for the plot
+
+        Returns:
+            List of beat dictionaries
+        """
+        # Use the LLM to generate plot beats
+        prompt = f"Generate a plot beats sheet for the theme: {theme}. "
+        prompt += "Return a JSON object with a 'beats' array containing act summaries."
+
+        result = await self._llm.generate(prompt=prompt)
+
+        # Parse the JSON response
+        import json
+        try:
+            response_data = json.loads(result)
+            beats = response_data.get("beats", [])
+            return beats if isinstance(beats, list) else []
+        except (json.JSONDecodeError, AttributeError):
+            # Return empty list if parsing fails
+            return []
 
     async def _expand_single_plot(
         self,

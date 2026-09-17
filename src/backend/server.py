@@ -23,6 +23,7 @@ from src.backend.routers import (
     anti_ai,
     books,
     branches,
+    chapters,
     commercial,
     cost,
     easy_mode,
@@ -30,6 +31,7 @@ from src.backend.routers import (
     episodes,
     export,
     graph,
+    health,
     illustrations,
     issues,
     marketing,
@@ -39,6 +41,7 @@ from src.backend.routers import (
     novel,
     patches,
     plots,
+    projects,
     prompt_versions,
     streaming,
     styles,
@@ -50,6 +53,9 @@ from src.backend.routers import (
     auth,
     billing,
     billing_webhook,
+    trace,
+    platform_export,
+    stream_writing,
 )
 
 logger = logging.getLogger(__name__)
@@ -94,6 +100,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(title=f"{settings.APP_NAME} Backend", version=settings.APP_VERSION, lifespan=lifespan)
 
+
+
+from src.backend.middleware.auth_middleware import GlobalAuthMiddleware
+
+register_error_handlers(app)
+app.add_middleware(GlobalAuthMiddleware)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origin_list,
@@ -101,8 +114,6 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=settings.cors_allow_headers_list,
 )
-
-register_error_handlers(app)
 
 
 # コアルーター登録
@@ -115,6 +126,8 @@ app.include_router(graph.router)
 app.include_router(editor.router)
 app.include_router(system.router)
 app.include_router(export.router)
+app.include_router(platform_export.router)
+app.include_router(stream_writing.router)
 
 # 管理者・監査ルーター登録
 app.include_router(admin_audit_router)
@@ -125,6 +138,8 @@ app.include_router(admin_enrichment_router)
 app.include_router(books.router)
 app.include_router(plots.router)
 app.include_router(episodes.router)
+app.include_router(chapters.router)
+app.include_router(projects.router)
 app.include_router(tasks.router)
 app.include_router(patches.router)
 app.include_router(issues.router)
@@ -145,6 +160,8 @@ app.include_router(publishing_assistant.router, prefix="/api")
 app.include_router(auth.router)
 app.include_router(billing.router)
 app.include_router(billing_webhook.router)
+app.include_router(trace.router)
+app.include_router(health.router)
 
 
 @app.get("/health")

@@ -1,10 +1,8 @@
 """Tests for SQLite RAG embedding persistence and fast batch vector search (Phase 3 / Steps 25-36)."""
 import time
-import pytest
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
 
-import src.backend.database.models
 from src.infrastructure.database.models.base_orm import Base
 from src.infrastructure.database.models.chunk import ChapterChunk
 from src.services.rag_service import GraphRAGService

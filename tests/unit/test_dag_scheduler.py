@@ -7,10 +7,8 @@ import pytest
 from src.backend.tasks.dag_models import (
     DAGGraph,
     DAGTaskNode,
-    TaskResourceRequirement,
 )
 from src.backend.tasks.dag_scheduler import DAGScheduler, _ResourceSemaphores
-from src.backend.tasks.resource_manager import ResourceManager
 from src.backend.tasks.generation_tasks import build_novel_generation_dag
 
 

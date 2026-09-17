@@ -2,7 +2,7 @@ import asyncio
 import logging
 from datetime import datetime
 from typing import Set, Dict, Any
-from fastapi import WebSocket, WebSocketDisconnect
+from fastapi import WebSocket
 from src.backend.schemas.pipeline_events import PipelineEvent
 
 logger = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ class PipelineEventHub:
             if book_id not in self._subscribers:
                 self._subscribers[book_id] = set()
             self._subscribers[book_id].add(websocket)
-            
+
             # Send latest snapshot if available
             if book_id in self._latest_snapshots:
                 try:

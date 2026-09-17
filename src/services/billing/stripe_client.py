@@ -1,13 +1,12 @@
 import stripe
 from src.backend.config import settings
-from typing import Optional
 
 # Initialize Stripe with API key from settings
 stripe.api_key = getattr(settings, 'STRIPE_SECRET_KEY', '')
 
 class StripeClient:
     """Stripe SDKラッパークラス"""
-    
+
     @staticmethod
     def create_checkout_session(
         user_id: int,
@@ -18,21 +17,21 @@ class StripeClient:
     ) -> str:
         """
         Stripe Checkout Sessionを生成してURLを返す
-        
+
         Args:
             user_id: ユーザーID
             user_email: ユーザーのメールアドレス
             price_id: Stripe Price ID
             success_url: 成功時のリダイレクトURL
             cancel_url: キャンセル時のリダイレクトURL
-            
+
         Returns:
             Checkout Session URL
         """
         try:
             # まずStripe Customerを取得または作成
             customer = StripeClient._get_or_create_customer(user_id, user_email)
-            
+
             # Checkout Sessionを作成
             session = stripe.checkout.Session.create(
                 customer=customer.id,
@@ -48,21 +47,21 @@ class StripeClient:
                     'user_id': str(user_id)
                 }
             )
-            
+
             return session.url
         except Exception as e:
             # 本番環境では適切なロギングを行うべき
             raise Exception(f"Failed to create checkout session: {str(e)}")
-    
+
     @staticmethod
     def create_customer_portal_session(stripe_customer_id: str, return_url: str) -> str:
         """
         Stripe Customer Portalセッションを生成してURLを返す
-        
+
         Args:
             stripe_customer_id: Stripe Customer ID
             return_url: ポータルから戻るURL
-            
+
         Returns:
             Customer Portal Session URL
         """
@@ -74,7 +73,7 @@ class StripeClient:
             return session.url
         except Exception as e:
             raise Exception(f"Failed to create customer portal session: {str(e)}")
-    
+
     @staticmethod
     def _get_or_create_customer(user_id: int, user_email: str):
         """
@@ -89,7 +88,7 @@ class StripeClient:
             customers = stripe.Customer.list(email=user_email, limit=1)
             if customers.data:
                 return customers.data[0]
-            
+
             # 新規顧客作成
             customer = stripe.Customer.create(
                 email=user_email,

@@ -15,18 +15,13 @@ from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.backend.database.core import get_db_manager
-from src.backend.database.models import Base, Book
+from src.backend.database.models import Base
 
 
 @pytest.fixture
 def client():
     import tempfile
     from pathlib import Path
-    import os
-    from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-    from src.backend.database.core import get_db_manager
-    from src.backend.database.models import Base
 
     tmp = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
     tmp.close()
@@ -57,15 +52,12 @@ def client():
             book = Book(title="t", genre="g", concept="c", current_branch_id=1)
             session.add(book)
             await session.commit()
-    import asyncio
     asyncio.run(_setup())
 
     # Set test API key
     os.environ["ALLOWED_API_KEYS"] = "testkey"
 
     from src.backend.routers import branches as bmod
-    from fastapi import FastAPI
-    from fastapi.testclient import TestClient
 
     app = FastAPI()
     app.include_router(bmod.router)

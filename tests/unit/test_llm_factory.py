@@ -10,11 +10,16 @@ from src.services.llm.mock_adapter import MockLLMAdapter
 
 @pytest.fixture(autouse=True)
 def _clear_llm_env(monkeypatch):
-    """各テストでLLM 関連環境変数をクリアし、独立性を担保する。"""
+    """各テストでLLM 関連環境変数をクリアし、独立性を担保する。
+
+    ファクトリのテスト環境ショートカット (APP_ENV=testing で MockLLMAdapter を返す)
+    を無効化し、各プロバイダの分岐を実際に検証できるようにする。
+    """
     monkeypatch.setattr(settings, "GEMINI_API_KEY", None)
     monkeypatch.setattr(settings, "OPENAI_API_KEY", None)
     monkeypatch.setattr(settings, "OPENAI_BASE_URL", None)
     monkeypatch.setattr(settings, "ANTHROPIC_API_KEY", None)
+    monkeypatch.delenv("APP_ENV", raising=False)
     yield
 
 

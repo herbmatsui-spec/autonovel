@@ -58,7 +58,7 @@ def execute_publication_task(schedule_id: int) -> dict[str, Any]:
                 # 2. 投稿データの準備
                 book_id = schedule.book_id
                 platform = schedule.platform
-                
+
                 # エピソード範囲からIDリストを抽出
                 # 実際には Chapter モデルから ep_num の範囲で取得する
                 from src.backend.database.models import Chapter
@@ -74,11 +74,11 @@ def execute_publication_task(schedule_id: int) -> dict[str, Any]:
                 # 認証情報の準備 (DBに保存されていない場合は環境変数等から取得される想定)
                 # ここでは簡易的に空の辞書を渡し、pipeline側でデフォルトを処理させる
                 credentials = {}
-                
+
                 # 3. 投稿実行
                 novel_data = await _get_novel_data(book_id)
                 episodes_data = await _get_episodes_data(book_id, episode_ids, platforms=[platform])
-                
+
                 pipeline = CommercialPipeline()
                 publish_results = await pipeline._publish_to_platforms(
                     novel=novel_data,
@@ -97,7 +97,7 @@ def execute_publication_task(schedule_id: int) -> dict[str, Any]:
                     if any(not r.success for r in results):
                         all_success = False
                         break
-                
+
                 if all_success:
                     schedule.status = "completed"
                     error_msg = None

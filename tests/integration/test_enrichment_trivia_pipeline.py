@@ -1,7 +1,7 @@
 # tests/integration/test_enrichment_trivia_pipeline.py
 """Integration tests for EnrichmentAgent trivia insertion pipeline (Step 11)."""
 import pytest
-from unittest.mock import MagicMock, AsyncMock
+from unittest.mock import MagicMock
 from src.agents.orchestrator import AgentContext, AgentName
 from src.agents.enrichment_agent import EnrichmentAgent
 

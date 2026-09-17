@@ -4,7 +4,7 @@ PLAN 02 - Step 5: 序盤特化エージェント単体テスト
 """
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 import pytest
 
 from src.config.opening_rules import OPENING_EPISODE_TARGETS, OPENING_FORBIDDEN_RULES

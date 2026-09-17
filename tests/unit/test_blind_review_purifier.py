@@ -5,7 +5,6 @@ import pytest
 from unittest.mock import AsyncMock
 
 from src.services.blind_review import (
-    PurifiedFeedback,
     detect_proposal_leaks,
     BlindFeedbackPurifier,
     BlindReviewGate,

@@ -4,7 +4,6 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 
 from src.agents.event_bus import EventBus, AgentEvent
 from src.agents.orchestrator import Orchestrator, AgentContext, AgentResult, AgentName
@@ -62,7 +61,7 @@ async def test_skill_emit_event():
 
     skill = EventEmittingSkill(event_bus=bus)
     ctx = AgentContext(book_id=1, branch_id=1, ep_num=1, artifacts={})
-    
+
     result = await skill.execute(ctx)
 
     # publish_sync は SkillAgent.emit_event 内で使われないため、
@@ -73,7 +72,7 @@ async def test_skill_emit_event():
 
     assert result.artifacts.get("skill_executed") is True
     assert len(received) >= 1
-    
+
     # started イベント
     started_events = [e for e in received if e.payload.get("event") == "skill.started"]
     assert len(started_events) >= 1
@@ -134,7 +133,7 @@ async def test_skill_error_event():
 
     skill = EventEmittingSkill(event_bus=bus, should_fail=True)
     ctx = AgentContext(book_id=1, branch_id=1, ep_num=1, artifacts={})
-    
+
     try:
         await skill.execute(ctx)
     except ValueError:

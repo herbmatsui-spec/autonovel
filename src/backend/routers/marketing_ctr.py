@@ -11,7 +11,6 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from src.agents.marketing import MarketingAgent
 from src.backend.auth import get_prompt_manager
-from src.core.container import AppContainer
 from src.models.marketing_ctr import ViralTitleRequest, ViralTitleResponse
 
 from src.services.llm.factory import get_llm_adapter

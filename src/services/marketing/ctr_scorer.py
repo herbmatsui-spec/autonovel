@@ -7,7 +7,6 @@ from __future__ import annotations
 from typing import Any
 
 from src.config.kakuyomu_syntax_patterns import (
-    CRITICAL_CTR_WORDS,
     OPTIMAL_LENGTH_MAX,
     OPTIMAL_LENGTH_MIN,
 )

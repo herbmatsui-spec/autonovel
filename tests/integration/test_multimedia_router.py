@@ -1,11 +1,10 @@
 """Multimedia ルータの統合テスト (self-contained FastAPI app)。"""
 from __future__ import annotations
 
-from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
-from fastapi import Depends, FastAPI
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from src.backend import config

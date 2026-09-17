@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import Optional, List, Dict, Any, Set
+from typing import Optional, List, Dict
 from datetime import datetime
 from enum import Enum
 from collections import defaultdict
@@ -104,7 +104,7 @@ class CharacterConsistencyChecker:
     ) -> List[CharacterConsistencyIssue]:
         """Check character consistency across all appearances."""
         issues = []
-        
+
         character = await self._char_repo.get_by_id(character_id)
         if not character:
             issues.append(CharacterConsistencyIssue(
@@ -126,7 +126,7 @@ class CharacterConsistencyChecker:
         role_counts = defaultdict(int)
         for c in all_chars:
             role_counts[c.role] += 1
-        
+
         if role_counts[character.role] > 1:
             issues.append(CharacterConsistencyIssue(
                 issue_type="duplicate_role",
@@ -178,10 +178,10 @@ class CharacterConsistencyChecker:
         """Check all character relationships for consistency."""
         issues = []
         all_chars = await self._char_repo.list_by_novel(novel_id)
-        
+
         # Build relationship map
-        relationships: Dict[CharacterId, List[CharacterRelationship]] = defaultdict(list)
-        
+        defaultdict(list)
+
         for char in all_chars:
             # In real implementation, would fetch from relationship repository
             pass
@@ -216,9 +216,9 @@ class CharacterRelationshipManager:
             description=description,
             is_mutual=is_mutual,
         )
-        
+
         self._relationships[character_id].append(rel)
-        
+
         if is_mutual:
             # Add reverse relationship
             reverse_type = self._get_reverse_type(relationship_type)
@@ -300,7 +300,7 @@ class CharacterRelationshipManager:
 class CharacterDomainService:
     """
     Domain service for character business logic.
-    
+
     Pure business logic - no infrastructure dependencies.
     Depends only on repository interfaces.
     """
@@ -494,7 +494,7 @@ class CharacterDomainService:
         character = await self.character_repo.get_by_id(character_id)
         if not character:
             return None
-        
+
         # Attach relationships (in real implementation, would be loaded from repo)
         character._relationships = self.get_relationships(character_id)
         return character
@@ -514,7 +514,7 @@ class CharacterDomainService:
     ) -> List[str]:
         """Validate if a new character can be created without conflicts."""
         warnings = []
-        
+
         # Check for duplicate name
         existing = await self.character_repo.get_by_name(novel_id, name)
         if existing:

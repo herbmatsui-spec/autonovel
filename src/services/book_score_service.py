@@ -3,46 +3,14 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Mapping, Optional, Protocol
-from dataclasses import dataclass
 from datetime import datetime
+from typing import Any, Dict, Mapping, Optional
 
 from src.agents.orchestrator import AgentContext
 from src.infrastructure.database.models.book_score import BookScore as BookScoreModel
+from src.services.book_score_models import BookScore, BookScoreRepository  # noqa: F401
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class BookScore:
-    overall_score: float
-    structure_score: float
-    coherency_score: float
-    factual_grounding_score: float
-    visual_textual_synergy_score: float
-    reader_experience_score: float
-    specialist_breakdown: Optional[Dict[str, Any]] = None
-
-    def lowest_dimension(self) -> str:
-        """Return the lowest scoring dimension."""
-        dims = {
-            "structure_score": self.structure_score,
-            "coherency_score": self.coherency_score,
-            "factual_grounding_score": self.factual_grounding_score,
-            "visual_textual_synergy_score": self.visual_textual_synergy_score,
-            "reader_experience_score": self.reader_experience_score,
-        }
-        return min(dims, key=dims.get)
-
-
-class BookScoreRepository(Protocol):
-    """BookScore リポジトリのプロトコル"""
-
-    async def save(self, score: BookScoreModel) -> None:
-        ...
-
-    async def get_latest(self, book_id: int, chapter_number: int) -> Optional[BookScoreModel]:
-        ...
 
 
 class BookScoreCalculator:
@@ -379,7 +347,7 @@ class BookScoreCalculator:
         self, book_id: int, chapter_number: int, ctx: Optional[AgentContext]
     ) -> float:
         """構造スコア (0-25点スケールを0-100に正規化)
-        
+
         評価項目:
         1. プロット因果整合性 (0-35点): 論理監査結果から
         2. 章構成バランス (0-35点): アーク境界と実話数の整合
@@ -387,7 +355,7 @@ class BookScoreCalculator:
         """
         if not self._repository or not hasattr(self._repository, 'session'):
             return 50.0  # デフォルト値
-        
+
         try:
             # 1. プロット因果整合性 (監査レポートから)
             audit_report = await self._fetch_audit_report(book_id, chapter_number)
@@ -395,12 +363,12 @@ class BookScoreCalculator:
             if audit_report:
                 # 論理整合性・因果律監査の結果を確認
                 logical_passed = any(
-                    getattr(a, 'category', '') == 'logical_consistency' and 
-                    getattr(a, 'severity', '') != 'high' 
+                    getattr(a, 'category', '') == 'logical_consistency' and
+                    getattr(a, 'severity', '') != 'high'
                     for a in audit_report
                 )
                 causal_passed = any(
-                    getattr(a, 'category', '') == 'causal_integrity' and 
+                    getattr(a, 'category', '') == 'causal_integrity' and
                     getattr(a, 'severity', '') != 'high'
                     for a in audit_report
                 )
@@ -410,7 +378,7 @@ class BookScoreCalculator:
                     causal_score = 75.0
                 else:
                     causal_score = 40.0
-            
+
             # 2. 章構成バランス (アーク境界チェック)
             plot = await self._fetch_plot(book_id, chapter_number)
             arc_score = 70.0
@@ -425,7 +393,7 @@ class BookScoreCalculator:
                         arc_score = 80.0
                     else:
                         arc_score = 60.0
-            
+
             # 3. テンポ・ペーシング (ストレス曲線)
             chapter = await self._fetch_chapter(book_id, chapter_number)
             pacing_score = 70.0
@@ -438,7 +406,7 @@ class BookScoreCalculator:
                     pacing_score = 75.0
                 else:
                     pacing_score = 50.0
-            
+
             # 重み付け合計 (0-100スケール)
             total = (
                 causal_score * 0.35 +
@@ -446,7 +414,7 @@ class BookScoreCalculator:
                 pacing_score * 0.30
             )
             return round(min(100.0, max(0.0, total)), 2)
-            
+
         except Exception as e:
             logger.debug(f"Structure scoring failed: {e}")
             return 50.0
@@ -455,7 +423,7 @@ class BookScoreCalculator:
         self, book_id: int, chapter_number: int, ctx: Optional[AgentContext]
     ) -> float:
         """一貫性スコア (0-25点スケールを0-100に正規化)
-        
+
         評価項目:
         1. キャラクター口調一貫性 (0-30点): 監査レポートの口調チェック
         2. 世界観ルール遵守 (0-30点): 能力整合性監査結果
@@ -464,7 +432,7 @@ class BookScoreCalculator:
         """
         if not self._repository or not hasattr(self._repository, 'session'):
             return 50.0
-        
+
         try:
             # 1. キャラクター口調一貫性 (監査レポートから)
             audit_report = await self._fetch_audit_report(book_id, chapter_number)
@@ -472,7 +440,7 @@ class BookScoreCalculator:
             if audit_report:
                 # 口調関連の監査問題をチェック
                 speech_issues = [
-                    a for a in audit_report 
+                    a for a in audit_report
                     if 'speech' in getattr(a, 'category', '').lower() or
                        'dialogue' in getattr(a, 'category', '').lower() or
                        '口調' in getattr(a, 'description', '')
@@ -483,12 +451,12 @@ class BookScoreCalculator:
                     speech_score = 75.0
                 else:
                     speech_score = 50.0
-            
+
             # 2. 世界観ルール遵守 (能力整合性監査)
             world_rule_score = 70.0
             if audit_report:
                 ability_issues = [
-                    a for a in audit_report 
+                    a for a in audit_report
                     if 'ability' in getattr(a, 'category', '').lower() or
                        '能力' in getattr(a, 'description', '')
                 ]
@@ -498,12 +466,12 @@ class BookScoreCalculator:
                     world_rule_score = 75.0
                 else:
                     world_rule_score = 50.0
-            
+
             # 3. タイムライン一貫性 (因果律監査)
             timeline_score = 70.0
             if audit_report:
                 causal_issues = [
-                    a for a in audit_report 
+                    a for a in audit_report
                     if 'causal' in getattr(a, 'category', '').lower() or
                        '因果' in getattr(a, 'description', '')
                 ]
@@ -513,7 +481,7 @@ class BookScoreCalculator:
                     timeline_score = 75.0
                 else:
                     timeline_score = 50.0
-            
+
             # 4. 固有名詞表記統一 (テキスト統計から簡易チェック)
             chapter = await self._fetch_chapter(book_id, chapter_number)
             naming_score = 70.0
@@ -539,7 +507,7 @@ class BookScoreCalculator:
                             naming_score = 65.0
                         else:
                             naming_score = 50.0
-            
+
             # 重み付け合計 (0-100スケール)
             total = (
                 speech_score * 0.30 +
@@ -548,7 +516,7 @@ class BookScoreCalculator:
                 naming_score * 0.20
             )
             return round(min(100.0, max(0.0, total)), 2)
-            
+
         except Exception as e:
             logger.debug(f"Coherency scoring failed: {e}")
             return 50.0
@@ -557,7 +525,7 @@ class BookScoreCalculator:
         self, book_id: int, chapter_number: int, ctx: Optional[AgentContext]
     ) -> float:
         """事実正確性スコア (0-20点スケールを0-100に正規化)
-        
+
         評価項目:
         1. GraphRAG参照情報との整合性 (0-40点): RAG取得エンティティと本文の一致
         2. 歴史・文化的正確性 (0-35点): 時代考証チェック
@@ -565,7 +533,7 @@ class BookScoreCalculator:
         """
         if not self._repository or not hasattr(self._repository, 'session'):
             return 50.0
-        
+
         try:
             # 1. GraphRAG参照情報との整合性
             rag_score = 70.0
@@ -586,7 +554,7 @@ class BookScoreCalculator:
                                 if isinstance(v, str):
                                     import re
                                     keywords.update(re.findall(r'[一-龯ァ-ヴー]{2,}', v))
-                        
+
                         if keywords:
                             # 本文にキーワードが含まれているかチェック
                             found = sum(1 for k in keywords if k in text)
@@ -601,7 +569,7 @@ class BookScoreCalculator:
                                 rag_score = 50.0
                     except Exception:
                         pass
-            
+
             # 2. 歴史・文化的正確性 (HistoricalAccuracyChecker 連携簡易版)
             history_score = 70.0
             if bible and hasattr(bible, 'settings') and bible.settings:
@@ -621,7 +589,7 @@ class BookScoreCalculator:
                             history_score = 50.0
                 except Exception:
                     pass
-            
+
             # 3. 用語の適切性
             term_score = 70.0
             if chapter and hasattr(chapter, 'content') and chapter.content:
@@ -648,7 +616,7 @@ class BookScoreCalculator:
                                         term_score = 60.0
                     except Exception:
                         pass
-            
+
             # 重み付け合計 (0-100スケール)
             total = (
                 rag_score * 0.40 +
@@ -656,7 +624,7 @@ class BookScoreCalculator:
                 term_score * 0.25
             )
             return round(min(100.0, max(0.0, total)), 2)
-            
+
         except Exception as e:
             logger.debug(f"Factual scoring failed: {e}")
             return 50.0
@@ -676,7 +644,7 @@ class BookScoreCalculator:
         self, book_id: int, chapter_number: int, ctx: Optional[AgentContext]
     ) -> float:
         """ビジュアルテキスト相乗効果スコア (0-15点スケールを0-100に正規化)
-        
+
         評価項目:
         1. 情報量マッチ度 (0-40点): 挿絵プロンプトと本文のエンティティ一致
         2. 焦点一致 (0-35点): 本文強調要素とプロンプト強調要素の一致
@@ -684,26 +652,26 @@ class BookScoreCalculator:
         """
         if not self._repository or not hasattr(self._repository, 'session'):
             return 50.0
-        
+
         try:
             # 挿絵データ取得
             illustration = await self._fetch_illustration(book_id, chapter_number)
             chapter = await self._fetch_chapter(book_id, chapter_number)
-            
+
             if not illustration or not chapter or not hasattr(chapter, 'content') or not chapter.content:
                 return 50.0  # データ不足時はデフォルト
-            
+
             text = chapter.content
             prompt = getattr(illustration, 'prompt', '') or ''
-            
+
             if not prompt:
                 return 50.0
-            
+
             # 1. 情報量マッチ度: エンティティ抽出・比較
             import re
             text_entities = set(re.findall(r'[一-龯ァ-ヴー]{2,}', text))
             prompt_entities = set(re.findall(r'[一-龯ァ-ヴー]{2,}', prompt))
-            
+
             entity_score = 50.0
             if text_entities and prompt_entities:
                 intersection = text_entities & prompt_entities
@@ -717,7 +685,7 @@ class BookScoreCalculator:
                     entity_score = 65.0
                 else:
                     entity_score = 40.0
-            
+
             # 2. 焦点一致: 本文の強調表現 vs プロンプトの強調キーワード
             focus_score = 50.0
             # 本文で強調されている要素（感嘆符、大文字、繰り返し等）
@@ -728,14 +696,14 @@ class BookScoreCalculator:
             text_focus = set()
             for pattern in emphasis_patterns:
                 text_focus.update(re.findall(pattern, text))
-            
+
             # プロンプトの強調キーワード
             prompt_focus_keywords = [
                 'focus', 'emphasis', 'highlight', 'dramatic', 'intense',
                 '主役', '中心', 'クローズアップ', 'フォーカス', '強調'
             ]
             prompt_focus = set(kw for kw in prompt_focus_keywords if kw.lower() in prompt.lower())
-            
+
             if text_focus and prompt_focus:
                 # 簡易的な一致判定
                 focus_score = 85.0
@@ -743,29 +711,29 @@ class BookScoreCalculator:
                 focus_score = 65.0
             else:
                 focus_score = 50.0
-            
+
             # 3. 感情トーン整合性
             tone_score = 50.0
             # 本文の感情トーン推定（簡易版）
             positive_words = ['喜', '笑', '幸', '楽', '愛', '希望', '輝', '明']
             negative_words = ['悲', '泣', '苦', '痛', '憎', '絶望', '暗', '闇', '恐']
-            
+
             text_pos = sum(text.count(w) for w in positive_words)
             text_neg = sum(text.count(w) for w in negative_words)
-            
+
             prompt_pos = sum(prompt.lower().count(w.lower()) for w in ['bright', 'happy', 'joy', 'hope', 'warm', 'light'])
             prompt_neg = sum(prompt.lower().count(w.lower()) for w in ['dark', 'sad', 'gloom', 'fear', 'cold', 'shadow'])
-            
+
             text_tone = 'positive' if text_pos > text_neg else ('negative' if text_neg > text_pos else 'neutral')
             prompt_tone = 'positive' if prompt_pos > prompt_neg else ('negative' if prompt_neg > prompt_pos else 'neutral')
-            
+
             if text_tone == prompt_tone:
                 tone_score = 95.0
             elif text_tone == 'neutral' or prompt_tone == 'neutral':
                 tone_score = 70.0
             else:
                 tone_score = 40.0
-            
+
             # 重み付け合計 (0-100スケール)
             total = (
                 entity_score * 0.40 +
@@ -773,7 +741,7 @@ class BookScoreCalculator:
                 tone_score * 0.25
             )
             return round(min(100.0, max(0.0, total)), 2)
-            
+
         except Exception as e:
             logger.debug(f"Visual-textual scoring failed: {e}")
             return 50.0
@@ -782,7 +750,7 @@ class BookScoreCalculator:
         self, book_id: int, chapter_number: int, ctx: Optional[AgentContext]
     ) -> float:
         """読者体験スコア (0-15点スケールを0-100に正規化)
-        
+
         評価項目:
         1. 冒頭フック強度 (0-40点): 最初の200文字の「謎/違和感/危機」キーワード密度
         2. 末尾の引き・クリフハンガー (0-35点): 最後の200文字の未解決・示唆キーワード
@@ -790,15 +758,15 @@ class BookScoreCalculator:
         """
         if not self._repository or not hasattr(self._repository, 'session'):
             return 50.0
-        
+
         try:
             chapter = await self._fetch_chapter(book_id, chapter_number)
             if not chapter or not hasattr(chapter, 'content') or not chapter.content:
                 return 50.0
-            
+
             text = chapter.content
             text_len = len(text)
-            
+
             # 1. 冒頭フック強度 (最初の200文字)
             hook_score = 50.0
             if text_len >= 50:
@@ -818,7 +786,7 @@ class BookScoreCalculator:
                     hook_score = 65.0
                 else:
                     hook_score = 40.0
-            
+
             # 2. 末尾の引き・クリフハンガー (最後の200文字)
             cliffhanger_score = 50.0
             if text_len >= 50:
@@ -838,7 +806,7 @@ class BookScoreCalculator:
                     cliffhanger_score = 65.0
                 else:
                     cliffhanger_score = 40.0
-            
+
             # 3. 感情曲線適切性 (WavePatternAnalyzer 簡易版)
             emotion_score = 50.0
             if hasattr(chapter, 'tension') and chapter.tension is not None:
@@ -861,7 +829,7 @@ class BookScoreCalculator:
                     # 文長の変化で感情の起伏を推定
                     lengths = [len(s) for s in sentences]
                     avg_len = sum(lengths) / len(lengths)
-                    var_len = sum((l - avg_len) ** 2 for l in lengths) / len(lengths)
+                    var_len = sum((length - avg_len) ** 2 for length in lengths) / len(lengths)
                     cv = (var_len ** 0.5) / max(1, avg_len)  # 変動係数
                     if 0.3 <= cv <= 0.8:
                         emotion_score = 80.0
@@ -869,7 +837,7 @@ class BookScoreCalculator:
                         emotion_score = 65.0
                     else:
                         emotion_score = 50.0
-            
+
             # 重み付け合計 (0-100スケール)
             total = (
                 hook_score * 0.40 +
@@ -877,7 +845,7 @@ class BookScoreCalculator:
                 emotion_score * 0.25
             )
             return round(min(100.0, max(0.0, total)), 2)
-            
+
         except Exception as e:
             logger.debug(f"Reader experience scoring failed: {e}")
             return 50.0
@@ -904,13 +872,13 @@ class BookScoreCalculator:
         # 線形回帰（最小二乗法）
         x_mean = sum(x_vals) / n
         y_mean = sum(y_vals) / n
-        
+
         numerator = sum((x - x_mean) * (y - y_mean) for x, y in zip(x_vals, y_vals))
         denominator = sum((x - x_mean) ** 2 for x in x_vals)
-        
+
         slope = numerator / denominator if denominator != 0 else 0
         intercept = y_mean - slope * x_mean
-        
+
         # 決定係数 R^2
         y_pred = [intercept + slope * x for x in x_vals]
         ss_res = sum((y - yp) ** 2 for y, yp in zip(y_vals, y_pred))
@@ -939,7 +907,7 @@ class BookScoreCalculator:
 
         # トレンド判定
         trend_direction = "improving" if slope > 1 else ("declining" if slope < -1 else "stable")
-        
+
         return {
             "book_id": book_id,
             "chapters_evaluated": n,
@@ -957,7 +925,7 @@ class BookScoreCalculator:
     async def generate_pdca_report(self, book_id: int) -> dict[str, Any]:
         """PDCA レポートを生成する（Plan-Do-Check-Act）"""
         trend = await self.analyze_trend(book_id)
-        
+
         if "error" in trend:
             return {"error": trend["error"], "book_id": book_id}
 

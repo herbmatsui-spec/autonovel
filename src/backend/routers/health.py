@@ -2,7 +2,7 @@ import asyncio
 import logging
 from datetime import UTC, datetime
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Response, status
 from pydantic import BaseModel
 
 from config import get_config
@@ -38,6 +38,57 @@ class HealthResponse(BaseModel):
     checks: dict[str, CheckResponse]
 
 
+class LivenessResponse(BaseModel):
+    status: str = "alive"
+    timestamp: str
+
+
+@router.get("/health/liveness", response_model=LivenessResponse)
+async def health_liveness():
+    """Liveness Probe: プロセスが生きているか即座に応答（外部依存なし）"""
+    return LivenessResponse(
+        status="alive",
+        timestamp=datetime.now(UTC).isoformat(),
+    )
+
+
+class ReadinessResponse(BaseModel):
+    status: str  # "ready" or "not_ready"
+    dependencies: dict[str, str]
+    timestamp: str
+
+
+@router.get("/health/readiness", response_model=ReadinessResponse)
+async def health_readiness(response: Response):
+    """Readiness Probe: DBなどの主要外部依存が準備完了しているか検証"""
+    cfg = get_config()
+    db_manager = AppContainer.db()
+
+    # 主要なDBとRedisの疎通を確認
+    db_res = await check_database(db_manager)
+    redis_res = await check_redis(cfg.redis_url)
+
+    deps = {
+        "database": db_res.status.value,
+        "redis": redis_res.status.value,
+    }
+
+    # DBがエラーの場合はトラフィックを送らせないため 503 Service Unavailable を設定
+    if db_res.status == HealthStatus.ERROR:
+        response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+        return ReadinessResponse(
+            status="not_ready",
+            dependencies=deps,
+            timestamp=datetime.now(UTC).isoformat(),
+        )
+
+    return ReadinessResponse(
+        status="ready",
+        dependencies=deps,
+        timestamp=datetime.now(UTC).isoformat(),
+    )
+
+
 def determine_overall_status(checks: dict[str, HealthCheckResult]) -> HealthStatus:
     """個別チェック結果から総合ステータスを決定"""
     statuses = [c.status for c in checks.values()]
@@ -49,7 +100,7 @@ def determine_overall_status(checks: dict[str, HealthCheckResult]) -> HealthStat
     return HealthStatus.OK
 
 
-@router.get("/health", response_model=HealthResponse)
+@router.get("/health/detail", response_model=HealthResponse)
 async def health_check():
     """拡張ヘルスチェック: DB, Redis, ChromaDB, LLM Gateway, Worker を並列チェック"""
     cfg = get_config()

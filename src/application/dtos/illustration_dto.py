@@ -1,8 +1,7 @@
 """Illustration DTOs."""
 
 from __future__ import annotations
-from dataclasses import dataclass
-from typing import Optional, List, Dict, Any
+from typing import Optional, List
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field

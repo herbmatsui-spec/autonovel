@@ -27,7 +27,7 @@ class DummyAuditor(SpecialistAuditor):
     specialist_name = "dummy"
 
     async def audit(self, ctx: dict) -> SpecialistAuditResult:
-        score, critique, suggestions = await self._judge_with_llm("プロンプト")
+        score, critique, suggestions, *_ = await self._judge_with_llm("プロンプト")
         return SpecialistAuditResult(
             specialist_name=self.specialist_name,
             score=score,
@@ -38,7 +38,11 @@ class DummyAuditor(SpecialistAuditor):
 
 @pytest.mark.asyncio
 async def test_judge_with_llm_json_parsing():
-    """Step 63: 構造化JSON出力からのスコア・講評・改善案パース検証."""
+    """Step 63: 構造化JSON出力からのスコア・講評・改善案パース検証.
+
+    _judge_with_llm は 7 要素タプル (score, critique, suggestions, confidence,
+    reasoning, raw, actionable_diffs) を返すため、先頭3要素のみ取り出す。
+    """
     mock_llm = _make_llm_mock("""
 ```json
 {
@@ -49,7 +53,7 @@ async def test_judge_with_llm_json_parsing():
 ```
 """)
     auditor = DummyAuditor(llm=mock_llm)
-    score, critique, suggestions = await auditor._judge_with_llm("テキストを評価せよ")
+    score, critique, suggestions, *_ = await auditor._judge_with_llm("テキストを評価せよ")
 
     assert score == 88.5
     assert "伏線" in critique
@@ -63,7 +67,7 @@ async def test_judge_with_llm_regex_fallback():
     mock_llm = _make_llm_mock("評価スコア: 72.0点。全体の構成は良好だが、後半の展開がやや急ぎ足。")
 
     auditor = DummyAuditor(llm=mock_llm)
-    score, critique, suggestions = await auditor._judge_with_llm("テキストを評価せよ")
+    score, critique, suggestions, *_ = await auditor._judge_with_llm("テキストを評価せよ")
 
     assert score == 72.0
     assert "展開がやや急ぎ足" in critique

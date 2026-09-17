@@ -4,7 +4,7 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 from dataclasses import dataclass
 
 from src.backend.planning_service import PlanningService
@@ -87,7 +87,7 @@ async def test_planning_service_3gacha_comparison(
         Arc(start_ep=4, end_ep=7, title="展開", summary=""),
         Arc(start_ep=8, end_ep=10, title="クライマックス", summary=""),
     ]
-    
+
     proposal_b = [  # アーク数多すぎ（5アーク）
         Arc(start_ep=1, end_ep=2, title="導入1", summary=""),
         Arc(start_ep=3, end_ep=4, title="導入2", summary=""),
@@ -95,20 +95,20 @@ async def test_planning_service_3gacha_comparison(
         Arc(start_ep=7, end_ep=8, title="転換", summary=""),
         Arc(start_ep=9, end_ep=10, title="クライマックス", summary=""),
     ]
-    
+
     proposal_c = [  # アーク数少なすぎ（1アーク）、クライマックス位置不適切
         Arc(start_ep=1, end_ep=10, title="全編通し", summary=""),
     ]
 
     proposals = [proposal_a, proposal_b, proposal_c]
-    
+
     results = await service.predict_book_score_for_proposals(
         proposals, genre="literary", target_eps=10
     )
 
     # 3案分の結果が返る
     assert len(results) == 3
-    
+
     # 全案に必要なキーが含まれる
     for r in results:
         assert "proposal_index" in r
@@ -116,17 +116,17 @@ async def test_planning_service_3gacha_comparison(
         assert "overall_score" in r
         assert "rank" in r
         assert "recommended" in r
-    
+
     # ランク順でソート済み（降順）
     scores = [r["overall_score"] for r in results]
     assert scores == sorted(scores, reverse=True)
-    
+
     # 1位のみ recommended=True
     recommended_count = sum(1 for r in results if r["recommended"])
     assert recommended_count == 1
     assert results[0]["recommended"] is True
     assert results[0]["rank"] == 1
-    
+
     # 結果の妥当性確認（スコアが降順でソートされていること）
     # 実際のスコアリングロジックに基づき、最高スコア案が推奨される
     assert results[0]["overall_score"] >= results[1]["overall_score"]
@@ -154,7 +154,7 @@ async def test_planning_service_single_proposal(
     ]
 
     result = await service.predict_book_score_from_outline(arcs, genre="literary", target_eps=10)
-    
+
     assert "overall_score" in result
     assert "structure_score" in result
     assert "reader_experience_score" in result
@@ -177,7 +177,7 @@ async def test_planning_service_empty_arcs(
     )
 
     result = await service.predict_book_score_from_outline([], genre="literary", target_eps=10)
-    
+
     # 構造スコアが低い（30点）ため、全体も低い
     assert result["structure_score"] == 30.0
     assert result["overall_score"] < 50.0
@@ -199,7 +199,7 @@ async def test_planning_service_no_calculator(
 
     arcs = [Arc(start_ep=1, end_ep=10, title="単一アーク", summary="")]
     result = await service.predict_book_score_from_outline(arcs, genre="literary", target_eps=10)
-    
+
     assert result["overall_score"] == 0.0
     assert result["structure_score"] == 0.0
     assert result["reader_experience_score"] == 0.0

@@ -8,7 +8,7 @@ from pydantic import BaseModel
 
 from src.agents.skill_base import SkillAgent
 from src.agents.orchestrator import AgentContext, AgentResult, AgentName
-from src.services.compression.models import ProtectedContext
+from src.services.compression.models import ProtectedContext, SceneFlowHistory
 
 
 class ContextBuilderInput(BaseModel):
@@ -101,13 +101,36 @@ class ContextBuilderAgent(SkillAgent):
         self.social_manager = social_manager
         self.age_client = age_client
 
+    async def build_context(
+        self,
+        book_id: str,
+        episode_number: int,
+        bible_data: dict,
+        characters: list,
+        prev_summary: str,
+    ) -> dict:
+        """Build writing context from bible data, characters, and previous summary."""
+        # Create a context dictionary that includes all the provided data
+        context = {
+            "book_id": book_id,
+            "episode_number": episode_number,
+            "bible_data": bible_data,
+            "characters": characters,
+            "prev_summary": prev_summary,
+            # Additional fields that might be useful
+            "world_name": bible_data.get("world_name", ""),
+            "rules": bible_data.get("rules", []),
+            "character_names": [char.get("name", "") for char in characters if isinstance(char, dict)],
+        }
+        return context
+
     async def execute(self, ctx: AgentContext) -> AgentResult:
         """スキル実行エントリーポイント。"""
         self.emit_event("context_builder.started", {
             "book_id": ctx.book_id,
             "ep_num": ctx.ep_num,
         })
-        
+
         repo = ctx.artifacts.get("repo")
         if repo is None:
             self.emit_event("context_builder.error", {
@@ -154,7 +177,7 @@ class ContextBuilderAgent(SkillAgent):
             "book_id": book_id,
             "ep_num": ep_num,
         })
-        
+
         res_artifacts = dict(ctx.artifacts)
         res_artifacts["writing_context"] = full_context
         return AgentResult(
@@ -210,7 +233,7 @@ class ContextBuilderAgent(SkillAgent):
         prev_chapter = await self._get_prev_chapter(repo, book_id, branch_id, ep_num)
 
         active_chars = await self._get_active_chars(chars, plot)
-        
+
         # Step 53: ソーシャル関係性・直近ジャーナルの動的コンテキスト取得
         social_ctx = await self._get_social_dynamic_context(
             session=session,
@@ -233,13 +256,13 @@ class ContextBuilderAgent(SkillAgent):
             char_dynamic_ctx = self._build_char_dynamic_ctx(
                 active_chars, prev_chapter, social_context=social_ctx
             )
-        
+
         # 再生成フォーカスに応じて前話文脈を強化
         if regeneration_focus and "structure" in regeneration_focus:
             prev_ctx = self._build_prev_ctx(prev_chapter, book_id, branch_id, ep_num, include_arc_info=True)
         else:
             prev_ctx = self._build_prev_ctx(prev_chapter, book_id, branch_id, ep_num)
-        
+
         dialogue_profiles = self._build_dialogue_profiles(active_chars)
 
         plot_dict = {}
@@ -327,7 +350,7 @@ class ContextBuilderAgent(SkillAgent):
             raw_corpus = f"{prev_ctx}\n{char_static_ctx}\n{plot_dict.get('summary', '')}"
             s_type = "general"
             scene_weights = None
-            
+
             # Try to get multi-label detection from compressor or its layer4
             detector = None
             if hasattr(compressor, "detect_scene_type_multi") and callable(compressor.detect_scene_type_multi):
@@ -338,7 +361,7 @@ class ContextBuilderAgent(SkillAgent):
                 detector = compressor.detect_scene_type
             elif hasattr(getattr(compressor, "layer4", None), "detect_scene_type"):
                 detector = compressor.layer4.detect_scene_type
-            
+
             if detector:
                 multi = detector(plot_dict.get("summary", ""), plot_dict.get("scenes", []))
                 if multi:
@@ -348,40 +371,50 @@ class ContextBuilderAgent(SkillAgent):
                     else:
                         s_type = multi
 
-            # Build ProtectedContext for guaranteed retention of active characters & foreshadowings (Step 61)
-            active_char_names = [getattr(c, "name", str(c)) for c in (active_chars or []) if c]
-            foreshadowing_ids = [
-                str(fs.get("id")) for fs in plot_dict.get("foreshadowings", [])
-                if isinstance(fs, dict) and fs.get("id")
-            ]
-            protected_ctx = ProtectedContext(
-                active_characters=active_char_names,
-                pending_foreshadowing_ids=foreshadowing_ids,
-            )
+# Build ProtectedContext for guaranteed retention of active characters & foreshadowings (Step 61)
+        active_char_names = [getattr(c, "name", str(c)) for c in (active_chars or []) if c]
+        foreshadowing_ids = [
+            str(fs.get("id")) for fs in plot_dict.get("foreshadowings", [])
+            if isinstance(fs, dict) and fs.get("id")
+        ]
+        protected_ctx = ProtectedContext(
+            active_characters=active_char_names,
+            pending_foreshadowing_ids=foreshadowing_ids,
+        )
 
-            try:
-                import inspect
-                c_res = compressor.compress(
-                    raw_corpus,
-                    session=session,
-                    book_id=book_id,
-                    ep_num=ep_num,
-                    scene_type=s_type,
-                    scene_weights=scene_weights,
-                    protected_context=protected_ctx,
-                )
-                if inspect.iscoroutine(c_res):
-                    c_res = await c_res
-                if c_res and hasattr(c_res, "final_context_text"):
-                    compressed_context = c_res.final_context_text
-                    compression_stats = {
-                        "reduction_ratio": getattr(c_res, "overall_reduction_ratio", 0.0),
-                        "final_tokens": getattr(c_res, "final_token_count", 0),
-                        "from_cache": getattr(c_res, "from_cache", False),
-                        "scene_type": getattr(c_res, "layer4", None).scene_type if getattr(c_res, "layer4", None) else s_type,
-                        "scene_weights": scene_weights,
-                    }
-            except Exception as e:
+        # Build SceneFlowHistory for context-aware compression (Step 14)
+        # Extract recent scene types from plot history or use defaults
+        recent_scene_types = []  # In a full implementation, this would come from previous episodes
+        episode_goal = plot_dict.get("summary", "") or plot_dict.get("title", "") or f"Episode {ep_num}"
+        scene_flow = SceneFlowHistory(
+            recent_scene_types=recent_scene_types,
+            episode_goal=episode_goal,
+        )
+
+        try:
+            import inspect
+            c_res = compressor.compress(
+                raw_corpus,
+                session=session,
+                book_id=book_id,
+                ep_num=ep_num,
+                scene_type=s_type,
+                scene_weights=scene_weights,
+                protected_context=protected_ctx,
+                scene_flow=scene_flow,
+)
+            if inspect.iscoroutine(c_res):
+                c_res = await c_res
+            if c_res and hasattr(c_res, "final_context_text"):
+                compressed_context = c_res.final_context_text
+                compression_stats = {
+                    "reduction_ratio": getattr(c_res, "overall_reduction_ratio", 0.0),
+                    "final_tokens": getattr(c_res, "final_token_count", 0),
+                    "from_cache": getattr(c_res, "from_cache", False),
+                    "scene_type": getattr(c_res, "layer4", None).scene_type if getattr(c_res, "layer4", None) else s_type,
+                    "scene_weights": scene_weights,
+                }
+        except Exception as e:
                 import logging
                 logging.getLogger(__name__).warning(f"Context compression failed: {e}")
 
@@ -398,7 +431,41 @@ class ContextBuilderAgent(SkillAgent):
             "rag_context": rag_context,
             "compressed_context": compressed_context,
             "compression_stats": compression_stats,
+            "foreshadowing_ctx": self.format_unresolved_foreshadowings(
+                plot_dict.get("foreshadowings", [])
+            ),
         }
+
+    @staticmethod
+    def format_unresolved_foreshadowings(foreshadowings: list) -> str:
+        """未回収伏線一覧をプロンプト注入用テキストにフォーマットする。
+
+        Args:
+            foreshadowings: ForeshadowingModel or dict のリスト
+
+        Returns:
+            プロンプトに挿入可能な日本語テキスト
+        """
+        if not foreshadowings:
+            return "なし"
+        lines = []
+        for f in foreshadowings:
+            if isinstance(f, dict):
+                title = f.get("title", "不明")
+                planted = f.get("planted_episode", "?")
+                desc = f.get("description", "")
+                target = f.get("target_episode")
+            else:
+                title = getattr(f, "title", "不明")
+                planted = getattr(f, "planted_episode", "?")
+                desc = getattr(f, "description", "")
+                target = getattr(f, "target_episode", None)
+            line = f"- 【伏線: {title}】(設置: 第{planted}話"
+            if target:
+                line += f", 回収目標: 第{target}話"
+            line += f") {desc}"
+            lines.append(line)
+        return "\n".join(lines)
 
     # デリゲートメソッド群（repo を直接受け取るように変更）
     async def _get_plot(self, repo: Any, book_id: int, branch_id: int, ep_num: int) -> Any | None:
@@ -600,28 +667,21 @@ class ContextBuilderAgent(SkillAgent):
                 except Exception as e:
                     logger.debug("Failed to retrieve social summaries from repository: %s", e)
 
-            # 2. フォールバック: AGE からの直前話ジャーナル取得試行 (未取得時)
-            if not any("内面手記" in p for p in parts) and age_client and session and ep_num > 1:
+            # 2. 直前話の確定事実ダイジェスト取得 (v5.0 Relational Memory)
+            if ep_num > 1 and session:
                 try:
+                    from src.backend.database.models_digest import EpisodeDigestModel
+                    from sqlalchemy import select
                     prev_ep = ep_num - 1
-                    cypher = (
-                        f"MATCH (j:journal_entry) "
-                        f"WHERE j.book_id = {book_id} AND j.ep_num = {prev_ep} "
-                        f"RETURN j.character_name as name, j.emotion as emotion, j.theme as theme, j.content as content "
-                        f"LIMIT 5"
+                    stmt = select(EpisodeDigestModel).where(
+                        EpisodeDigestModel.book_id == book_id,
+                        EpisodeDigestModel.episode_num == prev_ep,
                     )
-                    res = age_client.execute_cypher(session, cypher)
-                    if res and getattr(res, "records", None):
-                        j_lines = []
-                        for r in res.records:
-                            c_name = r.get("name", "登場人物")
-                            emo = r.get("emotion", "")
-                            cnt = r.get("content", "")
-                            j_lines.append(f"- {c_name}（感情: {emo}）: 「{cnt[:120]}」")
-                        if j_lines:
-                            parts.append("【直前話の登場人物内面手記・独白 (Apache AGE)】\n" + "\n".join(j_lines))
+                    res = session.execute(stmt).scalars().first()
+                    if res and res.digest_text:
+                        parts.append(f"【直前話(第{prev_ep}話)の確定事実ダイジェスト】\n- {res.digest_text}")
                 except Exception as e:
-                    logger.debug("Failed to retrieve journals from AGE: %s", e)
+                    logger.debug("Failed to retrieve digest for prev episode: %s", e)
 
             # 3. フォールバック: SocialInteractionManager からの関係性メトリクス取得 (未取得時)
             if not any("動的関係性" in p or "動的心理関係性" in p for p in parts) and social_manager:

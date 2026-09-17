@@ -17,7 +17,7 @@ from src.models.api_schemas import (
     ProduceNovelRequest,
     ProduceNovelResponse,
 )
-from src.legacy.novel_producer import NovelProducer
+from src.services.novel_producer import NovelProducer
 from src.services.report_generator import ReportGenerator
 
 router = APIRouter(prefix="/api/novel", tags=["novel"])

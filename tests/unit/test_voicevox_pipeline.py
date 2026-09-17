@@ -1,4 +1,3 @@
-import asyncio
 import pytest
 from src.services.audio.base import AudioSynthesisRequest
 from src.services.audio.dialogue_extractor import DialogueExtractor, split_long_sentence

@@ -4,10 +4,6 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from src.infrastructure.database.models.base_orm import Base
 from src.backend.database.models import (
     Book,
-    CharacterRelationship,
-    CharacterJournal,
-    CharacterComment,
-    RelationshipHistory,
 )
 from src.backend.database.social_repository import SocialRepository
 from src.agents.social.models import RelationshipMetrics, JournalEntry, SocialComment

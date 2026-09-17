@@ -17,7 +17,7 @@ class MarketingCopySkill(SkillAgent):
             "book_id": ctx.book_id,
             "title": ctx.artifacts.get("title", ""),
         })
-        
+
         title = ctx.artifacts.get("title", "")
         synopsis = ctx.artifacts.get("synopsis", "")
         genre = ctx.artifacts.get("genre", "ファンタジー")
@@ -56,7 +56,7 @@ class MarketingCopySkill(SkillAgent):
             "book_id": ctx.book_id,
             "copies_generated": list(copies.keys()),
         })
-        
+
         return AgentResult(
             next_agent=None,
             artifacts={"marketing_copies": copies},

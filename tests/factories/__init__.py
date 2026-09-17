@@ -1,5 +1,5 @@
 """テストデータファクトリ.
- 
+
 このモジュールは、統合テストで使用するテストデータを生成するための
 ファクトリ関数を提供します。
 """
@@ -30,10 +30,10 @@ def random_name() -> str:
 
 def user_factory(**kwargs) -> Dict[str, Any]:
     """ユーザーオブジェクトのファクトリ.
-    
+
     Args:
         **kwargs: 上書きするフィールド
-        
+
     Returns:
         ユーザーデータの辞書
     """
@@ -52,10 +52,10 @@ def user_factory(**kwargs) -> Dict[str, Any]:
 
 def book_factory(**kwargs) -> Dict[str, Any]:
     """書籍オブジェクトのファクトリ.
-    
+
     Args:
         **kwargs: 上書きするフィールド
-        
+
     Returns:
         書籍データの辞書
     """
@@ -77,16 +77,16 @@ def book_factory(**kwargs) -> Dict[str, Any]:
 
 def chapter_factory(**kwargs) -> Dict[str, Any]:
     """章オブジェクトのファクトリ.
-    
+
     Args:
         **kwargs: 上書きするフィールド
-        
+
     Returns:
         章データの辞書
     """
     # チャプタ番号を決定（指定されていればそれを使い、なければランダム）
     chapter_number = kwargs.get("chapter_number", random.randint(1, 50))
-    
+
     defaults = {
         "id": random.randint(1, 10000),
         "book_id": kwargs.get("book_id", random.randint(1, 1000)),
@@ -103,10 +103,10 @@ def chapter_factory(**kwargs) -> Dict[str, Any]:
 
 def character_factory(**kwargs) -> Dict[str, Any]:
     """キャラクター情報のファクトリ.
-    
+
     Args:
         **kwargs: 上書きするフィールド
-        
+
     Returns:
         キャラクターデータの辞書
     """

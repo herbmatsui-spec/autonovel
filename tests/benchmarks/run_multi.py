@@ -2,10 +2,9 @@
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
-from tests.benchmarks.run_single import benchmark_single_episode, benchmark_episode_data
-from tests.benchmarks.fixtures import LongNovelData, EpisodeData
+from tests.benchmarks.run_single import benchmark_single_episode
+from tests.benchmarks.fixtures import LongNovelData
 from tests.benchmarks.utils import percentile, mean
-from src.services.compression.models import SceneType
 
 
 def benchmark_episodes(
@@ -48,7 +47,7 @@ def benchmark_novel(
     """Run benchmark on a full novel at specified episode checkpoints."""
     if ep_counts is None:
         ep_counts = [10, 50, 100, 200]
-    
+
     # Filter to requested episode counts
     max_ep = max(ep_counts)
     episodes_to_run = novel.episodes[:max_ep]

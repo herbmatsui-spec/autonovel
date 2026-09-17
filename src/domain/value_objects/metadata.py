@@ -8,7 +8,7 @@ from enum import Enum
 
 from src.domain.value_objects.ids import NovelId, UserId
 from src.domain.value_objects.text import Title, Genre, Catchcopy, Summary
-from src.domain.value_objects.scores import BookScore, QolScore, CostScore
+from src.domain.value_objects.scores import CostScore
 
 
 class NovelStatus(Enum):

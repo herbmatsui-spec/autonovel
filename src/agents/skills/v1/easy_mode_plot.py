@@ -30,7 +30,7 @@ class EasyModePlotSkill(SkillAgent):
         try:
             book_id = ctx.artifacts.get("book_id")
             target_eps = ctx.artifacts.get("target_eps", 10)
-            genre = ctx.artifacts.get("genre", "fantasy")
+            ctx.artifacts.get("genre", "fantasy")
             bible = ctx.artifacts.get("bible")
 
             if not book_id:
@@ -45,7 +45,7 @@ class EasyModePlotSkill(SkillAgent):
             plot_agent = PlotAgent(repo=self.repo, pm=self.pm, generate_json=self.llm.generate_json if self.llm else None)
 
             arcs = getattr(bible, "arcs", []) if bible else []
-            
+
             results = await plot_agent.expand_plots(
                 book_id=book_id,
                 target_ep_list=list(range(1, target_eps + 1)),

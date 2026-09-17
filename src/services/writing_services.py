@@ -1,7 +1,31 @@
+"""
+src/services/writing_services.py — 状態バリデーション・執筆コンテキスト補助 (非推奨モジュール)
+
+.. deprecated:: 4.9.4
+    執筆パイプラインとサービスの中核は `src.backend.writing_service.WritingService` へ集約されています。
+    本モジュールは後方互換性のために維持されており、Phase 2 にて統合完了後に廃止される予定です。
+"""
+
 import json
 import logging
 import uuid
+import warnings
 from typing import TYPE_CHECKING, Any
+
+# 遅延警告: import時ではなくクラス初期化時に非推奨警告を発する
+_DEPRECATION_WARNING_ISSUED = False
+
+
+def _emit_deprecation_warning():
+    global _DEPRECATION_WARNING_ISSUED
+    if not _DEPRECATION_WARNING_ISSUED:
+        warnings.warn(
+            "src.services.writing_services は非推奨です。"
+            "src.backend.writing_service を使用してください。",
+            DeprecationWarning,
+            stacklevel=3,
+        )
+        _DEPRECATION_WARNING_ISSUED = True
 
 from pydantic import BaseModel
 
@@ -42,6 +66,13 @@ from src.models import WritingContext
 logger = logging.getLogger(__name__)
 
 
+import re
+
+def clean_writing_response(text: str) -> str:
+    """思考ログを除去して本文を整形する"""
+    text = re.sub(r"<thinking>.*?</thinking>", "", text, flags=re.DOTALL)
+    return text.strip()
+
 class WritingGenerationContext(BaseModel):
     sys_inst: str = ""
     fw_prompt: str = ""
@@ -77,6 +108,7 @@ class WritingGenerationContext(BaseModel):
 
 class GenerationLoopManager:
     def __init__(self, repo, llm, pm, critique, narrative, config):
+        _emit_deprecation_warning()
         self.repo = repo
         self.llm = llm
         self.pm = pm
@@ -517,7 +549,13 @@ class GenerationLoopManager:
         return ""
 
     def _calculate_ncs_score(self, ep_num: int, ctx: WritingContext) -> int:
-        from config import AUDIT_TRIGGER_KEYWORDS
+        try:
+            from config import AUDIT_TRIGGER_KEYWORDS
+        except ImportError:
+            try:
+                from src.config import AUDIT_TRIGGER_KEYWORDS
+            except ImportError:
+                AUDIT_TRIGGER_KEYWORDS = ["伏線", "裏切り", "死亡", "決戦", "覚醒"]
 
         summary_text = (
             (getattr(ctx.plot, "summary", "") or "")
@@ -538,11 +576,9 @@ class GenerationLoopManager:
                 f"🎬 第{ep_num}話: シーン・ビート・エクスパンダーを起動し、プロットを物理動作（Beat）に分解中...",
                 "info",
             )
-        # book_id is not readily available in this method, but build_beat_expansion_prompt (if it exists in PromptManager)
-        # was previously called without it. Looking at engine_prompts.py, most build_* methods now take book_id.
-        # However, _expand_scene_beats doesn't have book_id in its arguments.
-        # Let's check if we can get it from elsewhere or if we should pass None.
-        beat_prompt = await self.pm.build_beat_expansion_prompt(blueprint, book_id=None)
+        import inspect
+        res = self.pm.build_beat_expansion_prompt(blueprint, book_id=None)
+        beat_prompt = await res if inspect.isawaitable(res) else res
         beat_res = await self.llm.generate_json(
             ProjectContext.get_setting("model_writing"), beat_prompt, temp=0.7
         )
@@ -655,7 +691,8 @@ class GenerationLoopManager:
                 except (TypeError, ValueError):
                     pass
 
-        polish_prompt = await self.pm.build_polishing_prompt(
+        import inspect
+        res = self.pm.build_polishing_prompt(
             draft_content=draft_content,
             target_word_count=gen_ctx.target_word_count,
             style_key=gen_ctx.style_key,
@@ -664,6 +701,7 @@ class GenerationLoopManager:
             use_beat_rules=use_beat_rules,
             book_id=None,
         )
+        polish_prompt = await res if inspect.isawaitable(res) else res
 
         polish_sys_inst = (
             "あなたは優秀な「推敲エージェント」です。"
@@ -741,7 +779,13 @@ class GenerationLoopManager:
         should_heavy_audit: bool,
         monitor,
     ) -> tuple[bool, str, list[dict[str, Any]]]:
-        from config import AUDIT_TRIGGER_KEYWORDS
+        try:
+            from config import AUDIT_TRIGGER_KEYWORDS
+        except ImportError:
+            try:
+                from src.config import AUDIT_TRIGGER_KEYWORDS
+            except ImportError:
+                AUDIT_TRIGGER_KEYWORDS = ["伏線", "裏切り", "死亡", "決戦", "覚醒"]
 
         is_causal_ok = True
         causal_reason = ""

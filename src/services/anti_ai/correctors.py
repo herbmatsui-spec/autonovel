@@ -139,8 +139,8 @@ class SameStructureCorrector(BaseCorrector):
             # Replace the tail in the sentence text (preserving leading chars).
             old_end = tail_match.group(0)
             # Compute offsets within the full text
-            tail_start = v.start + (len(sentence) - len(old_end))
-            tail_end = v.start + len(sentence)
+            v.start + (len(sentence) - len(old_end))
+            v.start + len(sentence)
             new_sentence = sentence[: len(sentence) - len(old_end)] + new_end
             edits.append((v.start, v.end, new_sentence))
         return edits

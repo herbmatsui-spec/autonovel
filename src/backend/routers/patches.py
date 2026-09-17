@@ -5,18 +5,17 @@ from pydantic import BaseModel
 from sqlalchemy import select
 
 from config.project_context import GlobalConfig
-from src.backend.auth import require_api_key
+from src.backend.auth import get_current_user
+from src.backend.database.models import User
+from src.backend.security.owner_guard import verify_book_ownership
+from src.backend.database.uow import UnitOfWork
+from src.core.container import AppContainer
 from src.backend.database.models import PatchReview, PendingPatch, PromptVersion
 from src.backend.patch_validator import PatchValidator
 from src.backend.prompt_version_manager import PromptVersionManager
-from src.core.container import AppContainer
 from src.core.exceptions import NotFoundError, ValidationError
 
 # New imports for paragraph patching
-from src.services.prose.paragraph_indexer import ParagraphIndexer
-from src.agents.writing.paragraph_patch_agent import ParagraphPatchAgent
-from src.services.prose.patch_merger import PatchMerger
-from src.models.patch_pdca import ParagraphTarget, PatchRewriteResult
 
 router = APIRouter(prefix="/api", tags=["patches"])
 
@@ -45,20 +44,17 @@ class ParagraphPatchResponse(BaseModel):
     patched_paragraph: str
 
 
-@router.get("/patches/{book_id}/pending", dependencies=[Depends(require_api_key)])
-async def get_pending_patches(book_id: int):
-    from src.backend.database.uow import UnitOfWork
-
+@router.get("/patches/{book_id}/pending", dependencies=[Depends(get_current_user)])
+async def get_pending_patches(book_id: int, current_user: User = Depends(get_current_user)):
     async with UnitOfWork(AppContainer.db()) as uow:
-        if uow.session is None:
-            raise RuntimeError("Database session not initialized")
+        await verify_book_ownership(book_id, current_user, uow)
         patches = await uow.misc.get_pending_patches(book_id)
     return patches
 
 
-@router.post("/patches/{patch_id}/approve")
+@router.post("/patches/{patch_id}/approve", dependencies=[Depends(get_current_user)])
 async def approve_patch(
-    patch_id: int, req: Any | None = None, api_key: str = Depends(require_api_key)
+    patch_id: int, req: Any | None = None, current_user: User = Depends(get_current_user)
 ):
     from src.backend.database.uow import UnitOfWork
 
@@ -72,6 +68,9 @@ async def approve_patch(
             raise NotFoundError(
                 "Patch not found", resource_type="PendingPatch", resource_id=str(patch_id)
             )
+
+        # 所有権を確認
+        await verify_book_ownership(patch.book_id, current_user, uow)
 
         if patch.status != "pending":
             raise ValidationError(f"Patch is already {patch.status}")
@@ -120,9 +119,9 @@ async def approve_patch(
     return {"message": "Patch approved and applied successfully"}
 
 
-@router.post("/patches/{patch_id}/reject")
+@router.post("/patches/{patch_id}/reject", dependencies=[Depends(get_current_user)])
 async def reject_patch(
-    patch_id: int, req: Any | None = None, api_key: str = Depends(require_api_key)
+    patch_id: int, req: Any | None = None, current_user: User = Depends(get_current_user)
 ):
     from src.backend.database.uow import UnitOfWork
 
@@ -137,6 +136,9 @@ async def reject_patch(
                 "Patch not found", resource_type="PendingPatch", resource_id=str(patch_id)
             )
 
+        # 所有権を確認
+        await verify_book_ownership(patch.book_id, current_user, uow)
+
         if patch.status != "pending":
             raise ValidationError(f"Patch is already {patch.status}")
 
@@ -144,8 +146,8 @@ async def reject_patch(
     return {"message": "Patch rejected successfully"}
 
 
-@router.post("/patches/{patch_id}/edit")
-async def edit_patch(patch_id: int, req: Any, api_key: str = Depends(require_api_key)):
+@router.post("/patches/{patch_id}/edit", dependencies=[Depends(get_current_user)])
+async def edit_patch(patch_id: int, req: Any, current_user: User = Depends(get_current_user)):
     # Note: PatchEditRequest should be imported from api_schemas in the actual final version
     # For now, we assume it's handled by the request body
     from src.backend.database.uow import UnitOfWork
@@ -160,6 +162,9 @@ async def edit_patch(patch_id: int, req: Any, api_key: str = Depends(require_api
             raise NotFoundError(
                 "Patch not found", resource_type="PendingPatch", resource_id=str(patch_id)
             )
+
+        # 所有権を確認
+        await verify_book_ownership(patch.book_id, current_user, uow)
 
         if patch.status != "pending":
             raise ValidationError(f"Cannot edit patch in status: {patch.status}")
@@ -199,20 +204,22 @@ async def edit_patch(patch_id: int, req: Any, api_key: str = Depends(require_api
 # ============================================================================
 
 
-@router.get("/patches/{book_id}/reviews")
-async def get_pending_reviews(book_id: int):
+@router.get("/patches/{book_id}/reviews", dependencies=[Depends(get_current_user)])
+async def get_pending_reviews(book_id: int, current_user: User = Depends(get_current_user)):
     """レビュー待ちパッチ一覧を取得"""
     from src.backend.database.uow import UnitOfWork
 
     async with UnitOfWork(AppContainer.db()) as uow:
         if uow.session is None:
             raise RuntimeError("Database session not initialized")
+        # 所有権を確認
+        await verify_book_ownership(book_id, current_user, uow)
         reviews = await uow.misc.get_pending_reviews(book_id)
     return reviews
 
 
-@router.get("/patches/reviews/{review_id}", dependencies=[Depends(require_api_key)])
-async def get_review_detail(review_id: int):
+@router.get("/patches/reviews/{review_id}", dependencies=[Depends(get_current_user)])
+async def get_review_detail(review_id: int, current_user: User = Depends(get_current_user)):
     """レビュー詳細を取得"""
     from src.backend.database.uow import UnitOfWork
 
@@ -220,16 +227,19 @@ async def get_review_detail(review_id: int):
         if uow.session is None:
             raise RuntimeError("Database session not initialized")
         review = await uow.misc.get_patch_review(review_id)
-    if not review:
-        raise NotFoundError(
-            "Review not found", resource_type="PatchReview", resource_id=str(review_id)
-        )
+        if not review:
+            raise NotFoundError(
+                "Review not found", resource_type="PatchReview", resource_id=str(review_id)
+            )
+
+        # 所有権を確認 (reviewからbook_idを取得して確認)
+        await verify_book_ownership(review["book_id"], current_user, uow)
     return review
 
 
-@router.post("/patches/reviews/{review_id}/approve")
+@router.post("/patches/reviews/{review_id}/approve", dependencies=[Depends(get_current_user)])
 async def approve_review(
-    review_id: int, req: ReviewActionRequest, api_key: str = Depends(require_api_key)
+    review_id: int, req: ReviewActionRequest, current_user: User = Depends(get_current_user)
 ):
     """レビューを承認"""
     from src.backend.database.uow import UnitOfWork
@@ -242,6 +252,9 @@ async def approve_review(
             raise NotFoundError(
                 "Review not found", resource_type="PatchReview", resource_id=str(review_id)
             )
+
+        # 所有権を確認
+        await verify_book_ownership(review["book_id"], current_user, uow)
 
         if review.get("status") != "under_review":
             raise ValidationError(f"Review is already {review.get('status')}")
@@ -265,15 +278,15 @@ async def approve_review(
     return {"message": "Review approved successfully"}
 
 
-@router.post("/patches/reviews/{review_id}/reject")
+@router.post("/patches/reviews/{review_id}/reject", dependencies=[Depends(get_current_user)])
 async def reject_review(
-    review_id: int, req: ReviewActionRequest, api_key: str = Depends(require_api_key)
+    review_id: int, req: ReviewActionRequest, current_user: User = Depends(get_current_user)
 ):
     """レビューを差し戻し"""
+    from src.backend.database.uow import UnitOfWork
+
     if not req.comment:
         raise ValidationError("Comment is required when rejecting a review")
-
-    from src.backend.database.uow import UnitOfWork
 
     async with UnitOfWork(AppContainer.db()) as uow:
         if uow.session is None:
@@ -283,6 +296,9 @@ async def reject_review(
             raise NotFoundError(
                 "Review not found", resource_type="PatchReview", resource_id=str(review_id)
             )
+
+        # 所有権を確認
+        await verify_book_ownership(review["book_id"], current_user, uow)
 
         if review.get("status") != "under_review":
             raise ValidationError(f"Review is already {review.get('status')}")
@@ -300,18 +316,15 @@ async def reject_review(
             await uow.session.execute(
                 update(AuditIssue)
                 .where(AuditIssue.id.in_(audit_issue_ids))
-                .values(
-                    status="rejected",
-                    resolved_note=f"Rejected via review {review_id}: {req.comment}",
-                )
+                .values(status="rejected", resolved_note=f"Rejected via review {review_id}: {req.comment}")
             )
 
     return {"message": "Review rejected successfully"}
 
 
-@router.post("/patches/reviews/{review_id}/revise")
+@router.post("/patches/reviews/{review_id}/revise", dependencies=[Depends(get_current_user)])
 async def revise_review(
-    review_id: int, req: ReviseReviewRequest, api_key: str = Depends(require_api_key)
+    review_id: int, req: ReviseReviewRequest, current_user: User = Depends(get_current_user)
 ):
     """レビューに修正案を提示（再レビュー要求）"""
     from src.backend.database.uow import UnitOfWork
@@ -324,6 +337,9 @@ async def revise_review(
             raise NotFoundError(
                 "Review not found", resource_type="PatchReview", resource_id=str(review_id)
             )
+
+        # 所有権を確認
+        await verify_book_ownership(review["book_id"], current_user, uow)
 
         if review.get("status") not in ("under_review", "rejected"):
             raise ValidationError(f"Cannot revise review in status: {review.get('status')}")
@@ -350,26 +366,30 @@ async def revise_review(
 # ============================================================================
 
 
-@router.get("/patches/{book_id}/setting-versions")
-async def get_setting_versions(book_id: int):
+@router.get("/patches/{book_id}/setting-versions", dependencies=[Depends(get_current_user)])
+async def get_setting_versions(book_id: int, current_user: User = Depends(get_current_user)):
     """設定バージョン履歴を取得"""
     from src.backend.database.uow import UnitOfWork
 
     async with UnitOfWork(AppContainer.db()) as uow:
         if uow.session is None:
             raise RuntimeError("Database session not initialized")
+        # 所有権を確認
+        await verify_book_ownership(book_id, current_user, uow)
         versions = await uow.misc.get_setting_versions(book_id)
     return versions
 
 
-@router.get("/patches/{book_id}/setting-versions/{version_number}")
-async def get_setting_version(book_id: int, version_number: int):
+@router.get("/patches/{book_id}/setting-versions/{version_number}", dependencies=[Depends(get_current_user)])
+async def get_setting_version(book_id: int, version_number: int, current_user: User = Depends(get_current_user)):
     """特定バージョンの設定を取得"""
     from src.backend.database.uow import UnitOfWork
 
     async with UnitOfWork(AppContainer.db()) as uow:
         if uow.session is None:
             raise RuntimeError("Database session not initialized")
+        # 所有権を確認
+        await verify_book_ownership(book_id, current_user, uow)
         version = await uow.misc.get_setting_version(book_id, version_number)
     if not version:
         raise NotFoundError(
@@ -385,28 +405,39 @@ async def get_setting_version(book_id: int, version_number: int):
 # ============================================================================
 
 
-@router.post("/episodes/{episode_id}/patch-paragraph")
+@router.post("/episodes/{episode_id}/patch-paragraph", dependencies=[Depends(get_current_user)])
 async def patch_paragraph(
-    episode_id: int, req: ParagraphPatchRequest, api_key: str = Depends(require_api_key)
+    episode_id: int, req: ParagraphPatchRequest, current_user: User = Depends(get_current_user)
 ):
     """手動で特定段落のリライトを指示し、即時差分を取得"""
-    # TODO: Implement actual logic to fetch episode text, apply patch, and return diff
-    # For now, we return a dummy response to ensure the endpoint works
+    from src.backend.database.uow import UnitOfWork
+    from src.backend.database.models import Chapter
+    from sqlalchemy import select
+    from src.core.exceptions import NotFoundError
 
     # Validate paragraph index
     if req.paragraph_index < 0:
         raise HTTPException(status_code=400, detail="Paragraph index must be non-negative")
 
-    # Dummy implementation: return a fixed response
-    # In a real implementation, we would:
-    # 1. Fetch the episode text from the database or service
-    # 2. Index the text into paragraphs
-    # 3. Get the target paragraph by index
-    # 4. Use the patch agent to rewrite the paragraph with context
-    # 5. Use the patch merchant to merge the patch
-    # 6. Return the original and patched paragraph
+    async with UnitOfWork(AppContainer.db()) as uow:
+        if uow.session is None:
+            raise RuntimeError("Database session not initialized")
 
-    # For now, we return a dummy response
+        # episode_id から chapter を取得し book_id を特定
+        result = await uow.session.execute(
+            select(Chapter).where(Chapter.id == episode_id)
+        )
+        chapter = result.scalar_one_or_none()
+        if not chapter:
+            raise NotFoundError("Episode not found", resource_type="Chapter", resource_id=str(episode_id))
+
+        book_id = chapter.book_id
+
+        # 所有権を確認
+        await verify_book_ownership(book_id, current_user, uow)
+
+    # TODO: 実際のパッチロジック実装
+    # 現状はダミー実装を維持
     dummy_original = f"This is the original content of paragraph {req.paragraph_index} for episode {episode_id}."
     dummy_patched = f"This is the patched content of paragraph {req.paragraph_index} for episode {episode_id} based on directive: {req.directive}"
 

@@ -1,5 +1,4 @@
 import asyncio
-import pytest
 
 from src.llm.circuit_breaker import LLMCircuitBreaker, CircuitState
 
@@ -13,21 +12,21 @@ def test_circuit_breaker_basic():
     assert state.state == CircuitState.CLOSED
 
     # 初期状態では実行可能
-    assert breaker.can_execute("test_provider") == True
+    assert breaker.can_execute("test_provider")
 
     # 連続失敗 -> Open状態に移行
     breaker.record_failure("test_provider")
     breaker.record_failure("test_provider")
     breaker.record_failure("test_provider")  # 3 failures -> OPEN
-    assert breaker.can_execute("test_provider") == False
+    assert not breaker.can_execute("test_provider")
 
     # 復旧後も実行不可
     breaker.record_failure("test_provider")
-    assert breaker.can_execute("test_provider") == False
+    assert not breaker.can_execute("test_provider")
 
     # 成功を記録すると復旧しない (OPEN -> still OPEN, success doesn't help)
     breaker.record_success("test_provider")
-    assert breaker.can_execute("test_provider") == False
+    assert not breaker.can_execute("test_provider")
 
 
 async def test_circuit_breaker_half_open():
@@ -36,18 +35,18 @@ async def test_circuit_breaker_half_open():
 
     # 失敗でOpen状態に
     breaker.record_failure("test_provider")
-    assert breaker.can_execute("test_provider") == False
+    assert not breaker.can_execute("test_provider")
 
     # タイムアウト後、HALF_OPEN状態になる
     await asyncio.sleep(0.15)
 
     # HALF_OPEN状態は1回の呼び出しまで可能
-    assert breaker.can_execute("test_provider") == True
+    assert breaker.can_execute("test_provider")
 
     # HALF_OPEN の probe に成功すると CLOSED に復帰
     breaker.record_success("test_provider")
     assert breaker.get_state("test_provider").state == CircuitState.CLOSED
-    assert breaker.can_execute("test_provider") == True
+    assert breaker.can_execute("test_provider")
 
 
 def test_circuit_breaker_closed_success_count():
@@ -74,10 +73,10 @@ async def test_circuit_breaker_reset():
     """サーキットブレーカーのリセット機能"""
     breaker = LLMCircuitBreaker(failure_threshold=1, timeout_seconds=5)
     breaker.record_failure("test_provider")
-    assert breaker.can_execute("test_provider") == False
+    assert not breaker.can_execute("test_provider")
 
     breaker.reset("test_provider")
-    assert breaker.can_execute("test_provider") == True
+    assert breaker.can_execute("test_provider")
 
 
 async def test_circuit_breaker_snapshot():

@@ -111,7 +111,7 @@ class TestRequestRouting:
         api_client._resilient_client = mock_client
 
         with patch("src.infrastructure.api.api_client._resolve_if_coroutine", return_value=mock_response):
-            result = _request("GET", "/test", param1="value1")
+            _request("GET", "/test", param1="value1")
 
         call_args = mock_client.request.call_args
         assert call_args[0][0] == "GET"
@@ -128,7 +128,7 @@ class TestRequestRouting:
         api_client._resilient_client = mock_client
 
         with patch("src.infrastructure.api.api_client._resolve_if_coroutine", return_value=mock_response):
-            result = _request("POST", "/test", data1="value1")
+            _request("POST", "/test", data1="value1")
 
         call_args = mock_client.request.call_args
         assert call_args[0][0] == "POST"
@@ -145,7 +145,7 @@ class TestRequestRouting:
         api_client._resilient_client = mock_client
 
         with patch("src.infrastructure.api.api_client._resolve_if_coroutine", return_value=mock_response):
-            result = _request("DELETE", "/test", id=123)
+            _request("DELETE", "/test", id=123)
 
         call_args = mock_client.request.call_args
         assert call_args[1]["params"] == {"id": 123}
@@ -161,7 +161,7 @@ class TestRequestRouting:
         api_client._resilient_client = mock_client
 
         with patch("src.infrastructure.api.api_client._resolve_if_coroutine", return_value=mock_response):
-            result = _request("UNKNOWN", "/test", param="value")
+            _request("UNKNOWN", "/test", param="value")
 
         call_args = mock_client.request.call_args
         assert call_args[1]["params"] == {"param": "value"}
@@ -191,7 +191,7 @@ class TestAsyncClient:
     @pytest.mark.asyncio
     async def test_close_async_client(self):
         """Test close_async_client."""
-        client = _get_async_client()
+        _get_async_client()
         await close_async_client()
 
         import src.infrastructure.api.api_client as api_client

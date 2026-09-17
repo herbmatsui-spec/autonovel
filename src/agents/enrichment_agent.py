@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 class EnrichmentAgent(SkillAgent):
     """エンリッチメントスキルエージェント
-    
+
     4つの機能で生成テキストを強化:
     1. トリビア挿入 - 世界観雑学の自然な組み込み
     2. 引用付与 - World Bible 典拠の脚注化
@@ -341,7 +341,7 @@ class EnrichmentAgent(SkillAgent):
         """トリビア関連度スコアリング（Step 14）"""
         fact_text = trivia.get("fact", "")
         context_lower = scene_context.lower()
-        
+
         # 日本語対応: キーワード抽出で類似度計算
         def extract_keywords(text: str) -> set:
             import re
@@ -353,13 +353,13 @@ class EnrichmentAgent(SkillAgent):
             # 英単語
             keywords.update(re.findall(r'[a-zA-Z]{2,}', text.lower()))
             return keywords
-        
+
         fact_keywords = extract_keywords(fact_text)
         context_keywords = extract_keywords(scene_context)
-        
+
         if not fact_keywords or not context_keywords:
             return 0.0
-        
+
         overlap = len(fact_keywords & context_keywords)
         union = len(fact_keywords | context_keywords)
         jaccard = overlap / union if union > 0 else 0.0
@@ -586,7 +586,7 @@ class EnrichmentAgent(SkillAgent):
     def _extract_factual_claims(self, text: str) -> list[dict]:
         """事実記述抽出（Step 20）"""
         claims = []
-        
+
         # 文単位で分割してから各文をチェック（より確実）
         sentences = re.split(r'(?<=[。！？])', text)
         pos = 0
@@ -595,20 +595,20 @@ class EnrichmentAgent(SkillAgent):
             if not sent:
                 pos += len(sent) + 1
                 continue
-            
+
             # 事実記述らしい文の条件:
             # 1. 設定用語を含む
             # 2. 断定形（です/だ/である/という/過去形/丁寧語）で終わる
             # 3. 十分な長さ
-            setting_keywords = ['魔法', 'スキル', '能力', 'システム', 'ルール', '設定', '世界', '歴史', 
-                               'MP', 'HP', 'レベル', 'ステータス', 'アイテム', '武器', '剣', '呪文', 
+            setting_keywords = ['魔法', 'スキル', '能力', 'システム', 'ルール', '設定', '世界', '歴史',
+                               'MP', 'HP', 'レベル', 'ステータス', 'アイテム', '武器', '剣', '呪文',
                                '術式', '防具', '聖剣', 'ダンジョン', '遺跡', '国家', '都市', '組織', '勢力']
-            
+
             has_setting_kw = any(kw in sent for kw in setting_keywords)
             # 断定形: です/だ/である/という/ます + 過去形(た/だ/た。/だ。) + 丁寧語
             # 辞書形動詞(う動詞/る動詞)も断定として扱う
             declarative_endings = (
-                'です', 'だ', 'である', 'という', 
+                'です', 'だ', 'である', 'という',
                 'ます', 'ます。', 'です。', 'だ。', 'である。', 'という。',
                 'た', 'た。', 'だ。', 'た。',  # 過去形
                 'ました', 'ました。', 'ました',  # 丁寧過去
@@ -617,37 +617,37 @@ class EnrichmentAgent(SkillAgent):
             )
             is_declarative = any(sent.endswith(e) for e in declarative_endings)
             is_long_enough = len(sent) >= 8
-            
+
             if has_setting_kw and is_declarative and is_long_enough:
                 claims.append({
                     "text": sent,
                     "position": pos,
                     "end_position": pos + len(sent),
                 })
-            
+
             pos += len(sent) + 1
-        
+
         # 重複除去（位置ベース）
         unique_claims = []
         for claim in claims:
             if not any(abs(claim["position"] - c["position"]) < 20 for c in unique_claims):
                 unique_claims.append(claim)
-        
+
         return unique_claims[:self._config.get("citation_attachment", {}).get("max_citations_per_chapter", 10)]
 
     def _match_claims_to_sources(self, claims: list[dict]) -> list[dict]:
         """ソースマッチング（Step 21）"""
         pairs = []
-        
+
         for claim in claims:
             claim_text = claim["text"].lower()
             best_match = None
             best_score = 0.0
-            
+
             # キーワードベースマッチング
             import re
             keywords = re.findall(r'[一-龯ァ-ヴー]{2,}|[a-zA-Z]{3,}', claim_text)
-            
+
             for kw in keywords:
                 if kw in self._bible_index:
                     for source in self._bible_index[kw]:
@@ -657,7 +657,7 @@ class EnrichmentAgent(SkillAgent):
                         if score > best_score:
                             best_score = score
                             best_match = source
-            
+
             if best_match and best_score >= 0.5:
                 pairs.append({
                     "claim": claim["text"],
@@ -666,42 +666,42 @@ class EnrichmentAgent(SkillAgent):
                     "source": best_match,
                     "score": best_score,
                 })
-        
+
         return pairs
 
     def _insert_footnote_markers(self, text: str, claim_source_pairs: list[dict]) -> tuple[str, list]:
         """脚注マーカー挿入（Step 22）"""
         # 位置でソート（後ろから挿入してオフセット調整不要にする）
         sorted_pairs = sorted(claim_source_pairs, key=lambda x: x["position"], reverse=True)
-        
+
         enriched_text = text
         citations_meta = []
         marker_counter = 0
         source_to_marker = {}  # 同一ソースは同一番号
-        
+
         for pair in sorted_pairs:
             source_key = (pair["source"]["source"], pair["source"].get("page", ""))
-            
+
             if source_key in source_to_marker:
                 marker_num = source_to_marker[source_key]
             else:
                 marker_counter += 1
                 marker_num = marker_counter
                 source_to_marker[source_key] = marker_num
-            
+
             marker = f"[^{marker_num}]"
             insert_pos = pair["end_position"]
-            
+
             # マーカー挿入
             enriched_text = enriched_text[:insert_pos] + marker + enriched_text[insert_pos:]
-            
+
             citations_meta.append({
                 "marker": marker_num,
                 "claim": pair["claim"],
                 "source": pair["source"],
                 "score": pair["score"],
             })
-        
+
         return enriched_text, citations_meta
 
     def _format_citations(self, text: str, citations_meta: list[dict], style: str) -> str:
@@ -723,7 +723,7 @@ class EnrichmentAgent(SkillAgent):
         elif style == "endnote":
             # 後注スタイル: 章末にまとめる（footnote と同様）
             return self._format_citations(text, citations_meta, "footnote")
-        
+
         return text
 
     # --- 感覚拡充関連 ---

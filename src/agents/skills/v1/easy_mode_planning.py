@@ -38,7 +38,7 @@ class EasyModePlanningSkill(SkillAgent):
             # 既存の PlanningAgent ロジックを簡易化して実行
             from src.agents.planning import PlanningAgent
             planner = PlanningAgent(repo=self.repo, llm=self.llm, prompt_manager=self.pm)
-            
+
             book_id, bible = await planner.create_hegemony_plan(
                 genre=genre,
                 keywords=keywords,

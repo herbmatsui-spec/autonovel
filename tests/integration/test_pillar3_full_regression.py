@@ -11,8 +11,6 @@ from src.services.proposal_isolation import (
 from src.services.blind_review import (
     BlindFeedbackPurifier,
     BlindReviewGate,
-    detect_proposal_leaks,
-    verify_no_cross_proposal_contamination,
 )
 
 # Part 2 & 3 imports
@@ -34,7 +32,7 @@ from src.agents.context_builder_agent import ContextBuilderAgent
 @pytest.mark.asyncio
 async def test_pillar3_full_regression():
     """Full end-to-end regression verifying all 6 parts of Pillar 3 in sequence."""
-    
+
     # -------------------------------------------------------------
     # 1. Part 1: Blind Review & Proposal Isolation
     # -------------------------------------------------------------

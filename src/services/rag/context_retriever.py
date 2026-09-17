@@ -137,10 +137,10 @@ class LongFormContextRetriever:
     def upsert_foreshadowing(self, book_id: int, entity: ForeshadowingEntity) -> None:
         """伏線エンティティをベクトルDBに保存・更新"""
         collection = self._get_or_create_collection(book_id)
-        
+
         # 埋め込み用テキストを構築
         embedding_text = f"{entity.description} {' '.join(entity.keywords)} {' '.join(entity.related_characters)}"
-        
+
         collection.upsert(
             ids=[entity.foreshadow_id],
             documents=[embedding_text],
@@ -150,10 +150,10 @@ class LongFormContextRetriever:
     def get_pending_foreshadowings(self, book_id: int, current_ep: int) -> list[ForeshadowingEntity]:
         """未回収かつ回収目標が近い伏線を優先抽出"""
         collection = self._get_or_create_collection(book_id)
-        
+
         # 全件取得してフィルタリング（本番ではwhere句で効率化）
         results = collection.get()
-        
+
         entities = []
         for metadata in results.get("metadatas", []):
             entity = ForeshadowingEntity.from_dict(metadata)
@@ -161,7 +161,7 @@ class LongFormContextRetriever:
                 # 回収目標が現在エピソード以降、または目標未設定
                 if entity.target_resolution_ep is None or entity.target_resolution_ep >= current_ep:
                     entities.append(entity)
-        
+
         # 回収目標が近い順でソート
         entities.sort(key=lambda e: e.target_resolution_ep or float('inf'))
         return entities
@@ -174,13 +174,13 @@ class LongFormContextRetriever:
     ) -> list[dict[str, Any]]:
         """プロット概要と意味的類似度が高い伏線をベクトル検索"""
         collection = self._get_or_create_collection(book_id)
-        
+
         results = collection.query(
             query_texts=[plot_summary],
             n_results=top_k,
             where={"status": {"$ne": "resolved"}},
         )
-        
+
         relevant = []
         for i, metadata in enumerate(results.get("metadatas", [[]])[0]):
             distance = results.get("distances", [[]])[0][i] if results.get("distances") else 0
@@ -189,14 +189,14 @@ class LongFormContextRetriever:
                 "similarity": 1.0 - distance,
                 "metadata": metadata,
             })
-        
+
         return relevant
 
     def extract_subgraph(self, character_names: list[str]) -> list[dict[str, Any]]:
         """知識グラフからキャラクター関連のサブグラフを抽出"""
         if self.graph_store is None:
             return []
-        
+
         return self.graph_store.extract_character_subgraph(character_names)
 
     def retrieve_writing_context(
@@ -208,19 +208,19 @@ class LongFormContextRetriever:
     ) -> dict[str, Any]:
         """執筆に必要な背景知識をワンストップで提供"""
         character_names = character_names or []
-        
+
         # 1. 未回収伏線の取得
         pending_foreshadowings = self.get_pending_foreshadowings(book_id, current_ep)
-        
+
         # 2. プロット類似度ベースの関連伏線検索
         relevant_foreshadowings = self.search_relevant_context(book_id, plot_outline)
-        
+
         # 3. 知識グラフから関連サブグラフ抽出
         subgraph = self.extract_subgraph(character_names) if character_names else []
-        
+
         # 4. キャラクター状態取得（将来拡張用）
         character_states = self._get_character_states(book_id, current_ep, character_names)
-        
+
         return {
             "pending_foreshadowings": pending_foreshadowings,
             "relevant_foreshadowings": [r["entity"] for r in relevant_foreshadowings],
@@ -249,7 +249,7 @@ class LongFormContextRetriever:
     def format_context_for_prompt(self, context_dict: dict[str, Any]) -> str:
         """取得した知識をプロンプト用Markdownに整形"""
         lines = ["## 本話で意識・回収すべき伏線・設定"]
-        
+
         # 未回収伏線
         pending = context_dict.get("pending_foreshadowings", [])
         if pending:
@@ -260,31 +260,31 @@ class LongFormContextRetriever:
                     f"- **{fs.foreshadow_id}** (第{fs.introduced_in_ep}話提示 → 第{target}話回収予定): "
                     f"{fs.description} [キャラ: {', '.join(fs.related_characters) or 'なし'}]"
                 )
-        
+
         # 関連伏線
         relevant = context_dict.get("relevant_foreshadowings", [])
         if relevant:
             lines.append("### 今回のプロットに関連する伏線・設定")
             for fs in relevant:
                 lines.append(f"- {fs.description} [キーワード: {', '.join(fs.keywords)}]")
-        
+
         # サブグラフ
         subgraph = context_dict.get("subgraph_edges", [])
         if subgraph:
             lines.append("### キャラクター関係性・因縁")
             for edge in subgraph:
                 lines.append(f"- {edge.get('source', '')} --{edge.get('relation', '')}--> {edge.get('target', '')}")
-        
+
         # キャラクター状態
         states = context_dict.get("character_states", [])
         if states:
             lines.append("### キャラクター状態")
             for st in states:
                 lines.append(f"- {st.name}: 感情={st.emotional_state}, 知識={', '.join(st.knowledge) or 'なし'}")
-        
+
         if not any([pending, relevant, subgraph, states]):
             lines.append("(参照すべき背景情報はありません)")
-        
+
         return "\n".join(lines)
 
     def resolve_foreshadowing(
@@ -295,17 +295,17 @@ class LongFormContextRetriever:
     ) -> bool:
         """伏線回収ステータスを更新"""
         collection = self._get_or_create_collection(book_id)
-        
+
         # 既存データ取得
         results = collection.get(ids=[foreshadow_id])
         if not results.get("metadatas"):
             return False
-        
+
         metadata = results["metadatas"][0]
         metadata["status"] = ForeshadowingStatus.RESOLVED.value
         metadata["updated_at"] = datetime.now().isoformat()
         metadata["target_resolution_ep"] = resolved_ep
-        
+
         collection.update(
             ids=[foreshadow_id],
             metadatas=[metadata],

@@ -61,7 +61,7 @@ def build_relation_graph(bible: dict[str, Any]) -> dict[str, set[str]]:
 
     characters = bible.get("characters", [])
     locations = bible.get("locations", [])
-    items = bible.get("items", [])
+    bible.get("items", [])
     factions = bible.get("factions", [])
 
     char_names = set()
@@ -168,7 +168,7 @@ def check_semantic_consistency(draft: str, graph: dict[str, set[str]]) -> float:
     char_locations: dict[str, set[str]] = defaultdict(set)
     for ent, rels in graph.items():
         for rel in rels:
-            if rel.startswith("location:") or rel in (l for l in graph.keys() if any(loc in rel for loc in ["都", "城", "村", "町", "森", "山", "川", "海", "砂漠", "平原", "洞窟", "遺跡", "ダンジョン", "塔", "神殿", "教会", "学校", "病院", "会社", "家", "部屋", "駅", "空港", "港"])):
+            if rel.startswith("location:") or rel in (key for key in graph.keys() if any(loc in rel for loc in ["都", "城", "村", "町", "森", "山", "川", "海", "砂漠", "平原", "洞窟", "遺跡", "ダンジョン", "塔", "神殿", "教会", "学校", "病院", "会社", "家", "部屋", "駅", "空港", "港"])):
                 char_locations[ent].add(rel.replace("location:", ""))
 
     for char, locs in char_locations.items():
@@ -290,7 +290,7 @@ def analyze_pacing(draft: str, plot_phases: list[str]) -> float:
 
     # Coefficient of variation (lower = more balanced)
     mean_len = sum(lengths) / len(lengths)
-    variance = sum((l - mean_len) ** 2 for l in lengths) / len(lengths)
+    variance = sum((length - mean_len) ** 2 for length in lengths) / len(lengths)
     cv = (variance ** 0.5) / mean_len if mean_len > 0 else 1.0
 
     # Convert to score: exponential decay for high CV
@@ -313,7 +313,6 @@ def extract_emotion_triples(text: str) -> set[tuple[str, str, str]]:
     triples = set()
 
     # Character patterns
-    char_pattern = r"(?:[一-龯ぁ-んァ-ヶーa-zA-Z]{1,10})(?:は|が|を|に|で|と|の|だ|です|だった|だった|だろう|らしい|ようだ|みたいだ|そうだ|らしい|かもしれない|はずだ|に違いない|わけだ|もん|んだ|のだ|のです|なのだ|なのです)"
 
     # Emotion keywords
     emotions = {

@@ -1,7 +1,6 @@
 """Unit tests for NovelSectionExtractor (Step 37-39)."""
 
-import pytest
-from src.agents.specialists.windowing import NovelSectionExtractor, NovelSection
+from src.agents.specialists.windowing import NovelSectionExtractor
 
 
 def test_extractor_instantiation():

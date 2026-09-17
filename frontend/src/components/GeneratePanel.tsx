@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNovelContext } from "../context/NovelContext";
+import { useUnsavedGenerationGuard } from "../hooks/useUnsavedGenerationGuard";
+import "../components/common/GachaShimmer.css";
 import { useToast } from "../hooks/useToast";
 import { useNovelGeneration } from "../hooks/useNovelGeneration";
 import { useStreamingWriter } from "../hooks/useStreamingWriter";
@@ -229,6 +231,9 @@ export default function GeneratePanel({ onGenerated, onMessage }: GeneratePanelP
   };
 
   const isBusy = generationState.isGenerating || isStreaming;
+
+  // 提案7: 生成中のページ離脱警告（誤操作による生成中断を防止）
+  useUnsavedGenerationGuard(isBusy);
 
   // Early return pattern - clean conditional rendering
   const renderContent = () => {

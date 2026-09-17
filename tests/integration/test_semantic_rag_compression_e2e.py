@@ -3,7 +3,6 @@
 import pytest
 from unittest.mock import MagicMock
 
-from src.services.query_reformulator import QueryReformulator
 from src.services.reflective_rag import ReflectiveRAGService
 from src.services.rag_service import SearchResult
 from src.services.compression.compressor import FourLayerCompressor
@@ -14,7 +13,7 @@ from src.agents.context_builder_agent import ContextBuilderAgent
 @pytest.mark.asyncio
 async def test_semantic_rag_compression_e2e():
     """E2E Test: HyDE query expansion -> Reflective RAG retrieval -> 4-layer protected compression -> Context builder prompt."""
-    
+
     # 1. Setup Query Reformulator & Reflective RAG Service
     mock_rag = MagicMock()
     mock_rag.age_client = None
@@ -45,7 +44,7 @@ async def test_semantic_rag_compression_e2e():
     ]
 
     rag_service = ReflectiveRAGService(rag_service=mock_rag, relevance_threshold=0.5)
-    
+
     # 2. Reflective query rewrite and retrieval
     scene_intent = "フェルディナントが聖剣を抜いて真祖の吸血鬼と対峙する決戦シーン"
     rag_result = await rag_service.retrieve_with_reflection(

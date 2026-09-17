@@ -2,18 +2,13 @@
 
 from __future__ import annotations
 
-import os
-from pathlib import Path
 
 import pytest
 
 from src.config.anti_ai_config import (
     AntiAIConfig,
     DEFAULT_CONFIG_PATH,
-    DetectorSettings,
     FeatureSettings,
-    LLMSanityCheckSettings,
-    LoopSettings,
     clear_cache,
     load_anti_ai_config,
 )

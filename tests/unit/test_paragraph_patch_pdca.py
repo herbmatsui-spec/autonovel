@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 from src.services.pdca_cycle import ClosedLoopPDCARunner
 from src.services.audit_aggregator import AuditAggregator
@@ -10,7 +10,7 @@ from src.services.prose.paragraph_indexer import ParagraphIndexer
 from src.services.prose.patch_merger import PatchMerger
 from src.agents.writing.paragraph_patch_agent import ParagraphPatchAgent
 from src.services.pdca_directive import PDCADirectiveGenerator
-from src.models.patch_pdca import ParagraphTarget, PatchRewriteResult
+from src.models.patch_pdca import PatchRewriteResult
 
 
 @pytest.fixture

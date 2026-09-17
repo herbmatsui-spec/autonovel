@@ -1,13 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.backend.database import get_db
+from src.backend.database import get_async_db
 from src.backend.auth import get_current_user
 from src.backend.database.models import User
 from src.services.billing.stripe_client import StripeClient
 from src.services.billing.credit_service import CreditService
 from src.config.billing_plans import PLAN_CONFIG
 from typing import Dict, Any
-import uuid
 
 router = APIRouter(prefix="/api/billing", tags=["billing"])
 
@@ -32,14 +31,14 @@ async def get_plans():
 @router.get("/balance", response_model=Dict[str, Any])
 async def get_balance(
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """
     現在のユーザー残高とプラン情報を取得
     """
     credit_service = CreditService(db)
     balance = await credit_service.get_balance(current_user.id)
-    
+
     return {
         "balance": balance,
         "plan_tier": current_user.plan_tier,
@@ -50,7 +49,7 @@ async def get_balance(
 async def create_checkout_session(
     request: Dict[str, str],
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """
     Stripe Checkout セッションを作成してURLを取得
@@ -61,11 +60,11 @@ async def create_checkout_session(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="price_id is required"
         )
-    
+
     # 成功・キャンセルURLは実際のフロントエンドURLに置き換える必要がある
     success_url = request.get("success_url", "https://your-domain.com/billing/success")
     cancel_url = request.get("cancel_url", "https://your-domain.com/billing/cancel")
-    
+
     try:
         checkout_url = StripeClient.create_checkout_session(
             user_id=current_user.id,
@@ -96,10 +95,10 @@ async def create_portal_session(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Stripe customer ID not found for user"
         )
-    
+
     # 戻りURLは実際のフロントエンドURLに置き換える必要がある
     return_url = request.get("return_url", "https://your-domain.com/billing")
-    
+
     try:
         portal_url = StripeClient.create_customer_portal_session(
             stripe_customer_id=stripe_customer_id,
@@ -117,21 +116,21 @@ async def get_transactions(
     limit: int = 50,
     offset: int = 0,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """
     ユーザーのクレジット取引履歴を取得
     """
     from sqlalchemy import select, desc
     from src.backend.database.models_billing import CreditTransaction
-    
+
     query = select(CreditTransaction).where(
         CreditTransaction.user_id == current_user.id
     ).order_by(desc(CreditTransaction.created_at)).limit(limit).offset(offset)
-    
+
     result = await db.execute(query)
     transactions = result.scalars().all()
-    
+
     # シリアライズ可能な形式に変換
     transaction_list = []
     for tx in transactions:
@@ -144,7 +143,7 @@ async def get_transactions(
             "description": tx.description,
             "created_at": tx.created_at.isoformat() if tx.created_at else None
         })
-    
+
     return {
         "transactions": transaction_list,
         "limit": limit,

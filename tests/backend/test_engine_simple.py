@@ -1,4 +1,3 @@
-import pytest
 from src.backend.engine import UltimateHegemonyEngine
 
 def test_engine_import_and_instantiation():

@@ -5,10 +5,14 @@ from __future__ import annotations
 import io
 import urllib.parse
 from typing import Optional
-from fastapi import APIRouter, Query, HTTPException, status
+from fastapi import APIRouter, Depends, Query, HTTPException, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.backend.auth import get_current_user
+from src.backend.database import get_async_db
+from src.backend.database.models import User, Book
 from src.services.formatters.ruby_transpiler import PublishPlatform
 from src.services.formatters.platform_formatter import PlatformFormatter
 from src.backend.database.series_loader import SeriesDataLoader, SeriesDataLoaderConfig
@@ -21,12 +25,29 @@ class PublishExportRequest(BaseModel):
     branch_id: Optional[int] = None
 
 
+async def _verify_publish_access(db: AsyncSession, book_id: int, current_user: User) -> None:
+    """リクエストユーザーがブックの所有者または管理者であることを検証する。"""
+    book = await db.get(Book, book_id)
+    if not book:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="指定された作品が存在しません")
+    if current_user.role != "admin" and getattr(book, "user_id", None) is not None:
+        if book.user_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="この作品の出版データを操作する権限がありません",
+            )
+
+
 @router.post("/{platform}")
 async def export_for_publishing(
     platform: PublishPlatform,
     req: PublishExportRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """Export formatted novel package as a ZIP archive for the specified platform (Step 61)."""
+    await _verify_publish_access(db, req.book_id, current_user)
+
     loader = SeriesDataLoader()
     try:
         config = SeriesDataLoaderConfig(
@@ -77,8 +98,12 @@ async def preview_for_publishing(
     book_id: int = Query(..., description="Target Book ID"),
     chapter_number: int = Query(1, description="Episode/Chapter number to preview"),
     branch_id: Optional[int] = Query(None, description="Optional branch ID"),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """Preview formatted episode text and check platform limit warnings (Step 62)."""
+    await _verify_publish_access(db, book_id, current_user)
+
     loader = SeriesDataLoader()
     try:
         config = SeriesDataLoaderConfig(

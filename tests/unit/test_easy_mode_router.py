@@ -4,7 +4,6 @@ import asyncio
 from unittest.mock import MagicMock
 
 import pytest
-from fastapi import HTTPException
 
 import src.backend.tasks.huey as huey_mod
 from src.backend.routers import easy_mode
@@ -455,10 +454,10 @@ async def test_cancel_task(monkeypatch):
     class DummyRepo:
         def update_task_status(self, task_id, status):
             pass
-    
+
     monkeypatch.setattr(easy_mode, "BookRepository", DummyRepo)
     monkeypatch.setattr(huey_mod, "revoke_by_id", lambda tid: None)
-    
+
     response = await easy_mode.cancel_task("task-123")
     assert response["task_id"] == "task-123"
     assert response["status"] == "cancelled"

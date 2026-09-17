@@ -6,18 +6,26 @@ from __future__ import annotations
 
 from typing import Any
 
-from src.agents.base import BaseAgent
 
 
 class PromptComposer:
-    """プロンプトを構���築するユーティリティクラス"""
+    """プロンプトを構築するユーティリティクラス"""
 
-    def __init__(self, agent: BaseAgent):
+    def __init__(self, agent: Any | None = None):
         """
         Args:
             agent: 親エージェント（プロンプトマネージャへのアクセスのために必要）
         """
         self.agent = agent
+        self.sections: dict[str, str] = {}
+
+    def add_section(self, name: str, content: str) -> None:
+        """セクションを追加する"""
+        self.sections[name] = content
+
+    def build(self) -> str:
+        """セクションを結合してプロンプトを構築する"""
+        return "\n\n".join(self.sections.values())
 
     async def compose_writing_prompt(
         self,

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 from src.agents.audit import PlotIntegrityMonitor
 from src.models.audit import (
@@ -274,7 +274,7 @@ class TestPlotIntegrityMonitor:
                 source="blueprint"
             ),
         ]
-        broken = monitor._verify_causality_chains(links)
+        monitor._verify_causality_chains(links)
         # 全て繋がっているので broken は空（終端の「世界」は除外判定される可能性）
         # 少なくとも魔王→世界は繋がっている
 

@@ -1,7 +1,6 @@
 """Test to verify Redis and ChromaDB fixtures work."""
 from __future__ import annotations
 
-import pytest
 import redis
 
 
@@ -24,8 +23,8 @@ def test_chromadb_container(chromadb_container):
     import socket
     import time
 
-    chromadb_host = chromadb_container.get_container_host_ip()
-    chromadb_port = chromadb_container.get_exposed_port(8000)
+    chromadb_container.get_container_host_ip()
+    chromadb_container.get_exposed_port(8000)
 
     # Wait a bit for ChromaDB to fully start up
     time.sleep(3)

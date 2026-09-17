@@ -258,11 +258,11 @@ class AuditAggregatorNode:
             try:
                 # PostgreSQL upsert or fallback insert
                 query = text("""
-                    INSERT INTO audit_specialist_results 
+                    INSERT INTO audit_specialist_results
                         (book_id, chapter_number, specialist_name, score, feedback_json, suggestions_json, evaluated_at, evaluator_version)
-                    VALUES 
+                    VALUES
                         (:book_id, :chapter_number, :specialist_name, :score, :feedback_json, :suggestions_json, :evaluated_at, :evaluator_version)
-                    ON CONFLICT (book_id, chapter_number, specialist_name) 
+                    ON CONFLICT (book_id, chapter_number, specialist_name)
                     DO UPDATE SET
                         score = EXCLUDED.score,
                         feedback_json = EXCLUDED.feedback_json,
@@ -298,10 +298,34 @@ class AuditAggregatorNode:
             phase = ctx.artifacts.get("phase", "writing")
             book_id = ctx.book_id
             aggregator = self.get_aggregator(genre=genre, phase=phase, book_id=book_id)
-
             specialist_input = self.build_specialist_input(ctx)
-            await aggregator.run_all(specialist_input)
-            score_result = aggregator.aggregate()
+
+            draft_text = specialist_input.get("draft_text", "")
+
+            # v5.0: 8並列LLM呼び出しを廃止し、二層ハイブリッド監査 UnifiedAuditor を実行
+            from src.agents.specialists.unified_auditor import UnifiedAuditor
+            unified = UnifiedAuditor(llm_gateway=self.llm)
+            report = await unified.audit(draft_text)
+
+            # 後方互換スコアの生成
+            from src.services.book_score_mapping import BookScoreResult
+            by_sp = {
+                "reader_hook": report.qualitative.hook_score,
+                "emotion_curve": report.qualitative.emotional_score,
+                "consistency": report.qualitative.character_consistency,
+                "style": report.quantitative_score,
+                "factual": report.quantitative_score,
+                "structure": report.final_score,
+                "creativity": report.qualitative.overall_score,
+                "multimodal": 80.0,
+            }
+            score_result = BookScoreResult(
+                overall=report.final_score,
+                by_specialist=by_sp,
+                missing=[],
+                raw={},
+            )
+
 
             # Include weight variant in score result for metrics
             variant_name = getattr(aggregator, "_weight_variant", "default_v1")

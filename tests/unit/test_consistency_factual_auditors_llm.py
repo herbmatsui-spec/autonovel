@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import pytest
-from unittest.mock import MagicMock, AsyncMock
+from unittest.mock import MagicMock
 
 from src.agents.specialists.consistency_auditor import ConsistencyAuditor
 from src.agents.specialists.factual_auditor import FactualAuditor

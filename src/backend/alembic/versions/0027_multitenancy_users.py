@@ -34,10 +34,10 @@ def upgrade():
     # SQLiteの制約上、直接的にForeignKeyをALTERで追加するのは難しいが、Alembicがhandleしてくれる場合が多い
     op.add_column("books", sa.Column("user_id", sa.Integer(), nullable=True))
     op.create_index("idx_books_user_id", "books", ["user_id"])
-    
+
     op.add_column("branches", sa.Column("user_id", sa.Integer(), nullable=True))
     op.create_index("idx_branches_user_id", "branches", ["user_id"])
-    
+
     op.add_column("chapters", sa.Column("user_id", sa.Integer(), nullable=True))
     op.create_index("idx_chapters_user_id", "chapters", ["user_id"])
 

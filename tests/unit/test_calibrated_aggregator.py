@@ -9,7 +9,6 @@ from src.services.audit_aggregator import (
     BookScoreResult,
     SPECIALIST_NAMES,
 )
-from src.services.score_calibrator import ScoreCalibrator
 
 
 def create_dummy_specialists(scores_map: dict[str, float]) -> list[SpecialistAuditor]:

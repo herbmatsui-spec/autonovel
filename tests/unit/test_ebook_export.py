@@ -1,10 +1,13 @@
 """src.easy_mode.phase3.ebook_export の単体テスト。"""
 from __future__ import annotations
 
+from pathlib import Path
+
 from src.easy_mode.phase3.ebook_export import (
     EPUB_AVAILABLE,
     PDF_AVAILABLE,
-    create_ebook_exporter,
+    EbookMetadata,
+    EbookExporter,
 )
 from src.easy_mode import SeriesResult
 from src.easy_mode.spice_guard import SpiceElement
@@ -38,25 +41,28 @@ def _make_series(genre: str = "ハイファンタジー (R15)") -> SeriesResult:
     )
 
 
+def _make_exporter(output_dir: Path) -> EbookExporter:
+    """正しいシグネチャ (metadata, output_dir) で EbookExporter を生成する。"""
+    metadata = EbookMetadata(title="テストシリーズ", genre="ハイファンタジー (R15)")
+    return EbookExporter(metadata, output_dir)
+
+
 def test_create_ebook_exporter():
-    exporter = create_ebook_exporter("ハイファンタジー (R15)", {"characters": {"archetypes": {}}, "erotic": {}})
+    exporter = _make_exporter(Path("."))
     assert exporter is not None
+    assert exporter.genre == "ハイファンタジー (R15)"
 
 
 def test_export_all_unknown_format_is_skipped(tmp_path):
     series = _make_series()
-    exporter = create_ebook_exporter(
-        "ハイファンタジー (R15)", {"characters": {"archetypes": {}}, "erotic": {}}
-    )
+    exporter = _make_exporter(tmp_path)
     results = exporter.export_all(series, tmp_path, ["unknown_format"])
     assert results == {}
 
 
 def test_export_all_epub_fallback(tmp_path):
     series = _make_series()
-    exporter = create_ebook_exporter(
-        "ハイファンタジー (R15)", {"characters": {"archetypes": {}}, "erotic": {}}
-    )
+    exporter = _make_exporter(tmp_path)
     results = exporter.export_all(series, tmp_path, ["epub"])
     if not EPUB_AVAILABLE:
         # フォールバック: 空 dict または JSON ファイル
@@ -68,9 +74,7 @@ def test_export_all_epub_fallback(tmp_path):
 
 def test_export_all_pdf_fallback(tmp_path):
     series = _make_series()
-    exporter = create_ebook_exporter(
-        "ハイファンタジー (R15)", {"characters": {"archetypes": {}}, "erotic": {}}
-    )
+    exporter = _make_exporter(tmp_path)
     results = exporter.export_all(series, tmp_path, ["pdf"])
     if PDF_AVAILABLE:
         assert "pdf" in results

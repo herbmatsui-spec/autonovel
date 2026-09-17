@@ -1,6 +1,5 @@
 """Unit tests for FourLayerCompressor end-to-end pipeline and ProtectedContext pinning (Part 5 / Steps 55-60)."""
 
-import pytest
 
 from src.services.compression.compressor import FourLayerCompressor
 from src.services.compression.models import (

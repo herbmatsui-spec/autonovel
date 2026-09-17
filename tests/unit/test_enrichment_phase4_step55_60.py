@@ -10,7 +10,6 @@ from src.agents.enrichment.sensory import (
     EmotionSpan,
     generate_sensory_details,
     replace_with_sensory_expansion,
-    expand_sensory_details_pipeline,
 )
 from src.agents.enrichment_agent import EnrichmentAgent
 from src.agents.orchestrator import AgentContext, AgentName
@@ -21,7 +20,7 @@ def test_step55_sensory_expansion_jinja2_rendering():
     tpl_path = Path("src/prompts/enrichment/sensory_expansion.jinja2")
     assert tpl_path.exists()
     content = tpl_path.read_text(encoding="utf-8")
-    
+
     template = Template(content)
     rendered = template.render(
         emotion="sadness",

@@ -10,7 +10,6 @@ Tests the full lifecycle of a long chapter (8000+ chars):
 """
 
 import pytest
-import re
 from unittest.mock import AsyncMock, MagicMock
 from src.agents.orchestrator import AgentContext, AgentName
 from src.agents.enrichment_agent import EnrichmentAgent

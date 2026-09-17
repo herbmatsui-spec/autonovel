@@ -133,12 +133,12 @@ class ResourceManager:
         """GPU ワーカー用環境変数 (CUDA_VISIBLE_DEVICES + NUMA) 生成。"""
         env = os.environ.copy()
         env["CUDA_VISIBLE_DEVICES"] = str(gpu_index)
-        
+
         numa = self.numa_topology.get_numa_for_gpu(gpu_index)
         if numa is not None:
             # numactl でメモリ割当制御
             env["NUMACTL_ARGS"] = f"--membind={numa} --cpunodebind={numa}"
-        
+
         return env
 
 

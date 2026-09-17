@@ -25,7 +25,9 @@ from .base import (
     NotFoundError,
     PipelineError,
     ValidationError,
+    CostBudgetExceededError,
 )
+
 from .phase3 import (
     CompressionCacheError,
     CompressionConfigError,
@@ -87,4 +89,5 @@ __all__ = [
     "SocialSimulationError",
     "ConfigurationError",
     "ResourceExhaustedError",
+    "CostBudgetExceededError",
 ]

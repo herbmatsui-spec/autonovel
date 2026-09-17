@@ -9,7 +9,7 @@ import json
 
 from src.domain.entities.world_bible import WorldBible, Setting, Lore, PendingSetting
 from src.domain.value_objects.ids import NovelId, SettingId
-from src.domain.value_objects.text import TextContent, MarkdownText
+from src.domain.value_objects.text import TextContent
 from src.domain.repositories.world_bible_repository import IWorldBibleRepository
 
 
@@ -183,7 +183,7 @@ class BibleConsistencyChecker:
             if existing.category == new_lore.category:
                 existing_keywords = self._extract_keywords(existing.content.content)
                 new_keywords = self._extract_keywords(new_lore.content.content)
-                
+
                 # Check for direct contradictions
                 for kw in existing_keywords:
                     opposite = self._get_opposite(kw)
@@ -381,7 +381,7 @@ class BibleValidator:
 class BibleDomainService:
     """
     Domain service for world bible business logic.
-    
+
     Pure business logic - no infrastructure dependencies.
     Depends only on repository interfaces.
     """
@@ -416,7 +416,7 @@ class BibleDomainService:
             raise BibleValidationError(f"World bible for novel {novel_id} not found")
 
         bible.update_settings(settings, increment_version)
-        
+
         errors = self._validator.validate_world_bible(bible)
         if errors:
             raise BibleValidationError("; ".join(errors))
@@ -451,7 +451,7 @@ class BibleDomainService:
         if not 0.0 <= confidence <= 1.0:
             raise BibleValidationError("Confidence must be between 0.0 and 1.0")
 
-        pending = bible.add_pending_setting(field_name, proposed_value, confidence)
+        bible.add_pending_setting(field_name, proposed_value, confidence)
         return await self.bible_repo.save(bible)
 
     async def confirm_pending_setting(self, novel_id: NovelId, field_name: str) -> Optional[PendingSetting]:
@@ -620,7 +620,7 @@ class BibleDomainService:
     async def get_lore_by_category(self, novel_id: NovelId, category: str) -> List[Lore]:
         """Get lore entries by category."""
         all_lore = await self.bible_repo.get_all_lore(novel_id)
-        return [l for l in all_lore if l.category == category]
+        return [lore_item for lore_item in all_lore if lore_item.category == category]
 
     async def check_consistency(self, novel_id: NovelId) -> ConsistencyReport:
         """Perform full consistency check."""

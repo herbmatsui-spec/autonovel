@@ -22,12 +22,17 @@ from src.backend.database.repositories import (
     BranchRepository,
     ChapterRepository,
     CharacterRepository,
+    CollabRepository,
+    CostRepository,
     IllustrationRepository,
     MiscRepository,
+    NarrativeMetricRepository,
+    PDCAHistoryRepository,
     PlotRepository,
     PromptMetricsRepository,
     PromptVersionRepository,
     RulesRepository,
+    TraceRepository,
 )
 from src.backend.database.uow_context import current_uow
 
@@ -44,24 +49,7 @@ class UnitOfWork:
         self.db = db
         self.session: AsyncSession | None = None
         self._token = None
-        self._bible: BibleRepository | None = None
-        self._books: BookRepository | None = None
-        self._branches: BranchRepository | None = None
-        self._chapters: ChapterRepository | None = None
-        self._characters: CharacterRepository | None = None
-        self._misc: MiscRepository | None = None
-        self._plots: PlotRepository | None = None
-        self._rules: RulesRepository | None = None
-        self._audit: AuditRepository | None = None
-        self._book_scores: BookScoreRepository | None = None
-        self._prompt_versions: PromptVersionRepository | None = None
-        self._prompt_metrics: PromptMetricsRepository | None = None
-        self._pdca_history: PDCAHistoryRepository | None = None
-        self._illustrations: IllustrationRepository | None = None
-        self._collab: CollabRepository | None = None
-        self._cost: CostRepository | None = None
-        self._narrative_metrics: NarrativeMetricRepository | None = None
-        self._trace: TraceRepository | None = None
+        self._repo_cache: dict[type[Any], Any] = {}
 
         self.outbox_service = ChromaOutboxService()
         self._chroma_additions: list[dict[str, Any]] = []
@@ -90,113 +78,82 @@ class UnitOfWork:
         """ChromaDBからのドキュメント削除をステージング"""
         self._chroma_deletions.append({"collection": collection, "ids": ids})
 
+    def _get_repo(self, repo_cls: type[Any]) -> Any:
+        if repo_cls not in self._repo_cache:
+            self._repo_cache[repo_cls] = repo_cls(self.session)
+        return self._repo_cache[repo_cls]
+
     @property
     def bible(self) -> BibleRepository:
-        if self._bible is None:
-            self._bible = BibleRepository(self.session)
-        return self._bible
+        return self._get_repo(BibleRepository)
 
     @property
     def books(self) -> BookRepository:
-        if self._books is None:
-            self._books = BookRepository(self.session)
-        return self._books
+        return self._get_repo(BookRepository)
 
     @property
     def branches(self) -> BranchRepository:
-        if self._branches is None:
-            self._branches = BranchRepository(self.session)
-        return self._branches
+        return self._get_repo(BranchRepository)
 
     @property
     def chapters(self) -> ChapterRepository:
-        if self._chapters is None:
-            self._chapters = ChapterRepository(self.session)
-        return self._chapters
+        return self._get_repo(ChapterRepository)
 
     @property
     def characters(self) -> CharacterRepository:
-        if self._characters is None:
-            self._characters = CharacterRepository(self.session)
-        return self._characters
+        return self._get_repo(CharacterRepository)
 
     @property
     def misc(self) -> MiscRepository:
-        if self._misc is None:
-            self._misc = MiscRepository(self.session)
-        return self._misc
+        return self._get_repo(MiscRepository)
 
     @property
     def plots(self) -> PlotRepository:
-        if self._plots is None:
-            self._plots = PlotRepository(self.session)
-        return self._plots
+        return self._get_repo(PlotRepository)
 
     @property
     def rules(self) -> RulesRepository:
-        if self._rules is None:
-            self._rules = RulesRepository(self.session)
-        return self._rules
+        return self._get_repo(RulesRepository)
 
     @property
     def audit(self) -> AuditRepository:
-        if self._audit is None:
-            self._audit = AuditRepository(self.session)
-        return self._audit
+        return self._get_repo(AuditRepository)
 
     @property
     def book_scores(self) -> BookScoreRepository:
-        if self._book_scores is None:
-            self._book_scores = BookScoreRepository(self.session)
-        return self._book_scores
+        return self._get_repo(BookScoreRepository)
 
     @property
     def prompt_versions(self) -> PromptVersionRepository:
-        if self._prompt_versions is None:
-            self._prompt_versions = PromptVersionRepository(self.session)
-        return self._prompt_versions
+        return self._get_repo(PromptVersionRepository)
 
     @property
     def prompt_metrics(self) -> PromptMetricsRepository:
-        if self._prompt_metrics is None:
-            self._prompt_metrics = PromptMetricsRepository(self.session)
-        return self._prompt_metrics
+        return self._get_repo(PromptMetricsRepository)
 
     @property
     def pdca_history(self) -> PDCAHistoryRepository:
-        if self._pdca_history is None:
-            self._pdca_history = PDCAHistoryRepository(self.session)
-        return self._pdca_history
+        return self._get_repo(PDCAHistoryRepository)
 
     @property
     def illustrations(self) -> IllustrationRepository:
-        if self._illustrations is None:
-            self._illustrations = IllustrationRepository(self.session)
-        return self._illustrations
+        return self._get_repo(IllustrationRepository)
 
     @property
     def collab(self) -> CollabRepository:
-        if self._collab is None:
-            self._collab = CollabRepository(self.session)
-        return self._collab
+        return self._get_repo(CollabRepository)
 
     @property
     def cost(self) -> CostRepository:
-        if self._cost is None:
-            self._cost = CostRepository(self.session)
-        return self._cost
+        return self._get_repo(CostRepository)
 
     @property
     def narrative_metrics(self) -> NarrativeMetricRepository:
-        if self._narrative_metrics is None:
-            self._narrative_metrics = NarrativeMetricRepository(self.session)
-        return self._narrative_metrics
+        return self._get_repo(NarrativeMetricRepository)
 
     @property
     def trace(self) -> TraceRepository:
-        if self._trace is None:
-            self._trace = TraceRepository(self.session)
-        return self._trace
+        return self._get_repo(TraceRepository)
 
     async def __aenter__(self) -> UnitOfWork:
         if hasattr(self.db, "get_session"):
@@ -272,22 +229,6 @@ class UnitOfWork:
             if self.session:
                 await self.session.close()
             self.session = None
-            self._bible = None
-            self._books = None
-            self._branches = None
-            self._chapters = None
-            self._characters = None
-            self._misc = None
-            self._plots = None
-            self._rules = None
-            self._audit = None
-            self._book_scores = None
-            self._prompt_versions = None
-            self._prompt_metrics = None
-            self._pdca_history = None
-            self._collab = None
-            self._cost = None
-            self._narrative_metrics = None
-            self._trace = None
+            self._repo_cache.clear()
             self._chroma_additions.clear()
             self._chroma_deletions.clear()

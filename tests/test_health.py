@@ -15,10 +15,12 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
+from src.backend.config import settings
 from src.backend.observability.health import metrics
 from src.backend.server import app
 
-client = TestClient(app)
+settings.AUTH_DISABLED = True
+client = TestClient(app, headers={"Authorization": "dev-key"})
 
 
 def test_health_ok() -> None:

@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 import io
-from PIL import Image
 from typing import Dict, Any
+
 
 @dataclass
 class ImageGenerationRequest:
@@ -35,13 +35,14 @@ def extract_png_metadata(image_bytes: bytes) -> Dict[str, Any]:
     簡易的にダミーの情報を返す。
     """
     try:
+        from PIL import Image
         with Image.open(io.BytesIO(image_bytes)) as img:
             width, height = img.size
             format = img.format
     except Exception:
         width = height = 0
         format = None
-    
+
     return {
         "width": width,
         "height": height,

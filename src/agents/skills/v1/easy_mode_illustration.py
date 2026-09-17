@@ -30,9 +30,9 @@ class EasyModeIllustrationSkill(SkillAgent):
         try:
             # easy_mode では挿絵生成をスキップして次へ
             # 必要に応じて簡易版 IllustrationAgent を呼び出す
-            
-            drafted_text = ctx.artifacts.get("drafted_text", "")
-            book_context = {
+
+            ctx.artifacts.get("drafted_text", "")
+            {
                 "title": ctx.artifacts.get("title", ""),
                 "genre": ctx.artifacts.get("genre", ""),
             }

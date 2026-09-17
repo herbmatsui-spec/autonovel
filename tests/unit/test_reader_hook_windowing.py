@@ -1,7 +1,7 @@
 """Unit tests for ReaderHookAuditor windowing integration (Step 40-42)."""
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 from src.agents.specialists.reader_hook_auditor import ReaderHookAuditor
 
 

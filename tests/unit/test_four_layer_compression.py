@@ -14,8 +14,8 @@ from src.services.compression import (
 )
 from src.agents.context_builder_agent import ContextBuilderAgent
 from src.agents.orchestrator import AgentContext
-from tests.benchmarks.annotations import ACCURACY_TEST_CASES, SCENE_ANNOTATIONS
-from tests.benchmarks.accuracy import scene_type_accuracy, evaluate_test_case
+from tests.benchmarks.annotations import ACCURACY_TEST_CASES
+from tests.benchmarks.accuracy import evaluate_test_case
 
 
 SAMPLE_LONG_NOVEL_TEXT = """
@@ -240,7 +240,7 @@ def test_scene_type_accuracy(test_case):
     # Map entity names to labels based on test case
     entity_labels = {}
     relations = []
-    
+
     if test_case["scene_type"] == "combat":
         entity_labels = {
             "e1": ("アルカディア", ["Character"]),

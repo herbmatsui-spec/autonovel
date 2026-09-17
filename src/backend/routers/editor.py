@@ -12,7 +12,9 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from src.backend.auth import get_current_user
 from src.backend.database import get_db
+from src.backend.database.models import User
 from src.models.editor import (
     AskBibleRequest,
     AskBibleResponse,
@@ -38,7 +40,10 @@ next_beats_service = NextBeatsService()
 
 
 @router.post("/assist", response_model=AssistResponse)
-async def assist_content(req: AssistRequest) -> AssistResponse:
+async def assist_content(
+    req: AssistRequest,
+    current_user: User = Depends(get_current_user),
+) -> AssistResponse:
     """選択テキストに対するインラインAI推敲・五感描写拡張・Show Don't Tell・トーン変換"""
     try:
         return await assist_service.assist(req)
@@ -51,6 +56,7 @@ async def assist_content(req: AssistRequest) -> AssistResponse:
 async def ask_bible(
     req: AskBibleRequest,
     session: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> AskBibleResponse:
     """GraphRAG（ベクトル検索 + ナレッジグラフ）を活用した世界観設定資料・過去章 Q&A"""
     try:
@@ -64,8 +70,9 @@ async def ask_bible(
 async def audit_consistency(
     req: ConsistencyAuditRequest,
     session: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> ConsistencyAuditResponse:
-    """執筆中の本文と GraphRAG 設定情報とのリアルタイム矛盾診断"""
+    """執筆中の本文と設定情報とのリアルタイム矛盾診断"""
     try:
         return await editorial_service.audit_consistency(session, req)
     except Exception as e:
@@ -73,8 +80,30 @@ async def audit_consistency(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/audit")
+async def audit_fast_hybrid(
+    draft_text: str,
+    character_profiles: str = "",
+    plot_spec: str = "",
+    current_user: User = Depends(get_current_user),
+):
+    """v5.0: 二層ハイブリッド監査（静的ルール解析＋定性判定）エンドポイント"""
+    try:
+        from src.agents.specialists.unified_auditor import UnifiedAuditor
+        auditor = UnifiedAuditor()
+        report = await auditor.audit(draft_text, character_profiles, plot_spec)
+        return report.model_dump()
+    except Exception as e:
+        logger.error(f"Error in audit_fast_hybrid: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
 @router.post("/next-beats", response_model=NextBeatsResponse)
-async def generate_next_beats(req: NextBeatsRequest) -> NextBeatsResponse:
+async def generate_next_beats(
+    req: NextBeatsRequest,
+    current_user: User = Depends(get_current_user),
+) -> NextBeatsResponse:
     """直前までの本文から、王道・サスペンス・心情の3つの展開バリエーションを並列生成"""
     try:
         return await next_beats_service.generate_three_beats(req)

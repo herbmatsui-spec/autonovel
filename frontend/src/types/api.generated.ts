@@ -383,13 +383,144 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /**
+         * Stream Generation
+         * @description 小説執筆を SSE でストリーミング配信する (GET)。
+         *
+         *     EventSource は GET のみ対応しているため、本エンドポイントは GET で
+         *     リクエストパラメータ (個別フィールド または base64 ``payload``) を受け取り、
+         *     ``text/event-stream`` で逐次チャンクを返す。
+         *
+         *     個別フィールドが指定された場合は ``StreamQueryInput`` 経由で組み立てる。
+         *     ``payload`` (base64 JSON) を渡した場合は ``EasyModeInput`` として直接復元する。
+         */
+        get: operations["stream_generation_easy_mode_generate_stream_get"];
+        put?: never;
+        /**
+         * Stream Generation Post
+         * @description POST endpoint for SSE streaming (fully implemented).
+         */
+        post: operations["stream_generation_post_easy_mode_generate_stream_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/styles/all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get All Styles
+         * @description 全スタイル定義を取得（config/data/styles.jsonより）
+         */
+        get: operations["get_all_styles_api_styles_all_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/styles/categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Style Categories
+         * @description スタイルカテゴリ一覧を取得
+         */
+        get: operations["get_style_categories_api_styles_categories_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/styles/{style_id}/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Style Preview
+         * @description 特定スタイルのプレビュー情報を取得
+         */
+        get: operations["get_style_preview_api_styles__style_id__preview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/styles/presets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Style Presets
+         * @description 利用可能な文体プリセット一覧を取得
+         */
+        get: operations["get_style_presets_api_styles_presets_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/styles/distill": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         get?: never;
         put?: never;
         /**
-         * Stream Generation
-         * @description 小説執筆をストリーミング配信するエンドポイント。
+         * Distill Style
+         * @description 提供されたサンプル文章から作家性DNA（StyleProfile）を自動抽出
          */
-        post: operations["stream_generation_easy_mode_generate_stream_post"];
+        post: operations["distill_style_api_styles_distill_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/styles/reformat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reformat Cadence
+         * @description 本文の文末重複（〜た）を補正し、自然な音律とリズムへ整形
+         */
+        post: operations["reformat_cadence_api_styles_reformat_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -428,6 +559,326 @@ export interface paths {
          * @description 保存されているベクトルチャンク一覧を取得する.
          */
         get: operations["list_chapter_chunks_api_graph_chunks_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/graph/cypher": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Execute Cypher
+         * @description 任意のCypherクエリを実行する（管理者向け）.
+         */
+        post: operations["execute_cypher_api_graph_cypher_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/graph/nodes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upsert Node
+         * @description ノードを作成または更新する.
+         */
+        post: operations["upsert_node_api_graph_nodes_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/graph/edges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upsert Edge
+         * @description エッジを作成または更新する.
+         */
+        post: operations["upsert_edge_api_graph_edges_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/graph/batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upsert Batch
+         * @description ノードとエッジをバッチで作成・更新する.
+         */
+        post: operations["upsert_batch_api_graph_batch_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/graph/nodes/{label}/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Node
+         * @description ノードを削除する.
+         */
+        delete: operations["delete_node_api_graph_nodes__label___name__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/graph/search/neighbors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Search Neighbors
+         * @description 指定ノードからNホップ以内の近傍ノードを取得する.
+         */
+        post: operations["search_neighbors_api_graph_search_neighbors_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/graph/nodes/{node_name}/path/{target_name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Shortest Path
+         * @description 2ノード間の最短パスを取得する.
+         */
+        get: operations["get_shortest_path_api_graph_nodes__node_name__path__target_name__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/graph/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Graph Stats
+         * @description グラフの統計情報を取得する.
+         */
+        get: operations["get_graph_stats_api_graph_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/graph/labels": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Labels
+         * @description グラフ内の全ラベル一覧を取得する.
+         */
+        get: operations["get_labels_api_graph_labels_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/graph/pipeline/process": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Process Chapter
+         * @description 単一チャプターのGraphRAG処理を実行する.
+         */
+        post: operations["process_chapter_api_graph_pipeline_process_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/graph/pipeline/batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Process Chapters Batch
+         * @description 複数チャプターのGraphRAG処理をバッチ実行する.
+         */
+        post: operations["process_chapters_batch_api_graph_pipeline_batch_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/graph/pipeline/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Pipeline Status
+         * @description パイプラインの処理状態を取得する.
+         */
+        get: operations["get_pipeline_status_api_graph_pipeline_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/graph/rag/hybrid-search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Hybrid Search
+         * @description ハイブリッド検索 (Vector + Graph + Fulltext) を実行する.
+         */
+        post: operations["hybrid_search_api_graph_rag_hybrid_search_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/graph/rag/context": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Build Rag Context
+         * @description 執筆用RAGコンテキスト (グラフ + ベクトル + 全文) を生成する.
+         */
+        post: operations["build_rag_context_api_graph_rag_context_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/graph/rag/episode": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retrieve For Episode
+         * @description エピソード執筆向けのコンテキストを一括取得する.
+         */
+        post: operations["retrieve_for_episode_api_graph_rag_episode_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/graph/rag/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Rag Stats
+         * @description RAGサービスの統計情報を取得する.
+         */
+        get: operations["get_rag_stats_api_graph_rag_stats_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -516,6 +967,566 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/system/models/info": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Models Info
+         * @description サーバー既定のモデル構成および利用可能プロバイダ一覧を返す。
+         */
+        get: operations["get_models_info_api_system_models_info_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/system/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * System Status
+         * @description システム全体の耐障害ステータスを返す。
+         */
+        get: operations["system_status_api_system_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/system/huey/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Huey Health Status
+         * @description Huey 分散タスクキューの健全性・接続状態を返す (Step 47)
+         */
+        get: operations["get_huey_health_status_api_system_huey_health_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/system/offline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Offline Flag
+         * @description オフラインモード有効状態を返す。
+         */
+        get: operations["offline_flag_api_system_offline_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/llm/providers/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Llm Provider Status */
+        get: operations["get_llm_provider_status_admin_llm_providers_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/llm/circuit-breaker/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reset Llm Circuit Breaker */
+        post: operations["reset_llm_circuit_breaker_admin_llm_circuit_breaker_reset_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/system/admin/skills/switch_version": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Switch Skill Version
+         * @description スキルバージョンを切り替える (v1, v2)
+         */
+        post: operations["switch_skill_version_api_system_admin_skills_switch_version_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/system/admin/skills/version": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Skill Version
+         * @description 現在のスキルバージョンを取得
+         */
+        get: operations["get_skill_version_api_system_admin_skills_version_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/system/admin/book_score/recalc": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Recalc All Book Scores
+         * @description 全書籍の BookScore を再計算する（管理者用・並列化対応）
+         */
+        post: operations["recalc_all_book_scores_api_system_admin_book_score_recalc_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/system/admin/book_score/improvement_priorities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Improvement Priorities
+         * @description 書籍の改善優先順位を取得する（管理者用）
+         */
+        get: operations["get_improvement_priorities_api_system_admin_book_score_improvement_priorities_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/system/admin/skills/metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Skill Metrics
+         * @description スキル実行メトリクスを取得する（デバッグ用）
+         */
+        get: operations["get_skill_metrics_api_system_admin_skills_metrics_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/system/admin/skills/ab_test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run Ab Test
+         * @description A/Bテストを即時実行する
+         */
+        post: operations["run_ab_test_api_system_admin_skills_ab_test_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/system/admin/skills/ab_test/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Ab Test History
+         * @description A/Bテスト履歴を取得する（簡易実装：メトリクスから取得）
+         */
+        get: operations["get_ab_test_history_api_system_admin_skills_ab_test_history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/system/admin/skills/ab_test/schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Schedule Ab Test
+         * @description 定期的なA/Bテストをスケジュールする
+         */
+        post: operations["schedule_ab_test_api_system_admin_skills_ab_test_schedule_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/system/admin/skills/ab_test/schedule/{task_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Cancel Ab Test Schedule
+         * @description スケジュール済みA/Bテストをキャンセルする
+         */
+        delete: operations["cancel_ab_test_schedule_api_system_admin_skills_ab_test_schedule__task_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/audit/model-routing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Audit Model Routing
+         * @description 現在のオーディターごとのモデル割り当てを一覧返却
+         */
+        get: operations["get_audit_model_routing_admin_audit_model_routing_get"];
+        put?: never;
+        /**
+         * Update Audit Model Routing
+         * @description オーディターのモデル割り当てを動的に変更
+         */
+        post: operations["update_audit_model_routing_admin_audit_model_routing_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/system/admin/skills/ab_test/auto_promote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Auto Promote Ab Winner
+         * @description A/Bテスト勝者バージョンを自動本番昇格する
+         */
+        post: operations["auto_promote_ab_winner_api_system_admin_skills_ab_test_auto_promote_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/export/platforms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Platforms
+         * @description 対応プラットフォーム一覧を取得する。
+         */
+        get: operations["get_platforms_api_export_platforms_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/export/books/{book_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Book
+         * @description 作品を指定プラットフォーム用に整形して出力する。
+         */
+        get: operations["export_book_api_export_books__book_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/export/ebook": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Export Ebook Alias
+         * @description README 互換エイリアス: eBook エクスポート (EPUB/PDF/MOBI) - `/multimedia/ebook` に委譲。
+         *
+         *     重い PDF/EPUB 生成をワーカースレッドにオフロードしてイベントループをブロックしない。
+         */
+        post: operations["export_ebook_alias_api_export_ebook_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/audit/specialists": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Specialists
+         * @description 登録済みの専門オーディター一覧を取得
+         */
+        get: operations["list_specialists_admin_audit_specialists_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/audit/aggregate_test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Test Aggregate
+         * @description 任意の原稿で監査集約を実行（テスト用）
+         */
+        post: operations["test_aggregate_admin_audit_aggregate_test_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/audit/weights": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Audit Weights
+         * @description 現在の重み設定を取得
+         */
+        get: operations["get_audit_weights_admin_audit_weights_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/rag/reflection_test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Test Reflection
+         * @description 反射スクリーニングをテスト実行
+         */
+        post: operations["test_reflection_admin_rag_reflection_test_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/rag/reflection_stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Reflection Stats
+         * @description 反射スクリーニングの統計を取得（DB履歴から集計）
+         */
+        get: operations["get_reflection_stats_admin_rag_reflection_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/enrichment/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Enrichment Status
+         * @description EnrichmentAgent の設定・機能フラグ・ステータスを取得
+         */
+        get: operations["get_enrichment_status_admin_enrichment_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/enrichment/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Test Enrichment
+         * @description EnrichmentAgent をテスト実行（開発・デバッグ用）
+         */
+        post: operations["test_enrichment_admin_enrichment_test_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/enrichment/metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Enrichment Metrics
+         * @description Prometheus メトリクスから Enrichment 関連のスナップショットを取得
+         */
+        get: operations["get_enrichment_metrics_admin_enrichment_metrics_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/books/": {
         parameters: {
             query?: never;
@@ -526,7 +1537,8 @@ export interface paths {
         /** List Books */
         get: operations["list_books_api_books__get"];
         put?: never;
-        post?: never;
+        /** Create Book */
+        post: operations["create_book_api_books__post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -543,7 +1555,8 @@ export interface paths {
         /** List Books */
         get: operations["list_books_api_books_get"];
         put?: never;
-        post?: never;
+        /** Create Book */
+        post: operations["create_book_api_books_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -563,6 +1576,40 @@ export interface paths {
         post?: never;
         /** Delete Book */
         delete: operations["delete_book_api_books__book_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/books/{book_id}/book-scores/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Book Score History */
+        get: operations["get_book_score_history_api_books__book_id__book_scores_history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/books/{book_id}/pdca/cycles/{chapter_number}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Pdca Cycles */
+        get: operations["get_pdca_cycles_api_books__book_id__pdca_cycles__chapter_number__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -792,6 +1839,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tasks/dag/{dag_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Dag Status
+         * @description Step 57: Get DAG workflow status, progress, and node execution states.
+         */
+        get: operations["get_dag_status_api_tasks_dag__dag_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tasks/{task_id}/stream": {
         parameters: {
             query?: never;
@@ -820,6 +1887,69 @@ export interface paths {
         put?: never;
         /** Stop Task */
         post: operations["stop_task_api_tasks__task_id__stop_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/admin/recover": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Trigger Task Recovery
+         * @description Step 58: Manual trigger for orphan task detection and recovery.
+         *
+         *     Scans for zombie tasks (running with stale heartbeat) and resets them to pending
+         *     for re-scheduling. Returns count of recovered tasks.
+         */
+        post: operations["trigger_task_recovery_api_tasks_admin_recover_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/admin/recover/zombies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Zombie Tasks
+         * @description List current zombie tasks (running with stale heartbeat) without recovering them.
+         */
+        get: operations["list_zombie_tasks_api_tasks_admin_recover_zombies_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/admin/wal/{dag_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Wal Logs
+         * @description Get WAL logs for a specific DAG for debugging.
+         */
+        get: operations["get_wal_logs_api_tasks_admin_wal__dag_id__get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -894,6 +2024,166 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/patches/{book_id}/reviews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Pending Reviews
+         * @description レビュー待ちパッチ一覧を取得
+         */
+        get: operations["get_pending_reviews_api_patches__book_id__reviews_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/patches/reviews/{review_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Review Detail
+         * @description レビュー詳細を取得
+         */
+        get: operations["get_review_detail_api_patches_reviews__review_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/patches/reviews/{review_id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve Review
+         * @description レビューを承認
+         */
+        post: operations["approve_review_api_patches_reviews__review_id__approve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/patches/reviews/{review_id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reject Review
+         * @description レビューを差し戻し
+         */
+        post: operations["reject_review_api_patches_reviews__review_id__reject_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/patches/reviews/{review_id}/revise": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revise Review
+         * @description レビューに修正案を提示（再レビュー要求）
+         */
+        post: operations["revise_review_api_patches_reviews__review_id__revise_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/patches/{book_id}/setting-versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Setting Versions
+         * @description 設定バージョン履歴を取得
+         */
+        get: operations["get_setting_versions_api_patches__book_id__setting_versions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/patches/{book_id}/setting-versions/{version_number}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Setting Version
+         * @description 特定バージョンの設定を取得
+         */
+        get: operations["get_setting_version_api_patches__book_id__setting_versions__version_number__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/episodes/{episode_id}/patch-paragraph": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Patch Paragraph
+         * @description 手動で特定段落のリライトを指示し、即時差分を取得
+         */
+        post: operations["patch_paragraph_api_episodes__episode_id__patch_paragraph_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/issues/books/{book_id}": {
         parameters: {
             query?: never;
@@ -955,8 +2245,31 @@ export interface paths {
         /** Export Package Get */
         get: operations["export_package_get_api_marketing_export_package__book_id__get"];
         put?: never;
-        /** Export Package Post */
+        /**
+         * Export Package Post
+         * @description 作品データ一式 (本文 / 設定 / プロット / JSON) を ZIP で返す.
+         */
         post: operations["export_package_post_api_marketing_export_package__book_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/marketing/viral-titles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate Viral Titles
+         * @description カクヨムCTR最大化タイトル候補30〜50案を生成・採点し、上位推薦案とあらすじを返す。
+         */
+        post: operations["generate_viral_titles_api_marketing_viral_titles_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1172,6 +2485,227 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/novel/books/{book_id}/chapters/{chapter_number}/score": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Chapter Book Score
+         * @description 指定章の BookScore を取得する
+         */
+        get: operations["get_chapter_book_score_api_novel_books__book_id__chapters__chapter_number__score_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/novel/books/{book_id}/promotion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Check Promotion Eligibility
+         * @description かんたんモードから上級者Studioへの昇格判定を取得する
+         */
+        get: operations["check_promotion_eligibility_api_novel_books__book_id__promotion_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/novel/books/{book_id}/pdca": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Pdca Report
+         * @description 書籍の PDCA レポートを取得する
+         */
+        get: operations["get_pdca_report_api_novel_books__book_id__pdca_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/novel/books/{book_id}/alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Book Alerts
+         * @description 書籍のスコアアラートを取得する
+         */
+        get: operations["get_book_alerts_api_novel_books__book_id__alerts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/novel/{book_id}/social/relationships": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Novel Social Relationships
+         * @description 作品のキャラクター間動的関係性一覧を取得
+         */
+        get: operations["get_novel_social_relationships_api_novel__book_id__social_relationships_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/novel/{book_id}/social/journals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Novel Social Journals
+         * @description 作品の登場人物内面手記・日記一覧を取得
+         */
+        get: operations["get_novel_social_journals_api_novel__book_id__social_journals_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/novel/{book_id}/social/trends": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Novel Social Trends
+         * @description 作品の動的関係性トレンド要約テキストを取得
+         */
+        get: operations["get_novel_social_trends_api_novel__book_id__social_trends_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/commercial/schedules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Schedule
+         * @description 投稿スケジュールを登録する。
+         */
+        post: operations["create_schedule_commercial_schedules_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/commercial/schedules/{book_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Schedules
+         * @description 書籍ごとの投稿スケジュール一覧を取得する。
+         */
+        get: operations["get_schedules_commercial_schedules__book_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/commercial/schedules/{schedule_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Cancel Schedule
+         * @description 投稿スケジュールを取り消す。
+         *     ステータスが 'pending' の場合のみ取り消し可能。
+         */
+        delete: operations["cancel_schedule_commercial_schedules__schedule_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/commercial/schedules/{schedule_id}/run-now": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run Schedule Now
+         * @description 予約投稿を即時に実行する (Step 10).
+         */
+        post: operations["run_schedule_now_commercial_schedules__schedule_id__run_now_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/commercial/run": {
         parameters: {
             query?: never;
@@ -1198,6 +2732,140 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/commercial/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Publish Commercial
+         * @description 【非推奨・廃止】外部投稿サイトの利用規約（自動スクレイピング・非公式API投稿の禁止）および
+         *     アカウントBANリスクゼロの安全確保のため、自動直接投稿機能は無効化されました。
+         *     今後は半自動投稿アシスタント（/api/publish-assistant/format）をご利用ください。
+         */
+        post: operations["publish_commercial_commercial_publish_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/commercial/scheduled-tasks/{book_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Scheduled Publish Tasks
+         * @description 予約投稿ジョブの一覧を取得する (Step 56).
+         */
+        get: operations["get_scheduled_publish_tasks_commercial_scheduled_tasks__book_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/commercial/scheduled-tasks/{task_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Cancel Scheduled Publish Task
+         * @description 予約投稿ジョブを取り消す (Step 57).
+         */
+        delete: operations["cancel_scheduled_publish_task_commercial_scheduled_tasks__task_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/commercial/publish/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Get Publish Status
+         * @description 投稿ステータスを取得する。
+         *
+         *     Args:
+         *         request: ステータス取得リクエスト
+         *
+         *     Returns:
+         *         投稿ステータス情報
+         */
+        post: operations["get_publish_status_commercial_publish_status_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/commercial/publish/records/{book_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Publish Records
+         * @description 書籍の投稿履歴を取得する。
+         *
+         *     Args:
+         *         book_id: 書籍ID
+         *
+         *     Returns:
+         *         投稿履歴リスト
+         */
+        get: operations["get_publish_records_commercial_publish_records__book_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/commercial/publish/platforms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Publish Platforms
+         * @description 対応投稿プラットフォーム一覧を取得
+         */
+        get: operations["list_publish_platforms_commercial_publish_platforms_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/generate": {
         parameters: {
             query?: never;
@@ -1218,6 +2886,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/yonkoma": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate Yonkoma
+         * @description 1話分の流れを 6 コマ (デフォルト) で要約した漫画プロンプト+画像を生成する。
+         *
+         *     Request:
+         *         {
+         *             "book_id": int,
+         *             "episode_text": str,        # 1話分の本文
+         *             "panels": int = 6,          # 3〜6 (省略時 6)
+         *             "model": str = "auto",      # fast/quality/ultra/auto
+         *             "enable_r15": bool = false,
+         *             "book_context": dict = {}   # title/genre/character_name 等
+         *         }
+         *
+         *     Response: IllustrationResult 互換の dict
+         */
+        post: operations["generate_yonkoma_yonkoma_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/batch": {
         parameters: {
             query?: never;
@@ -1229,9 +2929,1116 @@ export interface paths {
         put?: never;
         /**
          * Batch Generate Illustrations
-         * @description バッチで挿絵を生成する
+         * @description バッチで挿絵を生成する (Huey タスクキューに投入)。
+         *
+         *     レスポンスは即座に ``{task_id, status: "queued"}`` を返し、
+         *     進捗・結果は ``GET /api/illustrations/status/{task_id}`` で取得する。
          */
         post: operations["batch_generate_illustrations_batch_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/status/{task_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Illustration Status
+         * @description Huey タスクのステータス・結果を取得する。
+         */
+        get: operations["get_illustration_status_status__task_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/multimedia/media-mix": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate Media Mix
+         * @description Media Mix 台本生成。
+         */
+        post: operations["generate_media_mix_multimedia_media_mix_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/multimedia/ebook": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Export Ebook
+         * @description Ebook エクスポート (EPUB/PDF/MOBI)。
+         */
+        post: operations["export_ebook_multimedia_ebook_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/multimedia/if-routes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate If Routes
+         * @description IF ルートグラフ生成。
+         */
+        post: operations["generate_if_routes_multimedia_if_routes_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/multimedia/asset-pack": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate Asset Pack
+         * @description 統合アセットパック (ZIP) を生成。
+         */
+        post: operations["generate_asset_pack_multimedia_asset_pack_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/multimedia/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate Asset Pack Alias
+         * @description README 互換エイリアス: 統合アセットパック (ZIP) を生成 (`/asset-pack` と同等)。
+         */
+        post: operations["generate_asset_pack_alias_multimedia_generate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/multimedia/assets/{book_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Assets By Book
+         * @description README 互換エイリアス: 指定 book_id の全アセットメタデータを取得。
+         */
+        get: operations["get_assets_by_book_multimedia_assets__book_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/multimedia/artifacts/{asset_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Artifact
+         * @description 成果物メタデータ取得。
+         */
+        get: operations["get_artifact_multimedia_artifacts__asset_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/multimedia/artifacts/{asset_id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download Artifact
+         * @description 成果物ファイル本体をダウンロード。
+         */
+        get: operations["download_artifact_multimedia_artifacts__asset_id__download_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/multimedia/tasks/{task_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Task
+         * @description タスクステータス取得。
+         */
+        get: operations["get_task_multimedia_tasks__task_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/multimedia/files/{filename}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Serve File
+         * @description `MULTIMEDIA_OUTPUT_DIR` 配下の静的ファイルを配信 (パストラバーサル防止済み)。
+         */
+        get: operations["serve_file_multimedia_files__filename__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/multimedia/audio/synthesize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Trigger Audio Synthesis
+         * @description 指定章の音声合成ジョブを投入または実行する (Step 19)。
+         */
+        post: operations["trigger_audio_synthesis_multimedia_audio_synthesize_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/multimedia/audio/{book_id}/{episode_num}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Chapter Audio
+         * @description 作品・章ごとの音声アセット情報を取得する (Step 21)。
+         */
+        get: operations["get_chapter_audio_multimedia_audio__book_id___episode_num__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/multimedia/audio/{audio_id}/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Stream Audio File
+         * @description 音声バイナリ (WAV) を配信する (Step 20)。
+         */
+        get: operations["stream_audio_file_multimedia_audio__audio_id__stream_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/branches/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Branch
+         * @description 新規ブランチを作成.
+         */
+        post: operations["create_branch_api_branches__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/branches/{book_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Branches
+         * @description 書籍配下の全ブランチをツリー順に取得.
+         */
+        get: operations["list_branches_api_branches__book_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/branches/{book_id}/tree": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Branch Tree
+         * @description 書籍の全ブランチをツリー構造（ノードとエッジ）で取得.
+         */
+        get: operations["get_branch_tree_api_branches__book_id__tree_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/branches/{book_id}/diff": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Branch Diff
+         * @description 二つのブランチの指定章の差分を取得.
+         */
+        get: operations["get_branch_diff_api_branches__book_id__diff_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/branches/{book_id}/graph": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Branch Graph
+         * @description IF グラフ JSON を取得. branch_id は必須.
+         */
+        get: operations["get_branch_graph_api_branches__book_id__graph_get"];
+        /**
+         * Save Branch Graph
+         * @description IF グラフをブランチに保存.
+         */
+        put: operations["save_branch_graph_api_branches__book_id__graph_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/branches/{book_id}/fork": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Fork Branch
+         * @description 既存ブランチから分岐をフォーク.
+         */
+        post: operations["fork_branch_api_branches__book_id__fork_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/branches/{book_id}/merge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Merge Branches
+         * @description 2 ブランチを MERGE ノードで合流.
+         *
+         *     既存 IF グラフの merge_ep_num 位置に MERGE ノードを追加し、
+         *     target ブランチに保存する。
+         */
+        post: operations["merge_branches_api_branches__book_id__merge_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/branches/{book_id}/merge/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview Merge
+         * @description マージのプレビューとコンフリクト検知.
+         */
+        post: operations["preview_merge_api_branches__book_id__merge_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/branches/{book_id}/merge/commit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Commit Branch Merge
+         * @description 解決済みテキストを受け取りマージを確定コミットする (Step 55)。
+         */
+        post: operations["commit_branch_merge_api_branches__book_id__merge_commit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/branches/play": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start Play Session
+         * @description IF プレイヤーセッションを開始. session_id は UUID で自動発行.
+         */
+        post: operations["start_play_session_api_branches_play_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/branches/play/{session_id}/state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Play State
+         * @description セッションの現状態（current node / context / available choices）を取得.
+         */
+        get: operations["get_play_state_api_branches_play__session_id__state_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/branches/play/{session_id}/choose": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Play Choose
+         * @description 選択肢を実行し current_node を進める. 楽観ロック対応.
+         */
+        post: operations["play_choose_api_branches_play__session_id__choose_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/branches/play/{session_id}/save": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Play Save
+         * @description 現状態を save_points に追記保存.
+         */
+        post: operations["play_save_api_branches_play__session_id__save_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/branches/play/{session_id}/load": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Play Load
+         * @description save_points の index から状態を復元.
+         */
+        post: operations["play_load_api_branches_play__session_id__load_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/branches/play/{session_id}/end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Play End
+         * @description セッションを終了（status 更新）.
+         */
+        post: operations["play_end_api_branches_play__session_id__end_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/branches/play/{session_id}/playthrough": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Playthrough
+         * @description プレイスルー記録 (history + context) を取得.
+         */
+        get: operations["get_playthrough_api_branches_play__session_id__playthrough_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/branches/{book_id}/nodes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Branch Nodes
+         * @description ブランチのグラフに含まれるノード一覧を返す.
+         */
+        get: operations["list_branch_nodes_api_branches__book_id__nodes_get"];
+        put?: never;
+        /**
+         * Create Branch Node
+         * @description グラフに新ノードを追加.
+         */
+        post: operations["create_branch_node_api_branches__book_id__nodes_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/branches/{book_id}/nodes/{node_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Branch Node
+         * @description ノード削除（孤立チェック付き）.
+         */
+        delete: operations["delete_branch_node_api_branches__book_id__nodes__node_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/branches/{book_id}/editor/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Validate Branch Graph
+         * @description グラフ整合性検証. errors: 問題箇所のリスト.
+         */
+        post: operations["validate_branch_graph_api_branches__book_id__editor_validate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/branches/{book_id}/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Branches Zip
+         * @description 書籍の全ブランチを EPUB に変換し ZIP で返す (基本スジ分割).
+         */
+        get: operations["export_branches_zip_api_branches__book_id__export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/branches/{book_id}/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Branch Stats
+         * @description 選択率・平均到達ノード等の統計.
+         */
+        get: operations["get_branch_stats_api_branches__book_id__stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/branches/{book_id}/choices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Branch Choice Stats
+         * @description 選択肢ごとの選択数. choice_id → 集計.
+         */
+        get: operations["get_branch_choice_stats_api_branches__book_id__choices_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/anti_ai/detect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Detect
+         * @description Detect AI fingerprints in text.
+         */
+        post: operations["detect_admin_anti_ai_detect_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/anti_ai/correct": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Correct
+         * @description Detect and correct AI fingerprints in text.
+         */
+        post: operations["correct_admin_anti_ai_correct_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/anti_ai/config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Config
+         * @description Get Anti-AI detection configuration.
+         */
+        get: operations["get_config_admin_anti_ai_config_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cost/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Cost Summary */
+        get: operations["get_cost_summary_api_cost_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/stream/pipeline/{book_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Sse Pipeline Stream
+         * @description Server-Sent Events (SSE) fallback endpoint for pipeline telemetry (Step 31).
+         */
+        get: operations["sse_pipeline_stream_api_stream_pipeline__book_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/export/publish/{platform}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Export For Publishing
+         * @description Export formatted novel package as a ZIP archive for the specified platform (Step 61).
+         */
+        post: operations["export_for_publishing_api_export_publish__platform__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/export/publish/{platform}/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Preview For Publishing
+         * @description Preview formatted episode text and check platform limit warnings (Step 62).
+         */
+        get: operations["preview_for_publishing_api_export_publish__platform__preview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/publishing-assistant/format": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Format Chapter For Publishing
+         * @description 小説テキストをプラットフォーム別（カクヨム・なろう等）に分割・整形し、
+         *     AI開示文言および規約バリデーション結果を返却する。
+         */
+        post: operations["format_chapter_for_publishing_api_publishing_assistant_format_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Register */
+        post: operations["register_api_auth_register_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Login */
+        post: operations["login_api_auth_login_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Me */
+        get: operations["get_me_api_auth_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/billing/plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Plans
+         * @description 利用可能なプランと価格一覧を取得
+         */
+        get: operations["get_plans_api_billing_plans_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/billing/balance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Balance
+         * @description 現在のユーザー残高とプラン情報を取得
+         */
+        get: operations["get_balance_api_billing_balance_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/billing/create-checkout-session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Checkout Session
+         * @description Stripe Checkout セッションを作成してURLを取得
+         */
+        post: operations["create_checkout_session_api_billing_create_checkout_session_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/billing/create-portal-session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Portal Session
+         * @description Stripe Customer Portal セッションを作成してURLを取得
+         */
+        post: operations["create_portal_session_api_billing_create_portal_session_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/billing/transactions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Transactions
+         * @description ユーザーのクレジット取引履歴を取得
+         */
+        get: operations["get_transactions_api_billing_transactions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/billing/webhook": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Handle Stripe Webhook
+         * @description Stripe Webhookを受信して安全・非同期かつべき等に処理する。
+         */
+        post: operations["handle_stripe_webhook_api_billing_webhook_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/trace/books/{book_id}/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Runs
+         * @description 生成実行記録を取得する。
+         */
+        get: operations["list_runs_api_trace_books__book_id__runs_get"];
+        put?: never;
+        /**
+         * Record Run
+         * @description 生成実行のメタデータを記録する。
+         */
+        post: operations["record_run_api_trace_books__book_id__runs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/trace/books/{book_id}/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Reproducibility Report
+         * @description 再現性レポート（Markdown）を生成する。
+         */
+        get: operations["reproducibility_report_api_trace_books__book_id__report_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1289,6 +4096,74 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** ABTestAutoPromoteRequest */
+        ABTestAutoPromoteRequest: {
+            /** Skill Name */
+            skill_name: string;
+            /**
+             * Auto Promote
+             * @default true
+             */
+            auto_promote: boolean;
+        };
+        /** ABTestRequest */
+        ABTestRequest: {
+            /** Skill Name */
+            skill_name: string;
+            /** Version A */
+            version_a: string;
+            /** Version B */
+            version_b: string;
+            /**
+             * Samples
+             * @default 10
+             */
+            samples: number;
+        };
+        /** ABTestScheduleRequest */
+        ABTestScheduleRequest: {
+            /** Skill Name */
+            skill_name: string;
+            /** Version A */
+            version_a: string;
+            /** Version B */
+            version_b: string;
+            /** Interval Hours */
+            interval_hours: number;
+            /**
+             * Min Samples
+             * @default 10
+             */
+            min_samples: number;
+        };
+        /** AlertResponse */
+        AlertResponse: {
+            /** Book Id */
+            book_id: number;
+            /** Alerts */
+            alerts: {
+                [key: string]: unknown;
+            }[];
+        };
+        /** ArtifactMetaResponse */
+        ArtifactMetaResponse: {
+            /** Asset Id */
+            asset_id: number;
+            /** Book Id */
+            book_id: number;
+            /** Asset Type */
+            asset_type: string;
+            /** Format */
+            format: string;
+            /** File Path */
+            file_path: string;
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /** Created At */
+            created_at?: string | null;
+        };
         /**
          * AskBibleRequest
          * @description 世界観バイブル・過去章 Q&A リクエスト
@@ -1331,6 +4206,106 @@ export interface components {
              * @description 関連キャラクター名一覧
              */
             related_characters?: string[];
+        };
+        /**
+         * AssetPackGenerateRequest
+         * @description `/multimedia/generate` 用リクエスト (README 互換エイリアス)。
+         */
+        AssetPackGenerateRequest: {
+            /** Book Id */
+            book_id: number;
+            /**
+             * Include If Routes
+             * @default true
+             */
+            include_if_routes: boolean;
+            /**
+             * Include Media Mix
+             * @default true
+             */
+            include_media_mix: boolean;
+            /**
+             * Include Ebook
+             * @default true
+             */
+            include_ebook: boolean;
+            /** Ebook Formats */
+            ebook_formats?: ("epub" | "pdf" | "mobi" | "json")[];
+            /** Media Mix Formats */
+            media_mix_formats?: ("manga" | "audio_drama" | "video" | "light_novel" | "webtoon")[];
+        };
+        /**
+         * AssetPackGenerateResponse
+         * @description `/multimedia/generate` 用レスポンス (README 互換エイリアス)。
+         */
+        AssetPackGenerateResponse: {
+            /** Asset Id */
+            asset_id: number;
+            /** Task Id */
+            task_id: string;
+            /**
+             * File Count
+             * @default 0
+             */
+            file_count: number;
+            /** File Path */
+            file_path?: string | null;
+        };
+        /**
+         * AssetPackRequest
+         * @description 統合アセットパック生成リクエスト。
+         */
+        AssetPackRequest: {
+            /** Book Id */
+            book_id: number;
+            /**
+             * Include If Routes
+             * @default true
+             */
+            include_if_routes: boolean;
+            /**
+             * Include Media Mix
+             * @default true
+             */
+            include_media_mix: boolean;
+            /**
+             * Include Ebook
+             * @default true
+             */
+            include_ebook: boolean;
+            /**
+             * Include Audio
+             * @default true
+             */
+            include_audio: boolean;
+            /** Ebook Formats */
+            ebook_formats?: ("epub" | "pdf" | "mobi" | "json")[];
+            /** Media Mix Formats */
+            media_mix_formats?: ("manga" | "audio_drama" | "video" | "light_novel" | "webtoon")[];
+        };
+        /** AssetPackResponse */
+        AssetPackResponse: {
+            /** Asset Id */
+            asset_id: number;
+            /** Task Id */
+            task_id: string;
+            /**
+             * File Count
+             * @default 0
+             */
+            file_count: number;
+            /** File Path */
+            file_path?: string | null;
+        };
+        /**
+         * AssetsByBookResponse
+         * @description `/multimedia/assets/{book_id}` 用レスポンス (README 互換エイリアス)。
+         */
+        AssetsByBookResponse: {
+            /** Book Id */
+            book_id: number;
+            /** Assets */
+            assets?: components["schemas"]["ArtifactMetaResponse"][];
         };
         /**
          * AssistAction
@@ -1406,6 +4381,92 @@ export interface components {
              */
             diff_summary: string;
         };
+        /** AudioSynthesizeRequest */
+        AudioSynthesizeRequest: {
+            /** Book Id */
+            book_id: number;
+            /** Episode Num */
+            episode_num: number;
+            /** Chapter Text */
+            chapter_text?: string | null;
+            /** Characters */
+            characters?: string[] | null;
+        };
+        /** AuditAggregateTestRequest */
+        AuditAggregateTestRequest: {
+            /**
+             * Book Id
+             * @description 対象書籍ID
+             */
+            book_id: number;
+            /**
+             * Chapter Number
+             * @description 対象章番号
+             */
+            chapter_number: number;
+            /**
+             * Draft Text
+             * @description 監査対象の原稿テキスト
+             */
+            draft_text: string;
+            /** World Bible Snapshot */
+            world_bible_snapshot?: {
+                [key: string]: unknown;
+            };
+            /** Style Dna */
+            style_dna?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Plot Tree
+             * @default
+             */
+            plot_tree: string;
+            /**
+             * Plot Summary
+             * @default
+             */
+            plot_summary: string;
+            /**
+             * Illustration Prompts
+             * @default
+             */
+            illustration_prompts: string;
+            /**
+             * Genre
+             * @default literary
+             */
+            genre: string;
+            /**
+             * Phase
+             * @default mid_writing
+             */
+            phase: string;
+        };
+        /** AuditAggregateTestResponse */
+        AuditAggregateTestResponse: {
+            /** Overall */
+            overall: number;
+            /** By Specialist */
+            by_specialist: {
+                [key: string]: number;
+            };
+            /** Missing */
+            missing: string[];
+            /** Weights Used */
+            weights_used: {
+                [key: string]: number;
+            };
+            /** Lowest Dimension */
+            lowest_dimension: string | null;
+        };
+        /** AuditModelRoutingRequest */
+        AuditModelRoutingRequest: {
+            /** Auditor Name */
+            auditor_name: string;
+            /** New Model */
+            new_model: string;
+        };
         /**
          * AuditPlanRequest
          * @description プラン監査リクエスト（configなし）
@@ -1434,6 +4495,33 @@ export interface components {
              * @default カクヨム/なろう
              */
             platform: string;
+        };
+        /**
+         * BatchUpsertRequest
+         * @description バッチUPSERTリクエスト.
+         */
+        BatchUpsertRequest: {
+            /** Nodes */
+            nodes?: components["schemas"]["NodeUpsertRequest"][];
+            /** Edges */
+            edges?: components["schemas"]["EdgeUpsertRequest"][];
+            /**
+             * Graph Name
+             * @description 対象グラフ名
+             */
+            graph_name?: string | null;
+        };
+        /**
+         * BatchUpsertResponse
+         * @description バッチUPSERTレスポンス.
+         */
+        BatchUpsertResponse: {
+            /** Nodes Created */
+            nodes_created: number;
+            /** Edges Created */
+            edges_created: number;
+            /** Errors */
+            errors?: string[];
         };
         /**
          * BeatCard
@@ -1470,6 +4558,40 @@ export interface components {
             hook_text: string;
         };
         /**
+         * BookCreateRequest
+         * @description 新規作品作成リクエスト
+         */
+        BookCreateRequest: {
+            /**
+             * Title
+             * @description 作品タイトル
+             */
+            title: string;
+            /**
+             * Genre
+             * @description ジャンル
+             */
+            genre: string;
+            /**
+             * Concept
+             * @description コンセプト
+             * @default
+             */
+            concept: string;
+            /**
+             * Synopsis
+             * @description あらすじ
+             * @default
+             */
+            synopsis: string;
+            /**
+             * Target Eps
+             * @description 目標話数
+             * @default 10
+             */
+            target_eps: number;
+        };
+        /**
          * BookSchema
          * @description 作品情報スキーマ
          */
@@ -1504,11 +4626,362 @@ export interface components {
             created_at?: string | null;
         };
         /**
+         * BookScoreHistoryItem
+         * @description BookScore 履歴の1エントリ
+         */
+        BookScoreHistoryItem: {
+            /** Chapter Number */
+            chapter_number: number;
+            /** Overall Score */
+            overall_score: number;
+            /** Structure Score */
+            structure_score: number;
+            /** Coherency Score */
+            coherency_score: number;
+            /** Factual Grounding Score */
+            factual_grounding_score: number;
+            /** Visual Textual Synergy Score */
+            visual_textual_synergy_score: number;
+            /** Reader Experience Score */
+            reader_experience_score: number;
+            /**
+             * Evaluated At
+             * Format: date-time
+             */
+            evaluated_at: string;
+            /** Evaluator Version */
+            evaluator_version?: string | null;
+        };
+        /**
+         * BookScoreHistoryResponse
+         * @description BookScore 時系列履歴レスポンス
+         */
+        BookScoreHistoryResponse: {
+            /**
+             * Success
+             * @default true
+             */
+            success: boolean;
+            /** Error Message */
+            error_message?: string | null;
+            /** Error Type */
+            error_type?: string | null;
+            /** Book Id */
+            book_id: number;
+            /** History */
+            history?: components["schemas"]["BookScoreHistoryItem"][];
+            /**
+             * Benchmarks
+             * @description ジャンル平均ベンチマーク
+             */
+            benchmarks?: {
+                [key: string]: number;
+            } | null;
+        };
+        /** BookScoreResponse */
+        BookScoreResponse: {
+            /** Book Id */
+            book_id: number;
+            /** Chapter Number */
+            chapter_number: number;
+            /** Overall Score */
+            overall_score: number;
+            /** Structure Score */
+            structure_score: number;
+            /** Coherency Score */
+            coherency_score: number;
+            /** Factual Grounding Score */
+            factual_grounding_score: number;
+            /** Visual Textual Synergy Score */
+            visual_textual_synergy_score: number;
+            /** Reader Experience Score */
+            reader_experience_score: number;
+            /** Evaluated At */
+            evaluated_at?: string | null;
+            /** Trend 3Ch */
+            trend_3ch?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
+         * BranchDbModelCreate
+         * @description 新規ブランチ作成用リクエスト.
+         */
+        BranchDbModelCreate: {
+            /** Book Id */
+            book_id: number;
+            /** Name */
+            name: string;
+            /** Parent Id */
+            parent_id?: number | null;
+            /**
+             * Fork Ep Num
+             * @default 0
+             */
+            fork_ep_num: number | null;
+            /** Graph Json */
+            graph_json?: {
+                [key: string]: unknown;
+            } | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * BranchForkRequest
+         * @description フォーク（分岐作成）リクエスト.
+         */
+        BranchForkRequest: {
+            /** Parent Id */
+            parent_id: number;
+            /** Name */
+            name: string;
+            /**
+             * Fork Ep Num
+             * @default 0
+             */
+            fork_ep_num: number;
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * BranchGraphResponse
+         * @description ブランチ配下の IF グラフ JSON レスポンス.
+         */
+        BranchGraphResponse: {
+            /** Branch Id */
+            branch_id: number;
+            /** Graph */
+            graph?: {
+                [key: string]: unknown;
+            };
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * BranchMergeCommitRequest
+         * @description マージ確定コミットリクエスト (Step 49).
+         */
+        BranchMergeCommitRequest: {
+            /** Source Branch Id */
+            source_branch_id: number;
+            /** Target Branch Id */
+            target_branch_id: number;
+            /** Merge Ep Num */
+            merge_ep_num: number;
+            /** Resolved Chapters */
+            resolved_chapters: components["schemas"]["ResolvedChapterPayload"][];
+            /**
+             * Commit Message
+             * @default Merged branch with resolved conflicts
+             */
+            commit_message: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * BranchMergeCommitResponse
+         * @description マージ確定コミッドレスポンス (Step 49).
+         */
+        BranchMergeCommitResponse: {
+            /** Success */
+            success: boolean;
+            /** Target Branch Id */
+            target_branch_id: number;
+            /** Updated Chapters Count */
+            updated_chapters_count: number;
+            /** Committed At */
+            committed_at: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * BranchMergeRequest
+         * @description マージ（合流）リクエスト.
+         *
+         *     source_branch_id の plot を merge_ep_num で target_branch_id に合流させる。
+         *     既存 IF グラフに MERGE ノードを追加する。
+         */
+        BranchMergeRequest: {
+            /** Source Branch Id */
+            source_branch_id: number;
+            /** Target Branch Id */
+            target_branch_id: number;
+            /** Merge Ep Num */
+            merge_ep_num: number;
+            /** Name */
+            name?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * BranchPlayChooseRequest
+         * @description 選択肢実行リクエスト.
+         */
+        BranchPlayChooseRequest: {
+            /** Choice Id */
+            choice_id: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * BranchPlayEndRequest
+         * @description セッション終了リクエスト.
+         */
+        BranchPlayEndRequest: {
+            /**
+             * Status
+             * @default completed
+             */
+            status: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * BranchPlayPlaythroughResponse
+         * @description プレイスルー記録レスポンス.
+         */
+        BranchPlayPlaythroughResponse: {
+            /** Session Id */
+            session_id: string;
+            /** Book Id */
+            book_id: number;
+            /** Branch Id */
+            branch_id: number;
+            /** History */
+            history?: unknown[];
+            /** Flags */
+            flags?: {
+                [key: string]: unknown;
+            };
+            /** Variables */
+            variables?: {
+                [key: string]: unknown;
+            };
+            /** Final Ending */
+            final_ending?: string | null;
+            /** Saved At */
+            saved_at?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * BranchPlayRequest
+         * @description セッション開始リクエスト.
+         */
+        BranchPlayRequest: {
+            /** Book Id */
+            book_id: number;
+            /** Branch Id */
+            branch_id: number;
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * BranchPlaySessionResponse
+         * @description セッション作成 / 終了レスポンス.
+         */
+        BranchPlaySessionResponse: {
+            /** Session Id */
+            session_id: string;
+            /** Book Id */
+            book_id: number;
+            /** Branch Id */
+            branch_id: number;
+            /** Current Node Id */
+            current_node_id?: string | null;
+            /**
+             * Status
+             * @default active
+             */
+            status: string;
+            /** Updated At */
+            updated_at?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * BranchPlayStateResponse
+         * @description 現セッション状態.
+         */
+        BranchPlayStateResponse: {
+            /** Session Id */
+            session_id: string;
+            /** Book Id */
+            book_id: number;
+            /** Branch Id */
+            branch_id: number;
+            /** Current Node */
+            current_node?: {
+                [key: string]: unknown;
+            };
+            /** Current Node Id */
+            current_node_id?: string | null;
+            /** Context */
+            context?: {
+                [key: string]: unknown;
+            };
+            /** Available Choices */
+            available_choices?: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Save Points Count
+             * @default 0
+             */
+            save_points_count: number;
+            /**
+             * Status
+             * @default active
+             */
+            status: string;
+            /** Updated At */
+            updated_at?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * BranchResponse
+         * @description 単一ブランチのレスポンス.
+         */
+        BranchResponse: {
+            /** Id */
+            id: number;
+            /** Book Id */
+            book_id: number;
+            /** Name */
+            name: string | null;
+            /** Parent Id */
+            parent_id?: number | null;
+            /**
+             * Fork Ep Num
+             * @default 0
+             */
+            fork_ep_num: number | null;
+            /** Created At */
+            created_at?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /**
          * BranchType
          * @description 展開分岐タイプ
          * @enum {string}
          */
         BranchType: "royal" | "twist" | "psychology";
+        /**
+         * CadenceStats
+         * @description 文章の音律・ケイデンス統計情報
+         */
+        CadenceStats: {
+            /** Total Sentences */
+            total_sentences: number;
+            /** Repeated Endings Fixed */
+            repeated_endings_fixed: number;
+            /** Avg Sentence Length */
+            avg_sentence_length: number;
+            /** Paragraph Count */
+            paragraph_count: number;
+        };
         /**
          * ChapterImportRequest
          * @description 章インポートリクエスト
@@ -1550,6 +5023,16 @@ export interface components {
              * @default
              */
             genre: string;
+            /**
+             * Style Id
+             * @description 適用する文体スタイルID
+             */
+            style_id?: string | null;
+        };
+        /** CircuitResetRequest */
+        CircuitResetRequest: {
+            /** Provider Name */
+            provider_name?: string | null;
         };
         /**
          * CommercialConfig
@@ -1578,6 +5061,24 @@ export interface components {
              *     ]
              */
             platforms: string[];
+            /**
+             * Do Publish
+             * @default false
+             */
+            do_publish: boolean;
+            /** Credentials */
+            credentials?: {
+                [key: string]: {
+                    [key: string]: unknown;
+                };
+            } | null;
+        };
+        /** ConfigResponse */
+        ConfigResponse: {
+            /** Enabled */
+            enabled: boolean;
+            /** Categories */
+            categories: string[];
         };
         /**
          * ConsistencyAuditRequest
@@ -1659,6 +5160,103 @@ export interface components {
              */
             suggested_fix: string;
         };
+        /** CorrectRequest */
+        CorrectRequest: {
+            /** Text */
+            text: string;
+            /**
+             * Max Loops
+             * @default 3
+             */
+            max_loops: number;
+            /**
+             * Score Threshold
+             * @default 90
+             */
+            score_threshold: number;
+        };
+        /** CorrectResponse */
+        CorrectResponse: {
+            /** Original Text */
+            original_text: string;
+            /** Corrected Text */
+            corrected_text: string;
+            /** Final Score */
+            final_score: number;
+            /** Iterations */
+            iterations: number;
+            /** Converged */
+            converged: boolean;
+            /** History */
+            history: {
+                [key: string]: unknown;
+            }[];
+        };
+        /**
+         * CypherQueryRequest
+         * @description 任意のCypherクエリ実行リクエスト.
+         */
+        CypherQueryRequest: {
+            /**
+             * Query
+             * @description 実行するCypherクエリ
+             */
+            query: string;
+            /**
+             * Graph Name
+             * @description 対象グラフ名
+             */
+            graph_name?: string | null;
+            /**
+             * Parameters
+             * @description クエリパラメータ
+             */
+            parameters?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Column Definition
+             * @description 戻り値カラム定義
+             * @default (result agtype)
+             */
+            column_definition: string;
+        };
+        /**
+         * CypherQueryResponse
+         * @description Cypherクエリ実行レスポンス.
+         */
+        CypherQueryResponse: {
+            /** Records */
+            records: {
+                [key: string]: unknown;
+            }[];
+            /** Summary */
+            summary: {
+                [key: string]: unknown;
+            };
+            /** Execution Time Ms */
+            execution_time_ms: number;
+        };
+        /** DetectRequest */
+        DetectRequest: {
+            /** Text */
+            text: string;
+        };
+        /** DetectResponse */
+        DetectResponse: {
+            /** Total Score */
+            total_score: number;
+            /** Category Scores */
+            category_scores: {
+                [key: string]: number;
+            };
+            /** Total Violations */
+            total_violations: number;
+            /** Violations */
+            violations: {
+                [key: string]: unknown;
+            }[];
+        };
         /** DigestRequest */
         DigestRequest: {
             /**
@@ -1715,6 +5313,34 @@ export interface components {
          */
         DigestStatus: "processing" | "completed" | "failed";
         /**
+         * DistillRequest
+         * @description 文体蒸留リクエスト
+         */
+        DistillRequest: {
+            /**
+             * Sample Text
+             * @description お手本となる小説サンプルテキスト
+             */
+            sample_text: string;
+            /**
+             * Name Hint
+             * @description スタイル名のヒント
+             */
+            name_hint?: string | null;
+        };
+        /**
+         * DistillResponse
+         * @description 文体蒸留レスポンス
+         */
+        DistillResponse: {
+            /**
+             * Success
+             * @default true
+             */
+            success: boolean;
+            profile: components["schemas"]["StyleProfile"];
+        };
+        /**
          * EasyModeInput
          * @description かんたんモード生成リクエスト入力。
          */
@@ -1732,6 +5358,171 @@ export interface components {
              * @default 2000
              */
             content_length_limit: number;
+            /**
+             * Target Episodes
+             * @description 目標話数 (1〜50)
+             * @default 1
+             */
+            target_episodes: number;
+            /**
+             * Style Override
+             * @description カスタムStyleProfileの辞書
+             */
+            style_override?: {
+                [key: string]: unknown;
+            } | null;
+            /** @description オプトインのLLM設定 */
+            llm_config?: components["schemas"]["LLMConfigOverride"] | null;
+            /**
+             * Book Id
+             * @description 既存作品に追加・更新する場合の作品ID。未指定時は新規採番して保存
+             */
+            book_id?: number | null;
+            /**
+             * Start Ep
+             * @description 開始話数
+             * @default 1
+             */
+            start_ep: number;
+            /**
+             * End Ep
+             * @description 終了話数（未指定時はtarget_episodesまで）
+             */
+            end_ep?: number | null;
+        };
+        /** EbookExportResponse */
+        EbookExportResponse: {
+            /** Asset Id */
+            asset_id: number;
+            /** Files */
+            files?: string[];
+            /** Formats */
+            formats?: string[];
+        };
+        /**
+         * EdgeUpsertRequest
+         * @description エッジUPSERTリクエスト.
+         */
+        EdgeUpsertRequest: {
+            /**
+             * Source Label
+             * @description 始点ノードラベル
+             */
+            source_label: string;
+            /**
+             * Source Name
+             * @description 始点ノード名
+             */
+            source_name: string;
+            /**
+             * Target Label
+             * @description 終点ノードラベル
+             */
+            target_label: string;
+            /**
+             * Target Name
+             * @description 終点ノード名
+             */
+            target_name: string;
+            /**
+             * Relation Type
+             * @description 関係タイプ
+             */
+            relation_type: string;
+            /**
+             * Properties
+             * @description 関係プロパティ
+             */
+            properties?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Graph Name
+             * @description 対象グラフ名
+             */
+            graph_name?: string | null;
+        };
+        /** EnrichmentMetricsSnapshot */
+        EnrichmentMetricsSnapshot: {
+            /**
+             * Enrichment Duration Seconds
+             * @default 0
+             */
+            enrichment_duration_seconds: number;
+            /**
+             * Trivia Insertions Total
+             * @default 0
+             */
+            trivia_insertions_total: number;
+            /**
+             * Citations Added Total
+             * @default 0
+             */
+            citations_added_total: number;
+            /**
+             * Sensory Expansions Total
+             * @default 0
+             */
+            sensory_expansions_total: number;
+            /**
+             * Multimedia Scenarios Total
+             * @default 0
+             */
+            multimedia_scenarios_total: number;
+            /**
+             * Token Usage Avg
+             * @default 0
+             */
+            token_usage_avg: number;
+            /**
+             * Errors Total
+             * @default 0
+             */
+            errors_total: number;
+        };
+        /** EnrichmentStatusResponse */
+        EnrichmentStatusResponse: {
+            /** Enabled */
+            enabled: boolean;
+            /** Config */
+            config: {
+                [key: string]: unknown;
+            };
+            /** Feature Flags */
+            feature_flags: {
+                [key: string]: boolean;
+            };
+        };
+        /** EnrichmentTestRequest */
+        EnrichmentTestRequest: {
+            /**
+             * Draft Text
+             * @description エンリッチメント対象の原稿テキスト
+             */
+            draft_text: string;
+            /**
+             * Writing Context
+             * @description 執筆コンテキスト
+             */
+            writing_context?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Book Id
+             * @description 書籍ID（省略可）
+             */
+            book_id?: number | null;
+        };
+        /** EnrichmentTestResponse */
+        EnrichmentTestResponse: {
+            /** Enriched Text */
+            enriched_text: string;
+            /** Enrichment Metadata */
+            enrichment_metadata: {
+                [key: string]: unknown;
+            };
+            /** Elapsed Ms */
+            elapsed_ms: number;
         };
         /**
          * EpisodeGenerateCandidatesRequest
@@ -1856,6 +5647,75 @@ export interface components {
                 [key: string]: unknown;
             }[];
         };
+        /** FormatRequest */
+        FormatRequest: {
+            /**
+             * @description 投稿先プラットフォーム
+             * @default kakuyomu
+             */
+            platform: components["schemas"]["TargetPlatform"];
+            /**
+             * Chapter Title
+             * @description 話・章のタイトル
+             */
+            chapter_title: string;
+            /**
+             * Raw Text
+             * @description 元の生成テキスト（マーカーやルビ含む）
+             */
+            raw_text: string;
+            /**
+             * Ai Role
+             * @description AI利用役割
+             * @default assisted
+             */
+            ai_role: string;
+        };
+        /** FormattedChapterPayload */
+        FormattedChapterPayload: {
+            platform: components["schemas"]["TargetPlatform"];
+            /**
+             * Chapter Title
+             * @description 章・話のタイトル
+             */
+            chapter_title: string;
+            /**
+             * Foreword
+             * @description 前書き（前話のおさらい等）
+             * @default
+             */
+            foreword: string;
+            /**
+             * Main Content
+             * @description プラットフォーム記法適用済み本文
+             */
+            main_content: string;
+            /**
+             * Afterword
+             * @description 後書き（AI利用明記、次回予告）
+             * @default
+             */
+            afterword: string;
+            /**
+             * Char Count
+             * @description 本文・前書き・後書き総文字数または本文文字数
+             * @default 0
+             */
+            char_count: number;
+            /**
+             * Ai Disclosure Statement
+             * @description AI利用開示文言
+             * @default
+             */
+            ai_disclosure_statement: string;
+            /**
+             * Validation Warnings
+             * @description 規約やフォーマットに関する警告一覧
+             */
+            validation_warnings?: string[];
+        } & {
+            [key: string]: unknown;
+        };
         /** GachaPlan */
         GachaPlan: {
             /**
@@ -1885,6 +5745,29 @@ export interface components {
              * @description この案の最大の魅力（アピールポイント）
              */
             charm_point: string;
+            /**
+             * Audit Score
+             * @description ブラインドピアレビューによる独立監査スコア
+             */
+            audit_score?: number | null;
+            /**
+             * Critique
+             * @description 独立講評・フィードバック
+             */
+            critique?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Recommendation Reason
+             * @description 推奨理由
+             */
+            recommendation_reason?: string | null;
+            /**
+             * Is Recommended
+             * @description 推奨案フラグ
+             * @default false
+             */
+            is_recommended: boolean;
         };
         /**
          * GachaPlanType
@@ -1909,6 +5792,11 @@ export interface components {
              * @default 0.7
              */
             temperature: number;
+            /**
+             * Review Session Id
+             * @description 既存レビューセッションID（再開用）
+             */
+            review_session_id?: string | null;
         };
         /** GachaResponse */
         GachaResponse: {
@@ -1919,9 +5807,19 @@ export interface components {
             request_id: string;
             /**
              * Plans
-             * @description 生成された3つの企画案
+             * @description 3案の企画リスト (王道、変化球、ダーク)
              */
             plans: components["schemas"]["GachaPlan"][];
+            /**
+             * Recommended Plan Id
+             * @description 最も推奨される案のID
+             */
+            recommended_plan_id?: string | null;
+            /**
+             * Review Session Id
+             * @description レビューセッションID
+             */
+            review_session_id?: string | null;
         };
         /**
          * GenerationResponse
@@ -1978,10 +5876,187 @@ export interface components {
              */
             source_reference: string;
         };
+        /**
+         * GraphSearchRequest
+         * @description グラフ検索リクエスト.
+         */
+        GraphSearchRequest: {
+            /**
+             * Node Name
+             * @description 起点ノード名
+             */
+            node_name: string;
+            /**
+             * Max Depth
+             * @description 最大ホップ数
+             * @default 2
+             */
+            max_depth: number;
+            /**
+             * Relationship Types
+             * @description フィルタする関係タイプ
+             */
+            relationship_types?: string[] | null;
+            /**
+             * Direction
+             * @description 方向
+             * @default both
+             */
+            direction: string;
+            /**
+             * Limit
+             * @description 最大取得件数
+             * @default 50
+             */
+            limit: number;
+            /**
+             * Graph Name
+             * @description 対象グラフ名
+             */
+            graph_name?: string | null;
+        };
+        /**
+         * GraphStatsResponse
+         * @description グラフ統計レスポンス.
+         */
+        GraphStatsResponse: {
+            /** Node Count */
+            node_count: number;
+            /** Edge Count */
+            edge_count: number;
+            /** Labels */
+            labels: string[];
+            /** Relationship Types */
+            relationship_types: string[];
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /**
+         * HybridSearchRequest
+         * @description ハイブリッド検索リクエスト.
+         */
+        HybridSearchRequest: {
+            /**
+             * Query
+             * @description 検索クエリ
+             */
+            query: string;
+            /**
+             * Core Entities
+             * @description グラフ探索の起点エンティティ
+             */
+            core_entities?: string[] | null;
+            /**
+             * Top K
+             * @description 返却件数
+             * @default 10
+             */
+            top_k: number;
+            /**
+             * Alpha
+             * @description ベクトル検索の重み
+             * @default 0.5
+             */
+            alpha: number;
+            /**
+             * Beta
+             * @description グラフ検索の重み
+             * @default 0.3
+             */
+            beta: number;
+            /**
+             * Gamma
+             * @description 全文検索の重み
+             * @default 0.2
+             */
+            gamma: number;
+        };
+        /**
+         * IFRouteGenerateRequest
+         * @description IF ルート生成リクエスト。
+         */
+        IFRouteGenerateRequest: {
+            /**
+             * Book Id
+             * @description 対象 Book ID
+             */
+            book_id: number;
+            /**
+             * Persist
+             * @description DB に永続化するか
+             * @default true
+             */
+            persist: boolean;
+        };
+        /** IFRouteResponse */
+        IFRouteResponse: {
+            /** Asset Id */
+            asset_id: number;
+            /** Nodes */
+            nodes: number;
+            /** Entry Node Id */
+            entry_node_id: string;
+            /** Graph */
+            graph?: {
+                [key: string]: unknown;
+            };
+        };
+        /**
+         * LLMConfigOverride
+         * @description オプトインでフロントエンドから渡されるLLM設定。
+         */
+        LLMConfigOverride: {
+            /**
+             * Provider
+             * @description gemini / openai / mock
+             */
+            provider?: string | null;
+            /**
+             * Api Key
+             * @description カスタムAPIキー
+             */
+            api_key?: string | null;
+            /**
+             * Model Name
+             * @description 全体既定モデル名 (例: gemini-2.5-flash, gpt-4o-mini)
+             */
+            model_name?: string | null;
+            /**
+             * Base Url
+             * @description OpenAI互換 Base URL
+             */
+            base_url?: string | null;
+            /**
+             * Model Planning
+             * @description プロット・構成用モデル (例: gemini-2.5-flash)
+             */
+            model_planning?: string | null;
+            /**
+             * Model Writing
+             * @description 本文執筆用モデル (例: gpt-4o, claude-3-5-sonnet)
+             */
+            model_writing?: string | null;
+            /**
+             * Model Audit
+             * @description 校正・監査用モデル (例: gemini-2.5-flash)
+             */
+            model_audit?: string | null;
+            /**
+             * Model Embedding
+             * @description ベクトル検索・Embedding用モデル (例: text-embedding-3-small)
+             */
+            model_embedding?: string | null;
+        };
+        /**
+         * MarketingExportRequest
+         * @description マーケティングエクスポート (POST) リクエスト
+         */
+        MarketingExportRequest: {
+            /** Api Key */
+            api_key: string;
         };
         /**
          * MarketingGenerateRequest
@@ -1994,6 +6069,66 @@ export interface components {
             book_id: number;
             /** Latest Ep */
             latest_ep: number;
+        };
+        /**
+         * MediaMixRequest
+         * @description Media Mix 台本生成リクエスト。
+         */
+        MediaMixRequest: {
+            /**
+             * Book Id
+             * @description 対象 Book ID
+             */
+            book_id: number;
+            /**
+             * Format
+             * @default manga
+             * @enum {string}
+             */
+            format: "manga" | "audio_drama" | "video" | "light_novel" | "webtoon";
+            /** Episode Num */
+            episode_num?: number | null;
+            /**
+             * Include Metadata
+             * @default true
+             */
+            include_metadata: boolean;
+        };
+        /** MediaMixResponse */
+        MediaMixResponse: {
+            /** Asset Id */
+            asset_id: number;
+            /** Files */
+            files?: string[];
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
+        };
+        /**
+         * MetaphorFrequency
+         * @description 比喩表現の出現頻度と傾向
+         */
+        MetaphorFrequency: {
+            /**
+             * Per 1000 Chars
+             * @description 1000文字あたりの比喩数
+             * @default 3.5
+             */
+            per_1000_chars: number;
+            /**
+             * Types
+             * @description 五感比喩の比率
+             */
+            types?: {
+                [key: string]: number;
+            };
+            /**
+             * Description
+             * @description 比喩表現の特徴解説
+             * @default
+             */
+            description: string;
         };
         /**
          * NextBeatsRequest
@@ -2048,6 +6183,34 @@ export interface components {
             original_tail: string;
         };
         /**
+         * NodeUpsertRequest
+         * @description ノードUPSERTリクエスト.
+         */
+        NodeUpsertRequest: {
+            /**
+             * Label
+             * @description ノードラベル
+             */
+            label: string;
+            /**
+             * Name
+             * @description ノード名（ユニークキー）
+             */
+            name: string;
+            /**
+             * Properties
+             * @description 追加プロパティ
+             */
+            properties?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Graph Name
+             * @description 対象グラフ名
+             */
+            graph_name?: string | null;
+        };
+        /**
          * NovelReportResponse
          * @description 制作レポート取得レスポンス
          */
@@ -2097,6 +6260,128 @@ export interface components {
             message: string;
             /** Completed Episodes */
             completed_episodes?: number[];
+        };
+        /**
+         * PDCACycleSnapshot
+         * @description PDCAサイクル実行結果のスナップショット
+         */
+        PDCACycleSnapshot: {
+            /** Book Id */
+            book_id: number;
+            /** Chapter Number */
+            chapter_number: number;
+            /** Cycle Number */
+            cycle_number: number;
+            /** Initial Score */
+            initial_score: number;
+            /** Final Score */
+            final_score: number;
+            /** Score Delta */
+            score_delta: number;
+            /** Improved Percentage */
+            improved_percentage: number;
+            /** Lowest Dimension */
+            lowest_dimension: string;
+            /** Directives */
+            directives?: components["schemas"]["WritingDirectiveSchema"][];
+            /** History */
+            history?: components["schemas"]["PDCAHistoryItem"][];
+            /** Converged */
+            converged: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at?: string;
+        };
+        /**
+         * PDCAHistoryItem
+         * @description PDCAサイクル内の一ステップ履歴
+         */
+        PDCAHistoryItem: {
+            /** Cycle */
+            cycle: number;
+            /** Draft Chars */
+            draft_chars: number;
+            /** Score */
+            score: number;
+            /** Scores By Specialist */
+            scores_by_specialist?: {
+                [key: string]: number;
+            };
+            /** Calibrated Scores */
+            calibrated_scores?: {
+                [key: string]: number;
+            };
+            /** Lowest Dimension */
+            lowest_dimension?: string | null;
+            /** Directives Count */
+            directives_count: number;
+            /** Delta */
+            delta: number;
+        };
+        /** PDCAReportResponse */
+        PDCAReportResponse: {
+            /** Book Id */
+            book_id: number;
+            /** Plan */
+            plan: {
+                [key: string]: unknown;
+            };
+            /** Do */
+            do: {
+                [key: string]: unknown;
+            };
+            /** Check */
+            check: {
+                [key: string]: unknown;
+            };
+            /** Act */
+            act: {
+                [key: string]: unknown;
+            };
+        };
+        /** ParagraphPatchRequest */
+        ParagraphPatchRequest: {
+            /** Paragraph Index */
+            paragraph_index: number;
+            /** Directive */
+            directive: string;
+        };
+        /**
+         * PipelineBatchRequest
+         * @description パイプラインバッチ処理リクエスト.
+         */
+        PipelineBatchRequest: {
+            /** Chapters */
+            chapters: components["schemas"]["PipelineProcessRequest"][];
+            /**
+             * Continue On Error
+             * @description エラー時に継続
+             * @default true
+             */
+            continue_on_error: boolean;
+        };
+        /**
+         * PipelineProcessRequest
+         * @description パイプライン処理リクエスト.
+         */
+        PipelineProcessRequest: {
+            /**
+             * Chapter Id
+             * @description チャプターID
+             */
+            chapter_id: number;
+            /**
+             * Chapter Text
+             * @description チャプターテキスト
+             */
+            chapter_text: string;
+            /**
+             * Idempotency Key
+             * @description 冪等性キー
+             */
+            idempotency_key?: string | null;
         };
         /**
          * PlanGenerationRequest
@@ -2256,6 +6541,21 @@ export interface components {
                 [key: string]: number;
             } | null;
         };
+        /** PromotionEligibilityResponse */
+        PromotionEligibilityResponse: {
+            /** Book Id */
+            book_id: number;
+            /** Eligible */
+            eligible: boolean;
+            /** Avg Score */
+            avg_score: number;
+            /** Trend Slope */
+            trend_slope: number;
+            /** Chapters Evaluated */
+            chapters_evaluated: number;
+            /** Reason */
+            reason?: string | null;
+        };
         /** PromotionRequest */
         PromotionRequest: {
             /**
@@ -2281,6 +6581,260 @@ export interface components {
              * @description 引き継ぎ用の状態トークン
              */
             state_token: string;
+        };
+        /** PublicationScheduleCreate */
+        PublicationScheduleCreate: {
+            /** Book Id */
+            book_id: number;
+            /** Platform */
+            platform: string;
+            /** Episode Range */
+            episode_range: [
+                number,
+                number
+            ];
+            /**
+             * Scheduled At
+             * Format: date-time
+             */
+            scheduled_at: string;
+            /** Credentials Override */
+            credentials_override?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /** PublicationScheduleResponse */
+        PublicationScheduleResponse: {
+            /** Id */
+            id: number;
+            /** Book Id */
+            book_id: number;
+            /** Platform */
+            platform: string;
+            /** Episode Range */
+            episode_range: [
+                number,
+                number
+            ];
+            /**
+             * Scheduled At
+             * Format: date-time
+             */
+            scheduled_at: string;
+            /** Status */
+            status: string;
+            /** Error Message */
+            error_message?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** PublishExportRequest */
+        PublishExportRequest: {
+            /** Book Id */
+            book_id: number;
+            /** Branch Id */
+            branch_id?: number | null;
+        };
+        /**
+         * PublishPlatform
+         * @description Supported novel publishing platforms.
+         * @enum {string}
+         */
+        PublishPlatform: "narou" | "kakuyomu" | "alphapolis" | "kdp_epub" | "aozora";
+        /**
+         * PublishRequest
+         * @description 投稿実行リクエスト
+         */
+        PublishRequest: {
+            /**
+             * Book Id
+             * @description 書籍ID
+             */
+            book_id: number;
+            /**
+             * Platforms
+             * @description 投稿先プラットフォーム
+             */
+            platforms?: string[];
+            /**
+             * Episode Range
+             * @description 投稿対象話数範囲 (from, to)
+             */
+            episode_range?: [
+                number,
+                number
+            ] | null;
+            /**
+             * Episode Ids
+             * @description 投稿対象エピソードIDリスト
+             */
+            episode_ids?: number[] | null;
+            /**
+             * Schedule
+             * @description 定期投稿スケジュール設定
+             */
+            schedule?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Credentials
+             * @description プラットフォーム別認証情報（環境変数優先）
+             */
+            credentials?: {
+                [key: string]: {
+                    [key: string]: unknown;
+                };
+            } | null;
+        };
+        /**
+         * PublishStatusRequest
+         * @description 投稿ステータス取得リクエスト
+         */
+        PublishStatusRequest: {
+            /** Book Id */
+            book_id: number;
+            /** Platform */
+            platform: string;
+            /** Post Id */
+            post_id: string;
+        };
+        /**
+         * RagContextRequest
+         * @description RAGコンテキスト生成リクエスト.
+         */
+        RagContextRequest: {
+            /**
+             * Current Prompt
+             * @description 現在のプロンプト/クエリ
+             */
+            current_prompt: string;
+            /**
+             * Character Name
+             * @description 主人公名
+             */
+            character_name: string;
+            /**
+             * Additional Entities
+             * @description 追加エンティティ
+             */
+            additional_entities?: string[] | null;
+        };
+        /** ReflectionStatsResponse */
+        ReflectionStatsResponse: {
+            /** Book Id */
+            book_id: number | null;
+            /** Total Calls */
+            total_calls: number;
+            /** Avg Iterations */
+            avg_iterations: number;
+            /** Convergence Rate */
+            convergence_rate: number;
+            /** Avg Threshold Filtered */
+            avg_threshold_filtered: number;
+        };
+        /** ReflectionTestRequest */
+        ReflectionTestRequest: {
+            /**
+             * Query
+             * @description 検索クエリ
+             */
+            query: string;
+            /**
+             * Book Id
+             * @description 書籍ID
+             */
+            book_id?: number | null;
+            /**
+             * Top K
+             * @default 5
+             */
+            top_k: number;
+            /**
+             * Max Iter
+             * @default 3
+             */
+            max_iter: number;
+            /**
+             * Relevance Threshold
+             * @default 0.5
+             */
+            relevance_threshold: number;
+        };
+        /** ReflectionTestResponse */
+        ReflectionTestResponse: {
+            /** Iterations */
+            iterations: number;
+            /** Converged */
+            converged: boolean;
+            /** Original Query */
+            original_query: string;
+            /** Refined Queries */
+            refined_queries: string[];
+            /** Final Doc Count */
+            final_doc_count: number;
+            /** Initial Doc Count */
+            initial_doc_count: number;
+            /** History */
+            history: {
+                [key: string]: unknown;
+            }[];
+            /** Elapsed Ms */
+            elapsed_ms: number;
+        };
+        /**
+         * ReformatRequest
+         * @description 音律・リズム整形リクエスト
+         */
+        ReformatRequest: {
+            /**
+             * Text
+             * @description 整形対象の小説本文
+             */
+            text: string;
+        };
+        /**
+         * ReformatResponse
+         * @description 音律・リズム整形レスポンス
+         */
+        ReformatResponse: {
+            /** Reformatted Text */
+            reformatted_text: string;
+            stats: components["schemas"]["CadenceStats"];
+        };
+        /**
+         * ResolveIssueRequest
+         * @description 課題解決リクエスト
+         */
+        ResolveIssueRequest: {
+            /** Api Key */
+            api_key: string;
+            /** Config */
+            config?: {
+                [key: string]: unknown;
+            };
+            /** Action */
+            action: string;
+        };
+        /**
+         * ResolvedChapterPayload
+         * @description コンフリクト解決済み章コンテンツ (Step 49).
+         */
+        ResolvedChapterPayload: {
+            /** Chapter Number */
+            chapter_number: number;
+            /** Resolved Content */
+            resolved_content: string;
+            /**
+             * Resolution Strategy
+             * @description base | source | target | manual
+             * @default manual
+             */
+            resolution_strategy: string;
+        } & {
+            [key: string]: unknown;
         };
         /**
          * RetryFailedRequest
@@ -2324,6 +6878,8 @@ export interface components {
              * @default ハイファンタジー (R15)
              */
             genre: string;
+            /** @description オプトインのLLM設定 */
+            llm_config?: components["schemas"]["LLMConfigOverride"] | null;
         };
         /**
          * ReversePlotGenerateRequest
@@ -2345,11 +6901,39 @@ export interface components {
             /** Genre */
             genre: string;
         };
+        /** ReviewActionRequest */
+        ReviewActionRequest: {
+            /** Reviewer Id */
+            reviewer_id?: string | null;
+            /**
+             * Comment
+             * @default
+             */
+            comment: string;
+        };
+        /** ReviseReviewRequest */
+        ReviseReviewRequest: {
+            /** Proposed Content */
+            proposed_content: string;
+            /** Reviewer Id */
+            reviewer_id?: string | null;
+            /**
+             * Comment
+             * @default
+             */
+            comment: string;
+        };
         /**
          * RollbackRequest
          * @description プロンプトロールバックリクエスト
          */
         RollbackRequest: {
+            /** Api Key */
+            api_key: string;
+            /** Config */
+            config?: {
+                [key: string]: unknown;
+            };
             /** Version Id */
             version_id: number;
             /**
@@ -2358,6 +6942,50 @@ export interface components {
              */
             reason: string | null;
         };
+        /** RunRequest */
+        RunRequest: {
+            /**
+             * Task Type
+             * @default writing
+             */
+            task_type: string;
+            /**
+             * Prompt Version
+             * @default
+             */
+            prompt_version: string;
+            /**
+             * Model Name
+             * @default
+             */
+            model_name: string;
+            /**
+             * Params
+             * @default {}
+             */
+            params: {
+                [key: string]: unknown;
+            };
+            /**
+             * Payload
+             * @default {}
+             */
+            payload: {
+                [key: string]: unknown;
+            };
+            /**
+             * Output Preview
+             * @default
+             */
+            output_preview: string;
+            /**
+             * Trace Id
+             * @default
+             */
+            trace_id: string;
+            /** Chapter Ep */
+            chapter_ep?: number | null;
+        };
         /**
          * SensoryType
          * @description 五感・描写拡張タイプ
@@ -2365,11 +6993,354 @@ export interface components {
          */
         SensoryType: "visual" | "auditory" | "olfactory" | "tactile" | "gustatory" | "metaphor";
         /**
+         * SentenceEndDistribution
+         * @description 文末出現比率
+         */
+        SentenceEndDistribution: {
+            /**
+             * Desu Masu
+             * @description です・ます調の割合
+             * @default 0.1
+             */
+            desu_masu: number;
+            /**
+             * Da Dearu
+             * @description だ・である調の割合
+             * @default 0.6
+             */
+            da_dearu: number;
+            /**
+             * Nominal
+             * @description 体言止めの割合
+             * @default 0.2
+             */
+            nominal: number;
+            /**
+             * Exclamatory
+             * @description 感嘆符（！）の割合
+             * @default 0.07
+             */
+            exclamatory: number;
+            /**
+             * Interrogative
+             * @description 疑問符（？）の割合
+             * @default 0.03
+             */
+            interrogative: number;
+            /**
+             * Description
+             * @description 文末リズムの特徴解説
+             * @default
+             */
+            description: string;
+        };
+        /**
+         * SentenceLengthModel
+         * @description 文長分布パラメータ
+         */
+        SentenceLengthModel: {
+            /**
+             * Avg
+             * @description 平均文長（文字数）
+             * @default 40
+             */
+            avg: number;
+            /**
+             * Std Dev
+             * @description 標準偏差
+             * @default 12
+             */
+            std_dev: number;
+            /**
+             * Min
+             * @description 最小文長
+             * @default 15
+             */
+            min: number;
+            /**
+             * Max
+             * @description 最大文長
+             * @default 80
+             */
+            max: number;
+            /**
+             * Description
+             * @description 文長の特徴解説
+             * @default
+             */
+            description: string;
+        };
+        /** SkillVersionSwitchRequest */
+        SkillVersionSwitchRequest: {
+            /** Version */
+            version: string;
+        };
+        /** SpecialistInfo */
+        SpecialistInfo: {
+            /** Name */
+            name: string;
+            /**
+             * Version
+             * @default v2-phase2
+             */
+            version: string;
+            /** Llm Required */
+            llm_required: boolean;
+        };
+        /**
+         * StyleCategory
+         * @description カテゴリ情報
+         */
+        StyleCategory: {
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+            /** Style Ids */
+            style_ids: string[];
+        };
+        /**
+         * StyleEntry
+         * @description スタイル定義エントリ
+         */
+        StyleEntry: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Category */
+            category: string;
+            /** Instruction */
+            instruction: string;
+            /** Dialogue Ratio */
+            dialogue_ratio: string;
+            /** Syntax Rhythm */
+            syntax_rhythm: string;
+            /** Metaphor Dna */
+            metaphor_dna: string;
+            /** Noise Dna */
+            noise_dna: string;
+            /** Is Light */
+            is_light: boolean;
+        };
+        /**
+         * StylePresetSummary
+         * @description 文体プリセット概要
+         */
+        StylePresetSummary: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Genre */
+            genre: string;
+            /** Description */
+            description: string;
+            /** Tone */
+            tone: string;
+            profile?: components["schemas"]["StyleProfile"] | null;
+        };
+        /**
+         * StyleProfile
+         * @description 作家性DNA（Style DNA）プロファイル
+         */
+        StyleProfile: {
+            /**
+             * Id
+             * @description スタイルID
+             * @default custom
+             */
+            id: string;
+            /**
+             * Name
+             * @description スタイル表示名
+             * @default カスタム文体
+             */
+            name: string;
+            /**
+             * Genre Hint
+             * @description ジャンルヒント
+             * @default general
+             */
+            genre_hint: string;
+            /**
+             * Category
+             * @description カテゴリ: tempo/heavy/dark/elegant
+             * @default
+             */
+            category: string;
+            /**
+             * Tone Description
+             * @description 語り口・トーンの概要
+             * @default 臨場感あふれるテンポの良い文体
+             */
+            tone_description: string;
+            sentence_length?: components["schemas"]["SentenceLengthModel"];
+            sentence_end_distribution?: components["schemas"]["SentenceEndDistribution"];
+            metaphor_frequency?: components["schemas"]["MetaphorFrequency"];
+            /**
+             * Kerenmi Intensity
+             * @description ケレン味・ハッタリ・誇張表現の強度 (0.0〜1.0)
+             * @default 0.8
+             */
+            kerenmi_intensity: number;
+            /**
+             * Forbidden Patterns
+             * @description 避けるべきAI手癖パターン
+             */
+            forbidden_patterns?: string[];
+            /**
+             * Required Patterns
+             * @description 必須の文体パターン
+             */
+            required_patterns?: string[];
+            /**
+             * Few Shot Sample
+             * @description 文体のお手本となる代表的パラグラフ（100〜300文字）
+             * @default
+             */
+            few_shot_sample: string;
+            /**
+             * Raw Sample
+             * @description 蒸留元の生サンプルテキスト
+             * @default
+             */
+            raw_sample: string;
+        };
+        /**
+         * TargetPlatform
+         * @enum {string}
+         */
+        TargetPlatform: "kakuyomu" | "narou" | "alphapolis" | "kindle";
+        /** TaskStatusResponse */
+        TaskStatusResponse: {
+            /** Task Id */
+            task_id: string;
+            /** Asset Id */
+            asset_id?: number | null;
+            /**
+             * Status
+             * @default pending
+             * @enum {string}
+             */
+            status: "pending" | "running" | "completed" | "failed";
+            /** Error */
+            error?: string | null;
+            /** Started At */
+            started_at?: string | null;
+            /** Finished At */
+            finished_at?: string | null;
+        };
+        /**
+         * TitleCandidate
+         * @description 生成されたタイトル候補とCTR予測結果
+         */
+        TitleCandidate: {
+            /**
+             * Title
+             * @description 生成されたタイトル文字列
+             */
+            title: string;
+            /**
+             * Char Count
+             * @description 文字数
+             */
+            char_count: number;
+            /**
+             * Syntax Type
+             * @description 構文パターン名 (追放ざまぁ, 勘違い無双 等)
+             */
+            syntax_type: string;
+            /**
+             * Predicted Ctr Score
+             * @description CTR予測スコア (0-100)
+             */
+            predicted_ctr_score: number;
+            /**
+             * Hooks
+             * @description 含まれるフック要素
+             */
+            hooks?: string[];
+        };
+        /** TokenResponse */
+        TokenResponse: {
+            /** Access Token */
+            access_token: string;
+            /** Refresh Token */
+            refresh_token: string;
+            /**
+             * Token Type
+             * @default bearer
+             */
+            token_type: string;
+            /** Expires In */
+            expires_in: number;
+        };
+        /**
          * ToneType
          * @description トーン書き換えタイプ
          * @enum {string}
          */
         ToneType: "tension" | "erotic" | "fast_paced" | "formal" | "lyrical";
+        /** UserLoginRequest */
+        UserLoginRequest: {
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+            /** Password */
+            password: string;
+        };
+        /** UserProfileResponse */
+        UserProfileResponse: {
+            /** Id */
+            id: number;
+            /** Email */
+            email: string;
+            /** Display Name */
+            display_name: string;
+            role: components["schemas"]["UserRole"];
+            status: components["schemas"]["UserStatus"];
+            /** Credits */
+            credits: number;
+            /** Plan Tier */
+            plan_tier: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** UserRegisterRequest */
+        UserRegisterRequest: {
+            /**
+             * Email
+             * Format: email
+             * @description メールアドレス
+             */
+            email: string;
+            /**
+             * Password
+             * @description パスワード
+             */
+            password: string;
+            /**
+             * Display Name
+             * @description 作家名/表示名
+             */
+            display_name: string;
+        };
+        /**
+         * UserRole
+         * @enum {string}
+         */
+        UserRole: "user" | "pro" | "admin";
+        /**
+         * UserStatus
+         * @enum {string}
+         */
+        UserStatus: "active" | "suspended" | "pending";
         /** ValidationError */
         ValidationError: {
             /** Location */
@@ -2383,6 +7354,127 @@ export interface components {
             /** Context */
             ctx?: Record<string, never>;
         };
+        /**
+         * ViralTitleRequest
+         * @description バズタイトル生成リクエスト
+         */
+        ViralTitleRequest: {
+            /**
+             * Genre
+             * @description ジャンル (ファンタジー, 現代ドラマ 等)
+             */
+            genre: string;
+            /**
+             * Core Concept
+             * @description 作品の核心設定・独自性
+             */
+            core_concept: string;
+            /**
+             * Protagonist Benefit
+             * @description 主人公の圧倒的強み・実利
+             */
+            protagonist_benefit: string;
+            /**
+             * Antagonist Misfortune
+             * @description 敵・元仲間へのざまぁ/見下し要素
+             * @default
+             */
+            antagonist_misfortune: string;
+            /**
+             * Candidate Count
+             * @description 生成候補数
+             * @default 30
+             */
+            candidate_count: number;
+        };
+        /**
+         * ViralTitleResponse
+         * @description バズタイトル生成レスポンス
+         */
+        ViralTitleResponse: {
+            /**
+             * Top Recommendations
+             * @description CTR最上位候補 (1-5案)
+             */
+            top_recommendations: components["schemas"]["TitleCandidate"][];
+            /**
+             * All Candidates
+             * @description 全生成候補
+             */
+            all_candidates: components["schemas"]["TitleCandidate"][];
+            /**
+             * Selected Synopsis
+             * @description 最上位タイトルに連動して生成されたあらすじ
+             * @default
+             */
+            selected_synopsis: string;
+        };
+        /**
+         * WritingDirectiveSchema
+         * @description PDCA執筆指示のスキーマ
+         */
+        WritingDirectiveSchema: {
+            /** Dimension */
+            dimension: string;
+            /** Severity */
+            severity: string;
+            /** Target Location */
+            target_location: string;
+            /** Current Issue */
+            current_issue: string;
+            /** Mandatory Instruction */
+            mandatory_instruction: string;
+            /** Rationale */
+            rationale: string;
+            /**
+             * Specialist Name
+             * @default
+             */
+            specialist_name: string | null;
+        };
+        /**
+         * EbookExportRequest
+         * @description eBook エクスポートリクエスト (README 互換: POST /export/ebook)。
+         */
+        src__backend__routers__export__EbookExportRequest: {
+            /** Book Id */
+            book_id: number;
+            /** Formats */
+            formats?: string[];
+            /**
+             * Author
+             * @default AI Novel Engine
+             */
+            author: string;
+            /**
+             * Publisher
+             * @default 覇権小説エンジン
+             */
+            publisher: string;
+        };
+        /**
+         * EbookExportRequest
+         * @description 電子書籍エクスポートリクエスト。
+         */
+        src__backend__schemas__multimedia__EbookExportRequest: {
+            /**
+             * Book Id
+             * @description 対象 Book ID
+             */
+            book_id: number;
+            /** Formats */
+            formats?: ("epub" | "pdf" | "mobi" | "json")[];
+            /**
+             * Author
+             * @default AI Novel Engine
+             */
+            author: string;
+            /**
+             * Publisher
+             * @default 覇権小説エンジン
+             */
+            publisher: string;
+        };
     };
     responses: never;
     parameters: never;
@@ -2395,7 +7487,9 @@ export interface operations {
     generate_content_easy_mode_generate_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                Authorization?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -2694,7 +7788,9 @@ export interface operations {
     generate_content_api_easy_mode_generate_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                Authorization?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -2990,10 +8086,52 @@ export interface operations {
             };
         };
     };
-    stream_generation_easy_mode_generate_stream_post: {
+    stream_generation_easy_mode_generate_stream_get: {
+        parameters: {
+            query?: {
+                /** @description Base64-urlsafe encoded JSON of EasyModeInput */
+                payload?: string | null;
+                current_chapter?: string | null;
+                /** @description newline-separated chapter history */
+                chapter_history?: string | null;
+                character_name?: string | null;
+                character_personality?: string | null;
+                character_ability?: string | null;
+                character_genre?: string | null;
+                content_length_limit?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stream_generation_post_easy_mode_generate_stream_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                Authorization?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -3010,6 +8148,163 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_all_styles_api_styles_all_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StyleEntry"][];
+                };
+            };
+        };
+    };
+    get_style_categories_api_styles_categories_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StyleCategory"][];
+                };
+            };
+        };
+    };
+    get_style_preview_api_styles__style_id__preview_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                style_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StyleEntry"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_style_presets_api_styles_presets_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StylePresetSummary"][];
+                };
+            };
+        };
+    };
+    distill_style_api_styles_distill_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DistillRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DistillResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reformat_cadence_api_styles_reformat_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReformatRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReformatResponse"];
                 };
             };
             /** @description Validation Error */
@@ -3087,6 +8382,540 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    execute_cypher_api_graph_cypher_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CypherQueryRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CypherQueryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upsert_node_api_graph_nodes_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NodeUpsertRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upsert_edge_api_graph_edges_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EdgeUpsertRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upsert_batch_api_graph_batch_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BatchUpsertRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BatchUpsertResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_node_api_graph_nodes__label___name__delete: {
+        parameters: {
+            query?: {
+                graph_name?: string | null;
+                /** @description 関連エッジも削除 */
+                detach?: boolean;
+            };
+            header?: never;
+            path: {
+                label: string;
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    search_neighbors_api_graph_search_neighbors_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GraphSearchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_shortest_path_api_graph_nodes__node_name__path__target_name__get: {
+        parameters: {
+            query?: {
+                max_depth?: number;
+                graph_name?: string | null;
+            };
+            header?: never;
+            path: {
+                node_name: string;
+                target_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_graph_stats_api_graph_stats_get: {
+        parameters: {
+            query?: {
+                graph_name?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GraphStatsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_labels_api_graph_labels_get: {
+        parameters: {
+            query?: {
+                graph_name?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    process_chapter_api_graph_pipeline_process_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PipelineProcessRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    process_chapters_batch_api_graph_pipeline_batch_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PipelineBatchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_pipeline_status_api_graph_pipeline_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    hybrid_search_api_graph_rag_hybrid_search_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HybridSearchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    build_rag_context_api_graph_rag_context_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RagContextRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    retrieve_for_episode_api_graph_rag_episode_post: {
+        parameters: {
+            query: {
+                book_id?: number | null;
+                episode_number?: number | null;
+                /** @description 主人公名 */
+                character_name: string;
+                additional_entities?: string[] | null;
+                top_k?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_rag_stats_api_graph_rag_stats_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
         };
@@ -3223,6 +9052,922 @@ export interface operations {
             };
         };
     };
+    get_models_info_api_system_models_info_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    system_status_api_system_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    get_huey_health_status_api_system_huey_health_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    offline_flag_api_system_offline_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    get_llm_provider_status_admin_llm_providers_status_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reset_llm_circuit_breaker_admin_llm_circuit_breaker_reset_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CircuitResetRequest"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    switch_skill_version_api_system_admin_skills_switch_version_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SkillVersionSwitchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_skill_version_api_system_admin_skills_version_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    recalc_all_book_scores_api_system_admin_book_score_recalc_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    get_improvement_priorities_api_system_admin_book_score_improvement_priorities_get: {
+        parameters: {
+            query: {
+                book_id: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_skill_metrics_api_system_admin_skills_metrics_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    run_ab_test_api_system_admin_skills_ab_test_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ABTestRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_ab_test_history_api_system_admin_skills_ab_test_history_get: {
+        parameters: {
+            query?: {
+                skill_name?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    schedule_ab_test_api_system_admin_skills_ab_test_schedule_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ABTestScheduleRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_ab_test_schedule_api_system_admin_skills_ab_test_schedule__task_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                task_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_audit_model_routing_admin_audit_model_routing_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_audit_model_routing_admin_audit_model_routing_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AuditModelRoutingRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    auto_promote_ab_winner_api_system_admin_skills_ab_test_auto_promote_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ABTestAutoPromoteRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_platforms_api_export_platforms_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string;
+                    }[];
+                };
+            };
+        };
+    };
+    export_book_api_export_books__book_id__get: {
+        parameters: {
+            query?: {
+                /** @description narou | kakuyomu | nocturne | nocturn */
+                platform?: string;
+            };
+            header?: {
+                Authorization?: string;
+            };
+            path: {
+                book_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_ebook_alias_api_export_ebook_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["src__backend__routers__export__EbookExportRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EbookExportResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Multimedia disabled */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    list_specialists_admin_audit_specialists_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpecialistInfo"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    test_aggregate_admin_audit_aggregate_test_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AuditAggregateTestRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditAggregateTestResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_audit_weights_admin_audit_weights_get: {
+        parameters: {
+            query?: {
+                /** @description ジャンルフィルタ */
+                genre?: string | null;
+                /** @description フェーズフィルタ */
+                phase?: string | null;
+            };
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    test_reflection_admin_rag_reflection_test_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReflectionTestRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReflectionTestResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_reflection_stats_admin_rag_reflection_stats_get: {
+        parameters: {
+            query?: {
+                /** @description 書籍ID（指定時はその書籍のみ） */
+                book_id?: number | null;
+            };
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReflectionStatsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_enrichment_status_admin_enrichment_status_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnrichmentStatusResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    test_enrichment_admin_enrichment_test_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnrichmentTestRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnrichmentTestResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_enrichment_metrics_admin_enrichment_metrics_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnrichmentMetricsSnapshot"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_books_api_books__get: {
         parameters: {
             query?: never;
@@ -3243,6 +9988,39 @@ export interface operations {
             };
         };
     };
+    create_book_api_books__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BookCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookSchema"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_books_api_books_get: {
         parameters: {
             query?: never;
@@ -3259,6 +10037,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BookSchema"][];
+                };
+            };
+        };
+    };
+    create_book_api_books_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BookCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookSchema"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -3312,6 +10123,69 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_book_score_history_api_books__book_id__book_scores_history_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                book_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookScoreHistoryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_pdca_cycles_api_books__book_id__pdca_cycles__chapter_number__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                book_id: number;
+                chapter_number: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PDCACycleSnapshot"][];
                 };
             };
             /** @description Validation Error */
@@ -3748,6 +10622,37 @@ export interface operations {
             };
         };
     };
+    get_dag_status_api_tasks_dag__dag_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                dag_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     stream_task_status_api_tasks__task_id__stream_get: {
         parameters: {
             query?: never;
@@ -3782,9 +10687,93 @@ export interface operations {
     stop_task_api_tasks__task_id__stop_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                Authorization?: string;
+            };
             path: {
                 task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    trigger_task_recovery_api_tasks_admin_recover_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_zombie_tasks_api_tasks_admin_recover_zombies_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_wal_logs_api_tasks_admin_wal__dag_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                dag_id: string;
             };
             cookie?: never;
         };
@@ -3813,7 +10802,9 @@ export interface operations {
     get_pending_patches_api_patches__book_id__pending_get: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                Authorization?: string;
+            };
             path: {
                 book_id: number;
             };
@@ -3846,7 +10837,9 @@ export interface operations {
             query?: {
                 req?: unknown | null;
             };
-            header?: never;
+            header?: {
+                Authorization?: string;
+            };
             path: {
                 patch_id: number;
             };
@@ -3879,7 +10872,9 @@ export interface operations {
             query?: {
                 req?: unknown | null;
             };
-            header?: never;
+            header?: {
+                Authorization?: string;
+            };
             path: {
                 patch_id: number;
             };
@@ -3912,13 +10907,290 @@ export interface operations {
             query: {
                 req: unknown;
             };
-            header?: never;
+            header?: {
+                Authorization?: string;
+            };
             path: {
                 patch_id: number;
             };
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_pending_reviews_api_patches__book_id__reviews_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                book_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_review_detail_api_patches_reviews__review_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path: {
+                review_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    approve_review_api_patches_reviews__review_id__approve_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path: {
+                review_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewActionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reject_review_api_patches_reviews__review_id__reject_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path: {
+                review_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewActionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    revise_review_api_patches_reviews__review_id__revise_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path: {
+                review_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviseReviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_setting_versions_api_patches__book_id__setting_versions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                book_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_setting_version_api_patches__book_id__setting_versions__version_number__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                book_id: number;
+                version_number: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_paragraph_api_episodes__episode_id__patch_paragraph_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path: {
+                episode_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ParagraphPatchRequest"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -3973,16 +11245,20 @@ export interface operations {
     };
     resolve_issue_api_issues__issue_id__resolve_post: {
         parameters: {
-            query: {
-                req: unknown;
+            query?: never;
+            header?: {
+                Authorization?: string;
             };
-            header?: never;
             path: {
                 issue_id: number;
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResolveIssueRequest"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -4072,16 +11348,18 @@ export interface operations {
     };
     export_package_post_api_marketing_export_package__book_id__post: {
         parameters: {
-            query: {
-                api_key_req: unknown;
-            };
+            query?: never;
             header?: never;
             path: {
                 book_id: number;
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MarketingExportRequest"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -4090,6 +11368,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_viral_titles_api_marketing_viral_titles_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ViralTitleRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ViralTitleResponse"];
                 };
             };
             /** @description Validation Error */
@@ -4320,7 +11631,9 @@ export interface operations {
     produce_novel_api_novel_produce_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                Authorization?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -4443,10 +11756,378 @@ export interface operations {
             };
         };
     };
-    run_commercial_pipeline_commercial_run_post: {
+    get_chapter_book_score_api_novel_books__book_id__chapters__chapter_number__score_get: {
         parameters: {
             query?: never;
             header?: never;
+            path: {
+                book_id: number;
+                chapter_number: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookScoreResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    check_promotion_eligibility_api_novel_books__book_id__promotion_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                book_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromotionEligibilityResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_pdca_report_api_novel_books__book_id__pdca_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                book_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PDCAReportResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_book_alerts_api_novel_books__book_id__alerts_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                book_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_novel_social_relationships_api_novel__book_id__social_relationships_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path: {
+                book_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_novel_social_journals_api_novel__book_id__social_journals_get: {
+        parameters: {
+            query?: {
+                ep_num?: number | null;
+                character_name?: string | null;
+                limit?: number;
+            };
+            header?: {
+                Authorization?: string;
+            };
+            path: {
+                book_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_novel_social_trends_api_novel__book_id__social_trends_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path: {
+                book_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_schedule_commercial_schedules_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublicationScheduleCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicationScheduleResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_schedules_commercial_schedules__book_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path: {
+                book_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicationScheduleResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_schedule_commercial_schedules__schedule_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path: {
+                schedule_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_schedule_now_commercial_schedules__schedule_id__run_now_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path: {
+                schedule_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_commercial_pipeline_commercial_run_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -4478,7 +12159,243 @@ export interface operations {
             };
         };
     };
+    publish_commercial_commercial_publish_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublishRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_scheduled_publish_tasks_commercial_scheduled_tasks__book_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path: {
+                book_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_scheduled_publish_task_commercial_scheduled_tasks__task_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_publish_status_commercial_publish_status_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublishStatusRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_publish_records_commercial_publish_records__book_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path: {
+                book_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_publish_platforms_commercial_publish_platforms_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string;
+                    }[];
+                };
+            };
+        };
+    };
     generate_illustration_generate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_yonkoma_yonkoma_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -4535,6 +12452,1981 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_illustration_status_status__task_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_media_mix_multimedia_media_mix_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MediaMixRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaMixResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Multimedia disabled */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    export_ebook_multimedia_ebook_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["src__backend__schemas__multimedia__EbookExportRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EbookExportResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Multimedia disabled */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    generate_if_routes_multimedia_if_routes_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IFRouteGenerateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IFRouteResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Multimedia disabled */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    generate_asset_pack_multimedia_asset_pack_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssetPackRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssetPackResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Multimedia disabled */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    generate_asset_pack_alias_multimedia_generate_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssetPackGenerateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssetPackGenerateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Multimedia disabled */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_assets_by_book_multimedia_assets__book_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                book_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssetsByBookResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Multimedia disabled */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_artifact_multimedia_artifacts__asset_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                asset_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArtifactMetaResponse"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_artifact_multimedia_artifacts__asset_id__download_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                asset_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_task_multimedia_tasks__task_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskStatusResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    serve_file_multimedia_files__filename__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                filename: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    trigger_audio_synthesis_multimedia_audio_synthesize_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AudioSynthesizeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_chapter_audio_multimedia_audio__book_id___episode_num__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path: {
+                book_id: number;
+                episode_num: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stream_audio_file_multimedia_audio__audio_id__stream_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                audio_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_branch_api_branches__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BranchDbModelCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BranchResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_branches_api_branches__book_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                book_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BranchResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_branch_tree_api_branches__book_id__tree_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                book_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_branch_diff_api_branches__book_id__diff_get: {
+        parameters: {
+            query: {
+                branchA: number;
+                branchB: number;
+                chapter: number;
+            };
+            header?: never;
+            path: {
+                book_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_branch_graph_api_branches__book_id__graph_get: {
+        parameters: {
+            query: {
+                branch_id: number;
+            };
+            header?: never;
+            path: {
+                book_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BranchGraphResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_branch_graph_api_branches__book_id__graph_put: {
+        parameters: {
+            query: {
+                branch_id: number;
+            };
+            header?: never;
+            path: {
+                book_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BranchGraphResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    fork_branch_api_branches__book_id__fork_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                book_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BranchForkRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BranchResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    merge_branches_api_branches__book_id__merge_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                book_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BranchMergeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BranchResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_merge_api_branches__book_id__merge_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                book_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BranchMergeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    commit_branch_merge_api_branches__book_id__merge_commit_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                book_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BranchMergeCommitRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BranchMergeCommitResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_play_session_api_branches_play_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BranchPlayRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BranchPlaySessionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_play_state_api_branches_play__session_id__state_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BranchPlayStateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    play_choose_api_branches_play__session_id__choose_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BranchPlayChooseRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BranchPlayStateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    play_save_api_branches_play__session_id__save_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BranchPlayStateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    play_load_api_branches_play__session_id__load_post: {
+        parameters: {
+            query?: {
+                index?: number;
+            };
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BranchPlayStateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    play_end_api_branches_play__session_id__end_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["BranchPlayEndRequest"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BranchPlaySessionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_playthrough_api_branches_play__session_id__playthrough_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BranchPlayPlaythroughResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_branch_nodes_api_branches__book_id__nodes_get: {
+        parameters: {
+            query: {
+                branch_id: number;
+            };
+            header?: never;
+            path: {
+                book_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_branch_node_api_branches__book_id__nodes_post: {
+        parameters: {
+            query: {
+                branch_id: number;
+            };
+            header?: never;
+            path: {
+                book_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_branch_node_api_branches__book_id__nodes__node_id__delete: {
+        parameters: {
+            query: {
+                branch_id: number;
+            };
+            header?: never;
+            path: {
+                book_id: number;
+                node_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    validate_branch_graph_api_branches__book_id__editor_validate_post: {
+        parameters: {
+            query: {
+                branch_id: number;
+            };
+            header?: never;
+            path: {
+                book_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_branches_zip_api_branches__book_id__export_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                book_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_branch_stats_api_branches__book_id__stats_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                book_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_branch_choice_stats_api_branches__book_id__choices_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                book_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    detect_admin_anti_ai_detect_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DetectRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DetectResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    correct_admin_anti_ai_correct_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CorrectRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CorrectResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_config_admin_anti_ai_config_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfigResponse"];
+                };
+            };
+        };
+    };
+    get_cost_summary_api_cost_summary_get: {
+        parameters: {
+            query?: {
+                /** @description 管理者のみ: 全ユーザー集約を取得 */
+                all_users?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sse_pipeline_stream_api_stream_pipeline__book_id__get: {
+        parameters: {
+            query?: {
+                token?: string | null;
+            };
+            header?: never;
+            path: {
+                book_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_for_publishing_api_export_publish__platform__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                platform: components["schemas"]["PublishPlatform"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublishExportRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_for_publishing_api_export_publish__platform__preview_get: {
+        parameters: {
+            query: {
+                /** @description Target Book ID */
+                book_id: number;
+                /** @description Episode/Chapter number to preview */
+                chapter_number?: number;
+                /** @description Optional branch ID */
+                branch_id?: number | null;
+            };
+            header?: never;
+            path: {
+                platform: components["schemas"]["PublishPlatform"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    format_chapter_for_publishing_api_publishing_assistant_format_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FormatRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FormattedChapterPayload"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    register_api_auth_register_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserRegisterRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserProfileResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    login_api_auth_login_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_me_api_auth_me_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserProfileResponse"];
+                };
+            };
+        };
+    };
+    get_plans_api_billing_plans_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    get_balance_api_billing_balance_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    create_checkout_session_api_billing_create_checkout_session_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    [key: string]: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_portal_session_api_billing_create_portal_session_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    [key: string]: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_transactions_api_billing_transactions_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    handle_stripe_webhook_api_billing_webhook_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Stripe-Signature"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_runs_api_trace_books__book_id__runs_get: {
+        parameters: {
+            query?: {
+                chapter_ep?: number | null;
+            };
+            header?: never;
+            path: {
+                book_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    }[];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    record_run_api_trace_books__book_id__runs_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                book_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RunRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reproducibility_report_api_trace_books__book_id__report_get: {
+        parameters: {
+            query?: {
+                chapter_ep?: number | null;
+            };
+            header?: never;
+            path: {
+                book_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Validation Error */

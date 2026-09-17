@@ -8,20 +8,24 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
-from src.backend.auth import require_api_key
+from src.backend.auth import get_current_user, require_api_key
 from src.backend.database import get_db
-from src.backend.database.models import PublicationScheduleDbModel
+from src.backend.database.models import PublicationScheduleDbModel, User
+from src.backend.middleware.tenant_guard import verify_book_ownership
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.backend.workflows.commercial_pipeline import CommercialPipeline
 from src.services.publishers import (
-    get_credential_store,
     NarouCredentials,
     KakuyomuCredentials,
     KoboCredentials,
     KindleCredentials,
 )
 
-router = APIRouter(prefix="/commercial", tags=["commercial"])
+router = APIRouter(
+    prefix="/commercial",
+    tags=["commercial"],
+    dependencies=[Depends(get_current_user)],
+)
 
 
 class CommercialConfig(BaseModel):
@@ -79,12 +83,14 @@ class PublicationScheduleResponse(BaseModel):
 @router.post("/schedules", response_model=PublicationScheduleResponse)
 async def create_schedule(
     req: PublicationScheduleCreate,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
     api_key: str = Depends(require_api_key),
 ):
     """
     投稿スケジュールを登録する。
     """
+    await verify_book_ownership(req.book_id, current_user, db)
     try:
         schedule = PublicationScheduleDbModel(
             book_id=req.book_id,
@@ -115,12 +121,14 @@ async def create_schedule(
 @router.get("/schedules/{book_id}", response_model=list[PublicationScheduleResponse])
 async def get_schedules(
     book_id: int,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
     api_key: str = Depends(require_api_key),
 ):
     """
     書籍ごとの投稿スケジュール一覧を取得する。
     """
+    await verify_book_ownership(book_id, current_user, db)
     try:
         from sqlalchemy import select
         stmt = (
@@ -160,27 +168,27 @@ async def cancel_schedule(
     """
     try:
         from sqlalchemy import select
-        
+
         # スケジュールの取得
         result = await db.execute(select(PublicationScheduleDbModel).where(PublicationScheduleDbModel.id == schedule_id))
         schedule = result.scalar_one_or_none()
-        
+
         if not schedule:
             raise HTTPException(status_code=404, detail="Schedule not found")
-        
+
         if schedule.status != "pending":
             raise HTTPException(
                 status_code=400,
                 detail=f"Only pending schedules can be cancelled. Current status: {schedule.status}"
             )
-        
+
         # ステータスを cancelled に更新
         schedule.status = "cancelled"
         await db.commit()
         await db.refresh(schedule)
-        
+
         return {"success": True, "message": "Schedule cancelled successfully", "schedule_id": schedule_id}
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -199,31 +207,31 @@ async def run_schedule_now(
     try:
         from sqlalchemy import select
         from src.backend.tasks.commercial_tasks import execute_publication_task
-        
+
         # スケジュールの存在確認
         result = await db.execute(select(PublicationScheduleDbModel).where(PublicationScheduleDbModel.id == schedule_id))
         schedule = result.scalar_one_or_none()
-        
+
         if not schedule:
             raise HTTPException(status_code=404, detail="Schedule not found")
-        
+
         if schedule.status == "running":
             raise HTTPException(status_code=400, detail="Schedule is already running")
-        
+
         # Hueyタスクを即時投入
         execute_publication_task(schedule_id)
-        
+
         return {"success": True, "message": "Publication task triggered successfully", "schedule_id": schedule_id}
-        
+
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Trigger run-now failed: {str(e)}")
         await db.commit()
         await db.refresh(schedule)
-        
+
         return {"success": True, "message": "Schedule cancelled successfully", "schedule_id": schedule_id}
-        
+
     except HTTPException:
         raise
     except Exception as e:

@@ -3,29 +3,39 @@ import time
 
 from fastapi import APIRouter, Depends
 
-from src.backend.auth import require_api_key
 from src.backend.database.uow import UnitOfWork
 from src.core.container import AppContainer
 from src.core.exceptions import NotFoundError, ValidationError
 from src.models.api_schemas import ResolveIssueRequest
 
+from src.backend.auth import get_current_user
+from src.backend.database.models import User
+from src.backend.security.owner_guard import verify_book_ownership
+
 router = APIRouter(prefix="/api/issues", tags=["issues"])
 
 
 @router.get("/books/{book_id}")
-async def get_issues(book_id: int):
+async def get_issues(
+    book_id: int,
+    current_user: User = Depends(get_current_user),
+):
     async with UnitOfWork(AppContainer.db()) as uow:
+        await verify_book_ownership(book_id, current_user, uow)
         return await uow.audit.get_book_issues(book_id)
 
 
 @router.post("/{issue_id}/resolve")
-async def resolve_issue(issue_id: int, req: ResolveIssueRequest, api_key: str = Depends(require_api_key)):
+async def resolve_issue(issue_id: int, req: ResolveIssueRequest, current_user: User = Depends(get_current_user)):
     async with UnitOfWork(AppContainer.db()) as uow:
         issue = await uow.audit.get_issue(issue_id)
         if not issue:
             raise NotFoundError(
                 "Issue not found", resource_type="AuditIssue", resource_id=str(issue_id)
             )
+
+        # 作品の所有権を検証
+        await verify_book_ownership(issue.book_id, current_user, uow)
 
         book_id = issue.book_id
         ep_num = issue.ep_num

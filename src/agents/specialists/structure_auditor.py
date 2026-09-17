@@ -131,7 +131,6 @@ class StructureAuditor(SpecialistAuditor):
 
         # Phase-based keyword coverage
         # Split plot into 4 phases: intro, conflict, climax, resolution
-        plot_phases = ["導入", "展開", "転換", "結び", "起", "承", "転", "結", "intro", "conflict", "climax", "resolution"]
         phase_keywords = {phase: [] for phase in ["intro", "conflict", "climax", "resolution"]}
 
         # Simple heuristic: split plot by common delimiters

@@ -15,7 +15,11 @@ from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisco
 from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.backend.auth import validate_api_key_or_raise
+from src.backend.auth import get_current_user
+from src.backend.database.models import User
+from src.backend.security.owner_guard import verify_book_ownership
+from src.backend.database.uow import UnitOfWork
+from src.core.container import AppContainer
 from src.backend.database.core import get_db_manager
 from src.backend.database.repositories.branch import BranchRepository
 from src.backend.services.branch_merge_service import BranchMergeService
@@ -42,7 +46,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(
     prefix="/api/branches",
     tags=["branches"],
-    dependencies=[Depends(validate_api_key_or_raise)],
+    dependencies=[Depends(get_current_user)],
 )
 
 
@@ -71,11 +75,12 @@ def _to_response(model: Any) -> BranchResponse:
     )
 
 
-def _validate_uuid(session_id: str) -> None:
+def _validate_uuid(session_id: str) -> bool:
     try:
         uuid.UUID(session_id)
+        return True
     except (ValueError, AttributeError):
-        raise HTTPException(status_code=400, detail="Invalid session_id (UUID required)")
+        return False
 
 
 @router.post("/", response_model=BranchResponse, status_code=201)
@@ -103,66 +108,75 @@ async def create_branch(
 @router.get("/{book_id}", response_model=list[BranchResponse])
 async def list_branches(
     book_id: int,
-    session: AsyncSession = Depends(get_branch_session),
+    current_user: User = Depends(get_current_user),
 ) -> list[BranchResponse]:
     """書籍配下の全ブランチをツリー順に取得."""
-    repo = BranchRepository(session)
-    branches = await repo.get_branch_tree(book_id)
-    return [_to_response(b) for b in branches]
+    async with UnitOfWork(AppContainer.db()) as uow:
+        await verify_book_ownership(book_id, current_user, uow)
+        repo = BranchRepository(uow.session)
+        branches = await repo.get_branch_tree(book_id)
+        return [_to_response(b) for b in branches]
 
 
 
 @router.get("/{book_id}/tree", response_model=dict)
 async def get_branch_tree(
     book_id: int,
-    session: AsyncSession = Depends(get_branch_session),
+    current_user: User = Depends(get_current_user),
 ) -> dict[str, Any]:
     """書籍の全ブランチをツリー構造（ノードとエッジ）で取得."""
-    repo = BranchRepository(session)
-    branches = await repo.get_branch_tree(book_id)
-    
-    # ノードとエッジに変換
-    nodes: list[dict] = []
-    edges: list[dict] = []
-    
-    for branch in branches:
-        # ノードデータ
-        nodes.append({
-            "id": int(branch.id),
-            "data": {
-                "label": str(branch.name) if branch.name else None,
-                "bookId": int(branch.book_id),
-                "parentId": int(branch.parent_id) if branch.parent_id else None,
-                "forkEpNum": int(branch.fork_ep_num) if branch.fork_ep_num is not None else 0,
-                "createdAt": branch.created_at.isoformat() if branch.created_at else None
-            },
-            "position": { "x": 0, "y": 0 }  # レイアウトはフロントエンドで計算
-        })
-        
-        # エッジデータ（親が存在する場合）
-        if branch.parent_id is not None:
-            edges.append({
-                "id": f"edge-{branch.parent_id}-{branch.id}",
-                "source": branch.parent_id,
-                "target": branch.id,
-                "type": "smoothstep"
+    async with UnitOfWork(AppContainer.db()) as uow:
+        await verify_book_ownership(book_id, current_user, uow)
+        repo = BranchRepository(uow.session)
+        branches = await repo.get_branch_tree(book_id)
+
+        # ノードとエッジに変換
+        nodes: list[dict] = []
+        edges: list[dict] = []
+
+        for branch in branches:
+            # ノードデータ
+            nodes.append({
+                "id": int(branch.id),
+                "data": {
+                    "label": str(branch.name) if branch.name else None,
+                    "bookId": int(branch.book_id),
+                    "parentId": int(branch.parent_id) if branch.parent_id else None,
+                    "forkEpNum": int(branch.fork_ep_num) if branch.fork_ep_num is not None else 0,
+                    "createdAt": branch.created_at.isoformat() if branch.created_at else None
+                },
+                "position": { "x": 0, "y": 0 }  # レイアウトはフロントエンドで計算
             })
-    
-    return {
-        "nodes": nodes,
-        "edges": edges
-    }
+
+            # エッジデータ（親が存在する場合）
+            if branch.parent_id is not None:
+                edges.append({
+                    "id": f"edge-{branch.parent_id}-{branch.id}",
+                    "source": branch.parent_id,
+                    "target": branch.id,
+                    "type": "smoothstep"
+                })
+
+        return {
+            "nodes": nodes,
+            "edges": edges
+        }
 def _compute_unified_diff(content_a: str, content_b: str) -> str:
     lines_a = content_a.splitlines(keepends=True)
     lines_b = content_b.splitlines(keepends=True)
     return "".join(difflib.unified_diff(lines_a, lines_b, fromfile="Branch A", tofile="Branch B"))
 
 
-def _compute_side_by_side_diff(content_a: str, content_b: str) -> dict[str, list[str]]:
-    return {
-        "left": content_a.splitlines(),
-        "right": content_b.splitlines(),
-    }
+def _compute_side_by_side_diff(content_a: str, content_b: str) -> list[tuple[str, str]]:
+    lines_a = content_a.splitlines()
+    lines_b = content_b.splitlines()
+    max_len = max(len(lines_a), len(lines_b))
+    result = []
+    for i in range(max_len):
+        a = lines_a[i] if i < len(lines_a) else ""
+        b = lines_b[i] if i < len(lines_b) else ""
+        result.append((a, b))
+    return result
 
 
 @router.get("/{book_id}/diff", response_model=dict)
@@ -287,32 +301,32 @@ async def preview_merge(
     """マージのプレビューとコンフリクト検知."""
     branch_repo = BranchRepository(session)
     chapter_repo = ChapterRepository(session)
-    
+
     # ソースブランチとターゲットブランチを取得
     source_branch = await branch_repo.get_branch(payload.source_branch_id)
     target_branch = await branch_repo.get_branch(payload.target_branch_id)
-    
+
     if not source_branch or not target_branch:
         raise HTTPException(status_code=404, detail="Branch not found")
-    
+
     # マージポイントの章内容を取得
     source_chapter = await chapter_repo.get_chapter(payload.source_branch_id, payload.merge_ep_num)
     target_chapter = await chapter_repo.get_chapter(payload.target_branch_id, payload.merge_ep_num)
-    
+
     # ベースブランチ（共通祖先）の内容を取得（簡易実装：ターゲットブランチの親）
     base_chapter_content = ""
     if target_branch.parent_id is not None:
         base_chapter = await chapter_repo.get_chapter(target_branch.parent_id, payload.merge_ep_num)
         if base_chapter:
             base_chapter_content = base_chapter.content or ""
-    
+
     source_content = source_chapter.content or "" if source_chapter else ""
     target_content = target_chapter.content or "" if target_chapter else ""
-    
+
     # 簡易的なコンフリクト検知
     has_conflict = False
     conflict_chunks = []
-    
+
     if source_content != target_content and source_content != base_chapter_content and target_content != base_chapter_content:
         # 三方向の変更が異なる場合はコンフリクト
         has_conflict = True
@@ -331,10 +345,10 @@ async def preview_merge(
             "source": source_content,
             "target": target_content,
         })
-    
+
     # マージ後の内容をシミュレート（簡易：ソースを優先）
     merged_content = source_content if source_content else target_content
-    
+
     return {
         "can_merge": not has_conflict,
         "has_conflict": has_conflict,
@@ -445,7 +459,8 @@ async def get_play_state(
     session: AsyncSession = Depends(get_branch_session),
 ) -> BranchPlayStateResponse:
     """セッションの現状態（current node / context / available choices）を取得."""
-    _validate_uuid(session_id)
+    if not _validate_uuid(session_id):
+        raise HTTPException(status_code=400, detail="Invalid session_id (UUID required)")
     repo = BranchRepository(session)
     sess = await repo.get_play_session(session_id)
     if sess is None:
@@ -477,7 +492,8 @@ async def play_choose(
     session: AsyncSession = Depends(get_branch_session),
 ) -> BranchPlayStateResponse:
     """選択肢を実行し current_node を進める. 楽観ロック対応."""
-    _validate_uuid(session_id)
+    if not _validate_uuid(session_id):
+        raise HTTPException(status_code=400, detail="Invalid session_id (UUID required)")
     repo = BranchRepository(session)
     sess = await repo.get_play_session(session_id)
     if sess is None:
@@ -523,7 +539,8 @@ async def play_save(
     session: AsyncSession = Depends(get_branch_session),
 ) -> BranchPlayStateResponse:
     """現状態を save_points に追記保存."""
-    _validate_uuid(session_id)
+    if not _validate_uuid(session_id):
+        raise HTTPException(status_code=400, detail="Invalid session_id (UUID required)")
     repo = BranchRepository(session)
     sess = await repo.get_play_session(session_id)
     if sess is None:
@@ -554,7 +571,8 @@ async def play_load(
     session: AsyncSession = Depends(get_branch_session),
 ) -> BranchPlayStateResponse:
     """save_points の index から状態を復元."""
-    _validate_uuid(session_id)
+    if not _validate_uuid(session_id):
+        raise HTTPException(status_code=400, detail="Invalid session_id (UUID required)")
     repo = BranchRepository(session)
     sess = await repo.get_play_session(session_id)
     if sess is None:
@@ -584,7 +602,8 @@ async def play_end(
     session: AsyncSession = Depends(get_branch_session),
 ) -> BranchPlaySessionResponse:
     """セッションを終了（status 更新）."""
-    _validate_uuid(session_id)
+    if not _validate_uuid(session_id):
+        raise HTTPException(status_code=400, detail="Invalid session_id (UUID required)")
     repo = BranchRepository(session)
     sess = await repo.get_play_session(session_id)
     if sess is None:
@@ -610,7 +629,8 @@ async def get_playthrough(
     session: AsyncSession = Depends(get_branch_session),
 ) -> BranchPlayPlaythroughResponse:
     """プレイスルー記録 (history + context) を取得."""
-    _validate_uuid(session_id)
+    if not _validate_uuid(session_id):
+        raise HTTPException(status_code=400, detail="Invalid session_id (UUID required)")
     repo = BranchRepository(session)
     sess = await repo.get_play_session(session_id)
     if sess is None:

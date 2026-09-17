@@ -1,6 +1,5 @@
 """Unit tests for Layer 3 Dynamic Concept Abstraction & Hierarchy Integration (Part 4 / Steps 43-48)."""
 
-import pytest
 
 from src.services.compression.layer3_abstraction import Layer3ConceptAbstractor
 from src.services.compression.models import SubgraphLayerOutput, AbstractionLayerOutput

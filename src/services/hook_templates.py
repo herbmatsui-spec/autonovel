@@ -35,26 +35,26 @@ HOOK_TEMPLATES: Dict[str, List[str]] = {
 def get_hook_templates(hook_type: str) -> List[str]:
     """
     指定されたタイプのフックテンプレートを取得する
-    
+
     Args:
         hook_type: フックタイプ ("mystery", "threat", "emotion")
-        
+
     Returns:
         フックテンプレートのリスト
-        
+
     Raises:
         ValueError: 不正なフックタイプが指定された場合
     """
     if hook_type not in HOOK_TEMPLATES:
         raise ValueError(f"Invalid hook type: {hook_type}. Must be one of {list(HOOK_TEMPLATES.keys())}")
-    
+
     return HOOK_TEMPLATES[hook_type]
 
 
 def get_all_hook_types() -> List[str]:
     """
     すべてのフックタイプを取得する
-    
+
     Returns:
         フックタイプのリスト
     """

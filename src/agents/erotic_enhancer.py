@@ -63,7 +63,6 @@ class EroticEnhancer:
         if not gate.is_active():
             return result
         erotic_intensity = gate.intensity
-        nsfw_enabled = gate.enabled
 
         specialist = None
         params = None
@@ -85,7 +84,7 @@ class EroticEnhancer:
             if specialist:
                 from src.engine.prompts.erotic_specialist import EroticSpecialist
                 specialist = EroticSpecialist()
-                enhanced_prompt = specialist.build_scene_prompt(
+                specialist.build_scene_prompt(
                     curve=None,  # 簡略化のためNone
                     context={**context, **(params or {})},
                     params=params,

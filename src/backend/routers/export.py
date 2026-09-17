@@ -13,7 +13,9 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
-from src.backend.auth import require_api_key
+from src.backend.auth import get_current_user
+from src.backend.database.models import User
+from src.backend.security.owner_guard import verify_book_ownership
 from src.backend.database.uow import UnitOfWork
 from src.backend.feature_flags import is_multimedia_enabled
 from src.backend.multimedia_service import MultimediaService
@@ -59,16 +61,20 @@ async def get_platforms() -> list[dict[str, str]]:
     return list_platforms()
 
 
-@router.get("/books/{book_id}", dependencies=[Depends(require_api_key)])
+@router.get("/books/{book_id}")
 async def export_book(
     book_id: int,
     platform: str = Query("narou", description="narou | kakuyomu | nocturne | nocturn"),
+    current_user: User = Depends(get_current_user),
 ) -> dict[str, Any]:
     """作品を指定プラットフォーム用に整形して出力する。"""
     async with UnitOfWork(AppContainer.db()) as uow:
         book_row = await uow.books.get_book(book_id)
         if book_row is None:
             raise HTTPException(status_code=404, detail="Book not found")
+
+        # 作品の所有権を検証
+        await verify_book_ownership(book_id, current_user, uow)
 
         chapters_list = await uow.chapters.get_all_non_anchor_chapters(book_id)
         chapters = [
@@ -91,17 +97,19 @@ async def export_book(
     "/ebook",
     response_model=EbookExportResponse,
     responses={503: {"description": "Multimedia disabled"}},
-    dependencies=[Depends(require_api_key)],
 )
 async def export_ebook_alias(
     payload: EbookExportRequest,
+    current_user: User = Depends(get_current_user),
     service: MultimediaService = Depends(get_multimedia_service),
 ) -> EbookExportResponse:
     """README 互換エイリアス: eBook エクスポート (EPUB/PDF/MOBI) - `/multimedia/ebook` に委譲。
-    
+
     重い PDF/EPUB 生成をワーカースレッドにオフロードしてイベントループをブロックしない。
     """
     _check_multimedia()
+    async with UnitOfWork(AppContainer.db()) as uow:
+        await verify_book_ownership(payload.book_id, current_user, uow)
     result = await asyncio.to_thread(service.export_ebook, book_id=payload.book_id, formats=payload.formats)
     return EbookExportResponse(
         asset_id=result.asset_id or 0,

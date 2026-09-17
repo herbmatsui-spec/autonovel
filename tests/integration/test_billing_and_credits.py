@@ -20,7 +20,7 @@ from src.backend.database.models_billing import (
     Subscription,
 )
 from src.services.billing.credit_service import CreditService
-from src.config.billing_plans import PLAN_CONFIG, TASK_CREDIT_COSTS
+from src.config.billing_plans import TASK_CREDIT_COSTS
 from src.backend.auth import get_current_user
 
 

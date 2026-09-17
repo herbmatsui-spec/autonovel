@@ -81,18 +81,18 @@ class Orchestrator:
         self._active_skill_version: str = "v1"
         self._ordered_skill_names: list[str] = []
         self._skill_instances: dict[str, SkillAgent] = {}
-        
+
 
     def _build_dag_graph(self) -> "DAGGraph":
         """Orchestrator のスキル順序に基づいて DAGGraph を構築する"""
         from src.backend.tasks.dag_models import DAGGraph, DAGTaskNode, TaskResourceRequirement
-        
+
         graph = DAGGraph(dag_id=f"orch_{self.correlation_id}")
-        
+
         # 各スキルを DAGTaskNode に変換
         for i, skill_name in enumerate(self._ordered_skill_names):
             task_id = f"{self.correlation_id}_{skill_name}"
-            
+
             # 依存関係：最初のスキル以外は前のスキルに依存
             if i == 0:
                 dependencies = []
@@ -108,14 +108,14 @@ class Orchestrator:
                     "task_id": task_id,
                     "input_from": prev_task_id,  # 前のタスクからデータを取得する
                 }
-            
+
             # デフォルトのリソース要件（後で設定可能にする）
             resources = TaskResourceRequirement(
                 cpu_cores=1.0,
                 ram_mb=512,
                 gpu_mem_mb=0
             )
-            
+
             # DAGTaskNode を作成
             task_node = DAGTaskNode(
                 task_id=task_id,
@@ -128,16 +128,16 @@ class Orchestrator:
                 timeout_seconds=300.0,  # 5分のデフォルトタイムアウト
                 retry_limit=3,
             )
-            
+
             graph.add_node(task_node)
-        
+
         return graph
 
     def _register_skills_to_scheduler(self) -> None:
         """スキルの実行関数を DAGScheduler のタスクレジストリに登録する"""
         if not self.dag_scheduler or not self._skill_instances:
             return
-        
+
         # スキルインスタンスから run メソッドを取得して登録
         for skill_name, skill_instance in self._skill_instances.items():
             self.dag_scheduler.register_task(skill_name, skill_instance.run)
@@ -341,14 +341,14 @@ class Orchestrator:
         metric_key: str = "avg_duration_sec",
     ) -> dict[str, Any]:
         """A/Bテストを実行し、2バージョンのメトリクスを比較する。
-        
+
         Args:
             skill_name: テスト対象スキル名
             version_a: バージョンA (例: "v1")
             version_b: バージョンB (例: "v2")
             ctx_list: 同一入力コンテキストリスト
             metric_key: 比較するメトリクスキー
-            
+
         Returns:
             {
                 "version_a": {"metrics": ..., "samples": N},
@@ -360,21 +360,21 @@ class Orchestrator:
         """
         if version_a not in ("v1", "v2") or version_b not in ("v1", "v2"):
             raise ValueError("Versions must be 'v1' or 'v2'")
-        
+
         import statistics
-        
+
         # 元のバージョンを保存
         original_version = self._active_skill_version
-        
+
         results = {"a": [], "b": []}
-        
+
         try:
             # バージョンAで実行
             self.set_skill_version(version_a)
             skill_cls_a = self.get_skill_class(skill_name)
             if not skill_cls_a:
                 raise ValueError(f"Skill '{skill_name}' not found in version {version_a}")
-            
+
             for ctx in ctx_list:
                 skill_instance = skill_cls_a()
                 ctx_copy = AgentContext(
@@ -391,13 +391,13 @@ class Orchestrator:
                     })
                 except Exception:
                     results["a"].append({"success": False, "duration": 0})
-            
+
             # バージョンBで実行
             self.set_skill_version(version_b)
             skill_cls_b = self.get_skill_class(skill_name)
             if not skill_cls_b:
                 raise ValueError(f"Skill '{skill_name}' not found in version {version_b}")
-            
+
             for ctx in ctx_list:
                 skill_instance = skill_cls_b()
                 ctx_copy = AgentContext(
@@ -414,7 +414,7 @@ class Orchestrator:
                     })
                 except Exception:
                     results["b"].append({"success": False, "duration": 0})
-            
+
             # 統計計算
             def calc_stats(runs):
                 if not runs:
@@ -426,10 +426,10 @@ class Orchestrator:
                     "avg_duration": statistics.mean(durations) if durations else 0,
                     "samples": len(runs),
                 }
-            
+
             stats_a = calc_stats(results["a"])
             stats_b = calc_stats(results["b"])
-            
+
             # 勝者判定（成功率優先、同率なら平均時間）
             if stats_a["success_rate"] > stats_b["success_rate"]:
                 winner = "a"
@@ -441,7 +441,7 @@ class Orchestrator:
                 winner = "b"
             else:
                 winner = "tie"
-            
+
             # 簡易p値計算（二項検定の近似）
             import math
             n = len(results["a"])
@@ -457,7 +457,7 @@ class Orchestrator:
                     p_value = 1.0
             else:
                 p_value = 1.0
-            
+
             return {
                 "version_a": {"version": version_a, "metrics": stats_a, "samples": len(results["a"])},
                 "version_b": {"version": version_b, "metrics": stats_b, "samples": len(results["b"])},
@@ -465,11 +465,11 @@ class Orchestrator:
                 "p_value": p_value,
                 "metric_key": metric_key,
             }
-            
+
         finally:
             # 元のバージョンに戻す
             self.set_skill_version(original_version)
-            
+
             # メトリクス記録
             try:
                 from src.backend.observability.metrics import record_ab_test_result
@@ -494,7 +494,7 @@ class Orchestrator:
         min_samples: int = 10,
     ) -> str:
         """定期的なA/Bテストをスケジュールする（簡易実装：即時実行・結果返却）。
-        
+
         実運用ではバックグラウンドタスクとして実装する必要があります。
         """
         import asyncio
@@ -511,10 +511,10 @@ class Orchestrator:
         """A/Bテスト勝者バージョンを本番昇格する"""
         if winner_version not in ("v1", "v2"):
             raise ValueError(f"Invalid version: {winner_version}")
-        
+
         # 勝者バージョンを本番（v1）として登録
         self.set_skill_version(winner_version)
-        
+
         # メトリクス記録
         try:
             from src.backend.observability.metrics import record_skill_promotion
@@ -540,7 +540,7 @@ class Orchestrator:
             # Use DAG scheduler for execution
             # Task results cache: maps task_id to AgentResult (to access artifacts)
             task_results: dict[str, AgentResult] = {}
-            
+
             # Register skills to scheduler with wrappers
             for skill_name, skill_instance in self._skill_instances.items():
                 # Create a wrapper function for this skill
@@ -549,7 +549,7 @@ class Orchestrator:
                         # Extract task_id and input_from from kwargs
                         task_id = kwargs.get("task_id")
                         input_from = kwargs.get("input_from")
-                        
+
                         # Publish start event
                         if self.event_bus:
                             await self.event_bus.publish_async(
@@ -562,7 +562,7 @@ class Orchestrator:
                                     correlation_id=self.correlation_id,
                                 )
                             )
-                        
+
                         try:
                             # Determine input AgentContext
                             if input_from and input_from in task_results:
@@ -572,7 +572,7 @@ class Orchestrator:
                             else:
                                 # First task or no input_from: use the original ctx's artifacts
                                 input_artifacts = ctx.artifacts.copy()
-                            
+
                             # Create input AgentContext
                             input_ctx = AgentContext(
                                 book_id=ctx.book_id,
@@ -581,10 +581,10 @@ class Orchestrator:
                                 artifacts=input_artifacts,
                                 backtrack_history=ctx.backtrack_history.copy(),  # Preserve original backtrack history
                             )
-                            
+
                             # Execute the skill
                             agent_result: AgentResult = await instance.run(input_ctx)
-                            
+
                             # Publish completion event
                             if self.event_bus:
                                 await self.event_bus.publish_async(
@@ -599,15 +599,15 @@ class Orchestrator:
                                         correlation_id=self.correlation_id,
                                     )
                                 )
-                            
+
                             # If the skill returned an error, treat it as a failure
                             if agent_result.error is not None:
                                 raise RuntimeError(f"Skill {name} failed: {agent_result.error}")
-                            
+
                             # Store the full result for potential use by subsequent tasks
                             if task_id:
                                 task_results[task_id] = agent_result
-                            
+
                             # For DAGScheduler, we return the artifacts to be merged into ctx.artifacts
                             # In the original flow, ctx.artifacts.update(result.artifacts) is done
                             return agent_result.artifacts
@@ -627,18 +627,18 @@ class Orchestrator:
                                     )
                                 )
                             raise
-                    
+
                     return wrapper
-                
+
                 wrapper = make_skill_wrapper(skill_name, skill_instance)
                 self.dag_scheduler.register_task(skill_name, wrapper)
-            
+
             # Build DAG from ordered skills
             graph = self._build_dag_graph()
-            
+
             # Execute DAG using scheduler
             executed_graph = await self.dag_scheduler.run_dag(graph)
-            
+
             # Collect results from completed nodes and update ctx.artifacts
             for task_id, node in executed_graph.nodes.items():
                 if node.status == "completed" and node.result is not None:
@@ -648,7 +648,7 @@ class Orchestrator:
                     else:
                         # If result is not a dict, store it with task_id as key
                         ctx.artifacts[task_id] = node.result
-            
+
             return ctx
         while current:
             agent_key = current.value if hasattr(current, "value") else str(current)

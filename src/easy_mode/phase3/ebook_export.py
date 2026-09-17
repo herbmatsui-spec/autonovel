@@ -159,15 +159,15 @@ class EbookContentProcessor:
         """共通CSS生成"""
         return """
 /* 共通スタイル */
-body { 
-    font-family: "Noto Serif JP", "Hiragino Mincho ProN", serif; 
-    line-height: 1.8; 
-    margin: 0; 
+body {
+    font-family: "Noto Serif JP", "Hiragino Mincho ProN", serif;
+    line-height: 1.8;
+    margin: 0;
     padding: 1em;
     color: #333;
 }
 
-h1, h2, h3 { 
+h1, h2, h3 {
     font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", sans-serif;
     font-weight: bold;
     margin-top: 2em;
@@ -179,8 +179,8 @@ h1 { font-size: 1.8em; border-bottom: 2px solid #333; padding-bottom: 0.3em; }
 h2 { font-size: 1.5em; }
 h3 { font-size: 1.3em; }
 
-p { 
-    text-indent: 1em; 
+p {
+    text-indent: 1em;
     margin: 0.5em 0;
     text-align: justify;
 }
@@ -188,23 +188,23 @@ p {
 p:first-of-type { text-indent: 0; }
 
 /* セリフ */
-p.dialogue { 
-    text-indent: 0; 
+p.dialogue {
+    text-indent: 0;
     margin: 0.5em 1em;
     font-style: normal;
 }
 
 /* 独白 */
-p.monologue { 
-    text-indent: 0; 
+p.monologue {
+    text-indent: 0;
     margin: 0.5em 1.5em;
     font-style: italic;
     color: #555;
 }
 
 /* 強調 */
-p.emphasis { 
-    font-weight: bold; 
+p.emphasis {
+    font-weight: bold;
 }
 
 /* ルビ */
@@ -226,12 +226,12 @@ rt { font-size: 0.6em; }
 .cover-author { font-size: 1.2em; margin-top: 0.5em; color: #666; }
 
 /* コルフォン */
-.colophon { 
-    margin-top: 4em; 
-    padding-top: 1em; 
-    border-top: 1px solid #ccc; 
-    font-size: 0.8em; 
-    color: #666; 
+.colophon {
+    margin-top: 4em;
+    padding-top: 1em;
+    border-top: 1px solid #ccc;
+    font-size: 0.8em;
+    color: #666;
     text-align: center;
 }
 """
@@ -717,28 +717,42 @@ class MobiGenerator:
 class EbookExporter:
     """電子書籍エクスポーター統合"""
 
-    def __init__(self, genre: str, preset: dict[str, Any]):
-        self.genre = genre
-        self.preset = preset
-        self.processor = EbookContentProcessor(genre)
+    def __init__(self, metadata: EbookMetadata, output_dir: Path):
+        self.metadata = metadata
+        self.output_dir = output_dir
+        # Use metadata's genre or default
+        self.genre = metadata.genre or "general"
+        self.preset = {}  # Default empty preset
+        self.processor = EbookContentProcessor(self.genre)
 
     def create_metadata(self, series: SeriesResult, **kwargs) -> EbookMetadata:
         """メタデータ作成"""
-        author = kwargs.pop("author", "AI Novel Engine")
-        tags = kwargs.pop("tags", [])
-        cover_image = kwargs.pop("cover_image", None)
-        cover_image_path = kwargs.pop("cover_image_path", None)
+        author = kwargs.pop("author", self.metadata.author)
+        tags = kwargs.pop("tags", self.metadata.tags)
+        cover_image = kwargs.pop("cover_image", self.metadata.cover_image)
+        cover_image_path = kwargs.pop("cover_image_path", self.metadata.cover_image_path)
+        publisher = kwargs.pop("publisher", self.metadata.publisher)
+        publication_date = kwargs.pop("publication_date", self.metadata.publication_date)
+        identifier = kwargs.pop("identifier", self.metadata.identifier)
+        description = kwargs.pop("description", self.metadata.description)
+        subject = kwargs.pop("subject", self.metadata.subject)
+        genre = kwargs.pop("genre", self.metadata.genre or self.genre)
+        rights = kwargs.pop("rights", self.metadata.rights)
 
         return EbookMetadata(
             title=series.title,
             author=author,
-            description=series.metadata.get("concept", ""),
-            subject=[self.genre, "Web小説", "AI生成"],
-            genre=self.genre,
-            tags=tags + [self.genre],
+            language=self.metadata.language,  # Keep language from metadata
+            publisher=publisher,
+            publication_date=publication_date,
+            identifier=identifier,
+            description=description,
+            subject=subject,
+            rights=rights,
+            genre=genre,
+            tags=tags,
             cover_image=cover_image,
             cover_image_path=cover_image_path,
-            **kwargs,
         )
 
     def export_epub(self, series: SeriesResult, output_path: Path, **kwargs) -> Path:
@@ -789,6 +803,6 @@ class EbookExporter:
         return results
 
 
-def create_ebook_exporter(genre: str, preset: dict[str, Any]) -> EbookExporter:
+def create_ebook_exporter(metadata: EbookMetadata, output_dir: Path) -> EbookExporter:
     """電子書籍エクスポーター作成"""
-    return EbookExporter(genre, preset)
+    return EbookExporter(metadata, output_dir)

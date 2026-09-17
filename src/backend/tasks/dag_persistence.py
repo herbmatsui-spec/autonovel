@@ -10,15 +10,15 @@ class DAGPersistence(Protocol):
     def save_checkpoint(self, graph: DAGGraph, checkpoint_id: str) -> None:
         """グラフ状態をチェックポイント保存。"""
         ...
-    
+
     def load_checkpoint(self, checkpoint_id: str) -> Optional[DAGGraph]:
         """チェックポイントからグラフ復元。"""
         ...
-    
+
     def list_checkpoints(self, dag_id: str) -> list[str]:
         """指定 DAG のチェックポイント一覧。"""
         ...
-    
+
     def delete_checkpoint(self, checkpoint_id: str) -> None:
         """チェックポイント削除。"""
         ...
@@ -34,10 +34,10 @@ class FileSystemDAGPersistence:
     def __init__(self, base_dir: str = "/tmp/dag_checkpoints"):
         self.base_dir = Path(base_dir)
         self.base_dir.mkdir(parents=True, exist_ok=True)
-    
+
     def _checkpoint_path(self, checkpoint_id: str) -> Path:
         return self.base_dir / f"{checkpoint_id}.json"
-    
+
     def save_checkpoint(self, graph: DAGGraph, checkpoint_id: str) -> None:
         # Pydantic モデルを JSON シリアライズ
         data = graph.model_dump(mode="json")
@@ -48,15 +48,15 @@ class FileSystemDAGPersistence:
         }
         path = self._checkpoint_path(checkpoint_id)
         path.write_text(json.dumps(data, ensure_ascii=False, indent=2))
-    
+
     def load_checkpoint(self, checkpoint_id: str) -> Optional[DAGGraph]:
         path = self._checkpoint_path(checkpoint_id)
         if not path.exists():
             return None
         data = json.loads(path.read_text())
-        meta = data.pop("_checkpoint_meta", {})
+        data.pop("_checkpoint_meta", {})
         return DAGGraph.model_validate(data)
-    
+
     def list_checkpoints(self, dag_id: str) -> list[str]:
         checkpoints = []
         for path in self.base_dir.glob("*.json"):
@@ -67,7 +67,7 @@ class FileSystemDAGPersistence:
             except Exception:
                 pass
         return sorted(checkpoints)
-    
+
     def delete_checkpoint(self, checkpoint_id: str) -> None:
         self._checkpoint_path(checkpoint_id).unlink(missing_ok=True)
 
@@ -88,20 +88,20 @@ class RedisDAGPersistence:
             raise RuntimeError("redis not installed. Install with: pip install redis")
         self.client = redis.from_url(url, decode_responses=True)
         self.ttl = ttl
-    
+
     def _key(self, checkpoint_id: str) -> str:
         return f"dag:checkpoint:{checkpoint_id}"
-    
+
     def save_checkpoint(self, graph: DAGGraph, checkpoint_id: str) -> None:
         data = graph.model_dump_json()
         self.client.setex(self._key(checkpoint_id), self.ttl, data)
-    
+
     def load_checkpoint(self, checkpoint_id: str) -> Optional[DAGGraph]:
         data = self.client.get(self._key(checkpoint_id))
         if not data:
             return None
         return DAGGraph.model_validate_json(data)
-    
+
     def list_checkpoints(self, dag_id: str) -> list[str]:
         pattern = "dag:checkpoint:*"
         checkpoints = []
@@ -113,7 +113,7 @@ class RedisDAGPersistence:
                 if meta.get("dag_id") == dag_id:
                     checkpoints.append(key.split(":")[-1])
         return sorted(checkpoints)
-    
+
     def delete_checkpoint(self, checkpoint_id: str) -> None:
         self.client.delete(self._key(checkpoint_id))
 

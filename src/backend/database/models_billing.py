@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Index, text
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
 from src.infrastructure.database.models.base_orm import Base
 from sqlalchemy.sql import func
 
@@ -24,3 +24,13 @@ class Subscription(Base):
     plan_tier = Column(String(20), nullable=False)
     status = Column(String(30), nullable=False)  # active, canceled, past_due
     current_period_end = Column(DateTime, nullable=False)
+
+
+class StripeWebhookEvent(Base):
+    __tablename__ = "stripe_webhook_events"
+
+    event_id = Column(String(255), primary_key=True)
+    event_type = Column(String(100), nullable=False)
+    status = Column(String(30), default="processed", nullable=False)  # processing, processed, failed
+    created_at = Column(DateTime, server_default=func.now())
+    processed_at = Column(DateTime, server_default=func.now(), onupdate=func.now())

@@ -48,6 +48,8 @@ from src.application.use_cases.writing_use_cases import (
     DeleteEpisodeUseCase,
     ExpandPlotIntoEpisodeUseCase,
 )
+from src.application.use_cases.book_use_cases import BookUseCases
+
 
 __all__ = [
     # Audit

@@ -31,18 +31,18 @@ class EpisodeWriter(BaseAgent):
         self, content: str, pending_list: List[ForeshadowingEntity]
     ) -> List[str]:
         """生成された本文中から解決された伏線を簡易検知する。
-        
+
         Args:
             content: 生成されたエピソード本文
             pending_list: 現在未回収の伏線リスト
-            
+
         Returns:
             解決されたと判断された伏線のIDリスト
         """
         resolved_ids = []
         if not content or not pending_list:
             return resolved_ids
-        
+
         content_lower = content.lower()
         for fs in pending_list:
             # キーワードのいずれかが本文に含まれているかをチェック
@@ -115,7 +115,7 @@ class EpisodeWriter(BaseAgent):
                     style_intensity=style_intensity
                 )
                 result = refinement_result.refined_text
-        except Exception as e:
+        except Exception:
             # プロセ精練に失敗しても、元のテキストを返す（フォールバック）
             # In a real implementation, we would have access to a logger
             # For now, we'll just continue with the unrefined text

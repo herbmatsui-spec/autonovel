@@ -11,9 +11,9 @@ logger = logging.getLogger(__name__)
 
 class HistoricalAccuracyCheckerSkillAgent(SkillAgent):
     """HistoricalAccuracyChecker のスキルラッパー バージョン2 - 時代考証データベース連携強化版"""
-    
+
     version = "2.0"
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._agent = HistoricalAccuracyChecker(*args, **kwargs)
@@ -22,18 +22,18 @@ class HistoricalAccuracyCheckerSkillAgent(SkillAgent):
             "anachronism_detection_enhanced": True,
             "cultural_timeline_validation": True,
         }
-    
+
     async def execute(self, ctx: AgentContext) -> AgentResult:
         await self._v2_pre_process(ctx)
         result = await self._agent.execute(ctx)
         await self._v2_post_process(ctx, result)
         return result
-    
+
     async def _v2_pre_process(self, ctx: AgentContext):
         if ctx.artifacts.get("regeneration_focus"):
             ctx.artifacts["historical_accuracy_v2_enhanced"] = True
             logger.info("HistoricalAccuracyCheckerSkillAgent v2: 再生成モード - 時代考証DB連携強化有効")
-    
+
     async def _v2_post_process(self, ctx: AgentContext, result: AgentResult):
         if result.artifacts.get("historical_accuracy"):
             logger.debug("HistoricalAccuracyCheckerSkillAgent v2: 時代考証チェック完了")

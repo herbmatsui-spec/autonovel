@@ -6,7 +6,7 @@ import json
 
 # Mock redis.asyncio before importing the module
 with patch.dict('sys.modules', {'redis.asyncio': MagicMock()}):
-    from src.services.redis_cache import RedisCacheService, PromptCacheService, REDIS_AVAILABLE
+    from src.services.redis_cache import RedisCacheService, PromptCacheService
 
 
 class TestRedisCacheService:
@@ -16,12 +16,12 @@ class TestRedisCacheService:
         # Mock REDIS_AVAILABLE to True
         self.redis_patcher = patch('src.services.redis_cache.REDIS_AVAILABLE', True)
         self.mock_redis_module = self.redis_patcher.start()
-        
+
         # Mock redis.asyncio
         self.mock_redis_asyncio = MagicMock()
         import sys
         sys.modules['redis.asyncio'] = self.mock_redis_asyncio
-        
+
         self.cache = RedisCacheService(
             redis_url="redis://localhost:6379/0",
             namespace="test:cache",

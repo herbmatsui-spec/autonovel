@@ -61,7 +61,7 @@ class TestCitationAttachment:
         """脚注マーカー挿入"""
         text = "魔法システムAを使った。MPを消費した。"
         pairs = [
-            {"claim": "魔法システムAを使った", "position": 0, "end_position": 10, 
+            {"claim": "魔法システムAを使った", "position": 0, "end_position": 10,
              "source": {"source": "世界観設定書・巻I", "page": "p.23"}, "score": 0.8},
             {"claim": "MPを消費した", "position": 11, "end_position": 18,
              "source": {"source": "世界観設定書・巻I", "page": "p.24"}, "score": 0.7},
@@ -93,7 +93,7 @@ class TestCitationAttachment:
         """脚注スタイルフォーマット"""
         text = "魔法システムAを使った[^1]。"
         meta = [
-            {"marker": 1, "claim": "魔法システムAを使った", 
+            {"marker": 1, "claim": "魔法システムAを使った",
              "source": {"source": "世界観設定書・巻I", "page": "p.23"}, "score": 0.8},
         ]
         formatted = agent._format_citations(text, meta, "footnote")

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import Optional
 
 from src.domain.repositories.novel_repository import INovelRepository
 from src.domain.value_objects.ids import NovelId

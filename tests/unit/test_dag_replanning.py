@@ -1,7 +1,6 @@
 """Unit tests for DAGReplanner (Part 5 / Step 54 / Checkpoint 9)."""
 
 import asyncio
-import pytest
 from unittest.mock import MagicMock
 
 from src.backend.tasks.dag_models import DAGGraph, DAGTaskNode

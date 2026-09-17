@@ -6,7 +6,6 @@ import time
 import pytest
 
 from src.services.age_client import AgeClient
-from src.services.vector_store import PgVectorStore, get_default_store
 from src.services.graph_pipeline import GraphPipelineService
 from src.services.rag_service import GraphRAGService
 from src.services.embedding_service import embedding_service

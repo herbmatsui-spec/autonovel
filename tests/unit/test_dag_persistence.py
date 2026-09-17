@@ -16,10 +16,10 @@ def test_save_load_checkpoint(persistence: DAGPersistence):
     g = DAGGraph(dag_id="test_dag")
     g.add_node(DAGTaskNode(task_id="t1", func_name="f", status="completed", result="ok"))
     g.add_node(DAGTaskNode(task_id="t2", func_name="f", status="pending"))
-    
+
     persistence.save_checkpoint(g, "cp1")
     loaded = persistence.load_checkpoint("cp1")
-    
+
     assert loaded is not None
     assert loaded.dag_id == "test_dag"
     assert loaded.nodes["t1"].status == "completed"
@@ -57,7 +57,7 @@ def test_resume_from_checkpoint():
         g = DAGGraph(dag_id="resume_test")
         g.add_node(DAGTaskNode(task_id="t1", func_name="f", status="completed"))
         persistence.save_checkpoint(g, "resume_cp")
-        
+
         # 新しいスケジューラで復元
         loaded = persistence.load_checkpoint("resume_cp")
         assert loaded.dag_id == "resume_test"
@@ -67,36 +67,36 @@ def test_resume_from_checkpoint():
 def test_scheduler_checkpoint_integration():
     """DAGScheduler のチェックポイント機能統合テスト。"""
     from src.backend.tasks.dag_scheduler import DAGScheduler
-    
+
     with tempfile.TemporaryDirectory() as d:
         scheduler = DAGScheduler(
             persistence=FileSystemDAGPersistence(d),
             checkpoint_interval=2,  # 2タスクごと
         )
-        
+
         def task_fn(task_id: str):
             return f"{task_id}_done"
-        
+
         scheduler.register_task("task", task_fn)
-        
+
         g = DAGGraph(dag_id="cp_integration_test")
         for i in range(4):
             g.add_node(DAGTaskNode(task_id=f"t{i}", func_name="task", kwargs={"task_id": f"t{i}"}))
-        
+
         # 実行
         import asyncio
         completed = asyncio.run(scheduler.run_dag(g))
-        
+
         assert completed.is_all_completed()
-        
+
         # チェックポイントが作成されているか確認 (4タスク、interval=2 なので2回保存)
         checkpoints = scheduler.persistence.list_checkpoints("cp_integration_test")
         assert len(checkpoints) >= 1
-        
+
         # 復元テスト
         latest_cp = scheduler.find_latest_checkpoint("cp_integration_test")
         assert latest_cp is not None
-        
+
         recovered = scheduler.auto_recover("cp_integration_test")
         assert recovered is not None
         assert recovered.dag_id == "cp_integration_test"

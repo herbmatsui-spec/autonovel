@@ -64,16 +64,16 @@ def age_container():
             conn.execute(text("CREATE EXTENSION IF NOT EXISTS age;"))
             conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
             conn.commit()
-        
+
         # Create all tables from models
         from src.infrastructure.database.models import Base
         Base.metadata.create_all(engine)
-        
+
         # Run alembic migrations up to 0011 (skip problematic 0012+)
         alembic_cfg = Config(os.path.join(os.path.dirname(__file__), "..", "..", "alembic.ini"))
         alembic_cfg.set_main_option("sqlalchemy.url", url)
         command.upgrade(alembic_cfg, "0011")
-        
+
         yield engine
     finally:
         engine.dispose()
@@ -300,24 +300,24 @@ def test_age_graph_stats(age_container):
     session = Session()
     # Don't start a transaction here - let AgeClient manage commits
     # We'll manually commit after upserts
-    
+
     try:
         client = AgeClient(default_graph_name="test_graph_stats")
         assert client.init_graph(session) is True
-        
+
         # init_graph commits, so we need to start a new transaction for upserts
         transaction = session.begin()
-        
+
         client.upsert_node(session, "Character", "A", {})
         client.upsert_node(session, "Item", "B", {})
         client.upsert_edge(session, "Character", "A", "Item", "B", "HAS")
-        
+
         # Commit the upserts
         transaction.commit()
-        
+
         # Start new transaction for stats query
         transaction = session.begin()
-        
+
         stats = client.get_graph_stats(session)
         assert stats.node_count >= 2
         assert stats.edge_count >= 1
@@ -444,7 +444,7 @@ def test_graph_pipeline_process_chapter(age_session):
     text = "勇者アルスは聖剣エクスカリバーを手に入れ、王都ルミナスへ向かった。\n\n門番のガレスが出迎えた。"
 
     # モックLLMを使用するため、extraction_serviceをパッチ
-    from unittest.mock import patch, MagicMock
+    from unittest.mock import patch
     from src.models.graph_schemas import GraphExtractionResult, Entity, Relationship
     from src.services.age_client import age_client
 
@@ -478,7 +478,7 @@ def test_graph_pipeline_batch(age_session):
     """バッチ処理パイプライン."""
     from src.services.graph_pipeline import GraphPipelineService
     from unittest.mock import patch
-    from src.models.graph_schemas import GraphExtractionResult, Entity, Relationship
+    from src.models.graph_schemas import GraphExtractionResult, Entity
 
     pipeline = GraphPipelineService()
     chapters = [
@@ -510,31 +510,30 @@ def test_graph_pipeline_batch(age_session):
 async def test_rag_hybrid_search(age_session):
     """ハイブリッド検索 (Vector + Graph + Fulltext)."""
     from src.services.rag_service import GraphRAGService
-    from unittest.mock import patch, MagicMock
-    from src.models.graph_schemas import GraphExtractionResult, Entity, Relationship
+    from unittest.mock import patch
 
     service = GraphRAGService()
 
     # Create required parent records
     from sqlalchemy import text
-    
+
     # Create book if not exists (provide all required columns)
     age_session.execute(text("""
-        INSERT INTO books (id, title, mode, ai_assistant_config, created_at) 
+        INSERT INTO books (id, title, mode, ai_assistant_config, created_at)
         VALUES (1, 'Test Book', 'normal', '{}', NOW())
         ON CONFLICT (id) DO NOTHING
     """))
-    
+
     # Create branch if not exists
     age_session.execute(text("""
         INSERT INTO branches (id, book_id, name) VALUES (1, 1, 'Main Branch')
         ON CONFLICT (id) DO NOTHING
     """))
-    
+
     # Create chapter if not exists
     age_session.execute(text("""
-        INSERT INTO chapters (id, book_id, branch_id, ep_num, title, content, 
-            score_story, killer_phrase, summary, world_state, 
+        INSERT INTO chapters (id, book_id, branch_id, ep_num, title, content,
+            score_story, killer_phrase, summary, world_state,
             trinity_review_log, ai_insight, tension_delta, qol_delta, is_anchor)
         VALUES (1, 1, 1, 1, 'Test Chapter', 'Test Content',
             0, '', '', '', '', '', 0.0, 0.0, false)
@@ -569,30 +568,29 @@ async def test_rag_build_context(age_session):
     """RAGコンテキスト構築."""
     from src.services.rag_service import GraphRAGService
     from unittest.mock import patch
-    from src.models.graph_schemas import GraphExtractionResult, Entity, Relationship
 
     service = GraphRAGService()
 
     # Create required parent records
     from sqlalchemy import text
-    
+
     # Create book if not exists (provide all required columns)
     age_session.execute(text("""
-        INSERT INTO books (id, title, mode, ai_assistant_config, created_at) 
+        INSERT INTO books (id, title, mode, ai_assistant_config, created_at)
         VALUES (1, 'Test Book', 'normal', '{}', NOW())
         ON CONFLICT (id) DO NOTHING
     """))
-    
+
     # Create branch if not exists
     age_session.execute(text("""
         INSERT INTO branches (id, book_id, name) VALUES (1, 1, 'Main Branch')
         ON CONFLICT (id) DO NOTHING
     """))
-    
+
     # Create chapter if not exists
     age_session.execute(text("""
-        INSERT INTO chapters (id, book_id, branch_id, ep_num, title, content, 
-            score_story, killer_phrase, summary, world_state, 
+        INSERT INTO chapters (id, book_id, branch_id, ep_num, title, content,
+            score_story, killer_phrase, summary, world_state,
             trinity_review_log, ai_insight, tension_delta, qol_delta, is_anchor)
         VALUES (1, 1, 1, 1, 'Test Chapter', 'Test Content',
             0, '', '', '', '', '', 0.0, 0.0, false)
@@ -634,7 +632,6 @@ def test_graph_api_endpoints(age_container):
     """FastAPI エンドポイントテスト."""
     from fastapi.testclient import TestClient
     from src.backend.server import app
-    from sqlalchemy.orm import sessionmaker
 
     # テスト用DB接続設定
     url = str(age_container.url).replace("postgresql+psycopg2://", "postgresql://")
@@ -771,7 +768,6 @@ async def test_graphrag_e2e(age_session):
     from src.services.age_client import age_client, AgeClient
     from unittest.mock import patch
     from src.models.graph_schemas import GraphExtractionResult, Entity, Relationship
-    from src.infrastructure.database.models.chunk import ChapterChunk
 
     # 1. テストデータ
     chapter_text = """

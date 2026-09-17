@@ -1,6 +1,10 @@
 """
-src/services/publishers/__init__ - Publisher パッケージエントリーポイント
+Publishers Package (v5.0 Deprecation Notice)
+自動ブラウザ操作によるWeb小説投稿機能は、サイト側のCAPTCHA導入や規約リスク、
+高いメンテナンスコストのためv5.0で非推奨（Deprecated）となりました。
+今後は PlatformCopyFormatter によるワンクリック整形コピー機能を使用してください。
 """
+import warnings
 
 from src.services.publishers.base import (
     PublisherAdapter,

@@ -79,7 +79,7 @@ class TestFullPipeline:
         from src.agents.planning import PlanningAgent
         from src.agents.bible import BibleAgent
         from src.agents.context_builder_agent import ContextBuilderAgent
-        from tests.mocks import MockPlotAgent, MockWritingAgent, MockAuditAgent, MockMarketingAgent, MockPromptManager, MockIllustrationAgent
+        from tests.mocks import MockPromptManager, MockIllustrationAgent
 
         llm = MockLLMAdapter()
         repo = MockBookRepository()
@@ -122,7 +122,7 @@ class TestEventBusIntegration:
         """各エージェント実行前後でイベントが発行されること。"""
         import asyncio
         from src.agents.event_bus import EventBus, AgentEvent
-        from src.agents.orchestrator import Orchestrator, AgentName
+        from src.agents.orchestrator import AgentName
         from tests.mocks import create_mock_orchestrator, create_mock_context
 
         events_received = []

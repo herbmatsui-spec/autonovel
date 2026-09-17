@@ -8,7 +8,6 @@ from src.backend.database.social_repository import SocialRepository
 from src.agents.social.manager import SocialInteractionManager
 from src.agents.social.journals import generate_multi_perspective_journals_async
 from src.agents.social.comments import simulate_character_reactions_async
-from src.agents.social.models import JournalEntry
 
 
 @pytest.fixture

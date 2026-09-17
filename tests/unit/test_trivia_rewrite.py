@@ -1,7 +1,7 @@
 # tests/unit/test_trivia_rewrite.py
 """Unit tests for Step 1-9: Trivia Inline Rewriting and Context Integration."""
 import pytest
-from unittest.mock import MagicMock, AsyncMock
+from unittest.mock import MagicMock
 from src.agents.enrichment_agent import EnrichmentAgent
 
 

@@ -22,11 +22,15 @@ class WritingAgent(SkillAgent):
         pm: Any = None,
         ctx_mgr: Any = None,
         reporter_factory: Any = None,
+        model_name: str = None,
+        temperature: float = None,
     ):
         super().__init__(repo=repo, llm=llm, style_rag=style_rag, rag_prefetch=rag_prefetch)
         self.pm = pm
         self.ctx_mgr = ctx_mgr
         self.reporter_factory = reporter_factory
+        self.model_name = model_name
+        self.temperature = temperature
         # generator は遅延初期化
         self._generator = None
 
@@ -63,7 +67,7 @@ class WritingAgent(SkillAgent):
         # 再生成フォーカス取得（WritingService からの指示）
         regeneration_focus: list[str] = artifacts.get("regeneration_focus", [])
         regeneration_action: Any = artifacts.get("regeneration_action")
-         
+
         # 検出: AuditAggregatorNode からの再生成ディレクティブ (regeneration_directive)
         regeneration_directive: Any = artifacts.get("regeneration_directive")
         if regeneration_directive:
@@ -136,7 +140,7 @@ class WritingAgent(SkillAgent):
                     "failed_episodes": [],
                 },
 )
-        
+
         except Exception as e:
             self.emit_event("writing.error", {
                 "book_id": book_id,
@@ -229,7 +233,7 @@ class WritingAgent(SkillAgent):
         reporter: Any = None,
     ) -> dict[str, Any]:
         """特定フォーカスでの書き直し（読者体験改善用）。
-        
+
         Args:
             book_id: 書籍ID
             ep_num: 話数
@@ -243,14 +247,14 @@ class WritingAgent(SkillAgent):
         params = params or {}
         if reporter:
             reporter.report(f"Ep.{ep_num}: {focus} フォーカスで書き直し開始", "info")
-        
+
         # 既存の章を取得
         chapter = await self.repo.get_chapter(1, ep_num) if self.repo else None
         if not chapter or not chapter.content:
             return {"status": "error", "message": "Chapter not found or empty"}
-        
+
         original_text = chapter.content
-        
+
         # フォーカスに応じた書き直し指示を作成
         rewrite_instructions = []
         if params.get("enhance_hook"):
@@ -268,7 +272,7 @@ class WritingAgent(SkillAgent):
                 "感情曲線を整え、カタルシスのタイミング・強さ・起伏バランスを適切にする。"
                 "中盤でのテンション上昇とクライマックスでの感情解放を明確にせよ。"
             )
-        
+
         # Actionable Diff などの追加指示があれば反映
         actionable_diffs = params.get("actionable_diffs", [])
         if actionable_diffs:
@@ -439,22 +443,30 @@ class WritingAgent(SkillAgent):
             f"【改稿後の本文】"
         )
 
-        
+
+
+        rewritten_text = None
 
         if self.llm is not None:
             try:
-                req = LLMRequest(
-                    prompt=rewrite_prompt,
-                    system_prompt="プロの小説家として、指示に従い本文を魅力的に改稿してください。解説や挨拶は含めず本文のみを出力してください。",
-                    temperature=0.7,
-                    max_tokens=max(2000, int(len(original_text) * 1.5)),
-                    model=None,
-                    json_mode=False,
-                    response_schema=None,
-                    extra_params={},
-                )
-                resp: LLMResponse = await self.llm.agenerate(req)
-                rewritten_text = resp.content
+                if hasattr(self.llm, "agenerate"):
+                    req = LLMRequest(
+                        prompt=rewrite_prompt,
+                        system_prompt="プロの小説家として、指示に従い本文を魅力的に改稿してください。解説や挨拶は含めず本文のみを出力してください。",
+                        temperature=0.7,
+                        max_tokens=max(2000, int(len(original_text) * 1.5)),
+                        model=None,
+                        json_mode=False,
+                        response_schema=None,
+                        extra_params={},
+                    )
+                    resp: LLMResponse = await self.llm.agenerate(req)
+                    rewritten_text = resp.content
+                elif hasattr(self.llm, "generate_text"):
+                    rewritten_text = await self.llm.generate_text(
+                        rewrite_prompt,
+                        system_prompt="プロの小説家として、指示に従い本文を魅力的に改稿してください。解説や挨拶は含めず本文のみを出力してください。",
+                    )
             except Exception as llm_err:
                 logger.warning(f"WritingAgent rewrite_for_dimension LLM error: {llm_err}")
 

@@ -1,10 +1,8 @@
 """Unit tests for Layer 3 Dynamic Taxonomy Engines (Part 4 / Steps 37-42)."""
 
-import pytest
 from unittest.mock import MagicMock
 
 from src.services.compression.layer3_taxonomy import (
-    TaxonomyEngine,
     RuleBasedMorphologicalMapper,
     SemanticAnchorTaxonomy,
     LLMDynamicTaxonomy,

@@ -15,7 +15,6 @@ from src.backend.database.models import Book, Chapter, Character
 from src.backend.database.repository import BookRepository
 from src.backend.tasks import generation_tasks
 from src.backend.tasks.generation_tasks import generate_chapter_task
-from sqlalchemy import select
 
 
 def test_generation_task_persists_and_cleans_up(real_db_manager, monkeypatch) -> None:

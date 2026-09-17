@@ -96,7 +96,7 @@ def check_results(
     overall_result = check_regression(summary, base_thresholds)
 
     # Collect all violations
-    all_violations = overall_result["violations"] + scene_violations + scaling_violations
+    overall_result["violations"] + scene_violations + scaling_violations
 
     # Print results
     print(f"Regression Check: {results_path} (checkpoint: {checkpoint} episodes)")

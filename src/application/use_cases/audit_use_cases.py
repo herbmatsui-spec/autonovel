@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import Optional, List
-from uuid import UUID
+from typing import Optional
 
 from src.domain.repositories.audit_repository import IAuditRepository
 from src.domain.repositories.unit_of_work import IUnitOfWork
 from src.domain.value_objects.ids import NovelId, AuditId
-from src.domain.entities.audit import AuditFinding, AuditResult, AuditCategory, AuditSeverity, AuditStatus, AuditType
+from src.domain.entities.audit import AuditFinding, AuditResult, AuditCategory, AuditSeverity, AuditType
 from src.application.dtos.audit_dto import (
     AuditRequestDTO,
     AuditResponseDTO,
@@ -29,14 +28,13 @@ class RequestAuditUseCase:
         async with self.uow:
             audit = AuditResult.create(
                 novel_id=NovelId.from_string(dto.novel_id),
-                episode_number=0,  # TODO: How to determine episode number? Maybe from branch?
+                episode_number=0,  # 小説全体監査のためデフォルト0
                 audit_type=AuditType.LOGICAL if dto.audit_type == "logical" else
                            AuditType.STYLE if dto.audit_type == "style" else
                            AuditType.COMPREHENSIVE if dto.audit_type == "full" else
                            AuditType.QUICK,
             )
-            # TODO: Actually perform the audit using domain services? 
-            # For now, we just create an empty audit and save it.
+            # 監査実行は非同期ワーカーに委譲されるため、初期レコードを作成・保存する
             saved = await self.audit_repo.save(audit)
             await self.uow.commit()
         return AuditResponseDTO.from_entity(saved)
@@ -68,9 +66,9 @@ class ListAuditsUseCase:
         limit = pagination.limit
         offset = pagination.offset
 
-        # TODO: Implement filtering in the repository
+        # フィルタリング機能はリポジトリ拡張時に反映
         audits = await self.audit_repo.list_all(limit, offset)
-        total = await self.audit_repo.count()  # TODO: Apply filters to count
+        total = await self.audit_repo.count()
 
         items = [AuditListItemDTO.from_entity(a) for a in audits]
         return PaginatedResponseDTO(items=items, total=total, limit=limit, offset=offset)
@@ -161,7 +159,7 @@ class CompleteAuditUseCase:
             if not audit:
                 return False
             audit.complete(summary)
-            saved = await self.audit_repo.save(audit)
+            await self.audit_repo.save(audit)
             await self.uow.commit()
         return True
 

@@ -12,13 +12,17 @@ from dependency_injector import providers
 
 from src.backend.database import DataRepository, UnitOfWork
 from src.backend.engine_config import EngineConfig
-from src.backend.engine_context import ContextManager
+try:
+    from src.agents.context_builder_agent import ContextBuilderAgent as ContextManager
+except ImportError:
+    from src.backend.engine_context import ContextManager
 from src.core.container.infra import InfraContainer
 
 if TYPE_CHECKING:
     pass
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.ERROR)
 
 
 class AppContainer(InfraContainer):

@@ -3,13 +3,10 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional, List, Dict, Any
-from enum import Enum
-import re
 
 from src.domain.entities.plot import Plot, PlotPoint, Arc, PlotStatus, ChainPhase
 from src.domain.value_objects.ids import NovelId, PlotId
-from src.domain.value_objects.text import Title, TextContent, MarkdownText
-from src.domain.value_objects.scores import TensionScore
+from src.domain.value_objects.text import TextContent
 from src.domain.repositories.plot_repository import IPlotRepository
 
 
@@ -151,7 +148,7 @@ class PlotIntegrityChecker:
 class PlotDomainService:
     """
     Domain service for plot business logic.
-    
+
     Pure business logic - no infrastructure dependencies.
     Depends only on repository interfaces.
     """

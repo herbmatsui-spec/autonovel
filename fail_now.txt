@@ -1,0 +1,47 @@
+full_test_result.txt:FAILED tests/unit/agents/test_erotic_pipeline.py::TestEroticCurve::test_curve_creation
+full_test_result.txt:FAILED tests/unit/agents/test_erotic_pipeline.py::TestEroticCurve::test_add_point
+full_test_result.txt:FAILED tests/unit/agents/test_erotic_pipeline.py::TestEroticCurve::test_get_phase_intensity
+full_test_result.txt:FAILED tests/unit/agents/test_erotic_pipeline.py::TestEroticCurve::test_curve_validation_u_shape
+full_test_result.txt:FAILED tests/unit/agents/test_erotic_pipeline.py::TestCharacterStateSnapshot::test_snapshot_creation
+full_test_result.txt:FAILED tests/unit/agents/test_erotic_pipeline.py::TestCharacterStateSnapshot::test_snapshot_defaults
+full_test_result.txt:FAILED tests/unit/agents/test_erotic_pipeline.py::TestContinuityTracker::test_update_and_get_character_state
+full_test_result.txt:FAILED tests/unit/agents/test_erotic_pipeline.py::TestContinuityTracker::test_get_nonexistent_character
+full_test_result.txt:FAILED tests/unit/agents/test_erotic_pipeline.py::TestContinuityTracker::test_stamina_transition_validation
+full_test_result.txt:FAILED tests/unit/agents/test_erotic_pipeline.py::TestContinuityTracker::test_psychological_transition_validation
+full_test_result.txt:FAILED tests/unit/agents/test_erotic_pipeline.py::TestContinuityTracker::test_invalid_stamina_transition
+full_test_result.txt:FAILED tests/unit/agents/test_erotic_pipeline.py::TestContinuityTracker::test_invalid_psychological_transition
+full_test_result.txt:FAILED tests/unit/agents/test_erotic_pipeline.py::TestContinuityTracker::test_intimacy_progression
+full_test_result.txt:FAILED tests/unit/agents/test_erotic_pipeline.py::TestContinuityTracker::test_location_transition
+full_test_result.txt:FAILED tests/unit/agents/test_erotic_pipeline.py::TestContinuityTracker::test_items_held_tracking
+full_test_result.txt:FAILED tests/unit/agents/test_erotic_pipeline.py::TestContinuityTracker::test_body_marks_tracking
+full_test_result.txt:FAILED tests/unit/agents/test_erotic_pipeline.py::TestContinuityReport::test_report_creation
+full_test_result.txt:FAILED tests/unit/agents/test_erotic_pipeline.py::TestContinuityReport::test_report_with_issues
+full_test_result.txt:FAILED tests/unit/agents/test_erotic_pipeline.py::TestEroticIntegrityChecker::test_check_coercive_context_coercion
+full_test_result.txt:FAILED tests/unit/agents/test_erotic_pipeline.py::TestEroticIntegrityChecker::test_full_integrity_check_pass
+full_test_result.txt:FAILED tests/unit/agents/test_erotic_pipeline.py::TestEroticPipelineIntegration::test_pipeline_with_explicit_consent
+full_test_result.txt:FAILED tests/unit/agents/test_erotic_pipeline.py::TestEroticPipelineIntegration::test_pipeline_rejects_coercive_content
+full_test_result.txt:FAILED tests/unit/agents/test_erotic_pipeline.py::TestEroticPipelineIntegration::test_continuity_across_episodes
+full_test_result.txt:FAILED tests/unit/marketing/test_marketing_ctr_router.py::test_generate_viral_titles_endpoint
+full_test_result.txt:FAILED tests/unit/services/test_editor_autosave.py::test_writing_manager_saves_checkpoint
+full_test_result.txt:FAILED tests/unit/services/test_stripe_payment.py::test_stripe_webhook_grants_credits
+full_test_result.txt:FAILED tests/unit/test_closed_loop_pdca.py::test_pdca_cycle_convergence_and_improvement
+full_test_result.txt:FAILED tests/unit/test_enrichment_phase4_step55_60.py::test_step56_llm_sensory_generation_call
+full_test_result.txt:FAILED tests/unit/test_marketing_agent.py::test_post_export_package_endpoint
+full_test_result.txt:FAILED tests/unit/test_multimedia_real_db.py::test_empty_book_router_returns_422
+full_test_result.txt:FAILED tests/unit/test_multimedia_tasks.py::test_generate_asset_pack_task_runs_sync
+full_test_result.txt:FAILED tests/unit/test_narrative_spine_enforcement.py::test_narrative_spine_composer
+full_test_result.txt:FAILED tests/unit/test_orchestrator_skills.py::test_build_execution_order_circular
+full_test_result.txt:FAILED tests/unit/test_p4_async_and_db_concurrency.py::TestTasksRouterAsyncRedis::test_get_task_status_uses_async_redis
+full_test_result.txt:FAILED tests/unit/test_pipeline_websocket.py::test_pipeline_websocket_and_hub
+full_test_result.txt:FAILED tests/unit/test_pipeline_websocket.py::test_sse_pipeline_stream - asse...
+full_test_result.txt:FAILED tests/unit/test_reader_hook_windowing.py::test_reader_hook_auditor_windowing_long_draft
+full_test_result.txt:FAILED tests/unit/test_regeneration_directive_integration.py::test_adapter_to_agent_result_injects_actionable_diffs
+full_test_result.txt:FAILED tests/unit/test_repository_concurrency.py::test_repository_get_set_state_async
+full_test_result.txt:FAILED tests/unit/test_sqlite_rag_embedding.py::test_sqlite_rag_batch_vector_search_and_no_truncation
+full_test_result.txt:FAILED tests/unit/test_sqlite_rag_embedding.py::test_backfill_missing_embeddings
+full_test_result.txt:FAILED tests/unit/test_uow_repositories.py::test_uow_all_repositories_instantiate_without_name_error
+full_test_result.txt:FAILED tests/unit/test_uow_repositories.py::test_uow_cleanup_clears_repo_cache
+full_test_result.txt:FAILED tests/unit/test_voicevox_pipeline.py::test_speaker_mapper - AssertionE...
+full_test_result.txt:FAILED tests/unit/workflows/test_writing_graph_flow.py::test_writing_graph_complete_flow
+FINDSTR: ŠJ‚­‚±‚Æ‚ª‚Å‚«‚Ü‚¹‚ñ (;)
+FINDSTR: ŠJ‚­‚±‚Æ‚ª‚Å‚«‚Ü‚¹‚ñ (type)

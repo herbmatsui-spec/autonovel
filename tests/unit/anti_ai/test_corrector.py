@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import pytest
 
-from src.services.anti_ai.corrector import BaseCorrector, CorrectedText
 from src.services.anti_ai.correction_pipeline import AntiAICorrector
 from src.services.anti_ai.correctors import (
     DirectEmotionCorrector,

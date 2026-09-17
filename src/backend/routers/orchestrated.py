@@ -9,17 +9,22 @@ import logging
 import os
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Request
+from fastapi import APIRouter, Depends, HTTPException, Path, Request, status
 from pydantic import BaseModel, Field
 
 from src.backend import database
+from src.backend.auth import get_current_user
+from src.backend.database.models import User
 from src.backend.database.repository import BookRepository
 from src.backend.observability.health import metrics
 from src.backend.rate_limit import generate_limiter
 from src.backend.tasks.generation_tasks import generate_chapter_orchestrated_task
 from src.backend.tasks.huey import huey
 from src.agents.event_bus import EventBus, AgentEvent
-from sse_starlette.sse import EventSourceResponse
+try:
+    from sse_starlette.sse import EventSourceResponse
+except ImportError:
+    EventSourceResponse = Any  # type: ignore
 
 router = APIRouter(tags=["orchestrated"])
 logger = logging.getLogger(__name__)
@@ -55,9 +60,19 @@ async def generate_orchestrated(
     input_data: OrchestratedGenerateRequest,
     request: Request,
     session=Depends(database.get_db),
+    current_user: User = Depends(get_current_user),
 ) -> OrchestratedGenerateResponse:
     """マルチエージェントオーケストレーションによる章生成をキューに投入。"""
     generate_limiter.check(request)
+
+    # ブックの所有権チェック
+    repo = BookRepository(session)
+    book = await repo.get_book(input_data.book_id)
+    if not book:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="指定された作品が存在しません")
+    if current_user.role != "admin" and getattr(book, "user_id", None) is not None:
+        if book.user_id != current_user.id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="この作品に対する生成権限がありません")
 
     try:
         # リクエストを dict に変換
@@ -123,15 +138,22 @@ async def cancel_orchestrated_task(task_id: str) -> dict[str, str]:
 async def export_orchestrated_package(
     book_id: int = Path(ge=1),
     session=Depends(database.get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """オーケストレーション版の納品パッケージ (ZIP) をエクスポート。"""
     import urllib.parse
     from fastapi import Response
 
+    repo = BookRepository(session)
+    book = await repo.get_book(book_id)
+    if not book:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="指定された作品が存在しません")
+    if current_user.role != "admin" and getattr(book, "user_id", None) is not None:
+        if book.user_id != current_user.id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="この作品のエクスポート権限がありません")
+
     logger.info("Orchestrated export requested: book_id=%s", book_id)
     metrics.increment("orchestrated_exports_attempted")
-
-    repo = BookRepository(session)
     from src.agents.marketing import MarketingAgent
     from src.services.llm.factory import get_llm_adapter
 

@@ -1,0 +1,63 @@
+/* 提案7: ガチャ生成中の軽量アニメーション演出 */
+
+/* 生成中ボタンの光が流れるシマー効果 */
+.gacha-loading-btn {
+  position: relative;
+  overflow: hidden;
+  cursor: wait;
+}
+
+.gacha-loading-btn::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.25),
+    transparent
+  );
+  animation: gacha-shimmer 1.6s ease-in-out infinite;
+}
+
+@keyframes gacha-shimmer {
+  100% {
+    left: 100%;
+  }
+}
+
+/* ガチャ結果モーダルのカード出現アニメーション（縮小回転→拡大） */
+.gacha-card-enter {
+  animation: gacha-card-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes gacha-card-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.6) rotate(-4deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+/* ガチャ結果の確定演出：きらきら（1回だけ） */
+.gacha-card-sparkle {
+  animation: gacha-sparkle 0.9s ease-out 0.45s 1 both;
+}
+
+@keyframes gacha-sparkle {
+  0% {
+    filter: brightness(1);
+  }
+  40% {
+    filter: brightness(1.5) saturate(1.3);
+  }
+  100% {
+    filter: brightness(1);
+  }
+}

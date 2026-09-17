@@ -11,22 +11,7 @@ from src.agents.social.models import JournalEntry
 logger = logging.getLogger(__name__)
 
 
-def generate_multi_perspective_journals(
-    scene_summary: str = "",
-    characters: list[dict[str, Any]] | None = None,
-    book_id: int = 1,
-    ep_num: int = 1,
-    scene_id: str = "",
-    llm: Any = None,
-    scene_text: str = "",
-) -> list[JournalEntry]:
-    """Generate distinct inner monologue / journal entries for multiple characters in the same scene."""
-    characters = characters or []
-    if not characters:
-        return []
 
-    effective_scene = scene_summary or scene_text
-    scene_summary = effective_scene
 
 
 import asyncio

@@ -1,5 +1,4 @@
 """Tests for NUMA Topology (Step 5)."""
-import pytest
 from src.backend.tasks.numa_topology import NUMATopology, detect_numa_topology
 
 

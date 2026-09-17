@@ -125,6 +125,7 @@ def real_db_manager(monkeypatch) -> Generator[Session, None, None]:
 
     # モデル定義から全テーブル作成（単一 Base による初期スキーマ反映）
     import src.backend.database.models  # noqa
+    import src.backend.database.models_tenant  # noqa
     import src.infrastructure.database.models  # noqa
 
     Base.metadata.create_all(test_engine)

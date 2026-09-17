@@ -5,12 +5,11 @@ Audit failure -> Downstream task cancellation & rollback -> Localized node retry
 Automatic reactivation -> EventBus notification -> Successful DAG completion.
 """
 
-import asyncio
 import pytest
 from unittest.mock import MagicMock
 
 from src.backend.tasks.dag_models import DAGGraph, DAGTaskNode
-from src.backend.tasks.dag_replanning import DAGReplanningState, DAGReplanner
+from src.backend.tasks.dag_replanning import DAGReplanningState
 from src.backend.tasks.dag_scheduler import DAGScheduler
 from src.services.commercial_benchmarks import CommercialBenchmarkJudge
 

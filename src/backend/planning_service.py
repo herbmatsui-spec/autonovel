@@ -84,7 +84,7 @@ class PlanningService:
         target_eps: int = 10,
     ) -> dict[str, float]:
         """企画アウトラインから BookScore を予測する（構造スコア・読者体験スコア中心）。
-        
+
         単一アーク構成の評価。3案比較時はこのメソッドを各案に対して呼び出す。
         """
         if self.book_score_calculator is None:
@@ -92,7 +92,7 @@ class PlanningService:
 
         # 擬似的な AgentContext を作成して計算
         from src.agents.orchestrator import AgentContext
-        ctx = AgentContext(book_id=0, branch_id=1, ep_num=1, artifacts={"arcs": arcs})
+        AgentContext(book_id=0, branch_id=1, ep_num=1, artifacts={"arcs": arcs})
 
         # 簡易実装: 構造スコアはアークの論理的流れから、読者体験は冒頭フックから推定
         structure = await self._estimate_structure_score(arcs, target_eps)
@@ -130,15 +130,15 @@ class PlanningService:
             score_dict["proposal_index"] = i
             score_dict["proposal_name"] = f"案{i+1}"
             results.append(score_dict)
-        
+
         # 総合スコアでソート（降順）
         results.sort(key=lambda x: x["overall_score"], reverse=True)
-        
+
         # 推奨フラグ付与
         for i, r in enumerate(results):
             r["recommended"] = (i == 0)
             r["rank"] = i + 1
-        
+
         return results
 
     async def _estimate_structure_score(self, arcs: list[Any], target_eps: int) -> float:

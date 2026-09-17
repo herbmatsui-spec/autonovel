@@ -4,9 +4,8 @@ PLAN 03 - Step 7: 毒要素注入単体テスト
 """
 from __future__ import annotations
 
-import pytest
 from src.agents.context_builder_agent import resolve_character_flaw
-from src.models.character_flaw import CharacterFlawProfile, SecretMotive
+from src.models.character_flaw import CharacterFlawProfile
 
 
 def test_resolve_character_flaw_defaults_to_preset():

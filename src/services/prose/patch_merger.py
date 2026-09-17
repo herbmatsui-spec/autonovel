@@ -2,8 +2,8 @@
 Patch merger for combining original text with rewritten paragraphs.
 """
 
-from typing import List, Dict
-from src.models.patch_pdca import ParagraphTarget, PatchRewriteResult
+from typing import List
+from src.models.patch_pdca import PatchRewriteResult
 
 class PatchMerger:
     """

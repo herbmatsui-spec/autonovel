@@ -9,7 +9,6 @@ from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.backend.database.core import get_db_manager
 from src.backend.database.models import Base, Book
 
 
@@ -17,10 +16,6 @@ from src.backend.database.models import Base, Book
 def client():
     import tempfile
     from pathlib import Path
-    import os
-    from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-    from src.backend.database.core import get_db_manager
-    from src.backend.database.models import Base
 
     tmp = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
     tmp.close()
@@ -49,7 +44,6 @@ def client():
             s.add(b)
             await s.commit()
 
-    import asyncio
     asyncio.run(_setup())
 
     from src.backend.auth import validate_api_key_or_raise

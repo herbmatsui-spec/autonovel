@@ -6,7 +6,6 @@ from unittest.mock import AsyncMock, MagicMock
 from src.agents.specialist_auditor_base import (
     SpecialistAuditor,
     SpecialistAuditResult,
-    ActionableDiff,
     parse_actionable_diffs,
     parse_audit_response_json,
 )

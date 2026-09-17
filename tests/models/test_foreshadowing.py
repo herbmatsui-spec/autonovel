@@ -1,4 +1,3 @@
-import pytest
 from src.models.foreshadowing import Foreshadowing
 
 
@@ -13,7 +12,7 @@ def test_foreshadowing_creation():
         hang_type="implicit",
         importance="★★★"
     )
-    
+
     assert fs.id == "F-001"
     assert fs.content == "主人公の実父母の正体"
     assert fs.hang_volume == 1
@@ -38,7 +37,7 @@ def test_foreshadowing_with_resolution():
         resolution_volume=5,
         resolution_episode=3
     )
-    
+
     assert fs.resolution_volume == 5
     assert fs.resolution_episode == 3
 
@@ -56,7 +55,7 @@ def test_foreshadowing_to_dict():
         resolution_volume=4,
         resolution_episode=2
     )
-    
+
     expected = {
         "id": "F-003",
         "content": "古い約束",
@@ -68,7 +67,7 @@ def test_foreshadowing_to_dict():
         "resolution_volume": 4,
         "resolution_episode": 2
     }
-    
+
     assert fs.to_dict() == expected
 
 
@@ -85,9 +84,9 @@ def test_foreshadowing_from_dict():
         "resolution_volume": 3,
         "resolution_episode": 4
     }
-    
+
     fs = Foreshadowing.from_dict(data)
-    
+
     assert fs.id == "F-004"
     assert fs.content == "隠された真実"
     assert fs.hang_volume == 1
@@ -112,8 +111,8 @@ def test_foreshadowing_roundtrip():
         resolution_volume=6,
         resolution_episode=1
     )
-    
+
     data = original.to_dict()
     restored = Foreshadowing.from_dict(data)
-    
+
     assert original == restored

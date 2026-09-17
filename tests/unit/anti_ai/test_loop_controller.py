@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-import pytest
 
 from src.services.anti_ai.loop_controller import AntiAILoopController
-from src.services.anti_ai.models import AICategory, Severity, ViolationSpan
 
 
 AI_TEXT = """しかし、朝が来た。しかし、昼が来た。しかし、夜が来た。

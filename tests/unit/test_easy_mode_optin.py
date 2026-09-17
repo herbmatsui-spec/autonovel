@@ -8,7 +8,13 @@ from src.services.llm.openai_adapter import OpenAIAdapter
 from src.backend.workflows.reverse_plot_workflow import ReversePlotGenerationWorkflow
 
 
-def test_llm_factory_optin_gemini():
+def test_llm_factory_optin_gemini(monkeypatch):
+    """Per-request Gemini API key should instantiate GeminiAdapter.
+
+    ファクトリのテスト環境ショートカット (APP_ENV=testing) を無効化して
+    実際の分岐を検証する。
+    """
+    monkeypatch.delenv("APP_ENV", raising=False)
     # Per-request Gemini API key should instantiate GeminiAdapter
     adapter = get_llm_adapter(
         provider="gemini",
@@ -20,7 +26,13 @@ def test_llm_factory_optin_gemini():
     assert adapter.model_name == "gemini-2.5-pro"
 
 
-def test_llm_factory_optin_openai():
+def test_llm_factory_optin_openai(monkeypatch):
+    """Per-request OpenAI API key and custom base_url.
+
+    ファクトリのテスト環境ショートカット (APP_ENV=testing) を無効化して
+    実際の分岐を検証する。
+    """
+    monkeypatch.delenv("APP_ENV", raising=False)
     # Per-request OpenAI API key and custom base_url
     adapter = get_llm_adapter(
         provider="openai",

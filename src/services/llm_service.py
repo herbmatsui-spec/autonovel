@@ -23,7 +23,6 @@ class LLMService:
         self._kwargs = kwargs
 
     def _ensure_factory(self):
-        from src.services.llm.factory import get_llm_adapter
 
         return self
 

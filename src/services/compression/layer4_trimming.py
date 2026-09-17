@@ -132,6 +132,19 @@ SCENE_KEYWORDS_WEIGHTED: dict[SceneType, dict[str, float]] = {
     },
 }
 
+# 直前シーンから次シーンへの自然な遷移重み（マルコフ事前分布）
+SCENE_TRANSITION_MATRIX: dict[SceneType, dict[SceneType, float]] = {
+    "combat": {"daily": 1.4, "psychological": 1.3, "combat": 0.8, "political": 1.1, "romance": 0.9, "mystery": 1.0, "flashback": 1.2, "survival": 1.0, "general": 1.0},
+    "daily": {"combat": 1.3, "political": 1.2, "romance": 1.3, "daily": 1.0, "psychological": 1.0, "mystery": 1.2, "flashback": 0.8, "survival": 1.1, "general": 1.0},
+    "political": {"combat": 1.3, "psychological": 1.3, "political": 1.1, "mystery": 1.2, "daily": 0.9, "romance": 0.8, "flashback": 1.1, "survival": 0.9, "general": 1.0},
+    "psychological": {"combat": 1.2, "flashback": 1.4, "daily": 1.1, "political": 1.1, "romance": 1.1, "mystery": 1.2, "psychological": 0.9, "survival": 1.0, "general": 1.0},
+    "romance": {"daily": 1.3, "psychological": 1.3, "combat": 0.9, "political": 0.9, "romance": 1.0, "mystery": 0.8, "flashback": 1.1, "survival": 0.8, "general": 1.0},
+    "mystery": {"combat": 1.2, "political": 1.3, "psychological": 1.2, "mystery": 1.0, "daily": 0.9, "romance": 0.8, "flashback": 1.1, "survival": 1.0, "general": 1.0},
+    "flashback": {"psychological": 1.4, "combat": 1.2, "daily": 1.0, "political": 1.1, "flashback": 0.5, "romance": 0.9, "mystery": 1.0, "survival": 1.0, "general": 1.0},
+    "survival": {"combat": 1.4, "daily": 1.3, "survival": 1.0, "psychological": 1.2, "political": 0.7, "romance": 0.7, "mystery": 0.9, "flashback": 0.8, "general": 1.0},
+    "general": {k: 1.0 for k in ["general", "combat", "daily", "psychological", "political", "romance", "mystery", "flashback", "survival"]},
+}
+
 
 def _softmax(scores: Dict[str, float]) -> Dict[str, float]:
     """Apply softmax to normalize scores to probabilities."""
@@ -180,7 +193,7 @@ class Layer4SceneTrimmer:
     ) -> List[Tuple[SceneType, float]]:
         """Infer scene narrative type with confidence scores (multi-label)."""
         combined = f"{plot_summary} {' '.join(scenes or [])}".lower()
-        
+
         scores = {}
         for scene_type, keywords in SCENE_KEYWORDS_WEIGHTED.items():
             score = 0.0
@@ -189,15 +202,44 @@ class Layer4SceneTrimmer:
                     score += kw_weight
             if score > 0:
                 scores[scene_type] = score
-        
+
         if not scores:
             return [("general", 1.0)]
-        
+
         # Apply softmax to get confidence scores
         probs = _softmax(scores)
         # Sort by confidence descending
         sorted_probs = sorted(probs.items(), key=lambda x: x[1], reverse=True)
         return sorted_probs
+
+    def detect_scene_context_aware(
+        self,
+        plot_summary: str,
+        scenes: list[str] | None = None,
+        scene_flow: SceneFlowHistory | None = None,
+    ) -> List[Tuple[SceneType, float]]:
+        """直前シーン履歴とエピソード主目的を考慮した文脈認識型シーン判定"""
+        # 1. 基本キーワードスコアリング
+        raw_probs = dict(self.detect_scene_type_multi(plot_summary, scenes))
+
+        # 2. 直前シーン履歴によるバイアス補正
+        if scene_flow and scene_flow.recent_scene_types:
+            last_scene = scene_flow.recent_scene_types[-1]
+            transition_weights = SCENE_TRANSITION_MATRIX.get(last_scene, {})
+            for s_type in raw_probs:
+                bias = transition_weights.get(s_type, 1.0)
+                raw_probs[s_type] *= bias
+
+        # 3. エピソード主目的によるボーナス補正
+        if scene_flow and scene_flow.episode_goal:
+            goal = scene_flow.episode_goal.lower()
+            for s_type, keywords in SCENE_KEYWORDS_WEIGHTED.items():
+                if any(kw in goal for kw in keywords):
+                    raw_probs[s_type] = raw_probs.get(s_type, 0.0) * 1.5
+
+        # 4. Softmax再正規化
+        norm_probs = _softmax(raw_probs)
+        return sorted(norm_probs.items(), key=lambda x: x[1], reverse=True)
 
     def trim(
         self,
@@ -210,7 +252,7 @@ class Layer4SceneTrimmer:
         protected_context: ProtectedContext | None = None,
     ) -> TrimmedContextOutput:
         """Trim facts down to token budget based on scene type importance with attention pinning (Steps 53-56).
-        
+
         Args:
             abstraction_output: Output from Layer 3
             scene_type: Single scene type (legacy, used if scene_weights not provided)
@@ -243,26 +285,28 @@ class Layer4SceneTrimmer:
             for fact_item in facts:
                 content = fact_item.get("fact", "")
                 entity = fact_item.get("entity", "")
-                
+                # Use dual_name for pinning and keyword checks (fallback to fact)
+                display_text = fact_item.get("dual_name", content)
+
                 # Check attention pinning (Step 55)
                 is_pinned = False
                 pin_reason = ""
-                if entity in active_chars or any(c in content for c in active_chars):
+                if entity in active_chars or any(c in display_text for c in active_chars):
                     is_pinned = True
                     pin_reason = "active_character"
-                elif entity in pinned_ents or any(e in content for e in pinned_ents):
+                elif entity in pinned_ents or any(e in display_text for e in pinned_ents):
                     is_pinned = True
                     pin_reason = "pinned_entity"
-                elif any(fid in content or fid in entity for fid in pending_ids):
+                elif any(fid in display_text or fid in entity for fid in pending_ids):
                     is_pinned = True
                     pin_reason = "pending_foreshadowing"
-                elif any(ck in content for ck in crit_kws):
+                elif any(ck in display_text for ck in crit_kws):
                     is_pinned = True
                     pin_reason = "critical_keyword"
 
                 # キーワード一致ボーナス
                 kw_bonus = 1.0
-                if any(k in content.lower() or k in entity.lower() for k in kws):
+                if any(k in display_text.lower() or k in entity.lower() for k in kws):
                     kw_bonus = 1.4
 
                 score = (cat_weight * kw_bonus) + (100.0 if is_pinned else 0.0)
@@ -389,6 +433,7 @@ __all__ = [
     "Layer4DynamicTrimmer",
     "SCENE_CATEGORY_WEIGHTS",
     "SCENE_KEYWORDS_WEIGHTED",
+    "SCENE_TRANSITION_MATRIX",
     "_softmax",
     "_blend_category_weights",
 ]

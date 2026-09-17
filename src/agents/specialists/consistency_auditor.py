@@ -66,10 +66,10 @@ class ConsistencyAuditor(SpecialistAuditor):
             raise LLMUnavailableError("No LLM configured for ConsistencyAuditor")
 
         bible_summary = self._summarize_bible(bible)
-        
+
         # Extract entity keywords from bible summary to find relevant sections in long draft
         keywords = re.findall(r"[ァ-ヴー]{2,}|[一-龥々]{2,}|[a-zA-Z0-9]{2,}", bible_summary) if bible_summary else []
-        
+
         if len(draft) <= 3500:
             audited_text = draft
         elif keywords:

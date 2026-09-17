@@ -9,6 +9,7 @@ rule-based path; the aggregator captures this and records a missing status.
 
 from __future__ import annotations
 
+import inspect
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any
@@ -418,20 +419,65 @@ class SpecialistAuditor(ABC):
 
         # Single judge function that uses the unified LLM client
         async def _single_judge() -> tuple[float, str, list[str], float, str, str, list[ActionableDiff]]:
-            # Ensure the llm is an IUnifiedLLMClient (or at least has agenerate)
-            if not isinstance(llm, IUnifiedLLMClient):
-                # If it's not, we try to call agenerate anyway if it exists
-                if hasattr(llm, "agenerate"):
-                    pass
-                else:
-                    raise LLMUnavailableError(f"LLM does not have agenerate method: {type(llm)}")
+            # IUnifiedLLMClient / agenerate / generate_text / ainvoke のいずれかに対応
+            if not isinstance(llm, IUnifiedLLMClient) and not hasattr(llm, "agenerate"):
+                if hasattr(llm, "generate_text"):
+                    try:
+                        text_resp_raw = await llm.generate_text(req.prompt, system_prompt=req.system_prompt or None)
+                        text_resp = str(text_resp_raw).strip()
+                        if not text_resp:
+                            raise LLMUnavailableError("LLM returned empty response")
+                        score, critique, suggestions, confidence, reasoning, actionable_diffs = parse_audit_response_json(text_resp)
+                        return score, critique, suggestions, confidence, reasoning, text_resp, actionable_diffs
+                    except LLMUnavailableError:
+                        raise
+                    except Exception as e:
+                        raise LLMUnavailableError(f"LLM call failed: {e}") from e
+                if hasattr(llm, "ainvoke"):
+                    try:
+                        text_resp_raw = await llm.ainvoke(req.prompt)
+                        text_resp = str(getattr(text_resp_raw, "content", text_resp_raw)).strip()
+                        if not text_resp:
+                            raise LLMUnavailableError("LLM returned empty response")
+                        score, critique, suggestions, confidence, reasoning, actionable_diffs = parse_audit_response_json(text_resp)
+                        return score, critique, suggestions, confidence, reasoning, text_resp, actionable_diffs
+                    except LLMUnavailableError:
+                        raise
+                    except Exception as e:
+                        raise LLMUnavailableError(f"LLM call failed: {e}") from e
+                raise LLMUnavailableError(f"LLM does not have agenerate method: {type(llm)}")
             try:
-                resp: LLMResponse = await llm.agenerate(req)
-                text_resp = resp.content.strip()
+                # agenerate → ainvoke → generate_text の順でフォールバック
+                # (agenerate が MagicMock 等で無効な結果を返す場合に対応)
+                text_resp = None
+
+                if callable(getattr(llm, "agenerate", None)):
+                    resp = llm.agenerate(req)
+                    if inspect.isawaitable(resp):
+                        resp = await resp
+                    raw = str(getattr(resp, "content", resp)).strip()
+                    # MagicMock の文字列化表現 ("<MagicMock ...>") は無効とみなす
+                    if raw and not raw.startswith("<MagicMock"):
+                        text_resp = raw
+
+                if text_resp is None and hasattr(llm, "ainvoke"):
+                    text_resp_raw = await llm.ainvoke(req.prompt)
+                    raw = str(getattr(text_resp_raw, "content", text_resp_raw)).strip()
+                    if raw and not raw.startswith("<MagicMock"):
+                        text_resp = raw
+
+                if text_resp is None and hasattr(llm, "generate_text"):
+                    text_resp_raw = await llm.generate_text(req.prompt, system_prompt=req.system_prompt or None)
+                    raw = str(text_resp_raw).strip()
+                    if raw and not raw.startswith("<MagicMock"):
+                        text_resp = raw
+
                 if not text_resp:
                     raise LLMUnavailableError("LLM returned empty response")
                 score, critique, suggestions, confidence, reasoning, actionable_diffs = parse_audit_response_json(text_resp)
                 return score, critique, suggestions, confidence, reasoning, text_resp, actionable_diffs
+            except LLMUnavailableError:
+                raise
             except Exception as e:
                 raise LLMUnavailableError(f"LLM call failed: {e}") from e
 

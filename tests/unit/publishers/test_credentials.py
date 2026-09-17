@@ -8,7 +8,7 @@ import pytest
 import os
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import patch
 
 from src.services.publishers.credentials import (
     CredentialStore,
@@ -18,15 +18,12 @@ from src.services.publishers.credentials import (
 )
 from src.services.publishers import (
     NarouCredentials,
-    KakuyomuCredentials,
-    KoboCredentials,
-    KindleCredentials,
 )
 
 
 class TestCredentialStore:
     """CredentialStoreテスト"""
-    
+
     @pytest.fixture
     def config(self):
         """テスト用設定"""
@@ -38,12 +35,12 @@ class TestCredentialStore:
                 encrypted_file_path=str(Path(tmpdir) / "credentials.enc"),
                 key_file_path=str(Path(tmpdir) / "credential.key"),
             )
-    
+
     @pytest.fixture
     def store(self, config):
         """CredentialStoreインスタンス"""
         return CredentialStore(config)
-    
+
     def test_load_from_env(self, store):
         """環境変数から読み込みテスト"""
         with patch.dict(os.environ, {
@@ -54,10 +51,10 @@ class TestCredentialStore:
             narou_creds = store._load_from_env("narou")
             assert narou_creds["email"] == "test@test.com"
             assert narou_creds["password"] == "password123"
-            
+
             kakuyomu_creds = store._load_from_env("kakuyomu")
             assert kakuyomu_creds["api_token"] == "token456"
-    
+
     def test_get_credentials(self, store):
         """認証情報取得テスト"""
         with patch.dict(os.environ, {
@@ -68,18 +65,18 @@ class TestCredentialStore:
             assert isinstance(creds, NarouCredentials)
             assert creds.email == "env@test.com"
             assert creds.password == "env_pass"
-    
+
     def test_set_and_get_credentials(self, store):
         """認証情報設定・取得テスト"""
         creds = NarouCredentials(email="set@test.com", password="set_pass")
         store.set("narou", creds)
-        
+
         # 環境変数なしで取得
         with patch.dict(os.environ, {}, clear=True):
             retrieved = store.get("narou")
             assert retrieved.email == "set@test.com"
             assert retrieved.password == "set_pass"
-    
+
     def test_validate_success(self, store):
         """バリデーション成功テスト"""
         with patch.dict(os.environ, {
@@ -96,7 +93,7 @@ class TestCredentialStore:
             assert store.validate("kakuyomu") is True
             assert store.validate("kobo") is True
             assert store.validate("kindle") is True
-    
+
     def test_validate_failure(self, store):
         """バリデーション失敗テスト"""
         with patch.dict(os.environ, {}, clear=True):
@@ -104,26 +101,26 @@ class TestCredentialStore:
             assert store.validate("kakuyomu") is False  # token不足
             assert store.validate("kobo") is False  # client_id/secret不足
             assert store.validate("kindle") is False  # refresh_token不足
-    
+
     def test_delete_credentials(self, store):
         """認証情報削除テスト"""
         creds = NarouCredentials(email="del@test.com", password="del_pass")
         store.set("narou", creds)
-        
+
         # 存在確認
         with patch.dict(os.environ, {}, clear=True):
             retrieved = store.get("narou")
             assert retrieved.email == "del@test.com"
-        
+
         # 削除
         store.delete("narou")
-        
+
         # 削除確認
         with patch.dict(os.environ, {}, clear=True):
             retrieved = store.get("narou")
             assert retrieved.email == ""
             assert retrieved.password == ""
-    
+
     def test_list_configured(self, store):
         """設定済みプラットフォーム一覧テスト"""
         with patch.dict(os.environ, {
@@ -136,11 +133,11 @@ class TestCredentialStore:
             assert "kakuyomu" in configured
             assert "kobo" not in configured
             assert "kindle" not in configured
-    
+
     def test_get_env_template(self, store):
         """環境変数テンプレート生成テスト"""
         template = store.get_env_template()
-        
+
         assert "NAROU_EMAIL=" in template
         assert "NAROU_PASSWORD=" in template
         assert "KAKUYOMU_API_TOKEN=" in template
@@ -149,31 +146,31 @@ class TestCredentialStore:
         assert "KINDLE_CLIENT_ID=" in template
         assert "KINDLE_CLIENT_SECRET=" in template
         assert "KINDLE_REFRESH_TOKEN=" in template
-    
+
     def test_create_env_file(self, store):
         """環境変数ファイル作成テスト"""
         with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
             temp_path = f.name
-        
+
         try:
             create_env_file(temp_path)
-            
+
             with open(temp_path) as f:
                 content = f.read()
-            
+
             assert "NAROU_EMAIL=" in content
             assert "KAKUYOMU_API_TOKEN=" in content
         finally:
             os.unlink(temp_path)
-    
+
     def test_encrypted_file_persistence(self, store):
         """暗号化ファイル永続化テスト"""
         creds = NarouCredentials(email="enc@test.com", password="enc_pass")
         store.set("narou", creds)
-        
+
         # 新しいstoreインスタンスで読み込み（同じキーファイル使用）
         new_store = CredentialStore(store.config)
-        
+
         with patch.dict(os.environ, {}, clear=True):
             retrieved = new_store.get("narou")
             assert retrieved.email == "enc@test.com"
@@ -182,7 +179,7 @@ class TestCredentialStore:
 
 class TestCredentialConfig:
     """CredentialConfigテスト"""
-    
+
     def test_default_config(self):
         """デフォルト設定テスト"""
         config = CredentialConfig()
@@ -195,7 +192,7 @@ class TestCredentialConfig:
 
 class TestGlobalFunctions:
     """グローバル関数テスト"""
-    
+
     def test_get_credential_store_singleton(self):
         """シングルトン取得テスト"""
         store1 = get_credential_store()

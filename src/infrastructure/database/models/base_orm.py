@@ -6,7 +6,7 @@ from sqlalchemy.orm import DeclarativeBase
 class Base(DeclarativeBase):
     """Base class for all SQLAlchemy ORM models."""
 
-    pass
+    __table_args__ = {"extend_existing": True}
 
 
 class BaseDbModel(Base):

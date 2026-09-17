@@ -4,12 +4,11 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Optional, List
-from uuid import uuid4
 
 from src.domain.value_objects.ids import NovelId, UserId
 from src.domain.value_objects.text import Title, Genre, Catchcopy, Summary
 from src.domain.value_objects.metadata import NovelStatus, NovelMode, NovelMetadata
-from src.domain.value_objects.scores import BookScore, CostScore
+from src.domain.value_objects.scores import CostScore
 
 
 @dataclass

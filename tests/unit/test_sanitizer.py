@@ -225,7 +225,7 @@ class TestOutputSanitizer:
 
     def test_extract_content_and_metadata_separator(self):
         """Test extraction with separator."""
-        text = f"Story content\n### NOVEL CONTENT ###\n{{\"title\": \"Test\"}}\n### NOVEL CONTENT ###"
+        text = "Story content\n### NOVEL CONTENT ###\n{\"title\": \"Test\"}\n### NOVEL CONTENT ###"
         metadata, content = OutputSanitizer.extract_content_and_metadata(text)
         # The function extracts metadata from the separator format
         assert isinstance(metadata, dict)
@@ -328,31 +328,46 @@ class TestContentValidator:
     """Tests for ContentValidator class."""
 
     def test_check_rhythm_uniform(self):
-        """Test rhythm check for uniform sentence lengths."""
+        """Test rhythm check for uniform sentence lengths.
+
+        実装は tuple[bool, str] を返す。日本語の句点で分割されるため
+        英文は 1 文として扱われ、5 文未満で True になる。
+        """
         text = "This is a test. This is a test. This is a test. This is a test. This is a test."
-        errors = ContentValidator.check_rhythm(text)
-        # Uniform sentence lengths should trigger rhythm warning
-        assert isinstance(errors, list)
+        is_valid, msg = ContentValidator.check_rhythm(text)
+        assert isinstance(is_valid, bool)
+        assert isinstance(msg, str)
+        # 日本語文での均一性チェック
+        jp_text = "これはテストです。これはテストです。これはテストです。これはテストです。これはテストです。"
+        is_valid_jp, msg_jp = ContentValidator.check_rhythm(jp_text)
+        assert is_valid_jp is False
+        assert "均一" in msg_jp
 
     def test_check_rhythm_varied(self):
         """Test rhythm check for varied sentence lengths."""
         text = "Short. This is a longer sentence here. Very long sentence that goes on and on. Tiny. Medium size."
-        errors = ContentValidator.check_rhythm(text)
+        is_valid, msg = ContentValidator.check_rhythm(text)
         # Should handle varied lengths
-        assert isinstance(errors, list)
+        assert is_valid is True
 
     def test_check_rhythm_short_text(self):
         """Test rhythm check for short text."""
         text = "Short."
-        errors = ContentValidator.check_rhythm(text)
-        assert isinstance(errors, list)
+        is_valid, msg = ContentValidator.check_rhythm(text)
+        # 5文未満は常に True
+        assert is_valid is True
+        assert msg == ""
 
     def test_check_rhythm_consecutive_endings(self):
-        """Test detection of consecutive same endings."""
-        text = "Going desu. Coming desu. Seeing desu."
-        errors = ContentValidator.check_rhythm(text)
+        """Test detection of consecutive same endings.
+
+        語尾比較は s[-2:] を用いるため「です」等の2文字語尾が3回連続すると検出される。
+        """
+        text = "行くです。来るです。見るです。あるです。するです。"
+        is_valid, msg = ContentValidator.check_rhythm(text)
         # May detect consecutive endings
-        assert isinstance(errors, list)
+        assert is_valid is False
+        assert "連続" in msg or "均一" in msg or msg == ""
 
     def test_check_catharsis_reservation_ep1_has_keywords(self):
         """Test catharsis check for episode 1 with keywords."""

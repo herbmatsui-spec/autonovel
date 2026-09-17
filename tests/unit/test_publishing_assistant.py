@@ -1,8 +1,7 @@
 """Unit tests for Safe Publishing Assistant (Steps 1-12)."""
 
-import pytest
 
-from src.models.publishing_assistant import TargetPlatform, FormattedChapterPayload
+from src.models.publishing_assistant import TargetPlatform
 from src.services.publishing.content_splitter import ContentSplitter
 from src.services.publishing.ai_disclosure_generator import AIDisclosureGenerator
 from src.services.publishing.compliance_validator import ComplianceValidator

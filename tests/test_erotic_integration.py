@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-import asyncio
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -15,7 +14,6 @@ from src.services.auto_workflow_pipeline import (
     create_full_auto_pipeline,
     WorkflowContext,
 )
-from src.services.pipeline_base import WorkflowStep
 from src.services.pipeline_steps import PlanStep
 
 

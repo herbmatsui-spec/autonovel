@@ -9,7 +9,6 @@
 
 from __future__ import annotations
 
-import io
 import json
 import zipfile
 from pathlib import Path
@@ -31,7 +30,6 @@ from src.backend.database.series_loader import SeriesDataLoader
 from src.backend.multimedia_service import MultimediaService
 from src.backend.routers import branches as branches_router
 from src.backend.routers import multimedia as multimedia_router
-from src.agents.event_bus import EventBus
 
 
 # 1x1 透明 PNG バイト列 (テスト用)
@@ -45,7 +43,7 @@ TINY_PNG = (
 @pytest.fixture
 def p0_e2e_setup(monkeypatch, tmp_path: Path):
     """P0 総合E2Eテストハーネス (Step 66).
-    
+
     同期エンジン（MultimediaService用）と非同期エンジン（BranchRouter用）で
     同一の SQLite ファイルを共有する。
     """
@@ -225,7 +223,7 @@ def test_p0_harness_initialization(p0_e2e_setup):
 
 def test_real_db_multimedia_generation_e2e(p0_e2e_setup):
     """Step 67: 実DB小説からのマルチメディア生成フロー E2E.
-    
+
     DB内の実際の書籍・章データから漫画台本およびEPUBを出力し、
     ダミーではなく実DBの文章が反映されていることを検証する。
     """
@@ -245,7 +243,7 @@ def test_real_db_multimedia_generation_e2e(p0_e2e_setup):
     script_path = Path(data["files"][0])
     assert script_path.exists()
     script_content = script_path.read_text(encoding="utf-8")
-    
+
     # DBの実データ（第1章）のキーワードが台本に含まれていること
     assert "旅立ち" in script_content or "少年" in script_content
 
@@ -267,7 +265,7 @@ def test_real_db_multimedia_generation_e2e(p0_e2e_setup):
 
 def test_illustrated_commercial_epub_e2e(p0_e2e_setup):
     """Step 68: 挿絵付き商用EPUB出力フロー E2E.
-    
+
     画像アセットをDBに登録した状態で EPUB 出力を行い、
     生成バイナリ内に XHTML 挿絵ページ、画像ファイル、Spine 登録、
     および縦書き CSS が規格通り組み込まれていることを完全検証する。
@@ -343,7 +341,7 @@ def test_illustrated_commercial_epub_e2e(p0_e2e_setup):
 
 def test_branch_fork_merge_commit_e2e(p0_e2e_setup):
     """Step 69: IFルート分岐 -> コンフリクト発生 -> 確定コミットフロー E2E.
-    
+
     1. ブランチフォーク (Branch 1 -> Branch 2)
     2. 各ブランチで章の内容を変更
     3. マージプレビューで差分を検出
@@ -447,7 +445,7 @@ def test_branch_fork_merge_commit_e2e(p0_e2e_setup):
 
 def test_edge_cases_and_error_handling(p0_e2e_setup):
     """Step 70: APIエラーレスポンスおよびエッジケース総合検証.
-    
+
     1. 不正なフォーマット名 -> 400 または 422
     2. 存在しない書籍IDでのマルチメディア生成 -> 404 または 422
     3. 不正なブランチマージコミット (空本文・存在しないブランチ) -> 400

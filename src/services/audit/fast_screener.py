@@ -4,7 +4,6 @@ Uses a lightweight LLM to quickly determine if text passes basic quality thresho
 """
 
 from typing import Tuple
-from src.models.patch_pdca import ParagraphTarget  # Though not used here, for consistency
 
 class FastScreener:
     """

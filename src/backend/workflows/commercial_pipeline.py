@@ -63,6 +63,65 @@ class CommercialPipeline:
         """
         self.csv_path = csv_path or "/tmp/commercial_schedule.csv"
 
+    async def execute_batch(
+        self,
+        book_id: int,
+        batch_size: int,
+        genre: str = "ファンタジー",
+        concept: str = "現代日本",
+        keywords: str = "",
+        target_word_count_per_episode: int = 3000
+    ) -> dict[str, Any]:
+        """
+        指定された書籍に対してバッチエピソードを生成する。
+
+        Args:
+            book_id: 対象の書籍ID
+            batch_size: 生成するエピソード数
+            genre: ジャンル（デフォルト: ファンタジー）
+            concept: コンセプト（デフォルト: 現代日本）
+            keywords: キーワード（デフォルト: 空文字）
+            target_word_count_per_episode: エピソードあたりの目標文字数（デフォルト: 3000）
+
+        Returns:
+            生成されたエピソード情報を含む辞書
+        """
+        # シリーズ設定を構築
+        series_config = {
+            "book_id": book_id,
+            "genre": genre,
+            "concept": concept,
+            "keywords": keywords,
+            "target_eps": batch_size,
+            "target_word_count_per_episode": target_word_count_per_episode,
+            "platforms": ["kakuyomu"],  # デフォルトプラットフォーム
+            "trend_memo": ""
+        }
+
+        # 空のサンプルリストとプラットフォームリストを準備
+        samples = []
+        platforms = ["kakuyomu"]
+
+        # 既存のrunメソッドを呼び出し（投稿はしない）
+        result = await self.run(
+            series_config=series_config,
+            samples=samples,
+            platforms=platforms,
+            do_publish=False
+        )
+
+        # 結果を期待される形式に変換
+        if "error" in result:
+            return {"completed_episodes": []}
+
+        selected_episodes = result.get("selected", [])
+        completed_episodes = [
+            ep.get("ep_num") for ep in selected_episodes
+            if ep.get("ep_num") is not None
+        ]
+
+        return {"completed_episodes": completed_episodes}
+
     @async_retry(max_attempts=3, base_delay=1.0)
     async def _step_plan_async(self, series_config: dict) -> dict[str, Any]:
         """Bible生成ステップ（リトライ対応）"""

@@ -96,7 +96,7 @@ class PlanningAgent(SkillAgent):
             "book_id": ctx.book_id,
             "title": ctx.artifacts.get("title"),
         })
-        
+
         title = ctx.artifacts.get("title")
         synopsis = ctx.artifacts.get("synopsis", "")
         target_eps = ctx.artifacts.get("target_eps", 10)
@@ -136,7 +136,7 @@ class PlanningAgent(SkillAgent):
             "arc_count": len(arcs.arcs) if arcs.arcs else 0,
             "proposal_count": len(artifacts.get("proposals", {})),
         })
-        
+
         return AgentResult(
             next_agent=AgentName.PLOT,
             artifacts=artifacts,

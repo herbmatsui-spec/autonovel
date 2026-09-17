@@ -13,7 +13,7 @@ def require_credits(task_type: str):
     ):
         # Get required credits for the task type
         required = TASK_CREDIT_COSTS.get(task_type, 10)  # Default to 10 if not found
-        
+
         # Check if user has sufficient credits
         if current_user.credits < required:
             raise HTTPException(

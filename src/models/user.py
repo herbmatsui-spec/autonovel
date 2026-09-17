@@ -1,7 +1,14 @@
 from __future__ import annotations
 from datetime import datetime
 from enum import Enum
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, Field
+
+try:
+    from pydantic import EmailStr
+    from pydantic import create_model
+    create_model("_TestEmailValidator", email=(EmailStr, ...))
+except Exception:
+    EmailStr = str  # type: ignore[misc,assignment]
 
 class UserRole(str, Enum):
     USER = "user"

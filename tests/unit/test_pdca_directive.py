@@ -1,12 +1,9 @@
 """Unit tests for PDCADirectiveGenerator (Part 4 / Step 42 / Checkpoint 7)."""
 
-import pytest
 from src.agents.specialist_auditor_base import ActionableDiff
 from src.services.pdca_directive import (
     WritingDirective,
-    PDCACycleResult,
     PDCADirectiveGenerator,
-    DIMENSION_PROMPT_TEMPLATES,
 )
 
 

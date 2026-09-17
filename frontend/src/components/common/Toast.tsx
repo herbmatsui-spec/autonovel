@@ -29,8 +29,17 @@ export const Toast: React.FC<ToastProps> = ({ toast, onClose }) => {
     }
   };
 
+  // 提案2: スクリーンリーダーに通知を読み上げさせる（error は即時、他は polite）
+  const ariaLive = toast.type === "error" ? "assertive" : "polite";
+
   return (
-    <div className={getClassName()} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+    <div
+      className={getClassName()}
+      style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
+      role="status"
+      aria-live={ariaLive}
+      aria-atomic="true"
+    >
       <div>
         <span style={{ marginRight: "8px" }}>{getIcon()}</span>
         <span>{toast.message}</span>

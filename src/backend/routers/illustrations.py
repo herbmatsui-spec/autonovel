@@ -1,7 +1,11 @@
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.backend.auth import get_current_user
+from src.backend.database import get_async_db
+from src.backend.database.models import User
 from src.dependencies import get_illustration_workflow
 from src.models.illustration import (
     IllustrationModel,
@@ -9,6 +13,7 @@ from src.models.illustration import (
     IllustrationType,
     SafetyLevel,
 )
+from src.services.billing.credit_service import CreditService, InsufficientCreditsError
 
 router = APIRouter()
 
@@ -38,9 +43,27 @@ class _ReporterShim:
 
 @router.post("/generate")
 async def generate_illustration(
-    request: dict[str, Any], workflow=Depends(get_illustration_workflow)
+    request: dict[str, Any],
+    workflow=Depends(get_illustration_workflow),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db),
 ):
-    """単一の挿絵を生成する"""
+    """単一の挿絵を生成する (5クレジット消費)"""
+    try:
+        # クレジット消費
+        credit_service = CreditService(db)
+        await credit_service.deduct_credits(
+            user_id=current_user.id,
+            amount=5,
+            transaction_type="illustration_generation",
+            description=f"Generate illustration for book {request.get('book_id')}",
+        )
+    except InsufficientCreditsError as e:
+        raise HTTPException(
+            status_code=status.HTTP_402_PAYMENT_REQUIRED,
+            detail=f"クレジット残高が不足しています: {e}",
+        )
+
     try:
         # リクエストのパース
         ill_request = IllustrationRequest(
@@ -63,12 +86,19 @@ async def generate_illustration(
             raise HTTPException(status_code=500, detail=res["message"])
 
         return res["result"]
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/yonkoma")
-async def generate_yonkoma(request: dict[str, Any], workflow=Depends(get_illustration_workflow)):
+async def generate_yonkoma(
+    request: dict[str, Any],
+    workflow=Depends(get_illustration_workflow),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db),
+):
     """1話分の流れを 6 コマ (デフォルト) で要約した漫画プロンプト+画像を生成する。
 
     Request:
@@ -83,6 +113,22 @@ async def generate_yonkoma(request: dict[str, Any], workflow=Depends(get_illustr
 
     Response: IllustrationResult 互換の dict
     """
+    yonkoma_enabled = bool(request.get("yonkoma_enabled", True))
+    if yonkoma_enabled:
+        try:
+            credit_service = CreditService(db)
+            await credit_service.deduct_credits(
+                user_id=current_user.id,
+                amount=20,
+                transaction_type="illustration_yonkoma",
+                description=f"Generate yonkoma for book {request.get('book_id')}",
+            )
+        except InsufficientCreditsError as e:
+            raise HTTPException(
+                status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                detail=f"クレジット残高が不足しています: {e}",
+            )
+
     try:
         book_id = int(request["book_id"])
         episode_text = str(request.get("episode_text") or "")
@@ -104,7 +150,6 @@ async def generate_yonkoma(request: dict[str, Any], workflow=Depends(get_illustr
 
         # オフ設定でも、UI がプレビュー目的で叩く可能性があるため常にプロンプトは返す。
         # 画像生成は settings.yonkoma_enabled=False ならスキップする (呼び出し側で分岐)。
-        yonkoma_enabled = bool(request.get("yonkoma_enabled", True))
         if not yonkoma_enabled:
             res = await workflow.illustration_agent.generate_prompt_only(request=ill_request)
         else:
@@ -118,6 +163,8 @@ async def generate_yonkoma(request: dict[str, Any], workflow=Depends(get_illustr
             raise HTTPException(status_code=500, detail=res.get("message"))
 
         return res["result"]
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

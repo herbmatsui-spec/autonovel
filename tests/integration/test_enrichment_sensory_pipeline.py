@@ -1,6 +1,5 @@
 """Integration tests for sensory expansion pipeline with EnrichmentAgent (Part 2, Step 23)."""
 import pytest
-from unittest.mock import MagicMock
 from src.agents.orchestrator import AgentContext, AgentName
 from src.agents.enrichment_agent import EnrichmentAgent
 

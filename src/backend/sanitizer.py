@@ -11,7 +11,8 @@ import logging
 import re
 from typing import Any
 
-from src.models import CharacterRegistry
+from src.models.character import CharacterRegistry
+
 
 logger = logging.getLogger(__name__)
 
@@ -154,6 +155,12 @@ class NormalizationFlow:
             for key, value in self._severity_map.items():
                 if key in sev:
                     data["severity"] = value
+                    break
+
+        if "characters" not in data:
+            for alias in ["char_list", "characters_list", "chars"]:
+                if alias in data:
+                    data["characters"] = data[alias]
                     break
 
         if "detailed_blueprint" not in data:
@@ -572,11 +579,11 @@ class ContentValidator:
     """生成されたテキストの視点・リズム・商業的強度を検証する"""
 
     @staticmethod
-    def check_rhythm(text: str) -> list[str]:
+    def check_rhythm(text: str) -> tuple[bool, str]:
         errors = []
         sentences = [s.strip() for s in re.split(r"[。？！]", text) if s.strip()]
         if len(sentences) < 5:
-            return errors
+            return True, ""
 
         lengths = [len(s) for s in sentences]
         avg = sum(lengths) / len(lengths)
@@ -597,7 +604,9 @@ class ContentValidator:
                     break
             else:
                 count = 1
-        return errors
+        is_valid = len(errors) == 0
+        msg = errors[0] if errors else ""
+        return is_valid, msg
 
     @staticmethod
     def check_catharsis_reservation(text: str, ep_num: int) -> list[str]:

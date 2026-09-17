@@ -1,11 +1,11 @@
 from __future__ import annotations
-
 """
 database/core.py - データベース接続および低レベルインフラ管理
 """
 import asyncio
 import functools
 import logging
+import os
 import shutil
 import sqlite3
 import time
@@ -14,8 +14,10 @@ from pathlib import Path
 from typing import Any
 
 import aiosqlite
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, text, event
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import NullPool
 
 try:
     from src.backend.config import ROOT_DIR as BASE_DIR
@@ -23,15 +25,26 @@ try:
 
     DATABASE_URL = settings.DATABASE_URL
 except ImportError:
-    try:
-        from config import BASE_DIR, DATABASE_URL
-    except ImportError:
-        from pathlib import Path
-
-        BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
-        DATABASE_URL = f"sqlite:///{BASE_DIR / 'storage' / 'autonovel.db'}"
+            try:
+                from config import BASE_DIR, DATABASE_URL
+            except ImportError:
+                BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
+                DATABASE_URL = f"sqlite:///{BASE_DIR / 'storage' / 'autonovel.db'}"
 
 logger = logging.getLogger(__name__)
+
+
+def configure_sqlite_engine(engine):
+    """SQLiteエンジンにWALモードと外部キー有効化PRAGMAを設定。"""
+    target = getattr(engine, "sync_engine", engine)
+    if target.dialect.name == "sqlite":
+        @event.listens_for(target, "connect")
+        def set_sqlite_pragma(dbapi_connection, connection_record):
+            cursor = dbapi_connection.cursor()
+            cursor.execute("PRAGMA journal_mode=WAL")
+            cursor.execute("PRAGMA foreign_keys=ON")
+            cursor.execute("PRAGMA synchronous=NORMAL")
+            cursor.close()
 
 
 # ==========================================
@@ -90,10 +103,6 @@ class WorkspaceManager:
 # ==========================================
 # DatabaseManager（低レベルSQLite/PostgreSQL操作 - SQLAlchemy コネクションプール版）
 # ==========================================
-import os
-from sqlalchemy import event
-from sqlalchemy.pool import NullPool
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 
 class DatabaseConnectionWrapper:
@@ -181,6 +190,9 @@ class DatabaseManager:
             async_url,
             **engine_kwargs,
         )
+
+        # Configure SQLite engine if applicable
+        configure_sqlite_engine(self.engine)
 
         # Ensure is_plot_twist column exists in SQLite database
         # (Skipped: Schema updates should be handled by Alembic migrations)
@@ -387,9 +399,17 @@ def init_db(db_path: str = ""):
         logger.warning("[init_db] Failed to seed default book: %s", e)
 
 
+_async_db_manager: DatabaseManager | None = None
+_cached_async_url: str | None = None
+
+
 def get_db_manager() -> DatabaseManager:
-    logger.debug("[core] get_db_manager called - returning patched manager")
-    return DatabaseManager(DATABASE_URL)
+    global _async_db_manager, _cached_async_url
+    if _async_db_manager is None or _cached_async_url != DATABASE_URL:
+        logger.debug("[core] Initializing singleton DatabaseManager with url=%s", DATABASE_URL)
+        _async_db_manager = DatabaseManager(DATABASE_URL)
+        _cached_async_url = DATABASE_URL
+    return _async_db_manager
 
 
 _sync_engine = None

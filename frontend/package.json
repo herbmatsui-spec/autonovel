@@ -1,7 +1,7 @@
 {
   "name": "autonovel-frontend",
   "private": true,
-  "version": "4.9.0",
+  "version": "5.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,15 +10,16 @@
     "test": "vitest",
     "test:ci": "vitest run --coverage",
     "lint": "eslint .",
-    "typecheck": "node --max-old-space-size=8192 ./node_modules/typescript/bin/tsc --noEmit",
-    "generate:api-types": "openapi-typescript ../docs/openapi.json -o src/types/api.generated.ts"
+    "typecheck": "tsc --noEmit",
+    "type:sync": "node scripts/generate-types.mjs",
+    "export:openapi": "python ../scripts/export_openapi.py",
+    "generate:api-types": "npm run export:openapi && npx openapi-typescript ../docs/openapi.json -o src/types/api.generated.ts"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.102.8",
     "@tiptap/core": "^3.31.3",
     "@tiptap/react": "^3.31.3",
     "@tiptap/starter-kit": "^3.31.3",
-    "@types/react-router-dom": "^5.3.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-force-graph-2d": "^1.29.1",

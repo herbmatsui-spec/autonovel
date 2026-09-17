@@ -1,0 +1,822 @@
+[VECTOR STORE] pgvector requires PostgreSQL, falling back to chroma/memory
+[VECTOR STORE] pgvector requires PostgreSQL, falling back to chroma/memory
+[VECTOR STORE] pgvector requires PostgreSQL, falling back to chroma/memory
+ebooklib not available. EPUB export will be limited.
+...................................FFFF.........FFFFFFFFFFFFFF.........F [  2%]
+.....F..........FFF..................................................... [  5%]
+........................................................................ [  7%]
+........................................................................ [ 10%]
+........................................................................ [ 12%]
+........................................................................ [ 15%]
+........................................................................ [ 18%]
+........................................................................ [ 20%]
+.......................................F................................ [ 23%]
+.....................................EEEEEEEEE.......................... [ 25%]
+........................................................................ [ 28%]
+........................................................................ [ 31%]
+.................................F...................................... [ 33%]
+.........................F.............s................................ [ 36%]
+........................................................................ [ 38%]
+........................................................................ [ 41%]
+........................................................................ [ 44%]
+........................................................................ [ 46%]
+..F..................................................................... [ 49%]
+........................................................................ [ 51%]
+........................................................................ [ 54%]
+.....................................F.............................EE... [ 57%]
+........................................................................ [ 59%]
+........................................................................ [ 62%]
+........................................................................ [ 64%]
+........................................................................ [ 67%]
+...................................F........................F........... [ 70%]
+.......FF.................................F....................F........ [ 72%]
+................................FF...................................... [ 75%]
+....................F...............................................F... [ 77%]
+........F............................................................... [ 80%]
+........................................................................ [ 82%]
+........................................................................ [ 85%]
+................................................................FF.....s [ 88%]
+s....................................................................... [ 90%]
+....................................................................FF.. [ 93%]
+................................F....................................... [ 95%]
+..................................................................F..... [ 98%]
+........................................                                 [100%]C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\_pytest\unraisableexception.py:33: RuntimeWarning: coroutine 'backfill_missing_embeddings' was never awaited
+  gc.collect()
+RuntimeWarning: Enable tracemalloc to get the object allocation traceback
+
+=================================== ERRORS ====================================
+_____ ERROR at setup of TestNarouPublisher.test_publisher_initialization ______
+tests\unit\publishers\test_narou.py:21: in publisher
+    with patch("src.services.publishers.narou.webdriver"), \
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Python314\Lib\unittest\mock.py:1503: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+C:\Python314\Lib\unittest\mock.py:1473: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'src.services.publishers.narou' from 'e:\\hhh\\src\\services\\publishers\\narou.py'> does not have the attribute 'webdriver'
+_______ ERROR at setup of TestNarouPublisher.test_authenticate_success ________
+tests\unit\publishers\test_narou.py:21: in publisher
+    with patch("src.services.publishers.narou.webdriver"), \
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Python314\Lib\unittest\mock.py:1503: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+C:\Python314\Lib\unittest\mock.py:1473: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'src.services.publishers.narou' from 'e:\\hhh\\src\\services\\publishers\\narou.py'> does not have the attribute 'webdriver'
+_ ERROR at setup of TestNarouPublisher.test_authenticate_missing_credentials __
+tests\unit\publishers\test_narou.py:21: in publisher
+    with patch("src.services.publishers.narou.webdriver"), \
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Python314\Lib\unittest\mock.py:1503: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+C:\Python314\Lib\unittest\mock.py:1473: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'src.services.publishers.narou' from 'e:\\hhh\\src\\services\\publishers\\narou.py'> does not have the attribute 'webdriver'
+___ ERROR at setup of TestNarouPublisher.test_authenticate_failed_redirect ____
+tests\unit\publishers\test_narou.py:21: in publisher
+    with patch("src.services.publishers.narou.webdriver"), \
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Python314\Lib\unittest\mock.py:1503: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+C:\Python314\Lib\unittest\mock.py:1473: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'src.services.publishers.narou' from 'e:\\hhh\\src\\services\\publishers\\narou.py'> does not have the attribute 'webdriver'
+_______ ERROR at setup of TestNarouPublisher.test_publish_first_episode _______
+tests\unit\publishers\test_narou.py:21: in publisher
+    with patch("src.services.publishers.narou.webdriver"), \
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Python314\Lib\unittest\mock.py:1503: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+C:\Python314\Lib\unittest\mock.py:1473: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'src.services.publishers.narou' from 'e:\\hhh\\src\\services\\publishers\\narou.py'> does not have the attribute 'webdriver'
+__________ ERROR at setup of TestNarouPublisher.test_update_chapter ___________
+tests\unit\publishers\test_narou.py:21: in publisher
+    with patch("src.services.publishers.narou.webdriver"), \
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Python314\Lib\unittest\mock.py:1503: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+C:\Python314\Lib\unittest\mock.py:1473: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'src.services.publishers.narou' from 'e:\\hhh\\src\\services\\publishers\\narou.py'> does not have the attribute 'webdriver'
+__________ ERROR at setup of TestNarouPublisher.test_get_post_status __________
+tests\unit\publishers\test_narou.py:21: in publisher
+    with patch("src.services.publishers.narou.webdriver"), \
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Python314\Lib\unittest\mock.py:1503: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+C:\Python314\Lib\unittest\mock.py:1473: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'src.services.publishers.narou' from 'e:\\hhh\\src\\services\\publishers\\narou.py'> does not have the attribute 'webdriver'
+_________ ERROR at setup of TestNarouPublisher.test_format_for_narou __________
+tests\unit\publishers\test_narou.py:21: in publisher
+    with patch("src.services.publishers.narou.webdriver"), \
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Python314\Lib\unittest\mock.py:1503: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+C:\Python314\Lib\unittest\mock.py:1473: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'src.services.publishers.narou' from 'e:\\hhh\\src\\services\\publishers\\narou.py'> does not have the attribute 'webdriver'
+_______ ERROR at setup of TestNarouPublisher.test_format_preserves_ruby _______
+tests\unit\publishers\test_narou.py:21: in publisher
+    with patch("src.services.publishers.narou.webdriver"), \
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Python314\Lib\unittest\mock.py:1503: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+C:\Python314\Lib\unittest\mock.py:1473: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'src.services.publishers.narou' from 'e:\\hhh\\src\\services\\publishers\\narou.py'> does not have the attribute 'webdriver'
+__________________ ERROR at setup of test_enhancer_gate_off ___________________
+tests\unit\test_erotic_baseline.py:13: in mock_agent
+    return MockAgent()
+           ^^^^^^^^^^^
+E   TypeError: Can't instantiate abstract class MockAgent without an implementation for abstract method 'run'
+_____________ ERROR at setup of test_enhancer_gate_on_intensity0 ______________
+tests\unit\test_erotic_baseline.py:13: in mock_agent
+    return MockAgent()
+           ^^^^^^^^^^^
+E   TypeError: Can't instantiate abstract class MockAgent without an implementation for abstract method 'run'
+================================== FAILURES ===================================
+_____________________ TestEroticCurve.test_curve_creation _____________________
+tests\unit\agents\test_erotic_pipeline.py:175: in test_curve_creation
+    curve = EroticCurve()
+            ^^^^^^^^^^^^^
+E   TypeError: EroticCurve.__init__() missing 1 required positional argument: 'points'
+_______________________ TestEroticCurve.test_add_point ________________________
+tests\unit\agents\test_erotic_pipeline.py:180: in test_add_point
+    curve = EroticCurve()
+            ^^^^^^^^^^^^^
+E   TypeError: EroticCurve.__init__() missing 1 required positional argument: 'points'
+__________________ TestEroticCurve.test_get_phase_intensity ___________________
+tests\unit\agents\test_erotic_pipeline.py:187: in test_get_phase_intensity
+    curve = EroticCurve()
+            ^^^^^^^^^^^^^
+E   TypeError: EroticCurve.__init__() missing 1 required positional argument: 'points'
+________________ TestEroticCurve.test_curve_validation_u_shape ________________
+tests\unit\agents\test_erotic_pipeline.py:198: in test_curve_validation_u_shape
+    curve = EroticCurve()
+            ^^^^^^^^^^^^^
+E   TypeError: EroticCurve.__init__() missing 1 required positional argument: 'points'
+______________ TestCharacterStateSnapshot.test_snapshot_creation ______________
+tests\unit\agents\test_erotic_pipeline.py:338: in test_snapshot_creation
+    snapshot = CharacterStateSnapshot(
+E   pydantic_core._pydantic_core.ValidationError: 3 validation errors for CharacterStateSnapshot
+E   psychological_state
+E     Extra inputs are not permitted [type=extra_forbidden, input_value='content', input_type=str]
+E       For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden
+E   items_held
+E     Extra inputs are not permitted [type=extra_forbidden, input_value=['指輪'], input_type=list]
+E       For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden
+E   body_marks
+E     Extra inputs are not permitted [type=extra_forbidden, input_value=['首筋のキスマーク'], input_type=list]
+E       For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden
+______________ TestCharacterStateSnapshot.test_snapshot_defaults ______________
+tests\unit\agents\test_erotic_pipeline.py:360: in test_snapshot_defaults
+    snapshot = CharacterStateSnapshot(character_name="テスト")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for CharacterStateSnapshot
+E   episode_num
+E     Field required [type=missing, input_value={'character_name': 'テスト'}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/missing
+__________ TestContinuityTracker.test_update_and_get_character_state __________
+tests\unit\agents\test_erotic_pipeline.py:384: in test_update_and_get_character_state
+    self.tracker.update_character_state(
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'ContinuityTracker' object has no attribute 'update_character_state'
+____________ TestContinuityTracker.test_get_nonexistent_character _____________
+tests\unit\agents\test_erotic_pipeline.py:404: in test_get_nonexistent_character
+    state = self.tracker.get_character_state("存在しない")
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'ContinuityTracker' object has no attribute 'get_character_state'
+__________ TestContinuityTracker.test_stamina_transition_validation ___________
+tests\unit\agents\test_erotic_pipeline.py:410: in test_stamina_transition_validation
+    self.tracker.update_character_state("キャラ", {"stamina_level": "normal"})
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'ContinuityTracker' object has no attribute 'update_character_state'
+_______ TestContinuityTracker.test_psychological_transition_validation ________
+tests\unit\agents\test_erotic_pipeline.py:418: in test_psychological_transition_validation
+    self.tracker.update_character_state("キャラ", {"psychological_state": "neutral"})
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'ContinuityTracker' object has no attribute 'update_character_state'
+____________ TestContinuityTracker.test_invalid_stamina_transition ____________
+tests\unit\agents\test_erotic_pipeline.py:425: in test_invalid_stamina_transition
+    self.tracker.update_character_state("キャラ", {"stamina_level": "exhausted"})
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'ContinuityTracker' object has no attribute 'update_character_state'
+_________ TestContinuityTracker.test_invalid_psychological_transition _________
+tests\unit\agents\test_erotic_pipeline.py:434: in test_invalid_psychological_transition
+    self.tracker.update_character_state("キャラ", {"psychological_state": "distressed"})
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'ContinuityTracker' object has no attribute 'update_character_state'
+_______________ TestContinuityTracker.test_intimacy_progression _______________
+tests\unit\agents\test_erotic_pipeline.py:443: in test_intimacy_progression
+    self.tracker.update_character_state("キャラ", {"intimacy_level": level})
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'ContinuityTracker' object has no attribute 'update_character_state'
+_______________ TestContinuityTracker.test_location_transition ________________
+tests\unit\agents\test_erotic_pipeline.py:449: in test_location_transition
+    self.tracker.update_character_state("キャラ", {"location": "bedroom"})
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'ContinuityTracker' object has no attribute 'update_character_state'
+_______________ TestContinuityTracker.test_items_held_tracking ________________
+tests\unit\agents\test_erotic_pipeline.py:456: in test_items_held_tracking
+    self.tracker.update_character_state("キャラ", {"items_held": ["指輪", "手紙"]})
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'ContinuityTracker' object has no attribute 'update_character_state'
+_______________ TestContinuityTracker.test_body_marks_tracking ________________
+tests\unit\agents\test_erotic_pipeline.py:463: in test_body_marks_tracking
+    self.tracker.update_character_state("キャラ", {"body_marks": ["キスマーク", "あざ"]})
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'ContinuityTracker' object has no attribute 'update_character_state'
+__________________ TestContinuityReport.test_report_creation __________________
+tests\unit\agents\test_erotic_pipeline.py:474: in test_report_creation
+    report = ContinuityReport(
+E   pydantic_core._pydantic_core.ValidationError: 3 validation errors for ContinuityReport
+E   checked_dimensions
+E     Field required [type=missing, input_value={'is_consistent': True, '...cene_type_match': True}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/missing
+E   character_name
+E     Field required [type=missing, input_value={'is_consistent': True, '...cene_type_match': True}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/missing
+E   episode_num
+E     Field required [type=missing, input_value={'is_consistent': True, '...cene_type_match': True}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/missing
+________________ TestContinuityReport.test_report_with_issues _________________
+tests\unit\agents\test_erotic_pipeline.py:486: in test_report_with_issues
+    report = ContinuityReport(
+E   pydantic_core._pydantic_core.ValidationError: 3 validation errors for ContinuityReport
+E   checked_dimensions
+E     Field required [type=missing, input_value={'is_consistent': False, ...'scene_consistency': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/missing
+E   character_name
+E     Field required [type=missing, input_value={'is_consistent': False, ...'scene_consistency': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/missing
+E   episode_num
+E     Field required [type=missing, input_value={'is_consistent': False, ...'scene_consistency': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/missing
+_______ TestEroticIntegrityChecker.test_check_coercive_context_coercion _______
+tests\unit\agents\test_erotic_pipeline.py:586: in test_check_coercive_context_coercion
+    assert passed is False
+E   assert True is False
+__________ TestEroticIntegrityChecker.test_full_integrity_check_pass __________
+tests\unit\agents\test_erotic_pipeline.py:643: in test_full_integrity_check_pass
+    assert consent_passed is True
+E   assert False is True
+______ TestEroticPipelineIntegration.test_pipeline_with_explicit_consent ______
+tests\unit\agents\test_erotic_pipeline.py:746: in test_pipeline_with_explicit_consent
+    assert scene_type == "erotic"
+E   AssertionError: assert 'conversation' == 'erotic'
+E     
+E     - erotic
+E     + conversation
+____ TestEroticPipelineIntegration.test_pipeline_rejects_coercive_content _____
+tests\unit\agents\test_erotic_pipeline.py:768: in test_pipeline_rejects_coercive_content
+    assert coercion_passed is False
+E   assert True is False
+________ TestEroticPipelineIntegration.test_continuity_across_episodes ________
+tests\unit\agents\test_erotic_pipeline.py:777: in test_continuity_across_episodes
+    tracker.update_character_state("ヒロイン", {
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'ContinuityTracker' object has no attribute 'update_character_state'
+_____________________ test_generate_viral_titles_endpoint _____________________
+tests\unit\marketing\test_marketing_ctr_router.py:55: in test_generate_viral_titles_endpoint
+    assert res.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+____________________ test_writing_manager_saves_checkpoint ____________________
+C:\Python314\Lib\unittest\mock.py:2369: in assert_awaited_once
+    raise AssertionError(msg)
+E   AssertionError: Expected record_step to have been awaited once. Awaited 0 times.
+
+During handling of the above exception, another exception occurred:
+tests\unit\services\test_editor_autosave.py:31: in test_writing_manager_saves_checkpoint
+    mock_checkpoint_manager.record_step.assert_awaited_once()
+E   AssertionError: Expected record_step to have been awaited once. Awaited 0 times.
+E   
+E   pytest introspection follows:
+E   
+E   Kwargs:
+E   assert {'state_paylo...rafting', ...} == {}
+E     
+E     Left contains 5 more items:
+E     {'state_payload': {'ac_iter': 2,
+E                        'audit_result': {'is_integrity_ok': True},
+E                        'draft': 'Once upon a time...',
+E                        'ep_num': 5},
+E      'status': <CheckpointStatus.COMPLETED: 'completed'>,...
+E     
+E     ...Full output truncated (4 lines hidden), use '-vv' to show
+_____________________ test_stripe_webhook_grants_credits ______________________
+tests\unit\services\test_stripe_payment.py:45: in test_stripe_webhook_grants_credits
+    assert mock_user.credits == 110
+E   AssertionError: assert 10 == 110
+E    +  where 10 = <MagicMock id='1434165538368'>.credits
+------------------------------ Captured log call ------------------------------
+WARNING  src.backend.routers.billing_webhook:billing_webhook.py:82 Stripe event evt_test_123 previously failed. Retrying processing.
+ERROR    src.backend.routers.billing_webhook:billing_webhook.py:116 Error handling Stripe webhook event evt_test_123: 'coroutine' object has no attribute 'id'
+Traceback (most recent call last):
+  File "e:\hhh\src\backend\routers\billing_webhook.py", line 103, in handle_stripe_webhook
+    await _handle_checkout_session_completed(event_data, db, event_id=event_id)
+  File "e:\hhh\src\backend\routers\billing_webhook.py", line 138, in _handle_checkout_session_completed
+    user_id = user.id
+              ^^^^^^^
+AttributeError: 'coroutine' object has no attribute 'id'
+_________________ test_pdca_cycle_convergence_and_improvement _________________
+tests\unit\test_closed_loop_pdca.py:67: in test_pdca_cycle_convergence_and_improvement
+    assert result.converged is True
+E   AssertionError: assert False is True
+E    +  where False = PDCACycleResult(cycle_number=0, initial_score=59.65, final_score=59.65, score_delta=0.0, improved_percentage=0.0, lowe...: 59.7, 'multimodal': 60.1}, 'lowest_dimension': 'consistency', 'directives_count': 0, 'delta': 0.0}], converged=False).converged
+___________________ test_step56_llm_sensory_generation_call ___________________
+C:\Python314\Lib\unittest\mock.py:964: in assert_called_once
+    raise AssertionError(msg)
+E   AssertionError: Expected 'generate' to have been called once. Called 0 times.
+
+During handling of the above exception, another exception occurred:
+tests\unit\test_enrichment_phase4_step55_60.py:57: in test_step56_llm_sensory_generation_call
+    mock_llm.generate.assert_called_once()
+E   AssertionError: Expected 'generate' to have been called once. Called 0 times.
+______________________ test_post_export_package_endpoint ______________________
+tests\unit\test_marketing_agent.py:145: in test_post_export_package_endpoint
+    assert resp.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+---------------------------- Captured stdout setup ----------------------------
+2026-09-17 13:39:44,580 DEBUG asyncio [TestApp/local]: Using proactor: IocpProactor
+2026-09-17 13:39:44,583 INFO src.backend.server [TestApp/local]: Huey task queue initialized: {'status': 'healthy', 'backend': 'sqlite', 'pending_tasks': 145, 'immediate_mode': False}
+2026-09-17 13:39:44,583 WARNING src.backend.server [TestApp/local]: LLM_PROVIDER is 'openai' but OPENAI_API_KEY is not configured.
+----------------------------- Captured log setup ------------------------------
+DEBUG    asyncio:proactor_events.py:631 Using proactor: IocpProactor
+---------------------------- Captured stdout call -----------------------------
+2026-09-17 13:39:44,586 DEBUG asyncio [TestApp/local]: Using proactor: IocpProactor
+2026-09-17 13:39:44,589 INFO src.backend.server [TestApp/local]: Huey task queue initialized: {'status': 'healthy', 'backend': 'sqlite', 'pending_tasks': 145, 'immediate_mode': False}
+2026-09-17 13:39:44,589 WARNING src.backend.server [TestApp/local]: LLM_PROVIDER is 'openai' but OPENAI_API_KEY is not configured.
+2026-09-17 13:39:44,591 INFO httpx [TestApp/local]: HTTP Request: POST http://testserver/api/marketing/export_package/1 "HTTP/1.1 401 Unauthorized"
+------------------------------ Captured log call ------------------------------
+DEBUG    asyncio:proactor_events.py:631 Using proactor: IocpProactor
+_____________________ test_empty_book_router_returns_422 ______________________
+tests\unit\test_multimedia_real_db.py:194: in test_empty_book_router_returns_422
+    assert response.status_code == 422
+E   assert 401 == 422
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+---------------------------- Captured stdout call -----------------------------
+2026-09-17 13:39:45,742 DEBUG asyncio [TestApp/local]: Using proactor: IocpProactor
+2026-09-17 13:39:45,746 INFO httpx [TestApp/local]: HTTP Request: POST http://testserver/multimedia/media-mix "HTTP/1.1 401 Unauthorized"
+------------------------------ Captured log call ------------------------------
+DEBUG    asyncio:proactor_events.py:631 Using proactor: IocpProactor
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/multimedia/media-mix "HTTP/1.1 401 Unauthorized"
+___________________ test_generate_asset_pack_task_runs_sync ___________________
+tests\unit\test_multimedia_tasks.py:22: in test_generate_asset_pack_task_runs_sync
+    result = generate_asset_pack_task.call_local(
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\huey\api.py:1025: in call_local
+    return self.func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: generate_asset_pack_task() got an unexpected keyword argument 'task_id'
+________________________ test_narrative_spine_composer ________________________
+tests\unit\test_narrative_spine_enforcement.py:13: in test_narrative_spine_composer
+    hook = EmotionalHookSpec(
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for EmotionalHookSpec
+E   hook_name
+E     Value error, 未知の感情起点名です: despair_to_hope [type=value_error, input_value='despair_to_hope', input_type=str]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+_____________________ test_build_execution_order_circular _____________________
+tests\unit\test_orchestrator_skills.py:54: in test_build_execution_order_circular
+    orch.build_execution_order(manifest, available)
+src\agents\orchestrator.py:221: in build_execution_order
+    raise CyclicDependencyError(f"Circular dependency detected in skill manifest: {sorted(list(remaining))}")
+E   src.agents.orchestrator.CyclicDependencyError: Circular dependency detected in skill manifest: ['A', 'B']
+_______ TestTasksRouterAsyncRedis.test_get_task_status_uses_async_redis _______
+tests\unit\test_p4_async_and_db_concurrency.py:180: in test_get_task_status_uses_async_redis
+    await get_task_status("test_task")
+src\backend\routers\tasks.py:44: in get_task_status
+    async with db.get_session() as session:
+               ^^^^^^^^^^^^^^
+E   AttributeError: 'NoneType' object has no attribute 'get_session'
+---------------------------- Captured stdout setup ----------------------------
+2026-09-17 13:39:59,326 DEBUG asyncio [TestApp/local]: Using proactor: IocpProactor
+----------------------------- Captured log setup ------------------------------
+DEBUG    asyncio:proactor_events.py:631 Using proactor: IocpProactor
+_______________________ test_pipeline_websocket_and_hub _______________________
+tests\unit\test_pipeline_websocket.py:23: in test_pipeline_websocket_and_hub
+    with client.websocket_connect("/api/ws/pipeline/999") as websocket:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\starlette\testclient.py:115: in __enter__
+    self._raise_on_close(message)
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\starlette\testclient.py:144: in _raise_on_close
+    raise WebSocketDisconnect(code=message.get("code", 1000), reason=message.get("reason", ""))
+E   starlette.websockets.WebSocketDisconnect
+---------------------------- Captured stdout call -----------------------------
+2026-09-17 13:40:01,624 DEBUG asyncio [TestApp/local]: Using proactor: IocpProactor
+2026-09-17 13:40:01,627 DEBUG asyncio [TestApp/local]: Using proactor: IocpProactor
+------------------------------ Captured log call ------------------------------
+DEBUG    asyncio:proactor_events.py:631 Using proactor: IocpProactor
+DEBUG    asyncio:proactor_events.py:631 Using proactor: IocpProactor
+__________________________ test_sse_pipeline_stream ___________________________
+tests\unit\test_pipeline_websocket.py:44: in test_sse_pipeline_stream
+    assert response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+---------------------------- Captured stdout call -----------------------------
+2026-09-17 13:40:01,712 DEBUG asyncio [TestApp/local]: Using proactor: IocpProactor
+2026-09-17 13:40:01,717 INFO httpx [TestApp/local]: HTTP Request: GET http://testserver/api/stream/pipeline/999 "HTTP/1.1 401 Unauthorized"
+------------------------------ Captured log call ------------------------------
+DEBUG    asyncio:proactor_events.py:631 Using proactor: IocpProactor
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/stream/pipeline/999 "HTTP/1.1 401 Unauthorized"
+________________ test_reader_hook_auditor_windowing_long_draft ________________
+tests\unit\test_reader_hook_windowing.py:41: in test_reader_hook_auditor_windowing_long_draft
+    assert "奈落の底から不気味な叫び声が聞こえた……。" in prompt_text
+E   AssertionError: assert '奈落の底から不気味な叫び声が聞こえた……。' in '【執筆ドラフト本文】\nなぜ扉が開いていたのか？ そこに誰かが立っていた。\n平穏な日常が続いていた。平穏な日常が続いていた。平穏な日常が続いていた。平穏な日常が続いていた。平穏な日常が続いていた。平穏な日常が続いていた。平穏な日常が...こなす時間が流れた。日々の仕事や雑用をこなす時間が流れた。日々の仕事や雑用をこなす時間が流れた。日々の仕事や雑用をこな\n\n上記文章の冒頭の引きの強さと末尾のクリフハンガー（次話への牽引力）を審査し、0～100で採点してください。\n'
+---------------------------- Captured stdout setup ----------------------------
+2026-09-17 13:40:02,092 DEBUG asyncio [TestApp/local]: Using proactor: IocpProactor
+----------------------------- Captured log setup ------------------------------
+DEBUG    asyncio:proactor_events.py:631 Using proactor: IocpProactor
+____________ test_adapter_to_agent_result_injects_actionable_diffs ____________
+tests\unit\test_regeneration_directive_integration.py:50: in test_adapter_to_agent_result_injects_actionable_diffs
+    assert "【具体的改稿サンプル(Actionable Diffs)】" in directive
+E   AssertionError: assert '【具体的改稿サンプル(Actionable Diffs)】' in '【再生成指示 - 重点改善項目: reader_hook】\nスコア向上のため以下を反映して書き直してください: つかみを強化'
+---------------------------- Captured stdout call -----------------------------
+2026-09-17 13:40:03,787 INFO src.config.weight_variants [TestApp/local]: Registered weight variant: default_v1 -> {'consistency': 0.2, 'creativity': 0.15, 'reader_hook': 0.15, 'emotion_curve': 0.15, 'style': 0.1, 'factual': 0.1, 'structure': 0.1, 'multimodal': 0.05}
+2026-09-17 13:40:03,787 INFO src.config.weight_variants [TestApp/local]: Registered weight variant: literary_v1 -> {'consistency': 0.2, 'creativity': 0.15, 'reader_hook': 0.15, 'emotion_curve': 0.15, 'style': 0.1, 'factual': 0.1, 'structure': 0.1, 'multimodal': 0.05}
+2026-09-17 13:40:03,787 INFO src.config.weight_variants [TestApp/local]: Registered weight variant: entertainment_v1 -> {'consistency': 0.15, 'creativity': 0.15, 'reader_hook': 0.25, 'emotion_curve': 0.15, 'style': 0.1, 'factual': 0.1, 'structure': 0.05, 'multimodal': 0.05}
+2026-09-17 13:40:03,787 INFO src.config.weight_variants [TestApp/local]: Registered weight variant: educational_v1 -> {'consistency': 0.2, 'creativity': 0.1, 'reader_hook': 0.15, 'emotion_curve': 0.15, 'style': 0.1, 'factual': 0.2, 'structure': 0.1, 'multimodal': 0.0}
+2026-09-17 13:40:03,787 INFO src.config.weight_variants [TestApp/local]: Registered weight variant: romance_v1 -> {'consistency': 0.15, 'creativity': 0.15, 'reader_hook': 0.1, 'emotion_curve': 0.25, 'style': 0.1, 'factual': 0.1, 'structure': 0.1, 'multimodal': 0.05}
+2026-09-17 13:40:03,787 INFO src.config.weight_variants [TestApp/local]: Registered weight variant: mystery_v1 -> {'consistency': 0.25, 'creativity': 0.1, 'reader_hook': 0.1, 'emotion_curve': 0.1, 'style': 0.05, 'factual': 0.05, 'structure': 0.25, 'multimodal': 0.1}
+2026-09-17 13:40:03,788 INFO src.config.weight_variants [TestApp/local]: Registered weight variant: planning_v1 -> {'consistency': 0.15, 'creativity': 0.25, 'reader_hook': 0.05, 'emotion_curve': 0.15, 'style': 0.05, 'factual': 0.1, 'structure': 0.15, 'multimodal': 0.1}
+2026-09-17 13:40:03,788 INFO src.config.weight_variants [TestApp/local]: Registered weight variant: mid_writing_v1 -> {'consistency': 0.25, 'creativity': 0.05, 'reader_hook': 0.1, 'emotion_curve': 0.2, 'style': 0.05, 'factual': 0.2, 'structure': 0.1, 'multimodal': 0.05}
+2026-09-17 13:40:03,788 INFO src.config.weight_variants [TestApp/local]: Registered weight variant: climax_v1 -> {'consistency': 0.15, 'creativity': 0.1, 'reader_hook': 0.2, 'emotion_curve': 0.25, 'style': 0.05, 'factual': 0.15, 'structure': 0.05, 'multimodal': 0.05}
+2026-09-17 13:40:03,788 INFO src.config.weight_variants [TestApp/local]: Loaded 9 weight variants from config/audit_weights.yaml
+2026-09-17 13:40:03,788 INFO src.agents.specialists.adapter [TestApp/local]: BookScore 65.00 < 70.00 (retry 1/2). Triggering regeneration for reader_hook.
+------------------------------ Captured log call ------------------------------
+INFO     src.config.weight_variants:weight_variants.py:216 Registered weight variant: default_v1 -> {'consistency': 0.2, 'creativity': 0.15, 'reader_hook': 0.15, 'emotion_curve': 0.15, 'style': 0.1, 'factual': 0.1, 'structure': 0.1, 'multimodal': 0.05}
+INFO     src.config.weight_variants:weight_variants.py:216 Registered weight variant: literary_v1 -> {'consistency': 0.2, 'creativity': 0.15, 'reader_hook': 0.15, 'emotion_curve': 0.15, 'style': 0.1, 'factual': 0.1, 'structure': 0.1, 'multimodal': 0.05}
+INFO     src.config.weight_variants:weight_variants.py:216 Registered weight variant: entertainment_v1 -> {'consistency': 0.15, 'creativity': 0.15, 'reader_hook': 0.25, 'emotion_curve': 0.15, 'style': 0.1, 'factual': 0.1, 'structure': 0.05, 'multimodal': 0.05}
+INFO     src.config.weight_variants:weight_variants.py:216 Registered weight variant: educational_v1 -> {'consistency': 0.2, 'creativity': 0.1, 'reader_hook': 0.15, 'emotion_curve': 0.15, 'style': 0.1, 'factual': 0.2, 'structure': 0.1, 'multimodal': 0.0}
+INFO     src.config.weight_variants:weight_variants.py:216 Registered weight variant: romance_v1 -> {'consistency': 0.15, 'creativity': 0.15, 'reader_hook': 0.1, 'emotion_curve': 0.25, 'style': 0.1, 'factual': 0.1, 'structure': 0.1, 'multimodal': 0.05}
+INFO     src.config.weight_variants:weight_variants.py:216 Registered weight variant: mystery_v1 -> {'consistency': 0.25, 'creativity': 0.1, 'reader_hook': 0.1, 'emotion_curve': 0.1, 'style': 0.05, 'factual': 0.05, 'structure': 0.25, 'multimodal': 0.1}
+INFO     src.config.weight_variants:weight_variants.py:216 Registered weight variant: planning_v1 -> {'consistency': 0.15, 'creativity': 0.25, 'reader_hook': 0.05, 'emotion_curve': 0.15, 'style': 0.05, 'factual': 0.1, 'structure': 0.15, 'multimodal': 0.1}
+INFO     src.config.weight_variants:weight_variants.py:216 Registered weight variant: mid_writing_v1 -> {'consistency': 0.25, 'creativity': 0.05, 'reader_hook': 0.1, 'emotion_curve': 0.2, 'style': 0.05, 'factual': 0.2, 'structure': 0.1, 'multimodal': 0.05}
+INFO     src.config.weight_variants:weight_variants.py:216 Registered weight variant: climax_v1 -> {'consistency': 0.15, 'creativity': 0.1, 'reader_hook': 0.2, 'emotion_curve': 0.25, 'style': 0.05, 'factual': 0.15, 'structure': 0.05, 'multimodal': 0.05}
+INFO     src.config.weight_variants:weight_variants.py:255 Loaded 9 weight variants from config/audit_weights.yaml
+INFO     src.agents.specialists.adapter:adapter.py:209 BookScore 65.00 < 70.00 (retry 1/2). Triggering regeneration for reader_hook.
+_____________________ test_repository_get_set_state_async _____________________
+tests\unit\test_repository_concurrency.py:17: in test_repository_get_set_state_async
+    await repo.set_state(test_key, test_val)
+src\backend\database\repository.py:101: in set_state
+    async with self.db.get_session() as session:
+               ^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'NoneType' object has no attribute 'get_session'
+---------------------------- Captured stdout setup ----------------------------
+2026-09-17 13:40:14,024 DEBUG asyncio [TestApp/local]: Using proactor: IocpProactor
+----------------------------- Captured log setup ------------------------------
+DEBUG    asyncio:proactor_events.py:631 Using proactor: IocpProactor
+____________ test_sqlite_rag_batch_vector_search_and_no_truncation ____________
+tests\unit\test_sqlite_rag_embedding.py:89: in test_sqlite_rag_batch_vector_search_and_no_truncation
+    assert len(results) > 0
+           ^^^^^^^^^^^^
+E   TypeError: object of type 'coroutine' has no len()
+---------------------------- Captured stdout call -----------------------------
+2026-09-17 13:40:35,723 WARNING src.services.vector_store [TestApp/local]: [VECTOR STORE] pgvector requires PostgreSQL, falling back to chroma/memory
+------------------------------ Captured log call ------------------------------
+WARNING  src.services.vector_store:__init__.py:69 [VECTOR STORE] pgvector requires PostgreSQL, falling back to chroma/memory
+______________________ test_backfill_missing_embeddings _______________________
+tests\unit\test_sqlite_rag_embedding.py:124: in test_backfill_missing_embeddings
+    assert updated_count == 2
+E   assert <coroutine object backfill_missing_embeddings at 0x0000014DFD601D20> == 2
+__________ test_uow_all_repositories_instantiate_without_name_error ___________
+tests\unit\test_uow_repositories.py:32: in test_uow_all_repositories_instantiate_without_name_error
+    uow = UnitOfWork(mock_db)
+          ^^^^^^^^^^^^^^^^^^^
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\dependency_injector\wiring.py:1221: in _patched
+    return fn(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^
+E   TypeError: UnitOfWork.__init__() got multiple values for argument 'db'
+_____________________ test_uow_cleanup_clears_repo_cache ______________________
+tests\unit\test_uow_repositories.py:69: in test_uow_cleanup_clears_repo_cache
+    uow = UnitOfWork(mock_db)
+          ^^^^^^^^^^^^^^^^^^^
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\dependency_injector\wiring.py:1221: in _patched
+    return fn(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^
+E   TypeError: UnitOfWork.__init__() got multiple values for argument 'db'
+---------------------------- Captured stdout setup ----------------------------
+2026-09-17 13:40:43,293 DEBUG asyncio [TestApp/local]: Using proactor: IocpProactor
+----------------------------- Captured log setup ------------------------------
+DEBUG    asyncio:proactor_events.py:631 Using proactor: IocpProactor
+_____________________________ test_speaker_mapper _____________________________
+tests\unit\test_voicevox_pipeline.py:41: in test_speaker_mapper
+    assert assign_speaker_id("ルクス", gender="male") == 13
+E   AssertionError: assert 23 == 13
+E    +  where 23 = assign_speaker_id('ルクス', gender='male')
+______________________ test_writing_graph_complete_flow _______________________
+tests\unit\workflows\test_writing_graph_flow.py:45: in test_writing_graph_complete_flow
+    draft, meta, is_ok = await manager.run(
+src\backend\workflows\writing_langgraph.py:837: in run
+    res = await self.workflow.ainvoke(initial_state)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\langgraph\pregel\main.py:4061: in ainvoke
+    async for chunk in self.astream(
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\langgraph\pregel\main.py:3147: in astream
+    ) = self._defaults(
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\langgraph\pregel\main.py:2561: in _defaults
+    raise ValueError(
+E   ValueError: Checkpointer requires one or more of the following 'configurable' keys: thread_id, checkpoint_ns, checkpoint_id
+---------------------------- Captured stdout setup ----------------------------
+2026-09-17 13:40:48,399 DEBUG asyncio [TestApp/local]: Using proactor: IocpProactor
+----------------------------- Captured log setup ------------------------------
+DEBUG    asyncio:proactor_events.py:631 Using proactor: IocpProactor
+---------------------------- Captured stdout call -----------------------------
+2026-09-17 13:40:48,401 INFO src.backend.workflows.writing_langgraph [TestApp/local]: gen_ctx cache cleared: 0 entries removed
+2026-09-17 13:40:48,449 INFO src.backend.workflows.writing_langgraph [TestApp/local]: Starting LangGraph execution for Ep.1 (easy_mode=False)
+2026-09-17 13:40:48,450 ERROR src.backend.workflows.writing_langgraph [TestApp/local]: LangGraph execution failed for Ep.1: Checkpointer requires one or more of the following 'configurable' keys: thread_id, checkpoint_ns, checkpoint_id
+------------------------------ Captured log call ------------------------------
+INFO     src.backend.workflows.writing_langgraph:writing_langgraph.py:211 gen_ctx cache cleared: 0 entries removed
+INFO     src.backend.workflows.writing_langgraph:writing_langgraph.py:785 Starting LangGraph execution for Ep.1 (easy_mode=False)
+ERROR    src.backend.workflows.writing_langgraph:writing_langgraph.py:843 LangGraph execution failed for Ep.1: Checkpointer requires one or more of the following 'configurable' keys: thread_id, checkpoint_ns, checkpoint_id
+============================== warnings summary ===============================
+C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\_hypothesis_pytestplugin.py:487
+  C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\_hypothesis_pytestplugin.py:487: UserWarning: Skipping collection of '.hypothesis' directory - this usually means you've explicitly set the `norecursedirs` pytest config option, replacing rather than extending the default ignores.
+    warnings.warn(
+
+tests/unit/agents/test_audit_agent_deep.py::test_logical_auditor_generate_critic_feedback
+  e:\hhh\tests\unit\agents\test_audit_agent_deep.py:179: DeprecationWarning: LogicalAuditor is deprecated, use AuditAggregator or AuditAgent instead
+    auditor_no_pm = LogicalAuditor(pm=None)
+
+tests/unit/agents/test_audit_agent_deep.py::test_logical_auditor_generate_critic_feedback
+  e:\hhh\tests\unit\agents\test_audit_agent_deep.py:192: DeprecationWarning: LogicalAuditor is deprecated, use AuditAggregator or AuditAgent instead
+    auditor = LogicalAuditor(pm=pm, generate_json=mock_llm_call)
+
+tests/unit/routers/test_router_branches_comprehensive.py::test_start_play_session
+  e:\hhh\src\backend\routers\branches.py:452: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    updated_at=datetime.utcnow(),
+
+tests/unit/routers/test_router_branches_comprehensive.py::test_play_save
+  e:\hhh\src\backend\routers\branches.py:554: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    "saved_at": datetime.utcnow().isoformat(),
+
+tests/unit/routers/test_router_branches_comprehensive.py::test_play_end
+  e:\hhh\src\backend\routers\branches.py:622: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    updated_at=datetime.utcnow(),
+
+tests/unit/routers/test_router_branches_comprehensive.py::test_get_playthrough
+  e:\hhh\src\backend\routers\branches.py:648: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    saved_at=datetime.utcnow(),
+
+tests/unit/services/test_book_score_calculator.py::TestBookScoreCalculatorSaveAndGet::test_save_score_with_repo
+tests/unit/services/test_book_score_service_deep.py::test_save_score_executes_repo
+tests/unit/test_book_score_service.py::TestBookScoreCalculatorSaveAndGet::test_save_score_with_repo
+tests/unit/test_unified_book_score.py::test_save_score_includes_specialist_breakdown
+  e:\hhh\src\services\book_score_service.py:215: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    evaluated_at=datetime.utcnow(),
+
+tests/unit/services/test_book_score_calculator.py::TestBookScoreCalculatorSaveAndGet::test_get_latest_score_with_repo
+  C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\_pytest\threadexception.py:58: PytestUnhandledThreadExceptionWarning: Exception in thread Thread-7 (_connection_worker_thread)
+  
+  Traceback (most recent call last):
+    File "C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\aiosqlite\core.py", line 66, in _connection_worker_thread
+      future.get_loop().call_soon_threadsafe(set_result, future, result)
+      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Python314\Lib\asyncio\base_events.py", line 872, in call_soon_threadsafe
+      self._check_closed()
+      ~~~~~~~~~~~~~~~~~~^^
+    File "C:\Python314\Lib\asyncio\base_events.py", line 550, in _check_closed
+      raise RuntimeError('Event loop is closed')
+  RuntimeError: Event loop is closed
+  
+  During handling of the above exception, another exception occurred:
+  
+  Traceback (most recent call last):
+    File "C:\Python314\Lib\threading.py", line 1081, in _bootstrap_inner
+      self._context.run(self.run)
+      ~~~~~~~~~~~~~~~~~^^^^^^^^^^
+    File "C:\Python314\Lib\threading.py", line 1023, in run
+      self._target(*self._args, **self._kwargs)
+      ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\aiosqlite\core.py", line 75, in _connection_worker_thread
+      future.get_loop().call_soon_threadsafe(set_exception, future, e)
+      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Python314\Lib\asyncio\base_events.py", line 872, in call_soon_threadsafe
+      self._check_closed()
+      ~~~~~~~~~~~~~~~~~~^^
+    File "C:\Python314\Lib\asyncio\base_events.py", line 550, in _check_closed
+      raise RuntimeError('Event loop is closed')
+  RuntimeError: Event loop is closed
+  
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    warnings.warn(pytest.PytestUnhandledThreadExceptionWarning(msg))
+
+tests/unit/services/test_editor_autosave.py::test_writing_manager_saves_checkpoint
+  e:\hhh\src\backend\workflows\writing_langgraph.py:114: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    self.checkpoint_manager.record_step(
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/unit/services/test_stripe_payment.py::test_stripe_webhook_grants_credits
+tests/unit/test_p4_async_and_db_concurrency.py::TestGraphPipelineAsync::test_save_chapter_chunks_async_embedding
+  C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\_pytest\stash.py:108: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    del self._storage[key]
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/unit/services/test_writing_services_deep.py::test_determine_pov_instruction
+  e:\hhh\tests\unit\services\test_writing_services_deep.py:85: DeprecationWarning: src.services.writing_services は非推奨です。src.backend.writing_service を使用してください。
+    manager = GenerationLoopManager(
+
+tests/unit/services/test_writing_services_deep.py::test_execute_generation_loop_easy_mode
+  e:\hhh\src\services\writing_services.py:258: DeprecationWarning: LogicalAuditor is deprecated, use AuditAggregator or AuditAgent instead
+    auditor = LogicalAuditor(self.repo, self.pm, self.llm.generate_json, None)
+
+tests/unit/test_branch_merge_commit.py::test_commit_success
+  e:\hhh\src\backend\services\branch_merge_service.py:96: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    "committed_at": datetime.utcnow().isoformat(),
+
+tests/unit/test_branch_merge_commit.py::test_commit_success
+  e:\hhh\src\backend\services\branch_merge_service.py:115: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    committed_at=datetime.utcnow().isoformat(),
+
+tests/unit/test_causality_audit.py::TestPlotIntegrityMonitor::test_extract_keywords_returns_entities
+tests/unit/test_causality_audit.py::TestPlotIntegrityMonitor::test_check_integrity_with_mock_extraction
+tests/unit/test_causality_audit.py::TestPlotIntegrityMonitor::test_check_integrity_with_mock_extraction
+tests/unit/test_graphrag.py::test_graph_pipeline_service
+  e:\hhh\src\services\extraction_service.py:144: DeprecationWarning: BaseLLMAdapter is deprecated, use IUnifiedLLMClient instead
+    raw_response = self._llm.generate(
+
+tests/unit/test_circuit_breaker.py: 9 warnings
+tests/unit/test_llm_resilient_gateway.py: 15 warnings
+  e:\hhh\src\llm\circuit_breaker.py:58: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    now = datetime.utcnow()
+
+tests/unit/test_circuit_breaker.py: 7 warnings
+tests/unit/test_llm_resilient_gateway.py: 9 warnings
+  e:\hhh\src\llm\circuit_breaker.py:95: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    now = datetime.utcnow()
+
+tests/unit/test_commercial_epub_bundle.py: 2 warnings
+tests/unit/test_multimedia_real_db.py: 2 warnings
+tests/unit/test_multimedia_service.py: 12 warnings
+  C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\sqlalchemy\engine\default.py:952: DeprecationWarning: The default datetime adapter is deprecated as of Python 3.12; see the sqlite3 documentation for suggested replacement recipes
+    cursor.execute(statement, parameters)
+
+tests/unit/test_container.py::test_legacy_config_container_compatibility
+  e:\hhh\tests\unit\test_container.py:26: DeprecationWarning: config.container is deprecated. Please use src.core.container.AppContainer instead.
+    from config.container import Container, get_container
+
+tests/unit/test_dag_replanning.py::test_plan_local_retry_and_reschedule
+tests/unit/test_dag_scheduler_replanning.py::test_scheduler_replan_node_and_execution_flow
+tests/unit/test_dag_scheduler_replanning.py::test_scheduler_replan_event_bus_publication
+  <string>:9: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+
+tests/unit/test_deprecation_delegation.py::test_context_manager_delegation
+  e:\hhh\tests\unit\test_deprecation_delegation.py:21: DeprecationWarning: ContextManager is deprecated, use ContextBuilderAgent instead
+    cm = ContextManager(repo=repo)
+
+tests/unit/test_easy_mode_router.py::test_execute_generation
+  e:\hhh\src\backend\routers\easy_mode.py:183: RuntimeWarning: coroutine 'GraphPipelineService.process_chapter_knowledge' was never awaited
+    graph_pipeline_service.process_chapter_knowledge(
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/unit/test_error_handlers.py::test_validation_exception_handler
+tests/unit/test_error_handlers.py::test_validation_exception_handler
+  e:\hhh\tests\unit\test_error_handlers.py:54: DeprecationWarning: 'HTTP_422_UNPROCESSABLE_ENTITY' is deprecated. Use 'HTTP_422_UNPROCESSABLE_CONTENT' instead.
+    response = await validation_exception_handler(dummy_request, exc)
+
+tests/unit/test_generation_tasks.py::test__update_task_in_db_completed
+  e:\hhh\tests\conftest.py:153: RuntimeWarning: coroutine 'generate_sensory_details' was never awaited
+    gc.collect()
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/unit/test_generation_tasks.py::test__update_task_in_db_completed
+  e:\hhh\tests\conftest.py:153: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    gc.collect()
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/unit/test_graphrag.py::test_mock_adapter_structured_outputs
+  e:\hhh\tests\unit\test_graphrag.py:384: DeprecationWarning: BaseLLMAdapter is deprecated, use IUnifiedLLMClient instead
+    resp = adapter.generate("テスト", response_format={"type": "json_schema"})
+
+tests/unit/test_manifest_pipeline.py::test_production_manifest_order_and_plugins
+  e:\hhh\src\agents\audit_agent.py:36: DeprecationWarning: LogicalAuditor is deprecated, use AuditAggregator or AuditAgent instead
+    self._logical_auditor = LogicalAuditor(
+
+tests/unit/test_marketing_agent.py::test_create_export_package_zip
+  C:\Python314\Lib\unittest\mock.py:2252: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    def __init__(self, name, parent):
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/unit/test_multimedia_real_db.py::test_empty_book_raises_no_chapters_found
+tests/unit/test_multimedia_real_db.py::test_empty_book_raises_no_chapters_found
+tests/unit/test_series_loader.py::test_load_series_no_chapters_raises
+  e:\hhh\src\backend\database\series_loader.py:200: DeprecationWarning: 'HTTP_422_UNPROCESSABLE_ENTITY' is deprecated. Use 'HTTP_422_UNPROCESSABLE_CONTENT' instead.
+    raise NoChaptersFoundError(f"No chapters found for book {config.book_id}")
+
+tests/unit/test_p4_async_and_db_concurrency.py::TestTasksRouterAsyncRedis::test_stop_task_uses_async_redis
+  e:\hhh\tests\unit\test_p4_async_and_db_concurrency.py:222: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    pass  # DBエラーは無視
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/unit/test_redis_cache.py::TestRedisCacheService::test_mset
+  e:\hhh\src\services\redis_cache.py:252: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    pipe.set(full_key, serialized, ex=ttl)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/unit/test_reflective_rag.py::TestRetrieveWithReflection::test_empty_initial_results
+  e:\hhh\tests\unit\test_reflective_rag.py:169: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    result = await reflective.retrieve_with_reflection(session, query="test", book_id=1)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/unit/test_state_and_resilience.py::TestResilience::test_check_gemini_success
+  C:\Users\keide\AppData\Roaming\Python\Python314\site-packages\google\auth\transport\grpc.py:44: FutureWarning: grpcio < 1.83.0 does not support Post-Quantum Cryptography (PQC). Support for non-PQC environments is deprecated. In October 2026, google-auth will raise its minimum requirements to enforce grpcio >= 1.83.0. For more details on Google Cloud's post-quantum security migration, visit: https://cloud.google.com/security/resources/post-quantum-cryptography
+    warnings.warn(
+
+tests/unit/test_state_and_resilience.py::TestResilience::test_check_gemini_success
+  e:\hhh\src\services\resilience.py:49: FutureWarning: 
+  
+  All support for the `google.generativeai` package has ended. It will no longer be receiving 
+  updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+  See README for more details:
+  
+  https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+  
+    import google.generativeai as genai
+
+tests/unit/test_worker_recovery.py::TestWorkerRecoveryManager::test_log_task_start
+tests/unit/test_worker_recovery.py::TestWorkerRecoveryManagerIntegration::test_full_recovery_cycle
+  e:\hhh\src\backend\tasks\worker_recovery.py:226: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    session.add(log)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/unit/agents/test_erotic_pipeline.py::TestEroticCurve::test_curve_creation
+FAILED tests/unit/agents/test_erotic_pipeline.py::TestEroticCurve::test_add_point
+FAILED tests/unit/agents/test_erotic_pipeline.py::TestEroticCurve::test_get_phase_intensity
+FAILED tests/unit/agents/test_erotic_pipeline.py::TestEroticCurve::test_curve_validation_u_shape
+FAILED tests/unit/agents/test_erotic_pipeline.py::TestCharacterStateSnapshot::test_snapshot_creation
+FAILED tests/unit/agents/test_erotic_pipeline.py::TestCharacterStateSnapshot::test_snapshot_defaults
+FAILED tests/unit/agents/test_erotic_pipeline.py::TestContinuityTracker::test_update_and_get_character_state
+FAILED tests/unit/agents/test_erotic_pipeline.py::TestContinuityTracker::test_get_nonexistent_character
+FAILED tests/unit/agents/test_erotic_pipeline.py::TestContinuityTracker::test_stamina_transition_validation
+FAILED tests/unit/agents/test_erotic_pipeline.py::TestContinuityTracker::test_psychological_transition_validation
+FAILED tests/unit/agents/test_erotic_pipeline.py::TestContinuityTracker::test_invalid_stamina_transition
+FAILED tests/unit/agents/test_erotic_pipeline.py::TestContinuityTracker::test_invalid_psychological_transition
+FAILED tests/unit/agents/test_erotic_pipeline.py::TestContinuityTracker::test_intimacy_progression
+FAILED tests/unit/agents/test_erotic_pipeline.py::TestContinuityTracker::test_location_transition
+FAILED tests/unit/agents/test_erotic_pipeline.py::TestContinuityTracker::test_items_held_tracking
+FAILED tests/unit/agents/test_erotic_pipeline.py::TestContinuityTracker::test_body_marks_tracking
+FAILED tests/unit/agents/test_erotic_pipeline.py::TestContinuityReport::test_report_creation
+FAILED tests/unit/agents/test_erotic_pipeline.py::TestContinuityReport::test_report_with_issues
+FAILED tests/unit/agents/test_erotic_pipeline.py::TestEroticIntegrityChecker::test_check_coercive_context_coercion
+FAILED tests/unit/agents/test_erotic_pipeline.py::TestEroticIntegrityChecker::test_full_integrity_check_pass
+FAILED tests/unit/agents/test_erotic_pipeline.py::TestEroticPipelineIntegration::test_pipeline_with_explicit_consent
+FAILED tests/unit/agents/test_erotic_pipeline.py::TestEroticPipelineIntegration::test_pipeline_rejects_coercive_content
+FAILED tests/unit/agents/test_erotic_pipeline.py::TestEroticPipelineIntegration::test_continuity_across_episodes
+FAILED tests/unit/marketing/test_marketing_ctr_router.py::test_generate_viral_titles_endpoint
+FAILED tests/unit/services/test_editor_autosave.py::test_writing_manager_saves_checkpoint
+FAILED tests/unit/services/test_stripe_payment.py::test_stripe_webhook_grants_credits
+FAILED tests/unit/test_closed_loop_pdca.py::test_pdca_cycle_convergence_and_improvement
+FAILED tests/unit/test_enrichment_phase4_step55_60.py::test_step56_llm_sensory_generation_call
+FAILED tests/unit/test_marketing_agent.py::test_post_export_package_endpoint
+FAILED tests/unit/test_multimedia_real_db.py::test_empty_book_router_returns_422
+FAILED tests/unit/test_multimedia_tasks.py::test_generate_asset_pack_task_runs_sync
+FAILED tests/unit/test_narrative_spine_enforcement.py::test_narrative_spine_composer
+FAILED tests/unit/test_orchestrator_skills.py::test_build_execution_order_circular
+FAILED tests/unit/test_p4_async_and_db_concurrency.py::TestTasksRouterAsyncRedis::test_get_task_status_uses_async_redis
+FAILED tests/unit/test_pipeline_websocket.py::test_pipeline_websocket_and_hub
+FAILED tests/unit/test_pipeline_websocket.py::test_sse_pipeline_stream - asse...
+FAILED tests/unit/test_reader_hook_windowing.py::test_reader_hook_auditor_windowing_long_draft
+FAILED tests/unit/test_regeneration_directive_integration.py::test_adapter_to_agent_result_injects_actionable_diffs
+FAILED tests/unit/test_repository_concurrency.py::test_repository_get_set_state_async
+FAILED tests/unit/test_sqlite_rag_embedding.py::test_sqlite_rag_batch_vector_search_and_no_truncation
+FAILED tests/unit/test_sqlite_rag_embedding.py::test_backfill_missing_embeddings
+FAILED tests/unit/test_uow_repositories.py::test_uow_all_repositories_instantiate_without_name_error
+FAILED tests/unit/test_uow_repositories.py::test_uow_cleanup_clears_repo_cache
+FAILED tests/unit/test_voicevox_pipeline.py::test_speaker_mapper - AssertionE...
+FAILED tests/unit/workflows/test_writing_graph_flow.py::test_writing_graph_complete_flow
+ERROR tests/unit/publishers/test_narou.py::TestNarouPublisher::test_publisher_initialization
+ERROR tests/unit/publishers/test_narou.py::TestNarouPublisher::test_authenticate_success
+ERROR tests/unit/publishers/test_narou.py::TestNarouPublisher::test_authenticate_missing_credentials
+ERROR tests/unit/publishers/test_narou.py::TestNarouPublisher::test_authenticate_failed_redirect
+ERROR tests/unit/publishers/test_narou.py::TestNarouPublisher::test_publish_first_episode
+ERROR tests/unit/publishers/test_narou.py::TestNarouPublisher::test_update_chapter
+ERROR tests/unit/publishers/test_narou.py::TestNarouPublisher::test_get_post_status
+ERROR tests/unit/publishers/test_narou.py::TestNarouPublisher::test_format_for_narou
+ERROR tests/unit/publishers/test_narou.py::TestNarouPublisher::test_format_preserves_ruby
+ERROR tests/unit/test_erotic_baseline.py::test_enhancer_gate_off - TypeError:...
+ERROR tests/unit/test_erotic_baseline.py::test_enhancer_gate_on_intensity0 - ...
+45 failed, 2717 passed, 3 skipped, 102 warnings, 11 errors in 229.75s (0:03:49)

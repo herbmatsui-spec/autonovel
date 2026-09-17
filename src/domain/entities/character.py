@@ -4,7 +4,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Optional
-from uuid import uuid4
 
 from src.domain.value_objects.ids import NovelId, CharacterId
 from src.domain.value_objects.metadata import CharacterMetadata

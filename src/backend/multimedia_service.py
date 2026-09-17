@@ -382,7 +382,11 @@ class MultimediaService:
     ) -> MultimediaResult:
         require_multimedia()
         series = self._resolve_series(book_id, series)
-        exporter = create_ebook_exporter(series.genre, _extract_preset(series))
+        # create_ebook_exporter は EbookMetadata を要求するため、正しいシグネチャで生成する
+        from src.easy_mode.phase3.ebook_export import EbookMetadata
+
+        ebook_metadata = EbookMetadata(title=series.title, genre=series.genre or "general")
+        exporter = create_ebook_exporter(ebook_metadata, self._output_path())
 
         out_dir = self._output_path() / f"book_{book_id}" / "ebook"
         out_dir.mkdir(parents=True, exist_ok=True)

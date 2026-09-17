@@ -6,7 +6,6 @@ and re-audit until reaching the target score or detecting convergence.
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from typing import Any, Callable, List
 
@@ -17,7 +16,6 @@ from src.services.book_score_mapping import UnifiedBookScoreBridge
 from src.services.prose.paragraph_indexer import ParagraphIndexer
 from src.services.prose.patch_merger import PatchMerger
 from src.services.pdca_directive import (
-    PDCADirectiveGenerator,
     PDCACycleResult,
     WritingDirective,
 )

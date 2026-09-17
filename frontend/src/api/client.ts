@@ -1,81 +1,85 @@
 /**
- * frontend/src/api/client.ts - 共通 API クライアント層
+ * 型安全 API クライアント基盤
  *
- * 各 API リクエスト時に LocalStorage から API キーを取得し、
- * X-API-Key ヘッダーを自動付与して fetch を実行する。
+ * 提案6: エラーUX改善
+ * - AbortController によるタイムアウト（デフォルト 30 秒）
+ * - ネットワーク断（fetch 自体の失敗）とHTTPエラーの区別
+ * - 401 時の auth_token 除去（ログアウト連携）
  */
 
-export function getApiKey(): string {
-  if (typeof window === "undefined") return "";
-  return localStorage.getItem("autonovel_api_key") || "";
-}
+export const DEFAULT_API_TIMEOUT_MS = 30_000;
 
-export function setApiKey(key: string): void {
-  if (typeof window === "undefined") return;
-  if (key) {
-    localStorage.setItem("autonovel_api_key", key);
-  } else {
-    localStorage.removeItem("autonovel_api_key");
-  }
-}
-
-export class ApiError extends Error {
-  status: number;
-  data?: any;
-
-  constructor(message: string, status: number, data?: any) {
+export class ApiNetworkError extends Error {
+  constructor(message = "ネットワークに接続できません。接続を確認してください。") {
     super(message);
-    this.name = "ApiError";
-    this.status = status;
-    this.data = data;
+    this.name = "ApiNetworkError";
   }
 }
 
-export async function extractErrorMessage(res: Response): Promise<string> {
-  try {
-    const clone = res.clone();
-    const data = await clone.json();
-    if (typeof data === "string") return data;
-    if (data?.detail) {
-      if (typeof data.detail === "string") return data.detail;
-      if (Array.isArray(data.detail)) {
-        return data.detail.map((d: any) => d.msg || JSON.stringify(d)).join(", ");
-      }
-      return JSON.stringify(data.detail);
-    }
-    if (data?.error_message) return data.error_message;
-    if (data?.message) return data.message;
-    return JSON.stringify(data);
-  } catch {
-    return res.statusText || `HTTP error ${res.status}`;
+export class ApiTimeoutError extends Error {
+  constructor(timeoutMs: number) {
+    super(`リクエストがタイムアウトしました（${Math.round(timeoutMs / 1000)}秒）。しばらくしてから再試行してください。`);
+    this.name = "ApiTimeoutError";
   }
-}
-
-export async function handleResponse<T>(
-  res: Response,
-  defaultErrorMsg = "API request failed"
-): Promise<T> {
-  if (!res.ok) {
-    const errorDetail = await extractErrorMessage(res);
-    let msg = `${defaultErrorMsg}: ${errorDetail}`;
-    if (res.status === 401) {
-      msg = `[401 認証エラー] APIキーが設定されていないか無効です: ${errorDetail}`;
-    } else if (res.status === 403) {
-      msg = `[403 権限エラー] アクセスが拒否されました: ${errorDetail}`;
-    }
-    throw new ApiError(msg, res.status);
-  }
-  return res.json();
 }
 
 export async function apiFetch(
-  input: RequestInfo | URL,
-  init: RequestInit = {}
+  endpoint: string,
+  options?: RequestInit,
+  timeoutMs: number = DEFAULT_API_TIMEOUT_MS
 ): Promise<Response> {
-  const headers = new Headers(init.headers || {});
-  const apiKey = getApiKey();
-  if (apiKey && !headers.has("X-API-Key")) {
-    headers.set("X-API-Key", apiKey);
+  const token = localStorage.getItem("auth_token");
+  const headers = new Headers(options?.headers || {});
+  if (!headers.has("Content-Type") && options?.body) {
+    headers.set("Content-Type", "application/json");
   }
-  return fetch(input, { ...init, headers });
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  let response: Response;
+  try {
+    response = await fetch(endpoint, {
+      ...options,
+      headers,
+      signal: options?.signal ?? controller.signal,
+    });
+  } catch (err: unknown) {
+    clearTimeout(timeoutId);
+    // AbortError: タイムアウト or 呼び出し側の中断
+    if (err instanceof DOMException && err.name === "AbortError") {
+      if (options?.signal?.aborted) {
+        throw err; // 呼び出し側の意図的な中断はそのまま伝播
+      }
+      throw new ApiTimeoutError(timeoutMs);
+    }
+    // fetch 自体の失敗（オフライン・DNS 失敗など）
+    throw new ApiNetworkError();
+  }
+  clearTimeout(timeoutId);
+
+  // 401: 認証切れ → トークンを除去（AuthContext が次回未認証扱いにする）
+  if (response.status === 401) {
+    try {
+      localStorage.removeItem("auth_token");
+    } catch {
+      // ignore storage error
+    }
+  }
+
+  return response;
+}
+
+export async function handleResponse<T>(response: Response, errorMessage?: string): Promise<T> {
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    if (errorMessage && !("detail" in errorData) && !("title" in errorData)) {
+      throw { detail: errorMessage, ...errorData };
+    }
+    throw errorData;
+  }
+  return response.json() as Promise<T>;
 }

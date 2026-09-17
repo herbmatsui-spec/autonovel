@@ -212,11 +212,15 @@ class IFRouteGraph:
     """IFルートグラフ（分岐構造全体）"""
 
     nodes: dict[str, RouteNode] = field(default_factory=dict)
+    edges: list[tuple[str, str, str]] = field(default_factory=list)
     entry_node_id: str = ""
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def add_node(self, node: RouteNode) -> None:
         self.nodes[node.id] = node
+
+    def add_edge(self, from_node_id: str, to_node_id: str, choice_text: str) -> None:
+        self.edges.append((from_node_id, to_node_id, choice_text))
 
     def get_node(self, node_id: str) -> RouteNode | None:
         return self.nodes.get(node_id)

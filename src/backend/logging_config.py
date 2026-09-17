@@ -45,6 +45,154 @@ class _ContextFilter(logging.Filter):
         return True
 
 
+class _SensitiveDataFilter(logging.Filter):
+    """機密情報 (APIキー・トークン・パスワード等) をマスクするフィルタ。"""
+
+    # マスク対象のキー名パターン (正規表現)
+    SENSITIVE_KEY_PATTERNS = [
+        r"(?i)(authorization)",
+        r"(?i)(x-api-key)",
+        r"(?i)(api[_-]?key)",
+        r"(?i)(access[_-]?token)",
+        r"(?i)(refresh[_-]?token)",
+        r"(?i)(bearer)",
+        r"(?i)(password)",
+        r"(?i)(secret)",
+        r"(?i)(client[_-]?secret)",
+        r"(?i)(private[_-]?key)",
+    ]
+
+    # 値をマスクする際に先頭に残す文字数
+    MASK_PREFIX_LENGTH = 4
+    MASK_SUFFIX = "***"
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        import re
+
+        # msg 属性のマスキング
+        if hasattr(record, "msg") and isinstance(record.msg, str):
+            record.msg = self._mask_sensitive_data(record.msg)
+
+        # args 属性のマスキング (タプルや辞書の場合)
+        if hasattr(record, "args") and record.args:
+            record.args = self._mask_args(record.args)
+
+        return True
+
+    def _mask_sensitive_data(self, text: str) -> str:
+        """文字列内の機密情報をマスクする。"""
+        import re
+
+        # Authorization: Bearer <token> または Authorization: <token>
+        text = re.sub(
+            r"(?i)(authorization\s*[:=]\s*)(?:bearer\s+)?(\S+)",
+            lambda m: m.group(1) + self._mask_value(m.group(2)),
+            text,
+        )
+        # X-API-Key ヘッダー
+        text = re.sub(
+            r"(?i)(x-api-key\s*[:=]\s*)(\S+)",
+            lambda m: m.group(1) + self._mask_value(m.group(2)),
+            text,
+        )
+        # api_key クエリパラメータ
+        text = re.sub(
+            r"([?&]api[_-]?key=)([^&\s]+)",
+            lambda m: m.group(1) + self._mask_value(m.group(2)),
+            text,
+        )
+        # access_token クエリパラメータ
+        text = re.sub(
+            r"(access[_-]?token=)([^&\s]+)",
+            lambda m: m.group(1) + self._mask_value(m.group(2)),
+            text,
+        )
+        # refresh_token クエリパラメータ
+        text = re.sub(
+            r"(refresh[_-]?token=)([^&\s]+)",
+            lambda m: m.group(1) + self._mask_value(m.group(2)),
+            text,
+        )
+        # Bearer トークン (Authorization ヘッダーとは独立して存在する場合)
+        text = re.sub(
+            r"(?i)(bearer\s+)(\S+)",
+            lambda m: m.group(1) + self._mask_value(m.group(2)),
+            text,
+        )
+        # パスワード系
+        text = re.sub(
+            r"(?i)(password\s*[:=]\s*)(\S+)",
+            lambda m: m.group(1) + self._mask_value(m.group(2)),
+            text,
+        )
+        # シークレット系
+        text = re.sub(
+            r"(?i)(secret\s*[:=]\s*)(\S+)",
+            lambda m: m.group(1) + self._mask_value(m.group(2)),
+            text,
+        )
+        # client_secret
+        text = re.sub(
+            r"(?i)(client[_-]?secret\s*[:=]\s*)(\S+)",
+            lambda m: m.group(1) + self._mask_value(m.group(2)),
+            text,
+        )
+        # private_key
+        text = re.sub(
+            r"(?i)(private[_-]?key\s*[:=]\s*)(\S+)",
+            lambda m: m.group(1) + self._mask_value(m.group(2)),
+            text,
+        )
+        return text
+
+    def _mask_value(self, value: str) -> str:
+        """値をマスクする (先頭N文字のみ残す)。"""
+        if len(value) <= self.MASK_PREFIX_LENGTH:
+            return self.MASK_SUFFIX
+        return value[: self.MASK_PREFIX_LENGTH] + self.MASK_SUFFIX
+
+    def _mask_args(self, args: Any) -> Any:
+        """args 内の機密データを再帰的にマスクする。"""
+        if isinstance(args, dict):
+            masked = {}
+            for k, v in args.items():
+                # キー名が機密情報を示す場合、値をマスク
+                if self._is_sensitive_key(k):
+                    masked[k] = self._mask_value(str(v))
+                else:
+                    masked[k] = self._mask_args(v)
+            return masked
+        elif isinstance(args, (list, tuple)):
+            return type(args)(self._mask_args(v) for v in args)
+        elif isinstance(args, str):
+            return self._mask_sensitive_data(args)
+        return args
+
+    def _is_sensitive_key(self, key: str) -> bool:
+        """キー名が機密情報を示すか判定する。"""
+        import re
+        sensitive_patterns = [
+            r"(?i)^api[_-]?key$",
+            r"(?i)^access[_-]?token$",
+            r"(?i)^refresh[_-]?token$",
+            r"(?i)^password$",
+            r"(?i)^secret$",
+            r"(?i)^secret$",
+            r"(?i)^client[_-]?secret$",
+            r"(?i)^private[_-]?key$",
+            r"(?i)^token$",
+            r"(?i)^bearer$",
+            r"(?i)^authorization$",
+            r"(?i)^x[_-]?api[_-]?key$",
+            r"(?i)^jwt$",
+            r"(?i)^session[_-]?id$",
+            r"(?i)^csrf[_-]?token$",
+        ]
+        return any(re.match(pattern, str(key)) for pattern in sensitive_patterns)
+
+
+
+
 def _logger_levels_from_env() -> dict[str, int]:
     """``LOG_LEVEL_<NAME>`` 形式の環境変数からロガー別レベルを抽出する。"""
     prefix = "LOG_LEVEL_"
@@ -105,12 +253,11 @@ def configure() -> None:
             )
 
     handler.setFormatter(formatter)
+    # ハンドラーにもフィルタを追加（ロガーフィルタが呼ばれない環境対策）
+    handler.addFilter(_ContextFilter(_extra_attributes()))
+    handler.addFilter(_SensitiveDataFilter())
     root.addHandler(handler)
     root.setLevel(level)
-
-    # アプリメタデータを全レコードへ注入
-    context_filter = _ContextFilter(_extra_attributes())
-    root.addFilter(context_filter)
 
     # ロガー別レベル上書きを適用
     for logger_name, logger_level in _logger_levels_from_env().items():

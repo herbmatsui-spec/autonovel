@@ -30,7 +30,7 @@ DEFAULT_CATEGORIES = [
 CONCEPT_TAXONOMY = {
     # 戦闘・武術
     "抜刀": "近接剣術スキル",
-    "居合": "近接剣術スキル",
+    "居合": "近接剣術スキルス",
     "迅雷": "雷属性攻撃",
     "火球": "火炎魔術",
     "爆縮": "高密度破壊魔術",
@@ -46,8 +46,8 @@ CONCEPT_TAXONOMY = {
     "魔導書": "古代遺物",
     "ポーション": "回復消耗品",
     "指輪": "魔力補助装飾品",
+    "魔剣バルムンク": "伝説級",
 }
-
 
 class Layer3ConceptAbstractor:
     """Abstracts specific facts into higher-level conceptual categories with dynamic taxonomy."""
@@ -89,10 +89,14 @@ class Layer3ConceptAbstractor:
                 abstract_concepts.append(generalized)
                 category_mappings.setdefault(target_cat, []).append(f"{name} -> {generalized}")
 
-            fact_text = f"{name}（{desc}）" if desc else name
+            # 固有名詞＋概念のデュアル表記（可逆性保持）
+            dual_name = f"{name} [{generalized}]" if (generalized and generalized != name) else name
+            fact_text = f"{dual_name}（{desc}）" if desc else dual_name
+
             categorized_facts[target_cat].append({
                 "entity": name,
                 "concept": generalized or name,
+                "dual_name": dual_name,
                 "fact": fact_text,
                 "category": target_cat,
             })
@@ -113,10 +117,14 @@ class Layer3ConceptAbstractor:
             elif any(k in generalized_rel for k in ["装備", "遺物", "使役"]):
                 target_cat = "アイテム・装備"
 
-            edge_fact = f"{src} と {tgt} は「{rel}（{generalized_rel}）」の関係"
+            # デュアル関係性表記
+            dual_rel = f"{rel} [{generalized_rel}]" if (generalized_rel and generalized_rel != rel) else rel
+            edge_fact = f"{src} と {tgt} は「{dual_rel}」の関係"
+
             categorized_facts[target_cat].append({
                 "entity": f"{src}-{tgt}",
                 "concept": generalized_rel,
+                "dual_name": dual_rel,
                 "fact": edge_fact,
                 "category": target_cat,
             })
@@ -148,13 +156,13 @@ class Layer3ConceptAbstractor:
     ) -> str:
         """Dynamically detect category using labels and taxonomy concept (Step 44)."""
         # Explicit labels check
-        if any(l in ["Location", "Place", "City", "Country", "地理", "国家"] for l in labels):
+        if any(label in ["Location", "Place", "City", "Country", "地理", "国家"] for label in labels):
             return "地理・勢力"
-        if any(l in ["Item", "Weapon", "Artifact", "アイテム", "武器"] for l in labels):
+        if any(label in ["Item", "Weapon", "Artifact", "アイテム", "武器"] for label in labels):
             return "アイテム・装備"
-        if any(l in ["Skill", "Magic", "Ability", "スキル", "魔法"] for l in labels):
+        if any(label in ["Skill", "Magic", "Ability", "スキル", "魔法"] for label in labels):
             return "武術・スキル"
-        if any(l in ["Rule", "Lore", "WorldSetting", "設定"] for l in labels):
+        if any(label in ["Rule", "Lore", "WorldSetting", "設定"] for label in labels):
             return "核心設定"
 
         # Concept-based heuristic inference

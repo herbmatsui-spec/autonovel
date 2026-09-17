@@ -12,6 +12,7 @@ from prometheus_client import Counter
 
 from .circuit_breaker import LLMCircuitBreaker
 from .fallback_policy import FallbackPolicy
+from src.services.llm.provider_failover import ProviderFailoverManager
 
 
 llm_failover_total = Counter(
@@ -71,6 +72,8 @@ class ResilientLLMGateway:
         self.backoff_base_seconds = max(0.0, backoff_base_seconds)
         self.max_backoff_seconds = max(0.0, max_backoff_seconds)
         self._sleep = sleep or asyncio.sleep
+        # ProviderFailoverManager singleton for additional circuit breaker checks
+        self._failover_manager = ProviderFailoverManager()
 
     async def generate_text(
         self,
@@ -134,6 +137,12 @@ class ResilientLLMGateway:
             next_provider = self._next_candidate(candidates, attempt, seen)
             if not self.circuit_breaker.can_execute(provider):
                 last_unavailable = RuntimeError(f"Circuit breaker is OPEN for {provider}")
+                if next_provider:
+                    self._record_failover(provider, next_provider, "circuit_open")
+                continue
+            # Additional check using ProviderFailoverManager
+            if not self._failover_manager.breakers.get(provider, self._failover_manager.breakers["gemini"]).can_execute():
+                last_unavailable = RuntimeError(f"Failover manager circuit breaker is OPEN for {provider}")
                 if next_provider:
                     self._record_failover(provider, next_provider, "circuit_open")
                 continue

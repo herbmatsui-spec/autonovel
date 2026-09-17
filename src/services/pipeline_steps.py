@@ -653,7 +653,7 @@ class IllustrationPointGenerationStep(WorkflowStep):
                 reporter.report("⚠️ Bible データが見つかりません", "warning")
                 return True
 
-            plots = await engine.repo.plot.get_all_plots(ctx.book_id)
+            await engine.repo.plot.get_all_plots(ctx.book_id)
             episodes = await engine.repo.episode.get_all_by_book_id(ctx.book_id)
 
             # 2. キャラクター情報を抽出
@@ -670,7 +670,7 @@ class IllustrationPointGenerationStep(WorkflowStep):
 
             # 口絵用の挿絵ポイント（第1話の重要シーン）
             if episodes and len(episodes) > 0:
-                first_episode = episodes[0]
+                episodes[0]
                 ip_id = f"IP-{len(illustration_points)+1:03d}"
                 illustration_point = IllustrationPoint(
                     id=ip_id,
@@ -686,7 +686,7 @@ class IllustrationPointGenerationStep(WorkflowStep):
 
             # クライマックスシーン用の挿絵ポイント
             if len(episodes) >= 3:
-                climax_episode = episodes[len(episodes)//2]  # 中盤のエピソードをクライマックスとして扱う
+                episodes[len(episodes)//2]  # 中盤のエピソードをクライマックスとして扱う
                 ip_id = f"IP-{len(illustration_points)+1:03d}"
                 illustration_point = IllustrationPoint(
                     id=ip_id,
@@ -707,7 +707,7 @@ class IllustrationPointGenerationStep(WorkflowStep):
 
             # エンディング用の挿絵ポイント
             if episodes and len(episodes) > 0:
-                last_episode = episodes[-1]
+                episodes[-1]
                 ip_id = f"IP-{len(illustration_points)+1:03d}"
                 illustration_point = IllustrationPoint(
                     id=ip_id,

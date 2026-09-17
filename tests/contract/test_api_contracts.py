@@ -2,7 +2,6 @@
 
 レスポンス形状の不変性を確認し、破壊的変更を検知する。
 """
-import pytest
 from fastapi.testclient import TestClient
 
 print("[test module] About to import app", flush=True)
@@ -54,9 +53,6 @@ def test_graph_endpoint_response_shape():
 
 def test_graph_chunks_endpoint(client):
     """/api/graph/chunks レスポンス形状"""
-    import os
-    from sqlalchemy import inspect
-    from src.backend.database import SessionLocal
     resp = client.get("/api/graph/chunks")
     assert resp.status_code == 200
     data = resp.json()

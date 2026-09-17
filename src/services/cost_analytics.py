@@ -21,12 +21,12 @@ DEFAULT_PRICING: Dict[str, Tuple[float, float]] = {
 @dataclass
 class CostCalculator:
     pricing: Optional[Dict[str, Tuple[float, float]]] = None
-    
+
     def __post_init__(self) -> None:
         # Ensure default pricing is available
         if self.pricing is None:
             self.pricing = DEFAULT_PRICING.copy()
-    
+
     def estimate_cost_usd(self, input_tokens: int, output_tokens: int, model: Optional[str] = None) -> float:
         """トークン数とモデルから推定コスト（USD）を計算する。"""
         effective_model = model or self._task_to_model()
@@ -34,13 +34,13 @@ class CostCalculator:
         return round(
             (input_tokens / 1_000_000) * in_price + (output_tokens / 1_000_000) * out_price, 6
         )
-    
+
     def _task_to_model(self, task_type: str = None) -> str:
         """タスク種別をモデル名にマッピングする（環境変数を考慮）。"""
         if task_type is None:
             task_type = os.environ.get("LLM_TASK_TYPE", "writing")
         provider = os.environ.get("LLM_PROVIDER", "").lower()
-        
+
         if provider == "openrouter":
             mapping = {
                 "planning": "google/gemini-2.0-flash",
@@ -73,7 +73,7 @@ def check_budget_alert(current_cost: float, budget_limit: float) -> dict:
     """予算消費状況に基づいたアラート情報を返す。"""
     if budget_limit <= 0:
         return {"status": "unknown", "message": "Budget limit not set.", "ratio": 0.0}
-    
+
     ratio = current_cost / budget_limit
     if ratio >= 1.0:
         return {"status": "exceeded", "message": "Budget exceeded!", "ratio": ratio}

@@ -5,8 +5,8 @@ import os
 import pytest
 import time
 import redis
-from sqlalchemy import create_engine, event, text
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import sessionmaker
 try:
     from testcontainers.core.container import DockerContainer
     from testcontainers.postgres import PostgresContainer
@@ -37,7 +37,7 @@ def postgres_container():
         try:
             postgres.exec(["apt-get", "install", "-y", "postgresql-vector"])
         except Exception:
-            # If still fails, we'll try to create the extension from source? 
+            # If still fails, we'll try to create the extension from source?
             # But for now, we'll just note the error and hope the extension is available via other means.
             pass
     yield postgres
@@ -131,7 +131,7 @@ def chromadb_client(chadb_container):
     """ChromaDB クライアントフィクスチャ (テストごとにインスタンスを提供)."""
     # Wait a bit more for ChromaDB to fully initialize
     time.sleep(2)
-    
+
     # Import here to avoid issues if chromadb is not installed
     try:
         import chromadb
@@ -140,22 +140,22 @@ def chromadb_client(chadb_container):
         # Tests that need this fixture will need to handle the import themselves
         yield None
         return
-        
-    chromadb_host = chadb_container.get_container_host_ip()
-    chromadb_port = chadb_container.get_exposed_port(8000)
-    
+
+    chadb_container.get_container_host_ip()
+    chadb_container.get_exposed_port(8000)
+
     # Create ChromaDB client
     client = chromadb.HttpClient(host=chadb_host, port=int(chadb_port))
-    
+
     # Test connection
     try:
         client.heartbeat()
     except Exception:
         # If heartbeat fails, still yield the client - tests can handle connection issues
         pass
-    
+
     yield client
-    
+
     # Cleanup: delete all collections after each test
     try:
         collections = client.list_collections()

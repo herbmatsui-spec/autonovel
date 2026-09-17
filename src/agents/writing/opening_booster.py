@@ -15,7 +15,7 @@ from src.models.opening_booster import CliffhangerEvaluation, OpeningEpisodeConf
 from src.services.auditors.cliffhanger_scorer import score_cliffhanger
 
 if TYPE_CHECKING:
-    from src.agents.orchestrator import AgentContext, AgentResult
+    pass
 
 logger = logging.getLogger(__name__)
 

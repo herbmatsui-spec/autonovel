@@ -4,7 +4,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Optional, List
-from uuid import uuid4
 from enum import Enum
 
 from src.domain.value_objects.ids import NovelId, PlotId

@@ -152,7 +152,7 @@ async def get_skill_version() -> dict[str, Any]:
     }
 
 
-@router.post("/api/system/admin/book_score/recalc")
+@router.post("/api/system/admin/book_score/recalc", dependencies=[Depends(require_api_key)])
 async def recalc_all_book_scores() -> dict[str, Any]:
     """全書籍の BookScore を再計算する（管理者用・並列化対応）"""
     try:
@@ -223,7 +223,7 @@ class ImprovementPriorityItem(BaseModel):
     target_agent: str
 
 
-@router.get("/api/system/admin/book_score/improvement_priorities")
+@router.get("/api/system/admin/book_score/improvement_priorities", dependencies=[Depends(require_api_key)])
 async def get_improvement_priorities(book_id: int) -> dict[str, Any]:
     """書籍の改善優先順位を取得する（管理者用）"""
     try:
@@ -235,7 +235,7 @@ async def get_improvement_priorities(book_id: int) -> dict[str, Any]:
         db_manager = get_db_manager()
         async with db_manager.get_session() as session:
             book_score_repo = BookScoreRepository(session)
-            calculator = BookScoreCalculator(repository=book_score_repo)
+            BookScoreCalculator(repository=book_score_repo)
             all_scores = await book_score_repo.get_all_for_book(book_id)
 
         if not all_scores:
@@ -304,7 +304,7 @@ async def get_improvement_priorities(book_id: int) -> dict[str, Any]:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
-@router.get("/api/system/admin/skills/metrics")
+@router.get("/api/system/admin/skills/metrics", dependencies=[Depends(require_api_key)])
 async def get_skill_metrics() -> dict[str, Any]:
     """スキル実行メトリクスを取得する（デバッグ用）"""
     try:
@@ -329,7 +329,7 @@ class ABTestRequest(BaseModel):
     samples: int = 10
 
 
-@router.post("/api/system/admin/skills/ab_test")
+@router.post("/api/system/admin/skills/ab_test", dependencies=[Depends(require_api_key)])
 async def run_ab_test(req: ABTestRequest) -> dict[str, Any]:
     """A/Bテストを即時実行する"""
     try:
@@ -352,7 +352,7 @@ async def run_ab_test(req: ABTestRequest) -> dict[str, Any]:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
-@router.get("/api/system/admin/skills/ab_test/history")
+@router.get("/api/system/admin/skills/ab_test/history", dependencies=[Depends(require_api_key)])
 async def get_ab_test_history(skill_name: str | None = None) -> dict[str, Any]:
     """A/Bテスト履歴を取得する（簡易実装：メトリクスから取得）"""
     try:
@@ -382,7 +382,7 @@ class ABTestScheduleRequest(BaseModel):
     min_samples: int = 10
 
 
-@router.post("/api/system/admin/skills/ab_test/schedule")
+@router.post("/api/system/admin/skills/ab_test/schedule", dependencies=[Depends(require_api_key)])
 async def schedule_ab_test(req: ABTestScheduleRequest) -> dict[str, Any]:
     """定期的なA/Bテストをスケジュールする"""
     try:
@@ -406,7 +406,7 @@ async def schedule_ab_test(req: ABTestScheduleRequest) -> dict[str, Any]:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
-@router.delete("/api/system/admin/skills/ab_test/schedule/{task_id}")
+@router.delete("/api/system/admin/skills/ab_test/schedule/{task_id}", dependencies=[Depends(require_api_key)])
 async def cancel_ab_test_schedule(task_id: int) -> dict[str, Any]:
     """スケジュール済みA/Bテストをキャンセルする"""
     try:
@@ -469,7 +469,7 @@ class ABTestAutoPromoteRequest(BaseModel):
     auto_promote: bool = True
 
 
-@router.post("/api/system/admin/skills/ab_test/auto_promote")
+@router.post("/api/system/admin/skills/ab_test/auto_promote", dependencies=[Depends(require_api_key)])
 async def auto_promote_ab_winner(req: ABTestAutoPromoteRequest) -> dict[str, Any]:
     """A/Bテスト勝者バージョンを自動本番昇格する"""
     try:

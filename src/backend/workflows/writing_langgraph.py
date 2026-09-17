@@ -27,6 +27,9 @@ except ImportError:
     StateGraph = None  # type: ignore
     HAS_LANGGRAPH = False
 
+from src.backend.checkpoint_saver import CheckpointManager
+from src.domain.entities.checkpoint import CheckpointStatus
+
 logger = logging.getLogger(__name__)
 
 # ============================================================================
@@ -68,7 +71,13 @@ class WritingGraphState(dict[str, Any]):
     requires_user_review: bool
 
     # Status
+    # 注意: 'checkpoint_id' は langgraph の予約チャンネル名のため使用できない
     status: str
+    task_id: str
+    saved_checkpoint_id: str
+    step_index: int
+    resumed_from_step: int | None
+    is_resumed: bool
 
 
 class WritingGraphManager:
@@ -80,11 +89,11 @@ class WritingGraphManager:
 
     def __init__(self, manager):
         self.manager = manager  # GenerationLoopManager instance
-        self.workflow = self._build_graph()
         # チェックポインター設定（長時間運用対応）
         self.checkpointer = None
         if HAS_LANGGRAPH and MemorySaver is not None:
             self.checkpointer = MemorySaver()
+        self.workflow = self._build_graph()
         # メタデータ保持用
         self._checkpoint_metadata: dict[str, Any] = {}
         # 品質メトリクス収集（ジャンル別トレンド分析用）
@@ -93,6 +102,32 @@ class WritingGraphManager:
         self.metrics_collector = QualityMetricsCollector()
         # StreamingPlotScheduler 統合（依存関係管理用、None=未注入）
         self._scheduler: Any | None = None
+        # チェックポイントマネージャー設定
+        self.checkpoint_manager = None
+        self._pending_checkpoint_tasks: list = []
+        if hasattr(manager, "session_factory"):
+            self.checkpoint_manager = CheckpointManager(manager.session_factory)
+
+
+    def _save_checkpoint_if_needed(self, state: dict[str, Any], step_name: str, step_index: int) -> None:
+        """ステップ完了時にチェックポイントを保存"""
+        task_id = state.get("task_id")
+        if task_id and self.checkpoint_manager:
+            # record_step は同期メソッドの場合と非同期メソッドの場合があるため両対応
+            result = self.checkpoint_manager.record_step(
+                task_id=task_id,
+                step_name=step_name,
+                step_index=step_index,
+                state_payload={
+                    "ep_num": state.get("ep_num"),
+                    "draft": state.get("draft_content", ""),
+                    "audit_result": state.get("audit_result", {}),
+                    "ac_iter": state.get("ac_iter", 0),
+                },
+                status=CheckpointStatus.COMPLETED,
+            )
+            if asyncio.iscoroutine(result):
+                self._pending_checkpoint_tasks.append(result)
 
     def _build_graph(self):
         if not HAS_LANGGRAPH or StateGraph is None:
@@ -237,16 +272,23 @@ class WritingGraphManager:
                         logger.error(f"node_prepare failed after 3 attempts: {e}")
                         raise
 
-        from config.project_context import ProjectContext
-
-        base_max_ac_iter = ProjectContext.get_setting("actor_critic_max_iterations", 2)
+        # v5.0: 最大反復回数を1回に制限（全文再生成の多重ループ廃止）
+        try:
+            from config.project_context import ProjectContext
+            base_max_ac_iter = min(ProjectContext.get_setting("actor_critic_max_iterations", 1), 1)
+        except (ImportError, Exception):
+            base_max_ac_iter = 1
         max_ac_iter = 1 if ncs_score < 40 else base_max_ac_iter
+
+
 
         # 早期終了判定: NCSスコアが極めて高い場合はdogfeedスキップ
         if ncs_score >= 90:
             should_dogfeed = False
             logger.info(f"High NCS score ({ncs_score}), skipping dogfeed for Ep.{state['ep_num']}")
 
+        # チェックポイント保存
+        self._save_checkpoint_if_needed(state, "prepare", 0)
         return {
             "gen_ctx": gen_ctx,
             "max_ac_iter": max_ac_iter,
@@ -279,6 +321,8 @@ class WritingGraphManager:
                     logger.info(
                         f"Drafting completed for Ep.{state['ep_num']} (attempt {attempt + 1}), length: {len(content)}"
                     )
+                    # チェックポイント保存
+                    self._save_checkpoint_if_needed(state, "drafting", 1)
                     return {"draft_content": content, "final_meta": meta}
                 else:
                     logger.warning(
@@ -295,6 +339,8 @@ class WritingGraphManager:
 
         # 全リトライ失敗時
         logger.error(f"Drafting failed after 3 attempts for Ep.{state['ep_num']}: {last_error}")
+        # チェックポイント保存
+        self._save_checkpoint_if_needed(state, "drafting", 1)
         return {"draft_content": "", "final_meta": {}}
 
     async def node_audit(self, state: dict[str, Any]):
@@ -304,6 +350,8 @@ class WritingGraphManager:
         # easy_mode または品質が十分高い場合は早期終了
         if state["is_easy_mode"]:
             logger.info(f"Easy mode for Ep.{state['ep_num']}, skipping detailed audit")
+            # チェックポイント保存
+            self._save_checkpoint_if_needed(state, "audit", 2)
             return {
                 "is_integrity_ok": True,
                 "is_causal_ok": True,
@@ -359,6 +407,8 @@ class WritingGraphManager:
                 logger.info(
                     f"Audit completed for Ep.{state['ep_num']}: integrity={is_integrity_ok}, causal={is_causal_ok}, rate={rate:.2f}"
                 )
+                # チェックポイント保存
+                self._save_checkpoint_if_needed(state, "audit", 2)
                 return {
                     "is_integrity_ok": is_integrity_ok,
                     "is_causal_ok": is_causal_ok,
@@ -378,6 +428,8 @@ class WritingGraphManager:
                     retry_delay = min(retry_delay * RETRY_BACKOFF_FACTOR, MAX_RETRY_DELAY)
 
         logger.error(f"Audit failed after 3 attempts for Ep.{state['ep_num']}: {last_error}")
+        # チェックポイント保存
+        self._save_checkpoint_if_needed(state, "audit", 2)
         return {
             "is_integrity_ok": False,
             "is_causal_ok": False,
@@ -448,8 +500,13 @@ class WritingGraphManager:
         else:  # timeout
             return "timeout"
 
+    def _should_continue_critic(self, state: dict[str, Any]) -> str:
+        """v5.0 早期終了判定（route_after_auditのエイリアス）"""
+        return self.route_after_audit(state)
+
     def route_after_audit(self, state: dict[str, Any]) -> str:
         """監査後のルート分岐 - 早期終了条件を積極的に適用"""
+
         # easy_mode は即座に終了
         if state.get("is_easy_mode", False):
             return "finish"
@@ -470,30 +527,31 @@ class WritingGraphManager:
                 )
                 return "review_wait"
 
-        # 整合性・因果性双方がOKで、反復回数の上限に達していない場合
+        # 整合性・因果性双方がOKの場合 (v5.0 Early Exit)
         if state.get("is_integrity_ok") and state.get("is_causal_ok"):
-            # 反復回数が残っているかチェック
-            if state.get("ac_iter", 0) >= state.get("max_ac_iter", 2):
-                logger.info(
-                    f"Max iterations ({state.get('max_ac_iter', 2)}) reached for Ep.{state.get('ep_num')}, finishing"
-                )
-                return "finish"
-            # 重監査モードで、まだ改善の余地がある場合
-            if state.get("should_heavy_audit", True) and state.get("ac_iter", 0) < state.get(
-                "max_ac_iter", 2
-            ):
-                return "critic"
+            logger.info(
+                f"v5.0 Early Exit: Integrity and Causality passed for Ep.{state.get('ep_num')}, finishing immediately"
+            )
             return "finish"
+
+        # 反復回数の上限に達した場合は終了
+        if state.get("ac_iter", 0) >= state.get("max_ac_iter", 1):
+            logger.info(
+                f"Max iterations ({state.get('max_ac_iter', 1)}) reached for Ep.{state.get('ep_num')}, finishing"
+            )
+            return "finish"
+
 
         # 因果性のみ失敗で重監査モードの場合
         if not state.get("is_causal_ok") and state.get("should_heavy_audit", True):
             return "heal"
 
         # 反復可能で重監査モードの場合
-        if state.get("ac_iter", 0) < state.get("max_ac_iter", 2) and state.get(
+        if state.get("ac_iter", 0) < state.get("max_ac_iter", 1) and state.get(
             "should_heavy_audit", True
         ):
             return "critic"
+
 
         return "finish"
 
@@ -517,6 +575,8 @@ class WritingGraphManager:
                     None,
                 )
                 logger.info(f"Critic completed for Ep.{state['ep_num']}: triggered={triggered}")
+                # チェックポイント保存
+                self._save_checkpoint_if_needed(state, "critic", 3)
                 return {"critic_triggered": triggered}
             except Exception as e:
                 last_error = e
@@ -530,6 +590,11 @@ class WritingGraphManager:
 
     def route_after_critic(self, state: dict[str, Any]) -> str:
         """批評後のルート分岐"""
+        tracker = state.get("budget_tracker")
+        if tracker is not None and not tracker.is_within_budget():
+            logger.info(f"Budget exceeded, forcing finish for Ep.{state.get('ep_num')}")
+            return "finish"
+
         if state.get("critic_triggered"):
             # 最大反復回数に達していない場合のみリトライ
             if state.get("ac_iter", 0) < state.get("max_ac_iter", 2):
@@ -544,9 +609,22 @@ class WritingGraphManager:
         return "finish"
 
     async def node_healing(self, state: WritingGraphState):
-        """修復ノード - リトライロジック付き"""
+        """修復ノード - v5.0 1パッチPDCA対応"""
         logger.info(f"LangGraph: Healing Ep.{state['ep_num']}")
+        
+        # v5.0 1パッチPDCA: UnifiedAuditorが提示した局所修正パッチがある場合は全文再生成を行わずに適用
+        actionable_patch = state.get("actionable_patch")
+        if actionable_patch and state.get("draft_content"):
+            logger.info(f"v5.0 1-Patch PDCA: Applying focused single-patch instead of full rewrite for Ep.{state['ep_num']}")
+            healed_content = state["draft_content"] + "\n\n" + actionable_patch
+            return {
+                "draft_content": healed_content,
+                "is_causal_ok": True,
+                "causal_reason": "healed_via_actionable_patch",
+            }
+
         blueprint = state["context"]["plot"].detailed_blueprint
+
 
         # 指数関数的バックオフ付きリトライ
         retry_delay = DEFAULT_RETRY_DELAY
@@ -630,14 +708,22 @@ class WritingGraphManager:
         logger.info(f"LangGraph: Finalizing Ep.{state.get('ep_num')}")
 
         ep_num = state.get("ep_num")
-        # メタデータを保存
+        # v5.0 メタデータ記録（レイテンシ・反復数）
+        start_time = state.get("start_time", time.time())
+        latency_sec = time.time() - start_time
+        final_meta = state.get("final_meta") or {}
+        final_meta["latency_sec"] = latency_sec
+        final_meta["ac_iterations"] = state.get("ac_iter", 0)
+
         self._checkpoint_metadata[ep_num] = {
             "ac_iter": state.get("ac_iter", 0),
             "rate": state.get("rate", 0),
             "is_integrity_ok": state.get("is_integrity_ok", False),
             "is_causal_ok": state.get("is_causal_ok", False),
+            "latency_sec": latency_sec,
             "timestamp": time.time(),
         }
+
 
         # 品質メトリクスを記録
         try:
@@ -683,7 +769,27 @@ class WritingGraphManager:
         logger.info(
             f"Finalized Ep.{ep_num}: integrity={state.get('is_integrity_ok')}, causal={state.get('is_causal_ok')}, dogfeed={state.get('dogfeed_ok', True)}"
         )
-        return {"status": "completed"}
+
+        # v5.0 Step 12: 伏線ステータス自動更新（章完了トランザクションに統合）
+        try:
+            foreshadowing_service = state.get("foreshadowing_service")
+            book_id = state.get("book_id")
+            draft_content = state.get("draft_content", "")
+            if foreshadowing_service and book_id and draft_content:
+                resolved_titles = await foreshadowing_service.check_and_resolve(
+                    book_id=book_id,
+                    episode_num=ep_num,
+                    draft_text=draft_content,
+                )
+                if resolved_titles:
+                    logger.info(
+                        f"Foreshadowing auto-resolved in Ep.{ep_num}: {resolved_titles}"
+                    )
+                    final_meta["resolved_foreshadowings"] = resolved_titles
+        except Exception as e:
+            logger.warning(f"Foreshadowing auto-resolve failed for Ep.{ep_num}: {e}")
+
+        return {"status": "completed", "final_meta": final_meta}
 
     def _create_initial_state(
         self,
@@ -695,12 +801,19 @@ class WritingGraphManager:
         is_easy_mode: bool,
     ) -> dict[str, Any]:
         """初期状態を生成（フォールバック・LangGraph共通）"""
-        from config.project_context import ProjectContext
+        # v5.0: 最大反復回数を1回にハード制限
+        try:
+            from config.project_context import ProjectContext
+            base_max = min(ProjectContext.get_setting("actor_critic_max_iterations", 1), 1)
+        except (ImportError, Exception):
+            base_max = 1
 
-        base_max = ProjectContext.get_setting("actor_critic_max_iterations", 2)
+
         return {
             "ep_num": ep_num,
+            "start_time": time.time(),
             "passion": passion,
+
             "is_easy_mode": is_easy_mode,
             "context": ctx,
             "sys_inst": sys_inst,
@@ -785,7 +898,13 @@ class WritingGraphManager:
             )
 
         try:
-            res = await self.workflow.ainvoke(initial_state)
+            config = {
+                "configurable": {
+                    "thread_id": f"ep_{ep_num}_{initial_state.get('task_id', 'run')}",
+                    "checkpoint_ns": f"ep_{ep_num}",
+                }
+            }
+            res = await self.workflow.ainvoke(initial_state, config=config)
             logger.info(
                 f"LangGraph completed for Ep.{ep_num}: integrity={res.get('is_integrity_ok')}, causal={res.get('is_causal_ok')}"
             )

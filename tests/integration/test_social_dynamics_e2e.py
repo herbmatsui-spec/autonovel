@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
 from src.agents.social.manager import SocialInteractionManager
 from src.agents.social.models import RelationshipMetrics
@@ -15,7 +15,7 @@ from src.core.container import AppContainer
 async def test_social_dynamics_lifecycle_e2e():
     """Verify full lifecycle: relationship creation -> scene update -> history tracking -> prune."""
     db = AppContainer.db()
-    
+
     # Ensure tables exist
     async_eng = getattr(db, "engine", None)
     if async_eng is not None and hasattr(async_eng, "begin"):

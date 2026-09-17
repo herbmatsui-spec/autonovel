@@ -16,7 +16,7 @@ class AudioCombiner:
         pauses: Optional[list[float]] = None,
     ) -> bytes:
         """クリップを可変ポーズで結合。
-        
+
         Args:
             clips: WAVバイト列のリスト
             silence_duration_sec: デフォルト無音時間（秒）
@@ -39,14 +39,14 @@ class AudioCombiner:
                 for i, clip in enumerate(valid_clips):
                     with wave.open(io.BytesIO(clip), "rb") as in_wav:
                         out_wav.writeframes(in_wav.readframes(in_wav.getnframes()))
-                    
+
                     # 最後のクリップでない場合、ポーズを挿入
                     if i < len(valid_clips) - 1:
                         if pauses and i < len(pauses):
                             pause_sec = pauses[i]
                         else:
                             pause_sec = silence_duration_sec
-                        
+
                         if pause_sec > 0:
                             silence_frames = int(framerate * pause_sec)
                             silence_data = b"\x00" * (silence_frames * nchannels * sampwidth)
