@@ -10,7 +10,8 @@
     "test": "vitest",
     "test:ci": "vitest run --coverage",
     "lint": "eslint .",
-    "typecheck": "node --max-old-space-size=8192 ./node_modules/typescript/bin/tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "type:sync": "node scripts/generate-types.mjs",
     "export:openapi": "python ../scripts/export_openapi.py",
     "generate:api-types": "npm run export:openapi && npx openapi-typescript ../docs/openapi.json -o src/types/api.generated.ts"
   },
