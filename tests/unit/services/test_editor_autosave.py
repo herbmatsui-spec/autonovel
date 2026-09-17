@@ -12,7 +12,7 @@ async def test_writing_manager_saves_checkpoint():
     wgm = WritingGraphManager(mock_manager)
 
     # Replace the checkpoint_manager with a mock
-    mock_checkpoint_manager = AsyncMock()
+    mock_checkpoint_manager = MagicMock()
     wgm.checkpoint_manager = mock_checkpoint_manager
 
     # Prepare a state dict
@@ -28,7 +28,7 @@ async def test_writing_manager_saves_checkpoint():
     wgm._save_checkpoint_if_needed(state, "drafting", 1)
 
     # Verify that checkpoint_manager.record_step was called
-    mock_checkpoint_manager.record_step.assert_awaited_once()
+    mock_checkpoint_manager.record_step.assert_called_once()
     # Check the arguments
     call_args = mock_checkpoint_manager.record_step.call_args
     assert call_args is not None

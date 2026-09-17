@@ -104,8 +104,10 @@ class WritingGraphManager:
         self._scheduler: Any | None = None
         # チェックポイントマネージャー設定
         self.checkpoint_manager = None
+        self._pending_checkpoint_tasks: list = []
         if hasattr(manager, "session_factory"):
             self.checkpoint_manager = CheckpointManager(manager.session_factory)
+
 
     def _save_checkpoint_if_needed(self, state: dict[str, Any], step_name: str, step_index: int) -> None:
         """ステップ完了時にチェックポイントを保存"""
@@ -525,7 +527,7 @@ class WritingGraphManager:
                 )
                 return "review_wait"
 
-        # v5.0 Early Exit: 整合性・因果性双方がOKの場合、余分な再監査を行わずに即座にfinishへ
+        # 整合性・因果性双方がOKの場合 (v5.0 Early Exit)
         if state.get("is_integrity_ok") and state.get("is_causal_ok"):
             logger.info(
                 f"v5.0 Early Exit: Integrity and Causality passed for Ep.{state.get('ep_num')}, finishing immediately"
@@ -538,6 +540,7 @@ class WritingGraphManager:
                 f"Max iterations ({state.get('max_ac_iter', 1)}) reached for Ep.{state.get('ep_num')}, finishing"
             )
             return "finish"
+
 
         # 因果性のみ失敗で重監査モードの場合
         if not state.get("is_causal_ok") and state.get("should_heavy_audit", True):

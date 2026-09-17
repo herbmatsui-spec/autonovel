@@ -48,7 +48,8 @@ async def test_node_prepare(make_manager):
 
     # アサーション
     assert result["gen_ctx"] == "fake_gen_ctx"
-    assert result["max_ac_iter"] == 2  # デフォルト値 (base_max from ProjectContext)
+    assert result["max_ac_iter"] == 1  # v5.0: 最大反復回数は1回に制限
+
     assert not result["should_heavy_audit"]
     assert result["should_dogfeed"]
     assert not result["should_beat_decompose"]
