@@ -72,12 +72,31 @@ async def audit_consistency(
     session: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> ConsistencyAuditResponse:
-    """執筆中の本文と GraphRAG 設定情報とのリアルタイム矛盾診断"""
+    """執筆中の本文と設定情報とのリアルタイム矛盾診断"""
     try:
         return await editorial_service.audit_consistency(session, req)
     except Exception as e:
         logger.error(f"Error in audit_consistency endpoint: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/audit")
+async def audit_fast_hybrid(
+    draft_text: str,
+    character_profiles: str = "",
+    plot_spec: str = "",
+    current_user: User = Depends(get_current_user),
+):
+    """v5.0: 二層ハイブリッド監査（静的ルール解析＋定性判定）エンドポイント"""
+    try:
+        from src.agents.specialists.unified_auditor import UnifiedAuditor
+        auditor = UnifiedAuditor()
+        report = await auditor.audit(draft_text, character_profiles, plot_spec)
+        return report.model_dump()
+    except Exception as e:
+        logger.error(f"Error in audit_fast_hybrid: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 
 @router.post("/next-beats", response_model=NextBeatsResponse)

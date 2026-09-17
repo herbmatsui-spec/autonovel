@@ -106,6 +106,19 @@ class EasyModePipeline:
                 "episodes": 1
             }
 
+    async def audit_draft(self, draft_text: str, character_profiles: str = "", plot_spec: str = "") -> dict[str, Any]:
+        """v5.0: UnifiedAuditor による高速二層監査"""
+        from src.agents.specialists.unified_auditor import UnifiedAuditor
+        auditor = UnifiedAuditor()
+        report = await auditor.audit(draft_text, character_profiles, plot_spec)
+        return {
+            "is_acceptable": report.is_acceptable,
+            "final_score": report.final_score,
+            "quantitative_score": report.quantitative_score,
+            "critique": report.qualitative.critique,
+        }
+
 
 # 後方互換性のためのエイリアス
 __all__ = ["EasyModePipeline"]
+
