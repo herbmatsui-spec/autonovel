@@ -147,3 +147,55 @@ class TestFalAiAdapter:
         payload = call_args[1]["json"]
         assert payload["image_size"] == "landscape_16_9"
         assert payload["num_inference_steps"] <= 10
+
+
+# ── Step 4: MockImageAdapter ──
+
+class TestMockImageAdapter:
+    def test_mock_adapter_provider_name(self):
+        from src.services.illustration.adapters.mock_adapter import MockImageAdapter
+        adapter = MockImageAdapter()
+        assert adapter.provider_name == "mock"
+
+    @pytest.mark.asyncio
+    async def test_mock_adapter_generate_image(self):
+        from src.services.illustration.adapters.mock_adapter import MockImageAdapter
+        adapter = MockImageAdapter()
+        req = ImagePromptRequest(prompt="テスト挿絵", aspect_ratio="1:1", style="anime")
+        res = await adapter.generate_image(req)
+
+        assert res.provider == "mock"
+        assert res.format == "png"
+        assert res.cost_usd == 0.0
+        assert len(res.image_bytes) > 0
+        assert res.metadata["mock_prompt"] == "テスト挿絵"
+
+
+# ── Step 5 & 6: get_image_adapter Factory ──
+
+class TestImageFactory:
+    def test_factory_returns_mock_default(self, monkeypatch):
+        from src.services.illustration.factory import get_image_adapter
+        monkeypatch.delenv("IMAGE_PROVIDER", raising=False)
+        adapter = get_image_adapter()
+        assert adapter.provider_name == "mock"
+
+    def test_factory_returns_mock_on_unknown(self):
+        from src.services.illustration.factory import get_image_adapter
+        adapter = get_image_adapter("unknown_provider_xyz")
+        assert adapter.provider_name == "mock"
+
+    def test_factory_returns_dalle3(self, monkeypatch):
+        from src.services.illustration.factory import get_image_adapter
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-factory-test")
+        adapter = get_image_adapter("dalle3")
+        assert adapter.provider_name == "dalle3"
+        assert adapter.api_key == "sk-factory-test"
+
+    def test_factory_returns_fal_ai(self, monkeypatch):
+        from src.services.illustration.factory import get_image_adapter
+        monkeypatch.setenv("FAL_KEY", "fal-factory-test")
+        adapter = get_image_adapter("fal")
+        assert adapter.provider_name == "fal_ai"
+        assert adapter.api_key == "fal-factory-test"
+
