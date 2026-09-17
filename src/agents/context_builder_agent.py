@@ -431,7 +431,41 @@ class ContextBuilderAgent(SkillAgent):
             "rag_context": rag_context,
             "compressed_context": compressed_context,
             "compression_stats": compression_stats,
+            "foreshadowing_ctx": self.format_unresolved_foreshadowings(
+                plot_dict.get("foreshadowings", [])
+            ),
         }
+
+    @staticmethod
+    def format_unresolved_foreshadowings(foreshadowings: list) -> str:
+        """未回収伏線一覧をプロンプト注入用テキストにフォーマットする。
+
+        Args:
+            foreshadowings: ForeshadowingModel or dict のリスト
+
+        Returns:
+            プロンプトに挿入可能な日本語テキスト
+        """
+        if not foreshadowings:
+            return "なし"
+        lines = []
+        for f in foreshadowings:
+            if isinstance(f, dict):
+                title = f.get("title", "不明")
+                planted = f.get("planted_episode", "?")
+                desc = f.get("description", "")
+                target = f.get("target_episode")
+            else:
+                title = getattr(f, "title", "不明")
+                planted = getattr(f, "planted_episode", "?")
+                desc = getattr(f, "description", "")
+                target = getattr(f, "target_episode", None)
+            line = f"- 【伏線: {title}】(設置: 第{planted}話"
+            if target:
+                line += f", 回収目標: 第{target}話"
+            line += f") {desc}"
+            lines.append(line)
+        return "\n".join(lines)
 
     # デリゲートメソッド群（repo を直接受け取るように変更）
     async def _get_plot(self, repo: Any, book_id: int, branch_id: int, ep_num: int) -> Any | None:
