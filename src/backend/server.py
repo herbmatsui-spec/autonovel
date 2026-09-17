@@ -23,6 +23,7 @@ from src.backend.routers import (
     anti_ai,
     books,
     branches,
+    chapters,
     commercial,
     cost,
     easy_mode,
@@ -40,6 +41,7 @@ from src.backend.routers import (
     novel,
     patches,
     plots,
+    projects,
     prompt_versions,
     streaming,
     styles,
@@ -52,6 +54,7 @@ from src.backend.routers import (
     billing,
     billing_webhook,
     trace,
+    platform_export,
 )
 
 logger = logging.getLogger(__name__)
@@ -122,6 +125,7 @@ app.include_router(graph.router)
 app.include_router(editor.router)
 app.include_router(system.router)
 app.include_router(export.router)
+app.include_router(platform_export.router)
 
 # 管理者・監査ルーター登録
 app.include_router(admin_audit_router)
@@ -132,6 +136,8 @@ app.include_router(admin_enrichment_router)
 app.include_router(books.router)
 app.include_router(plots.router)
 app.include_router(episodes.router)
+app.include_router(chapters.router)
+app.include_router(projects.router)
 app.include_router(tasks.router)
 app.include_router(patches.router)
 app.include_router(issues.router)
