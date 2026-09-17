@@ -498,8 +498,13 @@ class WritingGraphManager:
         else:  # timeout
             return "timeout"
 
+    def _should_continue_critic(self, state: dict[str, Any]) -> str:
+        """v5.0 早期終了判定（route_after_auditのエイリアス）"""
+        return self.route_after_audit(state)
+
     def route_after_audit(self, state: dict[str, Any]) -> str:
         """監査後のルート分岐 - 早期終了条件を積極的に適用"""
+
         # easy_mode は即座に終了
         if state.get("is_easy_mode", False):
             return "finish"
@@ -700,14 +705,22 @@ class WritingGraphManager:
         logger.info(f"LangGraph: Finalizing Ep.{state.get('ep_num')}")
 
         ep_num = state.get("ep_num")
-        # メタデータを保存
+        # v5.0 メタデータ記録（レイテンシ・反復数）
+        start_time = state.get("start_time", time.time())
+        latency_sec = time.time() - start_time
+        final_meta = state.get("final_meta") or {}
+        final_meta["latency_sec"] = latency_sec
+        final_meta["ac_iterations"] = state.get("ac_iter", 0)
+
         self._checkpoint_metadata[ep_num] = {
             "ac_iter": state.get("ac_iter", 0),
             "rate": state.get("rate", 0),
             "is_integrity_ok": state.get("is_integrity_ok", False),
             "is_causal_ok": state.get("is_causal_ok", False),
+            "latency_sec": latency_sec,
             "timestamp": time.time(),
         }
+
 
         # 品質メトリクスを記録
         try:
@@ -775,7 +788,9 @@ class WritingGraphManager:
 
         return {
             "ep_num": ep_num,
+            "start_time": time.time(),
             "passion": passion,
+
             "is_easy_mode": is_easy_mode,
             "context": ctx,
             "sys_inst": sys_inst,
