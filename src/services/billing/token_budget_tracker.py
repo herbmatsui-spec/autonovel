@@ -1,11 +1,8 @@
 """リアルタイムトークンバジェットトラッカー。"""
 from __future__ import annotations
 from src.services.billing.cost_budget_guard import CostBudgetConfig
+from src.core.exceptions import CostBudgetExceededError
 
-
-class CostBudgetExceededError(Exception):
-    """設定されたトークンまたは原価予算の上限を超過した場合の例外。"""
-    pass
 
 
 class TokenBudgetTracker:

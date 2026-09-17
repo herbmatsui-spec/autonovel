@@ -11,7 +11,8 @@ import logging
 import re
 from typing import Any
 
-from src.models import CharacterRegistry
+from src.models.character import CharacterRegistry
+
 
 logger = logging.getLogger(__name__)
 

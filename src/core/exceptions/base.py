@@ -209,6 +209,26 @@ class ValidationError(HegemonyError):
         )
 
 
+class CostBudgetExceededError(HegemonyError):
+    """設定されたトークンまたは原価予算の上限を超過した場合の例外。"""
+
+    def __init__(
+        self,
+        message: str = "トークンまたはコストの予算上限を超過しました",
+        status_code: int = 429,
+        error_code: str = "COST_BUDGET_EXCEEDED",
+        original: Exception | None = None,
+        **kwargs,
+    ):
+        super().__init__(
+            message=message,
+            status_code=status_code,
+            error_code=error_code,
+            original=original,
+            **kwargs,
+        )
+
+
 class NotFoundError(HegemonyError):
     """リソース未検出エラー"""
 

@@ -25,8 +25,9 @@ from .base import (
     NotFoundError,
     PipelineError,
     ValidationError,
+    CostBudgetExceededError,
 )
-from src.services.billing.token_budget_tracker import CostBudgetExceededError
+
 from .phase3 import (
     CompressionCacheError,
     CompressionConfigError,
