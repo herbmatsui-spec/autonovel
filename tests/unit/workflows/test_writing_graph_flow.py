@@ -137,3 +137,7 @@ async def test_writing_graph_flow_with_mocked_workflow():
         # 渡された引数を確認
         call_args = mock_workflow.ainvoke.call_args[0][0]
         assert call_args == initial_state
+        call_kwargs = mock_workflow.ainvoke.call_args[1]
+        assert "config" in call_kwargs
+        assert "configurable" in call_kwargs["config"]
+        assert "thread_id" in call_kwargs["config"]["configurable"]

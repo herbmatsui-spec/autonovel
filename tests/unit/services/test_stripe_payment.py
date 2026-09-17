@@ -12,11 +12,13 @@ async def test_stripe_webhook_grants_credits():
 
     # Mock database session
     mock_session = AsyncMock()
+    mock_user = MagicMock(id=1, credits=10, stripe_customer_id="cus_test_123", plan_tier="free")
     # Mock the query to get user by stripe_customer_id
     mock_result = AsyncMock()
-    mock_result.scalar_one_or_none = AsyncMock(return_value=MagicMock(id=1, credits=10, stripe_customer_id="cus_test_123"))
+    mock_result.scalar_one_or_none = AsyncMock(return_value=mock_user)
     mock_session.execute = AsyncMock(return_value=mock_result)
     mock_session.commit = AsyncMock()
+    mock_session.merge = AsyncMock(return_value=mock_user)
 
     # Mock Stripe.Webhook.construct_event to return our event
     with patch("stripe.Webhook.construct_event") as mock_construct:
@@ -30,13 +32,9 @@ async def test_stripe_webhook_grants_credits():
             )
 
             # Mock the get_credits_for_price_id function to return 100 credits
-            with patch("src.config.billing_plans.get_credits_for_price_id", return_value=100):
+            with patch("src.backend.routers.billing_webhook.get_credits_for_price_id", return_value=100):
                 # Mock the get_tier_for_price_id function
-                with patch("src.config.billing_plans.get_tier_for_price_id", return_value="pro"):
-                    # Mock the user repository to update the user
-                    mock_user = MagicMock(id=1, credits=10, stripe_customer_id="cus_test_123", plan_tier="free")
-                    # We need to mock the session.merge or session.add to update the user
-                    mock_session.merge = AsyncMock(return_value=mock_user)
+                with patch("src.backend.routers.billing_webhook.get_tier_for_price_id", return_value="pro"):
 
                     # Call the handler
                     await handle_stripe_webhook(mock_request, db=mock_session)

@@ -837,7 +837,13 @@ class WritingGraphManager:
             )
 
         try:
-            res = await self.workflow.ainvoke(initial_state)
+            config = {
+                "configurable": {
+                    "thread_id": f"ep_{ep_num}_{initial_state.get('task_id', 'run')}",
+                    "checkpoint_ns": f"ep_{ep_num}",
+                }
+            }
+            res = await self.workflow.ainvoke(initial_state, config=config)
             logger.info(
                 f"LangGraph completed for Ep.{ep_num}: integrity={res.get('is_integrity_ok')}, causal={res.get('is_causal_ok')}"
             )

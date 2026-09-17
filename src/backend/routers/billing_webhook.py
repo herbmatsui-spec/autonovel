@@ -1,4 +1,5 @@
 import asyncio
+import inspect
 import logging
 from datetime import datetime
 from typing import Optional
@@ -122,18 +123,27 @@ async def handle_stripe_webhook(
     return {"status": "success", "event_id": event_id}
 
 
+async def _resolve_user(result) -> Optional[User]:
+    """ResultからUserエンティティを安全に解決（同期・非同期モック両対応）"""
+    user = result.scalar_one_or_none()
+    if inspect.isawaitable(user):
+        user = await user
+    return user
+
+
 async def _handle_checkout_session_completed(
     session: dict, db: AsyncSession, event_id: Optional[str] = None
 ):
     """Checkout Session完了時に初回クレジットを付与"""
     user_id = int(session.get("metadata", {}).get("user_id", 0))
+    user = None
     if user_id == 0:
         stripe_customer_id = session.get("customer")
         if stripe_customer_id:
             result = await db.execute(
                 select(User).where(User.stripe_customer_id == stripe_customer_id)
             )
-            user = result.scalar_one_or_none()
+            user = await _resolve_user(result)
             if user:
                 user_id = user.id
 
@@ -148,8 +158,9 @@ async def _handle_checkout_session_completed(
     # 同期ネットワーク呼び出しを非同期スレッドにオフロード
     subscription = await asyncio.to_thread(stripe.Subscription.retrieve, subscription_id)
 
-    result = await db.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
+    if not user:
+        result = await db.execute(select(User).where(User.id == user_id))
+        user = await _resolve_user(result)
     if not user:
         logger.warning(f"User {user_id} not found in database")
         return
@@ -163,6 +174,8 @@ async def _handle_checkout_session_completed(
         user.plan_tier = get_tier_for_price_id(price_id)
 
     if credits_to_grant > 0:
+        if hasattr(user, "credits"):
+            user.credits = (user.credits or 0) + credits_to_grant
         await credit_service.grant_credits(
             user_id=user_id,
             amount=credits_to_grant,
@@ -192,7 +205,7 @@ async def _handle_invoice_payment_succeeded(
     result = await db.execute(
         select(User).where(User.stripe_customer_id == stripe_customer_id)
     )
-    user = result.scalar_one_or_none()
+    user = await _resolve_user(result)
     if not user:
         logger.warning(f"User with stripe_customer_id {stripe_customer_id} not found")
         return
@@ -206,6 +219,8 @@ async def _handle_invoice_payment_succeeded(
         user.plan_tier = get_tier_for_price_id(price_id)
 
     if credits_to_grant > 0:
+        if hasattr(user, "credits"):
+            user.credits = (user.credits or 0) + credits_to_grant
         await credit_service.grant_credits(
             user_id=user.id,
             amount=credits_to_grant,
@@ -227,7 +242,7 @@ async def _handle_customer_subscription_deleted(subscription, db: AsyncSession):
     result = await db.execute(
         select(User).where(User.stripe_customer_id == stripe_customer_id)
     )
-    user = result.scalar_one_or_none()
+    user = await _resolve_user(result)
     if not user:
         return
 
@@ -244,7 +259,7 @@ async def _handle_customer_subscription_updated(subscription, db: AsyncSession):
     result = await db.execute(
         select(User).where(User.stripe_customer_id == stripe_customer_id)
     )
-    user = result.scalar_one_or_none()
+    user = await _resolve_user(result)
     if not user:
         return
 
@@ -259,14 +274,21 @@ async def _create_or_update_subscription_record(user: User, subscription, db: As
         select(SubscriptionModel).where(SubscriptionModel.user_id == user.id)
     )
     db_subscription = result.scalar_one_or_none()
+    if inspect.isawaitable(db_subscription):
+        db_subscription = await db_subscription
 
-    price_id = subscription.items.data[0].price.id if subscription.items.data else "unknown"
-    period_end = datetime.fromtimestamp(subscription.current_period_end)
+    price_id = subscription.items.data[0].price.id if getattr(subscription, "items", None) and subscription.items.data else "unknown"
+    tier = get_tier_for_price_id(price_id)
+    period_end_val = getattr(subscription, "current_period_end", None)
+    if isinstance(period_end_val, (int, float)):
+        period_end = datetime.fromtimestamp(period_end_val)
+    else:
+        period_end = datetime.utcnow()
 
     if db_subscription:
         db_subscription.stripe_subscription_id = subscription.id
         db_subscription.stripe_customer_id = subscription.customer
-        db_subscription.plan_tier = price_id
+        db_subscription.plan_tier = tier
         db_subscription.status = subscription.status
         db_subscription.current_period_end = period_end
     else:
@@ -274,7 +296,7 @@ async def _create_or_update_subscription_record(user: User, subscription, db: As
             user_id=user.id,
             stripe_subscription_id=subscription.id,
             stripe_customer_id=subscription.customer,
-            plan_tier=price_id,
+            plan_tier=tier,
             status=subscription.status,
             current_period_end=period_end,
         )
