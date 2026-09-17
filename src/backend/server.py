@@ -55,6 +55,7 @@ from src.backend.routers import (
     billing_webhook,
     trace,
     platform_export,
+    stream_writing,
 )
 
 logger = logging.getLogger(__name__)
@@ -126,6 +127,7 @@ app.include_router(editor.router)
 app.include_router(system.router)
 app.include_router(export.router)
 app.include_router(platform_export.router)
+app.include_router(stream_writing.router)
 
 # 管理者・監査ルーター登録
 app.include_router(admin_audit_router)

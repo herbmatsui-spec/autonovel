@@ -51,6 +51,7 @@ PUBLIC_PREFIXES: tuple[str, ...] = (
     "/favicon",
     "/docs",
     "/redoc",
+    "/api/stream",
 )
 
 
