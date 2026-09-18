@@ -43,8 +43,9 @@ describe("StudioWorkspace component", () => {
       </NovelProvider>
     );
 
-    // 左ペインに NovelContext の初期値が反映されていること
-    expect(screen.getByDisplayValue("アルト")).toBeInTheDocument();
+    // 左ペインに ChapterOutlineTree が描画され、章データが反映されていること
+    expect(screen.getByTestId("chapter-outline-tree")).toBeInTheDocument();
+    expect(screen.getByText("第1話 運命の覚醒")).toBeInTheDocument();
 
     // 中央エディタに初期テキストが存在すること
     expect(screen.getByTestId("editor-textarea")).toHaveValue(
@@ -98,5 +99,21 @@ describe("StudioWorkspace component", () => {
     await user.click(screen.getByTestId("tab-studio-multimedia"));
 
     expect(window.localStorage.getItem("autonovel.studioTab")).toBe("multimedia");
+  });
+
+  it("renders zen writing screen when layoutMode is zen", () => {
+    // localStorageにzenを設定した状態でレンダリング
+    window.localStorage.setItem("autonovel.layoutMode", "zen");
+
+    render(
+      <NovelProvider>
+        <StudioWorkspace />
+      </NovelProvider>
+    );
+
+    // ZenWritingScreen の要素が表示されていること
+    expect(screen.getByTestId("zen-editor-textarea")).toBeInTheDocument();
+    expect(screen.getByText(/Zenモード終了 \(Esc\)/)).toBeInTheDocument();
+    expect(screen.getByText(/Ctrl\+Bでルビを挿入/)).toBeInTheDocument();
   });
 });

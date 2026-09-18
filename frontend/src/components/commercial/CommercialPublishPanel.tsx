@@ -9,6 +9,8 @@ import { PublicationScheduleResponse, PublicationScheduleCreate } from '../../ty
 import { PublicationScheduleTable } from './PublicationScheduleTable';
 import { PublicationScheduleModal } from './PublicationScheduleModal';
 import { PublicationErrorModal } from './PublicationErrorModal';
+import { useNovelContext } from '../../context/NovelContext';
+import { PlatformCopyButton } from '../common/PlatformCopyButton';
 
 interface CommercialPublishPanelProps {
   bookId: number;
@@ -20,11 +22,19 @@ interface CommercialPublishPanelProps {
  * 予約投稿の一覧表示、新規登録、即時実行、キャンセル、エラー詳細確認を統合的に管理する
  */
 export const CommercialPublishPanel: React.FC<CommercialPublishPanelProps> = ({ bookId, onToast }) => {
+  const {
+    chapters,
+    currentEpNum,
+    currentChapterText,
+  } = useNovelContext();
   const [schedules, setSchedules] = useState<PublicationScheduleResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
   const [selectedError, setSelectedError] = useState<{ id: number; message: string } | null>(null);
+
+  const currentChapter = chapters.find((c) => c.ep_num === currentEpNum);
+  const chapterTitle = currentChapter?.title ?? `第${currentEpNum}話`;
 
   // スケジュール一覧の取得
   const fetchSchedules = useCallback(async () => {
@@ -119,6 +129,10 @@ export const CommercialPublishPanel: React.FC<CommercialPublishPanelProps> = ({ 
           </svg>
           <span>新規予約投稿</span>
         </button>
+      </div>
+
+      <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+        <PlatformCopyButton title={chapterTitle} body={currentChapterText} />
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">

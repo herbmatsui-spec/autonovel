@@ -87,6 +87,7 @@ class WritingService:
         book_score_calculator: BookScoreCalculator,
         context_builder_agent: ContextBuilderAgent,
         illustration_agent: IllustrationAgent,
+        compressor: Any = None,
         max_retries: int = 3,
         score_threshold: float = 70.0,
         backoff_base: float = 2.0,
@@ -98,12 +99,20 @@ class WritingService:
         self.book_score_calculator = book_score_calculator
         self.context_builder_agent = context_builder_agent
         self.illustration_agent = illustration_agent
+        self.compressor = compressor
         self.max_retries = max_retries
         self.score_threshold = score_threshold
         self.backoff_base = backoff_base
         self._anti_ai_controller = anti_ai_controller
         self._enable_anti_ai_loop = enable_anti_ai_loop and AntiAILoopController is not None
         self._anti_ai_threshold = anti_ai_threshold
+
+    async def _build_context_with_compression(self, ctx: AgentContext) -> dict:
+        """compressor 付きでコンテキスト構築"""
+        # ContextBuilderAgent が compressor を使うよう artifacts に設定
+        ctx.artifacts["compressor"] = self.compressor
+        result = await self.context_builder_agent.execute(ctx)
+        return result.artifacts.get("writing_context", {})
 
     async def generate_with_quality_assurance(
         self,
@@ -118,10 +127,12 @@ class WritingService:
         regeneration_history = []
 
         while retry_count <= self.max_retries:
-            # 1. 通常執筆実行
+# 1. 通常執筆実行
             if reporter:
                 reporter.report(f"執筆実行 (試行 {retry_count + 1}/{self.max_retries + 1})", "info")
-
+            
+            # compressor を artifacts に設定して context_builder_agent などで利用可能にする
+            ctx.artifacts["compressor"] = self.compressor
             result = await self.writing_agent.execute(ctx)
 
             if result.error:

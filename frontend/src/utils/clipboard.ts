@@ -20,8 +20,8 @@ export async function copyWithFallback(
     ta.value = text;
     document.body.appendChild(ta);
     ta.select();
-    document.execCommand('copy');
+    const success = document.execCommand('copy');
     ta.remove();
-    return { success: true, usedFallback: true };
+    return { success: !!success, usedFallback: true };
   }
 }

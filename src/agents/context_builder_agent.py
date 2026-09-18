@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from src.agents.skill_base import SkillAgent
 from src.agents.orchestrator import AgentContext, AgentResult, AgentName
 from src.services.compression.models import ProtectedContext, SceneFlowHistory
+from src.services.episode_context import EpisodeContextBuilder
 
 
 class ContextBuilderInput(BaseModel):
@@ -100,6 +101,14 @@ class ContextBuilderAgent(SkillAgent):
         self.compressor = compressor
         self.social_manager = social_manager
         self.age_client = age_client
+        # 3層ローリング記憶ビルダー（遅延初期化：セッションが必要なため）
+        self._episode_context_builder: EpisodeContextBuilder | None = None
+
+    def _get_episode_context_builder(self, session: Any) -> EpisodeContextBuilder:
+        """EpisodeContextBuilder を取得（セッションが変わるたびに新しいインスタンス）"""
+        if self._episode_context_builder is None or getattr(self._episode_context_builder, 'db', None) != session:
+            self._episode_context_builder = EpisodeContextBuilder(session)
+        return self._episode_context_builder
 
     async def build_context(
         self,
@@ -233,6 +242,16 @@ class ContextBuilderAgent(SkillAgent):
         prev_chapter = await self._get_prev_chapter(repo, book_id, branch_id, ep_num)
 
         active_chars = await self._get_active_chars(chars, plot)
+
+        # Step 7: 3層ローリング記憶 (Layer 1: バイブル, Layer 2: 100字要約, Layer 3: 直前生文) を構築
+        episode_context_builder = self._get_episode_context_builder(session)
+        previous_episode_text = prev_chapter.content if prev_chapter and prev_chapter.content else None
+        three_layer_context = await episode_context_builder.build_context(
+            book_id=book_id,
+            ep_num=ep_num,
+            target_word_count=target_word_count,
+            previous_episode_text=previous_episode_text,
+        )
 
         # Step 53: ソーシャル関係性・直近ジャーナルの動的コンテキスト取得
         social_ctx = await self._get_social_dynamic_context(
@@ -434,6 +453,8 @@ class ContextBuilderAgent(SkillAgent):
             "foreshadowing_ctx": self.format_unresolved_foreshadowings(
                 plot_dict.get("foreshadowings", [])
             ),
+            # Step 7: 3層ローリング記憶をコンテキストに注入
+            "three_layer_context": three_layer_context,
         }
 
     @staticmethod

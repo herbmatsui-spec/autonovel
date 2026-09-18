@@ -162,9 +162,9 @@ async def recalc_all_book_scores() -> dict[str, Any]:
         from src.agents.orchestrator import AgentContext
         from src.backend.database.core import get_db_manager
         from src.backend.database.repositories.book_score import BookScoreRepository
-        from src.infrastructure.database.models.book import Book as BookModel
+        from src.backend.database.models import Book as BookModel
         from src.infrastructure.database.models.book_score import BookScore as BookScoreModel
-        from src.infrastructure.database.models.chapter import Chapter as ChapterModel
+        from src.backend.database.models import Chapter as ChapterModel
         from src.services.book_score_service import BookScoreCalculator
 
         db_manager = get_db_manager()

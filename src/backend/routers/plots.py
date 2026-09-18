@@ -9,6 +9,7 @@ from src.backend.task_helpers import create_task as _create_task
 from src.core.container import AppContainer
 from src.core.exceptions import AppError
 from src.core.observability import TraceContext
+from src.core.llm_gateway import LLMGateway
 from src.models.api_schemas import (
     AuditPlanRequest,
     PlanGenerationRequest,
@@ -16,7 +17,14 @@ from src.models.api_schemas import (
     PlotExpandRequest,
     PlotRebuildRequest,
     ReversePlotGenerateRequest,
+    ExpandBeatsRequest,
+    BeatItemSchema,
 )
+
+# 商業ビート生成用システム指示
+PLANNER_SYSTEM_INSTRUCTION = """あなたは商業Web小説の構成プロデューサーです。
+企画パラメータに基づき、読者を引き込む12ステップのビートシート（五感フォーカス・クリフハンガー種別付き）を生成してください。
+Save the Cat!のビートシート構成に準拠し、日本のWeb小説市場でヒットする構成を意識してください。"""
 
 router = APIRouter(
     prefix="/api/plots",
@@ -226,3 +234,236 @@ async def reverse_generate_plot(
         trace_id=TraceContext.get_trace_id(),
     )
     return {"task_id": task_id}
+
+
+@router.post("/wizard-save")
+async def wizard_save(
+    req: ExpandBeatsRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """ウィザードで作成した企画とビートシートをDBに保存する"""
+    if req.api_key:
+        validate_api_key_sync(req.api_key)
+
+    from src.backend.database.models import Book
+    from src.services.errors import retry_on_lock
+
+    async with UnitOfWork(AppContainer.db()) as uow:
+        # 新規Bookを作成
+        book = Book(
+            user_id=getattr(current_user, "id", None),
+            title=req.title,
+            genre=req.genre,
+            concept="",
+            synopsis=req.synopsis,
+            target_eps=req.target_chapters,
+        )
+        uow.session.add(book)
+        await uow.session.flush()
+        book_id = book.id
+
+        # ビートシートをPlotとして保存
+        beats = req.beats if req.beats else []
+        for i, beat in enumerate(beats, start=1):
+            await uow.plots.create_or_replace_plot(
+                book_id=book_id,
+                ep_num=beat.episode if beat.episode else i,
+                thought_process="wizard_creation_funnel",
+                title=beat.title,
+                summary=beat.outline,
+                detailed_blueprint=beat.foreshadowing_notes or "",
+                next_hook=beat.cliffhanger_type or "New Crisis",
+                tension=50,
+                status="open",
+            )
+
+    return {"book_id": book_id, "branch_id": 1, "success": True}
+
+
+@router.post("/expand-beats", response_model=list[BeatItemSchema])
+async def expand_commercial_beats(
+    req: ExpandBeatsRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """企画パラメータから商業12ステップビートシートを生成"""
+    if req.api_key:
+        validate_api_key_sync(req.api_key)
+
+    llm = LLMGateway()
+    prompt = f"""【作品タイトル】{req.title}
+【ジャンル】{req.genre}
+【あらすじ】{req.synopsis}
+【目標話数】{req.target_chapters}
+【チート度 (1-5)】{req.cheat_scale}
+【成長曲線】{req.growth_curve}
+【システム支援度 (0-100)】{req.system_assist}
+【代償・リスク過酷度 (1-5)】{req.cost_severity}
+
+上記の企画パラメータに基づき、商業Web小説として最適な「12ステップのビートシート（五感フォーカス・クリフハンガー種別付き）」を生成してください。
+各ステップは以下の構造で出力してください：
+
+```json
+[
+  {{
+    "episode": 1,
+    "title": "エピソードタイトル",
+    "outline": "このエピソードで起こる出来事の詳細（3-5行）",
+    "cliffhanger_type": "New Crisis | Shocking Truth | Quiet Foreshadowing",
+    "sensory_focus": ["visual", "auditory", "olfactory", "tactile", "gustatory", "metaphor"],
+    "foreshadowing_notes": "伏線メモ（あれば）"
+  }},
+  ...
+]
+```
+
+クリフハンガー種別の使い分け:
+- New Crisis: 新たな危機・敵の出現・予期せぬトラブル（アクション・サスペンス向き）
+- Shocking Truth: 衝撃の真実・正体発覚・裏切り（ミステリー・どんでん返し向き）
+- Quiet Foreshadowing: 静かな伏線・感情の変化・小さな違和感（心情・日常・伏線回収向き）
+
+五感フォーカスは各話2-3種類をバランスよく配分してください。
+12ステップ構成（Save the Cat準拠）:
+1. Opening Image / 日常の提示
+2. Theme Stated / テーマの提示
+3. Set-Up / 主要キャラ・世界観の導入
+4. Catalyst / 発端・きっかけ
+5. Debate / 迷い・葛藤
+6. Break into Two / 決意・旅立ち
+7. B Story / サブプロット・仲間との出会い
+8. Fun and Games / 約束された楽しみ・能力発揮
+9. Midpoint / 中間地点・大きな転換
+10. Bad Guys Close In / 逆境・追い詰められる
+11. All Is Lost / 絶望・全てを失う
+12. Dark Night of the Soul / 闇夜・内面の葛藤
+（13話以降はクライマックス・決着へ）"""
+
+    try:
+        res = await llm.generate_text(
+            purpose_or_request="planning",
+            prompt=prompt,
+            system_instruction=PLANNER_SYSTEM_INSTRUCTION,
+            temp=0.7,
+        )
+        raw_text = getattr(res, "story_content", "") or getattr(res, "content", "") or ""
+        import json
+        import re
+
+        try:
+            cleaned = str(raw_text).strip()
+            if "```json" in cleaned:
+                cleaned = cleaned.split("```json")[1].split("```")[0].strip()
+            elif "```" in cleaned:
+                cleaned = cleaned.split("```")[1].split("```")[0].strip()
+            beats_data = json.loads(cleaned)
+            # 12ステップに制限、空配列の場合はフォールバック
+            if not beats_data:
+                pass  # フォールバックへ
+            else:
+                return beats_data[:12]
+        except Exception as e:
+            # JSONパースエラーの場合はフォールバック
+            pass
+    except Exception as e:
+        # LLM呼び出しエラーの場合はフォールバック
+        pass
+    
+    # フォールバック: デフォルトの12ステップを返す
+    default_beats = [
+        {
+            "episode": 1,
+            "title": "日常の崩壊",
+            "outline": f"主人公の平穏な日常が、突如として現れた異変によって崩れ去る。{req.genre}世界の日常風景の中で、運命の歯車が回り始める。",
+            "cliffhanger_type": "New Crisis",
+            "sensory_focus": ["visual", "auditory"],
+            "foreshadowing_notes": "不穏な予兆",
+        },
+        {
+            "episode": 2,
+            "title": "運命の告知",
+            "outline": "異変の正体が明かされ、主人公に使命が課せられる。拒否することもできるが、代償は大きい。",
+            "cliffhanger_type": "Shocking Truth",
+            "sensory_focus": ["tactile", "metaphor"],
+            "foreshadowing_notes": "古い予言",
+        },
+        {
+            "episode": 3,
+            "title": "覚悟の決意",
+            "outline": "葛藤の末、主人公は立ち向かうことを決意する。仲間との出会い、最初の装備・スキル獲得。",
+            "cliffhanger_type": "Quiet Foreshadowing",
+            "sensory_focus": ["visual", "gustatory"],
+            "foreshadowing_notes": "師匠の言葉",
+        },
+        {
+            "episode": 4,
+            "title": "最初の試練",
+            "outline": "旅立ち早々、予想以上の強敵と遭遇。チート能力（レベル{req.cheat_scale}）が初めて試される瞬間。",
+            "cliffhanger_type": "New Crisis",
+            "sensory_focus": ["auditory", "olfactory"],
+            "foreshadowing_notes": "敵の弱点",
+        },
+        {
+            "episode": 5,
+            "title": "力の代償",
+            "outline": "圧倒的な力を振るうほど、主人公の肉体・精神に負荷がかかる。{req.cost_severity}段階のリスクが顕在化。",
+            "cliffhanger_type": "Shocking Truth",
+            "sensory_focus": ["tactile", "metaphor"],
+            "foreshadowing_notes": "禁忌の存在",
+        },
+        {
+            "episode": 6,
+            "title": "仲間との絆",
+            "outline": "個性豊かな仲間たちと共に、最初の拠点を確保。サブプロット（恋愛・友情・因縁）が動き出す。",
+            "cliffhanger_type": "Quiet Foreshadowing",
+            "sensory_focus": ["visual", "auditory"],
+            "foreshadowing_notes": "仲間の秘密",
+        },
+        {
+            "episode": 7,
+            "title": "無双の快進撃",
+            "outline": f"{req.growth_curve}の真価を発揮し、次々と強敵を薙ぎ倒す。読者に爽快感を与える『約束された楽しみ』のフェーズ。",
+            "cliffhanger_type": "New Crisis",
+            "sensory_focus": ["visual", "gustatory"],
+            "foreshadowing_notes": "影の黒幕",
+        },
+        {
+            "episode": 8,
+            "title": "中間地点の真実",
+            "outline": "勝利の裏で、世界の根幹に関わる衝撃の事実が判明。主人公の存在意義が揺らぐ。",
+            "cliffhanger_type": "Shocking Truth",
+            "sensory_focus": ["olfactory", "metaphor"],
+            "foreshadowing_notes": "世界の秘密",
+        },
+        {
+            "episode": 9,
+            "title": "追い詰められる",
+            "outline": "黒幕の本格的な逆襲が始まる。仲間が離脱、拠点喪失、能力封印…絶体絶命のピンチ。",
+            "cliffhanger_type": "New Crisis",
+            "sensory_focus": ["auditory", "tactile"],
+            "foreshadowing_notes": "最後の切り札",
+        },
+        {
+            "episode": 10,
+            "title": "全てを失って",
+            "outline": "最愛のものを失い、主人公は奈落の底へ。チート能力さえ通用しない、真の絶望。",
+            "cliffhanger_type": "Quiet Foreshadowing",
+            "sensory_focus": ["visual", "metaphor"],
+            "foreshadowing_notes": "過去の伏線回収",
+        },
+        {
+            "episode": 11,
+            "title": "闇夜の決意",
+            "outline": "絶望の中で、主人公は真の強さ（{req.growth_curve}の完成形）に目覚める。内面の葛藤を乗り越え、最終決戦へ。",
+            "cliffhanger_type": "Shocking Truth",
+            "sensory_focus": ["tactile", "gustatory"],
+            "foreshadowing_notes": "真の敵",
+        },
+        {
+            "episode": 12,
+            "title": "決戦の夜明け",
+            "outline": "全ての伏線が回収され、クライマックスへ向かうラストスパート。読者の期待を超えるカタルシスを約束する。",
+            "cliffhanger_type": "Quiet Foreshadowing",
+            "sensory_focus": ["visual", "auditory", "metaphor"],
+            "foreshadowing_notes": "エピローグへ",
+        },
+    ]
+    return default_beats

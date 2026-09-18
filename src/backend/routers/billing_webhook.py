@@ -1,7 +1,7 @@
 import asyncio
 import inspect
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 import stripe
@@ -286,7 +286,7 @@ async def _create_or_update_subscription_record(user: User, subscription, db: As
     if isinstance(period_end_val, (int, float)):
         period_end = datetime.fromtimestamp(period_end_val)
     else:
-        period_end = datetime.utcnow()
+        period_end = datetime.now(timezone.utc)
 
     if db_subscription:
         db_subscription.stripe_subscription_id = subscription.id

@@ -18,6 +18,9 @@ from tests.mocks.llm_adapter import LLMMocker, MockLLMAdapter
 def pytest_configure(config):
     """テスト収集前に環境変数を設定し、早期のDB初期化を防ぐ。"""
     os.environ.setdefault("APP_ENV", "testing")
+    os.environ.setdefault("AUTONOVEL_RAG_MODE", "memory")
+    os.environ.setdefault("RAG_FALLBACK_MODE", "memory")
+    os.environ.setdefault("AUTH_DISABLED", "true")
 
     def dummy_init_db(*args, **kwargs):
         pass

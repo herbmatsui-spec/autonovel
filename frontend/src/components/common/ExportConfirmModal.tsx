@@ -18,9 +18,8 @@ export function ExportConfirmModal({
   if (!isOpen || !summary) return null;
 
   const [isOpenState, setIsOpenState] = useState(isOpen);
-  const focusTrapRef = useRef<HTMLElement>(null);
-  const firstFocusableRef = useRef<HTMLElement | null>(null);
-  const lastFocusableRef = useRef<HTMLElement | null>(null);
+  const firstFocusableRef = useRef<HTMLButtonElement | null>(null);
+  const lastFocusableRef = useRef<HTMLButtonElement | null>(null);
 
   // モーダルが開いたときにフォーカスを管理
   useEffect(() => {
@@ -63,7 +62,6 @@ export function ExportConfirmModal({
       isOpen={isOpenState} 
       onClose={onClose} 
       title="出力前確認"
-      ref={focusTrapRef}
     >
       <div className="space-y-6">
         {/* 警告表示 */}

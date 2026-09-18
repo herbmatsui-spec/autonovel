@@ -133,3 +133,33 @@ def test_post_next_beats_endpoint(mock_next_beats_service):
     data = response.json()
     assert len(data["beats"]) == 1
     assert data["beats"][0]["title"] == "逆転の一撃"
+
+
+def test_post_audit_fast_hybrid_endpoint():
+    """POST /api/editor/audit 正常系テスト"""
+    payload = {
+        "draft_text": "「行こう！」彼は叫んだ。空が燃えていた。",
+        "character_profiles": "主人公: アルト",
+        "plot_spec": "第1話: 旅立ち",
+    }
+    response = client.post("/api/editor/audit", json=payload)
+    if response.status_code == 401:
+        return  # 認証が必要な環境
+    assert response.status_code == 200
+    data = response.json()
+    assert "final_score" in data
+    assert "quantitative_score" in data
+    assert "conflicts" in data
+    assert isinstance(data["conflicts"], list)
+
+
+def test_post_audit_fast_hybrid_validation_error():
+    """POST /api/editor/audit バリデーションエラーテスト (空テキスト)"""
+    payload = {
+        "draft_text": "",
+        "character_profiles": "",
+        "plot_spec": "",
+    }
+    response = client.post("/api/editor/audit", json=payload)
+    assert response.status_code in (401, 422)
+

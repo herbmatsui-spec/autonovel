@@ -16,7 +16,6 @@ from src.backend.config import settings
 from src.backend.database import get_async_db, get_db
 from src.backend.database.models import User
 from src.backend.security.jwt import decode_token
-from src.dependencies import get_prompt_manager
 
 logger = logging.getLogger(__name__)
 
@@ -162,6 +161,21 @@ async def validate_api_key_or_raise(
     authorization: str = Header(default="", alias="Authorization"),
 ) -> str:
     return await require_api_key(authorization)
+
+
+def get_prompt_manager() -> Any:
+    """FastAPI Depends 用の PromptManager プロバイダ。
+
+    ``prompts.manager.PromptManager`` を遅延 import して返す。
+    import 失敗時は None を返し、依存側でフォールバックできるようにする。
+    """
+    try:
+        from prompts.manager import PromptManager
+
+        return PromptManager()
+    except Exception as e:  # noqa: BLE001
+        logger.warning("PromptManager initialization failed: %s", e)
+        return None
 
 
 __all__ = [

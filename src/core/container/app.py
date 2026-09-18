@@ -53,6 +53,15 @@ class AppContainer(InfraContainer):
     )
     connection_pipeline: providers.Singleton = providers.Singleton(lambda: None)
 
+    # 4層圧縮プロバイダー
+    compression_config: providers.Singleton = providers.Singleton(
+        "src.services.compression.models.CompressionConfig",
+    )
+    compressor: providers.Singleton = providers.Singleton(
+        "src.services.compression.compressor.FourLayerCompressor",
+        config=compression_config,
+    )
+
     repo: providers.Singleton = providers.Singleton(
         DataRepository,
         db=InfraContainer.db,
@@ -159,6 +168,7 @@ class AppContainer(InfraContainer):
         style_rag=style_rag,
         rag_prefetch=providers.Self(),  # RAGPrefetchService が必要なら追加
         event_bus=providers.Self(),  # EventBus が必要なら追加
+        compressor=compressor,  # ← 追加
     )
     image_service: providers.Factory = providers.Factory(
         "src.services.image_service.ImageService",
@@ -211,6 +221,7 @@ class AppContainer(InfraContainer):
         book_score_calculator=book_score_calculator,
         context_builder_agent=context_builder_agent,
         illustration_agent=illustration_agent,
+        compressor=compressor,  # ← 追加
         max_retries=3,
         score_threshold=70.0,
         backoff_base=2.0,

@@ -10,6 +10,7 @@ import { BookShowcaseModal } from "./showcase/BookShowcaseModal";
 import { PublishExportModal } from "./common/PublishExportModal";
 import { ExportConfirmModal } from "./common/ExportConfirmModal";
 import { ExportHandoffSummary, ExportTarget } from "../types/export";
+import { PlatformCopyButton } from "./common/PlatformCopyButton";
 
 interface ExportPanelProps {
   output?: string;
@@ -216,6 +217,11 @@ export default function ExportPanel({
           {exporting ? "📦 パッケージ生成中..." : "📦 納品パッケージ (ZIP) ダウンロード"}
         </button>
 
+        <PlatformCopyButton
+          title={selectedBook?.title ?? "無題"}
+          body={displayOutput}
+        />
+
         <button
           type="button"
           className="btn btn-secondary"
@@ -318,8 +324,8 @@ export default function ExportPanel({
             setConfirmedPublishTarget(null);
           }}
           bookId={selectedBook.id}
-          currentChapter={parseInt(confirmedPublishTarget.chapterId)}
-          branchId={parseInt(confirmedPublishTarget.branchId)}
+          initialChapterId={parseInt(confirmedPublishTarget.chapterId)}
+          initialBranchId={parseInt(confirmedPublishTarget.branchId)}
         />
       )}
     </section>

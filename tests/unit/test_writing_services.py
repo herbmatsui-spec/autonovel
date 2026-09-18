@@ -109,3 +109,19 @@ def test_writing_generation_context_build_fw_prompt_no_beats():
     result = ctx.build_fw_prompt()
     assert "物理動作ビート分解" not in result
 
+
+def test_writing_service_audit_generated_text():
+    """Test WritingService.audit_generated_text executes UnifiedAuditor quantitative analysis."""
+    from src.backend.writing_service import WritingService
+
+    service = WritingService(writer=MagicMock())
+    sample_text = "「行くぞ！」アルトは叫び、剣を抜いた。夜の風が冷たく吹き抜ける。"
+    result = service.audit_generated_text(sample_text)
+
+    assert "quantitative_score" in result
+    assert "is_acceptable" in result
+    assert "warnings" in result
+    assert isinstance(result["warnings"], list)
+    assert result["quantitative_score"] > 0
+
+

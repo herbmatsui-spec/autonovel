@@ -8,6 +8,11 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from src.domain.schemas.foreshadowing import (
+    ForeshadowingGraphResponse,
+    GraphEdgeSchema,
+    GraphNodeSchema,
+)
 from src.infrastructure.repositories.foreshadowing_repo import DbForeshadowingRepository
 from src.models.foreshadowing_status import ForeshadowingStatus
 from src.services.foreshadowing_parser import detect_foreshadowing_mentions
@@ -119,3 +124,113 @@ class ForeshadowingService:
             if f_id == foreshadowing_id:
                 return f
         return None
+
+    async def get_foreshadowing_graph(self, book_id: int) -> ForeshadowingGraphResponse:
+        """作品IDに紐づく伏線・キャラからForce-Graph向けのノード・エッジを生成する。
+
+        Args:
+            book_id: 作品ID
+
+        Returns:
+            ForeshadowingGraphResponse: ノードとエッジを含むグラフデータ
+        """
+        # 未回収・回収済み全ての伏線を取得
+        all_foreshadowings = await self.repo.get_by_book_id(book_id)
+
+        nodes: list[GraphNodeSchema] = []
+        edges: list[GraphEdgeSchema] = []
+        node_ids: set[str] = set()
+
+        # 伏線ノード作成
+        for f in all_foreshadowings:
+            node_id = f"foreshadowing_{f.id}"
+            if node_id in node_ids:
+                continue
+            node_ids.add(node_id)
+            nodes.append(
+                GraphNodeSchema(
+                    id=node_id,
+                    label="Foreshadowing",
+                    properties={
+                        "title": f.title,
+                        "description": f.description,
+                        "planted_episode": f.planted_episode,
+                        "target_episode": f.target_episode,
+                        "resolved_episode": f.resolved_episode,
+                        "status": f.status,
+                    },
+                )
+            )
+
+        # キャラクター関連のノード・エッジは別途CharacterRepositoryから取得想定
+        # ここでは伏線同士の関連（PLANTED_IN, RESOLVED_BY）をエッジとして構築
+        for f in all_foreshadowings:
+            source_id = f"foreshadowing_{f.id}"
+
+            # 設置エピソードへのエッジ（概念的なノードとして扱う）
+            ep_node_id = f"episode_{f.planted_episode}"
+            if ep_node_id not in node_ids:
+                node_ids.add(ep_node_id)
+                nodes.append(
+                    GraphNodeSchema(
+                        id=ep_node_id,
+                        label="Episode",
+                        properties={"episode_number": f.planted_episode},
+                    )
+                )
+            edges.append(
+                GraphEdgeSchema(
+                    source=source_id,
+                    target=ep_node_id,
+                    type="PLANTED_IN",
+                    properties={},
+                )
+            )
+
+            # 回収済みの場合、回収エピソードへのエッジ
+            if f.resolved_episode is not None:
+                resolved_ep_id = f"episode_{f.resolved_episode}"
+                if resolved_ep_id not in node_ids:
+                    node_ids.add(resolved_ep_id)
+                    nodes.append(
+                        GraphNodeSchema(
+                            id=resolved_ep_id,
+                            label="Episode",
+                            properties={"episode_number": f.resolved_episode},
+                        )
+                    )
+                edges.append(
+                    GraphEdgeSchema(
+                        source=source_id,
+                        target=resolved_ep_id,
+                        type="RESOLVED_BY",
+                        properties={},
+                    )
+                )
+
+            # 目標話数がある場合の関連エッジ
+            if f.target_episode is not None:
+                target_ep_id = f"episode_{f.target_episode}"
+                if target_ep_id not in node_ids:
+                    node_ids.add(target_ep_id)
+                    nodes.append(
+                        GraphNodeSchema(
+                            id=target_ep_id,
+                            label="Episode",
+                            properties={"episode_number": f.target_episode, "is_target": True},
+                        )
+                    )
+                edges.append(
+                    GraphEdgeSchema(
+                        source=source_id,
+                        target=target_ep_id,
+                        type="RELATED_TO",
+                        properties={"relation": "target_episode"},
+                    )
+                )
+
+        return ForeshadowingGraphResponse(
+            graph_name=f"book_{book_id}_foreshadowing",
+            nodes=nodes,
+            edges=edges,
+        )

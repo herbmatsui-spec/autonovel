@@ -2,6 +2,8 @@
  * Client API for web novel publishing export and preview (Step 64).
  */
 
+import { apiFetch } from "./client";
+
 export interface PublishPreviewResponse {
   book_id: number;
   platform: string;
@@ -28,7 +30,7 @@ export async function fetchPublishPreview(
     params.append('branch_id', String(branchId));
   }
 
-  const res = await fetch(`/api/export/publish/${encodeURIComponent(platform)}/preview?${params.toString()}`);
+  const res = await apiFetch(`/api/export/publish/${encodeURIComponent(platform)}/preview?${params.toString()}`);
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     throw new Error(errorData.detail || `プレビュー取得に失敗しました (HTTP ${res.status})`);
@@ -41,7 +43,7 @@ export async function downloadPublishZip(
   bookId: number,
   branchId?: number
 ): Promise<void> {
-  const res = await fetch(`/api/export/publish/${encodeURIComponent(platform)}`, {
+  const res = await apiFetch(`/api/export/publish/${encodeURIComponent(platform)}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

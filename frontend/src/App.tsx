@@ -16,6 +16,7 @@ import { getGenreBadgeConfig } from "./constants/genres";
 import { MobileBottomNav } from "./components/mobile/MobileBottomNav";
 import { MobileChapterDrawer } from "./components/mobile/MobileChapterDrawer";
 import { MobileQuickActionBar } from "./components/mobile/MobileQuickActionBar";
+import { WizardWorkflowPage } from "./pages/WizardWorkflowPage";
 
 // 提案3: react-force-graph-2d は重いため React.lazy でコード分割
 const GraphVisualization = lazy(
@@ -45,6 +46,8 @@ function AppContent() {
   const [showTransitionOverlay, setShowTransitionOverlay] = useState(false);
   const [mobileTab, setMobileTab] = useState<'books' | 'plots' | 'writing' | 'settings'>('writing');
   const [isChapterDrawerOpen, setIsChapterDrawerOpen] = useState(false);
+  // v5.0 T3: 3ステップ共創ウィザード起動状態
+  const [showWizardWorkflow, setShowWizardWorkflow] = useState(false);
   const [mode, setMode] = useState<"easy" | "studio">(() => {
     if (typeof window === "undefined") return "studio";
     return (localStorage.getItem("autonovel.mode") as "easy" | "studio") || "studio";
@@ -100,7 +103,7 @@ function AppContent() {
       <Modal
         isOpen={showMedia}
         onClose={() => setShowMedia(false)}
-        title="🖼️ マルチメディア生成 (Asset Pack)"
+        title="📦 アセットパック"
         testId="media-modal"
         closeBtnTestId="btn-close-media-modal"
       >
@@ -229,13 +232,23 @@ function AppContent() {
             ⚙️ LLM設定
           </Button>
 
+          {/* v5.0 T3: 3ステップ共創ウィザード起動ボタン */}
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => setShowWizardWorkflow(true)}
+            data-testid="open-wizard-btn"
+          >
+            ✨ 3ステップ共創ウィザード
+          </Button>
+
           <Button
             variant="accent-cyan"
             size="sm"
             onClick={() => setShowMedia(true)}
             data-testid="open-media-btn"
           >
-            🖼️ 画像生成
+            📦 アセットパック
           </Button>
 
           <Button
@@ -272,7 +285,21 @@ function AppContent() {
         </div>
       </header>
 
-      {mode === "easy" ? (
+      {showWizardWorkflow ? (
+        <div className="wizard-workflow-overlay">
+          <div className="flex justify-end mb-4 max-w-4xl mx-auto px-4">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setShowWizardWorkflow(false)}
+              data-testid="close-wizard-btn"
+            >
+              ✕ ウィザードを閉じる
+            </Button>
+          </div>
+          <WizardWorkflowPage />
+        </div>
+      ) : mode === "easy" ? (
         <main className="main-grid">
           <GeneratePanel onMessage={handleMessage} />
           <ExportPanel

@@ -87,10 +87,12 @@ class PlatformCopyFormatter:
 
     @classmethod
     def _to_kakuyomu_ruby(cls, text: str) -> str:
-        """カクヨム形式: |漢字《かんじ》"""
-        return re.sub(r"[\|｜]([^《\n]+)《([^》\n]+)》", r"|\1《\2》", text)
+        """カクヨム形式: |漢字《かんじ》 + 傍点《《傍点》》"""
+        text = re.sub(r"[\|｜]([^《\n]+)《([^》\n]+)》", r"|\1《\2》", text)
+        text = re.sub(r"《《([^》\n]+)》》", r"《《\1》》", text)
+        return text
 
     @classmethod
     def _to_alphapolis_ruby(cls, text: str) -> str:
-        """アルファポリス形式: #漢字__かんじ#"""
-        return re.sub(r"[\|｜]([^《\n]+)《([^》\n]+)》", r"#\1__\2#", text)
+        """アルファポリス形式: #漢字(ルビ)#"""
+        return re.sub(r"[\|｜]([^《\n]+)《([^》\n]+)》", r"#\1(\2)#", text)

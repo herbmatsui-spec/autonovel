@@ -6,8 +6,10 @@ from src.agents.erotic_enhancer import EroticEnhancer
 from src.agents.orchestrator import AgentContext, AgentResult
 from src.agents.prompt_composer import PromptComposer
 from src.agents.writing.prose_refiner_agent import ProseRefinerAgent
+from src.infrastructure.repositories.foreshadowing_repo import DbForeshadowingRepository
 from src.services.llm_service import LLMService
 from src.services.rag.context_retriever import ForeshadowingEntity
+from src.services.foreshadowing_service import ForeshadowingService
 from prompts.manager import PromptManager
 
 
@@ -21,11 +23,13 @@ class EpisodeWriter(BaseAgent):
         rag_prefetch: Any = None,
         context_retriever: Any = None,
         prompt_manager: PromptManager = None,
+        compressor: Any = None,
     ):
         super().__init__(repo=repo, llm=llm, style_rag=style_rag, rag_prefetch=rag_prefetch)
         self.context_builder = context_builder
         self.context_retriever = context_retriever
         self.prompt_manager = prompt_manager
+        self.compressor = compressor
 
     def detect_resolved_foreshadowings(
         self, content: str, pending_list: List[ForeshadowingEntity]
@@ -70,6 +74,7 @@ class EpisodeWriter(BaseAgent):
             artifacts={
                 "target_word_count": target_word_count,
                 "style_tag": style_tag,
+                "compressor": self.compressor,
             },
         )
         result = await self.context_builder.execute(ctx)
@@ -131,6 +136,26 @@ class EpisodeWriter(BaseAgent):
         writing_context = ctx.artifacts.get("writing_context", {})
         # Generate the written text
         written_text = await self.write(book_id, ep_num, writing_context)
+        
+        # Step 8: 本文生成後に伏線自動回収を実行
+        try:
+            repo = ctx.artifacts.get("repo")
+            session = ctx.artifacts.get("session") or getattr(repo, "session", None)
+            if repo and session:
+                foreshadowing_repo = DbForeshadowingRepository(session)
+                foreshadowing_service = ForeshadowingService(foreshadowing_repo)
+                resolved_titles = await foreshadowing_service.check_and_resolve(
+                    book_id=book_id,
+                    episode_num=ep_num,
+                    draft_text=written_text,
+                )
+                if resolved_titles:
+                    if hasattr(self, "logger"):
+                        self.logger.info(f"Ep.{ep_num}: 伏線自動回収 - {', '.join(resolved_titles)}")
+        except Exception as e:
+            if hasattr(self, "logger"):
+                self.logger.warning(f"Ep.{ep_num}: 伏線自動回収でエラー: {e}")
+        
         # Return the result with the written text in artifacts
         return AgentResult(
             next_agent=None,

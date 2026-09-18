@@ -72,14 +72,14 @@ class GlobalAuthMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         app_obj = getattr(request, "app", None)
-        if app_obj and hasattr(app_obj, "dependency_overrides"):
+        overrides = getattr(app_obj, "dependency_overrides", None)
+        if overrides:
             from src.backend.auth import (
                 get_current_user,
                 require_admin_user_or_key,
                 require_api_key,
             )
 
-            overrides = app_obj.dependency_overrides
             if (
                 get_current_user in overrides
                 or require_api_key in overrides

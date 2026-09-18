@@ -77,6 +77,18 @@ describe('ZenModeAndEditor Components Tests', () => {
       setMode: vi.fn(),
       lineScores: {},
       setLineScores: vi.fn(),
+      chapters: [
+        {
+          ep_num: 1,
+          title: '第1話 テストの旅立ち',
+          summary: 'テスト概要',
+          content: 'テスト本文',
+          is_catharsis: false,
+          status: 'draft',
+        },
+      ],
+      setChapters: vi.fn(),
+      setCurrentEpNum: vi.fn(),
     });
     (useEditorTheme as any).mockReturnValue({
       theme: 'dark',

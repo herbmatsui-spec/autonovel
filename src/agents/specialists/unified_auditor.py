@@ -10,7 +10,7 @@ from src.services.auditors.rule_based_metrics import (
     detect_ai_cliches,
     evaluate_cliffhanger_ending,
 )
-from src.models.unified_audit import UnifiedAuditReport, QualitativeAudit
+from src.models.unified_audit import UnifiedAuditReport, QualitativeAudit, ConflictItemSchema
 
 logger = logging.getLogger(__name__)
 
@@ -80,6 +80,75 @@ class UnifiedAuditor:
             critique="パース失敗による安全フォールバック",
         )
 
+    def _build_conflicts(self, meta: dict[str, Any], qual: QualitativeAudit) -> list[ConflictItemSchema]:
+        """静的ルール解析および定性評価からUI表示用の指摘項目リストを生成"""
+        conflicts: list[ConflictItemSchema] = []
+
+        # 1. AI定型表現の指摘
+        for cliche in meta.get("cliches", []):
+            conflicts.append(
+                ConflictItemSchema(
+                    category="cliche",
+                    severity="medium",
+                    title=f"AI定型表現の検出: {cliche}",
+                    description=f"頻出・陳腐化表現「{cliche}」が含まれています。オリジナリティのある描写への置換を推奨します。",
+                    current_value=cliche,
+                    suggested_value="",
+                    confidence=0.95,
+                )
+            )
+
+        # 2. 会話文比率の指摘
+        dialogue_ratio = meta.get("dialogue_ratio", 0.0)
+        if dialogue_ratio < 0.10:
+            conflicts.append(
+                ConflictItemSchema(
+                    category="dialogue",
+                    severity="low",
+                    title="会話文比率の低下",
+                    description=f"会話文比率が {round(dialogue_ratio * 100, 1)}% と低めです。登場人物同士の台詞を挟むことでテンポを向上させられます。",
+                    confidence=0.85,
+                )
+            )
+        elif dialogue_ratio > 0.65:
+            conflicts.append(
+                ConflictItemSchema(
+                    category="dialogue",
+                    severity="low",
+                    title="地の文の不足（台詞過多）",
+                    description=f"会話文比率が {round(dialogue_ratio * 100, 1)}% と高めです。台詞だけでなく行動や情景描写を追加して状況を補強してください。",
+                    confidence=0.85,
+                )
+            )
+
+        # 3. 文長リズムの指摘
+        rhythm_score = meta.get("rhythm_score", 100.0)
+        if rhythm_score < 60.0:
+            conflicts.append(
+                ConflictItemSchema(
+                    category="rhythm",
+                    severity="medium",
+                    title="文長リズムの偏り",
+                    description="文末の長さや接続詞のパターンが偏っています。長文と短文を交互に配置し、読みのリズムを整えてください。",
+                    confidence=0.80,
+                )
+            )
+
+        # 4. 定性評価からの推奨パッチ
+        if qual.actionable_patch:
+            conflicts.append(
+                ConflictItemSchema(
+                    category="hook" if qual.hook_score < 70 else "character",
+                    severity="high" if qual.overall_score < 70 else "medium",
+                    title="AI編集者による推奨パッチ",
+                    description=qual.critique or "文章の引き込みと一貫性を強化するためのパッチです。",
+                    suggested_value=qual.actionable_patch,
+                    confidence=0.90,
+                )
+            )
+
+        return conflicts
+
     async def audit(
         self,
         text: str,
@@ -93,6 +162,7 @@ class UnifiedAuditor:
         # 総合得点 = 定量40% + 定性60%
         final = (q_score * 0.4) + (qual.overall_score * 0.6)
         is_ok = final >= 70.0 and len(meta["cliches"]) < 3
+        conflicts = self._build_conflicts(meta, qual)
 
         return UnifiedAuditReport(
             is_acceptable=is_ok,
@@ -101,4 +171,5 @@ class UnifiedAuditor:
             qualitative=qual,
             detected_cliches=meta["cliches"],
             dialogue_ratio=meta["dialogue_ratio"],
+            conflicts=conflicts,
         )

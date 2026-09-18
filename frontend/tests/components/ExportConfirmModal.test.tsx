@@ -45,42 +45,34 @@ describe('ExportConfirmModal', () => {
     // タイトルが表示されることを確認
     expect(screen.getByText(/出力前確認/)).toBeInTheDocument();
     
-    // 各フィールドのラベルと値が正しく表示されることを確認
-    // ブランチフィールド
-    const branchLabels = screen.getAllByText(/ブランチ/);
-    // index 1がラベル元素（index 0はタイトルの一部、index 2はプライマリターゲットテキスト）
-    const branchLabel = branchLabels[1];
+    // 各フィールドのラベルが存在することを確認（class名とテキストの組み合わせで一意に特定）
+    // font-mediumクラスを持つすべての要素を取得し、テキストでフィルタリング
+    const fontMediumElements = Array.from(document.getElementsByClassName('font-medium'));
+    
+    const branchLabel = fontMediumElements.find(el => el.textContent.includes('ブランチ'));
     expect(branchLabel).toBeInTheDocument();
-    // ブランチラベルの親要素の次の兄弟要素（値のコンテナ）から値を取得
-    const branchValueContainer = branchLabel.parentElement?.nextElementSibling;
-    expect(branchValueContainer?.querySelector('div')).toHaveTextContent('main');
     
-    // 版フィールド
-    const versionLabels = screen.getAllByText(/版/);
-    // index 1がラベル元素（index 0はタイトルの一部、index 2はプライマリターゲットテキスト）
-    const versionLabel = versionLabels[1];
+    const versionLabel = fontMediumElements.find(el => el.textContent.includes('版'));
     expect(versionLabel).toBeInTheDocument();
-    // 版ラベルの親要素の次の兄弟要素（値のコンテナ）から値を取得
-    const versionValueContainer = versionLabel.parentElement?.nextElementSibling;
-    expect(versionValueContainer?.querySelector('div')).toHaveTextContent('保存版');
     
-    // 行き先フィールド
-    const destinationLabels = screen.getAllByText(/行き先/);
-    // index 1がラベル元素
-    const destinationLabel = destinationLabels[1];
+    const destinationLabel = fontMediumElements.find(el => el.textContent.includes('行き先'));
     expect(destinationLabel).toBeInTheDocument();
-    // 行き先ラベルの親要素の次の兄弟要素（値のコンテナ）から値を取得
-    const destinationValueContainer = destinationLabel.parentElement?.nextElementSibling;
-    expect(destinationValueContainer?.querySelector('div')).toHaveTextContent('ZIPダウンロード');
     
-    // 文字数フィールド
-    const wordCountLabels = screen.getAllByText(/文字数/);
-    // index 1がラベル元素
-    const wordCountLabel = wordCountLabels[1];
+    const wordCountLabel = fontMediumElements.find(el => el.textContent.includes('文字数'));
     expect(wordCountLabel).toBeInTheDocument();
-    // 文字数ラベルの親要素の次の兄弟要素（値のコンテナ）から値を取得
-    const wordCountValueContainer = wordCountLabel.parentElement?.nextElementSibling;
-    expect(wordCountValueContainer?.querySelector('div')).toHaveTextContent('1000字');
+    
+    // 各フィールドの値が正しく表示されることを確認
+    // ブランチの値 "main" - ラベルの次の兄弟要素として存在することを確認
+    expect(branchLabel.nextElementSibling).toHaveTextContent('main');
+    
+    // 版の値 "保存版" - ラベルの次の兄弟要素として存在することを確認
+    expect(versionLabel.nextElementSibling).toHaveTextContent('保存版');
+    
+    // 行き先の値 "ZIPダウンロード" - ラベルの次の兄弟要素として存在することを確認
+    expect(destinationLabel.nextElementSibling).toHaveTextContent('ZIPダウンロード');
+    
+    // 文字数の値 "1,000字" - ラベルの次の兄弟要素として存在することを確認
+    expect(wordCountLabel.nextElementSibling).toHaveTextContent('1,000字');
     
     // プライマリターゲットセクションが表示されることを確認
     expect(screen.getByText(/📤 出力実行対象/)).toBeInTheDocument();

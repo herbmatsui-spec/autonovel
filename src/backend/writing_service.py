@@ -63,12 +63,12 @@ class WritingService:
 
     def __init__(
         self,
-        writer: Any,  # WritingAgent 実体
-        repo: Any,  # DataRepository
-        pm: Any,  # PromptManager
-        style_rag: Any,  # StyleRagManager
-        ctx_mgr: Any,  # ContextManager
-        reporter_factory: Any,  # StatusReporter 作成用 Callable
+        writer: Any = None,  # WritingAgent 実体
+        repo: Any = None,  # DataRepository
+        pm: Any = None,  # PromptManager
+        style_rag: Any = None,  # StyleRagManager
+        ctx_mgr: Any = None,  # ContextManager
+        reporter_factory: Any = None,  # StatusReporter 作成用 Callable
         book_score_calculator: Any = None,  # BookScoreCalculator
         score_threshold: float = 70.0,  # 再生成閾値
     ) -> None:
@@ -108,6 +108,28 @@ class WritingService:
             branch_id=branch_id,
             style_tag=style_tag,
         )
+
+    def audit_generated_text(self, text: str) -> dict[str, Any]:
+        """本文生成直後に UnifiedAuditor による定量監査（0ms/0円）を実行しスコアと警告一覧を付与."""
+        from src.agents.specialists.unified_auditor import UnifiedAuditor
+        auditor = UnifiedAuditor()
+        score, meta = auditor.audit_quantitative(text)
+        warnings = []
+        if meta.get("cliches"):
+            warnings.append(f"AI定型表現が検出されました: {', '.join(meta['cliches'])}")
+        if meta.get("dialogue_ratio", 0.0) < 0.10:
+            warnings.append("会話文比率が低すぎます（10%未満）")
+        elif meta.get("dialogue_ratio", 0.0) > 0.65:
+            warnings.append("会話文比率が高すぎます（地の文不足）")
+        if meta.get("rhythm_score", 100.0) < 60.0:
+            warnings.append("文長リズムに偏りがあります")
+
+        return {
+            "quantitative_score": round(score, 1),
+            "is_acceptable": score >= 70.0 and len(meta.get("cliches", [])) < 3,
+            "warnings": warnings,
+            "meta": meta,
+        }
 
     async def generate_episodes(
         self,

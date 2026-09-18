@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from src.models import FullAutoWorkflowResult
 from src.services.pipeline_base import WorkflowContext, WorkflowStep
@@ -150,6 +150,7 @@ def create_easy_mode_pipeline(
     max_rewrite_iterations: int = 3,
     target_audit_score: float = 95.0,
     enable_marketing: bool = True,
+    compressor: Any = None,
 ) -> AutoWorkflowPipeline:
     """
     かんたんモード用パイプライン構築

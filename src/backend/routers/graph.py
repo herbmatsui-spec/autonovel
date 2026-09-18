@@ -8,13 +8,23 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field, field_validator
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.backend import database
 from src.backend.auth import require_api_key
 from src.backend.config import settings
+from src.backend.database.models import Book as BookModel, Character as CharacterModel
+from src.backend.database.models_relation import CharacterRelationModel
+from src.domain.schemas.foreshadowing import (
+    ForeshadowingGraphResponse,
+    GraphEdgeSchema,
+    GraphNodeSchema,
+)
 from src.infrastructure.database.models.chunk import ChapterChunk
+from src.infrastructure.repositories.foreshadowing_repo import DbForeshadowingRepository
 from src.services.age_client import age_client
+from src.services.foreshadowing_service import ForeshadowingService
 from src.services.graph_pipeline import graph_pipeline_service
 from src.services.rag_service import rag_service
 
@@ -152,93 +162,89 @@ class RagContextRequest(BaseModel):
 
 
 @router.get("")
-def get_graph_data(
+async def get_graph_data(
+    book_id: int = Query(..., description="作品ID"),
     graph_name: str | None = None,
-    session: Session = Depends(database.get_db),
+    session: AsyncSession = Depends(database.get_async_db),
 ) -> dict[str, Any]:
-    """フロントエンドの相関図可視化 (Force-Graph 等) 用にノードとエッジ一覧を取得する."""
+    """フロントエンドの相関図可視化 (Force-Graph 等) 用にノードとエッジ一覧を取得する.
+    
+    book_id を指定して、RDBMS (foreshadowings, characters, character_relations) から
+    実際の作品データに基づくグラフを動的に生成して返却する。
+    """
     gname = graph_name or settings.AGE_GRAPH_NAME
 
-    if not settings.ENABLE_GRAPHRAG or not settings.DATABASE_URL.startswith("postgresql"):
-        # SQLite / モック環境用のサンプルフォールバックデータ
-        return {
-            "graph_name": gname,
-            "nodes": [
-                {
-                    "id": "主人公",
-                    "label": "Character",
-                    "properties": {"description": "物語の主人公", "is_alive": True},
-                },
-                {
-                    "id": "王都ルミナス",
-                    "label": "Location",
-                    "properties": {"description": "物語の舞台となる大都市"},
-                },
-                {"id": "聖剣", "label": "Item", "properties": {"description": "伝説の武器"}},
-            ],
-            "edges": [
-                {
-                    "source": "主人公",
-                    "target": "王都ルミナス",
-                    "type": "LOCATED_IN",
-                    "properties": {"detail": "滞在中"},
-                },
-                {
-                    "source": "主人公",
-                    "target": "聖剣",
-                    "type": "POSSESSES",
-                    "properties": {"detail": "所持"},
-                },
-            ],
-        }
-
+    # RDBMSベースの伏線グラフ生成
+    foreshadowing_repo = DbForeshadowingRepository(session)
+    foreshadowing_service = ForeshadowingService(foreshadowing_repo)
+    
     try:
-        # 全ノードの取得
-        node_query = "MATCH (n) RETURN id(n), labels(n), n.name, n"
-        node_rows = age_client.execute_cypher(
-            session=session,
-            cypher_query=node_query,
-            column_definition="(id agtype, labels agtype, name agtype, props agtype)",
-            graph_name=gname,
+        # 伏線グラフを取得
+        graph_response: ForeshadowingGraphResponse = await foreshadowing_service.get_foreshadowing_graph(book_id)
+        
+        # キャラクター情報も追加
+        from sqlalchemy import select
+        characters = await session.execute(
+            select(CharacterModel).where(CharacterModel.book_id == book_id)
         )
-
-        nodes = []
-        for row in getattr(node_rows, "records", node_rows):
-            node_name = str(row[2]).strip('"') if row[2] else str(row[0])
-            nodes.append(
-                {
-                    "id": node_name,
-                    "label": row[1],
-                    "properties": row[3],
-                }
+        character_list = characters.scalars().all()
+        
+        character_nodes = []
+        character_edges = []
+        for char in character_list:
+            node_id = f"character_{char.id}"
+            character_nodes.append(
+                GraphNodeSchema(
+                    id=node_id,
+                    label="Character",
+                    properties={
+                        "name": char.name,
+                        "role": char.role,
+                        "personality": char.personality,
+                        "ability": char.ability,
+                    },
+                )
             )
-
-        # 全エッジの取得
-        edge_query = "MATCH (a)-[r]->(b) RETURN a.name, type(r), b.name, r"
-        edge_rows = age_client.execute_cypher(
-            session=session,
-            cypher_query=edge_query,
-            column_definition="(source agtype, rel_type agtype, target agtype, props agtype)",
-            graph_name=gname,
+            # キャラクターを伏線ノードに接続（同じ作品内なら全伏線に関連付け）
+            for f_node in graph_response.nodes:
+                if f_node.label == "Foreshadowing":
+                    character_edges.append(
+                        GraphEdgeSchema(
+                            source=node_id,
+                            target=f_node.id,
+                            type="RELATED_TO",
+                            properties={"relation": "character_foreshadowing"},
+                        )
+                    )
+        
+        # すべてのノードとエッジを結合
+        all_nodes = graph_response.nodes + character_nodes
+        all_edges = graph_response.edges + character_edges
+        
+        # キャラクター関係も追加
+        from src.backend.database.models_relation import CharacterRelationModel
+        char_relations = await session.execute(
+            select(CharacterRelationModel).where(CharacterRelationModel.book_id == book_id)
         )
-
-        edges = []
-        for row in getattr(edge_rows, "records", edge_rows):
-            edges.append(
-                {
-                    "source": str(row[0]).strip('"'),
-                    "type": str(row[1]).strip('"'),
-                    "target": str(row[2]).strip('"'),
-                    "properties": row[3],
-                }
+        for rel in char_relations.scalars().all():
+            all_edges.append(
+                GraphEdgeSchema(
+                    source=f"character_{rel.source_char_id}",
+                    target=f"character_{rel.target_char_id}",
+                    type=rel.relation_type,
+                    properties={"description": rel.description} if rel.description else {},
+                )
             )
-
-        return {
-            "graph_name": gname,
-            "nodes": nodes,
-            "edges": edges,
-        }
+        
+        return ForeshadowingGraphResponse(
+            graph_name=gname,
+            nodes=all_nodes,
+            edges=all_edges,
+        ).model_dump()
+        
     except Exception as e:
+        logger.error(f"Failed to generate graph for book_id={book_id}: {e}")
+        # エラー時はフォールバックデータを返す
         return {
             "graph_name": gname,
             "error": str(e),
@@ -248,16 +254,18 @@ def get_graph_data(
 
 
 @router.get("/chunks")
-def list_chapter_chunks(
+async def list_chapter_chunks(
     chapter_id: int | None = Query(None, description="章IDでフィルタ"),
     limit: int = Query(20, ge=1, le=100),
-    session: Session = Depends(database.get_db),
+    session: AsyncSession = Depends(database.get_async_db),
 ) -> list[dict[str, Any]]:
     """保存されているベクトルチャンク一覧を取得する."""
-    query = session.query(ChapterChunk)
+    from sqlalchemy import select
+    query = select(ChapterChunk)
     if chapter_id is not None:
-        query = query.filter(ChapterChunk.chapter_id == chapter_id)
-    chunks = query.order_by(ChapterChunk.created_at.desc()).limit(limit).all()
+        query = query.where(ChapterChunk.chapter_id == chapter_id)
+    result = await session.execute(query.order_by(ChapterChunk.created_at.desc()).limit(limit))
+    chunks = result.scalars().all()
 
     return [
         {

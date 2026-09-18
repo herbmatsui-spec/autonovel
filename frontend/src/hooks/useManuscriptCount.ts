@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import { countManuscript, ManuscriptCountResult } from '../utils/manuscriptCount';
+import { countManuscript } from '../utils/manuscriptCount';
+import { ManuscriptCountResult } from '../types/manuscript';
 
 export function useManuscriptCount(content: string = ''): ManuscriptCountResult {
   return useMemo(() => {

@@ -233,7 +233,7 @@ class BookScoreCalculator:
         if not self._repository or not hasattr(self._repository, 'session'):
             return None
         try:
-            from src.infrastructure.database.models.plot import Plot as PlotModel
+            from src.backend.database.models import Plot as PlotModel
             from sqlalchemy import select
             result = await self._repository.session.execute(
                 select(PlotModel).where(
@@ -253,7 +253,7 @@ class BookScoreCalculator:
         if not self._repository or not hasattr(self._repository, 'session'):
             return None
         try:
-            from src.infrastructure.database.models.chapter import Chapter as ChapterModel
+            from src.backend.database.models import Chapter as ChapterModel
             from sqlalchemy import select
             result = await self._repository.session.execute(
                 select(ChapterModel).where(
@@ -273,7 +273,7 @@ class BookScoreCalculator:
         if not self._repository or not hasattr(self._repository, 'session'):
             return None
         try:
-            from src.infrastructure.database.models.illustration import Illustration as IllustrationModel
+            from src.backend.database.models import Illustration as IllustrationModel
             from sqlalchemy import select
             result = await self._repository.session.execute(
                 select(IllustrationModel).where(
@@ -293,7 +293,7 @@ class BookScoreCalculator:
         if not self._repository or not hasattr(self._repository, 'session'):
             return None
         try:
-            from src.infrastructure.database.models.bible import Bible as BibleModel
+            from src.backend.database.models import Bible as BibleModel
             from sqlalchemy import select
             result = await self._repository.session.execute(
                 select(BibleModel).where(
@@ -312,7 +312,7 @@ class BookScoreCalculator:
         if not self._repository or not hasattr(self._repository, 'session'):
             return None
         try:
-            from src.infrastructure.database.models.audit import AuditIssue as AuditIssueModel
+            from src.backend.database.models import AuditIssue as AuditIssueModel
             from sqlalchemy import select
             result = await self._repository.session.execute(
                 select(AuditIssueModel).where(

@@ -48,19 +48,20 @@ export const Editor: React.FC<EditorProps> = ({
    onToast,
    onCreateBranch,
    onSceneChange,
- }) => {
-   const {
-     activeHighlight,
-     setActiveHighlight,
-     selectedBookId,
-     currentEpNum,
-     character,
-     hoveredNodeSummary,
-     setHoveredNodeSummary,
-     lineScores,
-     setLineScores,
-     contentLengthLimit
-   } = useNovelContext();
+}) => {
+    const {
+      activeHighlight,
+      setActiveHighlight,
+      selectedBookId,
+      currentEpNum,
+      character,
+      hoveredNodeSummary,
+      setHoveredNodeSummary,
+      lineScores,
+      setLineScores,
+      contentLengthLimit,
+      chapters,
+    } = useNovelContext();
    const [tab, setTab] = useState<"edit" | "preview">("edit");
    const [selectedText, setSelectedText] = useState("");
    const [selectionRange, setSelectionRange] = useState<{ start: number; end: number } | null>(null);
@@ -111,6 +112,9 @@ export const Editor: React.FC<EditorProps> = ({
     }, []);
 
     const manuscriptCount = useManuscriptCount(content);
+
+    const currentChapter = chapters.find((c) => c.ep_num === currentEpNum);
+    const chapterTitle = currentChapter?.title ?? `第${currentEpNum}話`;
 
    const handleSynthesizeAudio = async () => {
      if (!content.trim()) {
@@ -366,10 +370,10 @@ export const Editor: React.FC<EditorProps> = ({
      }
    };
 
-   const charCount = content.replace(/\s/g, "").length;
-   const lineCount = content ? content.split("\n").length : 0;
-   const manuscriptPages = Math.ceil(charCount / 400);
-   const readingTimeMin = Math.ceil(charCount / 400);
+   const charCount = manuscriptCount.body;
+   const lineCount = manuscriptCount.lines;
+   const manuscriptPages = manuscriptCount.pages;
+   const readingTimeMin = manuscriptCount.readingTimeMinutes;
    // 提案5: 文字数上限（contentLengthLimit）に対する進捗率と警告レベル
    const charLimitRatio = contentLengthLimit > 0 ? charCount / contentLengthLimit : 0;
    const charLimitLevel =
@@ -470,35 +474,69 @@ export const Editor: React.FC<EditorProps> = ({
                  🏷️ ルビ挿入
                </button>
              )}
-           </div>
-
-           {/* EditorToolbar */}
-           <EditorToolbar
-             fontFamily={fontFamily}
-             onFontFamilyChange={setFontFamily}
-             fontSize={fontSize}
-             onFontSizeChange={setFontSize}
-             onZenModeToggle={() => setIsZenMode(true)}
-             isZenMode={isZenMode}
-             manuscriptPages={manuscriptPages}
-             onSynthesizeAudio={handleSynthesizeAudio}
-             isSynthesizingAudio={isSynthesizingAudio}
-           />
+</div>
+ 
+            {/* EditorToolbar */}
+            <EditorToolbar
+              fontFamily={fontFamily}
+              onFontFamilyChange={setFontFamily}
+              fontSize={fontSize}
+              onFontSizeChange={setFontSize}
+              onZenModeToggle={() => setIsZenMode(true)}
+              isZenMode={isZenMode}
+              manuscriptPages={manuscriptPages}
+              onSynthesizeAudio={handleSynthesizeAudio}
+              isSynthesizingAudio={isSynthesizingAudio}
+              chapterTitle={chapterTitle}
+              chapterBody={content}
+            />
          </div>
+          <div
+            style={{
+              fontSize: "0.82rem",
+              color: "var(--text-muted)",
+              display: "flex",
+              gap: "14px",
+              alignItems: "center",
+              flexWrap: "wrap",
+              padding: "6px 0",
+              borderBottom: "1px solid var(--border-color, rgba(255, 255, 255, 0.08))",
+              marginBottom: "8px",
+            }}
+          >
+            {/* Step 6: 三段階文字数カウント切替バッジ */}
+            <ManuscriptCountBadge
+              count={manuscriptCount}
+              mode={countMode}
+              onModeChange={handleCountModeChange}
+            />
 
-             文字数: <strong data-testid="editor-char-count" style={{ color: charLimitColor }}>{charCount}</strong>
-             / {contentLengthLimit} 文字
-             {charLimitLevel === "exceeded" && (
-               <span style={{ color: "var(--accent-danger)", marginLeft: "4px" }}>（上限超過）</span>
-             )}
-             {charLimitLevel === "warning" && (
-               <span style={{ color: "var(--accent-yellow)", marginLeft: "4px" }}>（まもなく上限）</span>
-             )}
-           </span>
-           <span>読了目安: <strong>約{readingTimeMin || 1}</strong> 分</span>
-           <span>原稿用紙: <strong>約{manuscriptPages}</strong> 枚</span>
-           <AutosaveIndicator status={status} lastSavedAt={lastSavedAt} />
-         </div>
+            <span>行数: <strong>{lineCount}</strong> 行</span>
+            <span>
+              文字数: <strong data-testid="editor-char-count" style={{ color: charLimitColor }}>{charCount}</strong>
+              / {contentLengthLimit} 文字
+              {charLimitLevel === "exceeded" && (
+                <span style={{ color: "var(--accent-danger)", marginLeft: "4px" }}>（上限超過）</span>
+              )}
+              {charLimitLevel === "warning" && (
+                <span style={{ color: "var(--accent-yellow)", marginLeft: "4px" }}>（まもなく上限）</span>
+              )}
+            </span>
+            <span>読了目安: <strong>約{readingTimeMin || 1}</strong> 分</span>
+            <span>原稿用紙: <strong>約{manuscriptPages}</strong> 枚</span>
+            <AutosaveIndicator status={status} lastSavedAt={lastSavedAt} />
+
+            {/* Step 10: 公募・新人賞目標インジケーター */}
+            <div style={{ width: "100%", marginTop: "2px" }}>
+              <ManuscriptTargetIndicator
+                count={manuscriptCount}
+                selectedPresetId={targetPresetId}
+                onPresetChange={handleTargetPresetChange}
+                customTargetChars={customTargetChars}
+                onCustomTargetChange={handleCustomTargetChange}
+              />
+            </div>
+          </div>
 
          {/* 矛盾フォーカス時の警告通知バー */}
          {activeHighlight && (

@@ -61,6 +61,23 @@ class CostRepository:
             {"k": f"budget_usd:{book_id}", "v": str(budget_usd)},
         )
 
+    @retry_on_lock()
+    async def get_budget(self, book_id: int) -> float:
+        """内部状態から予算を取得する（簡易実装）。"""
+        result = await self.session.execute(
+            __import__("sqlalchemy").text(
+                "SELECT value FROM internal_state WHERE key = :k"
+            ),
+            {"k": f"budget_usd:{book_id}"},
+        )
+        row = result.fetchone()
+        if row is not None:
+            try:
+                return float(row[0])
+            except (ValueError, TypeError):
+                return 0.0
+        return 0.0
+
     async def aggregate(self, book_id: int, branch_id: int = 1) -> dict:
         rows = await self.list_by_book(book_id, branch_id)
         total_tokens = sum(r.total_tokens for r in rows)

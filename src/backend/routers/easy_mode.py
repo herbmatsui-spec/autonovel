@@ -22,6 +22,8 @@ from src.services.llm.prompts import (
 )
 from src.services.marketing import MarketingAgent
 from src.services.rag_service import rag_service
+from src.services.compression.compressor import FourLayerCompressor
+from src.services.compression.models import CompressionConfig
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -250,8 +252,8 @@ async def generate_content(
             input_data.character_params.model_dump()
             if hasattr(input_data.character_params, "model_dump")
             else dict(input_data.character_params)
-        )
-
+)
+        
         # 生成パラメータ準備
         params: dict[str, Any] = {
             "chapter_history": input_data.chapter_history,
@@ -268,22 +270,23 @@ async def generate_content(
             "book_id": input_data.book_id,
             "start_ep": input_data.start_ep,
             "end_ep": input_data.end_ep,
+            "compressor": FourLayerCompressor(config=CompressionConfig()),
         }
-
+        
         # タスクをキューに投入 (Huey 非同期タスク呼び出し)
         from src.backend.tasks.generation_tasks import generate_chapter_orchestrated_task
-
+        
         task_result = generate_chapter_orchestrated_task(params)
         huey_task_id = str(task_result.id)
         params["task_id"] = huey_task_id
-
+        
         # DB レコードを作成
         repo = BookRepository(session)
         repo.create_task(task_id=huey_task_id, status="running")
-
+        
         metrics.increment("tasks_enqueued")
         logger.info("Enqueued generation task: task_id=%s", huey_task_id)
-
+        
         return GenerationResponse(
             task_id=huey_task_id,
             output="",

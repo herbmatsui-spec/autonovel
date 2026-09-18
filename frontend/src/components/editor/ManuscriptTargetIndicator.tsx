@@ -144,12 +144,14 @@ export const ManuscriptTargetIndicator: React.FC<ManuscriptTargetIndicatorProps>
             }}
             data-testid="target-progress-text"
           >
-            {targetState.isOver ? (
-              <span>⚠️ 目標超過 +{(count.body - activePreset.targetChars).toLocaleString()}字</span>
+            {targetState.isMaxOver ? (
+              <span>上限 {activePreset.maxPages}枚 超過 (現在 {count.pages}枚)</span>
+            ) : targetState.isOver ? (
+              <span>目標超過 +{(count.body - activePreset.targetChars).toLocaleString()} 字</span>
             ) : targetState.isWarning ? (
               <span>
                 {count.body.toLocaleString()} / {activePreset.targetChars.toLocaleString()} 字 ({percent}%)
-                (あと {targetState.remainingChars.toLocaleString()}字)
+                (あと {targetState.remainingChars.toLocaleString()} 字)
               </span>
             ) : (
               <span>

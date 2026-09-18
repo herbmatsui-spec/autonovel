@@ -299,6 +299,33 @@ class ProduceNovelRequest(BaseModel):
     engine_key: str = Field(default="standard", description="エンジンキー")
 
 
+class ExpandBeatsRequest(AuthenticatedRequest):
+    """商業ビート生成リクエスト"""
+
+    api_key: str = Field(default="", description="APIキー（省略可）")
+    config: dict[str, Any] = Field(default_factory=dict)
+    title: str = Field(..., description="作品タイトル")
+    genre: str = Field(..., description="ジャンル")
+    synopsis: str = Field(default="", description="あらすじ")
+    target_chapters: int = Field(default=20, ge=1, le=100, description="目標話数")
+    cheat_scale: int = Field(default=4, ge=1, le=5, description="チート度 (1-5)")
+    growth_curve: str = Field(default="最初からカンスト(無双)", min_length=1, description="成長曲線モデル")
+    system_assist: int = Field(default=70, ge=0, le=100, description="システム支援度 (0-100)")
+    cost_severity: int = Field(default=2, ge=1, le=5, description="代償・リスク過酷度 (1-5)")
+    beats: list[BeatItemSchema] = Field(default_factory=list, description="確定済みビート一覧（wizard-save時）")
+
+
+class BeatItemSchema(BaseModel):
+    """1話分のビート情報"""
+
+    episode: int = Field(..., description="話数")
+    title: str = Field(..., description="エピソードタイトル")
+    outline: str = Field(..., description="あらすじ・ビート内容")
+    cliffhanger_type: str = Field(..., description="クリフハンガー種別")
+    sensory_focus: list[str] = Field(default_factory=list, description="五感フォーカスタグ")
+    foreshadowing_notes: str = Field(default="", description="伏線メモ")
+
+
 class ProduceNovelResponse(BaseResponse):
     """作品生成レスポンス"""
 
@@ -448,4 +475,6 @@ __all__ = [
     "RollbackRequest",
     "ResolveIssueRequest",
     "ErrorResponse",
+    "ExpandBeatsRequest",
+    "BeatItemSchema",
 ]

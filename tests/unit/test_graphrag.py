@@ -410,8 +410,14 @@ def test_graph_router(client):
     """GET /api/graph エンドポイントが正常に応答することを検証.
 
     認証ミドルウェアにより 401 が返る環境では、認証エラーも許容する。
+    book_id は必須パラメータのため、422 (Unprocessable Entity) も許容する。
     """
+    # book_id なしの場合は 422
     response = client.get("/api/graph")
+    assert response.status_code in (200, 401, 422)
+    
+    # book_id ありの場合
+    response = client.get("/api/graph?book_id=1")
     assert response.status_code in (200, 401)
     if response.status_code == 200:
         data = response.json()

@@ -1,4 +1,5 @@
 import { EditorFontFamily, EditorFontSize } from "../../types";
+import { PlatformCopyButton } from "../common/PlatformCopyButton";
 
 interface EditorToolbarProps {
   fontFamily: EditorFontFamily;
@@ -10,6 +11,8 @@ interface EditorToolbarProps {
   manuscriptPages: number;
   onSynthesizeAudio?: () => void;
   isSynthesizingAudio?: boolean;
+  chapterTitle: string;
+  chapterBody: string;
 }
 
 export const EditorToolbar: React.FC<EditorToolbarProps> = ({
@@ -22,6 +25,8 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
   manuscriptPages,
   onSynthesizeAudio,
   isSynthesizingAudio = false,
+  chapterTitle,
+  chapterBody,
 }) => {
   return (
     <div className="editor-toolbar">
@@ -81,6 +86,10 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
 
       <div className="editor-toolbar__divider" />
 
+      <PlatformCopyButton title={chapterTitle} body={chapterBody} />
+
+      <div className="editor-toolbar__divider" />
+
       {onSynthesizeAudio && (
         <button
           type="button"
@@ -92,6 +101,8 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
           {isSynthesizingAudio ? "⏳ 合成中..." : "🔊 音声朗読"}
         </button>
       )}
+
+      <div className="editor-toolbar__divider" />
 
       <button
         type="button"

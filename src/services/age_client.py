@@ -12,15 +12,29 @@ Enhanced with:
 - Batch operations support
 - Hybrid backend support: delegates to HybridGraphFacade for automatic
   fallback between AGE (PostgreSQL) and NetworkX (SQLite/standalone)
+
+[DEPRECATED] This module is deprecated as of v5.0 Relational Memory.
+   Use RDBMS-based foreshadowing tables and character_relations instead.
+   Apache AGE / GraphRAG functionality has been fully replaced.
 """
 from __future__ import annotations
 
 import json
 import re
 import time
+import warnings
 from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Any
+
+# Age client for Apache AGE graph database
+warnings.warn(
+    "src.services.age_client is deprecated as of v5.0 Relational Memory. "
+    "Use RDBMS-based foreshadowing tables (foreshadowings, character_relations) instead. "
+    "Apache AGE / GraphRAG functionality has been fully replaced.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 from sqlalchemy import text
 from sqlalchemy.exc import DBAPIError, IntegrityError, OperationalError, ProgrammingError
@@ -205,7 +219,11 @@ def _validate_column_def(column_definition: str) -> str:
 
 
 class AgeClient:
-    """Apache AGE クライアント - 本番グレード実装."""
+    """Apache AGE クライアント - 本番グレード実装.
+
+    [DEPRECATED] This class is deprecated as of v5.0 Relational Memory.
+       Use RDBMS-based foreshadowing tables and character_relations instead.
+    """
 
     def __init__(
         self,
