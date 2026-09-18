@@ -39,6 +39,9 @@ async def handle_stripe_webhook(
                 payload, stripe_signature, WEBHOOK_SECRET
             )
         else:
+            if getattr(settings, "APP_ENV", "").lower() == "production":
+                logger.error("STRIPE_WEBHOOK_SECRET is required in production mode!")
+                raise HTTPException(status_code=500, detail="Server configuration error: missing webhook secret")
             # 開発・テスト環境でシークレット未設定時
             import json
             event = json.loads(payload)

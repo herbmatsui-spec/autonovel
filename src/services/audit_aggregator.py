@@ -16,6 +16,7 @@ from typing import Any, Mapping, Sequence
 from prometheus_client import Counter, Gauge
 
 from src.services.audit.fast_screener import FastScreener
+from src.agents.specialist_auditor_base import SpecialistAuditor, SpecialistAuditResult
 
 logger = logging.getLogger(__name__)
 

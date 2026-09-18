@@ -21,7 +21,9 @@ class TestNarouPublisher:
         with patch("src.services.publishers.narou.webdriver"), \
              patch("src.services.publishers.narou.ChromeDriverManager"), \
              patch("src.services.publishers.narou.Options"), \
-             patch("src.services.publishers.narou.Service"):
+             patch("src.services.publishers.narou.Service"), \
+             patch("time.sleep"), \
+             patch("asyncio.sleep"):
             pub = NarouPublisher(headless=True)
             yield pub
             pub._close_driver()

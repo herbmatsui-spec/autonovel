@@ -10,6 +10,7 @@ from src.services.compression.models import (
     TrimmedContextOutput,
     SceneType,
     ProtectedContext,
+    SceneFlowHistory,
 )
 from src.services.compression.layer1_keywords import count_tokens
 

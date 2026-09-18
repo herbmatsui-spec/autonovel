@@ -26,6 +26,53 @@ from src.services.publishers.base import (
 
 logger = logging.getLogger(__name__)
 
+try:
+    from selenium import webdriver
+    from selenium.webdriver.chrome.options import Options
+    from selenium.webdriver.chrome.service import Service
+    from selenium.webdriver.support.ui import WebDriverWait, Select
+    from selenium.webdriver.common.by import By
+    from selenium.webdriver.support import expected_conditions as EC
+    from webdriver_manager.chrome import ChromeDriverManager
+except ImportError:
+    webdriver = None
+    Options = None
+    Service = None
+    WebDriverWait = None
+    Select = None
+    ChromeDriverManager = None
+
+    class DummyBy:
+        NAME = "name"
+        ID = "id"
+        XPATH = "xpath"
+        CSS_SELECTOR = "css selector"
+        CLASS_NAME = "class name"
+        TAG_NAME = "tag name"
+        LINK_TEXT = "link text"
+
+    By = DummyBy()
+
+    class DummyEC:
+        @staticmethod
+        def presence_of_element_located(*args, **kwargs):
+            return lambda d: True
+
+        @staticmethod
+        def element_to_be_clickable(*args, **kwargs):
+            return lambda d: True
+
+    EC = DummyEC()
+
+    class DummySelect:
+        def __init__(self, elem):
+            self.elem = elem
+
+        def select_by_value(self, val):
+            pass
+
+    Select = DummySelect
+
 
 @dataclass
 class NarouCredentials(PublisherCredentials):
@@ -110,9 +157,6 @@ class NarouPublisher(PublisherAdapter):
 
         def _sync_auth() -> bool:
             import time
-            from selenium.webdriver.common.by import By
-            from selenium.webdriver.support.ui import WebDriverWait
-            from selenium.webdriver.support import expected_conditions as EC
 
             driver = self._get_driver()
             try:
@@ -171,9 +215,6 @@ class NarouPublisher(PublisherAdapter):
 
         def _sync_publish() -> PublishResult:
             import time
-            from selenium.webdriver.common.by import By
-            from selenium.webdriver.support.ui import WebDriverWait, Select
-            from selenium.webdriver.support import expected_conditions as EC
 
             driver = self._get_driver()
             try:
@@ -246,17 +287,17 @@ class NarouPublisher(PublisherAdapter):
                 time.sleep(2)
 
                 # 投稿完了後のURLから小説IDを抽出
-                current_url = driver.current_url
-                novel_id_match = re.search(r"/novel/(\d+)/", current_url)
+                current_url = str(getattr(driver, "current_url", "") or "")
+                novel_id_match = re.search(r"/novel(?:manage)?/(\d+)/", current_url)
 
                 if not novel_id_match:
                     driver.get(self.MY_PAGE_URL)
                     time.sleep(1)
                     novel_links = driver.find_elements(By.CSS_SELECTOR, "a[href*='/novelmanage/']")
                     if novel_links:
-                        novel_id_match = re.search(
-                            r"/novelmanage/(\d+)/", novel_links[0].get_attribute("href")
-                        )
+                        href = getattr(novel_links[0], "get_attribute", lambda attr: "")("href")
+                        if isinstance(href, str):
+                            novel_id_match = re.search(r"/novelmanage/(\d+)/", href)
 
                 if novel_id_match:
                     novel_id = novel_id_match.group(1)
@@ -293,9 +334,6 @@ class NarouPublisher(PublisherAdapter):
 
         def _sync_update() -> PublishResult:
             import time
-            from selenium.webdriver.common.by import By
-            from selenium.webdriver.support.ui import WebDriverWait
-            from selenium.webdriver.support import expected_conditions as EC
 
             driver = self._get_driver()
             try:
@@ -375,8 +413,6 @@ class NarouPublisher(PublisherAdapter):
         try:
             driver.get(f"https://ncode.syosetu.com/n{post_id}/")
             await asyncio.sleep(1)
-
-            from selenium.webdriver.common.by import By
 
             # 基本情報取得
             title_elem = driver.find_element(By.CSS_SELECTOR, ".novel_title, h1")

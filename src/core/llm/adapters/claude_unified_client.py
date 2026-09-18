@@ -10,7 +10,7 @@ import anthropic
 from anthropic import AsyncAnthropic
 from anthropic.types import Message, TextBlock
 
-from src.core.llm.types import LLMRequest, LLMResponse, StreamChunk
+from src.core.llm.types import LLMRequest, LLMResponse, LLMUsage, StreamChunk
 from src.core.llm.unified_interface import IUnifiedLLMClient
 from src.backend.config import settings
 

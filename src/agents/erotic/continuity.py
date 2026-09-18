@@ -7,6 +7,7 @@ erotic/continuity.py - シーン・キャラクター連続性追跡
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, model_validator
 

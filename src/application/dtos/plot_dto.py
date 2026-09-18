@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 from datetime import datetime
-from typing import Literal, Optional
+from typing import Literal, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.domain.entities.plot import Plot
 
 from pydantic import BaseModel, ConfigDict, Field
 

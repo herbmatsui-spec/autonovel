@@ -21,7 +21,7 @@ class GenerateCharacterIllustrationUseCase:
     illustration_service: IIllustrationService
     novel_repo: INovelRepository
 
-    async def execute(self, dto: GenerateCharacterIllustrationDTO) -> IllustrationResponseDTOResponse:
+    async def execute(self, dto: GenerateCharacterIllustrationDTO) -> IllustrationResponseDTO:
         # Verify novel exists
         nid = NovelId.from_string(dto.novel_id)
         novel = await self.novel_repo.get_by_id(nid)

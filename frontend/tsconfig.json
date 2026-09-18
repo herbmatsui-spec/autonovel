@@ -9,6 +9,9 @@
     "skipLibCheck": true,
     "isolatedModules": true,
     "noEmit": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "types": ["@testing-library/jest-dom"],
     "paths": {
       "@/*": ["./src/*"]
     }

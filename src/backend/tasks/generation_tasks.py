@@ -20,6 +20,7 @@ from src.backend.database.repository import BookRepository
 from src.backend.observability.health import metrics
 from src.backend.tasks.huey import huey
 from src.backend.database.models import BookDbModel
+from src.agents.orchestrator import AgentContext, AgentResult
 from src.services.billing.credit_service import CreditService
 
 logger = logging.getLogger(__name__)

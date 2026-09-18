@@ -1,7 +1,10 @@
 """Branch DTOs."""
 
 from __future__ import annotations
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.domain.entities.branch import Branch, BranchPlaySession
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field

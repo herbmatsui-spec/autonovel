@@ -13,7 +13,49 @@ writing_service.py - WritingService: 本文執筆・研磨を担当するドメ�
 - calculate_book_score: 執筆後の BookScore 計算とフィードバックループ
 """
 
+import re
 from typing import Any
+from pydantic import BaseModel
+
+
+def clean_writing_response(text: str) -> str:
+    """思考ログを除去して本文を整形する"""
+    text = re.sub(r"<thinking>.*?</thinking>", "", text, flags=re.DOTALL)
+    return text.strip()
+
+
+class WritingGenerationContext(BaseModel):
+    """執筆生成コンテキストモデル"""
+    sys_inst: str = ""
+    fw_prompt: str = ""
+    pov_instruction: str = ""
+    expanded_beats: str = ""
+    feedback_patch: str = ""
+    style_key: str = "style_web_standard"
+    target_word_count: int = 2000
+    enable_polishing: bool = True
+    prose_sample: str = ""
+    plot: Any | None = None
+
+    def build_sys_inst(self) -> str:
+        parts = [self.sys_inst]
+        if self.pov_instruction:
+            parts.append(self.pov_instruction)
+        if self.feedback_patch:
+            parts.append(f"\n\n【🚨自己評価フィードバックパッチ】\n{self.feedback_patch}")
+        return "\n\n".join(parts)
+
+    def build_fw_prompt(self, suffix: str = "") -> str:
+        parts = [self.fw_prompt]
+        if self.pov_instruction:
+            parts.append(self.pov_instruction)
+        if self.expanded_beats:
+            parts.append(
+                f"\n\n【📝 物理動作ビート分解（絶対遵守）】\n以下のビートに従って、各ビートの文字数を意識しShow, Don't Tellを徹底しながら執筆してください：\n{self.expanded_beats}\n"
+            )
+        if suffix:
+            parts.append(suffix)
+        return "\n\n".join(parts)
 
 
 class WritingService:

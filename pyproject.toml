@@ -89,7 +89,6 @@ omit = [
     # 移行過渡期の一時的カバレッジ除外モジュール
     "src/services/content_processor.py",
     "src/services/llm/provider_failover.py",
-    "src/services/plot_service.py",
     "src/services/state_manager.py",
     "src/services/narrative_scoring_service.py",
 ]

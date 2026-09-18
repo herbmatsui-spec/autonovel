@@ -74,10 +74,23 @@ export const PublishAssistantModal: React.FC<PublishAssistantModalProps> = ({
     }
   };
 
-  const copyToClipboard = (text: string, fieldName: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedField(fieldName);
-    setTimeout(() => setCopiedField(null), 2000);
+  const copyToClipboard = async (text: string, fieldName: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedField(fieldName);
+      // Success indication would be handled by the UI feedback
+      setTimeout(() => setCopiedField(null), 2000);
+    } catch (err) {
+      // Fallback: textarea にフォーカス・選択
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+      setCopiedField(fieldName);
+      setTimeout(() => setCopiedField(null), 2000);
+    }
   };
 
   if (!isOpen) return null;

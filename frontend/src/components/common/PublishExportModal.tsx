@@ -5,8 +5,10 @@ interface PublishExportModalProps {
   isOpen: boolean;
   onClose: () => void;
   bookId: number;
-  currentChapter?: number;
-  branchId?: number;
+  initialChapterId?: number;
+  initialBranchId?: number;
+  initialVersion?: 'saved' | 'current';
+  availableChapters?: { id: number; ep_num: number; title: string }[];
 }
 
 const PLATFORMS = [
@@ -21,8 +23,10 @@ export const PublishExportModal: React.FC<PublishExportModalProps> = ({
   isOpen,
   onClose,
   bookId,
-  currentChapter = 1,
-  branchId,
+  initialChapterId,
+  initialBranchId,
+  initialVersion,
+  availableChapters = [],
 }) => {
   const [selectedPlatform, setSelectedPlatform] = useState<string>('narou');
   const [previewData, setPreviewData] = useState<PublishPreviewResponse | null>(null);
@@ -30,6 +34,17 @@ export const PublishExportModal: React.FC<PublishExportModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
   const [downloading, setDownloading] = useState<boolean>(false);
+  
+  // チャプター・版・ブランチの選択状態を管理
+  const [selectedChapterId, setSelectedChapterId] = useState<number>(
+    initialChapterId ?? 1
+  );
+  const [selectedBranchId, setSelectedBranchId] = useState<number>(
+    initialBranchId ?? 1
+  );
+  const [selectedVersion, setSelectedVersion] = useState<'saved' | 'current'>(
+    initialVersion ?? 'saved'
+  );
 
   useEffect(() => {
     if (!isOpen || !bookId) return;
@@ -39,7 +54,7 @@ export const PublishExportModal: React.FC<PublishExportModalProps> = ({
     setError(null);
     setCopied(false);
 
-    fetchPublishPreview(selectedPlatform, bookId, currentChapter, branchId)
+    fetchPublishPreview(selectedPlatform, bookId, selectedChapterId, selectedBranchId)
       .then((data) => {
         if (isMounted) setPreviewData(data);
       })
@@ -53,21 +68,34 @@ export const PublishExportModal: React.FC<PublishExportModalProps> = ({
     return () => {
       isMounted = false;
     };
-  }, [isOpen, bookId, selectedPlatform, currentChapter, branchId]);
+  }, [isOpen, bookId, selectedPlatform, selectedChapterId, selectedBranchId]);
 
   if (!isOpen) return null;
 
-  const handleCopy = () => {
+  const handleCopy = async () => {
     if (!previewData?.formatted_content) return;
-    navigator.clipboard.writeText(previewData.formatted_content);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(previewData.formatted_content);
+      setCopied(true);
+      // Success toast would be handled by parent component or a toast system
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      // Fallback: textarea にフォーカス・選択
+      const ta = document.createElement('textarea');
+      ta.value = previewData.formatted_content;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   const handleDownload = async () => {
     try {
       setDownloading(true);
-      await downloadPublishZip(selectedPlatform, bookId, branchId);
+      await downloadPublishZip(selectedPlatform, bookId, selectedBranchId);
     } catch (err: any) {
       setError(err.message || 'ダウンロードに失敗しました');
     } finally {
@@ -112,6 +140,53 @@ export const PublishExportModal: React.FC<PublishExportModalProps> = ({
             </button>
           ))}
         </div>
+        
+        {/* Chapter and Version Selectors */}
+        {availableChapters.length > 0 && (
+          <div className="px-6 pt-4 pb-2 bg-slate-950/20">
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">章節</label>
+                <select
+                  value={selectedChapterId}
+                  onChange={(e) => setSelectedChapterId(parseInt(e.target.value))}
+                  className="w-full px-3 py-2 text-xs bg-slate-900 border border-slate-700 rounded"
+                >
+                  {availableChapters.map((chapter) => (
+                    <option key={chapter.id} value={chapter.id}>
+                      第{chapter.ep_num}話: {chapter.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="block text-xs text-slate-400 mb-1">版</label>
+                <div className="flex gap-3">
+                  <label className="flex items-center gap-2 text-xs">
+                    <input
+                      type="radio"
+                      value="saved"
+                      checked={selectedVersion === 'saved'}
+                      onChange={() => setSelectedVersion('saved')}
+                      className="h-4 w-4 text-indigo-600"
+                    />
+                    保存版
+                  </label>
+                  <label className="flex items-center gap-2 text-xs">
+                    <input
+                      type="radio"
+                      value="current"
+                      checked={selectedVersion === 'current'}
+                      onChange={() => setSelectedVersion('current')}
+                      className="h-4 w-4 text-indigo-600"
+                    />
+                    現在編集版
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Warnings Banner */}
         {previewData?.warnings && previewData.warnings.length > 0 && (
