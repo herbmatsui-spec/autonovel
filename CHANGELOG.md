@@ -4,6 +4,19 @@
 
 ## [4.7.0] - 2026-09-08 - 4大改善の柱（Pillar 1〜4: 全288ステップ）完全統合・商業品質化
 
+## [5.0.2] - 2026-09-18 - 4層圧縮統合・CI・ドキュメント更新
+
+### 追加
+- DI コンテナによる FourLayerCompressor シングルトン提供 (AppContainer)
+- WritingService、ContextBuilderAgent、EpisodeWriter、EasyMode パイプラインへのコンプレッサー注入
+- 4層圧縮モジュールの詳細設計と書類追加 (docs/compression_module.md、docs/architecture.md 更新)
+- CI パイプラインの追加 (.github/workflows/ci.yml) で自動テスト実行
+- README.md に 4層圧縮統合の概要と使用例を追加
+
+### 変更
+- なし
+
+
 ### 追加
 - **第1の柱: 表現力・窓枠評価**:
   - `NovelSectionExtractor`: 冒頭/末尾/等間隔起承転結/重要シーンの文頭・文末スナップ窓枠抽出（4000字打ち切り全廃）。

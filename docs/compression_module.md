@@ -54,7 +54,7 @@ FourLayerCompressor は以下の4層から構成されます：
 - **EasyMode パイプライン**  
   - `create_easy_mode_pipeline` 関数にて、引数 `compressor` を受け取り、内部で `CompressionPipelineStep` または各ステップに渡します（実装詳細は `src/services/auto_workflow_pipeline.py` 参照）。
 
-### 4.5 使用例（DI コンテナから取得）
+### 4.4 使用例（DI コンテナから取得）
 
 ```python
 from src.core.container.app import AppContainer
@@ -65,7 +65,7 @@ writing_service = container.writing_service()
 # writing_service.compressor 経由でアクセス可能
 ```
 
-### 4.6 設定
+### 4.5 設定
 
 `CompressionConfig` インスタンスにて以下のパラメータを調整可能です（デフォルト値は `src/services/compression/models.py` 参照）：
 
@@ -79,7 +79,7 @@ writing_service = container.writing_service()
 - `cache_ttl_seconds`: キャッシュ有効時間（秒、デフォルト 3600）
 - `preserve_categories`: 優先保持するカテゴリリスト（デフォルト ["主要キャラ", "核心設定", "伏線"]）
 
-### 4.7 テスト
+### 4.6 テスト
 
 - 単体テスト: `tests/unit/test_four_layer_compression.py`
 - 契約テスト: `tests/contract/test_compression_output_schema.py`
@@ -87,4 +87,4 @@ writing_service = container.writing_service()
 - 性能ベンチマーク: `tests/performance/test_compression_benchmark.py`
 - E2E テスト: `tests/e2e/test_full_novel_with_compression.py`
 
-全テストは CI パイプラインで自動実行されます.
+全テストは CI パイプラインで自動実行されます。

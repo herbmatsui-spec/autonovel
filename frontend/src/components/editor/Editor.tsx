@@ -23,6 +23,13 @@ import { EditorAudioSection } from "./EditorAudioSection";
 
 import { findNearestImageMarker } from "../../utils/multimedia";
 
+// 日本語原稿文字数三段階切替 & 目標判定
+import { CountMode } from "../../types/manuscript";
+import { useManuscriptCount } from "../../hooks/useManuscriptCount";
+import { ManuscriptCountBadge } from "./ManuscriptCountBadge";
+import { ManuscriptTargetIndicator } from "./ManuscriptTargetIndicator";
+
+
 interface EditorProps {
    content: string;
    onChange: (value: string) => void;
@@ -75,6 +82,35 @@ export const Editor: React.FC<EditorProps> = ({
    const textareaRef = useRef<HTMLTextAreaElement>(null);
    const mirrorRef = useRef<HTMLDivElement>(null);
    const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number } | null>(null);
+
+    // 原稿文字数カウント & 目標プリセット状態（localStorage永続化）
+    const [countMode, setCountMode] = useState<CountMode>(() => {
+      return (localStorage.getItem("autonovel.countMode") as CountMode) || "body";
+    });
+    const [targetPresetId, setTargetPresetId] = useState<string>(() => {
+      return localStorage.getItem("autonovel.targetPresetId") || "shousetsu-gekkan";
+    });
+    const [customTargetChars, setCustomTargetChars] = useState<number>(() => {
+      const saved = localStorage.getItem("autonovel.customTargetChars");
+      return saved ? Number(saved) : 10000;
+    });
+
+    const handleCountModeChange = useCallback((newMode: CountMode) => {
+      setCountMode(newMode);
+      localStorage.setItem("autonovel.countMode", newMode);
+    }, []);
+
+    const handleTargetPresetChange = useCallback((presetId: string) => {
+      setTargetPresetId(presetId);
+      localStorage.setItem("autonovel.targetPresetId", presetId);
+    }, []);
+
+    const handleCustomTargetChange = useCallback((chars: number) => {
+      setCustomTargetChars(chars);
+      localStorage.setItem("autonovel.customTargetChars", String(chars));
+    }, []);
+
+    const manuscriptCount = useManuscriptCount(content);
 
    const handleSynthesizeAudio = async () => {
      if (!content.trim()) {
@@ -450,9 +486,6 @@ export const Editor: React.FC<EditorProps> = ({
            />
          </div>
 
-         <div style={{ fontSize: "0.82rem", color: "var(--text-muted)", display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
-           <span>行数: <strong>{lineCount}</strong> 行</span>
-           <span>
              文字数: <strong data-testid="editor-char-count" style={{ color: charLimitColor }}>{charCount}</strong>
              / {contentLengthLimit} 文字
              {charLimitLevel === "exceeded" && (

@@ -6,39 +6,6 @@ const RUBY_TAG_REGEX = /<ruby>([^<]+)<rt>[^<]+<\/rt><\/ruby>/g;
 const MEDIAL_REGEX = /[《》〈〉「」『』【】〔〕]/g;
 
 export function countManuscript(htmlOrText: string): ManuscriptCountResult {
-// DEBUG: log for specific input
-  if (htmlOrText.includes('<ruby>猫<rt>ねこ</rt></ruby>')) {
-    console.log('Input:', htmlOrText);
-    const afterRubyReplace = htmlOrText.replace(RUBY_TAG_REGEX, '$1');
-    console.log('After ruby replace (base):', afterRubyReplace);
-    const afterTagReplace = afterRubyReplace.replace(/<[^>]+>/g, '');
-    console.log('After tag replace:', afterTagReplace);
-    const afterMedialReplace = afterTagReplace.replace(MEDIAL_REGEX, '');
-    console.log('After medial replace:', afterMedialReplace);
-    const afterWhitespaceReplace = afterMedialReplace.replace(/\s+/g, '');
-    console.log('After whitespace replace:', afterWhitespaceReplace);
-    console.log('Body length:', afterWhitespaceReplace.length);
-    // Log char codes for body
-    const bodyChars = [...afterWhitespaceReplace];
-    bodyChars.forEach((ch, idx) => {
-      console.log(`${idx}: '${ch}' (${ch.charCodeAt(0)})`);
-    });
-    
-    // withRuby
-    const withRubyReplace = htmlOrText.replace(/<ruby>([^<]+)<rt>([^<]+)<\/rt><\/ruby>/g, '$1($2)');
-    console.log('WithRuby replace:', withRubyReplace);
-    const withRubyAfterTag = withRubyReplace.replace(/<[^>]+>/g, '');
-    console.log('WithRuby after tag replace:', withRubyAfterTag);
-    const withRubyAfterWhitespace = withRubyAfterTag.replace(/\s+/g, '');
-    console.log('WithRuby after whitespace replace:', withRubyAfterWhitespace);
-    console.log('WithRuby length:', withRubyAfterWhitespace.length);
-    // Log char codes for withRuby
-    const wChars = [...withRubyAfterWhitespace];
-    wChars.forEach((ch, idx) => {
-      console.log(`${idx}: '${ch}' (${ch.charCodeAt(0)})`);
-    });
-  }
-
   // 1. 本文文字数: HTMLタグ全除去 + 媒介記号除去 + 空白正規化
   const plainText = htmlOrText
     .replace(RUBY_TAG_REGEX, '$1')  // ルビ本体のみ残す
@@ -73,10 +40,11 @@ export function countManuscript(htmlOrText: string): ManuscriptCountResult {
 // 目標判定
 export function checkTarget(result: ManuscriptCountResult, preset: ManuscriptTargetPreset) {
   const ratio = result.body / preset.targetChars;
+  const isOver = result.body > preset.targetChars;
   return {
     ratio: Number(ratio.toFixed(2)),
-    isOver: result.body > preset.targetChars,
-    isWarning: ratio >= preset.warningThreshold && !preset.maxPages,
+    isOver,
+    isWarning: ratio >= preset.warningThreshold && !isOver && !preset.maxPages,
     isMaxOver: preset.maxPages ? result.pages > preset.maxPages : false,
     remainingChars: Math.max(0, preset.targetChars - result.body),
   };

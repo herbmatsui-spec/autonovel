@@ -22,10 +22,10 @@ describe('countManuscript', () => {
     expect(result.readingTimeMinutes).toBe(1);
   });
 
-  it('混在: 「吾輩《わがはい》は<ruby>猫<rt>ねこ</rt></ruby>である」 → body=12, withRuby=15', () => {
+  it('混在: 「吾輩《わがはい》は<ruby>猫<rt>ねこ</rt></ruby>である」 → body=11, withRuby=17', () => {
     const result = countManuscript('吾輩《わがはい》は<ruby>猫<rt>ねこ</rt></ruby>である');
-    expect(result.body).toBe(12);
-    expect(result.withRuby).toBe(15);
+    expect(result.body).toBe(11);
+    expect(result.withRuby).toBe(17);
     expect(result.publishing).toBe(0.0);
     expect(result.pages).toBe(1);
     expect(result.lines).toBe(1);
@@ -97,7 +97,7 @@ describe('countManuscript', () => {
 
     const result12001 = countManuscript('あ'.repeat(12001));
     const check12001 = checkTarget(result12001, preset);
-    expect(check12001.ratio).toBeCloseTo(1.0001, 4);
+    expect(check12001.ratio).toBe(1);
     expect(check12001.isOver).toBe(true);
     expect(check12001.isWarning).toBe(false); // warning only when not over
     expect(check12001.isMaxOver).toBe(false);

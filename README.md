@@ -115,6 +115,26 @@ npm run dev
 
 ---
 
+
+## 🗜️ 4層圧縮統合
+
+4層圧縮は、LLMプロンプト、過去文脈、キャラクター情報、世界観設定などを階層的に圧縮し、トークン使用量を削減しながら重要な情報を保持します。この機能は以下のコンポーネントで利用可能です：
+
+- **WritingService**：`generate_with_quality_assurance` 実行時に自動的に圧縮コンテキストを生成し、執筆品質評価に使用します。
+- **ContextBuilderAgent**：圧縮結果を `artifacts` に格納し、次のエージェントに渡します。
+- **EpisodeWriter**：`build_context` 時に圧縮コンテキストを取得し、執筆に使用します。
+- **EasyMode パイプライン**：`create_easy_mode_pipeline` に `compressor` 引数を渡すことで圧縮を有効化できます。
+
+### 使用例（DI コンテナから取得）
+
+```python
+from src.core.container.app import AppContainer
+container = AppContainer()
+compressor = container.compressor()
+# またはサービス経由で取得
+writing_service = container.writing_service()
+# writing_service.compressor 経由でアクセス可
+```
 ## 📖 実践操作マニュアル
 
 ### かんたんモード操作ステップ

@@ -45,19 +45,42 @@ describe('ExportConfirmModal', () => {
     // タイトルが表示されることを確認
     expect(screen.getByText(/出力前確認/)).toBeInTheDocument();
     
-    // 各ラベルと値が正しく表示されることを確認
-    // ブランチフィールドをチェック（複数あるので2番目を取得）
-    const branchTexts = screen.getAllByText(/ブランチ/);
-    expect(branchTexts.length).toBeGreaterThanOrEqual(2);
-    // 2番目のブランチテキストがラベルであることを確認（1番目はラベル、0番目はタイトルの一部）
-    expect(branchTexts[1]).toHaveTextContent('ブランチ');
-    expect(screen.getByText(/main/)).toBeInTheDocument();
-    expect(screen.getByText(/行き先/)).toBeInTheDocument();
-    expect(screen.getByText(/ZIPダウンロード/)).toBeInTheDocument();
-    expect(screen.getByText(/版/)).toBeInTheDocument();
-    expect(screen.getByText(/保存版/)).toBeInTheDocument();
-    expect(screen.getByText(/文字数:/)).toBeInTheDocument();
-    expect(screen.getByText(/1000字/)).toBeInTheDocument();
+    // 各フィールドのラベルと値が正しく表示されることを確認
+    // ブランチフィールド
+    const branchLabels = screen.getAllByText(/ブランチ/);
+    // index 1がラベル元素（index 0はタイトルの一部、index 2はプライマリターゲットテキスト）
+    const branchLabel = branchLabels[1];
+    expect(branchLabel).toBeInTheDocument();
+    // ブランチラベルの親要素の次の兄弟要素（値のコンテナ）から値を取得
+    const branchValueContainer = branchLabel.parentElement?.nextElementSibling;
+    expect(branchValueContainer?.querySelector('div')).toHaveTextContent('main');
+    
+    // 版フィールド
+    const versionLabels = screen.getAllByText(/版/);
+    // index 1がラベル元素（index 0はタイトルの一部、index 2はプライマリターゲットテキスト）
+    const versionLabel = versionLabels[1];
+    expect(versionLabel).toBeInTheDocument();
+    // 版ラベルの親要素の次の兄弟要素（値のコンテナ）から値を取得
+    const versionValueContainer = versionLabel.parentElement?.nextElementSibling;
+    expect(versionValueContainer?.querySelector('div')).toHaveTextContent('保存版');
+    
+    // 行き先フィールド
+    const destinationLabels = screen.getAllByText(/行き先/);
+    // index 1がラベル元素
+    const destinationLabel = destinationLabels[1];
+    expect(destinationLabel).toBeInTheDocument();
+    // 行き先ラベルの親要素の次の兄弟要素（値のコンテナ）から値を取得
+    const destinationValueContainer = destinationLabel.parentElement?.nextElementSibling;
+    expect(destinationValueContainer?.querySelector('div')).toHaveTextContent('ZIPダウンロード');
+    
+    // 文字数フィールド
+    const wordCountLabels = screen.getAllByText(/文字数/);
+    // index 1がラベル元素
+    const wordCountLabel = wordCountLabels[1];
+    expect(wordCountLabel).toBeInTheDocument();
+    // 文字数ラベルの親要素の次の兄弟要素（値のコンテナ）から値を取得
+    const wordCountValueContainer = wordCountLabel.parentElement?.nextElementSibling;
+    expect(wordCountValueContainer?.querySelector('div')).toHaveTextContent('1000字');
     
     // プライマリターゲットセクションが表示されることを確認
     expect(screen.getByText(/📤 出力実行対象/)).toBeInTheDocument();
