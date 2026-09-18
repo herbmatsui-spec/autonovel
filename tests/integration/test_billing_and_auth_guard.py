@@ -12,6 +12,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from src.backend.server import app
+from src.backend.config import settings
 from src.backend.database import get_async_db
 from src.backend.database.models import Base, User
 from src.services.billing.credit_service import CreditService
@@ -34,7 +35,8 @@ async def override_get_async_db():
 
 
 @pytest_asyncio.fixture(autouse=True)
-async def setup_db():
+async def setup_db(monkeypatch):
+    monkeypatch.setattr(settings, "AUTH_DISABLED", False)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     app.dependency_overrides[get_async_db] = override_get_async_db

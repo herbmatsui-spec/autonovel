@@ -8,10 +8,14 @@
 """
 from __future__ import annotations
 
+import asyncio
 import json
+import os
+import tempfile
 import time
 
 import pytest
+from dependency_injector import providers
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from unittest.mock import AsyncMock, patch, MagicMock
@@ -19,9 +23,6 @@ from unittest.mock import AsyncMock, patch, MagicMock
 from src.backend.config import settings
 from src.backend.routers.plots import router as plots_router
 from src.backend.routers.stream_writing import router as stream_router
-
-# テスト用に認証を無効化
-settings.AUTH_DISABLED = True
 
 app = FastAPI()
 app.include_router(plots_router)
@@ -55,44 +56,56 @@ def _parse_sse_events(text: str) -> list[dict]:
     return events
 
 
-@pytest.fixture(scope="module")
-def client() -> TestClient:
-    # テスト用にDBテーブルを初期化（モジュールスコープで1回のみ）
-    import asyncio
-    from src.core.container import AppContainer
+@pytest.fixture(autouse=True)
+def _auth_disabled(monkeypatch):
+    """P2: 認証バイパスをテストスコープに限定（テスト終了後に自動復元）。
 
-    db = AppContainer.db()
+    モジュールレベルでの settings 書き換えは同一セッション内の後続テストに
+    リークするため、monkeypatch でスコープを限定する。
+    """
+    monkeypatch.setattr(settings, "AUTH_DISABLED", True)
+
+
+@pytest.fixture(scope="module")
+def client(tmp_path_factory) -> TestClient:
+    """P1: 開発用DB (./autonovel.db) を保護するため一時DBを使用する。
+
+    - tempfile に一時SQLiteを作成し、AppContainer.db プロバイダーを差し替え
+    - モジュール終了時にオーバーライドを復元し、一時ファイルを削除
+    """
+    from src.core.container import AppContainer
+    from src.backend.database.core import DatabaseManager
+
+    tmp = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
+    tmp.close()
+    db_path = tmp.name
+    temp_manager = DatabaseManager(db_url=f"sqlite:///{db_path}")
 
     async def _init_db():
         from src.infrastructure.database.models.base_orm import Base
         from src.backend.database import models as models_module  # noqa: F401
 
-        # 存在しないテーブルのみ作成（既存テーブルは保持）
-        async with db.engine.begin() as conn:
+        async with temp_manager.engine.begin() as conn:
             await conn.run_sync(
                 lambda sync_conn: Base.metadata.create_all(sync_conn, checkfirst=True)
             )
 
-        # AUTH_DISABLED 時のモックユーザー (id=1) を作成（存在しない場合のみ）
+        # AUTH_DISABLED 時のモックユーザー (id=1) を作成
         from sqlalchemy import insert
-        from sqlalchemy import select as sa_select
-        async with db.engine.begin() as conn:
-            result = await conn.execute(
-                sa_select(models_module.User).where(models_module.User.id == 1)
-            )
-            if result.first() is None:
-                await conn.execute(
-                    insert(models_module.User).values(
-                        id=1,
-                        email="dev@autonovel.local",
-                        display_name="Dev Admin",
-                        hashed_password="-",
-                        role="admin",
-                        status="active",
-                        plan_tier="enterprise",
-                        credits=99999,
-                    )
+
+        async with temp_manager.engine.begin() as conn:
+            await conn.execute(
+                insert(models_module.User).values(
+                    id=1,
+                    email="dev@autonovel.local",
+                    display_name="Dev Admin",
+                    hashed_password="-",
+                    role="admin",
+                    status="active",
+                    plan_tier="enterprise",
+                    credits=99999,
                 )
+            )
 
     try:
         asyncio.run(_init_db())
@@ -100,7 +113,21 @@ def client() -> TestClient:
         # DB初期化失敗時は警告のみ（wizard-saveは500で返る）
         print(f"DB init warning: {e}")
 
-    return TestClient(app)
+    # AppContainer.db を一時DBに差し替え（wizard-save / stream_writing が対象）
+    AppContainer.db.override(providers.Object(temp_manager))
+
+    yield TestClient(app)
+
+    # 復元 + クリーンアップ
+    AppContainer.db.reset_override()
+    try:
+        asyncio.run(temp_manager.engine.dispose())
+    except Exception:
+        pass
+    try:
+        os.unlink(db_path)
+    except OSError:
+        pass
 
 
 def test_wizard_creation_funnel_full_flow(client: TestClient) -> None:

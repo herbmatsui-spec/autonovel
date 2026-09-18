@@ -340,8 +340,8 @@ def generate_chapter_task(payload: dict[str, Any]) -> dict[str, Any]:
         credit_session = database.SessionLocal()
         try:
             user_id = _get_user_id_from_book_id(book_id)
-            # 易しいタスクのクレジットコスト: writing_standard (10クレジット)
-            credit_cost = 10
+            # テキスト執筆クレジットコスト: COST_PER_EPISODE (1クレジット)
+            credit_cost = CreditService.COST_PER_EPISODE
             # 新しいDBセッションでCreditServiceを初期化
             credit_service = CreditService(credit_session)
             # クレジットを仮押さえ（即時引き落とし）
@@ -424,8 +424,8 @@ def generate_chapter_orchestrated_task(payload: dict[str, Any]) -> dict[str, Any
         credit_session = database.SessionLocal()
         try:
             user_id = _get_user_id_from_book_id(book_id)
-            # オーケストレーションタスクのクレジットコスト: writing_standard (10) + audit_full (5) + illustration_generate (8) = 23
-            credit_cost = 23
+            # テキスト執筆クレジットコスト: COST_PER_EPISODE (1クレジット)
+            credit_cost = CreditService.COST_PER_EPISODE
             # 新しいDBセッションでCreditServiceを初期化
             credit_service = CreditService(credit_session)
             # クレジットを仮押さえ（即時引き落とし）

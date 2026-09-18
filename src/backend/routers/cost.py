@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func
 from src.backend.auth import get_current_user
 from src.backend.database import get_async_db
-from src.backend.database.models import User, Book
+from src.backend.database.models import User, Book, CostLogModel
 from src.backend.database.repositories import CostRepository
 from src.backend.security.roles import RoleChecker, UserRole
 router = APIRouter(

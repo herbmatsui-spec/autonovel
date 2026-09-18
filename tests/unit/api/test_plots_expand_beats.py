@@ -4,12 +4,19 @@ from unittest.mock import AsyncMock, patch, MagicMock
 from src.backend.server import app
 from src.backend.config import settings
 
-# テスト用に認証を無効化
-settings.AUTH_DISABLED = True
-
 # ルーターを事前に含める
 from src.backend.routers.plots import router
 app.include_router(router)
+
+
+@pytest.fixture(autouse=True)
+def _auth_disabled(monkeypatch):
+    """P2: 認証バイパスをテストスコープに限定（テスト終了後に自動復元）。
+
+    モジュールレベルでの settings 書き換えは同一セッション内の後続テストに
+    リークするため、monkeypatch でスコープを限定する。
+    """
+    monkeypatch.setattr(settings, "AUTH_DISABLED", True)
 
 
 @pytest.mark.asyncio

@@ -139,11 +139,13 @@ async def test_get_chapter_book_score_found_with_trend():
     calculator = MagicMock()
     calculator.get_latest_score = AsyncMock(return_value=score)
 
-    uow = MagicMock()
-    uow.book_scores.get_all_for_book = AsyncMock(return_value=all_scores)
+    uow = make_async_uow(all_scores)
 
     with pytest.MonkeyPatch.context() as m:
+        # 関数内で UnitOfWork が再 import されるためソース側もパッチ
         m.setattr(novel_module, "UnitOfWork", lambda db=None: uow)
+        import src.backend.database.uow as uow_source
+        m.setattr(uow_source, "UnitOfWork", lambda db=None: uow)
         m.setattr(novel_module.AppContainer, "db", lambda: None)
         m.setattr("src.services.book_score_service.BookScoreCalculator",
                   lambda repository=None: calculator)
@@ -153,6 +155,7 @@ async def test_get_chapter_book_score_found_with_trend():
     assert result.trend_3ch is not None
     assert result.trend_3ch["chapters_count"] == 3
     assert result.trend_3ch["trend_slope"] == 5.0
+    assert result.trend_3ch["recent_scores"][0]["chapter"] == 3
 
 
 @pytest.mark.asyncio
@@ -173,12 +176,15 @@ async def test_get_chapter_book_score_not_found():
 @pytest.mark.asyncio
 async def test_get_chapter_book_score_error_wrapped():
     with pytest.MonkeyPatch.context() as m:
-        m.setattr(novel_module, "UnitOfWork",
-                  lambda db=None: MagicMock(side_effect=RuntimeError("db")))
+        uow = make_failing_uow()
+        m.setattr(novel_module, "UnitOfWork", lambda db=None: uow)
+        import src.backend.database.uow as uow_source
+        m.setattr(uow_source, "UnitOfWork", lambda db=None: uow)
         m.setattr(novel_module.AppContainer, "db", lambda: None)
         with pytest.raises(HTTPException) as exc:
             await get_chapter_book_score(1, 1)
     assert exc.value.status_code == 500
+    assert "db" in exc.value.detail
 
 
 @pytest.mark.asyncio
@@ -202,6 +208,15 @@ async def test_get_chapter_book_score_no_trend_single_score():
 # ============================================================================
 
 
+def make_async_uow(scores):
+    """async context manager 対応の uow モック。"""
+    uow = MagicMock()
+    uow.book_scores.get_all_for_book = AsyncMock(return_value=scores)
+    uow.__aenter__ = AsyncMock(return_value=uow)
+    uow.__aexit__ = AsyncMock(return_value=False)
+    return uow
+
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize("scores,expected_eligible,reason_hint", [
     ([], False, "3章以上の評価が必要です"),
@@ -215,27 +230,44 @@ async def test_get_chapter_book_score_no_trend_single_score():
       make_score(chapter=3, overall=80.0)], False, "上昇していません"),
 ])
 async def test_check_promotion_eligibility(scores, expected_eligible, reason_hint):
-    uow = MagicMock()
-    uow.book_scores.get_all_for_book = AsyncMock(return_value=scores)
+    uow = make_async_uow(scores)
 
     with pytest.MonkeyPatch.context() as m:
         m.setattr(novel_module, "UnitOfWork", lambda db=None: uow)
+        import src.backend.database.uow as uow_source
+        m.setattr(uow_source, "UnitOfWork", lambda db=None: uow)
         m.setattr(novel_module.AppContainer, "db", lambda: None)
         result = await check_promotion_eligibility(1)
     assert result.eligible is expected_eligible
     if reason_hint:
         assert reason_hint in (result.reason or "")
+    else:
+        assert result.reason is None
+        assert result.chapters_evaluated == 3
+        assert result.avg_score == 86.0
+        assert result.trend_slope == 2.0
+
+
+def make_failing_uow():
+    """__aenter__ で失敗する uow モック。"""
+    uow = MagicMock()
+    uow.__aenter__ = AsyncMock(side_effect=RuntimeError("db"))
+    uow.__aexit__ = AsyncMock(return_value=False)
+    return uow
 
 
 @pytest.mark.asyncio
 async def test_check_promotion_eligibility_error():
     with pytest.MonkeyPatch.context() as m:
-        m.setattr(novel_module, "UnitOfWork",
-                  lambda db=None: MagicMock(side_effect=RuntimeError("db")))
+        uow = make_failing_uow()
+        m.setattr(novel_module, "UnitOfWork", lambda db=None: uow)
+        import src.backend.database.uow as uow_source
+        m.setattr(uow_source, "UnitOfWork", lambda db=None: uow)
         m.setattr(novel_module.AppContainer, "db", lambda: None)
         with pytest.raises(HTTPException) as exc:
             await check_promotion_eligibility(1)
     assert exc.value.status_code == 500
+    assert "db" in exc.value.detail
 
 
 # ============================================================================
@@ -293,7 +325,7 @@ async def test_get_pdca_report_not_found_and_error():
 @pytest.mark.asyncio
 async def test_get_book_alerts_all_types():
     trend = {"changepoints": [{"chapter_index": 4, "change": -20.0}],
-             "slope": 0.1, "avg_score": 60.0, "latest_score": 40.0,
+             "slope": -0.1, "avg_score": 60.0, "latest_score": 40.0,
              "chapters_evaluated": 6}
     with pytest.MonkeyPatch.context() as m:
         session = MagicMock()

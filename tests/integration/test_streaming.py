@@ -108,7 +108,7 @@ def test_stream_post_invokes_cancel_on_disconnect(client: TestClient, monkeypatc
             cancel_called["n"] += 1
             super().cancel()
 
-    monkeypatch.setattr(streaming_module, "get_llm_adapter", lambda: _SpyAdapter())
+    monkeypatch.setattr(streaming_module, "get_llm_adapter", lambda *args, **kwargs: _SpyAdapter())
 
     from src.backend.rate_limit import stream_limiter
 
@@ -153,7 +153,7 @@ def test_stream_invokes_cancel_on_disconnect(
             cancel_called["n"] += 1
             super().cancel()
 
-    monkeypatch.setattr(streaming_module, "get_llm_adapter", lambda: _SpyAdapter())
+    monkeypatch.setattr(streaming_module, "get_llm_adapter", lambda *args, **kwargs: _SpyAdapter())
 
     from src.backend.rate_limit import stream_limiter
 
