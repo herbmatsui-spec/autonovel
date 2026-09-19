@@ -1,8 +1,9 @@
 """
-src/services/publishers/kakuyomu.py - カクヨム Publisher
+src/services/publishers/kakuyomu.py - カクヨム Publisher (v5.0 Step 16/17)
 
-カクヨム非公式REST APIを使用。
-公式APIドキュメント: https://kakuyomu.jp/help/api
+カクヨムの架空の外部APIエンドポイントは実在しないため、
+HTTPリクエスト処理を完全撤廃し、ワンクリック整形コピー +
+「エピソード新規作成画面URL」生成による安全な手動投稿支援へ一本化する。
 """
 
 from __future__ import annotations
@@ -11,324 +12,172 @@ import logging
 from dataclasses import dataclass
 from typing import Any, Optional
 
-import httpx
-
 from src.services.publishers.base import (
     PublisherAdapter,
     PublisherCredentials,
     PublishResult,
     AuthError,
-    RateLimitError,
     ValidationError,
-    NetworkError,
-    async_retry,
 )
 
 logger = logging.getLogger(__name__)
 
+# カクヨム公式Web画面（エピソード新規作成）のURLテンプレート
+KAKUYOMU_WORK_URL_TEMPLATE = "https://kakuyomu.jp/works/{work_id}"
+KAKUYOMU_EPISODE_NEW_URL_TEMPLATE = "https://kakuyomu.jp/works/{work_id}/episodes/new"
+
 
 @dataclass
 class KakuyomuCredentials(PublisherCredentials):
-    """カクヨム認証情報"""
+    """カクヨム認証情報（手動投稿支援のため実APIトークンは不要）"""
 
-    api_token: str = ""  # カクヨムAPIトークン（マイページ > 設定 > API設定で取得）
-    user_id: str = ""  # ユーザーID
+    api_token: str = ""  # 互換用（未使用）
+    user_id: str = ""  # 互換用（未使用）
 
     def __post_init__(self):
         self.platform = "kakuyomu"
 
 
+@dataclass
+class KakuyomuEpisodeHandoff:
+    """カクヨム投稿ハンドオフペイロード（整形済み本文 + 投稿画面URL）。"""
+
+    work_id: str
+    episode_creation_url: str  # エピソード新規作成画面URL（別タブで開く）
+    title: str
+    body: str  # 整形済み本文（クリップボードコピー用）
+    total_characters: int = 0
+
+
 class KakuyomuPublisher(PublisherAdapter):
-    """カクヨム 投稿アダプタ（非公式REST API）"""
+    """カクヨム 投稿アダプタ（APIリクエストなし・URL生成 + クリップボード補助）"""
 
     platform = "kakuyomu"
-    description = "カクヨム（非公式REST API）"
+    description = "カクヨム（ワンクリック整形コピー + 投稿画面URL生成）"
 
-    rate_limit_per_minute: int = 30
-    rate_limit_per_hour: int = 500
-
-    # API エンドポイント
-    API_BASE = "https://api.kakuyomu.jp/v1"
-    # 代替: 非公式エンドポイント（Web画面と同じAPI）
-    WEB_API_BASE = "https://kakuyomu.jp/api"
+    # 手動投稿支援のためレート制限は実質無制限
+    rate_limit_per_minute: int = 60
+    rate_limit_per_hour: int = 3600
 
     def __init__(self, timeout: float = 30.0):
         super().__init__()
         self.timeout = timeout
-        self._client: Optional[httpx.AsyncClient] = None
-
-    def _get_client(self) -> httpx.AsyncClient:
-        """HTTPクライアントを遅延初期化"""
-        if self._client is None or self._client.is_closed:
-            self._client = httpx.AsyncClient(
-                timeout=httpx.Timeout(self.timeout),
-                headers={
-                    "User-Agent": "AutoNovel/1.0 (+https://github.com/autonovel)",
-                    "Accept": "application/json",
-                },
-            )
-        return self._client
-
-    async def _close_client(self):
-        """HTTPクライアントをクローズ"""
-        if self._client and not self._client.is_closed:
-            await self._client.aclose()
-            self._client = None
-
-    def _get_auth_headers(self, credentials: KakuyomuCredentials) -> dict[str, str]:
-        """認証ヘッダー生成"""
-        return {
-            "Authorization": f"Bearer {credentials.api_token}",
-            "X-Kakuyomu-User-ID": credentials.user_id,
-        }
 
     async def authenticate(self, credentials: KakuyomuCredentials) -> bool:
-        """APIトークンで認証確認"""
+        """認証確認（実APIが存在しないためトークン検証のみ）。
+
+        Step 16: 架空の外部APIエンドポイントへのHTTPリクエストは完全撤廃済み。
+        """
         if not credentials.api_token:
-            raise AuthError("APIトークンが必要です（カクヨム設定 > API設定で取得）", self.platform)
-
-        client = self._get_client()
-
-        try:
-            # ユーザー情報取得でトークン検証
-            response = await client.get(
-                f"{self.API_BASE}/user", headers=self._get_auth_headers(credentials)
-            )
-
-            if response.status_code == 401:
-                raise AuthError("APIトークンが無効または期限切れです", self.platform)
-            elif response.status_code == 403:
-                raise AuthError("APIアクセス権限がありません", self.platform)
-            elif response.status_code >= 400:
-                raise NetworkError(f"認証確認失敗: HTTP {response.status_code}", self.platform)
-
-            user_data = response.json()
-            credentials.user_id = user_data.get("id", "")
-
-            logger.info("カクヨム認証成功", extra={"user_id": credentials.user_id})
+            # 手動投稿支援モードではトークン不要（常にTrue）
+            logger.info("カクヨム: トークンなしで認証スキップ（手動投稿支援モード）")
             return True
+        return True
 
-        except AuthError:
-            raise
-        except httpx.RequestError as e:
-            logger.exception("カクヨム認証ネットワークエラー")
-            raise NetworkError(f"接続エラー: {e}", self.platform)
-        except Exception as e:
-            logger.exception("カクヨム認証エラー")
-            raise AuthError(f"認証中にエラーが発生しました: {e}", self.platform)
-
-    @async_retry(max_attempts=3, base_delay=3.0)
     async def publish(
         self, novel: dict[str, Any], chapter: dict[str, Any], credentials: KakuyomuCredentials
     ) -> PublishResult:
-        """新規作品投稿（第1話）"""
-        client = self._get_client()
+        """新規作品投稿（第1話）— 投稿画面URL生成のみでHTTPリクエストなし。
 
-        try:
-            # 1. 作品作成
-            work_payload = {
-                "title": novel.get("title", "無題")[:100],
-                "synopsis": novel.get("synopsis", "")[:5000],
-                "genre": self._map_genre(novel.get("genre", "general")),
-                "tags": novel.get("tags", [])[:10],
-                "is_adult": novel.get("is_adult", False),
-            }
-
-            response = await client.post(
-                f"{self.API_BASE}/works",
-                headers=self._get_auth_headers(credentials),
-                json=work_payload,
+        Step 17: work_id を指定して「エピソード新規作成URL」を生成し、
+        整形済み本文とともに返却する安全な仕様。
+        """
+        work_id = str(novel.get("work_id", "")).strip()
+        if not work_id:
+            raise ValidationError(
+                "カクヨムの作品ID（work_id）が必要です。投稿画面URLを生成できません。",
+                self.platform,
             )
 
-            if response.status_code == 429:
-                retry_after = float(response.headers.get("Retry-After", 60))
-                raise RateLimitError(
-                    "レート制限に達しました", self.platform, retry_after=retry_after
-                )
-            elif response.status_code >= 400:
-                error_detail = response.json().get("message", response.text)
-                raise ValidationError(f"作品作成失敗: {error_detail}", self.platform)
+        title = str(novel.get("title", "無題"))[:100]
+        body = self._format_for_kakuyomu(chapter.get("content", ""))
+        episode_url = self.get_episode_creation_url(work_id)
 
-            work_data = response.json()
-            work_id = work_data.get("id")
+        return PublishResult(
+            success=True,
+            platform=self.platform,
+            post_id=work_id,
+            url=episode_url,
+            metadata={
+                "work_id": work_id,
+                "episode_creation_url": episode_url,
+                "title": title,
+                "body": body,
+                "total_characters": len(body),
+                "message": "整形済み本文をコピーし、カクヨム投稿画面に貼り付けてください。",
+            },
+        )
 
-            if not work_id:
-                raise ValidationError("作品IDが返却されませんでした", self.platform)
-
-            # 2. 第1話投稿
-            episode_payload = {
-                "title": chapter.get("title", "第1話")[:100],
-                "body": self._format_for_kakuyomu(chapter.get("content", "")),
-                "number": 1,
-            }
-
-            response = await client.post(
-                f"{self.API_BASE}/works/{work_id}/episodes",
-                headers=self._get_auth_headers(credentials),
-                json=episode_payload,
-            )
-
-            if response.status_code == 429:
-                retry_after = float(response.headers.get("Retry-After", 60))
-                raise RateLimitError(
-                    "レート制限に達しました", self.platform, retry_after=retry_after
-                )
-            elif response.status_code >= 400:
-                error_detail = response.json().get("message", response.text)
-                raise ValidationError(f"話投稿失敗: {error_detail}", self.platform)
-
-            episode_data = response.json()
-            episode_id = episode_data.get("id")
-
-            post_url = f"https://kakuyomu.jp/works/{work_id}/episodes/{episode_id}"
-
-            return PublishResult(
-                success=True,
-                platform=self.platform,
-                post_id=work_id,
-                url=post_url,
-                metadata={"work_id": work_id, "episode_id": episode_id, "episode_number": 1},
-            )
-
-        except (ValidationError, RateLimitError):
-            raise
-        except httpx.RequestError as e:
-            logger.exception("カクヨム投稿ネットワークエラー")
-            raise NetworkError(f"接続エラー: {e}", self.platform)
-        except Exception as e:
-            logger.exception("カクヨム投稿エラー")
-            raise NetworkError(f"投稿中にエラーが発生しました: {e}", self.platform)
-
-    @async_retry(max_attempts=3, base_delay=3.0)
     async def update_chapter(
         self, post_id: str, chapter: dict[str, Any], credentials: KakuyomuCredentials
     ) -> PublishResult:
-        """既存作品に話を追加"""
-        client = self._get_client()
-        work_id = post_id  # カクヨムではpost_id = work_id
+        """既存作品への話追加 — 投稿画面URL生成のみでHTTPリクエストなし。"""
+        work_id = str(post_id).strip()
+        if not work_id:
+            raise ValidationError("作品ID（post_id）が必要です。", self.platform)
 
-        try:
-            episode_num = chapter.get("ep_num", 1)
+        episode_num = chapter.get("ep_num", 1)
+        title = str(chapter.get("title", f"第{episode_num}話"))[:100]
+        body = self._format_for_kakuyomu(chapter.get("content", ""))
+        episode_url = self.get_episode_creation_url(work_id)
 
-            episode_payload = {
-                "title": chapter.get("title", f"第{episode_num}話")[:100],
-                "body": self._format_for_kakuyomu(chapter.get("content", "")),
-                "number": episode_num,
-            }
-
-            response = await client.post(
-                f"{self.API_BASE}/works/{work_id}/episodes",
-                headers=self._get_auth_headers(credentials),
-                json=episode_payload,
-            )
-
-            if response.status_code == 429:
-                retry_after = float(response.headers.get("Retry-After", 60))
-                raise RateLimitError(
-                    "レート制限に達しました", self.platform, retry_after=retry_after
-                )
-            elif response.status_code == 404:
-                raise ValidationError(f"作品が見つかりません: {work_id}", self.platform)
-            elif response.status_code >= 400:
-                error_detail = response.json().get("message", response.text)
-                raise ValidationError(f"話追加失敗: {error_detail}", self.platform)
-
-            episode_data = response.json()
-            episode_id = episode_data.get("id")
-
-            post_url = f"https://kakuyomu.jp/works/{work_id}/episodes/{episode_id}"
-
-            return PublishResult(
-                success=True,
-                platform=self.platform,
-                post_id=work_id,
-                url=post_url,
-                metadata={
-                    "work_id": work_id,
-                    "episode_id": episode_id,
-                    "episode_number": episode_num,
-                },
-            )
-
-        except (ValidationError, RateLimitError):
-            raise
-        except httpx.RequestError as e:
-            logger.exception("カクヨム話追加ネットワークエラー")
-            raise NetworkError(f"接続エラー: {e}", self.platform)
-        except Exception as e:
-            logger.exception("カクヨム話追加エラー")
-            raise NetworkError(f"話追加中にエラーが発生しました: {e}", self.platform)
+        return PublishResult(
+            success=True,
+            platform=self.platform,
+            post_id=work_id,
+            url=episode_url,
+            metadata={
+                "work_id": work_id,
+                "episode_creation_url": episode_url,
+                "episode_number": episode_num,
+                "title": title,
+                "body": body,
+                "total_characters": len(body),
+                "message": "整形済み本文をコピーし、カクヨム投稿画面に貼り付けてください。",
+            },
+        )
 
     async def get_post_status(
         self, post_id: str, credentials: KakuyomuCredentials
     ) -> dict[str, Any]:
-        """作品ステータス取得"""
-        client = self._get_client()
-
-        try:
-            # 作品情報取得
-            response = await client.get(
-                f"{self.API_BASE}/works/{post_id}", headers=self._get_auth_headers(credentials)
-            )
-
-            if response.status_code == 404:
-                return {"work_id": post_id, "status": "not_found"}
-            elif response.status_code >= 400:
-                return {"work_id": post_id, "status": "error", "error": response.text}
-
-            work_data = response.json()
-
-            # エピソード一覧取得
-            eps_response = await client.get(
-                f"{self.API_BASE}/works/{post_id}/episodes",
-                headers=self._get_auth_headers(credentials),
-            )
-            episodes = (
-                eps_response.json().get("episodes", []) if eps_response.status_code == 200 else []
-            )
-
-            return {
-                "work_id": post_id,
-                "title": work_data.get("title"),
-                "status": work_data.get("status", "published"),
-                "episode_count": len(episodes),
-                "total_views": work_data.get("total_views", 0),
-                "url": f"https://kakuyomu.jp/works/{post_id}",
-            }
-
-        except Exception as e:
-            logger.warning(f"ステータス取得失敗: {e}")
-            return {"work_id": post_id, "status": "unknown", "error": str(e)}
-
-    def _map_genre(self, genre: str) -> str:
-        """内部ジャンルをカクヨムジャンルコードにマッピング"""
-        genre_map = {
-            "fantasy": "fantasy",
-            "sf": "sf",
-            "horror": "horror",
-            "mystery": "mystery",
-            "romance": "romance",
-            "general": "literary",
-            "history": "history",
-            "detective": "detective",
+        """作品ステータス取得 — 作品ページURLのみを返却（HTTPリクエストなし）。"""
+        work_id = str(post_id).strip()
+        return {
+            "work_id": work_id,
+            "status": "manual_publish",
+            "url": KAKUYOMU_WORK_URL_TEMPLATE.format(work_id=work_id),
+            "episode_creation_url": self.get_episode_creation_url(work_id),
+            "message": "カクヨムは手動投稿支援のみ対応しています。投稿画面から貼り付けてください。",
         }
-        return genre_map.get(genre, "literary")
+
+    def get_episode_creation_url(self, work_id: str) -> str:
+        """カクヨム「エピソード新規作成画面」URLを生成する（Step 17）。
+
+        Args:
+            work_id: カクヨム作品ID
+
+        Returns:
+            str: https://kakuyomu.jp/works/{work_id}/episodes/new
+        """
+        return KAKUYOMU_EPISODE_NEW_URL_TEMPLATE.format(work_id=str(work_id).strip())
+
+    def build_episode_handoff(
+        self, work_id: str, title: str, body: str
+    ) -> KakuyomuEpisodeHandoff:
+        """整形済み本文と投稿画面URLをまとめたハンドオフペイロードを構築する。"""
+        formatted = self._format_for_kakuyomu(body)
+        return KakuyomuEpisodeHandoff(
+            work_id=str(work_id).strip(),
+            episode_creation_url=self.get_episode_creation_url(work_id),
+            title=title.strip()[:100],
+            body=formatted,
+            total_characters=len(formatted),
+        )
 
     def _format_for_kakuyomu(self, content: str) -> str:
-        """カクヨム用フォーマット変換（Markdownベース）"""
-        # カクヨムはMarkdown記法をサポート
-        # 改行正規化
+        """カクヨム用フォーマット変換（改行正規化）。"""
         content = content.replace("\r\n", "\n").replace("\r", "\n")
-        content = content.strip()
-
-        # ルビ記法 |漢字《かんじ》| はそのまま対応
-        # 画像プレースホルダはMarkdownのまま保持
-
-        return content
-
-    async def close(self):
-        """リソース解放"""
-        await self._close_client()
+        return content.strip()
 
 
 def create_kakuyomu_publisher(timeout: float = 30.0) -> KakuyomuPublisher:

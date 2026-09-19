@@ -5,7 +5,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from src.core.exceptions import EngineError  # noqa: F401 - backward compat re-export
 
@@ -153,6 +153,28 @@ def ensure_str(v: Any) -> str:
     if v is None:
         return "なし"
     return str(v)
+
+
+# ==========================================
+# Base Engine Class
+# ==========================================
+
+class BaseEngine(BaseModel):
+    model_config = {**MODEL_CONFIG_DEFAULTS, "extra": "allow"}
+
+    @classmethod
+    def get_routing_keys(cls) -> list[str]:
+        """このエンジンが引き受けるべきフラットキーのリストを返す"""
+        return list(cls.model_fields.keys())
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_engine_data(cls, data: Any) -> Any:
+        """
+        エンジン固有のデータ正規化フック。
+        サブクラスでオーバーライドして、型変換や構造調整を行う。
+        """
+        return data
 
 
 # ==========================================

@@ -18,13 +18,29 @@ interface CopyButtonProps {
 
 export const PlatformCopyButton: React.FC<CopyButtonProps> = ({ title, body }) => {
   const [copiedPlatform, setCopiedPlatform] = useState<string | null>(null);
+  // Step 19: 字下げON/OFFトグル（なろう推奨: ON / カクヨム推奨: OFF）
+  const [indentEnabled, setIndentEnabled] = useState<boolean>(true);
   const { addToast } = useToast();
+
+  const handleToggleIndent = () => {
+    setIndentEnabled((prev) => {
+      const next = !prev;
+      addToast(
+        next
+          ? '📐 全角字下げ: ON（なろう推奨）'
+          : '📐 字下げなし: OFF（カクヨム推奨）',
+        'info',
+      );
+      return next;
+    });
+  };
 
   const handleCopy = async (platform: 'narou' | 'kakuyomu' | 'alphapolis') => {
     try {
       const resp = await apiFetch('/api/export/copy/', {
         method: 'POST',
-        body: JSON.stringify({ title, body, platform }),
+        // Step 19: indent_enabled をAPIリクエストに含める
+        body: JSON.stringify({ title, body, platform, indent_enabled: indentEnabled }),
       });
       const data = await handleResponse<FormattedResponse>(resp);
       await navigator.clipboard.writeText(data.body);
@@ -44,6 +60,33 @@ export const PlatformCopyButton: React.FC<CopyButtonProps> = ({ title, body }) =
   return (
     <div className="flex items-center gap-2">
       <span className="text-xs text-slate-400">整形コピー:</span>
+      {/* Step 19: 字下げON/OFF切り替えトグルスイッチ */}
+      <label
+        className="flex items-center gap-1.5 cursor-pointer select-none"
+        title="全角字下げ（なろう推奨）と字下げなし（カクヨム推奨）を切り替え"
+      >
+        <input
+          type="checkbox"
+          checked={indentEnabled}
+          onChange={handleToggleIndent}
+          className="sr-only"
+          data-testid="indent-toggle"
+        />
+        <span
+          className={`relative inline-block w-8 h-4 rounded-full transition-colors ${
+            indentEnabled ? 'bg-sky-600' : 'bg-slate-600'
+          }`}
+        >
+          <span
+            className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform ${
+              indentEnabled ? 'translate-x-4' : ''
+            }`}
+          />
+        </span>
+        <span className="text-xs text-slate-300">
+          {indentEnabled ? '字下げON' : '字下げOFF'}
+        </span>
+      </label>
       <button
         onClick={() => handleCopy('narou')}
         className={`px-2.5 py-1 text-xs bg-slate-700 hover:bg-sky-600 rounded text-white transition-colors ${

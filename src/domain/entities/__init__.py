@@ -23,6 +23,11 @@ from src.domain.entities.plot import (
     PlotStatus,
     ChainPhase,
 )
+from src.domain.entities.scene import (
+    Scene,
+    SceneRole,
+    SceneStatus,
+)
 from src.domain.entities.branch import (
     Branch,
     BranchPlaySession,
@@ -72,6 +77,10 @@ __all__ = [
     "Arc",
     "PlotStatus",
     "ChainPhase",
+    # Scene
+    "Scene",
+    "SceneRole",
+    "SceneStatus",
     # Branch
     "Branch",
     "BranchPlaySession",

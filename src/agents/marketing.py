@@ -13,6 +13,27 @@ from src.models.marketing_ctr import (
 )
 from src.services.llm_service import LLMService
 
+# Marketing imports for catchphrase functionality
+try:
+    from src.services.marketing.catchphrase_scorer import score_catchphrase_ctr
+except ImportError:
+    # Fallback for when catchphrase_scorer is not yet implemented
+    def score_catchphrase_ctr(catchphrase: str) -> int:
+        return 50  # Neutral score
+
+try:
+    from src.domain.schemas.marketing import CatchphraseItem
+except ImportError:
+    # Fallback for when marketing schemas are not yet implemented
+    from pydantic import BaseModel
+    from typing import Optional
+    
+    class CatchphraseItem(BaseModel):
+        catchphrase: str
+        score: float = 50.0
+        char_count: int = 0
+        type: str = "unknown"
+
 logger = logging.getLogger(__name__)
 
 
@@ -114,7 +135,7 @@ class MarketingAgent(BaseAgent):
 
         top_recs = scored_candidates[:min(5, len(scored_candidates))]
 
-        # 最上位タイトルに基づきあらすじを生成
+# 最上位タイトルに基づきあらすじを生成
         best_title = top_recs[0].title
         synopsis_prompt = await self.prompt_manager.build_viral_synopsis_prompt(
             selected_title=best_title,
@@ -131,6 +152,49 @@ class MarketingAgent(BaseAgent):
             all_candidates=scored_candidates,
             selected_synopsis=synopsis_text,
         )
+
+    async def generate_viral_catchphrases(
+        self, project_settings: str, candidate_count: int = 20
+    ) -> list:
+        """カクヨムCTR最大化キャッチコピー候補を生成・採点し、上位候補を返す。"""
+        if self.prompt_manager is None:
+            raise RuntimeError("PromptManager is unavailable")
+
+        prompt = await self.prompt_manager.build_viral_catchphrase_prompt(
+            project_settings=project_settings,
+        )
+
+        raw_candidates = await self.llm.generate_json(purpose="marketing", prompt=prompt)
+        candidates_list = []
+        if isinstance(raw_candidates, list):
+            candidates_list = raw_candidates
+        elif isinstance(raw_candidates, dict):
+            candidates_list = (
+                raw_candidates.get("catchphrases")
+                or raw_candidates.get("candidates")
+                or [raw_candidates]
+            )
+
+        scored_candidates: list = []
+        for item in candidates_list:
+            if isinstance(item, dict) and "catchphrase" in item:
+                catchphrase_str = str(item["catchphrase"])
+                catchphrase_type = str(item.get("type", "dialogue"))
+                score_info = score_catchphrase_ctr(catchphrase_str)
+                scored_candidates.append(
+                    CatchphraseItem(
+                        catchphrase=catchphrase_str,
+                        score=float(score_info),
+                        char_count=len(catchphrase_str),
+                        type=catchphrase_type,
+                    )
+                )
+
+        # スコア降順ソート
+        scored_candidates.sort(key=lambda c: c.score, reverse=True)
+
+        # 上位候補を返す
+        return scored_candidates[:min(candidate_count, len(scored_candidates))]
 
     async def run(self, *args, **kwargs):
         logger.info("MarketingAgent run invoked")

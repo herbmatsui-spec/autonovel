@@ -197,3 +197,73 @@ class TestPlatformExportAPI:
         data = response.json()
         assert data["foreword"] == ""
         assert data["afterword"] == ""
+
+    # ==========================================
+    # Step 15: カクヨム字下げ制御（indent_enabled）テスト
+    # ==========================================
+
+    def test_kakuyomu_indent_disabled(self):
+        """カクヨム + indent_enabled=false で行頭字下げなし"""
+        response = self._post(
+            {
+                "title": "字下げなし",
+                "body": "本文テスト",
+                "platform": "kakuyomu",
+                "indent_enabled": False,
+            }
+        )
+        if response is None:
+            return
+        assert response.status_code == 200
+        data = response.json()
+        assert data["platform"] == "kakuyomu"
+        assert not data["body"].startswith("　")
+
+    def test_kakuyomu_indent_enabled_explicit(self):
+        """カクヨム + indent_enabled=true で行頭字下げあり"""
+        response = self._post(
+            {
+                "title": "字下げあり",
+                "body": "本文テスト",
+                "platform": "kakuyomu",
+                "indent_enabled": True,
+            }
+        )
+        if response is None:
+            return
+        assert response.status_code == 200
+        data = response.json()
+        assert data["body"].startswith("　")
+
+    def test_kakuyomu_indent_default_is_enabled(self):
+        """indent_enabled省略時のデフォルトはTrue（字下げあり）"""
+        response = self._post(
+            {
+                "title": "デフォルト",
+                "body": "本文テスト",
+                "platform": "kakuyomu",
+            }
+        )
+        if response is None:
+            return
+        assert response.status_code == 200
+        data = response.json()
+        assert data["body"].startswith("　")
+
+    def test_kakuyomu_indent_disabled_multi_paragraph(self):
+        """カクヨム字下げなしで複数段落の空行リズムが維持される"""
+        response = self._post(
+            {
+                "title": "複数段落",
+                "body": "段落1\n\n\n\n段落2",
+                "platform": "kakuyomu",
+                "indent_enabled": False,
+            }
+        )
+        if response is None:
+            return
+        assert response.status_code == 200
+        data = response.json()
+        assert "\n\n\n" not in data["body"]
+        blocks = data["body"].split("\n\n")
+        assert len(blocks) == 2

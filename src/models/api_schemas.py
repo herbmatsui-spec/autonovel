@@ -250,6 +250,13 @@ class MarketingExportRequest(BaseModel):
     api_key: str
 
 
+class CatchphraseGenerateRequest(AuthenticatedRequest):
+    """キャッチコピー生成リクエスト"""
+
+    project_settings: str
+    candidate_count: int = Field(default=20, ge=1, le=100, description="生成する候補数")
+
+
 class RefineEroticRequest(AuthenticatedRequest):
     """官能研磨リクエスト"""
 
@@ -477,4 +484,5 @@ __all__ = [
     "ErrorResponse",
     "ExpandBeatsRequest",
     "BeatItemSchema",
+    "CatchphraseGenerateRequest",
 ]

@@ -4,7 +4,10 @@ prompt_composer.py - プロンプト構�築ユーティリティ
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.domain.entities.scene import Scene
 
 
 
@@ -125,3 +128,115 @@ class PromptComposer:
                 self.agent.logger.warning("Failed to render raw_emotion_instruction: %s", e)
 
         return prompt
+
+    async def compose_scene_prompt(
+        self,
+        book_id: int,
+        ep_num: int,
+        scene: "Scene",
+        context: dict[str, Any],
+    ) -> str:
+        """シーン生成用プロンプトを構築する。
+
+        Args:
+            book_id: 書籍ID
+            ep_num: エピソード番号
+            scene: シーンオブジェクト
+            context: 執筆コンテキスト
+
+        Returns:
+            構築されたプロンプト文字列
+        """
+        if getattr(self.agent, "prompt_manager", None) is None:
+            raise ValueError("PromptManager is not injected into WritingAgent")
+
+        # シーン用テンプレートを取得
+        from src.domain.entities.scene import SceneRole
+        from pathlib import Path
+        import jinja2
+
+        template_map = {
+            SceneRole.INTRODUCTION: "scene_introduction.j2",
+            SceneRole.CONFLICT: "scene_conflict.j2",
+            SceneRole.HOOK: "scene_hook.j2",
+        }
+        template_name = template_map.get(scene.role, "scene_introduction.j2")
+
+        tmpl_path = Path(__file__).resolve().parents[2] / "prompts" / "templates"
+        jenv = jinja2.Environment(loader=jinja2.FileSystemLoader(str(tmpl_path)))
+        tmpl = jenv.get_template(f"narrative/{template_name}")
+
+        # コンテキストサマリーを構築
+        plot_data = context.get("plot", {})
+        writing_context_summary = self._build_writing_context_summary(context, plot_data)
+
+        # 前シーンの内容
+        previous_scene_content = context.get("previous_scene_content", "")
+
+        # キャラクターの欠点情報
+        char_flaw = context.get("character_flaw")
+        if not char_flaw:
+            char_data = context.get("character") or {"name": context.get("pov_character_name", "主人公")}
+            try:
+                from src.agents.context_builder_agent import resolve_character_flaw
+                char_flaw = resolve_character_flaw(char_data)
+            except Exception:
+                char_flaw = "完璧を求めすぎて動けなくなる"
+
+        # プロンプトレンダリング
+        prompt = tmpl.render(
+            scene_data=scene,
+            episode_number=ep_num,
+            previous_scene_content=previous_scene_content,
+            writing_context_summary=writing_context_summary,
+            story_arc_summary=context.get("story_arc_summary", ""),
+            character_states=context.get("character_states", ""),
+            foreshadowing_hints=context.get("foreshadowing_hints", ""),
+            active_conflicts=context.get("active_conflicts", ""),
+            cliffhanger_requirements=context.get("cliffhanger_requirements", ""),
+            pov_character=context.get("pov_character_name", "主人公"),
+            style_instruction=context.get("style_instruction", ""),
+            char_flaw=char_flaw,
+        )
+
+        # 再生成ディレクティブがある場合は先頭に追加
+        regeneration_directive = context.get("regeneration_directive")
+        if regeneration_directive:
+            prompt = (
+                f"==================================================\n"
+                f"【最優先・再生成修正ディレクティブ】\n"
+                f"前回の審査で指摘された以下の問題点・Actionable Diffsを最優先で反映して執筆してください:\n\n"
+                f"{regeneration_directive}\n"
+                f"==================================================\n\n"
+                + prompt
+            )
+
+        return prompt
+
+    def _build_writing_context_summary(
+        self,
+        context: dict[str, Any],
+        plot_data: dict[str, Any],
+    ) -> str:
+        """執筆コンテキストのサマリーを構築する。"""
+        parts = []
+
+        if plot_data.get("one_line_summary"):
+            parts.append(f"【話の核】{plot_data['one_line_summary']}")
+
+        if plot_data.get("detailed_blueprint"):
+            bp = plot_data["detailed_blueprint"]
+            if len(bp) > 500:
+                bp = bp[:500] + "..."
+            parts.append(f"【詳細プロット】{bp}")
+
+        if context.get("world_setting"):
+            ws = context["world_setting"]
+            if len(ws) > 300:
+                ws = ws[:300] + "..."
+            parts.append(f"【世界設定】{ws}")
+
+        if context.get("genre"):
+            parts.append(f"【ジャンル】{context['genre']}")
+
+        return "\n\n".join(parts) if parts else "（コンテキスト情報なし）"

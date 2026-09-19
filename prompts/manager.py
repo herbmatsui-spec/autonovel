@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from jinja2 import Environment
@@ -9,6 +10,15 @@ from jinja2 import Environment
 from config import BASE_DIR
 from prompts.plotting import EMOTIONAL_HOOK_TEMPLATE
 from prompts.registry import PromptRegistry
+
+# 感情残基抽出用
+try:
+    from src.pipeline.prompt_builder import build_emotional_context_prompt
+    from src.stores.vector_store import RedisVectorStore
+    from src.pipeline.character_dict import load_character_dict
+    EMOTIONAL_RESIDUE_AVAILABLE = True
+except ImportError:
+    EMOTIONAL_RESIDUE_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -722,6 +732,22 @@ class PromptManager:
         if not blueprint and "blueprint" in kwargs:
             blueprint = kwargs.get("blueprint", "")
 
+        # 感情コンテキスト生成（感情残基抽出が利用可能な場合）
+        emotional_context = ""
+        if EMOTIONAL_RESIDUE_AVAILABLE and book_id is not None:
+            try:
+                # VectorStore初期化（設定から）
+                vector_store = RedisVectorStore(skip_connection_check=True)
+                char_dict = load_character_dict()
+                emotional_context = build_emotional_context_prompt(
+                    episode_id=ep_num,
+                    vector_store=vector_store,
+                    namespace="pipeline",
+                )
+            except Exception as e:
+                logger.warning(f"感情コンテキスト生成失敗: {e}")
+                emotional_context = ""
+
         context = {
             "quota_inst": quota_inst,
             "show_tell_inst": show_tell_inst,
@@ -740,6 +766,7 @@ class PromptManager:
             "foreshadowing_context": foreshadowing_context,
             "CONTENT_SEPARATOR": "---",
             "dialogue_profiles": kwargs.get("dialogue_profiles", {}),
+            "emotional_context": emotional_context,
         }
 
         return await self.render_async("final_writing_prompt.j2", context, book_id=book_id)
@@ -1099,6 +1126,15 @@ class PromptManager:
         return await self.render_async(
             "marketing_ab_test_prompt.j2",
             {"bible_core_concept": bible_core_concept},
+            book_id=book_id,
+        )
+
+    async def build_viral_catchphrase_prompt(
+        self, project_settings: str, book_id: Optional[int] = None
+    ) -> str:
+        return await self.render_async(
+            "marketing/viral_catchphrase_generation.j2",
+            {"project_settings": project_settings},
             book_id=book_id,
         )
 

@@ -36,13 +36,26 @@ class PlatformCopyFormatter:
         foreword: str = "",
         afterword: str = "",
         platform: str = "narou",
+        indent_enabled: bool = True,
     ) -> FormattedChapterPayload:
-        """指定プラットフォーム向けに本文、ルビ、改行、字下げを正規化整形する。"""
-        plat = (platform or "narou").lower()
-        cleaned_body = cls._clean_typography(body)
+        """指定プラットフォーム向けに本文、ルビ、改行、字下げを正規化整形する。
 
+        Args:
+            title: 章タイトル
+            body: 本文
+            foreword: 前書き
+            afterword: 後書き
+            platform: 投稿先プラットフォーム (narou / kakuyomu / alphapolis)
+            indent_enabled: 行頭全角字下げのON/OFF（カクヨム推奨: False）
+        """
+        plat = (platform or "narou").lower()
+        cleaned_body = cls._clean_typography(body, indent_enabled=indent_enabled)
+
+        # Step 11: カクヨム専用空行リズム（字下げなし・段落間1行空行）
         if plat == "kakuyomu":
             formatted_body = cls._to_kakuyomu_ruby(cleaned_body)
+            if not indent_enabled:
+                formatted_body = cls._apply_kakuyomu_line_rhythm(formatted_body)
         elif plat == "alphapolis":
             formatted_body = cls._to_alphapolis_ruby(cleaned_body)
         else:  # narou (default)
@@ -58,8 +71,13 @@ class PlatformCopyFormatter:
         )
 
     @classmethod
-    def _clean_typography(cls, text: str) -> str:
-        """行頭全角スペース字下げおよび台詞開始の空行・字下げ正規化。"""
+    def _clean_typography(cls, text: str, indent_enabled: bool = True) -> str:
+        """行頭全角スペース字下げおよび台詞開始の空行・字下げ正規化。
+
+        Args:
+            text: 対象テキスト
+            indent_enabled: Falseの場合は行頭字下げを行わない（カクヨム推奨）
+        """
         if not text:
             return ""
 
@@ -71,14 +89,69 @@ class PlatformCopyFormatter:
                 out.append("")
                 continue
             content = line.lstrip(" 　")
-            if content.startswith(cls.DIALOGUE_STARTERS):
-                out.append(content)
-            else:
+            if indent_enabled and not content.startswith(cls.DIALOGUE_STARTERS):
                 out.append(f"　{content}")
+            else:
+                # Step 10: 字下げ無効化（カクヨム推奨スタイル）
+                out.append(content)
 
         # 連続空行を最大2行に制限
         res = "\n".join(out)
         return re.sub(r"\n{3,}", "\n\n", res)
+
+    @classmethod
+    def _apply_kakuyomu_line_rhythm(cls, text: str) -> str:
+        """Step 11: カクヨム専用の空行リズム（字下げなし・段落間に自然な1行空行）。
+
+        段落（空行で区切られた塊）間に1行空行を配置し、
+        連続空行は2行までに正規化する。
+        """
+        if not text:
+            return ""
+
+        blocks = [b for b in re.split(r"\n{2,}", text.strip()) if b.strip()]
+        if not blocks:
+            return ""
+
+        return "\n\n".join(blocks)
+
+    @classmethod
+    def split_dense_paragraphs(cls, text: str, max_lines: int = 3) -> str:
+        """Step 12: スマホ読書用「3行超の段落自動分割（空行挿入）」。
+
+        1段落が4行以上連続すると読者が圧迫感で離脱するため、
+        句点（。）を基準に自動で改行＋空行を挟んで分割する。
+
+        Args:
+            text: 対象テキスト
+            max_lines: 1段落あたりの許容行数（既定3行）
+
+        Returns:
+            str: 分割済みテキスト
+        """
+        if not text:
+            return ""
+
+        # 句点で区切られた文単位に分割（句点は保持）
+        sentences = re.findall(r"[^。]+。?", text)
+        if not sentences:
+            return text
+
+        paragraphs: list[list[str]] = []
+        current: list[str] = []
+        char_budget = 45 * max_lines  # 1行約45字（スマホ横幅）を基準にした文字数バジェット
+
+        for sentence in sentences:
+            current.append(sentence)
+            # 文字バジェット超過、または句点で終わる文がmax_lines文連続したら分割
+            if sum(len(s) for s in current) >= char_budget or len(current) >= max_lines:
+                paragraphs.append(current)
+                current = []
+
+        if current:
+            paragraphs.append(current)
+
+        return "\n\n".join("".join(p) for p in paragraphs)
 
     @classmethod
     def _to_narou_ruby(cls, text: str) -> str:

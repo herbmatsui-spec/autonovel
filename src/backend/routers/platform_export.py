@@ -21,6 +21,7 @@ class CopyFormatRequest(BaseModel):
     foreword: str = ""
     afterword: str = ""
     platform: str = "narou"  # "narou", "kakuyomu", "alphapolis"
+    indent_enabled: bool = True  # Step 14: 全角字下げON/OFF（カクヨム推奨: false）
 
     @field_validator("platform")
     @classmethod
@@ -59,6 +60,7 @@ async def format_chapter_for_copy(req: CopyFormatRequest) -> CopyFormatResponse:
             foreword=req.foreword,
             afterword=req.afterword,
             platform=req.platform,
+            indent_enabled=req.indent_enabled,
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

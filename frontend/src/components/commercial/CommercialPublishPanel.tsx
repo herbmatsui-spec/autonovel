@@ -131,8 +131,19 @@ export const CommercialPublishPanel: React.FC<CommercialPublishPanelProps> = ({ 
         </button>
       </div>
 
-      <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+      <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200 flex-wrap">
         <PlatformCopyButton title={chapterTitle} body={currentChapterText} />
+        {/* Step 21: カクヨムエピソード作成画面を直接開く外部リンクボタン */}
+        <a
+          href={`https://kakuyomu.jp/my/works/new`}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => onToast?.("🔗 カクヨム投稿画面を新しいタブで開きました", "info")}
+          className="px-3 py-1 text-xs bg-emerald-600 hover:bg-emerald-500 rounded text-white transition-colors font-medium inline-flex items-center gap-1"
+          data-testid="kakuyomu-episode-link"
+        >
+          🔗 カクヨム投稿画面を開く
+        </a>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">

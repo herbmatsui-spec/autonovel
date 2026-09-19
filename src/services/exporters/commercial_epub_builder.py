@@ -88,6 +88,27 @@ class PureCommercialEpubBuilder:
                 )
                 spine_items.append('<itemref idref="cover"/>')
 
+            # 中扉ページ (中扉)
+            middle_page_id = "middle-page"
+            middle_page_html = f'''<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="ja">
+<head>
+  <meta charset="utf-8"/>
+  <title>{title}</title>
+  <link rel="stylesheet" type="text/css" href="styles/vertical.css"/>
+</head>
+<body class="vertical-text">
+  <div class="middle-page">
+    <div class="title">{title}</div>
+    <div class="author">{author}</div>
+  </div>
+</body>
+</html>'''
+            zf.writestr(f"OEBPS/{middle_page_id}.xhtml", middle_page_html)
+            manifest_items.append(f'<item id="{middle_page_id}" href="{middle_page_id}.xhtml" media-type="application/xhtml+xml"/>')
+            spine_items.append(f'<itemref idref="{middle_page_id}"/>')
+
             # 5. 各章のXHTML生成
             for idx, ch in enumerate(chapters, start=1):
                 ch_id = f"chapter_{idx}"

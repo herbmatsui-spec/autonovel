@@ -21,6 +21,7 @@ from src.backend.logging_config import configure as configure_logging
 from src.backend.observability.health import build_health_payload, metrics
 from src.backend.routers import (
     anti_ai,
+    annotations,
     books,
     branches,
     chapters,
@@ -56,6 +57,7 @@ from src.backend.routers import (
     trace,
     platform_export,
     stream_writing,
+    subtext,
 )
 
 logger = logging.getLogger(__name__)
@@ -162,6 +164,8 @@ app.include_router(billing.router)
 app.include_router(billing_webhook.router)
 app.include_router(trace.router)
 app.include_router(health.router)
+app.include_router(subtext.router)
+app.include_router(annotations.router)
 
 
 @app.get("/health")

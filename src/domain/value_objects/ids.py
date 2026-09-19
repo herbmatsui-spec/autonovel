@@ -224,6 +224,26 @@ class AuditId:
 
 
 @dataclass(frozen=True, slots=True)
+class SceneId:
+    """Scene identifier."""
+    value: UUID
+
+    @classmethod
+    def generate(cls) -> SceneId:
+        return cls(uuid4())
+
+    @classmethod
+    def from_string(cls, value: str) -> SceneId:
+        return cls(UUID(value))
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    def __int__(self) -> int:
+        return int(self.value)
+
+
+@dataclass(frozen=True, slots=True)
 class UserId:
     """User identifier."""
     value: UUID
@@ -255,5 +275,6 @@ __all__ = [
     "PlotPointId",
     "ArcId",
     "AuditId",
+    "SceneId",
     "UserId",
 ]

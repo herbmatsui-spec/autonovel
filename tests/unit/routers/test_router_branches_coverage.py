@@ -122,6 +122,9 @@ async def test_get_branch_diff_chapter_not_found_and_null_content():
     assert result["content_a"] == ""
     assert result["content_b"] == ""
     # nameless branches -> default names
+    chapter_repo.get_chapter = AsyncMock(
+        side_effect=[SimpleNamespace(content="a"),
+                     SimpleNamespace(content="a")])
     branch_repo.get_branch = AsyncMock(
         side_effect=[make_branch(1, name=None), make_branch(2, name=None)])
     with pytest.MonkeyPatch.context() as m:
@@ -427,21 +430,21 @@ async def test_get_play_state_success():
     with pytest.MonkeyPatch.context() as m:
         patch_branch_repo(m, repo)
         result = await get_play_state(session_id, session=session)
-    assert result.session_id == session_id
-    assert result.current_node_id == "n1"
-    assert result.current_node["choices"]
-    assert result.context == {"ctx": 1}
-    assert result.save_points_count == 2
-    assert result.status == "active"
-    # status=None -> default "active"
-    repo.get_play_session = AsyncMock(
-        return_value=SimpleNamespace(branch_id=1, book_id=10, current_node_id="n1",
-                                     context_json=None, save_points_json=None,
-                                     status=None, updated_at=None))
-    result2 = await get_play_state(session_id, session=session)
-    assert result2.status == "active"
-    assert result2.context == {}
-    assert result2.save_points_count == 0
+        assert result.session_id == session_id
+        assert result.current_node_id == "n1"
+        assert result.current_node["choices"]
+        assert result.context == {"ctx": 1}
+        assert result.save_points_count == 2
+        assert result.status == "active"
+        # status=None -> default "active"
+        repo.get_play_session = AsyncMock(
+            return_value=SimpleNamespace(branch_id=1, book_id=10, current_node_id="n1",
+                                         context_json=None, save_points_json=None,
+                                         status=None, updated_at=None))
+        result2 = await get_play_state(session_id, session=session)
+        assert result2.status == "active"
+        assert result2.context == {}
+        assert result2.save_points_count == 0
 
 
 def make_play_session(branch_id=1, book_id=10, current_node_id="n1",

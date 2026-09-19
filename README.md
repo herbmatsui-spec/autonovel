@@ -17,7 +17,7 @@
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 [![Type Checked: mypy](https://img.shields.io/badge/type%20checked-mypy-blue)](https://mypy-lang.org/)
 [![Vitest](https://img.shields.io/badge/tested_with-vitest-729B1B?logo=vitest&logoColor=white)](https://vitest.dev/)
-[![Version](https://img.shields.io/badge/version-5.0.2-brightgreen?logo=semver)](https://github.com/herbmatsui-spec/autonovel/releases/tag/v5.0.2)
+[![Version](https://img.shields.io/badge/version-5.0.3-brightgreen?logo=semver)](https://github.com/herbmatsui-spec/autonovel/releases/tag/v5.0.3)
 
 <br />
 
@@ -25,7 +25,7 @@
   <img src="docs/demo.gif" alt="AutoNovel UI & Workflow Demo" width="900" style="border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
 </p>
 
-*▲ AutoNovel v5.0.2: デモアニメーション（説明用）。実際のAI生成品質・所要時間・外部サービス接続を示すものではありません。*
+*▲ AutoNovel v5.0.3: デモアニメーション（説明用）。実際のAI生成品質・所要時間・外部サービス接続を示すものではありません。*
 
 ---
 
@@ -62,7 +62,7 @@ AutoNovel は、AI を活用して Web 小説を **企画から執筆、校正�
 
 ```powershell
 # 環境変数を設定（例: .env ファイルを作成）
-# 注意: .env.example の APP_VERSION は 4.9.0 のままです。実際のバージョンは 5.0.2 です。
+# 注意: .env.example の APP_VERSION は 4.9.0 のままです。実際のバージョンは 5.0.3 です。
 # 必要に応じて LLM_PROVIDER=mock などを設定してください。
 
 # コンテナのビルドと起動
@@ -231,7 +231,7 @@ make clean         # キャッシュや一時DBファイルをクリーンアッ
 
 品質計画・テスト網羅率プランは [TEST_COVERAGE_PLAN.md](TEST_COVERAGE_PLAN.md) を、パイプライン統合の将来計画は [PIPELINE_UNIFICATION_PLAN.md](PIPELINE_UNIFICATION_PLAN.md) を参照してください。
 
-> **現行バージョン**: v5.0.2 (`pyproject.toml`, `frontend/package.json`, Docker イメージ `autonovel-backend:5.0.2` / `autonovel-frontend:5.0.2`)。直近のリリースノートは [CHANGELOG.md](CHANGELOG.md)。
+> **現行バージョン**: v5.0.3 (`pyproject.toml`, `frontend/package.json`, Docker イメージ `autonovel-backend:5.0.3` / `autonovel-frontend:5.0.3`)。直近のリリースノートは [CHANGELOG.md](CHANGELOG.md)。
 
 ---
 

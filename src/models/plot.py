@@ -20,9 +20,11 @@ from src.models.base import (
     ensure_str,
     extract_int,
     normalize_chain_phase,
+    BaseEngine,
 )
 from src.models.emotional_hook import EmotionalHookSpec
 from src.models.sharp_edge import SharpEdgeSpec
+from src.models.subversion import SubversionEngine
 
 
 class ReviewLog(BaseModel):
@@ -311,24 +313,6 @@ class PlotBlueprintPhase2(BaseModel):
     script_content: str = Field(default="")
 
 
-class BaseEngine(BaseModel):
-    model_config = {**MODEL_CONFIG_DEFAULTS, "extra": "allow"}
-
-    @classmethod
-    def get_routing_keys(cls) -> list[str]:
-        """このエンジンが引き受けるべきフラットキーのリストを返す"""
-        return list(cls.model_fields.keys())
-
-    @model_validator(mode="before")
-    @classmethod
-    def normalize_engine_data(cls, data: Any) -> Any:
-        """
-        エンジン固有のデータ正規化フック。
-        サブクラスでオーバーライドして、型変換や構造調整を行う。
-        """
-        return data
-
-
 class PlotCoreInfo(BaseModel):
     ep_num: int = Field(
         default=0,
@@ -514,6 +498,17 @@ class EnigmaMixin(CoreEngineMixin):
 
 class ComfortMixin(CoreEngineMixin):
     comfort: ComfortAnalytics = Field(default_factory=ComfortAnalytics)
+
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from src.models.subversion import SubversionEngine
+
+
+class SubversionMixin(BaseModel):
+    """テンプレ逆張りエンジンを保持する Mixin"""
+    subversion: "SubversionEngine" = Field(default_factory=SubversionEngine)
+    model_config = MODEL_CONFIG_DEFAULTS
 
 
 from typing import Generic, TypeVar
@@ -756,6 +751,7 @@ class PlotEpisodeBase(FlatModelMixin, CoreEngineMixin, Generic[T]):
                 "foreshadowing": PlotForeshadowing,
                 "enigma": EnigmaAnalytics,
                 "comfort": ComfortAnalytics,
+                "subversion": SubversionEngine,
             }
             sub_models_names = cls._get_sub_model_names()
             for sub_name in sub_models_names:
@@ -771,14 +767,16 @@ class PlotEpisodeBase(FlatModelMixin, CoreEngineMixin, Generic[T]):
                 if sub_name not in data:
                     if hasattr(model_cls, "get_routing_keys"):
                         routing_keys = model_cls.get_routing_keys()
-                    else:
+                    elif isinstance(model_cls, type) and hasattr(model_cls, "model_fields"):
                         routing_keys = list(model_cls.model_fields.keys())
+                    else:
+                        continue
                     extracted_data = {k: data[k] for k in routing_keys if k in data}
                     if extracted_data:
                         data[sub_name] = extracted_data
 
             # 未定義データの抽出
-            all_routed_keys = set()
+            all_routed_keys: set[str] = set()
             for sub_name in sub_models_names:
                 if sub_name in data:
                     sub_val = data[sub_name]
@@ -857,7 +855,7 @@ class PlotEpisodeBase(FlatModelMixin, CoreEngineMixin, Generic[T]):
     model_config = {**MODEL_CONFIG_DEFAULTS, "extra": "allow"}
 
 
-class PlotEpisode(PlotEpisodeBase[CoreEngineMixin], EnigmaMixin, ComfortMixin):
+class PlotEpisode(PlotEpisodeBase[CoreEngineMixin], EnigmaMixin, ComfortMixin, SubversionMixin):
     """
     デフォルトの PlotEpisode モデル。
     現在は互換性のためにすべてのエンジン Mixin を含んでいるが、
@@ -869,10 +867,9 @@ class PlotEpisode(PlotEpisodeBase[CoreEngineMixin], EnigmaMixin, ComfortMixin):
     )
 
     @model_validator(mode="before")
-    @classmethod
-    def unwrap_plot_metadata(cls, data: Any) -> Any:
+    def unwrap_plot_metadata(cls, data: Any) -> Any:  # type: ignore[misc]
         # Base クラスの正規化ロジックに委譲 (FlatModelMixin + extra_engines 処理)
-        return super().unwrap_plot_metadata(data)
+        return super().unwrap_plot_metadata(data)  # type: ignore[operator]
 
 
 def plot_episode_factory(genre: str, **data) -> PlotEpisode:
@@ -1016,6 +1013,7 @@ class ArcBlueprint(BaseModel):
     end_ep: int = Field(..., validation_alias=AliasChoices("end_ep", "end_episode", "end"))
     title: str = Field(default="無題")
     summary: str = Field(default="")
+    thematic_milestone: str = Field(default="")
 
     @model_validator(mode="before")
     @classmethod

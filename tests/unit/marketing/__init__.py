@@ -1,1 +1,0 @@
-"""Marketing unit tests package."""

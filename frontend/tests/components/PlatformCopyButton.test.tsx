@@ -1,4 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+// Step 23: 字下げトグルとコピー動作のVitest単体テスト。
+// 注意: この環境（Node.js 24 + vitest 1.6）では vitest からの名前付き import が
+// undefined になるため、globals: true 設定のグローバルAPI（describe/it/expect/vi）を使用する。
+
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { PlatformCopyButton } from '../../src/components/common/PlatformCopyButton';
 import { apiFetch, handleResponse } from '../../src/api/client';
@@ -28,7 +31,7 @@ describe('PlatformCopyButton', () => {
     mockAddToast.mockClear();
     mockApiFetch.mockClear();
     mockHandleResponse.mockClear();
-    
+
     // Mock navigator.clipboard.writeText
     Object.defineProperty(navigator, 'clipboard', {
       value: {
@@ -40,7 +43,7 @@ describe('PlatformCopyButton', () => {
 
   it('renders three platform buttons', () => {
     render(<PlatformCopyButton title={mockTitle} body={mockBody} />);
-    
+
     expect(screen.getByText('なろう')).toBeInTheDocument();
     expect(screen.getByText('カクヨム')).toBeInTheDocument();
     expect(screen.getByText('アルファ')).toBeInTheDocument();
@@ -58,7 +61,7 @@ describe('PlatformCopyButton', () => {
         platform: 'narou',
       }),
     };
-    
+
     mockApiFetch.mockResolvedValue(mockResponse);
     mockHandleResponse.mockResolvedValue({
       title: mockTitle,
@@ -70,9 +73,75 @@ describe('PlatformCopyButton', () => {
     });
 
     render(<PlatformCopyButton title={mockTitle} body={mockBody} />);
-    
+
     fireEvent.click(screen.getByText('なろう'));
-    
+
+    await waitFor(() => {
+      expect(mockApiFetch).toHaveBeenCalledWith(
+        '/api/export/copy/',
+        expect.objectContaining({
+          method: 'POST',
+          // Step 23: indent_enabled（デフォルト true）を含むペイロード
+          body: JSON.stringify({
+            title: mockTitle,
+            body: mockBody,
+            platform: 'narou',
+            indent_enabled: true,
+          }),
+        })
+      );
+    });
+  });
+
+  // ==========================================
+  // Step 23: 字下げトグル切り替えのテスト
+  // ==========================================
+
+  it('renders indent toggle switch', () => {
+    render(<PlatformCopyButton title={mockTitle} body={mockBody} />);
+
+    // トグルスイッチ（checkbox）が存在する
+    const toggle = screen.getByTestId('indent-toggle') as HTMLInputElement;
+    expect(toggle).toBeInTheDocument();
+    // デフォルトは字下げON（なろう推奨）
+    expect(toggle.checked).toBe(true);
+    expect(screen.getByText('字下げON')).toBeInTheDocument();
+  });
+
+  it('toggles indent off and sends indent_enabled false', async () => {
+    const mockResponse = {
+      ok: true,
+      json: vi.fn().mockResolvedValue({
+        title: mockTitle,
+        foreword: '',
+        body: '「行くぞ」\n旅人は言った。',
+        afterword: '',
+        total_characters: 18,
+        platform: 'kakuyomu',
+      }),
+    };
+
+    mockApiFetch.mockResolvedValue(mockResponse);
+    mockHandleResponse.mockResolvedValue({
+      title: mockTitle,
+      foreword: '',
+      body: '「行くぞ」\n旅人は言った。',
+      afterword: '',
+      total_characters: 18,
+      platform: 'kakuyomu',
+    });
+
+    render(<PlatformCopyButton title={mockTitle} body={mockBody} />);
+
+    // トグルをOFFに切り替え
+    const toggle = screen.getByTestId('indent-toggle') as HTMLInputElement;
+    fireEvent.click(toggle);
+    expect(toggle.checked).toBe(false);
+    expect(screen.getByText('字下げOFF')).toBeInTheDocument();
+
+    // カクヨムボタンでコピー → indent_enabled: false が送信される
+    fireEvent.click(screen.getByText('カクヨム'));
+
     await waitFor(() => {
       expect(mockApiFetch).toHaveBeenCalledWith(
         '/api/export/copy/',
@@ -81,11 +150,25 @@ describe('PlatformCopyButton', () => {
           body: JSON.stringify({
             title: mockTitle,
             body: mockBody,
-            platform: 'narou',
+            platform: 'kakuyomu',
+            indent_enabled: false,
           }),
         })
       );
     });
+  });
+
+  it('shows toast when toggling indent', () => {
+    render(<PlatformCopyButton title={mockTitle} body={mockBody} />);
+
+    const toggle = screen.getByTestId('indent-toggle');
+    fireEvent.click(toggle);
+
+    // トグル切り替え時にトースト通知が表示される
+    expect(mockAddToast).toHaveBeenCalledWith(
+      '📐 字下げなし: OFF（カクヨム推奨）',
+      'info'
+    );
   });
 
   it('copies formatted text to clipboard on success', async () => {
@@ -101,7 +184,7 @@ describe('PlatformCopyButton', () => {
         platform: 'narou',
       }),
     };
-    
+
     mockApiFetch.mockResolvedValue(mockResponse);
     mockHandleResponse.mockResolvedValue({
       title: mockTitle,
@@ -113,9 +196,9 @@ describe('PlatformCopyButton', () => {
     });
 
     render(<PlatformCopyButton title={mockTitle} body={mockBody} />);
-    
+
     fireEvent.click(screen.getByText('なろう'));
-    
+
     await waitFor(() => {
       expect(navigator.clipboard.writeText).toHaveBeenCalledWith(formattedBody);
     });
@@ -133,7 +216,7 @@ describe('PlatformCopyButton', () => {
         platform: 'kakuyomu',
       }),
     };
-    
+
     mockApiFetch.mockResolvedValue(mockResponse);
     mockHandleResponse.mockResolvedValue({
       title: mockTitle,
@@ -145,9 +228,9 @@ describe('PlatformCopyButton', () => {
     });
 
     render(<PlatformCopyButton title={mockTitle} body={mockBody} />);
-    
+
     fireEvent.click(screen.getByText('カクヨム'));
-    
+
     await waitFor(() => {
       expect(mockAddToast).toHaveBeenCalledWith(
         '✨ カクヨム形式でコピーしました',
@@ -158,11 +241,11 @@ describe('PlatformCopyButton', () => {
 
   it('falls back to raw text copy on API error', async () => {
     mockApiFetch.mockRejectedValue(new Error('Network error'));
-    
+
     render(<PlatformCopyButton title={mockTitle} body={mockBody} />);
-    
+
     fireEvent.click(screen.getByText('なろう'));
-    
+
     await waitFor(() => {
       expect(navigator.clipboard.writeText).toHaveBeenCalledWith(mockBody);
       expect(mockAddToast).toHaveBeenCalledWith(
@@ -184,7 +267,7 @@ describe('PlatformCopyButton', () => {
         platform: 'alphapolis',
       }),
     };
-    
+
     mockApiFetch.mockResolvedValue(mockResponse);
     mockHandleResponse.mockResolvedValue({
       title: mockTitle,
@@ -196,10 +279,10 @@ describe('PlatformCopyButton', () => {
     });
 
     render(<PlatformCopyButton title={mockTitle} body={mockBody} />);
-    
+
     const alphapolisBtn = screen.getByText('アルファ');
     fireEvent.click(alphapolisBtn);
-    
+
     await waitFor(() => {
       expect(alphapolisBtn).toHaveTextContent('✓ コピー済');
       expect(alphapolisBtn).toHaveClass('animate-pulse');
@@ -218,7 +301,7 @@ describe('PlatformCopyButton', () => {
         platform: 'narou',
       }),
     };
-    
+
     mockApiFetch.mockResolvedValue(mockResponse);
     mockHandleResponse.mockResolvedValue({
       title: '',
@@ -230,9 +313,9 @@ describe('PlatformCopyButton', () => {
     });
 
     render(<PlatformCopyButton title="" body="" />);
-    
+
     fireEvent.click(screen.getByText('なろう'));
-    
+
     await waitFor(() => {
       expect(navigator.clipboard.writeText).toHaveBeenCalledWith('');
     });
@@ -251,7 +334,7 @@ describe('PlatformCopyButton', () => {
         platform: 'narou',
       }),
     };
-    
+
     mockApiFetch.mockResolvedValue(mockResponse);
     mockHandleResponse.mockResolvedValue({
       title: mockTitle,
@@ -263,9 +346,9 @@ describe('PlatformCopyButton', () => {
     });
 
     render(<PlatformCopyButton title={mockTitle} body={specialBody} />);
-    
+
     fireEvent.click(screen.getByText('なろう'));
-    
+
     await waitFor(() => {
       expect(navigator.clipboard.writeText).toHaveBeenCalledWith(specialBody);
     });
