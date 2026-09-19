@@ -1,0 +1,14 @@
+{
+  "id": "case_23",
+  "name": "ext_hesitation_e",
+  "speaker": "少女",
+  "before": [
+    "「えっ、えっ」"
+  ],
+  "expected_contains": [
+    "（息を詰まらせ、喉をかすかに震わせる）"
+  ],
+  "applied_rules": [
+    "rule_09_hesitation_stutter"
+  ]
+}

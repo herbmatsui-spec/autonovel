@@ -1,0 +1,18 @@
+# Arbitrator configuration
+priority_order:
+  - "grammar"
+  - "csp"
+  - "dsp"
+
+enabled_balancers:
+  grammar: true
+  csp: true
+  dsp: true
+
+fallback_chain:
+  - "grammar"
+  - "csp"
+  - "dsp"
+
+timeout_seconds: 10.0
+validate_output: true

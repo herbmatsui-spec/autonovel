@@ -1,0 +1,82 @@
+{# 引きシーン生成プロンプト #}
+{# 役割: 最大の危機/クライマックス、意外な展開/伏線の回収、次回への強烈なフック/クリフハンガー #}
+
+{% set scene = scene_data %}
+{% set ep_num = episode_number %}
+{% set prev_content = previous_scene_content %}
+
+<role>
+あなたは商業Web小説作家です。第{{ ep_num }}話の「引き」シーン（3シーン構成の第3シーン＝最終シーン）を執筆してください。
+</role>
+
+<constraints>
+- 文字数目安: {{ scene.target_word_count }}字前後
+- テンション: {{ scene.tension_start }} → {{ scene.tension_end }} (最高潮→余韻含む高止まり)
+- 視点: {{ pov_character or "主人公" }}視点（必要なら視点切替可、だが明示的に）
+- 前シーン（衝突）の末尾フックから直接継続すること
+</constraints>
+
+<required_beats>
+{% for beat in scene.beats %}
+- {{ beat }}
+{% endfor %}
+</required_beats>
+
+<previous_scene_summary>
+{{ prev_content[:500] }}{% if prev_content|length > 500 %}...{% endif %}
+</previous_scene_summary>
+
+<context>
+{{ writing_context_summary }}
+
+{% if story_arc_summary %}
+【ストーリーアーク概要】
+{{ story_arc_summary }}
+{% endif %}
+
+{% if character_states %}
+【キャラクター状態】
+{{ character_states }}
+{% endif %}
+
+{% if cliffhanger_requirements %}
+【次回への引き要件】
+{{ cliffhanger_requirements }}
+{% endif %}
+</context>
+
+<prohibited>
+- 衝突シーンの内容を繰り返す/要約する
+- 「すべて解決してめでたしめでたし」で終わる（次話への動機を失わせる）
+- 主人公が都合よく新能力を開花させて即解決（セットアップなしのデウス・エクス・マキナ）
+- 次回予告じみたメタ的な語り（「次回、衝撃の展開が！？」等）
+- テンションを急激に下げる「説明台詞」で終わる
+</prohibited>
+
+<instructions>
+以下の構成で「引き」を書き切ってください：
+
+1. **衝突からの直接継続（50-100字）**: 前シーンの末尾フック（絶体絶命の瞬間）から1秒も空けずに再開。時間を巻き戻さない。
+2. **最大の危機/クライマックス（{{ scene.target_word_count * 0.35 | int }}字）**: 
+   - 主人公が「これしかない」と賭ける最後の一手
+   - または、予期せぬ第三の要因（味方の駆けつけ、敵の裏切り、環境の激変、伏線の発火）
+   - 「意外性」と「必然性」の両立を狙う。読者に「あ──！」と思わせる展開
+3. **意外な展開/伏線の回収（{{ scene.target_word_count * 0.3 | int }}字）**: 
+   - 以前の伏線（アイテム、台詞、設定、キャラの特性）がここで機能する
+   - または、敵の真の目的/正体/弱点が判明し、戦局がひっくり返る
+4. **決着の瞬間と余韻（{{ scene.target_word_count * 0.2 | int }}字）**: 
+   - 即座の完全決着ではなく「一区切り」をつける
+   - 変化した関係性、得たもの/失ったもの、新たな認識を描写
+5. **次回への強烈なフック/クリフハンガー（{{ scene.target_word_count * 0.15 | int }}字）**: 
+   - **謎の提示**: 「その瞳の色は、紛れもなく───」
+   - **新たな脅威**: 「背後から聞こえた、聞き覚えのある足音」
+   - **関係性の激変**: 「『裏切り者は、お前だ』」
+   - **世界観の拡張**: 「空が、割れた」
+   - **主人公の変化**: 「右手に宿った、黒い紋様が脈打つ」
+
+文体: {{ style_instruction or "商業Web小説標準（クライマックスは感情爆発、末尾は静寂で余韻を残すメリハリ）" }}
+</instructions>
+
+<output_format>
+本文のみを出力してください。メタ情報、解説、プロンプトの繰り返しは不要です。
+</output_format>

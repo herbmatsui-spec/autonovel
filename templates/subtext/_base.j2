@@ -1,0 +1,12 @@
+{# Base Jinja2 macros and helpers for subtext templates #}
+{% macro render_line(speaker, text) -%}
+{% if speaker %}「{{ text }}」{% else %}{{ text }}{% endif %}
+{%- endmacro %}
+
+{% macro render_beat(desc) -%}
+（{{ desc }}）
+{%- endmacro %}
+
+{% macro render_action(desc) -%}
+——{{ desc }}。
+{%- endmacro %}

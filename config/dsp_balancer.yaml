@@ -1,0 +1,12 @@
+# Configuration for DSP Tension Balancer
+window_size: 8
+flatness_threshold: 0.60
+low_freq_ratio_threshold: 0.65
+min_tension_clip: 1.0
+max_tension_clip: 10.0
+
+impulse:
+  length: 5
+  peak: 9.0
+  decay: 0.70
+  shape: "exponential_decay"

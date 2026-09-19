@@ -1,0 +1,14 @@
+{
+  "id": "case_12",
+  "name": "threat_kill",
+  "speaker": "暗殺者",
+  "before": [
+    "「絶対に殺してやる」"
+  ],
+  "expected_contains": [
+    "——"
+  ],
+  "applied_rules": [
+    "rule_05_threat_subtext"
+  ]
+}

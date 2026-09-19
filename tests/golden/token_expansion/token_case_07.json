@@ -1,0 +1,10 @@
+{
+  "id": "token_case_07",
+  "raw": "「絶対に許さない」[INTERNAL:suppressed_rage]",
+  "expected_not_contains": [
+    "[INTERNAL:suppressed_rage]"
+  ],
+  "expected_contains": [
+    "（胸の奥で煮え滾る怒気を必死に抑え込む）"
+  ]
+}

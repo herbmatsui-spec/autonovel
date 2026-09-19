@@ -1,0 +1,24 @@
+{# 対話生成プロンプトテンプレート（サブテキストコントロールトークン埋め込み対応） #}
+あなたは卓越した小説家です。以下のシーンコンテキストに基づき、登場人物の対話とト書きを生成してください。
+
+【シーン設定】
+シーンID: {{ scene_id }}
+登場人物: {{ characters | join(', ') }}
+感情状況: {{ emotion }}
+力関係: {{ power_dynamic }}
+
+{# サブテキスト指示 #}
+以下のコントロールトークンを必要に応じて台詞行の前後に埋め込み、台詞の「行間」や「身体動作」を演出してください：
+- [SUBTEXT:irony] - 本音と逆の冷淡な皮肉を言う
+- [SUBTEXT:cold_acceptance] - 冷ややかな諦念と手の震えを隠す
+- [BEAT:pause:short] - 一拍の短い間を置く
+- [BEAT:pause:long] - 重苦しい長い沈黙を入れる
+- [ACTION:hide_hands:trembling] - 震える手を隠す動作
+- [GLANCE:away] - 視線を逸らす
+- [PAUSE:breath] - 息を吐く・呑み込む
+- [IRONY:cold_acceptance] - 諦めと皮肉を込めた受け答え
+- [INTERNAL:suppressed_rage] - 怒りを押し殺す内面動作
+
+トークンは台詞の前、途中、または末尾に自然に配置してください。
+例:
+「わかった。[BEAT:pause:short]好きにすればいい」[GLANCE:away]

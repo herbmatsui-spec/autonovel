@@ -1,0 +1,21 @@
+# Character Profiles Configuration for Subtext Templates & Tokens
+characters:
+  default:
+    forbidden_tags: []
+    preferred_templates: []
+    speech_patterns: {}
+
+  elena:
+    forbidden_tags: ["vulgar", "comic"]
+    preferred_templates: ["betrayal.cold_acceptance", "grief.suppressed_tears"]
+    speech_patterns:
+      "だ": "ですわ"
+      "だね": "ですわね"
+      "殺す": "討ち滅ぼします"
+
+  cain:
+    forbidden_tags: ["silly"]
+    preferred_templates: ["betrayal.quiet_threat", "power_play.silence_as_weapon"]
+    speech_patterns:
+      "です": "だ"
+      "ます": "る"

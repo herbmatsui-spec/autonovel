@@ -1,0 +1,14 @@
+{
+  "id": "case_24",
+  "name": "ext_secret_whisper",
+  "speaker": "情報屋",
+  "before": [
+    "「ここだけの話だけど」"
+  ],
+  "expected_contains": [
+    "「……壁に耳があるわ」"
+  ],
+  "applied_rules": [
+    "rule_10_secretive_whisper"
+  ]
+}

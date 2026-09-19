@@ -1,0 +1,15 @@
+{
+  "id": "case_16",
+  "name": "compliance_wakarimashita",
+  "speaker": "秘書",
+  "before": [
+    "「わかりました」"
+  ],
+  "expected_any": [
+    "仰せのままに",
+    "無言のまま"
+  ],
+  "applied_rules": [
+    "rule_06_compliance_subvert"
+  ]
+}

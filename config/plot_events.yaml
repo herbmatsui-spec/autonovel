@@ -1,0 +1,41 @@
+# プロットイベント入力ファイル (Week 2 Step 6)
+#
+# エピソードごとのイベントリスト。キーは "episode_{番号}" 形式。
+# 各イベント:
+#   - event_id: 一意なID
+#   - event_type: PlotEventType の値
+#   - scene: シーン番号 (同一エピソード内の順序)
+#   - roles: 役割 (Role の値) → キャラクター名
+#   - metadata: 任意データ (カスタムフラグ等)
+#
+# サンプル: ep14-16 (裏切り → 救出 → 告白の流れ)
+episode_14:
+  - event_id: "ep14_betrayal"
+    event_type: "betrayal"
+    scene: 3
+    roles:
+      victim: "A"
+      perpetrator: "B"
+    metadata:
+      witness: "C"
+      relationship_level: 0.6
+
+episode_15:
+  - event_id: "ep15_rescue"
+    event_type: "rescue"
+    scene: 1
+    roles:
+      victim: "A"
+      rescuer: "B"
+    metadata:
+      relationship_level: 0.4
+
+episode_16:
+  - event_id: "ep16_confession"
+    event_type: "confession"
+    scene: 2
+    roles:
+      confessor: "A"
+      listener: "B"
+    metadata:
+      relationship_level: 0.7

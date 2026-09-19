@@ -1,0 +1,15 @@
+{
+  "id": "case_11",
+  "name": "subjective_shinjiru",
+  "speaker": "騎士",
+  "before": [
+    "「俺は勝利を信じている」"
+  ],
+  "expected_contains": [
+    "（……",
+    "信じてげな素振りを見せ"
+  ],
+  "applied_rules": [
+    "rule_04_subjective_internalize"
+  ]
+}

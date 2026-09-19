@@ -1,0 +1,15 @@
+{
+  "id": "case_17",
+  "name": "compliance_shouchi",
+  "speaker": "武官",
+  "before": [
+    "「承知しました」"
+  ],
+  "expected_any": [
+    "仰せのままに",
+    "無言のまま"
+  ],
+  "applied_rules": [
+    "rule_06_compliance_subvert"
+  ]
+}

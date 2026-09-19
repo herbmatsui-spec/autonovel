@@ -1,0 +1,13 @@
+# パイプライン設定 (Week 2 Step 15)
+pipeline:
+  # ルールエンジンステージ (Week 2 ベースライン生成)
+  rule_engine:
+    enabled: true
+    rules_path: "config/emotional_rules.yaml"
+    events_path: "config/plot_events.yaml"
+
+  # ネームスペース分離 (Week 1-3)
+  namespaces:
+    pipeline: true       # Week 1 の自動抽出
+    rule_engine: true    # Week 2 のベースライン
+    annotation: false    # Week 3 の人間上書き (Week 3 で有効化)

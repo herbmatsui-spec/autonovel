@@ -1,0 +1,145 @@
+# Emotional Residue Pipeline CI/CD
+# 感情残基抽出パイプラインのテスト自動化
+
+name: Emotional Residue Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'src/pipeline/**'
+      - 'config/emotion_lexicon.yaml'
+      - 'config/characters.yaml'
+      - 'config/context_compression.yaml'
+      - 'config/redis.yaml'
+      - 'templates/emotional_context.j2'
+      - 'prompts/templates/narrative/final_writing_prompt.j2'
+      - 'prompts/manager.py'
+      - 'src/agents/writing/episode_writer.py'
+      - 'tests/unit/pipeline/**'
+      - 'tests/unit/config/**'
+      - 'tests/unit/stores/**'
+      - 'tests/unit/templates/**'
+      - 'tests/integration/pipeline/**'
+      - 'tests/integration/agent/**'
+      - 'tests/regression/test_emotional_residue_regression.py'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'src/pipeline/**'
+      - 'config/emotion_lexicon.yaml'
+      - 'config/characters.yaml'
+      - 'config/context_compression.yaml'
+      - 'config/redis.yaml'
+      - 'templates/emotional_context.j2'
+      - 'prompts/templates/narrative/final_writing_prompt.j2'
+      - 'prompts/manager.py'
+      - 'src/agents/writing/episode_writer.py'
+      - 'tests/unit/pipeline/**'
+      - 'tests/unit/config/**'
+      - 'tests/unit/stores/**'
+      - 'tests/unit/templates/**'
+      - 'tests/integration/pipeline/**'
+      - 'tests/integration/agent/**'
+      - 'tests/regression/test_emotional_residue_regression.py'
+
+jobs:
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          pip install -q pytest pytest-asyncio pytest-cov fakeredis spacy pyyaml jinja2
+          pip install -q ja-ginza || echo "ja-ginza optional"
+      
+      - name: Run unit tests
+        run: |
+          pytest tests/unit/pipeline/ tests/unit/config/ tests/unit/stores/ tests/unit/templates/ -v --tb=short
+      
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage.xml
+          flags: emotional-residue
+
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          pip install -q pytest pytest-asyncio pytest-cov fakeredis spacy pyyaml jinja2
+          pip install -q ja-ginza || echo "ja-ginza optional"
+      
+      - name: Run integration tests
+        run: |
+          pytest tests/integration/pipeline/ tests/integration/agent/ -v --tb=short
+
+  regression-tests:
+    name: Regression Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          pip install -q pytest pytest-asyncio pytest-cov fakeredis spacy pyyaml jinja2
+          pip install -q ja-ginza || echo "ja-ginza optional"
+      
+      - name: Run regression tests
+        run: |
+          pytest tests/regression/test_emotional_residue_regression.py -v --tb=short
+
+  lint-and-typecheck:
+    name: Lint & Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          pip install -q ruff mypy
+      
+      - name: Run ruff
+        run: |
+          ruff check src/pipeline/ src/stores/ prompts/manager.py src/agents/writing/episode_writer.py
+      
+      - name: Run mypy
+        run: |
+          mypy src/pipeline/ src/stores/ --ignore-missing-imports || true
+
+  notify:
+    name: Notify on Failure
+    needs: [unit-tests, integration-tests, regression-tests, lint-and-typecheck]
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify failure
+        run: |
+          echo "Emotional Residue Pipeline tests failed"
+          # ここにSlack/Discord通知等を追加可能

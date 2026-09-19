@@ -1,0 +1,14 @@
+{
+  "id": "case_04",
+  "name": "emotion_anger",
+  "speaker": "バルト",
+  "before": [
+    "「怒っているんだ」"
+  ],
+  "expected_contains": [
+    "怒気を孕んだ瞳で、テーブルを叩く"
+  ],
+  "applied_rules": [
+    "rule_02_emotion_to_action"
+  ]
+}

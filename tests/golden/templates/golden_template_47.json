@@ -1,0 +1,13 @@
+{
+  "id": "golden_template_47",
+  "context": {
+    "scene_id": "scene_010",
+    "turn_index": 1,
+    "speaker": "Character_2",
+    "emotion": "anger",
+    "relationship": "enemy",
+    "power_dynamic": "superior",
+    "intensity": "high"
+  },
+  "expected_category": "betrayal"
+}

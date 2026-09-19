@@ -1,0 +1,10 @@
+{
+  "id": "token_case_14",
+  "raw": "「テスト発言 14」[ACTION:hide_hands:trembling]「続く発言」",
+  "expected_not_contains": [
+    "[ACTION:hide_hands:trembling]"
+  ],
+  "expected_contains": [
+    "「テスト発言 14」"
+  ]
+}

@@ -1,0 +1,13 @@
+{"source": "A", "target": "B", "emotion_type": "affection", "value": -0.6, "confidence": 1.0, "evidence_span": "", "episode_id": "ep14", "cause": "betrayal", "hidden": false}
+{"source": "A", "target": "B", "emotion_type": "tension", "value": 0.8, "confidence": 1.0, "evidence_span": "", "episode_id": "ep14", "cause": "betrayal", "hidden": false}
+{"source": "A", "target": "B", "emotion_type": "fear", "value": 0.5, "confidence": 1.0, "evidence_span": "", "episode_id": "ep14", "cause": "betrayal", "hidden": false}
+{"source": "A", "target": "B", "emotion_type": "trust", "value": -0.7, "confidence": 1.0, "evidence_span": "", "episode_id": "ep14", "cause": "betrayal", "hidden": false}
+{"source": "A", "target": "B", "emotion_type": "affection", "value": -0.14, "confidence": 1.0, "evidence_span": "", "episode_id": "ep15", "cause": "rescue", "hidden": false}
+{"source": "A", "target": "B", "emotion_type": "tension", "value": 0.4200000000000001, "confidence": 1.0, "evidence_span": "", "episode_id": "ep15", "cause": "rescue", "hidden": false}
+{"source": "A", "target": "B", "emotion_type": "fear", "value": 0.45, "confidence": 1.0, "evidence_span": "", "episode_id": "ep15", "cause": null, "hidden": false}
+{"source": "A", "target": "B", "emotion_type": "trust", "value": -0.13, "confidence": 1.0, "evidence_span": "", "episode_id": "ep15", "cause": "rescue", "hidden": false}
+{"source": "A", "target": "B", "emotion_type": "affection", "value": 0.374, "confidence": 1.0, "evidence_span": "", "episode_id": "ep16", "cause": "confession", "hidden": false}
+{"source": "A", "target": "B", "emotion_type": "tension", "value": 0.1780000000000001, "confidence": 1.0, "evidence_span": "", "episode_id": "ep16", "cause": "confession", "hidden": false}
+{"source": "A", "target": "B", "emotion_type": "fear", "value": 0.405, "confidence": 1.0, "evidence_span": "", "episode_id": "ep16", "cause": null, "hidden": false}
+{"source": "A", "target": "B", "emotion_type": "trust", "value": -0.117, "confidence": 1.0, "evidence_span": "", "episode_id": "ep16", "cause": null, "hidden": false}
+{"source": "A", "target": "B", "emotion_type": "intimacy", "value": 0.6, "confidence": 1.0, "evidence_span": "", "episode_id": "ep16", "cause": "confession", "hidden": false}

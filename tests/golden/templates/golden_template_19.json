@@ -1,0 +1,13 @@
+{
+  "id": "golden_template_19",
+  "context": {
+    "scene_id": "scene_004",
+    "turn_index": 3,
+    "speaker": "Character_2",
+    "emotion": "pride",
+    "relationship": "subordinate",
+    "power_dynamic": "superior",
+    "intensity": "high"
+  },
+  "expected_category": "power_play"
+}

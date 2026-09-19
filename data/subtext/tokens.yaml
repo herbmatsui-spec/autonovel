@@ -1,0 +1,77 @@
+# Control Tokens Dictionary (Japanese) - PLAN_Y3
+subtext:
+  irony:
+    templates:
+      - "「……{phrase}」"
+      - "「……{phrase}——{beat}」"
+    phrases:
+      - "そう。好きにすればいいわ"
+      - "君に何が分かる"
+      - "期待しないことにする"
+    weights: [0.5, 0.3, 0.2]
+  cold_acceptance:
+    templates:
+      - "「……{phrase}」——{action}。"
+    phrases:
+      - "そう。好きにすれば"
+      - "ああ、それでいい"
+    actions:
+      - "乾いた笑みをこぼしながら、震える指先をマントの奥へ隠した"
+      - "視線を落とし、杯を静かに置いた"
+
+beat:
+  pause:
+    short:
+      - "……"
+      - "一瞬、間が開く"
+      - "静寂が張り詰める"
+    long:
+      - "長い沈黙が流れる"
+      - "数秒、何も言葉が返ってこない"
+  breath:
+    - "深く息を吐く"
+    - "吐息を漏らす"
+
+action:
+  hide_hands:
+    trembling:
+      - "震える指先をマントの奥へ隠した"
+      - "拳を握りしめ、袖の中に押し込んだ"
+    calm:
+      - "指先を袖で拭う"
+      - "手を膝の上で組み直した"
+  glance_away:
+    down:
+      - "視線を落とす"
+      - "伏し目がちになる"
+    side:
+      - "視線を逸らす"
+      - "横を向く"
+
+glance:
+  away:
+    - "視線を静かに逸らす"
+    - "横を向き、横顔を隠す"
+  down:
+    - "伏し目がちに手元を見つめる"
+
+pause:
+  breath:
+    - "深く息を吐く"
+    - "静かに息を呑む"
+  short:
+    - "……"
+    - "一拍、沈黙が落ちる"
+  long:
+    - "重苦しい静寂が部屋を支配する"
+
+irony:
+  cold_acceptance:
+    - "「……そう。望み通りになればいいわね」"
+    - "「……結構な判断ですこと」"
+
+internal:
+  suppressed_rage:
+    - "（胸の奥で煮え滾る怒気を必死に抑え込む）"
+  hesitation:
+    - "（喉の奥まで出かかった言葉を飲み込む）"

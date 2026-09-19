@@ -1,0 +1,17 @@
+---
+id: power_play.conditional_compliance
+category: power_play
+tags: [power_play, compliance, condition]
+context:
+  emotion: [reluctance, calculation]
+  power_dynamic: [inferior, equal]
+  relationship: [boss, client]
+  intensity: [medium]
+variables:
+  - condition_line: "条件付きの承諾"
+  - bow_motion: "形式的な礼"
+weight: 90
+final: false
+---
+「……{{ condition_line | default('仰せに従いましょう。ただし、責任の所在はお忘れなく') }}」
+——{{ bow_motion | default('形式的な一礼をしつつ、視線だけは真っ直ぐに据えていた') }}。

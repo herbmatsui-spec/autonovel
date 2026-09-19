@@ -1,0 +1,15 @@
+{
+  "id": "case_10",
+  "name": "subjective_omou",
+  "speaker": "探偵",
+  "before": [
+    "「私はそう思う」"
+  ],
+  "expected_contains": [
+    "（……",
+    "素振りを見せ"
+  ],
+  "applied_rules": [
+    "rule_04_subjective_internalize"
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "id": "case_19",
+  "name": "address_former_ally",
+  "speaker": "裏切り者",
+  "before": [
+    "「君、もう終わりだ」"
+  ],
+  "context": {
+    "relationship": "former_ally"
+  },
+  "expected_contains": [
+    "貴方"
+  ],
+  "applied_rules": [
+    "rule_07_address_distance"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "id": "golden_template_04",
+  "context": {
+    "scene_id": "scene_001",
+    "turn_index": 3,
+    "speaker": "Character_3",
+    "emotion": "affection",
+    "relationship": "partner",
+    "power_dynamic": "equal",
+    "intensity": "medium"
+  },
+  "expected_category": "romance"
+}

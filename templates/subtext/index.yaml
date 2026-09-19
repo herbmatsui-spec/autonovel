@@ -1,0 +1,273 @@
+templates:
+  action.environmental_interaction:
+    id: action.environmental_interaction
+    category: action
+    tags:
+    - action
+    - environment
+    - silence
+    weight: 95
+    final: false
+    file: E:\hhh\templates\subtext\action\environmental_interaction.j2
+  action.meaningful_glance:
+    id: action.meaningful_glance
+    category: action
+    tags:
+    - action
+    - silence
+    - gaze
+    weight: 100
+    final: false
+    file: E:\hhh\templates\subtext\action\meaningful_glance.j2
+  action.symbolic_gesture:
+    id: action.symbolic_gesture
+    category: action
+    tags:
+    - action
+    - gesture
+    - symbol
+    weight: 105
+    final: false
+    file: E:\hhh\templates\subtext\action\symbolic_gesture.j2
+  betrayal.calculated_retreat:
+    id: betrayal.calculated_retreat
+    category: betrayal
+    tags:
+    - betrayal
+    - retreat
+    - survival
+    weight: 90
+    final: false
+    file: E:\hhh\templates\subtext\betrayal\calculated_retreat.j2
+  betrayal.cold_acceptance:
+    id: betrayal.cold_acceptance
+    category: betrayal
+    tags:
+    - betrayal
+    - cold
+    - acceptance
+    - irony
+    weight: 100
+    final: false
+    file: E:\hhh\templates\subtext\betrayal\cold_acceptance.j2
+  betrayal.false_forgiveness:
+    id: betrayal.false_forgiveness
+    category: betrayal
+    tags:
+    - betrayal
+    - forgiveness
+    - facade
+    weight: 95
+    final: false
+    file: E:\hhh\templates\subtext\betrayal\false_forgiveness.j2
+  betrayal.masked_rage:
+    id: betrayal.masked_rage
+    category: betrayal
+    tags:
+    - betrayal
+    - anger
+    - mask
+    weight: 110
+    final: false
+    file: E:\hhh\templates\subtext\betrayal\masked_rage.j2
+  betrayal.quiet_threat:
+    id: betrayal.quiet_threat
+    category: betrayal
+    tags:
+    - betrayal
+    - threat
+    - cold
+    weight: 120
+    final: true
+    file: E:\hhh\templates\subtext\betrayal\quiet_threat.j2
+  comedy.absurdist_redirect:
+    id: comedy.absurdist_redirect
+    category: comedy
+    tags:
+    - comedy
+    - absurdist
+    - redirect
+    weight: 90
+    final: false
+    file: E:\hhh\templates\subtext\comedy\absurdist_redirect.j2
+  comedy.deadpan_evade:
+    id: comedy.deadpan_evade
+    category: comedy
+    tags:
+    - comedy
+    - deadpan
+    - evasion
+    weight: 95
+    final: false
+    file: E:\hhh\templates\subtext\comedy\deadpan_evade.j2
+  comedy.self_deprecating_deflection:
+    id: comedy.self_deprecating_deflection
+    category: comedy
+    tags:
+    - comedy
+    - self_deprecating
+    - deflection
+    weight: 100
+    final: false
+    file: E:\hhh\templates\subtext\comedy\self_deprecating_deflection.j2
+  fallback.generic_subtext:
+    id: fallback.generic_subtext
+    category: fallback
+    tags:
+    - fallback
+    - generic
+    weight: 10
+    final: false
+    file: E:\hhh\templates\subtext\fallback\generic_subtext.j2
+  fallback.minimal_beat:
+    id: fallback.minimal_beat
+    category: fallback
+    tags:
+    - fallback
+    - beat
+    - minimal
+    weight: 5
+    final: false
+    file: E:\hhh\templates\subtext\fallback\minimal_beat.j2
+  grief.denial_through_action:
+    id: grief.denial_through_action
+    category: grief
+    tags:
+    - grief
+    - denial
+    - action
+    weight: 105
+    final: false
+    file: E:\hhh\templates\subtext\grief\denial_through_action.j2
+  grief.quiet_breakdown:
+    id: grief.quiet_breakdown
+    category: grief
+    tags:
+    - grief
+    - breakdown
+    - silence
+    weight: 115
+    final: false
+    file: E:\hhh\templates\subtext\grief\quiet_breakdown.j2
+  grief.stoic_endurance:
+    id: grief.stoic_endurance
+    category: grief
+    tags:
+    - grief
+    - stoic
+    - endurance
+    weight: 100
+    final: false
+    file: E:\hhh\templates\subtext\grief\stoic_endurance.j2
+  grief.suppressed_tears:
+    id: grief.suppressed_tears
+    category: grief
+    tags:
+    - grief
+    - restraint
+    - tear
+    weight: 100
+    final: false
+    file: E:\hhh\templates\subtext\grief\suppressed_tears.j2
+  power_play.conditional_compliance:
+    id: power_play.conditional_compliance
+    category: power_play
+    tags:
+    - power_play
+    - compliance
+    - condition
+    weight: 90
+    final: false
+    file: E:\hhh\templates\subtext\power_play\conditional_compliance.j2
+  power_play.feigned_ignorance:
+    id: power_play.feigned_ignorance
+    category: power_play
+    tags:
+    - power_play
+    - ignorance
+    - probe
+    weight: 95
+    final: false
+    file: E:\hhh\templates\subtext\power_play\feigned_ignorance.j2
+  power_play.ironic_politeness:
+    id: power_play.ironic_politeness
+    category: power_play
+    tags:
+    - power_play
+    - polite
+    - irony
+    weight: 105
+    final: false
+    file: E:\hhh\templates\subtext\power_play\ironic_politeness.j2
+  power_play.silence_as_weapon:
+    id: power_play.silence_as_weapon
+    category: power_play
+    tags:
+    - power_play
+    - silence
+    - intimidation
+    weight: 120
+    final: true
+    file: E:\hhh\templates\subtext\power_play\silence_as_weapon.j2
+  romance.deflected_confession:
+    id: romance.deflected_confession
+    category: romance
+    tags:
+    - romance
+    - confession
+    - deflection
+    weight: 105
+    final: false
+    file: E:\hhh\templates\subtext\romance\deflected_confession.j2
+  romance.masked_longing:
+    id: romance.masked_longing
+    category: romance
+    tags:
+    - romance
+    - longing
+    - mask
+    weight: 100
+    final: false
+    file: E:\hhh\templates\subtext\romance\masked_longing.j2
+  romance.silent_understanding:
+    id: romance.silent_understanding
+    category: romance
+    tags:
+    - romance
+    - silence
+    - bond
+    weight: 110
+    final: false
+    file: E:\hhh\templates\subtext\romance\silent_understanding.j2
+  romance.teasing_as_shield:
+    id: romance.teasing_as_shield
+    category: romance
+    tags:
+    - romance
+    - tease
+    - shield
+    weight: 95
+    final: false
+    file: E:\hhh\templates\subtext\romance\teasing_as_shield.j2
+  zh.betrayal.cold_acceptance:
+    id: zh.betrayal.cold_acceptance
+    category: betrayal
+    tags:
+    - betrayal
+    - cold
+    - acceptance
+    - irony
+    weight: 100
+    final: false
+    file: E:\hhh\templates\subtext\zh\betrayal\cold_acceptance.j2
+  en.betrayal.cold_acceptance:
+    id: en.betrayal.cold_acceptance
+    category: betrayal
+    tags:
+    - betrayal
+    - cold
+    - acceptance
+    - irony
+    weight: 100
+    final: false
+    file: E:\hhh\templates\subtext\en\betrayal\cold_acceptance.j2

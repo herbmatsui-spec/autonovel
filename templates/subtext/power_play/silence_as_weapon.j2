@@ -1,0 +1,17 @@
+---
+id: power_play.silence_as_weapon
+category: power_play
+tags: [power_play, silence, intimidation]
+context:
+  emotion: [calm, dominance]
+  power_dynamic: [superior]
+  relationship: [subordinate, captive, rival]
+  intensity: [high]
+variables:
+  - gaze_description: "無言の視線"
+  - intimidating_beat: "威圧の沈黙"
+weight: 120
+final: true
+---
+（{{ intimidating_beat | default('数秒の張り詰めた沈黙が部屋の空気を凍りつかせる') }}）
+「……{{ gaze_description | default('用件は、それだけですか？') }}」

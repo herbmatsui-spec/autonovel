@@ -1,0 +1,14 @@
+{
+  "id": "case_22",
+  "name": "ext_hesitation_a",
+  "speaker": "少年",
+  "before": [
+    "「あっ、あっ」"
+  ],
+  "expected_contains": [
+    "（息を詰まらせ、喉をかすかに震わせる）"
+  ],
+  "applied_rules": [
+    "rule_09_hesitation_stutter"
+  ]
+}

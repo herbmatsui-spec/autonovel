@@ -1,0 +1,12 @@
+{
+  "id": "case_31",
+  "name": "negative_sadness_negated",
+  "speaker": "勇者",
+  "before": [
+    "「別に悲しくない」"
+  ],
+  "expected_contains": [
+    "「別に悲しくない」"
+  ],
+  "applied_rules": []
+}

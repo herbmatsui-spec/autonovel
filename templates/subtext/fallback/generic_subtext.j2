@@ -1,0 +1,13 @@
+---
+id: fallback.generic_subtext
+category: fallback
+tags: [fallback, generic]
+context: {}
+variables:
+  - fallback_line: "汎用セリフ"
+  - fallback_action: "汎用ト書き"
+weight: 10
+final: false
+---
+「……{{ fallback_line | default('それ以上は、何も言うな') }}」
+——{{ fallback_action | default('静かに目を伏せ、長い息を吐き出した') }}。

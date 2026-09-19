@@ -1,0 +1,14 @@
+{
+  "id": "case_14",
+  "name": "threat_forgive_not",
+  "speaker": "伯爵",
+  "before": [
+    "「貴様だけは許さない」"
+  ],
+  "expected_contains": [
+    "——"
+  ],
+  "applied_rules": [
+    "rule_05_threat_subtext"
+  ]
+}

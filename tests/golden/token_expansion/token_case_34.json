@@ -1,0 +1,10 @@
+{
+  "id": "token_case_34",
+  "raw": "「テスト発言 34」[PAUSE:breath]「続く発言」",
+  "expected_not_contains": [
+    "[PAUSE:breath]"
+  ],
+  "expected_contains": [
+    "「テスト発言 34」"
+  ]
+}

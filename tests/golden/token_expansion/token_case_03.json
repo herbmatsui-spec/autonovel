@@ -1,0 +1,10 @@
+{
+  "id": "token_case_03",
+  "raw": "[SUBTEXT:irony]「それで、何用かしら？」",
+  "expected_not_contains": [
+    "[SUBTEXT:irony]"
+  ],
+  "expected_contains": [
+    "「……"
+  ]
+}

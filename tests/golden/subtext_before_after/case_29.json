@@ -1,0 +1,14 @@
+{
+  "id": "case_29",
+  "name": "ext_unspoken_tension",
+  "speaker": "用心棒",
+  "before": [
+    "「言いたいことはそれだけか？」"
+  ],
+  "expected_contains": [
+    "「……それ以上は、お互いのためにならない」"
+  ],
+  "applied_rules": [
+    "rule_15_unspoken_tension"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "id": "golden_template_45",
+  "context": {
+    "scene_id": "scene_009",
+    "turn_index": 4,
+    "speaker": "Character_0",
+    "emotion": "tension",
+    "relationship": "friend",
+    "power_dynamic": "equal",
+    "intensity": "high"
+  },
+  "expected_category": "comedy"
+}

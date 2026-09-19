@@ -1,0 +1,104 @@
+# ──────────────────────────────────────────────
+# 紫色の散文デトックス パイプライン設定
+# ──────────────────────────────────────────────
+
+pipeline:
+  # 実行順序（数字が小さいほど先）
+  stages:
+    - id: "stream_guard"
+      enabled: true
+      mode: "replace"          # replace | drop | mark
+      limits:
+        aggressive_per_episode: 2
+        metaphor_per_1k_chars: 3
+      replacements:
+        aggressive: "顔をしかめた"
+        metaphor: ""           # 空文字＝削除
+      action_on_exceed: "replace_first"  # 最初のN個残し、超過分を置換
+
+    - id: "density_gate"
+      enabled: true
+      trigger: "threshold"     # threshold | always | never
+      thresholds_per_1k:
+        aggressive: 2.0
+        metaphor: 3.0
+        sensory_bias: 0.55     # 五感語彙の偏り（0-1）
+      # 閾値超過時のみ次段（syntax_refiner）へパス
+      pass_to_next: true
+
+    - id: "syntax_refiner"
+      enabled: false           # デフォルトOFF（条件付きで有効化）
+      conditions:
+        - "episode.tags contains 'climax'"
+        - "user.plan in ['pro', 'enterprise']"
+        - "density_gate.triggered == true"
+      model: "ja_ginza"        # ja_ginza | ja_core_news_lg | sudachi
+      rules:
+        - "collapse_violent_verbs_to_strong_single"
+        - "strip_metaphor_clauses"
+        - "convert_to_noun_ending"   # 体言止め変換
+      max_latency_ms: 200      # これを超えたらスキップして原文通す
+
+# ──────────────────────────────────────────────
+# ジャンル別プリセット（上書き適用）
+# ──────────────────────────────────────────────
+
+presets:
+  light_novel:
+    stream_guard:
+      limits:
+        aggressive_per_episode: 3
+        metaphor_per_1k_chars: 5
+    density_gate:
+      thresholds_per_1k:
+        aggressive: 3.0
+        metaphor: 5.0
+        sensory_bias: 0.65
+
+  literary:
+    stream_guard:
+      limits:
+        aggressive_per_episode: 1
+        metaphor_per_1k_chars: 2
+    density_gate:
+      thresholds_per_1k:
+        aggressive: 1.0
+        metaphor: 2.0
+        sensory_bias: 0.40
+    syntax_refiner:
+      enabled: true
+      conditions: []           # 常時ON
+
+  screenplay:
+    stream_guard:
+      limits:
+        aggressive_per_episode: 0   # セリフ中心なので物理描写不要
+        metaphor_per_1k_chars: 1
+    density_gate:
+      enabled: false
+
+# ──────────────────────────────────────────────
+# 運用・監視
+# ──────────────────────────────────────────────
+
+observability:
+  log_level: "INFO"
+  metrics:
+    - "stage.latency_ms"
+    - "stage.replacements_count"
+    - "stage.triggered"
+    - "pipeline.total_latency_ms"
+  sample_rate: 0.1           # 10%詳細ログ
+  alert:
+    - "pipeline.total_latency_ms > 500"
+    - "stream_guard.replacements_count > 10"
+
+# ──────────────────────────────────────────────
+# 辞書・語彙（別ファイル化推奨）
+# ──────────────────────────────────────────────
+
+lexicon_files:
+  aggressive: "lexicons/aggressive_ja.txt"
+  metaphor_markers: "lexicons/metaphor_markers_ja.txt"
+  sensory: "lexicons/sensory_ja.yaml"
+  strong_verbs: "lexicons/strong_verbs_ja.txt"

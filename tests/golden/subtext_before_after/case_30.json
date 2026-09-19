@@ -1,0 +1,12 @@
+{
+  "id": "case_30",
+  "name": "negative_normal_narration",
+  "speaker": "",
+  "before": [
+    "風が静かに吹き抜けていった。"
+  ],
+  "expected_contains": [
+    "風が静かに吹き抜けていった。"
+  ],
+  "applied_rules": []
+}
