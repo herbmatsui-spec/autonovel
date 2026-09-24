@@ -49,7 +49,13 @@ export default function ExportPanel({
     (errMsg) => onExportMessage?.(errMsg)
   );
 
-  const { open: openExportConfirm, confirm: confirmExport, cancel: cancelExport } = useExportConfirm();
+  const {
+    isOpen: isExportConfirmOpen,
+    summary: exportConfirmSummary,
+    open: openExportConfirm,
+    confirm: confirmExport,
+    cancel: cancelExport,
+  } = useExportConfirm();
 
   // 単一本文ソース化: 編集対象は currentChapterText に統一
   const displayOutput = output !== undefined ? output : currentChapterText;
@@ -106,12 +112,6 @@ export default function ExportPanel({
       const res = await promoteToStudio({ book_id: selectedBookId.toString() });
       if (res.success) {
         onExportMessage?.("✨ 上級者 Studio へ昇格しました！世界観設定がナレッジグラフに統合されました。");
-        // redirect_url を URL バーに反映 (将来 router 追加時のフックポイント)
-        const target = `${res.redirect_url}?token=${encodeURIComponent(res.state_token)}`;
-        if (typeof window !== "undefined" && window.history?.pushState) {
-          window.history.pushState({ bookId: selectedBookId, token: res.state_token }, "", target);
-          window.dispatchEvent(new PopStateEvent("popstate"));
-        }
         onPromoteToStudio?.();
       }
     } catch (err: any) {
@@ -326,6 +326,16 @@ export default function ExportPanel({
           bookId={selectedBook.id}
           initialChapterId={parseInt(confirmedPublishTarget.chapterId)}
           initialBranchId={parseInt(confirmedPublishTarget.branchId)}
+        />
+      )}
+
+      {/* 出力前確認モーダル */}
+      {isExportConfirmOpen && exportConfirmSummary && (
+        <ExportConfirmModal
+          isOpen={isExportConfirmOpen}
+          summary={exportConfirmSummary}
+          onClose={cancelExport}
+          onConfirm={confirmExport}
         />
       )}
     </section>

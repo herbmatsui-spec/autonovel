@@ -21,7 +21,7 @@ from src.models.editor import (
     ConsistencyIssue,
     GraphEvidenceNode,
 )
-from src.services.rag_service import GraphRAGService
+from src.services.rag import GraphRAGService
 
 logger = logging.getLogger(__name__)
 

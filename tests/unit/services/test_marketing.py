@@ -1,11 +1,4 @@
-import importlib.util
-import sys
-# Load the services marketing module directly from file to avoid package shadowing
-spec = importlib.util.spec_from_file_location("marketing", "E:\\hhh\\src\\services\\marketing.py")
-marketing = importlib.util.module_from_spec(spec)
-sys.modules[spec.name] = marketing
-spec.loader.exec_module(marketing)
-MarketingAgent = marketing.MarketingAgent
+from src.services.marketing import MarketingService as MarketingAgent
 
 import pytest
 from unittest.mock import MagicMock

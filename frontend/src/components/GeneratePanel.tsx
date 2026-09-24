@@ -152,6 +152,43 @@ export default function GeneratePanel({ onGenerated, onMessage }: GeneratePanelP
 
   const handleReversePlotComplete = (structure: GeneratedPlotStructure) => {
     setPlotStructure(structure);
+    if (structure.episodes && structure.episodes.length > 0) {
+      // 既存章にユーザーが記述した本文がある場合は警告 (上書き前に確認)
+      const hasUserContent = chapters.some((c) => {
+        const userText = (c.content || "").replace(/^【第\d+話[^\n]*】\n?/, "").trim();
+        return userText.length > 0;
+      });
+
+      if (hasUserContent && typeof window !== "undefined") {
+        const confirmed = window.confirm(
+          "既存の章に記述済みの本文があります。逆算プロットで上書きすると既存本文が消えます。続行しますか？",
+        );
+        if (!confirmed) {
+          onMessage?.("⚠️ 既存本文を保護するため、逆算プロットの適用をキャンセルしました");
+          return;
+        }
+      }
+
+      const mappedChapters = structure.episodes.map((ep) => {
+        const existing = chapters.find((c) => c.ep_num === ep.ep_num);
+        // 既存章があり、ユーザーが何か書いていた場合は保持
+        const preserveExisting = existing && (existing.content || "").trim().length > 0;
+        return {
+          ep_num: ep.ep_num,
+          title: `第${ep.ep_num}話: ${ep.title}`,
+          summary: ep.one_line_summary,
+          content: preserveExisting
+            ? existing!.content
+            : ep.ep_num === 1 && currentChapterText
+              ? currentChapterText
+              : `【第${ep.ep_num}話: ${ep.title}】\n${ep.one_line_summary}\n\n`,
+          is_catharsis: ep.is_catharsis,
+          status: (ep.ep_num === 1 ? "writing" : "draft") as "writing" | "draft",
+        };
+      });
+      setChapters(mappedChapters);
+      setCurrentEpNum(1);
+    }
     setMode('simple');
   };
 
@@ -340,6 +377,27 @@ export default function GeneratePanel({ onGenerated, onMessage }: GeneratePanelP
   return (
     <>
       <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        <h2 style={{ fontSize: "1.1rem", fontWeight: 700, margin: 0 }}>⚙️ 制作設定 & プロンプト</h2>
+        <div style={{ display: "flex", gap: "8px" }}>
+          <button
+            type="button"
+            className={`btn ${mode === "simple" ? "btn-primary" : "btn-secondary"}`}
+            onClick={() => setMode("simple")}
+            disabled={generationState.isGenerating}
+            data-testid="btn-submode-simple"
+          >
+            ⚙️ かんたんモード
+          </button>
+          <button
+            type="button"
+            className={`btn ${mode === "reverse" ? "btn-primary" : "btn-secondary"}`}
+            onClick={() => setMode("reverse")}
+            disabled={generationState.isGenerating}
+            data-testid="btn-submode-reverse"
+          >
+            🔮 逆算プロットビルダー
+          </button>
+        </div>
       {chapterScore !== null && (
         <div
           style={{

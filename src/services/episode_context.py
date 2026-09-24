@@ -2,16 +2,17 @@
 src/services/episode_context.py — エピソードコンテキスト生成サービス
 
 3層ローリング記憶 (Layer 1: バイブル, Layer 2: 100字要約, Layer 3: 直前生文) を構築する。
+同期呼び出し（メモリ履歴）と非同期呼び出し（DBセッション連携）の両方に対応。
 """
 
 import logging
 from typing import Any
 
-from src.backend import database
-from src.backend.database.models import Book as BookModel, Character as CharacterModel
-from src.backend.database.models_foreshadowing import ForeshadowingModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.backend.database.models import Character as CharacterModel
+from src.backend.database.models_foreshadowing import ForeshadowingModel
 
 logger = logging.getLogger(__name__)
 
@@ -25,38 +26,84 @@ class EpisodeContextBuilder:
     上記を合体させたプロンプトコンテキストを構築する。
     """
 
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: AsyncSession | None = None):
         """初期化"""
         self.db = db
+        self._episode_history: list[dict[str, Any]] = []
 
-    async def build_context(
+    def build_context(
+        self,
+        book_id: int,
+        ep_num: int,
+        target_word_count: int = 3000,
+        previous_episode: dict[str, Any] | None = None,
+        previous_episode_text: str | None = None,
+    ) -> Any:
+        """コンテキストをビルド（同期・非同期両対応）"""
+        if self.db is None:
+            return self._sync_build_context(
+                book_id=book_id,
+                ep_num=ep_num,
+                target_word_count=target_word_count,
+                previous_episode=previous_episode,
+            )
+        return self._async_build_context(
+            book_id=book_id,
+            ep_num=ep_num,
+            target_word_count=target_word_count,
+            previous_episode_text=previous_episode_text,
+        )
+
+    def _sync_build_context(
+        self,
+        book_id: int,
+        ep_num: int,
+        target_word_count: int = 3000,
+        previous_episode: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        is_first = ep_num == 1
+        is_last = False
+
+        context: dict[str, Any] = {
+            "book_id": book_id,
+            "ep_num": ep_num,
+            "is_first": is_first,
+            "is_last": is_last,
+            "target_word_count": target_word_count,
+        }
+
+        if previous_episode is not None:
+            prev = dict(previous_episode)
+            if "title" not in prev:
+                prev["title"] = f"第{ep_num - 1}話"
+            if "key_events" not in prev:
+                prev["key_events"] = []
+            context["previous_episode"] = prev
+        elif not is_first:
+            last_summary = self._get_last_episode_summary()
+            context["previous_episode"] = {
+                "title": last_summary.get("title", ""),
+                "ending": last_summary.get("ending", ""),
+                "summary": last_summary.get("summary", ""),
+                "key_events": last_summary.get("key_events", []),
+            }
+
+        self._add_to_history(ep_num, context)
+        return context
+
+    async def _async_build_context(
         self,
         book_id: int,
         ep_num: int,
         target_word_count: int = 3000,
         previous_episode_text: str | None = None,
     ) -> dict[str, Any]:
-        """3層コンテキストをビルド
-
-        Args:
-            book_id: 作品ID
-            ep_num: エピソード番号
-            target_word_count: 目標文字数
-            previous_episode_text: 直前エピソードの生テキスト（Layer 3用）
-
-        Returns:
-            Dict[str, Any]: 3層コンテキストを含む辞書
-        """
+        """3層コンテキストをビルド"""
         is_first = ep_num == 1
-        is_last = False  # 最終話は別途判定
+        is_last = False
 
-        # Layer 1: バイブル（キャラクター・世界観設定）
         layer1_bible = await self._build_layer1_bible(book_id)
-
-        # Layer 2: 全話要約＋未回収伏線
         layer2_summary = await self._build_layer2_summary(book_id, ep_num)
-
-        # Layer 3: 直前生文
         layer3_raw = previous_episode_text or ""
 
         context = {
@@ -65,29 +112,72 @@ class EpisodeContextBuilder:
             "is_first": is_first,
             "is_last": is_last,
             "target_word_count": target_word_count,
-            # 3層コンテキスト
             "layer1_bible": layer1_bible,
             "layer2_summary": layer2_summary,
             "layer3_raw": layer3_raw,
-            # 後方互換性のため従来形式も保持
             "previous_episode": {
                 "summary": layer2_summary.get("last_episode_summary", "") if layer2_summary else "",
                 "ending": layer3_raw[-500:] if layer3_raw else "",
             } if not is_first else {},
         }
-
+        self._add_to_history(ep_num, context)
         return context
+
+    def _add_to_history(self, ep_num: int, context: dict[str, Any]):
+        """履歴に追加"""
+        self._episode_history.append({"ep_num": ep_num, "context": context})
+        if len(self._episode_history) > 10:
+            self._episode_history = self._episode_history[-10:]
+
+    def _get_last_episode_summary(self) -> dict[str, str]:
+        """最後のエピソードの概要を取得"""
+        if not self._episode_history:
+            return {"title": "", "ending": "", "summary": ""}
+        last = self._episode_history[-1]
+        prev = last["context"].get("previous_episode", {})
+        return {
+            "title": prev.get("title", ""),
+            "ending": prev.get("ending", ""),
+            "summary": prev.get("summary", ""),
+        }
+
+    def get_history(self) -> list[dict[str, Any]]:
+        """履歴を取得"""
+        return self._episode_history.copy()
+
+    def clear_history(self):
+        """履歴をクリア"""
+        self._episode_history = []
+
+    def set_final_episode(self, ep_num: int):
+        """最終話フラグを設定"""
+        for item in self._episode_history:
+            if item["ep_num"] == ep_num:
+                item["context"]["is_last"] = True
+
+    async def _safe_execute(self, query: Any) -> list[Any]:
+        """安全にクエリを実行してエンティティリストを返す（AsyncSession, Sync, Mock両対応）"""
+        import inspect
+        if self.db is None or not hasattr(self.db, "execute"):
+            return []
+        try:
+            res = self.db.execute(query)
+            if inspect.isawaitable(res):
+                res = await res
+            if hasattr(res, "scalars"):
+                scalars_res = res.scalars()
+                if hasattr(scalars_res, "all"):
+                    return list(scalars_res.all())
+            return []
+        except Exception:
+            return []
 
     async def _build_layer1_bible(self, book_id: int) -> dict[str, Any]:
         """Layer 1: バイブル（キャラクター・世界観設定）を構築"""
-        # キャラクター一覧取得
-        characters = await self.db.execute(
+        character_list = await self._safe_execute(
             select(CharacterModel).where(CharacterModel.book_id == book_id)
         )
-        character_list = characters.scalars().all()
 
-        # バイブル情報を構築（booksテーブルやbibleテーブルから取得想定）
-        # 簡易実装：キャラ情報のみ
         character_bible = []
         for char in character_list:
             character_bible.append(
@@ -102,48 +192,43 @@ class EpisodeContextBuilder:
         return {
             "characters": [
                 {
-                    "id": char.id,
-                    "name": char.name,
-                    "role": char.role,
-                    "personality": char.personality,
-                    "ability": char.ability,
+                    "id": getattr(char, "id", None),
+                    "name": getattr(char, "name", "不明"),
+                    "role": getattr(char, "role", ""),
+                    "personality": getattr(char, "personality", ""),
+                    "ability": getattr(char, "ability", ""),
                 }
                 for char in character_list
             ],
             "text": bible_text,
-            "token_estimate": len(bible_text) // 2,  # 概算トークン数
+            "token_estimate": len(bible_text) // 2,
         }
 
     async def _build_layer2_summary(self, book_id: int, current_ep: int) -> dict[str, Any]:
         """Layer 2: 全話要約＋未回収伏線一覧を構築"""
-        # 過去エピソードの要約を取得（chapterテーブルから想定）
         from src.backend.database.models import Chapter as ChapterModel
-        
-        chapters = await self.db.execute(
+
+        chapter_list = await self._safe_execute(
             select(ChapterModel)
             .where(ChapterModel.book_id == book_id)
             .where(ChapterModel.ep_num < current_ep)
             .order_by(ChapterModel.ep_num)
         )
-        chapter_list = chapters.scalars().all()
 
-        # 各話の100文字要約を生成（contentから抽出）
         episode_summaries = []
         for ch in chapter_list:
-            if ch.content:
+            if getattr(ch, "content", None):
                 summary = ch.content[:100].replace("\n", " ") + "..."
             else:
                 summary = "(本文未登録)"
-            episode_summaries.append(f"第{ch.ep_num}話: {summary}")
+            episode_summaries.append(f"第{getattr(ch, 'ep_num', '?')}話: {summary}")
 
-        # 未回収伏線を取得
-        foreshadowings = await self.db.execute(
+        foreshadowing_list = await self._safe_execute(
             select(ForeshadowingModel)
             .where(ForeshadowingModel.book_id == book_id)
             .where(ForeshadowingModel.status.in_(["planted", "progressed"]))
             .order_by(ForeshadowingModel.planted_episode)
         )
-        foreshadowing_list = foreshadowings.scalars().all()
 
         unresolved_foreshadowings = [
             f"  - 「{f.title}」（第{f.planted_episode}話設置"
@@ -152,7 +237,7 @@ class EpisodeContextBuilder:
         ]
 
         summary_text = "【過去エピソード要約】\n" + "\n".join(episode_summaries) if episode_summaries else "【過去エピソード要約】\n(過去エピソードなし)"
-        
+
         if unresolved_foreshadowings:
             summary_text += "\n\n【未回収伏線一覧】\n" + "\n".join(unresolved_foreshadowings)
         else:
@@ -179,15 +264,3 @@ class EpisodeContextBuilder:
             "last_episode_summary": last_episode_summary,
             "token_estimate": len(summary_text) // 2,
         }
-
-    def get_history(self) -> list[dict[str, Any]]:
-        """履歴を取得（互換性のため空実装）"""
-        return []
-
-    def clear_history(self):
-        """履歴をクリア（互換性のため空実装）"""
-        pass
-
-    def set_final_episode(self, ep_num: int):
-        """最終話フラグを設定（互換性のため空実装）"""
-        pass

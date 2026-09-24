@@ -12,7 +12,7 @@ import os
 from dataclasses import dataclass, field
 from typing import Any
 
-from src.interfaces.plugin import BasePlugin, PluginProtocol
+from src.interfaces.plugin import PluginProtocol
 
 logger = logging.getLogger(__name__)
 

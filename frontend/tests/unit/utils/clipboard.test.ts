@@ -14,7 +14,7 @@ describe('copyWithFallback', () => {
     });
     
     // document.execCommand をモック
-    document.execCommand = vi.fn();
+    document.execCommand = vi.fn().mockReturnValue(true);
     
     // URL.createObjectURL と URL.revokeObjectURL をモック
     URL.createObjectURL = vi.fn();

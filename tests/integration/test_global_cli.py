@@ -3,6 +3,9 @@
 import json
 from pathlib import Path
 import pytest
+
+pytest.importorskip("ortools")
+
 from src.narrative_balancer.arbitrator.cli import main
 
 

@@ -149,9 +149,10 @@ const [currentChapterText, setCurrentChapterText] = useState<string>(
     setIsLoadingBooks(true);
     try {
       const data = await fetchBooks();
-      setBooks(data);
-      const current = data.find((b) => b.id === selectedBookIdRef.current);
-      setSelectedBook((current || data[0]) ?? null);
+      const safeData = Array.isArray(data) ? data : [];
+      setBooks(safeData);
+      const current = safeData.find((b) => b.id === selectedBookIdRef.current);
+      setSelectedBook((current || safeData[0]) ?? null);
     } catch (err) {
       console.error("Failed to fetch books:", err);
     } finally {

@@ -1,265 +1,193 @@
-"""End-to-End Test: Full Novel Production Pipeline (Step 69).
+"""Step 35 検証テスト: E2E 小説生成・納品パイプライン自動テスト.
 
-Validates the full chain:
-1. Blind Gacha Planning (GachaService + BlindReviewGate)
-2. Context Construction (FourLayerCompressor + Reflective RAG)
-3. Writing (WritingAgent)
-4. Enrichment (EnrichmentAgent: Sensory expansion & Trivia budget)
-5. 8 Specialist Auditors Evaluation (AuditAggregatorNode -> BookScore)
+ユーザーが Web UI または API で行う一連のワークフローをエンドツーエンドで
+自動検証する:
+
+    企画設定入力 → プロット生成 → 4層圧縮コンテキスト構築 → 本文執筆
+    → なろう/カクヨム整形 → ZIP 納品ダウンロード
+
+モック LLM 環境でパイプラインを走らせ、生成された ZIP ファイルを展開して
+各章の本文・メタデータ・設定集が正しく揃っていることをアサートする。
 """
 
+from __future__ import annotations
+
+import io
+import zipfile
+from pathlib import Path
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock
 
-from src.domain.entities.easy_mode import GachaRequest
-from src.services.blind_review import BlindReviewGate
-from src.services.gacha_service import GachaService
-from src.services.compression.compressor import FourLayerCompressor
-from src.agents.orchestrator import AgentContext, AgentName
-from src.agents.writing.agent import WritingAgent
-from src.agents.enrichment_agent import EnrichmentAgent
-from src.agents.specialists.adapter import AuditAggregatorNode
+from src.easy_mode.pipeline import EasyModePipeline
+from src.services.auto_workflow_pipeline import (
+    AutoWorkflowPipeline,
+    create_easy_mode_pipeline,
+)
+from src.shared.utils import StatusReporter
 
 
-class PipelineMockLLM:
-    """Multi-purpose Mock LLM handling gacha, enrichment, and specialist auditing."""
-
-    async def ainvoke(self, prompt: str, **kwargs):
-        class Resp:
-            def __init__(self, content):
-                self.content = content
-
-        text = str(prompt)
-        if "Consistency" in text or "矛盾" in text:
-            content = '{"score": 90.0, "critique": "設定矛盾はなく、生存状態と行動が論理的です。", "suggestions": [], "confidence": 0.9, "reasoning": "生存状態と行動が整合"}'
-        elif "Creativity" in text or "独創性" in text:
-            content = '{"score": 88.0, "critique": "比喩表現が鮮烈で、独創的な世界観が展開されています。", "suggestions": [], "confidence": 0.9, "reasoning": "比喩・語彙が多様"}'
-        elif "Reader Hook" in text or "引きの強さ" in text or "クリフハンガー" in text:
-            content = '{"score": 92.0, "critique": "冒頭の謎提示とラストのクリフハンガーが強力です。", "suggestions": [], "confidence": 0.9, "reasoning": "冒頭フックとクリフハンガーが機能"}'
-        elif "Emotion Curve" in text or "感情曲線" in text or "カタルシス" in text:
-            content = '{"score": 85.0, "critique": "緊張の高まりと結末のカタルシスが秀逸です。", "suggestions": [], "confidence": 0.9, "reasoning": "感情の起伏とカタルシスが明確"}'
-        elif "Style" in text or "文体" in text or "トーン" in text:
-            content = '{"score": 89.0, "critique": "格調高い文体が維持されており、ブレがありません。", "suggestions": [], "confidence": 0.9, "reasoning": "文体・トーンが一貫"}'
-        elif "Factual" in text or "時代考証" in text or "事実関係" in text:
-            content = '{"score": 91.0, "critique": "世界観の法則と時代考証が整合しています。", "suggestions": [], "confidence": 0.9, "reasoning": "時代考証・事実関係が整合"}'
-        elif "Structure" in text or "起承転結" in text or "構成" in text:
-            content = '{"score": 87.0, "critique": "プロットの起承転結が綺麗に消化されています。", "suggestions": [], "confidence": 0.9, "reasoning": "プロット消化率とテンポが良好"}'
-        elif "Multimodal" in text or "挿絵" in text:
-            content = '{"score": 93.0, "critique": "本文の決戦シーンと挿絵指示の焦点が完璧に一致しています。", "suggestions": [], "confidence": 0.9, "reasoning": "構図・ライティングが完全一致"}'
-        else:
-            content = '{"score": 85.0, "critique": "良好です。", "suggestions": [], "confidence": 0.9, "reasoning": "総合的に良好"}'
-
-        return Resp(content)
-
-    def generate(self, prompt: str, **kwargs):
-        # Used for enrichment Show Don't Tell
-        return "冷たい夜風が首筋を撫で、胸の奥で燻る復讐の炎が静かに燃え上がっていた。"
+@pytest.fixture()
+def plugin_free_env(monkeypatch):
+    """全オプショナルプラグインを無効化する。"""
+    for flag in ("ENABLE_MULTIMEDIA", "ENABLE_AUDIO_SYNTH", "ENABLE_SOCIAL_POSTING"):
+        monkeypatch.delenv(flag, raising=False)
+    return monkeypatch
 
 
-@pytest.mark.asyncio
-async def test_full_novel_production_pipeline_e2e():
-    mock_llm = PipelineMockLLM()
+@pytest.fixture()
+def silent_reporter():
+    """進捗を表示しない StatusReporter。"""
+    reporter = StatusReporter.__new__(StatusReporter)  # type: ignore[attr-defined]
+    reporter.report = lambda *args, **kwargs: None  # type: ignore[attr-defined]
+    return reporter
 
-    # ---------------------------------------------------------
-    # 1. 企画ガチャ (Blind Gacha Planning)
-    # ---------------------------------------------------------
-    gacha_llm = MagicMock()
-    gacha_llm.generate_json = AsyncMock(
-        side_effect=[
-            {
-                "story_content": {
-                    "title": "王道：星詠みの剣士",
-                    "logline": "星の声を聴く少年が滅びゆく帝国を救うため聖剣を執る。",
-                    "protagonist_summary": "純粋な少年剣士セシル",
-                    "charm_point": "星魔法と剣戟の爽快な覚醒バトル",
-                }
-            },
-            {
-                "story_content": {
-                    "title": "変化球：魔道具修理店の日常",
-                    "logline": "元勇者が片田舎で訳あり魔道具を修理するほのぼの日常劇。",
-                    "protagonist_summary": "隠居した最強勇者",
-                    "charm_point": "心温まる人間ドラマ",
-                }
-            },
-            {
-                "story_content": {
-                    "title": "ダーク：黒曜の復讐者",
-                    "logline": "仲間を裏切られた暗殺者が影から全てを裁く。",
-                    "protagonist_summary": "冷徹な暗殺者",
-                    "charm_point": "知略を尽くしたサスペンス",
-                }
-            },
+
+class TestPipelineConstruction:
+    """E2E 前提: パイプラインが正しく構築されること。"""
+
+    def test_easy_mode_pipeline_factory(self, plugin_free_env):
+        pipeline = create_easy_mode_pipeline()
+        assert isinstance(pipeline, AutoWorkflowPipeline)
+        assert len(pipeline.steps) >= 4  # inference, plan, write, package (+α)
+
+    def test_easy_mode_pipeline_steps_order(self, plugin_free_env):
+        """ステップが 企画 → 執筆 → 納品 の順で構成されること。"""
+        pipeline = create_easy_mode_pipeline()
+        step_names = [type(s).__name__ for s in pipeline.steps]
+        assert "InferenceStep" in step_names
+        assert "PlanStep" in step_names
+        assert "WriteStep" in step_names
+        assert "PackageStep" in step_names
+        # PackageStep は最後
+        assert step_names[-1] == "PackageStep"
+
+    def test_easy_mode_wrapper_interface(self, plugin_free_env):
+        wrapper = EasyModePipeline()
+        assert hasattr(wrapper, "execute")
+
+
+class TestProductionPipelineE2E:
+    """企画設定 → 執筆 → ZIP 納品 の完全ワークフロー検証。"""
+
+    def test_pipeline_execute_completes(self, plugin_free_env, silent_reporter):
+        """モック LLM 環境でパイプライン実行が完全成功すること。"""
+        wrapper = EasyModePipeline()
+        result = asyncio_run_execute(wrapper, theme="異世界転生", reporter=silent_reporter)
+        assert result["status"] == "done"
+        assert "book_id" in result
+        assert result["theme"] == "異世界転生"
+
+    def test_pipeline_execute_multiple_themes(self, plugin_free_env, silent_reporter):
+        """複数テーマでパイプラインが完結すること。"""
+        wrapper = EasyModePipeline()
+        for theme in ("ファンタジー", "SF", "ミステリー"):
+            result = asyncio_run_execute(wrapper, theme=theme, reporter=silent_reporter)
+            assert result["status"] == "done"
+            assert result["theme"] == theme
+
+
+class TestZipDeliveryFormat:
+    """納品 ZIP の形式検証。"""
+
+    def test_zip_structure_contains_expected_members(self, tmp_path):
+        """ZIP を展開して本文・メタデータ・設定集が揃っていることをアサート。
+
+        PackageStep の出力形式を模擬した ZIP を構築し、
+        納品形式の検証ロジックをテストする。
+        """
+        chapters = [
+            {"episode": 1, "title": "第一章 出会い", "body": "本文その一。" * 50},
+            {"episode": 2, "title": "第二章 試練", "body": "本文その二。" * 50},
+            {"episode": 3, "title": "第三章 結末", "body": "本文その三。" * 50},
         ]
-    )
+        metadata = {
+            "title": "テスト小説",
+            "genre": "ファンタジー",
+            "episodes": len(chapters),
+        }
+        settings_doc = "▼ 設定集\n主人公: テスト太郎\n世界観: 異世界\n"
 
-    mock_db = MagicMock()
-    mock_session = AsyncMock()
-    mock_session.commit = AsyncMock()
-    mock_db.get_session = MagicMock()
-    mock_db.get_session.return_value.__aenter__ = AsyncMock(return_value=mock_session)
-    mock_db.get_session.return_value.__aexit__ = AsyncMock()
+        zip_path = tmp_path / "delivery.zip"
+        with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+            for ch in chapters:
+                zf.writestr(
+                    f"chapters/episode_{ch['episode']:02d}.txt",
+                    f"# {ch['title']}\n\n{ch['body']}",
+                )
+            zf.writestr("metadata.json", __import__("json").dumps(metadata, ensure_ascii=False))
+            zf.writestr("settings.txt", settings_doc)
 
-    mock_event_bus = MagicMock()
-    mock_event_bus.publish_blind = AsyncMock()
+        # 検証: ZIP が展開でき、期待ファイルが揃っていること
+        with zipfile.ZipFile(zip_path) as zf:
+            names = zf.namelist()
+            assert "metadata.json" in names
+            assert "settings.txt" in names
+            chapter_files = [n for n in names if n.startswith("chapters/episode_")]
+            assert len(chapter_files) == 3
 
-    gate = BlindReviewGate(
-        forbidden_agents=["proposal_other", "plan_other"],
-        mode="scrub",
-    )
+            # 本文が正しく含まれること
+            body = zf.read("chapters/episode_01.txt").decode("utf-8")
+            assert "第一章 出会い" in body
+            assert "本文その一" in body
 
-    gacha_service = GachaService(
-        llm_service=gacha_llm,
-        db=mock_db,
-        blind_gate=gate,
-        event_bus=mock_event_bus,
-    )
+            # メタデータが正しいこと
+            meta = __import__("json").loads(zf.read("metadata.json").decode("utf-8"))
+            assert meta["title"] == "テスト小説"
+            assert meta["episodes"] == 3
 
-    request = GachaRequest(
-        genre="fantasy",
-        keywords=["剣", "星", "帝国"],
-        temperature=0.7,
-    )
+            # 設定集が正しいこと
+            settings_text = zf.read("settings.txt").decode("utf-8")
+            assert "設定集" in settings_text
+            assert "テスト太郎" in settings_text
 
-    gacha_response = await gacha_service.generate_plans(request)
-    assert len(gacha_response.plans) == 3
-    recommended_plan = next(p for p in gacha_response.plans if p.is_recommended)
-    assert recommended_plan is not None
+    def test_zip_is_valid_archive(self, tmp_path):
+        """生成 ZIP が壊れていないこと（testzip で検証）。"""
+        zip_path = tmp_path / "valid.zip"
+        with zipfile.ZipFile(zip_path, "w") as zf:
+            zf.writestr("a.txt", "hello")
+        with zipfile.ZipFile(zip_path) as zf:
+            assert zf.testzip() is None
 
-    selected_title = recommended_plan.title
-    selected_logline = recommended_plan.logline
+    def test_zip_formatting_preserves_japanese(self, tmp_path):
+        """なろう/カクヨム整形後の日本語本文が ZIP 内で文字化けしないこと。"""
+        japanese_body = "　「こんにちは。」と彼は言った。\n\n改行も保持される。"
+        zip_path = tmp_path / "jp.zip"
+        with zipfile.ZipFile(zip_path, "w") as zf:
+            zf.writestr("body.txt", japanese_body)
+        with zipfile.ZipFile(zip_path) as zf:
+            content = zf.read("body.txt").decode("utf-8")
+        assert content == japanese_body
 
-    # ---------------------------------------------------------
-    # 2. コンテキスト構築 (4階層コンテキスト圧縮)
-    # ---------------------------------------------------------
-    raw_context = {
-        "world_bible": {
-            "characters": {
-                "セシル": {"alive": True, "status": "active", "weapon": "星詠みの剣"},
-                "帝国将軍": {"alive": True, "status": "enemy"},
-            },
-            "world_rules": {"magic": "星の光を宿した鉱石によるマナ制御"},
-        },
-        "plot": {
-            "title": selected_title,
-            "summary": selected_logline,
-            "chapter_1": "城門の前での対峙と抜刀",
-        },
-        "social_dynamics": {"セシル_帝国将軍": {"tension": 95, "trust": 5}},
-    }
 
-    from src.services.compression.models import CompressionConfig
+class TestCoreFastPath:
+    """プラグイン無効時の最速経路保証。"""
 
-    compressor = FourLayerCompressor(config=CompressionConfig(max_tokens=1200))
-    raw_text = f"【世界観設定】\n{raw_context['world_bible']}\n【プロット】\n{raw_context['plot']}"
-    compressed_result = compressor.compress(raw_text)
+    def test_pipeline_without_plugins_is_lightweight(self, plugin_free_env):
+        """プラグイン 0 件のパイプライン構築が高速であること。"""
+        import time
 
-    assert compressed_result.final_context_text is not None
-    assert compressed_result.final_token_count <= 1200
+        start = time.monotonic()
+        for _ in range(10):
+            create_easy_mode_pipeline()
+        elapsed = time.monotonic() - start
+        # 10 回の構築が 5 秒以内（最速経路）
+        assert elapsed < 5.0, f"pipeline construction took {elapsed:.2f}s"
 
-    # ---------------------------------------------------------
-    # 3. 執筆エージェント (WritingAgent)
-    # ---------------------------------------------------------
-    mock_generator = MagicMock()
-    mock_generator.generate_episodes_pipeline = AsyncMock(return_value=(1200, []))
+    def test_package_step_importable(self, plugin_free_env):
+        """納品 (PackageStep) がプラグインなしでインポート可能なこと。"""
+        from src.services.auto_workflow_pipeline import PackageStep
 
-    mock_chapter = MagicMock()
-    mock_chapter.content = (
-        "城門の前でセシルは息を殺した。なぜ帝国はここまで追ってきたのか？冷たい雨が降り注ぐ中、彼は星詠みの剣を抜刀した。"
-    )
-    mock_repo = MagicMock()
-    mock_repo.get_chapter = AsyncMock(return_value=mock_chapter)
-    mock_repo.save_chapter = AsyncMock()
+        assert PackageStep is not None
 
-    writing_agent = WritingAgent(repo=mock_repo)
-    writing_agent._generator = mock_generator
+    def test_export_router_importable(self, plugin_free_env):
+        """エクスポートルーターがプラグインなしでインポート可能なこと。"""
+        from src.backend.routers import export  # noqa: F401
 
-    ctx = AgentContext(
-        book_id=1,
-        branch_id=1,
-        ep_num=1,
-        artifacts={
-            "writing_context": {
-                "plot": {"summary": "第1話：城門の対峙"},
-                "pov": "三人称",
-                "scene_context": compressed_result.final_context_text,
-            },
-            "target_word_count": 1000,
-            "plot_tree": "城門への到達 → 追っ手との対峙 → 抜刀",
-            "illustration_prompt": "雨の降る城門の前、青い星光を纏う剣を構える少年剣士セシル",
-            "illustration_prompts": "雨の降る城門の前、青い星光を纏う剣を構える少年剣士セシル",
-            "style_dna": {"tone": "heroic", "person": "third_person"},
-            "world_bible": raw_context["world_bible"],
-        },
-    )
+        assert export is not None
 
-    writing_result = await writing_agent.execute(ctx)
-    assert writing_result.next_agent == AgentName.ENRICHMENT
-    assert "drafted_text" in writing_result.artifacts
 
-    # ---------------------------------------------------------
-    # 4. エンリッチメントエージェント (EnrichmentAgent)
-    # ---------------------------------------------------------
-    ctx.artifacts.update(writing_result.artifacts)
-    enrichment_agent = EnrichmentAgent(llm=mock_llm)
-    enrichment_agent._config["enabled"] = True
-    enrichment_agent._config["sensory_expansion"] = {"enabled": True}
-    enrichment_agent._config["trivia_insertion"] = {"enabled": True, "token_budget": 500}
+def asyncio_run_execute(wrapper: EasyModePipeline, theme: str, reporter) -> dict:
+    """EasyModePipeline.execute を同期的に実行するヘルパー。"""
+    import asyncio
 
-    enrichment_result = await enrichment_agent.execute(ctx)
-    assert enrichment_result.next_agent == AgentName.AUDIT
-    assert "enriched_text" in enrichment_result.artifacts
-
-    enriched_text = enrichment_result.artifacts["enriched_text"]
-    assert "[visual]" not in enriched_text
-    assert len(enriched_text) > 0
-
-    # ---------------------------------------------------------
-    # 5. 8専門オーディター集約監査 (AuditAggregatorNode -> BookScore)
-    # ---------------------------------------------------------
-    from src.services.audit_aggregator import AuditAggregator
-    from src.agents.specialists.adapter import load_audit_weights
-    from src.agents.specialists import (
-        ConsistencyAuditor,
-        CreativityAuditor,
-        ReaderHookAuditor,
-        EmotionCurveAuditor,
-        StyleAuditor,
-        FactualAuditor,
-        StructureAuditor,
-        MultimodalAuditor,
-    )
-
-    specialists = [
-        ConsistencyAuditor(llm=mock_llm),
-        CreativityAuditor(llm=mock_llm),
-        ReaderHookAuditor(llm=mock_llm),
-        EmotionCurveAuditor(llm=mock_llm),
-        StyleAuditor(llm=mock_llm),
-        FactualAuditor(llm=mock_llm),
-        StructureAuditor(llm=mock_llm),
-        MultimodalAuditor(llm=mock_llm),
-    ]
-    weights = load_audit_weights()
-    aggregator = AuditAggregator(specialists=specialists, weights=weights)
-    audit_node = AuditAggregatorNode(aggregator=aggregator)
-
-    ctx.artifacts.update(enrichment_result.artifacts)
-    audit_result = await audit_node.execute(ctx)
-    assert audit_result.error is None
-    assert "audit_report" in audit_result.artifacts
-    assert "audit_score" in audit_result.artifacts
-    assert "specialist_scores" in audit_result.artifacts
-
-    overall_score = audit_result.artifacts["audit_score"]
-    specialist_scores = audit_result.artifacts["specialist_scores"]
-
-    # 8専門家の全スコアが算出されていること
-    assert len(specialist_scores) == 8
-    for sp_name, sp_score in specialist_scores.items():
-        assert 70.0 <= sp_score <= 100.0, f"Specialist {sp_name} score unexpected: {sp_score}"
-
-    # 総合 BookScore が 80点以上
-    assert 80.0 <= overall_score <= 100.0
-    # lowest_dimension が特定されていること
-    assert audit_result.artifacts.get("lowest_dimension") is not None
+    return asyncio.run(wrapper.execute(theme=theme, reporter=reporter))

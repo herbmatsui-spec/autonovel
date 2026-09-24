@@ -2,10 +2,16 @@ import { ChapterChunkItem, GraphDataResponse } from "../types/graph";
 import { GraphNodeDetail, EdgeCreationPayload } from "../types/graphInspector";
 import { apiFetch, handleResponse } from "./client";
 
-export async function fetchGraphData(bookId: number): Promise<GraphDataResponse> {
-  const query = `?book_id=${encodeURIComponent(bookId.toString())}`;
-  const res = await apiFetch(`/api/graph${query}`);
-  return handleResponse<GraphDataResponse>(res);
+export async function fetchGraphData(bookIdOrName?: number | string): Promise<GraphDataResponse> {
+  let query = "";
+  if (typeof bookIdOrName === "number") {
+    query = `?book_id=${encodeURIComponent(bookIdOrName.toString())}`;
+  } else if (bookIdOrName) {
+    query = `?graph_name=${encodeURIComponent(bookIdOrName)}`;
+  }
+  const res = await fetch(`/api/graph${query}`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
 }
 
 export async function fetchChapterChunks(chapterId?: number, limit = 20): Promise<ChapterChunkItem[]> {
@@ -13,8 +19,9 @@ export async function fetchChapterChunks(chapterId?: number, limit = 20): Promis
   if (chapterId !== undefined) params.append("chapter_id", chapterId.toString());
   params.append("limit", limit.toString());
 
-  const res = await apiFetch(`/api/graph/chunks?${params.toString()}`);
-  return handleResponse<ChapterChunkItem[]>(res);
+  const res = await fetch(`/api/graph/chunks?${params.toString()}`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
 }
 
 export async function upsertNode(payload: GraphNodeDetail): Promise<void> {

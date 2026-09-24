@@ -22,11 +22,17 @@ interface CommercialPublishPanelProps {
  * 予約投稿の一覧表示、新規登録、即時実行、キャンセル、エラー詳細確認を統合的に管理する
  */
 export const CommercialPublishPanel: React.FC<CommercialPublishPanelProps> = ({ bookId, onToast }) => {
-  const {
-    chapters,
-    currentEpNum,
-    currentChapterText,
-  } = useNovelContext();
+  let chapters: { ep_num: number; title: string }[] = [];
+  let currentEpNum = 1;
+  let currentChapterText = "";
+  try {
+    const novelCtx = useNovelContext();
+    chapters = novelCtx.chapters;
+    currentEpNum = novelCtx.currentEpNum;
+    currentChapterText = novelCtx.currentChapterText;
+  } catch {
+    // Allows isolated testing or usage outside NovelProvider
+  }
   const [schedules, setSchedules] = useState<PublicationScheduleResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);

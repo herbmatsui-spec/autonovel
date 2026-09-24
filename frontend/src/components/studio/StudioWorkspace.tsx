@@ -543,7 +543,7 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
               data-testid="cost-indicator"
               title={`Status: ${budgetInfo.status}${budgetInfo.downgrade_active ? " (downgrade active)" : ""}`}
             >
-              💰 ${budgetInfo.current_cost_usd.toFixed(2)} / ${budgetInfo.budget_usd.toFixed(2)}
+              💰 ${(budgetInfo.current_cost_usd ?? 0).toFixed(2)} / ${(budgetInfo.budget_usd ?? 0).toFixed(2)}
             </div>
           )}
           <div style={{ display: "flex", gap: "4px", marginLeft: "12px" }}>
@@ -691,7 +691,7 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
               <h2 style={{ fontSize: "1.05rem", color: "var(--accent-purple)", fontWeight: 700, margin: 0 }}>
                 🧠 専属 AI 編集者 (GraphRAG)
               </h2>
-              {chapterScore !== null && (
+              {typeof chapterScore === "number" && (
                 <button
                   type="button"
                   onClick={() => setShowQualityDashboard(true)}

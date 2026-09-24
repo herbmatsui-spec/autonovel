@@ -6,6 +6,7 @@ import App from "../../src/App";
 describe("Studio Mode Flow Integration Test", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    window.history.pushState({}, "", "/studio");
   });
 
   it("renders Studio mode by default and allows mode switching", async () => {

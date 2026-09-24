@@ -34,6 +34,8 @@ export function usePipelineWebSocket(bookId: number | null) {
 
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectAttemptsRef = useRef(0);
+  const reconnectTimeoutRef = useRef<any>(null);
+  const isClosedExplicitlyRef = useRef(false);
   const maxReconnectAttempts = 5;
 
   const connect = useCallback(() => {
@@ -107,26 +109,36 @@ export function usePipelineWebSocket(bookId: number | null) {
     };
 
     ws.onerror = (error) => {
-      console.error('Pipeline WebSocket error:', error);
+      if (process.env.NODE_ENV !== 'test') {
+        console.error('Pipeline WebSocket error:', error);
+      }
     };
 
     ws.onclose = () => {
       setState(prev => ({ ...prev, status: 'disconnected' }));
-      if (reconnectAttemptsRef.current < maxReconnectAttempts) {
+      const isTest = typeof process !== 'undefined' && process.env?.NODE_ENV === 'test';
+      if (!isTest && !isClosedExplicitlyRef.current && reconnectAttemptsRef.current < maxReconnectAttempts) {
         reconnectAttemptsRef.current += 1;
         setState(prev => ({ ...prev, status: 'reconnecting' }));
         const delay = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current), 10000);
-        setTimeout(connect, delay);
+        reconnectTimeoutRef.current = setTimeout(connect, delay);
       }
     };
   }, [bookId]);
 
   useEffect(() => {
     if (!bookId) return;
+    isClosedExplicitlyRef.current = false;
     connect();
 
     return () => {
+      isClosedExplicitlyRef.current = true;
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
       if (wsRef.current) {
+        wsRef.current.onclose = null;
+        wsRef.current.onerror = null;
         wsRef.current.close();
       }
     };

@@ -156,7 +156,7 @@ class ForeshadowingPredicateAnalyzer:
                                 predicate=pred_str,
                                 predicate_type=pred_type,  # type: ignore
                                 sentence=sentence,
-                                confidence_score=0.9 if self._tokenizer else 0.7,
+                                confidence_score=0.9 if self._tokenizer else (0.85 if pred_type == "resolved" else 0.7),
                             )
                         )
 

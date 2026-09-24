@@ -1,7 +1,12 @@
 """Variable schema for CP-SAT solver."""
 
-from typing import Dict, List
-from ortools.sat.python import cp_model
+from typing import Dict, List, Any
+
+try:
+    from ortools.sat.python import cp_model
+except ImportError:
+    cp_model = None
+
 from src.narrative_balancer.models import BeatType
 
 
@@ -14,15 +19,17 @@ class CSPVariables:
 
     def __init__(
         self,
-        model: cp_model.CpModel,
+        model: Any,
         n_episodes: int = 40,
         characters: List[str] = None,
     ):
+        if cp_model is None:
+            raise ImportError("ortools is required for CSPVariables. Install with `pip install ortools`.")
         self.n_episodes = n_episodes
         self.characters = characters or ["Protagonist", "Rival", "Mentor"]
 
         # Tension integer variable: 1 to 10
-        self.tension: List[cp_model.IntVar] = [
+        self.tension: List[Any] = [
             model.NewIntVar(1, 10, f"tension_{i}") for i in range(n_episodes)
         ]
 

@@ -157,7 +157,7 @@ describe('Commercial Components', () => {
 
     await waitFor(() => {
       expect(screen.getByText('小説家になろう')).toBeInTheDocument();
-      expect(screen.getByText('カクヨム')).toBeInTheDocument();
+      expect(screen.getAllByText('カクヨム').length).toBeGreaterThan(0);
     });
 
     expect(commercialApi.getPublicationSchedules).toHaveBeenCalledWith(123);

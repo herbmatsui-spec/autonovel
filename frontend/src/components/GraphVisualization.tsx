@@ -43,7 +43,7 @@ const LABEL_COLORS: Record<string, string> = {
   Concept: "#94a3b8",   // Slate
 };
 
-export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onClose, selectedBookId }) => {
+export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onClose, selectedBookId = 1 }) => {
   const [rawData, setRawData] = useState<GraphData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);

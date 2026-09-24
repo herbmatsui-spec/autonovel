@@ -110,7 +110,7 @@ export const WizardWorkflowPage: React.FC = () => {
   }, []);
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4">
+    <div className="max-w-4xl mx-auto py-8 px-4" data-testid="wizard-workflow-page">
       {error && (
         <div className="mb-4 p-3 bg-red-900/50 border border-red-700 rounded-lg text-red-200 text-sm">
           {error}

@@ -233,6 +233,20 @@ class AppContainer(InfraContainer):
         backoff_base=2.0,
     )
 
+    # Consolidated Services (Part 4)
+    audit_aggregator_service: providers.Singleton = providers.Singleton(
+        "src.services.audit.AuditAggregatorService",
+    )
+    marketing_service: providers.Singleton = providers.Singleton(
+        "src.services.marketing.MarketingService",
+    )
+    rag_service: providers.Singleton = providers.Singleton(
+        "src.services.rag.GraphRAGService",
+    )
+    rag_pipeline_service: providers.Singleton = providers.Singleton(
+        "src.services.rag.GraphRAGService",
+    )
+
     # DAG パイプラインのプロバイダー
     dag_pipeline: providers.Singleton = providers.Singleton(
         lambda: (

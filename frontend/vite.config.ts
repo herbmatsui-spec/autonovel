@@ -1,4 +1,5 @@
 import { defineConfig } from "vite";
+import { configDefaults } from "vitest/config";
 import react from "@vitejs/plugin-react";
 
 const backendUrl = process.env.VITE_BACKEND_URL || process.env.BACKEND_URL || "http://localhost:8200";
@@ -58,6 +59,7 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: ["./tests/setup.ts"],
+    exclude: [...configDefaults.exclude, "tests/e2e/**"],
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "html"],

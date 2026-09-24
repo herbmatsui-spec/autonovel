@@ -35,6 +35,11 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
+class DatabaseConnectionWrapper:
+    """Compatibility shim for legacy database connection wrapper."""
+    pass
+
+
 # ==========================================
 # リトライデコレータ
 # ==========================================

@@ -88,10 +88,11 @@ class TestWorkspaceManager:
     """WorkspaceManager クラスのテスト"""
 
     def test_get_path_returns_correct_path(self):
-        """get_path が正しいパスを返すことを確認"""
+        """get_path が正しいパスを返すことを確認（OS 非依存）"""
         with patch('src.backend.database.core.BASE_DIR', Path('/tmp/test')):
             result = WorkspaceManager.get_path("test.txt")
-            assert result == "/tmp/test/test.txt"
+            expected = Path('/tmp/test') / "test.txt"
+            assert result == str(expected)
 
     def test_list_backups_returns_sorted_list(self):
         """list_backups がソートされたリストを返すことを確認"""
