@@ -1,0 +1,14 @@
+database:
+  type: postgresql
+  host: db
+  port: 5432
+  user: user
+  password: pass
+  dbname: autonovel
+cache:
+  type: redis
+  host: redis
+  port: 6379
+  db: 0
+log:
+  level: INFO

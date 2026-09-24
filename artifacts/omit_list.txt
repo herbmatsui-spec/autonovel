@@ -1,0 +1,12 @@
+*/tests/*
+*/migrations/*
+*/alembic/*
+*/conftest.py
+*/__pycache__/*
+src/__init__.py
+src/*/__init__.py
+src/*/*/__init__.py
+src/*/*/*/__init__.py
+src/services/age_client.py
+src/services/llm/provider_failover.py
+src/services/state_manager.py
