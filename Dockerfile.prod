@@ -2,9 +2,7 @@
 FROM python:3.12-slim AS builder
 WORKDIR /app
 # 依存関係のみコピーしてキャッシュ活用
-COPY pyproject.toml poetry.lock* ./
-RUN pip install --no-cache-dir poetry && \
-    poetry export -f requirements.txt --output requirements.txt --without-hashes
+COPY requirements.txt ./
 # 本番依存関係のみインストール
 RUN pip install --no-cache-dir -r requirements.txt
 

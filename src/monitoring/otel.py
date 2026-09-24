@@ -5,11 +5,27 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
-from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-from opentelemetry.instrumentation.requests import RequestsInstrumentor
-from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
+try:
+    from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+    from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
+except ImportError:
+    OTLPSpanExporter = None
+    OTLPMetricExporter = None
+
+try:
+    from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+except ImportError:
+    FastAPIInstrumentor = None
+
+try:
+    from opentelemetry.instrumentation.requests import RequestsInstrumentor
+except ImportError:
+    RequestsInstrumentor = None
+
+try:
+    from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
+except ImportError:
+    SQLAlchemyInstrumentor = None
 
 def init_otel(app=None, service_name="autonovel"):
     """
@@ -44,8 +60,11 @@ def init_otel(app=None, service_name="autonovel"):
     metrics.set_meter_provider(meter_provider)
     
     # Instrumentations
-    FastAPIInstrumentor().instrument_app(app) if app else FastAPIInstrumentor().instrument()
-    RequestsInstrumentor().instrument()
-    SQLAlchemyInstrumentor().instrument()
+    if FastAPIInstrumentor is not None:
+        FastAPIInstrumentor().instrument_app(app) if app else FastAPIInstrumentor().instrument()
+    if RequestsInstrumentor is not None:
+        RequestsInstrumentor().instrument()
+    if SQLAlchemyInstrumentor is not None:
+        SQLAlchemyInstrumentor().instrument()
     
     return trace.get_tracer(__name__), metrics.get_meter(__name__)

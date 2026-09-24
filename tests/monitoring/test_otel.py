@@ -11,11 +11,14 @@ def client():
     
     @app.get("/")
     def read_root():
-        return {"Hello": "World"}
+        from opentelemetry import trace
+        tracer = trace.get_tracer("test_otel")
+        with tracer.start_span("root_span"):
+            return {"Hello": "World"}
     
     return TestClient(app)
 
-@patch("src.monitoring.otel.trace.get_tracer")
+@patch("opentelemetry.trace.get_tracer")
 def test_otel_creates_span_for_request(mock_get_tracer, client):
     mock_tracer = MagicMock()
     mock_span = MagicMock()

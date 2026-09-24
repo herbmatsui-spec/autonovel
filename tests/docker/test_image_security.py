@@ -1,5 +1,21 @@
 """Docker イメージのセキュリティ構成をテスト"""
+import shutil
 import subprocess
+import pytest
+
+
+def _is_docker_running() -> bool:
+    if not shutil.which("docker"):
+        return False
+    try:
+        res = subprocess.run(["docker", "info"], capture_output=True, timeout=3)
+        return res.returncode == 0
+    except Exception:
+        return False
+
+
+pytestmark = pytest.mark.skipif(not _is_docker_running(), reason="Docker daemon is not running")
+
 
 def test_image_contains_no_unnecessary_packages():
     # イメージをビルド（または既存のものを使用）
