@@ -6,13 +6,17 @@ from unittest.mock import patch
 from src.generation.local_polish import LocalPolisher
 
 
-def test_polish_preserves_context():
+@patch("src.generation.local_polish.call_llm_api")
+def test_polish_preserves_context(mock_call_llm):
     """局所パッチが前後の文脈を保持することを確認"""
+    mock_call_llm.return_value = "改善された対象シーン"
     original = "最初の文。対象シーン。最後の文。"
     # 対象シーンのみを「改善された対象シーン」に置換することを期待
+    target_text = "対象シーン"
+    start_pos = original.index(target_text)
     polished = LocalPolisher().polish(
         original,
-        target_range=(4, 10),  # 「対象シーン」の位置
+        target_range=(start_pos, start_pos + len(target_text)),
         improvement_instruction="より感情豊かに書き直して"
     )
     assert polished.startswith("最初の文。")
@@ -54,10 +58,11 @@ def test_polish_calls_llm_with_correct_prompt(mock_call_llm):
     # "前文脈。" = 5文字、なので対象範囲は(5, 5+4) = (5, 9) assuming "対象テキスト" is 4 chars
     # 実際の文字数を正確に合わせるため、わかりやすいテキストを使う
     text = "こんにちは。対象部分。さようなら。"
-    # "こんにちは。" = 5文字、なので対象範囲は(5, 5+5) = (5, 10) assuming "対象部分" is 5 chars
+    target_part = "対象部分"
+    start_pos = text.index(target_part)
     polished = polisher.polish(
         text,
-        target_range=(5, 10),  # 「対象部分」の位置
+        target_range=(start_pos, start_pos + len(target_part)),
         improvement_instruction="より詳細に説明してください"
     )
     
