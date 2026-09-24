@@ -1,0 +1,60 @@
+{
+  "benchmark_timestamp": "2026-09-24T17:27:42.202615",
+  "total_test_cases": 5,
+  "total_generation_time_seconds": 10.0,
+  "total_estimated_tokens": 5000.0,
+  "average_time_per_test": 2.0,
+  "average_tokens_per_test": 1000.0,
+  "results": [
+    {
+      "test_case": "短編ファンタジー",
+      "genre": "ファンタジー",
+      "requested_length_chars": 500,
+      "actual_length_chars": 500,
+      "estimated_token_count": 1000.0,
+      "generation_time_seconds": 2.0,
+      "tokens_per_second": 500.0,
+      "chars_per_second": 250.0
+    },
+    {
+      "test_case": "中編ラブコメ",
+      "genre": "ラブコメ",
+      "requested_length_chars": 1000,
+      "actual_length_chars": 1000,
+      "estimated_token_count": 1000.0,
+      "generation_time_seconds": 2.0,
+      "tokens_per_second": 500.0,
+      "chars_per_second": 500.0
+    },
+    {
+      "test_case": "長編SF",
+      "genre": "SF",
+      "requested_length_chars": 2000,
+      "actual_length_chars": 2000,
+      "estimated_token_count": 1000.0,
+      "generation_time_seconds": 2.0,
+      "tokens_per_second": 500.0,
+      "chars_per_second": 1000.0
+    },
+    {
+      "test_case": "中編ミステリー",
+      "genre": "ミステリー",
+      "requested_length_chars": 1500,
+      "actual_length_chars": 1500,
+      "estimated_token_count": 1000.0,
+      "generation_time_seconds": 2.0,
+      "tokens_per_second": 500.0,
+      "chars_per_second": 750.0
+    },
+    {
+      "test_case": "短編歴史",
+      "genre": "歴史",
+      "requested_length_chars": 800,
+      "actual_length_chars": 800,
+      "estimated_token_count": 1000.0,
+      "generation_time_seconds": 2.0,
+      "tokens_per_second": 500.0,
+      "chars_per_second": 400.0
+    }
+  ]
+}
