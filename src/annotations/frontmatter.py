@@ -12,7 +12,11 @@ from src.pipeline.emotional_residue import EmotionType
 FRONTMATTER_DELIMITER = "---"
 
 
-def parse_frontmatter(text: str) -> tuple[str, list[EmotionalBeat]]:
+def parse_frontmatter(
+    text: str,
+    default_episode: int = 1,
+    default_scene: int = 1,
+) -> tuple[str, list[EmotionalBeat]]:
     """YAMLフロントマターからビートを抽出
     
     形式:
@@ -29,6 +33,8 @@ def parse_frontmatter(text: str) -> tuple[str, list[EmotionalBeat]]:
     
     Args:
         text: 脚本テキスト（フロントマター含む）
+        default_episode: 指定がない場合のデフォルトエピソード番号
+        default_scene: 指定がない場合のデフォルトシーン番号
         
     Returns:
         (フロントマター除去後のテキスト, 抽出ビートリスト)
@@ -69,8 +75,8 @@ def parse_frontmatter(text: str) -> tuple[str, list[EmotionalBeat]]:
     for idx, beat_data in enumerate(fm_data["beats"]):
         try:
             beat = EmotionalBeat(
-                episode=beat_data.get("episode", 1),
-                scene=beat_data.get("scene", 1),
+                episode=beat_data.get("episode", default_episode),
+                scene=beat_data.get("scene", default_scene),
                 source=beat_data["source"],
                 target=beat_data["target"],
                 emotion=EmotionType(beat_data["emotion"]),

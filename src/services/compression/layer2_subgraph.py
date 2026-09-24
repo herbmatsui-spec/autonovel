@@ -79,8 +79,19 @@ class Layer2SubgraphExtractor:
         raw_edges: list[dict[str, Any]] = []
 
         try:
+            import json
             from sqlalchemy import text
-            from src.services.age_client import _parse_agtype
+
+            def _parse_agtype_local(val: Any) -> Any:
+                if val is None:
+                    return None
+                s = str(val).strip()
+                if s.endswith("::vertex") or s.endswith("::edge") or s.endswith("::path"):
+                    s = s.rsplit("::", 1)[0]
+                try:
+                    return json.loads(s)
+                except Exception:
+                    return s
 
             sql = f"SELECT * FROM cypher('{graph_name}', $$ {cypher} $$) as (n_name agtype, n_labels agtype, n_props agtype, m_name agtype, m_labels agtype, m_props agtype, rel_types agtype);"
             result = session.execute(text(sql))
@@ -93,8 +104,8 @@ class Layer2SubgraphExtractor:
                     raw_nodes[n_name] = {
                         "id": n_name,
                         "name": n_name,
-                        "labels": _parse_agtype(row[1]) if row[1] else [],
-                        "properties": _parse_agtype(row[2]) if row[2] else {},
+                        "labels": _parse_agtype_local(row[1]) if row[1] else [],
+                        "properties": _parse_agtype_local(row[2]) if row[2] else {},
                         "hop": 0,
                     }
 
@@ -102,13 +113,13 @@ class Layer2SubgraphExtractor:
                     raw_nodes[m_name] = {
                         "id": m_name,
                         "name": m_name,
-                        "labels": _parse_agtype(row[4]) if row[4] else [],
-                        "properties": _parse_agtype(row[5]) if row[5] else {},
+                        "labels": _parse_agtype_local(row[4]) if row[4] else [],
+                        "properties": _parse_agtype_local(row[5]) if row[5] else {},
                         "hop": 1,
                     }
 
                 if n_name and m_name:
-                    rel_types = _parse_agtype(row[6]) if row[6] else ["related"]
+                    rel_types = _parse_agtype_local(row[6]) if row[6] else ["related"]
                     rel_type = rel_types[0] if isinstance(rel_types, list) and rel_types else "related"
                     raw_edges.append({
                         "source": n_name,

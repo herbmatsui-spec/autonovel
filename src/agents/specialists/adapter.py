@@ -181,21 +181,31 @@ class AuditAggregatorNode:
         lowest_dim = score_result.lowest_dimension()
         retry_count = int(ctx.artifacts.get("audit_retry_count", 0))
 
-        # Retrieve suggestions for lowest dimension
+        # Retrieve suggestions and actionable diffs for lowest dimension
         suggestions = []
+        actionable_diffs = []
         if lowest_dim and lowest_dim in score_result.raw:
-            suggestions = score_result.raw[lowest_dim].suggestions
+            lowest_spec_result = score_result.raw[lowest_dim]
+            suggestions = lowest_spec_result.suggestions
+            actionable_diffs = getattr(lowest_spec_result, "actionable_diffs", []) or []
 
         regeneration_directive = ""
         if lowest_dim:
             sugg_text = "、".join(suggestions) if suggestions else "全体的な描写と整合性の見直し"
             regeneration_directive = f"【再生成指示 - 重点改善項目: {lowest_dim}】\nスコア向上のため以下を反映して書き直してください: {sugg_text}"
+            if actionable_diffs:
+                diff_lines = []
+                for d in actionable_diffs:
+                    diff_lines.append(f"- 箇所: {d.location}\n  修正前: {d.original_quote}\n  修正提案: {d.improved_suggestion}\n  理由: {d.rationale}")
+                regeneration_directive += "\n\n【具体的改稿サンプル(Actionable Diffs)】\n" + "\n".join(diff_lines)
 
         artifacts = {
             "audit_report": audit_payload,
             "audit_score": score_result.overall,
             "specialist_scores": score_result.by_specialist,
             "lowest_dimension": lowest_dim,
+            "regeneration_focus": [lowest_dim] if lowest_dim else [],
+            "actionable_diffs": actionable_diffs,
             "missing_specialists": score_result.missing,
             "audit_retry_count": retry_count,
             "regeneration_directive": regeneration_directive,

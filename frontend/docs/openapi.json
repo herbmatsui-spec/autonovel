@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "AutoNovel Backend",
-    "version": "4.9.0"
+    "version": "5.0.3"
   },
   "paths": {
     "/easy_mode/generate": {
@@ -1252,9 +1252,20 @@
           "graph"
         ],
         "summary": "Get Graph Data",
-        "description": "フロントエンドの相関図可視化 (Force-Graph 等) 用にノードとエッジ一覧を取得する.",
+        "description": "フロントエンドの相関図可視化 (Force-Graph 等) 用にノードとエッジ一覧を取得する.\n\nbook_id を指定して、RDBMS (foreshadowings, characters, character_relations) から\n実際の作品データに基づくグラフを動的に生成して返却する。",
         "operationId": "get_graph_data_api_graph_get",
         "parameters": [
+          {
+            "name": "book_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "作品ID",
+              "title": "Book Id"
+            },
+            "description": "作品ID"
+          },
           {
             "name": "graph_name",
             "in": "query",
@@ -2234,7 +2245,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
       }
     },
     "/api/editor/ask-bible": {
@@ -2276,7 +2292,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
       }
     },
     "/api/editor/audit-consistency": {
@@ -2285,7 +2306,7 @@
           "editor"
         ],
         "summary": "Audit Consistency",
-        "description": "執筆中の本文と GraphRAG 設定情報とのリアルタイム矛盾診断",
+        "description": "執筆中の本文と設定情報とのリアルタイム矛盾診断",
         "operationId": "audit_consistency_api_editor_audit_consistency_post",
         "requestBody": {
           "content": {
@@ -2318,7 +2339,59 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/editor/audit": {
+      "post": {
+        "tags": [
+          "editor"
+        ],
+        "summary": "Audit Fast Hybrid",
+        "description": "v5.0: 二層ハイブリッド監査（静的ルール解析＋定性判定）エンドポイント",
+        "operationId": "audit_fast_hybrid_api_editor_audit_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuditFastHybridRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnifiedAuditReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
       }
     },
     "/api/editor/next-beats": {
@@ -2360,7 +2433,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
       }
     },
     "/api/system/models/info": {
@@ -2676,15 +2754,37 @@
         "summary": "Recalc All Book Scores",
         "description": "全書籍の BookScore を再計算する（管理者用・並列化対応）",
         "operationId": "recalc_all_book_scores_api_system_admin_book_score_recalc_post",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Authorization"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
                   "type": "object",
+                  "additionalProperties": true,
                   "title": "Response Recalc All Book Scores Api System Admin Book Score Recalc Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -2708,6 +2808,16 @@
             "schema": {
               "type": "integer",
               "title": "Book Id"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Authorization"
             }
           }
         ],
@@ -2745,15 +2855,37 @@
         "summary": "Get Skill Metrics",
         "description": "スキル実行メトリクスを取得する（デバッグ用）",
         "operationId": "get_skill_metrics_api_system_admin_skills_metrics_get",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Authorization"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
                   "type": "object",
+                  "additionalProperties": true,
                   "title": "Response Get Skill Metrics Api System Admin Skills Metrics Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -2769,15 +2901,27 @@
         "summary": "Run Ab Test",
         "description": "A/Bテストを即時実行する",
         "operationId": "run_ab_test_api_system_admin_skills_ab_test_post",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Authorization"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ABTestRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -2785,8 +2929,8 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
                   "type": "object",
+                  "additionalProperties": true,
                   "title": "Response Run Ab Test Api System Admin Skills Ab Test Post"
                 }
               }
@@ -2829,6 +2973,16 @@
               ],
               "title": "Skill Name"
             }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Authorization"
+            }
           }
         ],
         "responses": {
@@ -2865,15 +3019,27 @@
         "summary": "Schedule Ab Test",
         "description": "定期的なA/Bテストをスケジュールする",
         "operationId": "schedule_ab_test_api_system_admin_skills_ab_test_schedule_post",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Authorization"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ABTestScheduleRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -2881,8 +3047,8 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
                   "type": "object",
+                  "additionalProperties": true,
                   "title": "Response Schedule Ab Test Api System Admin Skills Ab Test Schedule Post"
                 }
               }
@@ -2917,6 +3083,16 @@
             "schema": {
               "type": "integer",
               "title": "Task Id"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Authorization"
             }
           }
         ],
@@ -3054,15 +3230,27 @@
         "summary": "Auto Promote Ab Winner",
         "description": "A/Bテスト勝者バージョンを自動本番昇格する",
         "operationId": "auto_promote_ab_winner_api_system_admin_skills_ab_test_auto_promote_post",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Authorization"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ABTestAutoPromoteRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -3070,8 +3258,8 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
                   "type": "object",
+                  "additionalProperties": true,
                   "title": "Response Auto Promote Ab Winner Api System Admin Skills Ab Test Auto Promote Post"
                 }
               }
@@ -3127,6 +3315,11 @@
         "summary": "Export Book",
         "description": "作品を指定プラットフォーム用に整形して出力する。",
         "operationId": "export_book_api_export_books__book_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "book_id",
@@ -3148,16 +3341,6 @@
               "title": "Platform"
             },
             "description": "narou | kakuyomu | nocturne | nocturn"
-          },
-          {
-            "name": "Authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "",
-              "title": "Authorization"
-            }
           }
         ],
         "responses": {
@@ -3194,27 +3377,15 @@
         "summary": "Export Ebook Alias",
         "description": "README 互換エイリアス: eBook エクスポート (EPUB/PDF/MOBI) - `/multimedia/ebook` に委譲。\n\n重い PDF/EPUB 生成をワーカースレッドにオフロードしてイベントループをブロックしない。",
         "operationId": "export_ebook_alias_api_export_ebook_post",
-        "parameters": [
-          {
-            "name": "Authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "",
-              "title": "Authorization"
-            }
-          }
-        ],
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/src__backend__routers__export__EbookExportRequest"
+                "$ref": "#/components/schemas/EbookExportRequest"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -3229,6 +3400,120 @@
           },
           "503": {
             "description": "Multimedia disabled"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/export/copy/": {
+      "post": {
+        "tags": [
+          "export-copy"
+        ],
+        "summary": "Format Chapter For Copy",
+        "description": "Web小説投稿サイト別の整形済みテキストを返却する（クリップボードコピー用）。",
+        "operationId": "format_chapter_for_copy_api_export_copy__post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CopyFormatRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CopyFormatResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stream/writing/{book_id}/{ep_num}": {
+      "get": {
+        "tags": [
+          "streaming"
+        ],
+        "summary": "Stream Chapter Generation",
+        "description": "執筆進捗をServer-Sent Events (SSE) でリアルタイム配信する。",
+        "operationId": "stream_chapter_generation_api_stream_writing__book_id___ep_num__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "book_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Book Id"
+            }
+          },
+          {
+            "name": "ep_num",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Ep Num"
+            }
+          },
+          {
+            "name": "branch_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "description": "ブランチID",
+              "default": 1,
+              "title": "Branch Id"
+            },
+            "description": "ブランチID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -3695,7 +3980,7 @@
               "application/json": {
                 "schema": {
                   "items": {
-                    "$ref": "#/components/schemas/BookSchema"
+                    "$ref": "#/components/schemas/src__models__api_schemas__BookSchema"
                   },
                   "type": "array",
                   "title": "Response List Books Api Books  Get"
@@ -3732,7 +4017,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BookSchema"
+                  "$ref": "#/components/schemas/src__models__api_schemas__BookSchema"
                 }
               }
             }
@@ -3769,7 +4054,7 @@
               "application/json": {
                 "schema": {
                   "items": {
-                    "$ref": "#/components/schemas/BookSchema"
+                    "$ref": "#/components/schemas/src__models__api_schemas__BookSchema"
                   },
                   "type": "array",
                   "title": "Response List Books Api Books Get"
@@ -3806,7 +4091,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BookSchema"
+                  "$ref": "#/components/schemas/src__models__api_schemas__BookSchema"
                 }
               }
             }
@@ -3858,7 +4143,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BookSchema"
+                  "$ref": "#/components/schemas/src__models__api_schemas__BookSchema"
                 }
               }
             }
@@ -4326,6 +4611,102 @@
         ]
       }
     },
+    "/api/plots/wizard-save": {
+      "post": {
+        "tags": [
+          "plots"
+        ],
+        "summary": "Wizard Save",
+        "description": "ウィザードで作成した企画とビートシートをDBに保存する",
+        "operationId": "wizard_save_api_plots_wizard_save_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExpandBeatsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/plots/expand-beats": {
+      "post": {
+        "tags": [
+          "plots"
+        ],
+        "summary": "Expand Commercial Beats",
+        "description": "企画パラメータから商業12ステップビートシートを生成",
+        "operationId": "expand_commercial_beats_api_plots_expand_beats_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExpandBeatsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/BeatItemSchema"
+                  },
+                  "type": "array",
+                  "title": "Response Expand Commercial Beats Api Plots Expand Beats Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
     "/api/episodes/chapters/{book_id}": {
       "get": {
         "tags": [
@@ -4535,6 +4916,120 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/chapters/books/{book_id}": {
+      "get": {
+        "tags": [
+          "chapters"
+        ],
+        "summary": "Get Chapters",
+        "description": "指定作品の全章を統一スキーマ ChapterSchema で正規化して返す。",
+        "operationId": "get_chapters_api_chapters_books__book_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "book_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Book Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ChapterSchema"
+                  },
+                  "title": "Response Get Chapters Api Chapters Books  Book Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "List Projects",
+        "description": "ユーザー所有の作品群を ProjectSchema（統一ドメインモデル）で返す。",
+        "operationId": "list_projects_api_projects__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProjectSchema"
+                  },
+                  "type": "array",
+                  "title": "Response List Projects Api Projects  Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/projects": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "List Projects",
+        "description": "ユーザー所有の作品群を ProjectSchema（統一ドメインモデル）で返す。",
+        "operationId": "list_projects_api_projects_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProjectSchema"
+                  },
+                  "type": "array",
+                  "title": "Response List Projects Api Projects Get"
                 }
               }
             }
@@ -4863,6 +5358,11 @@
         ],
         "summary": "Get Pending Patches",
         "operationId": "get_pending_patches_api_patches__book_id__pending_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "book_id",
@@ -4871,16 +5371,6 @@
             "schema": {
               "type": "integer",
               "title": "Book Id"
-            }
-          },
-          {
-            "name": "Authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "",
-              "title": "Authorization"
             }
           }
         ],
@@ -4913,6 +5403,11 @@
         ],
         "summary": "Approve Patch",
         "operationId": "approve_patch_api_patches__patch_id__approve_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "patch_id",
@@ -4935,16 +5430,6 @@
                 }
               ],
               "title": "Req"
-            }
-          },
-          {
-            "name": "Authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "",
-              "title": "Authorization"
             }
           }
         ],
@@ -4977,6 +5462,11 @@
         ],
         "summary": "Reject Patch",
         "operationId": "reject_patch_api_patches__patch_id__reject_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "patch_id",
@@ -4999,16 +5489,6 @@
                 }
               ],
               "title": "Req"
-            }
-          },
-          {
-            "name": "Authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "",
-              "title": "Authorization"
             }
           }
         ],
@@ -5041,6 +5521,11 @@
         ],
         "summary": "Edit Patch",
         "operationId": "edit_patch_api_patches__patch_id__edit_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "patch_id",
@@ -5057,16 +5542,6 @@
             "required": true,
             "schema": {
               "title": "Req"
-            }
-          },
-          {
-            "name": "Authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "",
-              "title": "Authorization"
             }
           }
         ],
@@ -5100,6 +5575,11 @@
         "summary": "Get Pending Reviews",
         "description": "レビュー待ちパッチ一覧を取得",
         "operationId": "get_pending_reviews_api_patches__book_id__reviews_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "book_id",
@@ -5141,6 +5621,11 @@
         "summary": "Get Review Detail",
         "description": "レビュー詳細を取得",
         "operationId": "get_review_detail_api_patches_reviews__review_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "review_id",
@@ -5149,16 +5634,6 @@
             "schema": {
               "type": "integer",
               "title": "Review Id"
-            }
-          },
-          {
-            "name": "Authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "",
-              "title": "Authorization"
             }
           }
         ],
@@ -5192,6 +5667,11 @@
         "summary": "Approve Review",
         "description": "レビューを承認",
         "operationId": "approve_review_api_patches_reviews__review_id__approve_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "review_id",
@@ -5200,16 +5680,6 @@
             "schema": {
               "type": "integer",
               "title": "Review Id"
-            }
-          },
-          {
-            "name": "Authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "",
-              "title": "Authorization"
             }
           }
         ],
@@ -5253,6 +5723,11 @@
         "summary": "Reject Review",
         "description": "レビューを差し戻し",
         "operationId": "reject_review_api_patches_reviews__review_id__reject_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "review_id",
@@ -5261,16 +5736,6 @@
             "schema": {
               "type": "integer",
               "title": "Review Id"
-            }
-          },
-          {
-            "name": "Authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "",
-              "title": "Authorization"
             }
           }
         ],
@@ -5314,6 +5779,11 @@
         "summary": "Revise Review",
         "description": "レビューに修正案を提示（再レビュー要求）",
         "operationId": "revise_review_api_patches_reviews__review_id__revise_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "review_id",
@@ -5322,16 +5792,6 @@
             "schema": {
               "type": "integer",
               "title": "Review Id"
-            }
-          },
-          {
-            "name": "Authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "",
-              "title": "Authorization"
             }
           }
         ],
@@ -5375,6 +5835,11 @@
         "summary": "Get Setting Versions",
         "description": "設定バージョン履歴を取得",
         "operationId": "get_setting_versions_api_patches__book_id__setting_versions_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "book_id",
@@ -5416,6 +5881,11 @@
         "summary": "Get Setting Version",
         "description": "特定バージョンの設定を取得",
         "operationId": "get_setting_version_api_patches__book_id__setting_versions__version_number__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "book_id",
@@ -5466,6 +5936,11 @@
         "summary": "Patch Paragraph",
         "description": "手動で特定段落のリライトを指示し、即時差分を取得",
         "operationId": "patch_paragraph_api_episodes__episode_id__patch_paragraph_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "episode_id",
@@ -5474,16 +5949,6 @@
             "schema": {
               "type": "integer",
               "title": "Episode Id"
-            }
-          },
-          {
-            "name": "Authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "",
-              "title": "Authorization"
             }
           }
         ],
@@ -5526,6 +5991,11 @@
         ],
         "summary": "Get Issues",
         "operationId": "get_issues_api_issues_books__book_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "book_id",
@@ -5566,6 +6036,11 @@
         ],
         "summary": "Resolve Issue",
         "operationId": "resolve_issue_api_issues__issue_id__resolve_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "issue_id",
@@ -5574,16 +6049,6 @@
             "schema": {
               "type": "integer",
               "title": "Issue Id"
-            }
-          },
-          {
-            "name": "Authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "",
-              "title": "Authorization"
             }
           }
         ],
@@ -5756,6 +6221,46 @@
         }
       }
     },
+    "/api/marketing/catchphrases": {
+      "post": {
+        "tags": [
+          "marketing"
+        ],
+        "summary": "Generate Catchphrases",
+        "description": "カクヨム用キャッチコピーを生成するエンドポイント",
+        "operationId": "generate_catchphrases_api_marketing_catchphrases_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatchphraseGenerateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/marketing/viral-titles": {
       "post": {
         "tags": [
@@ -5861,7 +6366,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RollbackRequest"
+                "$ref": "#/components/schemas/src__models__api_schemas__RollbackRequest"
               }
             }
           }
@@ -5964,6 +6469,11 @@
         ],
         "summary": "Get Bible",
         "operationId": "get_bible_api_bibles__book_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "book_id",
@@ -6004,6 +6514,11 @@
         ],
         "summary": "Get Opt History",
         "operationId": "get_opt_history_api_optimization_history__book_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "book_id",
@@ -7307,7 +7822,7 @@
     "/generate": {
       "post": {
         "summary": "Generate Illustration",
-        "description": "単一の挿絵を生成する",
+        "description": "単一の挿絵を生成する (5クレジット消費)",
         "operationId": "generate_illustration_generate_post",
         "requestBody": {
           "content": {
@@ -7340,7 +7855,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
       }
     },
     "/yonkoma": {
@@ -7379,7 +7899,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
       }
     },
     "/batch": {
@@ -7434,679 +7959,6 @@
             "schema": {
               "type": "string",
               "title": "Task Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/multimedia/media-mix": {
-      "post": {
-        "tags": [
-          "multimedia"
-        ],
-        "summary": "Generate Media Mix",
-        "description": "Media Mix 台本生成。",
-        "operationId": "generate_media_mix_multimedia_media_mix_post",
-        "parameters": [
-          {
-            "name": "Authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "",
-              "title": "Authorization"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/MediaMixRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MediaMixResponse"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "Multimedia disabled"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/multimedia/ebook": {
-      "post": {
-        "tags": [
-          "multimedia"
-        ],
-        "summary": "Export Ebook",
-        "description": "Ebook エクスポート (EPUB/PDF/MOBI)。",
-        "operationId": "export_ebook_multimedia_ebook_post",
-        "parameters": [
-          {
-            "name": "Authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "",
-              "title": "Authorization"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/src__backend__schemas__multimedia__EbookExportRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/EbookExportResponse"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "Multimedia disabled"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/multimedia/if-routes": {
-      "post": {
-        "tags": [
-          "multimedia"
-        ],
-        "summary": "Generate If Routes",
-        "description": "IF ルートグラフ生成。",
-        "operationId": "generate_if_routes_multimedia_if_routes_post",
-        "parameters": [
-          {
-            "name": "Authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "",
-              "title": "Authorization"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/IFRouteGenerateRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/IFRouteResponse"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "Multimedia disabled"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/multimedia/asset-pack": {
-      "post": {
-        "tags": [
-          "multimedia"
-        ],
-        "summary": "Generate Asset Pack",
-        "description": "統合アセットパック (ZIP) を生成。",
-        "operationId": "generate_asset_pack_multimedia_asset_pack_post",
-        "parameters": [
-          {
-            "name": "Authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "",
-              "title": "Authorization"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AssetPackRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AssetPackResponse"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "Multimedia disabled"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/multimedia/generate": {
-      "post": {
-        "tags": [
-          "multimedia"
-        ],
-        "summary": "Generate Asset Pack Alias",
-        "description": "README 互換エイリアス: 統合アセットパック (ZIP) を生成 (`/asset-pack` と同等)。",
-        "operationId": "generate_asset_pack_alias_multimedia_generate_post",
-        "parameters": [
-          {
-            "name": "Authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "",
-              "title": "Authorization"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AssetPackGenerateRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AssetPackGenerateResponse"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "Multimedia disabled"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/multimedia/assets/{book_id}": {
-      "get": {
-        "tags": [
-          "multimedia"
-        ],
-        "summary": "Get Assets By Book",
-        "description": "README 互換エイリアス: 指定 book_id の全アセットメタデータを取得。",
-        "operationId": "get_assets_by_book_multimedia_assets__book_id__get",
-        "parameters": [
-          {
-            "name": "book_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "title": "Book Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AssetsByBookResponse"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "Multimedia disabled"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/multimedia/artifacts/{asset_id}": {
-      "get": {
-        "tags": [
-          "multimedia"
-        ],
-        "summary": "Get Artifact",
-        "description": "成果物メタデータ取得。",
-        "operationId": "get_artifact_multimedia_artifacts__asset_id__get",
-        "parameters": [
-          {
-            "name": "asset_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "title": "Asset Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ArtifactMetaResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/multimedia/artifacts/{asset_id}/download": {
-      "get": {
-        "tags": [
-          "multimedia"
-        ],
-        "summary": "Download Artifact",
-        "description": "成果物ファイル本体をダウンロード。",
-        "operationId": "download_artifact_multimedia_artifacts__asset_id__download_get",
-        "parameters": [
-          {
-            "name": "asset_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "title": "Asset Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "404": {
-            "description": "Not found"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/multimedia/tasks/{task_id}": {
-      "get": {
-        "tags": [
-          "multimedia"
-        ],
-        "summary": "Get Task",
-        "description": "タスクステータス取得。",
-        "operationId": "get_task_multimedia_tasks__task_id__get",
-        "parameters": [
-          {
-            "name": "task_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "title": "Task Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TaskStatusResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/multimedia/files/{filename}": {
-      "get": {
-        "tags": [
-          "multimedia"
-        ],
-        "summary": "Serve File",
-        "description": "`MULTIMEDIA_OUTPUT_DIR` 配下の静的ファイルを配信 (パストラバーサル防止済み)。",
-        "operationId": "serve_file_multimedia_files__filename__get",
-        "parameters": [
-          {
-            "name": "filename",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Filename"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/multimedia/audio/synthesize": {
-      "post": {
-        "tags": [
-          "multimedia"
-        ],
-        "summary": "Trigger Audio Synthesis",
-        "description": "指定章の音声合成ジョブを投入または実行する (Step 19)。",
-        "operationId": "trigger_audio_synthesis_multimedia_audio_synthesize_post",
-        "parameters": [
-          {
-            "name": "Authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "",
-              "title": "Authorization"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AudioSynthesizeRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Trigger Audio Synthesis Multimedia Audio Synthesize Post"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/multimedia/audio/{book_id}/{episode_num}": {
-      "get": {
-        "tags": [
-          "multimedia"
-        ],
-        "summary": "Get Chapter Audio",
-        "description": "作品・章ごとの音声アセット情報を取得する (Step 21)。",
-        "operationId": "get_chapter_audio_multimedia_audio__book_id___episode_num__get",
-        "parameters": [
-          {
-            "name": "book_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "title": "Book Id"
-            }
-          },
-          {
-            "name": "episode_num",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "title": "Episode Num"
-            }
-          },
-          {
-            "name": "Authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "",
-              "title": "Authorization"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Get Chapter Audio Multimedia Audio  Book Id   Episode Num  Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/multimedia/audio/{audio_id}/stream": {
-      "get": {
-        "tags": [
-          "multimedia"
-        ],
-        "summary": "Stream Audio File",
-        "description": "音声バイナリ (WAV) を配信する (Step 20)。",
-        "operationId": "stream_audio_file_multimedia_audio__audio_id__stream_get",
-        "parameters": [
-          {
-            "name": "audio_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "title": "Audio Id"
             }
           }
         ],
@@ -9656,6 +9508,52 @@
         }
       }
     },
+    "/api/cost/budget/{book_id}": {
+      "get": {
+        "tags": [
+          "cost"
+        ],
+        "summary": "Get Budget Consumption Ratio",
+        "description": "特定の書籍のリアルタイム予算消費率を取得する。",
+        "operationId": "get_budget_consumption_ratio_api_cost_budget__book_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "book_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Book Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/stream/pipeline/{book_id}": {
       "get": {
         "tags": [
@@ -9721,6 +9619,11 @@
         "summary": "Export For Publishing",
         "description": "Export formatted novel package as a ZIP archive for the specified platform (Step 61).",
         "operationId": "export_for_publishing_api_export_publish__platform__post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "platform",
@@ -9771,6 +9674,11 @@
         "summary": "Preview For Publishing",
         "description": "Preview formatted episode text and check platform limit warnings (Step 62).",
         "operationId": "preview_for_publishing_api_export_publish__platform__preview_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "platform",
@@ -10464,6 +10372,529 @@
         }
       }
     },
+    "/health/liveness": {
+      "get": {
+        "tags": [
+          "system"
+        ],
+        "summary": "Health Liveness",
+        "description": "Liveness Probe: プロセスが生きているか即座に応答（外部依存なし）",
+        "operationId": "health_liveness_health_liveness_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LivenessResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/readiness": {
+      "get": {
+        "tags": [
+          "system"
+        ],
+        "summary": "Health Readiness",
+        "description": "Readiness Probe: DBなどの主要外部依存が準備完了しているか検証",
+        "operationId": "health_readiness_health_readiness_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/detail": {
+      "get": {
+        "tags": [
+          "system"
+        ],
+        "summary": "Health Check",
+        "description": "拡張ヘルスチェック: DB, Redis, ChromaDB, LLM Gateway, Worker を並列チェック",
+        "operationId": "health_check_health_detail_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/subtext/rules": {
+      "get": {
+        "tags": [
+          "subtext"
+        ],
+        "summary": "List Rules",
+        "operationId": "list_rules_subtext_rules_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RewriteRuleModel"
+                  },
+                  "type": "array",
+                  "title": "Response List Rules Subtext Rules Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "subtext"
+        ],
+        "summary": "Create Or Update Rule",
+        "operationId": "create_or_update_rule_subtext_rules_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RewriteRuleModel"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RewriteRuleModel"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/subtext/templates": {
+      "get": {
+        "tags": [
+          "subtext"
+        ],
+        "summary": "List Templates",
+        "operationId": "list_templates_subtext_templates_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response List Templates Subtext Templates Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "subtext"
+        ],
+        "summary": "Create Template",
+        "operationId": "create_template_subtext_templates_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TemplateCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Create Template Subtext Templates Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/subtext/tokens": {
+      "get": {
+        "tags": [
+          "subtext"
+        ],
+        "summary": "Get Token Dictionary",
+        "operationId": "get_token_dictionary_subtext_tokens_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Get Token Dictionary Subtext Tokens Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "subtext"
+        ],
+        "summary": "Update Token Dictionary",
+        "operationId": "update_token_dictionary_subtext_tokens_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Content"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Update Token Dictionary Subtext Tokens Put"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/subtext/tokens/preview": {
+      "post": {
+        "tags": [
+          "subtext"
+        ],
+        "summary": "Preview Token Expansion",
+        "operationId": "preview_token_expansion_subtext_tokens_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TokenPreviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Preview Token Expansion Subtext Tokens Preview Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/subtext/process": {
+      "post": {
+        "tags": [
+          "subtext"
+        ],
+        "summary": "Process Dialogue",
+        "operationId": "process_dialogue_subtext_process_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProcessRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProcessResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/annotations/persist": {
+      "post": {
+        "tags": [
+          "annotations"
+        ],
+        "summary": "Persist Annotations",
+        "description": "アノテーション永続化エンドポイント",
+        "operationId": "persist_annotations_api_annotations_persist_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PersistRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersistResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/annotations/history": {
+      "get": {
+        "tags": [
+          "annotations"
+        ],
+        "summary": "Get Annotation History",
+        "description": "アノテーション履歴取得",
+        "operationId": "get_annotation_history_api_annotations_history_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "book_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Book Id"
+            }
+          },
+          {
+            "name": "episode",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Episode"
+            }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Source"
+            }
+          },
+          {
+            "name": "target",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Target"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/annotations/rollback": {
+      "post": {
+        "tags": [
+          "annotations"
+        ],
+        "summary": "Rollback Annotation",
+        "description": "指定ビートのロールバック（論理削除・再計算トリガー）",
+        "operationId": "rollback_annotation_api_annotations_rollback_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/src__backend__routers__annotations__RollbackRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
     "/health": {
       "get": {
         "summary": "Health",
@@ -10612,55 +11043,6 @@
         ],
         "title": "AlertResponse"
       },
-      "ArtifactMetaResponse": {
-        "properties": {
-          "asset_id": {
-            "type": "integer",
-            "title": "Asset Id"
-          },
-          "book_id": {
-            "type": "integer",
-            "title": "Book Id"
-          },
-          "asset_type": {
-            "type": "string",
-            "title": "Asset Type"
-          },
-          "format": {
-            "type": "string",
-            "title": "Format"
-          },
-          "file_path": {
-            "type": "string",
-            "title": "File Path"
-          },
-          "metadata": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Metadata"
-          },
-          "created_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Created At"
-          }
-        },
-        "type": "object",
-        "required": [
-          "asset_id",
-          "book_id",
-          "asset_type",
-          "format",
-          "file_path"
-        ],
-        "title": "ArtifactMetaResponse"
-      },
       "AskBibleRequest": {
         "properties": {
           "book_id": {
@@ -10725,215 +11107,6 @@
         ],
         "title": "AskBibleResponse",
         "description": "世界観バイブル・過去章 Q&A レスポンス"
-      },
-      "AssetPackGenerateRequest": {
-        "properties": {
-          "book_id": {
-            "type": "integer",
-            "minimum": 1.0,
-            "title": "Book Id"
-          },
-          "include_if_routes": {
-            "type": "boolean",
-            "title": "Include If Routes",
-            "default": true
-          },
-          "include_media_mix": {
-            "type": "boolean",
-            "title": "Include Media Mix",
-            "default": true
-          },
-          "include_ebook": {
-            "type": "boolean",
-            "title": "Include Ebook",
-            "default": true
-          },
-          "ebook_formats": {
-            "items": {
-              "type": "string",
-              "enum": [
-                "epub",
-                "pdf",
-                "mobi",
-                "json"
-              ]
-            },
-            "type": "array",
-            "title": "Ebook Formats"
-          },
-          "media_mix_formats": {
-            "items": {
-              "type": "string",
-              "enum": [
-                "manga",
-                "audio_drama",
-                "video",
-                "light_novel",
-                "webtoon"
-              ]
-            },
-            "type": "array",
-            "title": "Media Mix Formats"
-          }
-        },
-        "type": "object",
-        "required": [
-          "book_id"
-        ],
-        "title": "AssetPackGenerateRequest",
-        "description": "`/multimedia/generate` 用リクエスト (README 互換エイリアス)。"
-      },
-      "AssetPackGenerateResponse": {
-        "properties": {
-          "asset_id": {
-            "type": "integer",
-            "title": "Asset Id"
-          },
-          "task_id": {
-            "type": "string",
-            "title": "Task Id"
-          },
-          "file_count": {
-            "type": "integer",
-            "title": "File Count",
-            "default": 0
-          },
-          "file_path": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "File Path"
-          }
-        },
-        "type": "object",
-        "required": [
-          "asset_id",
-          "task_id"
-        ],
-        "title": "AssetPackGenerateResponse",
-        "description": "`/multimedia/generate` 用レスポンス (README 互換エイリアス)。"
-      },
-      "AssetPackRequest": {
-        "properties": {
-          "book_id": {
-            "type": "integer",
-            "minimum": 1.0,
-            "title": "Book Id"
-          },
-          "include_if_routes": {
-            "type": "boolean",
-            "title": "Include If Routes",
-            "default": true
-          },
-          "include_media_mix": {
-            "type": "boolean",
-            "title": "Include Media Mix",
-            "default": true
-          },
-          "include_ebook": {
-            "type": "boolean",
-            "title": "Include Ebook",
-            "default": true
-          },
-          "include_audio": {
-            "type": "boolean",
-            "title": "Include Audio",
-            "default": true
-          },
-          "ebook_formats": {
-            "items": {
-              "type": "string",
-              "enum": [
-                "epub",
-                "pdf",
-                "mobi",
-                "json"
-              ]
-            },
-            "type": "array",
-            "title": "Ebook Formats"
-          },
-          "media_mix_formats": {
-            "items": {
-              "type": "string",
-              "enum": [
-                "manga",
-                "audio_drama",
-                "video",
-                "light_novel",
-                "webtoon"
-              ]
-            },
-            "type": "array",
-            "title": "Media Mix Formats"
-          }
-        },
-        "type": "object",
-        "required": [
-          "book_id"
-        ],
-        "title": "AssetPackRequest",
-        "description": "統合アセットパック生成リクエスト。"
-      },
-      "AssetPackResponse": {
-        "properties": {
-          "asset_id": {
-            "type": "integer",
-            "title": "Asset Id"
-          },
-          "task_id": {
-            "type": "string",
-            "title": "Task Id"
-          },
-          "file_count": {
-            "type": "integer",
-            "title": "File Count",
-            "default": 0
-          },
-          "file_path": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "File Path"
-          }
-        },
-        "type": "object",
-        "required": [
-          "asset_id",
-          "task_id"
-        ],
-        "title": "AssetPackResponse"
-      },
-      "AssetsByBookResponse": {
-        "properties": {
-          "book_id": {
-            "type": "integer",
-            "title": "Book Id"
-          },
-          "assets": {
-            "items": {
-              "$ref": "#/components/schemas/ArtifactMetaResponse"
-            },
-            "type": "array",
-            "title": "Assets"
-          }
-        },
-        "type": "object",
-        "required": [
-          "book_id"
-        ],
-        "title": "AssetsByBookResponse",
-        "description": "`/multimedia/assets/{book_id}` 用レスポンス (README 互換エイリアス)。"
       },
       "AssistAction": {
         "type": "string",
@@ -11045,51 +11218,6 @@
         "title": "AssistResponse",
         "description": "インラインAIアシストレスポンス"
       },
-      "AudioSynthesizeRequest": {
-        "properties": {
-          "book_id": {
-            "type": "integer",
-            "minimum": 1.0,
-            "title": "Book Id"
-          },
-          "episode_num": {
-            "type": "integer",
-            "minimum": 1.0,
-            "title": "Episode Num"
-          },
-          "chapter_text": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Chapter Text"
-          },
-          "characters": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Characters"
-          }
-        },
-        "type": "object",
-        "required": [
-          "book_id",
-          "episode_num"
-        ],
-        "title": "AudioSynthesizeRequest"
-      },
       "AuditAggregateTestRequest": {
         "properties": {
           "book_id": {
@@ -11199,6 +11327,34 @@
           "lowest_dimension"
         ],
         "title": "AuditAggregateTestResponse"
+      },
+      "AuditFastHybridRequest": {
+        "properties": {
+          "draft_text": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Draft Text",
+            "description": "監査対象のドラフト本文"
+          },
+          "character_profiles": {
+            "type": "string",
+            "title": "Character Profiles",
+            "description": "登場人物の設定・プロファイル",
+            "default": ""
+          },
+          "plot_spec": {
+            "type": "string",
+            "title": "Plot Spec",
+            "description": "プロット・構成情報",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "draft_text"
+        ],
+        "title": "AuditFastHybridRequest",
+        "description": "二層ハイブリッド監査リクエスト"
       },
       "AuditModelRoutingRequest": {
         "properties": {
@@ -11365,6 +11521,128 @@
         "title": "BeatCard",
         "description": "1つの展開バリエーションカード"
       },
+      "BeatDTO": {
+        "properties": {
+          "beat_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Beat Id"
+          },
+          "episode": {
+            "type": "integer",
+            "title": "Episode"
+          },
+          "scene": {
+            "type": "integer",
+            "title": "Scene"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "target": {
+            "type": "string",
+            "title": "Target"
+          },
+          "emotion": {
+            "type": "string",
+            "title": "Emotion"
+          },
+          "delta": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": -1.0,
+            "title": "Delta"
+          },
+          "cause": {
+            "type": "string",
+            "title": "Cause"
+          },
+          "confidence": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence",
+            "default": 1.0
+          },
+          "hidden": {
+            "type": "boolean",
+            "title": "Hidden",
+            "default": false
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata",
+            "default": {}
+          }
+        },
+        "type": "object",
+        "required": [
+          "episode",
+          "scene",
+          "source",
+          "target",
+          "emotion",
+          "delta",
+          "cause"
+        ],
+        "title": "BeatDTO",
+        "description": "感情ビートDTO（API用）"
+      },
+      "BeatItemSchema": {
+        "properties": {
+          "episode": {
+            "type": "integer",
+            "title": "Episode",
+            "description": "話数"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "description": "エピソードタイトル"
+          },
+          "outline": {
+            "type": "string",
+            "title": "Outline",
+            "description": "あらすじ・ビート内容"
+          },
+          "cliffhanger_type": {
+            "type": "string",
+            "title": "Cliffhanger Type",
+            "description": "クリフハンガー種別"
+          },
+          "sensory_focus": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Sensory Focus",
+            "description": "五感フォーカスタグ"
+          },
+          "foreshadowing_notes": {
+            "type": "string",
+            "title": "Foreshadowing Notes",
+            "description": "伏線メモ",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "episode",
+          "title",
+          "outline",
+          "cliffhanger_type"
+        ],
+        "title": "BeatItemSchema",
+        "description": "1話分のビート情報"
+      },
       "BookCreateRequest": {
         "properties": {
           "title": {
@@ -11405,83 +11683,6 @@
         ],
         "title": "BookCreateRequest",
         "description": "新規作品作成リクエスト"
-      },
-      "BookSchema": {
-        "properties": {
-          "id": {
-            "type": "integer",
-            "title": "Id"
-          },
-          "title": {
-            "type": "string",
-            "title": "Title"
-          },
-          "genre": {
-            "type": "string",
-            "title": "Genre"
-          },
-          "concept": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Concept",
-            "default": ""
-          },
-          "synopsis": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Synopsis",
-            "default": ""
-          },
-          "target_eps": {
-            "type": "integer",
-            "title": "Target Eps",
-            "default": 0
-          },
-          "cumulative_stress": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Cumulative Stress",
-            "default": 0.0
-          },
-          "created_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Created At"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "title",
-          "genre"
-        ],
-        "title": "BookSchema",
-        "description": "作品情報スキーマ"
       },
       "BookScoreHistoryItem": {
         "properties": {
@@ -12238,6 +12439,38 @@
         "title": "CadenceStats",
         "description": "文章の音律・ケイデンス統計情報"
       },
+      "CatchphraseGenerateRequest": {
+        "properties": {
+          "api_key": {
+            "type": "string",
+            "title": "Api Key"
+          },
+          "config": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Config"
+          },
+          "project_settings": {
+            "type": "string",
+            "title": "Project Settings"
+          },
+          "candidate_count": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Candidate Count",
+            "description": "生成する候補数",
+            "default": 20
+          }
+        },
+        "type": "object",
+        "required": [
+          "api_key",
+          "project_settings"
+        ],
+        "title": "CatchphraseGenerateRequest",
+        "description": "キャッチコピー生成リクエスト"
+      },
       "ChapterImportRequest": {
         "properties": {
           "api_key": {
@@ -12271,6 +12504,96 @@
         ],
         "title": "ChapterImportRequest",
         "description": "章インポートリクエスト"
+      },
+      "ChapterSchema": {
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "default": "2026-09-24T01:42:49.169867"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At",
+            "default": "2026-09-24T01:42:49.169873"
+          },
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "book_id": {
+            "type": "integer",
+            "title": "Book Id"
+          },
+          "episode_number": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Episode Number"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Title"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content",
+            "default": ""
+          },
+          "digest": {
+            "type": "string",
+            "maxLength": 300,
+            "title": "Digest",
+            "default": ""
+          },
+          "word_count": {
+            "type": "integer",
+            "title": "Word Count",
+            "default": 0
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "default": "draft"
+          },
+          "scene_beats": {
+            "items": {
+              "$ref": "#/components/schemas/SceneBeat"
+            },
+            "type": "array",
+            "title": "Scene Beats"
+          },
+          "cliffhanger": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CliffhangerDef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "emotional_hook": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EmotionalHookSpec"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "book_id",
+          "episode_number",
+          "title"
+        ],
+        "title": "ChapterSchema"
       },
       "CharacterParams": {
         "properties": {
@@ -12315,6 +12638,39 @@
         "title": "CharacterParams",
         "description": "キャラクター設定パラメータ。"
       },
+      "CheckResponse": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/HealthStatus"
+          },
+          "latency_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latency Ms"
+          },
+          "details": {
+            "type": "string",
+            "title": "Details",
+            "default": ""
+          },
+          "error": {
+            "type": "string",
+            "title": "Error",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "CheckResponse"
+      },
       "CircuitResetRequest": {
         "properties": {
           "provider_name": {
@@ -12331,6 +12687,32 @@
         },
         "type": "object",
         "title": "CircuitResetRequest"
+      },
+      "CliffhangerDef": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "New Crisis",
+              "Shocking Truth",
+              "Quiet Foreshadowing"
+            ],
+            "title": "Type",
+            "description": "引きの分類（新たな危機 / 衝撃の真実 / 静かな伏線）",
+            "default": "New Crisis"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "クリフハンガーの具体的な描写・引きのフック"
+          }
+        },
+        "type": "object",
+        "required": [
+          "description"
+        ],
+        "title": "CliffhangerDef",
+        "description": "Web小説の離脱を防ぐ引き・クリフハンガー3分類（v4より完全継承）"
       },
       "CommercialConfig": {
         "properties": {
@@ -12405,6 +12787,91 @@
           "categories"
         ],
         "title": "ConfigResponse"
+      },
+      "ConflictItemSchema": {
+        "properties": {
+          "category": {
+            "type": "string",
+            "title": "Category",
+            "description": "カテゴリ (rhythm, dialogue, cliche, hook, character)"
+          },
+          "severity": {
+            "type": "string",
+            "title": "Severity",
+            "description": "重要度 (critical, high, medium, low)"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "description": "指摘タイトル"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "詳細説明"
+          },
+          "field_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Field Path"
+          },
+          "current_value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Value"
+          },
+          "suggested_value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggested Value"
+          },
+          "evidence_past": {
+            "type": "string",
+            "title": "Evidence Past",
+            "default": ""
+          },
+          "evidence_current": {
+            "type": "string",
+            "title": "Evidence Current",
+            "default": ""
+          },
+          "constraint_for_next": {
+            "type": "string",
+            "title": "Constraint For Next",
+            "default": ""
+          },
+          "confidence": {
+            "type": "number",
+            "title": "Confidence",
+            "default": 0.9
+          }
+        },
+        "type": "object",
+        "required": [
+          "category",
+          "severity",
+          "title",
+          "description"
+        ],
+        "title": "ConflictItemSchema"
       },
       "ConsistencyAuditRequest": {
         "properties": {
@@ -12499,6 +12966,84 @@
         ],
         "title": "ConsistencyIssue",
         "description": "設定矛盾・不整合の検出項目"
+      },
+      "CopyFormatRequest": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "body": {
+            "type": "string",
+            "title": "Body"
+          },
+          "foreword": {
+            "type": "string",
+            "title": "Foreword",
+            "default": ""
+          },
+          "afterword": {
+            "type": "string",
+            "title": "Afterword",
+            "default": ""
+          },
+          "platform": {
+            "type": "string",
+            "title": "Platform",
+            "default": "narou"
+          },
+          "indent_enabled": {
+            "type": "boolean",
+            "title": "Indent Enabled",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "body"
+        ],
+        "title": "CopyFormatRequest",
+        "description": "整形リクエスト。"
+      },
+      "CopyFormatResponse": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "foreword": {
+            "type": "string",
+            "title": "Foreword"
+          },
+          "body": {
+            "type": "string",
+            "title": "Body"
+          },
+          "afterword": {
+            "type": "string",
+            "title": "Afterword"
+          },
+          "total_characters": {
+            "type": "integer",
+            "title": "Total Characters"
+          },
+          "platform": {
+            "type": "string",
+            "title": "Platform"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "foreword",
+          "body",
+          "afterword",
+          "total_characters",
+          "platform"
+        ],
+        "title": "CopyFormatResponse",
+        "description": "整形レスポンス。"
       },
       "CorrectRequest": {
         "properties": {
@@ -12901,6 +13446,38 @@
         "title": "EasyModeInput",
         "description": "かんたんモード生成リクエスト入力。"
       },
+      "EbookExportRequest": {
+        "properties": {
+          "book_id": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Book Id"
+          },
+          "formats": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Formats"
+          },
+          "author": {
+            "type": "string",
+            "title": "Author",
+            "default": "AI Novel Engine"
+          },
+          "publisher": {
+            "type": "string",
+            "title": "Publisher",
+            "default": "覇権小説エンジン"
+          }
+        },
+        "type": "object",
+        "required": [
+          "book_id"
+        ],
+        "title": "EbookExportRequest",
+        "description": "eBook エクスポートリクエスト (README 互換: POST /export/ebook)。"
+      },
       "EbookExportResponse": {
         "properties": {
           "asset_id": {
@@ -12991,6 +13568,31 @@
         ],
         "title": "EdgeUpsertRequest",
         "description": "エッジUPSERTリクエスト."
+      },
+      "EmotionalHookSpec": {
+        "properties": {
+          "hook_type": {
+            "type": "string",
+            "title": "Hook Type",
+            "description": "カタルシス / 共感 / 緊張感 / ギャップ萌え",
+            "default": "catharsis"
+          },
+          "target_scene": {
+            "type": "string",
+            "title": "Target Scene",
+            "description": "フックを仕掛けるシーン",
+            "default": ""
+          },
+          "appeal_point": {
+            "type": "string",
+            "title": "Appeal Point",
+            "description": "読者への最大の訴求ポイント",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "title": "EmotionalHookSpec",
+        "description": "読者の感情を揺さぶりカタルシスを生む感情フック（v4より完全継承）"
       },
       "EnrichmentMetricsSnapshot": {
         "properties": {
@@ -13279,6 +13881,91 @@
         "type": "object",
         "title": "EpisodeListResponse",
         "description": "エピソード一覧取得レスポンス"
+      },
+      "ExpandBeatsRequest": {
+        "properties": {
+          "api_key": {
+            "type": "string",
+            "title": "Api Key",
+            "description": "APIキー（省略可）",
+            "default": ""
+          },
+          "config": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Config"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "description": "作品タイトル"
+          },
+          "genre": {
+            "type": "string",
+            "title": "Genre",
+            "description": "ジャンル"
+          },
+          "synopsis": {
+            "type": "string",
+            "title": "Synopsis",
+            "description": "あらすじ",
+            "default": ""
+          },
+          "target_chapters": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Target Chapters",
+            "description": "目標話数",
+            "default": 20
+          },
+          "cheat_scale": {
+            "type": "integer",
+            "maximum": 5.0,
+            "minimum": 1.0,
+            "title": "Cheat Scale",
+            "description": "チート度 (1-5)",
+            "default": 4
+          },
+          "growth_curve": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Growth Curve",
+            "description": "成長曲線モデル",
+            "default": "最初からカンスト(無双)"
+          },
+          "system_assist": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "System Assist",
+            "description": "システム支援度 (0-100)",
+            "default": 70
+          },
+          "cost_severity": {
+            "type": "integer",
+            "maximum": 5.0,
+            "minimum": 1.0,
+            "title": "Cost Severity",
+            "description": "代償・リスク過酷度 (1-5)",
+            "default": 2
+          },
+          "beats": {
+            "items": {
+              "$ref": "#/components/schemas/BeatItemSchema"
+            },
+            "type": "array",
+            "title": "Beats",
+            "description": "確定済みビート一覧（wizard-save時）"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "genre"
+        ],
+        "title": "ExpandBeatsRequest",
+        "description": "商業ビート生成リクエスト"
       },
       "ExportRequestPayload": {
         "properties": {
@@ -13781,6 +14468,46 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/HealthStatus"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version",
+            "default": "5.0.3"
+          },
+          "timestamp": {
+            "type": "string",
+            "title": "Timestamp"
+          },
+          "checks": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/CheckResponse"
+            },
+            "type": "object",
+            "title": "Checks"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "timestamp",
+          "checks"
+        ],
+        "title": "HealthResponse"
+      },
+      "HealthStatus": {
+        "type": "string",
+        "enum": [
+          "ok",
+          "degraded",
+          "error",
+          "not_configured"
+        ],
+        "title": "HealthStatus"
+      },
       "HybridSearchRequest": {
         "properties": {
           "query": {
@@ -13842,56 +14569,6 @@
         ],
         "title": "HybridSearchRequest",
         "description": "ハイブリッド検索リクエスト."
-      },
-      "IFRouteGenerateRequest": {
-        "properties": {
-          "book_id": {
-            "type": "integer",
-            "minimum": 1.0,
-            "title": "Book Id",
-            "description": "対象 Book ID"
-          },
-          "persist": {
-            "type": "boolean",
-            "title": "Persist",
-            "description": "DB に永続化するか",
-            "default": true
-          }
-        },
-        "type": "object",
-        "required": [
-          "book_id"
-        ],
-        "title": "IFRouteGenerateRequest",
-        "description": "IF ルート生成リクエスト。"
-      },
-      "IFRouteResponse": {
-        "properties": {
-          "asset_id": {
-            "type": "integer",
-            "title": "Asset Id"
-          },
-          "nodes": {
-            "type": "integer",
-            "title": "Nodes"
-          },
-          "entry_node_id": {
-            "type": "string",
-            "title": "Entry Node Id"
-          },
-          "graph": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Graph"
-          }
-        },
-        "type": "object",
-        "required": [
-          "asset_id",
-          "nodes",
-          "entry_node_id"
-        ],
-        "title": "IFRouteResponse"
       },
       "LLMConfigOverride": {
         "properties": {
@@ -13996,6 +14673,24 @@
         "title": "LLMConfigOverride",
         "description": "オプトインでフロントエンドから渡されるLLM設定。"
       },
+      "LivenessResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "default": "alive"
+          },
+          "timestamp": {
+            "type": "string",
+            "title": "Timestamp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "timestamp"
+        ],
+        "title": "LivenessResponse"
+      },
       "MarketingExportRequest": {
         "properties": {
           "api_key": {
@@ -14033,76 +14728,6 @@
         ],
         "title": "MarketingGenerateRequest",
         "description": "マーケティング生成リクエスト"
-      },
-      "MediaMixRequest": {
-        "properties": {
-          "book_id": {
-            "type": "integer",
-            "minimum": 1.0,
-            "title": "Book Id",
-            "description": "対象 Book ID"
-          },
-          "format": {
-            "type": "string",
-            "enum": [
-              "manga",
-              "audio_drama",
-              "video",
-              "light_novel",
-              "webtoon"
-            ],
-            "title": "Format",
-            "default": "manga"
-          },
-          "episode_num": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Episode Num"
-          },
-          "include_metadata": {
-            "type": "boolean",
-            "title": "Include Metadata",
-            "default": true
-          }
-        },
-        "type": "object",
-        "required": [
-          "book_id"
-        ],
-        "title": "MediaMixRequest",
-        "description": "Media Mix 台本生成リクエスト。"
-      },
-      "MediaMixResponse": {
-        "properties": {
-          "asset_id": {
-            "type": "integer",
-            "title": "Asset Id"
-          },
-          "files": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Files"
-          },
-          "metadata": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Metadata"
-          }
-        },
-        "type": "object",
-        "required": [
-          "asset_id"
-        ],
-        "title": "MediaMixResponse"
       },
       "MetaphorFrequency": {
         "properties": {
@@ -14545,6 +15170,55 @@
         ],
         "title": "ParagraphPatchRequest"
       },
+      "PersistRequest": {
+        "properties": {
+          "book_id": {
+            "type": "integer",
+            "title": "Book Id"
+          },
+          "episode": {
+            "type": "integer",
+            "title": "Episode"
+          },
+          "beats": {
+            "items": {
+              "$ref": "#/components/schemas/BeatDTO"
+            },
+            "type": "array",
+            "title": "Beats"
+          }
+        },
+        "type": "object",
+        "required": [
+          "book_id",
+          "episode",
+          "beats"
+        ],
+        "title": "PersistRequest",
+        "description": "アノテーション永続化リクエスト"
+      },
+      "PersistResponse": {
+        "properties": {
+          "persisted": {
+            "type": "integer",
+            "title": "Persisted"
+          },
+          "errors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Errors",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "persisted"
+        ],
+        "title": "PersistResponse",
+        "description": "永続化レスポンス"
+      },
       "PipelineBatchRequest": {
         "properties": {
           "chapters": {
@@ -14720,6 +15394,70 @@
         "title": "PlotRebuildRequest",
         "description": "プロット再構築リクエスト"
       },
+      "ProcessRequest": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "description": "Dialogue text to process"
+          },
+          "mode": {
+            "type": "string",
+            "title": "Mode",
+            "description": "rule, template, token, hybrid, off",
+            "default": "hybrid"
+          },
+          "context": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SubtextContext"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "ProcessRequest"
+      },
+      "ProcessResponse": {
+        "properties": {
+          "original": {
+            "type": "string",
+            "title": "Original"
+          },
+          "processed": {
+            "type": "string",
+            "title": "Processed"
+          },
+          "mode": {
+            "type": "string",
+            "title": "Mode"
+          }
+        },
+        "type": "object",
+        "required": [
+          "original",
+          "processed",
+          "mode"
+        ],
+        "title": "ProcessResponse"
+      },
       "ProduceNovelRequest": {
         "properties": {
           "title": {
@@ -14851,6 +15589,49 @@
         ],
         "title": "ProduceNovelResponse",
         "description": "作品生成レスポンス"
+      },
+      "ProjectSchema": {
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "default": "2026-09-24T01:42:49.169867"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At",
+            "default": "2026-09-24T01:42:49.169873"
+          },
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          },
+          "books": {
+            "items": {
+              "$ref": "#/components/schemas/src__domain__schemas__project__BookSchema"
+            },
+            "type": "array",
+            "title": "Books"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "ProjectSchema"
       },
       "PromotionEligibilityResponse": {
         "properties": {
@@ -15206,6 +15987,64 @@
         "title": "PublishStatusRequest",
         "description": "投稿ステータス取得リクエスト"
       },
+      "QualitativeAudit": {
+        "properties": {
+          "hook_score": {
+            "type": "number",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Hook Score",
+            "description": "読者引き込み度"
+          },
+          "emotional_score": {
+            "type": "number",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Emotional Score",
+            "description": "感情曲線の自然さ"
+          },
+          "character_consistency": {
+            "type": "number",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Character Consistency",
+            "description": "キャラ言動の一貫性"
+          },
+          "overall_score": {
+            "type": "number",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Overall Score",
+            "description": "定性総合評価"
+          },
+          "critique": {
+            "type": "string",
+            "title": "Critique",
+            "description": "主要講評",
+            "default": ""
+          },
+          "actionable_patch": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actionable Patch",
+            "description": "推奨局所修正パッチ"
+          }
+        },
+        "type": "object",
+        "required": [
+          "hook_score",
+          "emotional_score",
+          "character_consistency",
+          "overall_score"
+        ],
+        "title": "QualitativeAudit"
+      },
       "RagContextRequest": {
         "properties": {
           "current_prompt": {
@@ -15241,6 +16080,32 @@
         ],
         "title": "RagContextRequest",
         "description": "RAGコンテキスト生成リクエスト."
+      },
+      "ReadinessResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "dependencies": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Dependencies"
+          },
+          "timestamp": {
+            "type": "string",
+            "title": "Timestamp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "dependencies",
+          "timestamp"
+        ],
+        "title": "ReadinessResponse"
       },
       "ReflectionStatsResponse": {
         "properties": {
@@ -15626,41 +16491,76 @@
         ],
         "title": "ReviseReviewRequest"
       },
-      "RollbackRequest": {
+      "RewriteRuleModel": {
         "properties": {
-          "api_key": {
+          "id": {
             "type": "string",
-            "title": "Api Key"
+            "title": "Id",
+            "description": "Unique rule ID"
           },
-          "config": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Config"
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Human-readable rule name",
+            "default": ""
           },
-          "version_id": {
+          "pattern": {
+            "type": "string",
+            "title": "Pattern",
+            "description": "Regular expression pattern"
+          },
+          "replacement": {
+            "type": "string",
+            "title": "Replacement",
+            "description": "Replacement pattern or template",
+            "default": ""
+          },
+          "priority": {
             "type": "integer",
-            "title": "Version Id"
+            "title": "Priority",
+            "description": "Execution priority (lower executes earlier)",
+            "default": 100
           },
-          "reason": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Reason",
-            "default": "手動ロールバック"
+          "final": {
+            "type": "boolean",
+            "title": "Final",
+            "description": "Whether matching stops subsequent rules",
+            "default": false
+          },
+          "skip_if_matched": {
+            "type": "boolean",
+            "title": "Skip If Matched",
+            "description": "Skip if specific context tags already matched",
+            "default": false
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "description": "Enable or disable the rule",
+            "default": true
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags",
+            "description": "Rule tags for categorization"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "Detailed description",
+            "default": ""
           }
         },
         "type": "object",
         "required": [
-          "api_key",
-          "version_id"
+          "id",
+          "pattern"
         ],
-        "title": "RollbackRequest",
-        "description": "プロンプトロールバックリクエスト"
+        "title": "RewriteRuleModel",
+        "description": "Serializable specification of a rewrite rule."
       },
       "RunRequest": {
         "properties": {
@@ -15715,6 +16615,47 @@
         },
         "type": "object",
         "title": "RunRequest"
+      },
+      "SceneBeat": {
+        "properties": {
+          "beat_num": {
+            "type": "integer",
+            "title": "Beat Num",
+            "description": "ビート番号"
+          },
+          "physical_action": {
+            "type": "string",
+            "title": "Physical Action",
+            "description": "肉体的な動作描写"
+          },
+          "sensory_tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Sensory Tags",
+            "description": "五感タグ: smell(嗅覚), sound(聴覚), touch(触覚), taste(味覚), sight(視覚)"
+          },
+          "emotion_phase": {
+            "type": "string",
+            "title": "Emotion Phase",
+            "description": "感情フェーズ: buildup(助走) / explosion(爆発) / aftermath(余韻)",
+            "default": "neutral"
+          },
+          "word_budget": {
+            "type": "integer",
+            "title": "Word Budget",
+            "description": "このビートに配分する目標文字数",
+            "default": 300
+          }
+        },
+        "type": "object",
+        "required": [
+          "beat_num",
+          "physical_action"
+        ],
+        "title": "SceneBeat",
+        "description": "プロットから分解された物理動作・五感ビート（v4より完全継承）"
       },
       "SensoryType": {
         "type": "string",
@@ -16052,6 +16993,93 @@
         "title": "StyleProfile",
         "description": "作家性DNA（Style DNA）プロファイル"
       },
+      "SubtextContext": {
+        "properties": {
+          "scene_id": {
+            "type": "string",
+            "title": "Scene Id",
+            "description": "Scene identifier",
+            "default": ""
+          },
+          "turn_index": {
+            "type": "integer",
+            "title": "Turn Index",
+            "description": "Dialogue turn index in scene",
+            "default": 0
+          },
+          "speaker": {
+            "type": "string",
+            "title": "Speaker",
+            "description": "Speaking character name",
+            "default": ""
+          },
+          "target_speaker": {
+            "type": "string",
+            "title": "Target Speaker",
+            "description": "Addressed character name",
+            "default": ""
+          },
+          "emotion": {
+            "type": "string",
+            "title": "Emotion",
+            "description": "Primary emotional state (e.g. betrayal, grief, anger)",
+            "default": "neutral"
+          },
+          "power_dynamic": {
+            "type": "string",
+            "title": "Power Dynamic",
+            "description": "inferior, equal, superior",
+            "default": "equal"
+          },
+          "relationship": {
+            "type": "string",
+            "title": "Relationship",
+            "description": "former_ally, enemy, lover, subordinate, stranger",
+            "default": "neutral"
+          },
+          "intensity": {
+            "type": "string",
+            "title": "Intensity",
+            "description": "low, medium, high",
+            "default": "medium"
+          },
+          "genre": {
+            "type": "string",
+            "title": "Genre",
+            "description": "Genre modifier (e.g. fantasy, horror, romance)",
+            "default": "general"
+          },
+          "tone": {
+            "type": "string",
+            "title": "Tone",
+            "description": "Tone modifier (e.g. dark, ironic, light)",
+            "default": "neutral"
+          },
+          "history_summary": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "History Summary",
+            "description": "Recent conversation turns or subtext history"
+          },
+          "relationship_graph": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Relationship Graph",
+            "description": "Inter-character relationship properties"
+          },
+          "custom": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Custom",
+            "description": "Arbitrary extension parameters"
+          }
+        },
+        "type": "object",
+        "title": "SubtextContext",
+        "description": "Context information supplied to subtext rules, templates, and token expanders."
+      },
       "TargetPlatform": {
         "type": "string",
         "enum": [
@@ -16062,73 +17090,40 @@
         ],
         "title": "TargetPlatform"
       },
-      "TaskStatusResponse": {
+      "TemplateCreateRequest": {
         "properties": {
-          "task_id": {
+          "id": {
             "type": "string",
-            "title": "Task Id"
+            "title": "Id"
           },
-          "asset_id": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Asset Id"
-          },
-          "status": {
+          "category": {
             "type": "string",
-            "enum": [
-              "pending",
-              "running",
-              "completed",
-              "failed"
-            ],
-            "title": "Status",
-            "default": "pending"
+            "title": "Category",
+            "default": "general"
           },
-          "error": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Error"
+          "content": {
+            "type": "string",
+            "title": "Content"
           },
-          "started_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Started At"
+          "weight": {
+            "type": "integer",
+            "title": "Weight",
+            "default": 100
           },
-          "finished_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Finished At"
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags"
           }
         },
         "type": "object",
         "required": [
-          "task_id"
+          "id",
+          "content"
         ],
-        "title": "TaskStatusResponse"
+        "title": "TemplateCreateRequest"
       },
       "TitleCandidate": {
         "properties": {
@@ -16173,6 +17168,41 @@
         "title": "TitleCandidate",
         "description": "生成されたタイトル候補とCTR予測結果"
       },
+      "TokenPreviewRequest": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "context": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SubtextContext"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed",
+            "default": 42
+          }
+        },
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "TokenPreviewRequest"
+      },
       "TokenResponse": {
         "properties": {
           "access_token": {
@@ -16212,6 +17242,52 @@
         ],
         "title": "ToneType",
         "description": "トーン書き換えタイプ"
+      },
+      "UnifiedAuditReport": {
+        "properties": {
+          "is_acceptable": {
+            "type": "boolean",
+            "title": "Is Acceptable"
+          },
+          "final_score": {
+            "type": "number",
+            "title": "Final Score"
+          },
+          "quantitative_score": {
+            "type": "number",
+            "title": "Quantitative Score"
+          },
+          "qualitative": {
+            "$ref": "#/components/schemas/QualitativeAudit"
+          },
+          "detected_cliches": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Detected Cliches"
+          },
+          "dialogue_ratio": {
+            "type": "number",
+            "title": "Dialogue Ratio",
+            "default": 0.0
+          },
+          "conflicts": {
+            "items": {
+              "$ref": "#/components/schemas/ConflictItemSchema"
+            },
+            "type": "array",
+            "title": "Conflicts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "is_acceptable",
+          "final_score",
+          "quantitative_score",
+          "qualitative"
+        ],
+        "title": "UnifiedAuditReport"
       },
       "UserLoginRequest": {
         "properties": {
@@ -16495,76 +17571,234 @@
         "title": "WritingDirectiveSchema",
         "description": "PDCA執筆指示のスキーマ"
       },
-      "src__backend__routers__export__EbookExportRequest": {
+      "src__backend__routers__annotations__RollbackRequest": {
         "properties": {
           "book_id": {
             "type": "integer",
-            "minimum": 1.0,
             "title": "Book Id"
           },
-          "formats": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Formats"
-          },
-          "author": {
-            "type": "string",
-            "title": "Author",
-            "default": "AI Novel Engine"
-          },
-          "publisher": {
-            "type": "string",
-            "title": "Publisher",
-            "default": "覇権小説エンジン"
-          }
-        },
-        "type": "object",
-        "required": [
-          "book_id"
-        ],
-        "title": "EbookExportRequest",
-        "description": "eBook エクスポートリクエスト (README 互換: POST /export/ebook)。"
-      },
-      "src__backend__schemas__multimedia__EbookExportRequest": {
-        "properties": {
-          "book_id": {
+          "episode": {
             "type": "integer",
-            "minimum": 1.0,
-            "title": "Book Id",
-            "description": "対象 Book ID"
+            "title": "Episode"
           },
-          "formats": {
-            "items": {
-              "type": "string",
-              "enum": [
-                "epub",
-                "pdf",
-                "mobi",
-                "json"
-              ]
-            },
-            "type": "array",
-            "title": "Formats"
-          },
-          "author": {
+          "beat_id": {
             "type": "string",
-            "title": "Author",
-            "default": "AI Novel Engine"
-          },
-          "publisher": {
-            "type": "string",
-            "title": "Publisher",
-            "default": "覇権小説エンジン"
+            "title": "Beat Id"
           }
         },
         "type": "object",
         "required": [
-          "book_id"
+          "book_id",
+          "episode",
+          "beat_id"
         ],
-        "title": "EbookExportRequest",
-        "description": "電子書籍エクスポートリクエスト。"
+        "title": "RollbackRequest",
+        "description": "ロールバックリクエスト"
+      },
+      "src__domain__schemas__project__BookSchema": {
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "default": "2026-09-24T01:42:49.169867"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At",
+            "default": "2026-09-24T01:42:49.169873"
+          },
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "project_id": {
+            "type": "integer",
+            "title": "Project Id"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Title"
+          },
+          "genre": {
+            "type": "string",
+            "title": "Genre",
+            "default": "fantasy"
+          },
+          "synopsis": {
+            "type": "string",
+            "title": "Synopsis",
+            "default": ""
+          },
+          "total_words": {
+            "type": "integer",
+            "title": "Total Words",
+            "default": 0
+          },
+          "target_chapters": {
+            "type": "integer",
+            "title": "Target Chapters",
+            "default": 20
+          },
+          "cheat_scale": {
+            "type": "integer",
+            "maximum": 5.0,
+            "minimum": 1.0,
+            "title": "Cheat Scale",
+            "description": "チート度（1:微チート〜5:理不尽無双）",
+            "default": 4
+          },
+          "growth_curve": {
+            "type": "string",
+            "title": "Growth Curve",
+            "description": "成長曲線モデル",
+            "default": "最初からカンスト(無双)"
+          },
+          "system_assist": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "System Assist",
+            "description": "ステータス・システム関与度%",
+            "default": 70
+          },
+          "cost_severity": {
+            "type": "integer",
+            "maximum": 5.0,
+            "minimum": 1.0,
+            "title": "Cost Severity",
+            "description": "能力の代償・世界のリスク過酷度",
+            "default": 2
+          },
+          "thematic_core": {
+            "type": "string",
+            "title": "Thematic Core",
+            "description": "物語の根底にあるテーマ・哲学的問い",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "project_id",
+          "title"
+        ],
+        "title": "BookSchema"
+      },
+      "src__models__api_schemas__BookSchema": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "genre": {
+            "type": "string",
+            "title": "Genre"
+          },
+          "concept": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Concept",
+            "default": ""
+          },
+          "synopsis": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Synopsis",
+            "default": ""
+          },
+          "target_eps": {
+            "type": "integer",
+            "title": "Target Eps",
+            "default": 0
+          },
+          "cumulative_stress": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cumulative Stress",
+            "default": 0.0
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "genre"
+        ],
+        "title": "BookSchema",
+        "description": "作品情報スキーマ"
+      },
+      "src__models__api_schemas__RollbackRequest": {
+        "properties": {
+          "api_key": {
+            "type": "string",
+            "title": "Api Key"
+          },
+          "config": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Config"
+          },
+          "version_id": {
+            "type": "integer",
+            "title": "Version Id"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason",
+            "default": "手動ロールバック"
+          }
+        },
+        "type": "object",
+        "required": [
+          "api_key",
+          "version_id"
+        ],
+        "title": "RollbackRequest",
+        "description": "プロンプトロールバックリクエスト"
       }
     },
     "securitySchemes": {

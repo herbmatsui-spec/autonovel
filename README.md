@@ -49,20 +49,33 @@ AutoNovel は、AI を活用して Web 小説を **企画から執筆、校正�
 
 ## 🚀 クイックスタート & 起動ガイド
 
-### Windows ワンクリック起動（非推奨：既知の問題あり）
+### Windows ワンクリック起動（正式対応）
 
-> **注意**: 現在の `アプリ起動.bat` および `アプリ起動_ローカル.bat` には既知の問題があります。開発環境では以下の手順を推奨します。
-
-1. **`アプリ起動_ローカル.bat`** (軽量 / ローカル Python + SQLite 構成)
+1. **`アプリ起動_ローカル.bat`** (軽量 / ローカル Python + SQLite 構成) をダブルクリックするだけです。
    - Docker を起動せず、ローカルの Python 仮想環境 (`.venv`) と SQLite で起動します。
-   - ワーカープロセスは `--skip-migrations` フラグが正しく処理されません。手動で `python -m huey.bin.huey_consumer src.backend.tasks.huey.huey` を実行してください。
+   - 内部で `scripts\start_local.ps1` が呼び出され、以下を自動実行します:
+     1. 環境自己診断 (`scripts\check_env.py` 相当の検査)
+     2. `.venv` の自動作成と依存インストール
+     3. `scripts\init_db.py` による安全な Alembic マイグレーション（既存 DB は保護）
+     4. Backend (Uvicorn :8200) + Huey Worker + Frontend (Vite :5173) の協調起動
    - 起動完了後、ブラウザで `http://localhost:5173` が開きます。
+   - 停止する場合は **`アプリ停止.bat`** をダブルクリックしてください（ポート 8200/5173 のプロセスを安全に終了）。
+
+> **事前診断だけ実行したい場合**:
+> ```powershell
+> python scripts/check_env.py
+> ```
+>
+> **起動計画だけ確認したい場合（プロセス起動なし）**:
+> ```powershell
+> powershell -ExecutionPolicy Bypass -File scripts/start_local.ps1 -DryRun
+> ```
 
 ### Docker Compose による起動（開発環境）
 
 ```powershell
 # 環境変数を設定（例: .env ファイルを作成）
-# 注意: .env.example の APP_VERSION は 4.9.0 のままです。実際のバージョンは 5.0.3 です。
+# 注意: .env が無い場合は start_docker.bat が .env.example からのコピーを促します。
 # 必要に応じて LLM_PROVIDER=mock などを設定してください。
 
 # コンテナのビルドと起動

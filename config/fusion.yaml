@@ -1,0 +1,24 @@
+source_confidence:
+  annotation: 1.0
+  rule_engine: 0.8
+  pipeline: 0.5
+
+conflict_threshold: 0.3
+significance_threshold: 0.3
+
+blend_weights:
+  annotation: 0.7
+  rule_engine: 0.2
+  pipeline: 0.1
+
+mode: "weighted_blend"  # "highest_confidence" | "weighted_blend"
+conflict_penalty: 0.2
+
+alert_channels:
+  - "log"
+webhook_url: ""
+
+anomaly_thresholds:
+  conflict_spike: 2.0
+  annotation_stale_episodes: 3
+  min_avg_confidence: 0.6

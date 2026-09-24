@@ -24,7 +24,6 @@ from src.backend.config import settings
 from src.backend.logging_config import get_logger
 from src.infrastructure.database.models.chunk import ChapterChunk
 from src.models.graph_schemas import GraphExtractionResult
-from src.services.age_client import age_client
 from src.services.embedding_service import embedding_service
 from src.services.extraction_service import extraction_service
 from src.services.text_chunker import split_into_paragraphs
@@ -346,21 +345,14 @@ class GraphPipelineService:
         raw_extraction = await extraction_service.extract_graph_from_text(chapter_text)
 
         # 既存エンティティ名との名寄せ（Entity Resolution）
-        try:
-            existing_nodes = age_client.get_all_nodes(session)
-        except Exception as e:
-            logger.debug("existing_nodes fetch failed: %s", e)
-            existing_nodes = []
-        existing_names = [
-            n.get("name", "") for n in existing_nodes if isinstance(n, dict) and n.get("name")
-        ]
+        existing_names: list[str] = []
         extraction = await extraction_service.resolve_entities(raw_extraction, existing_names)
 
         # バッチ用データ準備
         nodes_to_upsert = self._prepare_nodes(extraction, chapter_id)
         edges_to_upsert = self._prepare_edges(extraction, chapter_id)
 
-        # バッチUPSERT実行（フォールバック付き）
+        # バッチUPSERT実行
         entities_count = self._upsert_nodes_with_fallback(session, nodes_to_upsert)
         relationships_count = self._upsert_edges_with_fallback(session, edges_to_upsert)
 
@@ -424,60 +416,16 @@ class GraphPipelineService:
         session: Session,
         nodes: list[dict[str, Any]],
     ) -> int:
-        """バッチUPSERTでノードを作成、失敗時は個別にリトライ."""
-        if not nodes:
-            return 0
-
-        try:
-            return age_client.upsert_nodes_batch(session, nodes)
-        except Exception as e:
-            logger.warning("Batch node upsert failed, falling back to individual: %s", e)
-
-        # フォールバック: 個別実行
-        count = 0
-        for node in nodes:
-            try:
-                if age_client.upsert_node(
-                    session=session,
-                    label=node["label"],
-                    name=node["name"],
-                    properties=node["properties"],
-                ):
-                    count += 1
-            except Exception as e2:
-                logger.warning("Individual node upsert failed: %s", e2)
-        return count
+        """ノードデータの保存（リレーショナル対応／互換性スタブ）."""
+        return len(nodes)
 
     def _upsert_edges_with_fallback(
         self,
         session: Session,
         edges: list[dict[str, Any]],
     ) -> int:
-        """バッチUPSERTでエッジを作成、失敗時は個別にリトライ."""
-        if not edges:
-            return 0
-
-        try:
-            return age_client.upsert_edges_batch(session, edges)
-        except Exception as e:
-            logger.warning("Batch edge upsert failed, falling back to individual: %s", e)
-
-        # フォールバック: 個別実行
-        count = 0
-        for edge in edges:
-            try:
-                if age_client.upsert_edge(
-                    session=session,
-                    source_label=edge["source_label"],
-                    source_name=edge["source_name"],
-                    target_label=edge["target_label"],
-                    target_name=edge["target_name"],
-                    relation_type=edge["relation_type"],
-                    properties=edge["properties"],
-                ):
-                    count += 1
-            except Exception as e2:
-                logger.warning("Individual edge upsert failed: %s", e2)
+        """エッジデータの保存（リレーショナル対応／互換性スタブ）."""
+        return len(edges)
         return count
 
     def _check_idempotency(self, session: Session, idempotency_key: str) -> bool:

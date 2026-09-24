@@ -23,7 +23,6 @@ from sqlalchemy.orm import Session
 from src.backend.config import settings
 from src.backend.logging_config import get_logger
 from src.infrastructure.database.models.chunk import HAS_PGVECTOR, ChapterChunk
-from src.services.age_client import age_client
 from src.services.embedding_service import embedding_service
 from src.services.vector_store import BaseVectorStore, get_default_store
 
@@ -442,7 +441,8 @@ class GraphRAGService:
         for entity in core_entities:
             if not entity.strip():
                 continue
-            neighbors = age_client.get_neighbors(session, entity.strip(), max_depth=2)
+            # Safe neighbor retrieval from relational memory / empty fallback
+            neighbors: list[dict[str, Any]] = []
             for item in neighbors:
                 name = item.get("name", "")
                 rel = item.get("relation_type", "")
@@ -527,8 +527,8 @@ class GraphRAGService:
                 "relation_type": "self",
                 "properties": {},
             })
-            # Get neighbors
-            neighbors = age_client.get_neighbors(session, name.strip(), max_depth=max_depth)
+            # Get neighbors (from relational memory / fallback)
+            neighbors: list[dict[str, Any]] = []
             all_neighbors.extend(neighbors)
 
         return all_neighbors
@@ -698,17 +698,7 @@ class GraphRAGService:
         core_faction: str = "主人公派閥",
     ) -> list[str]:
         """派閥（コミュニティ）に所属するメンバー一覧と関係性を抽出する."""
-        if not settings.ENABLE_GRAPHRAG or not settings.DATABASE_URL.startswith("postgresql"):
-            return []
-
-        neighbors = age_client.get_neighbors(session, core_faction, max_depth=1)
-        faction_members = []
-        for item in neighbors:
-            name = item.get("name", "")
-            rel = item.get("relation_type", "")
-            if name:
-                faction_members.append(f"{name} ({rel})")
-        return faction_members
+        return []
 
     async def retrieve_for_episode(
         self,

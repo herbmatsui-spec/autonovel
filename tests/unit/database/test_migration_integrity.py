@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from sqlalchemy import create_engine, Column, Integer
 from sqlalchemy.orm import sessionmaker, declarative_base
 from src.infrastructure.database.types.datetime_type import CompatibleDateTime
-from src.backend.database.core import configure_sqlite_engine
+from src.backend.database.core import DatabaseManager
 
 Base = declarative_base()
 
@@ -14,8 +14,19 @@ class DateTimeTestModel(Base):
 
 
 def test_datetime_utc_preservation():
-    engine = create_engine("sqlite:///:memory:")
-    configure_sqlite_engine(engine)
+    # Create a database manager to get properly configured engine
+    db_manager = DatabaseManager("sqlite:///:memory:")
+    # Get the sync engine for SQLite operations (needed for SQLAlchemy sync session)
+    async_url = str(db_manager.engine.url)
+    if async_url.startswith("sqlite+aiosqlite:"):
+        sync_url = async_url.replace("sqlite+aiosqlite:", "sqlite:")
+    elif async_url.startswith("postgresql+asyncpg:"):
+        sync_url = async_url.replace("postgresql+asyncpg:", "postgresql:")
+    else:
+        sync_url = async_url
+    
+    engine = create_engine(sync_url)
+    
     Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine)
     session = Session()

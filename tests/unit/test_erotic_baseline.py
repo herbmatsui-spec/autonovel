@@ -8,6 +8,9 @@ class MockAgent(BaseAgent):
     def __init__(self):
         self.logger = None
 
+    def run(self, *args, **kwargs):
+        pass
+
 @pytest.fixture
 def mock_agent():
     return MockAgent()

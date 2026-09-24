@@ -1,5 +1,6 @@
 @echo off
-setlocal
+rem AutoNovel local launcher - thin wrapper around scripts\start_local.ps1 (Step 5)
+rem Double-clicking this file starts Backend + Huey Worker + Frontend.
 cd /d "%~dp0"
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\start_local.ps1"
-endlocal
+powershell -NoProfile -ExecutionPolicy Bypass -File "scripts\start_local.ps1"
+pause

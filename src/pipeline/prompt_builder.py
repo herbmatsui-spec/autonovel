@@ -81,37 +81,106 @@ def build_emotional_context_prompt(
     )
 
 
+EMOTION_JA_MAP = {
+    "fear": "恐怖",
+    "affection": "好意",
+    "tension": "緊張",
+    "trust": "信頼",
+    "intimacy": "親愛",
+    "jealousy": "嫉妬",
+    "anger": "怒り",
+    "sadness": "悲哀",
+    "surprise": "驚き",
+    "disgust": "嫌悪",
+}
+
+
 def build_fused_emotional_context_prompt(
     episode_id: int,
-    vector_store: VectorStore,
-    namespaces: list[str] = None,
+    fusion_engine: Optional[Any] = None,
+    vector_store: Optional[VectorStore] = None,
+    namespaces: Optional[list[str]] = None,
     top_n: int = 5,
 ) -> str:
-    """融合済み感情コンテキストプロンプト生成（Week 4以降用）
+    """融合済み感情コンテキストプロンプト生成（Week 4 融合レイヤー版）
     
-    複数ネームスペースから優先順位でベクトル取得・融合
+    Args:
+        episode_id: 現在のエピソード番号（前話 episode_id - 1 から引き継ぐ）
+        fusion_engine: FusionEngine インスタンス（推奨）
+        vector_store: VectorStore（fusion_engine 未指定時に生成用）
+        namespaces: 参照ネームスペース一覧
+        top_n: 上位表示件数
+        
+    Returns:
+        融合済み感情コンテキスト文字列
     """
-    if namespaces is None:
-        namespaces = ["annotation", "rule_engine", "pipeline"]
-    
     prev_episode = episode_id - 1
     if prev_episode < 1:
         return ""
-    
-    # 簡易実装: 最初に見つかったネームスペースを使用
-    for ns in namespaces:
-        keys = vector_store.get_namespace_keys(ns)
-        ep_keys = [k for k in keys if k == f"ep{prev_episode}" or k.startswith(f"ep{prev_episode}:")]
-        if ep_keys:
-            for key in ep_keys:
-                if hasattr(vector_store, '_get_by_key'):
-                    vec = vector_store._get_by_key(ns, key)
-                    if vec:
-                        template = get_jinja_env().get_template("emotional_context.j2")
-                        top_pairs = vec.get_top_pairs(top_n)
-                        return template.render(top_pairs=top_pairs, vector=vec)
-    
-    return ""
+
+    if fusion_engine is None and vector_store is not None:
+        from src.fusion.engine import FusionEngine
+        fusion_engine = FusionEngine(vector_store)
+
+    if fusion_engine is None:
+        return ""
+
+    # 前話の融合ベクトル取得または融合実行
+    fused_vector = fusion_engine.get_fused(prev_episode)
+    if not fused_vector:
+        fused_vector = fusion_engine.fuse_all(prev_episode)
+
+    if not fused_vector or (not fused_vector.values and not fused_vector.conflicts):
+        return ""
+
+    # 信頼度別にアイテムを分類
+    high_confidence = []
+    medium_confidence = []
+    low_confidence = []
+
+    for (src, tgt, emo), f_val in fused_vector.values.items():
+        emo_str = emo.value if hasattr(emo, "value") else str(emo)
+        emo_ja = EMOTION_JA_MAP.get(emo_str, emo_str)
+        item = {
+            "source": src,
+            "target": tgt,
+            "emotion": emo_str,
+            "emotion_ja": emo_ja,
+            "value": f_val.value,
+            "primary_source": f_val.primary_source,
+            "confidence": f_val.confidence,
+            "cause": "",
+        }
+        if f_val.confidence >= 0.8:
+            high_confidence.append(item)
+        elif f_val.confidence >= 0.4:
+            medium_confidence.append(item)
+        else:
+            low_confidence.append(item)
+
+    # 矛盾リストの整形
+    formatted_conflicts = []
+    for c in fused_vector.conflicts:
+        emo_str = c.emotion.value if hasattr(c.emotion, "value") else str(c.emotion)
+        emo_ja = EMOTION_JA_MAP.get(emo_str, emo_str)
+        formatted_conflicts.append({
+            "pair": c.pair,
+            "emotion": emo_str,
+            "emotion_ja": emo_ja,
+            "sources": c.sources,
+        })
+
+    try:
+        template = get_jinja_env().get_template("fused_emotional_context.j2")
+        rendered = template.render(
+            high_confidence=high_confidence,
+            medium_confidence=medium_confidence,
+            low_confidence=low_confidence,
+            conflicts=formatted_conflicts,
+        )
+        return rendered.strip()
+    except Exception:
+        return ""
 
 
-__all__ = ["build_emotional_context_prompt", "build_fused_emotional_context_prompt", "get_jinja_env"]
+__all__ = ["build_emotional_context_prompt", "build_fused_emotional_context_prompt", "get_jinja_env", "EMOTION_JA_MAP"]

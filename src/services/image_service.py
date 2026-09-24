@@ -50,11 +50,11 @@ class ImageService:
         model = get_imagen_model_id(model or self.default_model)
         start = time.time()
         try:
-            safety_settings = self._build_safety_settings(safety_level)
+            safety_filter_level = self._build_safety_filter_level(safety_level)
 
             config_kwargs: dict = {
                 "number_of_images": number_of_images,
-                "safety_settings": safety_settings,
+                "safety_filter_level": safety_filter_level,
                 "aspect_ratio": aspect_ratio,
             }
             if negative_prompt:
@@ -84,22 +84,16 @@ class ImageService:
             logger.error(f"Image generation failed: {str(e)}")
             raise e
 
-    def _build_safety_settings(self, level: SafetyLevel):
-        """SafetyLevel を GenAI SDK の SafetySetting リストに変換する。"""
+    def _build_safety_filter_level(self, level: SafetyLevel) -> str:
+        """SafetyLevel を GenAI SDK の safety_filter_level 文字列に変換する。"""
         threshold_map = {
-            SafetyLevel.BLOCK_MOST.value: "BLOCK_MOST",
-            SafetyLevel.BLOCK_SOME.value: "BLOCK_SOME",
-            SafetyLevel.BLOCK_FEW.value: "BLOCK_FEW",
-            SafetyLevel.R15_CONTENT.value: "BLOCK_MOST",  # R15は露骨な表現を強く遮断
+            SafetyLevel.BLOCK_MOST.value: "block_low_and_above",
+            SafetyLevel.BLOCK_SOME.value: "block_medium_and_above",
+            SafetyLevel.BLOCK_FEW.value: "block_only_high",
+            SafetyLevel.R15_CONTENT.value: "block_low_and_above",
         }
         level_val = getattr(level, "value", level)
-        threshold = threshold_map.get(str(level_val), "BLOCK_SOME")
-        return [
-            types.SafetySetting(
-                category="HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                threshold=threshold,
-            )
-        ]
+        return threshold_map.get(str(level_val), "block_medium_and_above")
 
     def _save_image(self, image_bytes: bytes) -> str:
         """画像をファイルシステムに保存し、相対パスを返す。"""

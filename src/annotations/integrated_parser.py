@@ -20,7 +20,9 @@ class BeatParser:
     def parse_script(self, script: str, episode: int, scene: int = 1) -> ParsedScript:
         """脚本から全ビートを抽出（フロントマター優先）"""
         # 1. フロントマターを先にパース
-        clean_text, frontmatter_beats = parse_frontmatter(script)
+        clean_text, frontmatter_beats = parse_frontmatter(
+            script, default_episode=episode, default_scene=scene
+        )
         
         # 2. 残りテキストからインラインタグをパース
         inline_clean, inline_beats = parse_beats(

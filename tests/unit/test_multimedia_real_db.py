@@ -180,8 +180,10 @@ def test_empty_book_router_returns_422(service, db_session):
     db_session.commit()
     db_session.refresh(book)
 
+    from src.backend.auth import require_api_key
     app.dependency_overrides[get_multimedia_service] = lambda: service
     app.dependency_overrides[validate_api_key_or_raise] = lambda: "valid_key"
+    app.dependency_overrides[require_api_key] = lambda: "valid_key"
     client = TestClient(app)
 
     try:
@@ -197,3 +199,4 @@ def test_empty_book_router_returns_422(service, db_session):
     finally:
         app.dependency_overrides.pop(get_multimedia_service, None)
         app.dependency_overrides.pop(validate_api_key_or_raise, None)
+        app.dependency_overrides.pop(require_api_key, None)

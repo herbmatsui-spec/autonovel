@@ -10,12 +10,13 @@ import shutil
 import sqlite3
 import time
 import traceback
+from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Any
+from typing import Any, AsyncIterator
 
 import aiosqlite
 from sqlalchemy import create_engine, text, event
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncConnection, AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import NullPool
 
@@ -32,19 +33,6 @@ except ImportError:
                 DATABASE_URL = f"sqlite:///{BASE_DIR / 'storage' / 'autonovel.db'}"
 
 logger = logging.getLogger(__name__)
-
-
-def configure_sqlite_engine(engine):
-    """SQLiteエンジンにWALモードと外部キー有効化PRAGMAを設定。"""
-    target = getattr(engine, "sync_engine", engine)
-    if target.dialect.name == "sqlite":
-        @event.listens_for(target, "connect")
-        def set_sqlite_pragma(dbapi_connection, connection_record):
-            cursor = dbapi_connection.cursor()
-            cursor.execute("PRAGMA journal_mode=WAL")
-            cursor.execute("PRAGMA foreign_keys=ON")
-            cursor.execute("PRAGMA synchronous=NORMAL")
-            cursor.close()
 
 
 # ==========================================
@@ -105,52 +93,10 @@ class WorkspaceManager:
 # ==========================================
 
 
-class DatabaseConnectionWrapper:
-    def __init__(self, sql_conn, dbapi_conn):
-        super().__setattr__("sql_conn", sql_conn)
-        super().__setattr__("dbapi_conn", dbapi_conn)
-
-    @property
-    def cursor(self):
-        return self.dbapi_conn.cursor()
-
-    def commit(self):
-        return self.dbapi_conn.commit()
-
-    def rollback(self):
-        return self.dbapi_conn.rollback()
-
-    def execute(self, sql, params=()):
-        return self.dbapi_conn.execute(sql, params)
-
-    def __setattr__(self, name, value):
-        if name in ("sql_conn", "dbapi_conn"):
-            super().__setattr__(name, value)
-        else:
-            setattr(self.dbapi_conn, name, value)
-
-    def fetchone(self):
-        """単一行を取得"""
-        return self.dbapi_conn.fetchone()
-
-    def fetchall(self):
-        """全行を取得"""
-        return self.dbapi_conn.fetchall()
-
-    async def close(self) -> None:
-        try:
-            await self.dbapi_conn.rollback()
-        except Exception as exc:
-            # close 時の rollback 失敗はクリティカルではないが、追跡用にログを出力する
-            logger.debug("DatabaseConnectionWrapper.close: rollback 失敗: %s", exc)
-        await self.sql_conn.close()
-
-
 class DatabaseManager:
     def __init__(self, db_url: str, pool_size: int = 10):
         self.db_path = db_url  # 後方互換のため db_path に接続URLを保持
         self._pool_size = pool_size
-        self._warned_about_str_sql = False  # DeprecationWarning の重複抑制
 
         is_sqlite = "sqlite" in db_url
         connect_args = {}
@@ -191,18 +137,8 @@ class DatabaseManager:
             **engine_kwargs,
         )
 
-        # Configure SQLite engine if applicable
-        configure_sqlite_engine(self.engine)
-
-        # Ensure is_plot_twist column exists in SQLite database
-        # (Skipped: Schema updates should be handled by Alembic migrations)
-
-        self.session_factory = async_sessionmaker(
-            bind=self.engine, class_=AsyncSession, expire_on_commit=False
-        )
-
+        # Configure SQLite engine if applicable - centralized in one place
         if is_sqlite:
-
             @event.listens_for(self.engine.sync_engine, "connect")
             def set_sqlite_pragma(dbapi_connection, connection_record):
                 cursor = dbapi_connection.cursor()
@@ -230,25 +166,97 @@ class DatabaseManager:
                     # checkin 時の rollback 失敗は次回の接続で再試行されるためデバッグログのみ
                     logger.debug("reset_on_checkin rollback 失敗: %s", exc)
 
+        self.session_factory = async_sessionmaker(
+            bind=self.engine, class_=AsyncSession, expire_on_commit=False
+        )
+
     def get_session(self) -> AsyncSession:
         """SQLAlchemyのAsyncSessionを取得する"""
         return self.session_factory()
 
+    @asynccontextmanager
+    async def connection(self) -> AsyncIterator[AsyncConnection]:
+        """SQLAlchemy標準のAsyncConnectionをコンテキストマネージャで返却"""
+        async with self.engine.connect() as conn:
+            yield conn
+
+    @asynccontextmanager
+    async def begin(self) -> AsyncIterator[AsyncConnection]:
+        """トランザクション付きのAsyncConnectionをコンテキストマネージャで返却"""
+        async with self.engine.begin() as conn:
+            yield conn
+
+    # 後方互換用: 非推奨のget_conn
     @retry_with_logging(retries=5, base_delay=0.5)
-    async def get_conn(self) -> DatabaseConnectionWrapper:
-        """SQLAlchemyのコネクションプールから接続を取得し、aiosqlite互換ラッパーを返す"""
+    async def get_conn(self):
+        """非推奨: SQLAlchemyのコネクションプールから接続を取得し、aiosqlite互換ラッパーを返す
+        
+        代わりに `connection()` または `begin()` コンテキストマネージャを使用してください。
+        """
+        import warnings
+        warnings.warn(
+            "DatabaseManager.get_conn() is deprecated. Use connection() or begin() context managers instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         sql_conn = await self.engine.connect()
         raw_conn = await sql_conn.get_raw_connection()
         dbapi_conn = raw_conn._connection
-        return DatabaseConnectionWrapper(sql_conn, dbapi_conn)
+        
+        # 簡易ラッパー（最小限の互換性のみ）
+        class _CompatWrapper:
+            def __init__(self, dbapi_conn, sql_conn):
+                self.dbapi_conn = dbapi_conn
+                self.sql_conn = sql_conn
+            
+            @property
+            def cursor(self):
+                return self.dbapi_conn.cursor()
+            
+            def commit(self):
+                return self.dbapi_conn.commit()
+            
+            def rollback(self):
+                return self.dbapi_conn.rollback()
+            
+            def execute(self, sql, params=()):
+                return self.dbapi_conn.execute(sql, params)
+            
+            def fetchone(self):
+                return self.dbapi_conn.fetchone()
+            
+            def fetchall(self):
+                return self.dbapi_conn.fetchall()
+            
+            async def close(self):
+                try:
+                    await self.dbapi_conn.rollback()
+                except Exception:
+                    pass
+                await self.sql_conn.close()
+        
+        return _CompatWrapper(dbapi_conn, sql_conn)
 
-    async def get_read_conn(self) -> DatabaseConnectionWrapper:
-        """読み取り専用接続（プールから再利用）"""
+    async def get_read_conn(self):
+        """非推奨: 読み取り専用接続（プールから再利用）"""
+        import warnings
+        warnings.warn(
+            "DatabaseManager.get_read_conn() is deprecated. Use connection() instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return await self.get_conn()
 
-    async def release_read_conn(self, conn: DatabaseConnectionWrapper) -> None:
-        """読み取り専用接続をプールに返却"""
-        await conn.close()
+    async def release_read_conn(self, conn) -> None:
+        """非推奨: 読み取り専用接続をプールに返却"""
+        import warnings
+        warnings.warn(
+            "DatabaseManager.release_read_conn() is deprecated. Use connection() context manager instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        if hasattr(conn, 'close'):
+            await conn.close()
 
     async def enqueue_write(self, sql: str, params: tuple = ()) -> None:
         """後方互換用: 直接書き込みを実行"""
@@ -259,35 +267,24 @@ class DatabaseManager:
         pass
 
     async def execute(self, sql: Any, params: Any = ()) -> None:
-        import warnings
-
+        """SQLを実行する。sqlalchemy.text() でラップされたクエリのみ受け付ける。"""
         if isinstance(sql, str):
-            if not self._warned_about_str_sql:
-                warnings.warn(
-                    "DatabaseManager.execute() with raw string is deprecated. Please use sqlalchemy.text() or repositories instead.",
-                    DeprecationWarning,
-                    stacklevel=2,
-                )
-                self._warned_about_str_sql = True
-            sql = text(sql)
+            raise TypeError(
+                "DatabaseManager.execute() no longer accepts raw strings. "
+                "Please use sqlalchemy.text() for SQL queries."
+            )
 
         logger.debug("DatabaseManager.execute called: %s", sql)
         async with self.engine.begin() as conn:
             await conn.execute(sql, params)
 
     async def fetch_one(self, sql: Any, params: Any = ()) -> Any | None:
-        """読み取り専用接続プールを使用した単一行取得"""
-        import warnings
-
+        """単一行を取得する。sqlalchemy.text() でラップされたクエリのみ受け付ける。"""
         if isinstance(sql, str):
-            if not self._warned_about_str_sql:
-                warnings.warn(
-                    "DatabaseManager.fetch_one() with raw string is deprecated. Please use sqlalchemy.text() or repositories instead.",
-                    DeprecationWarning,
-                    stacklevel=2,
-                )
-                self._warned_about_str_sql = True
-            sql = text(sql)
+            raise TypeError(
+                "DatabaseManager.fetch_one() no longer accepts raw strings. "
+                "Please use sqlalchemy.text() for SQL queries."
+            )
 
         logger.debug("DatabaseManager.fetch_one called: %s", sql)
         async with self.engine.connect() as conn:
@@ -295,18 +292,12 @@ class DatabaseManager:
             return result.mappings().fetchone()
 
     async def fetch_all(self, sql: Any, params: Any = ()) -> list[Any]:
-        """読み取り専用接続プールを使用した複数行取得"""
-        import warnings
-
+        """複数行を取得する。sqlalchemy.text() でラップされたクエリのみ受け付ける。"""
         if isinstance(sql, str):
-            if not self._warned_about_str_sql:
-                warnings.warn(
-                    "DatabaseManager.fetch_all() with raw string is deprecated. Please use sqlalchemy.text() or repositories instead.",
-                    DeprecationWarning,
-                    stacklevel=2,
-                )
-                self._warned_about_str_sql = True
-            sql = text(sql)
+            raise TypeError(
+                "DatabaseManager.fetch_all() no longer accepts raw strings. "
+                "Please use sqlalchemy.text() for SQL queries."
+            )
 
         logger.debug("DatabaseManager.fetch_all called: %s", sql)
         async with self.engine.connect() as conn:
@@ -451,6 +442,10 @@ def set_db_manager(manager: DatabaseManager | None) -> None:
     try:
         from src.core.container import AppContainer
 
-        AppContainer.db.override(manager)
+        if manager is None:
+            # None の場合は override を解除して元のプロバイダに戻す（コンテナ汚染防止）
+            AppContainer.db.reset_override()
+        else:
+            AppContainer.db.override(manager)
     except Exception as exc:
         logger.warning("AppContainer.db.override に失敗: %s", exc, exc_info=True)

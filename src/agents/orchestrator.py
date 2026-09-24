@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from src.backend.tasks.dag_scheduler import DAGScheduler
 
 
-class CyclicDependencyError(ValueError):
+class CyclicDependencyError(ValueError, RuntimeError):
     """スキル間の循環依存が検出された場合に送出されるエラー"""
     pass
 

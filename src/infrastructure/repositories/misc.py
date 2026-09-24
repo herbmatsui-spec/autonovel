@@ -109,14 +109,39 @@ class MiscRepository(BaseRepository):
     # ---------- Internal State ----------
     @retry_on_lock()
     async def save_internal_state(self, key: str, value: Any) -> None:
-        """ウィザードの下書きなどの内部状態を保存する"""
-        result = await self.session.execute(select(InternalState).where(InternalState.key == key))
-        state = result.scalar_one_or_none()
-        if not state:
-            state = InternalState(key=key)
-            self.session.add(state)
-        state.value = json.dumps(value, ensure_ascii=False) if not isinstance(value, str) else value
-        state.updated_at = datetime.now()
+        """ウィザードの下書きなどの内部状態を保存する（UPSERT・並行アクセス安全）"""
+        from sqlalchemy import insert
+
+        value_str = json.dumps(value, ensure_ascii=False) if not isinstance(value, str) else value
+        now = datetime.now()
+
+        # ダイアレクト別のUPSERT（SELECT→INSERT の競合レースを回避）
+        dialect_name = self.session.bind.dialect.name if self.session.bind is not None else "sqlite"
+        if dialect_name == "sqlite":
+            from sqlalchemy.dialects.sqlite import insert
+        elif dialect_name == "postgresql":
+            from sqlalchemy.dialects.postgresql import insert
+        else:
+            insert = None
+
+        if insert is not None:
+            stmt = insert(InternalState).values(
+                key=key, value=value_str, updated_at=now
+            )
+            stmt = stmt.on_conflict_do_update(
+                index_elements=[InternalState.key],
+                set_={"value": value_str, "updated_at": now},
+            )
+            await self.session.execute(stmt)
+        else:
+            # フォールバック: 従来の SELECT→UPDATE/INSERT
+            result = await self.session.execute(select(InternalState).where(InternalState.key == key))
+            state = result.scalar_one_or_none()
+            if not state:
+                state = InternalState(key=key)
+                self.session.add(state)
+            state.value = value_str
+            state.updated_at = now
 
     async def get_internal_state(self, key: str) -> Any | None:
         """保存された内部状態を取得する"""

@@ -1,10 +1,13 @@
-"""Google Gemini API アダプタ。"""
+"""Google Gemini API アダプタ (google.genai 新SDK完全準拠版)."""
 
 from __future__ import annotations
 
 import logging
 from collections.abc import AsyncIterator
 from typing import Any
+
+from google import genai
+from google.genai import types
 
 from src.backend.config import settings
 from src.services.llm.base import BaseLLMAdapter
@@ -14,28 +17,25 @@ logger = logging.getLogger(__name__)
 
 
 class GeminiAdapter(BaseLLMAdapter):
-    """Google Gemini アダプタ。"""
+    """Google Gemini アダプタ (google.genai SDK)。"""
 
     def __init__(
         self,
         api_key: str | None = None,
         model_name: str | None = None,
     ) -> None:
-        self.api_key = api_key or settings.GEMINI_API_KEY or ""
+        resolved_key = api_key
+        if not resolved_key:
+            resolved_key = getattr(settings, "get_gemini_api_key", lambda: settings.GEMINI_API_KEY)() or ""
+        self.api_key = resolved_key
         self.model_name = model_name or settings.GEMINI_MODEL
-        self._model: Any = None
+        self._client: Any = None
 
-    def _get_model(self) -> Any:
-        """モデルを遅延初期化する。"""
-        if self._model is None:
-            import google.generativeai as genai
-
-            if self.api_key:
-                genai.configure(api_key=self.api_key)
-            self._model = genai.GenerativeModel(
-                model_name=self.model_name,
-            )
-        return self._model
+    def _get_client(self) -> Any:
+        """Client を遅延初期化する。"""
+        if self._client is None:
+            self._client = genai.Client(api_key=self.api_key or "dummy_key_for_testing")
+        return self._client
 
     async def generate_text(
         self,
@@ -47,22 +47,21 @@ class GeminiAdapter(BaseLLMAdapter):
         **kwargs: Any,
     ) -> str:
         """テキストを一括生成する。"""
-        import google.generativeai as genai
-
+        client = self._get_client()
         full_prompt = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
-        model = self._get_model()
 
-        generation_config_dict: dict[str, Any] = {
+        config_kwargs: dict[str, Any] = {
             "max_output_tokens": max_tokens,
             "temperature": temperature,
         }
         if response_format and response_format.get("type") in ("json_object", "json_schema"):
-            generation_config_dict["response_mime_type"] = "application/json"
+            config_kwargs["response_mime_type"] = "application/json"
 
         async def _call() -> str:
-            response = await model.generate_content_async(
-                full_prompt,
-                generation_config=genai.types.GenerationConfig(**generation_config_dict),
+            response = await client.aio.models.generate_content(
+                model=self.model_name,
+                contents=full_prompt,
+                config=types.GenerateContentConfig(**config_kwargs),
             )
             return response.text or ""
 
@@ -77,19 +76,17 @@ class GeminiAdapter(BaseLLMAdapter):
         **kwargs: Any,
     ) -> AsyncIterator[str]:
         """テキストをストリーミング生成する。"""
-        import google.generativeai as genai
-
+        client = self._get_client()
         full_prompt = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
-        model = self._get_model()
 
-        response = await model.generate_content_async(
-            full_prompt,
-            generation_config=genai.types.GenerationConfig(
+        response_stream = await client.aio.models.generate_content_stream(
+            model=self.model_name,
+            contents=full_prompt,
+            config=types.GenerateContentConfig(
                 max_output_tokens=max_tokens,
                 temperature=temperature,
             ),
-            stream=True,
         )
-        async for chunk in response:
+        async for chunk in response_stream:
             if chunk.text:
                 yield chunk.text

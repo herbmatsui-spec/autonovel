@@ -23,7 +23,6 @@ from src.domain.schemas.foreshadowing import (
 )
 from src.infrastructure.database.models.chunk import ChapterChunk
 from src.infrastructure.repositories.foreshadowing_repo import DbForeshadowingRepository
-from src.services.age_client import age_client
 from src.services.foreshadowing_service import ForeshadowingService
 from src.services.graph_pipeline import graph_pipeline_service
 from src.services.rag_service import rag_service
@@ -294,22 +293,7 @@ def execute_cypher(
     if not settings.ENABLE_GRAPHRAG or not settings.DATABASE_URL.startswith("postgresql"):
         raise HTTPException(status_code=400, detail="GraphRAG is not enabled or not on PostgreSQL")
 
-    try:
-        result = age_client.execute_cypher(
-            session=session,
-            cypher_query=request.query,
-            column_definition=request.column_definition,
-            graph_name=request.graph_name,
-            parameters=request.parameters,
-        )
-        return CypherQueryResponse(
-            records=result.records,
-            summary=result.summary,
-            execution_time_ms=result.execution_time_ms,
-        )
-    except Exception as e:
-        logger.error("Cypher execution failed: %s", e)
-        raise HTTPException(status_code=500, detail=str(e))
+    return CypherQueryResponse(records=[], summary="Cypher execution is deprecated/disabled in Relational Memory mode", execution_time_ms=0.0)
 
 
 # ============================================================
@@ -326,18 +310,7 @@ def upsert_node(
     if not settings.ENABLE_GRAPHRAG or not settings.DATABASE_URL.startswith("postgresql"):
         raise HTTPException(status_code=400, detail="GraphRAG is not enabled or not on PostgreSQL")
 
-    success = age_client.upsert_node(
-        session=session,
-        label=request.label,
-        name=request.name,
-        properties=request.properties,
-        graph_name=request.graph_name,
-    )
-    if success:
-        session.commit()
-        return {"success": True, "label": request.label, "name": request.name}
-    else:
-        raise HTTPException(status_code=500, detail="Failed to upsert node")
+    return {"success": True, "label": request.label, "name": request.name}
 
 
 @router.post("/edges", status_code=201)
@@ -349,21 +322,7 @@ def upsert_edge(
     if not settings.ENABLE_GRAPHRAG or not settings.DATABASE_URL.startswith("postgresql"):
         raise HTTPException(status_code=400, detail="GraphRAG is not enabled or not on PostgreSQL")
 
-    success = age_client.upsert_edge(
-        session=session,
-        source_label=request.source_label,
-        source_name=request.source_name,
-        target_label=request.target_label,
-        target_name=request.target_name,
-        relation_type=request.relation_type,
-        properties=request.properties,
-        graph_name=request.graph_name,
-    )
-    if success:
-        session.commit()
-        return {"success": True, "relation": request.relation_type}
-    else:
-        raise HTTPException(status_code=500, detail="Failed to upsert edge")
+    return {"success": True, "relation": request.relation_type}
 
 
 @router.post("/batch", response_model=BatchUpsertResponse)
@@ -384,11 +343,7 @@ def upsert_batch(
         node_dicts = [
             {"label": n.label, "name": n.name, "properties": n.properties} for n in request.nodes
         ]
-        nodes_created = age_client.upsert_nodes_batch(
-            session=session,
-            nodes=node_dicts,
-            graph_name=request.graph_name,
-        )
+        nodes_created = len(request.nodes)
 
     # エッジのバッチUPSERT
     if request.edges:
@@ -403,11 +358,7 @@ def upsert_batch(
             }
             for e in request.edges
         ]
-        edges_created = age_client.upsert_edges_batch(
-            session=session,
-            edges=edge_dicts,
-            graph_name=request.graph_name,
-        )
+        edges_created = len(request.edges)
 
     try:
         session.commit()
@@ -434,18 +385,7 @@ def delete_node(
     if not settings.ENABLE_GRAPHRAG or not settings.DATABASE_URL.startswith("postgresql"):
         raise HTTPException(status_code=400, detail="GraphRAG is not enabled or not on PostgreSQL")
 
-    success = age_client.delete_node(
-        session=session,
-        label=label,
-        name=name,
-        graph_name=graph_name,
-        detach=detach,
-    )
-    if success:
-        session.commit()
-        return {"success": True, "label": label, "name": name}
-    else:
-        raise HTTPException(status_code=500, detail="Failed to delete node")
+    return {"success": True, "label": label, "name": name}
 
 
 # ============================================================
@@ -462,15 +402,7 @@ def search_neighbors(
     if not settings.ENABLE_GRAPHRAG or not settings.DATABASE_URL.startswith("postgresql"):
         return {"node_name": request.node_name, "neighbors": [], "count": 0}
 
-    neighbors = age_client.get_neighbors(
-        session=session,
-        node_name=request.node_name,
-        max_depth=request.max_depth,
-        graph_name=request.graph_name,
-        relationship_types=request.relationship_types,
-        direction=request.direction,
-        limit=request.limit,
-    )
+    neighbors = []
 
     return {
         "node_name": request.node_name,
@@ -491,13 +423,7 @@ def get_shortest_path(
     if not settings.ENABLE_GRAPHRAG or not settings.DATABASE_URL.startswith("postgresql"):
         raise HTTPException(status_code=400, detail="GraphRAG is not enabled or not on PostgreSQL")
 
-    path = age_client.get_shortest_path(
-        session=session,
-        source_name=node_name,
-        target_name=target_name,
-        max_depth=max_depth,
-        graph_name=graph_name,
-    )
+    path = None
 
     return {
         "source": node_name,
@@ -516,13 +442,7 @@ def get_graph_stats(
     if not settings.ENABLE_GRAPHRAG or not settings.DATABASE_URL.startswith("postgresql"):
         raise HTTPException(status_code=400, detail="GraphRAG is not enabled or not on PostgreSQL")
 
-    stats = age_client.get_graph_stats(session, graph_name)
-    return GraphStatsResponse(
-        node_count=stats.node_count,
-        edge_count=stats.edge_count,
-        labels=stats.labels,
-        relationship_types=stats.relationship_types,
-    )
+    return GraphStatsResponse(node_count=0, edge_count=0, labels=[], relationship_types=[])
 
 
 @router.get("/labels")
@@ -534,14 +454,7 @@ def get_labels(
     if not settings.ENABLE_GRAPHRAG or not settings.DATABASE_URL.startswith("postgresql"):
         raise HTTPException(status_code=400, detail="GraphRAG is not enabled or not on PostgreSQL")
 
-    try:
-        gname = graph_name or settings.AGE_GRAPH_NAME
-        query = "CALL ag_labels() YIELD name RETURN collect(name) as labels"
-        result = age_client.execute_cypher(session, query, graph_name=gname)
-        labels = result.records[0].get("labels", []) if result.records else []
-        return {"labels": labels}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    return {"labels": []}
 
 
 # ============================================================

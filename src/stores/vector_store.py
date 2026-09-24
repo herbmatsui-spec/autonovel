@@ -201,9 +201,66 @@ class RedisVectorStore(VectorStore):
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         self.close()
 
+    def get_all_namespaces(self) -> list[str]:
+        """登録されているネームスペース一覧取得"""
+        return ["pipeline", "rule_engine", "annotation", "fused"]
+
+
+class InMemoryVectorStore(VectorStore):
+    """インメモリ実装のベクトルストア（テスト・軽量実行用）"""
+
+    def __init__(self):
+        self._store: dict[str, dict[str, str]] = {}
+
+    def upsert(self, namespace: str, key: str, vector: EmotionalVector) -> None:
+        if namespace not in self._store:
+            self._store[namespace] = {}
+        self._store[namespace][key] = json.dumps(vector.to_dict())
+
+    def get_latest(self, namespace: str, pair: tuple[str, str]) -> Optional[EmotionalVector]:
+        if namespace not in self._store:
+            return None
+        src, tgt = pair
+        target_pair = f"{src}->{tgt}"
+        latest_vec: Optional[EmotionalVector] = None
+        max_ep = -1
+
+        for key, data in self._store[namespace].items():
+            if target_pair in key:
+                vec = EmotionalVector.from_dict(json.loads(data))
+                import re
+                ep_match = re.search(r'ep(\d+)', vec.episode_id)
+                ep_num = int(ep_match.group(1)) if ep_match else 0
+                if ep_num >= max_ep:
+                    max_ep = ep_num
+                    latest_vec = vec
+        return latest_vec
+
+    def get_all(self, namespace: str) -> list[EmotionalVector]:
+        if namespace not in self._store:
+            return []
+        return [EmotionalVector.from_dict(json.loads(data)) for data in self._store[namespace].values()]
+
+    def delete(self, namespace: str, key: str) -> bool:
+        if namespace in self._store and key in self._store[namespace]:
+            del self._store[namespace][key]
+            return True
+        return False
+
+    def get_namespace_keys(self, namespace: str) -> list[str]:
+        if namespace not in self._store:
+            return []
+        return list(self._store[namespace].keys())
+
+    def get_all_namespaces(self) -> list[str]:
+        return list(self._store.keys())
+
+    def close(self) -> None:
+        pass
+
 
 # 後方互換性のためのエイリアス
 VectorStore = VectorStore
 RedisVectorStore = RedisVectorStore
 
-__all__ = ["VectorStore", "RedisVectorStore"]
+__all__ = ["VectorStore", "RedisVectorStore", "InMemoryVectorStore"]

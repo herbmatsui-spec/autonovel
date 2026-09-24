@@ -216,14 +216,20 @@ class AppContainer(InfraContainer):
         repository=providers.Self(),  # BookScoreRepository
     )
     writing_service: providers.Singleton = providers.Singleton(
-        "src.services.writing_service.WritingService",
-        writing_agent=writer,
+        "src.domain.writing.WritingService",
+        writer=writer,
+        repo=repo,
+        pm=pm,
+        style_rag=style_rag,
+        ctx_mgr=ctx_mgr,
+        reporter_factory=providers.Self(),
         book_score_calculator=book_score_calculator,
+        score_threshold=70.0,
+        writing_agent=writer,
         context_builder_agent=context_builder_agent,
         illustration_agent=illustration_agent,
-        compressor=compressor,  # ← 追加
+        compressor=compressor,
         max_retries=3,
-        score_threshold=70.0,
         backoff_base=2.0,
     )
 

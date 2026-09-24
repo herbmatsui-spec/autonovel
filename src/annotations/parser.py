@@ -67,6 +67,7 @@ def parse_beats(
     beats = []
     clean_lines = []
     beat_id_counter = 0
+    current_offset = 0
     
     for line in text.split('\n'):
         # その行のタグを全て抽出
@@ -98,9 +99,10 @@ def parse_beats(
             # hidden フラグ
             hidden = bool(hidden_flag)
             
-            # 発言者推定（直前の行から）
-            speaker = _estimate_speaker(text, match.start(), character_dict)
-            target = _estimate_target(text, match.start(), character_dict, speaker)
+            # 発言者推定（タグ位置）
+            tag_pos = current_offset + match.start()
+            speaker = _estimate_speaker(text, tag_pos, character_dict)
+            target = _estimate_target(text, tag_pos, character_dict, speaker)
             
             if not speaker or not target:
                 # 推定できない場合はスキップ
@@ -124,6 +126,7 @@ def parse_beats(
         # 残りのテキスト追加
         clean_line_parts.append(line[last_end:])
         clean_lines.append(''.join(clean_line_parts))
+        current_offset += len(line) + 1  # 1 for '\n'
     
     return '\n'.join(clean_lines), beats
 
@@ -133,13 +136,10 @@ def _estimate_speaker(
     tag_position: int,
     character_dict: set[str],
 ) -> Optional[str]:
-    """タグ位置より前のテキストから発言者を推定"""
-    # タグ位置より前のテキストを取得
-    prefix = full_text[:tag_position]
-    
-    # 最後のセリフ行を探す（「キャラ名「」」パターン）
+    """タグ位置より前のテキストから発言者を推定（なければ直後から推定）"""
     import re
-    # 逆順で検索
+    # 1. タグ位置より前のテキストを取得
+    prefix = full_text[:tag_position]
     lines = prefix.split('\n')
     for line in reversed(lines):
         line = line.strip()
@@ -151,17 +151,36 @@ def _estimate_speaker(
             speaker = match.group(1).strip()
             if speaker in character_dict:
                 return speaker
-            # 部分マッチ試行
             for char in character_dict:
                 if char in speaker or speaker in char:
                     return char
     
-    # キャラ名単独行を探す
     for line in reversed(lines):
         line = line.strip()
         if line in character_dict:
             return line
-    
+
+    # 2. タグ位置より後のテキストから探す（行頭タグ対応）
+    suffix = full_text[tag_position:]
+    for line in suffix.split('\n'):
+        line = line.strip()
+        if not line:
+            continue
+        match = re.search(r'([A-Za-z0-9_\u4e00-\u9faf\u3040-\u309f\u30a0-\u30ff]+)「', line)
+        if match:
+            speaker = match.group(1).strip()
+            if speaker in character_dict:
+                return speaker
+            for char in character_dict:
+                if char in speaker or speaker in char:
+                    return char
+        for char in character_dict:
+            if char in line:
+                return char
+
+    # 3. フォールバック
+    if character_dict:
+        return sorted(list(character_dict))[0]
     return None
 
 
@@ -172,23 +191,24 @@ def _estimate_target(
     speaker: Optional[str],
 ) -> Optional[str]:
     """タグ位置の前後から対象を推定（簡易：発言者以外の主要キャラ）"""
-    # 発言者以外で最初に見つかるキャラ名を対象とする
     prefix = full_text[:tag_position]
-    
-    # 近くに出現するキャラ名を探す
-    import re
     found_chars = []
     for char in character_dict:
         if char != speaker:
-            # 直前500文字以内に出現するか
             if char in prefix[-500:]:
                 found_chars.append(char)
     
     if found_chars:
-        return found_chars[-1]  # 直近のもの
-    
-    # フォールバック: 発言者以外の最初のキャラ
+        return found_chars[-1]
+
+    suffix = full_text[tag_position:]
     for char in character_dict:
+        if char != speaker:
+            if char in suffix[:500]:
+                return char
+
+    # フォールバック: 発言者以外の最初のキャラ
+    for char in sorted(list(character_dict)):
         if char != speaker:
             return char
     
