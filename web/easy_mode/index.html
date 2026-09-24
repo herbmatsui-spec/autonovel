@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Easy Mode - 小説生成</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Easy Mode 小説生成</h1>
+        <div class="form-section">
+            <label for="genre">ジャンル:</label>
+            <select id="genre">
+                <option value="">-- ジャンルを選択 --</option>
+                <option value="ファンタジー">ファンタジー</option>
+                <option value="ラブコメ">ラブコメ</option>
+                <option value="SF">SF</option>
+                <option value="ミステリー">ミステリー</option>
+                <option value="歴史">歴史</option>
+                <option value="その他">その他</option>
+            </select>
+        </div>
+        <div class="form-section">
+            <label for="length">目標長さ (文字数):</label>
+            <input type="number" id="length" min="100" placeholder="例: 3000">
+        </div>
+        <div class="form-section">
+            <label for="keywords">キーワード (カンマ区切り):</label>
+            <input type="text" id="keywords" placeholder="例: 魔法, 冒険, 友情">
+        </div>
+        <button id="generateBtn">生成開始</button>
+    </div>
+
+    <div id="progressSection" class="hidden">
+        <h2>生成中...</h2>
+        <div class="progress-bar">
+            <div class="progress" id="progress"></div>
+        </div>
+        <p id="progressText">0%</p>
+        <div id="preview">
+            <h3>プレビュー</h3>
+            <div id="previewContent"></div>
+        </div>
+    </div>
+
+    <div id="reviewSection" class="hidden">
+        <h2>生成完了 - レビュー</h2>
+        <div id="reviewContent"></div>
+        <div class="button-group">
+            <button id="downloadTxtBtn">テキストでダウンロード</button>
+            <button id="downloadZipBtn">ZIPでダウンロード</button>
+            <button id="downloadEpubBtn">EPUBでダウンロード</button>
+            <button id="regenerateBtn">再生成</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
