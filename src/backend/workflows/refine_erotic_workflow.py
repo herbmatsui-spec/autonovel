@@ -3,12 +3,15 @@ src/backend/workflows/refine_erotic_workflow.py
 螳倩・繧ｷ繝ｼ繝ｳ遐皮｣ｨ逕ｨ繝ｯ繝ｼ繧ｯ繝輔Ο繝ｼ
 """
 
+import logging
 from typing import Any
 
 from config.erotic_pacing import EroticCurve
 from src.shared.utils import StatusReporter
 
 from .base_workflow import BaseWorkflow
+
+logger = logging.getLogger(__name__)
 
 
 class RefineEroticWorkflow(BaseWorkflow):
@@ -63,18 +66,16 @@ class RefineEroticWorkflow(BaseWorkflow):
             peak_beat = curve.get_peak_beat()
             consent_state = peak_beat.consent_state if peak_beat else "implicit"
             is_ok, issues, _, _ = self._integrity_checker.check_all(refined_content, consent_state=consent_state)
-        except Exception:
-            # チェックに失敗しても洗練されたテキストは返す
-            pass
+        except Exception as exc:
+            logger.warning('EroticIntegrityChecker check failed: %s', exc)
 
         # 3. afterglow 評価
         try:
             afterglow_start = len(refined_content) * 3 // 4
             afterglow_candidate = refined_content[afterglow_start:]
             afterglow_ok, afterglow_issues = self._afterglow_evaluator.evaluate(afterglow_candidate)
-        except Exception:
-            # 評価に失敗しても洗練されたテキストは返す
-            pass
+        except Exception as exc:
+            logger.warning('AfterglowEvaluator evaluation failed: %s', exc)
 
         # ノート: 実際のワークフローではここで問題があるとフラグを立てるか、または
         # 再処理を行うが、この簡易メソッドでは基本的な洗練されたテキストを返す

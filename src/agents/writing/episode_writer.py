@@ -34,6 +34,7 @@ class EpisodeWriter(BaseAgent):
         compressor: Any = None,
         vector_store: Any = None,
         character_dict_path: str = None,
+        plot_expander: Any = None,
     ):
         super().__init__(repo=repo, llm=llm, style_rag=style_rag, rag_prefetch=rag_prefetch)
         self.context_builder = context_builder
@@ -41,6 +42,7 @@ class EpisodeWriter(BaseAgent):
         self.prompt_manager = prompt_manager
         self.compressor = compressor
         self.vector_store = vector_store
+        self.plot_expander = plot_expander
         
         # 感情残基抽出器（遅延初期化）
         self._emotional_extractor: Optional[EmotionalResidueExtractor] = None
@@ -102,6 +104,20 @@ class EpisodeWriter(BaseAgent):
         Returns:
             生成された本文（3シーン結合済み）
         """
+        # JIT 詳細プロット展開フック (Plan J2)
+        if self.plot_expander and hasattr(self.plot_expander, "ensure_detailed_plot"):
+            try:
+                detailed_plot = await self.plot_expander.ensure_detailed_plot(
+                    book_id=book_id,
+                    ep_num=ep_num,
+                    branch_id=context.get("branch_id", 1),
+                )
+                if detailed_plot:
+                    context["plot"] = detailed_plot
+            except Exception as e:
+                if hasattr(self, "logger"):
+                    self.logger.warning(f"Ep.{ep_num}: JITプロット展開エラー (既存プロット継続): {e}")
+
         orchestrator = self._get_scene_orchestrator()
 
         # 3シーン順次生成
@@ -166,6 +182,19 @@ class EpisodeWriter(BaseAgent):
                     self.logger.warning(f"Ep.{ep_num}: 配信コメント生成でエラー: {e}")
 
         clean_text, self.last_metadata = NovelOutputSplitter.split_novel_output(composed_text)
+
+        # 次話プロットの非同期投機的プリフェッチ (Plan J2)
+        if self.plot_expander and hasattr(self.plot_expander, "prefetch_next_episode_plot"):
+            try:
+                self.plot_expander.prefetch_next_episode_plot(
+                    book_id=book_id,
+                    next_ep=ep_num + 1,
+                    branch_id=context.get("branch_id", 1),
+                )
+            except Exception as e:
+                if hasattr(self, "logger"):
+                    self.logger.debug(f"Ep.{ep_num}: 次話プリフェッチエラー (無視): {e}")
+
         return clean_text
 
     def detect_resolved_foreshadowings(

@@ -148,6 +148,19 @@ class PlanStep(WorkflowStep):
                         "warning",
                     )
 
+            # 二段階化プロット展開: 大局骨子 (Macro Skeleton) の生成 (Plan J3)
+            if getattr(ctx, "use_coarse_fine_plot", True) and hasattr(engine, "plot_expander") and engine.plot_expander:
+                if hasattr(engine.plot_expander, "expand_macro_skeletons"):
+                    try:
+                        skeletons = await engine.plot_expander.expand_macro_skeletons(
+                            book_id=book_id,
+                            target_ep_list=list(range(1, ctx.target_eps + 1)),
+                            reporter=reporter,
+                        )
+                        ctx.easy_parameters["macro_skeletons_count"] = len(skeletons)
+                    except Exception as e:
+                        reporter.report(f"⚠️ 大局骨子生成でエラー (既存プロット継続): {e}", "warning")
+
             # 健全性チェック
             if (
                 hasattr(engine.planner, "plan_auditor")
@@ -184,6 +197,16 @@ class WriteStep(WorkflowStep):
             return False
         try:
             reporter.update_progress(1, 4, "STEP 2/4: 本文を自動執筆中...")
+
+            # JIT 詳細プロット展開の事前保証 (Plan J3)
+            if getattr(ctx, "use_coarse_fine_plot", True) and hasattr(engine, "plot_expander") and engine.plot_expander:
+                if hasattr(engine.plot_expander, "ensure_detailed_plot"):
+                    try:
+                        await engine.plot_expander.ensure_detailed_plot(
+                            book_id=ctx.book_id, ep_num=ctx.start_ep, reporter=reporter
+                        )
+                    except Exception as e:
+                        logger.debug("WriteStep: JIT plot pre-check error (will retry in writer): %s", e)
 
             # 共通リトライロジック使用
             from src.backend.workflows._shared_ops import execute_with_retry

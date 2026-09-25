@@ -1,8 +1,11 @@
+import logging
 from typing import Any
 
 from src.shared.utils import StatusReporter
 
 from .base_workflow import BaseWorkflow
+
+logger = logging.getLogger(__name__)
 
 
 class MarketingGenerationWorkflow(BaseWorkflow):
@@ -25,8 +28,8 @@ class MarketingGenerationWorkflow(BaseWorkflow):
         if prompt_manager is not None:
             try:
                 marketing_agent.prompt_manager = prompt_manager
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.debug("Failed to set prompt_manager on marketing_agent: %s", exc)
 
         result = await marketing_agent.generate_pack(
             book_title=book.title,

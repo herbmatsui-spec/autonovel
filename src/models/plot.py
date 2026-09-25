@@ -313,6 +313,65 @@ class PlotBlueprintPhase2(BaseModel):
     script_content: str = Field(default="")
 
 
+class EpisodeMacroSkeleton(BaseModel):
+    ep_num: Annotated[int, BeforeValidator(extract_int)] = Field(
+        default=0,
+        validation_alias=AliasChoices("ep_num", "episode_num", "episode", "ep", "no", "number"),
+        description="エピソード話数",
+    )
+    title: str = Field(default="", description="サブタイトル")
+    one_line_summary: str = Field(default="", max_length=150, description="一行あらすじ")
+    inciting_event: str = Field(default="", description="主要事件・発端")
+    climax_payoff: str = Field(default="", description="山場・獲得物")
+    tension: Annotated[int, BeforeValidator(extract_int)] = Field(
+        default=50, ge=0, le=100, description="目標テンション"
+    )
+    current_chain_phase: Annotated[ChainPhase, BeforeValidator(normalize_chain_phase)] = Field(
+        default="Friction", description="感情チェーンフェーズ"
+    )
+    resolution_style: str = Field(default="Cheat", description="解決スタイル")
+    foreshadowing_plan: list[str] = Field(default_factory=list, description="関与する伏線ID")
+    next_hook: Annotated[CliffhangerDef, BeforeValidator(ensure_cliffhanger_obj)] = Field(
+        default_factory=CliffhangerDef, description="クリフハンガー"
+    )
+
+    model_config = MODEL_CONFIG_DEFAULTS
+
+
+class PlotMacroBatch(BaseModel):
+    episodes: list[EpisodeMacroSkeleton] = Field(default_factory=list)
+
+    @model_validator(mode="before")
+    @classmethod
+    def unwrap_batch(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            for wrapper in ["metadata", "data", "episodes", "results"]:
+                if wrapper in data and isinstance(data[wrapper], list) and len(data) == 1:
+                    data = {"episodes": data[wrapper]}
+                    break
+                elif wrapper in data and isinstance(data[wrapper], dict) and len(data) == 1:
+                    data = data[wrapper]
+                    break
+        return data
+
+    model_config = MODEL_CONFIG_DEFAULTS
+
+
+class PlotMicroBlueprint(BaseModel):
+    ep_num: Annotated[int, BeforeValidator(extract_int)] = Field(
+        ...,
+        validation_alias=AliasChoices("ep_num", "episode_num", "episode", "ep", "no", "number"),
+        description="エピソード話数",
+    )
+    thought_process: str = Field(default="", description="前話からの接続・緩急の意図")
+    detailed_blueprint: str = Field(default="", description="2000字詳細シーンフロー")
+    scenes: list[MasterSceneBlock] = Field(default_factory=list, description="3シーン構成")
+    bridge_from_previous: str = Field(default="", description="前話ラストからの接続指示")
+    script_content: str = Field(default="", description="会話・行動台本")
+
+    model_config = MODEL_CONFIG_DEFAULTS
+
+
 class PlotCoreInfo(BaseModel):
     ep_num: int = Field(
         default=0,
@@ -852,6 +911,40 @@ class PlotEpisodeBase(FlatModelMixin, CoreEngineMixin, Generic[T]):
             "cumulative_stress": getattr(self.analytics, "cumulative_stress", self.tension_delta),
         }
 
+    def extract_macro_skeleton(self) -> EpisodeMacroSkeleton:
+        """PlotEpisode から大局骨子モデルを抽出する"""
+        foreshadowing_plan = []
+        if hasattr(self, "foreshadowing") and hasattr(self.foreshadowing, "foreshadowing_refs"):
+            foreshadowing_plan = list(self.foreshadowing.foreshadowing_refs or [])
+
+        return EpisodeMacroSkeleton(
+            ep_num=self.ep_num,
+            title=self.title,
+            one_line_summary=self.one_line_summary,
+            inciting_event=getattr(self, "inciting_event", "") or self.one_line_summary,
+            climax_payoff=getattr(self, "climax_payoff", "") or self.emotional_payoff,
+            tension=self.tension,
+            current_chain_phase=getattr(self, "current_chain_phase", "Friction"),
+            resolution_style=self.resolution_style,
+            foreshadowing_plan=foreshadowing_plan,
+            next_hook=self.next_hook,
+        )
+
+    def extract_micro_blueprint(self) -> PlotMicroBlueprint:
+        """PlotEpisode から微視的演出・ビート展開モデルを抽出する"""
+        bridge = ""
+        if self.scenes and hasattr(self.scenes[0], "bridge_instruction"):
+            bridge = self.scenes[0].bridge_instruction
+
+        return PlotMicroBlueprint(
+            ep_num=self.ep_num,
+            thought_process=self.thought_process,
+            detailed_blueprint=self.detailed_blueprint,
+            scenes=list(self.scenes or []),
+            bridge_from_previous=getattr(self, "bridge_instruction", "") or bridge,
+            script_content=getattr(self, "script_content", ""),
+        )
+
     model_config = {**MODEL_CONFIG_DEFAULTS, "extra": "allow"}
 
 
@@ -1137,3 +1230,27 @@ class CatharsisPattern(BaseModel):
             "pattern_type": self.pattern_type,
             "tension_wave": self.tension_wave,
         }
+
+
+def merge_macro_and_micro(macro: EpisodeMacroSkeleton, micro: PlotMicroBlueprint) -> PlotEpisode:
+    """大局骨子(Macro)と微視的演出(Micro)を結合して完全な PlotEpisode を構築する。"""
+    if macro.ep_num != micro.ep_num:
+        raise ValueError(
+            f"エピソード話数が一致しません: macro={macro.ep_num}, micro={micro.ep_num}"
+        )
+
+    # PlotEpisode のインスタンスを組み立て
+    return PlotEpisode(
+        ep_num=macro.ep_num,
+        title=macro.title,
+        one_line_summary=macro.one_line_summary,
+        detailed_blueprint=micro.detailed_blueprint,
+        thought_process=micro.thought_process,
+        tension=macro.tension,
+        current_chain_phase=macro.current_chain_phase,
+        resolution_style=macro.resolution_style,
+        next_hook=macro.next_hook,
+        scenes=micro.scenes,
+        script_content=micro.script_content,
+        foreshadowing_refs=macro.foreshadowing_plan,
+    )

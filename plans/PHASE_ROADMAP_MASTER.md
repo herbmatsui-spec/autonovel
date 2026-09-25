@@ -83,6 +83,8 @@
 | **Phase 3: コア軽量化・統合 (Part 3)** | **完了** | 静的ルールCRLF対応、LLMパース堅牢化、AIサニタイズ、PDCAパイプライン結合、LRUキャッシュ |
 | **Phase 4: 本番運用性・テスト確立 (Part 4)** | **完了** | health 503是正・DB疎通、空テスト（`assertTrue`）の真のE2Eテスト化、Sentry/OTELガード |
 | **Code Review Remediation (全20ステップ)** | **完了** | **P0〜P2所見の完全解消**: DB非同期コミット正規化、ヘルスチェック一本化、API認証/定数時間比較/バリデーション、CircuitBreakerスレッドセーフ一元化、旧`src/agent`・旧`database/core.py`等16ファイル(1,261行)削除、モデル競合解消 |
-| **総合検証 (Part 6)** | **完了** | 全19スイート（62件のリグレッションテスト）ALL GREEN (100% PASS, 6.92s) |
+| **Phase J: プロット二段階化 (Coarse-to-Fine)** | **完了** | **小説品質向上のための二段階プロット展開（J1〜J3全108ステップ完遂）**:<br>1. **J1 (モデルとプロンプト分離)**: `EpisodeMacroSkeleton` (大局骨子) と `PlotMicroBlueprint` (微視的演出) の分離定義、Jinja2テンプレート・プロンプトビルダー新設<br>2. **J2 (JIT Expanderサービス)**: デメリット3点（レイテンシ増・直列化・状態管理）を「小型高速モデル階層化(`gemini-3.5-flash-lite`)」「投機的非同期プリフェッチ(`asyncio.create_task`)」「完全冪等オンデマンドリゾルバ」で根治<br>3. **J3 (パイプライン統合・定量検証)**: `PlanStep` / `WriteStep` / `EasyMode` / `FullAuto` 切り替え、ビート描写解像度ベンチマーク(`bench_plot_resolution.py`)、真のE2Eテスト(`test_coarse_fine_e2e.py`)全件パス |
+| **Code Review Phase 2 Remediation (第2次是正・全24ステップ)** | **完了** | **第2次コードレビュー所見（Critical 3 / Major 5 / Minor 5）の完全解消**:<br>1. **セキュリティ**: .env追跡ゼロ確認、Docker Compose パスワード環境変数化 (test_env_security_guardrails.py 4 passed)<br>2. **認証・ログ**: auth_middleware.py 定数時間比較統一、branches.py print()削除 (test_auth_middleware_timing_safe.py 3 passed, test_no_print_in_production_code.py 1 passed)<br>3. **例外・整理**: ワークフローの except Exception: pass 撲滅、スクリプト集約 (test_exception_handling_audit.py 1 passed)<br>4. **移行完了**: ContextManager 撤廃・委譲一本化 (test_context_builder_migration.py 4 passed)<br>5. **TODO実装**: PatchMerger, ParagraphPatchAgent, FastScreener, patchesルーター, stream_writingジャンル動的化 (test_patch_pipeline_integration.py 4 passed)<br>6. **構造整理**: easy_mode.py 重複import解消 |
+| **総合検証 (Phase J / Phase 2 Remediation 含む)** | **完了** | 全新設リグレッションテストスイート ALL GREEN (100% PASS) |
 
 

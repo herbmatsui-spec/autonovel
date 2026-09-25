@@ -160,8 +160,8 @@ class IllustrationWorkflow(BaseWorkflow):
             if book is not None:
                 book_ctx["title"] = getattr(book, "title", "") or ""
                 book_ctx["genre"] = getattr(book, "genre", "") or ""
-        except Exception:  # noqa: BLE001
-            pass
+        except Exception as exc:  # noqa: BLE001
+            logger.debug(f"Yonkoma: failed to load book context for book {book_id}: {exc}")
 
         panels = max(3, min(int(settings.get("yonkomaPanels", 6) or 6), 6))
         request = IllustrationRequest(

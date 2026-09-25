@@ -8,6 +8,7 @@ from pydantic import ValidationError
 
 from src.backend import database
 from src.backend.auth import require_api_key
+from src.backend.database.core import get_db_manager
 from src.backend.database.repository import BookRepository
 from src.backend.observability.health import metrics
 from src.backend.rate_limit import generate_limiter
@@ -71,7 +72,6 @@ async def execute_generation(payload: dict[str, Any]) -> dict[str, Any]:
     history_context = "\n".join(chapter_history[:-1]) if len(chapter_history) > 1 else "なし"
 
     # GraphRAG コンテキストの取得
-    from src.backend.database.core import get_db_manager
     db = get_db_manager()
     async with db.get_session() as session:
         rag_context = await rag_service.build_rag_context(
@@ -178,7 +178,6 @@ async def execute_generation(payload: dict[str, Any]) -> dict[str, Any]:
     )
 
     # 生成完了後、バックグラウンド/同期でナレッジグラフとベクトルを更新
-    from src.backend.database.core import get_db_manager
     db = get_db_manager()
     async with db.get_session() as session:
         try:
@@ -424,7 +423,6 @@ async def gacha_endpoint(
     """3案ガチャ企画生成 [Gacha Pitch]"""
     from fastapi import HTTPException
 
-    from src.backend.database.core import get_db_manager
 
     db = get_db_manager()
     svc = GachaService(db=db)
@@ -444,7 +442,6 @@ async def digest_endpoint(
     """ダイジェスト生成 [Quick Digest]"""
     from fastapi import HTTPException
 
-    from src.backend.database.core import get_db_manager
 
     db = get_db_manager()
     svc = DigestService(db=db)
@@ -460,7 +457,6 @@ async def promote_endpoint(
     api_key: str = Depends(require_api_key),
 ) -> PromotionResponse:
     """上級者モード昇格 [Producer Handoff]"""
-    from src.backend.database.core import get_db_manager
     from fastapi import HTTPException
 
     db = get_db_manager()

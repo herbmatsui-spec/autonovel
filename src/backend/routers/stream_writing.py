@@ -35,6 +35,10 @@ async def _run_writing_pipeline(
     async with UnitOfWork(AppContainer.db()) as uow:
         await verify_book_ownership(book_id, user, uow)
         
+        # 書籍情報を取得してジャンルを特定
+        book = await uow.books.get_by_id(book_id)
+        book_genre = getattr(book, "genre", "") or "fantasy"
+
         # 章情報を取得
         chapter = await uow.chapters.get_chapter(branch_id, ep_num)
         if not chapter:
@@ -81,7 +85,7 @@ async def _run_writing_pipeline(
             "ep_num": chapter.ep_num,
             "title": chapter.title,
             "target_word_count": 3000,
-            "genre": "fantasy",  # TODO: 本来はbookから取得
+            "genre": book_genre,
             "concept": "",
             "keywords": [],
             "previous_episode_summary": "",

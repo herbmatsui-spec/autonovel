@@ -21,7 +21,7 @@ services:
         condition: service_healthy
     environment:
       - PYTHONPATH=/app
-      - DATABASE_URL=postgresql://autonovel:autonovel@db:5432/autonovel
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-autonovel}:${POSTGRES_PASSWORD:-autonovel}@db:5432/${POSTGRES_DB:-autonovel}
       - REDIS_URL=redis://redis:6379/0
       - HUEY_BACKEND=redis
       - AUTH_DISABLED=true
@@ -65,7 +65,7 @@ services:
     command: ["python", "-m", "huey.bin.huey_consumer", "src.backend.tasks.huey.huey", "-w", "2", "-k", "thread"]
     environment:
       - PYTHONPATH=/app
-      - DATABASE_URL=postgresql://autonovel:autonovel@db:5432/autonovel
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-autonovel}:${POSTGRES_PASSWORD:-autonovel}@db:5432/${POSTGRES_DB:-autonovel}
       - REDIS_URL=redis://redis:6379/0
       - HUEY_BACKEND=redis
       - USE_NULL_POOL=1
@@ -107,14 +107,14 @@ services:
     image: pgvector/pgvector:pg16
     container_name: autonovel_db
     environment:
-      - POSTGRES_USER=autonovel
-      - POSTGRES_PASSWORD=autonovel
-      - POSTGRES_DB=autonovel
+      - POSTGRES_USER=${POSTGRES_USER:-autonovel}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      - POSTGRES_DB=${POSTGRES_DB:-autonovel}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U autonovel -d autonovel"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-autonovel} -d ${POSTGRES_DB:-autonovel}"]
       interval: 5s
       timeout: 5s
       retries: 5

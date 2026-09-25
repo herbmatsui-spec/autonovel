@@ -10,6 +10,7 @@ src/backend/middleware/auth_middleware.py - グローバル認証ミドルウェ
 from __future__ import annotations
 
 import logging
+import secrets
 from typing import Callable
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
@@ -71,8 +72,8 @@ class GlobalAuthMiddleware(BaseHTTPMiddleware):
         if settings.AUTH_DISABLED:
             return await call_next(request)
 
-        app_obj = getattr(request, "app", None)
-        overrides = getattr(app_obj, "dependency_overrides", None)
+        app_obj = request.scope.get("app")
+        overrides = getattr(app_obj, "dependency_overrides", None) if app_obj else None
         if overrides:
             from src.backend.auth import (
                 get_current_user,
@@ -101,9 +102,9 @@ class GlobalAuthMiddleware(BaseHTTPMiddleware):
 
         # 4a. API Key 検証 (X-API-Key または Authorization)
         allowed_keys_str = settings.ALLOWED_API_KEYS or ""
-        allowed_keys = {k.strip() for k in allowed_keys_str.split(",") if k.strip()}
+        allowed_keys = [k.strip() for k in allowed_keys_str.split(",") if k.strip()]
 
-        if api_key_header and api_key_header in allowed_keys:
+        if api_key_header and any(secrets.compare_digest(api_key_header, k) for k in allowed_keys):
             return await call_next(request)
 
         # 4b. Authorization ヘッダー検証
@@ -114,8 +115,8 @@ class GlobalAuthMiddleware(BaseHTTPMiddleware):
             else:
                 token = auth_header.strip()
 
-            # API Key として一致するか確認
-            if token and token in allowed_keys:
+            # API Key として一致するか確認 (タイミングセーフ比較)
+            if token and any(secrets.compare_digest(token, k) for k in allowed_keys):
                 return await call_next(request)
 
             # JWT トークンとして検証
@@ -143,3 +144,8 @@ class GlobalAuthMiddleware(BaseHTTPMiddleware):
             content={"detail": "認証が必要です"},
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+
+# Backward-compatible alias
+AuthMiddleware = GlobalAuthMiddleware
+
