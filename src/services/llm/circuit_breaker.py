@@ -1,13 +1,12 @@
-"""LLMプロバイダー向けサーキットブレーカー。"""
+"""LLMプロバイダー向けサーキットブレーカー (src.llm.circuit_breaker 統合版)。"""
 from __future__ import annotations
-import time
-from enum import Enum
 
-
-class CircuitState(str, Enum):
-    CLOSED = "closed"      # 正常稼働
-    OPEN = "open"          # 遮断中 (通信スキップ)
-    HALF_OPEN = "half_open"  # 試験復旧中
+from typing import Any
+from src.llm.circuit_breaker import (
+    CircuitState,
+    LLMCircuitBreaker,
+    ProviderHealthState,
+)
 
 
 class CircuitBreakerOpenException(Exception):
@@ -16,28 +15,48 @@ class CircuitBreakerOpenException(Exception):
 
 
 class CircuitBreaker:
-    def __init__(self, failure_threshold: int = 3, recovery_timeout: float = 30.0):
+    """単一プロバイダまたは共有インスタンスに対するアダプタクラス。
+    内部でスレッドセーフな LLMCircuitBreaker を使用して状態管理を行う。
+    """
+
+    def __init__(
+        self,
+        failure_threshold: int = 3,
+        recovery_timeout: float = 30.0,
+        provider_name: str = "default",
+        underlying: LLMCircuitBreaker | None = None,
+    ) -> None:
+        self.provider_name = provider_name
         self.failure_threshold = failure_threshold
         self.recovery_timeout = recovery_timeout
-        self.state = CircuitState.CLOSED
-        self.failure_count = 0
-        self.last_failure_time = 0.0
+        self._underlying = underlying or LLMCircuitBreaker(
+            failure_threshold=failure_threshold,
+            timeout_seconds=recovery_timeout,
+            cooldown_seconds=recovery_timeout,
+        )
 
-    def record_success(self) -> None:
-        self.failure_count = 0
-        self.state = CircuitState.CLOSED
+    @property
+    def state(self) -> CircuitState:
+        return self._underlying.get_state(self.provider_name).state
 
-    def record_failure(self) -> None:
-        self.failure_count += 1
-        self.last_failure_time = time.time()
-        if self.failure_count >= self.failure_threshold:
-            self.state = CircuitState.OPEN
+    @property
+    def failure_count(self) -> int:
+        return self._underlying.get_state(self.provider_name).failure_count
 
-    def can_execute(self) -> bool:
-        now = time.time()
-        if self.state == CircuitState.OPEN:
-            if now - self.last_failure_time > self.recovery_timeout:
-                self.state = CircuitState.HALF_OPEN
-                return True
-            return False
-        return True
+    def record_success(self, provider_name: str | None = None) -> None:
+        self._underlying.record_success(provider_name or self.provider_name)
+
+    def record_failure(self, provider_name: str | None = None, error: Any = None) -> None:
+        self._underlying.record_failure(provider_name or self.provider_name, error)
+
+    def can_execute(self, provider_name: str | None = None) -> bool:
+        return self._underlying.can_execute(provider_name or self.provider_name)
+
+
+__all__ = [
+    "CircuitBreaker",
+    "CircuitBreakerOpenException",
+    "CircuitState",
+    "LLMCircuitBreaker",
+    "ProviderHealthState",
+]
