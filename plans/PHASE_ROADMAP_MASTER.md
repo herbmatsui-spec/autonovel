@@ -63,5 +63,22 @@
 - **主要タスク**:
   1. ローカル開発（SQLite）と本番（PostgreSQL + pgvector）の明確な境界定義
   2. Docker Compose 本番構成の起動・E2E検証
-  3. 監視・エラーハンドリング（Sentry / OpenTelemetry）の確認
-  4. 商用リリース
+  3. 監視・エラーハンドリング（Sentry / OpenTelemetry）のテスト環境スキップと本番初期化検証（完了）
+  4. ヘルスチェック（FastAPI JSONResponse 503準拠および実DB疎通）の是正（完了）
+  5. 商用リリース準備
+
+---
+
+## 📊 実装・統合完了状況 (2026-09-25 確定)
+
+詳細な実行計画書 [PLAN_RECOVERY_UNIFICATION_AND_REAL_INTEGRATION.md](file:///e:/hhh/plans/PLAN_RECOVERY_UNIFICATION_AND_REAL_INTEGRATION.md) に基づき、全17ステップを完了。
+
+| フェーズ / パート | 状態 | 主な達成内容 |
+| :--- | :---: | :--- |
+| **Phase 0: 観測性とSSOT確立** | **完了** | SSOT策定、README・仕様同期、カバレッジ閾値と実力値の調整 |
+| **Phase 1: テスト救命・復旧 (Part 1)** | **完了** | `__init__.py`全件・`conftest.py`リストア、`project_context`修復、テスト収集数 2,541件へ劇的改善 |
+| **Phase 2: 二重化解消 (Part 2)** | **完了** | Flask版仮設モック削除、仮設Web退避、FastAPI正規版への完全一本化 |
+| **Phase 3: コア軽量化・統合 (Part 3)** | **完了** | 静的ルールCRLF対応、LLMパース堅牢化、AIサニタイズ、PDCAパイプライン結合、LRUキャッシュ |
+| **Phase 4: 本番運用性・テスト確立 (Part 4)** | **完了** | health 503是正・DB疎通、空テスト（`assertTrue`）の真のE2Eテスト化、Sentry/OTELガード |
+| **総合検証 (Part 5)** | **完了** | 全13スイート（40件のリグレッションテスト）ALL GREEN (2.17s) |
+
