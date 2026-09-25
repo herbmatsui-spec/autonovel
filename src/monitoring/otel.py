@@ -31,7 +31,11 @@ def init_otel(app=None, service_name="autonovel"):
     """
     Initialize OpenTelemetry tracing and metrics.
     If app is provided, instruments the FastAPI app.
+    Skips initialization in testing environment to avoid overhead.
     """
+    if os.environ.get("TESTING") == "True" or "PYTEST_CURRENT_TEST" in os.environ:
+        return None
+
     # Set up resource
     resource = Resource(attributes={
         "service.name": service_name,

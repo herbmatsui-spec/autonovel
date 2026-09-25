@@ -6,7 +6,11 @@ def init_sentry(app=None):
     """
     Initialize Sentry error tracking.
     If app is provided, attaches the ASGI middleware.
+    Skips initialization in testing environment to avoid overhead.
     """
+    if os.environ.get("TESTING") == "True" or "PYTEST_CURRENT_TEST" in os.environ:
+        return None
+
     dsn = os.environ.get("SENTRY_DSN")
     if dsn:
         sentry_sdk.init(

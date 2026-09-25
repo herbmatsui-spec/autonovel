@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+from fastapi.responses import JSONResponse
 import logging
 
 logger = logging.getLogger(__name__)
@@ -16,17 +17,22 @@ async def liveness():
 async def readiness():
     """
     Readiness probe: checks if dependencies (e.g., database) are available.
-    In a real application, you would check the database connection, cache, etc.
-    For now, we return a placeholder.
+    Returns 200 when all dependencies are healthy, 503 with error payload otherwise.
     """
-    # TODO: Add actual dependency checks (e.g., database connection)
+    checks = {}
     try:
-        # Example: check database connection
-        # from src.backend.database import get_db
-        # db = get_db()
-        # db.execute("SELECT 1")
-        pass
+        from src.backend.observability.health import check_database
+        db_res = await check_database(timeout=2.0)
+        checks["database"] = db_res
+        if db_res.get("status") != "ok":
+            return JSONResponse(
+                status_code=503,
+                content={"status": "not ready", "error": db_res.get("code", "DB_ERROR"), "checks": checks},
+            )
     except Exception as e:
         logger.error(f"Readiness check failed: {e}")
-        return {"status": "not ready", "error": str(e)}, 503
-    return {"status": "ready"}
+        return JSONResponse(
+            status_code=503,
+            content={"status": "not ready", "error": str(e), "checks": checks},
+        )
+    return {"status": "ready", "checks": checks}
