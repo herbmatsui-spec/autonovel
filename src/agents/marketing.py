@@ -257,17 +257,22 @@ class MarketingAgent(BaseAgent):
             chars = override_characters if override_characters is not None else chars
             plots = override_plots if override_plots is not None else plots
 
+        def _to_win_txt_bytes(text: str) -> bytes:
+            crlf_text = text.replace("\r\n", "\n").replace("\n", "\r\n")
+            return b"\xef\xbb\xbf" + crlf_text.encode("utf-8")
+
         buf = io.BytesIO()
         with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
             # 01: 本文
+            title_header = f"■ 作品タイトル: {override_title or (book.title if book else '')}\n■ ジャンル・区分: {override_genre or (book.genre if book else '')}\n\n"
             if book_data is not None and override_chapters is not None:
-                full_text = "".join(
+                full_text = title_header + "".join(
                     f"第{c.get('ep_num', i + 1)}話 {c.get('title', '')}\n\n{c.get('content', '')}\n\n"
                     for i, c in enumerate(override_chapters)
                 )
             else:
-                full_text = "".join(f"第{c.ep_num}話 {c.title}\n\n{c.content}\n\n" for c in chapters)
-            z.writestr("01_本文.txt", full_text)
+                full_text = title_header + "".join(f"第{c.ep_num}話 {c.title}\n\n{c.content}\n\n" for c in chapters)
+            z.writestr("01_本文.txt", _to_win_txt_bytes(full_text))
 
             # 02: キャラクター・世界観設定
             settings_str = ""
@@ -308,7 +313,7 @@ class MarketingAgent(BaseAgent):
                     except Exception:
                         reg = {}
                     setting_text += f"■ {c.name} ({c.role})\n性格: {reg.get('personality', '')}\n能力: {reg.get('ability', '')}\n\n"
-            z.writestr("02_キャラクター・世界観設定集.txt", setting_text)
+            z.writestr("02_キャラクター・世界観設定集.txt", _to_win_txt_bytes(setting_text))
 
             # 03: プロット概要
             plot_text = "【プロット概要】\n"
@@ -321,7 +326,7 @@ class MarketingAgent(BaseAgent):
             else:
                 for p in plots:
                     plot_text += f"第{p.ep_num}話: {p.title}\n{p.one_line_summary or ''}\n\n"
-            z.writestr("03_プロット概要.txt", plot_text)
+            z.writestr("03_プロット概要.txt", _to_win_txt_bytes(plot_text))
 
             # 04: JSON ダンプ（機械可読）
             dump = {

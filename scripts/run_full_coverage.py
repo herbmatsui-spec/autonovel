@@ -23,7 +23,8 @@ cmd = [
     "--cov=src",
     "--cov-report=json:coverage.json",
     "--cov-report=term",
-    "-o", "addopts=-p no:timeout --import-mode=importlib",
+    "--import-mode=importlib",
+    "-p", "no:timeout",
 ]
 
 print("Running:", " ".join(cmd[:6]), "...")
