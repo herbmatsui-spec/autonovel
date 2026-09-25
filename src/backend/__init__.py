@@ -1,0 +1,1 @@
+"""AutoNovel backend package."""
