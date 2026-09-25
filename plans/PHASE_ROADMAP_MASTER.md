@@ -69,9 +69,11 @@
 
 ---
 
+---
+
 ## 📊 実装・統合完了状況 (2026-09-25 確定)
 
-詳細な実行計画書 [PLAN_RECOVERY_UNIFICATION_AND_REAL_INTEGRATION.md](file:///e:/hhh/plans/PLAN_RECOVERY_UNIFICATION_AND_REAL_INTEGRATION.md) に基づき、全17ステップを完了。
+詳細な実行計画書 [PLAN_RECOVERY_UNIFICATION_AND_REAL_INTEGRATION.md](file:///e:/hhh/plans/PLAN_RECOVERY_UNIFICATION_AND_REAL_INTEGRATION.md) および [PLAN_CODE_REVIEW_REMEDIATION_AND_HARDENING.md](file:///e:/hhh/plans/PLAN_CODE_REVIEW_REMEDIATION_AND_HARDENING.md) に基づき、全ステップを完了。
 
 | フェーズ / パート | 状態 | 主な達成内容 |
 | :--- | :---: | :--- |
@@ -80,11 +82,7 @@
 | **Phase 2: 二重化解消 (Part 2)** | **完了** | Flask版仮設モック削除、仮設Web退避、FastAPI正規版への完全一本化 |
 | **Phase 3: コア軽量化・統合 (Part 3)** | **完了** | 静的ルールCRLF対応、LLMパース堅牢化、AIサニタイズ、PDCAパイプライン結合、LRUキャッシュ |
 | **Phase 4: 本番運用性・テスト確立 (Part 4)** | **完了** | health 503是正・DB疎通、空テスト（`assertTrue`）の真のE2Eテスト化、Sentry/OTELガード |
-| **総合検証 (Part 5)** | **完了** | 全13スイート（40件のリグレッションテスト）ALL GREEN (2.17s) |
+| **Code Review Remediation (全20ステップ)** | **完了** | **P0〜P2所見の完全解消**: DB非同期コミット正規化、ヘルスチェック一本化、API認証/定数時間比較/バリデーション、CircuitBreakerスレッドセーフ一元化、旧`src/agent`・旧`database/core.py`等16ファイル(1,261行)削除、モデル競合解消 |
+| **総合検証 (Part 6)** | **完了** | 全19スイート（62件のリグレッションテスト）ALL GREEN (100% PASS, 6.92s) |
 
----
-
-## 🚀 次期実行計画: 包括コードレビュー是正と商用高信頼化 (2026-09-25 策定)
-
-詳細な実行計画書 [PLAN_CODE_REVIEW_REMEDIATION_AND_HARDENING.md](file:///e:/hhh/plans/PLAN_CODE_REVIEW_REMEDIATION_AND_HARDENING.md) に基づき、コードレビューで特定された P0〜P2 所見の解消とリグレッション防止テストの拡充（全20ステップ）を推進中。
 
