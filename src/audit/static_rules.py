@@ -45,10 +45,11 @@ class StaticRuleAuditor:
             List[Issue]: 検出された問題のリスト
         """
         issues = []
+
+        # 改行コードの正規化 (CRLF/CR -> LF) で文字オフセットのずれを防止
+        text = text.replace('\r\n', '\n').replace('\r', '\n')
         
         # 1. 文字数チェック (基本的な実装)
-        # 実際の実装では、プラットフォーム固有の制限を適用すべき
-        # ここではデフォルト制限を使用
         if len(text) > self.default_max_chapter_chars:
             issues.append(Issue(
                 type="length_exceeded",
@@ -58,7 +59,6 @@ class StaticRuleAuditor:
             ))
         
         # 2. 章タイトルフォーマットチェック
-        # 簡易実装：最初の行が章タイトルだと仮定
         lines = text.split('\n')
         if lines and len(lines[0]) > self.default_max_title_chars:
             issues.append(Issue(
@@ -74,36 +74,32 @@ class StaticRuleAuditor:
             issues.append(Issue(
                 type="paragraph_count_insufficient",
                 message=f"段落数が不足しています（{len(paragraphs)}段落 < {self.default_min_paragraphs}段落）",
-                location=None,  # Location unclear for entire text
+                location=None,
                 suggestion=f"少なくとも{self.default_min_paragraphs}段落を含めてください"
             ))
         
         # 4. 禁則チェック (基本的な実装)
-        # 約物禁則処理など
-        # ここでは簡易的なパターンマッチングを行う
         for pattern in self.forbidden_patterns:
             matches = list(re.finditer(pattern, text))
             for match in matches:
                 issues.append(Issue(
-                    type="forbidden_pattern",
-                    message=f"禁則パターンが検出されました: {match.group()}",
-                    location=(match.start(), match.end()),
-                    suggestion="禁則パターンを修正してください"
-                ))
+                type="forbidden_pattern",
+                message=f"禁則パターンが検出されました: {match.group()}",
+                location=(match.start(), match.end()),
+                suggestion="禁則パターンを修正してください"
+            ))
         
         # 5. 行頭禁則チェック (行頭に閉じ括弧や句読点がないか)
-        # Japanese line-start kinsoku characters
-        line_start_forbidden = '、。・：；？！」「』】〕〉》」』】〕〉》'
-        lines = text.split('\n')
-        for i, line in enumerate(lines):
+        line_start_forbidden = frozenset('、。・：；？！」「』】〕〉》')
+        current_offset = 0
+        for line in lines:
             if line and line[0] in line_start_forbidden:
-                # Calculate approximate position in original text
-                pos = sum(len(l) + 1 for l in lines[:i])  # +1 for newline
                 issues.append(Issue(
                     type="line_start_forbidden_punct",
                     message=f"行頭に禁則文字があります: '{line[0]}'",
-                    location=(pos, pos + 1),
+                    location=(current_offset, current_offset + 1),
                     suggestion="行頭の禁則文字を削除または文頭に移動してください"
                 ))
+            current_offset += len(line) + 1  # +1 for newline
          
         return issues

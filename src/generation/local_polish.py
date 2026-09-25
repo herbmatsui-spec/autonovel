@@ -2,8 +2,51 @@
 局所パッチ（Single-shot Polish） - 指摘された特定シーンのみの再生成
 """
 
+import re
 from typing import Tuple
 from src.audit.unified_llm_auditor import call_llm_api
+
+
+def sanitize_polished_text(raw_text: str) -> str:
+    """
+    LLMが生成した推敲文から、AIアシスタントの定型前置きやおしゃべりを除去し、
+    純粋な小説本文のみを抽出・サニタイズする。
+    """
+    if not raw_text:
+        return ""
+
+    text = raw_text.strip()
+
+    # 1. コードブロックで囲まれている場合は中身を取り出す
+    code_match = re.search(r"```(?:\w+)?\s*([\s\S]*?)\s*```", text)
+    if code_match:
+        text = code_match.group(1).strip()
+
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+
+    # 前置き判定キーワード
+    preamble_keywords = ("承知", "了解", "かしこまりました", "修正後", "修正案", "改善後", "改善案", "推敲後", "以下")
+    # 後書き判定キーワード
+    postscript_keywords = ("以上", "ご参考", "お役に", "いかがでしょうか")
+
+    # 先頭行が前置きなら除去
+    while lines and any(kw in lines[0] for kw in preamble_keywords) and (
+        "：" in lines[0] or ":" in lines[0] or "。" in lines[0] or len(lines[0]) < 40
+    ):
+        lines.pop(0)
+
+    # 末尾行が後書きなら除去
+    while lines and any(kw in lines[-1] for kw in postscript_keywords) and len(lines[-1]) < 50:
+        lines.pop()
+
+    result = "\n".join(lines).strip()
+
+    # 全体を囲む余分なクォート（"...", 「...」）を、単一ブロックなら外す
+    if (result.startswith("「") and result.endswith("」") and result.count("「") == 1) or \
+       (result.startswith('"') and result.endswith('"') and result.count('"') == 2):
+        result = result[1:-1].strip()
+
+    return result
 
 
 class LocalPolisher:
@@ -48,15 +91,19 @@ class LocalPolisher:
         try:
             # LLMを呼び出して改善されたテキストを生成
             improved_text = call_llm_api(prompt)
+            sanitized = sanitize_polished_text(improved_text)
             
+            # サニタイズ結果が空の場合は置換せず元のテキストを維持
+            if not sanitized:
+                return text
+
             # 生成されたテキストを元のテキストに組み込む
             # 前半 + 改善テキスト + 後半
-            polished_text = text[:start_idx] + improved_text.strip() + text[end_idx:]
+            polished_text = text[:start_idx] + sanitized + text[end_idx:]
             
             return polished_text
         except Exception:
             # LLM呼び出しに失敗した場合は元のテキストを返す
-            # フォールバック機構はStep 18で実装予定
             return text
     
     def _create_polish_prompt(self, before_context: str, target_text: str, 

@@ -9,6 +9,9 @@ from src.domain.writing.models import (
     WritingGenerationContext,
     clean_writing_response,
 )
+from src.audit.pipeline import AuditPipeline
+from src.generation.local_polish import LocalPolisher
+from src.generation.pdca_controller import PDCAController
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +29,9 @@ class WritingCoordinator:
         reporter_factory: Any = None,
         book_score_calculator: Any = None,
         score_threshold: float = 70.0,
+        pdca_controller: Any = None,
+        audit_pipeline: Any = None,
+        local_polisher: Any = None,
     ) -> None:
         self.writer = writer
         self.repo = repo
@@ -35,6 +41,10 @@ class WritingCoordinator:
         self.reporter_factory = reporter_factory
         self.book_score_calculator = book_score_calculator
         self.score_threshold = score_threshold
+        # Phase 3 コア軽量化: 全文再生成0回、局所パッチ最大1回のデフォルト
+        self.pdca_controller = pdca_controller or PDCAController()
+        self.audit_pipeline = audit_pipeline or AuditPipeline()
+        self.local_polisher = local_polisher or LocalPolisher()
 
     async def generate_episodes_pipeline(
         self,
@@ -121,7 +131,20 @@ class WritingCoordinator:
         if not auto_regenerate or self.book_score_calculator is None:
             return word_count
 
-        # 自動再生成ループ
+        # Phase 3 PDCA制御: 全文再生成が禁止されている場合 (max_regenerations == 0)
+        if not self.pdca_controller.should_regenerate_full_text():
+            if reporter:
+                reporter.report(
+                    f"Ep.{start_ep}-{end_ep}: PDCAポリシーにより全文再生成ループは無効化されています",
+                    "info",
+                )
+            # 局所パッチ (Single-shot Polish) の適用
+            if self.pdca_controller.can_do_local_patch():
+                for ep in range(start_ep, end_ep + 1):
+                    await self._apply_single_shot_polish(book_id, ep, branch_id, reporter)
+            return word_count
+
+        # 自動再生成ループ (max_regenerations > 0 の場合のみ到達)
         for ep in range(start_ep, end_ep + 1):
             for retry in range(max_retries):
                 score_result = await self.calculate_book_score(
@@ -378,3 +401,50 @@ class WritingCoordinator:
             import_text=import_text,
             do_refine=do_refine,
         )
+
+    async def _apply_single_shot_polish(
+        self,
+        book_id: int,
+        ep_num: int,
+        branch_id: int = 1,
+        reporter: Any = None,
+    ) -> None:
+        """エピソードテキストに対して AuditPipeline を実行し、指摘箇所を最大1回局所推敲する。"""
+        if self.repo is None:
+            return
+
+        episode = getattr(self.repo, "get_episode_by_number", lambda *args, **kwargs: None)(
+            book_id, ep_num, branch_id
+        )
+        if not episode or not getattr(episode, "content", None):
+            return
+
+        text = episode.content
+        issues = self.audit_pipeline.run(text)
+        if not issues:
+            return
+
+        # 位置情報(location)と改善提案(suggestion)を持つIssueを1つ選択
+        patch_candidate = next((i for i in issues if i.location and i.suggestion), None)
+        if not patch_candidate:
+            return
+
+        if reporter:
+            reporter.report(
+                f"Ep.{ep_num}: 局所パッチ適用中 [{patch_candidate.type}]: {patch_candidate.message}",
+                "info",
+            )
+
+        polished_text = self.local_polisher.polish(
+            text=text,
+            target_range=patch_candidate.location,
+            improvement_instruction=patch_candidate.suggestion,
+        )
+
+        if polished_text and polished_text != text:
+            episode.content = polished_text
+            if hasattr(self.repo, "save_episode"):
+                self.repo.save_episode(episode)
+            self.pdca_controller.record_local_patch()
+            if reporter:
+                reporter.report(f"Ep.{ep_num}: 局所パッチを適用・保存しました", "success")

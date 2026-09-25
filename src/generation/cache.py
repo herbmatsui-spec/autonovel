@@ -1,27 +1,31 @@
 import time
 import threading
+from collections import OrderedDict
 from typing import Any, Optional, Tuple
 
 
 class GenerationCache:
     """
-    シンプルなインメモリーキャッシュ（TTLサポート付き）。
+    LRU対応インメモリーキャッシュ（TTLサポート付き）。
     キー: プロンプトハッシュ + パラメータハッシュ + シード（もしあれば）
     値: 生成結果テキスト
     TTL（Time To Live）機能オプション
+    max_size を超えた場合は最古（LRU）のエントリを自動破棄
     キャッシュヒット率を測定するメトリクス
     """
 
-    def __init__(self, default_ttl: Optional[float] = None):
+    def __init__(self, default_ttl: Optional[float] = None, max_size: int = 1000):
         """
         キャッシュを初期化。
         
         Args:
             default_ttl: デフォルトのTTL（秒）。Noneの場合はTTLなし（無期限）。
+            max_size: キャッシュに保持する最大要素数。超えた場合はLRUで破棄。
         """
-        self._cache: dict = {}
+        self._cache: OrderedDict = OrderedDict()
         self._lock = threading.RLock()  # 再入可能ロックで再帰的な呼び出しにも対応
         self._default_ttl = default_ttl
+        self._max_size = max(1, max_size)
         self._hits = 0
         self._misses = 0
     
@@ -45,7 +49,18 @@ class GenerationCache:
                 ttl = self._default_ttl
             
             expiry = time.time() + ttl if ttl is not None else None
-            self._cache[key] = (value, expiry, 0)  # (value, expiry, hit_count)
+            
+            if key in self._cache:
+                self._cache[key] = (value, expiry, 0)
+                self._cache.move_to_end(key)
+                return
+
+            # 新規挿入時、容量上限に達していれば最古の要素を追い出す
+            if len(self._cache) >= self._max_size:
+                self._cache.popitem(last=False)
+
+            self._cache[key] = (value, expiry, 0)
+            self._cache.move_to_end(key)
     
     def get(self, key: Any) -> Tuple[bool, Any]:
         """
@@ -72,8 +87,9 @@ class GenerationCache:
                 self._misses += 1
                 return False, None
             
-            # ヒットカウントを増やす
+            # ヒットカウントを増やし、アクセス順を最新に更新
             self._cache[key] = (value, expiry, hit_count + 1)
+            self._cache.move_to_end(key)
             self._hits += 1
             return True, value
     
@@ -117,6 +133,7 @@ class GenerationCache:
         with self._lock:
             return {
                 "size": len(self._cache),
+                "max_size": self._max_size,
                 "hits": self._hits,
                 "misses": self._misses,
                 "hit_rate": self.hit_rate(),

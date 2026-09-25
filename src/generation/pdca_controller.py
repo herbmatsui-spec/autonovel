@@ -17,6 +17,14 @@ class PDCAController:
     # 内部状態の追跡
     _regeneration_count: int = field(default=0, init=False)
     _local_patch_count: int = field(default=0, init=False)
+
+    @property
+    def regeneration_count(self) -> int:
+        return self._regeneration_count
+
+    @property
+    def local_patch_count(self) -> int:
+        return self._local_patch_count
     
     def should_regenerate_full_text(self) -> bool:
         """
