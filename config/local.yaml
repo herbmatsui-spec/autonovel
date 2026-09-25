@@ -1,0 +1,5 @@
+database:
+  type: sqlite
+  path: data/local.db
+log:
+  level: DEBUG

@@ -1,0 +1,17 @@
+---
+id: comedy.deadpan_evade
+category: comedy
+tags: [comedy, deadpan, evasion]
+context:
+  emotion: [calm, bored]
+  power_dynamic: [equal, superior]
+  relationship: [colleague, stranger]
+  intensity: [low, medium]
+variables:
+  - flat_response: "無感情な返答"
+  - sip_drink: "飲み物をすする動作"
+weight: 95
+final: false
+---
+「……{{ flat_response | default('業務時間外につき、その質問にはお答えいたしかねます') }}」
+——{{ sip_drink | default('真顔のまま温い茶をすすり、完全に心を閉ざした') }}。

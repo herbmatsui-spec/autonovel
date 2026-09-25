@@ -17,6 +17,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Mapping
 
+from src.services.audit.aggregator import BookScoreResult
+
 # 5 Core BookScore Dimensions
 BOOK_SCORE_DIMENSIONS: tuple[str, ...] = (
     "structure_score",

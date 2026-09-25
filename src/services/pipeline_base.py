@@ -58,6 +58,7 @@ class WorkflowContext(BaseModel):
     # === 共通オプション ===
     enable_marketing: bool = True
     max_retries: int = 1
+    use_coarse_fine_plot: bool = True
     is_easy_mode: bool = False
 
     # === 内部用 (Step間受け渡し) ===
@@ -81,7 +82,7 @@ class WorkflowContext(BaseModel):
 
     # === 拡張出力 (Step が書き込む) ===
     illustrations: list[dict[str, Any]] = Field(default_factory=list)
-    marketing_pack: dict[str, Any] = Field(default_factory=list)
+    marketing_pack: dict[str, Any] = Field(default_factory=dict)
 
 
 class WorkflowStep:

@@ -1,0 +1,14 @@
+{
+  "id": "case_07",
+  "name": "emotion_grudge",
+  "speaker": "復讐者",
+  "before": [
+    "「恨んでいる」"
+  ],
+  "expected_contains": [
+    "冷たく目を細め"
+  ],
+  "applied_rules": [
+    "rule_02_emotion_to_action"
+  ]
+}

@@ -1,4 +1,4 @@
-"""src.services.bible_service & src.backend.bible_service の深層単体テスト (Step 11)。"""
+"""src.services.bible_service の深層単体テスト (Step 11)。"""
 from __future__ import annotations
 
 from datetime import datetime
@@ -6,7 +6,6 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-import src.backend.bible_service as backend_bible_service
 from src.services.bible_service import WorldBibleGenerator
 
 
@@ -89,10 +88,6 @@ class TestWorldBibleGenerator:
             # モデル作成がモック環境で失敗する場合は許容
             pass
 
-    def test_backend_alias(self):
-        """src.backend.bible_service はエイリアスモジュール。"""
-        assert backend_bible_service.WorldBibleGenerator is WorldBibleGenerator
-        assert backend_bible_service.__all__ == ["WorldBibleGenerator"]
 
 
 if __name__ == "__main__":

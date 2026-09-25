@@ -1,0 +1,70 @@
+{# 衝突シーン生成プロンプト #}
+{# 役割: 主要な対立/困難の顕在化、主人公の試行錯誤/葛藤、ピンチ/絶体絶命の状況 #}
+
+{% set scene = scene_data %}
+{% set ep_num = episode_number %}
+{% set prev_content = previous_scene_content %}
+
+<role>
+あなたは商業Web小説作家です。第{{ ep_num }}話の「衝突」シーン（3シーン構成の第2シーン）を執筆してください。
+</role>
+
+<constraints>
+- 文字数目安: {{ scene.target_word_count }}字前後
+- テンション: {{ scene.tension_start }} → {{ scene.tension_end }} (急激な上昇)
+- 視点: {{ pov_character or "主人公" }}視点（三人称限定視点推奨）
+- 前シーン（導入）の内容を踏まえ、継続性を保つこと
+</constraints>
+
+<required_beats>
+{% for beat in scene.beats %}
+- {{ beat }}
+{% endfor %}
+</required_beats>
+
+<previous_scene_summary>
+{{ prev_content[:500] }}{% if prev_content|length > 500 %}...{% endif %}
+</previous_scene_summary>
+
+<context>
+{{ writing_context_summary }}
+
+{% if story_arc_summary %}
+【ストーリーアーク概要】
+{{ story_arc_summary }}
+{% endif %}
+
+{% if character_states %}
+【キャラクター状態】
+{{ character_states }}
+{% endif %}
+
+{% if active_conflicts %}
+【アクティブな対立軸】
+{{ active_conflicts }}
+{% endif %}
+</context>
+
+<prohibited>
+- 導入シーンの内容を繰り返す/要約する
+- 対立を会話だけで解決しようとする「話し合いループ」
+- 主人公が無双して即座に解決するご都合主義
+- このシーンで物語を完結させること（引きシーンの役割）
+- テンションが下がる展開（緩和は最小限に）
+</prohibited>
+
+<instructions>
+以下の構成で「衝突」を書き切ってください：
+
+1. **導入からの継続（50-100字）**: 前シーンの末尾フックを受け、即座にアクションへ移行。時間経過や場面転換を最小限に。
+2. **主要な対立/困難の顕在化（{{ scene.target_word_count * 0.3 | int }}字）**: 敵/障害/状況の全貌が明らかになる。主人公の認識と現実のギャップを描く。
+3. **試行錯誤/葛藤（{{ scene.target_word_count * 0.4 | int }}字）**: 主人公が手持ちの手段で対抗するが、通用しない/裏目に出る/代償を払う。物理的・心理的両面の追い詰められ方を描写。
+4. **ピンチ/絶体絶命（{{ scene.target_word_count * 0.3 | int }}字）**: 逃げ場なし、手立てなし、味方不在。読者が「どうなる？」と息を呑む極限状態へ。
+5. **シーン末尾の最大フック**: 次シーン（引き）へ繋ぐ、最も強いクリフハンガー。「そこで、誰かの手が──彼の肩を掴んだ」級の衝撃で締める。
+
+文体: {{ style_instruction or "商業Web小説標準（スピード感重視、動詞主導、短文混在でテンポアップ）" }}
+</instructions>
+
+<output_format>
+本文のみを出力してください。メタ情報、解説、プロンプトの繰り返しは不要です。
+</output_format>

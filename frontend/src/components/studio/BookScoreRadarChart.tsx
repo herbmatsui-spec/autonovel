@@ -67,83 +67,104 @@ export const BookScoreRadarChart: React.FC<BookScoreRadarChartProps> = ({
   const benchmarkPolygonPoints = benchmarkPoints ? benchmarkPoints.map(p => `${p.x},${p.y}`).join(' ') : '';
 
   return (
-    <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="overflow-visible">
-        {/* Background Grids (Concentric Polygons) */}
-        {[20, 40, 60, 80].map((level) => (
-          <polygon
-            key={level}
-            points={DIMENSIONS.map((_, i) => {
-              const p = getPoint(i, level);
-              return `${p.x},${p.y}`;
-            }).join(' ')}
-            fill="none"
-            stroke="#e5e7eb"
-            strokeWidth="1"
-          />
-        ))}
-
-        {/* Axis Lines */}
-        {DIMENSIONS.map((_, i) => {
-          const p = getPoint(i, 100);
-          return (
-            <line
-              key={i}
-              x1={centerX}
-              y1={centerY}
-              x2={p.x}
-              y2={p.y}
-              stroke="#d1d5db"
+    <div className="flex flex-col items-center">
+      <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
+        <svg role="img" width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="overflow-visible">
+          {/* Background Grids (Concentric Polygons) */}
+          {[20, 40, 60, 80].map((level) => (
+            <polygon
+              key={level}
+              points={DIMENSIONS.map((_, i) => {
+                const p = getPoint(i, level);
+                return `${p.x},${p.y}`;
+              }).join(' ')}
+              fill="none"
+              stroke="#e5e7eb"
               strokeWidth="1"
             />
-          );
-        })}
+          ))}
 
-        {/* Benchmark Area */}
-        {benchmark && (
+          {/* Axis Lines */}
+          {DIMENSIONS.map((_, i) => {
+            const p = getPoint(i, 100);
+            return (
+              <line
+                key={i}
+                x1={centerX}
+                y1={centerY}
+                x2={p.x}
+                y2={p.y}
+                stroke="#d1d5db"
+                strokeWidth="1"
+              />
+            );
+          })}
+
+          {/* Benchmark Area */}
+          {benchmark && (
+            <polygon
+              points={benchmarkPolygonPoints}
+              fill={benchmarkColor}
+              stroke={benchmarkColor.replace('0.3', '0.6')}
+              strokeWidth="2"
+            />
+          )}
+
+          {/* Previous Score Area */}
+          {previousScores && (
+            <polygon
+              points={previousPolygonPoints}
+              fill={previousColor}
+              stroke={previousColor.replace('0.4', '0.8')}
+              strokeWidth="2"
+            />
+          )}
+
+          {/* Current Score Area */}
           <polygon
-            points={benchmarkPolygonPoints}
-            fill={benchmarkColor}
-            stroke={benchmarkColor.replace('0.3', '0.6')}
+            points={polygonPoints}
+            fill={color}
+            stroke={color.replace('0.5', '1')}
             strokeWidth="2"
           />
-        )}
 
-        {/* Previous Score Area */}
+          {/* Dimension Labels */}
+          {DIMENSIONS.map((dim, i) => {
+            const p = getPoint(i, 110); // Slightly outside the 100% radius
+            return (
+              <text
+                key={dim.key}
+                x={p.x}
+                y={p.y}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                className="text-[10px] fill-gray-500 font-medium"
+              >
+                {dim.label}
+              </text>
+            );
+          })}
+        </svg>
+      </div>
+
+      <div className="flex items-center gap-4 mt-2 text-xs text-slate-600">
+        <div className="flex items-center gap-1">
+          <span className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
+          <span>現サイクル</span>
+        </div>
         {previousScores && (
-          <polygon
-            points={previousPolygonPoints}
-            fill={previousColor}
-            stroke={previousColor.replace('0.4', '0.8')}
-            strokeWidth="2"
-          />
+          <div className="flex items-center gap-1">
+            <span className="w-3 h-3 rounded-full" style={{ backgroundColor: previousColor }} />
+            <span>前サイクル</span>
+          </div>
         )}
-
-        {/* Current Score Area */}
-        <polygon
-          points={polygonPoints}
-          fill={color}
-          stroke={color.replace('0.5', '1')}
-          strokeWidth="2"
-        />
-
-        {/* Dimension Labels */}
-        {DIMENSIONS.map((dim, i) => {
-          const p = getPoint(i, 110); // Slightly outside the 100% radius
-          return (
-            <text
-              key={dim.key}
-              x={p.x}
-              y={p.y}
-              textAnchor="middle"
-              dominantBaseline="middle"
-              className="text-[10px] fill-gray-500 font-medium"
-            >
-              {dim.label}
-            </text>
-          );
-        })}
-      </svg>
+        {benchmark && (
+          <div className="flex items-center gap-1">
+            <span className="w-3 h-3 rounded-full" style={{ backgroundColor: benchmarkColor }} />
+            <span>ベンチマーク</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

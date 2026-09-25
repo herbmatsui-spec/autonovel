@@ -1,0 +1,85 @@
+# Subtext Rewrite Rules Configuration
+version: "1.0.0"
+rules:
+  - id: "rule_01_explanatory_compress"
+    name: "Explanatory Dialogue Compression"
+    pattern: "(?:「.+?」\\n){3,}"
+    priority: 10
+    final: false
+    enabled: true
+    tags: ["compression", "dialogue_beat"]
+    description: "Compress 3+ consecutive lines of dialogue into beats and final line."
+
+  - id: "rule_02_emotion_to_action"
+    name: "Emotion to Action Converter"
+    pattern: "(悲し|怒っ|恨ん|悔し|寂し|腹立たし|ムカつ)"
+    priority: 20
+    final: false
+    enabled: true
+    tags: ["emotion", "action_beat"]
+    description: "Replaces direct emotion words with physical stage direction beats."
+
+  - id: "rule_03_causal_to_irony"
+    name: "Causal Connective to Irony"
+    pattern: "(なぜなら|理由は|〜から|〜ため|ゆえに)(.+)"
+    priority: 30
+    final: false
+    enabled: true
+    tags: ["irony", "causal"]
+    description: "Transforms logical explanatory connectives into ironic subtext."
+
+  - id: "rule_04_subjective_internalize"
+    name: "Subjective Assertion Internalization"
+    pattern: "「?(?:私|僕|俺)は(.+?)(?:と)?(思う|感じる|信じて|確信し)(?:ます|る|ている|ています)?」?[。！？]?"
+    priority: 40
+    final: false
+    enabled: true
+    tags: ["subjective", "stage_direction"]
+    description: "Internalizes subjective claims into stage directions."
+
+  - id: "rule_05_threat_subtext"
+    name: "Threat Direct to Subtext"
+    pattern: "(殺す|潰す|復讐|後悔させ|許さない)(?:てやる|てみせる|ぞ|わ|よ)?"
+    priority: 50
+    final: false
+    enabled: true
+    tags: ["threat", "cold"]
+    description: "Replaces direct threats with cold restrained phrases."
+
+  - id: "rule_06_compliance_subvert"
+    name: "Compliance Subversion"
+    pattern: "^「?(はい|わかりました|承知|従う|言う通り)(?:です|ました)?[。!]?」?$"
+    priority: 60
+    final: false
+    enabled: true
+    tags: ["compliance", "subversion"]
+    description: "Subverts agreement into irony or silent refusal."
+
+  - id: "rule_07_address_distance"
+    name: "Addressing Distance Modulation"
+    pattern: "([君お前あなた])([、。！？\\s]|$)"
+    priority: 70
+    final: false
+    enabled: true
+    tags: ["distance", "honorific"]
+    description: "Modulates addressing and honorifics based on psychological distance."
+
+  - id: "rule_08_apology_deflection"
+    name: "Apology Deflection"
+    pattern: "「?(ごめんなさい|すみません|申し訳ありません)[。！？]?」?"
+    replacement: "「……謝られても、何も戻らない」"
+    priority: 80
+    final: false
+    enabled: true
+    tags: ["apology", "subtext"]
+    description: "Replaces plain apology with heavy subtext deflection."
+
+  - id: "rule_09_hesitation_stutter"
+    name: "Hesitation Breath"
+    pattern: "「([あえうお])っ、([あえうお])っ」"
+    replacement: "（息を詰まらせ、喉をかすかに震わせる）"
+    priority: 85
+    final: false
+    enabled: true
+    tags: ["hesitation", "beat"]
+    description: "Replaces stutter with physiological tension beat."

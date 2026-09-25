@@ -17,12 +17,7 @@ body {
   padding: 0;
 }
 
-h1, h2, h3 {
-  font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
-  margin-right: 1.5em;
-  margin-left: 1.5em;
-}
-
+/* 基本テキストスタイル */
 p {
   margin: 0;
   padding: 0;
@@ -38,6 +33,36 @@ p.empty-line {
   text-indent: 0;
   margin: 0;
   padding: 0;
+}
+
+/* 見出しスタイル */
+h1, h2, h3 {
+  font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+  margin-right: 2em;
+  margin-left: 2em;
+  font-weight: bold;
+  line-height: 1.4;
+}
+
+h1 {
+  font-size: 2em;
+  margin-top: 1em;
+  margin-bottom: 1em;
+  text-align: center;
+}
+
+h2 {
+  font-size: 1.5em;
+  margin-top: 0.8em;
+  margin-bottom: 0.8em;
+  text-align: center;
+}
+
+h3 {
+  font-size: 1.2em;
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+  text-align: center;
 }
 
 /* 禁則処理 */
@@ -57,5 +82,91 @@ span.tcy {
   -webkit-text-combine: horizontal;
   -epub-text-combine: horizontal;
   text-combine-upright: all;
+}
+
+/* カバーページスタイル */
+.cover-page {
+  text-align: center;
+  padding: 2em;
+}
+
+.cover-page .title {
+  font-size: 2.5em;
+  margin-bottom: 0.5em;
+  font-weight: bold;
+}
+
+.cover-page .author {
+  font-size: 1.5em;
+  margin-bottom: 1em;
+}
+
+/* 中扉ページスタイル */
+.middle-page {
+  text-align: center;
+  padding: 2em;
+}
+
+.middle-page .title {
+  font-size: 2em;
+  margin-bottom: 0.5em;
+  font-weight: bold;
+}
+
+.middle-page .author {
+  font-size: 1.3em;
+  margin-bottom: 1em;
+}
+
+/* 目次ページスタイル */
+.toc-page {
+  padding: 1em;
+}
+
+.toc-page .toc-title {
+  font-size: 1.8em;
+  margin-bottom: 1em;
+  text-align: center;
+  font-weight: bold;
+}
+
+.toc-page .toc-item {
+  margin: 0.5em 0;
+  padding-left: 2em;
+  text-indent: -2em;
+}
+
+/* 挿絵ページスタイル */
+.illustration-page {
+  text-align: center;
+  padding: 2em;
+}
+
+.illustration-page .image {
+  margin: 1em auto;
+  max-width: 80%;
+  height: auto;
+}
+
+.illustration-page .caption {
+  font-size: 0.9em;
+  margin-top: 0.5em;
+  font-style: italic;
+  text-align: center;
+}
+
+/* ナビゲーションスタイル */
+nav {
+  padding: 1em;
+}
+
+nav ol {
+  line-height: 1.6;
+}
+
+nav li {
+  margin: 0.5em 0;
+  padding-left: 2em;
+  text-indent: -2em;
 }
 """

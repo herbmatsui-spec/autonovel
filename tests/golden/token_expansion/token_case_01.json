@@ -1,0 +1,11 @@
+{
+  "id": "token_case_01",
+  "raw": "「わかったよ」[BEAT:pause:short]「君の言う通りにする」",
+  "expected_not_contains": [
+    "[BEAT:pause:short]"
+  ],
+  "expected_contains": [
+    "「わかったよ」",
+    "「君の言う通りにする」"
+  ]
+}

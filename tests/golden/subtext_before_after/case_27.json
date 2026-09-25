@@ -1,0 +1,14 @@
+{
+  "id": "case_27",
+  "name": "ext_gaze_aversion",
+  "speaker": "ツンデレ",
+  "before": [
+    "「見ないでよ！」"
+  ],
+  "expected_contains": [
+    "（咄嗟に顔を背け、手の甲で表情を隠す）"
+  ],
+  "applied_rules": [
+    "rule_13_gaze_aversion"
+  ]
+}

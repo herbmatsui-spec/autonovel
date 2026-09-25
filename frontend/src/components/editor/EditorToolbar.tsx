@@ -1,4 +1,7 @@
+import React, { useState } from "react";
 import { EditorFontFamily, EditorFontSize } from "../../types";
+import { PlatformCopyButton } from "../common/PlatformCopyButton";
+import { SocialReactionModal, StreamComment, ForumPost } from "./SocialReactionModal";
 
 interface EditorToolbarProps {
   fontFamily: EditorFontFamily;
@@ -10,6 +13,9 @@ interface EditorToolbarProps {
   manuscriptPages: number;
   onSynthesizeAudio?: () => void;
   isSynthesizingAudio?: boolean;
+  chapterTitle: string;
+  chapterBody: string;
+  onInsertSocialReaction?: (text: string) => void;
 }
 
 export const EditorToolbar: React.FC<EditorToolbarProps> = ({
@@ -22,7 +28,23 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
   manuscriptPages,
   onSynthesizeAudio,
   isSynthesizingAudio = false,
+  chapterTitle,
+  chapterBody,
+  onInsertSocialReaction,
 }) => {
+  const [showSocialModal, setShowSocialModal] = useState(false);
+
+  const handleSocialReactionInsert = (text: string) => {
+    if (onInsertSocialReaction) {
+      onInsertSocialReaction(text);
+    }
+    setShowSocialModal(false);
+  };
+
+  const handleOpenSocialModal = () => {
+    setShowSocialModal(true);
+  };
+
   return (
     <div className="editor-toolbar">
       <div className="editor-toolbar__group">
@@ -81,6 +103,10 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
 
       <div className="editor-toolbar__divider" />
 
+      <PlatformCopyButton title={chapterTitle} body={chapterBody} />
+
+      <div className="editor-toolbar__divider" />
+
       {onSynthesizeAudio && (
         <button
           type="button"
@@ -93,6 +119,19 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
         </button>
       )}
 
+      <div className="editor-toolbar__divider" />
+
+      <button
+        type="button"
+        className="editor-toolbar__btn"
+        onClick={handleOpenSocialModal}
+        title="配信コメント・掲示板スレッドを生成・挿入"
+      >
+        💬 配信/掲示板演出
+      </button>
+
+      <div className="editor-toolbar__divider" />
+
       <button
         type="button"
         className={`editor-toolbar__btn editor-toolbar__btn--zen ${isZenMode ? "active" : ""}`}
@@ -101,6 +140,12 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
       >
         {isZenMode ? "⛶ 通常モード" : "🧘 Zen"}
       </button>
+
+      <SocialReactionModal
+        isOpen={showSocialModal}
+        onClose={() => setShowSocialModal(false)}
+        onInsert={handleSocialReactionInsert}
+      />
     </div>
   );
 };

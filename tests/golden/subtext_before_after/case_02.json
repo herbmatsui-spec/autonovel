@@ -1,0 +1,18 @@
+{
+  "id": "case_02",
+  "name": "explanatory_4_lines",
+  "speaker": "兵士",
+  "before": [
+    "「城門が破られました」",
+    "「敵の先鋒が突入しています」",
+    "「防衛線は崩壊しました」",
+    "「もう逃げるしかありません」"
+  ],
+  "expected_contains": [
+    "（",
+    "「もう逃げるしかありません」"
+  ],
+  "applied_rules": [
+    "rule_01_explanatory_compress"
+  ]
+}

@@ -31,6 +31,7 @@ export interface GraphData {
 
 interface GraphVisualizationProps {
   onClose?: () => void;
+  selectedBookId?: number;
 }
 
 const LABEL_COLORS: Record<string, string> = {
@@ -42,7 +43,7 @@ const LABEL_COLORS: Record<string, string> = {
   Concept: "#94a3b8",   // Slate
 };
 
-export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onClose }) => {
+export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onClose, selectedBookId = 1 }) => {
   const [rawData, setRawData] = useState<GraphData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
@@ -70,8 +71,10 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onClose 
   }, [loading, selectedNode]);
 
   useEffect(() => {
+    if (!selectedBookId) return;
+    
     let isMounted = true;
-    fetchGraphData()
+    fetchGraphData(selectedBookId)
       .then((json) => {
         if (isMounted) {
           setRawData(json as GraphData);
@@ -93,7 +96,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onClose 
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [selectedBookId]);
 
   // Filtered nodes and edges
   const graphData = useMemo(() => {

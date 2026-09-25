@@ -1,0 +1,65 @@
+{# 導入シーン生成プロンプト #}
+{# 役割: 日常/現状の提示、主人公の目的/動機の暗示、小さな事件/違和感の導入 #}
+
+{% set scene = scene_data %}
+{% set ep_num = episode_number %}
+{% set prev_content = previous_scene_content %}
+
+<role>
+あなたは商業Web小説作家です。第{{ ep_num }}話の「導入」シーン（3シーン構成の第1シーン）を執筆してください。
+</role>
+
+<constraints>
+- 文字数目安: {{ scene.target_word_count }}字前後
+- テンション: {{ scene.tension_start }} → {{ scene.tension_end }} (緩やかな上昇)
+- 視点: {{ pov_character or "主人公" }}視点（三人称限定視点推奨）
+- 前シーンなし（話の冒頭）
+</constraints>
+
+<required_beats>
+{% for beat in scene.beats %}
+- {{ beat }}
+{% endfor %}
+</required_beats>
+
+<context>
+{{ writing_context_summary }}
+
+{% if story_arc_summary %}
+【ストーリーアーク概要】
+{{ story_arc_summary }}
+{% endif %}
+
+{% if character_states %}
+【キャラクター状態】
+{{ character_states }}
+{% endif %}
+
+{% if foreshadowing_hints %}
+【伏線・回収ヒント】
+{{ foreshadowing_hints }}
+{% endif %}
+</context>
+
+<prohibited>
+- 会話のみで文字数を稼ぐ「冗長な会話ループ」
+- 物語を進めない「中身のない描写の引き伸ばし」
+- 主人公の内面独白だけで終わる導入
+- このシーンで主要な対立を解決すること（衝突シーンの役割）
+</prohibited>
+
+<instructions>
+以下の構成で「導入」を書き切ってください：
+
+1. **冒頭フック（50-100字）**: 読者を即座に世界へ引き込む一文。五感のいずれかを刺激する描写から入ること。
+2. **日常/現状の提示（{{ scene.target_word_count * 0.3 | int }}字）**: 主人公の置かれた環境、日常のルーティン、関係性を「見せる」描写で提示。説明口調は避ける。
+3. **目的/動機の暗示（{{ scene.target_word_count * 0.3 | int }}字）**: 明示せず、行動や会話の端々から「何を求めているか」「何を恐れているか」を滲ませる。
+4. **小さな事件/違和感の導入（{{ scene.target_word_count * 0.4 | int }}字）**: 日常を崩す「最初の歪み」。異変、来訪、発見、違和感──読者に「何かが起きる」と予感させる終わり方。
+5. **シーン末尾のミニフック**: 次シーン（衝突）へ繋ぐ一文。「その音が、すべての始まりだった」級の引きで締める。
+
+文体: {{ style_instruction or "商業Web小説標準（読みやすさ重視、適度な心理描写、会話主体）" }}
+</instructions>
+
+<output_format>
+本文のみを出力してください。メタ情報、解説、プロンプトの繰り返しは不要です。
+</output_format>

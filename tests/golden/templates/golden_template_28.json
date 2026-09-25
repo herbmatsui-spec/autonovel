@@ -1,0 +1,13 @@
+{
+  "id": "golden_template_28",
+  "context": {
+    "scene_id": "scene_006",
+    "turn_index": 2,
+    "speaker": "Character_3",
+    "emotion": "sadness",
+    "relationship": "family",
+    "power_dynamic": "inferior",
+    "intensity": "medium"
+  },
+  "expected_category": "grief"
+}

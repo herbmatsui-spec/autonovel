@@ -1,0 +1,34 @@
+{# 感情ベクトル自然言語化テンプレート #}
+[直前話からの引き継ぎ感情]
+{% if top_pairs %}
+{% for pair, emotions in top_pairs %}
+{% set source = pair[0] %}
+{% set target = pair[1] %}
+{{ source }}→{{ target }}: 
+{% set emo_items = emotions.items()|list %}
+{% for emo, val in emo_items %}
+{% if val > 0.1 %}
+{{ emo.value }}({{ "%.1f"|format(val) }}){% if not loop.last %}、{% endif %}
+{% endif %}
+{% endfor %}
+{% set dominant_emo = None %}
+{% set dominant_val = 0 %}
+{% for emo, val in emo_items %}
+{% if val|abs > dominant_val %}
+{% set dominant_emo = emo %}
+{% set dominant_val = val|abs %}
+{% endif %}
+{% endfor %}
+{% if dominant_emo and dominant_val > 0.5 %}
+ (主要: {{ dominant_emo.value }}{{ "%.1f"|format(dominant_val) }})
+{% endif %}
+{% if dominant_emo %}
+{% set cause_key = (source, target, dominant_emo) %}
+{% if vector.causes.get(cause_key) %}
+ [原因: {{ vector.causes.get(cause_key) }}]
+{% endif %}
+{% endif %}
+{% endfor %}
+{% else %}
+感情データなし
+{% endif %}

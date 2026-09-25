@@ -48,6 +48,18 @@ class DbForeshadowingRepository:
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
+    async def get_by_ids(self, foreshadowing_ids: list[int]) -> List[ForeshadowingModel]:
+        """複数ID指定で伏線一覧を取得"""
+        if not foreshadowing_ids:
+            return []
+        stmt = (
+            select(ForeshadowingModel)
+            .where(ForeshadowingModel.id.in_(foreshadowing_ids))
+            .order_by(ForeshadowingModel.id)
+        )
+        result = await self.db.execute(stmt)
+        return list(result.scalars().all())
+
     async def get_by_book_id(self, book_id: int) -> List[ForeshadowingModel]:
         """指定作品の全伏線を取得"""
         stmt = (
@@ -70,6 +82,21 @@ class DbForeshadowingRepository:
             select(ForeshadowingModel)
             .where(
                 ForeshadowingModel.book_id == book_id,
+                ForeshadowingModel.status.in_(active_statuses),
+            )
+            .order_by(ForeshadowingModel.planted_episode)
+        )
+        result = await self.db.execute(stmt)
+        return list(result.scalars().all())
+
+    async def get_unresolved_by_scope(self, book_id: int, scope: ForeshadowingScope) -> List[ForeshadowingModel]:
+        """スコープ別の未回収伏線を取得"""
+        active_statuses = [s.value for s in ForeshadowingStatus.active_statuses()]
+        stmt = (
+            select(ForeshadowingModel)
+            .where(
+                ForeshadowingModel.book_id == book_id,
+                ForeshadowingModel.scope == scope.value,
                 ForeshadowingModel.status.in_(active_statuses),
             )
             .order_by(ForeshadowingModel.planted_episode)

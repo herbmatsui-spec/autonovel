@@ -44,9 +44,15 @@ class UnitOfWork:
     SQLite のトランザクション整合性と ChromaDB への同期（Outboxパターン）を保証する Unit of Work。
     """
 
-    @inject
-    def __init__(self, db: DatabaseManager = Provide["db"]):
-        self.db = db
+    def __init__(self, db: DatabaseManager | None = None):
+        if db is None:
+            try:
+                from src.core.container import AppContainer
+                self.db = AppContainer.db()
+            except Exception:
+                self.db = None  # type: ignore[assignment]
+        else:
+            self.db = db
         self.session: AsyncSession | None = None
         self._token = None
         self._repo_cache: dict[type[Any], Any] = {}

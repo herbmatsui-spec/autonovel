@@ -110,36 +110,53 @@ class ClosedLoopPDCARunner:
             # A. Identify weak paragraphs from the latest audit
             latest_audit = self.aggregator.aggregate(genre=genre)
             target_paras: List[ParagraphTarget] = self.diagnostic.identify_weak_paragraphs(latest_audit)
-            if not target_paras:
-                logger.info("No weak paragraphs identified in cycle %d, stopping loop", cycle)
+            
+            new_draft = None
+            if target_paras:
+                # B. Index the current draft to get paragraphs and context
+                indexed_paras = self.indexer.index_paragraphs(current_draft)
+                # C. For each target paragraph, rewrite it with context
+                patches: List[PatchRewriteResult] = []
+                for target in target_paras:
+                    idx = target.index
+                    # Get context: previous and next paragraphs
+                    prev_para = indexed_paras[idx - 1]['text'] if idx > 0 else ""
+                    next_para = indexed_paras[idx + 1]['text'] if idx < len(indexed_paras) - 1 else ""
+                    context = {
+                        'prev_paragraph': prev_para,
+                        'next_paragraph': next_para,
+                        'directive': target.directive,
+                        'issue_category': target.issue_category,
+                    }
+                    # Rewrite the paragraph
+                    patch_result = await self.patch_agent.rewrite_paragraph(target, context)
+                    patches.append(patch_result)
+
+                # D. Merge the patches into the draft
+                new_draft = self.patch_merger.merge_patches(current_draft, patches)
+            elif callable(self.writer):
+                lowest_dim = latest_audit.lowest_dimension()
+                suggs = []
+                if lowest_dim and lowest_dim in latest_audit.raw:
+                    suggs = latest_audit.raw[lowest_dim].suggestions
+                sugg_str = "、".join(suggs) if suggs else "描写と構成の改善"
+                pdca_directives = f"【閉ループPDCA改善指示 - サイクル{cycle} (重点: {lowest_dim})】\n{sugg_str}"
+                
+                ctx["pdca_cycle"] = cycle
+                ctx["pdca_directives"] = pdca_directives
+                ctx["lowest_dimension"] = lowest_dim
+                
+                import inspect
+                if inspect.iscoroutinefunction(self.writer):
+                    new_draft = await self.writer(ctx)
+                else:
+                    new_draft = self.writer(ctx)
+            else:
+                logger.info("No weak paragraphs identified in cycle %d and no writer provided, stopping loop", cycle)
                 break
 
-            # B. Index the current draft to get paragraphs and context
-            indexed_paras = self.indexer.index_paragraphs(current_draft)
-            # indexed_paras is a list of dicts: [{'index': i, 'text': para}, ...]
-
-            # C. For each target paragraph, rewrite it with context
-            patches: List[PatchRewriteResult] = []
-            for target in target_paras:
-                idx = target.index
-                # Get context: previous and next paragraphs
-                prev_para = indexed_paras[idx - 1]['text'] if idx > 0 else ""
-                next_para = indexed_paras[idx + 1]['text'] if idx < len(indexed_paras) - 1 else ""
-                context = {
-                    'prev_paragraph': prev_para,
-                    'next_paragraph': next_para,
-                    # We could also pass the directive and issue_category if needed by the agent
-                    'directive': target.directive,
-                    'issue_category': target.issue_category,
-                }
-                # Rewrite the paragraph
-                patch_result = await self.patch_agent.rewrite_paragraph(target, context)
-                patches.append(patch_result)
-
-            # D. Merge the patches into the draft
-            new_draft = self.patch_merger.merge_patches(current_draft, patches)
             if not new_draft or len(new_draft.strip()) == 0:
-                logger.warning("Patch merge returned empty draft during cycle %d, stopping loop", cycle)
+                logger.warning("Draft regeneration returned empty during cycle %d, stopping loop", cycle)
                 break
 
             current_draft = new_draft

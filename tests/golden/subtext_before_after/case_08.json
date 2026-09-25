@@ -1,0 +1,14 @@
+{
+  "id": "case_08",
+  "name": "causal_nazenara",
+  "speaker": "賢者",
+  "before": [
+    "「なぜなら真実は闇の中だからだ」"
+  ],
+  "expected_contains": [
+    "「……"
+  ],
+  "applied_rules": [
+    "rule_03_causal_to_irony"
+  ]
+}

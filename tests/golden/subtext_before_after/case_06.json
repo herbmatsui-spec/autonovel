@@ -1,0 +1,14 @@
+{
+  "id": "case_06",
+  "name": "emotion_lonely",
+  "speaker": "少女",
+  "before": [
+    "「寂しいんだ」"
+  ],
+  "expected_contains": [
+    "微かに肩を震わせ"
+  ],
+  "applied_rules": [
+    "rule_02_emotion_to_action"
+  ]
+}

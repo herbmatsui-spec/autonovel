@@ -1,0 +1,10 @@
+{
+  "id": "token_case_09",
+  "raw": "「テスト発言 9」[GLANCE:away]「続く発言」",
+  "expected_not_contains": [
+    "[GLANCE:away]"
+  ],
+  "expected_contains": [
+    "「テスト発言 9」"
+  ]
+}

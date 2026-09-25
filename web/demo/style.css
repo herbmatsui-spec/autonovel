@@ -1,0 +1,60 @@
+/* Tutorial Styles */
+.tutorial-step {
+    background-color: rgba(59, 130, 246, 0.1);
+    border-left: 3px solid var(--primary-color);
+    padding: 1rem;
+    margin: 1rem 0;
+    border-radius: 0 var(--border-radius) var(--border-radius) 0;
+}
+
+.tutorial-step h3 {
+    color: var(--primary-color);
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.tutorial-step h3::before {
+    content: "📘";
+    font-size: 1rem;
+}
+
+.tutorial-content {
+    line-height: 1.6;
+    color: var(--text-secondary);
+}
+
+.tutorial-tip {
+    background-color: rgba(16, 185, 129, 0.1);
+    border-left: 3px solid var(--accent-color);
+    padding: 0.75rem;
+    margin-top: 1rem;
+    border-radius: 0 var(--border-radius) var(--border-radius) 0;
+    font-size: 0.875rem;
+}
+
+.example-inputs {
+    background-color: var(--background-input);
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    margin-top: 0.5rem;
+}
+
+.example-inputs div {
+    margin-bottom: 0.5rem;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+}
+
+/* Hide tutorial steps when tutorial mode is off */
+body:not(.tutorial-mode) .tutorial-step {
+    display: none !important;
+}
+
+/* Add tutorial mode class to body when active */
+body.tutorial-mode .tutorial-step {
+    display: block !important;
+}

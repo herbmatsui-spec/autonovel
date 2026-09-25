@@ -1,0 +1,14 @@
+{
+  "id": "case_28",
+  "name": "ext_monologue_cutoff",
+  "speaker": "独白キャラ",
+  "before": [
+    "「独り言さ」"
+  ],
+  "expected_contains": [
+    "「……なんでもない。忘れて」"
+  ],
+  "applied_rules": [
+    "rule_14_monologue_cutoff"
+  ]
+}

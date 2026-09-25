@@ -24,7 +24,9 @@ from src.models.editor import (
     ConsistencyAuditResponse,
     NextBeatsRequest,
     NextBeatsResponse,
+    AuditFastHybridRequest,
 )
+from src.models.unified_audit import UnifiedAuditReport
 from src.services.editor_assist_service import EditorAssistService
 from src.services.editorial_assistant_service import EditorialAssistantService
 from src.services.next_beats_service import NextBeatsService
@@ -80,19 +82,21 @@ async def audit_consistency(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/audit")
+@router.post("/audit", response_model=UnifiedAuditReport)
 async def audit_fast_hybrid(
-    draft_text: str,
-    character_profiles: str = "",
-    plot_spec: str = "",
+    req: AuditFastHybridRequest,
     current_user: User = Depends(get_current_user),
-):
+) -> UnifiedAuditReport:
     """v5.0: 二層ハイブリッド監査（静的ルール解析＋定性判定）エンドポイント"""
     try:
         from src.agents.specialists.unified_auditor import UnifiedAuditor
         auditor = UnifiedAuditor()
-        report = await auditor.audit(draft_text, character_profiles, plot_spec)
-        return report.model_dump()
+        report = await auditor.audit(
+            text=req.draft_text,
+            character_profiles=req.character_profiles,
+            plot_spec=req.plot_spec,
+        )
+        return report
     except Exception as e:
         logger.error(f"Error in audit_fast_hybrid: {e}")
         raise HTTPException(status_code=500, detail=str(e))

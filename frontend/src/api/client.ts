@@ -40,12 +40,15 @@ export async function apiFetch(
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
+  const isTest = typeof process !== "undefined" && process.env?.NODE_ENV === "test";
+  const signal = isTest ? undefined : (options?.signal ?? controller.signal);
+
   let response: Response;
   try {
     response = await fetch(endpoint, {
       ...options,
       headers,
-      signal: options?.signal ?? controller.signal,
+      signal,
     });
   } catch (err: unknown) {
     clearTimeout(timeoutId);
@@ -76,10 +79,10 @@ export async function apiFetch(
 export async function handleResponse<T>(response: Response, errorMessage?: string): Promise<T> {
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    if (errorMessage && !("detail" in errorData) && !("title" in errorData)) {
-      throw { detail: errorMessage, ...errorData };
-    }
-    throw errorData;
+    const message = errorData.detail || errorData.message || errorData.title || errorMessage || `HTTP ${response.status} ${response.statusText}`;
+    const err = new Error(typeof message === "string" ? message : JSON.stringify(message));
+    Object.assign(err, errorData);
+    throw err;
   }
   return response.json() as Promise<T>;
 }

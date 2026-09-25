@@ -1,3 +1,4 @@
+import inspect
 import logging
 from typing import Optional
 from sqlalchemy import select, update
@@ -7,13 +8,18 @@ from src.backend.database.models import User
 
 logger = logging.getLogger(__name__)
 
+
 class InsufficientCreditsError(Exception):
     """Raised when user attempts to deduct more credits than available."""
     pass
 
+
 class CreditService:
     def __init__(self, db: AsyncSession):
         self.db = db
+
+    COST_PER_EPISODE = 1          # テキスト執筆時の消費クレジット
+    COST_PER_ILLUSTRATION = 5     # 画像生成時の消費クレジット
 
     async def get_balance(self, user_id: int) -> int:
         """ユーザーの現在のクレジット残高を取得する (users.credits を絶対マスターとする)。"""
@@ -56,7 +62,9 @@ class CreditService:
             task_id=task_id,
             description=description,
         )
-        self.db.add(transaction)
+        add_res = self.db.add(transaction)
+        if inspect.isawaitable(add_res):
+            await add_res
         if auto_commit:
             await self.db.commit()
             await self.db.refresh(transaction)
@@ -120,3 +128,39 @@ class CreditService:
         else:
             await self.db.flush()
         return True
+
+    async def deduct_credits_for_text_writing(
+        self,
+        user_id: int,
+        transaction_type: str = "text_writing",
+        description: str = "Text writing credit consumption",
+        task_id: Optional[str] = None,
+        auto_commit: bool = True,
+    ) -> bool:
+        """テキスト執筆のためにクレジットを消費する。"""
+        return await self.deduct_credits(
+            user_id=user_id,
+            amount=self.COST_PER_EPISODE,
+            transaction_type=transaction_type,
+            description=description,
+            task_id=task_id,
+            auto_commit=auto_commit,
+        )
+
+    async def deduct_credits_for_illustration(
+        self,
+        user_id: int,
+        transaction_type: str = "illustration",
+        description: str = "Illustration generation credit consumption",
+        task_id: Optional[str] = None,
+        auto_commit: bool = True,
+    ) -> bool:
+        """画像生成のためにクレジットを消費する。"""
+        return await self.deduct_credits(
+            user_id=user_id,
+            amount=self.COST_PER_ILLUSTRATION,
+            transaction_type=transaction_type,
+            description=description,
+            task_id=task_id,
+            auto_commit=auto_commit,
+        )

@@ -10,6 +10,7 @@ src/backend/middleware/auth_middleware.py - グローバル認証ミドルウェ
 from __future__ import annotations
 
 import logging
+import secrets
 from typing import Callable
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
@@ -55,6 +56,14 @@ PUBLIC_PREFIXES: tuple[str, ...] = (
 )
 
 
+def is_safe_api_key_match(provided: str, expected: str) -> bool:
+    """タイミング攻撃耐性を持つ定数時間でのAPIキー比較."""
+    if not provided or not expected:
+        return False
+    return secrets.compare_digest(provided, expected)
+
+
+
 class GlobalAuthMiddleware(BaseHTTPMiddleware):
     """
     アプリケーション全体へのアクセスを保護する認証ミドルウェア。
@@ -71,15 +80,15 @@ class GlobalAuthMiddleware(BaseHTTPMiddleware):
         if settings.AUTH_DISABLED:
             return await call_next(request)
 
-        app_obj = getattr(request, "app", None)
-        if app_obj and hasattr(app_obj, "dependency_overrides"):
+        app_obj = request.scope.get("app")
+        overrides = getattr(app_obj, "dependency_overrides", None) if app_obj else None
+        if overrides:
             from src.backend.auth import (
                 get_current_user,
                 require_admin_user_or_key,
                 require_api_key,
             )
 
-            overrides = app_obj.dependency_overrides
             if (
                 get_current_user in overrides
                 or require_api_key in overrides
@@ -101,9 +110,9 @@ class GlobalAuthMiddleware(BaseHTTPMiddleware):
 
         # 4a. API Key 検証 (X-API-Key または Authorization)
         allowed_keys_str = settings.ALLOWED_API_KEYS or ""
-        allowed_keys = {k.strip() for k in allowed_keys_str.split(",") if k.strip()}
+        allowed_keys = [k.strip() for k in allowed_keys_str.split(",") if k.strip()]
 
-        if api_key_header and api_key_header in allowed_keys:
+        if api_key_header and any(is_safe_api_key_match(api_key_header, k) for k in allowed_keys):
             return await call_next(request)
 
         # 4b. Authorization ヘッダー検証
@@ -114,8 +123,8 @@ class GlobalAuthMiddleware(BaseHTTPMiddleware):
             else:
                 token = auth_header.strip()
 
-            # API Key として一致するか確認
-            if token and token in allowed_keys:
+            # API Key として一致するか確認 (タイミングセーフ比較)
+            if token and any(is_safe_api_key_match(token, k) for k in allowed_keys):
                 return await call_next(request)
 
             # JWT トークンとして検証
@@ -143,3 +152,8 @@ class GlobalAuthMiddleware(BaseHTTPMiddleware):
             content={"detail": "認証が必要です"},
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+
+# Backward-compatible alias
+AuthMiddleware = GlobalAuthMiddleware
+

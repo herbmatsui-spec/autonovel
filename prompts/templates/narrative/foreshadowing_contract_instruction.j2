@@ -1,0 +1,21 @@
+{# 伏線ビート契約指示テンプレート (Jinja2) #}
+{% if contract_foreshadowings %}
+=== 【本話の絶対回収ミッション（契約伏線）】 ===
+本話のクライマックスまたは重要局面において、以下の伏線を必ず解決・回収（Payoff）してください。
+読者が「ここでこの伏線が繋がるとは！」と膝を打つような強いカタルシスを生み出す描写を意識してください。
+{% for f in contract_foreshadowings %}
+- [伏線ID: {{ f.id }}] 『{{ f.title }}』
+  * 内容: {{ f.description }}
+  * 設置話数: 第{{ f.planted_episode }}話{% if f.target_episode %}（回収予定: 第{{ f.target_episode }}話）{% endif %}
+  * スコープ: {{ f.scope | default('short_term') }}
+{% endfor %}
+※ 本話の末尾の [METADATA_JSON] において、回収完了した伏線のIDを resolved_foreshadowing_ids に必ず明記すること。
+{% endif %}
+
+{% if background_foreshadowings %}
+=== 【背景・継続中の未回収伏線（留意事項）】 ===
+以下の伏線は現在進行中（未回収）です。本話で完全回収する必要はありませんが、必要に応じて手がかりの提示や言及を行って構いません。
+{% for f in background_foreshadowings %}
+- [伏線ID: {{ f.id }}] 『{{ f.title }}』: {{ f.description }}（第{{ f.planted_episode }}話設置）
+{% endfor %}
+{% endif %}

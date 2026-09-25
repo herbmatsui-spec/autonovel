@@ -66,7 +66,7 @@ export const QualityDashboardModal: React.FC<QualityDashboardModalProps> = ({
         <div className="bg-white p-8 rounded-xl shadow-xl max-w-md w-full text-center space-y-4">
           <div className="text-red-500 text-4xl">⚠️</div>
           <h3 className="text-lg font-bold text-gray-900">エラーが発生しました</h3>
-          <p className="text-gray-600">{error}</p>
+          <p className="text-gray-600">データの取得に失敗しました: {error}</p>
           <button 
             onClick={onClose}
             className="w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors"
@@ -123,6 +123,7 @@ export const QualityDashboardModal: React.FC<QualityDashboardModalProps> = ({
             <h2 className="text-xl font-bold text-slate-800">品質ダッシュボード</h2>
             <div className="flex items-center gap-2 bg-slate-100 rounded-lg px-3 py-1">
               <button 
+                aria-label="Prev"
                 onClick={() => setChapter(Math.max(1, chapter - 1))}
                 className="hover:text-blue-600 transition-colors"
               >
@@ -130,6 +131,7 @@ export const QualityDashboardModal: React.FC<QualityDashboardModalProps> = ({
               </button>
               <span className="text-sm font-bold text-slate-700">第 {chapter} 章</span>
               <button 
+                aria-label="Next"
                 onClick={() => setChapter(chapter + 1)}
                 className="hover:text-blue-600 transition-colors"
               >
@@ -138,6 +140,7 @@ export const QualityDashboardModal: React.FC<QualityDashboardModalProps> = ({
             </div>
           </div>
           <button 
+            aria-label="閉じる"
             onClick={onClose}
             className="text-slate-400 hover:text-slate-600 transition-colors text-2xl"
           >
@@ -152,7 +155,7 @@ export const QualityDashboardModal: React.FC<QualityDashboardModalProps> = ({
             <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
               <div className="flex justify-between items-end">
                 <div>
-                  <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Overall Score</div>
+                  <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">総合スコア (Overall Score)</div>
                   <div className="text-5xl font-black text-blue-600">{currentScore?.overall_score || '0.0'}</div>
                 </div>
                 <div className="text-right">
@@ -206,10 +209,10 @@ export const QualityDashboardModal: React.FC<QualityDashboardModalProps> = ({
                 {latestCycle && (
                   <div className="flex gap-2">
                     <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded">
-                      Cycle {latestCycle.cycle_number}
+                      Cycle {latestCycle.cycle_number ?? latestCycle.cycle_index ?? 1}
                     </span>
                     <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-bold rounded">
-                      {latestCycle.converged ? 'Converged' : 'In Progress'}
+                      {latestCycle.status ?? (latestCycle.converged ? 'Converged' : 'In Progress')}
                     </span>
                   </div>
                 )}
@@ -224,22 +227,22 @@ export const QualityDashboardModal: React.FC<QualityDashboardModalProps> = ({
                   <div className="grid grid-cols-3 gap-4 mb-6">
                     <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
                       <div className="text-[10px] text-slate-400 font-bold uppercase">Initial</div>
-                      <div className="text-lg font-bold text-slate-700">{latestCycle.initial_score}</div>
+                      <div className="text-lg font-bold text-slate-700">{latestCycle.initial_score ?? latestCycle.snapshot?.overall_score ?? '-'}</div>
                     </div>
                     <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
                       <div className="text-[10px] text-slate-400 font-bold uppercase">Final</div>
-                      <div className="text-lg font-bold text-blue-600">{latestCycle.final_score}</div>
+                      <div className="text-lg font-bold text-blue-600">{latestCycle.final_score ?? '-'}</div>
                     </div>
                     <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
                       <div className="text-[10px] text-slate-400 font-bold uppercase">Delta</div>
-                      <div className="text-lg font-bold text-green-600">+{latestCycle.score_delta}</div>
+                      <div className="text-lg font-bold text-green-600">+{latestCycle.score_delta ?? 0}</div>
                     </div>
                   </div>
 
-                  <div className="space-y-3">
+                    <div className="space-y-3">
                     <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">執筆指示 (Directives)</div>
                     <div className="grid grid-cols-1 gap-3">
-                      {latestCycle.directives.map((dir: any, i: number) => (
+                      {(latestCycle.directives || latestCycle.snapshot?.directives || []).map((dir: any, i: number) => (
                         <PDCADirectiveCard key={i} directive={dir} />
                       ))}
                     </div>

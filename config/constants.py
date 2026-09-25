@@ -48,6 +48,7 @@ MODEL_CLIMAX: Final[str] = "gemma-4-31b-it"
 MODEL_EMBEDDING: Final[str] = "text-embedding-004"
 MODEL_PLANNING: Final[str] = "gemini-3.5-flash-lite"
 MODEL_PLOT_EXPANSION: Final[str] = "gemma-4-31b-it"
+MODEL_FAST_EXPANSION: Final[str] = os.getenv("MODEL_FAST_EXPANSION", "gemini-3.5-flash-lite")
 MODEL_STABLE_FALLBACK: Final[str] = "gemma-4-31b-it"
 MODEL_ULTRA_STABLE: Final[str] = "gemma-4-31b-it"
 MODEL_WRITING: Final[str] = "gemma-4-31b-it"

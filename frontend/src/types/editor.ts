@@ -140,3 +140,47 @@ export interface NextBeatsResponse {
   beats: BeatCard[];
   original_tail: string;
 }
+
+// ==========================================
+// 4. 二層ハイブリッド監査 (v5.0 Two-Tier Hybrid Audit)
+// ==========================================
+
+export interface ConflictItem {
+  category: string;
+  severity: "critical" | "high" | "medium" | "low";
+  title: string;
+  description: string;
+  field_path?: string | null;
+  current_value?: string | null;
+  suggested_value?: string | null;
+  evidence_past?: string;
+  evidence_current?: string;
+  constraint_for_next?: string;
+  confidence?: number;
+}
+
+export interface QualitativeAudit {
+  hook_score: number;
+  emotional_score: number;
+  character_consistency: number;
+  overall_score: number;
+  critique: string;
+  actionable_patch?: string | null;
+}
+
+export interface UnifiedAuditReport {
+  is_acceptable: boolean;
+  final_score: number;
+  quantitative_score: number;
+  qualitative: QualitativeAudit;
+  detected_cliches: string[];
+  dialogue_ratio: number;
+  conflicts: ConflictItem[];
+}
+
+export interface AuditFastHybridRequest {
+  draft_text: string;
+  character_profiles?: string;
+  plot_spec?: string;
+}
+

@@ -153,6 +153,7 @@ class ProseRefinerAgent:
 3. 会話文のセリフそのものは改変せず、ト書き（地の文）のテンポを整えよ。
 4. 感情の説明ではなく、身体の反応・環境の変化・行動の描写で示せ。
 5. {intensity_guide.get(style_intensity, intensity_guide['balanced'])}
+6. 決めゴマ・ビジュアルシーンについては、五感（視覚・聴覚・嗅覚・味覚・触覚）と情景描写を密度高く描写せよ。
 
 ## Few-Shot例示（ジャンル: {genre}, シーン: {scene_type}）
 {few_shots_text}

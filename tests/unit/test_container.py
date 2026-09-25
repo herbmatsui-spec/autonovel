@@ -9,6 +9,10 @@ def test_app_container_instantiation():
     assert hasattr(container, "uow")
     assert hasattr(container, "db")
     assert hasattr(container, "auditor")
+    assert hasattr(container, "writing_service")
+    assert hasattr(container, "audit_aggregator_service")
+    assert hasattr(container, "marketing_service")
+    assert hasattr(container, "rag_service")
     assert AppContainer2 is AppContainer
 
 

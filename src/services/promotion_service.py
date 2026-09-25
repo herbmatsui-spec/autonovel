@@ -88,18 +88,28 @@ class PromotionService:
         async with self._db.get_session() as session:
             repo = EasyModeDraftRepository(session)
             draft_json = await repo.load_digest(book_id)
-            if draft_json is None:
-                raise ValueError(f"Book draft not found: {book_id}")
-
-            db_book_id = draft_json.get("db_book_id")
-            if db_book_id is not None:
-                result = await session.execute(Book.__table__.select().where(Book.id == db_book_id))
+            if draft_json is not None:
+                db_book_id = draft_json.get("db_book_id")
+                if db_book_id is not None:
+                    result = await session.execute(Book.__table__.select().where(Book.id == db_book_id))
+                    book_row = result.fetchone()
+                    if book_row is not None:
+                        await session.execute(
+                            Book.__table__.update().where(Book.id == db_book_id).values(mode="advanced")
+                        )
+            elif str(book_id).isdigit():
+                # 直接の数値 book_id 指定による昇格対応
+                b_id = int(book_id)
+                result = await session.execute(Book.__table__.select().where(Book.id == b_id))
                 book_row = result.fetchone()
-                if book_row is None:
-                    raise ValueError(f"Book record not found for db_book_id={db_book_id}")
-                await session.execute(
-                    Book.__table__.update().where(Book.id == db_book_id).values(mode="advanced")
-                )
+                if book_row is not None:
+                    await session.execute(
+                        Book.__table__.update().where(Book.id == b_id).values(mode="advanced")
+                    )
+                else:
+                    raise ValueError(f"Book record not found for db_book_id={b_id}")
+            else:
+                raise ValueError(f"Book draft not found: {book_id}")
 
             # state_token を InternalState に永続化 (TTL 24h)
             from src.backend.database.models import InternalState

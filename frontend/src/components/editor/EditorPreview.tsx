@@ -1,4 +1,7 @@
 import React from "react";
+import { CountMode } from "../../types/manuscript";
+import { useManuscriptCount } from "../../hooks/useManuscriptCount";
+import { ManuscriptCountBadge } from "./ManuscriptCountBadge";
 
 interface EditorPreviewProps {
   /** プレビューする本文 */
@@ -9,6 +12,10 @@ interface EditorPreviewProps {
   editorClassName?: string;
   /** mirror 用: ミラー div の ref（スクロール同期） */
   mirrorRef?: React.MutableRefObject<HTMLDivElement | null>;
+  /** カウントモード */
+  countMode?: CountMode;
+  /** カウントモード変更コールバック */
+  onCountModeChange?: (mode: CountMode) => void;
 }
 
 /**
@@ -44,7 +51,11 @@ export const EditorPreview: React.FC<EditorPreviewProps> = ({
   mode,
   editorClassName,
   mirrorRef,
+  countMode = "body",
+  onCountModeChange,
 }) => {
+  const count = useManuscriptCount(content);
+
   if (mode === "mirror") {
     return (
       <div
@@ -73,19 +84,32 @@ export const EditorPreview: React.FC<EditorPreviewProps> = ({
   }
 
   return (
-    <div
-      className="output-area"
-      style={{
-        flex: 1,
-        minHeight: "280px",
-        overflowY: "auto",
-        lineHeight: "1.9",
-        letterSpacing: "0.05em",
-      }}
-      dangerouslySetInnerHTML={renderRuby(content || "本文がありません。")}
-      data-testid="editor-preview"
-    />
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: "8px" }}>
+      {onCountModeChange && (
+        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+          <ManuscriptCountBadge
+            count={count}
+            mode={countMode}
+            onModeChange={onCountModeChange}
+            compact
+          />
+        </div>
+      )}
+      <div
+        className="output-area"
+        style={{
+          flex: 1,
+          minHeight: "280px",
+          overflowY: "auto",
+          lineHeight: "1.9",
+          letterSpacing: "0.05em",
+        }}
+        dangerouslySetInnerHTML={renderRuby(content || "本文がありません。")}
+        data-testid="editor-preview"
+      />
+    </div>
   );
 };
 
 export default EditorPreview;
+

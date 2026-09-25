@@ -42,13 +42,14 @@ class ContextManager:
     またはワークフロー内の統合コンテキストビルダークラスを使用してください。(Phase 6: Step 61)
     """
 
-    def __init__(self, repo: DataRepository):
+    def __init__(self, repo: DataRepository, compressor: Any = None):
         warnings.warn(
             "ContextManager is deprecated, use ContextBuilderAgent instead",
             DeprecationWarning,
             stacklevel=2,
         )
         self.repo = repo
+        self.compressor = compressor
         # ContextBuilderAgent への委譲インスタンスを遅延初期化用に保持 (Step 62)
         self._delegate_agent = None
 
@@ -56,7 +57,7 @@ class ContextManager:
         if self._delegate_agent is None:
             try:
                 from src.agents.context_builder_agent import ContextBuilderAgent
-                self._delegate_agent = ContextBuilderAgent(repo=self.repo)
+                self._delegate_agent = ContextBuilderAgent(repo=self.repo, compressor=self.compressor)
             except Exception as e:
                 logger.warning(f"Could not initialize ContextBuilderAgent delegate: {e}")
         return self._delegate_agent
@@ -161,7 +162,6 @@ class ContextManager:
                 target_word_count = 3000
                 style_tag = None
                 reflective_rag = None
-                compressor = None
                 social_manager = None
                 age_client = None
                 full = await delegate._build_full_writing_context_internal(
@@ -174,7 +174,7 @@ class ContextManager:
                     regeneration_focus=None,
                     reflective_rag=reflective_rag,
                     session=None,
-                    compressor=compressor,
+                    compressor=self.compressor,
                     social_manager=social_manager,
                     age_client=age_client,
                 )
@@ -274,7 +274,6 @@ class ContextManager:
                 target_word_count = 3000
                 style_tag = None
                 reflective_rag = None
-                compressor = None
                 social_manager = None
                 age_client = None
                 full = await delegate._build_full_writing_context_internal(
@@ -287,7 +286,7 @@ class ContextManager:
                     regeneration_focus=None,
                     reflective_rag=reflective_rag,
                     session=None,
-                    compressor=compressor,
+                    compressor=self.compressor,
                     social_manager=social_manager,
                     age_client=age_client,
                 )
@@ -368,7 +367,7 @@ class ContextManager:
                     regeneration_focus=None,
                     reflective_rag=None,
                     session=None,
-                    compressor=None,
+                    compressor=self.compressor,
                     social_manager=None,
                     age_client=None,
                 )
@@ -460,7 +459,7 @@ class ContextManager:
                     regeneration_focus=None,
                     reflective_rag=None,
                     session=None,
-                    compressor=None,
+                    compressor=self.compressor,
                     social_manager=None,
                     age_client=None,
                 )

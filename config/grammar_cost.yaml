@@ -1,0 +1,12 @@
+# Grammar and DP cost configuration
+rule_expansion_default: 1.0
+terminal_insertion_default: 2.0
+terminal_deletion_default: 3.0
+terminal_substitution_default: 2.5
+
+penalties:
+  stagnation: 15.0
+  missing_disaster: 25.0
+  character_neglect: 8.0
+  payoff_decay: 10.0
+  tension_monotony: 12.0

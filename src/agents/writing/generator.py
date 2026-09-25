@@ -6,6 +6,8 @@ import logging
 from typing import Any
 
 from src.agents.episode_pipeline import EpisodePipeline
+from src.agents.writing.episode_writer import EpisodeWriter
+from src.agents.writing.opening_booster import OpeningBoosterAgent
 
 logger = logging.getLogger(__name__)
 
@@ -36,12 +38,119 @@ class WritingGenerator:
         self.prompt_manager = pm
         self._writing_graph_manager = None
 
-        from src.agents.writing.opening_booster import OpeningBoosterAgent
-        self.opening_booster = OpeningBoosterAgent(
-            repo=self.repo,
-            llm=self.llm,
-            style_rag=self.style_rag,
-        )
+        # OpeningBoosterAgentを遅延初期化
+        self._opening_booster: OpeningBoosterAgent | None = None
+
+    @property
+    def opening_booster(self) -> OpeningBoosterAgent:
+        """OpeningBoosterAgentを遅延初期化して取得する。"""
+        if self._opening_booster is None:
+            self._opening_booster = OpeningBoosterAgent(
+                repo=self.repo,
+                llm=self.llm,
+                style_rag=self.style_rag,
+            )
+        return self._opening_booster
+
+    async def _write_single_episode_core(
+        self,
+        book_id: int,
+        ep_num: int,
+        target_word_count: int = 2500,
+        is_easy_mode: bool = False,
+        passion: float = 1.0,
+        genre: str = "異世界ファンタジー",
+        protagonist_name: str = "主人公",
+        inciting_incident: str = "",
+        payoff_moment: str = "",
+        branch_id: int = 1,
+    ) -> int:
+        """
+        単発執筆のコア処理（循環呼び出しを避けるための独立関数）
+
+        1話分の執筆実処理を行い、DBに保存して文字数を返す。
+        OpeningBoosterAgent（1-3話）またはEpisodeWriter（4話以降・Beat-to-Scene）を直接呼び出す。
+
+        Returns:
+            生成された本文の文字数
+        """
+        # 第1話〜第3話はOpeningBoosterAgentを使用
+        if ep_num in (1, 2, 3):
+            from src.models.opening_booster import OpeningEpisodeConfig
+            config = OpeningEpisodeConfig(
+                ep_num=ep_num,
+                target_word_count=target_word_count,
+                inciting_incident=inciting_incident or f"第{ep_num}話の理不尽と事件",
+                payoff_moment=payoff_moment or f"第{ep_num}話の転機と覚醒",
+            )
+            result = await self.opening_booster.generate_opening_episode(
+                config=config,
+                protagonist_name=protagonist_name,
+                genre=genre,
+            )
+
+            # 生成された本文をDBに保存
+            content = result.get("content", "")
+            if self.repo and content:
+                await self.repo.save_chapter(
+                    book_id=book_id,
+                    branch_id=branch_id,
+                    ep_num=ep_num,
+                    title=f"第{ep_num}話",
+                    content=content,
+                )
+
+            return len(content)
+        else:
+            # 第4話以降はEpisodeWriter（Beat-to-Scene分割執筆）を使用
+            # ContextBuilderが必要なので、ここでは簡易版として書く
+            from src.agents.context_builder_agent import ContextBuilderAgent
+            context_builder = ContextBuilderAgent(
+                repo=self.repo,
+                llm=self.llm,
+                style_rag=self.style_rag,
+            )
+
+            writer = EpisodeWriter(
+                llm=self.llm,
+                context_builder=context_builder,
+                repo=self.repo,
+                style_rag=self.style_rag,
+                rag_prefetch=None,
+                prompt_manager=self.pm,
+                compressor=None,
+            )
+
+            # コンテキストを構築（簡易版）
+            context = {
+                "book_id": book_id,
+                "ep_num": ep_num,
+                "target_word_count": target_word_count,
+                "genre": genre,
+                "style_intensity": "balanced",
+                "is_easy_mode": is_easy_mode,
+                "passion": passion,
+                "regeneration_focus": [],
+                "writing_focus": [],
+                "regeneration_directive": None,
+                "branch_id": branch_id,
+                "use_beat_to_scene": True,  # Beat-to-Scene分割執筆を有効化
+            }
+
+            # 本文を生成
+            content = await writer.write(book_id, ep_num, context)
+
+            # 生成された本文をDBに保存
+            if self.repo and content:
+                await self.repo.save_chapter(
+                    book_id=book_id,
+                    branch_id=branch_id,
+                    ep_num=ep_num,
+                    title=f"第{ep_num}話",
+                    content=content,
+                )
+
+            return len(content)
 
     def _get_bible(self, book_id: int) -> Any:
         """Bible を取得（SchedulerCoordinator 用）"""
@@ -129,22 +238,28 @@ class WritingGenerator:
         writing_focus: list[str] = None,
         regeneration_directive: str = None,
     ) -> int:
-        """単発エピソード生成（EpisodePipeline 経由）"""
-        result = await self.generate_episodes_pipeline(
-            book_id=book_id,
-            start_ep=start_ep,
-            end_ep=end_ep,
-            passion=passion,
-            target_word_count=target_word_count,
-            is_easy_mode=is_easy_mode,
-            reporter=reporter,
-            branch_id=branch_id,
-            style_tag=style_tag,
-            regeneration_focus=regeneration_focus or [],
-            writing_focus=writing_focus or [],
-            regeneration_directive=regeneration_directive,
-        )
-        return result[0]  # total_chars
+        """単発エピソード生成（パイプラインを経由せず直接コア関数を呼ぶ）"""
+        total_chars = 0
+        for ep_num in range(start_ep, end_ep + 1):
+            chars = await self._write_single_episode_core(
+                book_id=book_id,
+                ep_num=ep_num,
+                target_word_count=target_word_count,
+                is_easy_mode=is_easy_mode,
+                passion=passion,
+                branch_id=branch_id,
+            )
+            total_chars += chars
+
+            # レポーターに進捗を報告（あれば）
+            if reporter:
+                await reporter.report_progress(
+                    book_id=book_id,
+                    episode_num=ep_num,
+                    written_chars=chars,
+                )
+
+        return total_chars
 
     async def analyze_and_import_chapter(
         self,

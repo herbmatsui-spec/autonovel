@@ -9,6 +9,8 @@ import { PublicationScheduleResponse, PublicationScheduleCreate } from '../../ty
 import { PublicationScheduleTable } from './PublicationScheduleTable';
 import { PublicationScheduleModal } from './PublicationScheduleModal';
 import { PublicationErrorModal } from './PublicationErrorModal';
+import { useNovelContext } from '../../context/NovelContext';
+import { PlatformCopyButton } from '../common/PlatformCopyButton';
 
 interface CommercialPublishPanelProps {
   bookId: number;
@@ -20,11 +22,25 @@ interface CommercialPublishPanelProps {
  * 予約投稿の一覧表示、新規登録、即時実行、キャンセル、エラー詳細確認を統合的に管理する
  */
 export const CommercialPublishPanel: React.FC<CommercialPublishPanelProps> = ({ bookId, onToast }) => {
+  let chapters: { ep_num: number; title: string }[] = [];
+  let currentEpNum = 1;
+  let currentChapterText = "";
+  try {
+    const novelCtx = useNovelContext();
+    chapters = novelCtx.chapters;
+    currentEpNum = novelCtx.currentEpNum;
+    currentChapterText = novelCtx.currentChapterText;
+  } catch {
+    // Allows isolated testing or usage outside NovelProvider
+  }
   const [schedules, setSchedules] = useState<PublicationScheduleResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
   const [selectedError, setSelectedError] = useState<{ id: number; message: string } | null>(null);
+
+  const currentChapter = chapters.find((c) => c.ep_num === currentEpNum);
+  const chapterTitle = currentChapter?.title ?? `第${currentEpNum}話`;
 
   // スケジュール一覧の取得
   const fetchSchedules = useCallback(async () => {
@@ -119,6 +135,21 @@ export const CommercialPublishPanel: React.FC<CommercialPublishPanelProps> = ({ 
           </svg>
           <span>新規予約投稿</span>
         </button>
+      </div>
+
+      <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200 flex-wrap">
+        <PlatformCopyButton title={chapterTitle} body={currentChapterText} />
+        {/* Step 21: カクヨムエピソード作成画面を直接開く外部リンクボタン */}
+        <a
+          href={`https://kakuyomu.jp/my/works/new`}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => onToast?.("🔗 カクヨム投稿画面を新しいタブで開きました", "info")}
+          className="px-3 py-1 text-xs bg-emerald-600 hover:bg-emerald-500 rounded text-white transition-colors font-medium inline-flex items-center gap-1"
+          data-testid="kakuyomu-episode-link"
+        >
+          🔗 カクヨム投稿画面を開く
+        </a>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">

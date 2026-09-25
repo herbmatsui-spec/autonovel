@@ -1,0 +1,11 @@
+{
+  "id": "token_case_05",
+  "raw": "「もう終わりだ」[PAUSE:breath]",
+  "expected_not_contains": [
+    "[PAUSE:breath]"
+  ],
+  "expected_any": [
+    "深く息を吐く",
+    "静かに息を呑む"
+  ]
+}

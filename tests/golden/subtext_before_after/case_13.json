@@ -1,0 +1,14 @@
+{
+  "id": "case_13",
+  "name": "threat_crush",
+  "speaker": "巨漢",
+  "before": [
+    "「貴様を潰すぞ」"
+  ],
+  "expected_contains": [
+    "——"
+  ],
+  "applied_rules": [
+    "rule_05_threat_subtext"
+  ]
+}

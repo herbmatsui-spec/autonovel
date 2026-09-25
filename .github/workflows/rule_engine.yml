@@ -1,0 +1,75 @@
+name: Rule Engine (Week 2)
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "src/rules/**"
+      - "src/stores/**"
+      - "src/pipeline/compression_pipeline.py"
+      - "config/emotional_rules.yaml"
+      - "config/plot_events.yaml"
+      - "tests/unit/rules/**"
+      - "tests/unit/config/test_emotional_rules_yaml.py"
+      - "tests/unit/config/test_plot_events_yaml.py"
+      - "tests/integration/rules/**"
+      - "tests/regression/test_rule_engine_regression.py"
+      - "tests/regression/test_week2_regression.py"
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "src/rules/**"
+      - "src/stores/**"
+      - "config/emotional_rules.yaml"
+      - "config/plot_events.yaml"
+
+jobs:
+  unit-rules:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -e ".[dev]" pytest-asyncio fakeredis
+      - name: Run rule unit tests
+        run: pytest tests/unit/rules/ tests/unit/config/test_emotional_rules_yaml.py tests/unit/config/test_plot_events_yaml.py -q
+      - name: Run store unit tests
+        run: pytest tests/unit/stores/test_graph_store.py tests/unit/stores/test_event_log.py -q
+      - name: Run pipeline stage tests
+        run: pytest tests/unit/pipeline/test_rule_engine_stage.py -q
+
+  integration-rules:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -e ".[dev]" pytest-asyncio fakeredis
+      - name: Run rule engine integration tests
+        run: pytest tests/integration/rules/ tests/integration/pipeline/test_dual_vector_sources.py -q
+
+  # Week 1 (emotional_residue.yml) 成功後に実行したいが、
+  # 別ワークフローのジョブは needs で参照できないため
+  # workflow_run トリガーでの実行順序制御は上位の on: ブロックで行う。
+  # ここでは同一ワークフロー内の integration-rules 完了後に実行する。
+  regression-week2:
+    needs: [integration-rules]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -e ".[dev]" pytest-asyncio fakeredis
+      - name: Run Week 2 regression tests
+        run: pytest tests/regression/test_rule_engine_regression.py tests/regression/test_week2_regression.py -q
+      - name: Run performance tests
+        run: pytest tests/performance/test_rule_engine_perf.py -q -m "not benchmark"

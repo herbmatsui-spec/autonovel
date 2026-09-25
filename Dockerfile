@@ -15,9 +15,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
+# ホイールをビルドしてキャッシュ効率化 (Step 11)
+# 依存は /opt/deps に隔離し、runner ステージから最小限コピーする
 COPY requirements.txt pyproject.toml ./
 RUN pip install --upgrade pip && \
-    pip install --user --no-cache-dir -r requirements.txt
+    pip install --no-cache-dir --prefix=/opt/deps -r requirements.txt
 
 # ==========================================
 # Stage 2: Minimal Runtime
@@ -41,8 +43,8 @@ RUN useradd -m -u 1000 -s /bin/bash appuser && \
     mkdir -p /app/storage /app/logs && \
     chown -R appuser:appuser /app
 
-# builderステージからインストール済みパッケージをコピー
-COPY --from=builder --chown=appuser:appuser /root/.local /home/appuser/.local
+# builderステージからインストール済みパッケージを最小限コピー (Step 11)
+COPY --from=builder --chown=appuser:appuser /opt/deps /home/appuser/.local
 
 # アプリケーションソースのコピー
 COPY --chown=appuser:appuser src/ ./src/

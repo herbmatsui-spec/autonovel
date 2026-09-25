@@ -2,7 +2,7 @@
 
 伏線ステートマシンの状態遷移を定義する。
 状態遷移: PLANTED → PROGRESSED → RESOLVED
-                └→ ABANDONED（回収放棄）
+                 └→ ABANDONED（回収放棄）
 """
 from enum import Enum
 
@@ -24,6 +24,16 @@ class ForeshadowingStatus(str, Enum):
         return self in (ForeshadowingStatus.PLANTED, ForeshadowingStatus.PROGRESSED)
 
     @property
+    def is_resolved(self) -> bool:
+        """回収完了状態かどうか"""
+        return self == ForeshadowingStatus.RESOLVED
+
+    @property
     def is_terminal(self) -> bool:
         """終端状態（RESOLVED or ABANDONED）かどうか"""
         return self in (ForeshadowingStatus.RESOLVED, ForeshadowingStatus.ABANDONED)
+
+
+class ForeshadowingScope(str, Enum):
+    SHORT_TERM = "short_term"  # 即時快感用（2〜3話以内の伏線）
+    LONG_TERM = "long_term"    # 1巻伏線（クライマックスで回収）

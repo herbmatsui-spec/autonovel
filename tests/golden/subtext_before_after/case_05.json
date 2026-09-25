@@ -1,0 +1,14 @@
+{
+  "id": "case_05",
+  "name": "emotion_regret",
+  "speaker": "剣士",
+  "before": [
+    "「悔しいよ」"
+  ],
+  "expected_contains": [
+    "奥歯を噛み締め"
+  ],
+  "applied_rules": [
+    "rule_02_emotion_to_action"
+  ]
+}

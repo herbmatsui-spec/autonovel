@@ -1,0 +1,14 @@
+{
+  "id": "case_21",
+  "name": "ext_apology_2",
+  "speaker": "友人",
+  "before": [
+    "「申し訳ありません」"
+  ],
+  "expected_contains": [
+    "「……謝られても、何も戻らない」"
+  ],
+  "applied_rules": [
+    "rule_08_apology_deflection"
+  ]
+}

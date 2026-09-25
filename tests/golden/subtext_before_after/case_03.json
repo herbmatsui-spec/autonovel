@@ -1,0 +1,14 @@
+{
+  "id": "case_03",
+  "name": "emotion_sadness",
+  "speaker": "リリア",
+  "before": [
+    "「私は悲しい」"
+  ],
+  "expected_contains": [
+    "悲しげな表情で、拳を握りしめ"
+  ],
+  "applied_rules": [
+    "rule_02_emotion_to_action"
+  ]
+}

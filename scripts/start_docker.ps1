@@ -30,11 +30,17 @@ if (-not $dockerCmd) {
     exit 1
 }
 
-# 3. Check .env file
+# 3. Check .env file - guard with explicit guidance (Step 13)
 if (-not (Test-Path ".env")) {
+    Write-Host "[WARN] .env file not found." -ForegroundColor Yellow
     if (Test-Path ".env.example") {
         Write-Host "[.env] Creating .env from .env.example..." -ForegroundColor Green
         Copy-Item ".env.example" ".env"
+        Write-Host "[.env] Please review .env and set required values (e.g. LLM_PROVIDER)." -ForegroundColor Yellow
+    } else {
+        Write-Host "[ERROR] .env.example is also missing. Cannot configure environment." -ForegroundColor Red
+        Read-Host "Press Enter to exit..."
+        exit 1
     }
 }
 

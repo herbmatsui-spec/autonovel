@@ -174,3 +174,17 @@ class NextBeatsResponse(BaseModel):
 
     beats: list[BeatCard] = Field(default_factory=list, description="3つの展開カード")
     original_tail: str = Field(default="", description="参照した直前本文の末尾抜粋")
+
+
+# ==========================================
+# 4. 二層ハイブリッド監査 (v5.0 Hybrid-Lean)
+# ==========================================
+
+
+class AuditFastHybridRequest(BaseModel):
+    """二層ハイブリッド監査リクエスト"""
+
+    draft_text: str = Field(..., min_length=1, description="監査対象のドラフト本文")
+    character_profiles: str = Field(default="", description="登場人物の設定・プロファイル")
+    plot_spec: str = Field(default="", description="プロット・構成情報")
+

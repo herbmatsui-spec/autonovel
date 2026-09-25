@@ -1,0 +1,14 @@
+{
+  "id": "case_25",
+  "name": "ext_rhetorical_evasion",
+  "speaker": "怪盗",
+  "before": [
+    "「どうしてそんなことを聞くの？」"
+  ],
+  "expected_contains": [
+    "「……それを知って、どうするつもり？」"
+  ],
+  "applied_rules": [
+    "rule_11_rhetorical_evasion"
+  ]
+}

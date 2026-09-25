@@ -19,3 +19,22 @@ class ForeshadowingCreateRequest(AutoNovelBaseSchema):
     description: str
     planted_episode: int = Field(..., ge=1)
     target_episode: Optional[int] = None
+
+
+class GraphNodeSchema(AutoNovelBaseSchema):
+    id: str
+    label: str  # "Character", "Foreshadowing", "Location"
+    properties: dict = {}
+
+
+class GraphEdgeSchema(AutoNovelBaseSchema):
+    source: str
+    target: str
+    type: str  # "PLANTED_IN", "RESOLVED_BY", "RELATED_TO"
+    properties: dict = {}
+
+
+class ForeshadowingGraphResponse(AutoNovelBaseSchema):
+    graph_name: str
+    nodes: list[GraphNodeSchema]
+    edges: list[GraphEdgeSchema]

@@ -10,25 +10,39 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
+# Step 26: 固定キー集計に限定し、動的ラベル生成を抑制してメモリリークを防止する
+_ALLOWED_COUNTER_KEYS = frozenset(
+    {
+        "tasks_enqueued",
+        "tasks_completed",
+        "tasks_failed",
+        "exports_attempted",
+        "exports_succeeded",
+        "health_checks",
+        "streaming_disconnects",
+        "multimedia_requests_total",
+        "multimedia_errors_total",
+    }
+)
+_MAX_COUNTER_KEY_LENGTH = 64
+
+
 class _Metrics:
+    """固定キー集計のみ許容するスレッドセーフカウンタ (Step 26).
+
+    - 未知のキーは無視（動的ラベル生成の抑制）→ カウンタが肥大化しない
+    - キー長は 64 文字に制限
+    """
+
     def __init__(self) -> None:
         self._lock = threading.Lock()
-        self._counters: dict[str, int] = {
-            "tasks_enqueued": 0,
-            "tasks_completed": 0,
-            "tasks_failed": 0,
-            "exports_attempted": 0,
-            "exports_succeeded": 0,
-            "health_checks": 0,
-            "streaming_disconnects": 0,
-            "multimedia_requests_total": 0,
-            "multimedia_errors_total": 0,
-        }
+        self._counters: dict[str, int] = {key: 0 for key in _ALLOWED_COUNTER_KEYS}
 
     def increment(self, name: str, amount: int = 1) -> None:
+        # 固定キー以外は無視してメモリリークを防止
+        if name not in _ALLOWED_COUNTER_KEYS or len(name) > _MAX_COUNTER_KEY_LENGTH:
+            return
         with self._lock:
-            if name not in self._counters:
-                self._counters[name] = 0
             self._counters[name] += amount
 
     def get(self, name: str) -> int:
@@ -101,12 +115,20 @@ async def check_huey(timeout: float = 3.0) -> dict[str, Any]:
         return {"status": "error", "code": "HUEY_DOWN"}
 
 
+# Step 25: 各コンポーネントのタイムアウトを 1.0 秒に制限し、
+# 1 つが遅延してもヘルスチェック全体がタイムアウトしないようにする。
+COMPONENT_TIMEOUT = 1.0
+
+
 async def build_health_payload() -> dict[str, Any]:
-    """全コンポーネントのヘルスチェックを実行し_payload を構築する。"""
+    """全コンポーネントのヘルスチェックを実行し_payload を構築する (Step 25).
+
+    非同期並行チェック (asyncio.gather) + 各コンポーネント 1.0 秒のタイムアウト。
+    """
     metrics.increment("health_checks")
     db_status, huey_status = await asyncio.gather(
-        check_database(),
-        check_huey(),
+        check_database(timeout=COMPONENT_TIMEOUT),
+        check_huey(timeout=COMPONENT_TIMEOUT),
     )
 
     all_ok = db_status.get("status") == "ok" and huey_status.get("status") == "ok"

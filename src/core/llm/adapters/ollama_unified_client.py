@@ -9,7 +9,7 @@ from openai import AsyncOpenAI, OpenAI
 from openai.types.chat import ChatCompletion
 from openai.types.chat.chat_completion_chunk import ChoiceDelta
 
-from src.core.llm.types import LLMRequest, LLMResponse, StreamChunk
+from src.core.llm.types import LLMRequest, LLMResponse, LLMUsage, StreamChunk
 from src.core.llm.unified_interface import IUnifiedLLMClient
 from src.backend.config import settings
 

@@ -8,6 +8,7 @@ from pydantic import ValidationError
 
 from src.backend import database
 from src.backend.auth import require_api_key
+from src.backend.database.core import get_db_manager
 from src.backend.database.repository import BookRepository
 from src.backend.observability.health import metrics
 from src.backend.rate_limit import generate_limiter
@@ -22,6 +23,8 @@ from src.services.llm.prompts import (
 )
 from src.services.marketing import MarketingAgent
 from src.services.rag_service import rag_service
+from src.services.compression.compressor import FourLayerCompressor
+from src.services.compression.models import CompressionConfig
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -69,7 +72,6 @@ async def execute_generation(payload: dict[str, Any]) -> dict[str, Any]:
     history_context = "\n".join(chapter_history[:-1]) if len(chapter_history) > 1 else "なし"
 
     # GraphRAG コンテキストの取得
-    from src.backend.database.core import get_db_manager
     db = get_db_manager()
     async with db.get_session() as session:
         rag_context = await rag_service.build_rag_context(
@@ -176,7 +178,6 @@ async def execute_generation(payload: dict[str, Any]) -> dict[str, Any]:
     )
 
     # 生成完了後、バックグラウンド/同期でナレッジグラフとベクトルを更新
-    from src.backend.database.core import get_db_manager
     db = get_db_manager()
     async with db.get_session() as session:
         try:
@@ -250,8 +251,8 @@ async def generate_content(
             input_data.character_params.model_dump()
             if hasattr(input_data.character_params, "model_dump")
             else dict(input_data.character_params)
-        )
-
+)
+        
         # 生成パラメータ準備
         params: dict[str, Any] = {
             "chapter_history": input_data.chapter_history,
@@ -268,22 +269,26 @@ async def generate_content(
             "book_id": input_data.book_id,
             "start_ep": input_data.start_ep,
             "end_ep": input_data.end_ep,
+            "compressor": FourLayerCompressor(config=CompressionConfig()),
         }
-
+        
         # タスクをキューに投入 (Huey 非同期タスク呼び出し)
         from src.backend.tasks.generation_tasks import generate_chapter_orchestrated_task
-
+        
         task_result = generate_chapter_orchestrated_task(params)
         huey_task_id = str(task_result.id)
         params["task_id"] = huey_task_id
-
+        
         # DB レコードを作成
         repo = BookRepository(session)
-        repo.create_task(task_id=huey_task_id, status="running")
-
+        if repo.is_async:
+            await repo.create_task_async(task_id=huey_task_id, status="running")
+        else:
+            repo.create_task(task_id=huey_task_id, status="running")
+        
         metrics.increment("tasks_enqueued")
         logger.info("Enqueued generation task: task_id=%s", huey_task_id)
-
+        
         return GenerationResponse(
             task_id=huey_task_id,
             output="",
@@ -369,7 +374,11 @@ async def get_task_status(task_id: str) -> dict[str, Any]:
 
 
 @router.delete("/task/{task_id}")
-async def cancel_task(task_id: str) -> dict[str, str]:
+async def cancel_task(
+    task_id: str = Path(min_length=1, max_length=128, pattern=r"^[a-zA-Z0-9_\-]+$"),
+    session=Depends(database.get_db),
+    api_key: str = Depends(require_api_key),
+) -> dict[str, str]:
     """タスクをキャンセルまたは削除する。"""
     from src.backend.tasks.huey import huey
 
@@ -380,8 +389,11 @@ async def cancel_task(task_id: str) -> dict[str, str]:
         logger.warning("Failed to revoke huey task_id=%s", task_id)
 
     # DBタスクのステータス更新
-    repo = BookRepository()
-    repo.update_task_status(task_id, "cancelled")
+    repo = BookRepository(session)
+    if repo.is_async:
+        await repo.update_task_status_async(task_id, "cancelled")
+    else:
+        repo.update_task_status(task_id, "cancelled")
 
     return {"task_id": task_id, "status": "cancelled"}
 
@@ -404,11 +416,13 @@ from src.services.promotion_service import PromotionService
 
 
 @router.post("/gacha", response_model=GachaResponse)
-async def gacha_endpoint(req: GachaRequest) -> GachaResponse:
+async def gacha_endpoint(
+    req: GachaRequest,
+    api_key: str = Depends(require_api_key),
+) -> GachaResponse:
     """3案ガチャ企画生成 [Gacha Pitch]"""
     from fastapi import HTTPException
 
-    from src.backend.database.core import get_db_manager
 
     db = get_db_manager()
     svc = GachaService(db=db)
@@ -421,11 +435,13 @@ async def gacha_endpoint(req: GachaRequest) -> GachaResponse:
 
 
 @router.post("/digest", response_model=DigestResponse)
-async def digest_endpoint(req: DigestRequest) -> DigestResponse:
+async def digest_endpoint(
+    req: DigestRequest,
+    api_key: str = Depends(require_api_key),
+) -> DigestResponse:
     """ダイジェスト生成 [Quick Digest]"""
     from fastapi import HTTPException
 
-    from src.backend.database.core import get_db_manager
 
     db = get_db_manager()
     svc = DigestService(db=db)
@@ -436,9 +452,11 @@ async def digest_endpoint(req: DigestRequest) -> DigestResponse:
 
 
 @router.post("/promote", response_model=PromotionResponse)
-async def promote_endpoint(req: PromotionRequest) -> PromotionResponse:
+async def promote_endpoint(
+    req: PromotionRequest,
+    api_key: str = Depends(require_api_key),
+) -> PromotionResponse:
     """上級者モード昇格 [Producer Handoff]"""
-    from src.backend.database.core import get_db_manager
     from fastapi import HTTPException
 
     db = get_db_manager()
@@ -452,6 +470,7 @@ async def promote_endpoint(req: PromotionRequest) -> PromotionResponse:
 @router.post("/reverse-generate")
 async def reverse_generate_endpoint(
     req: ReversePlotGeneratePayload,
+    api_key: str = Depends(require_api_key),
 ) -> dict[str, Any]:
     """逆算プロットビルダー用同期生成エンドポイント [Reverse Plot Builder]"""
     from src.backend.workflows.reverse_plot_workflow import ReversePlotGenerationWorkflow
@@ -479,14 +498,24 @@ async def export_with_data_endpoint(
     repo = BookRepository(session)
     # DBにも永続化
     try:
-        repo.save_or_update_book_with_chapter(
-            book_id=book_id,
-            title=payload.title,
-            genre=payload.genre,
-            chapter_text=payload.current_text,
-            character_params=payload.character,
-            plots=payload.plots,
-        )
+        if repo.is_async:
+            await repo.save_or_update_book_with_chapter_async(
+                book_id=book_id,
+                title=payload.title,
+                genre=payload.genre,
+                chapter_text=payload.current_text,
+                character_params=payload.character,
+                plots=payload.plots,
+            )
+        else:
+            repo.save_or_update_book_with_chapter(
+                book_id=book_id,
+                title=payload.title,
+                genre=payload.genre,
+                chapter_text=payload.current_text,
+                character_params=payload.character,
+                plots=payload.plots,
+            )
     except Exception as e:
         logger.warning("Failed to auto-save book during export: %s", e)
 

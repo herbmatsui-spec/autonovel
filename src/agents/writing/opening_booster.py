@@ -10,7 +10,7 @@ from typing import Any, TYPE_CHECKING
 import jinja2
 
 from src.agents.base import BaseAgent
-from src.config.opening_rules import OPENING_EPISODE_TARGETS, OPENING_FORBIDDEN_RULES
+from src.config.opening_rules import GENRE_OPENING_TARGETS, OPENING_FORBIDDEN_RULES
 from src.models.opening_booster import CliffhangerEvaluation, OpeningEpisodeConfig
 from src.services.auditors.cliffhanger_scorer import score_cliffhanger
 
@@ -48,14 +48,19 @@ class OpeningBoosterAgent(BaseAgent):
         genre: str = "異世界ファンタジー",
     ) -> str:
         """指定話数（1〜3話）に応じた特化プロンプトを構築する"""
-        template_name = f"narrative/opening_ep0{config.ep_num}.j2"
+        # ジャンル別テンプレートがあれば優先使用、なければ汎用テンプレートにフォールバック
+        genre_template_name = f"narrative/opening_ep0{config.ep_num}_{genre}.j2"
+        generic_template_name = f"narrative/opening_ep0{config.ep_num}.j2"
         try:
-            template = self.jinja_env.get_template(template_name)
+            template = self.jinja_env.get_template(genre_template_name)
         except jinja2.TemplateNotFound:
-            logger.warning("Opening template %s not found, falling back to ep01", template_name)
-            template = self.jinja_env.get_template("narrative/opening_ep01.j2")
+            try:
+                template = self.jinja_env.get_template(generic_template_name)
+            except jinja2.TemplateNotFound:
+                logger.warning("Opening template %s/%s not found, falling back to ep01", genre_template_name, generic_template_name)
+                template = self.jinja_env.get_template("narrative/opening_ep01.j2")
 
-        target_instruction = OPENING_EPISODE_TARGETS.get(config.ep_num, "")
+        target_instruction = GENRE_OPENING_TARGETS.get(genre, {}).get(config.ep_num, "")
         prompt = template.render(
             genre=genre,
             protagonist_name=protagonist_name,

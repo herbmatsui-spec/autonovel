@@ -180,20 +180,36 @@ def test_empty_book_router_returns_422(service, db_session):
     db_session.commit()
     db_session.refresh(book)
 
+    from src.backend.auth import require_api_key, get_current_user
+    from src.backend.database.models import User
+    from src.backend.routers import multimedia
+    from unittest.mock import patch, AsyncMock
+
+    route_paths = [getattr(r, "path", "") for r in app.routes]
+    if "/multimedia/media-mix" not in route_paths:
+        app.include_router(multimedia.router, prefix="/multimedia", tags=["multimedia"])
+
+    mock_user = User(id=1, email="test@example.com")
     app.dependency_overrides[get_multimedia_service] = lambda: service
     app.dependency_overrides[validate_api_key_or_raise] = lambda: "valid_key"
+    app.dependency_overrides[require_api_key] = lambda: "valid_key"
+    app.dependency_overrides[get_current_user] = lambda: mock_user
     client = TestClient(app)
 
     try:
-        response = client.post(
-            "/multimedia/media-mix",
-            json={"book_id": book.id, "format": "manga", "episode_num": 1},
-            headers={"X-API-Key": "valid_key"},
-        )
-        # 422 Unprocessable Entity が返ることを確認
-        assert response.status_code == 422
-        detail = response.json().get("detail", "")
-        assert f"No chapters found for book {book.id}" in detail
+        with patch("src.backend.routers.multimedia.is_multimedia_enabled", return_value=True), \
+             patch("src.backend.routers.multimedia.verify_book_ownership", new_callable=AsyncMock):
+            response = client.post(
+                "/multimedia/media-mix",
+                json={"book_id": book.id, "format": "manga", "episode_num": 1},
+                headers={"X-API-Key": "valid_key"},
+            )
+            # 422 Unprocessable Entity が返ることを確認
+            assert response.status_code == 422
+            detail = response.json().get("detail", "")
+            assert f"No chapters found for book {book.id}" in detail
     finally:
         app.dependency_overrides.pop(get_multimedia_service, None)
         app.dependency_overrides.pop(validate_api_key_or_raise, None)
+        app.dependency_overrides.pop(require_api_key, None)
+        app.dependency_overrides.pop(get_current_user, None)

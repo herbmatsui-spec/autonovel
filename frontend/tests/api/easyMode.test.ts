@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeAll, afterAll, afterEach } from "vitest";
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
 import {
@@ -36,9 +36,12 @@ const server = setupServer(
 );
 
 describe("easyMode API client", () => {
-  server.listen();
+  beforeAll(() => server.listen({ onUnhandledRequest: "bypass" }));
 
-  afterEach(() => server.resetHandlers());
+  afterEach(() => {
+    server.resetHandlers();
+    vi.unstubAllGlobals();
+  });
 
   afterAll(() => server.close());
 
@@ -189,7 +192,7 @@ describe("easyMode API client", () => {
         character_params: { name: "", personality: "", ability: "", genre: "" },
         content_length_limit: 10,
       })
-    ).rejects.toThrow(TypeError);
+    ).rejects.toThrow("ネットワークに接続できません");
   });
 });
 

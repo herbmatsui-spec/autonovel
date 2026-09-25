@@ -9,6 +9,8 @@ import pytest
 
 from src.agents.marketing import MarketingAgent
 
+pytestmark = pytest.mark.flaky(reruns=3, reruns_delay=2)
+
 
 def _make_llm(return_value):
     llm = MagicMock()

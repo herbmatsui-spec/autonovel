@@ -1,0 +1,10 @@
+{
+  "id": "token_case_06",
+  "raw": "「承知しました」[IRONY:cold_acceptance]",
+  "expected_not_contains": [
+    "[IRONY:cold_acceptance]"
+  ],
+  "expected_contains": [
+    "「……"
+  ]
+}

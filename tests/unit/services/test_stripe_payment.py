@@ -12,10 +12,12 @@ async def test_stripe_webhook_grants_credits():
 
     # Mock database session
     mock_session = AsyncMock()
+    mock_session.add = MagicMock()
+    mock_session.get = AsyncMock(return_value=None)
     mock_user = MagicMock(id=1, credits=10, stripe_customer_id="cus_test_123", plan_tier="free")
     # Mock the query to get user by stripe_customer_id
-    mock_result = AsyncMock()
-    mock_result.scalar_one_or_none = AsyncMock(return_value=mock_user)
+    mock_result = MagicMock()
+    mock_result.scalar_one_or_none = MagicMock(return_value=mock_user)
     mock_session.execute = AsyncMock(return_value=mock_result)
     mock_session.commit = AsyncMock()
     mock_session.merge = AsyncMock(return_value=mock_user)

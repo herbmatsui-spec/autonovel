@@ -1,4 +1,4 @@
-from src.services.writing_services import WritingGenerationContext
+from src.backend.writing_service import WritingGenerationContext
 
 def test_writing_generation_context_build_sys_inst():
     ctx = WritingGenerationContext(

@@ -1,0 +1,10 @@
+{
+  "id": "token_case_17",
+  "raw": "「テスト発言 17」[SUBTEXT:irony]「続く発言」",
+  "expected_not_contains": [
+    "[SUBTEXT:irony]"
+  ],
+  "expected_contains": [
+    "「テスト発言 17」"
+  ]
+}

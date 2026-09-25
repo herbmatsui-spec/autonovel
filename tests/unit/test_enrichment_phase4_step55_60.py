@@ -35,7 +35,8 @@ def test_step55_sensory_expansion_jinja2_rendering():
     assert "tactile" in rendered
 
 
-def test_step56_llm_sensory_generation_call():
+@pytest.mark.asyncio
+async def test_step56_llm_sensory_generation_call():
     """Step 56: generate_sensory_details が LLM を呼び出して高度な展開文を生成すること."""
     mock_llm = MagicMock()
     mock_llm.generate.return_value = "冷たい雨が頬を打ち、彼の視界は白く霞んでいた。"
@@ -48,7 +49,7 @@ def test_step56_llm_sensory_generation_call():
         abstract_phrase="悲しかった",
     )
 
-    details = generate_sensory_details(
+    details = await generate_sensory_details(
         emotion_span=span,
         scene_context="雨の戦場",
         pov="三人称",

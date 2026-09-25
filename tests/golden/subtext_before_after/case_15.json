@@ -1,0 +1,15 @@
+{
+  "id": "case_15",
+  "name": "compliance_hai",
+  "speaker": "従僕",
+  "before": [
+    "「はい」"
+  ],
+  "expected_any": [
+    "仰せのままに",
+    "無言のまま"
+  ],
+  "applied_rules": [
+    "rule_06_compliance_subvert"
+  ]
+}

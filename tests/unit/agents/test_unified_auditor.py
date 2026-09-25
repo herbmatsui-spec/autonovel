@@ -42,3 +42,30 @@ async def test_unified_auditor_character_plot_context():
     called_prompt = mock_llm.generate.call_args[1]["prompt"]
     assert "おしとやかな令嬢" in called_prompt
     assert "Shocking Truth" in called_prompt
+
+@pytest.mark.asyncio
+async def test_unified_auditor_conflicts_generation():
+    auditor = UnifiedAuditor(llm_gateway=None)
+    # 会話文のない長めの文章
+    text = "長い文章が続く。彼は歩いた。街は静まり返っていた。太陽が沈み、闇が支配した。"
+    report = await auditor.audit(text)
+    assert isinstance(report.conflicts, list)
+    # dialogue_ratio が低いため dialogue カテゴリの指摘が含まれるか確認
+    dialogue_conflicts = [c for c in report.conflicts if c.category == "dialogue"]
+    assert len(dialogue_conflicts) > 0
+
+@pytest.mark.asyncio
+async def test_unified_auditor_actionable_patch_conflict():
+    mock_llm = AsyncMock()
+    mock_llm.generate.return_value = (
+        '{"hook_score": 60, "emotional_score": 65, "character_consistency": 70, '
+        '"overall_score": 65, "critique": "冒頭の引きが弱いため修正を推奨", '
+        '"actionable_patch": "「待て！」背後から鋭い叫び声が響いた。"}'
+    )
+    auditor = UnifiedAuditor(llm_gateway=mock_llm)
+    report = await auditor.audit("彼はゆっくりと歩き始めた。")
+    assert report.is_acceptable is False
+    patch_conflicts = [c for c in report.conflicts if c.suggested_value == "「待て！」背後から鋭い叫び声が響いた。"]
+    assert len(patch_conflicts) == 1
+    assert patch_conflicts[0].category == "hook"
+

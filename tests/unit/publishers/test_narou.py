@@ -18,10 +18,13 @@ class TestNarouPublisher:
     def publisher(self):
         """Publisherフィクスチャ"""
         # 依存関係を完全にモック化
-        with patch("src.services.publishers.narou.webdriver"), \
-             patch("src.services.publishers.narou.ChromeDriverManager"), \
-             patch("src.services.publishers.narou.Options"), \
-             patch("src.services.publishers.narou.Service"):
+        with patch("src.services.publishers.narou.webdriver", create=True), \
+             patch("src.services.publishers.narou.ChromeDriverManager", create=True), \
+             patch("src.services.publishers.narou.Options", create=True), \
+             patch("src.services.publishers.narou.Service", create=True), \
+             patch("src.services.publishers.narou.WebDriverWait", create=True), \
+             patch("time.sleep"), \
+             patch("asyncio.sleep"):
             pub = NarouPublisher(headless=True)
             yield pub
             pub._close_driver()

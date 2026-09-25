@@ -1,0 +1,27 @@
+# Control Tokens Dictionary (Chinese) - PLAN_Y3
+subtext:
+  irony:
+    templates:
+      - "“……{phrase}”"
+      - "“……{phrase}——{beat}”"
+    phrases:
+      - "行啊，随你的便。"
+      - "你又能懂什么？"
+      - "看来我一开始就不该抱有期待。"
+  cold_acceptance:
+    templates:
+      - "“……{phrase}”——{action}。"
+    phrases:
+      - "那就这样吧。"
+      - "嗯，随你高兴。"
+    actions:
+      - "干笑了一声，将微颤的指尖藏进袖中"
+      - "垂下视线，轻轻搁下茶杯"
+
+beat:
+  pause:
+    short:
+      - "……"
+      - "空气凝固了一瞬"
+    long:
+      - "长久的沉默在两人之间蔓延"

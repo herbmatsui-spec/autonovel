@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-interface ConflictItem {
+export interface ConflictItem {
   category: string;
   severity: "critical" | "high" | "medium" | "low";
   title: string;
@@ -14,7 +14,7 @@ interface ConflictItem {
   confidence: number;
 }
 
-interface ConflictReport {
+export interface ConflictReport {
   book_id: number;
   ep_num: number;
   patch_review_id: number | null;
@@ -27,20 +27,22 @@ interface ConflictReport {
   conflicts: ConflictItem[];
 }
 
-interface ConflictReportPanelProps {
+export interface ConflictReportPanelProps {
   report: ConflictReport;
-  onApprove: (reviewId: number, comment?: string) => void;
-  onReject: (reviewId: number, comment: string) => void;
-  onRevise: (reviewId: number, proposedContent: string, comment?: string) => void;
-  onClose: () => void;
+  onApprove?: (reviewId: number, comment?: string) => void;
+  onReject?: (reviewId: number, comment: string) => void;
+  onRevise?: (reviewId: number, proposedContent: string, comment?: string) => void;
+  onClose?: () => void;
+  onRunAudit?: () => void;
+  isLoading?: boolean;
 }
 
 const SEVERITY_COLORS = {
-    critical: "#ff6b6b",
-    high: "#ffb74d",
-    medium: "#ffd54f",
-    low: "#cddc39",
-  } as const;
+  critical: "#ff6b6b",
+  high: "#ffb74d",
+  medium: "#ffd54f",
+  low: "#cddc39",
+} as const;
 
 const SEVERITY_LABELS = {
   critical: "緊急",
@@ -55,6 +57,11 @@ const CATEGORY_LABELS: Record<string, string> = {
   deai: "AI感・文体",
   ability_consistency: "能力整合性",
   causal_integrity: "因果律",
+  rhythm: "文長リズム",
+  dialogue: "台詞・会話比率",
+  cliche: "AI定型表現",
+  hook: "引き・クリフハンガー",
+  character: "キャラクター心理",
 };
 
 export const ConflictReportPanel: React.FC<ConflictReportPanelProps> = ({
@@ -63,6 +70,8 @@ export const ConflictReportPanel: React.FC<ConflictReportPanelProps> = ({
   onReject,
   onRevise,
   onClose,
+  onRunAudit,
+  isLoading = false,
 }) => {
   const [activeTab, setActiveTab] = useState<"list" | "diff" | "actions">("list");
   const [selectedConflict, setSelectedConflict] = useState<ConflictItem | null>(null);
@@ -71,19 +80,19 @@ export const ConflictReportPanel: React.FC<ConflictReportPanelProps> = ({
   const [rejectComment, setRejectComment] = useState("");
 
   const handleApprove = () => {
-    if (report.patch_review_id) {
+    if (report.patch_review_id && onApprove) {
       onApprove(report.patch_review_id);
     }
   };
 
   const handleReject = () => {
-    if (report.patch_review_id && rejectComment.trim()) {
+    if (report.patch_review_id && rejectComment.trim() && onReject) {
       onReject(report.patch_review_id, rejectComment);
     }
   };
 
   const handleRevise = () => {
-    if (report.patch_review_id && revisionContent.trim()) {
+    if (report.patch_review_id && revisionContent.trim() && onRevise) {
       onRevise(report.patch_review_id, revisionContent, revisionComment);
     }
   };
@@ -98,89 +107,133 @@ export const ConflictReportPanel: React.FC<ConflictReportPanelProps> = ({
       <div className="diff-container">
         <div className="diff-side">
           <div className="diff-header">現在の値</div>
-          <pre className="diff-content">{curLines.map((l, i) => (
-            <div key={i} className="diff-line removed">{l}</div>
-          ))}</pre>
+          <pre className="diff-content">
+            {curLines.map((l, i) => (
+              <div key={i} className="diff-line removed">{l}</div>
+            ))}
+          </pre>
         </div>
         <div className="diff-side">
           <div className="diff-header">推奨値</div>
-          <pre className="diff-content">{sugLines.map((l, i) => (
-            <div key={i} className="diff-line added">{l}</div>
-          ))}</pre>
+          <pre className="diff-content">
+            {sugLines.map((l, i) => (
+              <div key={i} className="diff-line added">{l}</div>
+            ))}
+          </pre>
         </div>
       </div>
     );
   };
 
   return (
-    <div className="conflict-report-panel">
-      <div className="panel-header">
-        <h2>⚠️ 矛盾レポート - 第{report.ep_num}話</h2>
-        <button className="btn-close" onClick={onClose}>×</button>
+    <div className="conflict-report-panel" data-testid="conflict-report-panel">
+      <div className="panel-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+        <h2 style={{ fontSize: "1.1rem", margin: 0 }}>⚠️ 矛盾・二層監査レポート - 第{report.ep_num}話</h2>
+        {onClose && (
+          <button className="btn-close" onClick={onClose} aria-label="閉じる">×</button>
+        )}
       </div>
 
-      <div className="panel-summary">
-        <div className="summary-stats">
+      <div className="panel-summary" style={{ marginBottom: "16px", padding: "12px", background: "var(--bg-input)", borderRadius: "8px" }}>
+        <div className="summary-stats" style={{ display: "flex", gap: "12px", marginBottom: "8px", fontSize: "0.85rem", fontWeight: 600 }}>
           <span className="stat total">総計: {report.total_count}</span>
-          <span className="stat critical" style={{color: SEVERITY_COLORS.critical}}>緊急: {report.critical_count}</span>
-          <span className="stat high" style={{color: SEVERITY_COLORS.high}}>高: {report.high_count}</span>
-          <span className="stat medium" style={{color: SEVERITY_COLORS.medium}}>中: {report.medium_count}</span>
-          <span className="stat low" style={{color: SEVERITY_COLORS.low}}>低: {report.low_count}</span>
+          <span className="stat critical" style={{ color: SEVERITY_COLORS.critical }}>緊急: {report.critical_count}</span>
+          <span className="stat high" style={{ color: SEVERITY_COLORS.high }}>高: {report.high_count}</span>
+          <span className="stat medium" style={{ color: SEVERITY_COLORS.medium }}>中: {report.medium_count}</span>
+          <span className="stat low" style={{ color: SEVERITY_COLORS.low }}>低: {report.low_count}</span>
         </div>
-        <pre className="summary-text">{report.summary}</pre>
+        {report.summary && <pre className="summary-text" style={{ margin: 0, fontSize: "0.85rem", color: "var(--text-muted)", whiteSpace: "pre-wrap" }}>{report.summary}</pre>}
       </div>
 
-      <div className="panel-tabs">
+      <div className="panel-tabs" style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
         <button
-          className={activeTab === "list" ? "active" : ""}
+          type="button"
+          className={`btn-tab ${activeTab === "list" ? "btn-tab--active" : ""}`}
           onClick={() => setActiveTab("list")}
         >
-          矛盾一覧 ({report.conflicts.length})
+          矛盾・指摘一覧 ({report.conflicts.length})
         </button>
         <button
-          className={activeTab === "diff" ? "active" : ""}
+          type="button"
+          className={`btn-tab ${activeTab === "diff" ? "btn-tab--active" : ""}`}
           onClick={() => setActiveTab("diff")}
           disabled={!selectedConflict}
         >
           詳細diff
         </button>
-        <button
-          className={activeTab === "actions" ? "active" : ""}
-          onClick={() => setActiveTab("actions")}
-        >
-          アクション
-        </button>
+        {report.patch_review_id && (
+          <button
+            type="button"
+            className={`btn-tab ${activeTab === "actions" ? "btn-tab--active" : ""}`}
+            onClick={() => setActiveTab("actions")}
+          >
+            アクション
+          </button>
+        )}
       </div>
 
       <div className="panel-content">
         {activeTab === "list" && (
-          <div className="conflict-list" style={{maxHeight: "400px", overflowY: "auto"}}>
-            {report.conflicts.map((conflict, index) => (
-              <div
-                key={index}
-                className="conflict-card"
-                style={{
-                  borderLeft: `4px solid ${SEVERITY_COLORS[conflict.severity]}`,
-                  background: selectedConflict === conflict ? "rgba(255, 213, 79, 0.1)" : "transparent",
-                }}
-                onClick={() => setSelectedConflict(conflict)}
-              >
-                <div className="conflict-header">
-                  <span className="conflict-category">{CATEGORY_LABELS[conflict.category] || conflict.category}</span>
-                  <span
-                    className="conflict-severity"
-                    style={{background: SEVERITY_COLORS[conflict.severity], color: "#fff"}}
+          <div className="conflict-list" style={{ maxHeight: "400px", overflowY: "auto" }}>
+            {report.conflicts.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "32px 16px", color: "var(--text-muted)" }}>
+                <div style={{ fontSize: "2rem", marginBottom: "8px" }}>✅</div>
+                <div style={{ fontWeight: 600, marginBottom: "8px" }}>矛盾やAI定型表現は検出されませんでした</div>
+                <div style={{ fontSize: "0.85rem", marginBottom: "16px" }}>文章のテンポと一貫性は良好に保たれています。</div>
+                {onRunAudit && (
+                  <button
+                    type="button"
+                    className="inline-ai-btn"
+                    data-testid="btn-run-audit-panel"
+                    onClick={onRunAudit}
+                    disabled={isLoading}
+                    style={{ padding: "8px 16px", fontSize: "0.9rem" }}
                   >
-                    {SEVERITY_LABELS[conflict.severity]}
-                  </span>
-                  <span className="conflict-confidence">信頼度: {(conflict.confidence * 100).toFixed(0)}%</span>
-                </div>
-                <div className="conflict-description">{conflict.description}</div>
-                {conflict.field_path && (
-                  <div className="conflict-field">フィールド: <code>{conflict.field_path}</code></div>
+                    {isLoading ? "🧠 二層診断を実行中..." : "🧠 AI二層診断を実行する"}
+                  </button>
                 )}
               </div>
-            ))}
+            ) : (
+              report.conflicts.map((conflict, index) => (
+                <div
+                  key={index}
+                  className="conflict-card"
+                  style={{
+                    borderLeft: `4px solid ${SEVERITY_COLORS[conflict.severity]}`,
+                    background: selectedConflict === conflict ? "rgba(255, 213, 79, 0.1)" : "var(--bg-input)",
+                    padding: "12px",
+                    borderRadius: "6px",
+                    marginBottom: "8px",
+                    cursor: "pointer",
+                  }}
+                  onClick={() => setSelectedConflict(conflict)}
+                >
+                  <div className="conflict-header" style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "6px" }}>
+                    <span className="conflict-category" style={{ fontWeight: 600, color: "var(--accent-cyan)" }}>
+                      {CATEGORY_LABELS[conflict.category] || conflict.category}
+                    </span>
+                    <span
+                      className="conflict-severity"
+                      style={{ background: SEVERITY_COLORS[conflict.severity], color: "#000", padding: "2px 6px", borderRadius: "4px", fontSize: "0.75rem", fontWeight: 700 }}
+                    >
+                      {SEVERITY_LABELS[conflict.severity]}
+                    </span>
+                    {conflict.confidence && (
+                      <span className="conflict-confidence" style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginLeft: "auto" }}>
+                        信頼度: {(conflict.confidence * 100).toFixed(0)}%
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontWeight: 600, fontSize: "0.9rem", marginBottom: "4px" }}>{conflict.title}</div>
+                  <div className="conflict-description" style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>{conflict.description}</div>
+                  {conflict.field_path && (
+                    <div className="conflict-field" style={{ fontSize: "0.8rem", marginTop: "4px" }}>
+                      対象箇所: <code>{conflict.field_path}</code>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
           </div>
         )}
 
@@ -189,68 +242,49 @@ export const ConflictReportPanel: React.FC<ConflictReportPanelProps> = ({
             <h4>{CATEGORY_LABELS[selectedConflict.category] || selectedConflict.category}</h4>
             {renderDiff(selectedConflict.current_value, selectedConflict.suggested_value)}
             {selectedConflict.evidence_past && (
-              <details>
-                <summary>過去の証拠</summary>
-                <pre>{selectedConflict.evidence_past}</pre>
+              <details style={{ marginTop: "12px" }}>
+                <summary>過去の記述根拠</summary>
+                <pre style={{ fontSize: "0.85rem", whiteSpace: "pre-wrap" }}>{selectedConflict.evidence_past}</pre>
               </details>
             )}
             {selectedConflict.evidence_current && (
-              <details>
-                <summary>現在の証拠</summary>
-                <pre>{selectedConflict.evidence_current}</pre>
-              </details>
-            )}
-            {selectedConflict.constraint_for_next && (
-              <details>
-                <summary>次回への制約</summary>
-                <pre>{selectedConflict.constraint_for_next}</pre>
+              <details style={{ marginTop: "8px" }}>
+                <summary>現在の記述箇所</summary>
+                <pre style={{ fontSize: "0.85rem", whiteSpace: "pre-wrap" }}>{selectedConflict.evidence_current}</pre>
               </details>
             )}
           </div>
         )}
 
-        {activeTab === "actions" && (
-          <div className="actions-view">
-            <div className="action-group">
+        {activeTab === "actions" && report.patch_review_id && (
+          <div className="actions-view" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            <div className="action-section">
               <h4>承認</h4>
-              <p>矛盾内容を確認し、推奨修正案を適用して次に進みます。</p>
-              <button className="btn-primary" onClick={handleApprove}>
-                ✅ 承認して続行
-              </button>
+              <p style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>推奨されたパッチをそのまま本文へ適用します。</p>
+              <button type="button" className="btn-primary" onClick={handleApprove}>パッチを適用して承認</button>
             </div>
-
-            <div className="action-group">
-              <h4>差し戻し</h4>
-              <p>矛盾指摘に不同意の場合、理由を添えて差し戻します（修復フェーズへ）。</p>
+            <div className="action-section">
+              <h4>却下</h4>
               <textarea
-                placeholder="差し戻し理由（必須）"
+                placeholder="却下理由を入力してください..."
                 value={rejectComment}
                 onChange={(e) => setRejectComment(e.target.value)}
-                rows={3}
+                style={{ width: "100%", minHeight: "60px", marginBottom: "8px" }}
               />
-              <button className="btn-danger" onClick={handleReject} disabled={!rejectComment.trim()}>
-                ❌ 差し戻し
+              <button type="button" className="btn-secondary" onClick={handleReject} disabled={!rejectComment.trim()}>
+                指摘を却下
               </button>
             </div>
-
-            <div className="action-group">
-              <h4>修正案を提示</h4>
-              <p>推奨値を修正して再レビューを要求します。</p>
+            <div className="action-section">
+              <h4>修正して適用</h4>
               <textarea
-                placeholder="修正後の提案内容"
+                placeholder="修正後の本文内容..."
                 value={revisionContent}
                 onChange={(e) => setRevisionContent(e.target.value)}
-                rows={5}
-                defaultValue={selectedConflict?.suggested_value || ""}
+                style={{ width: "100%", minHeight: "80px", marginBottom: "8px" }}
               />
-              <textarea
-                placeholder="修正理由（任意）"
-                value={revisionComment}
-                onChange={(e) => setRevisionComment(e.target.value)}
-                rows={2}
-              />
-              <button className="btn-secondary" onClick={handleRevise} disabled={!revisionContent.trim()}>
-                🔄 修正案を提示
+              <button type="button" className="btn-secondary" onClick={handleRevise} disabled={!revisionContent.trim()}>
+                修正内容を適用
               </button>
             </div>
           </div>

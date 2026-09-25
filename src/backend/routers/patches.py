@@ -436,13 +436,54 @@ async def patch_paragraph(
         # 所有権を確認
         await verify_book_ownership(book_id, current_user, uow)
 
-    # TODO: 実際のパッチロジック実装
-    # 現状はダミー実装を維持
-    dummy_original = f"This is the original content of paragraph {req.paragraph_index} for episode {episode_id}."
-    dummy_patched = f"This is the patched content of paragraph {req.paragraph_index} for episode {episode_id} based on directive: {req.directive}"
+    from src.services.prose.paragraph_indexer import ParagraphIndexer
+    from src.agents.writing.paragraph_patch_agent import ParagraphPatchAgent
+    from src.models.patch_pdca import ParagraphTarget
+
+    content = chapter.content or ""
+    if not content.strip():
+        raise HTTPException(status_code=400, detail="Chapter content is empty")
+
+    indexer = ParagraphIndexer()
+    indexed_paras = indexer.index_paragraphs(content)
+
+    if req.paragraph_index >= len(indexed_paras):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Paragraph index {req.paragraph_index} is out of range (total paragraphs: {len(indexed_paras)})",
+        )
+
+    target_para = indexed_paras[req.paragraph_index]["text"]
+    prev_para = indexed_paras[req.paragraph_index - 1]["text"] if req.paragraph_index > 0 else ""
+    next_para = indexed_paras[req.paragraph_index + 1]["text"] if req.paragraph_index < len(indexed_paras) - 1 else ""
+
+    target = ParagraphTarget(
+        index=req.paragraph_index,
+        original_text=target_para,
+        issue_category="manual_patch",
+        directive=req.directive,
+    )
+    context = {
+        "prev_paragraph": prev_para,
+        "next_paragraph": next_para,
+        "directive": req.directive,
+        "issue_category": "manual_patch",
+    }
+
+    # Attempt to obtain LLM client if available
+    llm_client = None
+    try:
+        if hasattr(AppContainer, "llm_factory"):
+            llm_client = AppContainer.llm_factory()
+    except Exception:
+        llm_client = None
+
+    agent = ParagraphPatchAgent(llm_client=llm_client)
+    patch_result = await agent.rewrite_paragraph(target, context)
 
     return ParagraphPatchResponse(
         index=req.paragraph_index,
-        original_paragraph=dummy_original,
-        patched_paragraph=dummy_patched,
+        original_paragraph=target_para,
+        patched_paragraph=patch_result.patched_text,
     )
+

@@ -144,14 +144,18 @@ class EasyModeWorkflow(BaseWorkflow):
         result = await pipeline.execute(ctx, self.engine, adapter)
 
         # 4. チェックポイントを保存（成功時のみ）
-        if result.get("status") == "success":
+        res_status = getattr(result, "status", None) or (result.get("status") if isinstance(result, dict) else None)
+        if res_status == "success" and ctx.book_id is not None:
             last_completed_ep = ctx.end_ep or ctx.target_eps
-            await self._save_checkpoint(
-                book_id=ctx.book_id,
-                last_completed_ep=last_completed_ep,
-                compressed_context=None  # TODO: Implement context compression in later step
-            )
-            logger.info(f"Checkpoint saved: book {ctx.book_id}, up to episode {last_completed_ep}")
+            try:
+                await self._save_checkpoint(
+                    book_id=ctx.book_id,
+                    last_completed_ep=last_completed_ep,
+                    compressed_context=None  # TODO: Implement context compression in later step
+                )
+                logger.info(f"Checkpoint saved: book {ctx.book_id}, up to episode {last_completed_ep}")
+            except Exception as e:
+                logger.debug(f"Failed to save checkpoint: {e}")
 
         # 5. 既存インターフェース互換の dict に変換
         return map_context_to_easymode_result(ctx, result)

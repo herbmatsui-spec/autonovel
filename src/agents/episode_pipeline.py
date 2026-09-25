@@ -52,19 +52,13 @@ class EpisodePipeline:
                     await coordinator.await_ready(ep)
                     coordinator.schedule_ahead(ep, end_ep)
 
-                chars = await self.agent.generate_episodes(
+                chars = await self.agent._write_single_episode_core(
                     book_id=book_id,
-                    start_ep=ep,
-                    end_ep=ep,
-                    passion=passion,
+                    ep_num=ep,
                     target_word_count=target_word_count,
                     is_easy_mode=is_easy_mode,
-                    reporter=reporter,
+                    passion=passion,
                     branch_id=branch_id,
-                    style_tag=style_tag,
-                    regeneration_focus=regeneration_focus or [],
-                    writing_focus=writing_focus or [],
-                    regeneration_directive=regeneration_directive,
                 )
                 if chars > 0:
                     total_chars += chars

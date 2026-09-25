@@ -36,7 +36,7 @@ def _get_package_version() -> str:
         from importlib.metadata import version
         return version("autonovel")
     except Exception:
-        return "4.9.3"
+        return "5.0.2"
 
 
 class Settings(BaseSettings):

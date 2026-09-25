@@ -7,7 +7,7 @@ from __future__ import annotations
 from unittest.mock import AsyncMock
 import pytest
 
-from src.config.opening_rules import OPENING_EPISODE_TARGETS, OPENING_FORBIDDEN_RULES
+from src.config.opening_rules import GENRE_OPENING_TARGETS, OPENING_FORBIDDEN_RULES
 from src.models.opening_booster import CliffhangerType, OpeningEpisodeConfig
 from src.agents.writing.opening_booster import OpeningBoosterAgent
 
@@ -38,15 +38,15 @@ async def test_build_opening_prompt_includes_forbidden_rules(mock_llm):
     prompt = await agent.build_prompt(
         config=config,
         protagonist_name="アルト",
-        genre="異世界ファンタジー",
+        genre="banish_fantasy",
     )
 
     # 4つの禁止ルールがすべて含まれていることを検証
     for rule in OPENING_FORBIDDEN_RULES:
         assert rule in prompt, f"Rule not found in prompt: {rule}"
 
-    # 第1話ターゲット指示が含まれていることを検証
-    assert OPENING_EPISODE_TARGETS[1] in prompt
+    # 第1話ターゲット指示が含まれていることを検証（banish_fantasyジャンルを使用）
+    assert GENRE_OPENING_TARGETS["banish_fantasy"][1] in prompt
 
 
 @pytest.mark.asyncio
@@ -64,9 +64,9 @@ async def test_build_opening_prompt_targets_different_episodes(mock_llm):
         prompt = await agent.build_prompt(
             config=config,
             protagonist_name="アルト",
-            genre="異世界ファンタジー",
+            genre="banish_fantasy",  # banish_fantasyジャンルを使用
         )
-        assert OPENING_EPISODE_TARGETS[ep] in prompt
+        assert GENRE_OPENING_TARGETS["banish_fantasy"][ep] in prompt
 
 
 @pytest.mark.asyncio

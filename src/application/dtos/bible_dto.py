@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 from datetime import datetime
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.domain.entities.world_bible import Setting, Lore, WorldBible
 
 from pydantic import BaseModel, ConfigDict, Field
 

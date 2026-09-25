@@ -1,0 +1,33 @@
+# Control Tokens Dictionary (English) - PLAN_Y3
+subtext:
+  irony:
+    templates:
+      - "\"...{phrase}\""
+      - "\"...{phrase}--{beat}\""
+    phrases:
+      - "Whatever you say."
+      - "What would you know?"
+      - "I suppose I shouldn't expect much."
+  cold_acceptance:
+    templates:
+      - "\"...{phrase}\" -- {action}."
+    phrases:
+      - "Have it your way."
+      - "Fine, as you wish."
+    actions:
+      - "smirking dryly while concealing trembling hands"
+      - "lowering their gaze and setting the cup down quietly"
+
+beat:
+  pause:
+    short:
+      - "..."
+      - "A brief pause hangs in the air."
+    long:
+      - "A heavy silence settles between them."
+
+action:
+  hide_hands:
+    trembling:
+      - "shoved their trembling fists into the coat pockets"
+      - "gripped their sleeve tightly to mask the tremor"

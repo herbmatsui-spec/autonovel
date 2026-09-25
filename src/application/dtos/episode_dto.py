@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 from datetime import datetime
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.domain.entities.novel import Episode
 
 from pydantic import BaseModel, ConfigDict, Field
 

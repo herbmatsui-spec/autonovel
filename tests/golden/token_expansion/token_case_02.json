@@ -1,0 +1,11 @@
+{
+  "id": "token_case_02",
+  "raw": "「……」[ACTION:hide_hands:trembling]",
+  "expected_not_contains": [
+    "[ACTION:hide_hands:trembling]"
+  ],
+  "expected_any": [
+    "隠した",
+    "押し込んだ"
+  ]
+}

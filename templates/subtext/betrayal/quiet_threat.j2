@@ -1,0 +1,17 @@
+---
+id: betrayal.quiet_threat
+category: betrayal
+tags: [betrayal, threat, cold]
+context:
+  emotion: [betrayal, vengeance]
+  power_dynamic: [equal, superior]
+  relationship: [former_ally, enemy]
+  intensity: [high]
+variables:
+  - whisper_warning: "静かな警告"
+  - eye_action: "冷たい視線動作"
+weight: 120
+final: true
+---
+「……{{ whisper_warning | default('二度目はない。覚えておくことね') }}」
+——{{ eye_action | default('一切の感情を削ぎ落とした眼差しで、相手の首筋を静かに見据えた') }}。

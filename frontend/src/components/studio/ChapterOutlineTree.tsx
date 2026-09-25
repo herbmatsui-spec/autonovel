@@ -11,11 +11,12 @@ interface ChapterOutlineTreeProps {
 }
 
 export const ChapterOutlineTree: React.FC<ChapterOutlineTreeProps> = ({ onSelectChapter, onMessage }) => {
-  const { chapters, setChapters, currentEpNum, setCurrentEpNum } = useNovelContext();
-const [editingEpNum, setEditingEpNum] = useState<number | null>(null);
-   const [editingTitle, setEditingTitle] = useState("");
-   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const { chapters: rawChapters, setChapters, currentEpNum = 1, setCurrentEpNum } = useNovelContext();
+  const chapters = rawChapters ?? [];
+  const [editingEpNum, setEditingEpNum] = useState<number | null>(null);
+  const [editingTitle, setEditingTitle] = useState('');
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   const handleSelect = (epNum: number) => {
     setCurrentEpNum(epNum);
@@ -27,10 +28,10 @@ const [editingEpNum, setEditingEpNum] = useState<number | null>(null);
     const newChapter: ChapterItem = {
       ep_num: nextEpNum,
       title: `第${nextEpNum}話 新たな展開`,
-      summary: "プロット目標を設定してください",
+      summary: 'プロット目標を設定してください',
       content: `【第${nextEpNum}話】\n\n`,
       is_catharsis: false,
-      status: "draft",
+      status: 'draft',
     };
     setChapters((prev) => [...prev, newChapter]);
     setCurrentEpNum(nextEpNum);

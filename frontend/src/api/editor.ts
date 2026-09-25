@@ -10,74 +10,59 @@ import {
   ConsistencyAuditResponse,
   NextBeatsRequest,
   NextBeatsResponse,
+  AuditFastHybridRequest,
+  UnifiedAuditReport,
 } from "../types/editor";
+import { apiFetch, handleResponse as handleApiResponse } from "./client";
 
 const BASE = "/api/editor";
-
-/**
- * エラーハンドリング用ヘルパー
- */
-async function handleResponse<T>(res: Response): Promise<T> {
-  if (!res.ok) {
-    let errorDetail = `HTTP ${res.status} ${res.statusText}`;
-    try {
-      const errJson = await res.json();
-      errorDetail = errJson.detail || errJson.error || errorDetail;
-    } catch {
-      const text = await res.text();
-      if (text) errorDetail = text;
-    }
-    throw new Error(errorDetail);
-  }
-  return res.json();
-}
 
 /**
  * インライン AI アシスト（五感描写拡張・Show Don't Tell・トーン書き換え）
  */
 export async function assistContent(input: AssistRequest): Promise<AssistResponse> {
-  const res = await fetch(`${BASE}/assist`, {
+  const res = await apiFetch(`${BASE}/assist`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
   });
-  return handleResponse<AssistResponse>(res);
+  return handleApiResponse<AssistResponse>(res);
 }
 
 /**
  * GraphRAG 専属 AI 編集者への世界観・過去章 Q&A
  */
 export async function askBible(input: AskBibleRequest): Promise<AskBibleResponse> {
-  const res = await fetch(`${BASE}/ask-bible`, {
+  const res = await apiFetch(`${BASE}/ask-bible`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
   });
-  return handleResponse<AskBibleResponse>(res);
+  return handleApiResponse<AskBibleResponse>(res);
 }
 
 /**
  * 執筆テキストと設定情報のリアルタイム矛盾診断
  */
 export async function auditConsistency(input: ConsistencyAuditRequest): Promise<ConsistencyAuditResponse> {
-  const res = await fetch(`${BASE}/audit-consistency`, {
+  const res = await apiFetch(`${BASE}/audit-consistency`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
   });
-  return handleResponse<ConsistencyAuditResponse>(res);
+  return handleApiResponse<ConsistencyAuditResponse>(res);
 }
 
 /**
  * Next Beats 3バリエーション（王道・サスペンス・心情）並列生成
  */
 export async function generateNextBeats(input: NextBeatsRequest): Promise<NextBeatsResponse> {
-  const res = await fetch(`${BASE}/next-beats`, {
+  const res = await apiFetch(`${BASE}/next-beats`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
   });
-  return handleResponse<NextBeatsResponse>(res);
+  return handleApiResponse<NextBeatsResponse>(res);
 }
 
 /**
@@ -88,7 +73,7 @@ export async function resolveIssue(
   action: "Auto-Fix" | "Foreshadowing" | "Ignore",
   apiKey: string = "default-key"
 ): Promise<{ status: string; message: string }> {
-  const res = await fetch(`/api/issues/${issueId}/resolve`, {
+  const res = await apiFetch(`/api/issues/${issueId}/resolve`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -96,5 +81,17 @@ export async function resolveIssue(
     },
     body: JSON.stringify({ action }),
   });
-  return handleResponse<{ status: string; message: string }>(res);
+  return handleApiResponse<{ status: string; message: string }>(res);
+}
+
+/**
+ * v5.0: 二層ハイブリッド監査（静的ルール解析＋定性判定）
+ */
+export async function runHybridAudit(input: AuditFastHybridRequest): Promise<UnifiedAuditReport> {
+  const res = await apiFetch(`${BASE}/audit`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  return handleApiResponse<UnifiedAuditReport>(res, "二層ハイブリッド監査の実行に失敗しました");
 }

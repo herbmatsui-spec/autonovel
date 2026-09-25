@@ -1,0 +1,15 @@
+---
+id: action.meaningful_glance
+category: action
+tags: [action, silence, gaze]
+context:
+  emotion: [suspicion, understanding, tension]
+  power_dynamic: [equal, superior, inferior]
+  relationship: [any]
+  intensity: [high, medium]
+variables:
+  - silent_exchange: "視線の交錯"
+weight: 100
+final: false
+---
+（{{ silent_exchange | default('二人の視線が空中で無言のまま交錯し、火花のような緊張が弾けた') }}）

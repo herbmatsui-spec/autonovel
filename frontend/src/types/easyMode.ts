@@ -68,17 +68,24 @@ export interface GachaPlan {
   logline: string;
   protagonist_summary: string;
   charm_point: string;
+  audit_score?: number;
+  critique?: Record<string, unknown>;
+  recommendation_reason?: string;
+  is_recommended?: boolean;
 }
 
 export interface GachaRequest {
   genre: string;
   keywords: string[];
   temperature?: number;
+  review_session_id?: string;
 }
 
 export interface GachaResponse {
   request_id: string;
   plans: GachaPlan[];
+  recommended_plan_id?: string;
+  review_session_id?: string;
 }
 
 export interface DigestRequest {

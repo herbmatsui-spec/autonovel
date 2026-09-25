@@ -13,6 +13,27 @@ from src.models.marketing_ctr import (
 )
 from src.services.llm_service import LLMService
 
+# Marketing imports for catchphrase functionality
+try:
+    from src.services.marketing.catchphrase_scorer import score_catchphrase_ctr
+except ImportError:
+    # Fallback for when catchphrase_scorer is not yet implemented
+    def score_catchphrase_ctr(catchphrase: str) -> int:
+        return 50  # Neutral score
+
+try:
+    from src.domain.schemas.marketing import CatchphraseItem
+except ImportError:
+    # Fallback for when marketing schemas are not yet implemented
+    from pydantic import BaseModel
+    from typing import Optional
+    
+    class CatchphraseItem(BaseModel):
+        catchphrase: str
+        score: float = 50.0
+        char_count: int = 0
+        type: str = "unknown"
+
 logger = logging.getLogger(__name__)
 
 
@@ -114,7 +135,7 @@ class MarketingAgent(BaseAgent):
 
         top_recs = scored_candidates[:min(5, len(scored_candidates))]
 
-        # 最上位タイトルに基づきあらすじを生成
+# 最上位タイトルに基づきあらすじを生成
         best_title = top_recs[0].title
         synopsis_prompt = await self.prompt_manager.build_viral_synopsis_prompt(
             selected_title=best_title,
@@ -131,6 +152,49 @@ class MarketingAgent(BaseAgent):
             all_candidates=scored_candidates,
             selected_synopsis=synopsis_text,
         )
+
+    async def generate_viral_catchphrases(
+        self, project_settings: str, candidate_count: int = 20
+    ) -> list:
+        """カクヨムCTR最大化キャッチコピー候補を生成・採点し、上位候補を返す。"""
+        if self.prompt_manager is None:
+            raise RuntimeError("PromptManager is unavailable")
+
+        prompt = await self.prompt_manager.build_viral_catchphrase_prompt(
+            project_settings=project_settings,
+        )
+
+        raw_candidates = await self.llm.generate_json(purpose="marketing", prompt=prompt)
+        candidates_list = []
+        if isinstance(raw_candidates, list):
+            candidates_list = raw_candidates
+        elif isinstance(raw_candidates, dict):
+            candidates_list = (
+                raw_candidates.get("catchphrases")
+                or raw_candidates.get("candidates")
+                or [raw_candidates]
+            )
+
+        scored_candidates: list = []
+        for item in candidates_list:
+            if isinstance(item, dict) and "catchphrase" in item:
+                catchphrase_str = str(item["catchphrase"])
+                catchphrase_type = str(item.get("type", "dialogue"))
+                score_info = score_catchphrase_ctr(catchphrase_str)
+                scored_candidates.append(
+                    CatchphraseItem(
+                        catchphrase=catchphrase_str,
+                        score=float(score_info),
+                        char_count=len(catchphrase_str),
+                        type=catchphrase_type,
+                    )
+                )
+
+        # スコア降順ソート
+        scored_candidates.sort(key=lambda c: c.score, reverse=True)
+
+        # 上位候補を返す
+        return scored_candidates[:min(candidate_count, len(scored_candidates))]
 
     async def run(self, *args, **kwargs):
         logger.info("MarketingAgent run invoked")
@@ -193,17 +257,22 @@ class MarketingAgent(BaseAgent):
             chars = override_characters if override_characters is not None else chars
             plots = override_plots if override_plots is not None else plots
 
+        def _to_win_txt_bytes(text: str) -> bytes:
+            crlf_text = text.replace("\r\n", "\n").replace("\n", "\r\n")
+            return b"\xef\xbb\xbf" + crlf_text.encode("utf-8")
+
         buf = io.BytesIO()
         with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
             # 01: 本文
+            title_header = f"■ 作品タイトル: {override_title or (book.title if book else '')}\n■ ジャンル・区分: {override_genre or (book.genre if book else '')}\n\n"
             if book_data is not None and override_chapters is not None:
-                full_text = "".join(
+                full_text = title_header + "".join(
                     f"第{c.get('ep_num', i + 1)}話 {c.get('title', '')}\n\n{c.get('content', '')}\n\n"
                     for i, c in enumerate(override_chapters)
                 )
             else:
-                full_text = "".join(f"第{c.ep_num}話 {c.title}\n\n{c.content}\n\n" for c in chapters)
-            z.writestr("01_本文.txt", full_text)
+                full_text = title_header + "".join(f"第{c.ep_num}話 {c.title}\n\n{c.content}\n\n" for c in chapters)
+            z.writestr("01_本文.txt", _to_win_txt_bytes(full_text))
 
             # 02: キャラクター・世界観設定
             settings_str = ""
@@ -244,7 +313,7 @@ class MarketingAgent(BaseAgent):
                     except Exception:
                         reg = {}
                     setting_text += f"■ {c.name} ({c.role})\n性格: {reg.get('personality', '')}\n能力: {reg.get('ability', '')}\n\n"
-            z.writestr("02_キャラクター・世界観設定集.txt", setting_text)
+            z.writestr("02_キャラクター・世界観設定集.txt", _to_win_txt_bytes(setting_text))
 
             # 03: プロット概要
             plot_text = "【プロット概要】\n"
@@ -257,7 +326,7 @@ class MarketingAgent(BaseAgent):
             else:
                 for p in plots:
                     plot_text += f"第{p.ep_num}話: {p.title}\n{p.one_line_summary or ''}\n\n"
-            z.writestr("03_プロット概要.txt", plot_text)
+            z.writestr("03_プロット概要.txt", _to_win_txt_bytes(plot_text))
 
             # 04: JSON ダンプ（機械可読）
             dump = {

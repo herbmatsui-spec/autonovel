@@ -8,6 +8,7 @@ SceneTypeDetector と EroticIntegrityChecker を提供する。
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 from src.agents.erotic.continuity import (
     CharacterStateSnapshot,

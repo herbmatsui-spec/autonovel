@@ -21,6 +21,7 @@ from src.backend.logging_config import configure as configure_logging
 from src.backend.observability.health import build_health_payload, metrics
 from src.backend.routers import (
     anti_ai,
+    annotations,
     books,
     branches,
     chapters,
@@ -56,6 +57,7 @@ from src.backend.routers import (
     trace,
     platform_export,
     stream_writing,
+    subtext,
 )
 
 logger = logging.getLogger(__name__)
@@ -117,7 +119,14 @@ app.add_middleware(
 
 
 # コアルーター登録
+# Step 19: マルチメディア無効時は不要なルーターをスキップする条件付きマウント
+from src.core.plugin_registry import get_plugin_registry
+
+plugin_registry = get_plugin_registry()
+
+# コアルーター登録
 app.include_router(easy_mode.router, prefix="/easy_mode", tags=["easy_mode"])
+app.include_router(easy_mode.router, prefix="/api/wizard", tags=["wizard"])
 if settings.APP_ENV == "development":
     app.include_router(easy_mode.router, prefix="/api/easy-mode", tags=["easy-mode"])
 app.include_router(streaming.router, prefix="/easy_mode", tags=["streaming"])
@@ -150,7 +159,11 @@ app.include_router(misc.router)
 app.include_router(novel.router)
 app.include_router(commercial.router)
 app.include_router(illustrations.router)
-app.include_router(multimedia.router, prefix="/multimedia", tags=["multimedia"])
+# Step 19: multimedia プラグインが有効な場合のみマウント（DB初期化・タスク登録もスキップ）
+if plugin_registry.is_enabled("multimedia"):
+    app.include_router(multimedia.router, prefix="/multimedia", tags=["multimedia"])
+else:
+    logger.info("Multimedia plugin disabled; skipping /multimedia router mount")
 app.include_router(branches.router)
 app.include_router(anti_ai.router)
 app.include_router(cost.router)
@@ -162,6 +175,8 @@ app.include_router(billing.router)
 app.include_router(billing_webhook.router)
 app.include_router(trace.router)
 app.include_router(health.router)
+app.include_router(subtext.router)
+app.include_router(annotations.router)
 
 
 @app.get("/health")

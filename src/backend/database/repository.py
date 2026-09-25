@@ -132,57 +132,84 @@ class BookRepository:
             self.session = SessionLocal()
             self._db = None
 
-    def _safe_commit(self) -> None:
-        """同期・非同期どちらのセッションでも安全にコミットする"""
-        import asyncio
-        import inspect
+    @property
+    def is_async(self) -> bool:
+        """セッションが AsyncSession であるかを判定する"""
+        from sqlalchemy.ext.asyncio import AsyncSession
+        return isinstance(self.session, AsyncSession)
 
+    async def commit_async(self) -> None:
+        """非同期セッションで安全かつ確実にコミットを待機する"""
+        if self.is_async:
+            await self.session.commit()
+        else:
+            self.session.commit()
+
+    async def refresh_async(self, instance: Any) -> None:
+        """非同期セッションで安全かつ確実にリフレッシュを待機する"""
+        if self.is_async:
+            await self.session.refresh(instance)
+        else:
+            self.session.refresh(instance)
+
+    def _safe_commit(self) -> None:
+        """同期コミット実行（非同期セッションの場合は警告を出して同期コミットを試みる）"""
+        import inspect
         res = self.session.commit()
         if inspect.isawaitable(res):
+            logger.warning(
+                "[BookRepository] commit() returned an awaitable in sync context. "
+                "Use 'await repo.commit_async()' instead."
+            )
+            import asyncio
             try:
+                # 既にイベントループが実行中の場合はタスクとして待機コールバックを付与
                 loop = asyncio.get_running_loop()
                 task = loop.create_task(res)
-
                 def _on_done(t):
                     if not t.cancelled() and t.exception():
-                        logger.error(f"[BookRepository] Background commit failed: {t.exception()}")
-
+                        logger.error(f"[BookRepository] Async commit error: {t.exception()}")
                 task.add_done_callback(_on_done)
             except RuntimeError:
-                # イベントループが実行中でない場合は同期的に完了
                 asyncio.run(res)
 
     def _safe_refresh(self, instance: Any) -> None:
-        """同期・非同期どちらのセッションでも安全にリフレッシュする"""
-        import asyncio
+        """同期リフレッシュ実行（非同期セッションの場合は警告）"""
         import inspect
-
         res = self.session.refresh(instance)
         if inspect.isawaitable(res):
+            logger.warning(
+                "[BookRepository] refresh() returned an awaitable in sync context. "
+                "Use 'await repo.refresh_async()' instead."
+            )
+            import asyncio
             try:
                 loop = asyncio.get_running_loop()
                 task = loop.create_task(res)
-
                 def _on_done(t):
                     if not t.cancelled() and t.exception():
-                        logger.error(f"[BookRepository] Background refresh failed: {t.exception()}")
-
+                        logger.error(f"[BookRepository] Async refresh error: {t.exception()}")
                 task.add_done_callback(_on_done)
             except RuntimeError:
                 asyncio.run(res)
 
     def get_book(self, book_id: int) -> Book | None:
-        """指定した ID の作品情報を取得する"""
+        """指定した ID の作品情報を取得する（同期）"""
+        return self.session.get(Book, book_id)
+
+    async def get_book_async(self, book_id: int) -> Book | None:
+        """指定した ID の作品情報を取得する（非同期）"""
+        if self.is_async:
+            return await self.session.get(Book, book_id)
         return self.session.get(Book, book_id)
 
     def create_task(
         self, task_id: str | None = None, status: str = "pending", result: str | None = None
     ) -> Task:
-        """Create a new Task record and return it."""
+        """Create a new Task record and return it (Sync)."""
         now = int(time.time())
         if not task_id:
             import uuid
-
             task_id = str(uuid.uuid4())
         task = Task(id=task_id, status=status, result=result, created_at=now, updated_at=now)
         self.session.add(task)
@@ -190,20 +217,48 @@ class BookRepository:
         self._safe_refresh(task)
         return task
 
+    async def create_task_async(
+        self, task_id: str | None = None, status: str = "pending", result: str | None = None
+    ) -> Task:
+        """Create a new Task record and return it with guaranteed awaitable commit (Async)."""
+        now = int(time.time())
+        if not task_id:
+            import uuid
+            task_id = str(uuid.uuid4())
+        task = Task(id=task_id, status=status, result=result, created_at=now, updated_at=now)
+        self.session.add(task)
+        await self.commit_async()
+        await self.refresh_async(task)
+        return task
+
     def get_task(self, task_id: str) -> Task | None:
-        """指定した ID のタスクを取得する"""
+        """指定した ID のタスクを取得する（同期）"""
+        return self.session.get(Task, task_id)
+
+    async def get_task_async(self, task_id: str) -> Task | None:
+        """指定した ID のタスクを取得する（非同期）"""
+        if self.is_async:
+            return await self.session.get(Task, task_id)
         return self.session.get(Task, task_id)
 
     def update_task_status(self, task_id: str, status: str) -> None:
-        """タスクのステータスを更新する"""
+        """タスクのステータスを更新する（同期）"""
         task = self.session.get(Task, task_id)
         if task:
             task.status = status
             task.updated_at = int(time.time())
             self._safe_commit()
 
+    async def update_task_status_async(self, task_id: str, status: str) -> None:
+        """タスクのステータスを更新する（非同期）"""
+        task = await self.get_task_async(task_id)
+        if task:
+            task.status = status
+            task.updated_at = int(time.time())
+            await self.commit_async()
+
     def set_task_result(self, task_id: str, result: str) -> None:
-        """タスクの結果を保存し、ステータスを completed に更新する"""
+        """タスクの結果を保存し、ステータスを completed に更新する（同期）"""
         task = self.session.get(Task, task_id)
         if task:
             task.result = result
@@ -211,12 +266,31 @@ class BookRepository:
             task.status = "completed"
             self._safe_commit()
 
+    async def set_task_result_async(self, task_id: str, result: str) -> None:
+        """タスクの結果を保存し、ステータスを completed に更新する（非同期）"""
+        task = await self.get_task_async(task_id)
+        if task:
+            task.result = result
+            task.updated_at = int(time.time())
+            task.status = "completed"
+            await self.commit_async()
+
     def delete_task(self, task_id: str) -> None:
-        """Delete a task record from the database."""
+        """Delete a task record from the database (Sync)."""
         task = self.session.get(Task, task_id)
         if task:
             self.session.delete(task)
             self._safe_commit()
+
+    async def delete_task_async(self, task_id: str) -> None:
+        """Delete a task record from the database (Async)."""
+        task = await self.get_task_async(task_id)
+        if task:
+            if self.is_async:
+                await self.session.delete(task)
+            else:
+                self.session.delete(task)
+            await self.commit_async()
 
     def get_all_non_anchor_chapters(
         self, book_id: int, branch_id: int = 1, order_by: str = "ep_num"
@@ -334,6 +408,91 @@ class BookRepository:
                 self.session.add(char)
 
         self._safe_commit()
+        return book
+
+    async def save_or_update_book_with_chapter_async(
+        self,
+        book_id: int | None,
+        title: str = "R15ファンタジー作品",
+        genre: str = "ファンタジー (R15)",
+        chapter_text: str = "",
+        character_params: dict | None = None,
+        plots: list | None = None,
+    ) -> Book:
+        """かんたんモード等のデータをDBに新規作成または更新保存する（非同期）"""
+        if book_id is None or book_id == 0:
+            book = Book(
+                title=title,
+                genre=genre,
+                concept="かんたんモード生成作品",
+                synopsis=chapter_text[:200] if chapter_text else "",
+                target_eps=10,
+            )
+            self.session.add(book)
+            await self.commit_async()
+            await self.refresh_async(book)
+        else:
+            book = await self.get_book_async(book_id)
+            if book is None:
+                book = Book(
+                    title=title,
+                    genre=genre,
+                    concept="かんたんモード生成作品",
+                    synopsis=chapter_text[:200] if chapter_text else "",
+                    target_eps=10,
+                )
+                self.session.add(book)
+                await self.commit_async()
+                await self.refresh_async(book)
+
+        # 第1話の更新または作成
+        if chapter_text:
+            stmt = select(Chapter).where(Chapter.book_id == book.id).where(Chapter.ep_num == 1)
+            if self.is_async:
+                res = await self.session.execute(stmt)
+            else:
+                res = self.session.execute(stmt)
+            chapter = res.scalar_one_or_none()
+            if chapter:
+                chapter.content = chapter_text
+                chapter.summary = chapter_text[:100]
+            else:
+                chapter = Chapter(
+                    book_id=book.id,
+                    ep_num=1,
+                    title="第1話 運命の覚醒",
+                    content=chapter_text,
+                    summary=chapter_text[:100],
+                )
+                self.session.add(chapter)
+
+        # キャラクターの登録/更新
+        if character_params and character_params.get("name"):
+            char_name = character_params["name"]
+            stmt = (
+                select(Character)
+                .where(Character.book_id == book.id)
+                .where(Character.name == char_name)
+            )
+            if self.is_async:
+                res = await self.session.execute(stmt)
+            else:
+                res = self.session.execute(stmt)
+            char = res.scalar_one_or_none()
+            if char:
+                char.personality = character_params.get("personality", "")
+                char.ability = character_params.get("ability", "")
+            else:
+                char = Character(
+                    book_id=book.id,
+                    name=char_name,
+                    role="主人公",
+                    personality=character_params.get("personality", ""),
+                    ability=character_params.get("ability", ""),
+                )
+                self.session.add(char)
+
+        await self.commit_async()
         return book
 
 

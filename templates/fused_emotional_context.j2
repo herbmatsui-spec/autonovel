@@ -1,0 +1,25 @@
+[直前話からの引き継ぎ感情（融合済み）]
+{% if high_confidence %}
+## 高信頼度（作者指定・プロット整合）
+{% for item in high_confidence %}
+{{ item.source }}→{{ item.target }}: {{ item.emotion_ja }}({{ "%.1f"|format(item.value) }}){% if item.cause %} - {{ item.cause }}{% endif %} [{{ item.primary_source }}]
+{% endfor %}
+{% endif %}
+{% if medium_confidence %}
+## 中信頼度（プロットルール推定）
+{% for item in medium_confidence %}
+{{ item.source }}→{{ item.target }}: {{ item.emotion_ja }}({{ "%.1f"|format(item.value) }}){% if item.cause %} - {{ item.cause }}{% endif %} [{{ item.primary_source }}]
+{% endfor %}
+{% endif %}
+{% if low_confidence %}
+## 低信頼度（自動抽出・参考）
+{% for item in low_confidence %}
+{{ item.source }}→{{ item.target }}: {{ item.emotion_ja }}({{ "%.1f"|format(item.value) }}){% if item.cause %} - {{ item.cause }}{% endif %} [{{ item.primary_source }}]
+{% endfor %}
+{% endif %}
+{% if conflicts %}
+## ⚠ 矛盾検出（要確認）
+{% for c in conflicts %}
+{{ c.pair[0] }}→{{ c.pair[1] }}: {% for s in c.sources %}{{ s[0] }}={{ c.emotion_ja }}({{ "%.1f"|format(s[1]) }}){% if not loop.last %} vs {% endif %}{% endfor %}
+{% endfor %}
+{% endif %}

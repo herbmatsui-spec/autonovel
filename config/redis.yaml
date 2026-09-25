@@ -1,0 +1,16 @@
+# Redis接続設定
+redis:
+  host: "localhost"
+  port: 6379
+  db: 0
+  password: null
+  # デフォルトTTL (秒) - 10日
+  ttl_default: 864000
+  # ネームスペース別TTL上書き
+  namespace_ttls:
+    pipeline: 864000      # 10日
+    rule_engine: 2592000  # 30日
+    annotation: 0         # 無期限
+    fused: 864000         # 10日
+
+# 環境変数で上書き可能: REDIS_URL=redis://user:pass@host:port/db

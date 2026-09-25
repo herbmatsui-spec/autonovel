@@ -1,7 +1,7 @@
 """SQLiteとPostgreSQL pgvectorを透過的に吸収するVector型。"""
 from __future__ import annotations
 import json
-from typing import List, Optional
+from typing import Any, List, Optional
 from sqlalchemy import Text
 from sqlalchemy.types import TypeDecorator
 

@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from src.services.compression.models import (
     CompressionConfig,
     CompressedContextResult,
+    CompressionQualityMetrics,
     SceneType,
     ProtectedContext,
     SceneFlowHistory,

@@ -2,7 +2,58 @@
 
 本プロジェクトの変更履歴。[Semantic Versioning](https://semver.org/lang/ja/) に準拠。
 
+## [5.1.0] - 2026-09-24 - Stabilization and Architectural Consolidation (P1〜P3)
+
+### 追加
+- **ローカル起動の完全修復 (Part 1: Step 1-8)**:
+  - `scripts/check_env.py`: Python バージョン・仮想環境・ポート空き状況の事前自己診断（カラー/JSON 出力）
+  - `scripts/init_db.py`: SQLite 安全マイグレーション（既存 DB 保護、`--force` オプション）
+  - `scripts/start_local.ps1`: 堅牢な協調起動ランナー（`-DryRun` / `-SkipInstall`、孤立プロセス防止）
+  - `scripts/stop_local.ps1` + `アプリ停止.bat`: ポート 8200/5173 の Graceful Termination
+  - `アプリ起動_ローカル.bat` の正式ラッパー化（`--skip-migrations` 問題の解消）
+  - `tests/integration/test_local_startup.py`: 起動プロセス自動検証テスト
+- **マルチメディアのプラグイン疎結合化 (Part 3: Step 15-22)**:
+  - `src/interfaces/plugin.py`: `PluginProtocol`（initialize / is_available / shutdown）
+  - `src/interfaces/image_provider.py`: `ImageProviderProtocol`（Imagen / DALL-E / SD WebUI / ComfyUI 統一抽象）
+  - `src/core/plugin_registry.py`: `PluginRegistry`（環境変数フラグによる動的ロード・無効化）
+  - `src/plugins/multimedia/`: MultimediaService のオプショナルプラグインカプセル化
+  - `src/plugins/audio/voicevox.py`: VOICEVOX サーバー不在時の Graceful Fallback（スキップ / 無音 WAV）
+  - `tests/unit/core/test_core_without_plugins.py`: プラグイン 0 件でのコア完全動作保証
+- **CLI・監視の整理 (Part 4: Step 23-28)**:
+  - `src/cli/main.py`: 統一 CLI `autonovel`（balance / export / init-db / check-env / plugins サブコマンド）
+  - `pyproject.toml`: `[project.scripts]` に `autonovel = "src.cli.main:main"` 登録（旧エイリアス維持）
+  - `/health` エンドポイント: 非同期並行チェック + 各コンポーネント 1.0 秒タイムアウト制限
+  - `/metrics`: 固定キー集計限定・動的ラベル生成抑制（メモリリーク防止）
+  - `tests/unit/cli/`, `tests/unit/api/test_health_timeout.py`, `tests/unit/api/test_metrics_memory.py`
+- **ドキュメントの刷新 (Part 5: Step 29-34)**:
+  - `docs/development_guide.md`: 15 分オンボーディングガイド新規作成
+  - `docs/openapi.json`: 最新ルーター構成からの再エクスポート
+  - `frontend/src/types/api.generated.ts`: TypeScript 型定義の自動再生成
+
+### 変更
+- `.env.example`: 旧バージョン表記を解消し、必須/オプショナルの区分けと `ENABLE_*` 機能フラグを明記
+- `docker-compose.yml`: 開発用メモリ制限（backend 1024M / chromadb 512M）とヘルスゲート依存の厳格化
+- `Dockerfile`: マルチステージビルド最適化（`--prefix=/opt/deps` による依存隔離・最小ランタイムコピー）
+- `src/backend/server.py`: multimedia プラグイン無効時の条件付きルーターマウント（Step 19）
+- README.md: 「Windows ワンクリック起動（非推奨）」の汚名返上、正式起動手順として認定
+
+### 削除
+- README.md の旧「非推奨：既知の問題あり」警告文
+
 ## [4.7.0] - 2026-09-08 - 4大改善の柱（Pillar 1〜4: 全288ステップ）完全統合・商業品質化
+
+## [5.0.2] - 2026-09-18 - 4層圧縮統合・CI・ドキュメント更新
+
+### 追加
+- DI コンテナによる FourLayerCompressor シングルトン提供 (AppContainer)
+- WritingService、ContextBuilderAgent、EpisodeWriter、EasyMode パイプラインへのコンプレッサー注入
+- 4層圧縮モジュールの詳細設計と書類追加 (docs/compression_module.md、docs/architecture.md 更新)
+- CI パイプラインの追加 (.github/workflows/ci.yml) で自動テスト実行
+- README.md に 4層圧縮統合の概要と使用例を追加
+
+### 変更
+- なし
+
 
 ### 追加
 - **第1の柱: 表現力・窓枠評価**:

@@ -9,6 +9,16 @@ src/config/emotional_hook_vocabulary.py
 from typing import Dict, Tuple
 
 EMOTIONAL_HOOKS: Dict[str, Tuple[str, str, int]] = {
+    "despair_to_hope": (
+        "絶望から希望へ",
+        "絶望的な状況から一筋の光明が差し込む瞬間",
+        90,
+    ),
+    "tension_relief": (
+        "緊張と緩和",
+        "張り詰めた空気からの急激な弛緩と安心",
+        60,
+    ),
     "catharsis": (
         "カタルシス",
         "長い苦悩の末に訪れる解放と浄化",

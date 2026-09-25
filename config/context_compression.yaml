@@ -46,3 +46,10 @@ compression:
       - "主要キャラ"
       - "核心設定"
       - "伏線"
+
+# 感情残基抽出設定 (Week 1)
+emotional_residue:
+  enabled: true
+  vector_namespace: "pipeline"
+  nlp_model: "ja_ginza"
+  character_dict_path: "config/characters.yaml"

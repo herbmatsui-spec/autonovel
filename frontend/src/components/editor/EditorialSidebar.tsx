@@ -9,6 +9,7 @@ interface EditorialSidebarProps {
    currentText: string;
    onToast?: (msg: string, type: "success" | "error" | "info") => void;
    onOpenAuditReport?: () => void;
+   onRunHybridAudit?: () => void;
 }
 
 interface ChatMessage {
@@ -29,6 +30,7 @@ export const EditorialSidebar: React.FC<EditorialSidebarProps> = ({
    currentText,
    onToast,
    onOpenAuditReport,
+   onRunHybridAudit,
 }) => {
    const {
      activeHighlight,
@@ -325,29 +327,44 @@ export const EditorialSidebar: React.FC<EditorialSidebarProps> = ({
          ) : (
            /* 矛盾診断タブ */
            <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-             <div style={{ marginBottom: "12px" }}>
-               <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "12px" }}>
-                 現在の執筆本文を、ナレッジグラフおよび世界観バイブルと照合して設定矛盾を検出します。
-               </p>
-               <div style={{ display: "flex", gap: "8px" }}>
-                 <button
-                   onClick={() => onOpenAuditReport?.()}
-                   style={{ flex: 1, padding: "8px 12px", backgroundColor: "var(--accent-color)", color: "white", border: "none", borderRadius: "4px", cursor: "pointer" }}
-                 >
-                   詳細レポートを開く
-                 </button>
-                 <button
-                   type="button"
-                   className="btn btn-primary"
-                   style={{ flex: 1, padding: "8px" }}
-                   onClick={handleAudit}
-                   disabled={isAuditing}
-                   data-testid="btn-run-audit"
-                 >
-                   {isAuditing ? "🔍 設定照合・診断中..." : "🔍 本文の設定矛盾を診断"}
-                 </button>
-               </div>
-             </div>
+              <div style={{ marginBottom: "12px" }}>
+                <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "12px" }}>
+                  現在の執筆本文を、ナレッジグラフおよび世界観バイブルと照合して設定矛盾を検出します。
+                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <button
+                      type="button"
+                      onClick={() => onOpenAuditReport?.()}
+                      style={{ flex: 1, padding: "8px 12px", backgroundColor: "var(--accent-color)", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", fontSize: "0.85rem" }}
+                      data-testid="btn-open-audit-report"
+                    >
+                      📑 レポートを開く
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      style={{ flex: 1, padding: "8px", fontSize: "0.85rem" }}
+                      onClick={handleAudit}
+                      disabled={isAuditing}
+                      data-testid="btn-run-audit"
+                    >
+                      {isAuditing ? "🔍 設定照合中..." : "🔍 本文の設定矛盾を照合"}
+                    </button>
+                  </div>
+                  {onRunHybridAudit && (
+                    <button
+                      type="button"
+                      className="inline-ai-btn"
+                      style={{ width: "100%", padding: "8px", fontSize: "0.85rem" }}
+                      onClick={() => onRunHybridAudit()}
+                      data-testid="btn-trigger-hybrid-audit-sidebar"
+                    >
+                      🧠 二層ハイブリッド監査を実行
+                    </button>
+                  )}
+                </div>
+              </div>
 
              <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "10px" }}>
                {auditDone && auditIssues.length === 0 && (

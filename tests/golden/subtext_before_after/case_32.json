@@ -1,0 +1,14 @@
+{
+  "id": "case_32",
+  "name": "negative_short_dialogue",
+  "speaker": "通行人",
+  "before": [
+    "「こんにちは」",
+    "「良いお天気ですね」"
+  ],
+  "expected_contains": [
+    "「こんにちは」",
+    "「良いお天気ですね」"
+  ],
+  "applied_rules": []
+}

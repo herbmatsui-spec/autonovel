@@ -1,0 +1,82 @@
+# 感情変化ルールセット (Week 2 Step 3)
+#
+# 各ルールはプロットイベントに対する感情変化を定義する。
+# - event_type: PlotEventType の値 (src/rules/plot_events.py 参照)
+# - source_role / target_role: Role の値 (source=感じる側, target=向けられる側)
+# - emotion_deltas: EmotionType の値 → 変化量 (-1.0 ~ 1.0)
+# - condition: 条件名 (src/rules/conditions.py のレジストリ参照、省略時は常に適用)
+# - decay_per_episode: 1話あたりの減衰率
+rules:
+  - event_type: "betrayal"
+    source_role: "victim"
+    target_role: "perpetrator"
+    emotion_deltas:
+      affection: -0.6
+      tension: 0.8
+      fear: 0.5
+      trust: -0.7
+    decay_per_episode: 0.1
+
+  - event_type: "rescue"
+    source_role: "victim"
+    target_role: "rescuer"
+    emotion_deltas:
+      affection: 0.4
+      trust: 0.5
+      tension: -0.3
+    decay_per_episode: 0.05
+
+  - event_type: "confession"
+    source_role: "confessor"
+    target_role: "listener"
+    emotion_deltas:
+      affection: 0.5
+      intimacy: 0.6
+      tension: -0.2
+    decay_per_episode: 0.08
+
+  - event_type: "combat_victory"
+    source_role: "participant"
+    target_role: "participant"
+    emotion_deltas:
+      trust: 0.3
+      tension: -0.1
+    condition: "tension_above"
+    condition_params:
+      threshold: 0.4
+    decay_per_episode: 0.1
+
+  - event_type: "loss_of_loved_one"
+    source_role: "witness"
+    target_role: "victim"
+    emotion_deltas:
+      sadness: 0.7
+      fear: 0.3
+    decay_per_episode: 0.06
+
+  - event_type: "secret_shared"
+    source_role: "sharer"
+    target_role: "receiver"
+    emotion_deltas:
+      intimacy: 0.5
+      trust: 0.4
+    decay_per_episode: 0.04
+
+  - event_type: "forced_cooperation"
+    source_role: "victim"
+    target_role: "perpetrator"
+    emotion_deltas:
+      tension: 0.3
+      trust: 0.2
+    condition: "tension_above"
+    condition_params:
+      threshold: 0.6
+    decay_per_episode: 0.12
+
+  - event_type: "rejection"
+    source_role: "confessor"
+    target_role: "listener"
+    emotion_deltas:
+      affection: -0.3
+      sadness: 0.5
+    decay_per_episode: 0.1

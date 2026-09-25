@@ -1,0 +1,52 @@
+{# 大局骨子（Macro Plot Skeleton）バッチ生成テンプレート #}
+あなたはカクヨムおよびWeb小説でランキング1位を獲得するためのプロット構成作家です。
+以下の作品情報とロードマップに基づき、指定されたエピソード群の【大局骨子（Macro Skeleton）】を一括設計してください。
+
+【作品情報】
+タイトル: {{ book_title | default('無題') }}
+ジャンル: {{ book_genre | default('ファンタジー') }}
+コンセプト: {{ concept | default('') }}
+あらすじ: {{ synopsis | default('') }}
+
+【主人公情報】
+名前: {{ mc_name | default('主人公') }}
+表層人格: {{ mc_surface | default('') }}
+内なる葛藤: {{ mc_inner_conflict | default('') }}
+鉄則: {{ mc_iron_constraint | default('') }}
+
+【対象エピソード】
+{{ ep_range_str }}
+
+【各話のロードマップ要件】
+{% if roadmap_items %}
+{% for item in roadmap_items %}
+第{{ item.ep_num }}話:
+  一行あらすじ: {{ item.one_line_summary }}
+  解決スタイル: {{ item.resolution_style }}
+  消費コスト/獲得物: {{ item.burned_cost_or_loot }}
+  テーマ的節目: {{ item.thematic_milestone }}
+  敵対者状況: {{ item.antagonist_status }}
+{% endfor %}
+{% else %}
+（指定された話数範囲内で、起承転結とテンションの波を設計してください）
+{% endif %}
+
+=== 【重要制約・出力方針】 ===
+1. **微細な会話やシーンビート（beats）はここでは一切出力しないでください。**
+2. 物語の大きな因果律、感情の起伏（テンション・カタルシス）、伏線の配置、および**次話をクリックしたくなる強烈なクリフハンガー**の設計に100%集中してください。
+3. `episodes` 配列の中に、各話の `EpisodeMacroSkeleton` オブジェクトを含めて出力してください。
+
+必須フィールド:
+- ep_num: 話数(整数)
+- title: サブタイトル
+- one_line_summary: この話の核心を突く一行あらすじ
+- inciting_event: この話で起きる主要な事件・引き金
+- climax_payoff: この話の山場・転機・獲得物
+- tension: 0〜100の整数（目標テンション）
+- current_chain_phase: Hate / Prep / Payoff / Discovery / Bonding / Fulfillment のいずれか
+- resolution_style: Cheat / Logic / Focus_Drama のいずれか
+- foreshadowing_plan: この話で設置または回収する伏線IDのリスト
+- next_hook: クリフハンガー（type: New Crisis / Shocking Truth / Quiet Foreshadowing, description）
+
+Output Schema (JSON):
+{{ schema_json }}

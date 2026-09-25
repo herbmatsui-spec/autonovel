@@ -209,3 +209,17 @@ py scripts/generate_openapi.py
 CI では生成結果とリポジトリ上の `docs/openapi.json` との差分を検知し、
 スキーマの drift を防止する。新しいエンドポイント・スキーマ変更時は
 必ず再生成してコミットすること。
+
+---
+
+## 8. 商用・拡張エンドポイント一覧
+
+| プレフィックス / パス | メソッド | 説明 |
+|---|---|---|
+| `/api/auth/register` | POST | ユーザー新規登録 (JWT) |
+| `/api/auth/token` | POST | JWT アクセストークン発行 (OAuth2 準拠) |
+| `/api/billing/create-checkout-session` | POST | Stripe Checkout セッション生成 |
+| `/api/billing/webhook` | POST | Stripe Webhook 受信・クレジット自動付与 (べき等処理) |
+| `/api/wizard/generate` | POST | かんたんモード一括執筆 API (企画・プロット・本文) |
+| `/api/wizard/promote` | POST | かんたんモードから Studio モードへの作品データ昇格 |
+| `/api/publishing/export/{platform}` | POST | 投稿サイト形式（なろう/カクヨム/アルファポリス）出力 |

@@ -33,8 +33,13 @@ async def verify_book_ownership(
             )
         return book
 
-    if uow is not None:
+    if hasattr(uow, "session") and uow.session is not None:
         return await _check(uow.session)
+    elif hasattr(uow, "get_session"):
+        async with uow.get_session() as session:
+            return await _check(session)
+    elif hasattr(uow, "execute"):
+        return await _check(uow)
     else:
         async with UnitOfWork(AppContainer.db()) as local_uow:
             return await _check(local_uow.session)

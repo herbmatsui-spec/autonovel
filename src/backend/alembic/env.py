@@ -13,17 +13,18 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 # Import models to register them with Base.metadata
 from src.backend.database.models import Base  # noqa: E402
 
-config = context.config
+config = getattr(context, "config", None)
 
-# Allow overriding database URL via environment variable
-database_url = os.environ.get("ALEMBIC_DATABASE_URL", config.get_main_option("sqlalchemy.url"))
-config.set_main_option("sqlalchemy.url", database_url)
+if config is not None:
+    # Allow overriding database URL via environment variable
+    database_url = os.environ.get("ALEMBIC_DATABASE_URL", config.get_main_option("sqlalchemy.url"))
+    config.set_main_option("sqlalchemy.url", database_url)
 
-# Interpret the config file for Python logging.
-if config.config_file_name is not None:
-    import logging.config
+    # Interpret the config file for Python logging.
+    if config.config_file_name is not None:
+        import logging.config
 
-    logging.config.fileConfig(config.config_file_name)
+        logging.config.fileConfig(config.config_file_name)
 
 target_metadata = Base.metadata
 
@@ -62,7 +63,8 @@ def run_migrations_online() -> None:
             context.run_migrations()
 
 
-if context.is_offline_mode():
-    run_migrations_offline()
-else:
-    run_migrations_online()
+if config is not None:
+    if context.is_offline_mode():
+        run_migrations_offline()
+    else:
+        run_migrations_online()

@@ -1,6 +1,6 @@
 [project]
 name = "autonovel"
-version = "5.0.0"
+version = "5.2.0"
 description = "AutoNovel - 小説生成エンジン (FastAPI + React + Huey + SQLAlchemy)"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -19,9 +19,8 @@ dependencies = [
     "python-json-logger>=2.0",
     "openai>=1.20",
     "google-genai>=0.8.0",
-    "google-generativeai>=0.8.3",
-    "protobuf==5.29.5",
-    "google-api-core==2.25.2",
+    "protobuf>=5.29.0",
+    "google-api-core>=2.25.0",
     "pgvector>=0.3.0",
     "alembic>=1.13.0",
     "jinja2>=3.1.4",
@@ -31,8 +30,17 @@ dependencies = [
     "opentelemetry-sdk>=1.24.0",
     "aiosqlite>=0.19.0",
     "dependency-injector>=4.41.0",
-    "cachetools>=5.3.0",
 ]
+
+[project.scripts]
+# Step 24: 統一 CLI エントリポイント
+autonovel = "src.cli.main:main"
+# 旧スクリプトのエイリアス（後方互換）
+dsp-balance = "src.narrative_balancer.dsp.cli:main"
+csp-balance = "src.narrative_balancer.csp.cli:main"
+grammar-balance = "src.narrative_balancer.grammar.cli:main"
+global-balance = "src.narrative_balancer.arbitrator.cli:main"
+
 
 [project.optional-dependencies]
 dev = [
@@ -80,18 +88,20 @@ omit = [
     "*/conftest.py",
     "*/__pycache__/*",
 
+    # =========================================================================
+    # 【警告】以下のリストはテスト実行時の「カバレッジ測定除外対象」の定義です。
+    # 「デッドコード」ではありません！スクリプトやツールで物理削除しないでください！
+    # =========================================================================
     # パッケージマーカー（行カバレッジ対象外）
     "src/__init__.py",
     "src/*/__init__.py",
     "src/*/*/__init__.py",
     "src/*/*/*/__init__.py",
 
-    # 移行過渡期の一時的カバレッジ除外モジュール
-    "src/services/content_processor.py",
+    # 非推奨スタブモジュール
+    "src/services/age_client.py",
     "src/services/llm/provider_failover.py",
-    "src/services/plot_service.py",
     "src/services/state_manager.py",
-    "src/services/narrative_scoring_service.py",
 ]
 branch = true
 concurrency = ["multiprocessing", "thread"]
@@ -123,7 +133,7 @@ line-length = 120
 target-version = "py312"
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "G004"]
+select = ["E", "F", "W"]
 ignore = ["E501", "E402"]
 
 [tool.ruff.lint.per-file-ignores]

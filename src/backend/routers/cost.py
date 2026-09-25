@@ -1,23 +1,24 @@
 # ruff: noqa: B008
 from datetime import datetime
-from fastapi import APIRouter, Depends, Query
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func
 from src.backend.auth import get_current_user
-from src.backend.database import get_db
+from src.backend.database import get_async_db
 from src.backend.database.models import User, Book, CostLogModel
+from src.backend.database.repositories import CostRepository
 from src.backend.security.roles import RoleChecker, UserRole
-
 router = APIRouter(
     prefix="/api/cost",
     tags=["cost"],
     dependencies=[Depends(get_current_user), Depends(RoleChecker([UserRole.ADMIN, UserRole.PRO]))],
 )
 
+
 @router.get("/summary")
 async def get_cost_summary(
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     all_users: bool = Query(False, description="管理者のみ: 全ユーザー集約を取得"),
 ):
     # Get the start of the current month
@@ -25,7 +26,11 @@ async def get_cost_summary(
     start_of_month = datetime(now.year, now.month, 1)
 
     # Query the cost logs for the current month
-    query = db.query(
+    from sqlalchemy import select
+    from sqlalchemy.sql import column
+    
+    # Build the query using select instead of query() for AsyncSession
+    stmt = select(
         func.sum(CostLogModel.cost_usd).label("total_cost_usd"),
         func.sum(CostLogModel.input_tokens).label("total_input_tokens"),
         func.sum(CostLogModel.output_tokens).label("total_output_tokens"),
@@ -37,10 +42,11 @@ async def get_cost_summary(
 
     # 一般ユーザー、または管理者でall_users=Falseの場合は自身が所有する書籍に限定
     if current_user.role != "admin" or not all_users:
-        user_book_ids = db.query(Book.id).filter(Book.user_id == current_user.id).subquery()
-        query = query.filter(CostLogModel.book_id.in_(user_book_ids))
+        user_book_ids = select(Book.id).filter(Book.user_id == current_user.id).subquery()
+        stmt = stmt.filter(CostLogModel.book_id.in_(user_book_ids))
 
-    results = query.first()
+    result = await db.execute(stmt)
+    results = result.first()
 
     total_cost_usd = results.total_cost_usd or 0.0
     total_input_tokens = results.total_input_tokens or 0
@@ -76,4 +82,56 @@ async def get_cost_summary(
         "cache_hit_ratio": round(cache_hit_ratio, 4),
         "savings_jpy": round(savings_jpy, 2),
         "savings_usd": round(savings_usd, 2),
+    }
+
+
+@router.get("/budget/{book_id}")
+async def get_budget_consumption_ratio(
+    book_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db),
+):
+    """特定の書籍のリアルタイム予算消費率を取得する。"""
+    # 書籍の存在確認とアクセス権限チェック
+    from sqlalchemy import select
+    book_result = await db.execute(select(Book).where(Book.id == book_id))
+    book = book_result.scalar_one_or_none()
+    
+    if book is None:
+        raise HTTPException(status_code=404, detail="Book not found")
+    
+    # 権限チェック: 管理者または書籍の所有者のみアクセス可能
+    if current_user.role != "admin" and book.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    # コストリポジトリを使用して実際の消費コストと予算を取得
+    cost_repo = CostRepository(db)
+    
+    # 実際の消費コストを取得
+    aggregate_result = await cost_repo.aggregate(book_id)
+    total_cost_usd = aggregate_result["total_cost_usd"]
+    
+    # 予算を取得
+    budget_usd = await cost_repo.get_budget(book_id)
+    
+    # 予算消費率を計算
+    if budget_usd <= 0:
+        ratio = 0.0
+        budget_status = "no_budget"
+    else:
+        ratio = total_cost_usd / budget_usd
+        if ratio < 0.7:
+            budget_status = "normal"
+        elif ratio < 0.9:
+            budget_status = "warning"
+        else:
+            budget_status = "exceeded"
+    
+    return {
+        "book_id": book_id,
+        "total_cost_usd": round(total_cost_usd, 4),
+        "budget_usd": round(budget_usd, 2),
+        "consumption_ratio": round(ratio, 4),
+        "consumption_percentage": round(ratio * 100, 2),
+        "budget_status": budget_status,
     }

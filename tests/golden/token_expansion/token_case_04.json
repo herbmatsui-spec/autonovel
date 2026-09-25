@@ -1,0 +1,11 @@
+{
+  "id": "token_case_04",
+  "raw": "「お前など[GLANCE:away]顔も見たくない」",
+  "expected_not_contains": [
+    "[GLANCE:away]"
+  ],
+  "expected_any": [
+    "逸らす",
+    "横を向"
+  ]
+}

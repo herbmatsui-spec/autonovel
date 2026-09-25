@@ -1,0 +1,17 @@
+---
+id: betrayal.calculated_retreat
+category: betrayal
+tags: [betrayal, retreat, survival]
+context:
+  emotion: [betrayal, fear]
+  power_dynamic: [inferior]
+  relationship: [former_ally, enemy]
+  intensity: [medium, high]
+variables:
+  - concession_line: "譲歩の言葉"
+  - exit_action: "退出動作"
+weight: 90
+final: false
+---
+「……{{ concession_line | default('この場は貴方の勝ちです。引き上げましょう') }}」
+——{{ exit_action | default('踵を返し、一度も振り返ることなく暗がりへと溶け込んだ') }}。

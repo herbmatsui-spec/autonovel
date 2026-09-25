@@ -1,5 +1,18 @@
-from __future__ import annotations
+from typing import List, Optional
 from pydantic import BaseModel, Field
+
+class ConflictItemSchema(BaseModel):
+    category: str = Field(..., description="カテゴリ (rhythm, dialogue, cliche, hook, character)")
+    severity: str = Field(..., description="重要度 (critical, high, medium, low)")
+    title: str = Field(..., description="指摘タイトル")
+    description: str = Field(..., description="詳細説明")
+    field_path: Optional[str] = None
+    current_value: Optional[str] = None
+    suggested_value: Optional[str] = None
+    evidence_past: str = ""
+    evidence_current: str = ""
+    constraint_for_next: str = ""
+    confidence: float = 0.9
 
 class QualitativeAudit(BaseModel):
     hook_score: float = Field(..., ge=0.0, le=100.0, description="読者引き込み度")
@@ -16,3 +29,4 @@ class UnifiedAuditReport(BaseModel):
     qualitative: QualitativeAudit
     detected_cliches: list[str] = Field(default_factory=list)
     dialogue_ratio: float = 0.0
+    conflicts: list[ConflictItemSchema] = Field(default_factory=list)

@@ -1,0 +1,2 @@
+line 106: '    assert "<script>" in formatted  # escaped entity form <script>\n'
+line 144: '    assert "‘æ1˜b<“Á•Ê>" in html\n'

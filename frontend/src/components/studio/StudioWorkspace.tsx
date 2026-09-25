@@ -11,7 +11,8 @@ import { AssetPackPanel } from "../AssetPackPanel";
 import { StyleComparisonModal } from "../style/StyleComparisonModal";
 import { BookShowcaseModal } from "../showcase/BookShowcaseModal";
 import { BranchManagement } from "../branches/BranchManagement";
-import { ConflictReportPanel } from "../editor/ConflictReportPanel";
+import { ConflictReportPanel, ConflictReport } from "../editor/ConflictReportPanel";
+import { runHybridAudit } from "../../api/editor";
 import { CommercialPublishPanel } from "../commercial/CommercialPublishPanel";
 import { QualityDashboardModal } from "./QualityDashboardModal";
 import { fetchChapterBookScore } from "../../api/quality";
@@ -47,6 +48,7 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
     selectedBookId,
     selectedBook,
     currentEpNum,
+    setCurrentEpNum,
     isWizardActive,
     setIsWizardActive,
     wizardStep,
@@ -201,9 +203,58 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
     onMessage?.("🌿 IF分岐管理タブに切り替えました", "info");
   };
 
+  const [auditReport, setAuditReport] = useState<ConflictReport | null>(null);
+  const [isAuditing, setIsAuditing] = useState(false);
+
+  const handleRunHybridAudit = async () => {
+    setIsAuditing(true);
+    handleToast("🧠 二層ハイブリッド監査を実行中...", "info");
+    try {
+      const res = await runHybridAudit({
+        draft_text: currentChapterText || "本文なし",
+        character_profiles: character ? `${character.name}: ${character.genre}` : "",
+        plot_spec: `第${currentEpNum}話`,
+      });
+      const convertedReport: ConflictReport = {
+        book_id: selectedBookId || 1,
+        ep_num: currentEpNum,
+        patch_review_id: null,
+        summary: `総合スコア: ${res.final_score}点 (定性: ${res.qualitative.overall_score}点 / 定量: ${res.quantitative_score}点)\n講評: ${res.qualitative.critique}`,
+        total_count: res.conflicts.length,
+        critical_count: res.conflicts.filter((c) => c.severity === "critical").length,
+        high_count: res.conflicts.filter((c) => c.severity === "high").length,
+        medium_count: res.conflicts.filter((c) => c.severity === "medium").length,
+        low_count: res.conflicts.filter((c) => c.severity === "low").length,
+        conflicts: res.conflicts.map((c) => ({
+          category: c.category,
+          severity: c.severity,
+          title: c.title,
+          description: c.description,
+          field_path: c.field_path ?? null,
+          current_value: c.current_value ?? null,
+          suggested_value: c.suggested_value ?? null,
+          evidence_past: c.evidence_past ?? "",
+          evidence_current: c.evidence_current ?? "",
+          constraint_for_next: c.constraint_for_next ?? "",
+          confidence: c.confidence ?? 0.9,
+        })),
+      };
+      setAuditReport(convertedReport);
+      setTab("audit");
+      handleToast("✨ 二層ハイブリッド監査が完了しました", "success");
+    } catch (e: any) {
+      handleToast(e?.detail || e?.message || "二層ハイブリッド監査の実行に失敗しました", "error");
+    } finally {
+      setIsAuditing(false);
+    }
+  };
+
   const handleOpenAuditReport = () => {
     setTab("audit");
     onMessage?.("🧠 矛盾診断レポートタブに切り替えました", "info");
+    if (!auditReport && !isAuditing) {
+      void handleRunHybridAudit();
+    }
   };
 
   const handleToast = (msg: string, type: "success" | "error" | "info") => {
@@ -247,7 +298,7 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
           }} ref={leftPaneRef}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <h2 style={{ fontSize: "1.05rem", color: "var(--accent-cyan)", fontWeight: 700 }}>
-                📖 設定 & キャラクター
+                📖 章一覧 & 設定
               </h2>
               <div style={{ display: "flex", gap: "6px" }}>
                 {onOpenGraph && (
@@ -341,6 +392,15 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
                   </div>
                 )}
               </div>
+            </div>
+            <div style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
+              <ChapterOutlineTree
+                onSelectChapter={(epNum) => {
+                  setCurrentEpNum(epNum);
+                  handleToast(`第 ${epNum} 話を選択しました`, "info");
+                }}
+                onMessage={handleToast}
+              />
             </div>
           </aside>
           <div
@@ -483,7 +543,7 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
               data-testid="cost-indicator"
               title={`Status: ${budgetInfo.status}${budgetInfo.downgrade_active ? " (downgrade active)" : ""}`}
             >
-              💰 ${budgetInfo.current_cost_usd.toFixed(2)} / ${budgetInfo.budget_usd.toFixed(2)}
+              💰 ${(budgetInfo.current_cost_usd ?? 0).toFixed(2)} / ${(budgetInfo.budget_usd ?? 0).toFixed(2)}
             </div>
           )}
           <div style={{ display: "flex", gap: "4px", marginLeft: "12px" }}>
@@ -582,12 +642,36 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
           </>
         )}
         {tab === "audit" && (
-          <>
-            <div style={{ padding: '20px', textAlign: 'center' }}>
-              <h2>🧠 矛盾診断レポート</h2>
-              <p>矛盾診断レポートを表示するには、まず矛盾診断を実行してください。</p>
-            </div>
-          </>
+          <div style={{ padding: "8px 0" }}>
+            <ConflictReportPanel
+              report={
+                auditReport ?? {
+                  book_id: selectedBookId || 1,
+                  ep_num: currentEpNum,
+                  patch_review_id: null,
+                  summary: "二層ハイブリッド監査を実行すると、文長リズム・会話文比率・AI定型表現・キャラクター整合性の診断結果が表示されます。",
+                  total_count: 0,
+                  critical_count: 0,
+                  high_count: 0,
+                  medium_count: 0,
+                  low_count: 0,
+                  conflicts: [],
+                }
+              }
+              onRunAudit={handleRunHybridAudit}
+              isLoading={isAuditing}
+              onApprove={(reviewId, comment) => {
+                handleToast("パッチを承認しました", "success");
+              }}
+              onReject={(reviewId, comment) => {
+                handleToast(`指摘を却下しました: ${comment}`, "info");
+              }}
+              onRevise={(reviewId, proposedContent, comment) => {
+                setCurrentChapterText(proposedContent);
+                handleToast("修正本文をエディタに反映しました", "success");
+              }}
+            />
+          </div>
         )}
         {tab === "commercial" && (
           <>
@@ -607,7 +691,7 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
               <h2 style={{ fontSize: "1.05rem", color: "var(--accent-purple)", fontWeight: 700, margin: 0 }}>
                 🧠 専属 AI 編集者 (GraphRAG)
               </h2>
-              {chapterScore !== null && (
+              {typeof chapterScore === "number" && (
                 <button
                   type="button"
                   onClick={() => setShowQualityDashboard(true)}
@@ -643,6 +727,7 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
             currentText={currentChapterText}
             onToast={handleToast}
             onOpenAuditReport={handleOpenAuditReport}
+            onRunHybridAudit={handleRunHybridAudit}
           />
         </aside>
       ) : null}

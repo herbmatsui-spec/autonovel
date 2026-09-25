@@ -53,6 +53,15 @@ class AppContainer(InfraContainer):
     )
     connection_pipeline: providers.Singleton = providers.Singleton(lambda: None)
 
+    # 4層圧縮プロバイダー
+    compression_config: providers.Singleton = providers.Singleton(
+        "src.services.compression.models.CompressionConfig",
+    )
+    compressor: providers.Singleton = providers.Singleton(
+        "src.services.compression.compressor.FourLayerCompressor",
+        config=compression_config,
+    )
+
     repo: providers.Singleton = providers.Singleton(
         DataRepository,
         db=InfraContainer.db,
@@ -159,6 +168,7 @@ class AppContainer(InfraContainer):
         style_rag=style_rag,
         rag_prefetch=providers.Self(),  # RAGPrefetchService が必要なら追加
         event_bus=providers.Self(),  # EventBus が必要なら追加
+        compressor=compressor,  # ← 追加
     )
     image_service: providers.Factory = providers.Factory(
         "src.services.image_service.ImageService",
@@ -206,14 +216,35 @@ class AppContainer(InfraContainer):
         repository=providers.Self(),  # BookScoreRepository
     )
     writing_service: providers.Singleton = providers.Singleton(
-        "src.services.writing_service.WritingService",
-        writing_agent=writer,
+        "src.domain.writing.WritingService",
+        writer=writer,
+        repo=repo,
+        pm=pm,
+        style_rag=style_rag,
+        ctx_mgr=ctx_mgr,
+        reporter_factory=providers.Self(),
         book_score_calculator=book_score_calculator,
+        score_threshold=70.0,
+        writing_agent=writer,
         context_builder_agent=context_builder_agent,
         illustration_agent=illustration_agent,
+        compressor=compressor,
         max_retries=3,
-        score_threshold=70.0,
         backoff_base=2.0,
+    )
+
+    # Consolidated Services (Part 4)
+    audit_aggregator_service: providers.Singleton = providers.Singleton(
+        "src.services.audit.AuditAggregatorService",
+    )
+    marketing_service: providers.Singleton = providers.Singleton(
+        "src.services.marketing.MarketingService",
+    )
+    rag_service: providers.Singleton = providers.Singleton(
+        "src.services.rag.GraphRAGService",
+    )
+    rag_pipeline_service: providers.Singleton = providers.Singleton(
+        "src.services.rag.GraphRAGService",
     )
 
     # DAG パイプラインのプロバイダー

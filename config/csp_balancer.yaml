@@ -1,0 +1,29 @@
+# Configuration for CSP/SAT Solver Balancer
+n_episodes: 40
+
+# Hard constraint milestones
+midpoint_episode: 20
+midpoint_min_tension: 7
+all_is_lost_episode: 30
+all_is_lost_max_tension: 4
+climax_episode: 40
+climax_min_tension: 8
+
+# Character arcs
+min_defeats: 4
+max_defeats: 14
+
+# Foreshadowing
+max_payoff_distance: 15
+
+# Soft constraint weights (penalties)
+weights:
+  smoothness: 3
+  char_balance: 5
+  quarter_target: 10
+
+# Solver settings
+solver:
+  max_time_seconds: 5.0
+  num_search_workers: 4
+  log_search_progress: false

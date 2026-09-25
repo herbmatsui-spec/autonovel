@@ -65,6 +65,18 @@ READER_HOOK_USER_PROMPT = """【執筆ドラフト本文】
 上記文章の冒頭の引きの強さと末尾のクリフハンガー（次話への牽引力）を審査し、0〜100で採点してください。
 """
 
+READER_HOOK_WINDOWED_USER_PROMPT = """【執筆ドラフト本文】
+【総文字数】{total_chars}文字
+
+【冒頭セクション（つかみ・オープニングフック）】
+{opening_text}
+
+【末尾セクション（クリフハンガー・次回への引き）】
+{ending_text}
+
+上記文章の冒頭の引きの強さと末尾のクリフハンガー（次話への牽引力）を審査し、0〜100で採点してください。
+"""
+
 
 class ReaderHookAuditor(SpecialistAuditor):
     specialist_name = "reader_hook"
@@ -81,7 +93,17 @@ class ReaderHookAuditor(SpecialistAuditor):
         if not self.llm:
             raise LLMUnavailableError("No LLM available for ReaderHookAuditor")
 
-        prompt = READER_HOOK_USER_PROMPT.format(draft_text=draft[:4000])
+        if len(draft) > 3000:
+            opening_text = draft[:1500]
+            ending_text = draft[-1500:]
+            prompt = READER_HOOK_WINDOWED_USER_PROMPT.format(
+                total_chars=len(draft),
+                opening_text=opening_text,
+                ending_text=ending_text,
+            )
+        else:
+            prompt = READER_HOOK_USER_PROMPT.format(draft_text=draft[:4000])
+
         judge_res = await self._judge_with_llm(
             prompt=prompt,
             system_prompt=READER_HOOK_SYSTEM_PROMPT,

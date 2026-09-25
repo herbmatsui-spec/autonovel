@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from jinja2 import Environment
@@ -9,6 +10,15 @@ from jinja2 import Environment
 from config import BASE_DIR
 from prompts.plotting import EMOTIONAL_HOOK_TEMPLATE
 from prompts.registry import PromptRegistry
+
+# 感情残基抽出用
+try:
+    from src.pipeline.prompt_builder import build_emotional_context_prompt
+    from src.stores.vector_store import RedisVectorStore
+    from src.pipeline.character_dict import load_character_dict
+    EMOTIONAL_RESIDUE_AVAILABLE = True
+except ImportError:
+    EMOTIONAL_RESIDUE_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -722,6 +732,22 @@ class PromptManager:
         if not blueprint and "blueprint" in kwargs:
             blueprint = kwargs.get("blueprint", "")
 
+        # 感情コンテキスト生成（感情残基抽出が利用可能な場合）
+        emotional_context = ""
+        if EMOTIONAL_RESIDUE_AVAILABLE and book_id is not None:
+            try:
+                # VectorStore初期化（設定から）
+                vector_store = RedisVectorStore(skip_connection_check=True)
+                char_dict = load_character_dict()
+                emotional_context = build_emotional_context_prompt(
+                    episode_id=ep_num,
+                    vector_store=vector_store,
+                    namespace="pipeline",
+                )
+            except Exception as e:
+                logger.warning(f"感情コンテキスト生成失敗: {e}")
+                emotional_context = ""
+
         context = {
             "quota_inst": quota_inst,
             "show_tell_inst": show_tell_inst,
@@ -740,6 +766,7 @@ class PromptManager:
             "foreshadowing_context": foreshadowing_context,
             "CONTENT_SEPARATOR": "---",
             "dialogue_profiles": kwargs.get("dialogue_profiles", {}),
+            "emotional_context": emotional_context,
         }
 
         return await self.render_async("final_writing_prompt.j2", context, book_id=book_id)
@@ -1013,6 +1040,94 @@ class PromptManager:
 
         return await self.render_async("ultra_fast_plot_batch_prompt.j2", context, book_id=book_id)
 
+    async def build_macro_plot_skeleton_prompt(
+        self, bible_json_str: str, ep_range: List[int], book_id: Optional[int] = None
+    ) -> str:
+        """大局骨子(Macro Plot Skeleton)バッチ生成用プロンプトを構築する"""
+        bible_data = json.loads(bible_json_str) if bible_json_str else {}
+
+        title = bible_data.get("title", "無題")
+        genre = bible_data.get("genre", "ファンタジー")
+        concept = bible_data.get("concept", "")
+        synopsis = bible_data.get("synopsis", "")
+
+        mc_profile = bible_data.get("mc_profile", {})
+        if hasattr(mc_profile, "model_dump"):
+            mc_profile = mc_profile.model_dump()
+        mc_name = mc_profile.get("name", "主人公") if isinstance(mc_profile, dict) else "主人公"
+        mc_surface = mc_profile.get("surface_persona", "") if isinstance(mc_profile, dict) else ""
+        mc_inner_conflict = mc_profile.get("inner_conflict", "") if isinstance(mc_profile, dict) else ""
+        mc_iron_constraint = mc_profile.get("iron_constraint", "") if isinstance(mc_profile, dict) else ""
+
+        roadmap_items = []
+        full_roadmap = bible_data.get("full_story_roadmap", []) or bible_data.get("roadmap", [])
+        for item in full_roadmap:
+            if hasattr(item, "model_dump"):
+                item = item.model_dump()
+            if isinstance(item, dict):
+                ep_num = item.get("ep_num", item.get("episode_num", 0))
+                if ep_num in ep_range:
+                    roadmap_items.append({
+                        "ep_num": ep_num,
+                        "one_line_summary": item.get("one_line_summary", item.get("summary", "未定義")),
+                        "resolution_style": item.get("resolution_style", item.get("style", "Cheat")),
+                        "burned_cost_or_loot": item.get("burned_cost_or_loot", item.get("cost", "なし")),
+                        "thematic_milestone": item.get("thematic_milestone", "なし"),
+                        "antagonist_status": item.get("antagonist_status", item.get("enemy_status", "現状維持")),
+                    })
+
+        if len(ep_range) == 1:
+            ep_range_str = f"第{ep_range[0]}話"
+        else:
+            ep_range_str = f"第{ep_range[0]}話〜第{ep_range[-1]}話"
+
+        from src.models.plot import PlotMacroBatch
+        schema_json = json.dumps(
+            PlotMacroBatch.model_json_schema(), ensure_ascii=False, indent=2
+        )
+
+        context = {
+            "book_title": title,
+            "book_genre": genre,
+            "concept": concept,
+            "synopsis": synopsis,
+            "mc_name": mc_name,
+            "mc_surface": mc_surface,
+            "mc_inner_conflict": mc_inner_conflict,
+            "mc_iron_constraint": mc_iron_constraint,
+            "ep_range_str": ep_range_str,
+            "roadmap_items": roadmap_items,
+            "schema_json": schema_json,
+        }
+
+        return await self.render_async("macro_plot_skeleton.j2", context, book_id=book_id)
+
+    async def build_micro_scene_expander_prompt(
+        self,
+        macro_skeleton: Any,
+        previous_ending_text: str = "",
+        characters_summary: str = "",
+        book_id: Optional[int] = None,
+    ) -> str:
+        """微視的演出(Micro Scene & Beat)展開用プロンプトを構築する"""
+        macro_dict = macro_skeleton.model_dump() if hasattr(macro_skeleton, "model_dump") else (macro_skeleton or {})
+        ep_num = macro_dict.get("ep_num", 1)
+
+        from src.models.plot import PlotMicroBlueprint
+        schema_json = json.dumps(
+            PlotMicroBlueprint.model_json_schema(), ensure_ascii=False, indent=2
+        )
+
+        context = {
+            "ep_num": ep_num,
+            "macro": macro_skeleton,
+            "previous_ending_text": previous_ending_text,
+            "characters_summary": characters_summary,
+            "schema_json": schema_json,
+        }
+
+        return await self.render_async("micro_scene_expander.j2", context, book_id=book_id)
+
     async def build_sharp_edge_proposal_prompt(
         self, plot_summary: str, book_id: Optional[int] = None
     ) -> str:
@@ -1099,6 +1214,15 @@ class PromptManager:
         return await self.render_async(
             "marketing_ab_test_prompt.j2",
             {"bible_core_concept": bible_core_concept},
+            book_id=book_id,
+        )
+
+    async def build_viral_catchphrase_prompt(
+        self, project_settings: str, book_id: Optional[int] = None
+    ) -> str:
+        return await self.render_async(
+            "marketing/viral_catchphrase_generation.j2",
+            {"project_settings": project_settings},
             book_id=book_id,
         )
 

@@ -1,0 +1,17 @@
+{
+  "id": "case_01",
+  "name": "explanatory_3_lines",
+  "speaker": "宰相",
+  "before": [
+    "「敵が包囲網を敷いた」",
+    "「兵糧もあと三日分しかない」",
+    "「降伏するしか道はないのだ」"
+  ],
+  "expected_contains": [
+    "（",
+    "「降伏するしか道はないのだ」"
+  ],
+  "applied_rules": [
+    "rule_01_explanatory_compress"
+  ]
+}

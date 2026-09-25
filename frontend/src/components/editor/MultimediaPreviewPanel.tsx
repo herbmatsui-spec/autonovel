@@ -3,11 +3,13 @@ import React from "react";
 interface MultimediaPreviewPanelProps {
   sceneName: string | null;
   imageUrl?: string | undefined;
+  onGenerateImage?: () => void;
 }
 
 export const MultimediaPreviewPanel: React.FC<MultimediaPreviewPanelProps> = ({
   sceneName,
   imageUrl,
+  onGenerateImage,
 }) => {
   return (
     <div
@@ -61,9 +63,6 @@ export const MultimediaPreviewPanel: React.FC<MultimediaPreviewPanelProps> = ({
               objectFit: "cover",
               display: "block",
             }}
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).src = "https://via.placeholder.com/300x400?text=Image+Not+Found";
-            }}
           />
         ) : (
           <div style={{ 
@@ -76,6 +75,25 @@ export const MultimediaPreviewPanel: React.FC<MultimediaPreviewPanelProps> = ({
               <>
                 <div style={{ fontSize: "2rem", marginBottom: "8px" }}>🔍</div>
                 <div>「{sceneName}」の画像を<br />生成または選択してください</div>
+                {onGenerateImage && (
+                  <button
+                    type="button"
+                    onClick={onGenerateImage}
+                    style={{
+                      marginTop: '16px',
+                      padding: '8px 16px',
+                      backgroundColor: 'var(--accent-cyan)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontSize: '0.85rem',
+                      fontWeight: 500,
+                    }}
+                  >
+                    🎨 このシーンの挿絵を生成
+                  </button>
+                )}
               </>
             ) : (
               <>

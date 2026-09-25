@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { NovelProvider } from "../../src/context/NovelContext";
 import GeneratePanel from "../../src/components/GeneratePanel";
@@ -79,10 +79,12 @@ describe("GeneratePanel", () => {
     renderPanel();
     const user = userEvent.setup();
     await user.click(screen.getByText(/かんたん執筆開始/));
-    expect(onGenerated).toHaveBeenCalledWith(
-      "ポーリング完了本文",
-      ["次話提案"]
-    );
+    await waitFor(() => {
+      expect(onGenerated).toHaveBeenCalledWith(
+        "ポーリング完了本文",
+        ["次話提案"]
+      );
+    });
   });
 
   it("handles failed polling status", async () => {
@@ -105,7 +107,9 @@ describe("GeneratePanel", () => {
     renderPanel();
     const user = userEvent.setup();
     await user.click(screen.getByText(/かんたん執筆開始/));
-    expect(onMessage).toHaveBeenCalledWith(expect.stringContaining("LLM error occurred"));
+    await waitFor(() => {
+      expect(onMessage).toHaveBeenCalledWith(expect.stringContaining("LLM error occurred"));
+    });
   });
 
   it("shows error message on 500", async () => {

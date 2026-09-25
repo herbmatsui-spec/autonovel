@@ -104,6 +104,7 @@ from src.models.plot import (
     CoreEngineMixin,
     EnigmaMixin,
     ComfortMixin,
+    SubversionMixin,
     PlotEpisodeBase,
     PlotEpisode,
     MysteryEpisode,
@@ -116,6 +117,10 @@ from src.models.plot import (
     UltraFastPlotBatch,
     PlotDetail,
     CatharsisPattern,
+)
+from src.models.subversion import (
+    SubversionEngine,
+    SubversionPattern,
 )
 from src.models.production_config import (
     NovelProject,

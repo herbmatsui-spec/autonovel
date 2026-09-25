@@ -1,51 +1,51 @@
-import logging
-from typing import Any
+"""下位互換性維持のためのシム。実体は src.services.audit.service に移動しました。"""
+import importlib
+import sys
+import types
+import warnings
 
-from src.agents.audit import AbilityConsistencyChecker, DeAIAuditor, FastPlotScreener
-from config.erotic_thresholds import MAX_CONSECUTIVE_PEAK_EPISODES
+warnings.warn(
+    "src.services.audit_service is deprecated; use src.services.audit instead",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
-logger = logging.getLogger(__name__)
+_TARGET_MODULE = "src.services.audit.service"
+
+from src.services.audit.service import (  # noqa: F401
+    AuditService,
+    FastPlotScreener,
+    AbilityConsistencyChecker,
+    DeAIAuditor,
+    MAX_CONSECUTIVE_PEAK_EPISODES,
+)
+
+__all__ = [
+    "AuditService",
+    "FastPlotScreener",
+    "AbilityConsistencyChecker",
+    "DeAIAuditor",
+    "MAX_CONSECUTIVE_PEAK_EPISODES",
+]
 
 
-class AuditService:
-    """監査サービス"""
+class _ShimModule(types.ModuleType):
+    def __getattr__(self, name: str):
+        mod = importlib.import_module(_TARGET_MODULE)
+        val = getattr(mod, name)
+        super().__setattr__(name, val)
+        return val
 
-    def __init__(self, llm: Any, prompt_manager: Any):
-        self.fast_screener = FastPlotScreener(llm=llm, prompt_manager=prompt_manager)
-        self.ability_checker = AbilityConsistencyChecker(llm=llm, prompt_manager=prompt_manager)
-        self.deai_auditor = DeAIAuditor(llm=llm, prompt_manager=prompt_manager)
+    def __setattr__(self, name: str, value):
+        if name.startswith("__") or name in ("_actual_mod",):
+            super().__setattr__(name, value)
+            return
+        try:
+            mod = importlib.import_module(_TARGET_MODULE)
+            setattr(mod, name, value)
+        except Exception:
+            pass
+        super().__setattr__(name, value)
 
-    async def screen_plot(self, blueprint: str) -> tuple[bool, str]:
-        return await self.fast_screener.screen_plot(blueprint)
 
-    async def audit_ability(
-        self, blueprint: str, settings_json: str, characters_json: str
-    ) -> tuple[bool, str, str]:
-        return await self.ability_checker.audit_ability_consistency(
-            blueprint, settings_json, characters_json
-        )
-
-    async def audit_deai(self, content: str) -> tuple[bool, str]:
-        return await self.deai_auditor.audit(content)
-
-    def get_erotic_advice(
-        self, intensities: list[int], current_ep: int, total_eps: int
-    ) -> list[str]:
-        """官能シーンのタイミングに関するAIアドバイスを返す。"""
-        advice = []
-
-        if len(intensities) >= MAX_CONSECUTIVE_PEAK_EPISODES:
-            recent = intensities[-MAX_CONSECUTIVE_PEAK_EPISODES:]
-            if all(i >= 4 for i in recent):
-                advice.append(
-                    "⚠️ 連続するピークシーンが多すぎます。読者疲労の可能性があります。次の1〜2話はクールダウンを推奨します。"
-                )
-
-        if intensities:
-            avg = sum(intensities) / len(intensities)
-            if avg > 3.5:
-                advice.append(
-                    "⚠️ 全体の官能強度の平均が高めです。情緒的な「溜め」の回を増やすことを検討してください。"
-                )
-
-        return advice
+sys.modules[__name__].__class__ = _ShimModule

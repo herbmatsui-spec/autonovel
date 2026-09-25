@@ -1,0 +1,35 @@
+{# Instruction template to enforce [METADATA_JSON] output at the end of prose generation #}
+【重要：執筆メタデータ出力指示】
+本文の生成が完了した後、末尾に必ず以下の区切り記号とJSONブロックを出力してください。
+本文中にこのメタデータを混ぜず、本文の最後の段落の後に改行を挟んで出力してください。
+
+```markdown
+[METADATA_JSON]
+{
+  "episode_number": {{ episode_number }},
+  "foreshadowings": [
+    {% if contract_foreshadowings %}
+    {% for f in contract_foreshadowings %}
+    {
+      "foreshadowing_id": {{ f.id }},
+      "action": "resolved または progressed または mentioned_only",
+      "rationale": "なぜその判定にしたのかの理由（1文）",
+      "excerpt": "該当する本文の引用部分"
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+    {% else %}
+    {# 契約伏線がない場合でも、本文中で扱った伏線があれば記載 #}
+    {% endif %}
+  ],
+  "word_count_estimate": 本文の推定文字数（整数）,
+  "unresolved_notes": [
+    "意図的に残した謎や次回以降へ持ち越す事項があれば記載"
+  ]
+}
+[/METADATA_JSON]
+```
+
+※ action の厳密な判定基準：
+- "resolved": この話の中で伏線の謎が解明された、または因果が完結した場合のみ。
+- "progressed": 伏線の手がかりが提示された、または真相に一歩近づいた場合。
+- "mentioned_only": アイテム名や人物名が単に会話や地の文に登場しただけで、物語上の進展がない場合。

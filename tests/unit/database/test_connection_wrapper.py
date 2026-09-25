@@ -1,34 +1,49 @@
 import pytest
 from unittest.mock import MagicMock, AsyncMock
-from src.backend.database.core import DatabaseConnectionWrapper
+from sqlalchemy.ext.asyncio import AsyncConnection
+from sqlalchemy import text
+from src.backend.database.core import DatabaseManager
 
-def test_wrapper_delegation():
-    mock_sql_conn = MagicMock()
-    mock_dbapi_conn = MagicMock()
-    mock_dbapi_conn.fetchone.return_value = ("row1",)
-    mock_dbapi_conn.fetchall.return_value = [("row1",), ("row2",)]
+def test_connection_context_manager():
+    """Test that DatabaseManager.connection() returns an async context manager yielding AsyncConnection"""
+    # Create a mock database manager
+    db_manager = DatabaseManager("sqlite:///:memory:")
+    
+    # The connection method should return an async context manager
+    conn_cm = db_manager.connection()
+    assert hasattr(conn_cm, '__aenter__')
+    assert hasattr(conn_cm, '__aexit__')
 
-    wrapper = DatabaseConnectionWrapper(mock_sql_conn, mock_dbapi_conn)
-
-    wrapper.execute("SELECT 1")
-    mock_dbapi_conn.execute.assert_called_once_with("SELECT 1", ())
-
-    assert wrapper.fetchone() == ("row1",)
-    assert wrapper.fetchall() == [("row1",), ("row2",)]
-
-    wrapper.commit()
-    mock_dbapi_conn.commit.assert_called_once()
-
-    wrapper.rollback()
-    mock_dbapi_conn.rollback.assert_called_once()
+def test_begin_context_manager():
+    """Test that DatabaseManager.begin() returns an async context manager yielding AsyncConnection with transaction"""
+    # Create a mock database manager
+    db_manager = DatabaseManager("sqlite:///:memory:")
+    
+    # The begin method should return an async context manager
+    begin_cm = db_manager.begin()
+    assert hasattr(begin_cm, '__aenter__')
+    assert hasattr(begin_cm, '__aexit__')
 
 @pytest.mark.asyncio
-async def test_wrapper_close_handles_rollback():
-    mock_sql_conn = AsyncMock()
-    mock_dbapi_conn = MagicMock()
+async def test_connection_yields_async_connection():
+    """Test that the connection context manager yields a proper AsyncConnection"""
+    db_manager = DatabaseManager("sqlite:///:memory:")
+    
+    async with db_manager.connection() as conn:
+        # Should be an AsyncConnection
+        assert isinstance(conn, AsyncConnection)
+        # Should be able to execute a simple query
+        result = await conn.execute(text("SELECT 1"))
+        assert result is not None
 
-    wrapper = DatabaseConnectionWrapper(mock_sql_conn, mock_dbapi_conn)
-    await wrapper.close()
-
-    mock_dbapi_conn.rollback.assert_called_once()
-    mock_sql_conn.close.assert_awaited_once()
+@pytest.mark.asyncio
+async def test_begin_yields_async_connection():
+    """Test that the begin context manager yields a proper AsyncConnection with transaction"""
+    db_manager = DatabaseManager("sqlite:///:memory:")
+    
+    async with db_manager.begin() as conn:
+        # Should be an AsyncConnection
+        assert isinstance(conn, AsyncConnection)
+        # Should be able to execute a simple query
+        result = await conn.execute(text("SELECT 1"))
+        assert result is not None

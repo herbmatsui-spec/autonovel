@@ -213,22 +213,11 @@ def test_extraction_service_resolve_entities():
 
 
 def test_rag_service_community_context(db_session):
-    """GraphRAGService が派閥コミュニティコンテキストを取得できることを検証."""
+    """GraphRAGService がコミュニティコンテキスト（Relational Memory移行済み互換スタブ）を返すことを検証."""
     service = GraphRAGService()
-    # SQLite環境では空リスト
+    # AGE廃止・Relational Memory移行後は安全な互換スタブとして空リストを返す
     assert service.get_community_context(db_session, "光の騎士団") == []
-
-    # モックによる動作検証
-    mock_members = [
-        {"name": "アルス", "relation_type": "MEMBER_OF"},
-        {"name": "セリア", "relation_type": "LEADER_OF"},
-    ]
-    with patch("src.services.rag_service.age_client.get_neighbors", return_value=mock_members), \
-         patch("src.services.rag_service.settings.ENABLE_GRAPHRAG", True), \
-         patch("src.services.rag_service.settings.DATABASE_URL", "postgresql://user:pass@localhost/db"):
-        members = service.get_community_context(db_session, "光の騎士団")
-        assert len(members) == 2
-        assert "アルス (MEMBER_OF)" in members
+    assert service.get_community_context(db_session) == []
 
 
 @pytest.mark.asyncio
@@ -410,8 +399,14 @@ def test_graph_router(client):
     """GET /api/graph エンドポイントが正常に応答することを検証.
 
     認証ミドルウェアにより 401 が返る環境では、認証エラーも許容する。
+    book_id は必須パラメータのため、422 (Unprocessable Entity) も許容する。
     """
+    # book_id なしの場合は 422
     response = client.get("/api/graph")
+    assert response.status_code in (200, 401, 422)
+    
+    # book_id ありの場合
+    response = client.get("/api/graph?book_id=1")
     assert response.status_code in (200, 401)
     if response.status_code == 200:
         data = response.json()

@@ -1,0 +1,17 @@
+{
+  "id": "case_18",
+  "name": "address_hostile",
+  "speaker": "ライバル",
+  "before": [
+    "「お前、覚悟しろ」"
+  ],
+  "context": {
+    "relationship": "enemy"
+  },
+  "expected_contains": [
+    "貴方"
+  ],
+  "applied_rules": [
+    "rule_07_address_distance"
+  ]
+}

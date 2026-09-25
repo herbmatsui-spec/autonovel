@@ -23,6 +23,7 @@ class ForeshadowingModel(Base):
         planted_episode: 伏線を設置した話数
         target_episode: 回収目標話数（NULL許容：作者に委ねる場合）
         resolved_episode: 実際に回収された話数（NULL = 未回収）
+        scope: 伏線のスコープ (short_term / long_term)
         status: 伏線の現在ステータス (planted / progressed / resolved / abandoned)
         created_at: レコード作成日時
         updated_at: レコード更新日時
@@ -43,6 +44,7 @@ class ForeshadowingModel(Base):
     planted_episode = Column(Integer, nullable=False)
     target_episode = Column(Integer, nullable=True)
     resolved_episode = Column(Integer, nullable=True)
+    scope = Column(String(32), nullable=False, server_default='short_term')
     status = Column(String(20), default="planted", nullable=False, index=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(

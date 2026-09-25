@@ -168,7 +168,7 @@ describe('Quality Dashboard Components', () => {
         />
       );
 
-      const closeBtn = screen.getByRole('button', { name: /閉じる/i });
+      const closeBtn = await screen.findByRole('button', { name: /閉じる/i });
       fireEvent.click(closeBtn);
       expect(onCloseMock).toHaveBeenCalled();
     });
@@ -186,7 +186,7 @@ describe('Quality Dashboard Components', () => {
         />
       );
 
-      const nextBtn = screen.getByRole('button', { name: /Next/i });
+      const nextBtn = await screen.findByRole('button', { name: /Next/i });
       fireEvent.click(nextBtn);
 
       await waitFor(() => {

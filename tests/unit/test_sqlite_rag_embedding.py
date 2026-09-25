@@ -1,4 +1,4 @@
-"""Tests for SQLite RAG embedding persistence and fast batch vector search (Phase 3 / Steps 25-36)."""
+import pytest
 import time
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
@@ -32,8 +32,12 @@ class DummyEmbeddingService:
     def embed_texts(self, texts: list[str], batch_size: int = 64) -> list[list[float]]:
         return [self.get_embedding(t) for t in texts]
 
+    async def embed_texts_async(self, texts: list[str], batch_size: int = 64) -> list[list[float]]:
+        return self.embed_texts(texts, batch_size)
 
-def test_sqlite_rag_batch_vector_search_and_no_truncation(monkeypatch):
+
+@pytest.mark.asyncio
+async def test_sqlite_rag_batch_vector_search_and_no_truncation(monkeypatch):
     """Steps 28-36: SQLite RAG uses pre-stored embeddings, scans beyond limit*3, and returns correct rank."""
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(engine)
@@ -75,7 +79,7 @@ def test_sqlite_rag_batch_vector_search_and_no_truncation(monkeypatch):
 
         # Step 30 & 36: 検索実行（外部APIの逐次再計算なし、高速）
         start_t = time.perf_counter()
-        results = rag.search_vectors(
+        results = await rag.search_vectors(
             session=session,
             query="伝説の聖剣エクスカリバーについて",
             limit=5,
@@ -104,7 +108,8 @@ def test_sqlite_rag_batch_vector_search_and_no_truncation(monkeypatch):
         assert elapsed_ms < 500
 
 
-def test_backfill_missing_embeddings(monkeypatch):
+@pytest.mark.asyncio
+async def test_backfill_missing_embeddings(monkeypatch):
     """Step 27, 31: backfill_missing_embeddings successfully generates and stores embeddings for NULL chunks."""
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(engine)
@@ -120,7 +125,7 @@ def test_backfill_missing_embeddings(monkeypatch):
         session.add_all([c1, c2])
         session.commit()
 
-        updated_count = backfill_missing_embeddings(session)
+        updated_count = await backfill_missing_embeddings(session)
         assert updated_count == 2
 
         # Verify persisted

@@ -28,10 +28,10 @@ class LLMCircuitBreaker:
     def __init__(
         self,
         failure_threshold: int = 3,
-        timeout_seconds: int = 60,
+        timeout_seconds: float = 60.0,
         half_open_max_calls: int = 1,
         *,
-        cooldown_seconds: int | None = None,
+        cooldown_seconds: float | None = None,
     ) -> None:
         if failure_threshold < 1:
             raise ValueError("failure_threshold must be at least 1")
@@ -40,9 +40,9 @@ class LLMCircuitBreaker:
         if half_open_max_calls < 1:
             raise ValueError("half_open_max_calls must be at least 1")
         self.failure_threshold = failure_threshold
-        self.timeout_seconds = timeout_seconds
+        self.timeout_seconds = float(timeout_seconds)
         self.cooldown_seconds = (
-            timeout_seconds if cooldown_seconds is None else cooldown_seconds
+            float(timeout_seconds) if cooldown_seconds is None else float(cooldown_seconds)
         )
         self.half_open_max_calls = half_open_max_calls
         self._states: dict[str, ProviderHealthState] = {}
@@ -55,7 +55,8 @@ class LLMCircuitBreaker:
             return self._states[provider_name]
 
     def can_execute(self, provider_name: str) -> bool:
-        now = datetime.utcnow()
+        from datetime import timezone
+        now = datetime.now(timezone.utc)
         with self._lock:
             state = self.get_state(provider_name)
             if state.state is CircuitState.CLOSED:
@@ -92,7 +93,8 @@ class LLMCircuitBreaker:
                 state.last_error = None
 
     def record_failure(self, provider_name: str, error: Any = None) -> None:
-        now = datetime.utcnow()
+        from datetime import timezone
+        now = datetime.now(timezone.utc)
         with self._lock:
             state = self.get_state(provider_name)
             state.last_failure_time = now

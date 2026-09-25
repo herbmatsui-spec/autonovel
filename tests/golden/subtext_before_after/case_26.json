@@ -1,0 +1,14 @@
+{
+  "id": "case_26",
+  "name": "ext_condescending_polite",
+  "speaker": "貴族令嬢",
+  "before": [
+    "「ご親切にどうも」"
+  ],
+  "expected_contains": [
+    "「……余計なお気遣い、感服いたしますわ」"
+  ],
+  "applied_rules": [
+    "rule_12_condescending_politeness"
+  ]
+}

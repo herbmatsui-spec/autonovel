@@ -6,17 +6,15 @@
     "moduleResolution": "node",
     "jsx": "react-jsx",
     "strict": true,
-    "noUncheckedIndexedAccess": true,
     "skipLibCheck": true,
-    "exactOptionalPropertyTypes": true,
-    "noImplicitAny": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
+    "isolatedModules": true,
     "noEmit": true,
-  "types": ["vitest/globals", "@testing-library/jest-dom", "node"],
-      "paths": {
-        "@/*": ["./src/*"]
-      }
-    },
-    "include": ["src", "tests"]
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "types": ["@testing-library/jest-dom"],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["src"]
 }

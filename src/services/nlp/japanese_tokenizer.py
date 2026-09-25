@@ -118,7 +118,7 @@ class JapaneseTokenizer:
 
     def _regex_fallback_tokenize(self, text: str) -> list[str]:
         """Safe fallback regex tokenizer when SudachiPy is unavailable."""
-        raw_words = re.findall(r"[一-龯々〆ヵヶぁ-んァ-ンa-zA-Z0-9]+", text)
+        raw_words = re.findall(r"[一-龯々〆ヵヶ]+|[ァ-ンヴー]{2,}|[a-zA-Z0-9]+|[ぁ-ん]{2,}", text)
         filtered = []
         for w in raw_words:
             w_strip = w.strip()

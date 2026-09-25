@@ -1,0 +1,14 @@
+{
+  "id": "case_09",
+  "name": "causal_riyuu",
+  "speaker": "魔術師",
+  "before": [
+    "「理由は君にある」"
+  ],
+  "expected_contains": [
+    "「……"
+  ],
+  "applied_rules": [
+    "rule_03_causal_to_irony"
+  ]
+}

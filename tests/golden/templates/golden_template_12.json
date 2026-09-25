@@ -1,0 +1,13 @@
+{
+  "id": "golden_template_12",
+  "context": {
+    "scene_id": "scene_003",
+    "turn_index": 1,
+    "speaker": "Character_3",
+    "emotion": "grief",
+    "relationship": "lover",
+    "power_dynamic": "equal",
+    "intensity": "medium"
+  },
+  "expected_category": "grief"
+}

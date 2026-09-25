@@ -30,11 +30,12 @@ def test_narou_formatting():
 def test_kakuyomu_formatting():
     res = PlatformCopyFormatter.format_for_platform(
         title="第2章 遭遇",
-        body="森の奥で、｜魔導書《グリモワール》を発見した。",
+        body="森の奥で、｜魔導書《グリモワール》を発見した。\n《《重要》》な手がかりだ。",
         platform="kakuyomu",
     )
     assert res.platform == "kakuyomu"
     assert "|魔導書《グリモワール》" in res.body
+    assert "《《重要》》" in res.body
 
 
 def test_alphapolis_formatting():
@@ -44,7 +45,7 @@ def test_alphapolis_formatting():
         platform="alphapolis",
     )
     assert res.platform == "alphapolis"
-    assert "#勇者__ゆうしゃ#" in res.body
+    assert "#勇者(ゆうしゃ)#" in res.body
     assert "「はい！」" in res.body
 
 

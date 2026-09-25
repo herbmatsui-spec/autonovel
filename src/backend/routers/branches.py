@@ -54,10 +54,6 @@ async def get_branch_session() -> AsyncGenerator[AsyncSession, None]:
     """FastAPI Depends 用の AsyncSession プロバイダ."""
     mgr = get_db_manager()
     session = mgr.get_session()
-    # bind.url access can be problematic if bind is AsyncConnection
-    bind = session.bind
-    url = getattr(bind, "url", "unknown")
-    print(f"[router] manager session bind: {url}", flush=True)
     try:
         yield session
     finally:

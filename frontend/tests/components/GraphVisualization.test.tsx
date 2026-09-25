@@ -29,7 +29,7 @@ describe("GraphVisualization component", () => {
     render(<GraphVisualization onClose={onClose} />);
 
     expect(await screen.findByText(/AutoNovel 物理演算ナレッジグラフ/)).toBeInTheDocument();
-    expect(screen.getByTestId("mock-force-graph")).toBeInTheDocument();
+    expect(await screen.findByTestId("mock-force-graph")).toBeInTheDocument();
 
     // フィルタボタンの存在確認
     expect(screen.getByRole("button", { name: "Character" })).toBeInTheDocument();

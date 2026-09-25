@@ -42,6 +42,7 @@ class EasyModeMarketingSkill(SkillAgent):
                 llm=self.llm,
             )
 
+            ep_num = ctx.artifacts.get("episode_number") or ctx.artifacts.get("ep_num") or 1
             book_data = {
                 "title": ctx.artifacts.get("title", "無題"),
                 "genre": ctx.artifacts.get("genre", "ファンタジー"),

@@ -12,6 +12,15 @@ class BeatSheet(BaseModel):
     summary: str = Field(..., description="この話の全体的な要約")
 
 
+class EpisodeBeat(BaseModel):
+    ep_num: int = Field(..., ge=1, le=40, description="話数 (1-40)")
+    phase: str = Field(..., description="ビートシートのフェーズ (開幕フック、初期成功・拠点確立など)")
+    mission: str = Field(..., description="その話の具体的なミッション・目的")
+    tension_target: float = Field(..., ge=0.0, le=1.0, description="目標とするテンション値 (0.0-1.0)")
+    visual_scene_focus: str = Field(..., description="コミカライズ時の見せ場・ビジュアルフォーカス")
+    target_foreshadowing_ids: list[int] = Field(default_factory=list, description="本話で回収を試みる伏線IDリスト")
+
+
 class PlotVariantScore(BaseModel):
     consistency_score: int = Field(..., ge=0, le=100)
     engagement_score: int = Field(..., ge=0, le=100)

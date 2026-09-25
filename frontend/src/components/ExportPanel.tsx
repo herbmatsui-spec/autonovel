@@ -1,12 +1,16 @@
 import React, { useState } from "react";
 import { useNovelContext } from "../context/NovelContext";
 import { useNovelExport } from "../hooks/useNovelExport";
+import { useExportConfirm } from "../hooks/useExportConfirm";
 import { Editor } from "./editor/Editor";
 import { AiSuggestions } from "./editor/AiSuggestions";
 import { promoteToStudio } from "../api/easyMode";
 import { BookItem } from "../types";
 import { BookShowcaseModal } from "./showcase/BookShowcaseModal";
 import { PublishExportModal } from "./common/PublishExportModal";
+import { ExportConfirmModal } from "./common/ExportConfirmModal";
+import { ExportHandoffSummary, ExportTarget } from "../types/export";
+import { PlatformCopyButton } from "./common/PlatformCopyButton";
 
 interface ExportPanelProps {
   output?: string;
@@ -37,11 +41,21 @@ export default function ExportPanel({
   const [promoting, setPromoting] = useState(false);
   const [showBookShowcase, setShowBookShowcase] = useState(false);
   const [showPublishModal, setShowPublishModal] = useState(false);
+  const [exportConfirmTarget, setExportConfirmTarget] = useState<ExportTarget | null>(null);
+  const [confirmedPublishTarget, setConfirmedPublishTarget] = useState<ExportTarget | null>(null);
 
   const { exporting, downloadExportPackage } = useNovelExport(
     (msg) => onExportMessage?.(msg),
     (errMsg) => onExportMessage?.(errMsg)
   );
+
+  const {
+    isOpen: isExportConfirmOpen,
+    summary: exportConfirmSummary,
+    open: openExportConfirm,
+    confirm: confirmExport,
+    cancel: cancelExport,
+  } = useExportConfirm();
 
   // 単一本文ソース化: 編集対象は currentChapterText に統一
   const displayOutput = output !== undefined ? output : currentChapterText;
@@ -53,11 +67,36 @@ export default function ExportPanel({
       return;
     }
     setValidationError("");
-    await downloadExportPackage(selectedBook.id, {
-      title: selectedBook.title,
-      genre: character.genre,
-      current_text: displayOutput,
-      character: character,
+
+    // エクスポート対象のサマリーを作成
+    const exportTarget: ExportTarget = {
+      bookId: selectedBook.id.toString(),
+      chapterId: "1", // デフォルト第1話（実際の実装では現在編集中のチャプターIDを使用）
+      branchId: "main", // デフォルトブランチ（実際の実装では現在のブランチIDを使用）
+      version: "saved", // デフォルトは保存版
+      destination: "zip",
+      label: `${selectedBook.title} (mainブランチ・保存版)`,
+      wordCount: displayOutput.length,
+      lastSavedAt: new Date().toISOString(),
+    };
+
+    const summary: ExportHandoffSummary = {
+      targets: [exportTarget],
+      primaryTarget: exportTarget,
+      warnings: [], // 実際の実装では保存版と現在編集版の差分などを計算
+    };
+
+    // 確認モーダルを開く
+    openExportConfirm(summary).then((confirmedTarget) => {
+      if (confirmedTarget) {
+        // 確定されたら実際のエクスポートを実行
+        downloadExportPackage(selectedBook.id, {
+          title: selectedBook.title,
+          genre: character.genre,
+          current_text: displayOutput,
+          character: character,
+        });
+      }
     });
   };
 
@@ -73,12 +112,6 @@ export default function ExportPanel({
       const res = await promoteToStudio({ book_id: selectedBookId.toString() });
       if (res.success) {
         onExportMessage?.("✨ 上級者 Studio へ昇格しました！世界観設定がナレッジグラフに統合されました。");
-        // redirect_url を URL バーに反映 (将来 router 追加時のフックポイント)
-        const target = `${res.redirect_url}?token=${encodeURIComponent(res.state_token)}`;
-        if (typeof window !== "undefined" && window.history?.pushState) {
-          window.history.pushState({ bookId: selectedBookId, token: res.state_token }, "", target);
-          window.dispatchEvent(new PopStateEvent("popstate"));
-        }
         onPromoteToStudio?.();
       }
     } catch (err: any) {
@@ -184,13 +217,50 @@ export default function ExportPanel({
           {exporting ? "📦 パッケージ生成中..." : "📦 納品パッケージ (ZIP) ダウンロード"}
         </button>
 
+        <PlatformCopyButton
+          title={selectedBook?.title ?? "無題"}
+          body={displayOutput}
+        />
+
         <button
           type="button"
           className="btn btn-secondary"
           style={{ padding: "8px 14px", fontSize: "0.85rem", whiteSpace: "nowrap" }}
-          onClick={() => setShowPublishModal(true)}
+          onClick={async () => {
+            if (!selectedBook) {
+              setValidationError("作品が選択されていません");
+              return;
+            }
+            setValidationError("");
+
+            // 出版出力用のエクスポート対象サマリーを作成
+            // 実際の実装では、現在編集中のチャプター情報を取得する必要がある
+            const exportTarget: ExportTarget = {
+              bookId: selectedBook.id.toString(),
+              chapterId: "1", // デフォルト第1話
+              branchId: "main", // デフォルトブランチ
+              version: "saved", // デフォルトは保存版
+              destination: "publish",
+              label: `${selectedBook.title} (mainブランチ・保存版)`,
+              wordCount: displayOutput.length,
+              lastSavedAt: new Date().toISOString(),
+            };
+
+            const summary: ExportHandoffSummary = {
+              targets: [exportTarget],
+              primaryTarget: exportTarget,
+              warnings: [],
+            };
+
+            openExportConfirm(summary).then((confirmedTarget) => {
+              if (confirmedTarget) {
+                // 確定されたらPublishExportModalを表示
+                setConfirmedPublishTarget(confirmedTarget);
+                setShowPublishModal(true);
+              }
+            });
+          }}
           disabled={!selectedBook}
-          title="小説家になろう、カクヨム、アルファポリス等の形式で出力"
           data-testid="btn-publish-export"
         >
           🌐 投稿サイト形式出力
@@ -246,11 +316,26 @@ export default function ExportPanel({
       )}
 
       {/* Web小説投稿フォーマット出力モーダル (Step 65, 66) */}
-      {showPublishModal && selectedBook && (
+      {showPublishModal && selectedBook && confirmedPublishTarget && (
         <PublishExportModal
           isOpen={showPublishModal}
-          onClose={() => setShowPublishModal(false)}
+          onClose={() => {
+            setShowPublishModal(false);
+            setConfirmedPublishTarget(null);
+          }}
           bookId={selectedBook.id}
+          initialChapterId={parseInt(confirmedPublishTarget.chapterId)}
+          initialBranchId={parseInt(confirmedPublishTarget.branchId)}
+        />
+      )}
+
+      {/* 出力前確認モーダル */}
+      {isExportConfirmOpen && exportConfirmSummary && (
+        <ExportConfirmModal
+          isOpen={isExportConfirmOpen}
+          summary={exportConfirmSummary}
+          onClose={cancelExport}
+          onConfirm={confirmExport}
         />
       )}
     </section>
