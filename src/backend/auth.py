@@ -147,12 +147,18 @@ async def require_admin_user_or_key(
 
 
 def validate_api_key_sync(api_key: str) -> str | bool:
-    """同期コンテキスト用のAPIキー検証ヘルパー"""
+    """同期コンテキスト用のAPIキー検証ヘルパー（タイミング攻撃耐性版）"""
     if settings.AUTH_DISABLED:
         return "dev-key"
+    if not api_key:
+        return False
     allowed_keys_str = getattr(settings, "ALLOWED_API_KEYS", "") or os.environ.get("ALLOWED_API_KEYS", "")
     allowed_keys = [k.strip() for k in allowed_keys_str.split(",") if k.strip()]
-    if not allowed_keys or api_key not in allowed_keys:
+    if not allowed_keys:
+        return False
+    import hmac
+    is_valid = any(hmac.compare_digest(api_key, k) for k in allowed_keys)
+    if not is_valid:
         return False
     return api_key
 

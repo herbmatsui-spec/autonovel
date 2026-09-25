@@ -376,8 +376,9 @@ async def get_task_status(task_id: str) -> dict[str, Any]:
 
 @router.delete("/task/{task_id}")
 async def cancel_task(
-    task_id: str,
+    task_id: str = Path(min_length=1, max_length=128, pattern=r"^[a-zA-Z0-9_\-]+$"),
     session=Depends(database.get_db),
+    api_key: str = Depends(require_api_key),
 ) -> dict[str, str]:
     """タスクをキャンセルまたは削除する。"""
     from src.backend.tasks.huey import huey
@@ -416,7 +417,10 @@ from src.services.promotion_service import PromotionService
 
 
 @router.post("/gacha", response_model=GachaResponse)
-async def gacha_endpoint(req: GachaRequest) -> GachaResponse:
+async def gacha_endpoint(
+    req: GachaRequest,
+    api_key: str = Depends(require_api_key),
+) -> GachaResponse:
     """3案ガチャ企画生成 [Gacha Pitch]"""
     from fastapi import HTTPException
 
@@ -433,7 +437,10 @@ async def gacha_endpoint(req: GachaRequest) -> GachaResponse:
 
 
 @router.post("/digest", response_model=DigestResponse)
-async def digest_endpoint(req: DigestRequest) -> DigestResponse:
+async def digest_endpoint(
+    req: DigestRequest,
+    api_key: str = Depends(require_api_key),
+) -> DigestResponse:
     """ダイジェスト生成 [Quick Digest]"""
     from fastapi import HTTPException
 
@@ -448,7 +455,10 @@ async def digest_endpoint(req: DigestRequest) -> DigestResponse:
 
 
 @router.post("/promote", response_model=PromotionResponse)
-async def promote_endpoint(req: PromotionRequest) -> PromotionResponse:
+async def promote_endpoint(
+    req: PromotionRequest,
+    api_key: str = Depends(require_api_key),
+) -> PromotionResponse:
     """上級者モード昇格 [Producer Handoff]"""
     from src.backend.database.core import get_db_manager
     from fastapi import HTTPException
@@ -464,6 +474,7 @@ async def promote_endpoint(req: PromotionRequest) -> PromotionResponse:
 @router.post("/reverse-generate")
 async def reverse_generate_endpoint(
     req: ReversePlotGeneratePayload,
+    api_key: str = Depends(require_api_key),
 ) -> dict[str, Any]:
     """逆算プロットビルダー用同期生成エンドポイント [Reverse Plot Builder]"""
     from src.backend.workflows.reverse_plot_workflow import ReversePlotGenerationWorkflow
