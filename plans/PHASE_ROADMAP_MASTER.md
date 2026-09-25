@@ -82,3 +82,9 @@
 | **Phase 4: 本番運用性・テスト確立 (Part 4)** | **完了** | health 503是正・DB疎通、空テスト（`assertTrue`）の真のE2Eテスト化、Sentry/OTELガード |
 | **総合検証 (Part 5)** | **完了** | 全13スイート（40件のリグレッションテスト）ALL GREEN (2.17s) |
 
+---
+
+## 🚀 次期実行計画: 包括コードレビュー是正と商用高信頼化 (2026-09-25 策定)
+
+詳細な実行計画書 [PLAN_CODE_REVIEW_REMEDIATION_AND_HARDENING.md](file:///e:/hhh/plans/PLAN_CODE_REVIEW_REMEDIATION_AND_HARDENING.md) に基づき、コードレビューで特定された P0〜P2 所見の解消とリグレッション防止テストの拡充（全20ステップ）を推進中。
+
