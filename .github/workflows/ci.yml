@@ -20,5 +20,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pytest pytest-asyncio hypothesis
-      - name: Run test suite
-        run: pytest -q
+      - name: Run unit test suite
+        run: pytest -q -m "not integration and not slow"
+      - name: Run v5 regression guardrails
+        run: pytest tests/regression/ -v

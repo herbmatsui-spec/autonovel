@@ -140,6 +140,11 @@ class MarketingService:
         if not plots:
             plots = DEFAULT_FALLBACK["plots"]
 
+        def _to_win_txt_bytes(text: str) -> bytes:
+            """UTF-8 (BOM付き) かつ CRLF 改行に変換してメモ帳文字化けを完全防止."""
+            crlf_text = text.replace("\r\n", "\n").replace("\n", "\r\n")
+            return b"\xef\xbb\xbf" + crlf_text.encode("utf-8")
+
         buf = io.BytesIO()
         try:
             with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
@@ -149,7 +154,7 @@ class MarketingService:
                     f"第{c.get('ep_num', 1)}話 {c.get('title', '')}\n\n{c.get('content', '')}\n\n"
                     for c in chapters
                 )
-                z.writestr("01_本文.txt", full_text.encode("utf-8"))
+                z.writestr("01_本文.txt", _to_win_txt_bytes(full_text))
 
                 # 02: キャラクター・世界観設定集
                 settings_str = (
@@ -164,7 +169,7 @@ class MarketingService:
                         f"性格: {c.get('personality', '設定なし')}\n"
                         f"能力: {c.get('ability', '設定なし')}\n\n"
                     )
-                z.writestr("02_キャラクター・世界観設定集.txt", setting_text.encode("utf-8"))
+                z.writestr("02_キャラクター・世界観設定集.txt", _to_win_txt_bytes(setting_text))
 
                 # 03: プロット概要
                 plot_text = f"【作品プロット概要】 - {title}\n\n"
@@ -173,7 +178,7 @@ class MarketingService:
                         f"第{p.get('ep_num', 1)}話: {p.get('title', '')}\n"
                         f"{p.get('one_line_summary', '')}\n\n"
                     )
-                z.writestr("03_プロット概要.txt", plot_text.encode("utf-8"))
+                z.writestr("03_プロット概要.txt", _to_win_txt_bytes(plot_text))
 
                 # 04: データダンプ (JSON)
                 dump = {

@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import pytest
 
+pytest.importorskip("spacy", reason="spaCy is required for emotional residue NLP pipeline tests")
+
 from src.pipeline.emotional_residue import EmotionalVector, EmotionalSignal, EmotionType
 from src.stores.vector_store import RedisVectorStore
 from src.pipeline.prompt_builder import build_emotional_context_prompt

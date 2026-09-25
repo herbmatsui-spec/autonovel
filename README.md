@@ -19,7 +19,6 @@
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 [![Type Checked: mypy](https://img.shields.io/badge/type%20checked-mypy-blue)](https://mypy-lang.org/)
 [![Vitest](https://img.shields.io/badge/tested_with-vitest-729B1B?logo=vitest&logoColor=white)](https://vitest.dev/)
-[![Version](https://img.shields.io/badge/version-5.1.1-brightgreen?logo=semver)](https://github.com/herbmatsui-spec/autonovel/releases/tag/v5.1.1)
 
 <br />
 
@@ -27,7 +26,7 @@
   <img src="docs/demo.gif" alt="AutoNovel UI & Workflow Demo" width="900" style="border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
 </p>
 
-*▲ AutoNovel v5.1.1: デモアニメーション（説明用）。実際のAI生成品質・所要時間・外部サービス接続を示すものではありません。*
+*▲ AutoNovel v5.2.0: デモアニメーション（説明用）。実際のAI生成品質・所要時間・外部サービス接続を示すものではありません。*
 
 ---
 
@@ -44,6 +43,9 @@ AutoNovel は、AI を活用して Web 小説を **企画から執筆、校正�
 - **マルチレイヤー専門オーディター**：一貫性・創造性・読者フック・感情曲線・文体・事実性・構造・マルチメディアの8専門家並列監査
 - **Reflective RAG（反射的RAG）**：BM25キーワード抽出＋GraphRAG文脈適合性チェックによる反復クエリ精緻化ループ（最大3回反復で収束）
 - **統合パイプライン（AutoWorkflowPipeline）**：FullAutoWorkflow / EasyModeWorkflow を単一パイプラインに完全委譲、重複排除
+- **統一 CLI (`autonovel`)**：環境診断、執筆バランス調整、エクスポート等を単一のモダンコマンドに統合
+- **商用拡張基盤**：Stripe Webhook 決済/クレジット管理、JWT/RBAC 認証、動的プラグインシステム (`PluginRegistry`)、OpenTelemetry / Sentry 監視
+- **初心者向け自己完結 Web デモ**：バックエンド不要でブラウザから即座に体験可能 (`web/demo/index.html`)
 - **ワンクリック納品**：本文・設定・プロット・データを 1 つの ZIP にまとめて出力
 - **上級者 Studio**：本文編集・次話展開提案・設定参照・矛盾診断・マルチメディア管理
 - **投稿サイト整形**：なろう・カクヨム・アルファポリス向けに本文を自動変換
@@ -56,6 +58,14 @@ AutoNovel は、AI を活用して Web 小説を **企画から執筆、校正�
 ---
 
 ## 🚀 クイックスタート & 起動ガイド
+
+### 🌐 初心者向け自己完結 Web デモ（サーバー起動不要）
+
+まずはインストールなしでツールの操作感を体験したい場合、ブラウザで直接デモを開くことができます：
+- **`web/demo/index.html`** をお好みのブラウザ（Chrome, Edge, Firefox等）でダブルクリックして開くだけです。
+- 企画ガチャ、逆算プロットビルダー、かんたん執筆モック、納品パッケージ（ZIP）ダウンロードの全フローを即座に体験できます。
+
+---
 
 ### Windows ワンクリック起動（正式対応）
 
@@ -71,13 +81,39 @@ AutoNovel は、AI を活用して Web 小説を **企画から執筆、校正�
 
 > **事前診断だけ実行したい場合**:
 > ```powershell
-> python scripts/check_env.py
+> autonovel check-env
+> # または python scripts/check_env.py
 > ```
 >
 > **起動計画だけ確認したい場合（プロセス起動なし）**:
 > ```powershell
 > powershell -ExecutionPolicy Bypass -File scripts/start_local.ps1 -DryRun
 > ```
+
+---
+
+### 💻 統一 CLI `autonovel` の使い方
+
+AutoNovel は単一の統一コマンド `autonovel` で各種管理・診断・執筆支援を実行できます：
+
+```powershell
+# バージョン確認
+autonovel --version
+
+# 環境自己診断（Pythonバージョン、依存関係、DB接続検査）
+autonovel check-env
+
+# データベース初期化・マイグレーション
+autonovel init-db
+
+# 執筆物質バランサー（DSP / CSP / Grammar）
+autonovel balance --type dsp --book-id 1
+
+# 小説エクスポート（ZIP形式 / なろう / カクヨム / EPUB）
+autonovel export --book-id 1 --format zip
+```
+
+---
 
 ### Docker Compose による起動（開発環境）
 
@@ -141,10 +177,12 @@ npm run dev
 
 4層圧縮は、LLMプロンプト、過去文脈、キャラクター情報、世界観設定などを階層的に圧縮し、トークン使用量を削減しながら重要な情報を保持します。この機能は以下のコンポーネントで利用可能です：
 
-- **WritingService**：`generate_with_quality_assurance` 実行時に自動的に圧縮コンテキストを生成し、執筆品質評価に使用します。
+- **WritingService (`src/domain/writing/coordinator.py`)**：執筆ドメインの中核として、二段階プロット展開（Coarse-to-Fine）や品質評価時に自動的に圧縮コンテキストを生成・利用します。
 - **ContextBuilderAgent**：圧縮結果を `artifacts` に格納し、次のエージェントに渡します。
 - **EpisodeWriter**：`build_context` 時に圧縮コンテキストを取得し、執筆に使用します。
 - **EasyMode パイプライン**：`create_easy_mode_pipeline` に `compressor` 引数を渡すことで圧縮を有効化できます。
+
+> **設計ノート**: 執筆コアロジックは `src/domain/writing/` に完全集約されており、旧 `src/services/writing_service.py` 等は後方互換用シムです。
 
 ### 使用例（DI コンテナから取得）
 
@@ -152,9 +190,8 @@ npm run dev
 from src.core.container.app import AppContainer
 container = AppContainer()
 compressor = container.compressor()
-# またはサービス経由で取得
+# 執筆ドメインサービスの取得
 writing_service = container.writing_service()
-# writing_service.compressor 経由でアクセス可
 ```
 ## 📖 実践操作マニュアル
 

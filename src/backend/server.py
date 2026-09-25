@@ -126,6 +126,7 @@ plugin_registry = get_plugin_registry()
 
 # コアルーター登録
 app.include_router(easy_mode.router, prefix="/easy_mode", tags=["easy_mode"])
+app.include_router(easy_mode.router, prefix="/api/wizard", tags=["wizard"])
 if settings.APP_ENV == "development":
     app.include_router(easy_mode.router, prefix="/api/easy-mode", tags=["easy-mode"])
 app.include_router(streaming.router, prefix="/easy_mode", tags=["streaming"])

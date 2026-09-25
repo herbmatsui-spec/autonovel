@@ -1,10 +1,10 @@
 """Comprehensive regression tests for Week 5 Hierarchical Agent Memory."""
-from src.agent.memory.branch_manager import BranchMemoryManager
-from src.agent.memory.cached_archival import CachedArchivalMemory
-from src.agent.memory.compaction import CompactionPolicy
-from src.agent.memory.core_memory import CoreMemory
-from src.agent.memory.interfaces import MemoryEntry
-from src.agent.memory.voice_profile import VoiceProfile
+from src.agents.memory.branch_manager import BranchMemoryManager
+from src.agents.memory.cached_archival import CachedArchivalMemory
+from src.agents.memory.compaction import CompactionPolicy
+from src.agents.memory.core_memory import CoreMemory
+from src.agents.memory.interfaces import MemoryEntry
+from src.agents.memory.voice_profile import VoiceProfile
 from src.agents.writer_agent import WriterAgent
 from src.fusion.models import FusedValue, FusedVector
 from src.pipeline.emotional_residue import EmotionType

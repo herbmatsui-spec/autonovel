@@ -213,22 +213,11 @@ def test_extraction_service_resolve_entities():
 
 
 def test_rag_service_community_context(db_session):
-    """GraphRAGService が派閥コミュニティコンテキストを取得できることを検証."""
+    """GraphRAGService がコミュニティコンテキスト（Relational Memory移行済み互換スタブ）を返すことを検証."""
     service = GraphRAGService()
-    # SQLite環境では空リスト
+    # AGE廃止・Relational Memory移行後は安全な互換スタブとして空リストを返す
     assert service.get_community_context(db_session, "光の騎士団") == []
-
-    # モックによる動作検証
-    mock_members = [
-        {"name": "アルス", "relation_type": "MEMBER_OF"},
-        {"name": "セリア", "relation_type": "LEADER_OF"},
-    ]
-    with patch("src.services.rag_service.age_client.get_neighbors", return_value=mock_members), \
-         patch("src.services.rag_service.settings.ENABLE_GRAPHRAG", True), \
-         patch("src.services.rag_service.settings.DATABASE_URL", "postgresql://user:pass@localhost/db"):
-        members = service.get_community_context(db_session, "光の騎士団")
-        assert len(members) == 2
-        assert "アルス (MEMBER_OF)" in members
+    assert service.get_community_context(db_session) == []
 
 
 @pytest.mark.asyncio

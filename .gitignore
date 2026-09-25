@@ -78,3 +78,8 @@ fix_indent.py
 inspect_schema.py
 fail_*.txt
 full_test_result.txt
+debug_*.py
+manual_verification.py
+final_verification.py
+test_simple.py
+json-report.json

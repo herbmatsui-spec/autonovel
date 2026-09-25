@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoNovel かんたんモード デモ - AI小説執筆ツール体験</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <!-- ヘッダー -->
+        <header class="app-header">
+            <div class="header-content">
+                <h1>🎵 AutoNovel かんたんモード デモ</h1>
+                <p>AI小説執筆ツールを体験しよう - 初心者でも3ステップで物語創作</p>
+            </div>
+        </header>
+
+        <!-- メインコンテンツ -->
+        <main class="app-main">
+            <!-- ステップインジケーター -->
+            <div class="step-indicator">
+                <div class="step-step" data-step="1">企画ガチャ</div>
+                <div class="step-step" data-step="2">プロット作成</div>
+                <div class="step-step" data-step="3">キャラ設定</div>
+                <div class="step-step" data-step="4">執筆開始</div>
+                <div class="step-step" data-step="5">完成・エクスポート</div>
+            </div>
+
+            <!-- チュートリアルモード切替 -->
+            <div class="tutorial-toggle">
+                <button id="tutorialBtn" class="btn btn-outline">チュートリアルモード: <span id="tutorialStatus">OFF</span></button>
+            </div>
+
+            <!-- メインコンテンツエリア -->
+            <section id="mainContent" class="content-section">
+                <!-- 企画ガチャステップ -->
+                <div id="step1" class="step active">
+                    <h2>🎲 ステップ1: 企画ガチャでストーリーアイデアを生成</h2>
+                    <p class="step-description">ボタン1つで3つの物語案から選択し、あなたの物語の出発点を決めましょう</p>
+                    
+                    <div class="tutorial-step" data-step="1">
+                        <div class="tutorial-content">
+                            <h3>📖 これは何？</h3>
+                            <p>企画ガチャは、物語のアイデアが思いつかないときに便利な機能です。ボタンを押すと、ジャンル別に3つの物語案がランダムに生成されます。</p>
+                            <div class="tutorial-tip">
+                                <strong>💡 チップ:</strong> 王道は安定した展開、変化球は予想外の twists 、ダークは重厚なストーリーが特徴です。
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="gacha-container">
+                        <button id="gachaBtn" class="btn btn-primary btn-large">
+                            🎲 企画ガチャを引く
+                        </button>
+                    </div>
+
+                    <div id="gachaResult" class="gacha-result hidden">
+                        <h3>✨ あなたの物語案</h3>
+                        <div class="gacha-card" id="gachaCard">
+                            <!-- 動的に生成される -->
+                        </div>
+                        <div class="tutorial-step" data-step="1" style="margin-top: 1.5rem;">
+                            <div class="tutorial-content">
+                                <h3>🎯 次のステップ</h3>
+                                <p>気に入った案を選択したら、「この案で物語を始める」ボタンを押してください。選択された案の内容がキャラクター設定に自動的に反映されます。</p>
+                            </div>
+                        </div>
+                        <button id="selectGachaBtn" class="btn btn-success btn-block">
+                            この案で物語を始める →
+                        </button>
+                    </div>
+                </div>
+
+                <!-- プロット作成ステップ -->
+                <div id="step2" class="step hidden">
+                    <h2>🔮 ステップ2: 逆算プロットビルダーで物語構造を作成</h2>
+                    <p class="step-description">4つの質問に答えるだけで、プロット構造とエピソード別あらすじを自動生成</p>
+                    
+                    <div class="tutorial-step" data-step="2">
+                        <div class="tutorial-content">
+                            <h3>📖 これは何？</h3>
+                            <p>逆算プロットビルダーは、物語の結末や目標から逆算してプロットを構築する機能です。4つの簡単な質問に答えるだけで、プロの作家が使うような構造化されたストーリーが生成されます。</p>
+                            <div class="tutorial-tip">
+                                <strong>💡 チップ:</strong> 具体的な答えを書くと、より魅力的なプロットが生成されます。たとえば「魔王を倒す」より「暗黒の魔王ザンキスを光の剣で倒す」のような答えが効果的です。
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <form id="reversePlotForm" class="reverse-plot-form">
+                        <div class="form-group">
+                            <label for="genreSelect">ジャンル選択</label>
+                            <select id="genreSelect" class="select">
+                                <option value="">ジャンルを選択...</option>
+                                <option value="ファンタジー">ファンタジー</option>
+                                <option value="ラブコメ">ラブコメ</option>
+                                <option value="SF">SF</option>
+                                <option value="ミステリー">ミステリー</option>
+                                <option value="ホラー">ホラー</option>
+                                <option value="その他">その他</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="protagonistInput">主人公の名前と特徴</label>
+                            <input type="text" id="protagonistInput" class="input" placeholder="例：アルト、熱血・仲間思い・冷静な判断力">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="goalInput">主人公の目標</label>
+                            <input type="text" id="goalInput" class="input" placeholder="例：魔王を倒す、故郷を救う">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="obstacleInput">最大の障害</label>
+                            <input type="text" id="obstacleInput" class="input" placeholder="例：魔王軍の四天王、過去のトラブル">
+                        </div>
+                        
+                        <div class="tutorial-step" data-step="2">
+                            <div class="tutorial-content">
+                                <h3>📝 入力例</h3>
+                                <div class="example-inputs">
+                                    <div><strong>ジャンル:</strong> ファンタジー</div>
+                                    <div><strong>主人公:</strong> アルト、熱血・仲間思い・冷静な判断力</div>
+                                    <div><strong>目標:</strong> 失われた王冠を取り戻す</div>
+                                    <div><strong>障害:</strong> 魔王軍の四天王と内なる葛藤</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" id="plotBtn" class="btn btn-primary btn-block">
+                            🔮 プロット構造を生成
+                        </button>
+                    </form>
+
+                    <div id="plotResult" class="plot-result hidden">
+                        <h3>📖 生成されたプロット構造</h3>
+                        <div class="episodes-container" id="episodesContainer">
+                            <!-- 動的に生成される -->
+                        </div>
+                        <div class="tutorial-step" data-step="2" style="margin-top: 1.5rem;">
+                            <div class="tutorial-content">
+                                <h3>🎯 次のステップ</h3>
+                                <p>生成されたプロットに満足したら、「キャラ設定に進む」ボタンを押してください。ここで生成されたエピソード情報が次のステップで使用されます。</p>
+                            </div>
+                        </div>
+                        <button id="nextToCharBtn" class="btn btn-success btn-block">
+                            キャラ設定に進む →
+                        </button>
+                    </div>
+                </div>
+
+                <!-- キャラ設定ステップ -->
+                <div id="step3" class="step hidden">
+                    <h2>👤 ステップ3: キャラクター設定と冒頭テキスト入力</h2>
+                    <p class="step-description">主人公の詳細設定と物語の冒頭を入力して、執筆の準備を整えましょう</p>
+                    
+                    <div class="tutorial-step" data-step="3">
+                        <div class="tutorial-content">
+                            <h3>📖 これは何？</h3>
+                            <p>ここで物語の主人公の詳細を設定し、物語の冒頭を書きます。これらの情報がAIによる本文生成の基礎となります。</p>
+                            <div class="tutorial-tip">
+                                <strong>💡 チップ:</strong> 主人公の性格や能力は具体的に書くと、AIがより一貫性のあるキャラクターを生成しやすくなります。
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="character-form">
+                        <div class="form-group">
+                            <label for="charName">主人公の名前</label>
+                            <input type="text" id="charName" class="input" value="アルト">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="charPersonality">性格・特徴</label>
+                            <input type="text" id="charPersonality" class="input" value="熱血・仲間思い・冷静な判断力">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="charAbility">特殊能力・スキル</label>
+                            <input type="text" id="charAbility" class="input" value="古代魔導剣術・時空間把握">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="charGenre">ジャンル</label>
+                            <select id="charGenre" class="select">
+                                <option value="ファンタジー">ファンタジー</option>
+                                <option value="ラブコメ">ラブコメ</option>
+                                <option value="SF">SF</option>
+                                <option value="ミステリー">ミステリー</option>
+                                <option value="ホラー">ホラー</option>
+                                <option value="その他">その他</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="tutorial-step" data-step="3">
+                        <div class="tutorial-content">
+                            <h3>📝 入力例</h3>
+                            <div class="example-inputs">
+                                <div><strong>名前:</strong> アルト</div>
+                                <div><strong>性格・特徴:</strong> 熱血・仲間思い・冷静な判断力</div>
+                                <div><strong>特殊能力・スキル:</strong> 古代魔導剣術・時空間把握</div>
+                                <div><strong>ジャンル:</strong> ファンタジー</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="openingText">物語の冒頭 / 前話プロンプト</label>
+                        <textarea id="openingText" class="textarea" rows="5" placeholder="薄暗い迷宮の最深部、少年アルトは封印されし古代の魔剣を抜いた。"></textarea>
+                    </div>
+
+                    <div class="tutorial-step" data-step="3" style="margin-top: 1.5rem;">
+                        <div class="tutorial-content">
+                            <h3>💡 プロンプトの書き方</h3>
+                            <p>効果的な冒頭プロンプトは、場所・時間・キャラクターの行動・感情を含むと良いです。たとえば「雨の夜の都市で、探偵・太郎は重要な証拠を手にした」など。</p>
+                        </div>
+                    </div>
+
+                    <div class="button-group">
+                        <button id="streamingBtn" class="btn btn-accent btn-block">
+                            ⚡ リアルタイム速筆 (SSE)
+                        </button>
+                        <button id="generationBtn" class="btn btn-primary btn-block">
+                            🪄 かんたん執筆開始
+                        </button>
+                    </div>
+
+                    <!-- ストリーミングプレビュー -->
+                    <div id="streamingPreview" class="streaming-preview hidden">
+                        <div class="streaming-header">
+                            <span>⚡ リアルタイム執筆プレビュー</span>
+                            <span id="charCount">0 文字</span>
+                        </div>
+                        <div id="streamingContent" class="streaming-content">
+                            生成中...
+                        </div>
+                        <button id="stopStreamingBtn" class="btn btn-danger btn-block">
+                            ⏹ 中止
+                        </button>
+                    </div>
+                    
+                    <div class="tutorial-step" data-step="3" style="margin-top: 1.5rem;">
+                        <div class="tutorial-content">
+                            <h3>⚡ リアルタイム速筆 vs 🪄 かんたん執筆開始</h3>
+                            <p><strong>リアルタイム速筆:</strong> テキストが少しずつ表示され、書き進めながら内容を確認できます。アイデアが浮かんでくるような感覚で書きたいときに便利です。</p>
+                            <p><strong>かんたん執筆開始:</strong> バックグラウンドで本文を生成し、完了後にまとめて表示します。長めの本文を効率的に生成したいときに適しています。</p>
+                        </div>
+                    </div>
+                </div>
+
+                -- 執筆結果ステップ -->
+                <div id="step4" class="step hidden">
+                    <h2>📝 ステップ4: 生成結果と次話提案</h2>
+                    <p class="step-description">AIが生成した本文を確認し、次話への展開提案を受け取りましょう</p>
+                    
+                    <div class="tutorial-step" data-step="4">
+                        <div class="tutorial-content">
+                            <h3>📖 これは何？</h3>
+                            <p>ここではAIが生成した本文を確認し、次話への展開のアイデアを得ることができます。プロの編集者からのフィードバックを得ているような感覚です。</p>
+                            <div class="tutorial-tip">
+                                <strong>💡 チップ:</strong> 生成された本文を読んで、気に入った部分はそのまま使い、変更したい部分は編集してください。次話提案は、物語の続きを考える際のヒントになります。
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="result-tabs">
+                        <button class="tab-btn active" data-tab="generated">📖 生成本文</button>
+                        <button class="tab-btn" data-tab="suggestions">💡 次話提案</button>
+                    </div>
+                    
+                    <div class="tab-content active" data-tab="generated">
+                        <div id="generatedContent" class="generated-content">
+                            <!-- 生成本文がここに表示される -->
+                        </div>
+                    </div>
+                    
+                    <div class="tab-content hidden" data-tab="suggestions">
+                        <div id="suggestionsContent" class="suggestions-content">
+                            <!-- 次話提案がここに表示される -->
+                        </div>
+                    </div>
+                    
+                    <div class="tutorial-step" data-step="4" style="margin-top: 1.5rem;">
+                        <div class="tutorial-content">
+                            <h3>🎯 次のステップ</h3>
+                            <p>本文に満足したら、「納品パッケージ (ZIP) ダウンロード」ボタンで物語を保存しましょう。または、「上級者Studioへ昇格」ボタンでより高度な機能を体験できます。</p>
+                        </div>
+                    </div>
+
+                    <div class="button-group">
+                        <button id="exportBtn" class="btn btn-success btn-block">
+                            📦 納品パッケージ (ZIP) ダウンロード
+                        </button>
+                        <button id="promoteBtn" class="btn btn-primary btn-block">
+                            🚀 上級者Studioへ昇格
+                        </button>
+                    </div>
+                </div>
+
+                -- 完了ステップ -->
+                <div id="step5" class="step hidden">
+                    <h2>🎉 完成！お疲れ様でした</h2>
+                    <p class="step-description">あなたの物語が無事に生成されました。次はどのようにお楽しみになりますか？</p>
+                    
+                    <div class="achievement-card">
+                        <h3>🏆 達成項目</h3>
+                        <ul class="achievement-list">
+                            <li>✅ 企画ガチャで物語アイデア生成</li>
+                            <li>✅ プロット構造作成</li>
+                            <li>✅ キャラクター設定完了</li>
+                            <li>✅ AIによる本文生成</li>
+                            <li>✅ 納品パッケージ作成</li>
+                        </ul>
+                    </div>
+
+                    <div class="tutorial-step" data-step="5">
+                        <div class="tutorial-content">
+                            <h3>🎉 おめでとうございます！</h3>
+                            <p>あなたは今、AIと協力して物語を創作する一連のプロセスを体験しました。これはプロの小説家やシナリオライターが実際に使っている手法と同じです。</p>
+                            <div class="tutorial-tip">
+                                <strong>💡 次のステップ:</strong> 実際のAutoNovelでは、より高度なAIモデル、キャラクターの深掘り、プロットの細かい調整、マルチメディア機能などが利用できます。
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="button-group">
+                        <button id="restartBtn" class="btn btn-outline btn-block">
+                            🔄 もう一度始める
+                        </button>
+                        <button id="studioBtn" class="btn btn-primary btn-block">
+                            🏫 上級者Studioを実際に試す
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- フッター -->
+        <footer class="app-footer">
+            <div class="footer-content">
+                <p>&copy; 2026 HerbMatsui-spec. All rights reserved.</p>
+                <div class="footer-links">
+                    <a href="https://github.com/herbmatsui-spec/autonovel" target="_blank">GitHub</a>
+                    <a href="https://herbmatsui-spec.github.io/autonovel/docs/" target="_blank">ドキュメント</a>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script src="mock-data.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

@@ -56,6 +56,14 @@ PUBLIC_PREFIXES: tuple[str, ...] = (
 )
 
 
+def is_safe_api_key_match(provided: str, expected: str) -> bool:
+    """タイミング攻撃耐性を持つ定数時間でのAPIキー比較."""
+    if not provided or not expected:
+        return False
+    return secrets.compare_digest(provided, expected)
+
+
+
 class GlobalAuthMiddleware(BaseHTTPMiddleware):
     """
     アプリケーション全体へのアクセスを保護する認証ミドルウェア。
@@ -104,7 +112,7 @@ class GlobalAuthMiddleware(BaseHTTPMiddleware):
         allowed_keys_str = settings.ALLOWED_API_KEYS or ""
         allowed_keys = [k.strip() for k in allowed_keys_str.split(",") if k.strip()]
 
-        if api_key_header and any(secrets.compare_digest(api_key_header, k) for k in allowed_keys):
+        if api_key_header and any(is_safe_api_key_match(api_key_header, k) for k in allowed_keys):
             return await call_next(request)
 
         # 4b. Authorization ヘッダー検証
@@ -116,7 +124,7 @@ class GlobalAuthMiddleware(BaseHTTPMiddleware):
                 token = auth_header.strip()
 
             # API Key として一致するか確認 (タイミングセーフ比較)
-            if token and any(secrets.compare_digest(token, k) for k in allowed_keys):
+            if token and any(is_safe_api_key_match(token, k) for k in allowed_keys):
                 return await call_next(request)
 
             # JWT トークンとして検証
