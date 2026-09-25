@@ -282,7 +282,10 @@ async def generate_content(
         
         # DB レコードを作成
         repo = BookRepository(session)
-        repo.create_task(task_id=huey_task_id, status="running")
+        if repo.is_async:
+            await repo.create_task_async(task_id=huey_task_id, status="running")
+        else:
+            repo.create_task(task_id=huey_task_id, status="running")
         
         metrics.increment("tasks_enqueued")
         logger.info("Enqueued generation task: task_id=%s", huey_task_id)
@@ -372,7 +375,10 @@ async def get_task_status(task_id: str) -> dict[str, Any]:
 
 
 @router.delete("/task/{task_id}")
-async def cancel_task(task_id: str) -> dict[str, str]:
+async def cancel_task(
+    task_id: str,
+    session=Depends(database.get_db),
+) -> dict[str, str]:
     """タスクをキャンセルまたは削除する。"""
     from src.backend.tasks.huey import huey
 
@@ -383,8 +389,11 @@ async def cancel_task(task_id: str) -> dict[str, str]:
         logger.warning("Failed to revoke huey task_id=%s", task_id)
 
     # DBタスクのステータス更新
-    repo = BookRepository()
-    repo.update_task_status(task_id, "cancelled")
+    repo = BookRepository(session)
+    if repo.is_async:
+        await repo.update_task_status_async(task_id, "cancelled")
+    else:
+        repo.update_task_status(task_id, "cancelled")
 
     return {"task_id": task_id, "status": "cancelled"}
 
@@ -482,14 +491,24 @@ async def export_with_data_endpoint(
     repo = BookRepository(session)
     # DBにも永続化
     try:
-        repo.save_or_update_book_with_chapter(
-            book_id=book_id,
-            title=payload.title,
-            genre=payload.genre,
-            chapter_text=payload.current_text,
-            character_params=payload.character,
-            plots=payload.plots,
-        )
+        if repo.is_async:
+            await repo.save_or_update_book_with_chapter_async(
+                book_id=book_id,
+                title=payload.title,
+                genre=payload.genre,
+                chapter_text=payload.current_text,
+                character_params=payload.character,
+                plots=payload.plots,
+            )
+        else:
+            repo.save_or_update_book_with_chapter(
+                book_id=book_id,
+                title=payload.title,
+                genre=payload.genre,
+                chapter_text=payload.current_text,
+                character_params=payload.character,
+                plots=payload.plots,
+            )
     except Exception as e:
         logger.warning("Failed to auto-save book during export: %s", e)
 
