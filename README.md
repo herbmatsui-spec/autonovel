@@ -17,7 +17,7 @@
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 [![Type Checked: mypy](https://img.shields.io/badge/type%20checked-mypy-blue)](https://mypy-lang.org/)
 [![Vitest](https://img.shields.io/badge/tested_with-vitest-729B1B?logo=vitest&logoColor=white)](https://vitest.dev/)
-[![Version](https://img.shields.io/badge/version-5.1.0-brightgreen?logo=semver)](https://github.com/herbmatsui-spec/autonovel/releases/tag/v5.1.0)
+[![Version](https://img.shields.io/badge/version-5.1.1-brightgreen?logo=semver)](https://github.com/herbmatsui-spec/autonovel/releases/tag/v5.1.1)
 
 <br />
 
@@ -25,7 +25,7 @@
   <img src="docs/demo.gif" alt="AutoNovel UI & Workflow Demo" width="900" style="border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
 </p>
 
-*▲ AutoNovel v5.1.0: デモアニメーション（説明用）。実際のAI生成品質・所要時間・外部サービス接続を示すものではありません。*
+*▲ AutoNovel v5.1.1: デモアニメーション（説明用）。実際のAI生成品質・所要時間・外部サービス接続を示すものではありません。*
 
 ---
 
@@ -36,6 +36,8 @@ AutoNovel は、AI を活用して Web 小説を **企画から執筆、校正�
 ### 主な特徴
 
 - **かんたんモード**：ジャンル・主人公設定だけで本文を生成
+- **二段階プロット展開（Coarse-to-Fine Expansion）**：大局骨子（テンション・事件・引き）と執筆直前の微視的演出（五感・心理・ビート詳細）を分離し、LLMの認知負荷を激減させ描写解像度を劇的に向上
+- **投機的プリフェッチ（Speculative Prefetch）**：執筆中に次話の演出ビートをバックグラウンド事前展開し、待機時間をゼロ化
 - **ワンクリック納品**：本文・設定・プロット・データを 1 つの ZIP にまとめて出力
 - **上級者 Studio**：本文編集・次話展開提案・設定参照・矛盾診断・マルチメディア管理
 - **投稿サイト整形**：なろう・カクヨム・アルファポリス向けに本文を自動変換
@@ -244,7 +246,7 @@ make clean         # キャッシュや一時DBファイルをクリーンアッ
 
 品質計画・テスト網羅率プランは [TEST_COVERAGE_PLAN.md](TEST_COVERAGE_PLAN.md) を、パイプライン統合の将来計画は [PIPELINE_UNIFICATION_PLAN.md](PIPELINE_UNIFICATION_PLAN.md) を参照してください。
 
-> **現行バージョン**: v5.1.0 (`pyproject.toml`, `frontend/package.json`, Docker イメージ `autonovel-backend:5.1.0` / `autonovel-frontend:5.1.0`)。直近のリリースノートは [CHANGELOG.md](CHANGELOG.md)。
+> **現行バージョン**: v5.1.1 (`pyproject.toml`, `frontend/package.json`, Docker イメージ `autonovel-backend:5.1.1` / `autonovel-frontend:5.1.1`)。直近のリリースノートは [CHANGELOG.md](CHANGELOG.md)。
 
 ---
 
