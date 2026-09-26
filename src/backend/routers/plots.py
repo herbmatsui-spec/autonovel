@@ -264,10 +264,13 @@ async def wizard_save(
 
         # ビートシートをPlotとして保存
         beats = req.beats if req.beats else []
+        from src.backend.database.models_foreshadowing import ForeshadowingModel
+
         for i, beat in enumerate(beats, start=1):
+            ep_num = beat.episode if beat.episode else i
             await uow.plots.create_or_replace_plot(
                 book_id=book_id,
-                ep_num=beat.episode if beat.episode else i,
+                ep_num=ep_num,
                 thought_process="wizard_creation_funnel",
                 title=beat.title,
                 summary=beat.outline,
@@ -277,7 +280,20 @@ async def wizard_save(
                 status="open",
             )
 
+            # 伏線メモが存在する場合は伏線ステートマシンテーブル（foreshadowings）へ登録
+            if beat.foreshadowing_notes and beat.foreshadowing_notes.strip():
+                fs = ForeshadowingModel(
+                    book_id=book_id,
+                    title=f"第{ep_num}話: {beat.title or '伏線'}",
+                    description=beat.foreshadowing_notes.strip(),
+                    planted_episode=ep_num,
+                    status="planted",
+                    scope="short_term" if ep_num <= 5 else "long_term",
+                )
+                uow.session.add(fs)
+
     return {"book_id": book_id, "branch_id": 1, "success": True}
+
 
 
 @router.post("/expand-beats", response_model=list[BeatItemSchema])

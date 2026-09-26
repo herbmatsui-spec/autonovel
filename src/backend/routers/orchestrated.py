@@ -1,5 +1,11 @@
 # src/backend/routers/orchestrated.py
-"""マルチエージェントオーケストレーション API エンドポイント。"""
+"""マルチエージェントオーケストレーション API エンドポイント。
+
+[DEPRECATED in v5.0+]:
+本モジュールは旧マルチエージェント生成用レガシーエンドポイントです。
+v5.0以降の正規執筆パイプラインには `src.domain.writing` および
+`src.backend.routers.easy_mode` を使用してください。
+"""
 
 from __future__ import annotations
 

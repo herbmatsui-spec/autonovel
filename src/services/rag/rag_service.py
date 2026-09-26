@@ -67,12 +67,27 @@ class GraphRAGService:
         enable_cache: bool = True,
     ) -> None:
         self._reranker = reranker
-        self._vector_store = vector_store or get_default_store()
+        self._custom_vector_store = vector_store
+        self._vector_store_instance = None
         self._last_call_stats: dict[str, Any] = {}
         self._token_budget = token_budget
         self._enable_cache = enable_cache
         self._cache: dict[str, tuple[RagContext, float]] = {}  # key -> (context, timestamp)
         self._cache_ttl = 300  # 5分
+
+    @property
+    def _vector_store(self) -> BaseVectorStore:
+        if self._custom_vector_store is not None:
+            return self._custom_vector_store
+        if self._vector_store_instance is None:
+            self._vector_store_instance = get_default_store()
+        return self._vector_store_instance
+
+    @_vector_store.setter
+    def _vector_store(self, val: BaseVectorStore | None) -> None:
+        self._custom_vector_store = val
+        self._vector_store_instance = val
+
 
     def get_reranker(self) -> Reranker:
         """遅延初期化で Reranker を返す."""

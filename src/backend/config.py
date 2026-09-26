@@ -68,6 +68,7 @@ class Settings(BaseSettings):
     CORS_ORIGINS: str = (
         "http://localhost:5173,http://localhost:8080,http://127.0.0.1:5173,http://127.0.0.1:8080"
     )
+    FRONTEND_URL: str = "http://localhost:5173"
     CORS_ALLOW_HEADERS: str = "Content-Type,Authorization,X-API-Key,Accept,Origin,X-Requested-With"
     ALLOWED_API_KEYS: str = ""
     JWT_SECRET_KEY: str | None = Field(

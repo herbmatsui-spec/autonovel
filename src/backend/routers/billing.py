@@ -1,13 +1,17 @@
+import logging
+from typing import Dict, Any
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from src.backend.config import settings
 from src.backend.database import get_async_db
 from src.backend.auth import get_current_user
 from src.backend.database.models import User
 from src.services.billing.stripe_client import StripeClient
 from src.services.billing.credit_service import CreditService
 from src.config.billing_plans import PLAN_CONFIG
-from typing import Dict, Any
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/billing", tags=["billing"])
 
 @router.get("/plans", response_model=Dict[str, Any])
@@ -61,9 +65,9 @@ async def create_checkout_session(
             detail="price_id is required"
         )
 
-    # 成功・キャンセルURLは実際のフロントエンドURLに置き換える必要がある
-    success_url = request.get("success_url", "https://your-domain.com/billing/success")
-    cancel_url = request.get("cancel_url", "https://your-domain.com/billing/cancel")
+    base_frontend = settings.FRONTEND_URL.rstrip("/")
+    success_url = request.get("success_url", f"{base_frontend}/billing/success")
+    cancel_url = request.get("cancel_url", f"{base_frontend}/billing/cancel")
 
     try:
         checkout_url = StripeClient.create_checkout_session(
@@ -75,9 +79,10 @@ async def create_checkout_session(
         )
         return {"checkout_url": checkout_url}
     except Exception as e:
+        logger.error("Failed to create checkout session: %s", e, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create checkout session: {str(e)}"
+            detail="Failed to create checkout session"
         )
 
 @router.post("/create-portal-session", response_model=Dict[str, str])
@@ -96,8 +101,8 @@ async def create_portal_session(
             detail="Stripe customer ID not found for user"
         )
 
-    # 戻りURLは実際のフロントエンドURLに置き換える必要がある
-    return_url = request.get("return_url", "https://your-domain.com/billing")
+    base_frontend = settings.FRONTEND_URL.rstrip("/")
+    return_url = request.get("return_url", f"{base_frontend}/billing")
 
     try:
         portal_url = StripeClient.create_customer_portal_session(
@@ -106,10 +111,12 @@ async def create_portal_session(
         )
         return {"portal_url": portal_url}
     except Exception as e:
+        logger.error("Failed to create portal session: %s", e, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create portal session: {str(e)}"
+            detail="Failed to create portal session"
         )
+
 
 @router.get("/transactions", response_model=Dict[str, Any])
 async def get_transactions(

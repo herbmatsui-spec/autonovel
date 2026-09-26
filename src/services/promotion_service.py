@@ -111,6 +111,42 @@ class PromotionService:
             else:
                 raise ValueError(f"Book draft not found: {book_id}")
 
+            # 昇格時にプロットから伏線ステートマシンテーブル（foreshadowings）へ初期同期
+            target_b_id = (
+                db_book_id
+                if (draft_json is not None and db_book_id is not None)
+                else (int(book_id) if str(book_id).isdigit() else None)
+            )
+            if target_b_id is not None:
+                from src.backend.database.models import Plot
+                from src.backend.database.models_foreshadowing import ForeshadowingModel
+
+                fs_stmt = ForeshadowingModel.__table__.select().where(
+                    ForeshadowingModel.book_id == target_b_id
+                )
+                fs_existing = await session.execute(fs_stmt)
+                if fs_existing.first() is None:
+                    plot_stmt = (
+                        Plot.__table__.select()
+                        .where(Plot.book_id == target_b_id)
+                        .order_by(Plot.ep_num)
+                    )
+                    plot_rows = (await session.execute(plot_stmt)).fetchall()
+                    for p_row in plot_rows:
+                        note = getattr(p_row, "detailed_blueprint", "") or ""
+                        if note and note.strip():
+                            await session.execute(
+                                ForeshadowingModel.__table__.insert().values(
+                                    book_id=target_b_id,
+                                    title=f"第{p_row.ep_num}話: {getattr(p_row, 'title', '') or '伏線'}",
+                                    description=note.strip(),
+                                    planted_episode=p_row.ep_num,
+                                    status="planted",
+                                    scope="short_term" if p_row.ep_num <= 5 else "long_term",
+                                )
+                            )
+
+
             # state_token を InternalState に永続化 (TTL 24h)
             from src.backend.database.models import InternalState
 

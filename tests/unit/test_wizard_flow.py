@@ -54,8 +54,9 @@ async def test_promotion_service_with_numeric_book_id():
     assert len(res.state_token) >= 16
 
 
-def test_wizard_promote_endpoint():
-    client = TestClient(app)
+def test_wizard_promote_endpoint(client, monkeypatch):
+    from src.backend.config import settings
+    monkeypatch.setattr(settings, "AUTH_DISABLED", True)
 
     # 認証バイパスまたは有効なAPIキーでリクエスト
     mock_response = PromotionResponse(

@@ -12,6 +12,18 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
+# ---------------------------------------------------------------------------
+# Legacy import compatibility: `src.agent.*` was purged and unified into
+# `src.agents.*` (Step 16-18), but several test modules still import from
+# `src.agent.*`. Register a module alias so those imports resolve.
+# ---------------------------------------------------------------------------
+try:
+    import src.agents as _agents_pkg
+
+    sys.modules.setdefault("src.agent", _agents_pkg)
+except Exception:
+    pass
+
 from tests.mocks.llm_adapter import LLMMocker, MockLLMAdapter
 
 
