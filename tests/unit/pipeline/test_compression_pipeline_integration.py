@@ -6,7 +6,7 @@ import pytest
 fakeredis = pytest.importorskip("fakeredis")
 
 try:
-    import spacy
+    import spacy  # noqa: F401
 except ImportError:
     pytest.skip("spacy is not available or incompatible", allow_module_level=True)
 
@@ -32,19 +32,19 @@ class TestCompressionPipelineIntegration:
     def test_emotional_stage_runs(self, vector_store, char_dict):
         """感情抽出ステージが実行されること"""
         extractor = EmotionalResidueExtractor(vector_store, char_dict)
-        
+
         # 空白モデルでテスト
         from src.pipeline.nlp_init import get_nlp_for_testing
         nlp = get_nlp_for_testing()
         if "sentencizer" not in nlp.pipe_names:
             nlp.add_pipe("sentencizer")
         extractor._nlp = nlp
-        
+
         script = "AはBを信頼していた。"
         vector = extractor.extract_and_persist("ep01", script)
-        
+
         assert vector.episode_id == "ep01"
         # Redisに保存されたか確認
-        stored = vector_store.get_latest("pipeline", ("A", "B"))
+        _ = vector_store.get_latest("pipeline", ("A", "B"))
         # 空白モデルでは依存構造がないためシグナルなしの可能性
-        # 実行エラーにならないことのみ確認
+        # 実行エラーにならないことのみ確認

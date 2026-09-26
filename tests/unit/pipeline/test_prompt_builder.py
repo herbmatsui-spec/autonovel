@@ -32,9 +32,9 @@ class TestPromptBuilder:
         """プロンプト生成テスト"""
         # 直接ベクトルを保存
         vector_store.upsert("pipeline", "ep14", sample_vector)
-        
+
         prompt = build_emotional_context_prompt(15, vector_store)  # ep15執筆時 → ep14参照
-        
+
         assert "直前話からの引き継ぎ感情" in prompt
         assert "A→B" in prompt
         assert "affection" in prompt
@@ -58,10 +58,10 @@ class TestPromptBuilder:
         vec2 = EmotionalVector(episode_id="ep14")
         vec2.set_signal(EmotionalSignal("A", "B", EmotionType.AFFECTION, -0.5, 0.8, "...", "ep14"))
         vector_store.upsert("pipeline", "ep14", vec2)
-        
+
         # annotationが優先される
         prompt = build_fused_emotional_context_prompt(15, vector_store=vector_store)
-        
+
         # annotationの値（0.3）が採用される（-0.5 は採用値としては現れない）
         assert "0.3" in prompt
         assert "A→B: 愛情(-0.5)" not in prompt
