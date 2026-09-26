@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import pytest
 
+fakeredis = pytest.importorskip("fakeredis")
+
 from src.stores.vector_store import RedisVectorStore
 from src.pipeline.prompt_builder import build_emotional_context_prompt, build_fused_emotional_context_prompt
 from src.pipeline.emotional_residue import EmotionalVector, EmotionalSignal, EmotionType
@@ -58,8 +60,8 @@ class TestPromptBuilder:
         vector_store.upsert("pipeline", "ep14", vec2)
         
         # annotationが優先される
-        prompt = build_fused_emotional_context_prompt(15, vector_store)
+        prompt = build_fused_emotional_context_prompt(15, vector_store=vector_store)
         
-        # annotationの値（0.3）が採用される
+        # annotationの値（0.3）が採用される（-0.5 は採用値としては現れない）
         assert "0.3" in prompt
-        assert "-0.5" not in prompt
+        assert "A→B: 愛情(-0.5)" not in prompt

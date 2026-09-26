@@ -53,6 +53,9 @@ class WorkflowContext(BaseModel):
     # 空 dict のままで OK。``enableIllustration`` キーがある時のみ Step 内で実処理する。
     enable_illustration: bool = False
     illustration_settings: dict[str, Any] = Field(default_factory=dict)
+    # 挿絵ポイントから実画像を生成するか（統合エンジン使用・既定 False で
+    # 既存パイプライン挙動を変えない）
+    enable_illustration_generation: bool = False
     enable_catharsis_analysis: bool = True
 
     # === 共通オプション ===

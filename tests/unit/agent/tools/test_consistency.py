@@ -1,6 +1,6 @@
-"""Unit tests for consistency tool."""
-from src.agent.memory.core_memory import CoreMemory
-from src.agent.tools.consistency_tool import check_emotional_consistency
+﻿"""Unit tests for consistency tool."""
+from src.agents.memory.core_memory import CoreMemory
+from src.agents.tools.consistency_tool import check_emotional_consistency
 from src.fusion.models import FusedValue, FusedVector
 from src.pipeline.emotional_residue import EmotionType
 

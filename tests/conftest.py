@@ -12,27 +12,19 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
-# ---------------------------------------------------------------------------
-# Legacy import compatibility: `src.agent.*` was purged and unified into
-# `src.agents.*` (Step 16-18), but several test modules still import from
-# `src.agent.*`. Register a module alias so those imports resolve.
-# ---------------------------------------------------------------------------
-try:
-    import src.agents as _agents_pkg
 
-    sys.modules.setdefault("src.agent", _agents_pkg)
-except Exception:
-    pass
+# Settings はモジュール import 時に確定するため(pytest_configure は遅すぎる)、
+# 他の import より先にテスト用の既定値を設定する。
+os.environ.setdefault("APP_ENV", "testing")
+os.environ.setdefault("AUTONOVEL_RAG_MODE", "memory")
+os.environ.setdefault("RAG_FALLBACK_MODE", "memory")
+os.environ.setdefault("AUTH_DISABLED", "true")
 
 from tests.mocks.llm_adapter import LLMMocker, MockLLMAdapter
 
 
 def pytest_configure(config):
     """テスト収集前に環境変数を設定し、早期のDB初期化を防ぐ。"""
-    os.environ.setdefault("APP_ENV", "testing")
-    os.environ.setdefault("AUTONOVEL_RAG_MODE", "memory")
-    os.environ.setdefault("RAG_FALLBACK_MODE", "memory")
-    os.environ.setdefault("AUTH_DISABLED", "true")
 
     def dummy_init_db(*args, **kwargs):
         pass

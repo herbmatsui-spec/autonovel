@@ -1,6 +1,6 @@
-"""Unit tests for MemoryManager."""
-from src.agent.memory.interfaces import MemoryEntry, WorkingFrame
-from src.agent.memory.manager import MemoryManager
+﻿"""Unit tests for MemoryManager."""
+from src.agents.memory.interfaces import MemoryEntry, WorkingFrame
+from src.agents.memory.manager import MemoryManager
 
 
 def test_get_emotional_context_fallback():

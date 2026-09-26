@@ -233,6 +233,35 @@ class UltimateHegemonyEngine(Orchestrator):
             genre=genre,
         )
 
+    async def commercial_beat_sheet_workflow(
+        self,
+        book_id: int,
+        title: str,
+        synopsis: str,
+        genre: str = "fantasy",
+        target_episodes: int = 40,
+        branch_id: int = 1,
+        reporter: Any | None = None,
+    ) -> Any:
+        from src.backend.workflows.commercial_beat_sheet_workflow import (
+            CommercialBeatSheetWorkflow,
+        )
+
+        workflow = CommercialBeatSheetWorkflow(
+            repo=self.repo,
+            prompt_manager=self.pm,
+            llm=self.generate_json,
+        )
+        return await workflow.generate(
+            book_id=book_id,
+            title=title,
+            synopsis=synopsis,
+            genre=genre,
+            target_episodes=target_episodes,
+            branch_id=branch_id,
+            reporter=reporter,
+        )
+
 
 class HookGenerationStep:
     async def execute(self, ctx: Any, engine: Any, reporter: Any) -> bool:

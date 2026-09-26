@@ -3,6 +3,8 @@ from __future__ import annotations
 import importlib
 import sys
 
+from src.infrastructure.repositories.foreshadowing_repo import DbForeshadowingRepository
+
 
 _module_map = {
     "AuditRepository": "audit",
@@ -51,6 +53,7 @@ __all__ = [
     "CharacterRepository",
     "CollabRepository",
     "CostRepository",
+    "DbForeshadowingRepository",
     "EarlyModeDraftRepository",
     "IllustrationRepository",
     "MiscRepository",

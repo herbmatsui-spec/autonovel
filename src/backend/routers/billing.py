@@ -65,9 +65,10 @@ async def create_checkout_session(
             detail="price_id is required"
         )
 
+    # クライアント指定 URL は信用しない（オープンリダイレクト防止）。
     base_frontend = settings.FRONTEND_URL.rstrip("/")
-    success_url = request.get("success_url", f"{base_frontend}/billing/success")
-    cancel_url = request.get("cancel_url", f"{base_frontend}/billing/cancel")
+    success_url = f"{base_frontend}/billing/success"
+    cancel_url = f"{base_frontend}/billing/cancel"
 
     try:
         checkout_url = StripeClient.create_checkout_session(
@@ -102,7 +103,7 @@ async def create_portal_session(
         )
 
     base_frontend = settings.FRONTEND_URL.rstrip("/")
-    return_url = request.get("return_url", f"{base_frontend}/billing")
+    return_url = f"{base_frontend}/billing"
 
     try:
         portal_url = StripeClient.create_customer_portal_session(

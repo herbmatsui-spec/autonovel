@@ -3,6 +3,13 @@ from __future__ import annotations
 
 import pytest
 
+fakeredis = pytest.importorskip("fakeredis")
+
+try:
+    import spacy
+except ImportError:
+    pytest.skip("spacy is not available or incompatible", allow_module_level=True)
+
 from src.stores.vector_store import RedisVectorStore
 from src.pipeline.emotional_residue import EmotionalResidueExtractor
 

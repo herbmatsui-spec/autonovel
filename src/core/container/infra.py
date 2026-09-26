@@ -6,7 +6,6 @@ config.container.Container の責務を引き継ぎ、DB・設定・ベクトル
 from __future__ import annotations
 
 import asyncio
-import logging
 import os
 
 from dependency_injector import containers, providers
@@ -22,13 +21,10 @@ from src.core.spi.vector_store.provider_factory import VectorStoreFactory
 from src.core.spi.image.provider_factory import ImageProviderFactory
 
 def _get_chroma_client_provider():
+    from src.backend.config import settings
     from src.services.vector_store.chroma import ChromaClientProvider
-    return ChromaClientProvider(db_path="./chroma_db")
 
-
-def _get_vector_store():
-    from src.services.vector_store import get_default_store
-    return get_default_store()
+    return ChromaClientProvider(db_path=settings.CHROMA_DB_PATH)
 
 
 def _get_cooldown():
@@ -37,6 +33,13 @@ def _get_cooldown():
 
 
 class InfraContainer(containers.DeclarativeContainer):
+    wiring_config = containers.WiringConfiguration(
+        modules=[
+            "src.services.prompt_version_service",
+            "src.services.state_manager",
+            "src.backend.database.uow",
+        ]
+    )
 
     config: providers.Singleton = providers.Singleton(GlobalConfigModel.load)
 
@@ -49,7 +52,10 @@ class InfraContainer(containers.DeclarativeContainer):
 
     chroma_client_provider: providers.Singleton = providers.Singleton(_get_chroma_client_provider)
 
-    vector_store: providers.Singleton = providers.Singleton(_get_vector_store)
+    vector_store: providers.Singleton = providers.Singleton(
+        "src.services.vector_store.ChromaVectorStore",
+        client_provider=chroma_client_provider,
+    )
 
     audit_logger: providers.Singleton = providers.Singleton(lambda: None)
 

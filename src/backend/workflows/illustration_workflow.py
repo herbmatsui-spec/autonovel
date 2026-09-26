@@ -15,11 +15,31 @@ logger = logging.getLogger(__name__)
 
 
 class IllustrationWorkflow(BaseWorkflow):
-    """挿絵制作ワークフロー: 単一またはバッチでの画像生成を管理"""
+    """挿絵制作ワークフロー: 単一またはバッチでの画像生成を管理。
 
-    def __init__(self, illustration_agent: IllustrationAgent, **kwargs):
+    生成は統合エンジン（`UnifiedIllustrationGenerator`）が担う。種別ごとの
+    違いはこのワークフローで switch するだけ（エンジン本体は種別分岐しない）。
+    """
+
+    def __init__(
+        self,
+        illustration_agent: IllustrationAgent,
+        generator: Any = None,
+        **kwargs,
+    ):
         super().__init__(**kwargs)
         self.illustration_agent = illustration_agent
+        # 統合エンジンは Agent が保持（未設定なら Agent 側を利用）
+        self._generator = generator
+        #: 進捗計算用の章数キャッシュ（`execute` で更新）
+        self._chapter_count = 0
+
+    @property
+    def generator(self) -> Any:
+        """統合エンジンのインスタンス（Agent から借りる）。"""
+        if self._generator is None:
+            self._generator = getattr(self.illustration_agent, "generator", None)
+        return self._generator
 
     async def generate_illustrations(self, chapter_text: str, **kwargs) -> list[dict[str, Any]]:
         """
@@ -78,51 +98,61 @@ class IllustrationWorkflow(BaseWorkflow):
             return {"status": "skipped", "message": "Illustrations disabled"}
 
         results = []
+        book_ctx = await self._load_book_context(book_id)
+        safety = self._determine_safety_level(settings)
+        model = self._resolve_model(settings)
+        chapters = await self.repo.get_chapters(book_id) if self.repo else []
+        self._chapter_count = len(chapters)
+        total_steps = self._count_planned_steps(settings)
+        done_steps = 0
+
+        def _advance(message: str) -> None:
+            nonlocal done_steps
+            done_steps += 1
+            if total_steps:
+                reporter.update_progress(done_steps / total_steps, 1, message)
 
         # 1. 表紙の生成
         if settings.get("generateCover", True):
-            reporter.update_progress(0, 1, "表紙イラストを生成中...")
+            _advance("表紙イラストを生成中...")
             cover_request = IllustrationRequest(
                 book_id=book_id,
                 illustration_type=IllustrationType.COVER,
-                model=IllustrationModel(settings.get("illustrationModel", "auto").lower()),
-                safety_level=self._determine_safety_level(settings),
+                model=model,
+                safety_level=safety,
+                aspect_ratio=settings.get("coverAspectRatio", "2:3"),
+                book_context=book_ctx,
             )
-            res = await self.illustration_agent.run(request=cover_request)
-            if res["status"] == "success":
-                results.append(res["result"])
+            res = await self._generate_one(cover_request)
+            if res is not None:
+                results.append(res)
             else:
-                logger.error(f"Cover generation failed: {res.get('message')}")
+                logger.error("Cover generation failed")
 
-        # 2. 話数ごとの挿絵生成 (バッチ処理)
+        # 2. 话数ごとの挿絵生成 (バッチ処理)
         if settings.get("generateEpisodeIllustrations", False):
-            interval = settings.get("episodeInterval", 3)
-
-            # 本の全エピソード数を取得 (repo経由)
-            chapters = await self.repo.get_chapters(book_id)
+            interval = max(1, int(settings.get("episodeInterval", 3) or 3))
             total_chapters = len(chapters)
 
             if total_chapters > 0:
-                target_chapters = range(1, total_chapters + 1, interval)
-                total_steps = len(target_chapters)
+                target_chapters = list(range(1, total_chapters + 1, interval))
 
-                for i, ep_num in enumerate(target_chapters):
-                    reporter.update_progress(
-                        (i + 1) / total_steps, 1, f"第{ep_num}話の挿絵を生成中..."
-                    )
+                for ep_num in target_chapters:
+                    _advance(f"第{ep_num}話の挿絵を生成中...")
 
                     ep_request = IllustrationRequest(
                         book_id=book_id,
                         illustration_type=IllustrationType.EPISODE,
                         episode_number=ep_num,
-                        model=IllustrationModel(settings.get("illustrationModel", "auto").lower()),
-                        safety_level=self._determine_safety_level(settings),
+                        model=model,
+                        safety_level=safety,
+                        book_context={**book_ctx, "scene_text": self._chapter_text(chapters, ep_num)},
                     )
-                    res = await self.illustration_agent.run(request=ep_request)
-                    if res["status"] == "success":
-                        results.append(res["result"])
+                    res = await self._generate_one(ep_request)
+                    if res is not None:
+                        results.append(res)
                     else:
-                        logger.error(f"Episode {ep_num} generation failed: {res.get('message')}")
+                        logger.error(f"Episode {ep_num} generation failed")
 
                     # 各話の 6 コマ要約漫画も生成する (設定で有効な場合)
                     if settings.get("generateYonkoma", False):
@@ -132,9 +162,132 @@ class IllustrationWorkflow(BaseWorkflow):
                             settings=settings,
                             results=results,
                             reporter=reporter,
+                            book_ctx=book_ctx,
+                            model=model,
+                            safety=safety,
+                            progress=self._progress_cb(_advance),
+                        )
+
+                    # 24コマ漫画シート（設定で有効な場合）
+                    if settings.get("generateManga24", False):
+                        await self._generate_manga_24panel(
+                            book_id=book_id,
+                            ep_num=ep_num,
+                            settings=settings,
+                            results=results,
+                            reporter=reporter,
+                            book_ctx=book_ctx,
+                            model=model,
+                            safety=safety,
+                            chapters=chapters,
+                            progress=self._progress_cb(_advance),
                         )
 
         return {"status": "success", "illustrations": results}
+
+    # ---- 設定 / 補助 ----
+
+    @staticmethod
+    def _progress_cb(advance: Any) -> Any:
+        """`advance` をそのまま渡す（呼び出し側の進捗を保つ）。"""
+        return advance
+
+    async def _generate_one(self, request: IllustrationRequest) -> Any:
+        """1件生成して永続化する。失敗しても例外は投げない。"""
+        agent = self.illustration_agent
+        if agent is None:
+            return None
+        try:
+            res = await agent.run(request=request)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Illustration generation raised: %s", exc)
+            return None
+        if not isinstance(res, dict):
+            return res
+        if res.get("status") == "success":
+            return res.get("result")
+        logger.error("Illustration generation failed: %s", res.get("message"))
+        return None
+
+    def _count_planned_steps(self, settings: dict[str, Any]) -> int:
+        """進捗計算用の概算ステップ数（0 なら進捗計算を省略する）。"""
+        total = 1 if settings.get("generateCover", True) else 0
+        if settings.get("generateEpisodeIllustrations", False) and self._chapter_count:
+            interval = max(1, int(settings.get("episodeInterval", 3) or 3))
+            total += (self._chapter_count + interval - 1) // interval
+        return total
+
+    async def _load_book_context(self, book_id: int) -> dict[str, str]:
+        """書籍のタイトル/ジャンル等を読み込む（失敗しても空で継続）。"""
+        if self.repo is None:
+            return {}
+        try:
+            book = await self.repo.get_book(book_id)
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("Failed to load book context for book %s: %s", book_id, exc)
+            return {}
+        if book is None:
+            return {}
+        return {
+            "title": getattr(book, "title", "") or "",
+            "genre": getattr(book, "genre", "") or "",
+        }
+
+    @staticmethod
+    def _chapter_text(chapters: Any, ep_num: int) -> str:
+        """章リストから本文を取り出す（見つからなければ空文字）。"""
+        for chapter in chapters or []:
+            number = getattr(chapter, "number", None) or getattr(chapter, "episode_number", None)
+            if number is None or int(number) == int(ep_num):
+                return getattr(chapter, "content", "") or ""
+        return ""
+
+    @staticmethod
+    def _resolve_model(settings: dict[str, Any]) -> IllustrationModel:
+        raw = str(settings.get("illustrationModel", "auto") or "auto").lower()
+        try:
+            return IllustrationModel(raw)
+        except ValueError:
+            return IllustrationModel.AUTO
+
+    async def _generate_manga_24panel(
+        self,
+        *,
+        book_id: int,
+        ep_num: int,
+        settings: dict[str, Any],
+        results: list[Any],
+        reporter: Any,
+        book_ctx: dict[str, str],
+        model: IllustrationModel,
+        safety: SafetyLevel,
+        chapters: Any,
+        progress: Any = None,
+    ) -> None:
+        """1話分の 24 コマ漫画シートを生成する（1枚 = 1 API 呼び出し）。"""
+        from src.services.illustration.strategies.manga24 import TOTAL_PANELS
+
+        episode_text = self._chapter_text(chapters, ep_num)
+        if not episode_text:
+            return
+        if progress is not None:
+            progress(f"第{ep_num}話の24コマ漫画シートを生成中...")
+
+        panels = min(max(1, int(settings.get("manga24Panels", TOTAL_PANELS) or TOTAL_PANELS)), TOTAL_PANELS)
+        request = IllustrationRequest(
+            book_id=book_id,
+            illustration_type=IllustrationType.MANGA_24PANEL,
+            episode_number=ep_num,
+            scene_text=episode_text,
+            book_context=book_ctx,
+            model=model,
+            safety_level=safety,
+            aspect_ratio=settings.get("manga24AspectRatio", "2:3"),
+            panels=panels,
+        )
+        result = await self._generate_one(request)
+        if result is not None:
+            results.append(result)
 
     async def _generate_episode_yonkoma(
         self,
@@ -144,6 +297,10 @@ class IllustrationWorkflow(BaseWorkflow):
         settings: dict[str, Any],
         results: list[Any],
         reporter: Any,
+        book_ctx: dict[str, str] | None = None,
+        model: IllustrationModel | None = None,
+        safety: SafetyLevel | None = None,
+        progress: Any = None,
     ) -> None:
         """1話分の本文を取得し、6 コマ要約漫画を生成する。"""
         try:
@@ -154,14 +311,9 @@ class IllustrationWorkflow(BaseWorkflow):
         if chapter is None or not getattr(chapter, "content", None):
             return
 
-        book_ctx: dict[str, str] = {}
-        try:
-            book = await self.repo.get_book(book_id)
-            if book is not None:
-                book_ctx["title"] = getattr(book, "title", "") or ""
-                book_ctx["genre"] = getattr(book, "genre", "") or ""
-        except Exception as exc:  # noqa: BLE001
-            logger.debug(f"Yonkoma: failed to load book context for book {book_id}: {exc}")
+        ctx: dict[str, str] = dict(book_ctx or {})
+        if not ctx:
+            ctx = await self._load_book_context(book_id)
 
         panels = max(3, min(int(settings.get("yonkomaPanels", 6) or 6), 6))
         request = IllustrationRequest(
@@ -169,38 +321,28 @@ class IllustrationWorkflow(BaseWorkflow):
             illustration_type=IllustrationType.YONKOMA,
             episode_number=ep_num,
             scene_text=getattr(chapter, "content", ""),
-            book_context=book_ctx,
-            model=IllustrationModel(settings.get("illustrationModel", "auto").lower()),
-            safety_level=self._determine_safety_level(settings),
+            book_context=ctx,
+            model=model or self._resolve_model(settings),
+            safety_level=safety or self._determine_safety_level(settings),
             panels=panels,
         )
-        reporter.update_progress(0, 1, f"第{ep_num}話の6コマ要約を生成中...")
-        result = await self.illustration_agent.generate_episode_yonkoma(
-            episode_text=getattr(chapter, "content", ""),
-            request=request,
-            panels=panels,
-        )
-        # DB へ永続化
-        illustration_id = None
-        if self.illustration_agent.repo is not None and hasattr(
-            self.illustration_agent.repo, "create_illustration"
-        ):
-            try:
-                illustration_id = await self.illustration_agent.repo.create_illustration(
-                    book_id=book_id,
-                    illustration_type=IllustrationType.YONKOMA.value,
-                    image_url=result.image_url,
-                    prompt=result.prompt,
-                    episode_number=ep_num,
-                    character_id=None,
-                    model=result.model_used,
-                    safety_level=request.safety_level.value,
-                    generation_time_ms=result.generation_time_ms,
-                )
-                result.illustration_id = illustration_id
-            except Exception as e:  # noqa: BLE001
-                logger.warning(f"Failed to persist yonkoma: {e}")
-        results.append(result)
+        if progress is not None:
+            progress(f"第{ep_num}話の6コマ要約を生成中...")
+
+        agent = self.illustration_agent
+        if agent is None:
+            return
+        try:
+            result = await agent.generate_episode_yonkoma(
+                episode_text=getattr(chapter, "content", ""),
+                request=request,
+                panels=panels,
+            )
+        except Exception as e:  # noqa: BLE001
+            logger.warning("Yonkoma generation failed for episode %s: %s", ep_num, e)
+            return
+        if result is not None:
+            results.append(result)
 
     def _determine_safety_level(self, settings: dict[str, Any]) -> SafetyLevel:
         """設定に基づいてセーフティレベルを決定"""

@@ -1,8 +1,8 @@
-"""Integration tests for agent memory API."""
+﻿"""Integration tests for agent memory API."""
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from src.agent.memory.manager import MemoryManager
+from src.agents.memory.manager import MemoryManager
 from src.api.agent_memory import router, set_agent_memory_manager
 
 

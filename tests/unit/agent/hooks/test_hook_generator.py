@@ -1,6 +1,6 @@
-"""Unit tests for hook generator."""
-from src.agent.hooks.hook_generator import generate_hooks
-from src.agent.memory.core_memory import CoreMemory
+﻿"""Unit tests for hook generator."""
+from src.agents.hooks.hook_generator import generate_hooks
+from src.agents.memory.core_memory import CoreMemory
 
 
 def test_generate_hooks_from_fear():

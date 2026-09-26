@@ -3,8 +3,9 @@
 > **Slug**: `PLAN_I1_UNIFIED_ILLUSTRATION_ENGINE_24STEPS`
 > **対象**: イラスト機能3系統（Traditional / IllustrationPoint / Manga24）の統合
 > **方針**: 方向性1（統一インターフェース＋プラガブルバックエンド）＋ 生成モデルは **NanoBanana2Lite に全種別統一**（差し替え容易）
-> **ステータス**: 📋 計画確定・実装待ち
-> **作成日**: 2026-09-26
+> **ステータス**: ✅ **全24ステップ実装完了**（2026-09-26）
+> **関連ADR**: `docs/adr/002-unified-illustration-engine.md`
+> **テスト**: ユニット119件 / リグレッション111件 / E2E 8件 = **238件 PASS**
 
 ---
 
@@ -622,11 +623,78 @@ Step 18 (配線) ─────────────────────
 
 ## 10. 即時アクション（今日やること）
 
-- [ ] Step 1: `config/image_models.py` を作成（モデルカタログ SSOT）
-- [ ] Step 7: `strategies/base.py` の禁止句・安全修飾・ジャンルスタイルを**既存 `prompts.py` から import** して作る（二重定義回避のpractice）
-- [ ] Step 21 の骨格: `tests/regression/test_unified_illustration_regression.py` を**R-01 / R-02 / R-07 の3ケースだけ**先に書いて「守りたい仕様」を明文化（**テストを先に書く**）
-- [ ] Step 5 の `UnifiedIllustrationConfig.from_env()` を実装し、`AUTONOVEL_IMAGE_MODEL` の読取を確認
+- [x] Step 1: `config/image_models.py` を作成（モデルカタログ SSOT）
+- [x] Step 7: `strategies/base.py` の禁止句・安全修飾・ジャンルスタイルを**既存 `prompts.py` から import** して作る（二重定義回避のpractice）
+- [x] Step 21 の骨格: `tests/regression/test_unified_illustration_regression.py` を**R-01 / R-02 / R-07 の3ケースだけ**先に書いて「守りたい仕様」を明文化（**テストを先に書く**）
+- [x] Step 5 の `UnifiedIllustrationConfig.from_env()` を実装し、`AUTONOVEL_IMAGE_MODEL` の読取を確認
 
 ---
 
-**承認待ち**: この計画で実装を開始してよいか？ 修正点があれば指示を。特に「R-01〜R-18 のテスト契約」と「Step 15/16/17 の後方互換方針」について確認したい。
+## 11. 実装結果（2026-09-26 完了）
+
+### 11.1 実装したファイル
+
+**新規（14）**
+| ファイル | 役割 |
+|:---|:---|
+| `config/image_models.py` | モデルカタログ SSOT（既定 `nanobanana2lite`） |
+| `src/services/illustration/config.py` | `UnifiedIllustrationConfig`（差し替えは1行） |
+| `src/services/illustration/clients/{base,gemini_image_client,legacy_imagen_client,mock_client,factory}.py` | クライアント境界 |
+| `src/services/illustration/strategies/{base,cover,character,episode,yonkoma6,manga24}.py` | 種別プロンプト戦略 |
+| `src/services/illustration/{unified_generator,quality_gate,upscaler,typesetter,character_ref,wiring}.py` | エンジン・後処理・配線 |
+
+**変更（8）**
+| ファイル | 変更 |
+|:---|:---|
+| `src/models/illustration.py` | `MANGA_24PANEL` 追加、`image_path` / `quality` / `final_path` 追加 |
+| `src/agents/illustration_agent.py` | エンジン委譲（`image_service` 後方互換・戻り値形状維持・重複プロンプト削除） |
+| `src/backend/workflows/illustration_workflow.py` | 5種別対応・`generateManga24` 追加・失敗非致命化 |
+| `src/services/pipeline_steps.py` | `IllustrationPointGenerationStep` に生成実行（既定OFF） |
+| `src/services/pipeline_base.py` | `enable_illustration_generation` 追加 |
+| `src/services/illustration/prompts.py` | 6コマプロンプトの矛盾を解消（フキダシ禁止） |
+| `src/services/manga/{quality_gate,upscaler,typesetter}.py` | 統合実装へ委譲する shim 化 |
+| `pyproject.toml` | `image` extra（Pillow）追加 |
+
+**テスト（新規6 / 既存無変更）**
+`tests/unit/illustration/{test_config,test_strategies,test_clients_gemini,test_client_contract,test_unified_generator}.py`、
+`tests/regression/test_unified_illustration_regression.py`、
+`tests/e2e/test_illustration_full_flow_mock.py`
+
+### 11.2 実装中に見つかった実バグ（テストが先に見つけた）
+
+1. **6コマプロンプトの自己矛盾** — 「speech bubbles を控えめに」ながら「text を描画しない」指定。フキダシ禁止へ修正
+2. **`panels=0` が既定値 24 に化ける** — `or` による falsy 変換が原因。`None` 判定へ修正
+3. **Legacy 経路が明示モデル指定を上書き** — モデル差し替えと旧 tier 解決が衝突。フォールバック時のみ適用するよう分離
+4. **QualityGate の docstring/コメントの文字化け** — 実装中の文字化けを修正
+
+### 11.3 残タスク（別計画）
+
+**A. 未統合の第4系統（重要な発見）**
+
+当初の精査で見落と，但是现在は**さらに1つのクライアント抽象**が存在する。
+
+| ファイル | 内容 |
+|:---|:---|
+| `src/services/illustration/base.py` | `ImageGenerationRequest` / `ImageGenerationResult`（独自DTO） |
+| `src/services/illustration/factory.py` | `get_image_client()` / `get_image_adapter()` |
+| `src/services/illustration/{dalle_client,sd_client,mock_client}.py` | DALL-E3 / SD WebUI / Mock |
+| `src/services/illustration/adapters/{base,dalle3_adapter,fal_adapter,mock_adapter}.py` | アダプタ層（Fal AI 等） |
+
+今回の `clients/` はこの系統とは**別レイヤ**であり、名义が衝突する
+`MockImageClient` が両方に存在する。統合先は
+**`src/services/illustration/factory.py` + `adapters/`**（クライアント抽象の
+既存SSOT）へ寄せるのが妥当。
+
+→ 別計画で `clients/` と `factory.py`/`adapters/` を統合する。
+   参照テスト: `tests/unit/test_image_clients.py`,
+   `tests/unit/services/test_image_adapters.py`,
+   `tests/integration/test_zero_cost_pipeline.py`,
+   `tests/integration/test_phase2_multimodal_e2e.py`
+
+**B. その他**
+- `src/services/manga/MangaPipeline` 本体の段階削除（S3）
+- `src/services/image_service.py` / `src/infrastructure/repositories/illustration.py` 内の
+  ハードコード Imagen ID のカタログ参照化（移行対象外として R-16 の対象から除外中）
+- 実 API での eyeball 検証（S1: 5種別の実生成確認）
+
+**承認済み**: 全24ステップの実装が完了しました。

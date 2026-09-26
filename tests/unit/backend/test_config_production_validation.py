@@ -11,6 +11,7 @@ def test_production_rejects_auth_disabled():
             AUTH_DISABLED=True,
             JWT_SECRET_KEY="a" * 64,
             DATABASE_URL="postgresql://test:test@localhost:5432/test",
+            FRONTEND_URL="https://example.com",
         )
 
 
@@ -19,8 +20,10 @@ def test_production_rejects_weak_jwt():
     with pytest.raises(ValidationError, match="JWT_SECRET_KEY"):
         Settings(
             APP_ENV="production",
+            AUTH_DISABLED=False,
             JWT_SECRET_KEY="change-in-prod",
             DATABASE_URL="postgresql://test:test@localhost:5432/test",
+            FRONTEND_URL="https://example.com",
         )
 
 
@@ -29,8 +32,22 @@ def test_production_rejects_sqlite():
     with pytest.raises(ValidationError, match="SQLite"):
         Settings(
             APP_ENV="production",
+            AUTH_DISABLED=False,
             JWT_SECRET_KEY="a" * 64,
             DATABASE_URL="sqlite:///test.db",
+            FRONTEND_URL="https://example.com",
+        )
+
+
+def test_production_rejects_localhost_frontend_url():
+    from src.backend.config import Settings
+    with pytest.raises(ValidationError, match="FRONTEND_URL"):
+        Settings(
+            APP_ENV="production",
+            AUTH_DISABLED=False,
+            JWT_SECRET_KEY="a" * 64,
+            DATABASE_URL="postgresql://test:test@localhost:5432/test",
+            FRONTEND_URL="http://localhost:5173",
         )
 
 
@@ -38,3 +55,4 @@ def test_development_allows_defaults():
     from src.backend.config import Settings
     s = Settings(APP_ENV="development")
     assert s.APP_ENV == "development"
+

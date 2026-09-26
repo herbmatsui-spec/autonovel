@@ -28,7 +28,8 @@ async def test_promotion_service_foreshadowing_sync(real_db_manager):
         branch_id=1,
         ep_num=1,
         title="第1話 旅立ち",
-        detailed_blueprint="古びたペンダントの謎（実は王家の紋章）",
+        detailed_blueprint="",
+        foreshadowing_notes="古びたペンダントの謎（実は王家の紋章）",
         status="planned",
     )
     plot2 = Plot(
@@ -37,6 +38,7 @@ async def test_promotion_service_foreshadowing_sync(real_db_manager):
         ep_num=2,
         title="第2話 襲撃",
         detailed_blueprint="",
+        foreshadowing_notes="",
         status="planned",
     )
     plot3 = Plot(
@@ -44,10 +46,20 @@ async def test_promotion_service_foreshadowing_sync(real_db_manager):
         branch_id=1,
         ep_num=3,
         title="第3話 邂逅",
-        detailed_blueprint="謎の行商人が残した合言葉",
+        detailed_blueprint="",
+        foreshadowing_notes="謎の行商人が残した合言葉",
         status="planned",
     )
-    session.add_all([plot1, plot2, plot3])
+    plot4 = Plot(
+        book_id=book.id,
+        branch_id=1,
+        ep_num=4,
+        title="第4話 設計図のみ",
+        detailed_blueprint="これは各話の設計図であり、伏線メモではない。",
+        foreshadowing_notes="",
+        status="planned",
+    )
+    session.add_all([plot1, plot2, plot3, plot4])
     session.commit()
 
     # 2. 昇格実行前の伏線件数は 0
@@ -110,3 +122,4 @@ async def test_promotion_service_foreshadowing_sync(real_db_manager):
     assert fs_after[1].planted_episode == 3
     assert "謎の行商人が残した合言葉" in fs_after[1].description
     assert fs_after[1].status == "planted"
+    assert fs_after[1].scope == "short_term"

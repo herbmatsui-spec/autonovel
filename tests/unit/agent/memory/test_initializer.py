@@ -1,5 +1,5 @@
-"""Unit tests for memory initializer."""
-from src.agent.memory.initializer import initialize_memory_for_project
+﻿"""Unit tests for memory initializer."""
+from src.agents.memory.initializer import initialize_memory_for_project
 from src.stores.vector_store import InMemoryVectorStore
 
 

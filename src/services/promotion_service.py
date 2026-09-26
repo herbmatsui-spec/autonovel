@@ -3,6 +3,7 @@ import secrets
 from datetime import datetime, timedelta, timezone
 from sqlalchemy import func
 
+from src.config.commercial_beat_sheet import get_scope_for_episode
 from src.domain.entities.easy_mode import PromotionRequest, PromotionResponse
 
 logger = logging.getLogger("producer_handoff")
@@ -119,32 +120,31 @@ class PromotionService:
             )
             if target_b_id is not None:
                 from src.backend.database.models import Plot
-                from src.backend.database.models_foreshadowing import ForeshadowingModel
-
-                fs_stmt = ForeshadowingModel.__table__.select().where(
-                    ForeshadowingModel.book_id == target_b_id
+                from src.infrastructure.repositories.foreshadowing_repo import (
+                    DbForeshadowingRepository,
                 )
-                fs_existing = await session.execute(fs_stmt)
-                if fs_existing.first() is None:
-                    plot_stmt = (
-                        Plot.__table__.select()
-                        .where(Plot.book_id == target_b_id)
-                        .order_by(Plot.ep_num)
+
+                # 伏線メモは専用カラムにだけ入っている。detailed_blueprint は
+                # 各話ブループリント本文なので、絶対に伏線ソースにしないこと。
+                plot_stmt = (
+                    Plot.__table__.select()
+                    .where(Plot.book_id == target_b_id)
+                    .order_by(Plot.ep_num)
+                )
+                plot_rows = (await session.execute(plot_stmt)).fetchall()
+                fs_repo = DbForeshadowingRepository(session)
+                for p_row in plot_rows:
+                    note = (getattr(p_row, "foreshadowing_notes", "") or "").strip()
+                    if not note:
+                        continue
+                    ep_num = getattr(p_row, "ep_num", 0) or 0
+                    await fs_repo.add_if_absent(
+                        book_id=target_b_id,
+                        title=f"第{ep_num}話: {getattr(p_row, 'title', '') or '伏線'}",
+                        description=note,
+                        planted_episode=ep_num,
+                        scope=get_scope_for_episode(ep_num),
                     )
-                    plot_rows = (await session.execute(plot_stmt)).fetchall()
-                    for p_row in plot_rows:
-                        note = getattr(p_row, "detailed_blueprint", "") or ""
-                        if note and note.strip():
-                            await session.execute(
-                                ForeshadowingModel.__table__.insert().values(
-                                    book_id=target_b_id,
-                                    title=f"第{p_row.ep_num}話: {getattr(p_row, 'title', '') or '伏線'}",
-                                    description=note.strip(),
-                                    planted_episode=p_row.ep_num,
-                                    status="planted",
-                                    scope="short_term" if p_row.ep_num <= 5 else "long_term",
-                                )
-                            )
 
 
             # state_token を InternalState に永続化 (TTL 24h)

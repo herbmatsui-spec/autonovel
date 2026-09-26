@@ -18,12 +18,15 @@ logger = logging.getLogger(__name__)
 
 
 class MockImageClient:
-    """常に成功するダミークライアント。"""
+    """常に成功するダミークライアント。
 
-    name = "mock"
+    `name` は差し替え元のクライアント種別を名乗る（契約テストで
+    「どのバックエンドが選ばれたか」を判定できるようにするため）。
+    """
 
-    def __init__(self, model_id: str = "mock") -> None:
+    def __init__(self, model_id: str = "mock", name: str = "mock") -> None:
         self.model_id = model_id
+        self.name = name
         self.calls: list[dict] = []
 
     async def generate(

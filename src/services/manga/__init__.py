@@ -1,4 +1,12 @@
-"""NanoBanana 2 Lite Manga Pipeline package."""
+"""NanoBanana 2 Lite Manga Pipeline package（1話1枚・24コマ一括生成）。
+
+.. deprecated::
+   本パッケージの `quality_gate` / `upscaler` / `typesetter` は統合
+   イラスト生成エンジン（`src/services/illustration/`）へ委譲する薄い
+   互換 shim になった。新たなコードは
+   `src.services.illustration.unified_generator` を使用すること。
+   `MangaPipeline` は「1話1枚」の専用パイプラインとして当面温存する。
+"""
 from src.services.manga.config import MangaPipelineConfig
 from src.services.manga.models import (
     AspectRatio,

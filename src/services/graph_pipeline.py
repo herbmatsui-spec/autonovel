@@ -96,7 +96,8 @@ class GraphPipelineService:
         return self._vector_store_instance
 
     @_vector_store.setter
-    def _vector_store(self, val):
+    def _vector_store(self, val: Any | None) -> None:
+        # テストからの差し込み用。val が None の場合は「まだ未初期化」として遅延生成させる。
         self._vector_store_instance = val
 
     async def process_chapter_knowledge(
@@ -438,7 +439,6 @@ class GraphPipelineService:
     ) -> int:
         """エッジデータの保存（リレーショナル対応／互換性スタブ）."""
         return len(edges)
-        return count
 
     def _check_idempotency(self, session: Session, idempotency_key: str) -> bool:
         """冪等性キーが既に処理済みかチェック."""

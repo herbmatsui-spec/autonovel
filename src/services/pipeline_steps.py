@@ -6,7 +6,7 @@ FullAutoWorkflow / EasyModePipeline から移植・統合
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from src.backend.background import StatusReporter
@@ -656,7 +656,16 @@ class HookGenerationStep(WorkflowStep):
 
 
 class IllustrationPointGenerationStep(WorkflowStep):
-    """挿絵ポイント詳細生成 Step (ストーリーとキャラクターから挿絵の指示を生成)"""
+    """挿絵ポイント詳細生成 Step (ストーリーとキャラクターから挿絵の指示を生成)
+
+    統合イラスト生成エンジン（``illustration_generator``）を渡すと、生成した
+    ポイントから ``IllustrationRequest`` を組み立てて実画像も生成する。
+    既存挙動を壊さないため、画像生成は ``ctx.enable_illustration_generation``
+    が True のときだけ実行する（既定 False）。
+    """
+
+    def __init__(self, illustration_generator: Any = None) -> None:
+        self.illustration_generator = illustration_generator
 
     async def execute(
         self, ctx: WorkflowContext, engine: UltimateHegemonyEngine, reporter: StatusReporter
@@ -752,10 +761,131 @@ class IllustrationPointGenerationStep(WorkflowStep):
                 f"🎨 挿絵ポイント生成完了: {len(illustration_points)}点の挿絵指示を生成",
                 "info",
             )
+
+            # 6. （任意）統一エンジンで実画像を生成する
+            await self._generate_images_from_points(ctx, reporter)
             return True
         except Exception as e:
             reporter.report(f"⚠️ 挿絵ポイント生成エラー (継続): {e}", "warning")
             return True  # 失敗してもパイプライン継続
+
+    # ---- 挿絵ポイント → 画像生成（統合エンジン） ----
+
+    async def _generate_images_from_points(
+        self, ctx: WorkflowContext, reporter: StatusReporter
+    ) -> None:
+        """``ctx.illustration_points`` から画像生成リクエストを作って実行する。
+
+        例外は握りつぶして**必ずパイプラインを継続**させる（イラスト失敗で
+        小説生成が止まらないようにするのが本 Step の契約）。
+        """
+        if self.illustration_generator is None:
+            return
+        if not getattr(ctx, "enable_illustration_generation", False):
+            return
+
+        try:
+            requests = self._build_requests_from_points(ctx)
+            if not requests:
+                reporter.report("🎨 挿絵画像生成: 対象の挿絵ポイントがなかったためスキップ", "info")
+                return
+
+            reporter.report(f"🎨 挿絵画像生成開始: {len(requests)}件", "info")
+            results = await self.illustration_generator.generate_batch(requests)
+            succeeded = [r for r in results if r is not None]
+            # `WorkflowContext` の拡張出力欄へ積む（他Stepと同じ契約）
+            ctx.illustrations.extend(
+                {
+                    "illustration_type": r.request.illustration_type.value
+                    if hasattr(r.request.illustration_type, "value")
+                    else str(r.request.illustration_type),
+                    "episode_number": r.request.episode_number,
+                    "image_url": r.image_url,
+                    "image_path": str(r.image_path) if r.image_path else None,
+                    "prompt": r.prompt,
+                    "model": r.model_used,
+                    "generation_time_ms": r.generation_time_ms,
+                    "estimated_cost_usd": r.estimated_cost_usd,
+                    "quality": r.quality,
+                }
+                for r in succeeded
+            )
+            reporter.report(
+                f"✅ 挿絵画像生成完了: {len(succeeded)}/{len(requests)}件",
+                "info" if succeeded else "warning",
+            )
+        except Exception as e:  # noqa: BLE001
+            reporter.report(f"⚠️ 挿絵画像生成エラー (継続): {e}", "warning")
+
+    def _build_requests_from_points(self, ctx: WorkflowContext) -> list:
+        """``IllustrationPoint`` → ``IllustrationRequest`` に変換する。
+
+        例外を投げないこと（不正なポイントがあっても継続する）。
+        """
+        from src.models.illustration import IllustrationRequest, IllustrationType
+
+        requests = []
+        for point in getattr(ctx, "illustration_points", None) or []:
+            # `IllustrationPoint` 以外（型違い・破損要素）は黙ってスキップする
+            if not hasattr(point, "scene_description"):
+                continue
+            try:
+                page = str(getattr(point, "page", "") or "")
+                expressions = getattr(point, "expressions", None) or {}
+                scene_description = (
+                    getattr(point, "scene_description", "") or ""
+                )
+                extras = [
+                    f"composition: {getattr(point, 'composition', '')}"
+                    if getattr(point, "composition", "")
+                    else "",
+                    f"props: {getattr(point, 'props', '')}"
+                    if getattr(point, "props", "")
+                    else "",
+                    f"background: {getattr(point, 'background', '')}"
+                    if getattr(point, "background", "")
+                    else "",
+                ]
+                scene_text = " ".join([scene_description, *extras]).strip()
+                requests.append(
+                    IllustrationRequest(
+                        book_id=ctx.book_id,
+                        illustration_type=IllustrationType.EPISODE,
+                        episode_number=self._page_to_episode(page),
+                        scene_text=scene_text,
+                        book_context={
+                            "title": getattr(ctx, "title", "") or "",
+                            "genre": getattr(ctx, "genre", "") or "",
+                            "keywords": getattr(ctx, "keywords", "") or "",
+                            "archetype": getattr(ctx, "archetype_key", "") or "",
+                            "characters": ", ".join(str(k) for k in expressions.keys()),
+                            "illustration_page": page,
+                        },
+                    )
+                )
+            except Exception as e:  # noqa: BLE001 - 1件の変換失敗でも全体を止めない
+                logger.warning("Skipped invalid illustration point: %s", e)
+                continue
+        return requests
+
+    @staticmethod
+    def _page_to_episode(page: str) -> int | None:
+        """ページ表記（"口絵1" / "15"）から話数推定する。"""
+        import re
+
+        if not page:
+            return None
+        match = re.search(r"\d+", str(page))
+        if not match:
+            return None
+        try:
+            value = int(match.group())
+        except ValueError:
+            return None
+        if value <= 0:
+            return None
+        # 15 ページなら 3 話目くらい（1話あたり5ページ想定）
+        return max(1, (value + 4) // 5)
 
 
 # ============================================================================

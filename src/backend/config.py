@@ -89,6 +89,10 @@ class Settings(BaseSettings):
                 raise ValueError("本番環境 (APP_ENV=production) では安全な JWT_SECRET_KEY の設定が必須です。")
             if "sqlite" in self.DATABASE_URL:
                 raise ValueError("本番環境では SQLite ではなく PostgreSQL の設定が必要です。")
+            if not self.FRONTEND_URL or self.FRONTEND_URL in ("http://localhost:5173", "http://localhost:8080"):
+                raise ValueError(
+                    "本番環境 (APP_ENV=production) では FRONTEND_URL に実際の公開URLを設定してください。"
+                )
         return self
 
     # 外部決済設定

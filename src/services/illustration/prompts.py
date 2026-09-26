@@ -194,9 +194,10 @@ def build_yonkoma_prompt(
         style,
         "Manga / comic style, clean line art, panel grid layout (top row 3 panels, bottom row 3 panels).",
         "Each panel must show a distinct beat of the story so the episode flow is readable at a glance.",
-        "Use speech bubbles sparingly only when essential; prefer visual storytelling.",
+        "Prefer visual storytelling over any written element.",
         "Cinematic lighting, expressive faces, dynamic camera angles per panel.",
-        "No text or letters in image (titles, captions, sound effects are not rendered).",
+        "No text or letters in image (titles, captions, sound effects are not rendered), "
+        "no speech bubbles.",
     ]
 
     for i, (beat, beat_desc) in enumerate(beats):

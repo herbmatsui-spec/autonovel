@@ -22,6 +22,9 @@ def make_container(api_key: str, db=None):
     )
 
 
+# 遅延 import による循環 import の緩和。
+# 解消条件: app.py が infra.py を import する循環がなくなったとき、
+#           ここを通常のトップレベル import に戻すこと。
 def __getattr__(name: str):
     if name in ("AppContainer", "AppContainer2"):
         from src.core.container.app import AppContainer, AppContainer2

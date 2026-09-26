@@ -1,0 +1,44 @@
+[
+  {
+    "assetType": "button",
+    "componentPath": "frontend\\src\\components\\common\\Button.tsx",
+    "prompt": "A modern UI button with {color} background, {borderRadius} radius, subtle {shadow} shadow, flat design, suitable for a fantasy novel app",
+    "variables": {
+      "color": "deep indigo",
+      "borderRadius": "8px",
+      "shadow": "soft drop"
+    },
+    "samplePrompt": "A modern UI button with deep indigo background, 8px radius, subtle soft drop shadow, flat design, suitable for a fantasy novel app"
+  },
+  {
+    "assetType": "header-bg",
+    "componentPath": "frontend\\src\\components\\layout\\AppLayout.tsx",
+    "prompt": "A wide header background for a web novel site, {color} gradient, {texture} texture, fantasy style",
+    "variables": {
+      "color": "dark to purple gradient",
+      "texture": "soft parchment"
+    },
+    "samplePrompt": "A wide header background for a web novel site, dark to purple gradient, soft parchment texture, fantasy style"
+  },
+  {
+    "assetType": "card-bg",
+    "componentPath": "frontend\\src\\components\\showcase\\BookCoverPreview.tsx",
+    "prompt": "A fantasy card panel with parchment texture, faint rune borders, soft drop shadow, suitable for displaying novel covers",
+    "variables": {},
+    "samplePrompt": "A fantasy card panel with parchment texture, faint rune borders, soft drop shadow, suitable for displaying novel covers"
+  },
+  {
+    "assetType": "spinner",
+    "componentPath": "proposed: src/components/common/Spinner.tsx",
+    "prompt": "A cute animated loading spinner in fantasy style: glowing orb with tiny stars orbiting, transparent background, 64x64",
+    "variables": {},
+    "samplePrompt": "A cute animated loading spinner in fantasy style: glowing orb with tiny stars orbiting, transparent background, 64x64"
+  },
+  {
+    "assetType": "icon",
+    "componentPath": "proposed: src/components/common/Icons.tsx",
+    "prompt": "A fantasy-style gear icon: ornate metal gear with small gem inlay, flat design, transparent background, 64x64",
+    "variables": {},
+    "samplePrompt": "A fantasy-style gear icon: ornate metal gear with small gem inlay, flat design, transparent background, 64x64"
+  }
+]

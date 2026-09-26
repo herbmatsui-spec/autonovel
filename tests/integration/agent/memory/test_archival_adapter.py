@@ -1,6 +1,6 @@
-"""Integration tests for ArchivalMemory adapter."""
-from src.agent.memory.archival_memory import ArchivalMemory
-from src.agent.memory.interfaces import MemoryEntry
+﻿"""Integration tests for ArchivalMemory adapter."""
+from src.agents.memory.archival_memory import ArchivalMemory
+from src.agents.memory.interfaces import MemoryEntry
 from src.pipeline.emotional_residue import EmotionalVector, EmotionalSignal, EmotionType
 from src.stores.vector_store import InMemoryVectorStore
 

@@ -8,7 +8,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from dependency_injector import containers, providers
+from dependency_injector import providers
 
 from src.backend.database import DataRepository, UnitOfWork
 from src.backend.engine_config import EngineConfig
@@ -26,14 +26,6 @@ logger.setLevel(logging.ERROR)
 
 
 class AppContainer(InfraContainer):
-    wiring_config = containers.WiringConfiguration(
-        modules=[
-            "src.services.prompt_version_service",
-            "src.services.state_manager",
-            "src.backend.database.uow",
-        ]
-    )
-
     api_key: providers.Object = providers.Object("DUMMY")
 
     genai_client: providers.Singleton = providers.Singleton(

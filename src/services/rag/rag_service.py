@@ -12,10 +12,9 @@ Enhanced with:
 from __future__ import annotations
 
 import asyncio
-import math
 import time
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -85,6 +84,7 @@ class GraphRAGService:
 
     @_vector_store.setter
     def _vector_store(self, val: BaseVectorStore | None) -> None:
+        # 明示的に渡された場合は「カスタム」として扱い、遅延生成しない。
         self._custom_vector_store = val
         self._vector_store_instance = val
 

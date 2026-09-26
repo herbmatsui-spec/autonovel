@@ -49,6 +49,8 @@ dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.23",
     "pytest-cov>=4.1",
+    "pytest-timeout>=2.3.1",
+    "fakeredis>=2.20.0",
     "testcontainers>=4.14.2",
 ]
 rag = [
@@ -62,6 +64,11 @@ nlp = [
     "sudachidict-core>=20230109",
     "sudachidict-full>=20230109",
     "sudachidict-small>=20230109",
+]
+# イラスト後処理（品質ゲート / 超解像 / 写植）。
+# 未導入でも生成本体は縮退動作するため optional。
+image = [
+    "Pillow>=10.0.0",
 ]
 
 [tool.setuptools]

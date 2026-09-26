@@ -13,7 +13,7 @@ from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.backend.database.models_foreshadowing import ForeshadowingModel
-from src.models.foreshadowing_status import ForeshadowingStatus
+from src.models.foreshadowing_status import ForeshadowingScope, ForeshadowingStatus
 
 
 class DbForeshadowingRepository:
@@ -37,6 +37,35 @@ class DbForeshadowingRepository:
             planted_episode=planted_episode,
             target_episode=target_episode,
             status=ForeshadowingStatus.PLANTED.value,
+        )
+        self.db.add(record)
+        await self.db.flush()
+        return record
+
+    async def add_if_absent(
+        self,
+        book_id: int,
+        title: str,
+        description: str,
+        planted_episode: int,
+        scope: str = "short_term",
+    ) -> Optional[ForeshadowingModel]:
+        """同一 (book_id, planted_episode, title) が既にあれば追加しない（冪等な設置）。"""
+        existing = await self.db.execute(
+            select(ForeshadowingModel)
+            .where(ForeshadowingModel.book_id == book_id)
+            .where(ForeshadowingModel.planted_episode == planted_episode)
+            .where(ForeshadowingModel.title == title)
+        )
+        if existing.scalar_one_or_none() is not None:
+            return None
+        record = ForeshadowingModel(
+            book_id=book_id,
+            title=title,
+            description=description,
+            planted_episode=planted_episode,
+            status=ForeshadowingStatus.PLANTED.value,
+            scope=scope,
         )
         self.db.add(record)
         await self.db.flush()
@@ -92,11 +121,12 @@ class DbForeshadowingRepository:
     async def get_unresolved_by_scope(self, book_id: int, scope: ForeshadowingScope) -> List[ForeshadowingModel]:
         """スコープ別の未回収伏線を取得"""
         active_statuses = [s.value for s in ForeshadowingStatus.active_statuses()]
+        scope_value = scope.value if isinstance(scope, ForeshadowingScope) else str(scope)
         stmt = (
             select(ForeshadowingModel)
             .where(
                 ForeshadowingModel.book_id == book_id,
-                ForeshadowingModel.scope == scope.value,
+                ForeshadowingModel.scope == scope_value,  # Changed to scope_value
                 ForeshadowingModel.status.in_(active_statuses),
             )
             .order_by(ForeshadowingModel.planted_episode)

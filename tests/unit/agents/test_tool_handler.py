@@ -1,5 +1,5 @@
-"""Unit tests for ToolHandler."""
-from src.agent.memory.manager import MemoryManager
+﻿"""Unit tests for ToolHandler."""
+from src.agents.memory.manager import MemoryManager
 from src.agents.tool_handler import ToolHandler
 
 

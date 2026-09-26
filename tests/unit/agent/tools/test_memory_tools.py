@@ -1,6 +1,6 @@
-"""Unit tests for memory tools."""
-from src.agent.memory.manager import MemoryManager
-from src.agent.tools.memory_tools import MEMORY_TOOLS_SCHEMA, execute_memory_tool
+﻿"""Unit tests for memory tools."""
+from src.agents.memory.manager import MemoryManager
+from src.agents.tools.memory_tools import MEMORY_TOOLS_SCHEMA, execute_memory_tool
 
 
 def test_update_emotion_tool():

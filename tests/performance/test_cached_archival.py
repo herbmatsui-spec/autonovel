@@ -1,7 +1,7 @@
-"""Performance tests for CachedArchivalMemory."""
+﻿"""Performance tests for CachedArchivalMemory."""
 import time
-from src.agent.memory.cached_archival import CachedArchivalMemory
-from src.agent.memory.interfaces import MemoryEntry
+from src.agents.memory.cached_archival import CachedArchivalMemory
+from src.agents.memory.interfaces import MemoryEntry
 from src.stores.vector_store import InMemoryVectorStore
 
 

@@ -24,6 +24,7 @@ from src.backend.database.repositories import (
     CharacterRepository,
     CollabRepository,
     CostRepository,
+    DbForeshadowingRepository,
     IllustrationRepository,
     MiscRepository,
     NarrativeMetricRepository,
@@ -148,6 +149,10 @@ class UnitOfWork:
     @property
     def collab(self) -> CollabRepository:
         return self._get_repo(CollabRepository)
+
+    @property
+    def foreshadowings(self) -> DbForeshadowingRepository:
+        return self._get_repo(DbForeshadowingRepository)
 
     @property
     def cost(self) -> CostRepository:

@@ -1,5 +1,5 @@
-"""Unit tests for VoiceProfile."""
-from src.agent.memory.voice_profile import VoiceProfile
+﻿"""Unit tests for VoiceProfile."""
+from src.agents.memory.voice_profile import VoiceProfile
 
 
 def test_profile_influences_dialogue():

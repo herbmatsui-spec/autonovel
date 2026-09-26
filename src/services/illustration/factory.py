@@ -6,7 +6,6 @@ ComfyUIなどの自前常駐GPUサーバー依存を完全に撤廃し、
 from __future__ import annotations
 
 import os
-from typing import Optional
 
 from .adapters.base import ImageGenerationAdapter
 from .adapters.dalle3_adapter import Dalle3Adapter

@@ -66,3 +66,17 @@ def get_beat_for_episode(ep_num: int) -> Dict[str, Any]:
             return beat
     # 40話超過などのフォールバック
     return COMMERCIAL_40EP_BEATS[-1]
+
+
+def get_scope_for_episode(ep_num: int) -> str:
+    """指定話数の伏線スコープを商用構成定義から決定する（SSOT: COMMERCIAL_40EP_BEATS）。
+
+    Returns:
+        "long_term" または "short_term"
+    """
+    beat = get_beat_for_episode(ep_num)
+    scopes = beat.get("target_scopes") or ["short_term"]
+    return "long_term" if "long_term" in scopes else "short_term"
+
+
+__all__ = ["COMMERCIAL_40EP_BEATS", "get_beat_for_episode", "get_scope_for_episode"]

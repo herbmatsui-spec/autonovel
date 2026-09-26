@@ -1,5 +1,5 @@
-"""Unit tests for CoreMemory token budget and persistence."""
-from src.agent.memory.core_memory import CoreMemory
+﻿"""Unit tests for CoreMemory token budget and persistence."""
+from src.agents.memory.core_memory import CoreMemory
 from src.fusion.models import FusedValue, FusedVector
 from src.pipeline.emotional_residue import EmotionType
 

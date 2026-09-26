@@ -13,6 +13,8 @@ _module_map = {
     "CharacterRepository": "character",
     "CollabRepository": "collab",
     "CostRepository": "cost",
+       "DbForeshadowingRepository": "db_foreshadowing_repository",
+    "DbForeshadowingRepository": "foreshadowing_repo",
     "EasyModeDraftRepository": "easy_mode_draft_repository",
     "IllustrationRepository": "illustration",
     "MiscRepository": "misc",

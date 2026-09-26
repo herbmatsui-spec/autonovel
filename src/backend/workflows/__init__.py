@@ -12,10 +12,12 @@ from .plot_rebuild_workflow import PlotRebuildWorkflow
 from .refine_erotic_workflow import RefineEroticWorkflow
 from .reverse_plot_workflow import ReversePlotGenerationWorkflow
 from .retry_failed_episodes_workflow import RetryFailedEpisodesWorkflow
+from .commercial_beat_sheet_workflow import CommercialBeatSheetWorkflow
 
 __all__ = [
     "BaseWorkflow",
     "ChapterImportWorkflow",
+    "CommercialBeatSheetWorkflow",
     "CritiqueOptimizationWorkflow",
     "EasyModeWorkflow",
     "EpisodeWritingWorkflow",
@@ -44,4 +46,6 @@ WORKFLOW_REGISTRY = {
     "marketing_generation_workflow": MarketingGenerationWorkflow,
     "refine_erotic_workflow": RefineEroticWorkflow,
     "reverse_plot_generation_workflow": ReversePlotGenerationWorkflow,
+    "commercial_beat_sheet_workflow": CommercialBeatSheetWorkflow,
 }
+

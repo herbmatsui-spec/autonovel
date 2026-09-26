@@ -31,9 +31,14 @@ class LegacyImagenClient:
     def __init__(
         self,
         image_service: Any | None = None,
-        model_id: str = "imagen-4.0-fast-generate-001",
+        model_id: str | None = None,
     ) -> None:
         self._image_service = image_service
+        # モデルIDはカタログ（config/image_models.py）からのみ取得する
+        if model_id is None:
+            from config.image_models import get_image_model_id
+
+            model_id = get_image_model_id("imagen_fast")
         self.model_id = model_id
         if image_service is not None:
             resolved = getattr(image_service, "default_model", None)

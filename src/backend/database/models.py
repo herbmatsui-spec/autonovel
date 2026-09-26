@@ -23,7 +23,6 @@ from sqlalchemy.orm import relationship
 
 from src.infrastructure.database.models.base_orm import Base
 from src.backend.database.models_checkpoint import WorkflowCheckpointModel
-from src.backend.database.models_tenant import Tenant, TenantMember
 from src.infrastructure.database.types import CompatibleJSON, CompatibleDateTime, CompatibleVector
 
 """
@@ -201,6 +200,9 @@ class Plot(Base):
     summary = Column(Text)
     one_line_summary = Column(Text, default="")
     detailed_blueprint = Column(Text, default="")
+    # ウィザードビートシート由来の伏線メモ（昇格時に foreshadowings へ同期する）。
+    # detailed_blueprint（各話ブループリント本文）とは別物。混用しないこと。
+    foreshadowing_notes = Column(Text, default="")
     tension = Column(Integer, default=50)
     tension_delta = Column(Integer, default=0)
     catharsis = Column(Integer, default=0)

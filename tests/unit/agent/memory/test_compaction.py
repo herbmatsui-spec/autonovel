@@ -1,7 +1,7 @@
-"""Unit tests for CompactionPolicy."""
-from src.agent.memory.archival_memory import ArchivalMemory
-from src.agent.memory.compaction import CompactionPolicy
-from src.agent.memory.core_memory import CoreMemory
+﻿"""Unit tests for CompactionPolicy."""
+from src.agents.memory.archival_memory import ArchivalMemory
+from src.agents.memory.compaction import CompactionPolicy
+from src.agents.memory.core_memory import CoreMemory
 from src.stores.vector_store import InMemoryVectorStore
 
 

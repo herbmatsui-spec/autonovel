@@ -1,6 +1,6 @@
-"""Unit tests for BranchMemoryManager."""
-from src.agent.memory.branch_manager import BranchMemoryManager
-from src.agent.memory.core_memory import CoreMemory
+﻿"""Unit tests for BranchMemoryManager."""
+from src.agents.memory.branch_manager import BranchMemoryManager
+from src.agents.memory.core_memory import CoreMemory
 
 
 def test_fork_and_compare(tmp_path):

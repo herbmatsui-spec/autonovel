@@ -6,6 +6,7 @@ from src.backend.database.uow import UnitOfWork
 from src.backend.engine_helpers import get_engine as resolve_engine
 from src.backend.security.owner_guard import verify_book_ownership
 from src.backend.task_helpers import create_task as _create_task
+from src.backend.database.models_foreshadowing import ForeshadowingModel
 from src.core.container import AppContainer
 from src.core.exceptions import AppError
 from src.core.observability import TraceContext
@@ -246,7 +247,6 @@ async def wizard_save(
         validate_api_key_sync(req.api_key)
 
     from src.backend.database.models import Book
-    from src.services.errors import retry_on_lock
 
     async with UnitOfWork(AppContainer.db()) as uow:
         # 新規Bookを作成
@@ -264,8 +264,6 @@ async def wizard_save(
 
         # ビートシートをPlotとして保存
         beats = req.beats if req.beats else []
-        from src.backend.database.models_foreshadowing import ForeshadowingModel
-
         for i, beat in enumerate(beats, start=1):
             ep_num = beat.episode if beat.episode else i
             await uow.plots.create_or_replace_plot(
@@ -274,7 +272,9 @@ async def wizard_save(
                 thought_process="wizard_creation_funnel",
                 title=beat.title,
                 summary=beat.outline,
-                detailed_blueprint=beat.foreshadowing_notes or "",
+                # detailed_blueprint は各話ブループリント用のカラム。伏線メモは専用カラムへ.
+detailed_blueprint="",
+foreshadowing_notes=beat.foreshadowing_notes or "",
                 next_hook=beat.cliffhanger_type or "New Crisis",
                 tension=50,
                 status="open",
@@ -362,7 +362,6 @@ async def expand_commercial_beats(
         )
         raw_text = getattr(res, "story_content", "") or getattr(res, "content", "") or ""
         import json
-        import re
 
         try:
             cleaned = str(raw_text).strip()
@@ -376,13 +375,13 @@ async def expand_commercial_beats(
                 pass  # フォールバックへ
             else:
                 return beats_data[:12]
-        except Exception as e:
+        except Exception:
             # JSONパースエラーの場合はフォールバック
             pass
-    except Exception as e:
+    except Exception:
         # LLM呼び出しエラーの場合はフォールバック
         pass
-    
+
     # フォールバック: デフォルトの12ステップを返す
     default_beats = [
         {

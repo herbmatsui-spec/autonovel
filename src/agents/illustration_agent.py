@@ -1,4 +1,5 @@
 import logging
+from dataclasses import dataclass, field
 from typing import Any
 
 from src.agents.skill_base import SkillAgent
@@ -15,31 +16,80 @@ from src.services.illustration import (
     SceneIllustrator,
     YonkomaIllustrator,
 )
-from src.services.illustration.model_selector import _type_value, is_r15, resolve_request_model
-from src.services.image_service import ImageService
+from src.services.illustration.config import UnifiedIllustrationConfig
+from src.services.illustration.model_selector import _type_value
+from src.services.illustration.unified_generator import UnifiedIllustrationGenerator
 
 logger = logging.getLogger(__name__)
 
 
 class IllustrationAgent(SkillAgent):
-    """イラスト作成サブエージェント（表紙 / 挿絵 / キャラクター）。
+    """イラスト作成サブエージェント（表紙 / 挿絵 / 立ち絵 / 6コマ / 24コマ）。
+
+    生成は統合エンジン `UnifiedIllustrationGenerator` へ委譲する（生成モデルは
+    `config/image_models.py` のカタログで一元管理、既定は NanoBanana2Lite）。
+    `image_service` が渡された場合は後方互換のため Legacy Imagen 経路を使う。
 
     request は src / autonovel.src いずれの経路で生成された IllustrationRequest
     でも受け付けられるよう、isinstance に依存せず属性で判定する。
-    現在はプロンプト生成のみ対応、画像生成は将来実装。
     """
 
     AGENT_NAME = "illustration"
     DISPLAY_NAME = "イラスト作成サブエージェント"
 
-    def __init__(self, image_service: ImageService, **kwargs):
+    def __init__(
+        self,
+        image_service: Any = None,
+        config: UnifiedIllustrationConfig | None = None,
+        generator: UnifiedIllustrationGenerator | None = None,
+        **kwargs,
+    ):
         super().__init__(**kwargs)
         self.image_service = image_service
-        self.cover_generator = CoverGenerator(image_service)
-        self.character_illustrator = CharacterIllustrator(image_service)
-        self.scene_illustrator = SceneIllustrator(image_service)
-        self.scene_service = SceneIllustrationService(image_service, llm=self.llm)
-        self.yonkoma_illustrator = YonkomaIllustrator(image_service)
+        self.config = config or UnifiedIllustrationConfig()
+        self.generator = generator or UnifiedIllustrationGenerator(
+            config=self.config,
+            llm=self.llm,
+            image_service=image_service,
+        )
+        # 旧サービス群は後方互換のため遅延初期化（image_service 無しでも起動できる）
+        self._cover_generator: CoverGenerator | None = None
+        self._character_illustrator: CharacterIllustrator | None = None
+        self._scene_illustrator: SceneIllustrator | None = None
+        self._scene_service: SceneIllustrationService | None = None
+        self._yonkoma_illustrator: YonkomaIllustrator | None = None
+
+    # ---- 遅延プロパティ（旧サービス群） ----
+
+    @property
+    def cover_generator(self) -> CoverGenerator | None:
+        if self._cover_generator is None and self.image_service is not None:
+            self._cover_generator = CoverGenerator(self.image_service)
+        return self._cover_generator
+
+    @property
+    def character_illustrator(self) -> CharacterIllustrator | None:
+        if self._character_illustrator is None and self.image_service is not None:
+            self._character_illustrator = CharacterIllustrator(self.image_service)
+        return self._character_illustrator
+
+    @property
+    def scene_illustrator(self) -> SceneIllustrator | None:
+        if self._scene_illustrator is None and self.image_service is not None:
+            self._scene_illustrator = SceneIllustrator(self.image_service)
+        return self._scene_illustrator
+
+    @property
+    def scene_service(self) -> SceneIllustrationService | None:
+        if self._scene_service is None and self.image_service is not None:
+            self._scene_service = SceneIllustrationService(self.image_service, llm=self.llm)
+        return self._scene_service
+
+    @property
+    def yonkoma_illustrator(self) -> YonkomaIllustrator | None:
+        if self._yonkoma_illustrator is None and self.image_service is not None:
+            self._yonkoma_illustrator = YonkomaIllustrator(self.image_service)
+        return self._yonkoma_illustrator
 
     async def execute(self, ctx: AgentContext) -> AgentResult:
         """スキル実行エントリーポイント。"""
@@ -85,186 +135,96 @@ class IllustrationAgent(SkillAgent):
         raise ValueError("Invalid or missing illustration request")
 
     async def run(self, **kwargs) -> dict[str, Any]:
-        """エージェントのメイン実行ロジック (将来の画像生成用)。
+        """エージェントのメイン実行ロジック（画像生成）。
 
         kwargs:
             - request: IllustrationRequest
         """
-        # 現在は画像生成未実装。プロンプトのみ返す generate_prompt_only を使用
         return await self.generate_prompt_only(**kwargs)
 
     async def generate_prompt_only(self, **kwargs) -> dict[str, Any]:
-        """プロンプトのみ生成するメソッド (画像生成は将来実装)。
+        """プロンプトを組み立て、統一エンジンで画像を生成して結果を返す。
+
+        戻り値の形状 `{"status", "result", "prompt"}` は後方互換のため維持する。
+        画像生成が失敗しても `{"status": "error", "message": ...}` を返し、
+        呼び出し側（Orchestrator）を止めない。
 
         kwargs:
             - request: IllustrationRequest
         """
         try:
             request = self._coerce_request(kwargs.get("request"))
-            kind = _type_value(request.illustration_type)
 
-            if kind == IllustrationType.COVER.value:
-                prompt = await self._build_cover_prompt(request)
-            elif kind == IllustrationType.CHARACTER.value:
-                prompt = await self._build_character_prompt(request)
-            elif kind == IllustrationType.YONKOMA.value:
-                prompt = await self._build_yonkoma_prompt(request)
-            else:
-                prompt = await self._build_episode_prompt(request)
-
-            # 画像生成は行わず、プロンプトとメタデータのみ返す
-            result = IllustrationResult(
-                request=request,
-                image_url="",  # 画像生成未実装のため空
-                prompt=prompt,
-                model_used=resolve_request_model(request),
-                generation_time_ms=0,
-            )
-
+            result = await self.generator.generate(request)
             illustration_id = await self._persist(request, result)
             result.illustration_id = illustration_id
-            return {"status": "success", "result": result, "prompt": prompt}
+            return {"status": "success", "result": result, "prompt": result.prompt}
         except Exception as e:  # noqa: BLE001
-            logger.error(f"IllustrationAgent prompt generation error: {str(e)}")
+            logger.error(f"IllustrationAgent generation error: {str(e)}")
             return {"status": "error", "message": str(e)}
 
+    async def build_prompt_for(self, request) -> str:
+        """種別プロンプトだけを構築する（生成なし）。"""
+        request = self._coerce_request(request)
+        strategy = self.generator.get_strategy(request)
+        async_builder = getattr(strategy, "build_prompt_async", None)
+        if callable(async_builder):
+            return await async_builder(request)
+        return strategy.build_prompt(request)
+
     async def _generate_cover(self, request: IllustrationRequest) -> IllustrationResult:
-        return await self.cover_generator.generate(request)
+        """旧 API 互換。旧 CoverGenerator があればそれを、無ければ統一エンジンを使う。"""
+        if self.cover_generator is not None:
+            return await self.cover_generator.generate(request)
+        return await self.generator.generate(request)
 
     async def _generate_character(self, request: IllustrationRequest) -> IllustrationResult:
-        return await self.character_illustrator.generate(request)
+        if self.character_illustrator is not None:
+            return await self.character_illustrator.generate(request)
+        return await self.generator.generate(request)
 
     async def _generate_episode(self, request: IllustrationRequest) -> IllustrationResult:
-        """話数ごとの挿絵（単一）。scene_text があればそのシーンを描画。"""
-        if getattr(request, "scene_text", None):
+        """話数ごとの挿絵（単一）。統一エンジンへ委譲する。"""
+        if self.scene_illustrator is not None and getattr(request, "scene_text", None):
             return await self.scene_illustrator.generate_for_scene(request.scene_text, request)
+        return await self.generator.generate(request)
 
-        # scene_text がない場合は book_context から汎用エピソードプロンプトを構築
-        ctx = request.book_context or {}
-        title = ctx.get("title", "")
-        genre = ctx.get("genre", "")
-        concept = ctx.get("concept", "")
-        parts = [
-            f"Scene illustration for episode {getattr(request, 'episode_number', None)}.",
-        ]
-        if title:
-            parts.append(f"Title: {title}.")
-        if genre:
-            parts.append(f"Genre: {genre}.")
-        if concept:
-            parts.append(f"Atmosphere: {concept}.")
-        parts.append(
-            "Detailed background, cinematic lighting, rich detail, no text or letters in image."
-        )
-        prompt = " ".join(parts)
-        if is_r15(request.safety_level):
-            prompt += " Tasteful R15 artistic representation, intimate but not explicit."
+    # ---- 旧 *_prompt メソッド（後方互換・戦略へ委譲） ----
 
-        import time
-
-        start = time.time()
-        image_url = await self.image_service.generate(
-            prompt=prompt,
-            model=resolve_request_model(request),
-            aspect_ratio=request.aspect_ratio,
-            safety_level=request.safety_level,
-        )
-        elapsed = int((time.time() - start) * 1000)
-        return IllustrationResult(
-            request=request,
-            image_url=image_url,
-            prompt=prompt,
-            model_used=resolve_request_model(request),
-            generation_time_ms=elapsed,
-        )
+    async def _build_with_strategy(self, request: IllustrationRequest, illo_type) -> str:
+        """指定種別の戦略でプロンプトを構築する。"""
+        coerced = self._coerce_request(request)
+        if getattr(coerced, "illustration_type", None) != illo_type:
+            coerced = IllustrationRequest(
+                book_id=coerced.book_id,
+                illustration_type=illo_type,
+                episode_number=coerced.episode_number,
+                character_id=coerced.character_id,
+                scene_text=coerced.scene_text,
+                book_context=coerced.book_context,
+                model=coerced.model,
+                safety_level=coerced.safety_level,
+                aspect_ratio=coerced.aspect_ratio,
+                prompt_override=coerced.prompt_override,
+                panels=coerced.panels,
+            )
+        strategy = self.generator.get_strategy(coerced)
+        async_builder = getattr(strategy, "build_prompt_async", None)
+        if callable(async_builder):
+            return await async_builder(coerced)
+        return strategy.build_prompt(coerced)
 
     async def _build_cover_prompt(self, request: IllustrationRequest) -> str:
-        """表紙用プロンプトを構築 (将来の実装で使用)"""
-        ctx = request.book_context or {}
-        title = ctx.get("title", "無題")
-        genre = ctx.get("genre", "ファンタジー")
-        concept = ctx.get("concept", "")
-
-        parts = [
-            f"Book cover illustration for '{title}'",
-            f"Genre: {genre}",
-        ]
-        if concept:
-            parts.append(f"Concept: {concept}")
-        parts.append(
-            "Detailed, cinematic lighting, rich detail, professional book cover art, no text or letters in image"
-        )
-
-        if is_r15(request.safety_level):
-            parts.append("Tasteful R15 artistic representation, intimate but not explicit")
-
-        return ", ".join(parts)
+        """表紙用プロンプト（`CoverStrategy` へ委譲）。"""
+        return await self._build_with_strategy(request, IllustrationType.COVER)
 
     async def _build_character_prompt(self, request: IllustrationRequest) -> str:
-        """キャラクター用プロンプトを構築 (将来の実装で使用)"""
-        ctx = request.book_context or {}
-        character_name = ctx.get("character_name", "主人公")
-        character_desc = ctx.get("character_description", "")
-        genre = ctx.get("genre", "ファンタジー")
-
-        parts = [
-            f"Character illustration of {character_name}",
-            f"Genre: {genre}",
-        ]
-        if character_desc:
-            parts.append(f"Description: {character_desc}")
-        parts.append(
-            "Detailed character design, anime/manga style, clean lines, no text or letters in image"
-        )
-
-        if is_r15(request.safety_level):
-            parts.append("Tasteful R15 artistic representation, intimate but not explicit")
-
-        return ", ".join(parts)
+        """キャラクター用プロンプト（`CharacterStrategy` へ委譲）。"""
+        return await self._build_with_strategy(request, IllustrationType.CHARACTER)
 
     async def _build_episode_prompt(self, request: IllustrationRequest) -> str:
-        """エピソード用プロンプトを構築 (将来の実装で使用)。
-        シーンテキストから場所、時間帯、登場人物の表情・アクションを抽出して詳細プロンプトを構成。
-        """
-        ctx = request.book_context or {}
-        title = ctx.get("title", "無題")
-        genre = ctx.get("genre", "ファンタジー")
-        episode_num = getattr(request, "episode_number", None)
-        scene_text = getattr(request, "scene_text", "") or ""
-
-        # シーンから詳細情報を抽出
-        location, time_of_day, character_details, action = self._extract_scene_details(scene_text)
-
-        parts = [
-            f"Scene illustration for episode {episode_num} of '{title}'",
-            f"Genre: {genre}",
-        ]
-
-        # 場所を追加
-        if location:
-            parts.append(f"Location: {location}")
-
-        # 時間帯を追加
-        if time_of_day:
-            parts.append(f"Time of day: {time_of_day}")
-
-        # 登場人物の詳細
-        if character_details:
-            parts.append(f"Character details: {character_details}")
-
-        # アクション
-        if action:
-            parts.append(f"Action: {action}")
-
-        # 基本的な画像品質指示
-        parts.extend([
-            "Detailed background, cinematic lighting, rich detail, manga/anime style, no text or letters in image"
-        ])
-
-        if is_r15(request.safety_level):
-            parts.append("Tasteful R15 artistic representation, intimate but not explicit")
-
-        return ", ".join(parts)
+        """エピソード用プロンプト（`EpisodeStrategy` へ委譲）。"""
+        return await self._build_with_strategy(request, IllustrationType.EPISODE)
 
     def _extract_scene_details(self, scene_text: str) -> tuple[str, str, str, str]:
         """
@@ -344,35 +304,8 @@ class IllustrationAgent(SkillAgent):
         return location, time_of_day, character_details, action
 
     async def _build_yonkoma_prompt(self, request: IllustrationRequest) -> str:
-        """6コマ要約漫画用プロンプトを構築 (画像生成はせず文章のみ返す)。"""
-        from src.services.illustration.prompts import build_yonkoma_prompt
-
-        text = (getattr(request, "scene_text", "") or "").strip()
-        panels = getattr(request, "panels", 6) or 6
-        ctx = request.book_context or {}
-
-        if text:
-            from src.services.illustration.scene_service import YonkomaPlanner
-
-            planner = YonkomaPlanner()
-            if self.llm is not None:
-                try:
-                    summaries = await planner.plan_with_llm(text, self.llm, panels=panels)
-                except Exception as e:  # noqa: BLE001
-                    logger.warning("Yonkoma LLM planning failed in agent: %s", e)
-                    summaries = planner.plan_heuristic(text, panels=panels)
-            else:
-                summaries = planner.plan_heuristic(text, panels=panels)
-        else:
-            # シーン要約が無い場合は 6 個のプレースホルダで埋める (オンのとき UI で空でもエラーにしない)
-            summaries = ["(導入)", "(展開)", "(転換)", "(高潮)", "(余韻)", "(次回への引き)"]
-
-        prompt = build_yonkoma_prompt(summaries, ctx, panels=panels)
-        if is_r15(request.safety_level):
-            from src.services.illustration.prompts import apply_yonkoma_safety_modifier
-
-            prompt = apply_yonkoma_safety_modifier(prompt, request.safety_level)
-        return prompt
+        """6コマ要約漫画用プロンプト（`Yonkoma6Strategy` へ委譲）。"""
+        return await self._build_with_strategy(request, IllustrationType.YONKOMA)
 
     async def generate_episode_yonkoma(
         self,
@@ -393,18 +326,81 @@ class IllustrationAgent(SkillAgent):
         else:
             summaries = planner.plan_heuristic(episode_text, panels=panels)
 
-        return await self.yonkoma_illustrator.generate(
-            episode_text=episode_text,
-            request=request,
+        if self.yonkoma_illustrator is not None:
+            return await self.yonkoma_illustrator.generate(
+                episode_text=episode_text,
+                request=request,
+                panels=panels,
+                summaries=summaries,
+            )
+
+        # 旧 ImageService が無い場合は統一エンジンへ渡す
+        yonkoma_request = IllustrationRequest(
+            book_id=request.book_id,
+            illustration_type=IllustrationType.YONKOMA,
+            episode_number=request.episode_number,
+            character_id=request.character_id,
+            scene_text=episode_text,
+            book_context=request.book_context,
+            model=request.model,
+            safety_level=request.safety_level,
+            aspect_ratio=request.aspect_ratio,
+            prompt_override=request.prompt_override,
             panels=panels,
-            summaries=summaries,
         )
+        result = await self.generator.generate(yonkoma_request)
+        result.illustration_id = await self._persist(yonkoma_request, result)
+        return result
+
+    async def generate_manga_24panel(
+        self,
+        episode_text: str,
+        request: IllustrationRequest,
+        panels: int = 24,
+    ) -> IllustrationResult:
+        """本文から 24 コマ（4x6）の漫画シートを 1 枚生成する。"""
+        from src.services.illustration.strategies.manga24 import TOTAL_PANELS
+
+        manga_request = IllustrationRequest(
+            book_id=request.book_id,
+            illustration_type=IllustrationType.MANGA_24PANEL,
+            episode_number=request.episode_number,
+            character_id=request.character_id,
+            scene_text=episode_text,
+            book_context=request.book_context,
+            model=request.model,
+            safety_level=request.safety_level,
+            aspect_ratio=request.aspect_ratio or "2:3",
+            prompt_override=request.prompt_override,
+            panels=min(max(1, panels), TOTAL_PANELS),
+        )
+        result = await self.generator.generate(manga_request)
+        result.illustration_id = await self._persist(manga_request, result)
+        return result
 
     async def generate_episode_scenes(
         self, request: IllustrationRequest
     ) -> list[IllustrationResult]:
         """本文から複数シーンを抽出し、各シーンの挿絵を生成して返す（シーン抽出機能）。"""
-        results = await self.scene_service.generate(request)
+        if self.scene_service is not None:
+            results = await self.scene_service.generate(request)
+        else:
+            from src.services.illustration.scene_service import SceneExtractor
+
+            scenes = SceneExtractor().extract_scenes(request.scene_text or "", max_scenes=3)
+            results = []
+            for scene in scenes:
+                scene_request = IllustrationRequest(
+                    book_id=request.book_id,
+                    illustration_type=IllustrationType.EPISODE,
+                    episode_number=request.episode_number,
+                    scene_text=scene,
+                    book_context=request.book_context,
+                    model=request.model,
+                    safety_level=request.safety_level,
+                    aspect_ratio=request.aspect_ratio,
+                )
+                results.append(await self.generator.generate(scene_request))
         for r in results:
             r.illustration_id = await self._persist(request, r)
         return results
@@ -445,49 +441,19 @@ class IllustrationAgent(SkillAgent):
                 - match_emotional_tone: 感情トーン合わせ
         """
         params = params or {}
-        ctx = request.book_context or {}
+        request = self._coerce_request(request)
 
-        # 本文からエンティティ抽出
-        text_entities = []
-        if params.get("refocus_on_text_entities"):
-            scene_text = getattr(request, "scene_text", "") or ctx.get("scene_text", "")
-            if scene_text:
-                import re
-                text_entities = list(set(re.findall(r'[一-龯ァ-ヴー]{2,}', scene_text)))[:20]
+        # 强化ロジックは戦略側に集約（`PromptStrategy.regenerate_prompt`）
+        strategy = self.generator.get_strategy(request)
+        action = _RegenerationAction(params=params, focus=focus)
+        result = strategy.regenerate_prompt(request, action)
+        result["focus"] = focus
+        return result
 
-        # 感情トーン抽出
-        emotional_tone = "neutral"
-        if params.get("match_emotional_tone"):
-            scene_text = getattr(request, "scene_text", "") or ctx.get("scene_text", "")
-            if scene_text:
-                positive = sum(scene_text.count(w) for w in ['喜', '笑', '幸', '楽', '愛', '希望', '輝', '明'])
-                negative = sum(scene_text.count(w) for w in ['悲', '泣', '苦', '痛', '憎', '絶望', '暗', '闇', '恐'])
-                if positive > negative:
-                    emotional_tone = "positive"
-                elif negative > positive:
-                    emotional_tone = "negative"
 
-        # 既存のプロンプトを取得して強化
-        original_prompt = await self.generate_prompt_only(request=request)
-        original = original_prompt.get("prompt", "")
+@dataclass
+class _RegenerationAction:
+    """`PromptStrategy.regenerate_prompt` へ渡す軽量アクション（dict 互換）。"""
 
-        # 強化プロンプト構築
-        enhancements = []
-        if text_entities:
-            enhancements.append(f"Key entities to include: {', '.join(text_entities[:10])}")
-        if emotional_tone != "neutral":
-            tone_desc = "bright and hopeful" if emotional_tone == "positive" else "dark and somber"
-            enhancements.append(f"Emotional tone: {tone_desc}")
-
-        enhanced_prompt = original
-        if enhancements:
-            enhanced_prompt = original + " | ENHANCEMENTS: " + "; ".join(enhancements)
-
-        # 結果返却
-        return {
-            "status": "success",
-            "original_prompt": original,
-            "enhanced_prompt": enhanced_prompt,
-            "enhancements_applied": enhancements,
-            "focus": focus,
-        }
+    params: dict[str, Any] = field(default_factory=dict)
+    focus: str = "visual_textual_synergy"

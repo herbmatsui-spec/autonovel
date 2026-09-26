@@ -1,6 +1,8 @@
 import logging
 from typing import Any
 
+from src.models.db import BookDbModel  # 型注釈用（DTO定義: src/models/db.py）
+
 from src.shared.utils import StatusReporter
 
 from .base_workflow import BaseWorkflow
@@ -16,7 +18,10 @@ class MarketingGenerationWorkflow(BaseWorkflow):
         latest_ep = kwargs["latest_ep"]
         prompt_manager = kwargs.get("prompt_manager")
 
-        book = await self.repo.books.get_by_id(book_id)
+        # 旧実装の repo.books.get_by_id は存在しないため、facade 直下の get_book を使う。
+        if not self.repo:
+            raise RuntimeError("Repository is required for MarketingGenerationWorkflow")
+        book: BookDbModel | None = await self.repo.get_book(book_id)
         if not book:
             raise ValueError(f"Book not found: {book_id}")
 

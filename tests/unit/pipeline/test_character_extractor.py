@@ -3,6 +3,11 @@ from __future__ import annotations
 
 import pytest
 
+try:
+    import spacy
+except ImportError:
+    pytest.skip("spacy is not available or incompatible", allow_module_level=True)
+
 from src.pipeline.nlp_init import get_nlp_for_testing
 from src.pipeline.character_extractor import CharacterExtractor, CharacterMention
 

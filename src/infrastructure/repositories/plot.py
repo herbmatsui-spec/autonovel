@@ -80,6 +80,8 @@ class PlotRepository(BaseRepository):
             for p in plots
         ]
 
+
+
     @retry_on_lock()
     async def create_or_replace_plot(
         self,
@@ -89,8 +91,9 @@ class PlotRepository(BaseRepository):
         title: str,
         summary: str,
         detailed_blueprint: str,
-        next_hook: str,
-        tension: int,
+        foreshadowing_notes: str = "",
+        next_hook: str = "",
+        tension: int = 50,
         tension_delta: int = 0,
         catharsis: int = 0,
         love_meter: int = 0,
@@ -143,6 +146,7 @@ class PlotRepository(BaseRepository):
         plot_obj.title = title  # type: ignore[assignment]
         plot_obj.summary = summary  # type: ignore[assignment]
         plot_obj.detailed_blueprint = detailed_blueprint  # type: ignore[assignment]
+        plot_obj.foreshadowing_notes = foreshadowing_notes  # type: ignore[assignment]
         plot_obj.next_hook = (
             json.dumps(next_hook, ensure_ascii=False)
             if isinstance(next_hook, (dict, list))

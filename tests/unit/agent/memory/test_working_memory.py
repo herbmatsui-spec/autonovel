@@ -1,7 +1,7 @@
-"""Unit tests for WorkingMemory."""
-from src.agent.memory.archival_memory import ArchivalMemory
-from src.agent.memory.interfaces import WorkingFrame
-from src.agent.memory.working_memory import WorkingMemory
+﻿"""Unit tests for WorkingMemory."""
+from src.agents.memory.archival_memory import ArchivalMemory
+from src.agents.memory.interfaces import WorkingFrame
+from src.agents.memory.working_memory import WorkingMemory
 from src.stores.vector_store import InMemoryVectorStore
 
 

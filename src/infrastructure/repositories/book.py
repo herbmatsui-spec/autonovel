@@ -23,7 +23,13 @@ from src.backend.database.repositories.base import BaseRepository
 
 
 class BookRepository(BaseRepository):
-    """Booksテーブルに関するDB操作をまとめたMixin"""
+    """Booksテーブルに関するDB操作をまとめたMixin
+
+    # 作品情報の取得は必ず get_book() を使うこと。
+    # get_by_id() は存在しない（过去の実装誤り。詳細は P0-1 / P0-2）。
+    # 旧 DataRepositoryFacade 経由で利用する場合は self.repo.get_book(book_id) と書くこと
+    # （self.repo.books.get_book(...) は動かない: facade.__getattr__ は coroutine を返すため）。
+    """
 
     @retry_on_lock()
     async def create_book(
