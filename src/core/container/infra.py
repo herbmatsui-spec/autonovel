@@ -21,17 +21,22 @@ from src.core.spi.llm.provider_factory import LLMProviderFactory
 from src.core.spi.vector_store.provider_factory import VectorStoreFactory
 from src.core.spi.image.provider_factory import ImageProviderFactory
 
-logger = logging.getLogger(__name__)
+def _get_chroma_client_provider():
+    from src.services.vector_store.chroma import ChromaClientProvider
+    return ChromaClientProvider(db_path="./chroma_db")
+
+
+def _get_vector_store():
+    from src.services.vector_store import get_default_store
+    return get_default_store()
+
+
+def _get_cooldown():
+    from src.backend.engine_utils import AdaptiveCooldown
+    return AdaptiveCooldown(base_sec=2.0, min_sec=0.5, max_sec=10.0)
 
 
 class InfraContainer(containers.DeclarativeContainer):
-    wiring_config = containers.WiringConfiguration(
-        modules=[
-            "src.services.prompt_version_service",
-            "src.services.state_manager",
-            "src.backend.database.uow",
-        ]
-    )
 
     config: providers.Singleton = providers.Singleton(GlobalConfigModel.load)
 
@@ -42,24 +47,13 @@ class InfraContainer(containers.DeclarativeContainer):
         db_url=providers.Callable(lambda: os.getenv("DATABASE_URL") or DATABASE_URL),
     )
 
-    chroma_client_provider: providers.Singleton = providers.Singleton(
-        "src.services.vector_store.ChromaClientProvider",
-        db_path="./chroma_db",
-    )
+    chroma_client_provider: providers.Singleton = providers.Singleton(_get_chroma_client_provider)
 
-    vector_store: providers.Singleton = providers.Singleton(
-        "src.services.vector_store.ChromaVectorStore",
-        client_provider=chroma_client_provider,
-    )
+    vector_store: providers.Singleton = providers.Singleton(_get_vector_store)
 
     audit_logger: providers.Singleton = providers.Singleton(lambda: None)
 
-    cooldown: providers.Singleton = providers.Singleton(
-        "src.backend.engine_utils.AdaptiveCooldown",
-        base_sec=2.0,
-        min_sec=0.5,
-        max_sec=10.0,
-    )
+    cooldown: providers.Singleton = providers.Singleton(_get_cooldown)
 
     max_concurrent_api_calls: providers.Singleton = providers.Singleton(
         lambda c: c.max_concurrent_api_calls,

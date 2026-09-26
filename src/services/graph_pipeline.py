@@ -85,7 +85,19 @@ class GraphPipelineService:
         self.batch_size = batch_size
         self.max_retries = max_retries
         self.enable_vector_store = enable_vector_store
-        self._vector_store = get_default_store() if enable_vector_store else None
+        self._vector_store_instance = None
+
+    @property
+    def _vector_store(self):
+        if not self.enable_vector_store:
+            return None
+        if self._vector_store_instance is None:
+            self._vector_store_instance = get_default_store()
+        return self._vector_store_instance
+
+    @_vector_store.setter
+    def _vector_store(self, val):
+        self._vector_store_instance = val
 
     async def process_chapter_knowledge(
         self,

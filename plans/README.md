@@ -9,6 +9,7 @@
 | [V5_RELEASE_ROADMAP.md](./V5_RELEASE_ROADMAP.md) | **v5.0 リリース方針・将来戦略ロードマップ (Next-Gen)**<br>Pillar 1〜4（脱AGE・統合オーディター・30秒生成・EPUB特化） | 🎯 将来方針 |
 | [PHASE_ROADMAP_MASTER.md](./PHASE_ROADMAP_MASTER.md) | **健全化・商用化マスターロードマップ (SSOT)**<br>フェーズ0（止血・身軽化）〜フェーズ3（商用ローンチ）の全体計画 | 🚀 実行中 |
 | [PLAN_LOW_COST_COMMERCIALIZATION_ROADMAP.md](./PLAN_LOW_COST_COMMERCIALIZATION_ROADMAP.md) | 低コスト商用化ロードマップ（ゼロ予算公開戦略・料金モデル） | 📋 参照 |
+| [PLAN_I1_UNIFIED_ILLUSTRATION_ENGINE_24STEPS.md](./PLAN_I1_UNIFIED_ILLUSTRATION_ENGINE_24STEPS.md) | **統合イラスト生成エンジン**<br>3系統（Traditional/IllustrationPoint/Manga24）統合、生成モデルは NanoBanana2Lite に全種別統一、モデル差し替えは設定1行 | 📋 計画確定 |
 
 ---
 

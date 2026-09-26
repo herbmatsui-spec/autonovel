@@ -25,7 +25,9 @@ from src.backend.routers import (
     books,
     branches,
     chapters,
+    collab,
     commercial,
+    commercial_planning,
     cost,
     easy_mode,
     editor,
@@ -33,6 +35,7 @@ from src.backend.routers import (
     export,
     graph,
     health,
+    hooks,
     illustrations,
     issues,
     marketing,
@@ -43,8 +46,10 @@ from src.backend.routers import (
     patches,
     plots,
     projects,
+    prompt_compare,
     prompt_versions,
     streaming,
+    structure,
     styles,
     system,
     tasks,
@@ -158,6 +163,8 @@ app.include_router(prompt_versions.router)
 app.include_router(misc.router)
 app.include_router(novel.router)
 app.include_router(commercial.router)
+app.include_router(commercial_planning.router)
+app.include_router(collab.router)
 app.include_router(illustrations.router)
 # Step 19: multimedia プラグインが有効な場合のみマウント（DB初期化・タスク登録もスキップ）
 if plugin_registry.is_enabled("multimedia"):
@@ -177,6 +184,9 @@ app.include_router(trace.router)
 app.include_router(health.router)
 app.include_router(subtext.router)
 app.include_router(annotations.router)
+app.include_router(hooks.router)
+app.include_router(prompt_compare.router)
+app.include_router(structure.router)
 
 
 @app.get("/health")
